@@ -1,0 +1,33 @@
+metadata:
+  name: node-1
+  fqdn: node-1.h3.surf-thailand.com
+  description: Local containerized target host for dry-run deployments
+
+targets:
+  - name: node-1
+    host: localhost
+    port: 2222
+    username: deployer
+    password: changeme
+    # privateKey: C:/Users/me/.ssh/node-1
+    env:
+      NODE_ENV: production
+    preCommands:
+      - 'echo "[node-1] pre-check"'
+    postCommands:
+      - 'echo "[node-1] post-check"'
+
+services:
+  ai-inference:
+    artifacts:
+      - type: git
+        repo: https://github.com/example/ai-inference.git
+        branch: main
+    setup:
+      - 'cd /workspace/ai && npm install --production'
+    start:
+      - 'pm2 restart ai-inference || pm2 start npm --name ai-inference -- run start'
+    status:
+      - 'pm2 status ai-inference'
+    health:
+      - 'curl -fsS http://localhost:3000/health'

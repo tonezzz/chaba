@@ -1,0 +1,17 @@
+version: '3.9'
+
+services:
+  node-1:
+    build:
+      context: ./node-1
+      dockerfile: Dockerfile
+    container_name: node-1
+    hostname: node-1.h3.surf-thailand.com
+    ports:
+      - '2222:22'
+      - '3001:3000'
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ../:/workspace
+    command: /usr/sbin/sshd -D
