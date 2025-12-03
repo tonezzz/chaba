@@ -48,6 +48,46 @@ const runDeployScript = () =>
     const child = spawn('bash', [DEPLOY_SCRIPT], {
       stdio: 'inherit'
     });
+
+const availableLinks = [
+  { path: '/', label: 'Landing page' },
+  { path: '/api/health', label: 'Health check (JSON)' },
+  { path: '/api/greeting?name=Surf', label: 'Greeting API' },
+  { path: '/chat', label: 'Glama chat panel' },
+  { path: '/logger', label: 'Logger demo' }
+];
+
+app.get('/tony', (_req, res) => {
+  const html = `<!doctype html>
+  <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>node-1 Links</title>
+      <style>
+        body { font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 2rem; background: #0b0d12; color: #f5f6ff; }
+        h1 { margin-bottom: 1rem; }
+        ul { list-style: none; padding: 0; }
+        li { margin-bottom: 1rem; }
+        a { color: #7ef2c9; font-weight: 600; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .path { font-family: 'JetBrains Mono', Consolas, monospace; color: #8f99b8; display: block; }
+      </style>
+    </head>
+    <body>
+      <h1>node-1 available endpoints</h1>
+      <ul>
+        ${availableLinks
+          .map(
+            (link) =>
+              `<li><a href="${link.path}" target="_blank" rel="noreferrer">${link.label}</a><span class="path">${link.path}</span></li>`
+          )
+          .join('')}
+      </ul>
+    </body>
+  </html>`;
+  res.send(html);
+});
     child.on('error', reject);
     child.on('close', (code) => {
       if (code === 0) {
