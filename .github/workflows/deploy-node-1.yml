@@ -1,0 +1,64 @@
+name: Deploy node-1 apps
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'sites/**'
+      - 'installer/**'
+      - 'scripts/deploy-node-1.sh'
+      - '.github/workflows/deploy-node-1.yml'
+  workflow_dispatch:
+    inputs:
+      apps:
+        description: 'Space-separated list of apps to deploy (default: site-sample site-logger)'
+        required: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SSH_USER: ${{ secrets.NODE1_SSH_USER }}
+      SSH_HOST: ${{ secrets.NODE1_SSH_HOST }}
+      SSH_PORT: ${{ secrets.NODE1_SSH_PORT || '22' }}
+      SSH_KEY_PATH: /tmp/node1_key
+      APPS: ${{ github.event.inputs.apps || 'site-sample site-logger' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies (installer)
+        working-directory: installer
+        run: npm install
+
+      - name: Install dependencies (apps)
+        run: |
+          for app in $APPS; do
+            if [ -d "sites/$app" ]; then
+              (cd sites/$app && npm install)
+            fi
+          done
+
+      - name: Write SSH key
+        run: |
+          echo "${{ secrets.NODE1_SSH_KEY }}" > $SSH_KEY_PATH
+          chmod 600 $SSH_KEY_PATH
+
+      - name: Deploy via script
+        env:
+          SSH_KEY_PATH: ${{ env.SSH_KEY_PATH }}
+          LOCAL_BASE: sites
+          REMOTE_BASE: /www/node-1.h3.surf-thailand.com
+          ENV_DIR: .secrets/node-1
+        run: |
+          bash scripts/deploy-node-1.sh
+
+      - name: Smoke test
+        run: |
+          curl -f https://node-1.h3.surf-thailand.com/api/health
