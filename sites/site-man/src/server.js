@@ -48,6 +48,15 @@ const runDeployScript = () =>
     const child = spawn('bash', [DEPLOY_SCRIPT], {
       stdio: 'inherit'
     });
+    child.on('error', reject);
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`deploy_script_exit_${code}`));
+      }
+    });
+  });
 
 const availableLinks = [
   { path: '/', label: 'Landing page' },
@@ -88,15 +97,6 @@ app.get('/tony', (_req, res) => {
   </html>`;
   res.send(html);
 });
-    child.on('error', reject);
-    child.on('close', (code) => {
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new Error(`deploy_script_exit_${code}`));
-      }
-    });
-  });
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', node: process.version, timestamp: new Date().toISOString() });
