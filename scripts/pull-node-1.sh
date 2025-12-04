@@ -3,7 +3,7 @@ set -euo pipefail
 
 PROJECT_DIR=${PROJECT_DIR:-/www/node-1.h3.surf-thailand.com}
 NODE_DOMAIN=${NODE_DOMAIN:-node-1.h3.surf-thailand.com}
-TARGET_REF=${TARGET_REF:-origin/main}
+TARGET_REF=${TARGET_REF:-origin/node-1}
 
 cd "$PROJECT_DIR"
 
