@@ -1,0 +1,785 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Meeting POC • Webview</title>
+    <style>
+      :root {
+        font-family: 'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        color: #0c1524;
+        background-color: #f7f8fb;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(180deg, #f7f8fb 0%, #eef1f8 40%, #fff 100%);
+        min-height: 100vh;
+      }
+
+      .app-shell {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 32px 20px 80px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      header {
+        text-align: center;
+      }
+
+      header h1 {
+        margin: 0 0 4px;
+        font-size: 1.6rem;
+      }
+
+      header p {
+        margin: 0;
+        color: #5b6477;
+      }
+
+      .card {
+        background: #fff;
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+      }
+
+      .controls {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      button {
+        flex: 1;
+        min-height: 46px;
+        border: none;
+        border-radius: 14px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 120ms ease, box-shadow 120ms ease;
+      }
+
+      button.primary {
+        background: linear-gradient(120deg, #2563eb, #7c3aed);
+        color: #fff;
+        box-shadow: 0 10px 30px rgba(37, 99, 235, 0.35);
+      }
+
+      button.secondary {
+        background: #eef1f8;
+        color: #1e293b;
+      }
+
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
+      button:active:not(:disabled) {
+        transform: scale(0.98);
+      }
+
+      .status-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        font-size: 0.9rem;
+        color: #556075;
+      }
+
+      .status-chip {
+        padding: 4px 10px;
+        border-radius: 20px;
+        background: #edf2ff;
+        color: #1c3faa;
+        font-weight: 600;
+      }
+
+      .status-chip.error {
+        background: #ffe4e6;
+        color: #be123c;
+      }
+
+      .status-chip.success {
+        background: #ecfdf3;
+        color: #15803d;
+      }
+
+      .session-pill {
+        margin-top: 14px;
+        padding: 12px 14px;
+        border-radius: 16px;
+        background: #f5f5ff;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        font-size: 0.95rem;
+        color: #4338ca;
+      }
+
+      .session-pill small {
+        display: block;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #7c81a6;
+      }
+
+      .session-pill code {
+        font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        font-size: 0.85rem;
+        color: #1e1b4b;
+        background: rgba(255, 255, 255, 0.6);
+        padding: 2px 6px;
+        border-radius: 8px;
+      }
+
+      button.ghost {
+        flex: initial;
+        background: transparent;
+        border: 1px solid rgba(67, 56, 202, 0.4);
+        color: #3730a3;
+        min-height: 38px;
+        padding: 0 14px;
+      }
+
+      .transcript-log {
+        max-height: 220px;
+        overflow-y: auto;
+        margin-top: 12px;
+        padding-right: 4px;
+      }
+
+      .transcript-item {
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px dashed #e2e8f0;
+      }
+
+      .transcript-item:last-child {
+        border-bottom: none;
+      }
+
+      .transcript-item strong {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .transcript-item time {
+        font-size: 0.8rem;
+        color: #94a3b8;
+      }
+
+      .interim-text {
+        font-style: italic;
+        color: #7c3aed;
+      }
+
+      .topics-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .topic-card {
+        border: 1px solid #eef1f8;
+        border-radius: 16px;
+        padding: 14px;
+        background: #fdfdff;
+      }
+
+      .topic-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .topic-head span {
+        font-weight: 600;
+      }
+
+      .topic-badge {
+        padding: 4px 9px;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        text-transform: capitalize;
+      }
+
+      .topic-badge.emerging {
+        background: #fef3c7;
+        color: #9a3412;
+      }
+
+      .topic-badge.active {
+        background: #dbeafe;
+        color: #1d4ed8;
+      }
+
+      .topic-badge.resolved {
+        background: #dcfce7;
+        color: #15803d;
+      }
+
+      .progress-track {
+        position: relative;
+        height: 6px;
+        background: #e2e8f0;
+        border-radius: 999px;
+        margin: 12px 0;
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        background: linear-gradient(90deg, #34d399, #10b981);
+      }
+
+      .topic-list {
+        margin: 8px 0 0;
+        padding-left: 16px;
+        color: #475569;
+      }
+
+      .topic-evidence {
+        font-size: 0.9rem;
+        color: #6b7280;
+        margin-top: 6px;
+        border-left: 3px solid #c4b5fd;
+        padding-left: 10px;
+      }
+
+      textarea {
+        width: 100%;
+        border-radius: 14px;
+        border: 1px solid #d4dae4;
+        padding: 12px;
+        min-height: 80px;
+        font-family: inherit;
+        font-size: 1rem;
+        resize: vertical;
+        background: #fff;
+      }
+
+      .note {
+        font-size: 0.85rem;
+        color: #94a3b8;
+        margin-top: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header>
+        <h1>Meeting Listener (WebView PoC)</h1>
+        <p>Capture ➜ STT in browser ➜ Glama summaries ➜ spoken topics.</p>
+      </header>
+
+      <section class="card">
+        <div class="controls">
+          <button id="listenBtn" class="primary">Start Listening</button>
+          <button id="speakBtn" class="secondary" disabled>Speak Summary</button>
+        </div>
+        <div class="status-bar" id="statusBar">
+          <span class="status-chip" id="micStatus">Idle</span>
+          <span class="status-chip" id="summaryStatus">Summary idle</span>
+        </div>
+        <div class="session-pill">
+          <div>
+            <small>Session</small>
+            <code id="sessionLabel">—</code>
+          </div>
+          <button id="sessionResetBtn" class="ghost" type="button">New ID</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3>Transcript</h3>
+        <div id="interimText" class="interim-text"></div>
+        <div class="transcript-log" id="transcriptLog"></div>
+        <div class="note">Tip: If STT is unavailable, paste text below.</div>
+        <textarea id="manualInput" placeholder="Paste notes or type what was said..."></textarea>
+        <button id="injectBtn" class="secondary" style="margin-top: 10px">Inject Snippet</button>
+      </section>
+
+      <section class="card">
+        <h3>Topics</h3>
+        <div class="topics-grid" id="topicsRoot">
+          <p id="topicsEmpty" style="margin: 0; color: #94a3b8">Start speaking to see live topics.</p>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      (() => {
+        const DEFAULT_API_BASE = window.location.origin;
+        const initialApiBase = typeof window.POC_API_BASE === 'string' && window.POC_API_BASE.trim()
+          ? window.POC_API_BASE.trim()
+          : DEFAULT_API_BASE;
+        const STORAGE_KEYS = {
+          sessionId: 'pocMeetingSessionId'
+        };
+        const SpeechRecognition =
+          window.SpeechRecognition || window.webkitSpeechRecognition || window.mozSpeechRecognition;
+
+        const hostBridge = {
+          post(event, detail = {}) {
+            const payload = { type: event, detail };
+            try {
+              if (window.webkit?.messageHandlers?.meetingApp) {
+                window.webkit.messageHandlers.meetingApp.postMessage(payload);
+              } else if (window.MeetingAppBridge?.postMessage) {
+                window.MeetingAppBridge.postMessage(typeof payload === 'string' ? payload : JSON.stringify(payload));
+              } else if (window.parent) {
+                window.parent.postMessage(payload, '*');
+              }
+            } catch (err) {
+              console.warn('[hostBridge] post failed', err);
+            }
+          }
+        };
+
+        const state = {
+          apiBase: initialApiBase,
+          recognition: null,
+          listening: false,
+          interim: '',
+          transcriptChunks: [],
+          topics: [],
+          summary: '',
+          lastSummary: null,
+          pendingSummary: null,
+          ttsEnabled: !!window.speechSynthesis,
+          sttAvailable: !!SpeechRecognition,
+          sessionId: null,
+          meetingReady: false,
+          speakerAlias: 'You'
+        };
+
+        const endpoints = () => ({
+          topic: `${state.apiBase}/poc/topic-summary`,
+          meetingSession: `${state.apiBase}/meeting/sessions`,
+          meetingAppend: `${state.apiBase}/meeting/append-transcript`
+        });
+
+        const ui = {
+          listenBtn: document.getElementById('listenBtn'),
+          speakBtn: document.getElementById('speakBtn'),
+          micStatus: document.getElementById('micStatus'),
+          summaryStatus: document.getElementById('summaryStatus'),
+          interimText: document.getElementById('interimText'),
+          transcriptLog: document.getElementById('transcriptLog'),
+          topicsRoot: document.getElementById('topicsRoot'),
+          topicsEmpty: document.getElementById('topicsEmpty'),
+          manualInput: document.getElementById('manualInput'),
+          injectBtn: document.getElementById('injectBtn'),
+          sessionLabel: document.getElementById('sessionLabel'),
+          sessionResetBtn: document.getElementById('sessionResetBtn')
+        };
+
+        const fmtTime = (ts) => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        const updateSessionLabel = () => {
+          ui.sessionLabel.textContent = state.sessionId || '—';
+        };
+
+        const setApiBase = (nextBase, { silent = false } = {}) => {
+          if (!nextBase || typeof nextBase !== 'string') return;
+          state.apiBase = nextBase.trim() || DEFAULT_API_BASE;
+          if (!silent) {
+            hostBridge.post('apiBaseChanged', { apiBase: state.apiBase });
+          }
+        };
+
+        const updateButtons = () => {
+          ui.listenBtn.textContent = state.listening ? 'Stop Listening' : 'Start Listening';
+          ui.speakBtn.disabled = !state.summary || !state.ttsEnabled;
+          ui.listenBtn.disabled = !state.sttAvailable;
+          if (!state.sttAvailable) {
+            ui.listenBtn.textContent = 'STT unavailable';
+            ui.micStatus.classList.add('error');
+            ui.micStatus.textContent = 'Requires Safari 17+ or webkitSpeechRecognition';
+          }
+        };
+
+        const updateStatusChips = (summaryState = 'idle') => {
+          ui.micStatus.textContent = state.listening ? 'Listening…' : 'Idle';
+          ui.micStatus.classList.toggle('success', state.listening);
+          ui.micStatus.classList.toggle('error', !state.sttAvailable);
+
+          ui.summaryStatus.textContent = summaryState;
+          ui.summaryStatus.className = 'status-chip';
+          if (summaryState.toLowerCase().includes('error')) {
+            ui.summaryStatus.classList.add('error');
+          } else if (summaryState.toLowerCase().includes('ready') || summaryState.toLowerCase().includes('updated')) {
+            ui.summaryStatus.classList.add('success');
+          }
+        };
+
+        const renderTranscript = () => {
+          ui.transcriptLog.innerHTML = state.transcriptChunks
+            .slice(-20)
+            .map(
+              (chunk) => `
+                <div class="transcript-item">
+                  <strong>${chunk.speaker || 'Speaker'}</strong>
+                  <time>${fmtTime(chunk.timestamp)}</time>
+                  <div>${chunk.text}</div>
+                </div>`
+            )
+            .join('');
+        };
+
+        const renderTopics = () => {
+          if (!state.topics.length) {
+            ui.topicsRoot.innerHTML = '';
+            ui.topicsRoot.appendChild(ui.topicsEmpty);
+            ui.topicsEmpty.style.display = 'block';
+            return;
+          }
+          ui.topicsEmpty.style.display = 'none';
+          ui.topicsRoot.innerHTML = state.topics
+            .map((topic) => {
+              const pct = Math.round(Math.min(Math.max(topic.progress ?? 0, 0), 1) * 100);
+              const bullets = Array.isArray(topic.bullets)
+                ? topic.bullets.map((b) => `<li>${b}</li>`).join('')
+                : '';
+              const badgeClass = `topic-badge ${topic.status || 'active'}`;
+              return `
+                <div class="topic-card">
+                  <div class="topic-head">
+                    <span>${topic.topic || 'Untitled topic'}</span>
+                    <span class="${badgeClass}">${topic.status || 'active'}</span>
+                  </div>
+                  <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+                  ${bullets ? `<ul class="topic-list">${bullets}</ul>` : ''}
+                  ${topic.evidence ? `<div class="topic-evidence">“${topic.evidence}”</div>` : ''}
+                </div>`;
+            })
+            .join('');
+        };
+
+        const appendToMeeting = async (text, speaker) => {
+          if (!state.sessionId || !text) return;
+          try {
+            const response = await fetch(endpoints().meetingAppend, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                sessionId: state.sessionId,
+                text,
+                speaker: speaker || state.speakerAlias,
+                title: 'iPhone Session',
+                participants: ['Webview'],
+                tags: ['poc', 'ios']
+              })
+            });
+            if (!response.ok) {
+              const detail = await response.text();
+              throw new Error(detail || 'meeting_append_failed');
+            }
+            hostBridge.post('meetingTranscriptAppended', { sessionId: state.sessionId });
+          } catch (err) {
+            console.warn('[meeting] append failed', err);
+            hostBridge.post('meetingError', { message: err.message });
+          }
+        };
+
+        const addTranscriptChunk = (text, speaker = state.speakerAlias) => {
+          if (!text) return;
+          state.transcriptChunks.push({ text, speaker, timestamp: Date.now() });
+          if (state.transcriptChunks.length > 60) {
+            state.transcriptChunks = state.transcriptChunks.slice(-60);
+          }
+          renderTranscript();
+          appendToMeeting(text, speaker);
+          scheduleSummary();
+        };
+
+        const ensureRecognition = () => {
+          if (!state.sttAvailable || state.recognition) return state.recognition;
+          try {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = (event) => {
+              let finalText = '';
+              let interimText = '';
+              for (let i = event.resultIndex; i < event.results.length; i += 1) {
+                const result = event.results[i];
+                const transcript = result[0].transcript.trim();
+                if (!transcript) continue;
+                if (result.isFinal) {
+                  finalText += `${transcript} `;
+                } else {
+                  interimText = transcript;
+                }
+              }
+              if (finalText) {
+                state.interim = '';
+                ui.interimText.textContent = '';
+                addTranscriptChunk(finalText.trim());
+              } else if (interimText) {
+                state.interim = interimText;
+                ui.interimText.textContent = `${interimText} …`;
+              }
+            };
+
+            recognition.onerror = (event) => {
+              console.warn('[stt] error', event.error);
+              updateStatusChips(`STT error: ${event.error}`);
+              state.listening = false;
+              updateButtons();
+              hostBridge.post('sttError', { error: event.error });
+            };
+
+            recognition.onend = () => {
+              if (state.listening) {
+                recognition.start();
+              }
+            };
+
+            state.recognition = recognition;
+            return recognition;
+          } catch (err) {
+            console.error('Failed to init recognition', err);
+            state.sttAvailable = false;
+            updateButtons();
+            return null;
+          }
+        };
+
+        const setListening = (next) => {
+          state.listening = !!next;
+          hostBridge.post('listeningChanged', { listening: state.listening });
+        };
+
+        const startListening = () => {
+          if (!ensureRecognition()) return;
+          try {
+            setListening(true);
+            state.recognition.start();
+            updateButtons();
+            updateStatusChips('Capturing audio…');
+          } catch (err) {
+            console.error('startListening failed', err);
+            setListening(false);
+            updateStatusChips('STT start error');
+          }
+        };
+
+        const stopListening = () => {
+          setListening(false);
+          if (state.recognition) {
+            try {
+              state.recognition.stop();
+            } catch (_) {
+              // ignore
+            }
+          }
+          updateButtons();
+          updateStatusChips('Summary idle');
+        };
+
+        const scheduleSummary = () => {
+          if (state.pendingSummary) {
+            clearTimeout(state.pendingSummary);
+          }
+          state.pendingSummary = setTimeout(runSummary, 1600);
+          updateStatusChips('Waiting to summarize…');
+        };
+
+        const runSummary = async () => {
+          if (!state.transcriptChunks.length) return;
+          updateStatusChips('Summarizing with Glama…');
+          try {
+            const body = {
+              transcriptChunks: state.transcriptChunks.slice(-15),
+              maxTopics: 5,
+              sessionId: state.sessionId
+            };
+            const response = await fetch(endpoints().topic, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body)
+            });
+            if (!response.ok) {
+              const detail = await response.text();
+              throw new Error(detail || 'summary_failed');
+            }
+            const payload = await response.json();
+            state.topics = payload.topics || [];
+            state.summary = payload.summary || '';
+            state.lastSummary = new Date();
+            renderTopics();
+            updateButtons();
+            updateStatusChips('Summary updated');
+            hostBridge.post('summaryUpdated', {
+              sessionId: state.sessionId,
+              summary: state.summary,
+              topics: state.topics
+            });
+          } catch (err) {
+            console.error('[summary] failed', err);
+            updateStatusChips(`summary error: ${err.message}`);
+            hostBridge.post('summaryError', { message: err.message });
+          }
+        };
+
+        const speakSummary = () => {
+          if (!window.speechSynthesis || !state.summary) return;
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(state.summary);
+          utterance.rate = 1;
+          utterance.pitch = 1;
+          window.speechSynthesis.speak(utterance);
+        };
+
+        const generateSessionId = () => `sess-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+        const ensureMeetingSession = async () => {
+          if (!state.sessionId) return;
+          try {
+            const response = await fetch(endpoints().meetingSession, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                sessionId: state.sessionId,
+                title: 'iPhone Webview Meeting',
+                participants: ['iOS Device'],
+                tags: ['webview', 'poc'],
+                language: 'en'
+              })
+            });
+            if (!response.ok) {
+              const detail = await response.text();
+              throw new Error(detail || 'meeting_session_failed');
+            }
+            state.meetingReady = true;
+            hostBridge.post('meetingSessionReady', { sessionId: state.sessionId });
+          } catch (err) {
+            state.meetingReady = false;
+            console.warn('[meeting] session ensure failed', err);
+            updateStatusChips('Meeting session error');
+            hostBridge.post('meetingError', { message: err.message });
+          }
+        };
+
+        const setSessionId = (sessionId, { broadcast = true } = {}) => {
+          state.sessionId = sessionId;
+          try {
+            if (sessionId) {
+              localStorage.setItem(STORAGE_KEYS.sessionId, sessionId);
+            } else {
+              localStorage.removeItem(STORAGE_KEYS.sessionId);
+            }
+          } catch (_) {
+            // ignore storage errors
+          }
+          updateSessionLabel();
+          if (broadcast) {
+            hostBridge.post('sessionChanged', { sessionId });
+          }
+          ensureMeetingSession();
+        };
+
+        const bootstrapSession = () => {
+          let initial = null;
+          try {
+            initial = localStorage.getItem(STORAGE_KEYS.sessionId);
+          } catch (_) {
+            initial = null;
+          }
+          setSessionId(initial || generateSessionId(), { broadcast: false });
+        };
+
+        const handleHostCommand = (payload) => {
+          if (!payload || typeof payload !== 'object') return;
+          switch (payload.type) {
+            case 'setSession':
+              if (payload.sessionId) {
+                setSessionId(payload.sessionId, { broadcast: false });
+              }
+              break;
+            case 'setApiBase':
+              if (payload.apiBase) {
+                setApiBase(payload.apiBase, { silent: true });
+              }
+              break;
+            case 'injectTranscript':
+              if (payload.text) {
+                addTranscriptChunk(payload.text, payload.speaker || 'Host');
+              }
+              break;
+            default:
+              console.warn('[host] unknown command', payload);
+          }
+        };
+
+        window.addEventListener('message', (event) => {
+          if (!event?.data) return;
+          handleHostCommand(event.data);
+        });
+
+        window.MeetingWebviewBridge = {
+          setSession: (sessionId) => setSessionId(sessionId, { broadcast: false }),
+          setApiBase: (apiBase) => setApiBase(apiBase, { silent: true }),
+          injectTranscript: (payload) => handleHostCommand({ type: 'injectTranscript', ...(payload || {}) }),
+          ping: () => ({ ready: true, sessionId: state.sessionId, apiBase: state.apiBase })
+        };
+
+        ui.listenBtn.addEventListener('click', () => {
+          if (!state.sttAvailable) return;
+          state.listening ? stopListening() : startListening();
+        });
+
+        ui.speakBtn.addEventListener('click', speakSummary);
+
+        ui.injectBtn.addEventListener('click', () => {
+          const value = ui.manualInput.value.trim();
+          if (!value) return;
+          addTranscriptChunk(value, 'Manual');
+          ui.manualInput.value = '';
+          updateStatusChips('Manual snippet added');
+        });
+
+        ui.sessionResetBtn.addEventListener('click', () => {
+          setSessionId(generateSessionId());
+          state.transcriptChunks = [];
+          renderTranscript();
+          renderTopics();
+          updateStatusChips('Session reset');
+        });
+
+        const init = () => {
+          bootstrapSession();
+          updateSessionLabel();
+          updateButtons();
+          updateStatusChips('Summary idle');
+          hostBridge.post('ready', {
+            sessionId: state.sessionId,
+            apiBase: state.apiBase,
+            sttAvailable: state.sttAvailable,
+            ttsAvailable: state.ttsEnabled
+          });
+        };
+
+        init();
+      })();
+    </script>
+  </body>
+</html>

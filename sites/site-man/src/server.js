@@ -35,13 +35,87 @@ const TALK_GUIDANCE_DEFAULT =
   (process.env.TALK_GUIDANCE_DEFAULT || 'Open with a warm greeting, ask about today’s focus, and offer two helpful follow-up prompts.').trim();
 const DEPLOY_SCRIPT =
   process.env.DEPLOY_SCRIPT || path.resolve(__dirname, '..', '..', '..', 'scripts', 'pull-node-1.sh');
-const TONY_SITES_ROOT = path.resolve(__dirname, '..', '..', 'tony', 'sites');
+const PUBLIC_ROOT = path.resolve(__dirname, '..', 'public');
+const TONY_SITES_ROOT = path.resolve(PUBLIC_ROOT, 'tony', 'sites');
+const TONY_SITES_MANIFEST_PATH = path.resolve(__dirname, '..', 'tony-sites.json');
 const AGENTS_ROOT = path.resolve(__dirname, '..', 'agents');
 const AGENT_REGISTRY_PATH = path.join(AGENTS_ROOT, 'registry.json');
+const DEFAULT_STATIC_BUNDLES = ['chat', 'talk'];
+const RELEASE_METADATA_PATH = path.resolve(__dirname, '..', 'payload.json');
 const UPLOADS_ROOT = path.resolve(__dirname, '..', 'uploads');
 
 const sessionStore = new Map();
 const ORCHESTRATOR_ID = 'orchestrator';
+const DEFAULT_USER_ID = 'default';
+const DATA_ROOT = path.resolve(__dirname, '..', 'data');
+const SESSION_STORAGE_PATH = path.join(DATA_ROOT, 'sessions.json');
+const SESSION_ARCHIVE_DIR = path.join(DATA_ROOT, 'archive', 'sessions');
+const SESSION_ARCHIVE_MESSAGE_LIMIT = Number.isFinite(Number(process.env.SESSION_ARCHIVE_MESSAGE_LIMIT))
+  ? Math.max(10, Number(process.env.SESSION_ARCHIVE_MESSAGE_LIMIT))
+  : 200;
+let sessionPersistTimer = null;
+let sessionsHydrated = false;
+
+const normalizeUserId = (value = '') => {
+  const trimmed = (value || '').toString().trim().toLowerCase();
+  return trimmed || DEFAULT_USER_ID;
+};
+
+const serializeSessions = () =>
+  [...sessionStore.values()].map((session) => ({
+    ...session,
+    messages: Array.isArray(session?.messages) ? session.messages : []
+  }));
+
+const persistSessionStore = async () => {
+  try {
+    await fs.mkdir(DATA_ROOT, { recursive: true });
+    const payload = {
+      updatedAt: new Date().toISOString(),
+      sessions: serializeSessions()
+    };
+    await fs.writeFile(SESSION_STORAGE_PATH, JSON.stringify(payload, null, 2), 'utf8');
+  } catch (error) {
+    console.error('[site-man] Failed to persist sessions', error);
+  }
+};
+
+const scheduleSessionPersist = () => {
+  if (sessionPersistTimer) {
+    return;
+  }
+  sessionPersistTimer = setTimeout(() => {
+    sessionPersistTimer = null;
+    persistSessionStore();
+  }, 250);
+};
+
+const hydrateSessionStore = async () => {
+  if (sessionsHydrated) {
+    return;
+  }
+  try {
+    const raw = await fs.readFile(SESSION_STORAGE_PATH, 'utf8');
+    const parsed = JSON.parse(raw);
+    const sessions = Array.isArray(parsed?.sessions) ? parsed.sessions : Array.isArray(parsed) ? parsed : [];
+    sessions.forEach((session) => {
+      if (session?.id) {
+        sessionStore.set(session.id, {
+          ...session,
+          messages: Array.isArray(session.messages) ? session.messages : []
+        });
+      }
+    });
+  } catch (error) {
+    if (error?.code !== 'ENOENT') {
+      console.error('[site-man] Failed to load sessions', error);
+    }
+  } finally {
+    sessionsHydrated = true;
+  }
+};
+
+await hydrateSessionStore();
 
 const generateId = () =>
   typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
@@ -171,17 +245,37 @@ const describeAgents = async () => {
   );
 };
 
-const createSessionRecord = ({ agents, metadata }) => {
+const normalizeSessionMetadata = (metadata) => {
+  const base = {
+    title: null,
+    pinned: false,
+    autoTitle: true
+  };
+  if (!metadata) {
+    return base;
+  }
+  return {
+    ...base,
+    ...metadata,
+    pinned: Boolean(metadata.pinned),
+    autoTitle: metadata.autoTitle === false ? false : true,
+    title: typeof metadata.title === 'string' && metadata.title.trim() ? metadata.title.trim() : base.title
+  };
+};
+
+const createSessionRecord = ({ userId, agents, metadata }) => {
   const now = new Date().toISOString();
   const session = {
     id: generateId(),
+    userId: normalizeUserId(userId),
     agents,
-    metadata: metadata || null,
+    metadata: normalizeSessionMetadata(metadata),
     createdAt: now,
     updatedAt: now,
     messages: []
   };
   sessionStore.set(session.id, session);
+  scheduleSessionPersist();
   return session;
 };
 
@@ -192,10 +286,224 @@ const appendSessionMessage = (sessionId, message) => {
   }
   session.messages.push(message);
   session.updatedAt = message.createdAt;
+  scheduleSessionPersist();
   return message;
 };
 
+const removeSession = (sessionId) => {
+  if (!sessionId) {
+    return false;
+  }
+  const removed = sessionStore.delete(sessionId);
+  if (removed) {
+    scheduleSessionPersist();
+  }
+  return removed;
+};
+
 const DEFAULT_AGENT_PROMPT = 'You are a helpful Surf Thailand assistant. Respond with concise, actionable information.';
+
+const getSessionForUser = (userId, sessionId) => {
+  const session = sessionStore.get(sessionId);
+  if (!session) {
+    return null;
+  }
+  return session.userId === normalizeUserId(userId) ? session : null;
+};
+
+const listSessionsForUser = (userId, { limit = 20 } = {}) => {
+  const normalized = normalizeUserId(userId);
+  const sessions = [...sessionStore.values()].filter((session) => session.userId === normalized);
+  sessions.sort((a, b) => {
+    const aPinned = Boolean(a.metadata?.pinned);
+    const bPinned = Boolean(b.metadata?.pinned);
+    if (aPinned !== bPinned) {
+      return aPinned ? -1 : 1;
+    }
+    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+  });
+  return sessions.slice(0, limit);
+};
+
+const updateSessionMetadata = (session, patch = {}) => {
+  if (!session) {
+    return null;
+  }
+  session.metadata = {
+    ...normalizeSessionMetadata(session.metadata),
+    ...patch,
+    title:
+      typeof patch.title === 'string' && patch.title.trim() ? patch.title.trim() : patch.title === null ? null : session.metadata?.title,
+    pinned: typeof patch.pinned === 'boolean' ? patch.pinned : Boolean(session.metadata?.pinned),
+    autoTitle: typeof patch.autoTitle === 'boolean' ? patch.autoTitle : session.metadata?.autoTitle !== false
+  };
+  scheduleSessionPersist();
+  return session.metadata;
+};
+
+const buildAutoTitlePrompt = (session) => {
+  const recent = session.messages.slice(-8);
+  const lines = recent.map((message) => {
+    const role = message.role === 'assistant' ? (message.agentId || 'assistant') : 'user';
+    return `${role}: ${message.content}`;
+  });
+  const content = lines.join('\n').slice(0, 1000);
+  return [
+    { role: 'system', content: 'You are an assistant that writes short, descriptive chat titles (max 6 words).' },
+    {
+      role: 'user',
+      content: `Conversation excerpt:\n${content}\n\nRespond with a concise title (no quotes).`
+    }
+  ];
+};
+
+const generateSessionTitle = async (session) => {
+  const messages = buildAutoTitlePrompt(session);
+  const { text } = await callGlamaChatCompletion({ messages, maxTokens: 32, temperature: 0.3 });
+  const processed = (text || '').split('\n')[0].trim();
+  return processed.slice(0, 80) || 'Conversation';
+};
+
+const buildSessionSummaryPrompt = (session) => {
+  const recent = session.messages.slice(-12);
+  const excerpt = recent
+    .map((message) => {
+      const role = message.role === 'assistant' ? (message.agentId || 'assistant') : 'user';
+      return `${role}: ${message.content}`;
+    })
+    .join('\n')
+    .slice(0, 1600);
+  return [
+    {
+      role: 'system',
+      content:
+        'You are an operations assistant who summarizes multi-agent conversations. Provide 2-3 sentences plus optional bullet reminders.'
+    },
+    {
+      role: 'user',
+      content: `Conversation excerpt:\n${excerpt}\n\nSummarize key goals, actions, blockers, and next steps.`
+    }
+  ];
+};
+
+const summarizeSessionContext = async (session) => {
+  if (!session?.messages?.length) {
+    return 'Session contained no messages.';
+  }
+  const fallback = () =>
+    session.messages
+      .slice(-5)
+      .map((message) => {
+        const role = message.role === 'assistant' ? (message.agentId || 'assistant') : 'user';
+        return `${role}: ${message.content}`;
+      })
+      .join('\n');
+
+  if (!isGlamaReady()) {
+    return fallback();
+  }
+
+  try {
+    const prompt = buildSessionSummaryPrompt(session);
+    const { text } = await callGlamaChatCompletion({ messages: prompt, maxTokens: 160, temperature: 0.2 });
+    return (text || '').trim() || fallback();
+  } catch (error) {
+    console.error('[site-man] session summary failed', error);
+    return fallback();
+  }
+};
+
+const trimMessagesForArchive = (messages = [], limit = SESSION_ARCHIVE_MESSAGE_LIMIT) =>
+  messages.slice(-limit).map((message) => ({
+    id: message.id,
+    role: message.role,
+    agentId: message.agentId || null,
+    content: message.content,
+    agentTargets: Array.isArray(message.agentTargets) ? message.agentTargets : null,
+    attachments: Array.isArray(message.attachments) ? message.attachments : null,
+    createdAt: message.createdAt
+  }));
+
+const buildSessionArchiveRecord = async ({ session, deletedBy, reason }) => {
+  const summary = await summarizeSessionContext(session);
+  return {
+    sessionId: session.id,
+    userId: session.userId,
+    agents: session.agents,
+    metadata: session.metadata || null,
+    createdAt: session.createdAt,
+    updatedAt: session.updatedAt,
+    deletedAt: new Date().toISOString(),
+    deletedBy: deletedBy || 'system',
+    reason: reason || null,
+    summary,
+    messageCount: Array.isArray(session.messages) ? session.messages.length : 0,
+    storedMessages: trimMessagesForArchive(session.messages)
+  };
+};
+
+const persistSessionArchiveRecord = async (record) => {
+  await fs.mkdir(SESSION_ARCHIVE_DIR, { recursive: true });
+  const archiveId = record.archiveId || `${record.sessionId}-${Date.now()}`;
+  const filename = `${archiveId}.json`;
+  const archivePath = path.join(SESSION_ARCHIVE_DIR, filename);
+  const payload = {
+    ...record,
+    archiveId
+  };
+  await fs.writeFile(archivePath, JSON.stringify(payload, null, 2), 'utf8');
+  return { archiveId, archivePath };
+};
+
+const readArchiveRecord = async (archiveId) => {
+  if (!archiveId) {
+    return null;
+  }
+  const archivePath = path.join(SESSION_ARCHIVE_DIR, `${archiveId}.json`);
+  try {
+    const raw = await fs.readFile(archivePath, 'utf8');
+    return JSON.parse(raw);
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      console.error('[site-man] read archive failed', archiveId, error);
+    }
+    return null;
+  }
+};
+
+const listArchiveRecordsForUser = async ({ userId, limit = 20 }) => {
+  const normalized = normalizeUserId(userId);
+  let files = [];
+  try {
+    files = await fs.readdir(SESSION_ARCHIVE_DIR);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return [];
+    }
+    throw error;
+  }
+
+  const records = [];
+  for (const file of files) {
+    if (!file.endsWith('.json')) {
+      continue;
+    }
+    const archiveId = file.replace(/\.json$/, '');
+    const record = await readArchiveRecord(archiveId);
+    if (!record || record.userId !== normalized) {
+      continue;
+    }
+    records.push(record);
+  }
+
+  records.sort((a, b) => {
+    const aTime = new Date(a.deletedAt || a.updatedAt || 0).getTime();
+    const bTime = new Date(b.deletedAt || b.updatedAt || 0).getTime();
+    return bTime - aTime;
+  });
+
+  return records.slice(0, Math.max(1, Math.min(100, limit)));
+};
 
 const buildMessagesForAgent = ({ session, agentId, systemPrompt, historyLimit = 20 }) => {
   const messages = [];
@@ -477,46 +785,103 @@ const isWithinPath = (parent, child) => {
   return Boolean(relative) ? !relative.startsWith('..') && !path.isAbsolute(relative) : true;
 };
 
-const writeTonySiteFiles = async ({ siteSlug, files, clearExisting = false }) => {
-  if (!siteSlug) {
-    throw new Error('site_missing');
-  }
-  if (!Array.isArray(files) || !files.length) {
-    throw new Error('files_missing');
-  }
+const describeStaticBundle = async (bundleName) => {
+  const summary = {
+    name: bundleName,
+    exists: false,
+    files: 0,
+    bytes: 0,
+    updatedAt: null,
+    sampleEntries: []
+  };
 
-  const siteDir = path.join(TONY_SITES_ROOT, siteSlug);
-  if (clearExisting) {
-    await fs.rm(siteDir, { recursive: true, force: true });
-  }
-  await fs.mkdir(siteDir, { recursive: true });
-
-  let written = 0;
-  const details = [];
-
-  for (const file of files) {
-    const relativePath = normalizeRelativePath(file?.path || '');
-    if (!relativePath || relativePath.includes('..')) {
-      throw new Error(`invalid_path_${file?.path ?? ''}`);
+  const bundlePath = path.join(PUBLIC_ROOT, bundleName);
+  try {
+    const stats = await fs.stat(bundlePath);
+    if (!stats.isDirectory()) {
+      return summary;
     }
 
-    const targetPath = path.join(siteDir, relativePath);
-    if (!isWithinPath(siteDir, targetPath)) {
-      throw new Error(`path_escape_${relativePath}`);
+    summary.exists = true;
+    let latest = stats.mtimeMs;
+    const stack = [{ dir: bundlePath, relative: '' }];
+    while (stack.length) {
+      const { dir, relative } = stack.pop();
+      const entries = await fs.readdir(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const entryPath = path.join(dir, entry.name);
+        const relPath = path.join(relative, entry.name).replace(/\\/g, '/');
+        const entryStats = await fs.stat(entryPath);
+        latest = Math.max(latest, entryStats.mtimeMs);
+        if (entry.isDirectory()) {
+          stack.push({ dir: entryPath, relative: relPath });
+          if (summary.sampleEntries.length < 10) {
+            summary.sampleEntries.push({ path: `${relPath}/`, size: null });
+          }
+        } else {
+          summary.files += 1;
+          summary.bytes += entryStats.size;
+          if (summary.sampleEntries.length < 10) {
+            summary.sampleEntries.push({ path: relPath, size: entryStats.size });
+          }
+        }
+      }
     }
-
-    const encoding = file?.encoding === 'base64' ? 'base64' : 'utf8';
-    const contents = typeof file?.contents === 'string' ? file.contents : '';
-    const buffer = encoding === 'base64' ? Buffer.from(contents, 'base64') : Buffer.from(contents, 'utf8');
-
-    await fs.mkdir(path.dirname(targetPath), { recursive: true });
-    await fs.writeFile(targetPath, buffer);
-    written += 1;
-    details.push({ path: relativePath, bytes: buffer.length });
+    summary.updatedAt = new Date(latest).toISOString();
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      console.error('[site-man] static bundle inspection failed', bundleName, error);
+    }
   }
 
-  return { siteDir, written, details };
+  return summary;
 };
+
+const describeStaticBundles = async (names = DEFAULT_STATIC_BUNDLES) => {
+  const normalized = Array.isArray(names) && names.length ? names : DEFAULT_STATIC_BUNDLES;
+  const unique = [...new Set(normalized.filter(Boolean))];
+  return Promise.all(unique.map((name) => describeStaticBundle(name)));
+};
+
+const readReleaseMetadata = async () => {
+  try {
+    const raw = await fs.readFile(RELEASE_METADATA_PATH, 'utf8');
+    return JSON.parse(raw);
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      console.error('[site-man] release metadata read failed', error);
+    }
+    return null;
+  }
+};
+
+const formatRegexpSource = (regexp) => {
+  if (!regexp) {
+    return '';
+  }
+  if (regexp.fast_slash) {
+    return '/';
+  }
+  return regexp.toString();
+};
+
+const describeRouteStack = (stack = []) =>
+  stack
+    .filter((layer) => layer && typeof layer.handle === 'function')
+    .map((layer, index) => ({
+      index,
+      type: layer.route ? 'route' : layer.name === 'serveStatic' ? 'static' : 'middleware',
+      name: layer.name || '(anonymous)',
+      path: layer.route?.path || formatRegexpSource(layer.regexp),
+      methods: layer.route ? Object.keys(layer.route.methods).map((method) => method.toUpperCase()) : undefined
+    }));
+
+const talkRouter = express.Router();
+talkRouter.use(
+  express.static(path.join(PUBLIC_ROOT, 'talk'), {
+    extensions: ['html', 'htm']
+  })
+);
 
 app.use(morgan('dev'));
 app.use(express.json({ limit: '25mb', verify: rawBodyBuffer }));
@@ -551,19 +916,20 @@ app.use(
   })
 );
 
+const CHAT_PUBLIC_DIR = path.join(__dirname, '..', 'public', 'chat');
 app.use(
   '/chat',
-  express.static(path.join(__dirname, '..', 'public', 'chat'), {
+  express.static(CHAT_PUBLIC_DIR, {
     extensions: ['html', 'htm']
   })
 );
+const serveChatBundle = (_req, res) => {
+  res.sendFile(path.join(CHAT_PUBLIC_DIR, 'index.html'));
+};
+app.get(['/chat', '/chat/:userId'], serveChatBundle);
+app.get('/chat/:userId/*', serveChatBundle);
 
-app.use(
-  '/talk',
-  express.static(path.join(__dirname, '..', 'public', 'talk'), {
-    extensions: ['html', 'htm']
-  })
-);
+app.use('/talk', talkRouter);
 
 app.get('/api/agents', async (_req, res) => {
   try {
@@ -575,12 +941,13 @@ app.get('/api/agents', async (_req, res) => {
   }
 });
 
-app.get('/api/sessions/:sessionId/stream', async (req, res) => {
+app.get('/api/users/:userId/sessions/:sessionId/stream', async (req, res) => {
   if (!ensureGlamaReady(res)) {
     return;
   }
 
-  const session = sessionStore.get(req.params.sessionId);
+  const userId = normalizeUserId(req.params.userId);
+  const session = getSessionForUser(userId, req.params.sessionId);
   if (!session) {
     return res.status(404).json({ error: 'session_not_found' });
   }
@@ -708,6 +1075,154 @@ app.post('/api/sessions', async (req, res) => {
   }
 });
 
+app.get('/api/users/:userId/sessions/:sessionId', (req, res) => {
+  const userId = normalizeUserId(req.params.userId);
+  const session = getSessionForUser(userId, req.params.sessionId);
+  if (!session) {
+    return res.status(404).json({ error: 'session_not_found' });
+  }
+  return res.json({ session });
+});
+
+app.get('/api/users/:userId/sessions', (req, res) => {
+  const userId = normalizeUserId(req.params.userId);
+  const limit = Number.parseInt(req.query?.limit, 10);
+  const max = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 50) : 20;
+  const sessions = listSessionsForUser(userId, { limit: max }).map((session) => ({
+    id: session.id,
+    agents: session.agents,
+    createdAt: session.createdAt,
+    updatedAt: session.updatedAt,
+    metadata: session.metadata || null,
+    messageCount: Array.isArray(session.messages) ? session.messages.length : 0
+  }));
+  return res.json({ sessions });
+});
+
+app.post('/api/users/:userId/sessions', async (req, res) => {
+  try {
+    const userId = normalizeUserId(req.params.userId);
+    const requested = Array.isArray(req.body?.agents)
+      ? [...new Set(req.body.agents.map((id) => (id || '').toString().trim()).filter(Boolean))]
+      : [];
+
+    if (!requested.length) {
+      return res.status(400).json({ error: 'agents_required' });
+    }
+
+    const registryEntries = await listAgentEntries();
+    const missing = requested.filter((id) => !registryEntries.some((entry) => entry.id === id));
+    if (missing.length) {
+      return res.status(404).json({ error: 'agent_not_registered', detail: missing });
+    }
+
+    const session = createSessionRecord({ agents: requested, metadata: req.body?.metadata || null, userId });
+    return res.status(201).json({ session });
+  } catch (error) {
+    console.error('[site-man] create session failed', error);
+    res.status(500).json({ error: 'session_create_failed' });
+  }
+});
+
+app.patch('/api/users/:userId/sessions/:sessionId', (req, res) => {
+  const userId = normalizeUserId(req.params.userId);
+  const session = getSessionForUser(userId, req.params.sessionId);
+  if (!session) {
+    return res.status(404).json({ error: 'session_not_found' });
+  }
+  const patch = {};
+  if ('title' in req.body) {
+    patch.title = typeof req.body.title === 'string' ? req.body.title : null;
+    patch.autoTitle = false;
+  }
+  if ('pinned' in req.body) {
+    patch.pinned = Boolean(req.body.pinned);
+  }
+  updateSessionMetadata(session, patch);
+  return res.json({ metadata: session.metadata });
+});
+
+app.post('/api/users/:userId/sessions/:sessionId/auto-title', async (req, res) => {
+  if (!ensureGlamaReady(res)) {
+    return;
+  }
+  try {
+    const userId = normalizeUserId(req.params.userId);
+    const session = getSessionForUser(userId, req.params.sessionId);
+    if (!session) {
+      return res.status(404).json({ error: 'session_not_found' });
+    }
+    if (!session.messages.length) {
+      return res.status(400).json({ error: 'session_empty' });
+    }
+    const title = await generateSessionTitle(session);
+    updateSessionMetadata(session, { title, autoTitle: true });
+    return res.json({ title });
+  } catch (error) {
+    console.error('[site-man] auto-title failed', error);
+    return res.status(500).json({ error: 'auto_title_failed', detail: error.message || 'unknown_error' });
+  }
+});
+
+app.delete('/api/users/:userId/sessions/:sessionId', async (req, res) => {
+  const userId = normalizeUserId(req.params.userId);
+  const session = getSessionForUser(userId, req.params.sessionId);
+  if (!session) {
+    return res.status(404).json({ error: 'session_not_found' });
+  }
+
+  try {
+    const record = await buildSessionArchiveRecord({
+      session,
+      deletedBy: req.get('x-session-deleted-by') || 'user_request',
+      reason: req.body?.reason || null
+    });
+    const { archiveId, archivePath } = await persistSessionArchiveRecord(record);
+    removeSession(session.id);
+    return res.json({ archived: true, archiveId, archivePath, summary: record.summary });
+  } catch (error) {
+    console.error('[site-man] delete session failed', error);
+    return res.status(500).json({ error: 'session_delete_failed', detail: error.message || 'unknown_error' });
+  }
+});
+
+app.get('/api/users/:userId/archives', async (req, res) => {
+  try {
+    const userId = normalizeUserId(req.params.userId);
+    const limitParam = Number.parseInt(req.query?.limit, 10);
+    const limit = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 20;
+    const archives = await listArchiveRecordsForUser({ userId, limit });
+    const payload = archives.map((record) => ({
+      archiveId: record.archiveId,
+      sessionId: record.sessionId,
+      summary: record.summary,
+      agents: record.agents,
+      messageCount: record.messageCount,
+      deletedAt: record.deletedAt,
+      deletedBy: record.deletedBy || null,
+      reason: record.reason || null
+    }));
+    res.json({ archives: payload });
+  } catch (error) {
+    console.error('[site-man] list archives failed', error);
+    res.status(500).json({ error: 'archives_list_failed' });
+  }
+});
+
+app.get('/api/users/:userId/archives/:archiveId', async (req, res) => {
+  try {
+    const userId = normalizeUserId(req.params.userId);
+    const archive = await readArchiveRecord(req.params.archiveId);
+    if (!archive || archive.userId !== userId) {
+      return res.status(404).json({ error: 'archive_not_found' });
+    }
+    res.json({ archive });
+  } catch (error) {
+    console.error('[site-man] read archive failed', error);
+    res.status(500).json({ error: 'archive_read_failed' });
+  }
+});
+
 app.get('/api/sessions/:sessionId', (req, res) => {
   const session = sessionStore.get(req.params.sessionId);
   if (!session) {
@@ -754,8 +1269,9 @@ app.post('/api/sessions/:sessionId/messages', (req, res) => {
   return res.status(201).json({ message });
 });
 
-app.post('/api/attachments', async (req, res) => {
+app.post('/api/users/:userId/attachments', async (req, res) => {
   try {
+    const userId = normalizeUserId(req.params.userId);
     const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
     const type = typeof req.body?.type === 'string' ? req.body.type.trim() : 'application/octet-stream';
     const data = typeof req.body?.data === 'string' ? req.body.data : '';
@@ -763,9 +1279,10 @@ app.post('/api/attachments', async (req, res) => {
       return res.status(400).json({ error: 'invalid_attachment' });
     }
 
-    await fs.mkdir(UPLOADS_ROOT, { recursive: true });
+    const userUploadsDir = path.join(UPLOADS_ROOT, userId);
+    await fs.mkdir(userUploadsDir, { recursive: true });
     const id = generateId();
-    const filePath = path.join(UPLOADS_ROOT, id);
+    const filePath = path.join(userUploadsDir, id);
     const buffer = Buffer.from(data, 'base64');
     await fs.writeFile(filePath, buffer);
 
@@ -774,7 +1291,7 @@ app.post('/api/attachments', async (req, res) => {
       name,
       type,
       size: buffer.length,
-      url: `/uploads/${id}`
+      url: `/uploads/${userId}/${id}`
     };
     return res.status(201).json({ attachment });
   } catch (error) {
@@ -783,12 +1300,13 @@ app.post('/api/attachments', async (req, res) => {
   }
 });
 
-app.post('/api/sessions/:sessionId/run', async (req, res) => {
+app.post('/api/users/:userId/sessions/:sessionId/run', async (req, res) => {
   if (!ensureGlamaReady(res)) {
     return;
   }
 
-  const session = sessionStore.get(req.params.sessionId);
+  const userId = normalizeUserId(req.params.userId);
+  const session = getSessionForUser(userId, req.params.sessionId);
   if (!session) {
     return res.status(404).json({ error: 'session_not_found' });
   }
@@ -834,13 +1352,36 @@ const formatSiteLabel = (name) =>
     .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join(' ') || name;
 
+const readTonySitesManifest = async () => {
+  try {
+    const raw = await fs.readFile(TONY_SITES_MANIFEST_PATH, 'utf8');
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed?.sites) ? parsed.sites : [];
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      console.error('[site-man] Failed to read Tony sites manifest', error);
+    }
+    return [];
+  }
+};
+
 const readTonySites = async () => {
   try {
-    const entries = await fs.readdir(TONY_SITES_ROOT, { withFileTypes: true });
-    const folders = entries.filter((entry) => entry.isDirectory());
+    const manifest = await readTonySitesManifest();
+    const entries = manifest.length
+      ? manifest
+      : await fs.readdir(TONY_SITES_ROOT, { withFileTypes: true }).then((dirs) =>
+          dirs.filter((entry) => entry.isDirectory()).map((entry) => ({ slug: entry.name, path: entry.name }))
+        );
+
     const sites = await Promise.all(
-      folders.map(async (dir) => {
-        const sitePath = path.join(TONY_SITES_ROOT, dir.name);
+      entries.map(async (entry) => {
+        const slug = normalizeSiteSlug(entry.slug || entry.name || entry.path || '');
+        if (!slug) {
+          return null;
+        }
+        const folderName = entry.path ? normalizeRelativePath(entry.path) : slug;
+        const sitePath = path.join(TONY_SITES_ROOT, folderName);
         const indexPath = path.join(sitePath, 'index.html');
         let hasIndex = false;
         try {
@@ -850,15 +1391,18 @@ const readTonySites = async () => {
           hasIndex = false;
         }
         return {
-          name: dir.name,
-          label: formatSiteLabel(dir.name),
-          url: `/tony/sites/${encodeURIComponent(dir.name)}/`,
+          name: slug,
+          label: entry.label || formatSiteLabel(slug),
+          description: entry.description || null,
+          url: `/tony/sites/${encodeURIComponent(slug)}/`,
           filesystemPath: sitePath,
-          hasIndex
+          hasIndex,
+          bundlePath: path.relative(PUBLIC_ROOT, sitePath).replace(/\\/g, '/')
         };
       })
     );
-    return sites.sort((a, b) => a.label.localeCompare(b.label));
+
+    return sites.filter(Boolean).sort((a, b) => a.label.localeCompare(b.label));
   } catch (error) {
     if (error.code === 'ENOENT') {
       return [];
@@ -923,11 +1467,14 @@ app.get('/tony', async (_req, res) => {
             <a class="site-link" href="${site.url}" target="_blank" rel="noreferrer">
               ${site.url}
             </a>
+            ${site.description ? `<p>${escapeHtml(site.description)}</p>` : ''}
             <div class="path">${escapeHtml(site.filesystemPath)}</div>
           </li>`
           )
           .join('')
-      : '<li class="site-card empty">No folders found yet. Add one under \n            <code>c:/chaba/sites/tony/sites</code> to have it mounted automatically.</li>';
+      : '<li class="site-card empty">No folders found yet. Add one under \n            <code>sites/site-man/public/tony/sites</code> to have it mounted automatically.</li>';
+
+    const bundleNames = [...DEFAULT_STATIC_BUNDLES, ...tonySites.map((site) => site.bundlePath).filter(Boolean)];
 
     const html = `<!doctype html>
   <html lang="en">
@@ -1050,6 +1597,81 @@ app.get('/tony', async (_req, res) => {
           cursor: not-allowed;
         }
         .muted { color: #8f99b8; display: block; margin-top: 0.5rem; }
+        .bundle-grid {
+          display: grid;
+          gap: 0.75rem;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+        .bundle-card {
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 16px;
+          padding: 1rem;
+          background: rgba(255, 255, 255, 0.02);
+          display: flex;
+          flex-direction: column;
+          gap: 0.35rem;
+        }
+        .bundle-card h3 {
+          margin: 0;
+          font-size: 1rem;
+        }
+        .bundle-card .stat {
+          font-size: 0.9rem;
+          color: #8f99b8;
+        }
+        .bundle-card .status-pill {
+          align-self: flex-start;
+          padding: 0.1rem 0.75rem;
+          border-radius: 999px;
+          font-size: 0.8rem;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+        }
+        .bundle-card .status-pill.ok {
+          background: rgba(126, 242, 201, 0.15);
+          color: #7ef2c9;
+        }
+        .bundle-card .status-pill.warn {
+          background: rgba(255, 180, 123, 0.15);
+          color: #ffb47b;
+        }
+        .code-block {
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 12px;
+          padding: 1rem;
+          background: rgba(0, 0, 0, 0.35);
+          font-family: 'JetBrains Mono', Consolas, monospace;
+          font-size: 0.85rem;
+          max-height: 320px;
+          overflow: auto;
+          white-space: pre-wrap;
+        }
+        .diagnostic-actions {
+          display: flex;
+          gap: 0.5rem;
+          margin-top: 0.75rem;
+        }
+        .diagnostic-actions button {
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          background: transparent;
+          color: #f5f6ff;
+          border-radius: 999px;
+          padding: 0.35rem 0.9rem;
+          cursor: pointer;
+        }
+        .release-card {
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 16px;
+          padding: 1rem;
+          background: rgba(255, 255, 255, 0.02);
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+        }
+        .release-card span {
+          color: #8f99b8;
+          font-size: 0.9rem;
+        }
       </style>
     </head>
     <body>
@@ -1078,6 +1700,24 @@ app.get('/tony', async (_req, res) => {
           </ul>
         </section>
         <section>
+          <h2>Release metadata</h2>
+          <div id="releaseInfo" class="release-card">Loading release payload…</div>
+        </section>
+        <section>
+          <h2>Static bundles health</h2>
+          <div id="bundleDiagnostics" class="bundle-grid">Loading bundle stats…</div>
+          <div class="diagnostic-actions">
+            <button id="refreshBundles">Refresh bundles</button>
+          </div>
+        </section>
+        <section>
+          <h2>Route stack</h2>
+          <pre id="routeStack" class="code-block">Loading routes…</pre>
+          <div class="diagnostic-actions">
+            <button id="refreshRoutes">Refresh routes</button>
+          </div>
+        </section>
+        <section>
           <h2>Tony sandboxes (${tonySites.length})</h2>
           <p>
             Everything under <code>${escapeHtml(TONY_SITES_ROOT)}</code> is automatically mounted at
@@ -1089,6 +1729,7 @@ app.get('/tony', async (_req, res) => {
         </section>
       </main>
       <script>
+        const DEFAULT_STATIC_BUNDLES = ${JSON.stringify(bundleNames)};
         const restartBtn = document.getElementById('restartBtn');
         if (restartBtn) {
           restartBtn.addEventListener('click', async () => {
@@ -1121,6 +1762,114 @@ app.get('/tony', async (_req, res) => {
             }
           });
         }
+
+        const releaseInfoEl = document.getElementById('releaseInfo');
+        const bundleGridEl = document.getElementById('bundleDiagnostics');
+        const routeStackEl = document.getElementById('routeStack');
+        const refreshBundlesBtn = document.getElementById('refreshBundles');
+        const refreshRoutesBtn = document.getElementById('refreshRoutes');
+
+        const safeJson = async (response) => {
+          if (!response.ok) {
+            const detail = await response.text();
+            throw new Error(detail || response.statusText);
+          }
+          return response.json();
+        };
+
+        const renderRelease = (release) => {
+          if (!release) {
+            releaseInfoEl.textContent = 'No release payload found (payload.json).';
+            return;
+          }
+          const rows = Object.entries(release)
+            .map(([key, value]) => {
+              const serialized = typeof value === 'object' ? JSON.stringify(value) : value;
+              return '<strong>' + key + ':</strong> <span>' + serialized + '</span>';
+            })
+            .join('');
+          releaseInfoEl.innerHTML = rows || 'Empty release payload.';
+        };
+
+        const renderBundles = (bundles = []) => {
+          if (!bundles.length) {
+            bundleGridEl.textContent = 'No bundle data available.';
+            return;
+          }
+          bundleGridEl.innerHTML = bundles
+            .map((bundle) => {
+              const statusClass = bundle.exists ? 'ok' : 'warn';
+              const statusLabel = bundle.exists ? 'present' : 'missing';
+              const files = bundle.files || 0;
+              const bytes = bundle.bytes || 0;
+              const updated = bundle.updatedAt || 'n/a';
+              return (
+                '<article class="bundle-card">' +
+                '<div class="status-pill ' + statusClass + '">' + bundle.name + ': ' + statusLabel + '</div>' +
+                '<h3>' + bundle.name + '</h3>' +
+                '<div class="stat">Files: ' + files + '</div>' +
+                '<div class="stat">Bytes: ' + bytes + '</div>' +
+                '<div class="stat">Updated: ' + updated + '</div>' +
+                '</article>'
+              );
+            })
+            .join('');
+        };
+
+        const renderRoutes = (stack = []) => {
+          if (!stack.length) {
+            routeStackEl.textContent = 'Route stack unavailable.';
+            return;
+          }
+          const lines = stack.map((layer) => {
+            const methods = Array.isArray(layer.methods) ? layer.methods.join(',') : '';
+            const path = layer.path || '/';
+            return layer.index + ' • [' + layer.type + '] ' + path + (methods ? ' ' + methods : '');
+          });
+          routeStackEl.textContent = lines.join('\n');
+        };
+
+        const refreshRelease = async () => {
+          releaseInfoEl.textContent = 'Loading release payload…';
+          try {
+            const data = await safeJson(await fetch('/api/debug/release'));
+            renderRelease(data?.release || null);
+          } catch (error) {
+            releaseInfoEl.textContent = 'Release debug failed: ' + error.message;
+          }
+        };
+
+        const refreshBundles = async () => {
+          bundleGridEl.textContent = 'Loading bundle stats…';
+          try {
+            const namesParam = encodeURIComponent(DEFAULT_STATIC_BUNDLES.join(','));
+            const data = await safeJson(await fetch('/api/debug/static-bundles?names=' + namesParam));
+            renderBundles(data?.bundles || []);
+          } catch (error) {
+            bundleGridEl.textContent = 'Bundle debug failed: ' + error.message;
+          }
+        };
+
+        const refreshRoutes = async () => {
+          routeStackEl.textContent = 'Loading routes…';
+          try {
+            const data = await safeJson(await fetch('/api/debug/routes'));
+            renderRoutes(data?.stack || []);
+          } catch (error) {
+            routeStackEl.textContent = 'Route debug failed: ' + error.message;
+          }
+        };
+
+        refreshRelease();
+        refreshBundles();
+        refreshRoutes();
+
+        if (refreshBundlesBtn) {
+          refreshBundlesBtn.addEventListener('click', refreshBundles);
+        }
+        if (refreshRoutesBtn) {
+          refreshRoutesBtn.addEventListener('click', refreshRoutes);
+        }
       </script>
     </body>
   </html>`;
@@ -1147,46 +1896,6 @@ app.post('/api/app/restart', async (req, res) => {
   } catch (error) {
     console.error('[site-man] manual restart failed', error);
     return res.status(500).json({ error: 'restart_failed', detail: error.message || 'unknown_error' });
-  }
-});
-
-app.post('/api/tony/deploy', async (req, res) => {
-  if (!TONY_DEPLOY_SECRET) {
-    return res.status(503).json({ error: 'tony_deploy_unconfigured' });
-  }
-
-  const providedSecret = (req.get('x-tony-secret') || '').trim();
-  if (providedSecret !== TONY_DEPLOY_SECRET) {
-    return res.status(401).json({ error: 'forbidden' });
-  }
-
-  const siteSlug = normalizeSiteSlug(req.body?.site || '');
-  const files = Array.isArray(req.body?.files) ? req.body.files : [];
-  const clearExisting = Boolean(req.body?.clear === true || req.body?.clear === 'true');
-
-  if (!siteSlug) {
-    return res.status(400).json({ error: 'site_required' });
-  }
-  if (!files.length) {
-    return res.status(400).json({ error: 'files_required' });
-  }
-
-  try {
-    const { written, details } = await writeTonySiteFiles({ siteSlug, files, clearExisting });
-    const restartOutcome = await restartNodeDomain();
-    return res.json({
-      status: 'ok',
-      site: siteSlug,
-      filesWritten: written,
-      cleared: clearExisting,
-      restarted: restartOutcome.restarted,
-      restartDetail: restartOutcome.reason || restartOutcome.error || null,
-      deployedAt: new Date().toISOString(),
-      details
-    });
-  } catch (error) {
-    console.error('[site-man] Tony deploy failed', error);
-    return res.status(500).json({ error: 'tony_deploy_failed', detail: error.message || 'unknown_error' });
   }
 });
 
@@ -1276,17 +1985,43 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
-const talkRouter = express.Router();
-talkRouter.use(
-  express.static(path.join(__dirname, '..', 'public', 'talk'), {
-    extensions: ['html', 'htm']
-  })
-);
-talkRouter.get('/api/talk/guidance', (_req, res) => {
+app.get('/api/talk/guidance', (_req, res) => {
   res.json({ guidance: TALK_GUIDANCE_DEFAULT });
 });
 
-app.use(talkRouter);
+app.get('/api/debug/static-bundles', async (req, res) => {
+  try {
+    const names = typeof req.query?.names === 'string'
+      ? req.query.names.split(',').map((name) => name.trim()).filter(Boolean)
+      : undefined;
+    const bundles = await describeStaticBundles(names);
+    res.json({ bundles });
+  } catch (error) {
+    console.error('[site-man] static bundles debug failed', error);
+    res.status(500).json({ error: 'static_bundles_failed' });
+  }
+});
+
+app.get('/api/debug/routes', (_req, res) => {
+  try {
+    const stack = describeRouteStack(app?._router?.stack || []);
+    res.json({ stack });
+  } catch (error) {
+    console.error('[site-man] routes debug failed', error);
+    res.status(500).json({ error: 'routes_debug_failed' });
+  }
+});
+
+app.get('/api/debug/release', async (_req, res) => {
+  try {
+    const release = await readReleaseMetadata();
+    res.json({ release });
+  } catch (error) {
+    res.status(500).json({ error: 'release_debug_failed' });
+  }
+});
+
+app.use(express.static(PUBLIC_ROOT));
 
 app.listen(PORT, () => {
   console.log(`Sample site listening on port ${PORT}`);
@@ -1294,7 +2029,6 @@ app.listen(PORT, () => {
 
 if (TALK_PORT !== PORT) {
   const talkApp = express();
-  talkApp.use(express.json());
   talkApp.use(talkRouter);
   talkApp.listen(TALK_PORT, () => {
     console.log(`Talk panel listening on port ${TALK_PORT}`);

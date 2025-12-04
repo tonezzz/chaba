@@ -10,9 +10,38 @@
   <body>
     <main class="layout">
       <header>
-        <h1>Node-1 multi-agent smoke panel</h1>
+        <div class="title-row">
+          <h1>Node-1 multi-agent smoke panel</h1>
+          <span id="userBadge" class="user-badge"></span>
+        </div>
         <div class="status" id="status">Loading agents…</div>
       </header>
+
+      <section class="sessions-panel">
+        <div class="sessions-header">
+          <div>
+            <p class="sessions-label">Saved sessions</p>
+            <p class="sessions-subtext">Last 20 conversations for this workspace</p>
+          </div>
+          <button type="button" id="newSessionButton" class="ghost-btn">New session</button>
+        </div>
+        <div id="sessionsList" class="sessions-list">Loading sessions…</div>
+      </section>
+
+      <section class="archives-panel">
+        <div class="sessions-header">
+          <div>
+            <p class="sessions-label">Archived summaries</p>
+            <p class="sessions-subtext">Recent archived conversations (auto-summarized)</p>
+          </div>
+          <button type="button" id="refreshArchivesButton" class="ghost-btn">Refresh archives</button>
+        </div>
+        <div id="archivesList" class="archives-list">Loading archives…</div>
+        <details class="archive-detail" id="archiveDetail">
+          <summary>Archive details</summary>
+          <pre id="archiveDetailBody">Select an archive to preview summary + last stored messages.</pre>
+        </details>
+      </section>
 
       <section class="agents-panel">
         <div class="agents-label">

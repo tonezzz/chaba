@@ -68,6 +68,21 @@ header h1 {
   font-size: clamp(1.5rem, 3vw, 2.4rem);
 }
 
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.user-badge {
+  font-size: 0.9rem;
+  color: #9aa7d5;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  padding: 0.25rem 0.8rem;
+}
+
 .status {
   display: inline-flex;
   align-items: center;
@@ -81,6 +96,198 @@ header h1 {
 .status.ok {
   background: rgba(67, 217, 173, 0.15);
   color: #7ef2c9;
+}
+
+.sessions-panel {
+  margin: 1rem 0 1.5rem;
+  background: rgba(5, 7, 18, 0.7);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 1rem 1.5rem;
+}
+
+.archives-panel {
+  background: rgba(7, 9, 20, 0.7);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 1rem 1.5rem 1.2rem;
+}
+
+.archives-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.archive-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 0.75rem 1rem;
+  background: rgba(13, 16, 30, 0.85);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.archive-card:hover {
+  border-color: rgba(126, 242, 201, 0.7);
+}
+
+.archive-card__summary {
+  margin: 0 0 0.35rem;
+  font-weight: 600;
+}
+
+.archive-card__meta {
+  font-size: 0.8rem;
+  color: #95a2c4;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.archive-card__meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.archive-detail {
+  margin-top: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 0.6rem 0.9rem;
+  background: rgba(10, 12, 20, 0.8);
+}
+
+.archive-detail summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.archive-detail pre {
+  margin: 0.75rem 0 0;
+  white-space: pre-wrap;
+  font-size: 0.85rem;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 12px;
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sessions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.sessions-label {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.sessions-subtext {
+  margin: 0.1rem 0 0;
+  color: #a0adc9;
+  font-size: 0.85rem;
+}
+
+.ghost-btn {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+}
+
+.sessions-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.session-card {
+  flex: 1 1 220px;
+  min-width: 200px;
+  background: rgba(14, 18, 30, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.session-card:hover {
+  border-color: rgba(126, 242, 201, 0.5);
+  transform: translateY(-2px);
+}
+
+.session-card--active {
+  border-color: rgba(126, 242, 201, 0.9);
+  box-shadow: 0 0 15px rgba(126, 242, 201, 0.2);
+}
+
+.session-card__title {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.session-card__meta {
+  font-size: 0.8rem;
+  color: #98a6c4;
+}
+
+.session-card__agents {
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+  color: #c3cae6;
+}
+
+.session-empty {
+  font-size: 0.9rem;
+  color: #97a1c2;
+}
+
+.session-card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.session-card__controls {
+  display: flex;
+  gap: 0.3rem;
+  margin: 0.4rem 0;
+}
+
+.session-pin,
+.session-rename,
+.session-auto,
+.session-delete {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  cursor: pointer;
+}
+
+.session-auto:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.session-delete {
+  color: #ffb47b;
+  border-color: rgba(255, 180, 123, 0.35);
 }
 
 .agents-label {
