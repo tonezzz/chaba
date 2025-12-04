@@ -1,7 +1,7 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
 
-PROJECT_DIR=${PROJECT_DIR:-/www/node-1.h3.surf-thailand.com}
+PROJECT_DIR=${PROJECT_DIR:-/site-man/site-man/current}
 NODE_DOMAIN=${NODE_DOMAIN:-node-1.h3.surf-thailand.com}
 TARGET_REF=${TARGET_REF:-origin/node-1}
 
