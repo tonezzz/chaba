@@ -13,7 +13,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
+const TALK_PORT = Number(process.env.TALK_PORT) || 3001;
 const WEBHOOK_SECRET = (process.env.NODE1_WEBHOOK_SECRET || '').trim();
 const TONY_DEPLOY_SECRET = (process.env.TONY_DEPLOY_SECRET || WEBHOOK_SECRET).trim();
 const NODE_DOMAIN = (process.env.NODE_DOMAIN || 'node-1.h3.surf-thailand.com').trim();
@@ -30,13 +31,17 @@ const GLAMA_MAX_TOKENS = Number.isFinite(Number(process.env.GLAMA_MAX_TOKENS))
   : 800;
 const GLAMA_SYSTEM_PROMPT =
   process.env.GLAMA_SYSTEM_PROMPT || 'You are an upbeat AI assistant for Surf Thailand. Keep responses concise and helpful.';
+const TALK_GUIDANCE_DEFAULT =
+  (process.env.TALK_GUIDANCE_DEFAULT || 'Open with a warm greeting, ask about today’s focus, and offer two helpful follow-up prompts.').trim();
 const DEPLOY_SCRIPT =
   process.env.DEPLOY_SCRIPT || path.resolve(__dirname, '..', '..', '..', 'scripts', 'pull-node-1.sh');
 const TONY_SITES_ROOT = path.resolve(__dirname, '..', '..', 'tony', 'sites');
 const AGENTS_ROOT = path.resolve(__dirname, '..', 'agents');
 const AGENT_REGISTRY_PATH = path.join(AGENTS_ROOT, 'registry.json');
+const UPLOADS_ROOT = path.resolve(__dirname, '..', 'uploads');
 
 const sessionStore = new Map();
+const ORCHESTRATOR_ID = 'orchestrator';
 
 const generateId = () =>
   typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
@@ -48,6 +53,75 @@ const readJsonFile = async (filePath, fallback = null) => {
   } catch (error) {
     if (error && error.code === 'ENOENT') {
       return fallback;
+    }
+    throw error;
+  }
+};
+
+const extractTargets = (requestedIds, sessionAgents) => {
+  const ids = Array.isArray(requestedIds) && requestedIds.length ? requestedIds : sessionAgents;
+  return ids.filter((id) => sessionAgents.includes(id));
+};
+
+const parseDelegationPlan = (content, sessionAgents = []) => {
+  if (!content) {
+    return [];
+  }
+  const actions = [];
+  const lines = content.split(/\r?\n/);
+  const agentSet = new Set(sessionAgents.filter((id) => id !== ORCHESTRATOR_ID));
+  const pattern = /^\s*([a-z0-9_-]{2,})\s*[:\-]\s*(.+)$/i;
+  for (const line of lines) {
+    const match = line.match(pattern);
+    if (!match) {
+      continue;
+    }
+    const agentId = match[1].toLowerCase();
+    const instruction = match[2].trim();
+    if (!instruction || !agentSet.has(agentId)) {
+      continue;
+    }
+    actions.push({ agentId, instruction });
+  }
+  return actions;
+};
+
+const enqueueDelegations = ({ session, delegations }) => {
+  if (!delegations || !delegations.length) {
+    return;
+  }
+  delegations.forEach(({ agentId, instruction }) => {
+    const message = {
+      id: generateId(),
+      role: 'user',
+      content: instruction,
+      agentTargets: [agentId],
+      createdAt: new Date().toISOString()
+    };
+    appendSessionMessage(session.id, message);
+  });
+};
+
+const uniqueAgents = (ids = []) => [...new Set(ids.filter(Boolean))];
+
+const runOrchestratorIfNeeded = async ({ session, targets, onComplete, onError }) => {
+  if (!targets.includes(ORCHESTRATOR_ID)) {
+    return { targets }; 
+  }
+
+  try {
+    const response = await runAgentResponse({ session, agentId: ORCHESTRATOR_ID });
+    if (typeof onComplete === 'function') {
+      onComplete(response);
+    }
+    const filtered = targets.filter((id) => id !== ORCHESTRATOR_ID);
+    const delegations = parseDelegationPlan(response?.content || '', session.agents);
+    enqueueDelegations({ session, delegations });
+    const delegatedAgents = delegations.length ? uniqueAgents(delegations.map((item) => item.agentId)) : filtered;
+    return { targets: delegatedAgents, orchestratorResponse: response, delegations };
+  } catch (error) {
+    if (typeof onError === 'function') {
+      onError(error);
     }
     throw error;
   }
@@ -167,6 +241,133 @@ const runAgentResponse = async ({ session, agentId }) => {
       model: modelSettings.defaultModel || GLAMA_MODEL_DEFAULT,
       provider: 'glama',
       raw: data
+    }
+  };
+
+  appendSessionMessage(session.id, response);
+  return response;
+};
+
+const streamGlamaChatCompletion = async ({ messages, model, maxTokens, temperature, onToken }) => {
+  if (!isGlamaReady()) {
+    throw new Error('glama_unconfigured');
+  }
+  if (!Array.isArray(messages) || !messages.length) {
+    throw new Error('messages_required');
+  }
+
+  const payload = {
+    model: model || GLAMA_MODEL_DEFAULT,
+    max_tokens: Number.isFinite(maxTokens) && maxTokens > 0 ? maxTokens : GLAMA_MAX_TOKENS,
+    temperature: typeof temperature === 'number' ? temperature : GLAMA_TEMPERATURE,
+    stream: true,
+    messages
+  };
+
+  const response = await fetch(GLAMA_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${GLAMA_API_KEY}`
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail || `glama_http_${response.status}`);
+  }
+
+  if (!response.body || typeof response.body.getReader !== 'function') {
+    throw new Error('glama_stream_unsupported');
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder('utf8');
+  let buffer = '';
+  let accumulated = '';
+  let doneStreaming = false;
+
+  while (!doneStreaming) {
+    const { value, done } = await reader.read();
+    if (done && (!value || value.length === 0)) {
+      break;
+    }
+    buffer += decoder.decode(value || new Uint8Array(), { stream: true });
+
+    let boundary = buffer.indexOf('\n\n');
+    while (boundary !== -1) {
+      const rawChunk = buffer.slice(0, boundary).trim();
+      buffer = buffer.slice(boundary + 2);
+      if (rawChunk.startsWith('data:')) {
+        const data = rawChunk.slice(5).trim();
+        if (!data) {
+          boundary = buffer.indexOf('\n\n');
+          continue;
+        }
+        if (data === '[DONE]') {
+          doneStreaming = true;
+          break;
+        }
+        try {
+          const parsed = JSON.parse(data);
+          const deltas = Array.isArray(parsed?.choices)
+            ? parsed.choices.map((choice) => choice?.delta?.content || '').filter(Boolean)
+            : [];
+          if (deltas.length) {
+            const deltaText = deltas.join('');
+            accumulated += deltaText;
+            if (typeof onToken === 'function') {
+              onToken(deltaText, parsed);
+            }
+          }
+        } catch (error) {
+          // ignore malformed chunk
+        }
+      }
+      boundary = buffer.indexOf('\n\n');
+    }
+    if (done) {
+      doneStreaming = true;
+    }
+  }
+
+  return { text: accumulated };
+};
+
+const streamAgentResponse = async ({ session, agentId, onDelta }) => {
+  const descriptor = await loadAgentDescriptor(agentId);
+  if (!descriptor || !descriptor.config) {
+    throw new Error('agent_config_missing');
+  }
+
+  const config = descriptor.config;
+  const systemPrompt = config?.persona?.systemPrompt || DEFAULT_AGENT_PROMPT;
+  const messages = buildMessagesForAgent({ session, agentId, systemPrompt });
+
+  const modelSettings = config?.model || {};
+  const { text } = await streamGlamaChatCompletion({
+    messages,
+    model: modelSettings.defaultModel,
+    temperature: modelSettings.temperature,
+    maxTokens: modelSettings.maxTokens,
+    onToken: (delta, chunk) => {
+      if (typeof onDelta === 'function') {
+        onDelta(delta, chunk);
+      }
+    }
+  });
+
+  const response = {
+    id: generateId(),
+    role: 'assistant',
+    agentId,
+    content: text || '',
+    createdAt: new Date().toISOString(),
+    metadata: {
+      model: modelSettings.defaultModel || GLAMA_MODEL_DEFAULT,
+      provider: 'glama',
+      streamed: true
     }
   };
 
@@ -318,8 +519,8 @@ const writeTonySiteFiles = async ({ siteSlug, files, clearExisting = false }) =>
 };
 
 app.use(morgan('dev'));
-app.use(express.json({ verify: rawBodyBuffer }));
-app.use(express.static(path.join(__dirname, '..', 'public')));
+app.use(express.json({ limit: '25mb', verify: rawBodyBuffer }));
+app.use('/uploads', express.static(UPLOADS_ROOT));
 
 app.use('/tony/:siteSlug', (req, res, next) => {
   const siteSlug = normalizeSiteSlug(req.params.siteSlug);
@@ -350,9 +551,19 @@ app.use(
   })
 );
 
-app.get('/chat', (_req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
-});
+app.use(
+  '/chat',
+  express.static(path.join(__dirname, '..', 'public', 'chat'), {
+    extensions: ['html', 'htm']
+  })
+);
+
+app.use(
+  '/talk',
+  express.static(path.join(__dirname, '..', 'public', 'talk'), {
+    extensions: ['html', 'htm']
+  })
+);
 
 app.get('/api/agents', async (_req, res) => {
   try {
@@ -363,6 +574,101 @@ app.get('/api/agents', async (_req, res) => {
     res.status(500).json({ error: 'agents_list_failed' });
   }
 });
+
+app.get('/api/sessions/:sessionId/stream', async (req, res) => {
+  if (!ensureGlamaReady(res)) {
+    return;
+  }
+
+  const session = sessionStore.get(req.params.sessionId);
+  if (!session) {
+    return res.status(404).json({ error: 'session_not_found' });
+  }
+
+  const requested = typeof req.query.agents === 'string'
+    ? req.query.agents.split(',').map((id) => id.trim()).filter(Boolean)
+    : null;
+  let targets = extractTargets(requested, session.agents);
+  if (!targets.length) {
+    return res.status(400).json({ error: 'agents_required' });
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const sendEvent = (event, payload) => {
+    res.write(`event: ${event}\n`);
+    res.write(`data: ${JSON.stringify(payload)}\n\n`);
+  };
+
+  let aborted = false;
+  req.on('close', () => {
+    aborted = true;
+  });
+
+  try {
+    const orchestratorResults = await runOrchestratorIfNeeded({
+      session,
+      targets,
+      onComplete: (message) => {
+        sendEvent('complete', { agentId: ORCHESTRATOR_ID, message });
+      },
+      onError: (error) => {
+        sendEvent('stream-error', { agentId: ORCHESTRATOR_ID, error: error.message || 'agent_stream_failed' });
+      }
+    });
+    targets = orchestratorResults.targets;
+  } catch (error) {
+    sendEvent('stream-error', { agentId: ORCHESTRATOR_ID, error: error.message || 'agent_stream_failed' });
+    sendEvent('done', { sessionId: session.id });
+    return res.end();
+  }
+
+  if (!targets.length) {
+    sendEvent('done', { sessionId: session.id });
+    return res.end();
+  }
+
+  const runStreams = targets.map((agentId) =>
+    streamAgentResponse({
+      session,
+      agentId,
+      onDelta: (delta) => {
+        sendEvent('token', { agentId, delta });
+      }
+    })
+      .then((response) => {
+        sendEvent('complete', { agentId, message: response });
+        return response;
+      })
+      .catch((error) => {
+        console.error('[site-man] stream agent failed', error);
+        sendEvent('stream-error', { agentId, error: error.message || 'agent_stream_failed' });
+      })
+  );
+
+  Promise.all(runStreams)
+    .finally(() => {
+      if (!aborted) {
+        sendEvent('done', { sessionId: session.id });
+        res.end();
+      }
+    })
+    .catch(() => {
+      if (!aborted) {
+        sendEvent('done', { sessionId: session.id });
+        res.end();
+      }
+    });
+});
+
+app.get('/api/talk/guidance', (_req, res) => {
+  res.json({ guidance: TALK_GUIDANCE_DEFAULT });
+});
+
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.get('/api/agents/:agentId', async (req, res) => {
   try {
@@ -425,17 +731,56 @@ app.post('/api/sessions/:sessionId/messages', (req, res) => {
   const agentTargets = Array.isArray(req.body?.agentTargets)
     ? req.body.agentTargets.map((id) => (id || '').toString().trim()).filter(Boolean)
     : null;
+  const attachments = Array.isArray(req.body?.attachments)
+    ? req.body.attachments.map((item) => ({
+        id: item?.id,
+        name: item?.name,
+        type: item?.type,
+        url: item?.url,
+        size: item?.size
+      }))
+    : null;
 
   const message = {
     id: generateId(),
     role,
     content,
     agentTargets: agentTargets && agentTargets.length ? agentTargets : null,
+    attachments: attachments && attachments.length ? attachments : null,
     createdAt: new Date().toISOString()
   };
 
   appendSessionMessage(session.id, message);
   return res.status(201).json({ message });
+});
+
+app.post('/api/attachments', async (req, res) => {
+  try {
+    const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+    const type = typeof req.body?.type === 'string' ? req.body.type.trim() : 'application/octet-stream';
+    const data = typeof req.body?.data === 'string' ? req.body.data : '';
+    if (!name || !data) {
+      return res.status(400).json({ error: 'invalid_attachment' });
+    }
+
+    await fs.mkdir(UPLOADS_ROOT, { recursive: true });
+    const id = generateId();
+    const filePath = path.join(UPLOADS_ROOT, id);
+    const buffer = Buffer.from(data, 'base64');
+    await fs.writeFile(filePath, buffer);
+
+    const attachment = {
+      id,
+      name,
+      type,
+      size: buffer.length,
+      url: `/uploads/${id}`
+    };
+    return res.status(201).json({ attachment });
+  } catch (error) {
+    console.error('[site-man] attachment upload failed', error);
+    return res.status(500).json({ error: 'attachment_upload_failed', detail: error.message || 'unknown_error' });
+  }
 });
 
 app.post('/api/sessions/:sessionId/run', async (req, res) => {
@@ -452,13 +797,26 @@ app.post('/api/sessions/:sessionId/run', async (req, res) => {
     ? [...new Set(req.body.agents.map((id) => (id || '').toString().trim()).filter(Boolean))]
     : null;
 
-  const targets = (requested && requested.length ? requested : session.agents).filter((id) => session.agents.includes(id));
+  let targets = (requested && requested.length ? requested : session.agents).filter((id) => session.agents.includes(id));
   if (!targets.length) {
     return res.status(400).json({ error: 'agents_required' });
   }
 
   try {
-    const responses = await Promise.all(targets.map((agentId) => runAgentResponse({ session, agentId }))); 
+    const orchestratorResults = await runOrchestratorIfNeeded({ session, targets, onComplete: null, onError: null });
+    const orderedTargets = orchestratorResults.delegations?.length
+      ? orchestratorResults.delegations.map((item) => item.agentId)
+      : orchestratorResults.targets;
+
+    const downstreamResponses = [];
+    for (const agentId of orderedTargets) {
+      const response = await runAgentResponse({ session, agentId });
+      downstreamResponses.push(response);
+    }
+
+    const responses = orchestratorResults.orchestratorResponse
+      ? [orchestratorResults.orchestratorResponse, ...downstreamResponses]
+      : downstreamResponses;
     return res.status(201).json({ responses });
   } catch (error) {
     console.error('[site-man] run agents failed', error);
@@ -918,6 +1276,27 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
+const talkRouter = express.Router();
+talkRouter.use(
+  express.static(path.join(__dirname, '..', 'public', 'talk'), {
+    extensions: ['html', 'htm']
+  })
+);
+talkRouter.get('/api/talk/guidance', (_req, res) => {
+  res.json({ guidance: TALK_GUIDANCE_DEFAULT });
+});
+
+app.use(talkRouter);
+
 app.listen(PORT, () => {
   console.log(`Sample site listening on port ${PORT}`);
 });
+
+if (TALK_PORT !== PORT) {
+  const talkApp = express();
+  talkApp.use(express.json());
+  talkApp.use(talkRouter);
+  talkApp.listen(TALK_PORT, () => {
+    console.log(`Talk panel listening on port ${TALK_PORT}`);
+  });
+}

@@ -1,0 +1,47 @@
+{
+  "id": "orchestrator",
+  "name": "Surf Orchestrator",
+  "description": "Triages user intents, decides which specialist agents to involve, and emits a coordination plan.",
+  "model": {
+    "provider": "glama",
+    "mode": "chat_completion",
+    "defaultModel": "gpt-4o-mini",
+    "endpointEnv": "GLAMA_API_URL",
+    "apiKeyEnv": "GLAMA_API_KEY",
+    "temperature": 0.15,
+    "maxTokens": 900
+  },
+  "routing": {
+    "defaultChannel": "sequential",
+    "priority": 70,
+    "tags": ["coordination", "planning"]
+  },
+  "persona": {
+    "systemPrompt": "You are Surf Orchestrator, the conductor of all agents. Break high-level requests into phases, describe which agent should handle each phase, and summarize the final result along with follow-up tasks. Use short bullet lists when delegating.",
+    "style": "decisive"
+  },
+  "memory": {
+    "shortTerm": "memory/short_term.jsonl",
+    "longTermMeta": "memory/long_term.meta.json"
+  },
+  "knowledge": {
+    "sources": [
+      {
+        "type": "file",
+        "path": "knowledge/workflows.md"
+      }
+    ]
+  },
+  "tools": [
+    {
+      "name": "agent_registry",
+      "kind": "file",
+      "entry": "../registry.json",
+      "description": "List of available agents, priorities, and tags."
+    }
+  ],
+  "telemetry": {
+    "logPath": "logs/activity.log",
+    "metrics": "state/metrics.json"
+  }
+}

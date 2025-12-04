@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Multi-agent test panel</title>
+    <link rel="stylesheet" href="/chat/style.css" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <main class="layout">
+      <header>
+        <h1>Node-1 multi-agent smoke panel</h1>
+        <div class="status" id="status">Loading agents…</div>
+      </header>
+
+      <section class="agents-panel">
+        <div class="agents-label">
+          <span>เลือกทีม / Pick your crew</span>
+        </div>
+        <div id="agentPills" class="agent-pills"></div>
+        <div id="crewSummary" class="crew-summary">Loading agents…</div>
+      </section>
+
+      <section class="chat" id="chat"></section>
+
+      <form id="messageForm">
+        <textarea id="messageInput" rows="4" placeholder="Ask the crew something…"></textarea>
+        <div class="attachments-row">
+          <button type="button" id="attachButton" class="attach-btn">📎 Attach</button>
+          <div id="attachmentsList" class="attachments-list"></div>
+          <input type="file" id="attachmentInput" multiple hidden />
+        </div>
+        <div class="actions">
+          <label>
+            History limit
+            <input type="number" id="historyLimit" min="1" max="40" value="20" />
+          </label>
+          <label class="autosend">
+            <input type="checkbox" id="autoSendToggle" checked />
+            Send on Enter
+          </label>
+          <label class="autoretry">
+            <input type="checkbox" id="autoRetryToggle" checked />
+            Auto-retry stream
+          </label>
+          <button type="submit">Send & run agents</button>
+        </div>
+      </form>
+
+      <section class="activity" id="activity"></section>
+    </main>
+
+    <script type="module" src="/chat/main.js"></script>
+  </body>
+</html>

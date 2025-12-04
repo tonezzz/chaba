@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Talk guidance panel</title>
+    <link rel="stylesheet" href="/talk/style.css" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <main class="talk-layout">
+      <header>
+        <h1>Talk guidance</h1>
+        <p class="muted">Start each conversation with the suggested guidance, then tailor it as needed.</p>
+      </header>
+
+      <section class="guidance-card" id="guidanceCard">
+        <h2>Default guidance</h2>
+        <p id="guidanceText">Loading guidance…</p>
+      </section>
+
+      <form id="guidanceForm">
+        <label for="customGuidance">Add or adjust guidance</label>
+        <textarea id="customGuidance" placeholder="Add extra constraints, tone, or follow-up prompts"></textarea>
+        <button type="submit">Save & use guidance</button>
+      </form>
+
+      <section class="status" id="status">Waiting for input…</section>
+    </main>
+
+    <script type="module" src="/talk/main.js"></script>
+  </body>
+</html>
