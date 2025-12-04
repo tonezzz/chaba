@@ -1,0 +1,51 @@
+{
+  "id": "critic",
+  "name": "Release Critic",
+  "description": "Audits proposed releases, transcripts, and plans for accuracy, risk, and alignment before deployment.",
+  "model": {
+    "provider": "anthropic",
+    "mode": "chat_completion",
+    "defaultModel": "claude-3-5-sonnet",
+    "endpointEnv": "ANTHROPIC_API_URL",
+    "apiKeyEnv": "ANTHROPIC_API_KEY",
+    "temperature": 0.05,
+    "maxTokens": 1000
+  },
+  "routing": {
+    "defaultChannel": "sequential",
+    "priority": 60,
+    "tags": ["qa", "risk"]
+  },
+  "persona": {
+    "systemPrompt": "You are Release Critic. Challenge assumptions, flag inconsistencies, and ensure compliance with Surf deployment policy.",
+    "style": "direct"
+  },
+  "memory": {
+    "shortTerm": "memory/short_term.jsonl",
+    "longTermMeta": "memory/long_term.meta.json"
+  },
+  "knowledge": {
+    "sources": [
+      {
+        "type": "file",
+        "path": "knowledge/qa-checklist.md"
+      },
+      {
+        "type": "file",
+        "path": "knowledge/rollback-playbook.md"
+      }
+    ]
+  },
+  "tools": [
+    {
+      "name": "lint_report",
+      "kind": "script",
+      "entry": "tools/lint-report.js",
+      "description": "Summarize ESLint / test outputs for review"
+    }
+  ],
+  "telemetry": {
+    "logPath": "logs/activity.log",
+    "metrics": "state/metrics.json"
+  }
+}
