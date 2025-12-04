@@ -438,6 +438,34 @@ app.post('/api/sessions/:sessionId/messages', (req, res) => {
   return res.status(201).json({ message });
 });
 
+app.post('/api/sessions/:sessionId/run', async (req, res) => {
+  if (!ensureGlamaReady(res)) {
+    return;
+  }
+
+  const session = sessionStore.get(req.params.sessionId);
+  if (!session) {
+    return res.status(404).json({ error: 'session_not_found' });
+  }
+
+  const requested = Array.isArray(req.body?.agents)
+    ? [...new Set(req.body.agents.map((id) => (id || '').toString().trim()).filter(Boolean))]
+    : null;
+
+  const targets = (requested && requested.length ? requested : session.agents).filter((id) => session.agents.includes(id));
+  if (!targets.length) {
+    return res.status(400).json({ error: 'agents_required' });
+  }
+
+  try {
+    const responses = await Promise.all(targets.map((agentId) => runAgentResponse({ session, agentId }))); 
+    return res.status(201).json({ responses });
+  } catch (error) {
+    console.error('[site-man] run agents failed', error);
+    return res.status(500).json({ error: 'agent_run_failed', detail: error.message || 'unknown_error' });
+  }
+});
+
 const escapeHtml = (value = '') =>
   value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
