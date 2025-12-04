@@ -5,6 +5,7 @@ import express from 'express';
 import morgan from 'morgan';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import { promises as fs } from 'fs';
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ const PORT = process.env.PORT || 3000;
 const WEBHOOK_SECRET = (process.env.NODE1_WEBHOOK_SECRET || '').trim();
 const DEPLOY_SCRIPT =
   process.env.DEPLOY_SCRIPT || path.resolve(__dirname, '..', '..', '..', 'scripts', 'pull-node-1.sh');
+const TONY_SITES_ROOT = path.resolve(__dirname, '..', '..', 'tony', 'sites');
 
 const rawBodyBuffer = (req, _res, buffer) => {
   if (buffer && buffer.length) {
@@ -26,6 +28,56 @@ const rawBodyBuffer = (req, _res, buffer) => {
 app.use(morgan('dev'));
 app.use(express.json({ verify: rawBodyBuffer }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
+app.use(
+  '/tony/sites',
+  express.static(TONY_SITES_ROOT, {
+    extensions: ['html', 'htm']
+  })
+);
+
+const escapeHtml = (value = '') =>
+  value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+
+const formatSiteLabel = (name) =>
+  name
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ') || name;
+
+const readTonySites = async () => {
+  try {
+    const entries = await fs.readdir(TONY_SITES_ROOT, { withFileTypes: true });
+    const folders = entries.filter((entry) => entry.isDirectory());
+    const sites = await Promise.all(
+      folders.map(async (dir) => {
+        const sitePath = path.join(TONY_SITES_ROOT, dir.name);
+        const indexPath = path.join(sitePath, 'index.html');
+        let hasIndex = false;
+        try {
+          await fs.access(indexPath);
+          hasIndex = true;
+        } catch {
+          hasIndex = false;
+        }
+        return {
+          name: dir.name,
+          label: formatSiteLabel(dir.name),
+          url: `/tony/sites/${encodeURIComponent(dir.name)}/`,
+          filesystemPath: sitePath,
+          hasIndex
+        };
+      })
+    );
+    return sites.sort((a, b) => a.label.localeCompare(b.label));
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return [];
+    }
+    console.error('[site-man] Failed to enumerate Tony sites', error);
+    return [];
+  }
+};
 
 const verifySignature = (signature, payload) => {
   if (!WEBHOOK_SECRET || typeof signature !== 'string' || !payload) {
@@ -66,8 +118,29 @@ const availableLinks = [
   { path: '/logger', label: 'Logger demo' }
 ];
 
-app.get('/tony', (_req, res) => {
-  const html = `<!doctype html>
+app.get('/tony', async (_req, res) => {
+  try {
+    const tonySites = await readTonySites();
+    const sitesList = tonySites.length
+      ? tonySites
+          .map(
+            (site) => `
+          <li class="site-card">
+            <div class="site-card__header">
+              <span class="site-name">${escapeHtml(site.label)}</span>
+              <span class="pill ${site.hasIndex ? 'pill--ok' : 'pill--warn'}">
+                ${site.hasIndex ? 'index.html detected' : 'no index.html'}</span>
+            </div>
+            <a class="site-link" href="${site.url}" target="_blank" rel="noreferrer">
+              ${site.url}
+            </a>
+            <div class="path">${escapeHtml(site.filesystemPath)}</div>
+          </li>`
+          )
+          .join('')
+      : '<li class="site-card empty">No folders found yet. Add one under \n            <code>c:/chaba/sites/tony/sites</code> to have it mounted automatically.</li>';
+
+    const html = `<!doctype html>
   <html lang="en">
     <head>
       <meta charset="utf-8" />
@@ -97,6 +170,7 @@ app.get('/tony', (_req, res) => {
           box-shadow: 0 25px 60px rgba(5, 8, 20, 0.55);
           border: 1px solid rgba(126, 242, 201, 0.15);
         }
+        section { margin-top: 2rem; }
         h1 {
           margin: 0 0 0.5rem;
           font-size: clamp(1.8rem, 4vw, 2.4rem);
@@ -119,6 +193,18 @@ app.get('/tony', (_req, res) => {
           border-radius: 16px;
           padding: 1rem 1.25rem;
         }
+        .site-grid {
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        }
+        .site-card { display: flex; flex-direction: column; gap: 0.5rem; }
+        .site-card.empty { grid-column: 1 / -1; text-align: center; color: #8f99b8; }
+        .site-card__header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.5rem;
+        }
+        .site-name { font-size: 1.05rem; font-weight: 600; color: #f4f5ff; }
         a {
           color: #7ef2c9;
           font-weight: 600;
@@ -144,6 +230,15 @@ app.get('/tony', (_req, res) => {
           font-size: 0.85rem;
           margin-bottom: 1rem;
         }
+        .pill {
+          font-size: 0.75rem;
+          border-radius: 999px;
+          padding: 0.1rem 0.65rem;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
+        .pill--ok { background: rgba(126, 242, 201, 0.15); color: #7ef2c9; }
+        .pill--warn { background: rgba(255, 180, 123, 0.15); color: #ffb47b; }
       </style>
     </head>
     <body>
@@ -154,18 +249,35 @@ app.get('/tony', (_req, res) => {
           Quick shortcuts to the web experiences currently deployed on node-1. These endpoints are live for
           browser and iPhone webviews, so use them when verifying releases with your team.
         </p>
-        <ul>
-          ${availableLinks
-            .map(
-              (link) =>
-                `<li><a href="${link.path}" target="_blank" rel="noreferrer">${link.label}</a><span class="path">${link.path}</span></li>`
-            )
-            .join('')}
-        </ul>
+        <section>
+          <h2>Core utilities</h2>
+          <ul>
+            ${availableLinks
+              .map(
+                (link) =>
+                  `<li><a href="${link.path}" target="_blank" rel="noreferrer">${link.label}</a><span class="path">${link.path}</span></li>`
+              )
+              .join('')}
+          </ul>
+        </section>
+        <section>
+          <h2>Tony sandboxes (${tonySites.length})</h2>
+          <p>
+            Everything under <code>${escapeHtml(TONY_SITES_ROOT)}</code> is automatically mounted at
+            <code>https://node-1.h3.surf-thailand.com/tony/sites/&lt;folder&gt;/</code>.
+          </p>
+          <ul class="site-grid">
+            ${sitesList}
+          </ul>
+        </section>
       </main>
     </body>
   </html>`;
-  res.send(html);
+    res.send(html);
+  } catch (error) {
+    console.error('[site-man] Failed to render Tony panel', error);
+    res.status(500).send('Tony panel unavailable');
+  }
 });
 
 app.get('/api/health', (req, res) => {
