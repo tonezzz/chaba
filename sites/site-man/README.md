@@ -32,3 +32,34 @@ npm run start
 ```
 
 Set `app.js` as the startup file in Plesk so it boots the Express server. Adjust `PORT` via environment variables if needed.
+
+## Tony sandbox deploy API
+
+When `TONY_DEPLOY_SECRET` is configured (defaults to `NODE1_WEBHOOK_SECRET`), you can push static bundles directly into `sites/tony/sites/<name>/` without SSH:
+
+```
+POST /api/tony/deploy
+Headers:
+  Content-Type: application/json
+  x-tony-secret: <TONY_DEPLOY_SECRET>
+
+Body:
+{
+  "site": "chat1",
+  "clear": true,
+  "files": [
+    {
+      "path": "index.html",
+      "contents": "<!doctype html>...",
+      "encoding": "utf8"
+    },
+    {
+      "path": "assets/main.js",
+      "contents": "...base64 data...",
+      "encoding": "base64"
+    }
+  ]
+}
+```
+
+The server writes each file relative to `sites/tony/sites/<site>/`, optionally clears the folder, then restarts the Node domain via Plesk so the updated sandbox is immediately live at `https://node-1.h3.surf-thailand.com/tony/sites/<site>/`.

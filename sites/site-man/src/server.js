@@ -15,6 +15,8 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const WEBHOOK_SECRET = (process.env.NODE1_WEBHOOK_SECRET || '').trim();
+const TONY_DEPLOY_SECRET = (process.env.TONY_DEPLOY_SECRET || WEBHOOK_SECRET).trim();
+const NODE_DOMAIN = (process.env.NODE_DOMAIN || 'node-1.h3.surf-thailand.com').trim();
 const DEPLOY_SCRIPT =
   process.env.DEPLOY_SCRIPT || path.resolve(__dirname, '..', '..', '..', 'scripts', 'pull-node-1.sh');
 const TONY_SITES_ROOT = path.resolve(__dirname, '..', '..', 'tony', 'sites');
@@ -25,9 +27,118 @@ const rawBodyBuffer = (req, _res, buffer) => {
   }
 };
 
+const restartNodeDomain = () =>
+  new Promise((resolve) => {
+    if (!NODE_DOMAIN) {
+      return resolve({ restarted: false, reason: 'node_domain_missing' });
+    }
+
+    const child = spawn('plesk', ['bin', 'nodejs', '--restart', NODE_DOMAIN], {
+      stdio: 'inherit'
+    });
+
+    child.on('error', (error) => {
+      console.error('[site-man] Failed to restart Node domain', error);
+      resolve({ restarted: false, error: error.message });
+    });
+
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve({ restarted: true });
+      } else {
+        resolve({ restarted: false, reason: `plesk_exit_${code}` });
+      }
+    });
+  });
+
+const normalizeSiteSlug = (value = '') =>
+  value
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-_]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
+const normalizeRelativePath = (value = '') =>
+  value
+    .toString()
+    .trim()
+    .replace(/^[./\\]+/, '')
+    .replace(/\\/g, '/');
+
+const isWithinPath = (parent, child) => {
+  const relative = path.relative(parent, child);
+  return Boolean(relative) ? !relative.startsWith('..') && !path.isAbsolute(relative) : true;
+};
+
+const writeTonySiteFiles = async ({ siteSlug, files, clearExisting = false }) => {
+  if (!siteSlug) {
+    throw new Error('site_missing');
+  }
+  if (!Array.isArray(files) || !files.length) {
+    throw new Error('files_missing');
+  }
+
+  const siteDir = path.join(TONY_SITES_ROOT, siteSlug);
+  if (clearExisting) {
+    await fs.rm(siteDir, { recursive: true, force: true });
+  }
+  await fs.mkdir(siteDir, { recursive: true });
+
+  let written = 0;
+  const details = [];
+
+  for (const file of files) {
+    const relativePath = normalizeRelativePath(file?.path || '');
+    if (!relativePath || relativePath.includes('..')) {
+      throw new Error(`invalid_path_${file?.path ?? ''}`);
+    }
+
+    const targetPath = path.join(siteDir, relativePath);
+    if (!isWithinPath(siteDir, targetPath)) {
+      throw new Error(`path_escape_${relativePath}`);
+    }
+
+    const encoding = file?.encoding === 'base64' ? 'base64' : 'utf8';
+    const contents = typeof file?.contents === 'string' ? file.contents : '';
+    const buffer = encoding === 'base64' ? Buffer.from(contents, 'base64') : Buffer.from(contents, 'utf8');
+
+    await fs.mkdir(path.dirname(targetPath), { recursive: true });
+    await fs.writeFile(targetPath, buffer);
+    written += 1;
+    details.push({ path: relativePath, bytes: buffer.length });
+  }
+
+  return { siteDir, written, details };
+};
+
 app.use(morgan('dev'));
 app.use(express.json({ verify: rawBodyBuffer }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
+
+app.use('/tony/:siteSlug', (req, res, next) => {
+  const siteSlug = normalizeSiteSlug(req.params.siteSlug);
+  if (!siteSlug) {
+    return res.status(404).send('Site not found');
+  }
+
+  const siteRoot = path.join(TONY_SITES_ROOT, siteSlug);
+  const staticMiddleware = express.static(siteRoot, {
+    extensions: ['html', 'htm']
+  });
+
+  return staticMiddleware(req, res, (err) => {
+    if (err && err.status === 404) {
+      return res.status(404).send('Site not found');
+    }
+    if (err) {
+      return next(err);
+    }
+    return next();
+  });
+});
+
 app.use(
   '/tony/sites',
   express.static(TONY_SITES_ROOT, {
@@ -277,6 +388,46 @@ app.get('/tony', async (_req, res) => {
   } catch (error) {
     console.error('[site-man] Failed to render Tony panel', error);
     res.status(500).send('Tony panel unavailable');
+  }
+});
+
+app.post('/api/tony/deploy', async (req, res) => {
+  if (!TONY_DEPLOY_SECRET) {
+    return res.status(503).json({ error: 'tony_deploy_unconfigured' });
+  }
+
+  const providedSecret = (req.get('x-tony-secret') || '').trim();
+  if (providedSecret !== TONY_DEPLOY_SECRET) {
+    return res.status(401).json({ error: 'forbidden' });
+  }
+
+  const siteSlug = normalizeSiteSlug(req.body?.site || '');
+  const files = Array.isArray(req.body?.files) ? req.body.files : [];
+  const clearExisting = Boolean(req.body?.clear === true || req.body?.clear === 'true');
+
+  if (!siteSlug) {
+    return res.status(400).json({ error: 'site_required' });
+  }
+  if (!files.length) {
+    return res.status(400).json({ error: 'files_required' });
+  }
+
+  try {
+    const { written, details } = await writeTonySiteFiles({ siteSlug, files, clearExisting });
+    const restartOutcome = await restartNodeDomain();
+    return res.json({
+      status: 'ok',
+      site: siteSlug,
+      filesWritten: written,
+      cleared: clearExisting,
+      restarted: restartOutcome.restarted,
+      restartDetail: restartOutcome.reason || restartOutcome.error || null,
+      deployedAt: new Date().toISOString(),
+      details
+    });
+  } catch (error) {
+    console.error('[site-man] Tony deploy failed', error);
+    return res.status(500).json({ error: 'tony_deploy_failed', detail: error.message || 'unknown_error' });
   }
 });
 
