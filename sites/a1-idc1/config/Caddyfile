@@ -1,0 +1,25 @@
+a1.idc1.surf-thailand.com {
+    root * /var/www/a1
+    encode gzip zstd
+
+    handle /test/chat/api/* {
+        uri strip_prefix /test/chat
+        reverse_proxy 127.0.0.1:4020
+    }
+
+    handle /test/chat/* {
+        uri strip_prefix /test/chat
+        root * /var/www/a1/test/chat
+        try_files {path} {path}/ /index.html
+        file_server
+    }
+
+    handle /test/agents/* {
+        uri strip_prefix /test/agents
+        root * /var/www/a1/test/agents
+        try_files {path} {path}/ /index.html
+        file_server
+    }
+
+    file_server
+}
