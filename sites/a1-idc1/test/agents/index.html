@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Multi-agent test panel</title>
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <main class="layout">
+      <header>
+        <div class="title-row">
+          <h1>Node-1 multi-agent smoke panel</h1>
+          <span id="userBadge" class="user-badge"></span>
+        </div>
+        <div class="status" id="status">Loading agents…</div>
+      </header>
+
+      <section class="sessions-panel">
+        <div class="sessions-header">
+          <div>
+            <p class="sessions-label">Saved sessions</p>
+            <p class="sessions-subtext">Last 20 conversations for this workspace</p>
+          </div>
+          <button type="button" id="newSessionButton" class="ghost-btn">New session</button>
+        </div>
+        <div id="sessionsList" class="sessions-list">Loading sessions…</div>
+      </section>
+
+      <section class="archives-panel">
+        <div class="sessions-header">
+          <div>
+            <p class="sessions-label">Archived summaries</p>
+            <p class="sessions-subtext">Recent archived conversations (auto-summarized)</p>
+          </div>
+          <button type="button" id="refreshArchivesButton" class="ghost-btn">Refresh archives</button>
+        </div>
+        <div id="archivesList" class="archives-list">Loading archives…</div>
+        <details class="archive-detail" id="archiveDetail">
+          <summary>Archive details</summary>
+          <pre id="archiveDetailBody">Select an archive to preview summary + last stored messages.</pre>
+        </details>
+      </section>
+
+      <section class="agents-panel">
+        <div class="agents-label">
+          <span>เลือกทีม / Pick your crew</span>
+        </div>
+        <div id="agentPills" class="agent-pills"></div>
+        <div id="crewSummary" class="crew-summary">Loading agents…</div>
+      </section>
+
+      <section class="chat" id="chat"></section>
+
+      <form id="messageForm">
+        <textarea id="messageInput" rows="4" placeholder="Ask the crew something…"></textarea>
+        <div class="attachments-row">
+          <button type="button" id="attachButton" class="attach-btn">📎 Attach</button>
+          <div id="attachmentsList" class="attachments-list"></div>
+          <input type="file" id="attachmentInput" multiple hidden />
+        </div>
+        <div class="actions">
+          <label>
+            History limit
+            <input type="number" id="historyLimit" min="1" max="40" value="20" />
+          </label>
+          <label class="autosend">
+            <input type="checkbox" id="autoSendToggle" checked />
+            Send on Enter
+          </label>
+          <label class="autoretry">
+            <input type="checkbox" id="autoRetryToggle" checked />
+            Auto-retry stream
+          </label>
+          <button type="submit">Send & run agents</button>
+        </div>
+      </form>
+
+      <section class="activity" id="activity"></section>
+    </main>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>a1.idc1 · Test console</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: 'Space Grotesk', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        --bg: radial-gradient(circle at 10% -10%, #00c2b0, transparent 35%), radial-gradient(circle at 80% 0%, #3144ff, transparent 45%), #03040b;
+        --panel: rgba(8, 12, 26, 0.86);
+        --border: rgba(255, 255, 255, 0.1);
+        --accent: #7ef2c9;
+        --accent-2: #24c1ff;
+        --subtle: #b4bad8;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: #f4f7ff;
+        display: flex;
+        justify-content: center;
+        padding: clamp(1.5rem, 4vw, 3rem);
+      }
+      main {
+        width: min(1100px, 100%);
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+      header {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        padding: clamp(1.6rem, 4vw, 2.8rem);
+        box-shadow: 0 30px 70px rgba(0, 5, 20, 0.55);
+      }
+      .eyebrow {
+        margin: 0 0 0.4rem;
+        font-size: 0.9rem;
+        letter-spacing: 0.32em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+      h1 {
+        margin: 0 0 0.6rem;
+        font-size: clamp(2rem, 4.5vw, 2.8rem);
+        letter-spacing: 0.08em;
+      }
+      p {
+        margin: 0;
+        color: var(--subtle);
+        line-height: 1.6;
+        max-width: 65ch;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.2rem;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        transition: transform 0.2s ease, border-color 0.2s ease;
+      }
+      .card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(126, 242, 201, 0.35);
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.35rem 0.9rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.07);
+        font-size: 0.8rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--accent-2);
+      }
+      .card h2 {
+        margin: 0;
+        font-size: 1.25rem;
+      }
+      .card p {
+        margin: 0;
+        color: var(--subtle);
+      }
+      .card a {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-top: auto;
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .card a::after {
+        content: '↗';
+        font-size: 1rem;
+      }
+      footer {
+        text-align: center;
+        color: var(--subtle);
+        font-size: 0.9rem;
+        padding: 1rem 0 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">Surf Thailand · Edge node a1</p>
+        <h1>Test surface</h1>
+        <p>
+          Handy launchpad for experiments deployed under <strong>/test</strong>. Use these quick links to verify Glama,
+          APIs, and future diagnostics before promoting to the public site.
+        </p>
+      </header>
+
+      <section class="grid">
+        <article class="card">
+          <span class="chip">Chat</span>
+          <h2>Glama verification console</h2>
+          <p>
+            Full UI for exercising the Glama backend with temperature control and Enter-to-send toggle.
+          </p>
+          <a href="/test/chat">Open panel</a>
+        </article>
+
+        <article class="card">
+          <span class="chip">Agents</span>
+          <h2>Multi-agent smoke panel</h2>
+          <p>
+            Mirrors the original node-1 multi-agent console for demonstrating saved sessions, archives, and crew selection.
+          </p>
+          <a href="/test/agents">Launch agents demo</a>
+        </article>
+
+        <article class="card">
+          <span class="chip">API</span>
+          <h2>Chat API health</h2>
+          <p>
+            Returns JSON status from the Glama proxy (model, timestamp, readiness). Use for monitoring hooks.
+          </p>
+          <a href="/test/chat/api/health" target="_blank" rel="noreferrer">View JSON</a>
+        </article>
+
+        <article class="card">
+          <span class="chip">Docs</span>
+          <h2>Test routing notes</h2>
+          <p>
+            Reference for how /test paths map to Caddy + systemd services. Perfect for onboarding and local mirroring.
+          </p>
+          <a href="https://idc1.surf-thailand.com/tony" target="_blank" rel="noreferrer">node-1 panel</a>
+        </article>
+      </section>
+
+      <footer>
+        Surf Thailand · a1.idc1 sandbox · Updated
+        <time datetime="2025-12-05">Dec 5, 2025</time>
+      </footer>
+    </main>
+  </body>
+</html>

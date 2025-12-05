@@ -1,0 +1,68 @@
+chaba.surf-thailand.com {
+    handle_path /instrans-api/* {
+        reverse_proxy 127.0.0.1:3100
+    }
+
+    handle_path /mcp-agent2/* {
+        reverse_proxy 127.0.0.1:8310
+    }
+
+    handle_path /a-chaba/* {
+        root * /var/www/a-chaba
+        try_files {path} {path}/
+        file_server
+    }
+
+    handle /gallery/api/* {
+        reverse_proxy 127.0.0.1:3001
+    }
+
+    handle /gallery/assets/* {
+        reverse_proxy 127.0.0.1:3001
+    }
+
+    handle /meeting/* {
+        reverse_proxy 127.0.0.1:3001
+    }
+
+    # Voice Chat API load-balanced across host1 + Pom01
+    handle /api/* {
+        reverse_proxy {
+            to 127.0.0.1:3001
+            to 119.59.126.21:3001
+            lb_policy round_robin
+            health_uri /health
+            health_interval 20s
+            health_timeout 5s
+            fail_duration 30s
+        }
+    }
+
+    # Socket.IO/WebSocket passthrough to both backends
+    handle /socket.io/* {
+        reverse_proxy {
+            to 127.0.0.1:3001
+            to 119.59.126.21:3001
+            lb_policy round_robin
+            transport http {
+                keepalive 30s
+            }
+        }
+    }
+
+    # Default root
+    root * /var/www/a-chaba/sites/voice_chat
+    file_server
+}
+
+idc1.surf-thailand.com {
+    root * /var/www/idc1
+    encode gzip zstd
+    file_server
+}
+
+a1.idc1.surf-thailand.com {
+    root * /var/www/a1
+    encode gzip zstd
+    file_server
+}

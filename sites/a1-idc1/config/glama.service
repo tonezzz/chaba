@@ -1,0 +1,16 @@
+[Unit]
+Description=Glama proxy for a1.idc1
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/glama
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node -r dotenv/config src/server.js
+Restart=on-failure
+RestartSec=5
+User=chaba
+Group=chaba
+
+[Install]
+WantedBy=multi-user.target

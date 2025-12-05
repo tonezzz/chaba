@@ -1,6 +1,8 @@
 import path from 'path';
 import express from 'express';
 import morgan from 'morgan';
+import multer from 'multer';
+import fetch from 'node-fetch';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
@@ -12,8 +14,108 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10 MB
+  }
+});
+
+const GLAMA_API_URL = (process.env.GLAMA_API_URL || process.env.GLAMA_URL || '').trim();
+const GLAMA_API_KEY = (process.env.GLAMA_API_KEY || '').trim();
+const GLAMA_MODEL_VISION =
+  (process.env.GLAMA_MODEL_VISION || process.env.GLAMA_MODEL || process.env.GLAMA_MODEL_DEFAULT || '').trim() ||
+  'gpt-4o-mini';
+const GLAMA_TEMPERATURE = Number.isFinite(Number(process.env.GLAMA_TEMPERATURE))
+  ? Number(process.env.GLAMA_TEMPERATURE)
+  : 0.1;
+const GLAMA_MAX_TOKENS = Number.isFinite(Number(process.env.GLAMA_MAX_TOKENS))
+  ? Number(process.env.GLAMA_MAX_TOKENS)
+  : 800;
+const BASE_SYSTEM_PROMPT =
+  process.env.VISION_SYSTEM_PROMPT ||
+  'You are Surf Thailand’s vision analyst. Reply strictly in JSON with keys description and objects.';
+
+const isGlamaReady = () => Boolean(GLAMA_API_URL && GLAMA_API_KEY);
+
+const ensureGlamaReady = (res) => {
+  if (isGlamaReady()) {
+    return true;
+  }
+  res.status(503).json({ error: 'glama_unconfigured' });
+  return false;
+};
+
+const callVisionModel = async ({ base64Image, mimeType, prompt }) => {
+  if (!isGlamaReady()) {
+    throw new Error('glama_unconfigured');
+  }
+  const messages = [
+    {
+      role: 'system',
+      content: BASE_SYSTEM_PROMPT
+    },
+    {
+      role: 'user',
+      content: [
+        {
+          type: 'input_text',
+          text: `${prompt}\nRespond as JSON {"description": "...", "objects":[{"label":"","confidence":0-1,"detail":""}]}.`
+        },
+        {
+          type: 'input_image',
+          image_url: {
+            url: `data:${mimeType};base64,${base64Image}`
+          }
+        }
+      ]
+    }
+  ];
+
+  const payload = {
+    model: GLAMA_MODEL_VISION,
+    temperature: GLAMA_TEMPERATURE,
+    max_tokens: GLAMA_MAX_TOKENS,
+    messages
+  };
+
+  const response = await fetch(GLAMA_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${GLAMA_API_KEY}`
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail || `glama_http_${response.status}`);
+  }
+
+  const data = await response.json();
+  const rawContent = data?.choices?.[0]?.message?.content;
+  // content might be array of blocks or a string
+  const text =
+    typeof rawContent === 'string'
+      ? rawContent
+      : Array.isArray(rawContent)
+      ? rawContent
+          .map((entry) => {
+            if (typeof entry === 'string') return entry;
+            if (entry?.text) return entry.text;
+            if (entry?.content) return entry.content;
+            return '';
+          })
+          .join('\n')
+          .trim()
+      : '';
+
+  return { data, text };
+};
+
 app.use(morgan('dev'));
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 const availableLinks = [
@@ -21,7 +123,8 @@ const availableLinks = [
   { path: '/api/health', label: 'Health check (JSON)' },
   { path: '/api/greeting?name=Surf', label: 'Greeting API' },
   { path: '/chat', label: 'Glama chat panel' },
-  { path: '/logger', label: 'Logger demo' }
+  { path: '/logger', label: 'Logger demo' },
+  { path: '/test/detects', label: 'Vision detects panel' }
 ];
 
 app.get('/tony', (_req, res) => {
@@ -133,6 +236,60 @@ app.get('/api/health', (req, res) => {
 app.get('/api/greeting', (req, res) => {
   const name = req.query.name || 'friend';
   res.json({ message: `Hello, ${name}! Welcome to node-1 sample site.` });
+});
+
+app.post('/api/detects/analyze', upload.single('photo'), async (req, res) => {
+  if (!ensureGlamaReady(res)) {
+    return;
+  }
+  if (!req.file) {
+    return res.status(400).json({ error: 'photo_required' });
+  }
+  const prompt = (req.body?.prompt || '').toString().trim();
+  if (!prompt) {
+    return res.status(400).json({ error: 'prompt_required' });
+  }
+
+  const mimeType = req.file.mimetype || 'image/jpeg';
+  const base64Image = req.file.buffer.toString('base64');
+  const startedAt = Date.now();
+
+  try {
+    const { data, text } = await callVisionModel({ base64Image, mimeType, prompt });
+    const elapsed = Date.now() - startedAt;
+
+    let parsed = null;
+    if (text) {
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        const cleaned = text
+          .trim()
+          .replace(/```json/gi, '')
+          .replace(/```/g, '')
+          .trim();
+        try {
+          parsed = JSON.parse(cleaned);
+        } catch {
+          parsed = null;
+        }
+      }
+    }
+
+    const description = parsed?.description || text || 'No description returned.';
+    const objects = Array.isArray(parsed?.objects) ? parsed.objects : [];
+
+    res.json({
+      description,
+      objects,
+      raw: data,
+      model: data?.model || GLAMA_MODEL_VISION,
+      latencyMs: elapsed
+    });
+  } catch (error) {
+    console.error('[site-man] vision analyze failed', error);
+    res.status(502).json({ error: error.message || 'glama_vision_failed' });
+  }
 });
 
 app.post('/hooks/deploy', async (req, res) => {

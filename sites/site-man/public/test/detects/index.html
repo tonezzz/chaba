@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Surf Vision Lab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/test/detects/style.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Surf Thailand • A1 Vision Utilities</p>
+          <h1>Photo understanding sand-box</h1>
+          <p class="lede">
+            Drop in a still photo, choose one of the vision prompts, and we’ll send it through our Glama
+            vision endpoint to describe the scene and pinpoint notable objects.
+          </p>
+        </div>
+        <div class="hero-meta">
+          <div class="meta-chip">
+            <span>LLM</span>
+            <strong id="modelTag">—</strong>
+          </div>
+          <div class="meta-chip">
+            <span>Latency</span>
+            <strong id="latencyTag">—</strong>
+          </div>
+        </div>
+      </header>
+
+      <section class="panel">
+        <form id="detectForm" class="detect-form">
+          <div class="grid">
+            <div class="card">
+              <div class="card-head">
+                <h2>1. Upload photo</h2>
+                <p>Single still image, max 10 MB. Works great with portrait or landscape shots.</p>
+              </div>
+              <div class="dropzone" data-dropzone>
+                <input type="file" id="photoInput" accept="image/*" hidden />
+                <div class="dropzone-inner">
+                  <p class="drop-title">Drag & drop photo</p>
+                  <p class="drop-sub">or <button type="button" id="browseBtn">browse files</button></p>
+                  <p id="fileHint" class="file-hint">No file selected yet.</p>
+                </div>
+              </div>
+              <div id="previewWrap" class="preview hidden">
+                <img id="previewImage" alt="Selected preview" />
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <h2>2. Pick a vision brief</h2>
+                <p>Tap a chip to autofill the prompt, or fine-tune in the text box.</p>
+              </div>
+              <div class="prompt-chips" id="promptChips">
+                <!-- populated by script -->
+              </div>
+              <label class="prompt-field">
+                <span>Custom instructions</span>
+                <textarea id="promptInput" rows="6" placeholder="Explain what you want the model to focus on…"></textarea>
+              </label>
+            </div>
+          </div>
+
+          <div class="cta-row">
+            <div class="status" id="statusBanner">Waiting for your photo…</div>
+            <button type="submit" id="analyzeBtn">Run describe + detect</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel output-panel">
+        <div class="card">
+          <div class="card-head">
+            <h2>Vision summary</h2>
+            <p id="descriptionOutput" class="lede muted">No analysis yet.</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <h2>Detected objects</h2>
+            <p class="muted">Top items, sorted by model confidence.</p>
+          </div>
+          <div id="objectsGrid" class="objects-grid"></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <h2>Raw payload</h2>
+            <p class="muted">Direct JSON from the Glama response.</p>
+          </div>
+          <pre id="rawOutput" class="raw-output">// Awaiting response…</pre>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/test/detects/app.js"></script>
+  </body>
+</html>

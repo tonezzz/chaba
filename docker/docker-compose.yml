@@ -1,15 +1,15 @@
 version: '3.9'
 
 services:
-  node-1:
+  dev-host:
     build:
-      context: ./node-1
+      context: ./dev-host
       dockerfile: Dockerfile
-    container_name: node-1
-    hostname: node-1.h3.surf-thailand.com
+    container_name: dev-host
+    hostname: dev-host
     ports:
-      - '2222:22'
-      - '3001:3000'
+      - '2223:22'
+      - '3100:3000'
     environment:
       - NODE_ENV=development
     volumes:
