@@ -1,5 +1,3 @@
-import crypto from 'crypto';
-import { spawn } from 'child_process';
 import path from 'path';
 import express from 'express';
 import morgan from 'morgan';
@@ -13,50 +11,10 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const WEBHOOK_SECRET = (process.env.NODE1_WEBHOOK_SECRET || '').trim();
-const DEPLOY_SCRIPT =
-  process.env.DEPLOY_SCRIPT || path.resolve(__dirname, '..', '..', '..', 'scripts', 'pull-node-1.sh');
-
-const rawBodyBuffer = (req, _res, buffer) => {
-  if (buffer && buffer.length) {
-    req.rawBody = buffer.toString('utf8');
-  }
-};
 
 app.use(morgan('dev'));
-app.use(express.json({ verify: rawBodyBuffer }));
+app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
-
-const verifySignature = (signature, payload) => {
-  if (!WEBHOOK_SECRET || typeof signature !== 'string' || !payload) {
-    return false;
-  }
-  if (!signature.startsWith('sha256=')) {
-    return false;
-  }
-  const provided = signature.slice('sha256='.length);
-  const expected = crypto.createHmac('sha256', WEBHOOK_SECRET).update(payload).digest('hex');
-  try {
-    return crypto.timingSafeEqual(Buffer.from(provided, 'hex'), Buffer.from(expected, 'hex'));
-  } catch {
-    return false;
-  }
-};
-
-const runDeployScript = () =>
-  new Promise((resolve, reject) => {
-    const child = spawn('bash', [DEPLOY_SCRIPT], {
-      stdio: 'inherit'
-    });
-    child.on('error', reject);
-    child.on('close', (code) => {
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new Error(`deploy_script_exit_${code}`));
-      }
-    });
-  });
 
 const availableLinks = [
   { path: '/', label: 'Landing page' },
