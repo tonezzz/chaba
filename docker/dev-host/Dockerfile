@@ -4,7 +4,7 @@ LABEL maintainer="surf-thailand" \
       description="Local replica of dev-host for combined a1-idc1/idc1 development"
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends openssh-server sudo netcat-openbsd \
+    && apt-get install -y --no-install-recommends openssh-server openssh-client sudo netcat-openbsd rsync \
     && rm -rf /var/lib/apt/lists/*
 
 # Prepare SSH server
@@ -23,10 +23,13 @@ RUN chown -R deployer:deployer /home/deployer/.ssh \
     && chmod 700 /home/deployer/.ssh \
     && chmod 600 /home/deployer/.ssh/authorized_keys
 
+COPY start.sh /usr/local/bin/start-dev-host.sh
+RUN chmod +x /usr/local/bin/start-dev-host.sh
+
 WORKDIR /workspace
 
 EXPOSE 22 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=5 CMD nc -z localhost 22 || exit 1
 
-CMD ["/usr/sbin/sshd", "-D"]
+ENTRYPOINT ["/usr/local/bin/start-dev-host.sh"]

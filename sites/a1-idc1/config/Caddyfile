@@ -14,6 +14,18 @@ a1.idc1.surf-thailand.com {
         file_server
     }
 
+    handle /test/detects/api/* {
+        uri strip_prefix /test/detects/api
+        reverse_proxy 127.0.0.1:4120
+    }
+
+    handle /test/detects/* {
+        uri strip_prefix /test/detects
+        root * /var/www/a1/test/detects
+        try_files {path} {path}/ /index.html
+        file_server
+    }
+
     handle /test/agents/* {
         uri strip_prefix /test/agents
         root * /var/www/a1/test/agents

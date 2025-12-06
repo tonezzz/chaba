@@ -1,0 +1,30 @@
+{
+    admin 0.0.0.0:2019
+    auto_https disable_redirects
+}
+
+{$DEV_PROXY_DOMAIN} {
+    tls {
+        cert_file {$DEV_PROXY_CERT_FILE}
+        key_file {$DEV_PROXY_KEY_FILE}
+    }
+    reverse_proxy {$DEV_PROXY_TARGET}
+    encode gzip
+    log {
+        output stdout
+        format console
+    }
+}
+
+{$DEV_HOST_DOMAIN} {
+    tls {
+        cert_file {$DEV_HOST_CERT_FILE}
+        key_file {$DEV_HOST_KEY_FILE}
+    }
+    reverse_proxy {$DEV_PROXY_TARGET}
+    encode gzip
+    log {
+        output stdout
+        format console
+    }
+}

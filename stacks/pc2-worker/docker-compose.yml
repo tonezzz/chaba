@@ -1,0 +1,129 @@
+version: "3.9"
+
+x-default-service: &default-service
+  restart: unless-stopped
+  networks:
+    - pc2-worker-net
+  env_file:
+    - .env
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  node-runner:
+    <<: *default-service
+    image: node:22-alpine
+    profiles: ["base-tools"]
+    working_dir: /work
+    entrypoint: ["sleep", "infinity"]
+    volumes:
+      - ${HOST_REPO:-/home/tonezzz/repos}:/work:cached
+      - ${HOST_SSH_AUTH_SOCK:-/home/tonezzz/.ssh/ssh-agent.socket}:/ssh-agent
+    environment:
+      SSH_AUTH_SOCK: /ssh-agent
+
+  python-runner:
+    <<: *default-service
+    image: python:3.11-slim
+    profiles: ["base-tools"]
+    working_dir: /work
+    entrypoint: ["sleep", "infinity"]
+    volumes:
+      - ${HOST_REPO:-/home/tonezzz/repos}:/work:cached
+      - ${HOST_PIP_CACHE:-/home/tonezzz/.cache/pip}:/root/.cache/pip
+
+  redis:
+    <<: *default-service
+    image: redis:7-alpine
+    profiles: ["base-tools"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+
+  mcp-github:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${VOICE_CHAT_REPO:-/home/tonezzz/repos/voice_chat}/mcp/mcp-github
+    ports:
+      - "7201:8000"
+    volumes:
+      - ${VOICE_CHAT_REPO:-/home/tonezzz/repos/voice_chat}:/app
+
+  mcp-memory:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${VOICE_CHAT_REPO:-/home/tonezzz/repos/voice_chat}/mcp/mcp-memory
+    ports:
+      - "7202:8000"
+    volumes:
+      - ${VOICE_CHAT_REPO:-/home/tonezzz/repos/voice_chat}:/app
+
+  mcp-meeting:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${VOICE_CHAT_REPO:-/home/tonezzz/repos/voice_chat}/mcp/mcp-meeting
+    ports:
+      - "7203:8000"
+    volumes:
+      - ${VOICE_CHAT_REPO:-/home/tonezzz/repos/voice_chat}:/app
+
+  dev-proxy:
+    <<: *default-service
+    image: caddy:2-alpine
+    profiles: ["mcp-suite"]
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ${DEV_PROXY_CONFIG:-./dev-proxy/Caddyfile}:/etc/caddy/Caddyfile:ro
+      - ${DEV_PROXY_CERTS:-./dev-proxy/certs}:/certs:ro
+    environment:
+      CADDY_ADMIN: "0.0.0.0:2019"
+
+  inference:
+    <<: *default-service
+    image: nvidia/cuda:12.2.0-base-ubuntu20.04
+    profiles: ["gpu"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: ["gpu"]
+    entrypoint: ["sleep", "infinity"]
+    volumes:
+      - ${HOST_MODEL_DIR:-/srv/models}:/models:ro
+
+  node-exporter:
+    <<: *default-service
+    image: prom/node-exporter:v1.8.1
+    profiles: ["monitoring"]
+    command:
+      - "--path.rootfs=/host"
+    volumes:
+      - /:/host:ro,rslave
+
+  cadvisor:
+    <<: *default-service
+    image: gcr.io/cadvisor/cadvisor:v0.49.2
+    profiles: ["monitoring"]
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+
+networks:
+  pc2-worker-net:
+    driver: bridge
+
+volumes:
+  redis-data:

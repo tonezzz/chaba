@@ -174,7 +174,7 @@ const handleSubmit = async (event) => {
   setLoading(true);
 
   try {
-    const response = await fetch('/api/detects/analyze', {
+    const response = await fetch('/test/detects/api/analyze', {
       method: 'POST',
       body: formData
     });
