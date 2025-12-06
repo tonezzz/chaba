@@ -4,10 +4,7 @@
 }
 
 {$DEV_PROXY_DOMAIN} {
-    tls {
-        cert_file {$DEV_PROXY_CERT_FILE}
-        key_file {$DEV_PROXY_KEY_FILE}
-    }
+    tls internal
     reverse_proxy {$DEV_PROXY_TARGET}
     encode gzip
     log {
@@ -17,10 +14,7 @@
 }
 
 {$DEV_HOST_DOMAIN} {
-    tls {
-        cert_file {$DEV_HOST_CERT_FILE}
-        key_file {$DEV_HOST_KEY_FILE}
-    }
+    tls internal
     reverse_proxy {$DEV_PROXY_TARGET}
     encode gzip
     log {

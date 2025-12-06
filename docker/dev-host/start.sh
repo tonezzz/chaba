@@ -42,7 +42,7 @@ ensure_agents() {
   if [ ! -d "$AGENTS_ROOT" ] || [ ! -f "$AGENTS_ROOT/package.json" ]; then
     log "agents sources not found at $AGENTS_ROOT"
     return 1
-  }
+  fi
 
   cd "$AGENTS_ROOT"
 

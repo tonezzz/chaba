@@ -16,6 +16,7 @@
 ## Secrets & env
 - Mirror production env files/keys under `.secrets/dev-host/` (same filenames as `.secrets/node-1`).
 - Deploy scripts pick these up automatically; no extra configuration is required once the folder exists.
+- **Publish token:** create `.secrets/dev-host/publish.token` containing the shared secret used by the gateway’s `/api/deploy/*` endpoints. `start-dev-host.sh` automatically exports it as `DEV_HOST_PUBLISH_TOKEN` so the UI publish buttons work. Restart the container after editing the token.
 
 ## Gateway routing
 The Express gateway lives in `sites/dev-host/src/server.js`. It provides:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import html
 from contextlib import asynccontextmanager
 import logging
 from typing import Any, Dict, List, Optional
@@ -8,6 +9,7 @@ from typing import Any, Dict, List, Optional
 import httpx
 from fastapi import Body, Depends, FastAPI, Header, HTTPException, Path
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from registry import ProviderRegistry
@@ -115,6 +117,144 @@ async def list_providers(refresh: bool = False, registry: ProviderRegistry = Dep
     if refresh:
         await registry.refresh_capabilities()
     return registry.list_providers()
+
+
+@app.get("/www/providers", response_class=HTMLResponse)
+async def providers_dashboard(
+    refresh: bool = False,
+    registry: ProviderRegistry = Depends(get_registry),
+) -> str:
+    if refresh:
+        await registry.refresh_capabilities()
+    providers = registry.list_providers()
+
+    if providers:
+        rows = []
+        for info in sorted(providers, key=lambda item: item.name.lower()):
+            default_tools = ", ".join(info.default_tools) if info.default_tools else "—"
+            health_status = "unknown"
+            health_title = ""
+            latency = ""
+            if info.health:
+                health_status = info.health.status
+                if info.health.detail is not None:
+                    health_title = html.escape(str(info.health.detail), quote=True)
+                if info.health.latency_ms is not None:
+                    latency = f"{info.health.latency_ms} ms"
+            capabilities_updated = (
+                info.capabilities_updated_at.isoformat() if info.capabilities_updated_at else "—"
+            )
+            rows.append(
+                (
+                    "<tr>"
+                    f"<td>{html.escape(info.name)}</td>"
+                    f"<td><a href=\"{html.escape(info.base_url)}\" target=\"_blank\" rel=\"noopener\">"
+                    f"{html.escape(info.base_url)}</a></td>"
+                    f"<td title=\"{health_title}\">{html.escape(health_status)}"
+                    f"{f' · {latency}' if latency else ''}</td>"
+                    f"<td>{html.escape(info.capabilities_path or '—')}</td>"
+                    f"<td>{html.escape(default_tools)}</td>"
+                    f"<td>{html.escape(capabilities_updated)}</td>"
+                    "</tr>"
+                )
+            )
+        table_body = "\n".join(rows)
+    else:
+        table_body = (
+            "<tr><td colspan=\"6\" style=\"text-align:center; padding:1rem;\">"
+            "No providers registered</td></tr>"
+        )
+
+    return f"""
+    <!DOCTYPE html>
+    <html lang="en">
+        <head>
+            <meta charset="utf-8" />
+            <title>MCP Providers</title>
+            <style>
+                body {{
+                    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+                    background: #0f1115;
+                    color: #e5e7eb;
+                    margin: 0;
+                    padding: 2rem;
+                }}
+                h1 {{
+                    margin-top: 0;
+                    font-size: 1.8rem;
+                }}
+                table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 1.5rem;
+                    background: #151922;
+                    border: 1px solid #262b36;
+                }}
+                th, td {{
+                    padding: 0.65rem 0.75rem;
+                    border-bottom: 1px solid #1f2430;
+                    text-align: left;
+                }}
+                th {{
+                    background: #1d2431;
+                    font-size: 0.85rem;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    color: #9ca3af;
+                }}
+                tr:hover td {{
+                    background: #1c2230;
+                }}
+                a {{
+                    color: #7dd3fc;
+                    text-decoration: none;
+                }}
+                a:hover {{
+                    text-decoration: underline;
+                }}
+                .toolbar {{
+                    display: flex;
+                    gap: 0.5rem;
+                }}
+                .button {{
+                    background: #2563eb;
+                    color: white;
+                    border: none;
+                    border-radius: 999px;
+                    padding: 0.4rem 1rem;
+                    font-size: 0.9rem;
+                    cursor: pointer;
+                    text-decoration: none;
+                }}
+                .button.secondary {{
+                    background: #374151;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="toolbar">
+                <h1 style="flex:1;">Registered MCP Providers ({len(providers)})</h1>
+                <a class="button secondary" href="/providers">JSON</a>
+                <a class="button" href="/www/providers?refresh=true">Refresh</a>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Base URL</th>
+                        <th>Health</th>
+                        <th>Capabilities Path</th>
+                        <th>Default Tools</th>
+                        <th>Capabilities Updated</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {table_body}
+                </tbody>
+            </table>
+        </body>
+    </html>
+    """
 
 
 async def _proxy_request(

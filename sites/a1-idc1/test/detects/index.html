@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="th">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Surf Vision Lab</title>
+    <title id="pageTitle">Surf Vision Lab</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -16,20 +16,26 @@
     <main class="shell">
       <header class="hero">
         <div>
-          <p class="eyebrow">Surf Thailand • A1 Vision Utilities</p>
-          <h1>Photo understanding sand-box</h1>
-          <p class="lede">
-            Drop in a still photo, choose one of the vision prompts, and we’ll send it through our Glama
-            vision endpoint to describe the scene and pinpoint notable objects.
+          <p class="eyebrow" id="heroEyebrow">Surf Thailand • A1 Vision Utilities</p>
+          <h1 id="heroTitle">Photo understanding sandbox</h1>
+          <p class="lede" id="heroLede">
+            Drop in a still photo, choose one of the vision prompts, and we’ll send it through our Glama vision endpoint
+            to describe the scene and pinpoint notable objects.
           </p>
         </div>
         <div class="hero-meta">
+          <div class="lang-switch">
+            <label for="languageSelect">
+              <span id="langLabel">Language</span>
+              <select id="languageSelect" aria-label="Interface language"></select>
+            </label>
+          </div>
           <div class="meta-chip">
-            <span>LLM</span>
+            <span id="modelTagLabel">LLM</span>
             <strong id="modelTag">—</strong>
           </div>
           <div class="meta-chip">
-            <span>Latency</span>
+            <span id="latencyLabel">Latency</span>
             <strong id="latencyTag">—</strong>
           </div>
         </div>
@@ -40,14 +46,17 @@
           <div class="grid">
             <div class="card">
               <div class="card-head">
-                <h2>1. Upload photo</h2>
-                <p>Single still image, max 10 MB. Works great with portrait or landscape shots.</p>
+                <h2 id="uploadHeading">1. Upload photo</h2>
+                <p id="uploadBody">Single still image, max 10 MB. Works great with portrait or landscape shots.</p>
               </div>
               <div class="dropzone" data-dropzone>
                 <input type="file" id="photoInput" accept="image/*" hidden />
                 <div class="dropzone-inner">
-                  <p class="drop-title">Drag & drop photo</p>
-                  <p class="drop-sub">or <button type="button" id="browseBtn">browse files</button></p>
+                  <p class="drop-title" id="dropTitle">Drag & drop photo</p>
+                  <p class="drop-sub">
+                    <span id="dropAlt">or</span>
+                    <button type="button" id="browseBtn">browse files</button>
+                  </p>
                   <p id="fileHint" class="file-hint">No file selected yet.</p>
                 </div>
               </div>
@@ -58,11 +67,11 @@
 
             <div class="card">
               <div class="card-head">
-                <h2>2. Pick a vision brief</h2>
-                <p>Tap a chip to autofill the prompt, or fine-tune in the text box.</p>
+                <h2 id="promptHeading">2. Pick a vision brief</h2>
+                <p id="promptBody">Tap a chip to autofill the prompt, or fine-tune in the text box.</p>
               </div>
               <label class="model-field">
-                <span>Vision model</span>
+                <span id="modelLabel">Vision model</span>
                 <select id="modelSelect" aria-label="Vision model">
                   <option value="" disabled selected>Loading models…</option>
                 </select>
@@ -71,8 +80,12 @@
                 <!-- populated by script -->
               </div>
               <label class="prompt-field">
-                <span>Custom instructions</span>
-                <textarea id="promptInput" rows="6" placeholder="Explain what you want the model to focus on…"></textarea>
+                <span id="promptLabel">Custom instructions</span>
+                <textarea
+                  id="promptInput"
+                  rows="6"
+                  placeholder="Explain what you want the model to focus on…"
+                ></textarea>
               </label>
             </div>
           </div>
@@ -87,21 +100,21 @@
       <section class="panel output-panel">
         <div class="card">
           <div class="card-head">
-            <h2>Vision summary</h2>
+            <h2 id="summaryHeading">Vision summary</h2>
             <p id="descriptionOutput" class="lede muted">No analysis yet.</p>
           </div>
         </div>
         <div class="card">
           <div class="card-head">
-            <h2>Detected objects</h2>
-            <p class="muted">Top items, sorted by model confidence.</p>
+            <h2 id="objectsHeading">Detected objects</h2>
+            <p class="muted" id="objectsSubheading">Top items, sorted by model confidence.</p>
           </div>
           <div id="objectsGrid" class="objects-grid"></div>
         </div>
         <div class="card">
           <div class="card-head">
-            <h2>Raw payload</h2>
-            <p class="muted">Direct JSON from the Glama response.</p>
+            <h2 id="rawHeading">Raw payload</h2>
+            <p class="muted" id="rawSubheading">Direct JSON from the Glama response.</p>
           </div>
           <pre id="rawOutput" class="raw-output">// Awaiting response…</pre>
         </div>

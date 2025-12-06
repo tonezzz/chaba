@@ -64,28 +64,137 @@ services:
     volumes:
       - ${VOICE_CHAT_REPO:-/home/tonezzz/repos/voice_chat}:/app
 
-  mcp-meeting:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ${VOICE_CHAT_REPO:-/home/tonezzz/repos/voice_chat}/mcp/mcp-meeting
-    ports:
-      - "7203:8000"
-    volumes:
-      - ${VOICE_CHAT_REPO:-/home/tonezzz/repos/voice_chat}:/app
-
   dev-proxy:
     <<: *default-service
     image: caddy:2-alpine
     profiles: ["mcp-suite"]
     ports:
       - "443:443"
-      - "80:80"
+      - "3100:443"
     volumes:
       - ${DEV_PROXY_CONFIG:-./dev-proxy/Caddyfile}:/etc/caddy/Caddyfile:ro
       - ${DEV_PROXY_CERTS:-./dev-proxy/certs}:/certs:ro
     environment:
       CADDY_ADMIN: "0.0.0.0:2019"
+      DEV_HOST_VAJA_TARGET: http://mcp-vaja:8017
+
+  mcp-docker:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_DOCKER_BUILD_CONTEXT:-../../mcp/mcp-docker}
+    ports:
+      - "${MCP_DOCKER_PORT:-8340}:${MCP_DOCKER_PORT:-8340}"
+    environment:
+      DOCKER_HOST: ${MCP_DOCKER_DOCKER_HOST:-unix:///var/run/docker.sock}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
+
+  mcp0:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP0_BUILD_CONTEXT:-../../mcp/mcp0}
+    ports:
+      - "${MCP0_PORT:-8310}:${MCP0_PORT:-8310}"
+    environment:
+      MCP0_APP_NAME: ${MCP0_APP_NAME:-pc2-mcp0}
+      MCP0_PORT: ${MCP0_PORT:-8310}
+      MCP0_ADMIN_TOKEN: ${MCP0_ADMIN_TOKEN:-}
+      MCP0_PROVIDERS: ${MCP0_PROVIDERS:-}
+
+  mcp-glama:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_GLAMA_BUILD_CONTEXT:-../../mcp/mcp-glama}
+    ports:
+      - "${MCP_GLAMA_PORT:-7214}:8014"
+    environment:
+      PORT: 8014
+      GLAMA_API_URL: ${GLAMA_API_URL:-}
+      GLAMA_API_KEY: ${GLAMA_API_KEY:-}
+      GLAMA_MODEL: ${GLAMA_MODEL:-gpt-4o-mini}
+      GLAMA_TEMPERATURE: ${GLAMA_TEMPERATURE:-0.2}
+      GLAMA_MAX_TOKENS: ${GLAMA_MAX_TOKENS:-900}
+      GLAMA_TIMEOUT_SECONDS: ${GLAMA_TIMEOUT_SECONDS:-30}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8014/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-instrans:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_INSTRANS_BUILD_CONTEXT:-../../mcp/mcp-instrans}
+    ports:
+      - "${MCP_INSTRANS_PORT:-7216}:3100"
+    environment:
+      PORT: 3100
+      INSTRANS_STT_URL: ${INSTRANS_STT_URL:-}
+      INSTRANS_PORT: ${INSTRANS_PORT:-3100}
+      INSTRANS_DEFAULT_LANG: ${INSTRANS_DEFAULT_LANG:-en}
+      INSTRANS_ALLOWED_ORIGIN: ${INSTRANS_ALLOWED_ORIGIN:-*}
+      INSTRANS_SUMMARY_SENTENCES: ${INSTRANS_SUMMARY_SENTENCES:-3}
+      INSTRANS_SSE_HEARTBEAT_MS: ${INSTRANS_SSE_HEARTBEAT_MS:-15000}
+      INSTRANS_AUDIO_CHUNK_LIMIT: ${INSTRANS_AUDIO_CHUNK_LIMIT:-5242880}
+      INSTRANS_ENABLE_TRANSLATION: ${INSTRANS_ENABLE_TRANSLATION:-true}
+      INSTRANS_ENABLE_SUMMARY: ${INSTRANS_ENABLE_SUMMARY:-true}
+      INSTRANS_JSON_LIMIT: ${INSTRANS_JSON_LIMIT:-4mb}
+      INSTRANS_URLENCODED_LIMIT: ${INSTRANS_URLENCODED_LIMIT:-4mb}
+      INSTRANS_MAX_TRANSCRIPTS: ${INSTRANS_MAX_TRANSCRIPTS:-200}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3100/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-meeting:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_MEETING_BUILD_CONTEXT:-../../mcp/mcp-meeting}
+    ports:
+      - "${MCP_MEETING_PORT:-7208}:8008"
+    environment:
+      PORT: 8008
+      MEETING_STT_URL: ${MEETING_STT_URL:-}
+      MEETING_STT_HEALTH_PATH: ${MEETING_STT_HEALTH_PATH:-/health}
+      MEETING_MAX_SEGMENTS: ${MEETING_MAX_SEGMENTS:-1500}
+      MEETING_SUMMARY_MAX_ENTRIES: ${MEETING_SUMMARY_MAX_ENTRIES:-20}
+      MEETING_DEFAULT_LANGUAGE: ${MEETING_DEFAULT_LANGUAGE:-}
+      MEETING_DEFAULT_WHISPER_MODEL: ${MEETING_DEFAULT_WHISPER_MODEL:-}
+      MEETING_STORAGE_PATH: ${MEETING_STORAGE_PATH:-/data/meetings.json}
+    volumes:
+      - ${MEETING_STORAGE_ROOT:-./data/meeting}:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8008/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-vaja:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_VAJA_BUILD_CONTEXT:-../../mcp/mcp-vaja}
+    ports:
+      - "${MCP_VAJA_PORT:-7217}:8017"
+    environment:
+      PORT: 8017
+      AI4THAI_API_KEY: ${AI4THAI_API_KEY:-}
+      VAJA_ENDPOINT: ${VAJA_ENDPOINT:-https://api.aiforthai.in.th/vaja}
+      VAJA_OUTPUT_DIR: /output
+    volumes:
+      - ${VAJA_OUTPUT_DIR:-/home/tonezzz/vaja-audio}:/output
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8017/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   inference:
     <<: *default-service

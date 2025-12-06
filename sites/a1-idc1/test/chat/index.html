@@ -17,7 +17,13 @@
             Talk to Glama through the new a1.idc1 backend. Use this panel to measure latency, behavior, and streaming cadence before wiring it into production flows.
           </p>
         </div>
-        <div class="status" id="status">Checking status…</div>
+        <div class="header-tools">
+          <label class="language-picker">
+            <span>Preferred language</span>
+            <select id="language-select" aria-label="Preferred language"></select>
+          </label>
+          <div class="status" id="status" role="status">Checking status…</div>
+        </div>
       </header>
 
       <section class="chat-log" id="chat-log" aria-live="polite"></section>
@@ -44,8 +50,22 @@
     <template id="message-template">
       <article class="message">
         <header>
-          <span class="message-role"></span>
-          <time class="message-time"></time>
+          <div class="message-headline">
+            <span class="message-role"></span>
+            <time class="message-time"></time>
+          </div>
+          <div class="message-actions">
+            <span class="message-lang" hidden></span>
+            <button
+              type="button"
+              class="message-speaker"
+              aria-label="Play reply audio"
+              title="Play reply audio"
+              hidden
+            >
+              🔊
+            </button>
+          </div>
         </header>
         <p class="message-body"></p>
       </article>

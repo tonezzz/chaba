@@ -26,11 +26,16 @@ a1.idc1.surf-thailand.com {
         file_server
     }
 
+    handle /test/agents/api/* {
+        uri strip_prefix /test/agents
+        reverse_proxy 127.0.0.1:4060
+    }
+
     handle /test/agents/* {
         uri strip_prefix /test/agents
-        root * /var/www/a1/test/agents
-        try_files {path} {path}/ /index.html
-        file_server
+        @allrem path_regexp agentsAll ^/(.*)$
+        rewrite * /www/test/agents/{http.regexp.agentsAll.1}
+        reverse_proxy 127.0.0.1:4060
     }
 
     file_server

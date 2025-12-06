@@ -64,13 +64,18 @@ rsync_app() {
 install_remote() {
   local app=$1
   local target_dir=$(release_dir "$app")
-  cat <<'EOF' | ssh "${SSH_COMMON_OPTS[@]}" "$SSH_USER@$SSH_HOST"
+  cat <<EOF | ssh "${SSH_COMMON_OPTS[@]}" "$SSH_USER@$SSH_HOST"
 set -euo pipefail
 APP="$app"
 TARGET_DIR="$target_dir"
-cd "$TARGET_DIR"
-echo "[REMOTE] npm install --production in $TARGET_DIR"
-npm install --production --no-audit --no-fund
+cd "\$TARGET_DIR"
+if [ -f package.json ]; then
+  npm install --version >/dev/null 2>&1 || { echo "npm missing" >&2; exit 1; }
+  echo "[REMOTE] npm install --production in \$TARGET_DIR"
+  npm install --production --no-audit --no-fund
+else
+  echo "[REMOTE] package.json not found in \$TARGET_DIR, skipping npm install"
+fi
 EOF
 }
 
@@ -79,15 +84,15 @@ promote_release() {
   local target_dir=$(release_dir "$app")
   local current=$(current_link "$app")
   local releases_root="$REMOTE_BASE/$app/releases"
-  cat <<'EOF' | ssh "${SSH_COMMON_OPTS[@]}" "$SSH_USER@$SSH_HOST"
+  cat <<EOF | ssh "${SSH_COMMON_OPTS[@]}" "$SSH_USER@$SSH_HOST"
 set -euo pipefail
 APP="$app"
 TARGET_DIR="$target_dir"
 CURRENT_LINK="$current"
 RELEASES_ROOT="$releases_root"
-ln -sfn "$TARGET_DIR" "$CURRENT_LINK"
-if [ -d "$RELEASES_ROOT" ]; then
-  cd "$RELEASES_ROOT"
+ln -sfn "\$TARGET_DIR" "\$CURRENT_LINK"
+if [ -d "\$RELEASES_ROOT" ]; then
+  cd "\$RELEASES_ROOT"
   ls -1t | tail -n +$((RELEASES_TO_KEEP + 1)) | xargs -r -I{} rm -rf "{}"
 fi
 EOF

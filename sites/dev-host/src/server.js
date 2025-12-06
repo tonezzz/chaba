@@ -16,8 +16,14 @@ const DEV_HOST_BASE_URL = (process.env.DEV_HOST_BASE_URL || 'http://dev-host:310
 const DEV_HOST_PUBLISH_TOKEN = (process.env.DEV_HOST_PUBLISH_TOKEN || '').trim();
 const GLAMA_PROXY_TARGET =
   process.env.GLAMA_PROXY_TARGET || process.env.DEV_HOST_GLAMA_TARGET || 'http://127.0.0.1:4020';
+const AGENTS_PROXY_TARGET =
+  process.env.AGENTS_PROXY_TARGET || process.env.DEV_HOST_AGENTS_TARGET || 'http://127.0.0.1:4060';
 const DETECTS_PROXY_TARGET =
   process.env.DETECTS_PROXY_TARGET || process.env.DEV_HOST_DETECTS_TARGET || 'http://host.docker.internal:4120';
+const VAJA_PROXY_TARGET =
+  process.env.VAJA_PROXY_TARGET || process.env.DEV_HOST_VAJA_TARGET || 'http://host.docker.internal:7217';
+const MCP0_PROXY_TARGET =
+  process.env.MCP0_PROXY_TARGET || process.env.DEV_HOST_MCP0_TARGET || 'http://host.docker.internal:8310';
 
 const workspaceRoot = path.resolve(__dirname, '..', '..');
 
@@ -117,6 +123,60 @@ app.use(
 );
 
 app.use(
+  '/test/agents/api',
+  createProxyMiddleware({
+    target: AGENTS_PROXY_TARGET,
+    changeOrigin: true,
+    pathRewrite: (path) => path.replace(/^\/test\/agents\/api/i, '/api'),
+    onProxyReq: (proxyReq) => {
+      proxyReq.setHeader('x-dev-host-proxy', 'test-agents-api');
+    },
+    onError: (err, req, res) => {
+      console.error('[dev-host] /test/agents/api proxy error', err.message);
+      if (!res.headersSent) {
+        res.status(502).json({ error: 'proxy_error', detail: err.message });
+      }
+    }
+  })
+);
+
+app.use(
+  '/test/agents',
+  createProxyMiddleware({
+    target: AGENTS_PROXY_TARGET,
+    changeOrigin: true,
+    pathRewrite: (path) => path.replace(/^\/test\/agents/i, '/www/test/agents'),
+    onProxyReq: (proxyReq) => {
+      proxyReq.setHeader('x-dev-host-proxy', 'test-agents-www');
+    },
+    onError: (err, req, res) => {
+      console.error('[dev-host] /test/agents proxy error', err.message);
+      if (!res.headersSent) {
+        res.status(502).json({ error: 'proxy_error', detail: err.message });
+      }
+    }
+  })
+);
+
+app.use(
+  '/test/mcp0',
+  createProxyMiddleware({
+    target: MCP0_PROXY_TARGET,
+    changeOrigin: true,
+    pathRewrite: (path) => path.replace(/^\/test\/mcp0/i, ''),
+    onProxyReq: (proxyReq) => {
+      proxyReq.setHeader('x-dev-host-proxy', 'test-mcp0');
+    },
+    onError: (err, req, res) => {
+      console.error('[dev-host] /test/mcp0 proxy error', err.message);
+      if (!res.headersSent) {
+        res.status(502).json({ error: 'proxy_error', detail: err.message });
+      }
+    }
+  })
+);
+
+app.use(
   '/test/detects/api',
   createProxyMiddleware({
     target: DETECTS_PROXY_TARGET,
@@ -134,15 +194,39 @@ app.use(
   })
 );
 
+app.use(
+  '/test/vaja/api',
+  createProxyMiddleware({
+    target: VAJA_PROXY_TARGET,
+    changeOrigin: true,
+    pathRewrite: (path) => path.replace(/^\/test\/vaja\/api/i, ''),
+    onProxyReq: (proxyReq) => {
+      proxyReq.setHeader('x-dev-host-proxy', 'test-vaja');
+    },
+    onError: (err, req, res) => {
+      console.error('[dev-host] /test/vaja/api proxy error', err.message);
+      if (!res.headersSent) {
+        res.status(502).json({ error: 'proxy_error', detail: err.message });
+      }
+    }
+  })
+);
+
+app.get('/test/vaja/api/health', async (_req, res) => {
+  try {
+    const response = await fetch(`${VAJA_PROXY_TARGET.replace(/\/+$/, '')}/health`);
+    const data = await response.json();
+    return res.json(data);
+  } catch (err) {
+    console.error('[dev-host] /test/vaja/api/health error', err);
+    return res.status(502).json({ error: 'proxy_error', detail: err.message });
+  }
+});
+
 const additionalStaticRoutes = [
   {
     basePath: '/test/chat',
     roots: [path.join(workspaceRoot, 'a1-idc1', 'test', 'chat')],
-    spa: true
-  },
-  {
-    basePath: '/test/agents',
-    roots: [path.join(workspaceRoot, 'a1-idc1', 'test', 'agents')],
     spa: true
   },
   {
@@ -151,11 +235,13 @@ const additionalStaticRoutes = [
     spa: true
   },
   {
-    basePath: '/test',
-    roots: [path.join(workspaceRoot, 'a1-idc1', 'test')],
-    spa: true
+    basePath: '/test/vaja',
+    roots: [path.join(workspaceRoot, 'a1-idc1', 'test', 'vaja')],
+    spa: false
   }
 ];
+
+const testLandingRoot = path.join(workspaceRoot, 'a1-idc1', 'test');
 
 additionalStaticRoutes.forEach(({ basePath, roots, spa }) => {
   const router = express.Router();
@@ -187,6 +273,18 @@ additionalStaticRoutes.forEach(({ basePath, roots, spa }) => {
 
   app.use(basePath, router);
 });
+
+const sendTestLanding = (_req, res) => {
+  const fallback = path.join(testLandingRoot, 'index.html');
+  if (fs.existsSync(fallback)) {
+    return res.sendFile(fallback);
+  }
+  return res.status(404).json({ error: 'test_index_missing' });
+};
+
+app.get(['/test', '/test/', '/test/*'], sendTestLanding);
+
+app.use('/test', express.static(testLandingRoot, { fallthrough: true }));
 
 app.post('/api/deploy/:slug', (req, res) => {
   if (!requirePublishToken(req, res)) {
@@ -315,19 +413,101 @@ app.get('/', (_req, res) => {
     </head>
     <body>
       <main>
-        <h1>dev-host gateway</h1>
-        <p>Pick a site namespace to preview:</p>
+        <header class="page-head">
+          <div>
+            <h1>dev-host gateway</h1>
+            <p>Pick a site namespace to preview:</p>
+          </div>
+          <button id="clear-token" class="publish-btn subtle" type="button" disabled>Clear token</button>
+        </header>
         <ul>${links}</ul>
+        <section id="deploy-status" aria-live="polite"></section>
       </main>
       <script>
         (function () {
           const tokenKey = 'devHostPublishToken';
+          const tokenStore = window.sessionStorage;
+          const statusList = document.getElementById('deploy-status');
+          const activeJobs = new Map();
+          const clearBtn = document.getElementById('clear-token');
+
+          const getToken = () => tokenStore.getItem(tokenKey) || '';
+          const setToken = (value) => {
+            if (value) {
+              tokenStore.setItem(tokenKey, value);
+            } else {
+              tokenStore.removeItem(tokenKey);
+            }
+            if (clearBtn) {
+              clearBtn.disabled = !getToken();
+            }
+          };
+
+          if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+              setToken('');
+              alert('Publish token cleared for this tab.');
+            });
+            clearBtn.disabled = !getToken();
+          }
+
+          const renderStatus = () => {
+            if (!statusList) return;
+            const rows = Array.from(activeJobs.values())
+              .sort((a, b) => (a.startedAt < b.startedAt ? 1 : -1))
+              .map((job) => {
+                const heading = \`#\${job.id.slice(0, 8)} · \${job.slug} · \${job.status}\`;
+                const log = job.log?.slice(-8).join('\\n') || 'Waiting for output...';
+                return \`
+                  <article class="deploy-card">
+                    <header>
+                      <h3>\${heading}</h3>
+                      <small>\${new Date(job.startedAt).toLocaleTimeString()}</small>
+                    </header>
+                    <pre>\${log.replace(/</g, '&lt;')}</pre>
+                  </article>\`;
+              })
+              .join('');
+            statusList.innerHTML = rows || '';
+          };
+
+          const updateJob = (data) => {
+            activeJobs.set(data.id, data);
+            if (['succeeded', 'failed'].includes(data.status)) {
+              setTimeout(() => {
+                activeJobs.delete(data.id);
+                renderStatus();
+              }, 15000);
+            }
+            renderStatus();
+          };
+
+          const pollJob = async (id, token) => {
+            try {
+              const response = await fetch(\`/api/deploy/\${id}\`, {
+                headers: { Authorization: \`Bearer \${token}\` }
+              });
+              if (response.status === 401) {
+                window.localStorage.removeItem(tokenKey);
+                return;
+              }
+              if (!response.ok) return;
+              const data = await response.json();
+              updateJob(data);
+              if (!['succeeded', 'failed'].includes(data.status)) {
+                setTimeout(() => pollJob(id, token), 3000);
+              }
+            } catch (error) {
+              console.error('Polling error', error);
+            }
+          };
+
           const ensureToken = () => {
-            let token = window.localStorage.getItem(tokenKey);
+            let token = getToken();
             if (!token) {
               token = window.prompt('Enter publish token');
               if (token) {
-                window.localStorage.setItem(tokenKey, token.trim());
+                setToken(token.trim());
               }
             }
             return token?.trim();
@@ -348,15 +528,31 @@ app.get('/', (_req, res) => {
                 }
               });
               if (response.status === 401) {
-                window.localStorage.removeItem(tokenKey);
+                setToken('');
                 alert('Unauthorized: token cleared, please enter again.');
                 return;
               }
-              const data = await response.json();
-              if (!response.ok) {
-                throw new Error(data?.error || 'Deploy failed');
+              const raw = await response.text();
+              let data = null;
+              if (raw) {
+                try {
+                  data = JSON.parse(raw);
+                } catch (parseError) {
+                  if (response.ok) {
+                    throw new Error('Server returned invalid JSON');
+                  }
+                }
               }
-              alert(\`Deploy started (#\${data.id}). Use the API to monitor status.\`);
+              if (!response.ok) {
+                const detail =
+                  (data && (data.error || data.detail)) || raw || \`HTTP \${response.status}\`;
+                throw new Error(detail);
+              }
+              if (!data) {
+                throw new Error('Empty response from server');
+              }
+              updateJob({ id: data.id, slug: data.slug, status: data.status, startedAt: data.startedAt, log: [] });
+              pollJob(data.id, token);
             } catch (error) {
               console.error(error);
               alert('Deploy failed: ' + (error?.message || 'unknown error'));
