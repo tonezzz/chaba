@@ -52,6 +52,8 @@ const UI_COPY = {
     rawHeading: 'Raw payload',
     rawSubheading: 'Direct JSON from the Glama response.',
     rawPlaceholder: '// Awaiting response…',
+    speakButton: 'Play summary',
+    speakButtonUnavailable: 'Speech unavailable',
     chatHeading: 'Ask about this analysis',
     chatSubheading: 'Once a photo is analyzed, ask follow-up questions here.',
     chatPlaceholder: 'Type a question in your language…',
@@ -102,6 +104,8 @@ const UI_COPY = {
     rawHeading: 'ข้อมูลดิบ',
     rawSubheading: 'JSON ตรงจากการตอบกลับของ Glama',
     rawPlaceholder: '// รอผลลัพธ์…',
+    speakButton: 'เล่นสรุปเสียง',
+    speakButtonUnavailable: 'ไม่รองรับการอ่านออกเสียง',
     chatHeading: 'ถามต่อเกี่ยวกับการวิเคราะห์นี้',
     chatSubheading: 'เมื่อประมวลผลภาพแล้ว พิมพ์คำถามติดตามได้ที่นี่',
     chatPlaceholder: 'พิมพ์คำถามเป็นภาษาของคุณ…',
@@ -152,6 +156,8 @@ const UI_COPY = {
     rawHeading: 'Rohdaten',
     rawSubheading: 'Direktes JSON aus der Glama-Antwort.',
     rawPlaceholder: '// Warte auf Ergebnis…',
+    speakButton: 'Zusammenfassung abspielen',
+    speakButtonUnavailable: 'Sprachausgabe nicht verfügbar',
     chatHeading: 'Fragen zur Analyse',
     chatSubheading: 'Nach der Fotoanalyse kannst du hier Rückfragen stellen.',
     chatPlaceholder: 'Stelle deine Frage in deiner Sprache…',
@@ -202,6 +208,8 @@ const UI_COPY = {
     rawHeading: 'Rådata',
     rawSubheading: 'JSON direkte fra Glama-responsen.',
     rawPlaceholder: '// Venter på svar…',
+    speakButton: 'Spill av sammendrag',
+    speakButtonUnavailable: 'Tale ikke tilgjengelig',
     chatHeading: 'Still spørsmål om analysen',
     chatSubheading: 'Når bildet er analysert kan du stille oppfølgingsspørsmål her.',
     chatPlaceholder: 'Skriv et spørsmål på ditt språk…',
@@ -252,6 +260,8 @@ const UI_COPY = {
     rawHeading: 'Råpayload',
     rawSubheading: 'JSON direkt från Glama-svaret.',
     rawPlaceholder: '// Väntar på svar…',
+    speakButton: 'Spela upp sammanfattning',
+    speakButtonUnavailable: 'Tal inte tillgängligt',
     chatHeading: 'Fråga om analysen',
     chatSubheading: 'När bilden är analyserad kan du ställa följdfrågor här.',
     chatPlaceholder: 'Skriv en fråga på ditt språk…',
@@ -302,6 +312,8 @@ const UI_COPY = {
     rawHeading: 'Datos sin procesar',
     rawSubheading: 'JSON directo de la respuesta de Glama.',
     rawPlaceholder: '// Esperando respuesta…',
+    speakButton: 'Reproducir resumen',
+    speakButtonUnavailable: 'Voz no disponible',
     chatHeading: 'Pregunta sobre la detección',
     chatSubheading: 'Cuando la foto esté analizada, haz tus preguntas de seguimiento aquí.',
     chatPlaceholder: 'Escribe tu pregunta en tu idioma…',
@@ -352,6 +364,8 @@ const UI_COPY = {
     rawHeading: '生データ',
     rawSubheading: 'Glama 応答の JSON をそのまま表示します。',
     rawPlaceholder: '// 結果を待機中…',
+    speakButton: 'サマリーを再生',
+    speakButtonUnavailable: '音声読み上げは利用できません',
     chatHeading: 'この解析について質問する',
     chatSubheading: '写真を解析した後は、ここで追質問ができます。',
     chatPlaceholder: 'あなたの言語で質問を入力してください…',
@@ -402,6 +416,8 @@ const UI_COPY = {
     rawHeading: '原始数据',
     rawSubheading: '来自 Glama 响应的 JSON。',
     rawPlaceholder: '// 正在等待响应…',
+    speakButton: '播放摘要',
+    speakButtonUnavailable: '语音不可用',
     chatHeading: '就本次分析提问',
     chatSubheading: '照片分析完成后，可在此提出追问。',
     chatPlaceholder: '用你的语言输入问题…',
@@ -452,6 +468,8 @@ const UI_COPY = {
     rawHeading: '원시 페이로드',
     rawSubheading: 'Glama 응답의 JSON.',
     rawPlaceholder: '// 응답을 기다리는 중…',
+    speakButton: '요약 듣기',
+    speakButtonUnavailable: '음성 재생을 사용할 수 없습니다',
     chatHeading: '분석 결과에 대해 질문하기',
     chatSubheading: '사진 분석이 끝나면 여기에서 후속 질문을 해보세요.',
     chatPlaceholder: '원하는 언어로 질문을 입력하세요…',
@@ -875,6 +893,7 @@ const elements = {
   promptInput: document.getElementById('promptInput'),
   statusBanner: document.getElementById('statusBanner'),
   analyzeBtn: document.getElementById('analyzeBtn'),
+  speakBtn: document.getElementById('speakBtn'),
   descriptionOutput: document.getElementById('descriptionOutput'),
   objectsGrid: document.getElementById('objectsGrid'),
   rawOutput: document.getElementById('rawOutput'),
@@ -923,6 +942,46 @@ const state = {
 };
 
 let promptInputDirty = false;
+
+const hasSpeechSupport = () => typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis;
+
+const getSpeechLang = () => {
+  const map = {
+    th: 'th-TH',
+    de: 'de-DE',
+    no: 'nb-NO',
+    sv: 'sv-SE',
+    es: 'es-ES',
+    ja: 'ja-JP',
+    zh: 'zh-CN',
+    ko: 'ko-KR'
+  };
+  return map[state.language] || 'en-US';
+};
+
+const updateSpeakButton = () => {
+  if (!elements.speakBtn) return;
+  const supported = Boolean(hasSpeechSupport());
+  const summaryText = elements.descriptionOutput?.textContent?.trim();
+  const enabled = supported && state.hasAnalysis && !!summaryText;
+  elements.speakBtn.disabled = !enabled;
+  elements.speakBtn.textContent = supported ? t('speakButton') : t('speakButtonUnavailable');
+};
+
+const speakSummary = () => {
+  if (!hasSpeechSupport() || !elements.descriptionOutput) return;
+  const text = elements.descriptionOutput.textContent?.trim();
+  if (!text) return;
+  try {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = getSpeechLang();
+    utterance.rate = 1;
+    window.speechSynthesis.speak(utterance);
+  } catch (error) {
+    console.warn('speech synthesis failed', error);
+  }
+};
 
 const updateChatAvailability = () => {
   const canChat = Boolean(state.analysisContext) && !state.isChatting;
@@ -1064,6 +1123,7 @@ const resetOutputs = () => {
   }
   if (elements.modelTag) elements.modelTag.textContent = '—';
   if (elements.latencyTag) elements.latencyTag.textContent = '—';
+  updateSpeakButton();
 };
 
 const updateFileState = (file) => {
@@ -1187,7 +1247,13 @@ const bindDropzone = () => {
     elements.dropzone.classList.remove('drag-over');
     handleFiles(event.dataTransfer.files);
   });
-  elements.dropzone.addEventListener('click', () => elements.photoInput?.click());
+  elements.dropzone.addEventListener('click', (event) => {
+    const interactive = event.target.closest('button, input, label, textarea, select, a');
+    if (interactive) {
+      return;
+    }
+    elements.photoInput?.click();
+  });
 };
 
 const handleSubmit = async (event) => {
@@ -1239,6 +1305,7 @@ const handleSubmit = async (event) => {
       objects: Array.isArray(result.objects) ? result.objects : []
     };
     resetChatConversation();
+    updateSpeakButton();
     setStatus('statusAnalyzeComplete', 'ok');
   } catch (error) {
     console.error('Analyze failed', error);
@@ -1271,6 +1338,7 @@ const applyLocaleToUI = () => {
   if (!state.hasRaw && elements.rawOutput) elements.rawOutput.textContent = t('rawPlaceholder');
   if (!state.hasObjects) renderObjects([]);
   setLoading(state.isAnalyzing);
+  updateSpeakButton();
   refreshChatLocale();
 };
 
@@ -1317,6 +1385,8 @@ const init = () => {
   elements.cameraBtn?.addEventListener('click', () => elements.cameraInput?.click());
   elements.cameraInput?.addEventListener('change', (event) => handleFiles(event.target.files));
   elements.detectForm?.addEventListener('submit', handleSubmit);
+  elements.chatForm?.addEventListener('submit', handleChatSubmit);
+  elements.speakBtn?.addEventListener('click', speakSummary);
   elements.promptInput?.addEventListener('input', () => {
     promptInputDirty = true;
   });

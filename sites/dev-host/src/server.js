@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import express from 'express';
 import morgan from 'morgan';
+import dotenv from 'dotenv';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { spawn } from 'child_process';
 import { randomUUID } from 'crypto';
@@ -12,6 +13,25 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const loadEnv = () => {
+  const candidates = [
+    path.resolve(__dirname, '..', '.env.dev-host'),
+    path.resolve(__dirname, '..', '.env'),
+    path.resolve(__dirname, '../../.env.dev-host'),
+    path.resolve(__dirname, '../../.env')
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      dotenv.config({ path: candidate });
+      console.log(`[dev-host] Loaded environment from ${candidate}`);
+      return;
+    }
+  }
+  dotenv.config();
+};
+
+loadEnv();
+
 const DEV_HOST_BASE_URL = (process.env.DEV_HOST_BASE_URL || 'http://dev-host:3100').replace(/\/+$/, '');
 const DEV_HOST_PUBLISH_TOKEN = (process.env.DEV_HOST_PUBLISH_TOKEN || '').trim();
 const GLAMA_PROXY_TARGET =
@@ -19,13 +39,92 @@ const GLAMA_PROXY_TARGET =
 const AGENTS_PROXY_TARGET =
   process.env.AGENTS_PROXY_TARGET || process.env.DEV_HOST_AGENTS_TARGET || 'http://127.0.0.1:4060';
 const DETECTS_PROXY_TARGET =
-  process.env.DETECTS_PROXY_TARGET || process.env.DEV_HOST_DETECTS_TARGET || 'http://host.docker.internal:4120';
+  process.env.DETECTS_PROXY_TARGET ||
+  process.env.DEV_HOST_DETECTS_TARGET ||
+  'http://localhost:4120';
 const VAJA_PROXY_TARGET =
   process.env.VAJA_PROXY_TARGET || process.env.DEV_HOST_VAJA_TARGET || 'http://host.docker.internal:7217';
 const MCP0_PROXY_TARGET =
   process.env.MCP0_PROXY_TARGET || process.env.DEV_HOST_MCP0_TARGET || 'http://host.docker.internal:8310';
+const IMAGEN_PROXY_TARGET =
+  process.env.IMAGEN_PROXY_TARGET || process.env.DEV_HOST_IMAGEN_TARGET || 'http://127.0.0.1:8001';
 
 const workspaceRoot = path.resolve(__dirname, '..', '..');
+
+const PROXY_CHECKS = [
+  { id: 'glama', label: 'Glama chat', target: GLAMA_PROXY_TARGET, path: '/health' },
+  { id: 'agents', label: 'Agents API', target: AGENTS_PROXY_TARGET, path: '/health' },
+  { id: 'detects', label: 'Detects API', target: DETECTS_PROXY_TARGET, path: '/health' },
+  { id: 'vaja', label: 'Vaja TTS', target: VAJA_PROXY_TARGET, path: '/health' },
+  { id: 'mcp0', label: 'MCP0 control', target: MCP0_PROXY_TARGET, path: '/health' },
+  { id: 'imagen', label: 'Imagen service', target: IMAGEN_PROXY_TARGET, path: '/health' }
+];
+
+const fetchWithTimeout = async (url, { timeout = 4000, ...options } = {}) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+const safeParseBody = async (response) => {
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    return await response.json();
+  }
+  const text = await response.text();
+  return text.length > 500 ? `${text.slice(0, 500)}…` : text;
+};
+
+const probeProxyTargets = async () =>
+  Promise.all(
+    PROXY_CHECKS.map(async (check) => {
+      const result = {
+        id: check.id,
+        label: check.label,
+        target: check.target,
+        status: 'unconfigured',
+        latencyMs: null
+      };
+      if (!check.target) {
+        return result;
+      }
+      const started = Date.now();
+      try {
+        const base = check.target.replace(/\/+$/, '');
+        const url = `${base}${check.path || ''}`;
+        const response = await fetchWithTimeout(url, { timeout: check.timeoutMs || 4000 });
+        result.latencyMs = Date.now() - started;
+        result.httpStatus = response.status;
+        if (response.ok) {
+          result.status = 'ok';
+          result.body = await safeParseBody(response);
+        } else {
+          result.status = 'error';
+          result.error = `HTTP ${response.status}`;
+          result.body = await safeParseBody(response);
+        }
+      } catch (error) {
+        result.latencyMs = Date.now() - started;
+        result.status = 'error';
+        result.error = error.message;
+      }
+      return result;
+    })
+  );
+
+const overallStatusFromProxies = (proxies) =>
+  proxies.every((entry) => entry.status === 'ok' || entry.status === 'unconfigured') ? 'ok' : 'degraded';
+
+const getSiteStatuses = () =>
+  siteConfigs.map((site) => ({
+    slug: site.slug,
+    rootExists: fs.existsSync(site.root),
+    label: site.label
+  }));
 
 const deployConfigs = {
   'a1-idc1': {
@@ -212,6 +311,24 @@ app.use(
   })
 );
 
+app.use(
+  '/test/imagen/api',
+  createProxyMiddleware({
+    target: IMAGEN_PROXY_TARGET,
+    changeOrigin: true,
+    pathRewrite: (path) => path.replace(/^\/test\/imagen\/api/i, ''),
+    onProxyReq: (proxyReq) => {
+      proxyReq.setHeader('x-dev-host-proxy', 'test-imagen');
+    },
+    onError: (err, req, res) => {
+      console.error('[dev-host] /test/imagen/api proxy error', err.message);
+      if (!res.headersSent) {
+        res.status(502).json({ error: 'proxy_error', detail: err.message });
+      }
+    }
+  })
+);
+
 app.get('/test/vaja/api/health', async (_req, res) => {
   try {
     const response = await fetch(`${VAJA_PROXY_TARGET.replace(/\/+$/, '')}/health`);
@@ -237,6 +354,11 @@ const additionalStaticRoutes = [
   {
     basePath: '/test/vaja',
     roots: [path.join(workspaceRoot, 'a1-idc1', 'test', 'vaja')],
+    spa: false
+  },
+  {
+    basePath: '/test/imagen',
+    roots: [path.join(workspaceRoot, 'a1-idc1', 'test', 'imagen')],
     spa: false
   }
 ];
@@ -336,12 +458,25 @@ siteConfigs.forEach((site) => {
   app.use(`/${site.slug}`, buildSiteRouter(site));
 });
 
-app.get('/api/health', (_req, res) => {
-  res.json({
-    status: 'ok',
-    sites: siteConfigs.map((site) => ({ slug: site.slug, rootExists: fs.existsSync(site.root) })),
-    timestamp: new Date().toISOString()
-  });
+app.get('/api/health', async (_req, res) => {
+  try {
+    const proxies = await probeProxyTargets();
+    res.json({
+      status: overallStatusFromProxies(proxies),
+      proxies,
+      sites: getSiteStatuses(),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('[dev-host] /api/health probe failed', error);
+    res.status(500).json({
+      status: 'error',
+      error: error.message,
+      proxies: [],
+      sites: getSiteStatuses(),
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 app.get('/', (_req, res) => {

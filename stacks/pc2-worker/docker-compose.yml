@@ -44,22 +44,6 @@ services:
     volumes:
       - redis-data:/data
 
-  mcp-github:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ../../mcp/mcp-github
-    ports:
-      - "7201:8000"
-
-  mcp-memory:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ../../mcp/mcp-memory
-    ports:
-      - "7202:8000"
-
   dev-proxy:
     <<: *default-service
     image: caddy:2-alpine
@@ -188,6 +172,24 @@ services:
       - ${VAJA_OUTPUT_DIR:-/home/tonezzz/vaja-audio}:/output
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8017/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-tester:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_TESTER_BUILD_CONTEXT:-../../mcp/mcp-tester}
+    ports:
+      - "${MCP_TESTER_PORT:-8330}:${MCP_TESTER_PORT:-8330}"
+    environment:
+      MCP_TESTER_HOST: 0.0.0.0
+      MCP_TESTER_PORT: ${MCP_TESTER_PORT:-8330}
+      MCP_TESTER_SUITE_FILE: ${MCP_TESTER_SUITE_FILE:-/app/tests.example.json}
+      MCP_TESTER_DEFAULT_TIMEOUT_MS: ${MCP_TESTER_DEFAULT_TIMEOUT_MS:-5000}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_TESTER_PORT:-8330}/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

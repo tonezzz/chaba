@@ -8,14 +8,14 @@ import re
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 import httpx
 from dotenv import load_dotenv
 from fastapi import Body, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, FieldValidationInfo, field_validator
 from pydantic_settings import BaseSettings
 
 load_dotenv()
@@ -30,8 +30,10 @@ class Settings(BaseSettings):
     allow_origins: Optional[str] = Field(None, alias="MCP_TESTER_ALLOW_ORIGINS")
     targets_blob: Optional[str] = Field(None, alias="MCP_TESTER_TARGETS")
     suite_file: Optional[str] = Field(None, alias="MCP_TESTER_SUITE_FILE")
+    suite_files: Optional[str] = Field(None, alias="MCP_TESTER_SUITE_FILES")
     default_timeout_ms: int = Field(5000, alias="MCP_TESTER_DEFAULT_TIMEOUT_MS")
     verify_tls: bool = Field(True, alias="MCP_TESTER_VERIFY_TLS")
+    history_file: Optional[str] = Field(None, alias="MCP_TESTER_HISTORY_FILE")
 
     class Config:
         env_file = ".env"
@@ -60,18 +62,24 @@ class TestDefinition(BaseModel):
     verify_tls: Optional[bool] = Field(None, description="Override TLS verification per test")
     headers: Dict[str, str] = Field(default_factory=dict, description="Additional request headers")
     body: Optional[Any] = Field(None, description="Optional request payload for non-GET calls")
+    requires_env: List[str] = Field(default_factory=list, description="Env variables that must be defined or this test is skipped")
 
-    @validator("method", pre=True, always=True)
+    @field_validator("method", mode="before")
+    @classmethod
     def normalize_method(cls, value: str) -> str:
         method = (value or "GET").strip().upper()
         if method not in {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}:
             raise ValueError(f"Unsupported HTTP method '{value}'")
         return method
 
-    @validator("retries", "retry_delay_ms")
-    def non_negative(cls, value: int, field: Any) -> int:
+    @field_validator("retries", "retry_delay_ms", mode="before")
+    @classmethod
+    def non_negative(cls, value: Optional[int], info: FieldValidationInfo) -> Optional[int]:
+        if value is None:
+            return value
         if value < 0:
-            raise ValueError(f"{field.name} cannot be negative")
+            field_name = info.field_name or "value"
+            raise ValueError(f"{field_name} cannot be negative")
         return value
 
 
@@ -87,6 +95,7 @@ class TestResult(BaseModel):
     attempts: int
     error: Optional[str]
     body_excerpt: Optional[str]
+    skipped: bool = False
 
 
 class TestRunSummary(BaseModel):
@@ -147,12 +156,20 @@ def load_test_definitions() -> List[TestDefinition]:
     if default_file.exists():
         sources.append(("tests.example.json", default_file.read_text()))
 
+    suite_candidates: List[str] = []
     if settings.suite_file:
-        path = Path(settings.suite_file)
+        suite_candidates.append(settings.suite_file)
+    if settings.suite_files:
+        suite_candidates.extend(
+            entry.strip() for entry in settings.suite_files.split(",") if entry.strip()
+        )
+
+    for candidate in suite_candidates:
+        path = Path(candidate)
         if path.exists():
             sources.append((str(path), path.read_text()))
         else:
-            logger.warning("MCP_TESTER_SUITE_FILE=%s not found", settings.suite_file)
+            logger.warning("Suite file %s not found (from MCP_TESTER suite settings)", candidate)
 
     if settings.targets_blob:
         sources.append(("MCP_TESTER_TARGETS", settings.targets_blob))
@@ -232,6 +249,23 @@ def _excerpt(text: Optional[str], limit: int = 480) -> Optional[str]:
 
 
 async def _execute_test(test: TestDefinition, overrides: RunRequest) -> TestResult:
+    missing_env = [name for name in test.requires_env if not os.getenv(name)]
+    if missing_env:
+        return TestResult(
+            name=test.name,
+            status="skipped",
+            description=test.description,
+            target_url=test.url,
+            method=test.method,
+            expect_status=test.expect_status,
+            actual_status=None,
+            latency_ms=None,
+            attempts=0,
+            error=f"Missing env vars: {', '.join(missing_env)}",
+            body_excerpt=None,
+            skipped=True,
+        )
+
     effective_timeout_ms = overrides.timeout_ms or test.timeout_ms or settings.default_timeout_ms
     effective_retries = overrides.retries if overrides.retries is not None else test.retries
     effective_delay_ms = overrides.retry_delay_ms if overrides.retry_delay_ms is not None else test.retry_delay_ms
@@ -243,15 +277,26 @@ async def _execute_test(test: TestDefinition, overrides: RunRequest) -> TestResu
     for attempt in range(effective_retries + 1):
         attempts = attempt + 1
         try:
+            request_kwargs: Dict[str, Any] = {
+                "method": test.method,
+                "url": test.url,
+                "headers": test.headers or None,
+                "timeout": httpx.Timeout(effective_timeout_ms / 1000),
+                "follow_redirects": test.allow_redirects,
+            }
+            if test.body is not None:
+                if isinstance(test.body, (dict, list)):
+                    request_kwargs["json"] = test.body
+                    headers = request_kwargs["headers"] or {}
+                    if not any(k.lower() == "content-type" for k in headers.keys()):
+                        headers = dict(headers)
+                        headers["Content-Type"] = "application/json"
+                        request_kwargs["headers"] = headers
+                else:
+                    request_kwargs["content"] = str(test.body)
+
             async with httpx.AsyncClient(verify=verify) as client:
-                response = await client.request(
-                    method=test.method,
-                    url=test.url,
-                    headers=test.headers or None,
-                    content=None if test.body is None else json.dumps(test.body),
-                    timeout=httpx.Timeout(effective_timeout_ms / 1000),
-                    follow_redirects=test.allow_redirects,
-                )
+                response = await client.request(**request_kwargs)
         except Exception as exc:  # noqa: BLE001
             last_error = str(exc)
             if attempt < effective_retries:
@@ -337,6 +382,7 @@ async def run_suite(run_request: RunRequest) -> TestRunSummary:
         results=results,
     )
     await suite_manager.record_run(summary)
+    _persist_history(summary)
     return summary
 
 

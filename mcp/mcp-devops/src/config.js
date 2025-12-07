@@ -32,6 +32,12 @@ const windowsToWsl = (windowsPath = '') => {
 };
 
 const repoRootPosix = process.platform === 'win32' ? windowsToWsl(repoRoot) : repoRoot;
+const defaultMcp0BaseUrl = trimTrailingSlash(
+  process.env.MCP0_PROXY_BASE_URL || process.env.MCP0_BASE_URL || 'http://mcp0:8310'
+);
+const defaultPc2Mcp0BaseUrl = trimTrailingSlash(
+  process.env.PC2_MCP0_BASE_URL || defaultMcp0BaseUrl
+);
 
 const parseArgs = (value = '') =>
   value
@@ -82,12 +88,13 @@ const assertPathExists = (targetPath, label) => {
 
 export const config = {
   port: Number(process.env.MCP_DEVOPS_PORT || 8320),
+  host: process.env.MCP_DEVOPS_HOST || '127.0.0.1',
   repoRoot,
   scriptsRoot,
   stacksRoot,
   repoRootPosix,
   powershellExe: process.env.MCP_DEVOPS_POWERSHELL || defaultPowerShell,
-  devHostBaseUrl: process.env.DEV_HOST_BASE_URL || 'http://dev-host.pc1:3000',
+  devHostBaseUrl: process.env.DEV_HOST_BASE_URL || 'http://dev-host.pc1',
   devHostPc2BaseUrl: process.env.DEV_HOST_PC2_BASE_URL || 'http://dev-host.pc2:3000',
   pcWorker: (() => {
     const composeFile = path.join(stacksRoot, 'pc2-worker', 'docker-compose.yml');
@@ -145,6 +152,20 @@ export const config = {
     adminToken: process.env.MCP0_ADMIN_TOKEN || '',
     dockerProvider: process.env.MCP0_DOCKER_PROVIDER || 'mcp-docker',
     dockerLogContainers: process.env.MCP_DOCKER_LOG_CONTAINERS || 'dev-host'
+  },
+  pc2Host: {
+    sshUser: process.env.PC2_SSH_USER || 'chaba',
+    sshHost: process.env.PC2_SSH_HOST || 'pc2',
+    sshPort: process.env.PC2_SSH_PORT || '22',
+    sshKeyPath:
+      process.env.PC2_SSH_KEY_PATH ||
+      (process.platform === 'win32'
+        ? '/home/tonezzz/.ssh/chaba_ed25519'
+        : path.join(process.env.HOME || '/home/tonezzz', '.ssh', 'chaba_ed25519')),
+    wslUser: process.env.PC2_WSL_USER || process.env.MCP_DEVOPS_WSL_USER || 'tonezzz',
+    remoteStacksDir: process.env.PC2_STACKS_DIR || '/home/chaba/chaba/stacks',
+    workerDirName: process.env.PC2_WORKER_DIR || 'pc2-worker',
+    dockerHost: process.env.PC2_DOCKER_HOST || 'unix:///var/run/docker.sock'
   },
   uiBuild: {
     docs: 'README.md#mcp-tools',

@@ -17,6 +17,7 @@
 - Mirror production env files/keys under `.secrets/dev-host/` (same filenames as `.secrets/node-1`).
 - Deploy scripts pick these up automatically; no extra configuration is required once the folder exists.
 - **Publish token:** create `.secrets/dev-host/publish.token` containing the shared secret used by the gateway’s `/api/deploy/*` endpoints. `start-dev-host.sh` automatically exports it as `DEV_HOST_PUBLISH_TOKEN` so the UI publish buttons work. Restart the container after editing the token.
+- **Local profiles:** `sites/dev-host/.env.dev-host.example` ships with sane defaults for every proxy target (Glama, Detects, Agents, etc.). Copy it to `.env.dev-host` to override endpoints per workstation without touching Docker secrets. The server auto-loads `.env.dev-host` (falling back to `.env`) on startup.
 
 ## Gateway routing
 The Express gateway lives in `sites/dev-host/src/server.js`. It provides:
@@ -29,6 +30,12 @@ The Express gateway lives in `sites/dev-host/src/server.js`. It provides:
 | `/test/agents/*` | `sites/a1-idc1/test/agents` | SPA fallback. |
 | `/test/detects/*` | `sites/a1-idc1/test/detects` | SPA fallback. |
 
+### Local gateway workflow
+1. `cd sites/dev-host && npm install` (once).
+2. `npm run dev` starts the gateway with `nodemon`, so any changes under `sites/dev-host/src` hot-reload automatically.
+3. Copy or edit `.env.dev-host` whenever you need to flip proxy targets (e.g., point Detects at `http://localhost:4120`). Nodemon picks up env edits on the next restart; stop/start the dev task if you tweak proxies mid-session.
+4. Hit `http://127.0.0.1:3000/` (or whatever `DEV_HOST_BASE_URL` you set) to test routing and diagnostics outside Docker.
+
 ## API proxies
 | Route | Target env vars | Default target | Purpose |
 | --- | --- | --- | --- |
@@ -39,7 +46,8 @@ Both proxies add `x-dev-host-proxy` headers for easier tracing and rewrite the p
 
 ## Health checks
 - Container healthcheck: `nc -z localhost 22` (SSH ready).
-- Gateway health: `http://dev-host:3100/api/health` summarizes mounted site roots.
+- Gateway: `GET /api/health` now aggregates downstream proxy health in addition to mounted site roots. Each target (Glama, Agents, Detects, Vaja, MCP0, Imagen) reports `status`, HTTP code, latency, and the parsed `/health` body so you can see exactly which dependency is broken.
+- The JSON payload includes `overall status` (`ok` vs. `degraded`), `proxies[]`, and `sites[]` booleans indicating whether each static root exists inside the container/workspace.
 
 ## Runbook
 
@@ -63,8 +71,22 @@ Set in `.env` or export before running compose. Restart container to apply.
 4. `Invoke-WebRequest http://127.0.0.1:3100/test/detects/api/health` – Detects proxy status.
 5. If static path 404s, confirm directory presence under `sites/a1-idc1/test/*`.
 
-### Redeploying / rebasing
-1. Pull repo changes.
+### Troubleshooting matrix
+
+| Symptom | Likely cause | How to confirm | Fix |
+| --- | --- | --- | --- |
+| `/api/health` reports `status: degraded` and a proxy entry shows `status: error` | Downstream service not running or wrong target URL | Inspect that proxy’s `target` + `httpStatus` fields in `/api/health` and hit the target `/health` directly | Start the missing service (PM2/systemd/Docker) or update `.env.dev-host` to the correct target, then restart `npm run dev` |
+| All `proxies[]` show `status: unconfigured` | `.env.dev-host` missing or variables empty | Check server logs for `[dev-host] Loaded environment…`; inspect `/api/health` payload | Copy `.env.dev-host.example` → `.env.dev-host`, set targets, restart dev-host |
+| `/test/detects/*` returns 502/504 via dev-host | Detects API down or proxy mis-pointed | `Invoke-WebRequest http://127.0.0.1:3100/test/detects/api/health`; check PM2 (`pm2 list`) | Restart detects API (PM2/systemd) or fix `DETECTS_PROXY_TARGET` |
+| Static route (e.g., `/a1-idc1/test/detects/`) returns 404 | Workspace folder missing/mis-synced | `/api/health` `sites[]` entry shows `rootExists: false` | Ensure repo is mounted/synced in `sites/<slug>`; rerun deploy or git pull |
+| `ssh chaba@dev-host` succeeds but UI buttons fail to publish | Missing or stale `.secrets/dev-host/publish.token` | `/api/health` still ok; `/api/deploy/*` responds 401 | Regenerate token, place in `.secrets/dev-host/publish.token`, restart container |
+| `ssh <user>@dev-host` fails with `Permission denied` or `Connection reset` | Wrong user/key, SSH service down, or security group blocking | Try `ssh -vvv <user>@dev-host`; check `docker compose logs dev-host` for `sshd` errors | Confirm correct username (`chaba`), ensure private key matches `authorized_keys`, restart container if sshd crashed; verify host firewall allows port 22/2223 |
+| `ssh chaba@pc2` works but gateway routes still break | Remote worker reachable but services not running | After login run `pm2 list`/`docker ps` on pc2; check `/api/health` from that host | Start the missing PM2 apps or docker stack on pc2, then re-hit dev-host proxies |
+
+## Runbook
+
+### Startup
+1. `cmd /c "cd /d c:\chaba\docker && docker compose up -d dev-host"`
 2. `docker compose build dev-host` when Dockerfile/start script changes.
 3. `docker compose restart dev-host`.
 4. Re-run health checks above.

@@ -200,6 +200,93 @@ const workflows = [
       publicUrl: config.verify.a1Idc1TestUrl,
       docs: 'scripts/diagnostics-a1-idc1.sh'
     }
+  },
+  {
+    id: 'diagnostics-dev-host',
+    label: 'Collect dev-host container diagnostics',
+    description:
+      'Invokes MCP0/mcp-docker to list containers and fetch logs for configured dev-host services to unblock preview issues.',
+    tags: ['diagnostics', 'dev-host', 'mcp0'],
+    runner: {
+      type: 'posix',
+      scriptRelative: './scripts/diagnostics-dev-host.sh',
+      cwd: config.repoRoot,
+      docs: 'scripts/diagnostics-dev-host.mjs'
+    }
+  },
+  {
+    id: 'pc2-stack-status',
+    label: 'PC2 stack status',
+    description: 'Uses wsl+ssh to run `docker compose ps` for the pc2-worker stack on host pc2.',
+    tags: ['pc2', 'docker', 'status'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc2-worker', 'pc2-stack.ps1'),
+      args: ['-Action', 'status'],
+      cwd: config.repoRoot,
+      env: {
+        PC2_SSH_USER: config.pc2Host.sshUser,
+        PC2_SSH_HOST: config.pc2Host.sshHost,
+        PC2_SSH_PORT: config.pc2Host.sshPort,
+        PC2_SSH_KEY_PATH: config.pc2Host.sshKeyPath,
+        PC2_WSL_USER: config.pc2Host.wslUser,
+        PC2_STACKS_DIR: config.pc2Host.remoteStacksDir,
+        PC2_WORKER_DIR: config.pc2Host.workerDirName,
+        PC2_DOCKER_HOST: config.pc2Host.dockerHost
+      }
+    },
+    outputs: {
+      docs: 'scripts/pc2-worker/pc2-stack.ps1'
+    }
+  },
+  {
+    id: 'pc2-stack-up',
+    label: 'PC2 stack up (mcp-suite)',
+    description:
+      'Brings up the pc2-worker Docker compose stack on host pc2 using the configured profile (default mcp-suite).',
+    tags: ['pc2', 'docker', 'up'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc2-worker', 'pc2-stack.ps1'),
+      args: ['-Action', 'up'],
+      cwd: config.repoRoot,
+      env: {
+        PC2_SSH_USER: config.pc2Host.sshUser,
+        PC2_SSH_HOST: config.pc2Host.sshHost,
+        PC2_SSH_PORT: config.pc2Host.sshPort,
+        PC2_SSH_KEY_PATH: config.pc2Host.sshKeyPath,
+        PC2_WSL_USER: config.pc2Host.wslUser,
+        PC2_STACKS_DIR: config.pc2Host.remoteStacksDir,
+        PC2_WORKER_DIR: config.pc2Host.workerDirName
+      }
+    },
+    outputs: {
+      docs: 'scripts/pc2-worker/pc2-stack.ps1'
+    }
+  },
+  {
+    id: 'pc2-stack-down',
+    label: 'PC2 stack down',
+    description: 'Stops the pc2-worker Docker compose stack on host pc2.',
+    tags: ['pc2', 'docker', 'down'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc2-worker', 'pc2-stack.ps1'),
+      args: ['-Action', 'down'],
+      cwd: config.repoRoot,
+      env: {
+        PC2_SSH_USER: config.pc2Host.sshUser,
+        PC2_SSH_HOST: config.pc2Host.sshHost,
+        PC2_SSH_PORT: config.pc2Host.sshPort,
+        PC2_SSH_KEY_PATH: config.pc2Host.sshKeyPath,
+        PC2_WSL_USER: config.pc2Host.wslUser,
+        PC2_STACKS_DIR: config.pc2Host.remoteStacksDir,
+        PC2_WORKER_DIR: config.pc2Host.workerDirName
+      }
+    },
+    outputs: {
+      docs: 'scripts/pc2-worker/pc2-stack.ps1'
+    }
   }
 ];
 

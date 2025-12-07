@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Imagen preview · Surf Thailand</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/test/imagen/style.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Surf Thailand · Imagen GPU stack</p>
+          <h1>Diagnostic render lab</h1>
+          <p>
+            Exercise the <strong>MCP Imagen</strong> pipeline locally before promoting to node-1. Queue quick prompts,
+            tweak sampler settings, and capture the generation logs that the automation workflow sees.
+          </p>
+        </div>
+        <div class="status-board">
+          <div class="status-chip" data-health>
+            <span>Service</span>
+            <strong id="healthStatus">Checking…</strong>
+          </div>
+          <div class="status-chip">
+            <span>Last render</span>
+            <strong id="lastDuration">—</strong>
+          </div>
+          <button id="healthRefresh" type="button" class="ghost-btn">Refresh health</button>
+        </div>
+      </header>
+
+      <section class="panel" id="controls">
+        <form id="generateForm" class="control-grid">
+          <label class="field span-2">
+            <span>Prompt</span>
+            <textarea id="promptInput" rows="4" placeholder="Describe the scene you want to render" required></textarea>
+          </label>
+          <label class="field span-2">
+            <span>Negative prompt <small>(optional)</small></span>
+            <textarea id="negativeInput" rows="2" placeholder="Things to avoid"></textarea>
+          </label>
+          <label class="field">
+            <span>Steps</span>
+            <input type="range" id="stepsInput" min="6" max="50" step="2" value="24" />
+            <div class="field-meta">
+              <span id="stepsValue">24 steps</span>
+            </div>
+          </label>
+          <label class="field">
+            <span>Guidance</span>
+            <input type="range" id="guidanceInput" min="1" max="15" step="0.5" value="7" />
+            <div class="field-meta">
+              <span id="guidanceValue">7.0 CFG</span>
+            </div>
+          </label>
+          <label class="field">
+            <span>Resolution</span>
+            <select id="sizeSelect">
+              <option value="512">512 × 512 (fast)</option>
+              <option value="640">640 × 640</option>
+              <option value="768">768 × 768</option>
+              <option value="896">896 × 896</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Seed <small>(optional)</small></span>
+            <input type="number" id="seedInput" placeholder="Random" />
+          </label>
+          <div class="cta-row span-2">
+            <div class="status-banner" id="formStatus">Ready to render.</div>
+            <button type="submit" id="generateBtn">Generate preview</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel results">
+        <div class="preview" id="previewWrapper" hidden>
+          <img id="resultImage" alt="Imagen render preview" />
+        </div>
+        <div class="meta">
+          <div>
+            <h2>Metadata</h2>
+            <dl id="metaList"></dl>
+          </div>
+          <div>
+            <h2>Raw payload</h2>
+            <pre id="rawOutput">Awaiting render…</pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel logs">
+        <div class="logs-head">
+          <h2>Activity log</h2>
+          <button id="clearLogs" type="button" class="ghost-btn">Clear</button>
+        </div>
+        <ul id="logList"></ul>
+      </section>
+    </main>
+
+    <script type="module" src="/test/imagen/main.js"></script>
+  </body>
+</html>

@@ -125,6 +125,6 @@ app.post('/invoke', async (req, res) => {
   }
 });
 
-app.listen(config.port, () => {
-  console.log(`[mcp-devops] listening on port ${config.port}`);
+app.listen(config.port, config.host, () => {
+  console.log(`[mcp-devops] listening on ${config.host}:${config.port}`);
 });
