@@ -16,11 +16,21 @@ const upload = multer({
   }
 });
 
+const trimMaybe = (value) => (typeof value === 'string' ? value.trim() : '');
+
 const GLAMA_API_URL = (process.env.GLAMA_API_URL || process.env.GLAMA_URL || '').trim();
 const GLAMA_API_KEY = (process.env.GLAMA_API_KEY || '').trim();
 const DEFAULT_VISION_MODEL =
-  (process.env.GLAMA_MODEL_VISION || process.env.GLAMA_MODEL || process.env.GLAMA_MODEL_DEFAULT || '').trim() ||
+  trimMaybe(process.env.GLAMA_MODEL_VISION) ||
+  trimMaybe(process.env.GLAMA_MODEL) ||
+  trimMaybe(process.env.GLAMA_MODEL_DEFAULT) ||
   'gpt-4o-mini';
+const DEFAULT_CHAT_MODEL =
+  trimMaybe(process.env.GLAMA_MODEL_CHAT) ||
+  trimMaybe(process.env.GLAMA_MODEL_LLM) ||
+  trimMaybe(process.env.GLAMA_MODEL) ||
+  trimMaybe(process.env.GLAMA_MODEL_DEFAULT) ||
+  DEFAULT_VISION_MODEL;
 const RAW_MODEL_LIST = (process.env.GLAMA_VISION_MODEL_LIST || '')
   .split(',')
   .map((value) => value.trim())
@@ -35,6 +45,16 @@ const GLAMA_MAX_TOKENS = Number.isFinite(Number(process.env.GLAMA_MAX_TOKENS))
 const SYSTEM_PROMPT =
   process.env.SYSTEM_PROMPT ||
   'You are Surf Thailand’s vision analyst. Reply strictly in JSON with keys description and objects.';
+const CHAT_SYSTEM_PROMPT = (
+  process.env.CHAT_SYSTEM_PROMPT ||
+  'You are Surf Thailand’s vision follow-up analyst. Use the provided vision summary and detected objects to answer user questions in natural language. If you are unsure, say so. Reply in the same language as the user question.'
+).trim();
+const CHAT_TEMPERATURE = Number.isFinite(Number(process.env.GLAMA_CHAT_TEMPERATURE))
+  ? Number(process.env.GLAMA_CHAT_TEMPERATURE)
+  : 0.2;
+const CHAT_MAX_TOKENS = Number.isFinite(Number(process.env.GLAMA_CHAT_MAX_TOKENS))
+  ? Number(process.env.GLAMA_CHAT_MAX_TOKENS)
+  : 600;
 
 const isGlamaReady = () => Boolean(GLAMA_API_URL && GLAMA_API_KEY);
 
@@ -122,7 +142,72 @@ const callVisionModel = async ({ prompt, base64Image, mimeType, model }) => {
   return { data, text, model: selectedModel };
 };
 
+const callChatModel = async ({ messages, temperature = CHAT_TEMPERATURE, maxTokens = CHAT_MAX_TOKENS }) => {
+  if (!isGlamaReady()) {
+    throw new Error('glama_unconfigured');
+  }
+  if (!Array.isArray(messages) || !messages.length) {
+    throw new Error('messages_required');
+  }
+
+  const payload = {
+    model: DEFAULT_CHAT_MODEL,
+    temperature,
+    max_tokens: maxTokens,
+    messages
+  };
+
+  const response = await fetch(GLAMA_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${GLAMA_API_KEY}`
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail || `glama_http_${response.status}`);
+  }
+
+  const data = await response.json();
+  const rawContent = data?.choices?.[0]?.message?.content;
+  const text =
+    typeof rawContent === 'string'
+      ? rawContent
+      : Array.isArray(rawContent)
+      ? rawContent
+          .map((block) => {
+            if (typeof block === 'string') return block;
+            if (typeof block?.text === 'string') return block.text;
+            if (typeof block?.content === 'string') return block.content;
+            return '';
+          })
+          .join('\n')
+          .trim()
+      : '';
+
+  return { data, text };
+};
+
+const sanitizeHistory = (history = []) => {
+  if (!Array.isArray(history)) return [];
+  return history
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object') return null;
+      const role = typeof entry.role === 'string' ? entry.role.trim().toLowerCase() : '';
+      const content = typeof entry.content === 'string' ? entry.content.trim() : '';
+      if (!role || !content) return null;
+      if (!['user', 'assistant'].includes(role)) return null;
+      return { role, content };
+    })
+    .filter(Boolean)
+    .slice(-8);
+};
+
 app.use(morgan('dev'));
+app.use(express.json({ limit: '1mb' }));
 
 app.get('/health', (_req, res) => {
   res.json({
@@ -198,6 +283,58 @@ app.post('/analyze', upload.single('photo'), async (req, res) => {
   } catch (error) {
     console.error('[detects-api] vision analyze failed', error);
     res.status(502).json({ error: error.message || 'glama_vision_failed' });
+  }
+});
+
+app.post('/chat', async (req, res) => {
+  if (!ensureGlamaReady(res)) {
+    return;
+  }
+  const question = (req.body?.question || '').toString().trim();
+  const description = (req.body?.description || '').toString().trim();
+  const objects = Array.isArray(req.body?.objects) ? req.body.objects : [];
+  const language = (req.body?.language || '').toString().trim();
+  const history = sanitizeHistory(req.body?.history);
+
+  if (!question) {
+    return res.status(400).json({ error: 'question_required' });
+  }
+  if (!description && !objects.length) {
+    return res.status(400).json({ error: 'context_required' });
+  }
+
+  const objectsText =
+    objects
+      .map((entry, index) => {
+        if (!entry || typeof entry !== 'object') return null;
+        const label = entry.label || `Object ${index + 1}`;
+        const detail = entry.detail ? ` — ${entry.detail}` : '';
+        const confidence =
+          typeof entry.confidence === 'number' ? ` (confidence ${(entry.confidence * 100).toFixed(1)}%)` : '';
+        return `• ${label}${detail}${confidence}`;
+      })
+      .filter(Boolean)
+      .join('\n') || 'No objects were reported.';
+
+  const contextBlock = `Vision summary:\n${description || 'N/A'}\n\nDetected objects:\n${objectsText}`;
+  const localeHint = language ? ` [${language}]` : '';
+  const userPrompt = `${contextBlock}\n\nQuestion${localeHint}:\n${question}`;
+
+  const messages = [
+    { role: 'system', content: CHAT_SYSTEM_PROMPT },
+    ...history,
+    { role: 'user', content: userPrompt }
+  ];
+
+  try {
+    const { text } = await callChatModel({ messages });
+    if (!text) {
+      throw new Error('empty_response');
+    }
+    res.json({ reply: text });
+  } catch (error) {
+    console.error('[detects-api] chat failed', error);
+    res.status(502).json({ error: error.message || 'glama_chat_failed' });
   }
 });
 

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>mcp-vaja · Test Console</title>
+    <style>
+      :root {
+        font-family: "Space Grotesk", "Segoe UI", system-ui, -apple-system, sans-serif;
+        color-scheme: dark;
+        --bg: radial-gradient(circle at 20% 20%, #233759 0%, #0c111e 55%, #060810 100%);
+        --glass: rgba(8, 12, 22, 0.78);
+        --border: rgba(255, 255, 255, 0.08);
+        --accent: linear-gradient(130deg, #6fc8ff, #8f8bff);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: clamp(1.5rem, 4vw, 3rem);
+        color: #f5f7ff;
+      }
+      main {
+        width: min(620px, 100%);
+        background: var(--glass);
+        border-radius: 26px;
+        border: 1px solid var(--border);
+        padding: clamp(1.5rem, 3vw, 2.75rem);
+        box-shadow: 0 25px 80px rgba(0, 0, 0, 0.55);
+        backdrop-filter: blur(30px);
+      }
+      header {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+      }
+      .eyebrow {
+        text-transform: uppercase;
+        letter-spacing: 0.3em;
+        font-size: 0.7rem;
+        color: rgba(245, 247, 255, 0.6);
+        margin: 0;
+      }
+      h1 {
+        font-size: clamp(1.8rem, 3vw, 2.4rem);
+        margin: 0;
+      }
+      p {
+        margin: 0;
+        color: rgba(245, 247, 255, 0.75);
+      }
+      label {
+        display: block;
+        margin-top: 1.25rem;
+        font-size: 0.9rem;
+        color: rgba(245, 247, 255, 0.8);
+      }
+      textarea,
+      select,
+      input[type="text"] {
+        margin-top: 0.45rem;
+        width: 100%;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.05);
+        color: inherit;
+        font-size: 1rem;
+        padding: 0.9rem 1rem;
+      }
+      textarea {
+        min-height: 130px;
+        resize: vertical;
+      }
+      .inline-control {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin-top: 1rem;
+        font-size: 0.9rem;
+      }
+      .inline-control input {
+        width: 1.05rem;
+        height: 1.05rem;
+      }
+      button {
+        margin-top: 1.5rem;
+        width: 100%;
+        border: none;
+        border-radius: 18px;
+        padding: 1rem;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #05070d;
+        background: var(--accent);
+        box-shadow: 0 15px 35px rgba(111, 200, 255, 0.35);
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+      button:not(:disabled):hover {
+        transform: translateY(-1px);
+        box-shadow: 0 20px 45px rgba(143, 139, 255, 0.45);
+      }
+      .status-card {
+        margin-top: 1.4rem;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        background: rgba(6, 10, 20, 0.7);
+        padding: 1rem 1.2rem;
+        font-size: 0.95rem;
+        min-height: 70px;
+      }
+      .status-card a {
+        color: #7fe7ff;
+        text-decoration: none;
+      }
+      .status-card a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">pc2 dev-host · diagnostics</p>
+        <h1>mcp-vaja test console</h1>
+        <p>Send sample Thai text to the VAJA MCP service running on pc2. All requests proxy through /test/vaja/api.</p>
+      </header>
+
+      <label>
+        Text to synthesize
+        <textarea id="text" placeholder="สวัสดีจาก pc2 dev-host!"></textarea>
+        <button id="sampleBtn" class="secondary small" type="button" style="margin-top:0.6rem;">Generate sample text</button>
+      </label>
+
+      <label>
+        Speaker
+        <select id="speaker">
+          <!-- speakers injected via JS -->
+        </select>
+      </label>
+
+      <label>
+        Style (optional)
+        <input type="text" id="style" placeholder="commercial, narrator, etc." />
+      </label>
+
+      <div class="inline-control">
+        <input type="checkbox" id="download" />
+        <label for="download">Save audio to server volume</label>
+      </div>
+
+      <div class="inline-control">
+        <input type="checkbox" id="autoPlayToggle" />
+        <label for="autoPlayToggle">Auto-play new audio</label>
+      </div>
+
+      <div class="inline-control">
+        <input type="checkbox" id="cleanupToggle" />
+        <label for="cleanupToggle">Clean up text before TTS</label>
+      </div>
+
+      <div class="cta-row">
+        <button id="invokeBtn">Invoke synthesize_speech</button>
+        <button id="speakBtn" class="secondary" type="button" disabled>Play latest audio</button>
+        <button id="sampleBtn" class="secondary small" type="button">Generate sample text</button>
+      </div>
+
+      <div class="status-card" id="status">Waiting for input…</div>
+    </main>
+
+    <script>
+      const VAJA_SPEAKERS = [
+        { id: 'nana', description: 'Nana • Female • Animation' },
+        { id: 'noina', description: 'Noina • Female • Commercial/IVR' },
+        { id: 'farah', description: 'Farah • Female • Documentary' },
+        { id: 'mewzy', description: 'Mewzy • Female • Commercial' },
+        { id: 'farsai', description: 'Farsai • Female • Animation' },
+        { id: 'prim', description: 'Prim • Female • Announcer' },
+        { id: 'ped', description: 'Ped • Female • Announcer' },
+        { id: 'poom', description: 'Poom • Male • Commercial/IVR' },
+        { id: 'doikham', description: 'Doikham • Male • Northern dialect' },
+        { id: 'praw', description: 'Praw • Girl • Youth' },
+        { id: 'wayu', description: 'Wayu • Boy • Youth' },
+        { id: 'namphueng', description: 'Namphueng • Female • Anchor style' },
+        { id: 'toon', description: 'Toon • Female • Broadcast style' },
+        { id: 'sanooch', description: 'Sanooch • Female • Teacher style' },
+        { id: 'thanwa', description: 'Thanwa • Male • Broadcast style' }
+      ];
+
+      const speakerSelect = document.getElementById('speaker');
+      VAJA_SPEAKERS.forEach((speaker) => {
+        const option = document.createElement('option');
+        option.value = speaker.id;
+        option.textContent = speaker.description;
+        speakerSelect.appendChild(option);
+      });
+      speakerSelect.value = 'noina';
+
+      const statusEl = document.getElementById('status');
+      const invokeBtn = document.getElementById('invokeBtn');
+      const speakBtn = document.getElementById('speakBtn');
+      const autoPlayToggle = document.getElementById('autoPlayToggle');
+      const cleanupToggle = document.getElementById('cleanupToggle');
+      const sampleBtn = document.getElementById('sampleBtn');
+      let audioBuffer = null;
+      let audioContext = null;
+      const AUTO_PLAY_KEY = 'vajaAutoPlay';
+      const CLEAN_TEXT_KEY = 'vajaCleanText';
+      const SAMPLE_TEXTS = [
+        'สวัสดีค่ะ นี่คือเสียงจากระบบแชทบ็อตของเรา ยินดีที่ได้พบคุณนะคะ',
+        'วันนี้อากาศดี เหมาะกับการออกไปเดินเล่นหรือพักผ่อนที่คาเฟ่โปรด',
+        'กรุณาตรวจสอบอีเมลเพื่อยืนยันการนัดหมายของคุณภายในวันนี้',
+        'สำหรับลูกค้าวีไอพี เรามีส่วนลดพิเศษให้คุณลองใช้งานแพ็กเกจใหม่',
+        'ทีมซัพพอร์ตพร้อมช่วยเหลือตลอดยี่สิบสี่ชั่วโมง ติดต่อเราได้ทันที'
+      ];
+
+      const storedAutoPlay = window.localStorage.getItem(AUTO_PLAY_KEY);
+      if (storedAutoPlay === 'true') {
+        autoPlayToggle.checked = true;
+      }
+      autoPlayToggle.addEventListener('change', () => {
+        window.localStorage.setItem(AUTO_PLAY_KEY, autoPlayToggle.checked ? 'true' : 'false');
+      });
+
+      const storedClean = window.localStorage.getItem(CLEAN_TEXT_KEY);
+      if (storedClean === 'true') {
+        cleanupToggle.checked = true;
+      }
+      cleanupToggle.addEventListener('change', () => {
+        window.localStorage.setItem(CLEAN_TEXT_KEY, cleanupToggle.checked ? 'true' : 'false');
+      });
+
+      sampleBtn.addEventListener('click', () => {
+        const nextSample = SAMPLE_TEXTS[Math.floor(Math.random() * SAMPLE_TEXTS.length)];
+        document.getElementById('text').value = nextSample;
+        setStatus('Sample text ready. Click invoke to synthesize.');
+      });
+
+      const setStatus = (message, link) => {
+        if (link) {
+          statusEl.innerHTML = `${message}<br /><a href="${link}" target="_blank" rel="noreferrer">Open audio ⤴</a>`;
+        } else {
+          statusEl.textContent = message;
+        }
+      };
+
+      async function playAudio(buffer) {
+        if (!buffer) {
+          setStatus('No audio buffered yet. Invoke first.');
+          return;
+        }
+        try {
+          if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          }
+          const decoded = await audioContext.decodeAudioData(buffer.slice(0));
+          const source = audioContext.createBufferSource();
+          source.buffer = decoded;
+          source.connect(audioContext.destination);
+          source.start();
+          setStatus('Playing buffered audio…');
+        } catch (err) {
+          console.error(err);
+          setStatus(`Unable to play audio: ${err.message}`);
+        }
+      }
+
+      speakBtn.addEventListener('click', () => playAudio(audioBuffer));
+
+      invokeBtn.addEventListener('click', async () => {
+        const textArea = document.getElementById('text');
+        let text = textArea.value.trim();
+        if (!text) {
+          setStatus('Please enter text before invoking.');
+          return;
+        }
+        if (cleanupToggle.checked) {
+          const cleaned = text
+            .replace(/\s+/g, ' ')
+            .replace(/\s*([,.;?!])\s*/g, '$1 ')
+            .replace(/[\u200B-\u200D\uFEFF]/g, '')
+            .trim();
+          if (cleaned !== text) {
+            text = cleaned;
+            textArea.value = cleaned;
+            setStatus('Normalized text for clearer speech. Ready to invoke…');
+          }
+        }
+        const speaker = speakerSelect.value;
+        const style = document.getElementById('style').value.trim();
+        const download = document.getElementById('download').checked;
+
+        invokeBtn.disabled = true;
+        speakBtn.disabled = true;
+        setStatus('Invoking synthesize_speech…');
+
+        try {
+          const response = await fetch('/test/vaja/api/invoke', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tool: 'synthesize_speech',
+              arguments: { text, speaker, style: style || undefined, download }
+            })
+          });
+
+          if (!response.ok) {
+            const detail = await response.text();
+            throw new Error(detail || 'Invocation failed');
+          }
+
+          const streamResponse = response.clone();
+          const result = await response.json();
+          const info = [
+            `Speaker: ${result.speaker}`,
+            result.style ? `Style: ${result.style}` : null,
+            result.download ? `Saved to: ${result.download.path}` : null
+          ]
+            .filter(Boolean)
+            .join(' • ');
+          setStatus(`Success! ${info}`, result.audio_url);
+
+          // try buffering audio for inline playback (non-blocking)
+          if (streamResponse.headers.get('content-type')?.includes('application/json') && result.audio_url) {
+            fetch(result.audio_url)
+              .then((audioRes) => audioRes.arrayBuffer())
+              .then((buf) => {
+                audioBuffer = buf;
+                speakBtn.disabled = false;
+                setStatus(`Success! ${info} • Ready to play`, result.audio_url);
+                if (autoPlayToggle.checked) {
+                  playAudio(audioBuffer);
+                }
+              })
+              .catch((err) => {
+                console.warn('Failed to buffer audio', err);
+                speakBtn.disabled = true;
+              });
+          }
+        } catch (err) {
+          setStatus(`Error: ${err.message}`);
+        } finally {
+          invokeBtn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

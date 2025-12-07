@@ -23,6 +23,34 @@ const workflows = [
     }
   },
   {
+    id: 'deploy-dev-host-mirror',
+    label: 'Deploy dev-host mirror (pc1)',
+    description:
+      'Mirrors the latest a1-idc1 site assets to dev-host.pc1 using the deploy-node-1 pipeline with dev-host credentials.',
+    tags: ['deploy', 'dev-host', 'mirror'],
+    runner: {
+      type: 'posix',
+      scriptRelative: './scripts/deploy-dev-host-mirror.sh',
+      cwd: config.repoRoot,
+      env: {
+        SSH_USER: config.devHostDeploy.sshUser,
+        SSH_HOST: config.devHostDeploy.sshHost,
+        SSH_PORT: config.devHostDeploy.sshPort,
+        SSH_KEY_PATH: toPosixIfNeeded(config.devHostDeploy.sshKeyPath),
+        REMOTE_BASE: config.devHostDeploy.remoteBase,
+        LOCAL_BASE: toPosixIfNeeded(path.join(config.repoRoot, 'sites')),
+        ENV_DIR: toPosixIfNeeded(config.devHostDeploy.envDir),
+        APPS: 'a1-idc1',
+        RELEASES_TO_KEEP: config.devHostDeploy.releasesToKeep
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      previewUrl: 'http://dev-host.pc1:80/test/',
+      docs: 'scripts/deploy-dev-host-mirror.sh'
+    }
+  },
+  {
     id: 'preview-test-suite',
     label: 'Preview /test (chat + agents + detects)',
     description:
@@ -92,10 +120,13 @@ const workflows = [
     tags: ['build', 'ui'],
     runner: {
       type: 'posix',
-      scriptRelative: 'npm run build:deploy',
+      scriptRelative: './scripts/build-ui.sh',
       cwd: config.repoRoot,
       shell: config.shells.node,
-      env: {}
+      env: {
+        VOICE_CHAT_REPO: config.pcWorker?.voiceChatRepo || '',
+        VOICE_CHAT_MODEL_ROOT: config.pcWorker?.modelosRoot || ''
+      }
     },
     outputs: {
       docs: config.uiBuild.docs

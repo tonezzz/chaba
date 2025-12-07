@@ -48,21 +48,17 @@ services:
     <<: *default-service
     profiles: ["mcp-suite"]
     build:
-      context: ${VOICE_CHAT_REPO:-/home/tonezzz/repos/voice_chat}/mcp/mcp-github
+      context: ../../mcp/mcp-github
     ports:
       - "7201:8000"
-    volumes:
-      - ${VOICE_CHAT_REPO:-/home/tonezzz/repos/voice_chat}:/app
 
   mcp-memory:
     <<: *default-service
     profiles: ["mcp-suite"]
     build:
-      context: ${VOICE_CHAT_REPO:-/home/tonezzz/repos/voice_chat}/mcp/mcp-memory
+      context: ../../mcp/mcp-memory
     ports:
       - "7202:8000"
-    volumes:
-      - ${VOICE_CHAT_REPO:-/home/tonezzz/repos/voice_chat}:/app
 
   dev-proxy:
     <<: *default-service
@@ -194,6 +190,33 @@ services:
       test: ["CMD-SHELL", "curl -sf http://localhost:8017/health || exit 1"]
       interval: 30s
       timeout: 5s
+      retries: 3
+
+  mcp-imagen-gpu:
+    <<: *default-service
+    profiles: ["mcp-suite", "gpu"]
+    build:
+      context: ../../mcp/mcp-imagen
+      args:
+        BASE_IMAGE: ${MCP_IMAGEN_GPU_BASE_IMAGE:-nvidia/cuda:12.4.1-runtime-ubuntu22.04}
+        USE_GPU: "true"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: ["gpu"]
+    ports:
+      - "${MCP_IMAGEN_GPU_PORT:-8001}:8001"
+    environment:
+      PORT: 8001
+      IMAGE_MODEL_ROOT: ${MCP_IMAGEN_MODEL_ROOT:-/workspace/models/diffusers/models--runwayml--stable-diffusion-v1-5}
+      IMAGE_MODEL_CACHE: /workspace/models/diffusers
+    volumes:
+      - ${VOICE_CHAT_MODEL_ROOT:-/home/tonezzz/_models/diffusers}:/workspace/models/diffusers
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
       retries: 3
 
   inference:
