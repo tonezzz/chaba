@@ -1,5 +1,5 @@
 a1.idc1.surf-thailand.com {
-    root * /var/www/a1
+    root * /www/a1.idc1.surf-thailand.com/a1-idc1/current
     encode gzip zstd
 
     handle /test/chat/api/* {
@@ -9,7 +9,7 @@ a1.idc1.surf-thailand.com {
 
     handle /test/chat/* {
         uri strip_prefix /test/chat
-        root * /var/www/a1/test/chat
+        root * /www/a1.idc1.surf-thailand.com/a1-idc1/current/test/chat
         try_files {path} {path}/ /index.html
         file_server
     }
@@ -21,7 +21,14 @@ a1.idc1.surf-thailand.com {
 
     handle /test/detects/* {
         uri strip_prefix /test/detects
-        root * /var/www/a1/test/detects
+        root * /www/a1.idc1.surf-thailand.com/a1-idc1/current/test/detects
+        try_files {path} {path}/ /index.html
+        file_server
+    }
+
+    handle /test/vaja/* {
+        uri strip_prefix /test/vaja
+        root * /www/a1.idc1.surf-thailand.com/a1-idc1/current/test/vaja
         try_files {path} {path}/ /index.html
         file_server
     }
@@ -33,9 +40,9 @@ a1.idc1.surf-thailand.com {
 
     handle /test/agents/* {
         uri strip_prefix /test/agents
-        @allrem path_regexp agentsAll ^/(.*)$
-        rewrite * /www/test/agents/{http.regexp.agentsAll.1}
-        reverse_proxy 127.0.0.1:4060
+        root * /www/a1.idc1.surf-thailand.com/a1-idc1/current/test/agents
+        try_files {path} {path}/ /index.html
+        file_server
     }
 
     file_server

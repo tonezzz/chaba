@@ -99,21 +99,16 @@ export const config = {
   pcWorker: (() => {
     const composeFile = path.join(stacksRoot, 'pc2-worker', 'docker-compose.yml');
     const scriptsDir = path.join(repoRoot, 'scripts', 'pc2-worker');
-    const imagenDir = path.join(repoRoot, 'mcp', 'mcp-imagen');
     try {
       assertPathExists(composeFile, 'pc2-worker compose');
       assertPathExists(scriptsDir, 'pc2-worker scripts');
-      assertPathExists(imagenDir, 'mcp-imagen');
     } catch (err) {
       // eslint-disable-next-line no-console
       console.warn('[mcp-devops] configuration warning:', err.message);
     }
     return {
       composeFile,
-      scriptsDir,
-      imagenDir,
-      imagenServicePort: process.env.MCP_IMAGEN_GPU_PORT || '8001',
-      modelosRoot: process.env.VOICE_CHAT_MODEL_ROOT || 'C:/_dev/_models/diffusers'
+      scriptsDir
     };
   })(),
   deploy: {
@@ -145,6 +140,9 @@ export const config = {
     a1Idc1TestUrl:
       process.env.A1_IDC1_TEST_URL || 'https://a1.idc1.surf-thailand.com/test'
   },
+  tester: {
+    baseUrl: process.env.MCP_TESTER_BASE_URL || 'http://127.0.0.1:8330'
+  },
   mcp0: {
     baseUrl: trimTrailingSlash(
       process.env.MCP0_PROXY_BASE_URL || process.env.MCP0_BASE_URL || 'http://mcp0:8310'
@@ -165,7 +163,11 @@ export const config = {
     wslUser: process.env.PC2_WSL_USER || process.env.MCP_DEVOPS_WSL_USER || 'tonezzz',
     remoteStacksDir: process.env.PC2_STACKS_DIR || '/home/chaba/chaba/stacks',
     workerDirName: process.env.PC2_WORKER_DIR || 'pc2-worker',
-    dockerHost: process.env.PC2_DOCKER_HOST || 'unix:///var/run/docker.sock'
+    dockerHost: process.env.PC2_DOCKER_HOST || 'unix:///var/run/docker.sock',
+    repoRoot: process.env.PC2_REPO_ROOT || '/home/chaba/chaba',
+    gitRemote: process.env.PC2_GIT_REMOTE || 'https://github.com/tonezzz/chaba.git',
+    gitRef: process.env.PC2_GIT_REF || 'main',
+    syncBeforeUp: (process.env.PC2_SYNC_BEFORE_UP || 'true').toLowerCase() !== 'false'
   },
   uiBuild: {
     docs: 'README.md#mcp-tools',

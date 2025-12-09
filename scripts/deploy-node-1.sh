@@ -79,6 +79,34 @@ fi
 EOF
 }
 
+validate_release() {
+  local app=$1
+  local target_dir
+  target_dir=$(release_dir "$app")
+  local required_paths=${RELEASE_REQUIRED_PATHS:-}
+  cat <<'EOF' | SSH_USER="$SSH_USER" SSH_HOST="$SSH_HOST" TARGET_DIR="$target_dir" REQUIRED_PATHS="$required_paths" ssh "${SSH_COMMON_OPTS[@]}" "$SSH_USER@$SSH_HOST"
+set -euo pipefail
+TARGET_DIR="${TARGET_DIR:?missing target dir}"
+if [ ! -d "$TARGET_DIR" ]; then
+  echo "[ERROR] Release directory missing: $TARGET_DIR" >&2
+  exit 42
+fi
+if [ -z "$(find "$TARGET_DIR" -mindepth 1 -maxdepth 1 -print -quit)" ]; then
+  echo "[ERROR] Release directory empty: $TARGET_DIR" >&2
+  exit 43
+fi
+if [ -n "$REQUIRED_PATHS" ]; then
+  IFS=':' read -r -a paths <<<"$REQUIRED_PATHS"
+  for rel_path in "${paths[@]}"; do
+    if [ -n "$rel_path" ] && [ ! -e "$TARGET_DIR/$rel_path" ]; then
+      echo "[ERROR] Required path missing in release: $TARGET_DIR/$rel_path" >&2
+      exit 44
+    fi
+  done
+fi
+EOF
+}
+
 promote_release() {
   local app=$1
   local target_dir=$(release_dir "$app")
@@ -93,7 +121,7 @@ RELEASES_ROOT="$releases_root"
 ln -sfn "\$TARGET_DIR" "\$CURRENT_LINK"
 if [ -d "\$RELEASES_ROOT" ]; then
   cd "\$RELEASES_ROOT"
-  ls -1t | tail -n +$((RELEASES_TO_KEEP + 1)) | xargs -r -I{} rm -rf "{}"
+  ls -1 | sort -r | tail -n +$((RELEASES_TO_KEEP + 1)) | xargs -r -I{} rm -rf "{}"
 fi
 EOF
 }
@@ -114,6 +142,7 @@ for app in $APPS; do
   rsync_app "$app"
   push_env "$app"
   install_remote "$app"
+  validate_release "$app"
   promote_release "$app"
 done
 

@@ -8,7 +8,7 @@ import re
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional
 
 import httpx
 from dotenv import load_dotenv
@@ -63,6 +63,10 @@ class TestDefinition(BaseModel):
     headers: Dict[str, str] = Field(default_factory=dict, description="Additional request headers")
     body: Optional[Any] = Field(None, description="Optional request payload for non-GET calls")
     requires_env: List[str] = Field(default_factory=list, description="Env variables that must be defined or this test is skipped")
+    summary_path: Optional[str] = Field(None, description="Dot-path inside JSON response for success confirmation (e.g., 'status')")
+    expect_json_contains: Optional[Dict[str, Any]] = Field(
+        None, description="JSON key/value pairs that must match for the test to pass"
+    )
 
     @field_validator("method", mode="before")
     @classmethod

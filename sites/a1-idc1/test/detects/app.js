@@ -11,6 +11,122 @@ const LANGUAGE_OPTIONS = [
 ];
 
 const DEFAULT_LANGUAGE = 'th';
+const PREFERRED_VISION_MODEL = 'gpt-4.1-2025-04-14';
+
+const SPEECH_LOCALE_MAP = {
+  th: 'th-TH',
+  en: 'en-US',
+  de: 'de-DE',
+  no: 'nb-NO',
+  sv: 'sv-SE',
+  es: 'es-ES',
+  ja: 'ja-JP',
+  zh: 'zh-CN',
+  ko: 'ko-KR'
+};
+
+const MAX_SPEECH_CHARACTERS = 800;
+const SUPPORTS_SPEECH_RECOGNITION =
+  typeof window !== 'undefined' &&
+  (window.SpeechRecognition || window.webkitSpeechRecognition || null);
+
+const resolveSpeechLocale = (code) => {
+  const raw = (code || DEFAULT_LANGUAGE || 'en').trim();
+  if (!raw) {
+    return 'en-US';
+  }
+  if (raw.includes('-')) {
+    return raw;
+  }
+  return SPEECH_LOCALE_MAP[raw] || 'en-US';
+};
+
+const DETECTION_PROMPT_TEMPLATES = [
+  {
+    id: 'urban',
+    labelKey: 'promptUrbanLabel',
+    textKey: 'promptUrbanText',
+    fallbackLabel: 'Street operations sweep',
+    fallbackText:
+      'Describe traffic flow, signage status, crowd behavior, and note outages or hazards along the street.'
+  },
+  {
+    id: 'retail',
+    labelKey: 'promptRetailLabel',
+    textKey: 'promptRetailText',
+    fallbackLabel: 'Retail fixture compliance',
+    fallbackText:
+      'Audit shelf facings, promotional displays, and staff/customer interactions that affect merchandising discipline.'
+  },
+  {
+    id: 'safety',
+    labelKey: 'promptSafetyLabel',
+    textKey: 'promptSafetyText',
+    fallbackLabel: 'Safety compliance sweep',
+    fallbackText: 'Scan for PPE usage, blocked exits, spills, or anything that could violate safety protocols.'
+  },
+  {
+    id: 'vehicle',
+    labelKey: 'promptVehicleLabel',
+    textKey: 'promptVehicleText',
+    fallbackLabel: 'Vehicle damage survey',
+    fallbackText:
+      'Inspect exterior panels, glass, and lights; flag dents, scratches, rust, missing parts, and capture license info.'
+  },
+  {
+    id: 'document',
+    labelKey: 'promptDocumentLabel',
+    textKey: 'promptDocumentText',
+    fallbackLabel: 'Manual / SOP comprehension',
+    fallbackText: 'Summarize the document purpose, key steps, warnings, and tools that are mentioned.'
+  },
+  {
+    id: 'invoice',
+    labelKey: 'promptInvoiceLabel',
+    textKey: 'promptInvoiceText',
+    fallbackLabel: 'Receipt & slip extraction',
+    fallbackText:
+      'Transcribe totals, taxes, store info, payment method, and any handwritten notes shown on the slip.'
+  }
+];
+
+const CHAT_PRESET_TEMPLATES = [
+  {
+    id: 'summary',
+    labelKey: 'chatPresetSummary',
+    textKey: 'chatPresetSummaryText',
+    fallbackLabel: 'Quick summary',
+    fallbackText: 'Give me a 2 sentence summary of the detections.'
+  },
+  {
+    id: 'anomalies',
+    labelKey: 'chatPresetAnomalies',
+    textKey: 'chatPresetAnomaliesText',
+    fallbackLabel: 'Policy & safety issues',
+    fallbackText: 'List any compliance or safety issues that showed up.'
+  },
+  {
+    id: 'next',
+    labelKey: 'chatPresetNextSteps',
+    textKey: 'chatPresetNextStepsText',
+    fallbackLabel: 'Actionable next steps',
+    fallbackText: 'What are the top 3 actions we should take next based on this scene?'
+  },
+  {
+    id: 'inventory',
+    labelKey: 'chatPresetInventory',
+    textKey: 'chatPresetInventoryText',
+    fallbackLabel: 'Inventory counts',
+    fallbackText: 'Report notable inventory levels or items that look empty or overstocked.'
+  },
+  {
+    id: 'risks',
+    labelKey: 'chatPresetRisks',
+    textKey: 'chatPresetRisksText',
+    fallbackLabel: 'Risk factors',
+    fallbackText: 'Call out any potential risks or hazards in this scene and why they matter.'
+  }
+];
 
 const UI_COPY = {
   default: {
@@ -28,6 +144,19 @@ const UI_COPY = {
     fileHintEmpty: 'No file selected yet.',
     promptHeading: '2. Pick a vision brief',
     promptBody: 'Tap a chip to autofill the prompt, or fine-tune in the text box.',
+    promptUrbanLabel: 'Street operations sweep',
+    promptUrbanText:
+      'Describe traffic flow, signage status, crowd behavior, and note outages or hazards along the street.',
+    promptRetailLabel: 'Retail fixture compliance',
+    promptRetailText:
+      'Audit shelf facings, promotional displays, and staff/customer interactions that affect merchandising discipline.',
+    promptSafetyLabel: 'Safety compliance sweep',
+    promptSafetyText: 'Scan for PPE usage, blocked exits, spills, or anything that could violate safety protocols.',
+    promptVehicleLabel: 'Vehicle damage survey',
+    promptVehicleText:
+      'Inspect exterior panels, glass, and lights; flag dents, scratches, rust, missing parts, and capture license info.',
+    promptDocumentLabel: 'Manual / SOP comprehension',
+    promptDocumentText: 'Summarize the document purpose, key steps, warnings, and tools that are mentioned.',
     modelLabel: 'Vision model',
     modelTagLabel: 'LLM',
     latencyLabel: 'Latency',
@@ -52,8 +181,6 @@ const UI_COPY = {
     rawHeading: 'Raw payload',
     rawSubheading: 'Direct JSON from the Glama response.',
     rawPlaceholder: '// Awaiting response…',
-    speakButton: 'Play summary',
-    speakButtonUnavailable: 'Speech unavailable',
     chatHeading: 'Ask about this analysis',
     chatSubheading: 'Once a photo is analyzed, ask follow-up questions here.',
     chatPlaceholder: 'Type a question in your language…',
@@ -63,6 +190,16 @@ const UI_COPY = {
     chatEmpty: 'Chat is ready as soon as you run an analysis.',
     chatThinking: 'Thinking…',
     chatError: 'Sorry, I couldn’t answer that.',
+    chatPresetSummary: 'Quick summary',
+    chatPresetSummaryText: 'Give me a 2 sentence summary of the detections.',
+    chatPresetAnomalies: 'Policy & safety issues',
+    chatPresetAnomaliesText: 'List any compliance or safety issues that showed up.',
+    chatPresetNextSteps: 'Actionable next steps',
+    chatPresetNextStepsText: 'What are the top 3 actions we should take next based on this scene?',
+    chatPresetInventory: 'Inventory counts',
+    chatPresetInventoryText: 'Report notable inventory levels or items that look empty or overstocked.',
+    chatPresetRisks: 'Risk factors',
+    chatPresetRisksText: 'Call out any potential risks or hazards in this scene and why they matter.',
     statusNeedAnalysis: 'Run a describe + detect first, then start a chat.'
   },
   th: {
@@ -104,8 +241,6 @@ const UI_COPY = {
     rawHeading: 'ข้อมูลดิบ',
     rawSubheading: 'JSON ตรงจากการตอบกลับของ Glama',
     rawPlaceholder: '// รอผลลัพธ์…',
-    speakButton: 'เล่นสรุปเสียง',
-    speakButtonUnavailable: 'ไม่รองรับการอ่านออกเสียง',
     chatHeading: 'ถามต่อเกี่ยวกับการวิเคราะห์นี้',
     chatSubheading: 'เมื่อประมวลผลภาพแล้ว พิมพ์คำถามติดตามได้ที่นี่',
     chatPlaceholder: 'พิมพ์คำถามเป็นภาษาของคุณ…',
@@ -115,6 +250,16 @@ const UI_COPY = {
     chatEmpty: 'พร้อมแชททันทีหลังสั่งวิเคราะห์',
     chatThinking: 'กำลังคิด…',
     chatError: 'ขออภัย ไม่สามารถตอบคำถามนี้ได้',
+    chatPresetSummary: 'สรุปผลวิเคราะห์',
+    chatPresetSummaryText: 'สรุปผลวิเคราะห์ 2 ประโยค',
+    chatPresetAnomalies: 'ประเด็นความปลอดภัย',
+    chatPresetAnomaliesText: 'ระบุประเด็นความปลอดภัยที่เกิดขึ้น',
+    chatPresetNextSteps: 'ขั้นตอนต่อไป',
+    chatPresetNextStepsText: 'ขั้นตอนต่อไป 3 ขั้นตอน',
+    chatPresetInventory: 'สินค้าคงคลัง',
+    chatPresetInventoryText: 'รายงานสินค้าคงคลัง',
+    chatPresetRisks: 'ความเสี่ยง',
+    chatPresetRisksText: 'ระบุความเสี่ยงและเหตุผล',
     statusNeedAnalysis: 'กรุณาสั่ง describe + detect ก่อนแล้วค่อยเริ่มแชท'
   },
   de: {
@@ -156,8 +301,6 @@ const UI_COPY = {
     rawHeading: 'Rohdaten',
     rawSubheading: 'Direktes JSON aus der Glama-Antwort.',
     rawPlaceholder: '// Warte auf Ergebnis…',
-    speakButton: 'Zusammenfassung abspielen',
-    speakButtonUnavailable: 'Sprachausgabe nicht verfügbar',
     chatHeading: 'Fragen zur Analyse',
     chatSubheading: 'Nach der Fotoanalyse kannst du hier Rückfragen stellen.',
     chatPlaceholder: 'Stelle deine Frage in deiner Sprache…',
@@ -167,7 +310,17 @@ const UI_COPY = {
     chatEmpty: 'Starte zuerst eine Analyse, dann ist der Chat bereit.',
     chatThinking: 'Denke nach…',
     chatError: 'Sorry, ich konnte das nicht beantworten.',
-    statusNeedAnalysis: 'Führe zuerst describe + detect aus und starte dann den Chat.'
+    chatPresetSummary: 'Zusammenfassung',
+    chatPresetSummaryText: 'Gib mir eine 2-Satz-Zusammenfassung der Ergebnisse.',
+    chatPresetAnomalies: 'Sicherheitsprobleme',
+    chatPresetAnomaliesText: 'Liste alle Sicherheitsprobleme auf.',
+    chatPresetNextSteps: 'Nächste Schritte',
+    chatPresetNextStepsText: 'Was sind die nächsten 3 Schritte, die wir unternehmen sollten?',
+    chatPresetInventory: 'Inventar',
+    chatPresetInventoryText: 'Berichte über das Inventar.',
+    chatPresetRisks: 'Risiken',
+    chatPresetRisksText: 'Benenne alle Risiken und ihre Gründe.',
+    statusNeedAnalysis: 'Führe zuerst eine Analyse durch, bevor du den Chat startest.'
   },
   no: {
     heroEyebrow: 'Surf Thailand • A1 Visionverktøy',
@@ -208,8 +361,6 @@ const UI_COPY = {
     rawHeading: 'Rådata',
     rawSubheading: 'JSON direkte fra Glama-responsen.',
     rawPlaceholder: '// Venter på svar…',
-    speakButton: 'Spill av sammendrag',
-    speakButtonUnavailable: 'Tale ikke tilgjengelig',
     chatHeading: 'Still spørsmål om analysen',
     chatSubheading: 'Når bildet er analysert kan du stille oppfølgingsspørsmål her.',
     chatPlaceholder: 'Skriv et spørsmål på ditt språk…',
@@ -219,16 +370,26 @@ const UI_COPY = {
     chatEmpty: 'Kjør en analyse først, så er chatten klar.',
     chatThinking: 'Tenker…',
     chatError: 'Jeg klarte ikke å svare på det.',
-    statusNeedAnalysis: 'Kjør beskriv + detekter før du starter chatten.'
+    chatPresetSummary: 'Oppsummering',
+    chatPresetSummaryText: 'Gi meg en 2-setninger oppsummering av resultatene.',
+    chatPresetAnomalies: 'Sikkerhetsproblemer',
+    chatPresetAnomaliesText: 'Liste alle sikkerhetsproblemer.',
+    chatPresetNextSteps: 'Neste steg',
+    chatPresetNextStepsText: 'Hva er de neste 3 stegene vi bør ta?',
+    chatPresetInventory: 'Inventar',
+    chatPresetInventoryText: 'Rapporter om inventaret.',
+    chatPresetRisks: 'Risiko',
+    chatPresetRisksText: 'Navngi alle risiko og deres årsaker.',
+    statusNeedAnalysis: 'Kjør en analyse først, så starter du chatten.'
   },
   sv: {
     heroEyebrow: 'Surf Thailand • A1 Visionverktyg',
     heroTitle: 'Sandlåda för bildförståelse',
     heroLede:
-      'Ladda upp ett stillfoto, välj en visionbrief så skickar vi det via Glama för att beskriva scenen och hitta objekt.',
+      'Ladda upp ett stillbild, välj en visionbrief så skickar vi det via Glama för att beskriva scenen och hitta objekt.',
     langLabel: 'Språk',
     uploadHeading: '1. Ladda upp foto',
-    uploadBody: 'Ett stillbild, max 10 MB. Funkar i stående eller liggande läge.',
+    uploadBody: 'Ett stillbild, max 10 MB. Fungerar i stående eller liggande läge.',
     dropTitle: 'Dra & släpp foto',
     dropAlt: 'eller',
     browseButton: 'bläddra filer',
@@ -260,8 +421,6 @@ const UI_COPY = {
     rawHeading: 'Råpayload',
     rawSubheading: 'JSON direkt från Glama-svaret.',
     rawPlaceholder: '// Väntar på svar…',
-    speakButton: 'Spela upp sammanfattning',
-    speakButtonUnavailable: 'Tal inte tillgängligt',
     chatHeading: 'Fråga om analysen',
     chatSubheading: 'När bilden är analyserad kan du ställa följdfrågor här.',
     chatPlaceholder: 'Skriv en fråga på ditt språk…',
@@ -312,8 +471,6 @@ const UI_COPY = {
     rawHeading: 'Datos sin procesar',
     rawSubheading: 'JSON directo de la respuesta de Glama.',
     rawPlaceholder: '// Esperando respuesta…',
-    speakButton: 'Reproducir resumen',
-    speakButtonUnavailable: 'Voz no disponible',
     chatHeading: 'Pregunta sobre la detección',
     chatSubheading: 'Cuando la foto esté analizada, haz tus preguntas de seguimiento aquí.',
     chatPlaceholder: 'Escribe tu pregunta en tu idioma…',
@@ -364,8 +521,6 @@ const UI_COPY = {
     rawHeading: '生データ',
     rawSubheading: 'Glama 応答の JSON をそのまま表示します。',
     rawPlaceholder: '// 結果を待機中…',
-    speakButton: 'サマリーを再生',
-    speakButtonUnavailable: '音声読み上げは利用できません',
     chatHeading: 'この解析について質問する',
     chatSubheading: '写真を解析した後は、ここで追質問ができます。',
     chatPlaceholder: 'あなたの言語で質問を入力してください…',
@@ -393,11 +548,6 @@ const UI_COPY = {
     promptHeading: '2. 选择视觉任务',
     promptBody: '点击芯片自动填充提示，也可以在输入框中微调。',
     modelLabel: '视觉模型',
-    modelTagLabel: 'LLM',
-    latencyLabel: '延迟',
-    promptLabel: '自定义指令',
-    promptPlaceholder: '说明你希望模型关注的内容…',
-    analyzeButtonIdle: '执行描述 + 检测',
     analyzeButtonBusy: '分析中…',
     statusWaiting: '等待你的照片…',
     statusPhotoReady: '照片就绪，继续选择提示。',
@@ -416,8 +566,6 @@ const UI_COPY = {
     rawHeading: '原始数据',
     rawSubheading: '来自 Glama 响应的 JSON。',
     rawPlaceholder: '// 正在等待响应…',
-    speakButton: '播放摘要',
-    speakButtonUnavailable: '语音不可用',
     chatHeading: '就本次分析提问',
     chatSubheading: '照片分析完成后，可在此提出追问。',
     chatPlaceholder: '用你的语言输入问题…',
@@ -429,416 +577,6 @@ const UI_COPY = {
     chatError: '抱歉，无法回答该问题。',
     statusNeedAnalysis: '请先执行描述+检测，再开始聊天。'
   },
-  ko: {
-    heroEyebrow: 'Surf Thailand • A1 비전 도구',
-    heroTitle: '이미지 이해 샌드박스',
-    heroLede:
-      '정지 사진을 업로드하고 비전 프롬프트를 선택하면 Glama 엔드포인트가 장면을 설명하고 주요 객체를 표시합니다.',
-    langLabel: '언어',
-    uploadHeading: '1. 사진 업로드',
-    uploadBody: '정지 이미지 1장, 최대 10 MB. 세로·가로 모두 지원.',
-    dropTitle: '사진 끌어다 놓기',
-    dropAlt: '또는',
-    browseButton: '파일 찾아보기',
-    cameraButton: '사진 찍기',
-    fileHintEmpty: '아직 파일이 선택되지 않았습니다.',
-    promptHeading: '2. 비전 브리프 선택',
-    promptBody: '칩을 눌러 프롬프트를 자동 입력하거나 직접 수정하세요.',
-    modelLabel: '비전 모델',
-    modelTagLabel: 'LLM',
-    latencyLabel: '지연 시간',
-    promptLabel: '사용자 지정 지시',
-    promptPlaceholder: '모델이 집중하길 원하는 내용을 설명하세요…',
-    analyzeButtonIdle: '설명 + 감지 실행',
-    analyzeButtonBusy: '분석 중…',
-    statusWaiting: '사진을 기다리는 중…',
-    statusPhotoReady: '사진 준비 완료. 프롬프트를 선택하세요.',
-    statusInvalidFile: '이미지 파일을 선택하세요 (jpg, png, heic).',
-    statusFileTooLarge: '이미지는 10 MB 이하여야 합니다.',
-    statusNeedPhoto: '먼저 사진을 업로드하세요.',
-    statusNeedPrompt: '프롬프트는 비워둘 수 없습니다.',
-    statusAnalyzing: '이미지를 Glama로 전송 중…',
-    statusAnalyzeComplete: '비전 분석이 완료되었습니다.',
-    statusAnalyzeFailed: '비전 분석에 실패했습니다.',
-    summaryHeading: '비전 요약',
-    summaryEmpty: '아직 분석이 없습니다.',
-    objectsHeading: '감지된 객체',
-    objectsSubheading: '모델 신뢰도로 정렬된 주요 항목.',
-    objectsEmpty: '반환된 객체가 없습니다.',
-    rawHeading: '원시 페이로드',
-    rawSubheading: 'Glama 응답의 JSON.',
-    rawPlaceholder: '// 응답을 기다리는 중…',
-    speakButton: '요약 듣기',
-    speakButtonUnavailable: '음성 재생을 사용할 수 없습니다',
-    chatHeading: '분석 결과에 대해 질문하기',
-    chatSubheading: '사진 분석이 끝나면 여기에서 후속 질문을 해보세요.',
-    chatPlaceholder: '원하는 언어로 질문을 입력하세요…',
-    chatSendButton: '질문',
-    chatUserLabel: '사용자',
-    chatAssistantLabel: '비전 분석가',
-    chatEmpty: '먼저 분석을 실행하면 채팅을 사용할 수 있습니다.',
-    chatThinking: '생각 중…',
-    chatError: '죄송합니다. 답변할 수 없었습니다.',
-    statusNeedAnalysis: '채팅을 시작하기 전에 describe + detect를 먼저 실행하세요.'
-  }
-};
-
-const handleChatSubmit = async (event) => {
-  event.preventDefault();
-  if (!state.analysisContext) {
-    setStatus('statusNeedAnalysis', 'error');
-    return;
-  }
-  const question = elements.chatInput?.value?.trim();
-  if (!question) {
-    return;
-  }
-
-  appendChatMessage('user', question);
-  pushChatHistory({ role: 'user', content: question });
-  if (elements.chatInput) elements.chatInput.value = '';
-
-  const thinkingText = t('chatThinking') || 'Thinking…';
-  const pendingMessage = appendChatMessage('assistant', thinkingText, { pending: true });
-  setChatBusy(true);
-
-  try {
-    const response = await fetch('/test/detects/api/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        question,
-        description: state.analysisContext.description,
-        objects: state.analysisContext.objects,
-        language: state.language,
-        history: state.chatHistory
-      })
-    });
-    if (!response.ok) {
-      const detail = await response.text();
-      throw new Error(detail || 'chat_failed');
-    }
-    const data = await response.json();
-    const reply = (data?.reply || '').trim();
-    if (pendingMessage) {
-      pendingMessage.classList.remove('pending');
-      const body = pendingMessage.querySelector('.chat-body');
-      if (body) body.textContent = reply || t('chatError');
-    }
-    if (reply) {
-      pushChatHistory({ role: 'assistant', content: reply });
-    }
-  } catch (error) {
-    console.error('Chat failed', error);
-    if (pendingMessage) {
-      pendingMessage.classList.remove('pending');
-      const body = pendingMessage.querySelector('.chat-body');
-      if (body) body.textContent = t('chatError');
-    }
-  } finally {
-    setChatBusy(false);
-  }
-};
-
-const PROMPT_COPY = {
-  default: [
-    {
-      id: 'urban',
-      label: 'Street operations sweep',
-      text: 'Describe traffic flow, signage status, crowd behavior, and note outages or hazards along the street.'
-    },
-    {
-      id: 'retail',
-      label: 'Retail fixture compliance',
-      text: 'Audit shelf facings, promotional displays, and staff/customer interactions that affect merchandising discipline.'
-    },
-    {
-      id: 'safety',
-      label: 'Safety compliance sweep',
-      text: 'Scan for PPE usage, blocked exits, spills, or anything that could violate safety protocols.'
-    },
-    {
-      id: 'vehicle',
-      label: 'Vehicle damage survey',
-      text: 'Inspect exterior panels, glass, and lights; flag dents, scratches, rust, missing parts, and capture license info.'
-    },
-    {
-      id: 'receipt',
-      label: 'Receipt & slip extraction',
-      text: 'Transcribe totals, taxes, store info, payment method, and any handwritten notes shown on the slip.'
-    },
-    {
-      id: 'manual',
-      label: 'Manual / SOP comprehension',
-      text: 'Summarize the document purpose, key steps, warnings, and tools that are mentioned.'
-    },
-    {
-      id: 'specsheet',
-      label: 'Technical spec highlight',
-      text: 'List model numbers, critical specs (power, dimensions, materials), certifications, and tolerances from the sheet.'
-    }
-  ],
-  th: [
-    {
-      id: 'urban',
-      label: 'สำรวจการปฏิบัติงานบนถนน',
-      text: 'อธิบายการจราจร สถานะป้าย พฤติกรรมฝูงชน และแจ้งไฟดับหรือจุดเสี่ยงตลอดเส้นทาง'
-    },
-    {
-      id: 'retail',
-      label: 'ตรวจมาตรฐานหน้าร้าน',
-      text: 'ตรวจการจัดเรียงสินค้า ป้ายโปรโมชัน และการปฏิสัมพันธ์พนักงาน/ลูกค้าที่มีผลต่อการขาย'
-    },
-    {
-      id: 'safety',
-      label: 'กวาดความปลอดภัย',
-      text: 'ดูการใช้ PPE ทางหนีไฟที่ถูกปิด คราบหก หรือสิ่งที่ผิดข้อกำหนดความปลอดภัย'
-    },
-    {
-      id: 'vehicle',
-      label: 'ตรวจสภาพรถ',
-      text: 'สำรวจตัวถัง กระจก และไฟ แจ้งรอยบุบ ขีดข่วน สนิม อะไหล่ที่หาย และข้อมูลป้ายทะเบียน'
-    },
-    {
-      id: 'receipt',
-      label: 'ถอดข้อมูลใบเสร็จ/สลิป',
-      text: 'ถอดยอดรวม ภาษี ข้อมูลร้าน ช่องทางจ่าย และโน้ตที่เขียนด้วยมือบนสลิป'
-    },
-    {
-      id: 'manual',
-      label: 'สรุปคู่มือ/SOP',
-      text: 'สรุปวัตถุประสงค์ ขั้นตอนสำคัญ คำเตือน และเครื่องมือที่กล่าวถึงในเอกสาร'
-    },
-    {
-      id: 'specsheet',
-      label: 'ดึงไฮไลต์สเปกเทคนิค',
-      text: 'ระบุรุ่น ค่าสเปกหลัก (พลังงาน ขนาด วัสดุ) ใบรับรอง และค่าความคลาดเคลื่อนบนเอกสาร'
-    }
-  ],
-  de: [
-    {
-      id: 'urban',
-      label: 'Straßenbetrieb-Check',
-      text: 'Beschreibe Verkehrsfluss, Beschilderung, Menschenverhalten und markiere Ausfälle oder Gefahren entlang der Straße.'
-    },
-    {
-      id: 'retail',
-      label: 'Retail-Compliance-Prüfung',
-      text: 'Prüfe Regalflächen, Promotion-Displays sowie Personal- und Kundeninteraktionen, die das Merchandising beeinflussen.'
-    },
-    {
-      id: 'safety',
-      label: 'Sicherheits-Rundgang',
-      text: 'Achte auf PSA, blockierte Ausgänge, Verschüttungen oder andere Verstöße gegen Sicherheitsregeln.'
-    },
-    {
-      id: 'vehicle',
-      label: 'Fahrzeugschadensbericht',
-      text: 'Untersuche Karosserie, Glas und Beleuchtung; melde Dellen, Kratzer, Rost oder fehlende Teile plus Kennzeichen.'
-    },
-    {
-      id: 'receipt',
-      label: 'Beleg- & Bon-Erfassung',
-      text: 'Schreibe Summen, Steuern, Filialdaten, Zahlungsart und handschriftliche Notizen aus dem Beleg heraus.'
-    },
-    {
-      id: 'manual',
-      label: 'Handbuch/SOP-Zusammenfassung',
-      text: 'Fasse Zweck, wichtigste Schritte, Warnhinweise und erwähnte Werkzeuge des Dokuments zusammen.'
-    },
-    {
-      id: 'specsheet',
-      label: 'Technisches Datenblatt',
-      text: 'Liste Modellnummern, Kerndaten (Leistung, Maße, Materialien), Zertifizierungen und Toleranzen vom Blatt auf.'
-    }
-  ],
-  no: [
-    {
-      id: 'urban',
-      label: 'Gateoperasjons-sveip',
-      text: 'Beskriv trafikkflyt, skilting, publikumsatferd og pek ut avbrudd eller farer langs gaten.'
-    },
-    {
-      id: 'retail',
-      label: 'Butikkcompliance',
-      text: 'Gå gjennom hyllefronter, kampanjemateriell og ansatte/kunde-interaksjoner som påvirker gjennomføringen.'
-    },
-    {
-      id: 'safety',
-      label: 'Sikkerhetsrunde',
-      text: 'Se etter PPE-bruk, blokkerte utganger, søl eller andre brudd på sikkerhetsprosedyrer.'
-    },
-    {
-      id: 'vehicle',
-      label: 'Kjøretøyskade-rapport',
-      text: 'Inspiser karosseri, glass og lys; noter bulker, riper, rust eller manglende deler samt skiltinformasjon.'
-    },
-    {
-      id: 'receipt',
-      label: 'Kvitteringsuttrekk',
-      text: 'Les av totaler, avgifter, butikkinfo, betalingsmåte og eventuelle håndskrevne notater.'
-    },
-    {
-      id: 'manual',
-      label: 'Manual / SOP-oppsummering',
-      text: 'Oppsummer dokumentets formål, nøkkeltrinn, advarsler og verktøy som nevnes.'
-    },
-    {
-      id: 'specsheet',
-      label: 'Teknisk spes-oversikt',
-      text: 'List modellnumre, hovedspesifikasjoner (effekt, dimensjoner, materialer), sertifiseringer og toleranser.'
-    }
-  ],
-  sv: [
-    {
-      id: 'urban',
-      label: 'Gatuoperationer',
-      text: 'Beskriv trafikflöde, skyltstatus, folks beteende och peka ut avbrott eller risker längs gatan.'
-    },
-    {
-      id: 'retail',
-      label: 'Butiksregelefterlevnad',
-      text: 'Gå igenom hyllfronter, kampanjdisplayar och personal/kund‑interaktioner som påverkar merchandising.'
-    },
-    {
-      id: 'safety',
-      label: 'Säkerhetsrond',
-      text: 'Notera PPE, blockerade utgångar, spill eller annat som bryter mot säkerhetsrutiner.'
-    },
-    {
-      id: 'vehicle',
-      label: 'Fordonsskaderapport',
-      text: 'Inspektera kaross, glas och lampor; flagga bucklor, repor, rost eller saknade delar samt registreringsinfo.'
-    },
-    {
-      id: 'receipt',
-      label: 'Kvitto-/sliputdrag',
-      text: 'Transkribera totalsummor, moms, butiksdata, betalningsmetod och handskrivna anteckningar.'
-    },
-    {
-      id: 'manual',
-      label: 'Manual/SOP-sammanfattning',
-      text: 'Sammanfatta syfte, viktiga steg, varningar och verktyg som nämns i dokumentet.'
-    },
-    {
-      id: 'specsheet',
-      label: 'Teknisk spec-highlight',
-      text: 'Lista modellnummer, nyckelspecar (effekt, mått, material), certifieringar och toleranser.'
-    }
-  ],
-  es: [
-    {
-      id: 'urban',
-      label: 'Barrido de operaciones urbanas',
-      text: 'Describe el flujo vehicular, estado de señalización, comportamiento de la multitud y destaca cortes o riesgos en la calle.'
-    },
-    {
-      id: 'retail',
-      label: 'Cumplimiento en tienda',
-      text: 'Audita frentes de góndola, exhibiciones promocionales e interacciones personal-cliente que afectan la ejecución comercial.'
-    },
-    {
-      id: 'safety',
-      label: 'Ronda de seguridad',
-      text: 'Busca uso de EPP, salidas bloqueadas, derrames u otros elementos que violen protocolos de seguridad.'
-    },
-    {
-      id: 'vehicle',
-      label: 'Informe de daños vehiculares',
-      text: 'Inspecciona carrocería, cristales y luces; marca golpes, rayones, óxido o piezas faltantes e incluye la placa.'
-    },
-    {
-      id: 'receipt',
-      label: 'Extracción de recibos/slips',
-      text: 'Transcribe totales, impuestos, datos de la tienda, forma de pago y cualquier nota escrita a mano.'
-    },
-    {
-      id: 'manual',
-      label: 'Resumen de manual/SOP',
-      text: 'Resume el propósito del documento, pasos clave, advertencias y herramientas mencionadas.'
-    },
-    {
-      id: 'specsheet',
-      label: 'Resumen de ficha técnica',
-      text: 'Enumera números de modelo, especificaciones clave (potencia, dimensiones, materiales), certificaciones y tolerancias.'
-    }
-  ],
-  ja: [
-    {
-      id: 'urban',
-      label: '路上オペレーション点検',
-      text: '交通の流れ、標識の状態、人の動きを説明し、停電や危険箇所を指摘してください。'
-    },
-    {
-      id: 'retail',
-      label: '店舗コンプライアンス確認',
-      text: '棚割り、販促ディスプレイ、スタッフと顧客のやり取りを監査し、販売オペを評価します。'
-    },
-    {
-      id: 'safety',
-      label: '安全ラウンド',
-      text: 'PPEの着用、塞がれた出口、こぼれやその他の安全違反を探してください。'
-    },
-    {
-      id: 'vehicle',
-      label: '車両ダメージ調査',
-      text: '外装パネル、ガラス、ライトを確認し、へこみ・傷・錆・欠品とナンバー情報を報告してください。'
-    },
-    {
-      id: 'receipt',
-      label: 'レシート/伝票抽出',
-      text: '合計、税額、店舗情報、支払方法、手書きメモを読み取ってください。'
-    },
-    {
-      id: 'manual',
-      label: 'マニュアル/SOP要約',
-      text: '文書の目的、主要手順、警告、記載された工具を要約してください。'
-    },
-    {
-      id: 'specsheet',
-      label: '技術仕様ハイライト',
-      text: '型番、主要スペック（出力・寸法・素材）、認証、許容差を列挙してください。'
-    }
-  ],
-  zh: [
-    {
-      id: 'urban',
-      label: '街道运行巡查',
-      text: '描述车流、标志状态、人群行为，并标记道路上的停电或隐患。'
-    },
-    {
-      id: 'retail',
-      label: '门店合规检查',
-      text: '审核货架陈列、促销展示以及员工与顾客互动，对执行情况进行评估。'
-    },
-    {
-      id: 'safety',
-      label: '安全巡检',
-      text: '查看PPE佩戴、被阻挡的出口、溢漏或其它违反安全规程的情况。'
-    },
-    {
-      id: 'vehicle',
-      label: '车辆损伤报告',
-      text: '检查车身、玻璃与灯具；标记凹陷、划痕、锈蚀或缺失零件，并记录车牌信息。'
-    },
-    {
-      id: 'receipt',
-      label: '收据/票据提取',
-      text: '转写总额、税费、门店信息、付款方式及任何手写备注。'
-    },
-    {
-      id: 'manual',
-      label: '手册/SOP 摘要',
-      text: '概述文档目的、关键步骤、警示语和提到的工具。'
-    },
-    {
-      id: 'specsheet',
-      label: '技术规格亮点',
-      text: '列出型号、关键参数（功率、尺寸、材料）、认证以及公差。'
-    }
-  ],
   ko: [
     {
       id: 'urban',
@@ -877,12 +615,14 @@ const PROMPT_COPY = {
     }
   ]
 };
-PROMPT_COPY.en = PROMPT_COPY.default;
 
 const elements = {
+  pageTitle: document.getElementById('pageTitle'),
   detectForm: document.getElementById('detectForm'),
   browseBtn: document.getElementById('browseBtn'),
   cameraBtn: document.getElementById('cameraBtn'),
+  modelSelect: document.getElementById('modelSelect'),
+  modelQuickSelect: document.getElementById('modelQuickSelect'),
   photoInput: document.getElementById('photoInput'),
   cameraInput: document.getElementById('cameraInput'),
   dropzone: document.querySelector('[data-dropzone]'),
@@ -893,7 +633,6 @@ const elements = {
   promptInput: document.getElementById('promptInput'),
   statusBanner: document.getElementById('statusBanner'),
   analyzeBtn: document.getElementById('analyzeBtn'),
-  speakBtn: document.getElementById('speakBtn'),
   descriptionOutput: document.getElementById('descriptionOutput'),
   objectsGrid: document.getElementById('objectsGrid'),
   rawOutput: document.getElementById('rawOutput'),
@@ -921,11 +660,15 @@ const elements = {
   chatForm: document.getElementById('chatForm'),
   chatInput: document.getElementById('chatInput'),
   chatSendBtn: document.getElementById('chatSendBtn'),
+  chatMicBtn: document.getElementById('chatMicBtn'),
+  chatPresets: document.getElementById('chatPresets'),
   languageSelect: document.getElementById('languageSelect')
 };
 
 const state = {
   language: DEFAULT_LANGUAGE,
+  models: [],
+  selectedModel: null,
   promptSamples: [],
   selectedPromptId: null,
   selectedFile: null,
@@ -938,55 +681,290 @@ const state = {
   statusOverride: null,
   analysisContext: null,
   chatHistory: [],
-  isChatting: false
+  isChatting: false,
+  speechRecognition: null,
+  isDictating: false,
+  dictationBase: ''
 };
 
 let promptInputDirty = false;
 
-const hasSpeechSupport = () => typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis;
-
-const getSpeechLang = () => {
-  const map = {
-    th: 'th-TH',
-    de: 'de-DE',
-    no: 'nb-NO',
-    sv: 'sv-SE',
-    es: 'es-ES',
-    ja: 'ja-JP',
-    zh: 'zh-CN',
-    ko: 'ko-KR'
-  };
-  return map[state.language] || 'en-US';
+const updateModelSelectors = () => {
+  const selects = [elements.modelSelect, elements.modelQuickSelect].filter(Boolean);
+  selects.forEach((select) => {
+    select.innerHTML = '';
+    if (!state.models.length) {
+      select.disabled = true;
+      const option = document.createElement('option');
+      option.value = '';
+      option.textContent = '—';
+      select.appendChild(option);
+      return;
+    }
+    state.models.forEach((model) => {
+      const option = document.createElement('option');
+      option.value = model;
+      option.textContent = model;
+      option.selected = model === state.selectedModel;
+      select.appendChild(option);
+    });
+    select.disabled = false;
+  });
 };
 
-const updateSpeakButton = () => {
-  if (!elements.speakBtn) return;
-  const supported = Boolean(hasSpeechSupport());
-  const summaryText = elements.descriptionOutput?.textContent?.trim();
-  const enabled = supported && state.hasAnalysis && !!summaryText;
-  elements.speakBtn.disabled = !enabled;
-  elements.speakBtn.textContent = supported ? t('speakButton') : t('speakButtonUnavailable');
-};
-
-const speakSummary = () => {
-  if (!hasSpeechSupport() || !elements.descriptionOutput) return;
-  const text = elements.descriptionOutput.textContent?.trim();
-  if (!text) return;
-  try {
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = getSpeechLang();
-    utterance.rate = 1;
-    window.speechSynthesis.speak(utterance);
-  } catch (error) {
-    console.warn('speech synthesis failed', error);
+const setSelectedModel = (model) => {
+  if (model && state.models.includes(model)) {
+    state.selectedModel = model;
+  } else if (!state.selectedModel && state.models.length) {
+    state.selectedModel = state.models[0];
+  } else if (!state.models.length) {
+    state.selectedModel = null;
   }
+  updateModelSelectors();
+};
+
+const fetchModelOptions = async () => {
+  try {
+    const response = await fetch('/test/detects/api/models');
+    if (!response.ok) throw new Error('model_list_failed');
+    const data = await response.json();
+    const list = Array.isArray(data.models) ? data.models.filter(Boolean) : [];
+    if (list.length) {
+      state.models = list;
+      let preferred = null;
+      if (list.includes(PREFERRED_VISION_MODEL)) {
+        preferred = PREFERRED_VISION_MODEL;
+      } else if (typeof data.default === 'string' && list.includes(data.default)) {
+        preferred = data.default;
+      } else {
+        preferred = list[0];
+      }
+      setSelectedModel(preferred);
+    } else {
+      state.models = [];
+      setSelectedModel(null);
+    }
+  } catch (error) {
+    console.error('Failed to load model list', error);
+    if (!state.models.length) {
+      state.selectedModel = null;
+      updateModelSelectors();
+    }
+  }
+};
+
+async function handleChatSubmit(event) {
+  event.preventDefault();
+  if (state.isChatting) return;
+  if (!state.analysisContext) {
+    setStatus('statusNeedAnalysis', 'error');
+    return;
+  }
+  const question = elements.chatInput?.value?.trim();
+  if (!question) return;
+
+  appendChatMessage('user', question);
+  pushChatHistory({ role: 'user', content: question });
+  if (elements.chatInput) elements.chatInput.value = '';
+
+  stopSpeaking();
+  const thinkingText = t('chatThinking') || 'Thinking…';
+  const pendingMessage = appendChatMessage('assistant', thinkingText, { pending: true });
+  setChatBusy(true);
+
+  try {
+    const response = await fetch('/test/detects/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question,
+        description: state.analysisContext?.description || '',
+        objects: state.analysisContext?.objects || [],
+        language: state.language,
+        history: state.chatHistory
+      })
+    });
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(detail || 'chat_failed');
+    }
+    const data = await response.json();
+    const reply = (data?.reply || '').trim();
+    const replyLanguage = (data?.language || state.language || '').trim() || state.language;
+    if (pendingMessage) {
+      pendingMessage.classList.remove('pending');
+      const body = pendingMessage.querySelector('.chat-body');
+      if (body) body.textContent = reply || t('chatError');
+      applySpeakerState(pendingMessage, { text: reply, language: replyLanguage, enable: true });
+    }
+    if (reply) {
+      pushChatHistory({ role: 'assistant', content: reply });
+    }
+  } catch (error) {
+    console.error('Chat failed', error);
+    if (pendingMessage) {
+      pendingMessage.classList.remove('pending');
+      const body = pendingMessage.querySelector('.chat-body');
+      if (body) body.textContent = t('chatError');
+      applySpeakerState(pendingMessage, { text: '', language: state.language, enable: false });
+    }
+  } finally {
+    setChatBusy(false);
+  }
+}
+
+const initModelSelectors = () => {
+  [elements.modelSelect, elements.modelQuickSelect].forEach((select) => {
+    if (!select) return;
+    select.addEventListener('change', (event) => {
+      const value = event.target.value;
+      if (value) setSelectedModel(value);
+    });
+  });
+  fetchModelOptions();
+};
+
+const updateSpeechRecognitionLocale = () => {
+  if (!state.speechRecognition) return;
+  const locale = resolveSpeechLocale(state.language);
+  state.speechRecognition.lang = locale;
+};
+
+const getSpeechRecognitionCtor = () => {
+  if (!SUPPORTS_SPEECH_RECOGNITION) return null;
+  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+};
+
+const updateDictationState = (recording) => {
+  state.isDictating = Boolean(recording);
+  if (elements.chatMicBtn) {
+    elements.chatMicBtn.classList.toggle('recording', state.isDictating);
+    elements.chatMicBtn.setAttribute('aria-pressed', state.isDictating ? 'true' : 'false');
+  }
+  updateChatAvailability();
+};
+
+const applyDictationTranscript = (transcript, isFinal = false) => {
+  if (!elements.chatInput || !transcript) return;
+  const text = transcript.trim();
+  if (!text) return;
+  if (isFinal) {
+    state.dictationBase = text;
+  }
+  elements.chatInput.value = text;
+  elements.chatInput.focus();
+};
+
+const attachRecognitionHandlers = (recognition) => {
+  if (!recognition) return;
+  recognition.onstart = () => updateDictationState(true);
+  recognition.onend = () => updateDictationState(false);
+  recognition.onerror = () => updateDictationState(false);
+  recognition.onresult = (event) => {
+    if (!event.results?.length) return;
+    let combined = '';
+    let finalResult = false;
+    for (let i = event.resultIndex; i < event.results.length; i += 1) {
+      const result = event.results[i];
+      if (!result?.[0]) continue;
+      combined += result[0].transcript || '';
+      if (result.isFinal) {
+        finalResult = true;
+      }
+    }
+    if (combined) {
+      applyDictationTranscript(combined, finalResult);
+    }
+  };
+};
+
+const ensureSpeechRecognition = () => {
+  if (state.speechRecognition) return state.speechRecognition;
+  const Ctor = getSpeechRecognitionCtor();
+  if (!Ctor) {
+    state.speechRecognition = null;
+    return null;
+  }
+  try {
+    const recognition = new Ctor();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    state.speechRecognition = recognition;
+    updateSpeechRecognitionLocale();
+    attachRecognitionHandlers(recognition);
+    updateChatAvailability();
+    return recognition;
+  } catch (error) {
+    console.warn('Failed to init speech recognition', error);
+    state.speechRecognition = null;
+    updateChatAvailability();
+    return null;
+  }
+};
+
+const stopDictation = () => {
+  if (!state.speechRecognition) return;
+  try {
+    state.speechRecognition.stop();
+  } catch {
+    /* ignore */
+  }
+  updateDictationState(false);
+};
+
+const startDictation = () => {
+  const recognition = ensureSpeechRecognition();
+  if (!recognition) return;
+  try {
+    recognition.stop();
+  } catch {
+    /* ignore */
+  }
+  try {
+    recognition.start();
+  } catch (error) {
+    console.warn('Speech recognition start failed', error);
+  }
+};
+
+const handleMicButtonClick = (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  if (!state.speechRecognition) {
+    ensureSpeechRecognition();
+    return;
+  }
+  if (state.isDictating) {
+    stopDictation();
+  } else {
+    startDictation();
+  }
+};
+
+const initSpeechInput = () => {
+  if (!elements.chatMicBtn) return;
+  const ctor = getSpeechRecognitionCtor();
+  if (!ctor) {
+    elements.chatMicBtn.hidden = true;
+    return;
+  }
+  elements.chatMicBtn.hidden = false;
+  elements.chatMicBtn.addEventListener('click', handleMicButtonClick);
+  ensureSpeechRecognition();
 };
 
 const updateChatAvailability = () => {
   const canChat = Boolean(state.analysisContext) && !state.isChatting;
   if (elements.chatInput) elements.chatInput.disabled = !canChat;
   if (elements.chatSendBtn) elements.chatSendBtn.disabled = !canChat;
+  if (elements.chatMicBtn) {
+    const hasRecognition = Boolean(state.speechRecognition);
+    const shouldDisable = (!hasRecognition || !canChat) && !state.isDictating;
+    elements.chatMicBtn.disabled = shouldDisable;
+    elements.chatMicBtn.hidden = !hasRecognition;
+    elements.chatMicBtn.classList.toggle('recording', state.isDictating);
+  }
 };
 
 const pushChatHistory = (entry) => {
@@ -1020,6 +998,7 @@ const clearChatPlaceholder = () => {
 };
 
 const resetChatConversation = () => {
+  stopSpeaking();
   state.chatHistory = [];
   state.isChatting = false;
   if (elements.chatInput) elements.chatInput.value = '';
@@ -1038,22 +1017,118 @@ const setChatBusy = (busy) => {
   updateChatAvailability();
 };
 
-const appendChatMessage = (role, content, { pending = false } = {}) => {
+const supportsSpeechSynthesis = typeof window !== 'undefined' && 'speechSynthesis' in window;
+let activeUtterance = null;
+
+const setSpeakerIcon = (button, isPlaying) => {
+  if (!button) return;
+  const icon = button.querySelector('.icon');
+  const playing = Boolean(isPlaying);
+  const label = playing ? t('chatSpeakerStop') || 'Stop audio' : t('chatSpeakerButton') || 'Play audio response';
+  if (icon) {
+    icon.textContent = playing ? '⏹' : '🔊';
+  } else {
+    button.textContent = playing ? '⏹' : '🔊';
+  }
+  button.setAttribute('aria-label', label);
+  button.title = label;
+};
+
+const stopSpeaking = () => {
+  if (!supportsSpeechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const activeButton = elements.chatLog?.querySelector('.chat-speaker-btn.is-speaking');
+  if (activeButton) {
+    activeButton.classList.remove('is-speaking');
+    setSpeakerIcon(activeButton, false);
+  }
+  activeUtterance = null;
+};
+
+const speakText = (text, locale, buttonEl) => {
+  if (!supportsSpeechSynthesis || !text) return;
+  stopSpeaking();
+  activeUtterance = new SpeechSynthesisUtterance(text);
+  activeUtterance.lang = locale || resolveSpeechLocale(state.language);
+  activeUtterance.rate = 1;
+  if (buttonEl) {
+    buttonEl.classList.add('is-speaking');
+    setSpeakerIcon(buttonEl, true);
+  }
+  activeUtterance.onend = activeUtterance.onerror = () => {
+    if (buttonEl) {
+      buttonEl.classList.remove('is-speaking');
+      setSpeakerIcon(buttonEl, false);
+    }
+    activeUtterance = null;
+  };
+  window.speechSynthesis.speak(activeUtterance);
+};
+
+elements.chatLog?.addEventListener('click', (event) => {
+  const speakerBtn = event.target.closest('.chat-speaker-btn');
+  if (!speakerBtn || speakerBtn.hidden) return;
+  const text = speakerBtn.dataset.speakText;
+  if (!text) return;
+  const lang = speakerBtn.dataset.speakLang || resolveSpeechLocale(state.language);
+  speakText(text, lang, speakerBtn);
+});
+
+const applySpeakerState = (container, { text, language, enable }) => {
+  if (!container) return;
+  const button = container.querySelector('.chat-speaker-btn');
+  if (!button) return;
+  const speechText = (text || '').trim();
+  const canUseSpeech =
+    enable && supportsSpeechSynthesis && speechText && speechText.length <= MAX_SPEECH_CHARACTERS;
+  if (canUseSpeech) {
+    button.hidden = false;
+    button.dataset.speakText = speechText;
+    button.dataset.speakLang = resolveSpeechLocale(language);
+    setSpeakerIcon(button, false);
+  } else {
+    button.hidden = true;
+    button.removeAttribute('data-speak-text');
+    button.removeAttribute('data-speak-lang');
+    button.classList.remove('is-speaking');
+    setSpeakerIcon(button, false);
+  }
+};
+
+const appendChatMessage = (role, content, { pending = false, canSpeak = false, language } = {}) => {
   if (!elements.chatLog) return null;
   clearChatPlaceholder();
   const message = document.createElement('div');
   message.className = `chat-message ${role}`;
   if (pending) message.classList.add('pending');
+  const labelRow = document.createElement('div');
+  labelRow.className = 'chat-label-row';
   const label = document.createElement('span');
   label.className = 'chat-label';
   const labels = getChatLabels();
   label.textContent = role === 'user' ? labels.user : labels.assistant;
+  labelRow.appendChild(label);
+  if (role === 'assistant') {
+    const controls = document.createElement('div');
+    controls.className = 'chat-controls';
+    const speakBtn = document.createElement('button');
+    speakBtn.type = 'button';
+    speakBtn.className = 'chat-speaker-btn';
+    speakBtn.innerHTML = '<span class="icon">🔊</span>';
+    speakBtn.title = t('chatSpeakerButton') || 'Play audio';
+    speakBtn.hidden = true;
+    controls.appendChild(speakBtn);
+    labelRow.appendChild(controls);
+  }
   const body = document.createElement('p');
   body.className = 'chat-body';
   body.textContent = content;
-  message.append(label, body);
+  message.append(labelRow, body);
   elements.chatLog.appendChild(message);
   elements.chatLog.scrollTop = elements.chatLog.scrollHeight;
+  if (!pending && role === 'assistant') {
+    applySpeakerState(message, { text: content, language, enable: canSpeak });
+  }
   return message;
 };
 
@@ -1070,6 +1145,9 @@ const refreshChatLocale = () => {
   elements.chatLog.querySelectorAll('.chat-message.assistant .chat-label').forEach((label) => {
     label.textContent = labels.assistant;
   });
+  elements.chatLog.querySelectorAll('.chat-speaker-btn').forEach((button) => {
+    button.title = t('chatSpeakerButton') || 'Play audio response';
+  });
 };
 
 const getStrings = (lang = state.language) => ({
@@ -1082,8 +1160,6 @@ const t = (key, fallback = '') => {
   const strings = getStrings();
   return strings[key] ?? fallback ?? key;
 };
-
-const getPromptSet = () => PROMPT_COPY[state.language] || PROMPT_COPY.default;
 
 const setStatus = (key, stateClass = '', overrideText) => {
   state.statusKey = key || 'statusWaiting';
@@ -1099,6 +1175,28 @@ const setStatus = (key, stateClass = '', overrideText) => {
 };
 
 const refreshStatus = () => setStatus(state.statusKey, state.statusState, state.statusOverride);
+
+const renderChatPresets = () => {
+  if (!elements.chatPresets) return;
+  elements.chatPresets.innerHTML = '';
+  const presets = CHAT_PRESET_TEMPLATES.map((preset) => ({
+    id: preset.id,
+    label: t(preset.labelKey, preset.fallbackLabel),
+    text: t(preset.textKey, preset.fallbackText)
+  }));
+  presets.forEach((preset) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'preset';
+    button.innerHTML = `<strong>${preset.label}</strong><span>${preset.text}</span>`;
+    button.addEventListener('click', () => {
+      if (!elements.chatInput) return;
+      elements.chatInput.value = preset.text;
+      elements.chatInput.focus();
+    });
+    elements.chatPresets.appendChild(button);
+  });
+};
 
 const setLoading = (loading) => {
   state.isAnalyzing = loading;
@@ -1123,7 +1221,6 @@ const resetOutputs = () => {
   }
   if (elements.modelTag) elements.modelTag.textContent = '—';
   if (elements.latencyTag) elements.latencyTag.textContent = '—';
-  updateSpeakButton();
 };
 
 const updateFileState = (file) => {
@@ -1178,16 +1275,23 @@ const renderObjects = (objects = []) => {
     });
 };
 
+const buildPromptSamples = () =>
+  DETECTION_PROMPT_TEMPLATES.map((template) => ({
+    id: template.id,
+    label: t(template.labelKey, template.fallbackLabel),
+    text: t(template.textKey, template.fallbackText)
+  }));
+
 const renderPromptChips = () => {
   if (!elements.promptChips) return;
   elements.promptChips.innerHTML = '';
-  state.promptSamples = getPromptSet();
+  state.promptSamples = buildPromptSamples();
   state.promptSamples.forEach((sample) => {
     const chip = document.createElement('button');
     chip.type = 'button';
     chip.className = 'chip';
     chip.dataset.promptId = sample.id;
-    chip.textContent = sample.label;
+    chip.innerHTML = `<strong>${sample.label}</strong><span>${sample.text}</span>`;
     chip.addEventListener('click', () => selectPrompt(sample.id, true));
     elements.promptChips.appendChild(chip);
   });
@@ -1248,7 +1352,7 @@ const bindDropzone = () => {
     handleFiles(event.dataTransfer.files);
   });
   elements.dropzone.addEventListener('click', (event) => {
-    const interactive = event.target.closest('button, input, label, textarea, select, a');
+    const interactive = event.target.closest('button, input, label, select, textarea, a');
     if (interactive) {
       return;
     }
@@ -1271,6 +1375,9 @@ const handleSubmit = async (event) => {
   const formData = new FormData();
   formData.append('photo', state.selectedFile, state.selectedFile.name);
   formData.append('prompt', prompt);
+  if (state.selectedModel) {
+    formData.append('model', state.selectedModel);
+  }
 
   setStatus('statusAnalyzing');
   setLoading(true);
@@ -1305,7 +1412,6 @@ const handleSubmit = async (event) => {
       objects: Array.isArray(result.objects) ? result.objects : []
     };
     resetChatConversation();
-    updateSpeakButton();
     setStatus('statusAnalyzeComplete', 'ok');
   } catch (error) {
     console.error('Analyze failed', error);
@@ -1317,14 +1423,30 @@ const handleSubmit = async (event) => {
 };
 
 const applyLocaleToUI = () => {
-  const pairs = [
+  const textPairs = [
+    [elements.pageTitle, 'heroTitle'],
     [elements.heroEyebrow, 'heroEyebrow'],
+    [elements.heroTitle, 'heroTitle'],
+    [elements.heroLede, 'heroLede'],
+    [elements.langLabel, 'langLabel'],
+    [elements.uploadHeading, 'uploadHeading'],
+    [elements.uploadBody, 'uploadBody'],
+    [elements.dropTitle, 'dropTitle'],
+    [elements.promptHeading, 'promptHeading'],
+    [elements.promptBody, 'promptBody'],
+    [elements.promptLabel, 'promptLabel'],
+    [elements.modelLabel, 'modelLabel'],
+    [elements.modelTagLabel, 'modelTagLabel'],
+    [elements.latencyLabel, 'latencyLabel'],
+    [elements.summaryHeading, 'summaryHeading'],
+    [elements.objectsHeading, 'objectsHeading'],
+    [elements.objectsSubheading, 'objectsSubheading'],
     [elements.rawHeading, 'rawHeading'],
     [elements.rawSubheading, 'rawSubheading'],
     [elements.chatHeading, 'chatHeading'],
     [elements.chatSubheading, 'chatSubheading']
   ];
-  pairs.forEach(([el, key]) => {
+  textPairs.forEach(([el, key]) => {
     if (el) el.textContent = t(key);
   });
   if (elements.dropAlt) elements.dropAlt.textContent = t('dropAlt');
@@ -1338,7 +1460,6 @@ const applyLocaleToUI = () => {
   if (!state.hasRaw && elements.rawOutput) elements.rawOutput.textContent = t('rawPlaceholder');
   if (!state.hasObjects) renderObjects([]);
   setLoading(state.isAnalyzing);
-  updateSpeakButton();
   refreshChatLocale();
 };
 
@@ -1358,6 +1479,7 @@ const setLanguage = (lang) => {
   const exists = LANGUAGE_OPTIONS.some((entry) => entry.value === lang);
   state.language = exists ? lang : DEFAULT_LANGUAGE;
   document.documentElement.lang = state.language;
+  updateSpeechRecognitionLocale();
   try {
     localStorage.setItem('detectsLanguage', state.language);
   } catch {
@@ -1367,6 +1489,7 @@ const setLanguage = (lang) => {
   state.selectedPromptId = null;
   populateLanguageSelect();
   renderPromptChips();
+  renderChatPresets();
   applyLocaleToUI();
   refreshStatus();
 };
@@ -1380,13 +1503,23 @@ const initLanguageSwitcher = () => {
 
 const init = () => {
   bindDropzone();
-  elements.browseBtn?.addEventListener('click', () => elements.photoInput?.click());
+  initModelSelectors();
+  updateChatAvailability();
+  elements.browseBtn?.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    elements.photoInput?.click();
+  });
   elements.photoInput?.addEventListener('change', (event) => handleFiles(event.target.files));
-  elements.cameraBtn?.addEventListener('click', () => elements.cameraInput?.click());
+  elements.cameraBtn?.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    elements.cameraInput?.click();
+  });
   elements.cameraInput?.addEventListener('change', (event) => handleFiles(event.target.files));
   elements.detectForm?.addEventListener('submit', handleSubmit);
   elements.chatForm?.addEventListener('submit', handleChatSubmit);
-  elements.speakBtn?.addEventListener('click', speakSummary);
+  initSpeechInput();
   elements.promptInput?.addEventListener('input', () => {
     promptInputDirty = true;
   });

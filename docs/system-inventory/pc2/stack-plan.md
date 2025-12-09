@@ -79,6 +79,24 @@ Prereqs:
 4. **Monitoring**: `node-exporter`/`cAdvisor` require shared-mount access to `/`. WSL2 defaults prevent this, so keep the `monitoring` profile disabled for now; revisit when we run these containers on a native Linux host or enable `mount --make-rshared /`.
 5. **Backups**: persist volumes under `~/stacks/pc2-worker/data`; snapshot via `tar czf backups/pc2-worker-data-$(date +%Y%m%d).tgz data/`.
 
+### Secret Management Workflow (pc2-worker)
+1. **Authoritative template**: `stacks/pc2-worker/.env.example` stays in git with `__REPLACE_ME__` placeholders.
+2. **Private overrides**: create an untracked file such as `stacks/pc2-worker/.env.local` or a secrets bundle (`.secrets/.env/tony.env`) containing real values (MCP0 admin token, API keys, etc.).
+3. **Sync helper**: run `pwsh ./scripts/pc2-worker/sync-env.ps1 -SourcePath <path-to-private-env>` before invoking any compose workflow.  
+   - The script copies the env file over WSL SSH/SCP to `/home/chaba/chaba/stacks/pc2-worker/.env` and enforces secure permissions.
+   - If `PC2_STACK_ENV_SOURCE` is set (for example to `c:\chaba\.secrets\.env\tony.env`), the `-SourcePath` flag is optional.
+4. **Automations**: MCP DevOps workflows (e.g., `pc2-compose-stop-all`, `pc2-compose-rebuild-vaja`) should call the sync helper first to ensure PC2 has the latest secrets. This allows operator assistants like **Dever** to:
+   - Detect stale envs by comparing `.env.example` vs. the synced `.env`.
+   - Suggest credential rotations or new provider entries (e.g., for additional MCP agents) before triggering compose-control.
+   - Propose creating new agents by appending env keys + `MCP0_PROVIDERS` entries via the same templated workflow, then re-running `sync-env.ps1` and the relevant compose command.
+
+5. **MCP0 providers (pc1 + pc2)**:
+   - Keep `MCP0_PROVIDERS` in your private `.env.local` aligned with `stacks/pc2-worker/.env.example`. Each entry follows `name:base_url|health=/health|capabilities=/.well-known/mcp.json|tools=...`.
+   - Register both `mcp-agents-pc1` and `mcp-agents-pc2`, pointing at `https://dev-host.pc1/test/agents/api` and `https://dev-host.pc2/test/agents/api` respectively. Include `relay_prompt` in their `tools` list so Cascade can forward Dever prompts through either host.
+   - After updating secrets, rerun `scripts/pc2-worker/sync-env.ps1` and trigger a MCP0 refresh (e.g., restart the service or hit the admin `/providers/refresh` workflow) to propagate new providers to MCP clients.
+
+> **Tip for Dever**: incorporate a “sync secret env” step into any pc2 automation plan. If the helper reports missing secrets, prompt the operator to update their private env file, then retry. This keeps MCP0 credentials and agent definitions consistent across the repo, the local machine, and PC2.
+
 ## Next Steps
 1. Create `~/stacks/pc2-worker/docker-compose.yml` with the profiles above.
 2. Draft helper scripts:

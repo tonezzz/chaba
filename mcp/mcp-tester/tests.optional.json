@@ -1,0 +1,44 @@
+[
+  {
+    "name": "imagen-health",
+    "description": "Ensure the Imagen GPU service reports healthy.",
+    "url": "http://mcp-imagen-gpu:8001/health",
+    "expect_status": 200,
+    "timeout_ms": 8000,
+    "retries": 2,
+    "retry_delay_ms": 1000
+  },
+  {
+    "name": "imagen-generate",
+    "description": "Smoke-test image generation with a fast, low-cost request.",
+    "url": "http://mcp-imagen-gpu:8001/generate",
+    "method": "POST",
+    "expect_status": 200,
+    "timeout_ms": 20000,
+    "retries": 0,
+    "body": {
+      "prompt": "vibrant MCP stack verification badge, flat illustration",
+      "num_inference_steps": 6,
+      "width": 256,
+      "height": 256
+    }
+  },
+  {
+    "name": "dev-host-test-landing",
+    "description": "Validate the /test landing page through the dev-host proxy.",
+    "url": "{{DEV_HOST_TEST_BASE}}/test/",
+    "expect_status": 200,
+    "timeout_ms": 5000,
+    "retries": 1,
+    "requires_env": ["DEV_HOST_TEST_BASE"]
+  },
+  {
+    "name": "dev-host-agents-proxy",
+    "description": "Ensure the /test/agents route is being served via dev-host.",
+    "url": "{{DEV_HOST_TEST_BASE}}/test/agents/index.html",
+    "expect_status": 200,
+    "timeout_ms": 5000,
+    "retries": 1,
+    "requires_env": ["DEV_HOST_TEST_BASE"]
+  }
+]

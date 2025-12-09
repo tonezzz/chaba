@@ -15,9 +15,13 @@ const makePosixCommand = (runner) => {
           .map(([key, value]) => `export ${key}="${escapeDoubleQuotes(value)}"`)
           .join(' && ')
       : '';
-  const scriptRef = runner.scriptRelative?.startsWith('./')
-    ? runner.scriptRelative
-    : `./${runner.scriptRelative || ''}`.replace(/\/{2,}/g, '/');
+  const scriptRefRaw = runner.scriptRelative || '';
+  const shouldPrefix =
+    !!scriptRefRaw &&
+    !scriptRefRaw.startsWith('./') &&
+    !scriptRefRaw.startsWith('/') &&
+    !/\s/.test(scriptRefRaw);
+  const scriptRef = shouldPrefix ? `./${scriptRefRaw}`.replace(/\/{2,}/g, '/') : scriptRefRaw;
 
   const commandParts = [`cd ${repoPath}`];
   if (exports) {

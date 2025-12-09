@@ -2,13 +2,17 @@
 
 ## SSL quick reference
 
-### Production (idc1 / a1.idc1)
+### Production (idc1 / a1-idc1)
 - **Front-end**: Caddy 2 running on the idc1 VM via systemd, using the configs under `sites/a1-idc1/config/Caddyfile*` which expose `idc1.surf-thailand.com` and `a1.idc1.surf-thailand.com` with automatic HTTPS handling.@sites/a1-idc1/config/Caddyfile#1-38@sites/a1-idc1/config/Caddyfile.remote#58-69
 - **DNS**: `A` records for both hostnames point to `103.245.164.48`. Keep TTL ≤ 300 s when rotating certificates so ACME challenges see updates quickly.
 - **Provisioning workflow**:
   1. Install the official Caddy repo (`apt install -y debian-keyring debian-archive-keyring && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg`, then `apt install caddy`).
   2. Copy the desired Caddyfile from `sites/a1-idc1/config/` to `/etc/caddy/Caddyfile` and reload via `sudo systemctl reload caddy`.
   3. Ensure `/var/www/{idc1,a1}` is readable by the `caddy` user (`sudo chown -R caddy:www-data /var/www/idc1 /var/www/a1`) so the ACME HTTP challenge files can be served.
+- **Caddy validation loop**:
+  1. Run `pwsh ./scripts/validate-caddy.ps1` (or add `-SkipFormat` if you only need validation). The script binds `sites/a1-idc1/config` into the official `caddy:2` image, runs `caddy fmt --overwrite`, and then `caddy validate`.
+  2. MCP DevOps exposes the same helper via the `validate-caddy` workflow; invoke it before `deploy-a1-idc1` so the pipeline fails fast if the file is malformed.
+  3. Once validation passes, deploy with `scripts/deploy-a1-idc1.sh` and reload the daemon (`ssh chaba@idc1 'sudo systemctl reload caddy'`).
 - **Renewal**: handled automatically by Caddy’s built-in ACME client; check `journalctl -u caddy -f` during renewals.
 
 > **Side notes & fixes**

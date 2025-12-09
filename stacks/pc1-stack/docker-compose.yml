@@ -1,0 +1,58 @@
+version: "3.9"
+
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - .env
+  networks:
+    - pc1-stack-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  mcp0:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP0_BUILD_CONTEXT:-../../mcp/mcp0}
+    ports:
+      - "${MCP0_PORT:-8310}:${MCP0_PORT:-8310}"
+    environment:
+      MCP0_APP_NAME: ${MCP0_APP_NAME:-pc1-mcp0}
+      MCP0_PORT: ${MCP0_PORT:-8310}
+      MCP0_ADMIN_TOKEN: ${MCP0_ADMIN_TOKEN:-}
+      MCP0_PROVIDERS: ${MCP0_PROVIDERS:-}
+      MCP0_ALLOW_ORIGINS: ${MCP0_ALLOW_ORIGINS:-http://localhost:3000,http://dev-host.pc1:3100}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP0_PORT:-8310}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-agents:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_AGENTS_BUILD_CONTEXT:-../../mcp/mcp-agents}
+    ports:
+      - "${MCP_AGENTS_PORT:-8046}:8046"
+    environment:
+      PORT: ${MCP_AGENTS_PORT:-8046}
+      AGENTS_API_BASE: ${AGENTS_API_BASE:-http://dev-host.pc1:3100/test/agents/api}
+      AGENTS_DEFAULT_USER: ${AGENTS_DEFAULT_USER:-default}
+      AGENTS_DEFAULT_LIMIT: ${AGENTS_DEFAULT_LIMIT:-12}
+      JSON_BODY_LIMIT: ${AGENTS_JSON_LIMIT:-2mb}
+    volumes:
+      - ${MCP_AGENTS_DATA_DIR:-./data/mcp-agents}:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8046/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  pc1-stack-net:
+    driver: bridge

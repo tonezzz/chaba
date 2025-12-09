@@ -1,13 +1,4 @@
- {
-  if (newSessionButton) {
-    newSessionButton.addEventListener('click', startFreshSession);
-  }
-  loadSessions().catch((error) => console.error('Failed to load sessions', error));
-};
-
-/* remaining existing logic from previous main.js should follow (agent selection, streaming, etc.) */
-
-const sanitizeUserId = (value = '') => {
+ const sanitizeUserId = (value = '') => {
   const trimmed = (value || '').toString().trim().toLowerCase();
   const cleaned = trimmed.replace(/[^a-z0-9-_]/g, '');
   return cleaned || 'default';

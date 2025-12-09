@@ -46,24 +46,24 @@ cp .env.example .env
 | `list_workflows` | Returns id/label/description/tags/output hints for every registered workflow. |
 | `run_workflow` | Executes a workflow by id, optionally in `dry_run` mode and with extra params. Returns logs, exit code, and preview URL hints. |
 
-### Imagen GPU preview workflow
+### Production release (`release-a1-idc1`)
 
-The Imagen stack now lives under `stacks/pc2-worker` and can be brought up (plus smoke-tested) with the `scripts/preview-imagen.ps1` runner. This workflow:
+Daily `/test` publishes are now fully automated via `scripts/release-a1-idc1.ps1`. The script:
 
-1. Ensures Docker Desktop is available, then runs `docker compose --profile mcp-suite up -d dev-proxy mcp-imagen-gpu`.
-2. Waits for `http://127.0.0.1:8001/health` to return `status: ok`.
-3. Issues a low-cost `/generate` POST (default: 256×256, 6 steps) to catch regressions before touching the UI.
+1. Runs `scripts/validate-caddy.ps1` (dockerized `caddy fmt` + `caddy validate`).
+2. Calls `scripts/deploy-a1-idc1.sh` through WSL so assets sync to `/www/a1.idc1.surf-thailand.com`.
+3. SSHs to the host (`sudo systemctl reload caddy`).
+4. Executes `scripts/verify-a1-idc1-test.sh` against `https://a1.idc1.surf-thailand.com/test/`.
 
 Manual usage:
 
 ```powershell
-pwsh ./scripts/preview-imagen.ps1 `
-  -DevHostBaseUrl http://dev-host.pc1/test/imagen `
-  -ImagenHealthUrl http://127.0.0.1:8001/health `
-  -ImagenGenerateUrl http://127.0.0.1:8001/generate
+powershell -File scripts/release-a1-idc1.ps1
 ```
 
-Through MCP, call `run_workflow` with `workflow_id: "preview-imagen"` (see `src/workflowCatalog.js`). On success, the workflow returns the health URL plus the dev-host target (`http://dev-host.pc1/test/imagen/` once the UI is deployed under `/www/test/imagen`).
+Flags such as `-SkipValidate`, `-SkipDeploy`, `-SkipReload`, `-SkipVerify`, or `-DryRun` let you tailor the run without editing the script.
+
+**MCP workflow:** Trigger `run_workflow` with `workflow_id: "release-a1-idc1"` for a hands-off release. The workflow inherits SSH/env configuration from `config.deploy` and surfaces the `/test` URL in its output metadata so MCP clients can jump straight to the live site once the release finishes.
 
 ### PC2 Docker control (native WSL engine)
 

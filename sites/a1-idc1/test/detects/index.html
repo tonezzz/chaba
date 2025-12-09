@@ -7,6 +7,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2300c2b0'/%3E%3Cstop offset='100%25' stop-color='%233144ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='12' fill='url(%23g)'/%3E%3Ctext x='50%25' y='58%25' text-anchor='middle' font-size='34' font-family='Space Grotesk,Segoe UI,system-ui,sans-serif' fill='white'%3EAI%3C/text%3E%3C/svg%3E"
+    />
+    <link
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
@@ -27,12 +31,26 @@
           <div class="lang-switch">
             <label for="languageSelect">
               <span id="langLabel">Language</span>
-              <select id="languageSelect" aria-label="Interface language"></select>
+              <select id="languageSelect" aria-label="Interface language">
+                <option value="th">ไทย (TH) — ค่าเริ่มต้น</option>
+                <option value="en">English (EN) — Default</option>
+                <option value="de">Deutsch (DE) — German</option>
+                <option value="no">Norsk (NO) — Norwegian</option>
+                <option value="sv">Svenska (SV) — Swedish</option>
+                <option value="es">Español (ES) — Spanish</option>
+                <option value="ja">日本語 (JA) — Japanese</option>
+                <option value="zh">中文 (ZH) — Chinese</option>
+                <option value="ko">한국어 (KO) — Korean</option>
+              </select>
             </label>
           </div>
           <div class="meta-chip">
-            <span id="modelTagLabel">LLM</span>
-            <strong id="modelTag">—</strong>
+            <label class="meta-select">
+              <span id="modelTagLabel">LLM</span>
+              <select id="modelQuickSelect" aria-label="Vision model quick select">
+                <option value="" disabled selected>Loading…</option>
+              </select>
+            </label>
           </div>
           <div class="meta-chip">
             <span id="latencyLabel">Latency</span>
@@ -50,8 +68,19 @@
                 <p id="uploadBody">Single still image, max 10 MB. Works great with portrait or landscape shots.</p>
               </div>
               <div class="dropzone" data-dropzone>
-                <input type="file" id="photoInput" accept="image/*" hidden />
-                <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden />
+                <input
+                  type="file"
+                  id="photoInput"
+                  accept="image/*,.heic,.heif,.avif,.webp,.jpeg,.jpg,.png"
+                  hidden
+                />
+                <input
+                  type="file"
+                  id="cameraInput"
+                  accept="image/*,.heic,.heif,.avif,.webp,.jpeg,.jpg,.png"
+                  capture="environment"
+                  hidden
+                />
                 <div class="dropzone-inner">
                   <p class="drop-title" id="dropTitle">Drag & drop photo</p>
                   <p class="drop-sub">
@@ -106,27 +135,30 @@
             <p class="muted" id="chatSubheading">Once a photo is analyzed, ask follow-up questions here.</p>
           </div>
           <div id="chatLog" class="chat-log" aria-live="polite"></div>
+          <div id="chatPresets" class="chat-presets" aria-label="Sample follow-up questions"></div>
           <form id="chatForm" class="chat-input-row">
-            <input
-              type="text"
-              id="chatInput"
-              placeholder="Type a question in your language…"
-              autocomplete="off"
-            />
+            <div class="chat-input-group">
+              <input
+                type="text"
+                id="chatInput"
+                placeholder="Type a question in your language…"
+                autocomplete="off"
+              />
+              <button type="button" id="chatMicBtn" class="chat-mic-btn" aria-label="Dictate message">
+                <span class="icon">🎙</span>
+              </button>
+            </div>
             <button type="submit" id="chatSendBtn">Ask</button>
           </form>
         </div>
       </section>
 
       <section class="panel output-panel">
-        <div class="card summary-card">
-          <div class="card-head summary-head">
-            <div>
-              <h2 id="summaryHeading">Vision summary</h2>
-            </div>
-            <button type="button" id="speakBtn" class="ghost-btn speak-btn" disabled>Play summary</button>
+        <div class="card">
+          <div class="card-head">
+            <h2 id="summaryHeading">Vision summary</h2>
+            <p id="descriptionOutput" class="lede muted">No analysis yet.</p>
           </div>
-          <p id="descriptionOutput" class="lede muted">No analysis yet.</p>
         </div>
         <div class="card">
           <div class="card-head">

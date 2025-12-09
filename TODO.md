@@ -2,8 +2,29 @@
 
 - [x] Point mcp-imagen build + scripts at local chaba sources (compose + config)
 - [x] Add fast failure checks (preview script sanity request + config validation)
-- [ ] Document/verify updated workflow
-- [ ] Move Imagen UI into /www/test/imagen and wire dev-host routing
-- [ ] Add proxy smoke/health validation for the Imagen UI preview
+- [x] Document/verify updated workflow
 - [ ] Verify dev-host `/api/health` aggregate payload (pc1 workstation)
 - [ ] Capture diagnostics screenshot/log snippets for troubleshooting matrix
+- [ ] Wire /test/agents observability panel + publish via mcp-agents/mcp-devops
+  - [ ] Publish refreshed SPA bundle into `/www/test/agents` and surface MCP data blocks
+  - [ ] Deploy the `mcp-agents` service (compose entry, env, PM2) onto pc2-worker
+  - [ ] Register the new `mcp-agents` provider with MCP0 + document client hookup
+  - [ ] Expose preview/mcp workflows to smoke-test `mcp-agents` (preview-agents workflow, health probe, logs)
+- [ ] Confirm MCP DevOps docs reflect `http://dev-host.pc1/test/` canonical preview URL
+- [ ] Register MCP providers (glama, vaja, meeting, instrans) with MCP0 and confirm `/providers` refresh
+- [ ] Finish exposing dev-host.pc2 (port 3100 HTTPS) through firewall/router and verify `/test/mcp0/health` remotely
+- [ ] Document the new dev-host proxy env bootstrap + `/api/health` probe workflow for pc1/pc2 operators
+- [ ] Dever automation for Detects deployments
+  - [ ] Wrap `release-a1-idc1.ps1` + health checks behind a Dever command so publishing is one-step
+  - [ ] Add backend/service restarts + status validation (systemd/PM2) to the workflow
+  - [ ] Surface deployment outcome + smoke-test results back into MCP dashboards
+- [ ] Add git deployment using `git branch` flow to Dever
+  - [ ] Delegate to DevOps/agent loop to iterate on deploy/test until ready, then merge to main
+- [ ] Dever agent-improvement backlog
+  - [ ] Context-aware agent reviews (lint/tests + prioritized suggestions)
+  - [ ] Agent scaffolding templates for new services/providers
+  - [ ] Runtime telemetry & log correlation to recommend enhancements
+- [ ] Auditor agent rollout
+  - [ ] Build `mcp-agent-intern` alongside existing `mcp-agents` for blue/green validation
+  - [ ] Implement auditor MCP tool to run scenarios against both stacks and diff outputs/KPIs
+  - [ ] Gate promotion in mcp-devops workflows on green auditor reports + document process

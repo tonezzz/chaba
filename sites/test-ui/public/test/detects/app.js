@@ -1187,7 +1187,13 @@ const bindDropzone = () => {
     elements.dropzone.classList.remove('drag-over');
     handleFiles(event.dataTransfer.files);
   });
-  elements.dropzone.addEventListener('click', () => elements.photoInput?.click());
+  elements.dropzone.addEventListener('click', (event) => {
+    const interactiveTarget = event.target.closest('button, input, label, select, textarea, a');
+    if (interactiveTarget) {
+      return;
+    }
+    elements.photoInput?.click();
+  });
 };
 
 const handleSubmit = async (event) => {
@@ -1312,11 +1318,20 @@ const initLanguageSwitcher = () => {
 
 const init = () => {
   bindDropzone();
-  elements.browseBtn?.addEventListener('click', () => elements.photoInput?.click());
+  elements.browseBtn?.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    elements.photoInput?.click();
+  });
   elements.photoInput?.addEventListener('change', (event) => handleFiles(event.target.files));
-  elements.cameraBtn?.addEventListener('click', () => elements.cameraInput?.click());
+  elements.cameraBtn?.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    elements.cameraInput?.click();
+  });
   elements.cameraInput?.addEventListener('change', (event) => handleFiles(event.target.files));
   elements.detectForm?.addEventListener('submit', handleSubmit);
+  elements.chatForm?.addEventListener('submit', handleChatSubmit);
   elements.promptInput?.addEventListener('input', () => {
     promptInputDirty = true;
   });
@@ -1332,6 +1347,7 @@ const init = () => {
   setStatus('statusWaiting');
   initLanguageSwitcher();
   showChatPlaceholder();
+  updateChatAvailability();
 };
 
 init();

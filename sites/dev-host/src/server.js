@@ -46,18 +46,56 @@ const VAJA_PROXY_TARGET =
   process.env.VAJA_PROXY_TARGET || process.env.DEV_HOST_VAJA_TARGET || 'http://host.docker.internal:7217';
 const MCP0_PROXY_TARGET =
   process.env.MCP0_PROXY_TARGET || process.env.DEV_HOST_MCP0_TARGET || 'http://host.docker.internal:8310';
-const IMAGEN_PROXY_TARGET =
-  process.env.IMAGEN_PROXY_TARGET || process.env.DEV_HOST_IMAGEN_TARGET || 'http://127.0.0.1:8001';
 
 const workspaceRoot = path.resolve(__dirname, '..', '..');
+
+const resolveSitePath = (...segments) => {
+  const direct = path.join(workspaceRoot, ...segments);
+  if (fs.existsSync(direct)) {
+    return direct;
+  }
+  const nested = path.join(workspaceRoot, 'sites', ...segments);
+  if (fs.existsSync(nested)) {
+    return nested;
+  }
+  return direct;
+};
+
+const testLandingRoot = resolveSitePath('a1-idc1', 'test');
+const wwwRoot = resolveSitePath('a1-idc1', 'www');
+const additionalStaticRoutes = [
+  {
+    basePath: '/test/chat',
+    roots: [resolveSitePath('a1-idc1', 'test', 'chat')],
+    spa: true
+  },
+  {
+    basePath: '/test/agents',
+    roots: [
+      resolveSitePath('a1-idc1', 'test', 'agents'),
+      resolveSitePath('a1-idc1', 'www', 'test', 'agents')
+    ],
+    spa: true,
+    skipApiFallback: true
+  },
+  {
+    basePath: '/test/detects',
+    roots: [resolveSitePath('a1-idc1', 'test', 'detects')],
+    spa: true
+  },
+  {
+    basePath: '/test/vaja',
+    roots: [resolveSitePath('a1-idc1', 'test', 'vaja')],
+    spa: false
+  }
+];
 
 const PROXY_CHECKS = [
   { id: 'glama', label: 'Glama chat', target: GLAMA_PROXY_TARGET, path: '/health' },
   { id: 'agents', label: 'Agents API', target: AGENTS_PROXY_TARGET, path: '/health' },
   { id: 'detects', label: 'Detects API', target: DETECTS_PROXY_TARGET, path: '/health' },
   { id: 'vaja', label: 'Vaja TTS', target: VAJA_PROXY_TARGET, path: '/health' },
-  { id: 'mcp0', label: 'MCP0 control', target: MCP0_PROXY_TARGET, path: '/health' },
-  { id: 'imagen', label: 'Imagen service', target: IMAGEN_PROXY_TARGET, path: '/health' }
+  { id: 'mcp0', label: 'MCP0 control', target: MCP0_PROXY_TARGET, path: '/health' }
 ];
 
 const fetchWithTimeout = async (url, { timeout = 4000, ...options } = {}) => {
@@ -142,13 +180,13 @@ const siteConfigs = [
   {
     slug: 'a1-idc1',
     label: 'A1 IDC1 preview',
-    root: path.join(workspaceRoot, 'a1-idc1'),
+    root: resolveSitePath('a1-idc1'),
     publicUrl: 'https://a1.idc1.surf-thailand.com'
   },
   {
     slug: 'idc1',
     label: 'IDC1 preview',
-    root: path.join(workspaceRoot, 'idc1'),
+    root: resolveSitePath('idc1'),
     publicUrl: 'https://idc1.surf-thailand.com'
   }
 ];
@@ -203,210 +241,262 @@ const buildSiteRouter = (site) => {
 
 app.use(morgan('dev'));
 
-app.use(
-  '/test/chat/api',
-  createProxyMiddleware({
-    target: GLAMA_PROXY_TARGET,
-    changeOrigin: true,
-    pathRewrite: (path) => path.replace(/^\/test\/chat\/api/i, '/api'),
-    onProxyReq: (proxyReq) => {
-      proxyReq.setHeader('x-dev-host-proxy', 'test-chat');
-    },
-    onError: (err, req, res) => {
-      console.error('[dev-host] /test/chat/api proxy error', err.message);
-      if (!res.headersSent) {
-        res.status(502).json({ error: 'proxy_error', detail: err.message });
-      }
-    }
-  })
-);
-
-app.use(
-  '/test/agents/api',
-  createProxyMiddleware({
-    target: AGENTS_PROXY_TARGET,
-    changeOrigin: true,
-    pathRewrite: (path) => path.replace(/^\/test\/agents\/api/i, '/api'),
-    onProxyReq: (proxyReq) => {
-      proxyReq.setHeader('x-dev-host-proxy', 'test-agents-api');
-    },
-    onError: (err, req, res) => {
-      console.error('[dev-host] /test/agents/api proxy error', err.message);
-      if (!res.headersSent) {
-        res.status(502).json({ error: 'proxy_error', detail: err.message });
-      }
-    }
-  })
-);
-
-app.use(
-  '/test/agents',
-  createProxyMiddleware({
-    target: AGENTS_PROXY_TARGET,
-    changeOrigin: true,
-    pathRewrite: (path) => path.replace(/^\/test\/agents/i, '/www/test/agents'),
-    onProxyReq: (proxyReq) => {
-      proxyReq.setHeader('x-dev-host-proxy', 'test-agents-www');
-    },
-    onError: (err, req, res) => {
-      console.error('[dev-host] /test/agents proxy error', err.message);
-      if (!res.headersSent) {
-        res.status(502).json({ error: 'proxy_error', detail: err.message });
-      }
-    }
-  })
-);
-
-app.use(
-  '/test/mcp0',
-  createProxyMiddleware({
-    target: MCP0_PROXY_TARGET,
-    changeOrigin: true,
-    pathRewrite: (path) => path.replace(/^\/test\/mcp0/i, ''),
-    onProxyReq: (proxyReq) => {
-      proxyReq.setHeader('x-dev-host-proxy', 'test-mcp0');
-    },
-    onError: (err, req, res) => {
-      console.error('[dev-host] /test/mcp0 proxy error', err.message);
-      if (!res.headersSent) {
-        res.status(502).json({ error: 'proxy_error', detail: err.message });
-      }
-    }
-  })
-);
-
-app.use(
-  '/test/detects/api',
-  createProxyMiddleware({
-    target: DETECTS_PROXY_TARGET,
-    changeOrigin: true,
-    pathRewrite: (path) => path.replace(/^\/test\/detects\/api/i, ''),
-    onProxyReq: (proxyReq) => {
-      proxyReq.setHeader('x-dev-host-proxy', 'test-detects');
-    },
-    onError: (err, req, res) => {
-      console.error('[dev-host] /test/detects/api proxy error', err.message);
-      if (!res.headersSent) {
-        res.status(502).json({ error: 'proxy_error', detail: err.message });
-      }
-    }
-  })
-);
-
-app.use(
-  '/test/vaja/api',
-  createProxyMiddleware({
-    target: VAJA_PROXY_TARGET,
-    changeOrigin: true,
-    pathRewrite: (path) => path.replace(/^\/test\/vaja\/api/i, ''),
-    onProxyReq: (proxyReq) => {
-      proxyReq.setHeader('x-dev-host-proxy', 'test-vaja');
-    },
-    onError: (err, req, res) => {
-      console.error('[dev-host] /test/vaja/api proxy error', err.message);
-      if (!res.headersSent) {
-        res.status(502).json({ error: 'proxy_error', detail: err.message });
-      }
-    }
-  })
-);
-
-app.use(
-  '/test/imagen/api',
-  createProxyMiddleware({
-    target: IMAGEN_PROXY_TARGET,
-    changeOrigin: true,
-    pathRewrite: (path) => path.replace(/^\/test\/imagen\/api/i, ''),
-    onProxyReq: (proxyReq) => {
-      proxyReq.setHeader('x-dev-host-proxy', 'test-imagen');
-    },
-    onError: (err, req, res) => {
-      console.error('[dev-host] /test/imagen/api proxy error', err.message);
-      if (!res.headersSent) {
-        res.status(502).json({ error: 'proxy_error', detail: err.message });
-      }
-    }
-  })
-);
-
-app.get('/test/vaja/api/health', async (_req, res) => {
-  try {
-    const response = await fetch(`${VAJA_PROXY_TARGET.replace(/\/+$/, '')}/health`);
-    const data = await response.json();
-    return res.json(data);
-  } catch (err) {
-    console.error('[dev-host] /test/vaja/api/health error', err);
-    return res.status(502).json({ error: 'proxy_error', detail: err.message });
-  }
-});
-
-const additionalStaticRoutes = [
-  {
-    basePath: '/test/chat',
-    roots: [path.join(workspaceRoot, 'a1-idc1', 'test', 'chat')],
-    spa: true
-  },
-  {
-    basePath: '/test/detects',
-    roots: [path.join(workspaceRoot, 'a1-idc1', 'test', 'detects')],
-    spa: true
-  },
-  {
-    basePath: '/test/vaja',
-    roots: [path.join(workspaceRoot, 'a1-idc1', 'test', 'vaja')],
-    spa: false
-  },
-  {
-    basePath: '/test/imagen',
-    roots: [path.join(workspaceRoot, 'a1-idc1', 'test', 'imagen')],
-    spa: false
-  }
-];
-
-const testLandingRoot = path.join(workspaceRoot, 'a1-idc1', 'test');
-
-additionalStaticRoutes.forEach(({ basePath, roots, spa }) => {
-  const router = express.Router();
-  const resolvedRoots = roots.filter((dir) => fs.existsSync(dir));
-
-  if (!resolvedRoots.length) {
-    router.use((_req, res) => {
-      res.status(404).json({ error: 'static_root_missing', basePath });
-    });
-  } else {
-    resolvedRoots.forEach((dir) => router.use(express.static(dir, { fallthrough: true })));
-
-    if (spa) {
-      router.use((_req, res, next) => {
-        const fallback = resolvedRoots
-          .map((dir) => path.join(dir, 'index.html'))
-          .find((candidate) => fs.existsSync(candidate));
-        if (fallback) {
-          return res.sendFile(fallback);
-        }
-        return next();
-      });
-    }
-  }
-
-  router.use((req, res) => {
-    res.status(404).json({ error: 'not_found', basePath, path: req.path });
+const mountTestStaticRoutes = () => {
+  const testLandingRoot = resolveSitePath('a1-idc1', 'test');
+  const landingExists = fs.existsSync(testLandingRoot);
+  console.log('[dev-host] mounting /test static root', {
+    testLandingRoot,
+    landingExists
   });
 
-  app.use(basePath, router);
-});
+  additionalStaticRoutes.forEach(({ basePath, roots, spa, skipApiFallback }) => {
+    const router = express.Router();
+    const resolvedRoots = roots.filter((dir) => fs.existsSync(dir));
 
-const sendTestLanding = (_req, res) => {
-  const fallback = path.join(testLandingRoot, 'index.html');
-  if (fs.existsSync(fallback)) {
-    return res.sendFile(fallback);
-  }
-  return res.status(404).json({ error: 'test_index_missing' });
+    if (!resolvedRoots.length) {
+      router.use((_req, res) => {
+        res.status(404).json({ error: 'static_root_missing', basePath });
+      });
+    } else {
+      if (skipApiFallback) {
+        router.use((req, _res, next) => {
+          const localPath = req.path || '';
+          if (localPath.startsWith('/api') || localPath.startsWith('api')) {
+            return next('route');
+          }
+          return next();
+        });
+      }
+      resolvedRoots.forEach((dir) => router.use(express.static(dir, { fallthrough: true })));
+
+      if (spa) {
+        router.use((req, res, next) => {
+          const localPath = req.path || '';
+          if (skipApiFallback && (localPath.startsWith('/api') || localPath.startsWith('api'))) {
+            return next();
+          }
+          const fallback = resolvedRoots
+            .map((dir) => path.join(dir, 'index.html'))
+            .find((candidate) => fs.existsSync(candidate));
+          if (fallback) {
+            return res.sendFile(fallback);
+          }
+          return next();
+        });
+      }
+    }
+
+    router.use((req, res) => {
+      res.status(404).json({ error: 'not_found', basePath, path: req.path });
+    });
+
+    app.use(basePath, router);
+  });
+
+  const sendTestLanding = (req, res, next) => {
+    const fallback = path.join(testLandingRoot, 'index.html');
+    const exists = fs.existsSync(fallback);
+    console.log('[dev-host] /test landing check', {
+      url: req.originalUrl,
+      fallback,
+      exists
+    });
+    if (exists) {
+      res.sendFile(fallback, (err) => {
+        if (err) {
+          console.error('[dev-host] /test landing sendFile error', err);
+          return next(err);
+        }
+        console.log('[dev-host] /test landing served', req.originalUrl);
+      });
+      return;
+    }
+    console.warn('[dev-host] /test landing missing fallback', fallback);
+    return next();
+  };
+
+  const testRouter = express.Router();
+  testRouter.use(express.static(testLandingRoot, { fallthrough: true }));
+  testRouter.get(['/', '/index.html', ''], sendTestLanding);
+  app.use('/test', testRouter);
 };
 
-app.get(['/test', '/test/', '/test/*'], sendTestLanding);
+const mountWwwStaticRoutes = () => {
+  const exists = fs.existsSync(wwwRoot);
+  console.log('[dev-host] mounting /www static root', {
+    wwwRoot,
+    exists
+  });
 
-app.use('/test', express.static(testLandingRoot, { fallthrough: true }));
+  if (!exists) {
+    app.use('/www', (_req, res) => {
+      res.status(404).json({ error: 'www_root_missing', path: '/www' });
+    });
+    return;
+  }
+
+  const router = express.Router();
+  router.use(express.static(wwwRoot, { fallthrough: true }));
+  router.use((req, res) => {
+    res.status(404).json({ error: 'not_found', basePath: '/www', path: req.path });
+  });
+
+  app.use('/www', router);
+};
+
+const logRouteStack = () => {
+  if (!app._router?.stack) {
+    console.log('[dev-host] router stack unavailable');
+    return;
+  }
+  const summary = app._router.stack
+    .map((layer) => {
+      if (layer.route?.path) {
+        const methods = Object.keys(layer.route.methods || {}).join(',').toUpperCase();
+        return `ROUTE ${methods || 'ALL'} ${layer.route.path}`;
+      }
+      if (layer.name === 'router' && layer.regexp) {
+        return `MOUNT ${layer.regexp}`;
+      }
+      return `MIDDLEWARE ${layer.name || 'anonymous'}`;
+    })
+    .join('\n');
+  console.log('[dev-host] route stack:\n' + summary);
+};
+
+const wireProxies = () => {
+  app.use((req, _res, next) => {
+    if (req.originalUrl.startsWith('/test')) {
+      console.log('[dev-host] /test tap', req.method, req.originalUrl);
+    }
+    next();
+  });
+
+  app.use(
+    '/test/agents/api',
+    createProxyMiddleware({
+      target: AGENTS_PROXY_TARGET,
+      changeOrigin: true,
+      pathRewrite: (path) => path.replace(/^\/test\/agents\/api/i, '/api'),
+      onProxyReq: (proxyReq) => {
+        proxyReq.setHeader('x-dev-host-proxy', 'test-agents-api');
+      },
+      onError: (err, req, res) => {
+        console.error('[dev-host] /test/agents/api proxy error', err.message);
+        if (!res.headersSent) {
+          res.status(502).json({ error: 'proxy_error', detail: err.message });
+        }
+      }
+    })
+  );
+
+  app.use(
+    '/test/chat/api',
+    createProxyMiddleware({
+      target: GLAMA_PROXY_TARGET,
+      changeOrigin: true,
+      pathRewrite: (path) => path.replace(/^\/test\/chat\/api/i, '/api'),
+      onProxyReq: (proxyReq) => {
+        proxyReq.setHeader('x-dev-host-proxy', 'test-chat');
+      },
+      onError: (err, req, res) => {
+        console.error('[dev-host] /test/chat/api proxy error', err.message);
+        if (!res.headersSent) {
+          res.status(502).json({ error: 'proxy_error', detail: err.message });
+        }
+      }
+    })
+  );
+
+  app.use(
+    '/test/agents/api',
+    createProxyMiddleware({
+      target: AGENTS_PROXY_TARGET,
+      changeOrigin: true,
+      pathRewrite: (path) => path.replace(/^\/test\/agents\/api/i, '/api'),
+      onProxyReq: (proxyReq) => {
+        proxyReq.setHeader('x-dev-host-proxy', 'test-agents-api');
+      },
+      onError: (err, req, res) => {
+        console.error('[dev-host] /test/agents/api proxy error', err.message);
+        if (!res.headersSent) {
+          res.status(502).json({ error: 'proxy_error', detail: err.message });
+        }
+      }
+    })
+  );
+
+  app.use(
+    '/test/mcp0',
+    createProxyMiddleware({
+      target: MCP0_PROXY_TARGET,
+      changeOrigin: true,
+      pathRewrite: (path) => path.replace(/^\/test\/mcp0/i, ''),
+      onProxyReq: (proxyReq) => {
+        proxyReq.setHeader('x-dev-host-proxy', 'test-mcp0');
+      },
+      onError: (err, req, res) => {
+        console.error('[dev-host] /test/mcp0 proxy error', err.message);
+        if (!res.headersSent) {
+          res.status(502).json({ error: 'proxy_error', detail: err.message });
+        }
+      }
+    })
+  );
+
+  app.use(
+    '/test/detects/api',
+    createProxyMiddleware({
+      target: DETECTS_PROXY_TARGET,
+      changeOrigin: true,
+      pathRewrite: (path) => path.replace(/^\/test\/detects\/api/i, ''),
+      onProxyReq: (proxyReq) => {
+        proxyReq.setHeader('x-dev-host-proxy', 'test-detects');
+      },
+      onError: (err, req, res) => {
+        console.error('[dev-host] /test/detects/api proxy error', err.message);
+        if (!res.headersSent) {
+          res.status(502).json({ error: 'proxy_error', detail: err.message });
+        }
+      }
+    })
+  );
+
+  app.use(
+    '/test/vaja/api',
+    createProxyMiddleware({
+      target: VAJA_PROXY_TARGET,
+      changeOrigin: true,
+      pathRewrite: (path) => path.replace(/^\/test\/vaja\/api/i, ''),
+      onProxyReq: (proxyReq) => {
+        proxyReq.setHeader('x-dev-host-proxy', 'test-vaja');
+      },
+      onError: (err, req, res) => {
+        console.error('[dev-host] /test/vaja/api proxy error', err.message);
+        if (!res.headersSent) {
+          res.status(502).json({ error: 'proxy_error', detail: err.message });
+        }
+      }
+    })
+  );
+
+  app.get('/test/vaja/api/health', async (_req, res) => {
+    try {
+      const response = await fetch(`${VAJA_PROXY_TARGET.replace(/\/+$/, '')}/health`);
+      const data = await response.json();
+      return res.json(data);
+    } catch (err) {
+      console.error('[dev-host] /test/vaja/api/health error', err);
+      return res.status(502).json({ error: 'proxy_error', detail: err.message });
+    }
+  });
+
+  mountTestStaticRoutes();
+  mountWwwStaticRoutes();
+  logRouteStack();
+};
+
+wireProxies();
 
 app.post('/api/deploy/:slug', (req, res) => {
   if (!requirePublishToken(req, res)) {
@@ -508,7 +598,7 @@ app.get('/', (_req, res) => {
           <code>/${site.slug}/*</code>
           ${
             deployConfigs[site.slug]
-              ? `<button class="publish-btn" data-slug="${site.slug}">Publish to a1.idc-1</button>`
+              ? `<button class="publish-btn" data-slug="${site.slug}">Publish to a1.idc1</button>`
               : ''
           }
         </footer>

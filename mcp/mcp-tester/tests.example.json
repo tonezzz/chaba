@@ -38,5 +38,76 @@
     "expect_status": 200,
     "timeout_ms": 5000,
     "retries": 1
+  },
+  {
+    "name": "dev-host-test-landing",
+    "description": "Dev-host SPA landing page responds over HTTP",
+    "url": "{{DEV_HOST_TEST_BASE}}/test/",
+    "expect_status": 200,
+    "timeout_ms": 4000,
+    "retries": 2,
+    "requires_env": [
+      "DEV_HOST_TEST_BASE"
+    ]
+  },
+  {
+    "name": "a1-idc1-test-landing",
+    "description": "Production /test landing page",
+    "url": "{{A1_IDC1_TEST_URL}}",
+    "expect_status": 200,
+    "timeout_ms": 5000,
+    "retries": 2,
+    "verify_tls": true,
+    "requires_env": [
+      "A1_IDC1_TEST_URL"
+    ]
+  },
+  {
+    "name": "a1-idc1-chat-health",
+    "description": "Production chat API health via Caddy",
+    "url": "{{A1_IDC1_BASE_URL}}/test/chat/api/health",
+    "expect_status": 200,
+    "timeout_ms": 5000,
+    "retries": 1,
+    "verify_tls": true,
+    "requires_env": [
+      "A1_IDC1_BASE_URL"
+    ]
+  },
+  {
+    "name": "a1-idc1-detects-health",
+    "description": "Production detects API health via Caddy",
+    "url": "{{A1_IDC1_BASE_URL}}/test/detects/api/health",
+    "expect_status": 200,
+    "timeout_ms": 5000,
+    "retries": 1,
+    "verify_tls": true,
+    "requires_env": [
+      "A1_IDC1_BASE_URL"
+    ]
+  },
+  {
+    "name": "a1-idc1-agents-health",
+    "description": "Production agents API health via Caddy",
+    "url": "{{A1_IDC1_BASE_URL}}/test/agents/api/health",
+    "expect_status": 200,
+    "timeout_ms": 5000,
+    "retries": 1,
+    "verify_tls": true,
+    "requires_env": [
+      "A1_IDC1_BASE_URL"
+    ]
+  },
+  {
+    "name": "a1-idc1-imagen-health",
+    "description": "Production imagen API health via Caddy",
+    "url": "{{A1_IDC1_BASE_URL}}/test/imagen/api/health",
+    "expect_status": 200,
+    "timeout_ms": 6000,
+    "retries": 1,
+    "verify_tls": true,
+    "requires_env": [
+      "A1_IDC1_BASE_URL"
+    ]
   }
 ]

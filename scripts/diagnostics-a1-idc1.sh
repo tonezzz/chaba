@@ -27,10 +27,10 @@ echo "[REMOTE] Disk usage (top 10 entries):"
 df -h | head -n 10 || true
 echo
 echo "[REMOTE] Recent releases for a1-idc1:"
-ls -al /www/a1.idc-1.surf-thailand.com/a1-idc1/releases 2>/dev/null | head -n 20 || true
+ls -al /www/a1.idc1.surf-thailand.com/a1-idc1/releases 2>/dev/null | head -n 20 || true
 echo
 echo "[REMOTE] Current symlink:"
-ls -al /www/a1.idc-1.surf-thailand.com/a1-idc1/current 2>/dev/null || true
+ls -al /www/a1.idc1.surf-thailand.com/a1-idc1/current 2>/dev/null || true
 echo
 echo "[REMOTE] Node processes:"
 ps -eo pid,ppid,cmd --sort=-pcpu | grep -i node || true

@@ -18,10 +18,29 @@ const PORT = process.env.PORT || 4060;
 app.use(morgan('dev'));
 app.use(express.json({ limit: '2mb' }));
 
-const dataRoot = path.join(__dirname, '..', '..', '..', 'data', 'agents');
+const repoRoot = path.join(__dirname, '..', '..', '..', '..', '..');
+const candidateDataRoots = [
+  process.env.AGENTS_DATA_ROOT,
+  path.join(repoRoot, 'mcp', 'mcp-agents', 'data', 'agents'),
+  path.join(__dirname, '..', '..', '..', 'data', 'agents')
+].filter(Boolean);
+
+let dataRoot =
+  candidateDataRoots.find((dir) => {
+    try {
+      return fs.existsSync(dir);
+    } catch {
+      return false;
+    }
+  }) ||
+  candidateDataRoots[0] ||
+  path.join(repoRoot, 'mcp', 'mcp-agents', 'data', 'agents');
+
+fs.mkdirSync(dataRoot, { recursive: true });
 const usersDir = path.join(dataRoot, 'users');
 fs.mkdirSync(usersDir, { recursive: true });
 const spaCandidates = [
+  path.join(repoRoot, 'mcp', 'mcp-agents', 'www', 'test', 'agens'),
   path.join(__dirname, '..', '..', 'www', 'test', 'agents'),
   path.join(__dirname, '..', '..', 'test', 'agents')
 ];
@@ -419,12 +438,15 @@ app.get('/api/health', async (_req, res) => {
 });
 
 if (fs.existsSync(agentsSpaRoot)) {
-  app.use('/www/test/agents', express.static(agentsSpaRoot, { index: false, fallthrough: true }));
-  app.get(['/www/test/agents', '/www/test/agents/*'], (_req, res, next) => {
-    if (fs.existsSync(agentsSpaIndex)) {
-      return res.sendFile(agentsSpaIndex);
-    }
-    return next();
+  const spaMounts = ['/www/test/agens', '/www/test/agents'];
+  spaMounts.forEach((mountPath) => {
+    app.use(mountPath, express.static(agentsSpaRoot, { index: false, fallthrough: true }));
+    app.get([mountPath, `${mountPath}/*`], (_req, res, next) => {
+      if (fs.existsSync(agentsSpaIndex)) {
+        return res.sendFile(agentsSpaIndex);
+      }
+      return next();
+    });
   });
 }
 

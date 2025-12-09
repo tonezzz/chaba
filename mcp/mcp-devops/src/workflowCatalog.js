@@ -1,4 +1,4 @@
-import path from 'path';
+﻿import path from 'path';
 import { config } from './config.js';
 
 const previewTestTags = ['preview', 'dev-host', 'test'];
@@ -113,6 +113,24 @@ const workflows = [
     }
   },
   {
+    id: 'dever-deploy-git-branch',
+    label: 'Dever deploy via git branch',
+    description:
+      'Checks out the configured git branch inside WSL and runs release-a1-idc1.ps1 with the standard deploy pipeline (validate/deploy/reload/verify).',
+    tags: ['dever', 'deploy', 'git'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'dever-deploy-git-branch.ps1'),
+      cwd: config.repoRoot,
+      env: {
+        MCP_DEVOPS_GIT_BRANCH: process.env.MCP_DEVOPS_GIT_BRANCH || 'main'
+      }
+    },
+    outputs: {
+      docs: 'scripts/dever-deploy-git-branch.ps1'
+    }
+  },
+  {
     id: 'build-ui',
     label: 'Build UI bundle',
     description:
@@ -178,6 +196,23 @@ const workflows = [
     }
   },
   {
+    id: 'release-verify-a1-idc1',
+    label: 'Run /test verification (no deploy)',
+    description:
+      'Invokes release-a1-idc1.ps1 with SkipDeploy/SkipReload to re-validate Caddy config and /test landing without modifying releases.',
+    tags: ['verify', 'publish', 'powershell'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'release-a1-idc1.ps1'),
+      args: ['-SkipDeploy', '-SkipReload'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      publicUrl: config.verify.a1Idc1TestUrl,
+      docs: 'scripts/release-a1-idc1.ps1'
+    }
+  },
+  {
     id: 'diagnostics-a1-idc1',
     label: 'Capture diagnostics from a1-idc1 host',
     description:
@@ -199,6 +234,28 @@ const workflows = [
     outputs: {
       publicUrl: config.verify.a1Idc1TestUrl,
       docs: 'scripts/diagnostics-a1-idc1.sh'
+    }
+  },
+  {
+    id: 'verify-systemd-a1',
+    label: 'Gather systemd diagnostics on a1-idc1',
+    description:
+      'Runs scripts/verify-systemd.ps1 to capture systemctl status, journal logs, service definitions, and environment files for selected units on the production host.',
+    tags: ['diagnostics', 'systemd', 'ssh'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'verify-systemd.ps1'),
+      cwd: config.repoRoot,
+      env: {
+        A1_DEPLOY_SSH_USER: config.deploy.sshUser,
+        A1_DEPLOY_SSH_HOST: config.deploy.sshHost,
+        A1_DEPLOY_SSH_PORT: config.deploy.sshPort,
+        A1_DEPLOY_SSH_KEY_PATH: config.deploy.sshKeyPath,
+        MCP_DEVOPS_WSL_USER: process.env.MCP_DEVOPS_WSL_USER || 'tonezzz'
+      }
+    },
+    outputs: {
+      docs: 'scripts/verify-systemd.ps1'
     }
   },
   {

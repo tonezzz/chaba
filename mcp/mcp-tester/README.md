@@ -113,3 +113,20 @@ mcp/mcp-tester/
 ```
 
 Feel free to copy `tests.example.json` to `tests.pc2.json`, tweak the URLs, and mount it into the container for environment-specific suites.
+
+## Automation & DevOps integration
+
+- **Scripted runs:** `scripts/run-mcp-tester.ps1` posts to `/tests/run`, prints a per-test summary, and exits non-zero if any check fails. This makes it safe to gate deployments or local previews.
+
+  ```powershell
+  pwsh ./scripts/run-mcp-tester.ps1 `
+    -TesterBaseUrl http://127.0.0.1:8330 `
+    -FailFast `
+    -Tests glama-health,meeting-health
+  ```
+
+  The script supports `-TimeoutSeconds` and `-Tests` filters, mirroring the HTTP body fields.
+
+- **mcp-devops workflow:** `verify-mcp-suite` (defined in `mcp/mcp-devops/src/workflowCatalog.js`) automatically calls the script above using `MCP_TESTER_BASE_URL`. Add it to preview/deploy sequences so MCP services are verified before publishing UI updates.
+
+- **History retention:** The compose stack binds `./data/mcp-tester` into the container and points `MCP_TESTER_HISTORY_FILE` at `/data/run-history.ndjson`. A `.gitkeep` file is committed so the directory always exists; clean up the NDJSON file if it becomes too large, but keep the folder for persistence.

@@ -187,52 +187,63 @@ services:
       MCP_TESTER_HOST: 0.0.0.0
       MCP_TESTER_PORT: ${MCP_TESTER_PORT:-8330}
       MCP_TESTER_SUITE_FILE: ${MCP_TESTER_SUITE_FILE:-/app/tests.example.json}
+      MCP_TESTER_SUITE_FILES: ${MCP_TESTER_SUITE_FILES:-/app/tests.optional.json}
       MCP_TESTER_DEFAULT_TIMEOUT_MS: ${MCP_TESTER_DEFAULT_TIMEOUT_MS:-5000}
+      MCP_TESTER_HISTORY_FILE: ${MCP_TESTER_HISTORY_FILE:-/data/run-history.ndjson}
+      DEV_HOST_TEST_BASE: ${DEV_HOST_TEST_BASE:-http://dev-host.pc1:3000}
+      A1_IDC1_BASE_URL: ${A1_IDC1_BASE_URL:-https://a1.idc1.surf-thailand.com}
+      A1_IDC1_TEST_URL: ${A1_IDC1_TEST_URL:-https://a1.idc1.surf-thailand.com/test}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_TESTER_PORT:-8330}/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
-
-  mcp-imagen-gpu:
-    <<: *default-service
-    profiles: ["mcp-suite", "gpu"]
-    build:
-      context: ../../mcp/mcp-imagen
-      args:
-        BASE_IMAGE: ${MCP_IMAGEN_GPU_BASE_IMAGE:-nvidia/cuda:12.4.1-runtime-ubuntu22.04}
-        USE_GPU: "true"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: ["gpu"]
-    ports:
-      - "${MCP_IMAGEN_GPU_PORT:-8001}:8001"
-    environment:
-      PORT: 8001
-      IMAGE_MODEL_ROOT: ${MCP_IMAGEN_MODEL_ROOT:-/workspace/models/diffusers/models--runwayml--stable-diffusion-v1-5}
-      IMAGE_MODEL_CACHE: /workspace/models/diffusers
     volumes:
-      - ${VOICE_CHAT_MODEL_ROOT:-/home/tonezzz/_models/diffusers}:/workspace/models/diffusers
+      - ${MCP_TESTER_DATA_DIR:-./data/mcp-tester}:/data
+
+  mcp-agents:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_AGENTS_BUILD_CONTEXT:-../../mcp/mcp-agents}
+    ports:
+      - "${MCP_AGENTS_PORT:-8046}:8046"
+    environment:
+      PORT: ${MCP_AGENTS_PORT:-8046}
+      AGENTS_API_BASE: ${AGENTS_API_BASE:-http://dev-host.pc2:3100/test/agents/api}
+      AGENTS_DEFAULT_USER: ${AGENTS_DEFAULT_USER:-default}
+      AGENTS_DEFAULT_LIMIT: ${AGENTS_DEFAULT_LIMIT:-12}
+      JSON_BODY_LIMIT: ${AGENTS_JSON_LIMIT:-2mb}
+    volumes:
+      - ${MCP_AGENTS_DATA_DIR:-./data/mcp-agents}:/app/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8001/health || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:8046/health || exit 1"]
       interval: 30s
-      timeout: 10s
+      timeout: 5s
       retries: 3
 
-  inference:
+  mcp-playwright:
     <<: *default-service
-    image: nvidia/cuda:12.2.0-base-ubuntu20.04
-    profiles: ["gpu"]
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: ["gpu"]
-    entrypoint: ["sleep", "infinity"]
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_PLAYWRIGHT_BUILD_CONTEXT:-../../mcp/mcp-playwright}
+    ports:
+      - "${MCP_PLAYWRIGHT_PORT:-8025}:${MCP_PLAYWRIGHT_PORT:-8025}"
+    environment:
+      PORT: ${MCP_PLAYWRIGHT_PORT:-8025}
+      PLAYWRIGHT_BROWSER: ${PLAYWRIGHT_BROWSER:-chromium}
+      PLAYWRIGHT_HEADLESS: ${PLAYWRIGHT_HEADLESS:-true}
+      PLAYWRIGHT_TIMEOUT_MS: ${PLAYWRIGHT_TIMEOUT_MS:-15000}
+      PLAYWRIGHT_SCENARIOS_DIR: /app/scenarios
+      PLAYWRIGHT_OUTPUT_DIR: /app/output
     volumes:
-      - ${HOST_MODEL_DIR:-/srv/models}:/models:ro
+      - ${MCP_PLAYWRIGHT_SCENARIOS_DIR:-./data/mcp-playwright/scenarios}:/app/scenarios
+      - ${MCP_PLAYWRIGHT_OUTPUT_DIR:-./data/mcp-playwright/output}:/app/output
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_PLAYWRIGHT_PORT:-8025}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   node-exporter:
     <<: *default-service
