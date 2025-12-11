@@ -1,0 +1,35 @@
+test.idc1.surf-thailand.com {
+    encode gzip zstd
+
+    handle / {
+        redir /test/
+    }
+
+    handle /test {
+        redir /test/
+    }
+
+    handle_path /test/* {
+        root * /www/idc1.surf-thailand.com/test/current
+        try_files {path} {path}/ /index.html
+        file_server
+    }
+
+    log {
+        output file /var/log/caddy/test.idc1.access.log
+    }
+}
+
+cp.idc1.surf-thailand.com {
+    encode gzip zstd
+
+    basicauth {
+        cpadmin $2a$14$ikQeiweORPhj4DQn3AcBpe8dbpsTajCaDMNAfroIOdUA/Heygr8He
+    }
+
+    reverse_proxy http://127.0.0.1:8425
+
+    log {
+        output file /var/log/caddy/cp.idc1.access.log
+    }
+}

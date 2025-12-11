@@ -1,0 +1,65 @@
+{
+  "updated": "2025-12-10T18:05:00+07:00",
+  "services": [
+    {
+      "id": "mcp0",
+      "label": "MCP0 Router",
+      "role": "Broker for all MCP providers",
+      "composeService": "mcp0",
+      "port": 8355,
+      "endpoint": "http://localhost:8355",
+      "health": "http://localhost:8355/health",
+      "notes": "Admin token required for provider management."
+    },
+    {
+      "id": "mcp-agents",
+      "label": "Agents API",
+      "role": "Agent roster + observability tools",
+      "composeService": "mcp-agents",
+      "port": 8446,
+      "endpoint": "https://test.idc1.surf-thailand.com/agents/",
+      "health": "http://localhost:8046/health",
+      "notes": "Serves the agents SPA plus JSON API."
+    },
+    {
+      "id": "mcp-glama",
+      "label": "Glama Relay",
+      "role": "LLM proxy",
+      "composeService": "mcp-glama",
+      "port": 7441,
+      "endpoint": "http://localhost:7441",
+      "health": "http://localhost:8014/health",
+      "notes": "Requires GLAMA_API_KEY (OpenAI-compatible)."
+    },
+    {
+      "id": "mcp-tester",
+      "label": "MCP Tester",
+      "role": "Synthetic checks",
+      "composeService": "mcp-tester",
+      "port": 8435,
+      "endpoint": "http://localhost:8435",
+      "health": "http://localhost:8435/health",
+      "notes": "Runs scripted suites; data persisted in ./data/mcp-tester."
+    },
+    {
+      "id": "mcp-devops",
+      "label": "MCP DevOps",
+      "role": "Workflow runner & stack control",
+      "composeService": "mcp-devops",
+      "port": 8425,
+      "endpoint": "http://localhost:8425",
+      "health": "http://localhost:8425/health",
+      "notes": "Uses MCP0_ADMIN_TOKEN for authenticated actions."
+    },
+    {
+      "id": "mcp-playwright",
+      "label": "Playwright Runner",
+      "role": "Automated UI screenshots/tests",
+      "composeService": "mcp-playwright",
+      "port": 8460,
+      "endpoint": "http://localhost:8460",
+      "health": "http://localhost:8460/health",
+      "notes": "Writes artifacts under ./data/mcp-playwright/output."
+    }
+  ]
+}

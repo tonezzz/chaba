@@ -82,6 +82,24 @@ Required env entries (repo `.env` or process env) so MCP DevOps can SSH + talk t
 
 If `docker info` works via `ssh chaba@pc2 'DOCKER_HOST=unix:///var/run/docker.sock docker info'`, the workflows can run Docker Compose remotely.
 
+### idc1 diagnostics pack
+
+To debug idc1 without manual SSH, mcp-devops now exposes workflows that wrap the key scripts under `scripts/`:
+
+| Workflow ID | Script | What it does |
+| --- | --- | --- |
+| `idc1-docker-ps` | `scripts/idc1-docker-ps.sh` | SSH → `docker ps -a` with formatted output. |
+| `idc1-ls-workspace` | `scripts/idc1-ls-workspace.sh` | Confirms the code-server bind mount (`docker exec idc1-code-server ls /workspaces/chaba`). |
+| `idc1-health-sweep` | `scripts/idc1-health-sweep.sh` | Curls the on-box `mcp0`, `mcp-agents`, and `mcp-devops` `/health` routes to spot outages. |
+
+Each workflow inherits SSH credentials from `IDC1_DEPLOY_*` env vars (same ones used by deploy scripts). Run them through `run_workflow` just like any other task, e.g.:
+
+```json
+{ "tool": "run_workflow", "arguments": { "workflow_id": "idc1-health-sweep" } }
+```
+
+The logs that come back contain the remote stdout/stderr, so MCP clients (or downstream agents) can review the state without opening a shell.
+
 ### Example payloads
 
 **List workflows**
