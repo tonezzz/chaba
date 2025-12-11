@@ -16,7 +16,7 @@ function Get-ProviderSegment {
     [string]$Health,
     [string]$Capabilities
   )
-  $parts = @("$Name:$Url")
+  $parts = @("${Name}:${Url}")
   if ($Health) {
     $parts += "health=$Health"
   }
@@ -55,7 +55,7 @@ foreach ($envFile in $EnvFiles) {
     $providers = $existingValue -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
   }
 
-  $alreadyPresent = $providers | Where-Object { $_ -like "$ProviderName:*" }
+  $alreadyPresent = $providers | Where-Object { $_ -like "${ProviderName}:*" }
   if (-not $alreadyPresent) {
     $providers += $segment
   } else {
