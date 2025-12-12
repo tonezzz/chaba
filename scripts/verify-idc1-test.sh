@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-TARGET_URL="${TARGET_URL:-https://test.idc1.surf-thailand.com/}"
+TARGET_URL="${TARGET_URL:-https://test.idc1.surf-thailand.com/test/}"
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-5}"
 SLEEP_SECONDS="${SLEEP_SECONDS:-5}"
+EXPECTED_REGEX="${EXPECTED_REGEX:-AI Dev Team · PoC|idc1 node|idc1 demo site}"
 
 echo "[VERIFY] Checking ${TARGET_URL}"
 
@@ -19,6 +20,19 @@ while (( attempt <= MAX_ATTEMPTS )); do
       echo "[VERIFY] Body preview:"
       echo "$body" | head -n 20
     fi
+    if [[ "$status_code" != "200" ]]; then
+      echo "[VERIFY] Unexpected status code: ${status_code}" >&2
+      exit 1
+    fi
+    if [[ -z "${body//[[:space:]]/}" ]]; then
+      echo "[VERIFY] Empty response body" >&2
+      exit 1
+    fi
+    if ! grep -Eiq "$EXPECTED_REGEX" <<<"$body"; then
+      echo "[VERIFY] Response body did not match EXPECTED_REGEX: ${EXPECTED_REGEX}" >&2
+      exit 1
+    fi
+    echo "[VERIFY] OK"
     exit 0
   fi
 
