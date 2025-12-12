@@ -1,6 +1,18 @@
 test.idc1.surf-thailand.com {
     encode gzip zstd
 
+    handle /cp {
+        redir /test/cp/
+    }
+
+    handle /cp/ {
+        redir /test/cp/
+    }
+
+    handle_path /cp/* {
+        redir /test/cp{uri}
+    }
+
     handle / {
         redir /test/
     }
@@ -11,7 +23,7 @@ test.idc1.surf-thailand.com {
 
     handle_path /test/* {
         root * /www/idc1.surf-thailand.com/test/current
-        try_files {path} {path}/ /index.html
+        try_files {path} {path}/ {path}/index.html /index.html
         file_server
     }
 
