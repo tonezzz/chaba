@@ -23,10 +23,29 @@ build/
 /data/
 /artifacts/
 /logs/
-.DS_Store
-.idea/
-.vscode/
-*.code-workspace
+
+# Stack runtime volumes (never commit)
+stacks/*/data/
+stacks/*/data/**
+stacks/**/data/
+stacks/**/data/**
+
+# Common runtime caches/logs
+**/.cache/
+**/.cache/**
+**/logs/
+**/logs/**
+**/*.log
+
+# IDE / agent workspace state
+.windsurf/
+
+# Local temp outputs
+temp/
+tmp/
+temp_test_image.jpg
+
+*.sock
 
 # Installer/CI temp files
 installer/.env

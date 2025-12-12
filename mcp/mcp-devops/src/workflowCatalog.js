@@ -272,6 +272,83 @@ const workflows = [
     }
   },
   {
+    id: 'idc1-docker-ps',
+    label: 'idc1 docker ps',
+    description: 'SSH into idc1 and run `docker ps -a` to see container status.',
+    tags: ['idc1', 'docker', 'diagnostics'],
+    runner: {
+      type: 'posix',
+      scriptRelative: './scripts/idc1-docker-ps.sh',
+      cwd: config.repoRoot,
+      env: {
+        SSH_USER: process.env.IDC1_DEPLOY_SSH_USER || 'chaba',
+        SSH_HOST: process.env.IDC1_DEPLOY_SSH_HOST || 'idc1.surf-thailand.com',
+        SSH_PORT: process.env.IDC1_DEPLOY_SSH_PORT || '22',
+        SSH_KEY_PATH: toPosixIfNeeded(
+          process.env.IDC1_DEPLOY_SSH_KEY_PATH ||
+            path.join(config.repoRoot, '.secrets', 'dev-host', '.ssh', 'chaba_ed25519')
+        )
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/idc1-docker-ps.sh'
+    }
+  },
+  {
+    id: 'idc1-ls-workspace',
+    label: 'idc1 code-server workspace listing',
+    description: 'Runs `docker exec idc1-code-server ls /workspaces/chaba` to confirm the repo mount exists.',
+    tags: ['idc1', 'diagnostics', 'code-server'],
+    runner: {
+      type: 'posix',
+      scriptRelative: './scripts/idc1-ls-workspace.sh',
+      cwd: config.repoRoot,
+      env: {
+        SSH_USER: process.env.IDC1_DEPLOY_SSH_USER || 'chaba',
+        SSH_HOST: process.env.IDC1_DEPLOY_SSH_HOST || 'idc1.surf-thailand.com',
+        SSH_PORT: process.env.IDC1_DEPLOY_SSH_PORT || '22',
+        SSH_KEY_PATH: toPosixIfNeeded(
+          process.env.IDC1_DEPLOY_SSH_KEY_PATH ||
+            path.join(config.repoRoot, '.secrets', 'dev-host', '.ssh', 'chaba_ed25519')
+        ),
+        CODE_SERVER_CONTAINER: process.env.IDC1_CODE_SERVER_CONTAINER || 'idc1-code-server',
+        WORKSPACE_PATH: process.env.IDC1_WORKSPACE_PATH || '/workspaces/chaba'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/idc1-ls-workspace.sh'
+    }
+  },
+  {
+    id: 'idc1-health-sweep',
+    label: 'idc1 MCP health sweep',
+    description: 'SSH into idc1 and curl the local mcp0, mcp-agents, and mcp-devops /health endpoints.',
+    tags: ['idc1', 'diagnostics', 'health'],
+    runner: {
+      type: 'posix',
+      scriptRelative: './scripts/idc1-health-sweep.sh',
+      cwd: config.repoRoot,
+      env: {
+        SSH_USER: process.env.IDC1_DEPLOY_SSH_USER || 'chaba',
+        SSH_HOST: process.env.IDC1_DEPLOY_SSH_HOST || 'idc1.surf-thailand.com',
+        SSH_PORT: process.env.IDC1_DEPLOY_SSH_PORT || '22',
+        SSH_KEY_PATH: toPosixIfNeeded(
+          process.env.IDC1_DEPLOY_SSH_KEY_PATH ||
+            path.join(config.repoRoot, '.secrets', 'dev-host', '.ssh', 'chaba_ed25519')
+        ),
+        MCP0_PORT: process.env.IDC1_MCP0_PORT || '8355',
+        MCP_AGENTS_PORT: process.env.IDC1_MCP_AGENTS_PORT || '8046',
+        MCP_DEVOPS_PORT: process.env.IDC1_MCP_DEVOPS_PORT || '8425'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/idc1-health-sweep.sh'
+    }
+  },
+  {
     id: 'pc2-stack-status',
     label: 'PC2 stack status',
     description: 'Uses wsl+ssh to run `docker compose ps` for the pc2-worker stack on host pc2.',
@@ -294,6 +371,100 @@ const workflows = [
     },
     outputs: {
       docs: 'scripts/pc2-worker/pc2-stack.ps1'
+    }
+  },
+  {
+    id: 'idc1-stack-status',
+    label: 'idc1 stack status',
+    description: 'Runs scripts/idc1-stack.ps1 -Action status to show docker compose state on idc1.',
+    tags: ['idc1', 'docker', 'status'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'idc1-stack.ps1'),
+      args: ['-Action', 'status'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/idc1-stack.ps1'
+    }
+  },
+  {
+    id: 'idc1-stack-up',
+    label: 'idc1 stack up',
+    description: 'Calls scripts/idc1-stack.ps1 -Action up to start the MCP suite on idc1.',
+    tags: ['idc1', 'docker', 'up'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'idc1-stack.ps1'),
+      args: ['-Action', 'up'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/idc1-stack.ps1'
+    }
+  },
+  {
+    id: 'idc1-stack-down',
+    label: 'idc1 stack down',
+    description: 'Stops the idc1 MCP suite via scripts/idc1-stack.ps1 -Action down.',
+    tags: ['idc1', 'docker', 'down'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'idc1-stack.ps1'),
+      args: ['-Action', 'down'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/idc1-stack.ps1'
+    }
+  },
+  {
+    id: 'deploy-idc1-test',
+    label: 'Deploy test.idc1 site',
+    description: 'Wraps scripts/deploy-idc1-test.sh via Bash/WSL to sync /test assets to the idc1 host.',
+    tags: ['idc1', 'deploy', 'test'],
+    runner: {
+      type: 'posix',
+      scriptRelative: './scripts/deploy-idc1-test.sh',
+      cwd: config.repoRoot,
+      env: {
+        SSH_USER: process.env.IDC1_DEPLOY_SSH_USER || 'chaba',
+        SSH_HOST: process.env.IDC1_DEPLOY_SSH_HOST || 'idc1.surf-thailand.com',
+        SSH_PORT: process.env.IDC1_DEPLOY_SSH_PORT || '22',
+        SSH_KEY_PATH: toPosixIfNeeded(
+          process.env.IDC1_DEPLOY_SSH_KEY_PATH ||
+            path.join(config.repoRoot, '.secrets', 'dev-host', '.ssh', 'chaba_ed25519')
+        ),
+        REMOTE_BASE: process.env.IDC1_DEPLOY_REMOTE_BASE || '/www/idc1.surf-thailand.com',
+        LOCAL_BASE: toPosixIfNeeded(path.join(config.repoRoot, 'sites', 'idc1')),
+        ENV_DIR: toPosixIfNeeded(process.env.IDC1_DEPLOY_ENV_DIR || path.join(config.repoRoot, '.secrets', 'dev-host')),
+        APPS: 'test',
+        RELEASES_TO_KEEP: process.env.IDC1_DEPLOY_RELEASES || '5'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      publicUrl: 'https://test.idc1.surf-thailand.com',
+      docs: 'scripts/deploy-idc1-test.sh'
+    }
+  },
+  {
+    id: 'verify-idc1-test',
+    label: 'Verify test.idc1',
+    description: 'Curls https://test.idc1.surf-thailand.com with retries via scripts/verify-idc1-test.sh.',
+    tags: ['idc1', 'verify', 'test'],
+    runner: {
+      type: 'posix',
+      scriptRelative: './scripts/verify-idc1-test.sh',
+      cwd: config.repoRoot,
+      env: {
+        TARGET_URL: 'https://test.idc1.surf-thailand.com'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      publicUrl: 'https://test.idc1.surf-thailand.com',
+      docs: 'scripts/verify-idc1-test.sh'
     }
   },
   {

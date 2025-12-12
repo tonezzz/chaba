@@ -1,17 +1,12 @@
 :root {
-  color-scheme: light;
+  color-scheme: dark;
   font-family: 'Space Grotesk', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --bg: radial-gradient(circle at 30% 10%, #eef7ff, transparent 55%), radial-gradient(circle at 80% 0%, #fff4d5, transparent 45%), #f8fbff;
-  --panel: rgba(255, 255, 255, 0.95);
-  --border: rgba(8, 24, 46, 0.08);
-  --accent: #246bff;
-  --accent-strong: #17b1a8;
-  --text-main: #0b1224;
-  --text-subtle: #5a647c;
-}
-
-html {
-  font-size: clamp(17px, 1.4vw, 18px);
+  --bg: radial-gradient(circle at 20% -20%, #3144ff, transparent 40%), radial-gradient(circle at 80% 0%, #00c2b0, transparent 35%), #05060f;
+  --panel: rgba(7, 12, 32, 0.82);
+  --border: rgba(255, 255, 255, 0.08);
+  --accent: #7ef2c9;
+  --accent-strong: #24c1ff;
+  --text-subtle: #b3b8d6;
 }
 
 *,
@@ -24,7 +19,7 @@ body {
   margin: 0;
   min-height: 100vh;
   background: var(--bg);
-  color: var(--text-main);
+  color: #f4f7ff;
   display: flex;
   justify-content: center;
   padding: clamp(1.5rem, 4vw, 3rem);
@@ -42,7 +37,7 @@ header {
   border: 1px solid var(--border);
   border-radius: 28px;
   padding: clamp(1.5rem, 3vw, 2.5rem);
-  box-shadow: 0 20px 60px rgba(8, 30, 65, 0.08);
+  box-shadow: 0 30px 80px rgba(0, 5, 30, 0.55);
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -73,14 +68,14 @@ header h1 {
   align-self: flex-start;
   padding: 0.45rem 1rem;
   border-radius: 999px;
-  background: rgba(36, 107, 255, 0.05);
-  border: 1px solid rgba(36, 107, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   font-size: 0.9rem;
 }
 
 .status.ok {
-  background: rgba(23, 177, 168, 0.12);
-  border-color: rgba(23, 177, 168, 0.4);
+  background: rgba(126, 242, 201, 0.1);
+  border-color: rgba(126, 242, 201, 0.4);
   color: var(--accent);
 }
 
@@ -98,8 +93,8 @@ header h1 {
 }
 
 .message {
-  background: rgba(8, 24, 46, 0.02);
-  border: 1px solid rgba(8, 24, 46, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 20px;
   padding: 1rem 1.25rem;
   display: flex;
@@ -108,8 +103,8 @@ header h1 {
 }
 
 .message.user {
-  border-color: rgba(36, 107, 255, 0.15);
-  background: rgba(36, 107, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .message.pending {
@@ -134,7 +129,7 @@ header h1 {
 }
 
 .message.user .message-role {
-  color: #f45ba3;
+  color: #ffb0ff;
 }
 
 .message-time {
@@ -168,9 +163,9 @@ form {
 textarea {
   width: 100%;
   border-radius: 20px;
-  border: 1px solid rgba(8, 24, 46, 0.12);
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--text-main);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(5, 10, 20, 0.85);
+  color: inherit;
   font-family: inherit;
   padding: 1rem 1.2rem;
   font-size: 1rem;
@@ -179,7 +174,7 @@ textarea {
 }
 
 textarea:focus {
-  outline: 2px solid rgba(36, 107, 255, 0.35);
+  outline: 2px solid rgba(36, 193, 255, 0.5);
 }
 
 .controls {
@@ -198,7 +193,7 @@ textarea:focus {
 }
 
 .toggle input {
-  accent-color: var(--accent);
+  accent-color: var(--accent-strong);
   transform: scale(1.1);
 }
 
@@ -214,10 +209,10 @@ textarea:focus {
 .temp-field input {
   width: 110px;
   border-radius: 999px;
-  border: 1px solid rgba(8, 24, 46, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   padding: 0.4rem 0.6rem;
-  background: rgba(255, 255, 255, 0.95);
-  color: var(--text-main);
+  background: rgba(8, 15, 28, 0.85);
+  color: inherit;
   font-size: 1rem;
 }
 
@@ -226,7 +221,7 @@ button[type='submit'] {
   border-radius: 999px;
   padding: 0.9rem 2.4rem;
   background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-  color: #ffffff;
+  color: #041222;
   font-weight: 600;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -235,7 +230,7 @@ button[type='submit'] {
 
 button[type='submit']:hover {
   transform: translateY(-2px);
-  box-shadow: 0 16px 30px rgba(36, 107, 255, 0.35);
+  box-shadow: 0 16px 30px rgba(36, 193, 255, 0.45);
 }
 
 @media (max-width: 640px) {
