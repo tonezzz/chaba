@@ -328,6 +328,10 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '1mb' }));
 
+app.get('/healthz', (_req, res) => {
+  res.json({ status: 'ok' });
+});
+
 app.get('/health', async (_req, res) => {
   try {
     const data = await fetchJson(`${AGENTS_API_BASE.replace(/\/api$/, '')}/api/health`);
