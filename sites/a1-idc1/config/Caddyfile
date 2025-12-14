@@ -47,16 +47,3 @@ a1.idc1.surf-thailand.com {
 
     file_server
 }
-
-code.idc1.surf-thailand.com {
-    encode gzip zstd
-    header {
-        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-        X-Content-Type-Options "nosniff"
-        X-Frame-Options "DENY"
-        Referrer-Policy "same-origin"
-        Permissions-Policy "camera=(), microphone=(), geolocation=()"
-    }
-    tls ops@surf-thailand.com
-    reverse_proxy 127.0.0.1:8080
-}

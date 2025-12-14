@@ -22,7 +22,6 @@ CONTAINERS_DEFAULT=(
   mcp-devops
   mcp-tester
   mcp-glama
-  idc1-code-server
 )
 
 CONTAINER_LIST=()

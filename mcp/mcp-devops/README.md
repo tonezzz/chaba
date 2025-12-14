@@ -89,7 +89,6 @@ To debug idc1 without manual SSH, mcp-devops now exposes workflows that wrap the
 | Workflow ID | Script | What it does |
 | --- | --- | --- |
 | `idc1-docker-ps` | `scripts/idc1-docker-ps.sh` | SSH → `docker ps -a` with formatted output. |
-| `idc1-ls-workspace` | `scripts/idc1-ls-workspace.sh` | Confirms the code-server bind mount (`docker exec idc1-code-server ls /workspaces/chaba`). |
 | `idc1-health-sweep` | `scripts/idc1-health-sweep.sh` | Curls the on-box `mcp0`, `mcp-agents`, and `mcp-devops` `/health` routes to spot outages. |
 
 Each workflow inherits SSH credentials from `IDC1_DEPLOY_*` env vars (same ones used by deploy scripts). Run them through `run_workflow` just like any other task, e.g.:

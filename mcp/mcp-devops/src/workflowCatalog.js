@@ -296,32 +296,6 @@ const workflows = [
     }
   },
   {
-    id: 'idc1-ls-workspace',
-    label: 'idc1 code-server workspace listing',
-    description: 'Runs `docker exec idc1-code-server ls /workspaces/chaba` to confirm the repo mount exists.',
-    tags: ['idc1', 'diagnostics', 'code-server'],
-    runner: {
-      type: 'posix',
-      scriptRelative: './scripts/idc1-ls-workspace.sh',
-      cwd: config.repoRoot,
-      env: {
-        SSH_USER: process.env.IDC1_DEPLOY_SSH_USER || 'chaba',
-        SSH_HOST: process.env.IDC1_DEPLOY_SSH_HOST || 'idc1.surf-thailand.com',
-        SSH_PORT: process.env.IDC1_DEPLOY_SSH_PORT || '22',
-        SSH_KEY_PATH: toPosixIfNeeded(
-          process.env.IDC1_DEPLOY_SSH_KEY_PATH ||
-            path.join(config.repoRoot, '.secrets', 'dev-host', '.ssh', 'chaba_ed25519')
-        ),
-        CODE_SERVER_CONTAINER: process.env.IDC1_CODE_SERVER_CONTAINER || 'idc1-code-server',
-        WORKSPACE_PATH: process.env.IDC1_WORKSPACE_PATH || '/workspaces/chaba'
-      },
-      shell: config.deployShell
-    },
-    outputs: {
-      docs: 'scripts/idc1-ls-workspace.sh'
-    }
-  },
-  {
     id: 'idc1-health-sweep',
     label: 'idc1 MCP health sweep',
     description: 'SSH into idc1 and curl the local mcp0, mcp-agents, and mcp-devops /health endpoints.',
