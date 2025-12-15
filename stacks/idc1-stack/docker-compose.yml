@@ -168,6 +168,27 @@ services:
       timeout: 5s
       retries: 3
 
+  mcp-memory-bridge:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_MEMORY_BUILD_CONTEXT:-../../mcp/mcp-memory-bridge}
+    ports:
+      - "${MCP_MEMORY_PORT:-8470}:8470"
+    environment:
+      PORT: 8470
+      MEMORY_FILE_PATH: /data/memory.jsonl
+    volumes:
+      - mcp-memory-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8470/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
 networks:
   idc1-stack-net:
     driver: bridge
+
+volumes:
+  mcp-memory-data:
