@@ -183,9 +183,24 @@ services:
       timeout: 5s
       retries: 3
 
+  caddy:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    image: caddy:2
+    container_name: pc1-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
 networks:
   pc1-stack-net:
     driver: bridge
 
 volumes:
   webtop2-config:
+  caddy-data:
+  caddy-config:
