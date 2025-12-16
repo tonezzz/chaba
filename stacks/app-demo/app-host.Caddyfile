@@ -1,0 +1,10 @@
+:80 {
+  root * /srv/app/current
+  encode gzip
+
+  handle /health {
+    respond "ok" 200
+  }
+
+  file_server
+}

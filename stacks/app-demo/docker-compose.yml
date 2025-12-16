@@ -1,0 +1,75 @@
+version: "3.9"
+
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - .env
+  networks:
+    - app-demo-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  caddy:
+    <<: *default-service
+    profiles: ["app-demo"]
+    image: caddy:2
+    container_name: app-demo-caddy
+    ports:
+      - "${APP_DEMO_HTTP_PORT:-8090}:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+
+  app-host:
+    <<: *default-service
+    profiles: ["app-demo"]
+    image: caddy:2
+    container_name: app-demo-app-host
+    volumes:
+      - appdemo_artifacts:/srv/app:ro
+      - ./app-host.Caddyfile:/etc/caddy/Caddyfile:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:80/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-apphost:
+    <<: *default-service
+    profiles: ["app-demo"]
+    build:
+      context: ${MCP_APPHOST_BUILD_CONTEXT:-../../mcp/mcp-apphost}
+    container_name: app-demo-mcp-apphost
+    environment:
+      PORT: 8080
+      APPHOST_TOKEN: ${APPHOST_TOKEN:-}
+      APPHOST_REPO_URL: ${APPHOST_REPO_URL:-}
+      APPHOST_REF: ${APPHOST_REF:-main}
+      APPHOST_BUILD_COMMAND: ${APPHOST_BUILD_COMMAND:-npm run build}
+      APPHOST_INSTALL_COMMAND: ${APPHOST_INSTALL_COMMAND:-npm ci}
+      APPHOST_OUTPUT_DIR: ${APPHOST_OUTPUT_DIR:-dist}
+      APPHOST_RELEASES_TO_KEEP: ${APPHOST_RELEASES_TO_KEEP:-5}
+      APPHOST_ARTIFACTS_DIR: /srv/app
+      APPHOST_REPO_DIR: /repo
+      APPHOST_CACHE_DIR: /cache
+    volumes:
+      - appdemo_artifacts:/srv/app
+      - appdemo_repo:/repo
+      - appdemo_cache:/cache
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  app-demo-net:
+    driver: bridge
+
+volumes:
+  appdemo_artifacts:
+  appdemo_repo:
+  appdemo_cache:

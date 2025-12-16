@@ -1,0 +1,7 @@
+:80 {
+  handle_path /api/* {
+    reverse_proxy mcp-apphost:8080
+  }
+
+  reverse_proxy app-host:80
+}
