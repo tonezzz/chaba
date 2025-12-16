@@ -11,6 +11,12 @@ if [[ ! -f "$PUBLIC_DIR/index.html" ]]; then
   exit 2
 fi
 
+CHAT_UI_DIR="$REPO_ROOT/sites/a1-idc1/test/chat"
+if [[ ! -f "$CHAT_UI_DIR/index.html" ]]; then
+  echo "[ERROR] Missing $CHAT_UI_DIR/index.html" >&2
+  exit 2
+fi
+
 STAGING_DIR="$(mktemp -d -t idc1-test-deploy-XXXXXXXX)"
 cleanup() {
   rm -rf "$STAGING_DIR"
@@ -19,6 +25,9 @@ trap cleanup EXIT
 
 mkdir -p "$STAGING_DIR/test"
 rsync -az --delete "$PUBLIC_DIR/" "$STAGING_DIR/test/"
+
+mkdir -p "$STAGING_DIR/test/chat"
+rsync -az --delete "$CHAT_UI_DIR/" "$STAGING_DIR/test/chat/"
 
 export SSH_USER="${SSH_USER:-chaba}"
 export SSH_HOST="${SSH_HOST:-idc1.surf-thailand.com}"

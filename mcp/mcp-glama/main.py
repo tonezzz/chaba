@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import httpx
 from dotenv import load_dotenv
@@ -23,6 +23,7 @@ GLAMA_MODEL_DEFAULT = (
     or os.getenv("GLAMA_MODEL_DEFAULT")
     or "gpt-4o-mini"
 ).strip()
+GLAMA_MODEL_LIST = (os.getenv("GLAMA_MODEL_LIST") or "").strip()
 
 def _float_env(name: str, fallback: float) -> float:
     try:
@@ -39,16 +40,57 @@ GLAMA_MAX_TOKENS_DEFAULT = int(os.getenv("GLAMA_MAX_TOKENS", "900"))
 REQUEST_TIMEOUT_SECONDS = _float_env("GLAMA_TIMEOUT_SECONDS", 30.0)
 
 
+def _model_allowlist() -> List[str]:
+    fallback = [GLAMA_MODEL_DEFAULT, "gpt-4o", "gpt-4.1"]
+    from_env = [item.strip() for item in GLAMA_MODEL_LIST.split(",") if item.strip()] if GLAMA_MODEL_LIST else []
+    merged: List[str] = []
+    for item in from_env + fallback:
+        if item and item not in merged:
+            merged.append(item)
+    return merged
+
+
+def _resolve_model(requested: Optional[str]) -> str:
+    if not requested:
+        return GLAMA_MODEL_DEFAULT
+    candidate = requested.strip()
+    return candidate if candidate in _model_allowlist() else GLAMA_MODEL_DEFAULT
+
+
 class ChatMessage(BaseModel):
     role: str = Field(..., pattern="^(user|assistant|system)$")
-    content: str
+    content: Union[str, List[Dict[str, Any]]]
 
     @validator("content")
-    def validate_content(cls, value: str) -> str:
-        text = (value or "").strip()
-        if not text:
-            raise ValueError("content cannot be empty")
-        return text
+    def validate_content(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            text = value.strip()
+            if not text:
+                raise ValueError("content cannot be empty")
+            return text
+
+        if isinstance(value, list):
+            if not value:
+                raise ValueError("content parts cannot be empty")
+            # Best-effort validation for OpenAI-style multi-part content.
+            for part in value:
+                if not isinstance(part, dict):
+                    raise ValueError("content part must be an object")
+                part_type = (part.get("type") or "").strip()
+                if part_type == "text":
+                    text = (part.get("text") or "").strip()
+                    if not text:
+                        raise ValueError("text part cannot be empty")
+                elif part_type == "image_url":
+                    image_url = part.get("image_url")
+                    url = (image_url.get("url") if isinstance(image_url, dict) else "") or ""
+                    if not isinstance(url, str) or not url.strip().startswith("data:image/"):
+                        raise ValueError("image_url.url must be a data:image/* data URL")
+                else:
+                    raise ValueError("unsupported content part type")
+            return value
+
+        raise ValueError("content must be a string or list of parts")
 
 
 class InvokeArguments(BaseModel):
@@ -90,7 +132,30 @@ def tool_definitions() -> List[Dict[str, Any]]:
                             "type": "object",
                             "properties": {
                                 "role": {"type": "string", "enum": ["user", "assistant", "system"]},
-                                "content": {"type": "string"},
+                                "content": {
+                                    "anyOf": [
+                                        {"type": "string"},
+                                        {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "type": {"type": "string", "enum": ["text", "image_url"]},
+                                                    "text": {"type": "string"},
+                                                    "image_url": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "url": {"type": "string"}
+                                                        },
+                                                        "required": ["url"],
+                                                    },
+                                                },
+                                                "required": ["type"],
+                                            },
+                                            "minItems": 1,
+                                        },
+                                    ]
+                                },
                             },
                             "required": ["role", "content"],
                         },
@@ -111,7 +176,7 @@ async def call_glama(arguments: InvokeArguments) -> Dict[str, Any]:
         raise HTTPException(status_code=503, detail="glama_unconfigured")
 
     payload = {
-        "model": (arguments.model or GLAMA_MODEL_DEFAULT).strip() or GLAMA_MODEL_DEFAULT,
+        "model": _resolve_model(arguments.model),
         "max_tokens": arguments.max_tokens or GLAMA_MAX_TOKENS_DEFAULT,
         "temperature": (
             arguments.temperature
@@ -154,6 +219,7 @@ async def health() -> Dict[str, Any]:
         "status": status,
         "glamaReady": glama_ready(),
         "model": GLAMA_MODEL_DEFAULT,
+        "modelAllowlist": _model_allowlist(),
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 

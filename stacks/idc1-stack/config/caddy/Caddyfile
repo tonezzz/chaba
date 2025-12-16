@@ -65,6 +65,11 @@ test.idc1.surf-thailand.com {
         redir * /test/
     }
 
+    handle /test/chat/api/* {
+        uri strip_prefix /test/chat
+        reverse_proxy 127.0.0.1:4020
+    }
+
     handle_path /test/* {
         root * /www/idc1.surf-thailand.com/test/current
         try_files {path} {path}/ /index.html

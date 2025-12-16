@@ -22,6 +22,7 @@ services:
       - ./config/caddy:/etc/caddy:ro
       - ./data/caddy/data:/data
       - ./data/caddy/config:/config
+      - /www/idc1.surf-thailand.com:/www/idc1.surf-thailand.com:ro
 
   wg-easy:
     restart: unless-stopped
@@ -108,6 +109,7 @@ services:
       GLAMA_API_URL: ${GLAMA_API_URL:-}
       GLAMA_API_KEY: ${GLAMA_API_KEY:-}
       GLAMA_MODEL: ${GLAMA_MODEL:-gpt-4o-mini}
+      GLAMA_MODEL_LIST: ${GLAMA_MODEL_LIST:-gpt-4o-mini,gpt-4o,gpt-4.1}
       GLAMA_TEMPERATURE: ${GLAMA_TEMPERATURE:-0.2}
       GLAMA_MAX_TOKENS: ${GLAMA_MAX_TOKENS:-900}
       GLAMA_TIMEOUT_SECONDS: ${GLAMA_TIMEOUT_SECONDS:-30}

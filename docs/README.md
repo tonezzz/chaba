@@ -15,6 +15,40 @@
   3. Once validation passes, deploy with `scripts/deploy-a1-idc1.sh` and reload the daemon (`ssh chaba@idc1 'sudo systemctl reload caddy'`).
 - **Renewal**: handled automatically by Caddy’s built-in ACME client; check `journalctl -u caddy -f` during renewals.
 
+### idc1-stack (test.idc1 / cp.idc1 / mcp0.idc1)
+- **Front-end**: Caddy runs as a Docker container (`idc1-caddy`) from `stacks/idc1-stack/docker-compose.yml`.
+- **Config**: `stacks/idc1-stack/config/caddy/Caddyfile` (mounted into the container at `/etc/caddy/Caddyfile`).
+- **Important gotcha**: on idc1, `caddy.service` (systemd) can be **inactive**, even though HTTPS routing still works via the Docker container. In that state, `sudo systemctl reload caddy` does nothing useful.
+- **Reload**: use `scripts/idc1-caddy-reload.sh` (it reloads systemd when active, otherwise reloads the `idc1-caddy` container).
+
+#### Default pattern (use this)
+- **Static content mount (required):** the container must be able to read the deployed web root.
+  - The working default is to mount the host directory:
+    - `/www/idc1.surf-thailand.com:/www/idc1.surf-thailand.com:ro`
+  - Symptom when missing: `test.idc1` returns `404` even though files exist on the host under `/www/idc1.surf-thailand.com/test/current/...`.
+- **Deploy flow:** `scripts/deploy-idc1-test.sh` publishes the site into:
+  - `/www/idc1.surf-thailand.com/test/current`
+  - Caddy must be able to read that path *inside the container*.
+- **When you change docker-compose mounts:** you must recreate the container:
+  - `cd /home/chaba/chaba/stacks/idc1-stack && docker compose up -d --force-recreate caddy`
+  - Notes:
+    - The compose service name is `caddy`.
+    - The container name is `idc1-caddy`.
+- **When you only change the Caddyfile:** reload is sufficient:
+  - `scripts/idc1-caddy-reload.sh`
+
+#### /test/chat standard (MCP0 → Glama)
+- **UI:** `sites/a1-idc1/test/chat/` deployed to `https://test.idc1.surf-thailand.com/test/chat/` via `scripts/deploy-idc1-test.sh`.
+- **Backend path:** the chat UI calls MCP0 and proxies into the Glama provider:
+  - `POST https://mcp0.idc1.surf-thailand.com/proxy/glama/invoke`
+  - Payload is an MCP invoke object: `{ tool: "chat_completion", arguments: { messages: [...] } }`.
+- **Provider registration (required):** MCP0 must have a `glama` provider registered in `idc1-stack`:
+  - In `/home/chaba/chaba/stacks/idc1-stack/.env`:
+    - `MCP0_PROVIDERS=glama:http://mcp-glama:8014|health=/health|capabilities=/.well-known/mcp.json`
+  - Recreate MCP0 after changing providers:
+    - `cd /home/chaba/chaba/stacks/idc1-stack && docker compose up -d --force-recreate mcp0`
+- **First-call flakiness:** the UI includes a short retry/backoff to smooth out transient proxy/provider warmup.
+
 > **Side notes & fixes**
 > - We initially left UFW closed on ports 80/443 so Let’s Encrypt HTTP challenges failed. Fix: `sudo ufw allow 80,443/tcp`.
 > - Our first deploy copied files as `root`, preventing Caddy (running as the `caddy` user) from reading `/var/www/a1`. Running `sudo chown -R caddy:www-data /var/www/a1` resolved the `permission denied` errors in `journalctl`.

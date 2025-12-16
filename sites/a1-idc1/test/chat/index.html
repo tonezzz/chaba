@@ -22,6 +22,10 @@
             <span>Preferred language</span>
             <select id="language-select" aria-label="Preferred language"></select>
           </label>
+          <label class="model-picker">
+            <span>Model</span>
+            <select id="model-select" aria-label="Model"></select>
+          </label>
           <div class="status" id="status" role="status">Checking status…</div>
         </div>
       </header>
@@ -42,8 +46,15 @@
             <span>Temperature</span>
             <input type="number" id="temperature" min="0" max="2" step="0.1" value="0.2" />
           </label>
-          <button type="submit" id="send-button">Send</button>
+          <div class="compose-actions">
+            <label id="attach-button" class="icon-button" for="file-input" aria-label="Attach files" title="Attach files">
+              📎
+            </label>
+            <input id="file-input" type="file" class="visually-hidden" multiple />
+            <button type="submit" id="send-button">Send</button>
+          </div>
         </div>
+        <div class="attachments" id="attachments" hidden aria-live="polite"></div>
       </form>
     </main>
 
