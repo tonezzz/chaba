@@ -177,6 +177,30 @@ icacls "C:\chaba\.secrets\pc1\chaba2\.ssh\chaba_ed25519" /grant:r "$($acct):(R)"
 
 After running these commands, retry the SSH command from WSL.
 
+## Webtop UID/GID mapping (idc1-stack)
+LinuxServer `webtop` runs processes as user `abc` inside the container. To avoid permission issues when editing the repo bind mount (`/workspaces/chaba`), configure the container UID/GID to match the host user.
+
+- `.env` (gitignored) should include:
+  - `WEBTOP_PUID=1000`
+  - `WEBTOP_PGID=1000`
+- `stacks/idc1-stack/docker-compose.yml` maps these to LinuxServer `PUID/PGID` for `webtop`/`webtop2`.
+
+Recreate `webtop2` (example):
+
+```bash
+cd /workspaces/chaba/stacks/idc1-stack
+docker compose --profile mcp-suite up -d --force-recreate webtop2
+```
+
+Verification notes:
+- `docker exec ... id` runs as **root** by default (so it will show `uid=0`).
+- Verify the mapped user instead:
+
+```bash
+docker exec -it idc1-webtop2 id abc
+docker exec -it --user 1000:1000 idc1-webtop2 id
+```
+
 ## Detects vision API (`/test/detects`)
 
 - **Source layout**: UI lives in `sites/a1-idc1/test/detects/`; the Glama vision proxy/API is `sites/a1-idc1/api/detects/` with its `.env` (GLAMA_URL/KEY, model, prompt, etc.).@sites/a1-idc1/api/detects/src/server.js#1-184

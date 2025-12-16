@@ -28,3 +28,4 @@
   - [ ] Build `mcp-agent-intern` alongside existing `mcp-agents` for blue/green validation
   - [ ] Implement auditor MCP tool to run scenarios against both stacks and diff outputs/KPIs
   - [ ] Gate promotion in mcp-devops workflows on green auditor reports + document process
+- [x] Fix idc1-stack webtop UID/GID mapping (WEBTOP_PUID/PGID -> linuxserver PUID/PGID) and document verification commands
