@@ -1,0 +1,89 @@
+webtop.idc1.surf-thailand.com {
+    encode gzip zstd
+
+    reverse_proxy 127.0.0.1:3001
+}
+
+webtop2.idc1.surf-thailand.com {
+    encode gzip zstd
+
+    reverse_proxy 127.0.0.1:3003
+}
+
+memory.idc1.surf-thailand.com {
+    encode gzip zstd
+
+    reverse_proxy 127.0.0.1:8470
+}
+
+memory.idc1.vpn {
+    encode gzip zstd
+
+    @vpn_only not remote_ip 10.8.0.0/24 127.0.0.1
+    respond @vpn_only 403
+
+    reverse_proxy 127.0.0.1:8470
+}
+
+test.idc1.surf-thailand.com {
+    encode gzip zstd
+
+    handle /wg {
+        redir * /wg/
+    }
+
+    @wg_easy_assets path /assets* /api* /socket.io/* /favicon* /manifest* /sw.js /robots.txt
+    handle @wg_easy_assets {
+        reverse_proxy 127.0.0.1:51821
+    }
+
+    handle /wg* {
+        uri strip_prefix /wg
+        reverse_proxy 127.0.0.1:51821
+    }
+
+    handle /demo {
+        redir * /demo/
+    }
+
+    handle /demo/detects/api/* {
+        uri strip_prefix /demo/detects/api
+        reverse_proxy 127.0.0.1:4120
+    }
+
+    handle /demo/* {
+        root * /www/idc1.surf-thailand.com/test/current
+        try_files {path} {path}/ /index.html
+        file_server
+    }
+
+    handle / {
+        redir * /test/
+    }
+
+    handle /test {
+        redir * /test/
+    }
+
+    handle_path /test/* {
+        root * /www/idc1.surf-thailand.com/test/current
+        try_files {path} {path}/ /index.html
+        file_server
+    }
+}
+
+cp.idc1.surf-thailand.com {
+    encode gzip zstd
+
+    basicauth {
+        cpadmin $2a$14$ikQeiweORPhj4DQn3AcBpe8dbpsTajCaDMNAfroIOdUA/Heygr8He
+    }
+
+    reverse_proxy 127.0.0.1:8425
+}
+
+mcp0.idc1.surf-thailand.com {
+    encode gzip zstd
+
+    reverse_proxy 127.0.0.1:8355
+}

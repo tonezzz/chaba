@@ -23,6 +23,39 @@ services:
       - ./data/caddy/data:/data
       - ./data/caddy/config:/config
 
+  wg-easy:
+    restart: unless-stopped
+    profiles: ["vpn"]
+    image: ghcr.io/wg-easy/wg-easy:latest
+    container_name: idc1-wg-easy
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      net.ipv4.ip_forward: 1
+      net.ipv4.conf.all.src_valid_mark: 1
+    ports:
+      - "51820:51820/udp"
+      - "51821:51821/tcp"
+    volumes:
+      - ./data/wg-easy:/etc/wireguard
+    environment:
+      WG_HOST: ${WG_HOST:-}
+      WG_PORT: ${WG_PORT:-51820}
+      WG_DEFAULT_DNS: ${WG_DEFAULT_DNS:-10.8.0.1}
+      WG_ALLOWED_IPS: ${WG_ALLOWED_IPS:-10.8.0.0/24}
+      PASSWORD: ${WG_PASSWORD:-}
+
+  wg-dns:
+    restart: unless-stopped
+    profiles: ["vpn"]
+    image: coredns/coredns:1.11.1
+    container_name: idc1-wg-dns
+    network_mode: "container:idc1-wg-easy"
+    volumes:
+      - ./config/coredns:/etc/coredns:ro
+    command: ["-conf", "/etc/coredns/Corefile"]
+
   mcp0:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -178,26 +211,6 @@ services:
       timeout: 5s
       retries: 3
 
-  webtop:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    image: lscr.io/linuxserver/webtop:ubuntu-xfce
-    container_name: idc1-webtop
-    shm_size: "1gb"
-    ports:
-      - "3001:3000"
-    environment:
-      PUID: ${WEBTOP_PUID:-1000}
-      PGID: ${WEBTOP_PGID:-1000}
-    volumes:
-      - webtop-config:/config
-      - ../../:/workspaces/chaba:cached
-    healthcheck:
-      test: ["CMD-SHELL", "bash -lc 'DISPLAY=${DISPLAY:-:1} xrandr --query >/dev/null 2>&1'"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
   webtop2:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -212,6 +225,7 @@ services:
       PGID: ${WEBTOP_PGID:-1000}
     volumes:
       - webtop2-config:/config
+      - ./webtop/custom-cont-init.d:/custom-cont-init.d:ro
       - ../../:/workspaces/chaba:cached
     healthcheck:
       test: ["CMD-SHELL", "bash -lc 'DISPLAY=${DISPLAY:-:1} xrandr --query >/dev/null 2>&1'"]
@@ -242,6 +256,5 @@ networks:
     driver: bridge
 
 volumes:
-  webtop-config:
   webtop2-config:
   mcp-memory-data:
