@@ -1,4 +1,4 @@
-version: "3.9"
+name: idc1-stack
 
 x-default-service: &default-service
   restart: unless-stopped
@@ -13,6 +13,16 @@ x-default-service: &default-service
       max-file: "3"
 
 services:
+  caddy:
+    restart: unless-stopped
+    image: caddy:2.8
+    container_name: idc1-caddy
+    network_mode: host
+    volumes:
+      - ./config/caddy:/etc/caddy:ro
+      - ./data/caddy/data:/data
+      - ./data/caddy/config:/config
+
   mcp0:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -168,6 +178,70 @@ services:
       timeout: 5s
       retries: 3
 
+  webtop:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    image: lscr.io/linuxserver/webtop:ubuntu-xfce
+    container_name: idc1-webtop
+    shm_size: "1gb"
+    ports:
+      - "3001:3000"
+    environment:
+      PUID: ${WEBTOP_PUID:-1000}
+      PGID: ${WEBTOP_PGID:-1000}
+    volumes:
+      - webtop-config:/config
+      - ../../:/workspaces/chaba:cached
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc 'DISPLAY=${DISPLAY:-:1} xrandr --query >/dev/null 2>&1'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  webtop2:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    image: lscr.io/linuxserver/webtop:ubuntu-xfce
+    container_name: idc1-webtop2
+    hostname: webtop2
+    shm_size: "1gb"
+    ports:
+      - "3003:3000"
+    environment:
+      PUID: ${WEBTOP_PUID:-1000}
+      PGID: ${WEBTOP_PGID:-1000}
+    volumes:
+      - webtop2-config:/config
+      - ../../:/workspaces/chaba:cached
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc 'DISPLAY=${DISPLAY:-:1} xrandr --query >/dev/null 2>&1'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-memory-bridge:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_MEMORY_BUILD_CONTEXT:-../../mcp/mcp-memory-bridge}
+    ports:
+      - "${MCP_MEMORY_PORT:-8470}:8470"
+    environment:
+      PORT: 8470
+      MEMORY_FILE_PATH: /data/memory.jsonl
+    volumes:
+      - mcp-memory-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8470/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
 networks:
   idc1-stack-net:
     driver: bridge
+
+volumes:
+  webtop-config:
+  webtop2-config:
+  mcp-memory-data:
