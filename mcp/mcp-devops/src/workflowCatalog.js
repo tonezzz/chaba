@@ -37,6 +37,93 @@ const workflows = [
     }
   },
   {
+    id: 'pc1-caddy-status',
+    label: 'pc1 Caddy status',
+    description: 'Shows pc1-caddy container status (docker ps) in a concise table.',
+    tags: ['pc1', 'caddy', 'status'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-caddy-status.ps1'),
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-caddy-status.ps1'
+    }
+  },
+  {
+    id: 'pc1-caddy-logs',
+    label: 'pc1 Caddy logs (tail)',
+    description: 'Prints the last N lines of pc1-caddy logs (non-follow).',
+    tags: ['pc1', 'caddy', 'logs'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-caddy-logs.ps1'),
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-caddy-logs.ps1'
+    }
+  },
+  {
+    id: 'pc1-caddy-restart',
+    label: 'pc1 Caddy restart + validate',
+    description: 'Restarts the pc1-caddy container and validates /etc/caddy/Caddyfile.',
+    tags: ['pc1', 'caddy', 'restart', 'tls'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-caddy-restart.ps1'),
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-caddy-restart.ps1'
+    }
+  },
+  {
+    id: 'pc1-stack-status',
+    label: 'pc1-stack status (docker compose ps)',
+    description: 'Shows pc1-stack container status for the configured profile.',
+    tags: ['pc1', 'stack', 'status', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-stack.ps1'),
+      args: ['-Action', 'status'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack.ps1'
+    }
+  },
+  {
+    id: 'pc1-stack-up',
+    label: 'pc1-stack up (mcp-suite)',
+    description: 'Brings up pc1-stack containers in the mcp-suite profile (docker compose up -d).',
+    tags: ['pc1', 'stack', 'up', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-stack.ps1'),
+      args: ['-Action', 'up', '-Profile', 'mcp-suite'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack.ps1'
+    }
+  },
+  {
+    id: 'pc1-stack-down',
+    label: 'pc1-stack down',
+    description: 'Stops pc1-stack containers (docker compose down).',
+    tags: ['pc1', 'stack', 'down', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-stack.ps1'),
+      args: ['-Action', 'down'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack.ps1'
+    }
+  },
+  {
     id: 'deploy-dev-host-mirror',
     label: 'Deploy dev-host mirror (pc1)',
     description:
