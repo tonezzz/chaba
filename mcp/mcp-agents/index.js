@@ -182,7 +182,17 @@ const fetchJson = async (url, options = {}) => {
   if (response.status === 204) {
     return null;
   }
-  return response.json();
+  const text = await response.text();
+  if (!text || !text.trim()) {
+    return null;
+  }
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    const parseError = new Error(`invalid json response body at ${url} reason: ${error.message}`);
+    parseError.status = 502;
+    throw parseError;
+  }
 };
 
 const buildUserBase = (userId) =>
