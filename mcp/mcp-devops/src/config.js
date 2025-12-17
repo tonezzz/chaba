@@ -11,7 +11,9 @@ const repoEnv = path.resolve(__dirname, '..', '..', '..', '.env');
 dotenv.config({ path: localEnv, override: false });
 dotenv.config({ path: repoEnv, override: false });
 
-const repoRoot = path.resolve(__dirname, '..', '..', '..');
+const repoRoot = process.env.MCP_DEVOPS_REPO_ROOT
+  ? path.resolve(process.env.MCP_DEVOPS_REPO_ROOT)
+  : path.resolve(__dirname, '..', '..', '..');
 const scriptsRoot = path.join(repoRoot, 'scripts');
 const stacksRoot = path.join(repoRoot, 'stacks');
 const defaultPowerShell = process.platform === 'win32' ? 'powershell.exe' : 'pwsh';

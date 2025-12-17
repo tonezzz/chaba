@@ -124,6 +124,82 @@ const workflows = [
     }
   },
   {
+    id: 'pc1-self-status',
+    label: 'pc1-stack (self) status',
+    description:
+      'Runs docker compose ps for pc1-stack from inside mcp-devops (requires docker socket mount).',
+    tags: ['pc1', 'stack', 'self', 'status', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/pc1-stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        ACTION: 'status'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack-self.sh'
+    }
+  },
+  {
+    id: 'pc1-self-up',
+    label: 'pc1-stack (self) up (mcp-suite)',
+    description:
+      'Runs docker compose up -d for pc1-stack from inside mcp-devops (profile mcp-suite).',
+    tags: ['pc1', 'stack', 'self', 'up', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/pc1-stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        ACTION: 'up',
+        PROFILE: 'mcp-suite'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack-self.sh'
+    }
+  },
+  {
+    id: 'pc1-self-down',
+    label: 'pc1-stack (self) down',
+    description: 'Runs docker compose down for pc1-stack from inside mcp-devops.',
+    tags: ['pc1', 'stack', 'self', 'down', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/pc1-stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        ACTION: 'down'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack-self.sh'
+    }
+  },
+  {
+    id: 'pc1-self-restart-mcp-devops',
+    label: 'pc1-stack (self) restart mcp-devops',
+    description: 'Restarts the running mcp-devops service via docker compose restart.',
+    tags: ['pc1', 'stack', 'self', 'restart', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/pc1-stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        ACTION: 'restart-service',
+        SERVICE: 'mcp-devops'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack-self.sh'
+    }
+  },
+  {
     id: 'deploy-dev-host-mirror',
     label: 'Deploy dev-host mirror (pc1)',
     description:
