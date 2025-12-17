@@ -230,6 +230,39 @@ services:
       timeout: 5s
       retries: 3
 
+  redis:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-redis:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_REDIS_BUILD_CONTEXT:-../../mcp/mcp-redis}
+    ports:
+      - "${MCP_REDIS_PORT:-8033}:8033"
+    environment:
+      PORT: 8033
+      REDIS_URL: ${MCP_REDIS_URL:-redis://redis:6379/0}
+      REDIS_DB: ${MCP_REDIS_DB:-0}
+      REDIS_SCAN_MAX_ROUNDS: ${MCP_REDIS_SCAN_MAX_ROUNDS:-10}
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8033/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   caddy:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -252,3 +285,4 @@ volumes:
   webtop3-config:
   caddy-data:
   caddy-config:
+  redis-data:
