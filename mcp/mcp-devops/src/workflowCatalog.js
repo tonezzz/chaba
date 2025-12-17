@@ -200,6 +200,100 @@ const workflows = [
     }
   },
   {
+    id: 'pc1-self-restart-mcp0',
+    label: 'pc1-stack (self) restart mcp0',
+    description: 'Restarts the running mcp0 service via docker compose restart.',
+    tags: ['pc1', 'stack', 'self', 'restart', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/pc1-stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        ACTION: 'restart-service',
+        SERVICE: 'mcp0'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack-self.sh'
+    }
+  },
+  {
+    id: 'pc1-self-restart-caddy',
+    label: 'pc1-stack (self) restart caddy',
+    description: 'Restarts the running caddy service via docker compose restart.',
+    tags: ['pc1', 'stack', 'self', 'restart', 'caddy', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/pc1-stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        ACTION: 'restart-service',
+        SERVICE: 'caddy'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack-self.sh'
+    }
+  },
+  {
+    id: 'pc1-self-restart-webtop2',
+    label: 'pc1-stack (self) restart webtop2',
+    description: 'Restarts the running webtop2 service via docker compose restart.',
+    tags: ['pc1', 'stack', 'self', 'restart', 'webtop', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/pc1-stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        ACTION: 'restart-service',
+        SERVICE: 'webtop2'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack-self.sh'
+    }
+  },
+  {
+    id: 'pc1-self-pull',
+    label: 'pc1-stack (self) pull images',
+    description: 'Runs docker compose pull for pc1-stack (no up/down).',
+    tags: ['pc1', 'stack', 'self', 'pull', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/pc1-stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        ACTION: 'pull'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack-self.sh'
+    }
+  },
+  {
+    id: 'pc1-self-pull-up',
+    label: 'pc1-stack (self) pull + up (mcp-suite)',
+    description: 'Runs docker compose pull then docker compose up -d (profile mcp-suite) for pc1-stack.',
+    tags: ['pc1', 'stack', 'self', 'pull', 'up', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/pc1-stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        ACTION: 'pull-up',
+        PROFILE: 'mcp-suite'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack-self.sh'
+    }
+  },
+  {
     id: 'deploy-dev-host-mirror',
     label: 'Deploy dev-host mirror (pc1)',
     description:

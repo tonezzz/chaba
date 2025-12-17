@@ -25,7 +25,14 @@ case "$ACTION" in
   status)
     "${base[@]}" ps
     ;;
+  pull)
+    "${base[@]}" pull
+    ;;
   up)
+    "${base[@]}" --profile "$PROFILE" up -d
+    ;;
+  pull-up)
+    "${base[@]}" pull
     "${base[@]}" --profile "$PROFILE" up -d
     ;;
   down)
@@ -39,7 +46,7 @@ case "$ACTION" in
     "${base[@]}" restart "$SERVICE"
     ;;
   *)
-    echo "Unknown ACTION=$ACTION (supported: status|up|down|restart-service)" >&2
+    echo "Unknown ACTION=$ACTION (supported: status|pull|up|pull-up|down|restart-service)" >&2
     exit 2
     ;;
 esac
