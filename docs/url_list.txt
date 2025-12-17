@@ -1,0 +1,36 @@
+https://mcp0.idc1.surf-thailand.com
+https://memory.idc1.surf-thailand.com/mcp
+
+https://idc1.surf-thailand.com
+https://idc1.surf-thailand.com:8446/agents/api
+
+https://webtop2.idc1.surf-thailand.com
+
+https://cp.idc1.surf-thailand.com
+https://test.idc1.surf-thailand.com
+
+https://webtop2.pc1.vpn
+https://webtop3.pc1.vpn
+
+https://test.idc1.surf-thailand.com/test/chat/
+
+# pc1 webtop config export/import
+http://pc1.vpn:8055/health
+http://pc1.vpn:8056/health
+
+https://webtop.pc1.vpn
+https://chaba.webtop.pc1.vpn
+
+vpn:53 {
+    rewrite name regex (.*)\.pc1\.vpn pc1.vpn
+    rewrite name regex (.*)\.idc1\.vpn idc1.vpn
+    rewrite name regex (.*)\.pc2\.vpn pc2.vpn
+
+    hosts {
+        ...
+        fallthrough
+    }
+    forward . /etc/resolv.conf
+    log
+    errors
+}

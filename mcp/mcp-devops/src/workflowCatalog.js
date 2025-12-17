@@ -23,6 +23,20 @@ const workflows = [
     }
   },
   {
+    id: 'pc1-caddy-reload',
+    label: 'pc1 Caddy validate + reload',
+    description: 'Validates stacks/pc1-stack/Caddyfile inside the pc1-caddy container and reloads it.',
+    tags: ['pc1', 'caddy', 'reload', 'tls'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-caddy-reload.ps1'),
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-caddy-reload.ps1'
+    }
+  },
+  {
     id: 'deploy-dev-host-mirror',
     label: 'Deploy dev-host mirror (pc1)',
     description:
