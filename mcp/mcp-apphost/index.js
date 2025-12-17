@@ -12,6 +12,7 @@ const CACHE_DIR = process.env.APPHOST_CACHE_DIR || '/cache';
 
 const REPO_URL = process.env.APPHOST_REPO_URL || '';
 const DEFAULT_REF = process.env.APPHOST_REF || 'main';
+const WORKDIR = process.env.APPHOST_WORKDIR || '.';
 
 const INSTALL_COMMAND = process.env.APPHOST_INSTALL_COMMAND || 'npm ci';
 const BUILD_COMMAND = process.env.APPHOST_BUILD_COMMAND || 'npm run build';
@@ -96,6 +97,12 @@ function makeReleaseId(gitSha) {
 }
 
 async function buildToRelease(releaseId) {
+  const workDir = path.resolve(REPO_DIR, WORKDIR);
+  const pkgJson = path.join(workDir, 'package.json');
+  if (!(await fs.pathExists(pkgJson))) {
+    throw new Error(`APPHOST_WORKDIR does not contain a package.json: ${workDir}`);
+  }
+
   const env = {
     ...process.env,
     npm_config_cache: path.join(CACHE_DIR, 'npm'),
@@ -103,10 +110,10 @@ async function buildToRelease(releaseId) {
 
   await fs.ensureDir(CACHE_DIR);
 
-  await runCmd(`set -euo pipefail; ${INSTALL_COMMAND}`, { cwd: REPO_DIR, env });
-  await runCmd(`set -euo pipefail; ${BUILD_COMMAND}`, { cwd: REPO_DIR, env });
+  await runCmd(`set -euo pipefail; ${INSTALL_COMMAND}`, { cwd: workDir, env });
+  await runCmd(`set -euo pipefail; ${BUILD_COMMAND}`, { cwd: workDir, env });
 
-  const srcOut = path.join(REPO_DIR, OUTPUT_DIR);
+  const srcOut = path.resolve(workDir, OUTPUT_DIR);
   if (!(await fs.pathExists(srcOut))) {
     throw new Error(`Build output directory not found: ${srcOut}`);
   }
