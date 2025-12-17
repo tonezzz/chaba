@@ -450,6 +450,35 @@ const workflows = [
     }
   },
   {
+    id: 'idc1-fix-mcp0-vpn',
+    label: 'Fix mcp0.idc1.vpn (CoreDNS + Caddy)',
+    description:
+      'Patches idc1 CoreDNS and Caddy config to make mcp0.idc1.vpn resolve and reverse-proxy to the local mcp0 service, then restarts wg-dns and reloads Caddy.',
+    tags: ['idc1', 'vpn', 'dns', 'caddy', 'mcp0'],
+    runner: {
+      type: 'posix',
+      scriptRelative: './scripts/idc1-fix-mcp0-vpn.sh',
+      cwd: config.repoRoot,
+      env: {
+        SSH_USER: process.env.IDC1_DEPLOY_SSH_USER || 'chaba',
+        SSH_HOST: process.env.IDC1_DEPLOY_SSH_HOST || 'idc1.surf-thailand.com',
+        SSH_PORT: process.env.IDC1_DEPLOY_SSH_PORT || '22',
+        SSH_KEY_PATH: toPosixIfNeeded(
+          process.env.IDC1_DEPLOY_SSH_KEY_PATH ||
+            path.join(config.repoRoot, '.secrets', 'dev-host', '.ssh', 'chaba_ed25519')
+        ),
+        IDC1_STACK_DIR: process.env.IDC1_STACK_DIR || '/home/chaba/chaba/stacks/idc1-stack',
+        COREFILE_REL: process.env.IDC1_COREFILE_REL || 'config/coredns/Corefile',
+        CADDYFILE_REL: process.env.IDC1_CADDYFILE_REL || 'config/caddy/Caddyfile',
+        MCP0_PORT: process.env.IDC1_MCP0_PORT || '8355'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/idc1-fix-mcp0-vpn.sh'
+    }
+  },
+  {
     id: 'pc2-stack-status',
     label: 'PC2 stack status',
     description: 'Uses wsl+ssh to run `docker compose ps` for the pc2-worker stack on host pc2.',
