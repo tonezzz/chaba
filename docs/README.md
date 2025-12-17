@@ -261,9 +261,20 @@ Via MCP DevOps (workflow):
 }
 ```
 
+Additional pc1 ops workflows (MCP DevOps):
+- `pc1-caddy-status`
+- `pc1-caddy-logs`
+- `pc1-caddy-restart`
+- `pc1-stack-status`
+- `pc1-stack-up`
+- `pc1-stack-down`
+
 Notes:
 - The Caddyfile is mounted read-only (`:ro`), so formatting inside the container (`caddy fmt --overwrite`) will fail. Format on the host if needed.
 - Client browsers must trust Caddy's internal CA to avoid TLS warnings.
+
+Security note:
+- If any secret/token was ever pasted into a file or terminal output during setup, rotate it (treat it as compromised) and keep tokens only in env vars / `.secrets/` (never committed).
 ## Detects vision API (`/test/detects`)
 
 - **Source layout**: UI lives in `sites/a1-idc1/test/detects/`; the Glama vision proxy/API is `sites/a1-idc1/api/detects/` with its `.env` (GLAMA_URL/KEY, model, prompt, etc.).@sites/a1-idc1/api/detects/src/server.js#1-184
