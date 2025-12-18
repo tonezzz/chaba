@@ -60,6 +60,25 @@ Examples:
 }
 ```
 
+## idc1-stack
+### Service
+- `mcp-docker` service name: `mcp-docker`
+- Default port: `8340`
+
+### Env vars
+In `stacks/idc1-stack/.env`:
+- `MCP_DOCKER_BUILD_CONTEXT=../../mcp/mcp-docker`
+- `MCP_DOCKER_PORT=8340`
+
+### mcp0 provider registration
+`stacks/idc1-stack/.env.example` registers `mcp-docker` in `MCP0_PROVIDERS`:
+- `mcp-docker:http://mcp-docker:${MCP_DOCKER_PORT}|health=/health|capabilities=/.well-known/mcp.json`
+
+### Bring up
+On the idc1 host:
+- Copy `stacks/idc1-stack/.env.example` to `stacks/idc1-stack/.env`
+- Start the stack with your usual idc1 deploy method (e.g. `scripts/idc1-stack.ps1 up`)
+
 ## Integration with mcp0
 `pc1-stack/.env.example` registers `mcp-docker` in `MCP0_PROVIDERS` so `mcp0` can discover it.
 
