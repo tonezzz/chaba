@@ -3,6 +3,41 @@ pc1.vpn {
     tls internal
 }
 
+# Explicit HTTP (no TLS) listener to avoid auto-HTTPS redirect for internal clients/tunnels
+http://mcp0.pc1.vpn {
+    encode gzip zstd
+
+    @manifest path /.well-known/mcp.json
+    handle @manifest {
+        # Serve manifest from local mcp0 service
+        reverse_proxy pc1-mcp0:8351 {
+            header_up Host {upstream_hostport}
+        }
+    }
+
+    handle /mcp/messages* {
+        # Route messages directly to local mcp0 implementation
+        reverse_proxy pc1-mcp0:8351 {
+            flush_interval -1
+            header_up Host {upstream_hostport}
+            transport http {
+                versions h1
+            }
+        }
+    }
+
+    # Proxy Docker tool endpoints served by mcp0
+    handle /mcp/tools/* {
+        reverse_proxy pc1-mcp0:8351 {
+            flush_interval -1
+            header_up Host {upstream_hostport}
+            transport http {
+                versions h1
+            }
+        }
+    }
+}
+
 webtop2.pc1.vpn {
     reverse_proxy webtop2:3000
     tls internal
@@ -10,5 +45,46 @@ webtop2.pc1.vpn {
 
 webtop3.pc1.vpn {
     reverse_proxy webtop3:3000
+    tls internal
+}
+
+# Expose an MCP-compatible endpoint on pc1 with streaming (SSE) support.
+# - Serves the MCP manifest by proxying to the known-good idc1 endpoint
+# - Rewrites /mcp/messages* to Glama's /v1/chat/completions
+# - Enables unbuffered streaming for SSE
+mcp0.pc1.vpn {
+    encode gzip zstd
+
+    # Manifest discovery
+    @manifest path /.well-known/mcp.json
+    handle @manifest {
+        reverse_proxy pc1-mcp0:8351 {
+            header_up Host {upstream_hostport}
+        }
+    }
+
+    # Primary MCP messages endpoint -> native mcp0
+    handle /mcp/messages* {
+        reverse_proxy pc1-mcp0:8351 {
+            # Ensure Server-Sent Events / streaming is passed through
+            flush_interval -1
+            header_up Host {upstream_hostport}
+            transport http {
+                versions h1
+            }
+        }
+    }
+
+    # Proxy Docker tool endpoints served by mcp0
+    handle /mcp/tools/* {
+        reverse_proxy pc1-mcp0:8351 {
+            flush_interval -1
+            header_up Host {upstream_hostport}
+            transport http {
+                versions h1
+            }
+        }
+    }
+
     tls internal
 }

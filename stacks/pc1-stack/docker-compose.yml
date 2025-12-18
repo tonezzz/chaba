@@ -25,11 +25,17 @@ services:
       MCP0_ADMIN_TOKEN: ${MCP0_ADMIN_TOKEN:-}
       MCP0_PROVIDERS: ${MCP0_PROVIDERS:-}
       MCP0_ALLOW_ORIGINS: ${MCP0_ALLOW_ORIGINS:-http://localhost:3000,http://dev-host.pc1:3100}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      GITHUB_MODEL: ${GITHUB_MODEL:-gpt-4o-mini}
+      GITHUB_MODELS_API_BASE: ${GITHUB_MODELS_API_BASE:-https://models.inference.ai.azure.com}
+      DOCKER_HOST: unix:///var/run/docker.sock
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:${MCP0_PORT:-8351}/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
+    volumes:
+      - //var/run/docker.sock:/var/run/docker.sock
 
   mcp-agents:
     <<: *default-service

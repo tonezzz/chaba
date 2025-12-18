@@ -82,6 +82,14 @@ On the idc1 host:
 ## Integration with mcp0
 `pc1-stack/.env.example` registers `mcp-docker` in `MCP0_PROVIDERS` so `mcp0` can discover it.
 
+## pc1-stack (optional): MCP endpoint via mcp0 + Caddy
+`pc1-stack` can expose an MCP-compatible endpoint on `mcp0.pc1.vpn` via Caddy.
+
+Routes:
+- `/.well-known/mcp.json` -> proxied to `pc1-mcp0:8351`
+- `/mcp/messages*` -> proxied to `pc1-mcp0:8351` (supports streaming)
+- `/mcp/tools/*` -> proxied to `pc1-mcp0:8351` (Docker tool endpoints)
+
 If you modify ports, keep these aligned:
 - `MCP_DOCKER_PORT`
 - `MCP0_PROVIDERS` entry for `mcp-docker`

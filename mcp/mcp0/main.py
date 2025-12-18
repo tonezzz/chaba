@@ -9,8 +9,10 @@ from typing import Any, Dict, List, Optional
 import httpx
 from fastapi import Body, Depends, FastAPI, Header, HTTPException, Path
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse
+from pydantic import BaseModel, RootModel
+import docker
+from docker.errors import DockerException, NotFound as DockerNotFound
 
 from registry import ProviderRegistry
 from schemas import AggregatedHealth, ProviderDescriptor, ProviderInfo, ProxyResponse
@@ -106,6 +108,192 @@ class ProviderRegistration(BaseModel):
     descriptor: ProviderDescriptor
     headers: Optional[Dict[str, str]] = None
 
+
+# --- MCP native endpoints ---
+
+@app.get("/.well-known/mcp.json")
+async def mcp_manifest() -> JSONResponse:
+    manifest = {
+        "name": settings.app_name,
+        "version": "0.1.0",
+        "endpoints": {
+            "messages": "/mcp/messages",
+        },
+        "provider": "github-models",
+    }
+    return JSONResponse(content=manifest)
+
+
+class MCPMessage(BaseModel):
+    role: str
+    content: str
+
+
+class MCPMessagesRequest(BaseModel):
+    model: str
+    messages: List[MCPMessage]
+    stream: Optional[bool] = False
+    temperature: Optional[float] = None
+    max_tokens: Optional[int] = None
+
+
+def _github_models_headers() -> Dict[str, str]:
+    token = settings.effective_github_token
+    if not token:
+        raise HTTPException(status_code=503, detail="GitHub token not configured")
+    return {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+
+
+@app.post("/mcp/messages", response_model=None)
+async def mcp_messages(
+    body: MCPMessagesRequest,
+    timeout: float = Depends(get_timeout),
+):
+    api_base = settings.github_models_api_base.rstrip("/")
+    url = f"{api_base}/v1/chat/completions"
+    payload: Dict[str, Any] = {
+        "model": body.model or settings.github_model,
+        "messages": [m.model_dump() for m in body.messages],
+    }
+    if body.temperature is not None:
+        payload["temperature"] = body.temperature
+    if body.max_tokens is not None:
+        payload["max_tokens"] = body.max_tokens
+
+    headers = _github_models_headers()
+
+    # Streaming response
+    if body.stream:
+        payload["stream"] = True
+        client = httpx.AsyncClient(timeout=timeout)
+        try:
+            resp = await client.stream("POST", url, json=payload, headers=headers)
+        except httpx.RequestError as exc:  # noqa: BLE001
+            await client.aclose()
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+        async def event_iterator():
+            try:
+                async for line in resp.aiter_lines():
+                    # pass-through SSE (already in data: ... format from provider)
+                    if not line:
+                        yield "\n"
+                    else:
+                        yield f"{line}\n"
+            finally:
+                await client.aclose()
+
+        return StreamingResponse(event_iterator(), media_type="text/event-stream")
+
+    # Non-streaming response
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            r = await client.post(url, json=payload, headers=headers)
+    except httpx.RequestError as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    content_type = r.headers.get("content-type", "")
+    if "application/json" in content_type:
+        try:
+            data = r.json()
+        except ValueError:
+            data = r.text
+    else:
+        data = r.text
+    return JSONResponse(status_code=r.status_code, content=data)
+
+
+# --- Docker tool endpoints (integrated in mcp0) ---
+
+class DockerPortMap(RootModel[Dict[str, str]]):
+    # host_port: container_port (both as strings like "8080" or "8080/tcp")
+    pass
+
+
+class DockerEnvMap(RootModel[Dict[str, str]]):
+    pass
+
+
+class CreateContainerRequest(BaseModel):
+    image: str
+    name: Optional[str] = None
+    command: Optional[str] = None
+    ports: Optional[DockerPortMap] = None
+    environment: Optional[DockerEnvMap] = None
+    detach: bool = True
+
+
+def _docker_client():
+    try:
+        return docker.from_env()
+    except DockerException as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=f"Docker unavailable: {exc}") from exc
+
+
+@app.get("/mcp/tools/docker/list-containers")
+async def docker_list_containers(all: bool = False) -> List[Dict[str, Any]]:  # noqa: A002
+    client = _docker_client()
+    try:
+        containers = client.containers.list(all=all)
+    except DockerException as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    result: List[Dict[str, Any]] = []
+    for c in containers:
+        result.append(
+            {
+                "id": c.id,
+                "name": c.name,
+                "status": c.status,
+                "image": getattr(c.image, "tags", None) or str(c.image),
+            }
+        )
+    return result
+
+
+@app.get("/mcp/tools/docker/get-logs/{container}")
+async def docker_get_logs(container: str, tail: Optional[int] = 200) -> Dict[str, Any]:
+    client = _docker_client()
+    try:
+        obj = client.containers.get(container)
+        logs = obj.logs(tail=tail).decode("utf-8", errors="replace")
+    except DockerNotFound as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except DockerException as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    return {"container": container, "logs": logs}
+
+
+@app.post("/mcp/tools/docker/create-container")
+async def docker_create_container(req: CreateContainerRequest) -> Dict[str, Any]:
+    client = _docker_client()
+    ports = None
+    if req.ports and req.ports.root:
+        # Convert host->container mapping into docker-py format {container_port: host_port}
+        ports = {}
+        for host, container in req.ports.root.items():
+            ports[str(container)] = str(host)
+    environment = req.environment.root if req.environment and req.environment.root else None
+    try:
+        image = req.image
+        # Ensure image is available
+        try:
+            client.images.get(image)
+        except DockerNotFound:
+            client.images.pull(image)
+        container = client.containers.run(
+            image,
+            name=req.name,
+            command=req.command,
+            detach=req.detach,
+            ports=ports,
+            environment=environment,
+        )
+    except DockerException as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    return {"id": container.id, "name": container.name, "status": container.status}
 
 @app.get("/health", response_model=AggregatedHealth)
 async def service_health(registry: ProviderRegistry = Depends(get_registry)) -> AggregatedHealth:
