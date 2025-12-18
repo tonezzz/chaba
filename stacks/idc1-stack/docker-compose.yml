@@ -140,6 +140,24 @@ services:
       timeout: 5s
       retries: 3
 
+  mcp-docker:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_DOCKER_BUILD_CONTEXT:-../../mcp/mcp-docker}
+    ports:
+      - "${MCP_DOCKER_PORT:-8340}:8340"
+    environment:
+      PORT: ${MCP_DOCKER_PORT:-8340}
+      DOCKER_HOST: unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8340/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   code-server:
     <<: *default-service
     profiles: ["mcp-suite"]
