@@ -206,6 +206,26 @@ async def mcp_messages(
     return JSONResponse(status_code=r.status_code, content=data)
 
 
+# Compatibility alias: some proxies may strip the '/mcp' prefix
+# Route '/messages' to the same handler to avoid 404s when a proxy forwards '/messages'
+@app.post("/messages", response_model=None)
+async def mcp_messages_alias(
+    body: MCPMessagesRequest,
+    timeout: float = Depends(get_timeout),
+):
+    return await mcp_messages(body=body, timeout=timeout)
+
+
+# Some reverse proxies may erroneously forward to root '/'
+# Provide a root POST alias to ensure MCP clients behind misconfigured proxies still work
+@app.post("/", response_model=None)
+async def mcp_messages_root_alias(
+    body: MCPMessagesRequest,
+    timeout: float = Depends(get_timeout),
+):
+    return await mcp_messages(body=body, timeout=timeout)
+
+
 # --- Docker tool endpoints (integrated in mcp0) ---
 
 class DockerPortMap(RootModel[Dict[str, str]]):

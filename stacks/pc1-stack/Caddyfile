@@ -15,22 +15,22 @@ http://mcp0.pc1.vpn {
         }
     }
 
+    # Messages endpoint: ensure upstream path is /messages even if a proxy strips prefix
     handle /mcp/messages* {
-        # Route messages directly to local mcp0 implementation
+        uri replace /mcp/messages /messages
         reverse_proxy pc1-mcp0:8351 {
             flush_interval -1
-            header_up Host {upstream_hostport}
             transport http {
                 versions h1
             }
         }
     }
 
-    # Proxy Docker tool endpoints served by mcp0
+    # Docker tools: forward as-is and force identity encoding to avoid body quirks
     handle /mcp/tools/* {
         reverse_proxy pc1-mcp0:8351 {
+            header_up Accept-Encoding identity
             flush_interval -1
-            header_up Host {upstream_hostport}
             transport http {
                 versions h1
             }
@@ -63,23 +63,23 @@ mcp0.pc1.vpn {
         }
     }
 
-    # Primary MCP messages endpoint -> native mcp0
+    # Messages endpoint: ensure upstream path is /messages even if a proxy strips prefix
     handle /mcp/messages* {
+        uri replace /mcp/messages /messages
         reverse_proxy pc1-mcp0:8351 {
             # Ensure Server-Sent Events / streaming is passed through
             flush_interval -1
-            header_up Host {upstream_hostport}
             transport http {
                 versions h1
             }
         }
     }
 
-    # Proxy Docker tool endpoints served by mcp0
+    # Docker tools: forward as-is and force identity encoding to avoid body quirks
     handle /mcp/tools/* {
         reverse_proxy pc1-mcp0:8351 {
+            header_up Accept-Encoding identity
             flush_interval -1
-            header_up Host {upstream_hostport}
             transport http {
                 versions h1
             }

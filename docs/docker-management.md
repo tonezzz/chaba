@@ -90,6 +90,9 @@ Routes:
 - `/mcp/messages*` -> proxied to `pc1-mcp0:8351` (supports streaming)
 - `/mcp/tools/*` -> proxied to `pc1-mcp0:8351` (Docker tool endpoints)
 
+Compatibility note:
+- Some proxies/clients expect `/messages` instead of `/mcp/messages`. `mcp0` provides a `/messages` alias, and the pc1 Caddy routes rewrite `/mcp/messages` to `/messages` upstream.
+
 If you modify ports, keep these aligned:
 - `MCP_DOCKER_PORT`
 - `MCP0_PROVIDERS` entry for `mcp-docker`

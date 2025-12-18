@@ -177,10 +177,8 @@ icacls "C:\chaba\.secrets\pc1\chaba2\.ssh\chaba_ed25519" /grant:r "$($acct):(R)"
 
 After running these commands, retry the SSH command from WSL.
 
-<<<<<<< HEAD
-=======
 ## Webtop UID/GID mapping (idc1-stack)
-LinuxServer `webtop` runs processes as user `abc` inside the container. To avoid permission issues when editing the repo bind mount (`/workspaces/chaba`), configure the container UID/GID to match the host user.
+ LinuxServer `webtop` runs processes as user `abc` inside the container. To avoid permission issues when editing the repo bind mount (`/workspaces/chaba`), configure the container UID/GID to match the host user.
 
 - `.env` (gitignored) should include:
   - `WEBTOP_PUID=1000`
