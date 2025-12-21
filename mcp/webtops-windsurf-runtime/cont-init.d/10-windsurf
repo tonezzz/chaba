@@ -7,8 +7,68 @@ WINDSURF_DOWNLOAD_URL_TEMPLATE="${WINDSURF_DOWNLOAD_URL_TEMPLATE:-}"
 WINDSURF_DEB_URL_TEMPLATE="${WINDSURF_DEB_URL_TEMPLATE:-}"
 WINDSURF_CACHE_ROOT="${WINDSURF_CACHE_ROOT:-}"
 
+WORKSPACES_ROOT="${WORKSPACES_ROOT:-/workspaces}"
+WORKSPACES_REPO_DIR="${WORKSPACES_REPO_DIR:-$WORKSPACES_ROOT/chaba}"
+WORKSPACES_REPO_URL="${WORKSPACES_REPO_URL:-}"
+WORKSPACES_REPO_BRANCH="${WORKSPACES_REPO_BRANCH:-}"
+
 if [ -z "$WINDSURF_INSTALL_MODE" ]; then
   WINDSURF_INSTALL_MODE="deb_extract"
+fi
+
+mkdir -p "$WORKSPACES_ROOT" "$WORKSPACES_REPO_DIR" || true
+
+OWNER_UID="${PUID:-$(id -u abc 2>/dev/null || echo 1000)}"
+OWNER_GID="${PGID:-$(id -g abc 2>/dev/null || echo 1000)}"
+OWNER="${OWNER_UID}:${OWNER_GID}"
+chown "$OWNER" "$WORKSPACES_ROOT" 2>/dev/null || true
+chown -R "$OWNER" "$WORKSPACES_REPO_DIR" 2>/dev/null || true
+
+if [ -n "$WORKSPACES_REPO_URL" ] && command -v git >/dev/null 2>&1; then
+  GIT_RUNNER=""
+  if id abc >/dev/null 2>&1 && command -v s6-setuidgid >/dev/null 2>&1; then
+    GIT_RUNNER="s6-setuidgid abc"
+  fi
+
+  if [ ! -d "$WORKSPACES_REPO_DIR/.git" ]; then
+    if [ -n "$GIT_RUNNER" ]; then
+      $GIT_RUNNER git clone "$WORKSPACES_REPO_URL" "$WORKSPACES_REPO_DIR" || true
+    else
+      git clone "$WORKSPACES_REPO_URL" "$WORKSPACES_REPO_DIR" || true
+    fi
+  fi
+
+  if [ -d "$WORKSPACES_REPO_DIR/.git" ]; then
+    if [ -n "$WORKSPACES_REPO_BRANCH" ]; then
+      if [ -n "$GIT_RUNNER" ]; then
+        $GIT_RUNNER git -C "$WORKSPACES_REPO_DIR" fetch --all --prune || true
+        $GIT_RUNNER git -C "$WORKSPACES_REPO_DIR" checkout "$WORKSPACES_REPO_BRANCH" || true
+        $GIT_RUNNER git -C "$WORKSPACES_REPO_DIR" pull --ff-only || true
+      else
+        git -C "$WORKSPACES_REPO_DIR" fetch --all --prune || true
+        git -C "$WORKSPACES_REPO_DIR" checkout "$WORKSPACES_REPO_BRANCH" || true
+        git -C "$WORKSPACES_REPO_DIR" pull --ff-only || true
+      fi
+    else
+      if [ -n "$GIT_RUNNER" ]; then
+        $GIT_RUNNER git -C "$WORKSPACES_REPO_DIR" pull --ff-only || true
+      else
+        git -C "$WORKSPACES_REPO_DIR" pull --ff-only || true
+      fi
+    fi
+  fi
+
+  if [ ! -f /etc/gitconfig ]; then
+    : > /etc/gitconfig 2>/dev/null || true
+  fi
+  if [ -f /etc/gitconfig ] && ! grep -Fq "directory = $WORKSPACES_REPO_DIR" /etc/gitconfig 2>/dev/null; then
+    printf '%s\n' "[safe]" "  directory = $WORKSPACES_REPO_DIR" >> /etc/gitconfig 2>/dev/null || true
+  fi
+
+  HOME=/root git config --global --add safe.directory "$WORKSPACES_REPO_DIR" 2>/dev/null || true
+  if [ -n "$GIT_RUNNER" ]; then
+    $GIT_RUNNER env HOME=/config git config --global --add safe.directory "$WORKSPACES_REPO_DIR" 2>/dev/null || true
+  fi
 fi
 
 if [ -z "$WINDSURF_VERSION" ]; then
@@ -76,6 +136,10 @@ if [ "$WINDSURF_INSTALL_MODE" = "deb_extract" ]; then
   DESKTOP_DIR="$CONFIG_DIR/Desktop"
   mkdir -p "$USER_APPS_DIR" "$DESKTOP_DIR"
 
+  OWNER_UID="${PUID:-$(id -u abc 2>/dev/null || echo 1000)}"
+  OWNER_GID="${PGID:-$(id -g abc 2>/dev/null || echo 1000)}"
+  OWNER="${OWNER_UID}:${OWNER_GID}"
+
   DESKTOP_ENTRY_CONTENT="[Desktop Entry]
 Name=Windsurf
 Comment=Windsurf IDE
@@ -88,6 +152,11 @@ Categories=Development;IDE;"
   echo "$DESKTOP_ENTRY_CONTENT" > "/usr/share/applications/windsurf.desktop"
   echo "$DESKTOP_ENTRY_CONTENT" > "$USER_APPS_DIR/windsurf.desktop"
   cp -f "$USER_APPS_DIR/windsurf.desktop" "$DESKTOP_DIR/Windsurf.desktop" || true
+
+  chown "$OWNER" "$DESKTOP_DIR" 2>/dev/null || true
+  chown "$OWNER" "$USER_APPS_DIR/windsurf.desktop" 2>/dev/null || true
+  chown "$OWNER" "$DESKTOP_DIR/Windsurf.desktop" 2>/dev/null || true
+  chmod +x "$DESKTOP_DIR/Windsurf.desktop" 2>/dev/null || true
 
   exit 0
 fi
@@ -118,6 +187,10 @@ USER_APPS_DIR="$CONFIG_DIR/.local/share/applications"
 DESKTOP_DIR="$CONFIG_DIR/Desktop"
 mkdir -p "$USER_APPS_DIR" "$DESKTOP_DIR"
 
+OWNER_UID="${PUID:-$(id -u abc 2>/dev/null || echo 1000)}"
+OWNER_GID="${PGID:-$(id -g abc 2>/dev/null || echo 1000)}"
+OWNER="${OWNER_UID}:${OWNER_GID}"
+
 DESKTOP_ENTRY_CONTENT="[Desktop Entry]
 Name=Windsurf
 Comment=Windsurf IDE
@@ -130,3 +203,10 @@ Categories=Development;IDE;"
 echo "$DESKTOP_ENTRY_CONTENT" > "/usr/share/applications/windsurf.desktop"
 echo "$DESKTOP_ENTRY_CONTENT" > "$USER_APPS_DIR/windsurf.desktop"
 cp -f "$USER_APPS_DIR/windsurf.desktop" "$DESKTOP_DIR/Windsurf.desktop" || true
+
+chown "$OWNER" "$DESKTOP_DIR" 2>/dev/null || true
+chown "$OWNER" "$USER_APPS_DIR/windsurf.desktop" 2>/dev/null || true
+chown "$OWNER" "$DESKTOP_DIR/Windsurf.desktop" 2>/dev/null || true
+chmod +x "$DESKTOP_DIR/Windsurf.desktop" 2>/dev/null || true
+
+exit 0

@@ -1,0 +1,11 @@
+#!/usr/bin/with-contenv bash
+set -euo pipefail
+
+PUID="${PUID:-911}"
+PGID="${PGID:-911}"
+
+mkdir -p /config/Desktop /config/.local/share/applications
+
+chown -R "${PUID}:${PGID}" /config/Desktop 2>/dev/null || true
+chown "${PUID}:${PGID}" /config/.local/share/applications/windsurf.desktop 2>/dev/null || true
+chmod +x /config/Desktop/Windsurf.desktop 2>/dev/null || true

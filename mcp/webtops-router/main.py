@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import contextlib
 import json
 import logging
@@ -38,6 +39,15 @@ settings = Settings()  # type: ignore[call-arg]
 app = FastAPI(title="webtops-router", version="0.1.0")
 
 _session_map: Dict[str, str] = {}
+
+
+_FAVICON_ICO_B64 = (
+    "AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAAAAAAAAAAAAA"
+    "AAAAAAAAAAAAAAAAgICAAP///wD///8A////AP///wD///8A////AP///wD///8A////AP///"
+    "wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////"
+    "AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A"
+    "////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A"
+)
 
 
 def _load_state() -> None:
@@ -85,6 +95,15 @@ async def health() -> Dict[str, Any]:
     return {"status": "ok", "sessions": len(_session_map)}
 
 
+@app.api_route("/favicon.ico", methods=["GET", "HEAD"])
+async def favicon() -> Response:
+    return Response(
+        content=base64.b64decode(_FAVICON_ICO_B64),
+        media_type="image/x-icon",
+        headers={"cache-control": "public, max-age=86400"},
+    )
+
+
 @app.get("/admin/sessions")
 async def admin_list_sessions(authorization: Optional[str] = Header(default=None)) -> Dict[str, Any]:
     require_admin(authorization)
@@ -114,6 +133,8 @@ async def admin_delete_session(session_id: str, authorization: Optional[str] = H
 
 @app.websocket("/{base_path}/{session_id}/websockets")
 @app.websocket("/{base_path}/{session_id}/websockets/")
+@app.websocket("/{base_path}/{session_id}/websocket")
+@app.websocket("/{base_path}/{session_id}/websocket/")
 async def proxy_websockets(websocket: WebSocket, base_path: str, session_id: str) -> None:
     try:
         # Enforce base path matches settings.
@@ -129,7 +150,7 @@ async def proxy_websockets(websocket: WebSocket, base_path: str, session_id: str
             return
 
         upstream = upstream.rstrip("/")
-        upstream_ws_url = upstream.replace("http://", "ws://", 1).replace("https://", "wss://", 1) + "/websockets"
+        upstream_ws_url = upstream.replace("http://", "ws://", 1).replace("https://", "wss://", 1) + "/websocket"
         if websocket.url.query:
             upstream_ws_url = f"{upstream_ws_url}?{websocket.url.query}"
 
@@ -225,6 +246,12 @@ async def proxy_webtop(
 
     headers = dict(request.headers)
     headers.pop("host", None)
+    # Avoid upstream compression to prevent Content-Encoding/body mismatches when proxying.
+    # We proxy bytes as-is and let the client handle encoding.
+    for k in list(headers.keys()):
+        if k.lower() == "accept-encoding":
+            headers.pop(k, None)
+    headers["accept-encoding"] = "identity"
     # Avoid attempting to proxy WebSocket upgrades via plain HTTP (upstream would return 101,
     # which h11/uvicorn cannot emit as a normal HTTP response).
     for h in (
@@ -248,8 +275,26 @@ async def proxy_webtop(
         )
 
     # Filter hop-by-hop headers
-    excluded = {"connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailers", "transfer-encoding", "upgrade"}
+    excluded = {
+        "connection",
+        "keep-alive",
+        "proxy-authenticate",
+        "proxy-authorization",
+        "te",
+        "trailers",
+        "transfer-encoding",
+        "upgrade",
+        # Prevent browsers from attempting to decode payloads that are no longer compressed.
+        "content-encoding",
+        # Let FastAPI/uvicorn compute Content-Length from the bytes we return.
+        "content-length",
+    }
     out_headers = {k: v for k, v in resp.headers.items() if k.lower() not in excluded}
+
+    # Defensive: ensure these never leak through even if casing/duplication changes.
+    for k in list(out_headers.keys()):
+        if k.lower() in {"content-encoding", "content-length"}:
+            out_headers.pop(k, None)
 
     return Response(content=resp.content, status_code=resp.status_code, headers=out_headers)
 

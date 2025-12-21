@@ -187,8 +187,6 @@ icacls "C:\chaba\.secrets\pc1\chaba2\.ssh\chaba_ed25519" /grant:r "$($acct):(R)"
 
 After running these commands, retry the SSH command from WSL.
 
-<<<<<<< HEAD
-=======
 ## Webtop UID/GID mapping (idc1-stack)
 LinuxServer `webtop` runs processes as user `abc` inside the container. To avoid permission issues when editing the repo bind mount (`/workspaces/chaba`), configure the container UID/GID to match the host user.
 
@@ -285,6 +283,64 @@ Notes:
 
 Security note:
 - If any secret/token was ever pasted into a file or terminal output during setup, rotate it (treat it as compromised) and keep tokens only in env vars / `.secrets/` (never committed).
+
+## Webtops / Windsurf user config persistence
+
+Windsurf stores its user profile data inside the session `/config` volume. Starting a fresh session creates a fresh `/config`, so Windsurf will start with a blank profile unless you restore/copy the profile data.
+
+### Preferred: snapshot + restore
+
+1. Create a snapshot from a session:
+
+```powershell
+$body=@{ tool='create_snapshot'; arguments=@{ session_id='sess_...' ; options=@{} } } | ConvertTo-Json -Compress
+Invoke-RestMethod -Method Post -Uri http://localhost:8091/invoke -ContentType 'application/json' -Body $body
+```
+
+2. Restore into a new session:
+
+```powershell
+$body=@{ tool='restore_snapshot'; arguments=@{ user_id='demo'; snapshot_id='snap_...'; options=@{ profile='windsurf' } } } | ConvertTo-Json -Compress
+Invoke-RestMethod -Method Post -Uri http://localhost:8091/invoke -ContentType 'application/json' -Body $body
+```
+
+### Manual: copy Windsurf profile between session volumes
+
+If you need to extract data from an older session and move it into a new session, copy the Windsurf folders volume-to-volume (avoids PowerShell pipe corruption from tar streams).
+
+Common Windsurf folders inside `/config`:
+- `/config/.config/Windsurf`
+- `/config/.windsurf`
+- `/config/.codeium/windsurf`
+
+Volume-to-volume copy helper (example):
+
+```powershell
+$script = @'
+set -e
+copy_dir() {
+  src="$1"; dst="$2"
+  if [ -e "$src" ]; then
+    rm -rf "$dst"
+    mkdir -p "$(dirname "$dst")"
+    cp -a "$src" "$(dirname "$dst")/"
+  fi
+}
+copy_dir /from/.config/Windsurf /to/.config/Windsurf
+copy_dir /from/.windsurf /to/.windsurf
+copy_dir /from/.codeium/windsurf /to/.codeium/windsurf
+'@
+
+$b64=[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes(($script -replace "`r","")))
+docker run --rm -v <SOURCE_CONFIG_VOLUME>:/from -v <TARGET_CONFIG_VOLUME>:/to alpine sh -lc "echo $b64 | base64 -d | sh"
+```
+
+After copying, ensure ownership is correct in the target session (LinuxServer uses user `abc`):
+
+```powershell
+docker exec <target-container> bash -lc "chown -R abc:abc /config/.config/Windsurf /config/.windsurf /config/.codeium/windsurf 2>/dev/null || true"
+```
+
 ## Detects vision API (`/test/detects`)
 
 - **Source layout**: UI lives in `sites/a1-idc1/test/detects/`; the Glama vision proxy/API is `sites/a1-idc1/api/detects/` with its `.env` (GLAMA_URL/KEY, model, prompt, etc.).@sites/a1-idc1/api/detects/src/server.js#1-184

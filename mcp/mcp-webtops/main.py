@@ -47,6 +47,12 @@ class Settings(BaseSettings):
     windsurf_deb_url_template: str = Field("", alias="WEBTOPS_WINDSURF_DEB_URL_TEMPLATE")
     windsurf_cache_volume: str = Field("webtops_windsurf_cache", alias="WEBTOPS_WINDSURF_CACHE_VOLUME")
     windsurf_cache_mount_path: str = Field("/windsurf-cache", alias="WEBTOPS_WINDSURF_CACHE_MOUNT_PATH")
+
+    workspaces_volume: str = Field("webtops_workspaces", alias="WEBTOPS_WORKSPACES_VOLUME")
+    workspaces_mount_path: str = Field("/workspaces", alias="WEBTOPS_WORKSPACES_MOUNT_PATH")
+    workspaces_repo_url: str = Field("", alias="WEBTOPS_WORKSPACES_REPO_URL")
+    workspaces_repo_branch: str = Field("", alias="WEBTOPS_WORKSPACES_REPO_BRANCH")
+    workspaces_repo_dir: str = Field("/workspaces/chaba", alias="WEBTOPS_WORKSPACES_REPO_DIR")
     session_upstream_scheme: str = Field("http", alias="WEBTOPS_SESSION_UPSTREAM_SCHEME")
     session_container_name_prefix: str = Field("webtops-sess", alias="WEBTOPS_SESSION_NAME_PREFIX")
     session_volume_name_prefix: str = Field("webtops_sess", alias="WEBTOPS_SESSION_VOLUME_PREFIX")
@@ -209,13 +215,40 @@ def _resolve_network_name(client: docker.DockerClient, network_name: str) -> str
 
 def _build_linuxserver_env() -> Dict[str, str]:
     env: Dict[str, str] = {
-        "PUID": str(settings.session_puid),
-        "PGID": str(settings.session_pgid),
-        "TZ": str(settings.session_tz),
+        "TZ": settings.session_tz,
+        "PUID": settings.session_puid,
+        "PGID": settings.session_pgid,
+        "HOME": settings.session_mount_path,
     }
     if settings.session_password:
         env["PASSWORD"] = settings.session_password
     return env
+
+
+def _maybe_add_workspaces(
+    client: docker.DockerClient,
+    env: Dict[str, str],
+    volumes: Dict[str, Dict[str, str]],
+) -> None:
+    if not settings.workspaces_volume or not settings.workspaces_mount_path:
+        return
+    try:
+        workspaces_volume = client.volumes.get(settings.workspaces_volume)
+    except docker.errors.NotFound:
+        try:
+            workspaces_volume = client.volumes.create(name=settings.workspaces_volume)
+        except DockerException as exc:
+            raise HTTPException(status_code=502, detail=f"docker_volume_create_failed: {exc}")
+    except DockerException as exc:
+        raise HTTPException(status_code=502, detail=f"docker_volume_get_failed: {exc}")
+
+    volumes[workspaces_volume.name] = {"bind": settings.workspaces_mount_path, "mode": "rw"}
+    env["WORKSPACES_ROOT"] = settings.workspaces_mount_path
+    env["WORKSPACES_REPO_DIR"] = settings.workspaces_repo_dir or f"{settings.workspaces_mount_path.rstrip('/')}/chaba"
+    if settings.workspaces_repo_url:
+        env["WORKSPACES_REPO_URL"] = settings.workspaces_repo_url
+    if settings.workspaces_repo_branch:
+        env["WORKSPACES_REPO_BRANCH"] = settings.workspaces_repo_branch
 
 
 def _normalize_profile(profile: Any) -> str:
@@ -249,6 +282,61 @@ def _ensure_image(client: docker.DockerClient, image: str) -> None:
             raise HTTPException(status_code=502, detail=f"docker_image_pull_failed: {exc}")
     except DockerException as exc:
         raise HTTPException(status_code=503, detail=f"docker_image_check_failed: {exc}")
+
+
+def _copy_docker_volume(
+    client: docker.DockerClient,
+    src_volume: str,
+    dst_volume: str,
+    *,
+    remove_dst_contents: bool,
+) -> None:
+    """Copy all data from src volume to dst volume using a short-lived helper container."""
+    helper_image = "alpine:3.20"
+    try:
+        client.images.get(helper_image)
+    except docker.errors.ImageNotFound:
+        try:
+            client.images.pull(helper_image)
+        except DockerException as exc:
+            raise HTTPException(status_code=502, detail=f"docker_image_pull_failed: {exc}")
+    except DockerException as exc:
+        raise HTTPException(status_code=503, detail=f"docker_image_check_failed: {exc}")
+
+    # Ensure both volumes exist.
+    try:
+        client.volumes.get(src_volume)
+    except docker.errors.NotFound:
+        raise HTTPException(status_code=404, detail=f"docker_volume_not_found: {src_volume}")
+    except DockerException as exc:
+        raise HTTPException(status_code=502, detail=f"docker_volume_get_failed: {exc}")
+
+    try:
+        client.volumes.get(dst_volume)
+    except docker.errors.NotFound:
+        raise HTTPException(status_code=404, detail=f"docker_volume_not_found: {dst_volume}")
+    except DockerException as exc:
+        raise HTTPException(status_code=502, detail=f"docker_volume_get_failed: {exc}")
+
+    rm_dst = ""
+    if remove_dst_contents:
+        rm_dst = "rm -rf /dst/* /dst/.[!.]* /dst/..?* 2>/dev/null || true; "
+
+    cmd = f"sh -lc '{rm_dst}mkdir -p /dst; cp -a /src/. /dst/ 2>/dev/null || cp -a /src/* /dst/; sync'"
+
+    try:
+        client.containers.run(
+            image=helper_image,
+            command=cmd,
+            remove=True,
+            detach=False,
+            volumes={
+                src_volume: {"bind": "/src", "mode": "ro"},
+                dst_volume: {"bind": "/dst", "mode": "rw"},
+            },
+        )
+    except DockerException as exc:
+        raise HTTPException(status_code=502, detail=f"docker_volume_copy_failed: {exc}")
 
 
 def require_admin(authorization: Optional[str]) -> None:
@@ -430,6 +518,238 @@ async def invoke(payload: InvokePayload = Body(...), authorization: Optional[str
             raise HTTPException(status_code=404, detail="session_not_found")
         return {"tool": tool, "result": session}
 
+    if tool == "create_snapshot":
+        session_id = _normalize_session_id(args.get("session_id"))
+        options = args.get("options") or {}
+        if options and not isinstance(options, dict):
+            raise HTTPException(status_code=400, detail="options must be an object")
+
+        sessions = STATE.get("sessions") or {}
+        session = sessions.get(session_id)
+        if not isinstance(session, dict):
+            raise HTTPException(status_code=404, detail="session_not_found")
+
+        backend = session.get("backend") if isinstance(session, dict) else None
+        if not isinstance(backend, dict) or not backend.get("volume_id"):
+            raise HTTPException(status_code=400, detail="session_missing_volume")
+
+        src_volume_id = str(backend.get("volume_id"))
+        user_id = str(session.get("user_id") or "")
+        if not user_id:
+            raise HTTPException(status_code=400, detail="session_missing_user_id")
+
+        snapshot_id = "snap_" + uuid4().hex[:12]
+        snapshot_volume = f"webtops_snap_{snapshot_id}"
+        created_at = _now()
+
+        client = _docker_client()
+        try:
+            client.volumes.create(
+                name=snapshot_volume,
+                labels={
+                    "webtops.snapshot_id": snapshot_id,
+                    "webtops.user_id": user_id,
+                    "webtops.source_session_id": session_id,
+                    "webtops.managed_by": "mcp-webtops",
+                },
+            )
+        except DockerException as exc:
+            raise HTTPException(status_code=502, detail=f"docker_volume_create_failed: {exc}")
+
+        try:
+            _copy_docker_volume(client, src_volume_id, snapshot_volume, remove_dst_contents=True)
+        except Exception:
+            with contextlib.suppress(Exception):
+                client.volumes.get(snapshot_volume).remove(force=True)
+            raise
+
+        snap = {
+            "snapshot_id": snapshot_id,
+            "user_id": user_id,
+            "created_at": _iso(created_at),
+            "source_session_id": session_id,
+            "profile": session.get("profile") or "default",
+            "backend": {"type": "docker", "volume_id": snapshot_volume},
+        }
+        STATE.setdefault("snapshots", {})[snapshot_id] = snap
+        _save_state(STATE)
+        return {"tool": tool, "result": snap}
+
+    if tool == "restore_snapshot":
+        user_id = _normalize_user_id(args.get("user_id"))
+        snapshot_id = (args.get("snapshot_id") or "").strip()
+        if not snapshot_id:
+            raise HTTPException(status_code=400, detail="snapshot_id is required")
+        options = args.get("options") or {}
+        if options and not isinstance(options, dict):
+            raise HTTPException(status_code=400, detail="options must be an object")
+
+        snapshots = STATE.get("snapshots") or {}
+        snap = snapshots.get(snapshot_id)
+        if not isinstance(snap, dict):
+            raise HTTPException(status_code=404, detail="snapshot_not_found")
+
+        if snap.get("user_id") != user_id:
+            raise HTTPException(status_code=403, detail="snapshot_user_mismatch")
+
+        snap_backend = snap.get("backend")
+        if not isinstance(snap_backend, dict) or not snap_backend.get("volume_id"):
+            raise HTTPException(status_code=400, detail="snapshot_missing_volume")
+        snapshot_volume = str(snap_backend.get("volume_id"))
+
+        profile = _normalize_profile(options.get("profile") or snap.get("profile") or "default")
+
+        # Create a fresh session volume first, seed it from snapshot, then start container.
+        if settings.backend != "docker":
+            raise HTTPException(status_code=501, detail=f"backend_not_supported: {settings.backend}")
+
+        client = _docker_client()
+        resolved_network = _resolve_network_name(client, settings.docker_network)
+
+        session_id = "sess_" + uuid4().hex[:12]
+        created_at = _now()
+
+        ttl_minutes = options.get("ttl_minutes")
+        expires_at = None
+        if ttl_minutes is not None:
+            try:
+                ttl = float(ttl_minutes)
+            except Exception:
+                raise HTTPException(status_code=400, detail="ttl_minutes must be a number")
+            expires_at = created_at + timedelta(minutes=ttl)
+
+        session_image = settings.session_image
+        extra_env: Dict[str, str] = {}
+        shared_windsurf_cache_volume = None
+        if profile == "windsurf":
+            if not settings.session_image_windsurf:
+                raise HTTPException(status_code=503, detail="windsurf_profile_missing_image (WEBTOPS_SESSION_IMAGE_WINDSURF)")
+            if not settings.windsurf_version:
+                raise HTTPException(status_code=503, detail="windsurf_profile_missing_version (WEBTOPS_WINDSURF_VERSION)")
+            session_image = settings.session_image_windsurf
+            extra_env["WINDSURF_VERSION"] = settings.windsurf_version
+            extra_env["WINDSURF_INSTALL_MODE"] = (settings.windsurf_install_mode or "deb_extract").strip().lower()
+            if extra_env["WINDSURF_INSTALL_MODE"] == "deb_extract":
+                if not settings.windsurf_deb_url_template:
+                    raise HTTPException(status_code=503, detail="windsurf_profile_missing_deb_url_template (WEBTOPS_WINDSURF_DEB_URL_TEMPLATE)")
+                extra_env["WINDSURF_DEB_URL_TEMPLATE"] = settings.windsurf_deb_url_template
+            else:
+                if not settings.windsurf_download_url_template:
+                    raise HTTPException(status_code=503, detail="windsurf_profile_missing_download_url_template (WEBTOPS_WINDSURF_DOWNLOAD_URL_TEMPLATE)")
+                extra_env["WINDSURF_DOWNLOAD_URL_TEMPLATE"] = settings.windsurf_download_url_template
+
+            if settings.windsurf_cache_volume and settings.windsurf_cache_mount_path:
+                extra_env["WINDSURF_CACHE_ROOT"] = settings.windsurf_cache_mount_path
+                try:
+                    shared_windsurf_cache_volume = client.volumes.get(settings.windsurf_cache_volume)
+                except docker.errors.NotFound:
+                    try:
+                        shared_windsurf_cache_volume = client.volumes.create(name=settings.windsurf_cache_volume)
+                    except DockerException as exc:
+                        raise HTTPException(status_code=502, detail=f"docker_volume_create_failed: {exc}")
+                except DockerException as exc:
+                    raise HTTPException(status_code=502, detail=f"docker_volume_get_failed: {exc}")
+
+        _ensure_image(client, session_image)
+
+        container_name = f"{settings.session_container_name_prefix}-{session_id}"
+        volume_name = f"{settings.session_volume_name_prefix}_{session_id}"
+
+        try:
+            client.volumes.create(name=volume_name, labels={"webtops.session_id": session_id, "webtops.user_id": user_id})
+        except DockerException as exc:
+            raise HTTPException(status_code=502, detail=f"docker_volume_create_failed: {exc}")
+
+        # Seed the new volume from the snapshot.
+        _copy_docker_volume(client, snapshot_volume, volume_name, remove_dst_contents=True)
+
+        env = _build_linuxserver_env()
+        env.update(extra_env)
+        container_volumes: Dict[str, Dict[str, str]] = {
+            volume_name: {"bind": settings.session_mount_path, "mode": "rw"},
+        }
+        if shared_windsurf_cache_volume is not None:
+            container_volumes[shared_windsurf_cache_volume.name] = {"bind": settings.windsurf_cache_mount_path, "mode": "rw"}
+        _maybe_add_workspaces(client, env, container_volumes)
+
+        try:
+            container = client.containers.run(
+                image=session_image,
+                name=container_name,
+                detach=True,
+                network=resolved_network,
+                environment=env,
+                labels={
+                    "webtops.session_id": session_id,
+                    "webtops.user_id": user_id,
+                    "webtops.managed_by": "mcp-webtops",
+                    "webtops.restored_from_snapshot": snapshot_id,
+                },
+                volumes=container_volumes,
+            )
+        except DockerException as exc:
+            with contextlib.suppress(Exception):
+                client.volumes.get(volume_name).remove(force=True)
+            raise HTTPException(status_code=502, detail=f"docker_container_create_failed: {exc}")
+
+        container_id = container.id
+        upstream = _make_upstream(container_name)
+        await _router_put(session_id, upstream)
+
+        session = {
+            "session_id": session_id,
+            "user_id": user_id,
+            "profile": profile,
+            "status": "running",
+            "created_at": _iso(created_at),
+            "expires_at": _iso(expires_at) if expires_at else None,
+            "access_url": _session_access_url(session_id),
+            "backend": {
+                "type": settings.backend,
+                "container_id": container_id,
+                "volume_id": volume_name,
+                "ports": None,
+            },
+            "route": {
+                "base_path": settings.base_path.rstrip("/") + f"/{session_id}/",
+                "router_type": "router_service",
+                "upstream": upstream,
+            },
+            "last_error": None,
+            "restored_from_snapshot": snapshot_id,
+        }
+
+        STATE.setdefault("sessions", {})[session_id] = session
+        _save_state(STATE)
+        return {"tool": tool, "result": session}
+
+    if tool == "delete_snapshot":
+        snapshot_id = (args.get("snapshot_id") or "").strip()
+        if not snapshot_id:
+            raise HTTPException(status_code=400, detail="snapshot_id is required")
+        snapshots = STATE.get("snapshots") or {}
+        snap = snapshots.get(snapshot_id)
+        if not isinstance(snap, dict):
+            return {"tool": tool, "result": {"ok": True, "snapshot_id": snapshot_id}}
+
+        backend = snap.get("backend")
+        volume_id = backend.get("volume_id") if isinstance(backend, dict) else None
+
+        removed: Dict[str, Any] = {"volume": False}
+        if volume_id:
+            client = _docker_client()
+            try:
+                client.volumes.get(str(volume_id)).remove(force=True)
+                removed["volume"] = True
+            except docker.errors.NotFound:
+                removed["volume"] = True
+            except DockerException as exc:
+                removed["volume_error"] = str(exc)
+
+        snapshots.pop(snapshot_id, None)
+        _save_state(STATE)
+        return {"tool": tool, "result": {"ok": True, "snapshot_id": snapshot_id, "removed": removed}}
+
     if tool == "start_session":
         user_id = _normalize_user_id(args.get("user_id"))
         options = args.get("options") or {}
@@ -511,6 +831,12 @@ async def invoke(payload: InvokePayload = Body(...), authorization: Optional[str
 
             env = _build_linuxserver_env()
             env.update(extra_env)
+            container_volumes: Dict[str, Dict[str, str]] = {
+                volume.name: {"bind": settings.session_mount_path, "mode": "rw"},
+            }
+            if shared_windsurf_cache_volume is not None:
+                container_volumes[shared_windsurf_cache_volume.name] = {"bind": settings.windsurf_cache_mount_path, "mode": "rw"}
+            _maybe_add_workspaces(client, env, container_volumes)
             # Allow options.env as a safe extension point later.
 
             try:
@@ -525,18 +851,7 @@ async def invoke(payload: InvokePayload = Body(...), authorization: Optional[str
                         "webtops.user_id": user_id,
                         "webtops.managed_by": "mcp-webtops",
                     },
-                    volumes={
-                        **({
-                            volume.name: {"bind": settings.session_mount_path, "mode": "rw"}
-                        }),
-                        **(
-                            {
-                                shared_windsurf_cache_volume.name: {"bind": settings.windsurf_cache_mount_path, "mode": "rw"}
-                            }
-                            if shared_windsurf_cache_volume is not None
-                            else {}
-                        ),
-                    },
+                    volumes=container_volumes,
                 )
             except DockerException as exc:
                 with contextlib.suppress(Exception):
@@ -551,6 +866,7 @@ async def invoke(payload: InvokePayload = Body(...), authorization: Optional[str
         session = {
             "session_id": session_id,
             "user_id": user_id,
+            "profile": profile,
             "status": "running",
             "created_at": _iso(created_at),
             "expires_at": _iso(expires_at) if expires_at else None,
