@@ -43,6 +43,16 @@
 > - Caddy’s container could not read the certs when we stored them on the Windows side (`/mnt/c/...`). Copying them into the WSL home directory and setting `chmod 600` allowed the `caddy` process to load the keys.
 > - After resuming from sleep the WSL clock drifted, causing TLS handshakes to fail with `certificate has expired` even though the cert was new. `wsl --shutdown` (or `sudo hwclock -s`) re-synced the clock and the errors disappeared.
 
+## Webtops / Windsurf runtime caching
+
+Windsurf is installed at runtime (pinned version) inside each webtop session container, but downloads are cached in a shared Docker volume so new sessions do not re-download the `.deb`.
+
+- **Shared cache volume**: `WEBTOPS_WINDSURF_CACHE_VOLUME` (default: `webtops_windsurf_cache`)
+- **Mount path inside session**: `WEBTOPS_WINDSURF_CACHE_MOUNT_PATH` (default: `/windsurf-cache`)
+- **Runtime installer cache root** (inside the session container): `WINDSURF_CACHE_ROOT=/windsurf-cache`
+
+This keeps the "stable tag" workflow (image points to `webtops-windsurf-runtime:stable`, version is pinned via env var) while allowing fast session creation after the first download on a host.
+
 ### Checklist
 - Confirm DNS records + firewall rules (ports 80/443) before touching certificates.
 - Keep `mkcert` roots versioned in `~/.config/mkcert` backups so new laptops can trust our dev domains immediately.
