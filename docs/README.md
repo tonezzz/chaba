@@ -58,8 +58,120 @@ This keeps the "stable tag" workflow (image points to `webtops-windsurf-runtime:
 - Keep `mkcert` roots versioned in `~/.config/mkcert` backups so new laptops can trust our dev domains immediately.
 - Document any ACME outages (rate limits, staging certs) in `docs/system-inventory/<host>/YYYY-MM-DD.md` for future auditing.
 
+## Standard WSL → SSH → idc1 template (unattended)
+Use this pattern for any remote command to avoid PowerShell quoting issues (especially with characters like `@`, `{}`, and quotes).
+
+```powershell
+# Remote bash script (multi-line)
+ $remote = @'
+ set -euo pipefail
+ echo "[REMOTE] host=$(hostname) user=$(whoami)"
+ docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}" | head
+ '@
+
+ # Encode so we don't fight nested quoting
+ $b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes(($remote -replace "`r","")))
+
+ # Execute on idc1 via WSL ssh (unattended)
+ wsl bash -lc "printf %s '$b64' | base64 -d | /usr/bin/ssh -i ~/.ssh/chaba_ed25519 -o IdentitiesOnly=yes -o BatchMode=yes chaba@idc1.surf-thailand.com 'bash -s'"
+ ```
+
+ Notes:
+ - This requires the key to exist inside WSL at `~/.ssh/chaba_ed25519` with `chmod 600`.
+ - Prefer this over inline one-liners when the remote command contains quotes, braces, or Go-template strings like `{{.Names}}`.
+
+ Always use this unattended WSL → SSH pattern for idc1 work:
+ - `wsl bash -lc ...`
+ - user: `chaba@idc1.surf-thailand.com`
+ - key: `~/.ssh/chaba_ed25519`
+ - options: `-o IdentitiesOnly=yes -o BatchMode=yes`
+
+## CoreDNS + WireGuard DNS (idc1)
+ This is the VPN DNS path used for `*.vpn` hostnames (e.g. `memory.idc1.vpn`).
+
+ ### What runs where
+ - **WireGuard server**: Docker container `idc1-wg-easy` (image `ghcr.io/wg-easy/wg-easy:latest`)
+ - **DNS for VPN**: Docker container `idc1-wg-dns` (image `coredns/coredns:1.11.1`)
+ - **Important**: `idc1-wg-dns` runs with `network_mode: container:<idc1-wg-easy-container-id>`
+   - i.e. CoreDNS shares the network namespace with `wg-easy`, so it can bind the VPN-side DNS IP/port.
+
+ ### CoreDNS configuration
+ - **Corefile path on idc1 host**:
+   - `/home/chaba/chaba/stacks/idc1-stack/config/coredns/Corefile`
+ - **Corefile key block**:
+   - `vpn:53 { hosts { ... } forward ... }`
+ - **Record added for central memory**:
+   - `10.8.0.1 memory.idc1.vpn`
+
+ Current `vpn:53` hosts block should include:
+ ```txt
+ 10.8.0.1 idc1.vpn
+ 10.8.0.11 pc1.vpn
+ 10.8.0.12 pc2.vpn
+ 10.8.0.1 memory.idc1.vpn
+ ```
+
+ ### Caddy exposure (VPN-only)
+ - `memory.idc1.vpn` is reverse-proxied by Caddy to the memory service.
+ - Caddy config lives in `stacks/idc1-stack/config/caddy/Caddyfile` and blocks non-VPN IPs:
+   - allowlist: `10.8.0.0/24` and `127.0.0.1`
+
+ ### Verification
+ - **From a VPN client** (pc1/pc2/iOS): query the VPN DNS server:
+   - `nslookup memory.idc1.vpn 10.8.0.1`
+ - **On idc1**: CoreDNS logs confirm it answers:
+   - `docker logs --tail 120 idc1-wg-dns | grep memory.idc1.vpn`
+ - Note: `resolvectl query memory.idc1.vpn` on idc1 may fail because it uses `systemd-resolved` stub (127.0.0.53/54) and is not necessarily configured to forward `.vpn` to CoreDNS.
+
+ ### Common gotcha: wg-easy must advertise the DNS server
+ CoreDNS can be correct and still “not work” for clients if the client configs don’t set `DNS = 10.8.0.1`.
+
+ - The intended setting is `WG_DEFAULT_DNS=10.8.0.1`.
+ - In this repo, `stacks/idc1-stack/.env` is expected to contain:
+   - `WG_DEFAULT_DNS=10.8.0.1`
+ - If `docker inspect idc1-wg-easy` shows it still has `WG_DEFAULT_DNS=1.1.1.1`, recreate the service from the stack:
+   - `cd /home/chaba/chaba/stacks/idc1-stack && docker compose --profile vpn up -d wg-easy`
+ - After changing DNS, **clients must re-download / re-import** their WireGuard config from wg-easy for the DNS line to update.
+
+ ### Split-tunnel AllowedIPs (wg-easy)
+ wg-easy also controls what `AllowedIPs` appears in the downloaded client configs.
+
+ Intended split-tunnel (VPN subnet only):
+ - set: `WG_ALLOWED_IPS=10.8.0.0/24`
+ - effect (client `[Peer]`): `AllowedIPs = 10.8.0.0/24`
+ - note: clients must re-download / re-import after changing this.
+
+ Current state (Dec 15 2025):
+ - changed from full-tunnel (`0.0.0.0/0, ::/0`) to split-tunnel (`10.8.0.0/24`) via `stacks/idc1-stack/.env` and `docker compose --profile vpn up -d wg-easy`.
+
+ ### VPN network config (authoritative)
+ WireGuard subnet:
+ - `10.8.0.0/24`
+ - gateway / server IP: `10.8.0.1` (wg-easy `wg0`)
+
+ wg-easy defaults (idc1):
+ - `WG_PORT=51820`
+ - `WG_DEFAULT_ADDRESS=10.8.0.x`
+ - `WG_DEFAULT_DNS=10.8.0.1`
+ - `WG_ALLOWED_IPS=10.8.0.0/24` (split tunnel)
+
+ CoreDNS (VPN DNS):
+ - container: `idc1-wg-dns` (CoreDNS)
+ - DNS server IP (inside wg-easy netns): `10.8.0.1:53`
+ - `.vpn` hosts records live in `/home/chaba/chaba/stacks/idc1-stack/config/coredns/Corefile`.
+
+ Verification (client):
+ - `ping 10.8.0.1`
+ - `nslookup idc1.vpn 10.8.0.1`
+ - `nslookup memory.idc1.vpn 10.8.0.1`
+
+ Recovery note (important):
+ - If `WG_ALLOWED_IPS`/`WG_DEFAULT_DNS` changes require recreating `wg-easy`, VPN DNS can stop responding if `wg-dns` is not recreated to re-attach to the wg-easy network namespace.
+ - Fix:
+   - `cd /home/chaba/chaba/stacks/idc1-stack && docker compose --profile vpn up -d --force-recreate wg-easy wg-dns`
+
 ## Windows SSH key ACL fix
-When NTFS permissions prevent WSL/OpenSSH from using a private key (the “UNPROTECTED PRIVATE KEY FILE” error), run the following in an elevated PowerShell session. This consistently resets ownership and grants read-only access to the current user:
+ When NTFS permissions prevent WSL/OpenSSH from using a private key (the “UNPROTECTED PRIVATE KEY FILE” error), run the following in an elevated PowerShell session. This consistently resets ownership and grants read-only access to the current user:
 
 ```powershell
 $acct = "$env:COMPUTERNAME\$env:USERNAME"
@@ -75,6 +187,104 @@ icacls "C:\chaba\.secrets\pc1\chaba2\.ssh\chaba_ed25519" /grant:r "$($acct):(R)"
 
 After running these commands, retry the SSH command from WSL.
 
+<<<<<<< HEAD
+=======
+## Webtop UID/GID mapping (idc1-stack)
+LinuxServer `webtop` runs processes as user `abc` inside the container. To avoid permission issues when editing the repo bind mount (`/workspaces/chaba`), configure the container UID/GID to match the host user.
+
+- `.env` (gitignored) should include:
+  - `WEBTOP_PUID=1000`
+  - `WEBTOP_PGID=1000`
+- `stacks/idc1-stack/docker-compose.yml` maps these to LinuxServer `PUID/PGID` for `webtop`/`webtop2`.
+
+Recreate `webtop2` (example):
+
+```bash
+cd /workspaces/chaba/stacks/idc1-stack
+docker compose --profile mcp-suite up -d --force-recreate webtop2
+```
+
+Verification notes:
+- `docker exec ... id` runs as **root** by default (so it will show `uid=0`).
+- Verify the mapped user instead:
+
+```bash
+docker exec -it idc1-webtop2 id abc
+docker exec -it --user 1000:1000 idc1-webtop2 id
+```
+
+## pc1-stack webtop sessions (multi-user / isolated)
+pc1 runs multiple LinuxServer Webtop sessions for isolated development environments. Each session is:
+- its own `webtop*` container
+- its own persistent Docker volume mounted at `/config`
+- optionally paired with an `mcp-webtop*` sidecar for export/import of that `/config` volume
+
+### Sessions
+- **webtop2**
+  - container: `pc1-webtop2`
+  - URL (VPN + HTTPS): `https://webtop2.pc1.vpn`
+  - host port (direct): `http://pc1.vpn:3003`
+  - config volume: `webtop2-config`
+  - config API: `mcp-webtop2` on `http://pc1.vpn:8055`
+- **webtop3** (clone of webtop2, isolated)
+  - container: `pc1-webtop3`
+  - URL (VPN + HTTPS): `https://webtop3.pc1.vpn`
+  - host port (direct): `http://pc1.vpn:3004`
+  - config volume: `webtop3-config`
+  - config API: `mcp-webtop3` on `http://pc1.vpn:8056`
+
+### One-time clone: webtop2 → webtop3
+Clone the full `/config` snapshot (desktop settings, app profiles, Windsurf data, etc.) from webtop2 into webtop3:
+
+```powershell
+docker-compose --profile mcp-suite -f c:\chaba\stacks\pc1-stack\docker-compose.yml stop webtop3
+docker run --rm -v pc1-stack_webtop2-config:/from -v pc1-stack_webtop3-config:/to alpine:3.20 sh -lc "apk add --no-cache rsync >/dev/null && rsync -aHAX --delete /from/ /to/"
+docker-compose --profile mcp-suite -f c:\chaba\stacks\pc1-stack\docker-compose.yml up -d webtop3
+```
+
+### pc1-stack Caddy (VPN HTTPS, tls internal) — key workflow
+pc1 runs Caddy as a Docker container (`pc1-caddy`) with an internal CA (`tls internal`) to provide HTTPS for VPN hostnames.
+
+Important behavior:
+- Editing `stacks/pc1-stack/Caddyfile` does **not** automatically reload the running container.
+- After any Caddyfile change, run a reload:
+
+```powershell
+docker exec pc1-caddy caddy validate --config /etc/caddy/Caddyfile
+docker exec pc1-caddy caddy reload --config /etc/caddy/Caddyfile
+```
+
+Shortcut:
+
+```powershell
+powershell -File scripts/pc1-caddy-reload.ps1
+```
+
+Via MCP DevOps (workflow):
+
+```json
+{
+  "tool": "run_workflow",
+  "arguments": {
+    "workflow_id": "pc1-caddy-reload"
+  }
+}
+```
+
+Additional pc1 ops workflows (MCP DevOps):
+- `pc1-caddy-status`
+- `pc1-caddy-logs`
+- `pc1-caddy-restart`
+- `pc1-stack-status`
+- `pc1-stack-up`
+- `pc1-stack-down`
+
+Notes:
+- The Caddyfile is mounted read-only (`:ro`), so formatting inside the container (`caddy fmt --overwrite`) will fail. Format on the host if needed.
+- Client browsers must trust Caddy's internal CA to avoid TLS warnings.
+
+Security note:
+- If any secret/token was ever pasted into a file or terminal output during setup, rotate it (treat it as compromised) and keep tokens only in env vars / `.secrets/` (never committed).
 ## Detects vision API (`/test/detects`)
 
 - **Source layout**: UI lives in `sites/a1-idc1/test/detects/`; the Glama vision proxy/API is `sites/a1-idc1/api/detects/` with its `.env` (GLAMA_URL/KEY, model, prompt, etc.).@sites/a1-idc1/api/detects/src/server.js#1-184

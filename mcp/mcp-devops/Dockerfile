@@ -4,6 +4,8 @@ FROM node:20-alpine AS base
 
 WORKDIR /app
 
+RUN apk add --no-cache bash docker-cli docker-cli-compose openssh-client
+
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 

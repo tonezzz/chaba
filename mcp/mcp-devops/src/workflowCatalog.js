@@ -23,6 +23,277 @@ const workflows = [
     }
   },
   {
+    id: 'pc1-caddy-reload',
+    label: 'pc1 Caddy validate + reload',
+    description: 'Validates stacks/pc1-stack/Caddyfile inside the pc1-caddy container and reloads it.',
+    tags: ['pc1', 'caddy', 'reload', 'tls'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-caddy-reload.ps1'),
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-caddy-reload.ps1'
+    }
+  },
+  {
+    id: 'pc1-caddy-status',
+    label: 'pc1 Caddy status',
+    description: 'Shows pc1-caddy container status (docker ps) in a concise table.',
+    tags: ['pc1', 'caddy', 'status'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-caddy-status.ps1'),
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-caddy-status.ps1'
+    }
+  },
+  {
+    id: 'pc1-caddy-logs',
+    label: 'pc1 Caddy logs (tail)',
+    description: 'Prints the last N lines of pc1-caddy logs (non-follow).',
+    tags: ['pc1', 'caddy', 'logs'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-caddy-logs.ps1'),
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-caddy-logs.ps1'
+    }
+  },
+  {
+    id: 'pc1-caddy-restart',
+    label: 'pc1 Caddy restart + validate',
+    description: 'Restarts the pc1-caddy container and validates /etc/caddy/Caddyfile.',
+    tags: ['pc1', 'caddy', 'restart', 'tls'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-caddy-restart.ps1'),
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-caddy-restart.ps1'
+    }
+  },
+  {
+    id: 'pc1-stack-status',
+    label: 'pc1-stack status (docker compose ps)',
+    description: 'Shows pc1-stack container status for the configured profile.',
+    tags: ['pc1', 'stack', 'status', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-stack.ps1'),
+      args: ['-Action', 'status'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack.ps1'
+    }
+  },
+  {
+    id: 'pc1-stack-up',
+    label: 'pc1-stack up (mcp-suite)',
+    description: 'Brings up pc1-stack containers in the mcp-suite profile (docker compose up -d).',
+    tags: ['pc1', 'stack', 'up', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-stack.ps1'),
+      args: ['-Action', 'up', '-Profile', 'mcp-suite'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack.ps1'
+    }
+  },
+  {
+    id: 'pc1-stack-down',
+    label: 'pc1-stack down',
+    description: 'Stops pc1-stack containers (docker compose down).',
+    tags: ['pc1', 'stack', 'down', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-stack.ps1'),
+      args: ['-Action', 'down'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack.ps1'
+    }
+  },
+  {
+    id: 'pc1-self-status',
+    label: 'pc1-stack (self) status',
+    description:
+      'Runs docker compose ps for pc1-stack from inside mcp-devops (requires docker socket mount).',
+    tags: ['pc1', 'stack', 'self', 'status', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/pc1-stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        ACTION: 'status'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack-self.sh'
+    }
+  },
+  {
+    id: 'pc1-self-up',
+    label: 'pc1-stack (self) up (mcp-suite)',
+    description:
+      'Runs docker compose up -d for pc1-stack from inside mcp-devops (profile mcp-suite).',
+    tags: ['pc1', 'stack', 'self', 'up', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/pc1-stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        ACTION: 'up',
+        PROFILE: 'mcp-suite'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack-self.sh'
+    }
+  },
+  {
+    id: 'pc1-self-down',
+    label: 'pc1-stack (self) down',
+    description: 'Runs docker compose down for pc1-stack from inside mcp-devops.',
+    tags: ['pc1', 'stack', 'self', 'down', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/pc1-stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        ACTION: 'down'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack-self.sh'
+    }
+  },
+  {
+    id: 'pc1-self-restart-mcp-devops',
+    label: 'pc1-stack (self) restart mcp-devops',
+    description: 'Restarts the running mcp-devops service via docker compose restart.',
+    tags: ['pc1', 'stack', 'self', 'restart', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/pc1-stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        ACTION: 'restart-service',
+        SERVICE: 'mcp-devops'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack-self.sh'
+    }
+  },
+  {
+    id: 'pc1-self-restart-mcp0',
+    label: 'pc1-stack (self) restart mcp0',
+    description: 'Restarts the running mcp0 service via docker compose restart.',
+    tags: ['pc1', 'stack', 'self', 'restart', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/pc1-stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        ACTION: 'restart-service',
+        SERVICE: 'mcp0'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack-self.sh'
+    }
+  },
+  {
+    id: 'pc1-self-restart-caddy',
+    label: 'pc1-stack (self) restart caddy',
+    description: 'Restarts the running caddy service via docker compose restart.',
+    tags: ['pc1', 'stack', 'self', 'restart', 'caddy', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/pc1-stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        ACTION: 'restart-service',
+        SERVICE: 'caddy'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack-self.sh'
+    }
+  },
+  {
+    id: 'pc1-self-restart-webtop2',
+    label: 'pc1-stack (self) restart webtop2',
+    description: 'Restarts the running webtop2 service via docker compose restart.',
+    tags: ['pc1', 'stack', 'self', 'restart', 'webtop', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/pc1-stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        ACTION: 'restart-service',
+        SERVICE: 'webtop2'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack-self.sh'
+    }
+  },
+  {
+    id: 'pc1-self-pull',
+    label: 'pc1-stack (self) pull images',
+    description: 'Runs docker compose pull for pc1-stack (no up/down).',
+    tags: ['pc1', 'stack', 'self', 'pull', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/pc1-stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        ACTION: 'pull'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack-self.sh'
+    }
+  },
+  {
+    id: 'pc1-self-pull-up',
+    label: 'pc1-stack (self) pull + up (mcp-suite)',
+    description: 'Runs docker compose pull then docker compose up -d (profile mcp-suite) for pc1-stack.',
+    tags: ['pc1', 'stack', 'self', 'pull', 'up', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/pc1-stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        ACTION: 'pull-up',
+        PROFILE: 'mcp-suite'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack-self.sh'
+    }
+  },
+  {
     id: 'deploy-dev-host-mirror',
     label: 'Deploy dev-host mirror (pc1)',
     description:
@@ -346,6 +617,35 @@ const workflows = [
     },
     outputs: {
       docs: 'scripts/idc1-health-sweep.sh'
+    }
+  },
+  {
+    id: 'idc1-fix-mcp0-vpn',
+    label: 'Fix mcp0.idc1.vpn (CoreDNS + Caddy)',
+    description:
+      'Patches idc1 CoreDNS and Caddy config to make mcp0.idc1.vpn resolve and reverse-proxy to the local mcp0 service, then restarts wg-dns and reloads Caddy.',
+    tags: ['idc1', 'vpn', 'dns', 'caddy', 'mcp0'],
+    runner: {
+      type: 'posix',
+      scriptRelative: './scripts/idc1-fix-mcp0-vpn.sh',
+      cwd: config.repoRoot,
+      env: {
+        SSH_USER: process.env.IDC1_DEPLOY_SSH_USER || 'chaba',
+        SSH_HOST: process.env.IDC1_DEPLOY_SSH_HOST || 'idc1.surf-thailand.com',
+        SSH_PORT: process.env.IDC1_DEPLOY_SSH_PORT || '22',
+        SSH_KEY_PATH: toPosixIfNeeded(
+          process.env.IDC1_DEPLOY_SSH_KEY_PATH ||
+            path.join(config.repoRoot, '.secrets', 'dev-host', '.ssh', 'chaba_ed25519')
+        ),
+        IDC1_STACK_DIR: process.env.IDC1_STACK_DIR || '/home/chaba/chaba/stacks/idc1-stack',
+        COREFILE_REL: process.env.IDC1_COREFILE_REL || 'config/coredns/Corefile',
+        CADDYFILE_REL: process.env.IDC1_CADDYFILE_REL || 'config/caddy/Caddyfile',
+        MCP0_PORT: process.env.IDC1_MCP0_PORT || '8355'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/idc1-fix-mcp0-vpn.sh'
     }
   },
   {

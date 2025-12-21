@@ -16,6 +16,7 @@ services:
     profiles: ["mcp-suite"]
     build:
       context: ${MCP0_BUILD_CONTEXT:-../../mcp/mcp0}
+    container_name: pc1-mcp0
     ports:
       - "${MCP0_PORT:-8351}:${MCP0_PORT:-8351}"
     environment:
@@ -35,6 +36,7 @@ services:
     profiles: ["mcp-suite"]
     build:
       context: ${MCP_AGENTS_BUILD_CONTEXT:-../../mcp/mcp-agents}
+    container_name: pc1-mcp-agents
     ports:
       - "${MCP_AGENTS_PORT:-8046}:8046"
     environment:
@@ -56,6 +58,7 @@ services:
     profiles: ["mcp-suite"]
     build:
       context: ${MCP_GLAMA_BUILD_CONTEXT:-../../mcp/mcp-glama}
+    container_name: pc1-mcp-glama
     ports:
       - "${MCP_GLAMA_PORT:-7241}:8014"
     environment:
@@ -77,6 +80,7 @@ services:
     profiles: ["mcp-suite"]
     build:
       context: ${MCP_TESTER_BUILD_CONTEXT:-../../mcp/mcp-tester}
+    container_name: pc1-mcp-tester
     ports:
       - "${MCP_TESTER_PORT:-8335}:${MCP_TESTER_PORT:-8335}"
     environment:
@@ -102,11 +106,13 @@ services:
     profiles: ["mcp-suite"]
     build:
       context: ${MCP_DEVOPS_BUILD_CONTEXT:-../../mcp/mcp-devops}
+    container_name: pc1-mcp-devops
     ports:
       - "${MCP_DEVOPS_PORT:-8325}:${MCP_DEVOPS_PORT:-8325}"
     environment:
       MCP_DEVOPS_PORT: ${MCP_DEVOPS_PORT:-8325}
       MCP_DEVOPS_HOST: 0.0.0.0
+      MCP_DEVOPS_REPO_ROOT: /workspaces/chaba
       DEV_HOST_BASE_URL: ${DEV_HOST_BASE_URL:-http://dev-host.pc1}
       DEV_HOST_PC2_BASE_URL: ${DEV_HOST_PC2_BASE_URL:-http://dev-host.pc2:3000}
       MCP0_BASE_URL: ${MCP0_BASE_URL:-http://mcp0:${MCP0_PORT:-8351}}
@@ -114,12 +120,16 @@ services:
       MCP_DEVOPS_JSON_LIMIT: ${MCP_DEVOPS_JSON_LIMIT:-2mb}
     depends_on:
       - mcp0
+    volumes:
+      - ../../:/workspaces/chaba:cached
+      - //var/run/docker.sock:/var/run/docker.sock
 
   mcp-playwright:
     <<: *default-service
     profiles: ["mcp-suite"]
     build:
       context: ${MCP_PLAYWRIGHT_BUILD_CONTEXT:-../../mcp/mcp-playwright}
+    container_name: pc1-mcp-playwright
     ports:
       - "${MCP_PLAYWRIGHT_PORT:-8260}:${MCP_PLAYWRIGHT_PORT:-8260}"
     environment:
@@ -198,6 +208,114 @@ services:
       timeout: 5s
       retries: 3
 
+  webtop2:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ./webtop2
+    container_name: pc1-webtop2
+    hostname: webtop2
+    shm_size: "1gb"
+    ports:
+      - "${WEBTOP2_PORT:-3003}:3000"
+    environment:
+      PUID: ${WEBTOP_PUID:-1000}
+      PGID: ${WEBTOP_PGID:-1000}
+    volumes:
+      - webtop2-config:/config
+      - ../idc1-stack/webtop/custom-cont-init.d:/custom-cont-init.d:ro
+      - ../../:/workspaces/chaba:cached
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc 'DISPLAY=${DISPLAY:-:1} xrandr --query >/dev/null 2>&1'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  webtop3:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ./webtop2
+    container_name: pc1-webtop3
+    hostname: webtop3
+    shm_size: "1gb"
+    ports:
+      - "${WEBTOP3_PORT:-3004}:3000"
+    environment:
+      PUID: ${WEBTOP_PUID:-1000}
+      PGID: ${WEBTOP_PGID:-1000}
+    volumes:
+      - webtop3-config:/config
+      - ../idc1-stack/webtop/custom-cont-init.d:/custom-cont-init.d:ro
+      - ../../:/workspaces/chaba:cached
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc 'DISPLAY=${DISPLAY:-:1} xrandr --query >/dev/null 2>&1'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-webtop2:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_WEBTOP_BUILD_CONTEXT:-../../mcp/mcp-webtop}
+    container_name: pc1-mcp-webtop2
+    ports:
+      - "${MCP_WEBTOP_PORT:-8055}:8055"
+    environment:
+      PORT: 8055
+      WEBTOP_CONFIG_DIR: /webtop-config
+      EXPORT_DIR: /data/exports
+      JSON_BODY_LIMIT: ${MCP_WEBTOP_JSON_LIMIT:-1mb}
+    volumes:
+      - webtop2-config:/webtop-config
+      - ${MCP_WEBTOP_DATA_DIR:-./data/mcp-webtop}:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8055/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-webtop3:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_WEBTOP_BUILD_CONTEXT:-../../mcp/mcp-webtop}
+    container_name: pc1-mcp-webtop3
+    ports:
+      - "${MCP_WEBTOP3_PORT:-8056}:8056"
+    environment:
+      PORT: 8056
+      WEBTOP_CONFIG_DIR: /webtop-config
+      EXPORT_DIR: /data/exports
+      JSON_BODY_LIMIT: ${MCP_WEBTOP_JSON_LIMIT:-1mb}
+    volumes:
+      - webtop3-config:/webtop-config
+      - ${MCP_WEBTOP3_DATA_DIR:-./data/mcp-webtop3}:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8056/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  caddy:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    image: caddy:2
+    container_name: pc1-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
 networks:
   pc1-stack-net:
     driver: bridge
+
+volumes:
+  webtop2-config:
+  webtop3-config:
+  caddy-data:
+  caddy-config:
