@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ -x /config/.local/bin/windsurf ]; then
+  exec /config/.local/bin/windsurf "$@"
+fi
+
+echo "windsurf not installed" 1>&2
+exit 1
