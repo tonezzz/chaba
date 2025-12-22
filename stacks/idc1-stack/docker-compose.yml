@@ -186,9 +186,80 @@ services:
       timeout: 5s
       retries: 3
 
+  webtops-router:
+    <<: *default-service
+    profiles: ["webtops"]
+    build:
+      context: ${WEBTOPS_ROUTER_BUILD_CONTEXT:-../../mcp/webtops-router}
+    ports:
+      - "${WEBTOPS_ROUTER_PORT:-3001}:${WEBTOPS_ROUTER_PORT:-3001}"
+    environment:
+      ROUTER_HOST: 0.0.0.0
+      ROUTER_PORT: ${WEBTOPS_ROUTER_PORT:-3001}
+      ROUTER_BASE_PATH: ${WEBTOPS_BASE_PATH:-/webtop}
+      ROUTER_ADMIN_TOKEN: ${WEBTOPS_ROUTER_ADMIN_TOKEN:-}
+      ROUTER_STATE_FILE: /state/router.json
+    volumes:
+      - ${WEBTOPS_ROUTER_STATE_DIR:-./data/webtops-router}:/state
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${WEBTOPS_ROUTER_PORT:-3001}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-webtops:
+    <<: *default-service
+    profiles: ["webtops"]
+    build:
+      context: ${MCP_WEBTOPS_BUILD_CONTEXT:-../../mcp/mcp-webtops}
+    ports:
+      - "${MCP_WEBTOPS_PORT:-8091}:${MCP_WEBTOPS_PORT:-8091}"
+    environment:
+      WEBTOPS_HOST: 0.0.0.0
+      PORT: ${MCP_WEBTOPS_PORT:-8091}
+      WEBTOPS_ADMIN_TOKEN: ${WEBTOPS_ADMIN_TOKEN:-}
+      WEBTOPS_PUBLIC_BASE_URL: ${WEBTOPS_PUBLIC_BASE_URL:-https://webtops.idc1.surf-thailand.com/webtop/}
+      WEBTOPS_BASE_PATH: ${WEBTOPS_BASE_PATH:-/webtop/}
+      WEBTOPS_ROUTER_BASE_URL: http://webtops-router:${WEBTOPS_ROUTER_PORT:-3001}
+      WEBTOPS_ROUTER_ADMIN_TOKEN: ${WEBTOPS_ROUTER_ADMIN_TOKEN:-}
+      WEBTOPS_BACKEND: ${WEBTOPS_BACKEND:-docker}
+      WEBTOPS_DOCKER_NETWORK: ${WEBTOPS_DOCKER_NETWORK:-idc1-stack-net}
+      WEBTOPS_SESSION_INTERNAL_PORT: ${WEBTOPS_SESSION_INTERNAL_PORT:-3000}
+      WEBTOPS_SESSION_IMAGE: ${WEBTOPS_SESSION_IMAGE:-lscr.io/linuxserver/webtop:latest}
+
+      WEBTOPS_SESSION_IMAGE_WINDSURF: ${WEBTOPS_SESSION_IMAGE_WINDSURF:-webtops-windsurf-runtime:stable}
+      WEBTOPS_WINDSURF_VERSION: ${WEBTOPS_WINDSURF_VERSION:-}
+      WEBTOPS_WINDSURF_DOWNLOAD_URL_TEMPLATE: ${WEBTOPS_WINDSURF_DOWNLOAD_URL_TEMPLATE:-}
+      WEBTOPS_WINDSURF_INSTALL_MODE: ${WEBTOPS_WINDSURF_INSTALL_MODE:-deb_extract}
+      WEBTOPS_WINDSURF_DEB_URL_TEMPLATE: ${WEBTOPS_WINDSURF_DEB_URL_TEMPLATE:-}
+      WEBTOPS_WINDSURF_CACHE_VOLUME: ${WEBTOPS_WINDSURF_CACHE_VOLUME:-webtops_windsurf_cache}
+      WEBTOPS_WINDSURF_CACHE_MOUNT_PATH: ${WEBTOPS_WINDSURF_CACHE_MOUNT_PATH:-/windsurf-cache}
+
+      WEBTOPS_WORKSPACES_VOLUME: ${WEBTOPS_WORKSPACES_VOLUME:-webtops_workspaces}
+      WEBTOPS_WORKSPACES_MOUNT_PATH: ${WEBTOPS_WORKSPACES_MOUNT_PATH:-/workspaces}
+      WEBTOPS_WORKSPACES_REPO_URL: ${WEBTOPS_WORKSPACES_REPO_URL:-}
+      WEBTOPS_WORKSPACES_REPO_BRANCH: ${WEBTOPS_WORKSPACES_REPO_BRANCH:-}
+      WEBTOPS_WORKSPACES_REPO_DIR: ${WEBTOPS_WORKSPACES_REPO_DIR:-/workspaces/chaba}
+
+      WEBTOPS_SNAPSHOT_DIR: /snapshots
+      WEBTOPS_STATE_DIR: /state
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${WEBTOPS_SNAPSHOT_HOST_DIR:-./data/mcp-webtops/snapshots}:/snapshots
+      - ${WEBTOPS_STATE_HOST_DIR:-./data/mcp-webtops/state}:/state
+    depends_on:
+      - webtops-router
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_WEBTOPS_PORT:-8091}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
 networks:
   idc1-stack-net:
     driver: bridge
 
 volumes:
   mcp-memory-data:
+  webtops_windsurf_cache:
+  webtops_workspaces:
