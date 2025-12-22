@@ -498,9 +498,15 @@ async def invoke(payload: InvokePayload = Body(...), authorization: Optional[str
         active_only = bool(flt.get("active_only")) if isinstance(flt, dict) else False
 
         out: List[Dict[str, Any]] = []
+        changed = False
         for s in sessions.values():
             if not isinstance(s, dict):
                 continue
+            if not s.get("name"):
+                sid = (s.get("session_id") or "").strip()
+                if sid:
+                    s["name"] = sid
+                    changed = True
             if user_filter and s.get("user_id") != user_filter:
                 continue
             if status_filter and s.get("status") != status_filter:
@@ -509,6 +515,8 @@ async def invoke(payload: InvokePayload = Body(...), authorization: Optional[str
                 continue
             out.append(s)
         out.sort(key=lambda x: x.get("created_at", ""))
+        if changed:
+            _save_state(STATE)
         return {"tool": tool, "result": {"sessions": out}}
 
     if tool == "get_session":
@@ -722,6 +730,7 @@ async def invoke(payload: InvokePayload = Body(...), authorization: Optional[str
             "user_id": user_id,
             "profile": profile,
             "status": "running",
+            "name": session_id,
             "created_at": _iso(created_at),
             "expires_at": _iso(expires_at) if expires_at else None,
             "access_url": _session_access_url(session_id),
