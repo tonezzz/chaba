@@ -142,7 +142,6 @@ async def index(request: Request, authorization: Optional[str] = Header(default=
     <thead>
       <tr>
         <th>Session</th>
-        <th>Name</th>
         <th>User</th>
         <th>Created</th>
         <th>Profile</th>
@@ -189,11 +188,11 @@ async function refresh() {
     const containerId = (s.backend && s.backend.container_id) ? s.backend.container_id : '';
     const vol = (s.backend && s.backend.volume_id) ? s.backend.volume_id : '';
     const name = s.name || '';
+    const displayName = name || s.session_id || '';
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><code>${esc(s.session_id)}</code></td>
-      <td>${esc(name)}</td>
+      <td>${esc(displayName)}</td>
       <td>${esc(s.user_id)}</td>
       <td>${esc(fmtTs(s.created_at))}</td>
       <td>${esc(s.profile)}</td>
@@ -201,7 +200,7 @@ async function refresh() {
       <td>${access ? `<a href="${esc(access)}" target="_blank">Open</a>` : ''}</td>
       <td>${esc(backend)}<div class="muted" style="margin-top:4px">${esc(containerId ? ('ctr: ' + containerId.slice(0,12)) : '')}${esc(vol ? (' vol: ' + vol) : '')}</div></td>
       <td>
-        <button class="secondary" onclick="renameSession('${esc(s.session_id)}','${esc(name)}')">Rename</button>
+        <button class="secondary" onclick="renameSession('${esc(s.session_id)}','${esc(displayName)}')">Rename</button>
         <button class="secondary" onclick="stopSession('${esc(s.session_id)}')">Stop</button>
         <button onclick="deleteSession('${esc(s.session_id)}')">Delete</button>
       </td>
