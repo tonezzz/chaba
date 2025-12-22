@@ -255,6 +255,28 @@ services:
       timeout: 5s
       retries: 3
 
+  webtops-cp:
+    <<: *default-service
+    profiles: ["webtops"]
+    build:
+      context: ${WEBTOPS_CP_BUILD_CONTEXT:-../../mcp/webtops-cp}
+    ports:
+      - "${WEBTOPS_CP_PORT:-3005}:${WEBTOPS_CP_PORT:-3005}"
+    environment:
+      WEBTOPS_CP_HOST: 0.0.0.0
+      WEBTOPS_CP_PORT: ${WEBTOPS_CP_PORT:-3005}
+      WEBTOPS_CP_USERNAME: ${WEBTOPS_CP_USERNAME:-admin}
+      WEBTOPS_CP_PASSWORD: ${WEBTOPS_CP_PASSWORD:-}
+      WEBTOPS_CP_WEBTOPS_BASE_URL: http://mcp-webtops:${MCP_WEBTOPS_PORT:-8091}
+      WEBTOPS_ADMIN_TOKEN: ${WEBTOPS_ADMIN_TOKEN:-}
+    depends_on:
+      - mcp-webtops
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${WEBTOPS_CP_PORT:-3005}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
 networks:
   idc1-stack-net:
     driver: bridge

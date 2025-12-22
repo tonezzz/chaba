@@ -288,6 +288,8 @@ Security note:
 
 Windsurf stores its user profile data inside the session `/config` volume. Starting a fresh session creates a fresh `/config`, so Windsurf will start with a blank profile unless you restore/copy the profile data.
 
+The Webtops control panel session list includes `Created` and `Profile` columns. The Create Session form defaults to `user_id=tony` and `profile=windsurf`.
+
 ### Preferred: snapshot + restore
 
 1. Create a snapshot from a session:

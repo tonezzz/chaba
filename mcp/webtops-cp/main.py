@@ -119,19 +119,19 @@ async def index(request: Request, authorization: Optional[str] = Header(default=
 </head>
 <body>
   <h1>Webtops Control Panel</h1>
-  <div class=\"row\">
+  <div class="row">
     <label>User</label>
-    <input id=\"user\" placeholder=\"user_id\" value=\"demo\" />
+    <input id="user" placeholder="user_id" value="tony" />
     <label>Profile</label>
-    <select id=\"profile\">
-      <option value=\"default\" selected>default</option>
-      <option value=\"windsurf\">windsurf</option>
+    <select id="profile">
+      <option value="default">default</option>
+      <option value="windsurf" selected>windsurf</option>
     </select>
     <label>TTL (min)</label>
-    <input id=\"ttl\" placeholder=\"optional\" />
-    <button onclick=\"createSession()\">Create session</button>
-    <button class=\"secondary\" onclick=\"refresh()\">Refresh</button>
-    <span id=\"status\" class=\"muted\"></span>
+    <input id="ttl" placeholder="optional" />
+    <button onclick="createSession()">Create session</button>
+    <button class="secondary" onclick="refresh()">Refresh</button>
+    <span id="status" class="muted"></span>
   </div>
 
   <table>
@@ -139,6 +139,8 @@ async def index(request: Request, authorization: Optional[str] = Header(default=
       <tr>
         <th>Session</th>
         <th>User</th>
+        <th>Created</th>
+        <th>Profile</th>
         <th>Status</th>
         <th>Access</th>
         <th>Backend</th>
@@ -166,6 +168,11 @@ function esc(s) {
   return String(s || '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
 }
 
+function fmtTs(ts) {
+  if (!ts) return '';
+  return String(ts).replace('T', ' ').replace('Z', ' UTC');
+}
+
 async function refresh() {
   setStatus('Loading...');
   const data = await api('/api/sessions');
@@ -181,6 +188,8 @@ async function refresh() {
     tr.innerHTML = `
       <td><code>${esc(s.session_id)}</code></td>
       <td>${esc(s.user_id)}</td>
+      <td>${esc(fmtTs(s.created_at))}</td>
+      <td>${esc(s.profile)}</td>
       <td>${esc(s.status)}</td>
       <td>${access ? `<a href="${esc(access)}" target="_blank">Open</a>` : ''}</td>
       <td>${esc(backend)}<div class="muted" style="margin-top:4px">${esc(containerId ? ('ctr: ' + containerId.slice(0,12)) : '')}${esc(vol ? (' vol: ' + vol) : '')}</div></td>
