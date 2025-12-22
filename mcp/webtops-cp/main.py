@@ -90,6 +90,10 @@ class CreateSessionRequest(BaseModel):
     profile: Optional[str] = None
 
 
+class RenameSessionRequest(BaseModel):
+    name: str
+
+
 @app.get("/health")
 async def health() -> Dict[str, Any]:
     return {"status": "ok"}
@@ -138,6 +142,7 @@ async def index(request: Request, authorization: Optional[str] = Header(default=
     <thead>
       <tr>
         <th>Session</th>
+        <th>Name</th>
         <th>User</th>
         <th>Created</th>
         <th>Profile</th>
@@ -147,7 +152,7 @@ async def index(request: Request, authorization: Optional[str] = Header(default=
         <th>Actions</th>
       </tr>
     </thead>
-    <tbody id=\"rows\"></tbody>
+    <tbody id="rows"></tbody>
   </table>
 
 <script>
@@ -183,10 +188,12 @@ async function refresh() {
     const backend = (s.backend && s.backend.type) ? s.backend.type : '';
     const containerId = (s.backend && s.backend.container_id) ? s.backend.container_id : '';
     const vol = (s.backend && s.backend.volume_id) ? s.backend.volume_id : '';
+    const name = s.name || '';
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><code>${esc(s.session_id)}</code></td>
+      <td>${esc(name)}</td>
       <td>${esc(s.user_id)}</td>
       <td>${esc(fmtTs(s.created_at))}</td>
       <td>${esc(s.profile)}</td>
@@ -194,6 +201,7 @@ async function refresh() {
       <td>${access ? `<a href="${esc(access)}" target="_blank">Open</a>` : ''}</td>
       <td>${esc(backend)}<div class="muted" style="margin-top:4px">${esc(containerId ? ('ctr: ' + containerId.slice(0,12)) : '')}${esc(vol ? (' vol: ' + vol) : '')}</div></td>
       <td>
+        <button class="secondary" onclick="renameSession('${esc(s.session_id)}','${esc(name)}')">Rename</button>
         <button class="secondary" onclick="stopSession('${esc(s.session_id)}')">Stop</button>
         <button onclick="deleteSession('${esc(s.session_id)}')">Delete</button>
       </td>
@@ -201,6 +209,20 @@ async function refresh() {
     rows.appendChild(tr);
   }
   setStatus('');
+}
+
+async function renameSession(sessionId, currentName) {
+  const name = prompt('Rename session ' + sessionId + ' to:', currentName || '');
+  if (name === null) return;
+  const trimmed = String(name || '').trim();
+  if (!trimmed) return;
+  setStatus('Renaming...');
+  await api(`/api/sessions/${sessionId}/rename`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: trimmed })
+  });
+  await refresh();
 }
 
 async function createSession() {
@@ -263,6 +285,21 @@ async def api_create_session(payload: CreateSessionRequest = Body(...), authoriz
 async def api_stop_session(session_id: str, authorization: Optional[str] = Header(default=None)) -> JSONResponse:
     _require_cp_auth(authorization)
     data = await _webtops_invoke("stop_session", {"session_id": session_id}, require_admin=False)
+    return JSONResponse(data)
+
+
+@app.post("/api/sessions/{session_id}/rename")
+async def api_rename_session(
+    session_id: str,
+    payload: RenameSessionRequest = Body(...),
+    authorization: Optional[str] = Header(default=None),
+) -> JSONResponse:
+    _require_cp_auth(authorization)
+    data = await _webtops_invoke(
+        "rename_session",
+        {"session_id": session_id, "name": payload.name},
+        require_admin=True,
+    )
     return JSONResponse(data)
 
 

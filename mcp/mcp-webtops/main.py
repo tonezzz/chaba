@@ -386,8 +386,8 @@ def tool_definitions() -> List[Dict[str, Any]]:
         {"name": "list_sessions", "description": "List sessions", "input_schema": {"type": "object", "properties": {"filter": {"type": "object"}}}},
         {"name": "start_session", "description": "Start a new session", "input_schema": {"type": "object", "properties": {"user_id": {"type": "string"}, "options": {"type": "object"}}, "required": ["user_id"]}},
         {"name": "get_session", "description": "Get session details", "input_schema": {"type": "object", "properties": {"session_id": {"type": "string"}}, "required": ["session_id"]}},
+        {"name": "rename_session", "description": "Rename a session (admin)", "input_schema": {"type": "object", "properties": {"session_id": {"type": "string"}, "name": {"type": "string"}}, "required": ["session_id", "name"]}},
         {"name": "stop_session", "description": "Stop a session", "input_schema": {"type": "object", "properties": {"session_id": {"type": "string"}, "options": {"type": "object"}}, "required": ["session_id"]}},
-        {"name": "extend_session_ttl", "description": "Extend session TTL", "input_schema": {"type": "object", "properties": {"session_id": {"type": "string"}, "ttl_minutes": {"type": "number"}}, "required": ["session_id", "ttl_minutes"]}},
         {"name": "delete_session", "description": "Delete a session (admin)", "input_schema": {"type": "object", "properties": {"session_id": {"type": "string"}, "options": {"type": "object"}}, "required": ["session_id"]}},
         {"name": "reap_expired_sessions", "description": "Stop/delete expired sessions (admin)", "input_schema": {"type": "object", "properties": {"dry_run": {"type": "boolean"}}}},
         {"name": "list_snapshots", "description": "List snapshots for user", "input_schema": {"type": "object", "properties": {"user_id": {"type": "string"}}, "required": ["user_id"]}},
@@ -406,6 +406,7 @@ def tool_definitions() -> List[Dict[str, Any]]:
 
 ADMIN_ONLY_TOOLS = {
     "upsert_user",
+    "rename_session",
     "delete_session",
     "reap_expired_sessions",
     "delete_snapshot",
@@ -516,6 +517,26 @@ async def invoke(payload: InvokePayload = Body(...), authorization: Optional[str
         session = sessions.get(session_id)
         if not session:
             raise HTTPException(status_code=404, detail="session_not_found")
+        return {"tool": tool, "result": session}
+
+    if tool == "rename_session":
+        session_id = _normalize_session_id(args.get("session_id"))
+        name = args.get("name")
+        if not isinstance(name, str):
+            raise HTTPException(status_code=400, detail="name must be a string")
+        name = name.strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="name is required")
+        if len(name) > 200:
+            raise HTTPException(status_code=400, detail="name too long")
+
+        sessions = STATE.get("sessions") or {}
+        session = sessions.get(session_id)
+        if not isinstance(session, dict):
+            raise HTTPException(status_code=404, detail="session_not_found")
+
+        session["name"] = name
+        _save_state(STATE)
         return {"tool": tool, "result": session}
 
     if tool == "create_snapshot":
