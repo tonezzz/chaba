@@ -330,13 +330,6 @@ services:
       timeout: 5s
       retries: 3
 
-  webtops-demo:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    image: traefik/whoami:v1.11.0
-    environment:
-      WHOAMI_PORT_NUMBER: 80
-
   node-exporter:
     <<: *default-service
     image: prom/node-exporter:v1.8.1

@@ -208,96 +208,6 @@ services:
       timeout: 5s
       retries: 3
 
-  webtop2:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ./webtop2
-    container_name: pc1-webtop2
-    hostname: webtop2
-    shm_size: "1gb"
-    ports:
-      - "${WEBTOP2_PORT:-3003}:3000"
-    environment:
-      PUID: ${WEBTOP_PUID:-1000}
-      PGID: ${WEBTOP_PGID:-1000}
-    volumes:
-      - webtop2-config:/config
-      - ../idc1-stack/webtop/custom-cont-init.d:/custom-cont-init.d:ro
-      - ../../:/workspaces/chaba:cached
-    healthcheck:
-      test: ["CMD-SHELL", "bash -lc 'DISPLAY=${DISPLAY:-:1} xrandr --query >/dev/null 2>&1'"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
-  webtop3:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ./webtop2
-    container_name: pc1-webtop3
-    hostname: webtop3
-    shm_size: "1gb"
-    ports:
-      - "${WEBTOP3_PORT:-3004}:3000"
-    environment:
-      PUID: ${WEBTOP_PUID:-1000}
-      PGID: ${WEBTOP_PGID:-1000}
-    volumes:
-      - webtop3-config:/config
-      - ../idc1-stack/webtop/custom-cont-init.d:/custom-cont-init.d:ro
-      - ../../:/workspaces/chaba:cached
-    healthcheck:
-      test: ["CMD-SHELL", "bash -lc 'DISPLAY=${DISPLAY:-:1} xrandr --query >/dev/null 2>&1'"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
-  mcp-webtop2:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ${MCP_WEBTOP_BUILD_CONTEXT:-../../mcp/mcp-webtop}
-    container_name: pc1-mcp-webtop2
-    ports:
-      - "${MCP_WEBTOP_PORT:-8055}:8055"
-    environment:
-      PORT: 8055
-      WEBTOP_CONFIG_DIR: /webtop-config
-      EXPORT_DIR: /data/exports
-      JSON_BODY_LIMIT: ${MCP_WEBTOP_JSON_LIMIT:-1mb}
-    volumes:
-      - webtop2-config:/webtop-config
-      - ${MCP_WEBTOP_DATA_DIR:-./data/mcp-webtop}:/data
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8055/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
-  mcp-webtop3:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ${MCP_WEBTOP_BUILD_CONTEXT:-../../mcp/mcp-webtop}
-    container_name: pc1-mcp-webtop3
-    ports:
-      - "${MCP_WEBTOP3_PORT:-8056}:8056"
-    environment:
-      PORT: 8056
-      WEBTOP_CONFIG_DIR: /webtop-config
-      EXPORT_DIR: /data/exports
-      JSON_BODY_LIMIT: ${MCP_WEBTOP_JSON_LIMIT:-1mb}
-    volumes:
-      - webtop3-config:/webtop-config
-      - ${MCP_WEBTOP3_DATA_DIR:-./data/mcp-webtop3}:/data
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8056/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
   caddy:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -315,7 +225,5 @@ networks:
     driver: bridge
 
 volumes:
-  webtop2-config:
-  webtop3-config:
   caddy-data:
   caddy-config:

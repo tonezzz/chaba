@@ -211,35 +211,6 @@ docker exec -it idc1-webtop2 id abc
 docker exec -it --user 1000:1000 idc1-webtop2 id
 ```
 
-## pc1-stack webtop sessions (multi-user / isolated)
-pc1 runs multiple LinuxServer Webtop sessions for isolated development environments. Each session is:
-- its own `webtop*` container
-- its own persistent Docker volume mounted at `/config`
-- optionally paired with an `mcp-webtop*` sidecar for export/import of that `/config` volume
-
-### Sessions
-- **webtop2**
-  - container: `pc1-webtop2`
-  - URL (VPN + HTTPS): `https://webtop2.pc1.vpn`
-  - host port (direct): `http://pc1.vpn:3003`
-  - config volume: `webtop2-config`
-  - config API: `mcp-webtop2` on `http://pc1.vpn:8055`
-- **webtop3** (clone of webtop2, isolated)
-  - container: `pc1-webtop3`
-  - URL (VPN + HTTPS): `https://webtop3.pc1.vpn`
-  - host port (direct): `http://pc1.vpn:3004`
-  - config volume: `webtop3-config`
-  - config API: `mcp-webtop3` on `http://pc1.vpn:8056`
-
-### One-time clone: webtop2 → webtop3
-Clone the full `/config` snapshot (desktop settings, app profiles, Windsurf data, etc.) from webtop2 into webtop3:
-
-```powershell
-docker-compose --profile mcp-suite -f c:\chaba\stacks\pc1-stack\docker-compose.yml stop webtop3
-docker run --rm -v pc1-stack_webtop2-config:/from -v pc1-stack_webtop3-config:/to alpine:3.20 sh -lc "apk add --no-cache rsync >/dev/null && rsync -aHAX --delete /from/ /to/"
-docker-compose --profile mcp-suite -f c:\chaba\stacks\pc1-stack\docker-compose.yml up -d webtop3
-```
-
 ### pc1-stack Caddy (VPN HTTPS, tls internal) — key workflow
 pc1 runs Caddy as a Docker container (`pc1-caddy`) with an internal CA (`tls internal`) to provide HTTPS for VPN hostnames.
 
