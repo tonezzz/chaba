@@ -1,0 +1,1913 @@
+{
+  "defaults": {
+    "http_https_ingress": {
+      "service": "caddy",
+      "runs_as": "host_systemd",
+      "binds": [
+        "80/tcp",
+        "443/tcp"
+      ],
+      "responsibility": "First receiver for HTTP/HTTPS traffic; routes by hostname/path and reverse_proxies to internal services"
+    }
+  },
+  "hosts": {
+    "idc1": {
+      "repos": {
+        "chaba": "/home/chaba/chaba"
+      },
+      "ssh": {
+        "idc1.vpn": "chaba@idc1.vpn",
+        "idc1.surf-thailand.com": "chaba@idc1.surf-thailand.com"
+      },
+      "url": {
+        "host_vpn": "idc1.vpn",
+        "host_www": "idc1.surf-thailand.com"
+      },
+      "ingress": {
+        "http_https": {
+          "default": "host-caddy",
+          "current": "host-caddy",
+          "ports": [
+            80,
+            443
+          ]
+        }
+      },
+      "ports": {
+        "ssh": [
+          "22:22"
+        ],
+        "mcp0": [
+          "${MCP0_PORT:-8355}:${MCP0_PORT:-8355}"
+        ],
+        "mcp-agents": [
+          "${MCP_AGENTS_PORT:-8446}:8046"
+        ],
+        "mcp-glama": [
+          "${MCP_GLAMA_PORT:-7441}:8014"
+        ],
+        "mcp-tester": [
+          "${MCP_TESTER_PORT:-8435}:${MCP_TESTER_PORT:-8435}"
+        ],
+        "mcp-devops": [
+          "${MCP_DEVOPS_PORT:-8425}:${MCP_DEVOPS_PORT:-8425}"
+        ],
+        "mcp-playwright": [
+          "${MCP_PLAYWRIGHT_PORT:-8460}:${MCP_PLAYWRIGHT_PORT:-8460}"
+        ],
+        "mcp-docker": [
+          "${MCP_DOCKER_PORT:-8340}:8340"
+        ],
+        "mcp-memory-bridge": [
+          "${MCP_MEMORY_PORT:-8470}:8470"
+        ],
+        "coredns": [
+          "53:53",
+          "8080:8080",
+          "9153:9153"
+        ],
+        "wireguard": [
+          "51820:51820"
+        ],
+        "wg-easy": [
+          "51821:51821",
+          "51820:51820"
+        ]
+      },
+      "stacks": {
+        "idc1-stack": {
+          "info": {
+            "path": "stacks/idc1-stack",
+            "compose": "docker-compose.yml"
+          },
+          "containers": {
+            "mcp0": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP0_PORT:-8355}:${MCP0_PORT:-8355}"
+              ],
+              "port": 8355,
+              "type": "build",
+              "endpoints": {
+                "www": "http://idc1.surf-thailand.com:${MCP0_PORT:-8355}",
+                "vpn": "http://idc1.vpn:${MCP0_PORT:-8355}",
+                "local": "http://localhost:8355"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP0_PORT:-8355}:${MCP0_PORT:-8355}"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "www": "http://idc1.surf-thailand.com:${MCP0_PORT:-8355}/health",
+                "vpn": "http://idc1.vpn:${MCP0_PORT:-8355}/health",
+                "local": "http://localhost:8355/health"
+              },
+              "container_name": "idc1-mcp0",
+              "volumes": [
+                {
+                  "source": "//var/run/docker.sock",
+                  "target": "/var/run/docker.sock",
+                  "source_kind": "bind"
+                }
+              ]
+            },
+            "mcp-agents": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_AGENTS_PORT:-8446}:8046"
+              ],
+              "port": 8446,
+              "type": "build",
+              "volumes": [
+                {
+                  "source": "${MCP_AGENTS_DATA_DIR:-./data/mcp-agents}",
+                  "target": "/app/data",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "www": "http://idc1.surf-thailand.com:${MCP_AGENTS_PORT:-8446}",
+                "vpn": "http://idc1.vpn:${MCP_AGENTS_PORT:-8446}",
+                "local": "http://localhost:8446"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_AGENTS_PORT:-8446}:8046"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "www": "http://idc1.surf-thailand.com:${MCP_AGENTS_PORT:-8446}/health",
+                "vpn": "http://idc1.vpn:${MCP_AGENTS_PORT:-8446}/health",
+                "local": "http://localhost:8446/health"
+              },
+              "container_name": "idc1-mcp-agents"
+            },
+            "mcp-glama": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_GLAMA_PORT:-7441}:8014"
+              ],
+              "port": 7441,
+              "type": "build",
+              "endpoints": {
+                "www": "http://idc1.surf-thailand.com:${MCP_GLAMA_PORT:-7441}",
+                "vpn": "http://idc1.vpn:${MCP_GLAMA_PORT:-7441}",
+                "local": "http://localhost:7441"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_GLAMA_PORT:-7441}:8014"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "www": "http://idc1.surf-thailand.com:${MCP_GLAMA_PORT:-7441}/health",
+                "vpn": "http://idc1.vpn:${MCP_GLAMA_PORT:-7441}/health",
+                "local": "http://localhost:7441/health"
+              },
+              "container_name": "idc1-mcp-glama"
+            },
+            "mcp-tester": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_TESTER_PORT:-8435}:${MCP_TESTER_PORT:-8435}"
+              ],
+              "port": 8435,
+              "type": "build",
+              "volumes": [
+                {
+                  "source": "${MCP_TESTER_DATA_DIR:-./data/mcp-tester}",
+                  "target": "/data",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "www": "http://idc1.surf-thailand.com:${MCP_TESTER_PORT:-8435}",
+                "vpn": "http://idc1.vpn:${MCP_TESTER_PORT:-8435}",
+                "local": "http://localhost:8435"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_TESTER_PORT:-8435}:${MCP_TESTER_PORT:-8435}"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "www": "http://idc1.surf-thailand.com:${MCP_TESTER_PORT:-8435}/health",
+                "vpn": "http://idc1.vpn:${MCP_TESTER_PORT:-8435}/health",
+                "local": "http://localhost:8435/health"
+              },
+              "container_name": "idc1-mcp-tester"
+            },
+            "mcp-devops": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_DEVOPS_PORT:-8425}:${MCP_DEVOPS_PORT:-8425}"
+              ],
+              "port": 8425,
+              "type": "build",
+              "endpoints": {
+                "www": "http://idc1.surf-thailand.com:${MCP_DEVOPS_PORT:-8425}",
+                "vpn": "http://idc1.vpn:${MCP_DEVOPS_PORT:-8425}",
+                "local": "http://localhost:8425"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_DEVOPS_PORT:-8425}:${MCP_DEVOPS_PORT:-8425}"
+                }
+              ],
+              "container_name": "idc1-mcp-devops"
+            },
+            "mcp-playwright": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_PLAYWRIGHT_PORT:-8460}:${MCP_PLAYWRIGHT_PORT:-8460}"
+              ],
+              "port": 8460,
+              "type": "build",
+              "volumes": [
+                {
+                  "source": "${MCP_PLAYWRIGHT_SCENARIOS_DIR:-./data/mcp-playwright/scenarios}",
+                  "target": "/app/scenarios",
+                  "source_kind": "bind"
+                },
+                {
+                  "source": "${MCP_PLAYWRIGHT_OUTPUT_DIR:-./data/mcp-playwright/output}",
+                  "target": "/app/output",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "www": "http://idc1.surf-thailand.com:${MCP_PLAYWRIGHT_PORT:-8460}",
+                "vpn": "http://idc1.vpn:${MCP_PLAYWRIGHT_PORT:-8460}",
+                "local": "http://localhost:8460"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_PLAYWRIGHT_PORT:-8460}:${MCP_PLAYWRIGHT_PORT:-8460}"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "www": "http://idc1.surf-thailand.com:${MCP_PLAYWRIGHT_PORT:-8460}/health",
+                "vpn": "http://idc1.vpn:${MCP_PLAYWRIGHT_PORT:-8460}/health",
+                "local": "http://localhost:8460/health"
+              },
+              "container_name": "idc1-mcp-playwright"
+            },
+            "mcp-docker": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_DOCKER_PORT:-8340}:8340"
+              ],
+              "port": 8340,
+              "type": "build",
+              "volumes": [
+                {
+                  "source": "//var/run/docker.sock",
+                  "target": "/var/run/docker.sock",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "www": "http://idc1.surf-thailand.com:${MCP_DOCKER_PORT:-8340}",
+                "vpn": "http://idc1.vpn:${MCP_DOCKER_PORT:-8340}",
+                "vpn_alias": "http://mcp0.idc1.vpn:${MCP_DOCKER_PORT:-8340}",
+                "local": "http://localhost:8340"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_DOCKER_PORT:-8340}:8340"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "www": "http://idc1.surf-thailand.com:${MCP_DOCKER_PORT:-8340}/health",
+                "vpn": "http://idc1.vpn:${MCP_DOCKER_PORT:-8340}/health",
+                "vpn_alias": "http://mcp0.idc1.vpn:${MCP_DOCKER_PORT:-8340}/health",
+                "local": "http://localhost:8340/health"
+              },
+              "container_name": "idc1-mcp-docker",
+              "notes": "Accessible over VPN as mcp0.idc1.vpn via wg-dns rewrite (*.idc1.vpn -> idc1.vpn) + wg-easy forwarding of MCP_DOCKER_PORT to host gateway"
+            },
+            "mcp-memory-bridge": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_MEMORY_PORT:-8470}:8470"
+              ],
+              "port": 8470,
+              "type": "build",
+              "volumes": [
+                {
+                  "source": "mcp-memory-data",
+                  "target": "/data",
+                  "source_kind": "volume"
+                }
+              ],
+              "endpoints": {
+                "www": "http://idc1.surf-thailand.com:${MCP_MEMORY_PORT:-8470}",
+                "vpn": "http://idc1.vpn:${MCP_MEMORY_PORT:-8470}",
+                "local": "http://localhost:8470"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_MEMORY_PORT:-8470}:8470"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "www": "http://idc1.surf-thailand.com:${MCP_MEMORY_PORT:-8470}/health",
+                "vpn": "http://idc1.vpn:${MCP_MEMORY_PORT:-8470}/health",
+                "local": "http://localhost:8470/health"
+              },
+              "container_name": "idc1-mcp-memory-bridge"
+            },
+            "coredns": {
+              "profiles": [
+                "infra"
+              ],
+              "ports": [
+                "53:53",
+                "8080:8080",
+                "9153:9153"
+              ],
+              "port": 8080,
+              "type": "image",
+              "container_name": "idc1-coredns",
+              "endpoints": {
+                "www": "http://idc1.surf-thailand.com:8080",
+                "vpn": "http://idc1.vpn:8080",
+                "local": "http://localhost:8080"
+              },
+              "ports_map": [
+                {
+                  "raw": "53:53"
+                },
+                {
+                  "raw": "8080:8080"
+                },
+                {
+                  "raw": "9153:9153"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "www": "http://idc1.surf-thailand.com:8080/health",
+                "vpn": "http://idc1.vpn:8080/health",
+                "local": "http://localhost:8080/health"
+              }
+            },
+            "wireguard": {
+              "profiles": [
+                "infra"
+              ],
+              "ports": [
+                "51820:51820"
+              ],
+              "port": 51820,
+              "type": "image",
+              "container_name": "idc1-wireguard",
+              "source": {
+                "kind": "image"
+              },
+              "endpoints": {
+                "www": "udp://idc1.surf-thailand.com:51820",
+                "vpn": "udp://idc1.vpn:51820",
+                "local": "udp://localhost:51820"
+              },
+              "ports_map": [
+                {
+                  "raw": "51820:51820"
+                }
+              ],
+              "health_path": null
+            },
+            "wg-easy": {
+              "profiles": [
+                "vpn"
+              ],
+              "ports": [
+                "51821:51821",
+                "51820:51820"
+              ],
+              "port": 51821,
+              "type": "image",
+              "container_name": "idc1-wg-easy",
+              "source": {
+                "kind": "image",
+                "image": "ghcr.io/wg-easy/wg-easy:latest"
+              },
+              "runtime": {
+                "cap_add": [
+                  "NET_ADMIN",
+                  "SYS_MODULE"
+                ]
+              },
+              "notes": "Applies idc1.vpn:22 -> host sshd forwarding via WG_POST_UP in stacks/idc1-stack/docker-compose.yml",
+              "endpoints": {
+                "www": "http://idc1.surf-thailand.com:51821",
+                "vpn": "http://idc1.vpn:51821",
+                "local": "http://localhost:51821"
+              },
+              "ports_map": [
+                {
+                  "raw": "51821:51821"
+                },
+                {
+                  "raw": "51820:51820"
+                }
+              ],
+              "health_path": null
+            },
+            "wg-dns": {
+              "profiles": [
+                "vpn"
+              ],
+              "type": "image",
+              "container_name": "idc1-wg-dns",
+              "source": {
+                "kind": "image",
+                "image": "coredns/coredns:1.11.1"
+              },
+              "runtime": {
+                "network_mode": "container:idc1-wg-easy"
+              },
+              "notes": "CoreDNS for VPN; shares wg-easy netns (network_mode=container:idc1-wg-easy) so it can bind/listen on 10.8.0.1:53 inside the VPN",
+              "health_path": null
+            }
+          },
+          "archived_containers": {
+            "code-server": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${CODE_SERVER_PORT:-8080}:8080"
+              ],
+              "port": 8080,
+              "container_name": "idc1-code-server",
+              "type": "image",
+              "volumes": [
+                {
+                  "source": "${CODE_SERVER_REPO_ROOT:-../../}",
+                  "target": "/workspaces/chaba",
+                  "mode": "cached",
+                  "source_kind": "bind"
+                },
+                {
+                  "source": "${CODE_SERVER_DATA_DIR:-./data/code-server}",
+                  "target": "/home/coder/.local/share/code-server",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "www": "http://idc1.surf-thailand.com:${CODE_SERVER_PORT:-8080}",
+                "vpn": "http://idc1.vpn:${CODE_SERVER_PORT:-8080}",
+                "local": "http://localhost:8080"
+              },
+              "ports_map": [
+                {
+                  "raw": "${CODE_SERVER_PORT:-8080}:8080"
+                }
+              ],
+              "health_path": "/healthz",
+              "health_urls": {
+                "www": "http://idc1.surf-thailand.com:${CODE_SERVER_PORT:-8080}/healthz",
+                "vpn": "http://idc1.vpn:${CODE_SERVER_PORT:-8080}/healthz",
+                "local": "http://localhost:8080/healthz"
+              }
+            }
+          }
+        }
+      },
+      "capability": {
+        "public_ip": true
+      },
+      "ports_map": {
+        "ssh": [
+          {
+            "raw": "22:22",
+            "raw_host": "22",
+            "raw_container": "22",
+            "host": 22,
+            "container": 22,
+            "scheme": "tcp"
+          }
+        ],
+        "mcp0": [
+          {
+            "raw": "${MCP0_PORT:-8355}:${MCP0_PORT:-8355}"
+          }
+        ],
+        "mcp-agents": [
+          {
+            "raw": "${MCP_AGENTS_PORT:-8446}:8046",
+            "raw_host": "${MCP_AGENTS_PORT",
+            "raw_container": "-8446}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp-glama": [
+          {
+            "raw": "${MCP_GLAMA_PORT:-7441}:8014",
+            "raw_host": "${MCP_GLAMA_PORT",
+            "raw_container": "-7441}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp-tester": [
+          {
+            "raw": "${MCP_TESTER_PORT:-8435}:${MCP_TESTER_PORT:-8435}",
+            "raw_host": "${MCP_TESTER_PORT",
+            "raw_container": "-8435}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp-devops": [
+          {
+            "raw": "${MCP_DEVOPS_PORT:-8425}:${MCP_DEVOPS_PORT:-8425}",
+            "raw_host": "${MCP_DEVOPS_PORT",
+            "raw_container": "-8425}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp-playwright": [
+          {
+            "raw": "${MCP_PLAYWRIGHT_PORT:-8460}:${MCP_PLAYWRIGHT_PORT:-8460}",
+            "raw_host": "${MCP_PLAYWRIGHT_PORT",
+            "raw_container": "-8460}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp-docker": [
+          {
+            "raw": "${MCP_DOCKER_PORT:-8340}:8340",
+            "raw_host": "${MCP_DOCKER_PORT",
+            "raw_container": "-8340}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp-memory-bridge": [
+          {
+            "raw": "${MCP_MEMORY_PORT:-8470}:8470",
+            "raw_host": "${MCP_MEMORY_PORT",
+            "raw_container": "-8470}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "coredns": [
+          {
+            "raw": "53:53",
+            "raw_host": "53",
+            "raw_container": "53",
+            "host": 53,
+            "container": 53,
+            "scheme": "http"
+          },
+          {
+            "raw": "8080:8080",
+            "raw_host": "8080",
+            "raw_container": "8080",
+            "host": 8080,
+            "container": 8080,
+            "scheme": "http"
+          },
+          {
+            "raw": "9153:9153",
+            "raw_host": "9153",
+            "raw_container": "9153",
+            "host": 9153,
+            "container": 9153,
+            "scheme": "http"
+          }
+        ],
+        "wireguard": [
+          {
+            "raw": "51820:51820",
+            "raw_host": "51820",
+            "raw_container": "51820",
+            "host": 51820,
+            "container": 51820,
+            "scheme": "http"
+          }
+        ],
+        "wg-easy": [
+          {
+            "raw": "51821:51821",
+            "raw_host": "51821",
+            "raw_container": "51821",
+            "host": 51821,
+            "container": 51821,
+            "scheme": "http"
+          },
+          {
+            "raw": "51820:51820",
+            "raw_host": "51820",
+            "raw_container": "51820",
+            "host": 51820,
+            "container": 51820,
+            "scheme": "http"
+          }
+        ]
+      }
+    },
+    "pc1": { 
+      "repos": {
+        "chaba": "C:\\chaba"
+      },
+      "ssh": {
+        "idc1.vpn": "chaba@idc1.vpn",
+        "idc1.surf-thailand.com": "chaba@idc1.surf-thailand.com",
+        "pc1.vpn": "chaba@pc1.vpn",
+        "pc1.surf-thailand.com": "chaba@pc1.surf-thailand.com"
+      },
+      "url": {
+        "host_vpn": "pc1.vpn",
+        "host_www": "pc1.surf-thailand.com"
+      },
+      "ingress": {
+        "http_https": {
+          "default": "host-caddy",
+          "current": "host-caddy",
+          "ports": [
+            80,
+            443
+          ],
+          "notes": "Host Caddy should own :80/:443 and forward to per-stack internal Caddy on high ports (e.g. pc1-stack -> 18081)."
+        }
+      },
+      "stacks": {
+        "pc1-stack": {
+          "info": {
+            "path": "stacks/pc1-stack",
+            "compose": "docker-compose.yml"
+          },
+          "containers": {
+            "mcp0": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP0_PORT:-8351}:${MCP0_PORT:-8351}"
+              ],
+              "port": 8351,
+              "container_name": "pc1-mcp0",
+              "type": "build",
+              "volumes": [
+                {
+                  "source": "//var/run/docker.sock",
+                  "target": "/var/run/docker.sock",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "vpn": "http://pc1.vpn:${MCP0_PORT:-8351}",
+                "local": "http://localhost:8351"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP0_PORT:-8351}:${MCP0_PORT:-8351}"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "vpn": "http://pc1.vpn:${MCP0_PORT:-8351}/health",
+                "local": "http://localhost:8351/health"
+              }
+            },
+            "mcp-agents": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_AGENTS_PORT:-8046}:8046"
+              ],
+              "port": 8046,
+              "container_name": "pc1-mcp-agents",
+              "type": "build",
+              "volumes": [
+                {
+                  "source": "${MCP_AGENTS_DATA_DIR:-./data/mcp-agents}",
+                  "target": "/app/data",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "vpn": "http://pc1.vpn:${MCP_AGENTS_PORT:-8046}",
+                "local": "http://localhost:8046"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_AGENTS_PORT:-8046}:8046"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "vpn": "http://pc1.vpn:${MCP_AGENTS_PORT:-8046}/health",
+                "local": "http://localhost:8046/health"
+              }
+            },
+            "mcp-glama": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_GLAMA_PORT:-7241}:8014"
+              ],
+              "port": 7241,
+              "container_name": "pc1-mcp-glama",
+              "type": "build",
+              "endpoints": {
+                "vpn": "http://pc1.vpn:${MCP_GLAMA_PORT:-7241}",
+                "local": "http://localhost:7241"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_GLAMA_PORT:-7241}:8014"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "vpn": "http://pc1.vpn:${MCP_GLAMA_PORT:-7241}/health",
+                "local": "http://localhost:7241/health"
+              }
+            },
+            "mcp-tester": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_TESTER_PORT:-8335}:${MCP_TESTER_PORT:-8335}"
+              ],
+              "port": 8335,
+              "container_name": "pc1-mcp-tester",
+              "type": "build",
+              "volumes": [
+                {
+                  "source": "${MCP_TESTER_DATA_DIR:-./data/mcp-tester}",
+                  "target": "/data",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "vpn": "http://pc1.vpn:${MCP_TESTER_PORT:-8335}",
+                "local": "http://localhost:8335"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_TESTER_PORT:-8335}:${MCP_TESTER_PORT:-8335}"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "vpn": "http://pc1.vpn:${MCP_TESTER_PORT:-8335}/health",
+                "local": "http://localhost:8335/health"
+              }
+            },
+            "mcp-devops": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_DEVOPS_PORT:-8325}:${MCP_DEVOPS_PORT:-8325}"
+              ],
+              "port": 8325,
+              "container_name": "pc1-mcp-devops",
+              "type": "build",
+              "volumes": [
+                {
+                  "source": "../../",
+                  "target": "/workspaces/chaba",
+                  "mode": "cached",
+                  "source_kind": "bind"
+                },
+                {
+                  "source": "//var/run/docker.sock",
+                  "target": "/var/run/docker.sock",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "vpn": "http://pc1.vpn:${MCP_DEVOPS_PORT:-8325}",
+                "local": "http://localhost:8325"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_DEVOPS_PORT:-8325}:${MCP_DEVOPS_PORT:-8325}"
+                }
+              ],
+              "health_path": null,
+              "health_urls": {
+                "vpn": "http://pc1.vpn:${MCP_DEVOPS_PORT:-8325}",
+                "local": "http://localhost:8325"
+              }
+            },
+            "mcp-playwright": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_PLAYWRIGHT_PORT:-8260}:${MCP_PLAYWRIGHT_PORT:-8260}"
+              ],
+              "port": 8260,
+              "container_name": "pc1-mcp-playwright",
+              "type": "build",
+              "volumes": [
+                {
+                  "source": "${MCP_PLAYWRIGHT_SCENARIOS_DIR:-./data/mcp-playwright/scenarios}",
+                  "target": "/app/scenarios",
+                  "source_kind": "bind"
+                },
+                {
+                  "source": "${MCP_PLAYWRIGHT_OUTPUT_DIR:-./data/mcp-playwright/output}",
+                  "target": "/app/output",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "vpn": "http://pc1.vpn:${MCP_PLAYWRIGHT_PORT:-8260}",
+                "local": "http://localhost:8260"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_PLAYWRIGHT_PORT:-8260}:${MCP_PLAYWRIGHT_PORT:-8260}"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "vpn": "http://pc1.vpn:${MCP_PLAYWRIGHT_PORT:-8260}/health",
+                "local": "http://localhost:8260/health"
+              }
+            },
+            "mcp-webtop2": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_WEBTOP_PORT:-8055}:8055"
+              ],
+              "port": 8055,
+              "container_name": "pc1-mcp-webtop2",
+              "type": "build",
+              "volumes": [
+                {
+                  "source": "webtop2-config",
+                  "target": "/webtop-config",
+                  "source_kind": "volume"
+                },
+                {
+                  "source": "${MCP_WEBTOP_DATA_DIR:-./data/mcp-webtop}",
+                  "target": "/data",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "vpn": "http://pc1.vpn:${MCP_WEBTOP_PORT:-8055}",
+                "local": "http://localhost:8055"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_WEBTOP_PORT:-8055}:8055"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "vpn": "http://pc1.vpn:${MCP_WEBTOP_PORT:-8055}/health",
+                "local": "http://localhost:8055/health"
+              }
+            },
+            "mcp-webtop3": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_WEBTOP3_PORT:-8056}:8056"
+              ],
+              "port": 8056,
+              "container_name": "pc1-mcp-webtop3",
+              "type": "build",
+              "volumes": [
+                {
+                  "source": "webtop3-config",
+                  "target": "/webtop-config",
+                  "source_kind": "volume"
+                },
+                {
+                  "source": "${MCP_WEBTOP3_DATA_DIR:-./data/mcp-webtop3}",
+                  "target": "/data",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "vpn": "http://pc1.vpn:${MCP_WEBTOP3_PORT:-8056}",
+                "local": "http://localhost:8056"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_WEBTOP3_PORT:-8056}:8056"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "vpn": "http://pc1.vpn:${MCP_WEBTOP3_PORT:-8056}/health",
+                "local": "http://localhost:8056/health"
+              }
+            },
+            "mcp-docker": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_DOCKER_PORT:-8340}:8340"
+              ],
+              "port": 8340,
+              "container_name": "pc1-mcp-docker",
+              "type": "build",
+              "volumes": [
+                {
+                  "source": "//var/run/docker.sock",
+                  "target": "/var/run/docker.sock",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "vpn": "http://pc1.vpn:${MCP_DOCKER_PORT:-8340}",
+                "local": "http://localhost:8340"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_DOCKER_PORT:-8340}:8340"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "vpn": "http://pc1.vpn:${MCP_DOCKER_PORT:-8340}/health",
+                "local": "http://localhost:8340/health"
+              }
+            },
+            "caddy": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "18081:80"
+              ],
+              "port": 80,
+              "container_name": "pc1-caddy",
+              "type": "image",
+              "volumes": [
+                {
+                  "source": "./Caddyfile",
+                  "target": "/etc/caddy/Caddyfile",
+                  "mode": "ro",
+                  "source_kind": "bind"
+                },
+                {
+                  "source": "caddy-data",
+                  "target": "/data",
+                  "source_kind": "volume"
+                },
+                {
+                  "source": "caddy-config",
+                  "target": "/config",
+                  "source_kind": "volume"
+                }
+              ],
+              "endpoints": {
+                "vpn": "http://pc1-stack.pc1.vpn",
+                "local": "http://localhost:18081"
+              },
+              "ports_map": [],
+              "health_path": null,
+              "health_urls": {
+                "vpn": "http://pc1-stack.pc1.vpn",
+                "local": "http://localhost:18081"
+              }
+            }
+          }
+        },
+        "app-demo": {
+          "info": {
+            "path": "stacks/app-demo"
+          },
+          "containers": {}
+        }
+      },
+      "capability": {
+        "public_ip": false
+      },
+      "ports": {
+        "mcp0": [
+          "${MCP0_PORT:-8351}:${MCP0_PORT:-8351}"
+        ],
+        "mcp-agents": [
+          "${MCP_AGENTS_PORT:-8046}:8046"
+        ],
+        "mcp-glama": [
+          "${MCP_GLAMA_PORT:-7241}:8014"
+        ],
+        "mcp-tester": [
+          "${MCP_TESTER_PORT:-8335}:${MCP_TESTER_PORT:-8335}"
+        ],
+        "mcp-devops": [
+          "${MCP_DEVOPS_PORT:-8325}:${MCP_DEVOPS_PORT:-8325}"
+        ],
+        "mcp-playwright": [
+          "${MCP_PLAYWRIGHT_PORT:-8260}:${MCP_PLAYWRIGHT_PORT:-8260}"
+        ],
+        "mcp-webtop2": [
+          "${MCP_WEBTOP_PORT:-8055}:8055"
+        ],
+        "mcp-webtop3": [
+          "${MCP_WEBTOP3_PORT:-8056}:8056"
+        ],
+        "mcp-docker": [
+          "${MCP_DOCKER_PORT:-8340}:8340"
+        ],
+        "caddy": [
+          "18081:80"
+        ]
+      },
+      "ports_map": {
+        "mcp0": [
+          {
+            "raw": "${MCP0_PORT:-8351}:${MCP0_PORT:-8351}"
+          }
+        ],
+        "mcp-agents": [
+          {
+            "raw": "${MCP_AGENTS_PORT:-8046}:8046",
+            "raw_host": "${MCP_AGENTS_PORT",
+            "raw_container": "-8046}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp-glama": [
+          {
+            "raw": "${MCP_GLAMA_PORT:-7241}:8014",
+            "raw_host": "${MCP_GLAMA_PORT",
+            "raw_container": "-7241}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp-tester": [
+          {
+            "raw": "${MCP_TESTER_PORT:-8335}:${MCP_TESTER_PORT:-8335}",
+            "raw_host": "${MCP_TESTER_PORT",
+            "raw_container": "-8335}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp-devops": [
+          {
+            "raw": "${MCP_DEVOPS_PORT:-8325}:${MCP_DEVOPS_PORT:-8325}",
+            "raw_host": "${MCP_DEVOPS_PORT",
+            "raw_container": "-8325}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp-playwright": [
+          {
+            "raw": "${MCP_PLAYWRIGHT_PORT:-8260}:${MCP_PLAYWRIGHT_PORT:-8260}",
+            "raw_host": "${MCP_PLAYWRIGHT_PORT",
+            "raw_container": "-8260}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp-webtop2": [
+          {
+            "raw": "${MCP_WEBTOP_PORT:-8055}:8055",
+            "raw_host": "${MCP_WEBTOP_PORT",
+            "raw_container": "-8055}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp-webtop3": [
+          {
+            "raw": "${MCP_WEBTOP3_PORT:-8056}:8056",
+            "raw_host": "${MCP_WEBTOP3_PORT",
+            "raw_container": "-8056}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp-docker": [
+          {
+            "raw": "${MCP_DOCKER_PORT:-8340}:8340",
+            "raw_host": "${MCP_DOCKER_PORT",
+            "raw_container": "-8340}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "caddy": [
+          {
+            "raw": "18081:80",
+            "raw_host": "18081",
+            "raw_container": "80",
+            "host": 18081,
+            "container": 80,
+            "scheme": "http"
+          }
+        ]
+      }
+    },
+    "pc2": {
+      "url": {
+        "host_vpn": "pc2.vpn",
+        "host_www": "pc2.surf-thailand.com"
+      },
+      "ingress": {
+        "http_https": {
+          "default": "host-caddy",
+          "current": "host-caddy",
+          "ports": [
+            80,
+            443
+          ],
+          "notes": "Host Caddy should own :80/:443 and forward to per-stack internal Caddy on high ports (pc2-worker dev-proxy -> 19081 for HTTP; 3100 remains compatibility for HTTPS)."
+        }
+      },
+      "stacks": {
+        "pc2-worker": {
+          "info": {
+            "path": "stacks/pc2-worker",
+            "compose": "docker-compose.yml"
+          },
+          "containers": {
+            "node-runner": {
+              "profiles": [
+                "base-tools"
+              ],
+              "type": "image",
+              "volumes": [
+                {
+                  "source": "${HOST_REPO:-/home/tonezzz/repos}",
+                  "target": "/work",
+                  "mode": "cached",
+                  "source_kind": "bind"
+                },
+                {
+                  "source": "${HOST_SSH_AUTH_SOCK:-/home/tonezzz/.ssh/ssh-agent.socket}",
+                  "target": "/ssh-agent",
+                  "source_kind": "bind"
+                }
+              ],
+              "container_name": "pc2-node-runner"
+            },
+            "python-runner": {
+              "profiles": [
+                "base-tools"
+              ],
+              "type": "image",
+              "volumes": [
+                {
+                  "source": "${HOST_REPO:-/home/tonezzz/repos}",
+                  "target": "/work",
+                  "mode": "cached",
+                  "source_kind": "bind"
+                },
+                {
+                  "source": "${HOST_PIP_CACHE:-/home/tonezzz/.cache/pip}",
+                  "target": "/root/.cache/pip",
+                  "source_kind": "bind"
+                }
+              ],
+              "container_name": "pc2-python-runner"
+            },
+            "redis": {
+              "profiles": [
+                "base-tools"
+              ],
+              "ports": [
+                "${REDIS_PORT:-6379}:6379"
+              ],
+              "port": 6379,
+              "type": "image",
+              "volumes": [
+                {
+                  "source": "redis-data",
+                  "target": "/data",
+                  "source_kind": "volume"
+                }
+              ],
+              "endpoints": {
+                "vpn": "http://pc2.vpn:${REDIS_PORT:-6379}",
+                "local": "http://localhost:6379"
+              },
+              "ports_map": [
+                {
+                  "raw": "${REDIS_PORT:-6379}:6379"
+                }
+              ],
+              "health_path": null,
+              "health_urls": {
+                "vpn": "http://pc2.vpn:${REDIS_PORT:-6379}",
+                "local": "http://localhost:6379"
+              },
+              "container_name": "pc2-redis"
+            },
+            "dev-proxy": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "19081:80",
+                "3100:443"
+              ],
+              "port": 443,
+              "type": "image",
+              "volumes": [
+                {
+                  "source": "${DEV_PROXY_CONFIG:-./dev-proxy/Caddyfile}",
+                  "target": "/etc/caddy/Caddyfile",
+                  "mode": "ro",
+                  "source_kind": "bind"
+                },
+                {
+                  "source": "${DEV_PROXY_CERTS:-./dev-proxy/certs}",
+                  "target": "/certs",
+                  "mode": "ro",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "vpn": "https://pc2.vpn",
+                "local": "https://localhost"
+              },
+              "ports_map": [],
+              "health_path": null,
+              "health_urls": {
+                "vpn": "https://pc2.vpn",
+                "local": "https://localhost"
+              },
+              "container_name": "pc2-dev-proxy"
+            },
+            "mcp-docker": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_DOCKER_PORT:-8340}:${MCP_DOCKER_PORT:-8340}"
+              ],
+              "port": 8340,
+              "type": "build",
+              "volumes": [
+                {
+                  "source": "/var/run/docker.sock",
+                  "target": "/var/run/docker.sock",
+                  "source_kind": "bind"
+                },
+                {
+                  "source": "/mnt/wsl/docker-desktop/run/docker.sock",
+                  "target": "/var/run/docker-desktop.sock",
+                  "mode": "ro",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "vpn": "http://pc2.vpn:${MCP_DOCKER_PORT:-8340}",
+                "local": "http://localhost:8340"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_DOCKER_PORT:-8340}:${MCP_DOCKER_PORT:-8340}"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "vpn": "http://pc2.vpn:${MCP_DOCKER_PORT:-8340}/health",
+                "local": "http://localhost:8340/health"
+              },
+              "container_name": "pc2-mcp-docker"
+            },
+            "mcp0": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP0_PORT:-8310}:${MCP0_PORT:-8310}"
+              ],
+              "port": 8310,
+              "type": "build",
+              "endpoints": {
+                "vpn": "http://pc2.vpn:${MCP0_PORT:-8310}",
+                "vpn_ingress": "https://1mcp.pc2.vpn",
+                "vpn_stack": "http://1mcp.pc2-worker.pc2.vpn",
+                "local": "http://localhost:8310"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP0_PORT:-8310}:${MCP0_PORT:-8310}"
+                }
+              ],
+              "health_path": null,
+              "health_urls": {
+                "vpn": "http://pc2.vpn:${MCP0_PORT:-8310}",
+                "vpn_ingress": "https://1mcp.pc2.vpn",
+                "vpn_stack": "http://1mcp.pc2-worker.pc2.vpn",
+                "local": "http://localhost:8310"
+              },
+              "container_name": "pc2-mcp0"
+            },
+            "mcp-glama": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_GLAMA_PORT:-7214}:8014"
+              ],
+              "port": 7214,
+              "type": "build",
+              "endpoints": {
+                "vpn": "http://pc2.vpn:${MCP_GLAMA_PORT:-7214}",
+                "local": "http://localhost:7214"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_GLAMA_PORT:-7214}:8014"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "vpn": "http://pc2.vpn:${MCP_GLAMA_PORT:-7214}/health",
+                "local": "http://localhost:7214/health"
+              },
+              "container_name": "pc2-mcp-glama"
+            },
+            "mcp-instrans": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_INSTRANS_PORT:-7216}:3100"
+              ],
+              "port": 7216,
+              "type": "build",
+              "endpoints": {
+                "vpn": "http://pc2.vpn:${MCP_INSTRANS_PORT:-7216}",
+                "local": "http://localhost:7216"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_INSTRANS_PORT:-7216}:3100"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "vpn": "http://pc2.vpn:${MCP_INSTRANS_PORT:-7216}/health",
+                "local": "http://localhost:7216/health"
+              },
+              "container_name": "pc2-mcp-instrans"
+            },
+            "mcp-meeting": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_MEETING_PORT:-7208}:8008"
+              ],
+              "port": 7208,
+              "type": "build",
+              "volumes": [
+                {
+                  "source": "${MEETING_STORAGE_ROOT:-./data/meeting}",
+                  "target": "/data",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "vpn": "http://pc2.vpn:${MCP_MEETING_PORT:-7208}",
+                "local": "http://localhost:7208"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_MEETING_PORT:-7208}:8008"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "vpn": "http://pc2.vpn:${MCP_MEETING_PORT:-7208}/health",
+                "local": "http://localhost:7208/health"
+              },
+              "container_name": "pc2-mcp-meeting"
+            },
+            "mcp-vaja": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_VAJA_PORT:-7217}:8017"
+              ],
+              "port": 7217,
+              "type": "build",
+              "volumes": [
+                {
+                  "source": "${VAJA_OUTPUT_DIR:-/home/tonezzz/vaja-audio}",
+                  "target": "/output",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "vpn": "http://pc2.vpn:${MCP_VAJA_PORT:-7217}",
+                "local": "http://localhost:7217"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_VAJA_PORT:-7217}:8017"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "vpn": "http://pc2.vpn:${MCP_VAJA_PORT:-7217}/health",
+                "local": "http://localhost:7217/health"
+              },
+              "container_name": "pc2-mcp-vaja"
+            },
+            "mcp-tester": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_TESTER_PORT:-8330}:${MCP_TESTER_PORT:-8330}"
+              ],
+              "port": 8330,
+              "type": "build",
+              "volumes": [
+                {
+                  "source": "${MCP_TESTER_DATA_DIR:-./data/mcp-tester}",
+                  "target": "/data",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "vpn": "http://pc2.vpn:${MCP_TESTER_PORT:-8330}",
+                "local": "http://localhost:8330"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_TESTER_PORT:-8330}:${MCP_TESTER_PORT:-8330}"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "vpn": "http://pc2.vpn:${MCP_TESTER_PORT:-8330}/health",
+                "local": "http://localhost:8330/health"
+              },
+              "container_name": "pc2-mcp-tester"
+            },
+            "mcp-agents": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_AGENTS_PORT:-8046}:8046"
+              ],
+              "port": 8046,
+              "type": "build",
+              "volumes": [
+                {
+                  "source": "${MCP_AGENTS_DATA_DIR:-./data/mcp-agents}",
+                  "target": "/app/data",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "vpn": "http://pc2.vpn:${MCP_AGENTS_PORT:-8046}",
+                "local": "http://localhost:8046"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_AGENTS_PORT:-8046}:8046"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "vpn": "http://pc2.vpn:${MCP_AGENTS_PORT:-8046}/health",
+                "local": "http://localhost:8046/health"
+              },
+              "container_name": "pc2-mcp-agents"
+            },
+            "mcp-playwright": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_PLAYWRIGHT_PORT:-8025}:${MCP_PLAYWRIGHT_PORT:-8025}"
+              ],
+              "port": 8025,
+              "type": "build",
+              "volumes": [
+                {
+                  "source": "${MCP_PLAYWRIGHT_SCENARIOS_DIR:-./data/mcp-playwright/scenarios}",
+                  "target": "/app/scenarios",
+                  "source_kind": "bind"
+                },
+                {
+                  "source": "${MCP_PLAYWRIGHT_OUTPUT_DIR:-./data/mcp-playwright/output}",
+                  "target": "/app/output",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "vpn": "http://pc2.vpn:${MCP_PLAYWRIGHT_PORT:-8025}",
+                "local": "http://localhost:8025"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_PLAYWRIGHT_PORT:-8025}:${MCP_PLAYWRIGHT_PORT:-8025}"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "vpn": "http://pc2.vpn:${MCP_PLAYWRIGHT_PORT:-8025}/health",
+                "local": "http://localhost:8025/health"
+              },
+              "container_name": "pc2-mcp-playwright"
+            },
+            "webtop3": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${WEBTOP3_PORT:-3004}:3000"
+              ],
+              "port": 3004,
+              "container_name": "pc2-webtop3",
+              "type": "build",
+              "volumes": [
+                {
+                  "source": "webtop3-config",
+                  "target": "/config",
+                  "source_kind": "volume"
+                },
+                {
+                  "source": "../idc1-stack/webtop/custom-cont-init.d",
+                  "target": "/custom-cont-init.d",
+                  "mode": "ro",
+                  "source_kind": "bind"
+                },
+                {
+                  "source": "../../",
+                  "target": "/workspaces/chaba",
+                  "mode": "cached",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "vpn": "http://pc2.vpn:${WEBTOP3_PORT:-3004}",
+                "local": "http://localhost:3004"
+              },
+              "ports_map": [
+                {
+                  "raw": "${WEBTOP3_PORT:-3004}:3000"
+                }
+              ]
+            },
+            "mcp-webtop3": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_WEBTOP3_PORT:-8056}:8056"
+              ],
+              "port": 8056,
+              "container_name": "pc2-mcp-webtop3",
+              "type": "build",
+              "volumes": [
+                {
+                  "source": "webtop3-config",
+                  "target": "/webtop-config",
+                  "source_kind": "volume"
+                },
+                {
+                  "source": "${MCP_WEBTOP3_DATA_DIR:-./data/mcp-webtop3}",
+                  "target": "/data",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "vpn": "http://pc2.vpn:${MCP_WEBTOP3_PORT:-8056}",
+                "local": "http://localhost:8056"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_WEBTOP3_PORT:-8056}:8056"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "vpn": "http://pc2.vpn:${MCP_WEBTOP3_PORT:-8056}/health",
+                "local": "http://localhost:8056/health"
+              }
+            },
+            "node-exporter": {
+              "profiles": [
+                "monitoring"
+              ],
+              "ports": [],
+              "type": "image",
+              "volumes": [
+                {
+                  "source": "/",
+                  "target": "/host",
+                  "mode": "ro,rslave",
+                  "source_kind": "bind"
+                }
+              ],
+              "ports_map": [],
+              "container_name": "pc2-node-exporter"
+            },
+            "cadvisor": {
+              "profiles": [
+                "monitoring"
+              ],
+              "ports": [
+                "8080:8080"
+              ],
+              "port": 8080,
+              "type": "image",
+              "volumes": [
+                {
+                  "source": "/",
+                  "target": "/rootfs",
+                  "mode": "ro",
+                  "source_kind": "bind"
+                },
+                {
+                  "source": "/var/run",
+                  "target": "/var/run",
+                  "mode": "ro",
+                  "source_kind": "bind"
+                },
+                {
+                  "source": "/sys",
+                  "target": "/sys",
+                  "mode": "ro",
+                  "source_kind": "bind"
+                },
+                {
+                  "source": "/var/lib/docker/",
+                  "target": "/var/lib/docker",
+                  "mode": "ro",
+                  "source_kind": "bind"
+                }
+              ],
+              "endpoints": {
+                "vpn": "http://pc2.vpn:8080",
+                "local": "http://localhost:8080"
+              },
+              "ports_map": [],
+              "container_name": "pc2-cadvisor"
+            }
+          }
+        }
+      },
+      "capability": {
+        "public_ip": false
+      },
+      "ports": {
+        "redis": [
+          "${REDIS_PORT:-6379}:6379"
+        ],
+        "dev-proxy": [
+          "19081:80",
+          "3100:443"
+        ],
+        "mcp-docker": [
+          "${MCP_DOCKER_PORT:-8340}:${MCP_DOCKER_PORT:-8340}"
+        ],
+        "mcp0": [
+          "${MCP0_PORT:-8310}:${MCP0_PORT:-8310}"
+        ],
+        "mcp-glama": [
+          "${MCP_GLAMA_PORT:-7214}:8014"
+        ],
+        "mcp-instrans": [
+          "${MCP_INSTRANS_PORT:-7216}:3100"
+        ],
+        "mcp-meeting": [
+          "${MCP_MEETING_PORT:-7208}:8008"
+        ],
+        "mcp-vaja": [
+          "${MCP_VAJA_PORT:-7217}:8017"
+        ],
+        "mcp-tester": [
+          "${MCP_TESTER_PORT:-8330}:${MCP_TESTER_PORT:-8330}"
+        ],
+        "mcp-agents": [
+          "${MCP_AGENTS_PORT:-8046}:8046"
+        ],
+        "mcp-playwright": [
+          "${MCP_PLAYWRIGHT_PORT:-8025}:${MCP_PLAYWRIGHT_PORT:-8025}"
+        ],
+        "webtop3": [
+          "${WEBTOP3_PORT:-3004}:3000"
+        ],
+        "mcp-webtop3": [
+          "${MCP_WEBTOP3_PORT:-8056}:8056"
+        ],
+        "cadvisor": [
+          "8080:8080"
+        ]
+      },
+      "ports_map": {
+        "redis": [
+          {
+            "raw": "${REDIS_PORT:-6379}:6379",
+            "raw_host": "${REDIS_PORT",
+            "raw_container": "-6379}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "dev-proxy": [
+          {
+            "raw": "19081:80",
+            "raw_host": "19081",
+            "raw_container": "80",
+            "host": 19081,
+            "container": 80,
+            "scheme": "http"
+          },
+          {
+            "raw": "3100:443",
+            "raw_host": "3100",
+            "raw_container": "443",
+            "host": 3100,
+            "container": 443,
+            "scheme": "https"
+          }
+        ],
+        "mcp-docker": [
+          {
+            "raw": "${MCP_DOCKER_PORT:-8340}:${MCP_DOCKER_PORT:-8340}",
+            "raw_host": "${MCP_DOCKER_PORT",
+            "raw_container": "-8340}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp0": [
+          {
+            "raw": "${MCP0_PORT:-8310}:${MCP0_PORT:-8310}",
+            "raw_host": "${MCP0_PORT",
+            "raw_container": "-8310}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp-glama": [
+          {
+            "raw": "${MCP_GLAMA_PORT:-7214}:8014",
+            "raw_host": "${MCP_GLAMA_PORT",
+            "raw_container": "-7214}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp-instrans": [
+          {
+            "raw": "${MCP_INSTRANS_PORT:-7216}:3100",
+            "raw_host": "${MCP_INSTRANS_PORT",
+            "raw_container": "-7216}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp-meeting": [
+          {
+            "raw": "${MCP_MEETING_PORT:-7208}:8008",
+            "raw_host": "${MCP_MEETING_PORT",
+            "raw_container": "-7208}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp-vaja": [
+          {
+            "raw": "${MCP_VAJA_PORT:-7217}:8017",
+            "raw_host": "${MCP_VAJA_PORT",
+            "raw_container": "-7217}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp-tester": [
+          {
+            "raw": "${MCP_TESTER_PORT:-8330}:${MCP_TESTER_PORT:-8330}",
+            "raw_host": "${MCP_TESTER_PORT",
+            "raw_container": "-8330}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp-agents": [
+          {
+            "raw": "${MCP_AGENTS_PORT:-8046}:8046",
+            "raw_host": "${MCP_AGENTS_PORT",
+            "raw_container": "-8046}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp-playwright": [
+          {
+            "raw": "${MCP_PLAYWRIGHT_PORT:-8025}:${MCP_PLAYWRIGHT_PORT:-8025}",
+            "raw_host": "${MCP_PLAYWRIGHT_PORT",
+            "raw_container": "-8025}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "webtop3": [
+          {
+            "raw": "${WEBTOP3_PORT:-3004}:3000",
+            "raw_host": "${WEBTOP3_PORT",
+            "raw_container": "-3004}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp-webtop3": [
+          {
+            "raw": "${MCP_WEBTOP3_PORT:-8056}:8056",
+            "raw_host": "${MCP_WEBTOP3_PORT",
+            "raw_container": "-8056}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "cadvisor": [
+          {
+            "raw": "8080:8080",
+            "raw_host": "8080",
+            "raw_container": "8080",
+            "host": 8080,
+            "container": 8080,
+            "scheme": "http"
+          }
+        ]
+      }
+    }
+  }
+}
