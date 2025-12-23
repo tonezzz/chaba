@@ -79,31 +79,6 @@ Prereqs:
 4. **Monitoring**: `node-exporter`/`cAdvisor` require shared-mount access to `/`. WSL2 defaults prevent this, so keep the `monitoring` profile disabled for now; revisit when we run these containers on a native Linux host or enable `mount --make-rshared /`.
 5. **Backups**: persist volumes under `~/stacks/pc2-worker/data`; snapshot via `tar czf backups/pc2-worker-data-$(date +%Y%m%d).tgz data/`.
 
-## 1MCP Agent (pc2-worker)
-
-The `1mcp-agent` service aggregates multiple MCP backends (currently `filesystem` + `docker`) behind a single HTTP endpoint.
-
-### Start
-
-From `stacks/pc2-worker/`:
-
-- `docker compose --profile mcp-suite up -d --build 1mcp-agent`
-
-### Verify
-
-- OAuth/status dashboard:
-  - `http://127.0.0.1:3050/oauth`
-- Both `filesystem` and `docker` should show as `Connected`.
-
-Note: the agent starts in a synchronous loading mode and may take ~30-90s on first boot while `docker-mcp` initializes.
-
-### Windsurf
-
-Point Windsurf at the aggregated endpoint (example):
-
-- `C:\Users\Admin\.codeium\windsurf\mcp_config.json`
-  - `url: http://127.0.0.1:3050/mcp?app=windsurf`
-
 ### Secret Management Workflow (pc2-worker)
 1. **Authoritative template**: `stacks/pc2-worker/.env.example` stays in git with `__REPLACE_ME__` placeholders.
 2. **Private overrides**: create an untracked file such as `stacks/pc2-worker/.env.local` or a secrets bundle (`.secrets/.env/tony.env`) containing real values (MCP0 admin token, API keys, etc.).

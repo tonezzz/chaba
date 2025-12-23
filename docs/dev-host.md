@@ -46,7 +46,7 @@ The Express gateway lives in `sites/dev-host/src/server.js`. It provides:
 | `/test/detects/api/*` | `DETECTS_PROXY_TARGET` or `DEV_HOST_DETECTS_TARGET` | `http://host.docker.internal:4120` | Forwards to detects service. |
 | `/test/agents/api/*` | `AGENTS_PROXY_TARGET` or `DEV_HOST_AGENTS_TARGET` | `http://127.0.0.1:4060` | Internal Agents API / observability surface. |
 | `/test/vaja/api/*` | `VAJA_PROXY_TARGET` or `DEV_HOST_VAJA_TARGET` | `http://host.docker.internal:7217` | Thai TTS service. |
-| `/test/mcp0/*` | `MCP0_PROXY_TARGET` or `DEV_HOST_MCP0_TARGET` | `http://host.docker.internal:8310` | MCP0 admin/API passthrough. |
+| `/test/mcp0/*` | `MCP0_PROXY_TARGET` or `DEV_HOST_MCP0_TARGET` | `http://host.docker.internal:8351` | MCP0 admin/API passthrough. |
 | `/test/imagen/api/*` | `IMAGEN_PROXY_TARGET` or `DEV_HOST_IMAGEN_TARGET` | `http://127.0.0.1:8001` | Imagen MCP preview + health checks. |
 
 > **Canonical preview URL:** On pc1 the gateway is always available at `http://dev-host.pc1/test/`. Use that host when sharing preview links (e.g., `http://dev-host.pc1/test/detects/`, `http://dev-host.pc1/test/agents/`, `http://dev-host.pc1/test/agens/`).

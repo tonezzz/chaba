@@ -2,9 +2,28 @@
 
 ## SSL quick reference
 
+## Ingress (default)
+
+- **HTTP/HTTPS ingress (default)**: Host Caddy is the first receiver for inbound web traffic and should own `80/tcp` + `443/tcp` on hosts that act as public HTTP/HTTPS entrypoints.
+- **Routing**: Caddy terminates TLS (when applicable) and routes by hostname/path via `reverse_proxy` to internal services (Docker or host processes).
+- **Exceptions**:
+  - VPN-only / dev environments may terminate HTTPS in a container (e.g. `pc1-stack` Caddy, `pc2-worker` dev-proxy).
+  - Non-HTTP(S) ingress (SSH, WireGuard, custom TCP/UDP ports) is controlled by whatever service binds that port or receives DNAT/forwarded traffic.
+
+### VPN hostnames: host Caddy -> per-stack Caddy (Windows)
+
+- **Goal**: Host Caddy owns `80/443` and terminates TLS (`tls internal`) for `*.pc1.vpn` / `*.pc2.vpn`, then forwards to a stack-local Caddy which handles all internal routing.
+- **Hostname convention**:
+  - `<stack>.pc1.vpn` and `*. <stack>.pc1.vpn` route to the `pc1` stack ingress.
+  - `<stack>.pc2.vpn` and `*. <stack>.pc2.vpn` route to the `pc2` stack ingress.
+- **Upstream ports (examples)**:
+  - `pc1-stack` stack Caddy: `127.0.0.1:18081` (published as `18081:80`)
+  - `pc2-worker` stack Caddy: `127.0.0.1:19081` (published as `19081:80`)
+  - `app-demo` stack Caddy: `127.0.0.1:${APP_DEMO_HTTP_PORT}` (published as `${APP_DEMO_HTTP_PORT}:80`)
+
 ### Production (idc1 / a1-idc1)
 - **Front-end**: Caddy 2 running on the idc1 VM via systemd, using the configs under `sites/a1-idc1/config/Caddyfile*` which expose `idc1.surf-thailand.com` and `a1.idc1.surf-thailand.com` with automatic HTTPS handling.@sites/a1-idc1/config/Caddyfile#1-38@sites/a1-idc1/config/Caddyfile.remote#58-69
-- **DNS**: `A` records for both hostnames point to `103.245.164.48`. Keep TTL ≤ 300 s when rotating certificates so ACME challenges see updates quickly.
+- **DNS**: `A` records for both hostnames point to `103.245.164.48`. Keep TTL ≤ 300s when rotating certificates so ACME challenges see updates quickly.
 - **Provisioning workflow**:
   1. Install the official Caddy repo (`apt install -y debian-keyring debian-archive-keyring && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg`, then `apt install caddy`).
   2. Copy the desired Caddyfile from `sites/a1-idc1/config/` to `/etc/caddy/Caddyfile` and reload via `sudo systemctl reload caddy`.
@@ -42,16 +61,6 @@
 > - Running `mkcert` only inside WSL meant Windows trusted nothing; Edge kept throwing `NET::ERR_CERT_AUTHORITY_INVALID`. Installing the root in Windows’ trust store fixed it.
 > - Caddy’s container could not read the certs when we stored them on the Windows side (`/mnt/c/...`). Copying them into the WSL home directory and setting `chmod 600` allowed the `caddy` process to load the keys.
 > - After resuming from sleep the WSL clock drifted, causing TLS handshakes to fail with `certificate has expired` even though the cert was new. `wsl --shutdown` (or `sudo hwclock -s`) re-synced the clock and the errors disappeared.
-
-## Webtops / Windsurf runtime caching
-
-Windsurf is installed at runtime (pinned version) inside each webtop session container, but downloads are cached in a shared Docker volume so new sessions do not re-download the `.deb`.
-
-- **Shared cache volume**: `WEBTOPS_WINDSURF_CACHE_VOLUME` (default: `webtops_windsurf_cache`)
-- **Mount path inside session**: `WEBTOPS_WINDSURF_CACHE_MOUNT_PATH` (default: `/windsurf-cache`)
-- **Runtime installer cache root** (inside the session container): `WINDSURF_CACHE_ROOT=/windsurf-cache`
-
-This keeps the "stable tag" workflow (image points to `webtops-windsurf-runtime:stable`, version is pinned via env var) while allowing fast session creation after the first download on a host.
 
 ### Checklist
 - Confirm DNS records + firewall rules (ports 80/443) before touching certificates.
@@ -170,6 +179,33 @@ Use this pattern for any remote command to avoid PowerShell quoting issues (espe
  - Fix:
    - `cd /home/chaba/chaba/stacks/idc1-stack && docker compose --profile vpn up -d --force-recreate wg-easy wg-dns`
 
+### VPN stack quickstart (idc1)
+Start/recreate VPN services:
+- `cd /home/chaba/chaba/stacks/idc1-stack && docker compose --profile vpn up -d --force-recreate wg-easy wg-dns`
+
+Verify (client):
+- `nslookup idc1.vpn 10.8.0.1`
+- `nslookup mcp0.idc1.vpn 10.8.0.1`
+- `ssh chaba@idc1.vpn`
+- `curl -sf http://mcp0.idc1.vpn:${MCP_DOCKER_PORT:-8340}/health`
+
+## SSH over VPN (idc1.vpn)
+`idc1.vpn` resolves to `10.8.0.1`, which is the `wg0` IP **inside** the `idc1-wg-easy` container.
+
+Because host `sshd` is not bound to `10.8.0.1` (the host typically has no `wg0`), `idc1.vpn:22` must be forwarded from the wg-easy container to the host.
+
+Default behavior:
+- `idc1.vpn:22` is forwarded to host `sshd` using `iptables` DNAT rules applied by wg-easy on interface up (`WG_POST_UP` in `stacks/idc1-stack/docker-compose.yml`).
+
+Notes:
+- The forwarding target is `${WG_EASY_HOST_GW:-172.20.0.1}` (Docker host gateway as seen from inside the `idc1-wg-easy` container). If the Docker bridge gateway differs on your host, set `WG_EASY_HOST_GW` in `stacks/idc1-stack/.env`.
+
+Recovery:
+- If `ssh chaba@idc1.vpn` returns `Connection refused` after recreating/restarting `wg-easy`, recreate the VPN services so `WG_POST_UP` runs:
+  - `cd /home/chaba/chaba/stacks/idc1-stack && docker compose --profile vpn up -d --force-recreate wg-easy wg-dns`
+- Fallback (if you need to patch a running system without recreating containers):
+  - `scripts/idc1-fix-mcp0-vpn.sh`
+
 ## Windows SSH key ACL fix
  When NTFS permissions prevent WSL/OpenSSH from using a private key (the “UNPROTECTED PRIVATE KEY FILE” error), run the following in an elevated PowerShell session. This consistently resets ownership and grants read-only access to the current user:
 
@@ -187,8 +223,23 @@ icacls "C:\chaba\.secrets\pc1\chaba2\.ssh\chaba_ed25519" /grant:r "$($acct):(R)"
 
 After running these commands, retry the SSH command from WSL.
 
+## services_map.json metadata (optional)
+`docs/services_map.json` can include additional optional metadata to help with operations/debugging without changing how stacks run:
+- `hosts.<host>.repos`: repo checkout locations on that host
+- `containers.<name>.source`: build/image origin (e.g. image name)
+- `containers.<name>.runtime`: runtime constraints (e.g. `network_mode`, `cap_add`)
+- `containers.<name>.notes`: short human notes (e.g. special routing/forwarding)
+
+## System inventory (recommended)
+As the repo grows, service inventory should live in per-host files under `docs/system-inventory/`:
+- `docs/system-inventory/services_idc1.json`
+- `docs/system-inventory/services_pc1.json`
+- `docs/system-inventory/services_pc2.json`
+
+Keep `docs/services_map.json` as a small index / compatibility layer that points to the per-host files (and optionally a compiled `hosts` map if older tooling requires it).
+
 ## Webtop UID/GID mapping (idc1-stack)
-LinuxServer `webtop` runs processes as user `abc` inside the container. To avoid permission issues when editing the repo bind mount (`/workspaces/chaba`), configure the container UID/GID to match the host user.
+ LinuxServer `webtop` runs processes as user `abc` inside the container. To avoid permission issues when editing the repo bind mount (`/workspaces/chaba`), configure the container UID/GID to match the host user.
 
 - `.env` (gitignored) should include:
   - `WEBTOP_PUID=1000`
@@ -210,6 +261,17 @@ Verification notes:
 docker exec -it idc1-webtop2 id abc
 docker exec -it --user 1000:1000 idc1-webtop2 id
 ```
+
+## pc1-stack webtop sessions (multi-user / isolated)
+pc1 keeps only the `mcp-webtop*` helpers for managing persistent webtop `/config` volumes (export/import). The Webtop UI containers are not part of `pc1-stack`.
+
+### Sessions
+- **mcp-webtop2**
+  - config volume: `webtop2-config`
+  - config API: `mcp-webtop2` on `http://pc1.vpn:8055`
+- **mcp-webtop3**
+  - config volume: `webtop3-config`
+  - config API: `mcp-webtop3` on `http://pc1.vpn:8056`
 
 ### pc1-stack Caddy (VPN HTTPS, tls internal) — key workflow
 pc1 runs Caddy as a Docker container (`pc1-caddy`) with an internal CA (`tls internal`) to provide HTTPS for VPN hostnames.
@@ -254,66 +316,6 @@ Notes:
 
 Security note:
 - If any secret/token was ever pasted into a file or terminal output during setup, rotate it (treat it as compromised) and keep tokens only in env vars / `.secrets/` (never committed).
-
-## Webtops / Windsurf user config persistence
-
-Windsurf stores its user profile data inside the session `/config` volume. Starting a fresh session creates a fresh `/config`, so Windsurf will start with a blank profile unless you restore/copy the profile data.
-
-The Webtops control panel session list includes `Created` and `Profile` columns. The Create Session form defaults to `user_id=tony` and `profile=windsurf`.
-
-### Preferred: snapshot + restore
-
-1. Create a snapshot from a session:
-
-```powershell
-$body=@{ tool='create_snapshot'; arguments=@{ session_id='sess_...' ; options=@{} } } | ConvertTo-Json -Compress
-Invoke-RestMethod -Method Post -Uri http://localhost:8091/invoke -ContentType 'application/json' -Body $body
-```
-
-2. Restore into a new session:
-
-```powershell
-$body=@{ tool='restore_snapshot'; arguments=@{ user_id='demo'; snapshot_id='snap_...'; options=@{ profile='windsurf' } } } | ConvertTo-Json -Compress
-Invoke-RestMethod -Method Post -Uri http://localhost:8091/invoke -ContentType 'application/json' -Body $body
-```
-
-### Manual: copy Windsurf profile between session volumes
-
-If you need to extract data from an older session and move it into a new session, copy the Windsurf folders volume-to-volume (avoids PowerShell pipe corruption from tar streams).
-
-Common Windsurf folders inside `/config`:
-- `/config/.config/Windsurf`
-- `/config/.windsurf`
-- `/config/.codeium/windsurf`
-
-Volume-to-volume copy helper (example):
-
-```powershell
-$script = @'
-set -e
-copy_dir() {
-  src="$1"; dst="$2"
-  if [ -e "$src" ]; then
-    rm -rf "$dst"
-    mkdir -p "$(dirname "$dst")"
-    cp -a "$src" "$(dirname "$dst")/"
-  fi
-}
-copy_dir /from/.config/Windsurf /to/.config/Windsurf
-copy_dir /from/.windsurf /to/.windsurf
-copy_dir /from/.codeium/windsurf /to/.codeium/windsurf
-'@
-
-$b64=[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes(($script -replace "`r","")))
-docker run --rm -v <SOURCE_CONFIG_VOLUME>:/from -v <TARGET_CONFIG_VOLUME>:/to alpine sh -lc "echo $b64 | base64 -d | sh"
-```
-
-After copying, ensure ownership is correct in the target session (LinuxServer uses user `abc`):
-
-```powershell
-docker exec <target-container> bash -lc "chown -R abc:abc /config/.config/Windsurf /config/.windsurf /config/.codeium/windsurf 2>/dev/null || true"
-```
-
 ## Detects vision API (`/test/detects`)
 
 - **Source layout**: UI lives in `sites/a1-idc1/test/detects/`; the Glama vision proxy/API is `sites/a1-idc1/api/detects/` with its `.env` (GLAMA_URL/KEY, model, prompt, etc.).@sites/a1-idc1/api/detects/src/server.js#1-184

@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/services_map.schema.json",
+  "title": "Services Map",
+  "type": "object",
+  "required": ["hosts"],
+  "properties": {
+    "hosts": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["url", "stacks"],
+        "properties": {
+          "url": {
+            "type": "object",
+            "required": ["host_vpn", "host_www"],
+            "properties": {
+              "host_vpn": { "type": "string", "minLength": 1 },
+              "host_www": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          },
+          "stacks": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": {
+              "type": "object",
+              "required": ["info", "containers"],
+              "properties": {
+                "info": {
+                  "type": "object",
+                  "required": ["path"],
+                  "properties": {
+                    "path": { "type": "string", "minLength": 1 },
+                    "compose": { "type": "string" }
+                  },
+                  "additionalProperties": true
+                },
+                "containers": {
+                  "type": "object",
+                  "minProperties": 0,
+                  "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                      "profiles": { "type": "array", "items": { "type": "string" } },
+                      "ports": { "type": "array", "items": { "type": ["string", "number", "object"] } },
+                      "ports_map": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "raw": { "type": "string" },
+                            "raw_host": { "type": "string" },
+                            "raw_container": { "type": "string" },
+                            "host": { "type": ["integer", "null"] },
+                            "container": { "type": ["integer", "null"] },
+                            "scheme": { "type": ["string", "null"], "enum": ["http", "https", null] }
+                          },
+                          "anyOf": [
+                            { "required": ["raw"] },
+                            { "required": ["raw_host", "raw_container"] }
+                          ]
+                        }
+                      },
+                      "port": { "type": ["integer", "string"] },
+                      "endpoints": {
+                        "type": "object",
+                        "properties": {
+                          "www": { "type": "string", "minLength": 1 },
+                          "vpn": { "type": "string", "minLength": 1 },
+                          "local": { "type": "string", "minLength": 1 }
+                        },
+                        "additionalProperties": false
+                      },
+                      "health_path": { "type": ["string", "null"] },
+                      "health_urls": {
+                        "type": "object",
+                        "properties": {
+                          "www": { "type": "string" },
+                          "vpn": { "type": "string" },
+                          "local": { "type": "string" }
+                        },
+                        "additionalProperties": false
+                      },
+                      "volumes": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": ["source", "target", "source_kind"],
+                          "properties": {
+                            "source": { "type": "string" },
+                            "target": { "type": "string" },
+                            "mode": { "type": "string" },
+                            "source_kind": { "type": "string", "enum": ["bind", "volume"] }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "container_name": { "type": "string" },
+                      "type": { "type": "string", "enum": ["build", "image"] }
+                    },
+                    "additionalProperties": true
+                  }
+                }
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false
+}
