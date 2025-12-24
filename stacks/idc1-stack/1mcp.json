@@ -17,15 +17,6 @@
       "restartOnExit": true,
       "restartDelay": 2000
     },
-    "fetch": {
-      "command": "uvx",
-      "args": ["mcp-server-fetch"],
-      "tags": ["fetch", "web"],
-      "connectionTimeout": 30000,
-      "requestTimeout": 120000,
-      "restartOnExit": true,
-      "restartDelay": 1000
-    },
     "github": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-github"],
@@ -37,7 +28,7 @@
       "restartDelay": 1000
     },
     "glama": {
-      "url": "http://mcp-glama:8014/mcp/",
+      "url": "http://mcp-glama:8014/mcp",
       "type": "streamableHttp",
       "tags": ["glama"],
       "connectionTimeout": 30000,
@@ -45,6 +36,7 @@
     },
     "mcp-memory": {
       "url": "http://mcp-memory-bridge:8470/mcp",
+      "type": "streamableHttp",
       "tags": ["memory"],
       "connectionTimeout": 30000,
       "requestTimeout": 120000
