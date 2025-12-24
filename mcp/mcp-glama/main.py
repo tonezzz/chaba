@@ -9,7 +9,7 @@ import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, root_validator, validator
 
 load_dotenv()
 
@@ -54,9 +54,21 @@ class ChatMessage(BaseModel):
 
 class InvokeArguments(BaseModel):
     messages: List[ChatMessage]
+    system_prompt: Optional[str] = None
     model: Optional[str] = None
     max_tokens: Optional[int] = Field(default=None, alias="maxTokens")
     temperature: Optional[float] = None
+
+    class Config:
+        populate_by_name = True
+
+    @root_validator(pre=True)
+    def _normalize_system_prompt(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if not isinstance(values, dict):
+            return values
+        if values.get("system_prompt") is None and values.get("systemPrompt") is not None:
+            values["system_prompt"] = values.get("systemPrompt")
+        return values
 
 
 class InvokePayload(BaseModel):
@@ -88,6 +100,8 @@ def _mcp_tools_list() -> List[Dict[str, Any]]:
             "inputSchema": {
                 "type": "object",
                 "properties": {
+                    "system_prompt": {"type": "string"},
+                    "systemPrompt": {"type": "string"},
                     "messages": {
                         "type": "array",
                         "items": {
@@ -192,6 +206,8 @@ def tool_definitions() -> List[Dict[str, Any]]:
             "input_schema": {
                 "type": "object",
                 "properties": {
+                    "system_prompt": {"type": "string"},
+                    "systemPrompt": {"type": "string"},
                     "messages": {
                         "type": "array",
                         "items": {
@@ -218,6 +234,10 @@ async def call_glama(arguments: InvokeArguments) -> Dict[str, Any]:
     if not glama_ready():
         raise HTTPException(status_code=503, detail="glama_unconfigured")
 
+    messages = [message.dict() for message in arguments.messages]
+    if isinstance(arguments.system_prompt, str) and arguments.system_prompt.strip():
+        messages = [{"role": "system", "content": arguments.system_prompt.strip()}, *messages]
+
     payload = {
         "model": (arguments.model or GLAMA_MODEL_DEFAULT).strip() or GLAMA_MODEL_DEFAULT,
         "max_tokens": arguments.max_tokens or GLAMA_MAX_TOKENS_DEFAULT,
@@ -226,7 +246,7 @@ async def call_glama(arguments: InvokeArguments) -> Dict[str, Any]:
             if isinstance(arguments.temperature, (int, float))
             else GLAMA_TEMPERATURE_DEFAULT
         ),
-        "messages": [message.dict() for message in arguments.messages],
+        "messages": messages,
     }
 
     headers = {

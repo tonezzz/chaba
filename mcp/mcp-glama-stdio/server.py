@@ -53,6 +53,8 @@ async def handle_list_tools() -> List[types.Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
+                    "system_prompt": {"type": "string"},
+                    "systemPrompt": {"type": "string"},
                     "messages": {
                         "type": "array",
                         "minItems": 1,
@@ -81,6 +83,12 @@ async def _call_glama(payload: Dict[str, Any]) -> Dict[str, Any]:
     messages = payload.get("messages")
     if not isinstance(messages, list) or not messages:
         raise ValueError("messages is required")
+
+    system_prompt = payload.get("system_prompt")
+    if system_prompt is None:
+        system_prompt = payload.get("systemPrompt")
+    if isinstance(system_prompt, str) and system_prompt.strip():
+        messages = [{"role": "system", "content": system_prompt.strip()}, *messages]
 
     model = (payload.get("model") or GLAMA_MODEL_DEFAULT).strip() or GLAMA_MODEL_DEFAULT
     max_tokens = payload.get("max_tokens") or GLAMA_MAX_TOKENS_DEFAULT

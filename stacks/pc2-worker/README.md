@@ -36,3 +36,4 @@ Note: for VPN usage, this endpoint is currently HTTP-only (do not use HTTPS).
 ## Notes
 - `1mcp-agent` config lives in `stacks/pc2-worker/1mcp.json`.
 - Glama is configured as `glama` (HTTP/Streamable) in `1mcp.json`.
+- For `mcp-glama` `chat_completion`, prefer `system_prompt` (snake_case). `systemPrompt` (camelCase) is still accepted for backwards compatibility.
