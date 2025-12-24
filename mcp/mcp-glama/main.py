@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import os
 from datetime import datetime, timezone
+import time
+from statistics import mean
 from typing import Any, Dict, List, Optional
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, validator
 
@@ -52,15 +54,97 @@ class ChatMessage(BaseModel):
 
 
 class InvokeArguments(BaseModel):
-    messages: List[ChatMessage]
+    messages: Optional[List[ChatMessage]] = None
+    prompt: Optional[str] = None
+    system_prompt: Optional[str] = Field(default=None, alias="systemPrompt")
     model: Optional[str] = None
     max_tokens: Optional[int] = Field(default=None, alias="maxTokens")
     temperature: Optional[float] = None
+
+    @validator("prompt")
+    def validate_prompt(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        text = (value or "").strip()
+        if not text:
+            raise ValueError("prompt cannot be empty")
+        return text
+
+    @validator("system_prompt")
+    def validate_system_prompt(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        text = (value or "").strip()
+        if not text:
+            raise ValueError("system_prompt cannot be empty")
+        return text
+
+    @validator("messages", always=True)
+    def validate_one_of_messages_or_prompt(
+        cls, value: Optional[List[ChatMessage]], values: Dict[str, Any]
+    ) -> Optional[List[ChatMessage]]:
+        prompt = values.get("prompt")
+        if (not value or len(value) == 0) and not prompt:
+            raise ValueError("Either 'messages' or 'prompt' is required")
+        if value and prompt:
+            raise ValueError("Provide either 'messages' or 'prompt', not both")
+        return value
 
 
 class InvokePayload(BaseModel):
     tool: str
     arguments: InvokeArguments
+
+
+class BenchmarkArguments(BaseModel):
+    models: List[str] = Field(..., min_items=1)
+    trials: int = Field(default=1, ge=1, le=10)
+    messages: Optional[List[ChatMessage]] = None
+    prompt: Optional[str] = None
+    system_prompt: Optional[str] = Field(default=None, alias="systemPrompt")
+    max_tokens: Optional[int] = Field(default=None, alias="maxTokens")
+    temperature: Optional[float] = None
+
+    @validator("models")
+    def validate_models(cls, value: List[str]) -> List[str]:
+        cleaned = [item.strip() for item in (value or []) if isinstance(item, str) and item.strip()]
+        if not cleaned:
+            raise ValueError("models cannot be empty")
+        return cleaned
+
+    @validator("prompt")
+    def validate_prompt(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        text = (value or "").strip()
+        if not text:
+            raise ValueError("prompt cannot be empty")
+        return text
+
+    @validator("system_prompt")
+    def validate_system_prompt(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        text = (value or "").strip()
+        if not text:
+            raise ValueError("system_prompt cannot be empty")
+        return text
+
+    @validator("messages", always=True)
+    def validate_one_of_messages_or_prompt(
+        cls, value: Optional[List[ChatMessage]], values: Dict[str, Any]
+    ) -> Optional[List[ChatMessage]]:
+        prompt = values.get("prompt")
+        if (not value or len(value) == 0) and not prompt:
+            raise ValueError("Either 'messages' or 'prompt' is required")
+        if value and prompt:
+            raise ValueError("Provide either 'messages' or 'prompt', not both")
+        return value
+
+
+class BenchmarkPayload(BaseModel):
+    tool: str
+    arguments: BenchmarkArguments
 
 
 app = FastAPI(title=APP_NAME, version=APP_VERSION)
@@ -84,6 +168,8 @@ def tool_definitions() -> List[Dict[str, Any]]:
             "input_schema": {
                 "type": "object",
                 "properties": {
+                    "prompt": {"type": "string", "minLength": 1},
+                    "system_prompt": {"type": "string", "minLength": 1},
                     "messages": {
                         "type": "array",
                         "items": {
@@ -100,15 +186,53 @@ def tool_definitions() -> List[Dict[str, Any]]:
                     "max_tokens": {"type": "integer", "minimum": 1},
                     "temperature": {"type": "number", "minimum": 0, "maximum": 2},
                 },
-                "required": ["messages"],
+                "anyOf": [{"required": ["messages"]}, {"required": ["prompt"]}],
             },
         }
+        ,
+        {
+            "name": "benchmark_models",
+            "description": "Benchmark Glama model availability and latency using a fixed prompt/messages input.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "models": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1},
+                    "trials": {"type": "integer", "minimum": 1, "maximum": 10, "default": 1},
+                    "prompt": {"type": "string", "minLength": 1},
+                    "system_prompt": {"type": "string", "minLength": 1},
+                    "messages": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "role": {"type": "string", "enum": ["user", "assistant", "system"]},
+                                "content": {"type": "string"},
+                            },
+                            "required": ["role", "content"],
+                        },
+                        "minItems": 1,
+                    },
+                    "max_tokens": {"type": "integer", "minimum": 1},
+                    "temperature": {"type": "number", "minimum": 0, "maximum": 2},
+                },
+                "required": ["models"],
+                "anyOf": [{"required": ["messages"]}, {"required": ["prompt"]}],
+            },
+        },
     ]
 
 
 async def call_glama(arguments: InvokeArguments) -> Dict[str, Any]:
     if not glama_ready():
         raise HTTPException(status_code=503, detail="glama_unconfigured")
+
+    if arguments.prompt:
+        messages: List[ChatMessage] = []
+        if arguments.system_prompt:
+            messages.append(ChatMessage(role="system", content=arguments.system_prompt))
+        messages.append(ChatMessage(role="user", content=arguments.prompt))
+    else:
+        messages = list(arguments.messages or [])
 
     payload = {
         "model": (arguments.model or GLAMA_MODEL_DEFAULT).strip() or GLAMA_MODEL_DEFAULT,
@@ -118,7 +242,7 @@ async def call_glama(arguments: InvokeArguments) -> Dict[str, Any]:
             if isinstance(arguments.temperature, (int, float))
             else GLAMA_TEMPERATURE_DEFAULT
         ),
-        "messages": [message.dict() for message in arguments.messages],
+        "messages": [message.dict() for message in messages],
     }
 
     headers = {
@@ -144,6 +268,82 @@ async def call_glama(arguments: InvokeArguments) -> Dict[str, Any]:
     return {
         "response": combined_text,
         "raw": data,
+    }
+
+
+async def benchmark_models(arguments: BenchmarkArguments) -> Dict[str, Any]:
+    if not glama_ready():
+        raise HTTPException(status_code=503, detail="glama_unconfigured")
+
+    base_args = InvokeArguments(
+        messages=arguments.messages,
+        prompt=arguments.prompt,
+        systemPrompt=arguments.system_prompt,
+        maxTokens=arguments.max_tokens,
+        temperature=arguments.temperature,
+    )
+
+    results: List[Dict[str, Any]] = []
+
+    for model in arguments.models:
+        model_entry: Dict[str, Any] = {
+            "model": model,
+            "ok": False,
+            "error": None,
+            "trials": [],
+            "latency_ms": None,
+        }
+
+        latencies: List[int] = []
+        try:
+            for _ in range(arguments.trials):
+                started = time.perf_counter()
+                out = await call_glama(
+                    InvokeArguments(
+                        messages=base_args.messages,
+                        prompt=base_args.prompt,
+                        systemPrompt=base_args.system_prompt,
+                        model=model,
+                        maxTokens=base_args.max_tokens,
+                        temperature=base_args.temperature,
+                    )
+                )
+                elapsed_ms = int((time.perf_counter() - started) * 1000)
+                latencies.append(elapsed_ms)
+                model_entry["trials"].append(
+                    {
+                        "ok": True,
+                        "latency_ms": elapsed_ms,
+                        "response_len": len(out.get("response") or ""),
+                    }
+                )
+
+            model_entry["ok"] = True
+            model_entry["latency_ms"] = int(mean(latencies)) if latencies else None
+        except Exception as exc:  # noqa: BLE001
+            model_entry["error"] = str(exc)
+            model_entry["trials"].append(
+                {
+                    "ok": False,
+                    "latency_ms": None,
+                    "error": str(exc),
+                }
+            )
+
+        results.append(model_entry)
+
+    ok_models = [item for item in results if item.get("ok")]
+    best_latency = None
+    if ok_models:
+        best_latency = sorted(ok_models, key=lambda item: item.get("latency_ms") or 10**12)[0].get("model")
+
+    return {
+        "models": results,
+        "summary": {
+            "best_by_latency": best_latency,
+            "ok_count": len(ok_models),
+            "total": len(results),
+        },
     }
 
 
@@ -176,15 +376,17 @@ async def well_known_manifest() -> Dict[str, Any]:
 
 
 @app.post("/invoke")
-async def invoke(payload: InvokePayload) -> Dict[str, Any]:
-    if payload.tool != "chat_completion":
-        raise HTTPException(status_code=404, detail=f"unknown tool '{payload.tool}'")
-
-    result = await call_glama(payload.arguments)
-    return {
-        "tool": payload.tool,
-        "result": result,
-    }
+async def invoke(payload: Dict[str, Any] = Body(...)) -> Dict[str, Any]:
+    tool = (payload or {}).get("tool")
+    if tool == "chat_completion":
+        parsed = InvokePayload(**payload)
+        result = await call_glama(parsed.arguments)
+        return {"tool": parsed.tool, "result": result}
+    if tool == "benchmark_models":
+        parsed = BenchmarkPayload(**payload)
+        result = await benchmark_models(parsed.arguments)
+        return {"tool": parsed.tool, "result": result}
+    raise HTTPException(status_code=404, detail=f"unknown tool '{tool}'")
 
 
 @app.get("/")

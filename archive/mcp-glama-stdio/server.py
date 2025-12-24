@@ -53,6 +53,8 @@ async def handle_list_tools() -> List[types.Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
+                    "prompt": {"type": "string", "minLength": 1},
+                    "system_prompt": {"type": "string", "minLength": 1},
                     "messages": {
                         "type": "array",
                         "minItems": 1,
@@ -69,7 +71,7 @@ async def handle_list_tools() -> List[types.Tool]:
                     "max_tokens": {"type": "integer", "minimum": 1},
                     "temperature": {"type": "number", "minimum": 0, "maximum": 2},
                 },
-                "required": ["messages"],
+                "anyOf": [{"required": ["messages"]}, {"required": ["prompt"]}],
             },
         )
     ]
@@ -78,9 +80,26 @@ async def handle_list_tools() -> List[types.Tool]:
 async def _call_glama(payload: Dict[str, Any]) -> Dict[str, Any]:
     _require_configured()
 
+    prompt = payload.get("prompt")
+    system_prompt = payload.get("system_prompt")
     messages = payload.get("messages")
-    if not isinstance(messages, list) or not messages:
-        raise ValueError("messages is required")
+
+    if prompt and messages:
+        raise ValueError("Provide either 'messages' or 'prompt', not both")
+
+    if prompt:
+        if not isinstance(prompt, str) or not prompt.strip():
+            raise ValueError("prompt cannot be empty")
+        computed_messages: List[Dict[str, Any]] = []
+        if system_prompt is not None:
+            if not isinstance(system_prompt, str) or not system_prompt.strip():
+                raise ValueError("system_prompt cannot be empty")
+            computed_messages.append({"role": "system", "content": system_prompt.strip()})
+        computed_messages.append({"role": "user", "content": prompt.strip()})
+        messages = computed_messages
+    else:
+        if not isinstance(messages, list) or not messages:
+            raise ValueError("Either 'messages' or 'prompt' is required")
 
     model = (payload.get("model") or GLAMA_MODEL_DEFAULT).strip() or GLAMA_MODEL_DEFAULT
     max_tokens = payload.get("max_tokens") or GLAMA_MAX_TOKENS_DEFAULT
