@@ -10,7 +10,7 @@ import httpx
 from dotenv import load_dotenv
 from fastapi import Body, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, model_validator, validator
 
 load_dotenv()
 
@@ -79,16 +79,15 @@ class InvokeArguments(BaseModel):
             raise ValueError("system_prompt cannot be empty")
         return text
 
-    @validator("messages", always=True)
-    def validate_one_of_messages_or_prompt(
-        cls, value: Optional[List[ChatMessage]], values: Dict[str, Any]
-    ) -> Optional[List[ChatMessage]]:
-        prompt = values.get("prompt")
-        if (not value or len(value) == 0) and not prompt:
+    @model_validator(mode="after")
+    def validate_one_of_messages_or_prompt(self) -> "InvokeArguments":
+        messages = self.messages
+        prompt = self.prompt
+        if (not messages or len(messages) == 0) and not prompt:
             raise ValueError("Either 'messages' or 'prompt' is required")
-        if value and prompt:
+        if messages and prompt:
             raise ValueError("Provide either 'messages' or 'prompt', not both")
-        return value
+        return self
 
 
 class InvokePayload(BaseModel):
@@ -130,16 +129,15 @@ class BenchmarkArguments(BaseModel):
             raise ValueError("system_prompt cannot be empty")
         return text
 
-    @validator("messages", always=True)
-    def validate_one_of_messages_or_prompt(
-        cls, value: Optional[List[ChatMessage]], values: Dict[str, Any]
-    ) -> Optional[List[ChatMessage]]:
-        prompt = values.get("prompt")
-        if (not value or len(value) == 0) and not prompt:
+    @model_validator(mode="after")
+    def validate_one_of_messages_or_prompt(self) -> "BenchmarkArguments":
+        messages = self.messages
+        prompt = self.prompt
+        if (not messages or len(messages) == 0) and not prompt:
             raise ValueError("Either 'messages' or 'prompt' is required")
-        if value and prompt:
+        if messages and prompt:
             raise ValueError("Provide either 'messages' or 'prompt', not both")
-        return value
+        return self
 
 
 class BenchmarkPayload(BaseModel):
