@@ -572,7 +572,7 @@ app.post("/invoke", async (req, res) => {
 
 app.post(
   "/mcp",
-  express.raw({ type: "application/json", limit: process.env.JSON_BODY_LIMIT || "1mb" }),
+  express.text({ type: "application/json", limit: process.env.JSON_BODY_LIMIT || "1mb" }),
   async (req, res) => {
   try {
     const sessionId = req.headers["mcp-session-id"];
