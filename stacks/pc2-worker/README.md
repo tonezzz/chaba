@@ -23,7 +23,8 @@ Note: the agent starts in a synchronous loading mode and may take ~30-90s on fir
 Update your Windsurf MCP config:
 
 - `C:\Users\Admin\.codeium\windsurf\mcp_config.json`
-  - `url: http://1mcp.pc2.vpn:3050/mcp?app=windsurf`
+  - **Default (pc1)**: `url: http://1mcp.pc1.vpn:3051/mcp?app=windsurf`
+  - **Alternative (pc2)**: `url: http://1mcp.pc2.vpn:3050/mcp?app=windsurf`
 
 Note: for VPN usage, this endpoint is currently HTTP-only (do not use HTTPS).
 
