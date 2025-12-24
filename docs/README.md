@@ -4,6 +4,25 @@
 
 ## Ingress (default)
 
+## MCP (default)
+
+- **Default MCP entrypoint**: use `https://1mcp.pc2.vpn` (VPN-only).
+- **Where it runs**: `pc2` -> stack `stacks/pc2-worker` -> container `1mcp-agent` (port `3050`).
+- **What it provides**: a unified MCP endpoint that fans out to internal tools (e.g. `mcp-docker`, `filesystem`, and other MCP services enabled in `stacks/pc2-worker`).
+- **Key config files**:
+  - pc2-worker 1mcp config: `stacks/pc2-worker/1mcp.json`
+  - pc2-worker ingress: `stacks/pc2-worker/dev-proxy/Caddyfile`
+  - pc2 host ingress (binds `:80/:443`): managed on the pc2 host
+
+### Windsurf MCP client (recommended)
+
+- Configure the Windsurf client to point to:
+  - `http://1mcp.pc2.vpn:3050/mcp?app=windsurf` (as currently deployed)
+
+- **Important**: disable any local filesystem MCP server in Windsurf on Windows.
+  - Reason: local filesystem expects Windows paths (`C:\chaba\...`) while the filesystem server behind `1mcp-agent` runs in Linux containers and expects `/workspaces/chaba/...`.
+  - With local filesystem disabled, all filesystem operations go through `1mcp.pc2.vpn` and use the Linux mount path.
+
 - **HTTP/HTTPS ingress (default)**: Host Caddy is the first receiver for inbound web traffic and should own `80/tcp` + `443/tcp` on hosts that act as public HTTP/HTTPS entrypoints.
 - **Routing**: Caddy terminates TLS (when applicable) and routes by hostname/path via `reverse_proxy` to internal services (Docker or host processes).
 - **Exceptions**:

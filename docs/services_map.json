@@ -1160,6 +1160,9 @@
       }
     },
     "pc2": {
+      "repos": {
+        "chaba": "C:\\chaba"
+      },
       "url": {
         "host_vpn": "pc2.vpn",
         "host_www": "pc2.surf-thailand.com"
@@ -1175,16 +1178,13 @@
           "notes": "Host Caddy should own :80/:443 and forward to per-stack internal Caddy on high ports (pc2-worker dev-proxy -> 19081 for HTTP; 3100 remains compatibility for HTTPS).",
           "config": {
             "host_caddy": {
-              "stack_path": "stacks/host-caddy/pc2",
-              "compose": "stacks/host-caddy/pc2/docker-compose.yml",
-              "caddyfile": "stacks/host-caddy/pc2/Caddyfile",
-              "role": "Binds host :80/:443 on pc2 and routes 1mcp.pc2.vpn to the pc2-worker dev-proxy upstream (host.docker.internal:19081)."
+              "role": "Binds host :80/:443 on pc2 (managed on the pc2 host) and forwards *.pc2.vpn to the pc2-worker dev-proxy upstream (host.docker.internal:19081)."
             },
             "pc2_worker_dev_proxy": {
               "stack_path": "stacks/pc2-worker",
               "compose": "stacks/pc2-worker/docker-compose.yml",
               "caddyfile": "stacks/pc2-worker/dev-proxy/Caddyfile",
-              "role": "Stack-level ingress (published as 19081:80, 3100:443). Terminates/routs stack vhosts and forwards 1mcp.pc2.vpn to the backend (currently mcp-docker:8340 in Docker-only mode)."
+              "role": "Stack-level ingress (published as 19081:80, 3100:443). Uses env-driven vhosts to terminate/route stack traffic; the default MCP entrypoint is provided by 1mcp-agent on port 3050."
             }
           }
         }
@@ -1342,6 +1342,28 @@
               },
               "container_name": "pc2-mcp-docker"
             },
+            "1mcp-agent": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${ONE_MCP_PORT:-3050}:${ONE_MCP_PORT:-3050}"
+              ],
+              "port": 3050,
+              "type": "build",
+              "endpoints": {
+                "vpn_ingress": "https://1mcp.pc2.vpn",
+                "vpn": "http://pc2.vpn:${ONE_MCP_PORT:-3050}",
+                "local": "http://localhost:${ONE_MCP_PORT:-3050}"
+              },
+              "health_path": "/health",
+              "health_urls": {
+                "vpn_ingress": "https://1mcp.pc2.vpn/health",
+                "vpn": "http://pc2.vpn:${ONE_MCP_PORT:-3050}/health",
+                "local": "http://localhost:${ONE_MCP_PORT:-3050}/health"
+              },
+              "notes": "Default MCP entrypoint for VPN clients (Windsurf -> /mcp?app=windsurf). Tools are configured in stacks/pc2-worker/1mcp.json (includes filesystem mounted at /workspaces/chaba from C:\\chaba, plus docker tools via docker-mcp-stdio)."
+            },
             "mcp0": {
               "profiles": [
                 "mcp-suite"
@@ -1353,8 +1375,6 @@
               "type": "build",
               "endpoints": {
                 "vpn": "http://pc2.vpn:${MCP0_PORT:-8310}",
-                "vpn_ingress": "https://1mcp.pc2.vpn",
-                "vpn_stack": "http://1mcp.pc2-worker.pc2.vpn",
                 "local": "http://localhost:8310"
               },
               "ports_map": [
@@ -1362,12 +1382,10 @@
                   "raw": "${MCP0_PORT:-8310}:${MCP0_PORT:-8310}"
                 }
               ],
-              "health_path": null,
+              "health_path": "/health",
               "health_urls": {
-                "vpn": "http://pc2.vpn:${MCP0_PORT:-8310}",
-                "vpn_ingress": "https://1mcp.pc2.vpn",
-                "vpn_stack": "http://1mcp.pc2-worker.pc2.vpn",
-                "local": "http://localhost:8310"
+                "vpn": "http://pc2.vpn:${MCP0_PORT:-8310}/health",
+                "local": "http://localhost:8310/health"
               },
               "container_name": "pc2-mcp0"
             },
