@@ -58,7 +58,7 @@
         "mcp-docker": [
           "${MCP_DOCKER_PORT:-8340}:8340"
         ],
-        "mcp-memory-bridge": [
+        "mcp-memory": [
           "${MCP_MEMORY_PORT:-8470}:8470"
         ],
         "coredns": [
@@ -307,7 +307,7 @@
               "container_name": "idc1-mcp-docker",
               "notes": "Accessible over VPN as mcp0.idc1.vpn via wg-dns rewrite (*.idc1.vpn -> idc1.vpn) + wg-easy forwarding of MCP_DOCKER_PORT to host gateway"
             },
-            "mcp-memory-bridge": {
+            "mcp-memory": {
               "profiles": [
                 "mcp-suite"
               ],
@@ -339,7 +339,7 @@
                 "vpn": "http://idc1.vpn:${MCP_MEMORY_PORT:-8470}/health",
                 "local": "http://localhost:8470/health"
               },
-              "container_name": "idc1-mcp-memory-bridge"
+              "container_name": "idc1-mcp-memory"
             },
             "coredns": {
               "profiles": [
@@ -578,13 +578,13 @@
             "scheme": "http"
           }
         ],
-        "mcp-memory-bridge": [
+        "mcp-memory": [
           {
             "raw": "${MCP_MEMORY_PORT:-8470}:8470",
             "raw_host": "${MCP_MEMORY_PORT",
-            "raw_container": "-8470}",
-            "host": null,
-            "container": null,
+            "raw_container": "8470",
+            "host": 8470,
+            "container": 8470,
             "scheme": "http"
           }
         ],

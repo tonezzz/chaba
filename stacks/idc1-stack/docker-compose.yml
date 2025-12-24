@@ -190,11 +190,11 @@ services:
       timeout: 5s
       retries: 3
 
-  mcp-memory-bridge:
+  mcp-memory:
     <<: *default-service
     profiles: ["mcp-suite"]
     build:
-      context: ${MCP_MEMORY_BUILD_CONTEXT:-../../mcp/mcp-memory-bridge}
+      context: ${MCP_MEMORY_BUILD_CONTEXT:-../../mcp/mcp-memory}
     ports:
       - "${MCP_MEMORY_PORT:-8470}:8470"
     environment:
