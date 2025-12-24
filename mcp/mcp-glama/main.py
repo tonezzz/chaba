@@ -185,7 +185,7 @@ def tool_definitions() -> List[Dict[str, Any]]:
         {
             "name": "chat_completion",
             "description": "Send OpenAI-compatible chat messages to Glama gateway.",
-            "input_schema": {
+            "inputSchema": {
                 "type": "object",
                 "properties": {
                     "prompt": {"type": "string", "minLength": 1},
@@ -213,7 +213,7 @@ def tool_definitions() -> List[Dict[str, Any]]:
         {
             "name": "benchmark_models",
             "description": "Benchmark Glama model availability and latency using a fixed prompt/messages input.",
-            "input_schema": {
+            "inputSchema": {
                 "type": "object",
                 "properties": {
                     "models": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1},
