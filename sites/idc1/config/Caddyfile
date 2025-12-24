@@ -2,23 +2,23 @@ test.idc1.surf-thailand.com {
     encode gzip zstd
 
     handle /cp {
-        redir /test/cp/
+        redir /cp /test/cp/
     }
 
     handle /cp/ {
-        redir /test/cp/
+        redir /cp/ /test/cp/
     }
 
     handle_path /cp/* {
-        redir /test/cp{uri}
+        redir /cp/* /test/cp{uri}
     }
 
     handle / {
-        redir /test/
+        redir / /test/
     }
 
     handle /test {
-        redir /test/
+        redir /test /test/
     }
 
     handle_path /test/* {
