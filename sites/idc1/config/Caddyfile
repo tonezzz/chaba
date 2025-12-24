@@ -45,3 +45,17 @@ cp.idc1.surf-thailand.com {
         output file /var/log/caddy/cp.idc1.access.log
     }
 }
+
+1mcp.idc1.surf-thailand.com {
+    encode gzip zstd
+
+    basicauth {
+        chaba $2a$14$QP8RRMul3Fp63soF9Q8Bluqw/EnTU80Yt9pv/8JngQOTSbkUUvmOq
+    }
+
+    reverse_proxy http://127.0.0.1:3050
+
+    log {
+        output file /var/log/caddy/1mcp.idc1.access.log
+    }
+}
