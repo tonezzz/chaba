@@ -1,5 +1,9 @@
 # Chaba infrastructure notes
 
+## Stacks
+
+- `docs/stacks.md`
+
 ## SSL quick reference
 
 ## Ingress (default)
