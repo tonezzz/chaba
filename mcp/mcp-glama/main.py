@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import os
+import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, validator
 
@@ -63,6 +64,13 @@ class InvokePayload(BaseModel):
     arguments: InvokeArguments
 
 
+class _JsonRpcRequest(BaseModel):
+    jsonrpc: str
+    id: Any
+    method: str
+    params: Optional[Dict[str, Any]] = None
+
+
 app = FastAPI(title=APP_NAME, version=APP_VERSION)
 app.add_middleware(
     CORSMiddleware,
@@ -70,6 +78,101 @@ app.add_middleware(
     allow_headers=["*"],
     allow_methods=["*"],
 )
+
+
+def _mcp_tools_list() -> List[Dict[str, Any]]:
+    return [
+        {
+            "name": "chat_completion",
+            "description": "Send OpenAI-compatible chat messages to Glama gateway.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "messages": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "role": {"type": "string", "enum": ["user", "assistant", "system"]},
+                                "content": {"type": "string"},
+                            },
+                            "required": ["role", "content"],
+                        },
+                        "minItems": 1,
+                    },
+                    "model": {"type": "string"},
+                    "max_tokens": {"type": "integer", "minimum": 1},
+                    "temperature": {"type": "number", "minimum": 0, "maximum": 2},
+                },
+                "required": ["messages"],
+            },
+        }
+    ]
+
+
+@app.post("/mcp")
+async def mcp_endpoint(
+    request: _JsonRpcRequest,
+    response: Response,
+    mcp_session_id: Optional[str] = Header(default=None, alias="Mcp-Session-Id"),
+) -> Dict[str, Any]:
+    session_id = mcp_session_id or str(uuid.uuid4())
+    response.headers["Mcp-Session-Id"] = session_id
+
+    method = (request.method or "").strip()
+    params = request.params or {}
+
+    if request.jsonrpc != "2.0":
+        return {
+            "jsonrpc": "2.0",
+            "id": request.id,
+            "error": {"code": -32600, "message": "Invalid Request"},
+        }
+
+    if method == "initialize":
+        return {
+            "jsonrpc": "2.0",
+            "id": request.id,
+            "result": {
+                "protocolVersion": (params.get("protocolVersion") or "2024-11-05"),
+                "serverInfo": {"name": APP_NAME, "version": APP_VERSION},
+                "capabilities": {"tools": {}},
+            },
+        }
+
+    if method == "tools/list":
+        return {"jsonrpc": "2.0", "id": request.id, "result": {"tools": _mcp_tools_list()}}
+
+    if method == "tools/call":
+        name = params.get("name")
+        arguments = params.get("arguments") or {}
+        if name != "chat_completion":
+            return {
+                "jsonrpc": "2.0",
+                "id": request.id,
+                "error": {"code": -32601, "message": f"Unknown tool: {name}"},
+            }
+
+        try:
+            invoke_args = InvokeArguments.model_validate(arguments)
+            result = await call_glama(invoke_args)
+            return {
+                "jsonrpc": "2.0",
+                "id": request.id,
+                "result": {"content": [{"type": "text", "text": result.get("response", "")}]},
+            }
+        except Exception as exc:
+            return {
+                "jsonrpc": "2.0",
+                "id": request.id,
+                "error": {"code": -32000, "message": str(exc)},
+            }
+
+    return {
+        "jsonrpc": "2.0",
+        "id": request.id,
+        "error": {"code": -32601, "message": f"Method not found: {method}"},
+    }
 
 
 def glama_ready() -> bool:
