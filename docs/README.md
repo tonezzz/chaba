@@ -2,14 +2,18 @@
 
 ## MCP (default)
 
-- **Default MCP entrypoint (pc1)**: `http://1mcp.pc1.vpn:3051/mcp?app=windsurf`
+- **Default MCP entrypoint (idc1)**: `https://1mcp.idc1.surf-thailand.com/mcp?app=windsurf`
+- **Alternative MCP entrypoint (pc1)**: `http://1mcp.pc1.vpn:3051/mcp?app=windsurf`
 - **Alternative MCP entrypoint (pc2)**: `http://1mcp.pc2.vpn:3050/mcp?app=windsurf`
 
-The pc1 `1mcp` entrypoint aggregates:
+The idc1 `1mcp` entrypoint aggregates:
 
 - `filesystem`
 - `docker`
 - `mcp-devops`
+- `mcp-memory`
+- `mcp-sequentialthinking`
+- `mcp-glama`
 
 ## Stacks
 
