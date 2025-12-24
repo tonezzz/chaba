@@ -666,7 +666,7 @@
             80,
             443
           ],
-          "notes": "Host Caddy should own :80/:443 and forward to per-stack internal Caddy on high ports (e.g. pc1-stack -> 18081)."
+          "notes": "Host Caddy should own :80/:443 and forward to per-stack internal Caddy on high ports (e.g. pc1-stack -> 3080/3443)."
         }
       },
       "stacks": {
@@ -676,6 +676,31 @@
             "compose": "docker-compose.yml"
           },
           "containers": {
+            "1mcp-agent": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${ONE_MCP_PORT:-3051}:${ONE_MCP_PORT:-3051}"
+              ],
+              "port": 3051,
+              "container_name": "pc1-1mcp-agent",
+              "type": "build",
+              "endpoints": {
+                "vpn_ingress": "https://1mcp.pc1.vpn",
+                "local": "http://localhost:3051"
+              },
+              "ports_map": [
+                {
+                  "raw": "${ONE_MCP_PORT:-3051}:${ONE_MCP_PORT:-3051}"
+                }
+              ],
+              "health_path": "/health/ready",
+              "health_urls": {
+                "vpn_ingress": "https://1mcp.pc1.vpn/health/ready",
+                "local": "http://localhost:3051/health/ready"
+              }
+            },
             "mcp0": {
               "profiles": [
                 "mcp-suite"
@@ -983,7 +1008,8 @@
                 "mcp-suite"
               ],
               "ports": [
-                "18081:80"
+                "${PC1_CADDY_HTTP_PORT:-3080}:80",
+                "${PC1_CADDY_HTTPS_PORT:-3443}:443"
               ],
               "port": 80,
               "container_name": "pc1-caddy",
@@ -1008,13 +1034,13 @@
               ],
               "endpoints": {
                 "vpn": "http://pc1-stack.pc1.vpn",
-                "local": "http://localhost:18081"
+                "local": "http://localhost:${PC1_CADDY_HTTP_PORT:-3080}"
               },
               "ports_map": [],
               "health_path": null,
               "health_urls": {
                 "vpn": "http://pc1-stack.pc1.vpn",
-                "local": "http://localhost:18081"
+                "local": "http://localhost:${PC1_CADDY_HTTP_PORT:-3080}"
               }
             }
           }
