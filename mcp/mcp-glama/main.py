@@ -66,7 +66,7 @@ class InvokePayload(BaseModel):
 
 class _JsonRpcRequest(BaseModel):
     jsonrpc: str
-    id: Any
+    id: Optional[Any] = None
     method: str
     params: Optional[Dict[str, Any]] = None
 
@@ -115,7 +115,7 @@ async def mcp_endpoint(
     request: _JsonRpcRequest,
     response: Response,
     mcp_session_id: Optional[str] = Header(default=None, alias="Mcp-Session-Id"),
-) -> Dict[str, Any]:
+) -> Any:
     session_id = mcp_session_id or str(uuid.uuid4())
     response.headers["Mcp-Session-Id"] = session_id
 
@@ -128,6 +128,11 @@ async def mcp_endpoint(
             "id": request.id,
             "error": {"code": -32600, "message": "Invalid Request"},
         }
+
+    if request.id is None:
+        if method == "notifications/initialized":
+            return Response(status_code=204)
+        return Response(status_code=204)
 
     if method == "initialize":
         return {
