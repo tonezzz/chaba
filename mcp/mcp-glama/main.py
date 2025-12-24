@@ -147,6 +147,26 @@ class BenchmarkPayload(BaseModel):
     arguments: BenchmarkArguments
 
 
+class JsonRpcRequest(BaseModel):
+    jsonrpc: str = "2.0"
+    id: Optional[Any] = None
+    method: str
+    params: Optional[Dict[str, Any]] = None
+
+
+class JsonRpcError(BaseModel):
+    code: int
+    message: str
+    data: Optional[Any] = None
+
+
+class JsonRpcResponse(BaseModel):
+    jsonrpc: str = "2.0"
+    id: Any
+    result: Optional[Any] = None
+    error: Optional[JsonRpcError] = None
+
+
 app = FastAPI(title=APP_NAME, version=APP_VERSION)
 app.add_middleware(
     CORSMiddleware,
@@ -396,3 +416,65 @@ async def root() -> Dict[str, Any]:
         "version": APP_VERSION,
         "status": "ok",
     }
+
+
+def _jsonrpc_error(id_value: Any, code: int, message: str, data: Optional[Any] = None) -> JsonRpcResponse:
+    return JsonRpcResponse(
+        id=id_value,
+        error=JsonRpcError(code=code, message=message, data=data),
+    )
+
+
+@app.post("/mcp")
+async def mcp_endpoint(payload: Dict[str, Any] = Body(...)):
+    request = JsonRpcRequest(**(payload or {}))
+
+    if request.id is None:
+        return None
+
+    method = (request.method or "").strip()
+    params = request.params or {}
+
+    if method == "initialize":
+        return JsonRpcResponse(
+            id=request.id,
+            result={
+                "protocolVersion": "2024-11-05",
+                "serverInfo": {"name": APP_NAME, "version": APP_VERSION},
+                "capabilities": {"tools": {}},
+            },
+        ).model_dump(exclude_none=True)
+
+    if method in ("tools/list", "list_tools"):
+        return JsonRpcResponse(
+            id=request.id,
+            result={"tools": tool_definitions()},
+        ).model_dump(exclude_none=True)
+
+    if method in ("tools/call", "call_tool"):
+        tool_name = (params.get("name") or params.get("tool") or "").strip()
+        arguments_raw = params.get("arguments") or {}
+        if not tool_name:
+            return _jsonrpc_error(request.id, -32602, "Missing tool name").model_dump(exclude_none=True)
+
+        if tool_name == "chat_completion":
+            parsed = InvokeArguments(**(arguments_raw or {}))
+            out = await call_glama(parsed)
+            return JsonRpcResponse(
+                id=request.id,
+                result={"content": [{"type": "text", "text": out.get("response") or ""}]},
+            ).model_dump(exclude_none=True)
+
+        if tool_name == "benchmark_models":
+            parsed = BenchmarkArguments(**(arguments_raw or {}))
+            out = await benchmark_models(parsed)
+            return JsonRpcResponse(
+                id=request.id,
+                result={"content": [{"type": "text", "text": str(out)}]},
+            ).model_dump(exclude_none=True)
+
+        return _jsonrpc_error(request.id, -32601, f"Unknown tool '{tool_name}'").model_dump(
+            exclude_none=True
+        )
+
+    return _jsonrpc_error(request.id, -32601, f"Unknown method '{method}'").model_dump(exclude_none=True)
