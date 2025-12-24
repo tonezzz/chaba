@@ -480,7 +480,7 @@ app.use(
   }),
 );
 
-app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || "1mb" }));
+app.use("/invoke", express.json({ limit: process.env.JSON_BODY_LIMIT || "1mb" }));
 
 const transports = new Map();
 
@@ -570,7 +570,9 @@ app.post("/invoke", async (req, res) => {
   }
 });
 
-app.post("/mcp", async (req, res) => {
+app.post(
+  "/mcp",
+  async (req, res) => {
   try {
     const sessionId = req.headers["mcp-session-id"];
 
@@ -617,7 +619,8 @@ app.post("/mcp", async (req, res) => {
       });
     }
   }
-});
+  },
+);
 
 app.get("/mcp", async (req, res) => {
   const sessionId = req.headers["mcp-session-id"];
@@ -652,5 +655,5 @@ app.delete("/mcp", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  process.stderr.write(`mcp-memory-bridge listening on :${PORT} using ${MEMORY_FILE_PATH}\n`);
+  process.stderr.write(`mcp-memory listening on :${PORT} using ${MEMORY_FILE_PATH}\n`);
 });

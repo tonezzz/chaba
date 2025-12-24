@@ -58,7 +58,7 @@
         "mcp-docker": [
           "${MCP_DOCKER_PORT:-8340}:8340"
         ],
-        "mcp-memory-bridge": [
+        "mcp-memory": [
           "${MCP_MEMORY_PORT:-8470}:8470"
         ],
         "coredns": [
@@ -307,7 +307,7 @@
               "container_name": "idc1-mcp-docker",
               "notes": "Accessible over VPN as mcp0.idc1.vpn via wg-dns rewrite (*.idc1.vpn -> idc1.vpn) + wg-easy forwarding of MCP_DOCKER_PORT to host gateway"
             },
-            "mcp-memory-bridge": {
+            "mcp-memory": {
               "profiles": [
                 "mcp-suite"
               ],
@@ -339,7 +339,7 @@
                 "vpn": "http://idc1.vpn:${MCP_MEMORY_PORT:-8470}/health",
                 "local": "http://localhost:8470/health"
               },
-              "container_name": "idc1-mcp-memory-bridge"
+              "container_name": "idc1-mcp-memory"
             },
             "coredns": {
               "profiles": [
@@ -578,13 +578,13 @@
             "scheme": "http"
           }
         ],
-        "mcp-memory-bridge": [
+        "mcp-memory": [
           {
             "raw": "${MCP_MEMORY_PORT:-8470}:8470",
             "raw_host": "${MCP_MEMORY_PORT",
-            "raw_container": "-8470}",
-            "host": null,
-            "container": null,
+            "raw_container": "8470",
+            "host": 8470,
+            "container": 8470,
             "scheme": "http"
           }
         ],
@@ -666,7 +666,7 @@
             80,
             443
           ],
-          "notes": "Host Caddy should own :80/:443 and forward to per-stack internal Caddy on high ports (e.g. pc1-stack -> 18081)."
+          "notes": "Host Caddy should own :80/:443 and forward to per-stack internal Caddy on high ports (e.g. pc1-stack -> 3080/3443)."
         }
       },
       "stacks": {
@@ -676,6 +676,31 @@
             "compose": "docker-compose.yml"
           },
           "containers": {
+            "1mcp-agent": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${ONE_MCP_PORT:-3051}:${ONE_MCP_PORT:-3051}"
+              ],
+              "port": 3051,
+              "container_name": "pc1-1mcp-agent",
+              "type": "build",
+              "endpoints": {
+                "vpn_ingress": "http://1mcp.pc1.vpn:3051",
+                "local": "http://localhost:3051"
+              },
+              "ports_map": [
+                {
+                  "raw": "${ONE_MCP_PORT:-3051}:${ONE_MCP_PORT:-3051}"
+                }
+              ],
+              "health_path": "/health/ready",
+              "health_urls": {
+                "vpn_ingress": "http://1mcp.pc1.vpn:3051/health/ready",
+                "local": "http://localhost:3051/health/ready"
+              }
+            },
             "mcp0": {
               "profiles": [
                 "mcp-suite"
@@ -983,7 +1008,8 @@
                 "mcp-suite"
               ],
               "ports": [
-                "18081:80"
+                "${PC1_CADDY_HTTP_PORT:-3080}:80",
+                "${PC1_CADDY_HTTPS_PORT:-3443}:443"
               ],
               "port": 80,
               "container_name": "pc1-caddy",
@@ -1008,13 +1034,13 @@
               ],
               "endpoints": {
                 "vpn": "http://pc1-stack.pc1.vpn",
-                "local": "http://localhost:18081"
+                "local": "http://localhost:${PC1_CADDY_HTTP_PORT:-3080}"
               },
               "ports_map": [],
               "health_path": null,
               "health_urls": {
                 "vpn": "http://pc1-stack.pc1.vpn",
-                "local": "http://localhost:18081"
+                "local": "http://localhost:${PC1_CADDY_HTTP_PORT:-3080}"
               }
             }
           }

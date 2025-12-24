@@ -2,23 +2,23 @@ test.idc1.surf-thailand.com {
     encode gzip zstd
 
     handle /cp {
-        redir /test/cp/
+        redir /cp /test/cp/
     }
 
     handle /cp/ {
-        redir /test/cp/
+        redir /cp/ /test/cp/
     }
 
     handle_path /cp/* {
-        redir /test/cp{uri}
+        redir /cp/* /test/cp{uri}
     }
 
     handle / {
-        redir /test/
+        redir / /test/
     }
 
     handle /test {
-        redir /test/
+        redir /test /test/
     }
 
     handle_path /test/* {
@@ -44,4 +44,27 @@ cp.idc1.surf-thailand.com {
     log {
         output file /var/log/caddy/cp.idc1.access.log
     }
+}
+
+1mcp.idc1.surf-thailand.com {
+    encode gzip zstd
+
+    basicauth {
+        chaba $2a$14$QP8RRMul3Fp63soF9Q8Bluqw/EnTU80Yt9pv/8JngQOTSbkUUvmOq
+    }
+
+    reverse_proxy http://127.0.0.1:3050
+
+    log {
+        output file /var/log/caddy/1mcp.idc1.access.log
+    }
+}
+
+http://1mcp.idc1.vpn {
+    encode gzip zstd
+
+    @vpn_only not remote_ip 10.8.0.0/24 127.0.0.1
+    respond @vpn_only 403
+
+    reverse_proxy http://127.0.0.1:3050
 }

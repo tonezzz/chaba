@@ -140,6 +140,28 @@ services:
       timeout: 5s
       retries: 3
 
+  1mcp-agent:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ./1mcp-agent
+    ports:
+      - "127.0.0.1:${ONE_MCP_PORT:-3050}:${ONE_MCP_PORT:-3050}"
+    environment:
+      ONE_MCP_HOST: ${ONE_MCP_HOST:-0.0.0.0}
+      ONE_MCP_PORT: ${ONE_MCP_PORT:-3050}
+      ONE_MCP_EXTERNAL_URL: ${ONE_MCP_EXTERNAL_URL:-http://127.0.0.1:${ONE_MCP_PORT:-3050}}
+      ONE_MCP_LOG_LEVEL: ${ONE_MCP_LOG_LEVEL:-info}
+      ONE_MCP_CONFIG: ${ONE_MCP_CONFIG:-/app/mcp.json}
+      UV_PYTHON: python3
+      UV_PYTHON_DOWNLOADS: never
+      UV_PROJECT_ENVIRONMENT: /tmp/uv-project
+    volumes:
+      - ${ONE_MCP_CONFIG_FILE:-./1mcp.json}:${ONE_MCP_CONFIG:-/app/mcp.json}:ro
+      - ${ONE_MCP_WORKSPACE_HOST_DIR:-../../}:/workspaces/chaba:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+      - docker-mcp-venv:/opt/docker-mcp-venv
+
   code-server:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -168,11 +190,11 @@ services:
       timeout: 5s
       retries: 3
 
-  mcp-memory-bridge:
+  mcp-memory:
     <<: *default-service
     profiles: ["mcp-suite"]
     build:
-      context: ${MCP_MEMORY_BUILD_CONTEXT:-../../mcp/mcp-memory-bridge}
+      context: ${MCP_MEMORY_BUILD_CONTEXT:-../../mcp/mcp-memory}
     ports:
       - "${MCP_MEMORY_PORT:-8470}:8470"
     environment:
@@ -285,3 +307,4 @@ volumes:
   mcp-memory-data:
   webtops_windsurf_cache:
   webtops_workspaces:
+  docker-mcp-venv:
