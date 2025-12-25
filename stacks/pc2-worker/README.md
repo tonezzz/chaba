@@ -6,7 +6,7 @@ This stack runs the PC2 worker services.
 Key components:
 - `1mcp-agent` (aggregates MCP backends)
 - `mcp-glama` (Glama MCP provider via Streamable HTTP)
-- Supporting MCP servers (filesystem, docker, fetch, github, vaja)
+- Supporting MCP servers (docker, mcp-devops)
 
 ## Start
 From `stacks/pc2-worker/`:

@@ -1201,16 +1201,16 @@
           "notes": "Host Caddy should own :80/:443 and forward to per-stack internal Caddy on high ports (pc2-worker dev-proxy -> 19081 for HTTP; 3100 remains compatibility for HTTPS).",
           "config": {
             "host_caddy": {
-              "stack_path": "stacks/host-caddy/pc2",
-              "compose": "stacks/host-caddy/pc2/docker-compose.yml",
-              "caddyfile": "stacks/host-caddy/pc2/Caddyfile",
+              "stack_path": "stacks/pc2-host-caddy",
+              "compose": "stacks/pc2-host-caddy/docker-compose.yml",
+              "caddyfile": "stacks/pc2-host-caddy/Caddyfile",
               "role": "Binds host :80/:443 on pc2 and routes 1mcp.pc2.vpn to the pc2-worker dev-proxy upstream (host.docker.internal:19081)."
             },
             "pc2_worker_dev_proxy": {
               "stack_path": "stacks/pc2-worker",
               "compose": "stacks/pc2-worker/docker-compose.yml",
               "caddyfile": "stacks/pc2-worker/dev-proxy/Caddyfile",
-              "role": "Stack-level ingress (published as 19081:80, 3100:443). Terminates/routs stack vhosts and forwards 1mcp.pc2.vpn to the backend (currently mcp-docker:8340 in Docker-only mode)."
+              "role": "Stack-level ingress (published as 19081:80, 3100:443). Terminates/routes stack vhosts (including 1mcp.pc2.vpn) and forwards to the appropriate backend (notably 1mcp-agent on :3050 for MCP aggregation)."
             }
           }
         }
