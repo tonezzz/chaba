@@ -1,0 +1,40 @@
+services:
+  wg-dns:
+    image: coredns/coredns:1.11.1
+    container_name: idc1-wg-dns
+    restart: unless-stopped
+    ports:
+      - "53:53/udp"
+      - "53:53/tcp"
+      - "8080:8080/tcp"
+      - "9153:9153/tcp"
+    volumes:
+      - ./config/coredns/Corefile:/Corefile:ro
+      - ./config/coredns/zones:/zones:ro
+
+  wg-easy:
+    image: ghcr.io/wg-easy/wg-easy:latest
+    container_name: idc1-wg-easy
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv4.conf.all.src_valid_mark=1
+    ports:
+      - "51820:51820/udp"
+      - "51821:51821/tcp"
+    environment:
+      WG_HOST: ${WG_HOST:-idc1.surf-thailand.com}
+      WG_PORT: ${WG_PORT:-51820}
+      WG_DEFAULT_ADDRESS: ${WG_DEFAULT_ADDRESS:-10.8.0.x}
+      WG_DEFAULT_DNS: ${WG_DEFAULT_DNS:-10.8.0.1}
+      WG_ALLOWED_IPS: ${WG_ALLOWED_IPS:-10.8.0.0/24}
+      WG_PERSISTENT_KEEPALIVE: ${WG_PERSISTENT_KEEPALIVE:-25}
+      PASSWORD: ${WG_EASY_PASSWORD:-}
+    volumes:
+      - wg-easy-data:/etc/wireguard
+
+volumes:
+  wg-easy-data:
