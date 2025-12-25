@@ -285,7 +285,7 @@ services:
       UV_PROJECT_ENVIRONMENT: /tmp/uv-project
     volumes:
       - ${ONE_MCP_CONFIG_FILE:-./1mcp.json}:${ONE_MCP_CONFIG:-/app/mcp.json}:ro
-      - "${ONE_MCP_WORKSPACE_HOST_DIR:-C:/chaba}:/workspaces/chaba:cached"
+      - "${ONE_MCP_WORKSPACE_HOST_DIR:-/home/chaba/chaba}:/workspaces/chaba:rw"
       - /var/run/docker.sock:/var/run/docker.sock
       - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
       - docker-mcp-venv:/opt/docker-mcp-venv
