@@ -69,19 +69,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
 
-  mcp0:
-    <<: *default-service
-    profiles: ["mcp0"]
-    build:
-      context: ${MCP0_BUILD_CONTEXT:-../../mcp/mcp0}
-    ports:
-      - "${MCP0_PORT:-8310}:${MCP0_PORT:-8310}"
-    environment:
-      MCP0_APP_NAME: ${MCP0_APP_NAME:-pc2-mcp0}
-      MCP0_PORT: ${MCP0_PORT:-8310}
-      MCP0_ADMIN_TOKEN: ${MCP0_ADMIN_TOKEN:-}
-      MCP0_PROVIDERS: ${MCP0_PROVIDERS:-}
-
   mcp-glama:
     <<: *default-service
     profiles: ["mcp-suite"]

@@ -36,26 +36,6 @@ services:
       - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
       - docker-mcp-venv:/opt/docker-mcp-venv
 
-  mcp0:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ${MCP0_BUILD_CONTEXT:-../../mcp/mcp0}
-    container_name: pc1-mcp0
-    ports:
-      - "${MCP0_PORT:-8351}:${MCP0_PORT:-8351}"
-    environment:
-      MCP0_APP_NAME: ${MCP0_APP_NAME:-pc1-mcp0}
-      MCP0_PORT: ${MCP0_PORT:-8351}
-      MCP0_ADMIN_TOKEN: ${MCP0_ADMIN_TOKEN:-}
-      MCP0_PROVIDERS: ${MCP0_PROVIDERS:-}
-      MCP0_ALLOW_ORIGINS: ${MCP0_ALLOW_ORIGINS:-http://localhost:3000,http://dev-host.pc1:3100}
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP0_PORT:-8351}/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
   mcp-agents:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -140,11 +120,7 @@ services:
       MCP_DEVOPS_REPO_ROOT: /workspaces/chaba
       DEV_HOST_BASE_URL: ${DEV_HOST_BASE_URL:-http://dev-host.pc1}
       DEV_HOST_PC2_BASE_URL: ${DEV_HOST_PC2_BASE_URL:-http://dev-host.pc2:3000}
-      MCP0_BASE_URL: ${MCP0_BASE_URL:-http://mcp0:${MCP0_PORT:-8351}}
-      MCP0_ADMIN_TOKEN: ${MCP0_ADMIN_TOKEN:-}
       MCP_DEVOPS_JSON_LIMIT: ${MCP_DEVOPS_JSON_LIMIT:-2mb}
-    depends_on:
-      - mcp0
     volumes:
       - ../../:/workspaces/chaba:cached
       - //var/run/docker.sock:/var/run/docker.sock

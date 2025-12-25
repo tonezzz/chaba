@@ -13,25 +13,6 @@ x-default-service: &default-service
       max-file: "3"
 
 services:
-  mcp0:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ${MCP0_BUILD_CONTEXT:-../../mcp/mcp0}
-    ports:
-      - "${MCP0_PORT:-8355}:${MCP0_PORT:-8355}"
-    environment:
-      MCP0_APP_NAME: ${MCP0_APP_NAME:-idc1-mcp0}
-      MCP0_PORT: ${MCP0_PORT:-8355}
-      MCP0_ADMIN_TOKEN: ${MCP0_ADMIN_TOKEN:-}
-      MCP0_PROVIDERS: ${MCP0_PROVIDERS:-}
-      MCP0_ALLOW_ORIGINS: ${MCP0_ALLOW_ORIGINS:-http://localhost:3000}
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP0_PORT:-8355}/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
   mcp-agents:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -111,11 +92,8 @@ services:
       MCP_DEVOPS_HOST: 0.0.0.0
       DEV_HOST_BASE_URL: ${DEV_HOST_BASE_URL:-https://test.idc1.surf-thailand.com}
       DEV_HOST_PC2_BASE_URL: ${DEV_HOST_PC2_BASE_URL:-https://test.idc1.surf-thailand.com}
-      MCP0_BASE_URL: ${MCP0_BASE_URL:-http://mcp0:${MCP0_PORT:-8355}}
-      MCP0_ADMIN_TOKEN: ${MCP0_ADMIN_TOKEN:-}
       MCP_DEVOPS_JSON_LIMIT: ${MCP_DEVOPS_JSON_LIMIT:-2mb}
-    depends_on:
-      - mcp0
+
 
   mcp-task:
     <<: *default-service
