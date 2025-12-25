@@ -7,8 +7,8 @@ services:
     depends_on:
       - wg-easy
     volumes:
-      - ./config/coredns/Corefile:/Corefile:ro
-      - ./config/coredns/zones:/zones:ro
+      - ./config/coredns/Corefile:/etc/coredns/Corefile:ro
+      - ./config/coredns/zones:/etc/coredns/zones:ro
 
   wg-easy:
     image: ghcr.io/wg-easy/wg-easy:latest
