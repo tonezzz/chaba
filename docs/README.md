@@ -8,7 +8,6 @@
 
 The idc1 `1mcp` entrypoint aggregates:
 
-- `filesystem`
 - `docker`
 - `mcp-devops`
 - `mcp-memory`
@@ -17,7 +16,7 @@ The idc1 `1mcp` entrypoint aggregates:
 
 Notes:
 - `pc2-worker` runs `1mcp-agent` with the config mounted at `/root/.config/1mcp/mcp.json`.
-- On `pc2-worker`, the `filesystem` MCP server is intentionally not enabled (stdio noise/handshake issues) — use `docker` + `mcp-devops` for hands-off automation.
+- The `filesystem` MCP server is intentionally not enabled (stdio noise/handshake issues) — use `docker` + `mcp-devops` for hands-off automation.
 
 ## Stacks
 
