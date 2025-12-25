@@ -117,6 +117,25 @@ services:
     depends_on:
       - mcp0
 
+  mcp-task:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_TASK_BUILD_CONTEXT:-../../mcp/mcp-task}
+    environment:
+      PORT: 8016
+      MCP_TASK_DB_PATH: /data/sqlite/mcp-task.sqlite
+      MCP_TASK_SERVERS: '[{"name":"mcp-devops","url":"http://mcp-devops:${MCP_DEVOPS_PORT:-8425}"}]'
+    volumes:
+      - stack-sqlite:/data/sqlite
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8016/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - mcp-devops
+
   mcp-playwright:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -305,6 +324,7 @@ networks:
 
 volumes:
   mcp-memory-data:
+  stack-sqlite:
   webtops_windsurf_cache:
   webtops_workspaces:
   docker-mcp-venv:

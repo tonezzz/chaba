@@ -1,7 +1,7 @@
 FROM python:3.12-slim-bookworm
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends bash ca-certificates curl gnupg \
+  && apt-get install -y --no-install-recommends bash ca-certificates curl gnupg docker.io docker-compose-plugin \
   && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js 22 (required for @1mcp/agent)

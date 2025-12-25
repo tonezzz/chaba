@@ -149,6 +149,25 @@ services:
       - ../../:/workspaces/chaba:cached
       - //var/run/docker.sock:/var/run/docker.sock
 
+  mcp-task:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_TASK_BUILD_CONTEXT:-../../mcp/mcp-task}
+    environment:
+      PORT: 8016
+      MCP_TASK_DB_PATH: /data/sqlite/mcp-task.sqlite
+      MCP_TASK_SERVERS: '[{"name":"mcp-devops","url":"http://mcp-devops:${MCP_DEVOPS_PORT:-8325}"}]'
+    volumes:
+      - stack-sqlite:/data/sqlite
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8016/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - mcp-devops
+
   mcp-playwright:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -254,3 +273,4 @@ volumes:
   caddy-data:
   caddy-config:
   docker-mcp-venv:
+  stack-sqlite:
