@@ -15,6 +15,10 @@ The idc1 `1mcp` entrypoint aggregates:
 - `mcp-sequentialthinking`
 - `mcp-glama`
 
+Notes:
+- `pc2-worker` runs `1mcp-agent` with the config mounted at `/root/.config/1mcp/mcp.json`.
+- On `pc2-worker`, the `filesystem` MCP server is intentionally not enabled (stdio noise/handshake issues) — use `docker` + `mcp-devops` for hands-off automation.
+
 ## Stacks
 
 - `docs/stacks.md`
