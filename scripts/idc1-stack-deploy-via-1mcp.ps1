@@ -46,6 +46,6 @@ foreach ($composePath in $ComposePathCandidates) {
     Write-Host "[idc1] deploy completed"
     break
   } catch {
-    Write-Host "[idc1] failed for $composePath: $($_.Exception.Message)"
+    Write-Host "[idc1] failed for ${composePath}: $($_.Exception.Message)"
   }
 }
