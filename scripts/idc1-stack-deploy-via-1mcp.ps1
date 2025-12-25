@@ -1,6 +1,7 @@
 param(
   [string]$Endpoint = "https://1mcp.idc1.surf-thailand.com/mcp?app=windsurf",
   [string[]]$ComposePathCandidates = @(
+    "/home/chaba/chaba/stacks/idc1-stack/docker-compose.yml",
     "/opt/chaba/stacks/idc1-stack/docker-compose.yml",
     "/root/chaba/stacks/idc1-stack/docker-compose.yml"
   ),
@@ -21,7 +22,28 @@ function Invoke-JsonRpc {
     [string]$Url,
     [hashtable]$Body
   )
-  return Invoke-RestMethod -Method Post -Uri $Url -Headers $headers -ContentType "application/json" -Body ($Body | ConvertTo-Json -Depth 20)
+
+  $accepts = @(
+    "application/json",
+    "application/json, text/event-stream"
+  )
+
+  $json = ($Body | ConvertTo-Json -Depth 20)
+  foreach ($accept in $accepts) {
+    try {
+      $h = @{} + $headers
+      $h["Accept"] = $accept
+      return Invoke-RestMethod -Method Post -Uri $Url -Headers $h -ContentType "application/json" -Body $json
+    } catch {
+      # If gateway rejects Accept, it returns 406. Try next Accept.
+      if ($_.Exception.Message -match "406") {
+        continue
+      }
+      throw
+    }
+  }
+
+  throw "MCP endpoint rejected all Accept headers we tried"
 }
 
 Write-Host "[idc1] checking /health on $Endpoint"
