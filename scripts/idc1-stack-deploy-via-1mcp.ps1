@@ -16,31 +16,6 @@ $headers = @{ Authorization = "Basic $basic" }
 
 $baseUrl = ($Endpoint -replace "/mcp\?app=.*$", "")
 
-function New-McpSseSession {
-  param(
-    [string]$BaseUrl,
-    [hashtable]$Headers
-  )
-
-  $candidates = @(
-    @{ sse = "$BaseUrl/mcp/sse"; messages = "$BaseUrl/mcp/messages" },
-    @{ sse = "$BaseUrl/sse"; messages = "$BaseUrl/messages" }
-  )
-
-  foreach ($c in $candidates) {
-    try {
-      Write-Host "[idc1] creating SSE session via $($c.sse)"
-      $sse = Invoke-RestMethod -Uri $c.sse -Method Post -Headers $Headers
-      if (-not $sse.session_id) { throw "No session_id returned" }
-      return @{ session_id = $sse.session_id; messages_url = $c.messages }
-    } catch {
-      Write-Host "[idc1] SSE endpoint not available ($($c.sse)): $($_.Exception.Message)"
-    }
-  }
-
-  throw "No supported SSE endpoint found (tried /mcp/sse and /sse)"
-}
-
 function Invoke-JsonRpc {
   param(
     [string]$Url,
@@ -53,10 +28,19 @@ Write-Host "[idc1] checking /health on $Endpoint"
 $health = Invoke-RestMethod -Uri "$baseUrl/health" -Method Get -Headers $headers
 $health | ConvertTo-Json -Depth 6 | Write-Host
 
-Write-Host "[idc1] creating SSE session"
-$sess = New-McpSseSession -BaseUrl $baseUrl -Headers $headers
-$sessionId = $sess.session_id
-$rpcUrl = $sess.messages_url + "?session_id=$sessionId"
+Write-Host "[idc1] using direct MCP JSON-RPC at $Endpoint"
+$rpcUrl = $Endpoint
+
+# Optional: verify tool exists (best-effort)
+try {
+  $list = Invoke-JsonRpc -Url $rpcUrl -Body @{ jsonrpc = "2.0"; id = 1; method = "tools/list"; params = @{} }
+  $names = @($list.result.tools | ForEach-Object { $_.name })
+  if ($names -notcontains "docker_1mcp_compose-control") {
+    Write-Host "[idc1] warning: docker_1mcp_compose-control not found in tools/list"
+  }
+} catch {
+  Write-Host "[idc1] warning: tools/list failed: $($_.Exception.Message)"
+}
 
 foreach ($composePath in $ComposePathCandidates) {
   try {
