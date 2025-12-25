@@ -5,9 +5,9 @@ param(
 $ErrorActionPreference = "Stop"
 
 if (-not $PSBoundParameters.ContainsKey("Port") -or $Port -le 0) {
-  $envPort = $env:MCP0_PORT
+  $envPort = $env:ONE_MCP_PORT
   if ([string]::IsNullOrWhiteSpace($envPort)) {
-    $envPort = "8355"
+    $envPort = "3050"
   }
   $Port = [int]$envPort
 }
@@ -33,7 +33,7 @@ function Invoke-Compose {
 
 Invoke-Compose -Args @("ps")
 
-$healthUrl = "http://localhost:$Port/health"
+$healthUrl = "http://localhost:$Port/health/ready"
 $maxAttempts = 5
 $delaySeconds = 3
 $success = $false
@@ -55,7 +55,7 @@ for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
 }
 
 if (-not $success) {
-  throw "MCP0 health endpoint did not become ready at $healthUrl"
+  throw "1mcp-agent health endpoint did not become ready at $healthUrl"
 }
 
-Write-Host "[idc1-stack-verify] MCP0 is healthy at $healthUrl"
+Write-Host "[idc1-stack-verify] 1mcp-agent is healthy at $healthUrl"

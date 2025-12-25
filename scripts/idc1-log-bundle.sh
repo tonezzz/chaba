@@ -17,7 +17,6 @@ SSH_COMMON_OPTS=(
 )
 
 CONTAINERS_DEFAULT=(
-  mcp0
   mcp-agents
   mcp-devops
   mcp-tester

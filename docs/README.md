@@ -13,6 +13,7 @@ The idc1 `1mcp` entrypoint aggregates:
 - `mcp-devops`
 - `mcp-memory`
 - `mcp-sequentialthinking`
+- `mcp-playwright`
 - `mcp-glama`
 
 ## Stacks
@@ -204,9 +205,7 @@ Start/recreate VPN services:
 
 Verify (client):
 - `nslookup idc1.vpn 10.8.0.1`
-- `nslookup mcp0.idc1.vpn 10.8.0.1`
 - `ssh chaba@idc1.vpn`
-- `curl -sf http://mcp0.idc1.vpn:${MCP_DOCKER_PORT:-8340}/health`
 
 ## SSH over VPN (idc1.vpn)
 `idc1.vpn` resolves to `10.8.0.1`, which is the `wg0` IP **inside** the `idc1-wg-easy` container.
@@ -222,8 +221,6 @@ Notes:
 Recovery:
 - If `ssh chaba@idc1.vpn` returns `Connection refused` after recreating/restarting `wg-easy`, recreate the VPN services so `WG_POST_UP` runs:
   - `cd /home/chaba/chaba/stacks/idc1-stack && docker compose --profile vpn up -d --force-recreate wg-easy wg-dns`
-- Fallback (if you need to patch a running system without recreating containers):
-  - `scripts/idc1-fix-mcp0-vpn.sh`
 
 ## Windows SSH key ACL fix
  When NTFS permissions prevent WSL/OpenSSH from using a private key (the “UNPROTECTED PRIVATE KEY FILE” error), run the following in an elevated PowerShell session. This consistently resets ownership and grants read-only access to the current user:

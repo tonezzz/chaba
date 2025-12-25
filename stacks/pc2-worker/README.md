@@ -5,7 +5,7 @@ This stack runs the PC2 worker services.
 
 Key components:
 - `1mcp-agent` (aggregates MCP backends)
-- `mcp-glama` (Glama MCP provider via Streamable HTTP)
+- `mcp-glama` (Glama MCP provider)
 - Supporting MCP servers (filesystem, docker, fetch, github, vaja)
 
 ## Start
@@ -30,7 +30,7 @@ Note: for VPN usage, this endpoint is currently HTTP-only (do not use HTTPS).
 
 ## Secret Management Workflow (pc2-worker)
 1. **Authoritative template**: `stacks/pc2-worker/.env.example` stays in git with `__REPLACE_ME__` placeholders.
-2. **Private overrides**: create an untracked file such as `stacks/pc2-worker/.env.local` or a secrets bundle (`.secrets/.env/tony.env`) containing real values (MCP0 admin token, API keys, etc.).
+2. **Private overrides**: create an untracked file such as `stacks/pc2-worker/.env.local` or a secrets bundle (`.secrets/.env/tony.env`) containing real values (API keys, etc.).
 3. **Sync helper**: run `pwsh ./scripts/pc2-worker/sync-env.ps1 -SourcePath <path-to-private-env>` before invoking any compose workflow.
 4. **Automations**: for remote ops, prefer `scripts/pc2-worker/pc2-stack.ps1` (sync + up/down/status via WSL+SSH).
 

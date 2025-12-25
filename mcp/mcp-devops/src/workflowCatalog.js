@@ -595,7 +595,8 @@ const workflows = [
   {
     id: 'idc1-health-sweep',
     label: 'idc1 MCP health sweep',
-    description: 'SSH into idc1 and curl the local mcp0, mcp-agents, and mcp-devops /health endpoints.',
+    description:
+      'SSH into idc1 and curl the local 1mcp-agent, mcp-* services, and their /health endpoints to spot outages.',
     tags: ['idc1', 'diagnostics', 'health'],
     runner: {
       type: 'posix',
@@ -609,9 +610,13 @@ const workflows = [
           process.env.IDC1_DEPLOY_SSH_KEY_PATH ||
             path.join(config.repoRoot, '.secrets', 'dev-host', '.ssh', 'chaba_ed25519')
         ),
-        MCP0_PORT: process.env.IDC1_MCP0_PORT || '8355',
-        MCP_AGENTS_PORT: process.env.IDC1_MCP_AGENTS_PORT || '8046',
-        MCP_DEVOPS_PORT: process.env.IDC1_MCP_DEVOPS_PORT || '8425'
+        ONE_MCP_PORT: process.env.IDC1_ONE_MCP_PORT || '3050',
+        MCP_AGENTS_PORT: process.env.IDC1_MCP_AGENTS_PORT || '8446',
+        MCP_DEVOPS_PORT: process.env.IDC1_MCP_DEVOPS_PORT || '8425',
+        MCP_PLAYWRIGHT_PORT: process.env.IDC1_MCP_PLAYWRIGHT_PORT || '8460',
+        MCP_MEMORY_PORT: process.env.IDC1_MCP_MEMORY_PORT || '8470',
+        MCP_TESTER_PORT: process.env.IDC1_MCP_TESTER_PORT || '8435',
+        MCP_GLAMA_PORT: process.env.IDC1_MCP_GLAMA_PORT || '7441'
       },
       shell: config.deployShell
     },
@@ -620,14 +625,14 @@ const workflows = [
     }
   },
   {
-    id: 'idc1-fix-mcp0-vpn',
-    label: 'Fix mcp0.idc1.vpn (CoreDNS + Caddy)',
+    id: 'idc1-log-bundle',
+    label: 'idc1 log bundle (tar.gz)',
     description:
-      'Patches idc1 CoreDNS and Caddy config to make mcp0.idc1.vpn resolve and reverse-proxy to the local mcp0 service, then restarts wg-dns and reloads Caddy.',
-    tags: ['idc1', 'vpn', 'dns', 'caddy', 'mcp0'],
+      'SSH into idc1 and collect a tar.gz bundle with docker logs/inspect plus system and caddy diagnostics.',
+    tags: ['idc1', 'diagnostics', 'logs'],
     runner: {
       type: 'posix',
-      scriptRelative: './scripts/idc1-fix-mcp0-vpn.sh',
+      scriptRelative: './scripts/idc1-log-bundle.sh',
       cwd: config.repoRoot,
       env: {
         SSH_USER: process.env.IDC1_DEPLOY_SSH_USER || 'chaba',
@@ -637,15 +642,14 @@ const workflows = [
           process.env.IDC1_DEPLOY_SSH_KEY_PATH ||
             path.join(config.repoRoot, '.secrets', 'dev-host', '.ssh', 'chaba_ed25519')
         ),
-        IDC1_STACK_DIR: process.env.IDC1_STACK_DIR || '/home/chaba/chaba/stacks/idc1-stack',
-        COREFILE_REL: process.env.IDC1_COREFILE_REL || 'config/coredns/Corefile',
-        CADDYFILE_REL: process.env.IDC1_CADDYFILE_REL || 'config/caddy/Caddyfile',
-        MCP0_PORT: process.env.IDC1_MCP0_PORT || '8355'
+        BUNDLE_DIR: process.env.IDC1_LOG_BUNDLE_DIR || '/tmp',
+        BUNDLE_PREFIX: process.env.IDC1_LOG_BUNDLE_PREFIX || 'idc1-log-bundle',
+        CONTAINERS: process.env.IDC1_LOG_BUNDLE_CONTAINERS || ''
       },
       shell: config.deployShell
     },
     outputs: {
-      docs: 'scripts/idc1-fix-mcp0-vpn.sh'
+      docs: 'scripts/idc1-log-bundle.sh'
     }
   },
   {

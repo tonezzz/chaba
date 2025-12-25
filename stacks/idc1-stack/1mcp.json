@@ -38,9 +38,15 @@
       "restartOnExit": true,
       "restartDelay": 1000
     },
+    "mcp-playwright": {
+      "transport": "http",
+      "url": "http://mcp-playwright:${MCP_PLAYWRIGHT_PORT:-8460}",
+      "tags": ["playwright"],
+      "enabled": true
+    },
     "glama": {
-      "transport": "streamableHttp",
-      "url": "http://mcp-glama:8014/mcp",
+      "transport": "http",
+      "url": "http://mcp-glama:8014",
       "tags": ["glama"],
       "enabled": true
     }
