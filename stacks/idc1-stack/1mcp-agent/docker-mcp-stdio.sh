@@ -11,9 +11,9 @@ fi
 
 if [ ! -x "$VENV_DIR/bin/python" ]; then
   python3 -m venv "$VENV_DIR"
-  "$VENV_DIR/bin/python" -m pip install --upgrade pip setuptools wheel 1>&2
+  "$VENV_DIR/bin/python" -m pip install --upgrade pip setuptools wheel >/dev/null 2>&1
 fi
 
-"$VENV_DIR/bin/python" -m pip install -q -e "$PROJECT_DIR" 1>&2
+"$VENV_DIR/bin/python" -m pip install -q -e "$PROJECT_DIR" >/dev/null 2>&1
 
 exec "$VENV_DIR/bin/docker-mcp"

@@ -356,6 +356,30 @@ async def mcp_rpc(req: Request) -> JSONResponse:
     method = body.get("method")
     params = body.get("params") or {}
 
+    if method == "initialize":
+        client_info = (params or {}).get("clientInfo") or {}
+        _ = client_info
+        return JSONResponse(
+            {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "result": {
+                    "protocolVersion": (params or {}).get("protocolVersion") or "2024-11-05",
+                    "serverInfo": {"name": "mcp-task", "version": "0.1.0"},
+                    "capabilities": {
+                        "tools": {"listChanged": True},
+                    },
+                },
+            },
+            status_code=200,
+        )
+
+    if method == "notifications/initialized":
+        return JSONResponse({"jsonrpc": "2.0", "id": req_id, "result": None}, status_code=200)
+
+    if method == "ping":
+        return JSONResponse({"jsonrpc": "2.0", "id": req_id, "result": {}}, status_code=200)
+
     if method == "tools/list":
         return JSONResponse({"jsonrpc": "2.0", "id": req_id, "result": {"tools": _tool_list()}})
 
