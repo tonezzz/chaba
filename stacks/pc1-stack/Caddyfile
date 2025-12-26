@@ -1,6 +1,23 @@
 pc1.vpn {
-    reverse_proxy webtop2:3000
     tls internal
+
+    route {
+        handle_path /chat* {
+            reverse_proxy openchat-ui:3000
+        }
+
+        handle_path /openai* {
+            reverse_proxy mcp-openai-gateway:8181
+        }
+
+        handle_path /1mcp* {
+            reverse_proxy 1mcp-agent:3051
+        }
+
+        handle {
+            redir /chat/ 302
+        }
+    }
 }
 
 webtop2.pc1.vpn {
@@ -15,5 +32,15 @@ webtop3.pc1.vpn {
 
 1mcp.pc1.vpn {
     reverse_proxy 1mcp-agent:3051
+    tls internal
+}
+
+openchat.pc1.vpn {
+    reverse_proxy openchat-ui:3000
+    tls internal
+}
+
+openai.pc1.vpn {
+    reverse_proxy mcp-openai-gateway:8181
     tls internal
 }

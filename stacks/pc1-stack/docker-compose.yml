@@ -17,6 +17,18 @@ services:
     build:
       context: ./1mcp-agent
     container_name: pc1-1mcp-agent
+    command:
+      - 1mcp
+      - --config
+      - ${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}
+      - --transport
+      - http
+      - --host
+      - ${ONE_MCP_HOST:-0.0.0.0}
+      - --port
+      - ${ONE_MCP_PORT:-3051}
+      - --external-url
+      - ${ONE_MCP_EXTERNAL_URL:-http://127.0.0.1:3051}
     ports:
       - "${ONE_MCP_PORT:-3051}:${ONE_MCP_PORT:-3051}"
     environment:
@@ -31,7 +43,7 @@ services:
       UV_PROJECT_ENVIRONMENT: /tmp/uv-project
     volumes:
       - ${ONE_MCP_CONFIG_FILE:-./1mcp.json}:${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}:ro
-      - "${ONE_MCP_WORKSPACE_HOST_DIR:-C:/chaba}:/workspaces/chaba:cached"
+      - "${PC1_WORKSPACE_HOST_DIR:-C:/chaba}:/workspaces/chaba:cached"
       - /var/run/docker.sock:/var/run/docker.sock
       - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
       - docker-mcp-venv:/opt/docker-mcp-venv
@@ -79,6 +91,48 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+
+  mcp-openai-gateway:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_OPENAI_GATEWAY_BUILD_CONTEXT:-../../mcp/mcp-openai-gateway}
+    container_name: pc1-mcp-openai-gateway
+    ports:
+      - "${MCP_OPENAI_GATEWAY_PORT:-8181}:8181"
+    environment:
+      PORT: 8181
+      OPENAI_GATEWAY_MODEL_ID: ${OPENAI_GATEWAY_MODEL_ID:-glama-default}
+      OPENAI_GATEWAY_TIMEOUT_SECONDS: ${OPENAI_GATEWAY_TIMEOUT_SECONDS:-60}
+      OPENAI_GATEWAY_DEBUG: ${OPENAI_GATEWAY_DEBUG:-0}
+      MCP_AGENT_URL: ${MCP_AGENT_URL:-http://1mcp-agent:${ONE_MCP_PORT:-3051}/mcp?app=openchat}
+      GLAMA_API_URL: ${GLAMA_API_URL:-}
+      GLAMA_API_KEY: ${GLAMA_API_KEY:-}
+      GLAMA_MODEL: ${GLAMA_MODEL:-gpt-4o-mini}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8181/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - 1mcp-agent
+
+  openchat-ui:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${OPENCHAT_UI_BUILD_CONTEXT:-../../sites/openchat-ui}
+    container_name: pc1-openchat-ui
+    ports:
+      - "${OPENCHAT_UI_PORT:-3170}:3000"
+    environment:
+      OPENAI_API_HOST: ${OPENCHAT_OPENAI_API_HOST:-http://mcp-openai-gateway:8181}
+      OPENAI_API_KEY: ${OPENCHAT_OPENAI_API_KEY:-sk-dummy}
+      DEFAULT_MODEL: ${OPENCHAT_DEFAULT_MODEL:-glama-default}
+      NEXT_PUBLIC_DEFAULT_TEMPERATURE: ${OPENCHAT_DEFAULT_TEMPERATURE:-0.5}
+      NEXT_PUBLIC_DEFAULT_SYSTEM_PROMPT: ${OPENCHAT_DEFAULT_SYSTEM_PROMPT:-" "}
+    depends_on:
+      - mcp-openai-gateway
 
   mcp-tester:
     <<: *default-service
@@ -130,6 +184,8 @@ services:
     profiles: ["mcp-suite"]
     build:
       context: ${MCP_TASK_BUILD_CONTEXT:-../../mcp/mcp-task}
+    ports:
+      - "8016:8016"
     environment:
       PORT: 8016
       MCP_TASK_DB_PATH: /data/sqlite/mcp-task.sqlite
