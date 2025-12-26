@@ -10,12 +10,29 @@ const normalizeBoolean = (value) => {
   return Boolean(value);
 };
 
+const coerceArgsObject = (value) => {
+  if (!value) return {};
+  if (typeof value === 'object') return value;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return {};
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed && typeof parsed === 'object') return parsed;
+    } catch {
+      return {};
+    }
+  }
+  return {};
+};
+
 import express from 'express';
 import cors from 'cors';
 import crypto from 'node:crypto';
 import { config } from './config.js';
 import { listWorkflowMetadata, findWorkflow } from './workflowCatalog.js';
 import { executeWorkflow } from './executors.js';
+import { getSystemTelemetry, formatTelemetryReport } from './telemetry.js';
 
 const app = express();
 app.use(cors());
@@ -28,6 +45,27 @@ const TOOLS = {
     input_schema: {
       type: 'object',
       properties: {}
+    }
+  },
+  system_telemetry: {
+    name: 'system_telemetry',
+    description:
+      'Collect system telemetry (bounded) and return both structured JSON and a human-readable report tailored to the provided question.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        question: { type: 'string', description: 'What are you trying to diagnose or understand?' },
+        include_docker: { type: 'boolean', description: 'If true, include docker info + ps summary.' },
+        include_processes: {
+          type: 'boolean',
+          description: 'If true, include a bounded list of processes.'
+        },
+        max_containers: {
+          type: 'number',
+          description: 'Max docker containers to include in the report (bounded).'
+        },
+        max_processes: { type: 'number', description: 'Max processes to include (bounded).' }
+      }
     }
   },
   run_workflow: {
@@ -126,7 +164,7 @@ const handleMcpJsonRpc = async ({ payload, session, sessionId }) => {
 
   if (method === 'tools/call') {
     const toolName = payload?.params?.name;
-    const args = payload?.params?.arguments || {};
+    const args = coerceArgsObject(payload?.params?.arguments);
     if (!toolName || typeof toolName !== 'string') {
       return { type: 'response', payload: jsonRpcError(id, -32602, 'params.name is required') };
     }
@@ -149,7 +187,7 @@ const handleMcpJsonRpc = async ({ payload, session, sessionId }) => {
         };
       }
       case 'run_workflow': {
-        const workflowId = args.workflow_id;
+        const workflowId = args.workflow_id ?? args.workflowId;
         if (!workflowId) {
           return { type: 'response', payload: jsonRpcError(id, -32602, 'workflow_id is required') };
         }
@@ -160,14 +198,17 @@ const handleMcpJsonRpc = async ({ payload, session, sessionId }) => {
             payload: jsonRpcError(id, -32601, `Workflow '${workflowId}' not found`)
           };
         }
-        const dryRun = normalizeBoolean(args.dry_run);
+        const dryRun = normalizeBoolean(args.dry_run ?? args.dryRun);
         const result = await executeWorkflow(workflow, { dryRun });
         const response = {
           workflow_id: workflow.id,
           dry_run: dryRun || result.dryRun || false,
           exit_code: result.exitCode,
+          error_code: result.errorCode || null,
           duration_ms: result.durationMs,
           command: result.command || null,
+          attempts: result.attempts || [],
+          log_truncated: Boolean(result.logTruncated),
           outputs: workflow.outputs || {},
           logs: serializeLogs(result.logs)
         };
@@ -175,6 +216,22 @@ const handleMcpJsonRpc = async ({ payload, session, sessionId }) => {
           type: 'response',
           payload: jsonRpcResult(id, {
             content: [{ type: 'text', text: JSON.stringify(response) }]
+          })
+        };
+      }
+      case 'system_telemetry': {
+        const telemetry = await getSystemTelemetry({
+          question: args.question,
+          include_docker: normalizeBoolean(args.include_docker ?? args.includeDocker),
+          include_processes: normalizeBoolean(args.include_processes ?? args.includeProcesses),
+          max_containers: args.max_containers ?? args.maxContainers,
+          max_processes: args.max_processes ?? args.maxProcesses
+        });
+        const report = formatTelemetryReport(telemetry, { question: args.question });
+        return {
+          type: 'response',
+          payload: jsonRpcResult(id, {
+            content: [{ type: 'text', text: JSON.stringify({ telemetry, report }) }]
           })
         };
       }
@@ -368,7 +425,7 @@ app.post('/mcp', async (req, res) => {
       }
 
       const toolName = payload?.params?.name;
-      const args = payload?.params?.arguments || {};
+      const args = coerceArgsObject(payload?.params?.arguments);
       if (!toolName || typeof toolName !== 'string') {
         return res.status(400).json(jsonRpcError(id, -32602, 'params.name is required'));
       }
@@ -390,7 +447,7 @@ app.post('/mcp', async (req, res) => {
           );
         }
         case 'run_workflow': {
-          const workflowId = args.workflow_id;
+          const workflowId = args.workflow_id ?? args.workflowId;
           if (!workflowId) {
             return res.status(400).json(jsonRpcError(id, -32602, 'workflow_id is required'));
           }
@@ -398,20 +455,38 @@ app.post('/mcp', async (req, res) => {
           if (!workflow) {
             return res.status(404).json(jsonRpcError(id, -32601, `Workflow '${workflowId}' not found`));
           }
-          const dryRun = normalizeBoolean(args.dry_run);
+          const dryRun = normalizeBoolean(args.dry_run ?? args.dryRun);
           const result = await executeWorkflow(workflow, { dryRun });
           const response = {
             workflow_id: workflow.id,
             dry_run: dryRun || result.dryRun || false,
             exit_code: result.exitCode,
+            error_code: result.errorCode || null,
             duration_ms: result.durationMs,
             command: result.command || null,
+            attempts: result.attempts || [],
+            log_truncated: Boolean(result.logTruncated),
             outputs: workflow.outputs || {},
             logs: serializeLogs(result.logs)
           };
           return res.json(
             jsonRpcResult(id, {
               content: [{ type: 'text', text: JSON.stringify(response) }]
+            })
+          );
+        }
+        case 'system_telemetry': {
+          const telemetry = await getSystemTelemetry({
+            question: args.question,
+            include_docker: normalizeBoolean(args.include_docker ?? args.includeDocker),
+            include_processes: normalizeBoolean(args.include_processes ?? args.includeProcesses),
+            max_containers: args.max_containers ?? args.maxContainers,
+            max_processes: args.max_processes ?? args.maxProcesses
+          });
+          const report = formatTelemetryReport(telemetry, { question: args.question });
+          return res.json(
+            jsonRpcResult(id, {
+              content: [{ type: 'text', text: JSON.stringify({ telemetry, report }) }]
             })
           );
         }
@@ -429,7 +504,7 @@ app.post('/mcp', async (req, res) => {
 
 app.post('/invoke', async (req, res) => {
   const { tool, arguments: argumentsField, args: argsField } = req.body || {};
-  const args = argumentsField ?? argsField ?? {};
+  const args = coerceArgsObject(argumentsField ?? argsField);
   if (!tool || typeof tool !== 'string') {
     return res.status(400).json({ error: 'tool is required' });
   }
@@ -446,7 +521,7 @@ app.post('/invoke', async (req, res) => {
         });
       }
       case 'run_workflow': {
-        const workflowId = args.workflow_id;
+        const workflowId = args.workflow_id ?? args.workflowId;
         if (!workflowId) {
           return res.status(400).json({ error: 'workflow_id is required' });
         }
@@ -454,17 +529,31 @@ app.post('/invoke', async (req, res) => {
         if (!workflow) {
           return res.status(404).json({ error: `Workflow '${workflowId}' not found` });
         }
-        const dryRun = normalizeBoolean(args.dry_run);
+        const dryRun = normalizeBoolean(args.dry_run ?? args.dryRun);
         const result = await executeWorkflow(workflow, { dryRun });
         return res.json({
           workflow_id: workflow.id,
           dry_run: dryRun || result.dryRun || false,
           exit_code: result.exitCode,
+          error_code: result.errorCode || null,
           duration_ms: result.durationMs,
           command: result.command || null,
+          attempts: result.attempts || [],
+          log_truncated: Boolean(result.logTruncated),
           outputs: workflow.outputs || {},
           logs: serializeLogs(result.logs)
         });
+      }
+      case 'system_telemetry': {
+        const telemetry = await getSystemTelemetry({
+          question: args.question,
+          include_docker: normalizeBoolean(args.include_docker ?? args.includeDocker),
+          include_processes: normalizeBoolean(args.include_processes ?? args.includeProcesses),
+          max_containers: args.max_containers ?? args.maxContainers,
+          max_processes: args.max_processes ?? args.maxProcesses
+        });
+        const report = formatTelemetryReport(telemetry, { question: args.question });
+        return res.json({ telemetry, report });
       }
       default:
         return res.status(400).json({ error: `Tool '${tool}' not implemented` });
