@@ -163,12 +163,28 @@ def _init_db(conn: sqlite3.Connection) -> None:
 class ToolCall(BaseModel):
     server: str
     tool: str
-    args: Dict[str, Any] = Field(default_factory=dict)
+    args: Dict[str, Any] = Field(
+        default_factory=dict, validation_alias=AliasChoices("args", "arguments")
+    )
+
+
+class ToolCallPatch(BaseModel):
+    server: Optional[str] = None
+    tool: Optional[str] = None
+    args: Optional[Dict[str, Any]] = Field(
+        default=None, validation_alias=AliasChoices("args", "arguments")
+    )
 
 
 class CreateTaskArgs(BaseModel):
     title: str
     call: ToolCall
+
+
+class UpdateTaskArgs(BaseModel):
+    task_id: str = Field(validation_alias=AliasChoices("task_id", "taskId"))
+    title: Optional[str] = None
+    call: Optional[ToolCallPatch] = None
 
 
 class ApproveTaskArgs(BaseModel):
@@ -426,6 +442,11 @@ def _tool_list() -> List[Dict[str, Any]]:
             "inputSchema": CreateTaskArgs.model_json_schema(),
         },
         {
+            "name": "update_task",
+            "description": "Update a pending task's title and/or tool call (server/tool/args).",
+            "inputSchema": UpdateTaskArgs.model_json_schema(),
+        },
+        {
             "name": "approve_task",
             "description": "Approve and execute a task, creating a run and storing its report.",
             "inputSchema": ApproveTaskArgs.model_json_schema(),
@@ -494,7 +515,21 @@ async def _invoke_remote(server: str, tool: str, args: Dict[str, Any]) -> Any:
 
     async with httpx.AsyncClient(timeout=60.0) as client:
         r = await client.post(url, json=payload)
-        r.raise_for_status()
+        try:
+            r.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            body = None
+            try:
+                body = e.response.text
+            except Exception:
+                body = None
+            detail = body.strip() if isinstance(body, str) else ""
+            if len(detail) > 4000:
+                detail = detail[:4000] + "..."
+            msg = f"Remote invoke failed: {e.response.status_code} {e.response.reason_phrase} for {url}"
+            if detail:
+                msg = msg + f"; body={detail}"
+            raise RuntimeError(msg) from e
         return r.json()
 
 
@@ -568,6 +603,43 @@ async def _create_task(args: CreateTaskArgs) -> Dict[str, Any]:
         raise RuntimeError("Failed to create task")
 
     return {"task": _task_to_dict(row, None)}
+
+
+async def _update_task(args: UpdateTaskArgs) -> Dict[str, Any]:
+    row = _task_row(args.task_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="task not found")
+
+    if row["status"] not in ("pending",):
+        raise HTTPException(status_code=409, detail=f"task not pending (status={row['status']})")
+
+    spec = json.loads(row["spec_json"]) if row["spec_json"] else {}
+
+    if args.title is not None:
+        spec["title"] = args.title
+
+    if args.call is not None:
+        call = spec.get("call") or {}
+        if args.call.server is not None:
+            call["server"] = args.call.server
+        if args.call.tool is not None:
+            call["tool"] = args.call.tool
+        if args.call.args is not None:
+            call["args"] = args.call.args
+        spec["call"] = call
+
+    title_to_store = str(args.title) if args.title is not None else str(row["title"])
+    _conn.execute(
+        "UPDATE tasks SET title=?, spec_json=? WHERE task_id=?",
+        (title_to_store, _json_dumps(spec), args.task_id),
+    )
+    _conn.commit()
+
+    updated = _task_row(args.task_id)
+    if updated is None:
+        raise RuntimeError("task disappeared")
+    latest = _latest_run_row(args.task_id)
+    return {"task": _task_to_dict(updated, latest)}
 
 
 async def _approve_task(args: ApproveTaskArgs) -> Dict[str, Any]:
@@ -680,6 +752,9 @@ async def _dispatch_tool(tool: str, args: Dict[str, Any]) -> Any:
     if tool == "create_task":
         model = CreateTaskArgs.model_validate(args)
         return await _create_task(model)
+    if tool == "update_task":
+        model = UpdateTaskArgs.model_validate(args)
+        return await _update_task(model)
     if tool == "approve_task":
         model = ApproveTaskArgs.model_validate(args)
         return await _approve_task(model)
