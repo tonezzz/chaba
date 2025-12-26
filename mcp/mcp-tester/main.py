@@ -152,13 +152,22 @@ def _load_json_entries(label: str, content: str) -> List[Dict[str, Any]]:
         return []
 
 
+def _persist_history(summary: TestRunSummary) -> None:
+    if not settings.history_file:
+        return
+    try:
+        path = Path(settings.history_file)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = summary.model_dump()
+        with path.open("a", encoding="utf-8") as fp:
+            fp.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Failed to persist run history: %s", exc)
+
+
 def load_test_definitions() -> List[TestDefinition]:
     raw_entries: Dict[str, Dict[str, Any]] = {}
     sources: List[tuple[str, str]] = []
-
-    default_file = Path(__file__).with_name("tests.example.json")
-    if default_file.exists():
-        sources.append(("tests.example.json", default_file.read_text()))
 
     suite_candidates: List[str] = []
     if settings.suite_file:
@@ -177,6 +186,11 @@ def load_test_definitions() -> List[TestDefinition]:
 
     if settings.targets_blob:
         sources.append(("MCP_TESTER_TARGETS", settings.targets_blob))
+
+    if not sources:
+        default_file = Path(__file__).with_name("tests.example.json")
+        if default_file.exists():
+            sources.append(("tests.example.json", default_file.read_text()))
 
     for label, content in sources:
         for entry in _load_json_entries(label, content):

@@ -143,10 +143,11 @@ services:
     ports:
       - "${MCP_TESTER_PORT:-8335}:${MCP_TESTER_PORT:-8335}"
     environment:
+      PORT: ${MCP_TESTER_PORT:-8335}
       MCP_TESTER_HOST: 0.0.0.0
       MCP_TESTER_PORT: ${MCP_TESTER_PORT:-8335}
-      MCP_TESTER_SUITE_FILE: ${MCP_TESTER_SUITE_FILE:-/app/tests.example.json}
-      MCP_TESTER_SUITE_FILES: ${MCP_TESTER_SUITE_FILES:-/app/tests.optional.json}
+      MCP_TESTER_SUITE_FILE: ${MCP_TESTER_SUITE_FILE:-/app/tests.pc1.json}
+      MCP_TESTER_SUITE_FILES: ${MCP_TESTER_SUITE_FILES:-}
       MCP_TESTER_DEFAULT_TIMEOUT_MS: ${MCP_TESTER_DEFAULT_TIMEOUT_MS:-5000}
       MCP_TESTER_HISTORY_FILE: ${MCP_TESTER_HISTORY_FILE:-/data/run-history.ndjson}
       DEV_HOST_TEST_BASE: ${DEV_HOST_TEST_BASE:-http://host.docker.internal:3100}
