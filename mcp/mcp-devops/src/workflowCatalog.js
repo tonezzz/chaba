@@ -815,6 +815,56 @@ const workflows = [
     outputs: {
       docs: 'scripts/pc2-worker/pc2-stack.ps1'
     }
+  },
+  {
+    id: 'playwright-thumbnail-google',
+    label: 'Playwright thumbnail (google.com)',
+    description:
+      'Uses the local mcp-playwright service to capture a small (thumbnail) screenshot of https://www.google.com and prints the resulting artifact path.',
+    tags: ['playwright', 'thumbnail', 'screenshot', 'pc2', 'idc1', 'pc1'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/playwright-thumbnail.sh',
+      cwd: config.repoRoot,
+      env: {
+        TARGET_URL: 'https://www.google.com',
+        THUMB_WIDTH: '320',
+        THUMB_HEIGHT: '180',
+        THUMB_FORMAT: 'png',
+        THUMB_WAIT_UNTIL: 'domcontentloaded',
+        THUMB_FULL_PAGE: 'false',
+        MCP_PLAYWRIGHT_PORT: '8025'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/playwright-thumbnail.sh'
+    }
+  },
+  {
+    id: 'playwright-thumbnail-google-idc1',
+    label: 'Playwright thumbnail (google.com) [idc1]',
+    description:
+      'Uses the local mcp-playwright service on idc1-stack (default port 8460) to capture a thumbnail screenshot of https://www.google.com.',
+    tags: ['playwright', 'thumbnail', 'screenshot', 'idc1'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/playwright-thumbnail.sh',
+      cwd: config.repoRoot,
+      env: {
+        TARGET_URL: 'https://www.google.com',
+        THUMB_WIDTH: '320',
+        THUMB_HEIGHT: '180',
+        THUMB_FORMAT: 'png',
+        THUMB_WAIT_UNTIL: 'domcontentloaded',
+        THUMB_FULL_PAGE: 'false',
+        MCP_PLAYWRIGHT_PORT: '8460'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/playwright-thumbnail.sh'
+    }
   }
 ];
 
