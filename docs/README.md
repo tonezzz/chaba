@@ -15,6 +15,29 @@
   - `https://pc1.vpn:3443/openai/v1/chat/completions`
   - `https://pc1.vpn:3443/openai/health`
 
+## pc1-stack: local env overrides (recommended)
+
+`pc1-stack` supports overriding its compose `env_file` via `PC1_STACK_ENV_FILE`.
+
+- Put local-only secrets / overrides in: `stacks/pc1-stack/.env.local`
+- Keep `stacks/pc1-stack/.env.local` out of git (it is gitignored).
+- Start the stack using the override file:
+
+```powershell
+docker compose -f stacks/pc1-stack/docker-compose.yml --env-file stacks/pc1-stack/.env.local --profile mcp-suite up -d
+```
+
+## pc1-stack: mcp-tester (full suite)
+
+`pc1-stack` includes `mcp-tester` under the `mcp-suite` profile.
+
+- Local URL: `http://127.0.0.1:8335/health`
+- Run the full suite:
+
+```powershell
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8335/tests/run -ContentType "application/json" -Body "{}"
+```
+
 ## CI/CD (default)
 
 Preferred workflow is GitHub Pull Requests targeting `main`.
