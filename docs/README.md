@@ -2,9 +2,38 @@
 
 ## MCP (default)
 
-- **Default MCP entrypoint (idc1)**: `https://1mcp.idc1.surf-thailand.com/mcp?app=windsurf`
+- **Default MCP entrypoint (pc2)**: `http://1mcp.pc2.vpn:3050/mcp?app=windsurf`
 - **Alternative MCP entrypoint (pc1)**: `http://1mcp.pc1.vpn:3051/mcp?app=windsurf`
-- **Alternative MCP entrypoint (pc2)**: `http://1mcp.pc2.vpn:3050/mcp?app=windsurf`
+- **Alternative MCP entrypoint (idc1)**: `https://1mcp.idc1.surf-thailand.com/mcp?app=windsurf`
+
+## OpenChat UI (pc1)
+
+- **Direct port**: `http://pc1.vpn:3170`
+- **VPN HTTPS path**: `https://pc1.vpn:3443/chat/`
+- **OpenAI gateway (via VPN HTTPS path)**:
+  - `https://pc1.vpn:3443/openai/v1/models`
+  - `https://pc1.vpn:3443/openai/v1/chat/completions`
+  - `https://pc1.vpn:3443/openai/health`
+
+## CI/CD (default)
+
+This repo uses GitHub Pull Requests targeting `main` as the default delivery path.
+
+- **CI**: GitHub Actions workflow at `.github/workflows/ci.yml` runs on:
+  - PRs to `main`
+  - pushes to `main`
+- **Merge strategy**: use **Rebase and merge** for PRs into `main`.
+
+Recommended GitHub repo settings (Branch protection for `main`):
+- **Require a pull request before merging**
+- **Require status checks to pass before merging**
+  - require the `CI` workflow
+- **Require branches to be up to date before merging**
+
+Recommended GitHub repo settings (Pull Requests):
+- **Allow rebase merging**: enabled
+- **Allow merge commits**: disabled
+- **Allow squash merging**: disabled
 
 The idc1 `1mcp` entrypoint aggregates:
 

@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Python syntax check (compileall)
+        run: |
+          python -m compileall mcp
+
+      - name: Prepare stack env files for compose validation
+        run: |
+          set -euo pipefail
+          for d in stacks/*; do
+            if [ -f "$d/.env.example" ] && [ ! -f "$d/.env" ]; then
+              cp "$d/.env.example" "$d/.env"
+            fi
+          done
+
+      - name: Docker Compose config validation
+        run: |
+          docker compose -f stacks/pc1-stack/docker-compose.yml config >/dev/null
+          docker compose -f stacks/pc2-worker/docker-compose.yml config >/dev/null
+          docker compose -f stacks/idc1-stack/docker-compose.yml config >/dev/null
