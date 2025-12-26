@@ -364,95 +364,52 @@ const wireProxies = () => {
     next();
   });
 
-  app.use(
-    '/test/agents/api',
-    createProxyMiddleware({
-      target: AGENTS_PROXY_TARGET,
-      changeOrigin: true,
-      pathRewrite: (path) => path.replace(/^\/test\/agents\/api/i, '/api'),
-      onProxyReq: (proxyReq) => {
-        proxyReq.setHeader('x-dev-host-proxy', 'test-agents-api');
-      },
-      onError: (err, req, res) => {
-        console.error('[dev-host] /test/agents/api proxy error', err.message);
-        if (!res.headersSent) {
-          res.status(502).json({ error: 'proxy_error', detail: err.message });
-        }
-      }
-    })
-  );
+  const mountProxy = (mountPath, target, { id, pathRewrite }) => {
+    if (!target) {
+      app.use(mountPath, (_req, res) => {
+        res.status(503).json({ error: 'proxy_unconfigured', id, mountPath });
+      });
+      return;
+    }
 
-  app.use(
-    '/test/chat/api',
-    createProxyMiddleware({
-      target: GLAMA_PROXY_TARGET,
-      changeOrigin: true,
-      pathRewrite: (path) => path.replace(/^\/test\/chat\/api/i, '/api'),
-      onProxyReq: (proxyReq) => {
-        proxyReq.setHeader('x-dev-host-proxy', 'test-chat');
-      },
-      onError: (err, req, res) => {
-        console.error('[dev-host] /test/chat/api proxy error', err.message);
-        if (!res.headersSent) {
-          res.status(502).json({ error: 'proxy_error', detail: err.message });
+    app.use(
+      mountPath,
+      createProxyMiddleware({
+        target,
+        changeOrigin: true,
+        pathRewrite,
+        onProxyReq: (proxyReq) => {
+          proxyReq.setHeader('x-dev-host-proxy', id);
+        },
+        onError: (err, req, res) => {
+          console.error(`[dev-host] ${mountPath} proxy error`, err.message);
+          if (!res.headersSent) {
+            res.status(502).json({ error: 'proxy_error', detail: err.message });
+          }
         }
-      }
-    })
-  );
+      })
+    );
+  };
 
-  app.use(
-    '/test/agents/api',
-    createProxyMiddleware({
-      target: AGENTS_PROXY_TARGET,
-      changeOrigin: true,
-      pathRewrite: (path) => path.replace(/^\/test\/agents\/api/i, '/api'),
-      onProxyReq: (proxyReq) => {
-        proxyReq.setHeader('x-dev-host-proxy', 'test-agents-api');
-      },
-      onError: (err, req, res) => {
-        console.error('[dev-host] /test/agents/api proxy error', err.message);
-        if (!res.headersSent) {
-          res.status(502).json({ error: 'proxy_error', detail: err.message });
-        }
-      }
-    })
-  );
+  mountProxy('/test/agents/api', AGENTS_PROXY_TARGET, {
+    id: 'test-agents-api',
+    pathRewrite: (path) => path.replace(/^\/test\/agents\/api/i, '/api')
+  });
 
-  app.use(
-    '/test/mcp0',
-    createProxyMiddleware({
-      target: MCP0_PROXY_TARGET,
-      changeOrigin: true,
-      pathRewrite: (path) => path.replace(/^\/test\/mcp0/i, ''),
-      onProxyReq: (proxyReq) => {
-        proxyReq.setHeader('x-dev-host-proxy', 'test-mcp0');
-      },
-      onError: (err, req, res) => {
-        console.error('[dev-host] /test/mcp0 proxy error', err.message);
-        if (!res.headersSent) {
-          res.status(502).json({ error: 'proxy_error', detail: err.message });
-        }
-      }
-    })
-  );
+  mountProxy('/test/chat/api', GLAMA_PROXY_TARGET, {
+    id: 'test-chat',
+    pathRewrite: (path) => path.replace(/^\/test\/chat\/api/i, '/api')
+  });
 
-  app.use(
-    '/test/detects/api',
-    createProxyMiddleware({
-      target: DETECTS_PROXY_TARGET,
-      changeOrigin: true,
-      pathRewrite: (path) => path.replace(/^\/test\/detects\/api/i, ''),
-      onProxyReq: (proxyReq) => {
-        proxyReq.setHeader('x-dev-host-proxy', 'test-detects');
-      },
-      onError: (err, req, res) => {
-        console.error('[dev-host] /test/detects/api proxy error', err.message);
-        if (!res.headersSent) {
-          res.status(502).json({ error: 'proxy_error', detail: err.message });
-        }
-      }
-    })
-  );
+  mountProxy('/test/mcp0', MCP0_PROXY_TARGET, {
+    id: 'test-mcp0',
+    pathRewrite: (path) => path.replace(/^\/test\/mcp0/i, '')
+  });
+
+  mountProxy('/test/detects/api', DETECTS_PROXY_TARGET, {
+    id: 'test-detects',
+    pathRewrite: (path) => path.replace(/^\/test\/detects\/api/i, '')
+  });
 
   if (VAJA_PROXY_TARGET) {
     app.use(
