@@ -13,6 +13,12 @@
   cmd /c "cd /d c:\chaba\docker && docker compose up -d dev-host"
   ```
 
+> **pc2 note:** pc2 commonly already uses host ports `80` (host-caddy) and `3100` (pc2-worker dev-proxy). In that case, run dev-host on an alternate port:
+> ```
+> cmd /c "set DEV_HOST_HTTP_PORT=3101 && cd /d c:\chaba\docker && docker compose up -d --build dev-host"
+> ```
+> Then open `http://127.0.0.1:3101/`.
+
 ## Secrets & env
 - Mirror production env files/keys under `.secrets/dev-host/` (same filenames as `.secrets/node-1`).
 - Deploy scripts pick these up automatically; no extra configuration is required once the folder exists.
