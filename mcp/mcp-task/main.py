@@ -471,7 +471,21 @@ def well_known() -> Dict[str, Any]:
 
 async def _invoke_remote(server: str, tool: str, args: Dict[str, Any]) -> Any:
     servers = _get_servers()
-    base = servers.get(server)
+
+    requested = str(server or "").strip()
+    base = servers.get(requested)
+    if not base:
+        # Compatibility: some UIs use their own labels for the target server.
+        # Prefer mcp-devops as a sensible default if available.
+        requested_l = requested.lower()
+        if requested_l in ("openchat", "openchat-ui", "chat"):
+            if "mcp-devops" in servers:
+                requested = "mcp-devops"
+                base = servers.get(requested)
+            elif len(servers) == 1:
+                requested = next(iter(servers.keys()))
+                base = servers.get(requested)
+
     if not base:
         raise RuntimeError(f"Unknown server '{server}'. Known: {sorted(servers.keys())}")
 
