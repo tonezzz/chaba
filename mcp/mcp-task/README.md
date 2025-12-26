@@ -26,7 +26,17 @@ Example:
 
 - `GET /health`
 - `GET /tools`
+- `POST /mcp`
 - `POST /invoke`
 - `GET /sse`
 - `POST /messages?session_id=...`
+
+## Tools
+
+- `create_task`
+- `approve_task`
+- `get_task`
+- `get_task_report`
+- `list_tasks`
+- `list_runs`
 

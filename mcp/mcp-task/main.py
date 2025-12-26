@@ -5,11 +5,12 @@ import sqlite3
 import time
 import uuid
 from dataclasses import dataclass
+from html import escape
 from typing import Any, Dict, List, Literal, Optional
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from pydantic import AliasChoices, BaseModel, Field
 
 
@@ -54,7 +55,80 @@ def _db() -> sqlite3.Connection:
     return conn
 
 
+def _table_columns(conn: sqlite3.Connection, table: str) -> List[str]:
+    try:
+        cur = conn.execute(f"PRAGMA table_info({table})")
+        return [r["name"] for r in cur.fetchall()]
+    except Exception:
+        return []
+
+
 def _init_db(conn: sqlite3.Connection) -> None:
+    # Legacy schema migration (older mcp-task versions used tasks.id and runs.job_id/result_json)
+    # Convert in-place to the current schema so the rest of the service can operate normally.
+    task_cols = _table_columns(conn, "tasks")
+    run_cols = _table_columns(conn, "runs")
+    if task_cols and "task_id" not in task_cols and "id" in task_cols:
+        # Rename the legacy tables out of the way, then create the new tables and copy data over.
+        # This avoids subtle issues with DROP/ALTER ordering and lets us retry safely.
+        conn.execute("PRAGMA foreign_keys = OFF")
+        conn.execute("ALTER TABLE tasks RENAME TO tasks_old")
+        if run_cols:
+            conn.execute("ALTER TABLE runs RENAME TO runs_old")
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS tasks (
+                task_id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                status TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                approved_at INTEGER,
+                approved_by TEXT,
+                spec_json TEXT NOT NULL,
+                last_error TEXT
+            )
+            """
+        )
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO tasks (task_id, title, status, created_at, approved_at, approved_by, spec_json, last_error)
+            SELECT id, title, status, created_at, approved_at, approved_by, spec_json, NULL FROM tasks_old
+            """
+        )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS runs (
+                run_id TEXT PRIMARY KEY,
+                task_id TEXT NOT NULL,
+                status TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                finished_at INTEGER,
+                report_json TEXT,
+                error TEXT,
+                FOREIGN KEY(task_id) REFERENCES tasks(task_id)
+            )
+            """
+        )
+
+        if run_cols and "job_id" in run_cols:
+            error_expr = "error" if "error" in run_cols else ("error_message" if "error_message" in run_cols else "NULL")
+            finished_expr = "finished_at" if "finished_at" in run_cols else ("ended_at" if "ended_at" in run_cols else "NULL")
+            report_expr = "report_json" if "report_json" in run_cols else ("result_json" if "result_json" in run_cols else "NULL")
+            started_expr = "created_at" if "created_at" in run_cols else ("started_at" if "started_at" in run_cols else "NULL")
+            conn.execute(
+                f"""
+                INSERT OR IGNORE INTO runs (run_id, task_id, status, created_at, finished_at, report_json, error)
+                SELECT id, job_id, status, {started_expr}, {finished_expr}, {report_expr}, {error_expr} FROM runs_old
+                """
+            )
+
+        conn.execute("DROP TABLE IF EXISTS runs_old")
+        conn.execute("DROP TABLE IF EXISTS tasks_old")
+        conn.execute("PRAGMA foreign_keys = ON")
+        conn.commit()
+
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS tasks (
@@ -112,6 +186,18 @@ class GetTaskReportArgs(BaseModel):
     task_id: str = Field(validation_alias=AliasChoices("task_id", "taskId"))
 
 
+class ListTasksArgs(BaseModel):
+    status: Optional[str] = None
+    limit: int = Field(default=50, ge=1, le=500)
+    offset: int = Field(default=0, ge=0)
+
+
+class ListRunsArgs(BaseModel):
+    task_id: str = Field(validation_alias=AliasChoices("task_id", "taskId"))
+    limit: int = Field(default=50, ge=1, le=500)
+    offset: int = Field(default=0, ge=0)
+
+
 @dataclass
 class SseSession:
     session_id: str
@@ -136,6 +222,202 @@ def health() -> Dict[str, Any]:
         return {"ok": False, "service": "mcp-task", "error": str(e)}
 
 
+def _fmt_ts(ts: Optional[int]) -> str:
+    if ts is None:
+        return ""
+    try:
+        return time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(int(ts)))
+    except Exception:
+        return str(ts)
+
+
+def _html_page(title: str, body: str) -> HTMLResponse:
+    html = (
+        "<!doctype html>"
+        "<html><head><meta charset='utf-8'/>"
+        f"<title>{escape(title)}</title>"
+        "<meta name='viewport' content='width=device-width, initial-scale=1'/>"
+        "<style>"
+        "body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:1100px;margin:24px auto;padding:0 16px;}"
+        "a{color:#2563eb;text-decoration:none} a:hover{text-decoration:underline}"
+        "h1{font-size:20px;margin:0 0 16px 0} h2{font-size:16px;margin:20px 0 10px 0}"
+        ".muted{color:#6b7280}"
+        "table{width:100%;border-collapse:collapse;font-size:13px}"
+        "th,td{padding:8px 10px;border-bottom:1px solid #e5e7eb;vertical-align:top}"
+        "th{text-align:left;color:#374151;font-weight:600}"
+        "code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}"
+        "pre{background:#0b1020;color:#e5e7eb;padding:12px;border-radius:8px;overflow:auto;font-size:12px}"
+        ".pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#f3f4f6;color:#111827}"
+        ".row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 12px 0}"
+        "</style></head><body>"
+        f"<div class='row'><a href='/control'>Control</a><span class='muted'>/</span><span class='muted'>{escape(title)}</span></div>"
+        f"<h1>{escape(title)}</h1>"
+        f"{body}"
+        "</body></html>"
+    )
+    return HTMLResponse(html)
+
+
+def _run_row(run_id: str) -> Optional[sqlite3.Row]:
+    cur = _conn.execute("SELECT * FROM runs WHERE run_id = ?", (run_id,))
+    return cur.fetchone()
+
+
+def _control_task_rows(status: Optional[str], limit: int, offset: int) -> List[sqlite3.Row]:
+    if status:
+        cur = _conn.execute(
+            "SELECT task_id, title, status, created_at, last_error FROM tasks WHERE status = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (status, limit, offset),
+        )
+    else:
+        cur = _conn.execute(
+            "SELECT task_id, title, status, created_at, last_error FROM tasks ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (limit, offset),
+        )
+    return list(cur.fetchall())
+
+
+@app.get("/control")
+def control_home(limit: int = 50, offset: int = 0, status: Optional[str] = None) -> HTMLResponse:
+    rows = _control_task_rows(status=status, limit=limit, offset=offset)
+    filters = (
+        "<div class='row'>"
+        "<span class='muted'>Filters:</span>"
+        "<a class='pill' href='/control'>all</a>"
+        "<a class='pill' href='/control?status=pending'>pending</a>"
+        "<a class='pill' href='/control?status=approved'>approved</a>"
+        "<a class='pill' href='/control?status=completed'>completed</a>"
+        "<a class='pill' href='/control?status=failed'>failed</a>"
+        "</div>"
+    )
+    table = [
+        "<table><thead><tr>"
+        "<th>task</th><th>title</th><th>status</th><th>created</th><th>latest run</th><th>last error</th>"
+        "</tr></thead><tbody>"
+    ]
+    for r in rows:
+        task_id = str(r["task_id"]) if "task_id" in r.keys() else str(dict(r).get("task_id", ""))
+        latest = _latest_run_row(task_id)
+        latest_cell = ""
+        if latest is not None:
+            latest_cell = (
+                f"<a href='/control/run/{escape(latest['run_id'])}'>{escape(latest['run_id'])}</a>"
+                f"<div class='muted'>{escape(str(latest['status']))} · {_fmt_ts(latest['created_at'])}</div>"
+            )
+        last_error = r["last_error"]
+        last_error_text = escape(str(last_error)) if last_error else ""
+        table.append(
+            "<tr>"
+            f"<td><a href='/control/task/{escape(task_id)}'>{escape(task_id)}</a></td>"
+            f"<td>{escape(r['title'])}</td>"
+            f"<td><span class='pill'>{escape(r['status'])}</span></td>"
+            f"<td class='muted'>{escape(_fmt_ts(r['created_at']))}</td>"
+            f"<td>{latest_cell}</td>"
+            f"<td class='muted'>{last_error_text}</td>"
+            "</tr>"
+        )
+    table.append("</tbody></table>")
+    nav = "<div class='row' style='margin-top:14px'>"
+    prev_off = max(0, offset - limit)
+    next_off = offset + limit
+    qs_status = f"&status={escape(status)}" if status else ""
+    nav += f"<a class='pill' href='/control?limit={limit}&offset={prev_off}{qs_status}'>Prev</a>"
+    nav += f"<a class='pill' href='/control?limit={limit}&offset={next_off}{qs_status}'>Next</a>"
+    nav += f"<span class='muted'>limit={limit} offset={offset}</span>"
+    nav += "</div>"
+    return _html_page("Tasks", filters + "".join(table) + nav)
+
+
+@app.get("/control/task/{task_id}")
+def control_task(task_id: str, limit: int = 50, offset: int = 0) -> HTMLResponse:
+    task = _task_row(task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="task not found")
+
+    spec = json.loads(task["spec_json"]) if task["spec_json"] is not None else None
+    spec_pre = f"<h2>Spec</h2><pre>{escape(json.dumps(spec, ensure_ascii=False, indent=2))}</pre>" if spec else ""
+
+    rows = _runs_for_task(task_id=task_id, limit=limit, offset=offset)
+    table = [
+        "<h2>Runs</h2>",
+        "<table><thead><tr>"
+        "<th>run</th><th>status</th><th>created</th><th>finished</th><th>error</th><th>report</th>"
+        "</tr></thead><tbody>",
+    ]
+    for r in rows:
+        err = r["error"]
+        err_text = escape(str(err)) if err else ""
+        report_link = f"<a href='/control/run/{escape(r['run_id'])}'>open</a>"
+        table.append(
+            "<tr>"
+            f"<td><a href='/control/run/{escape(r['run_id'])}'>{escape(r['run_id'])}</a></td>"
+            f"<td><span class='pill'>{escape(r['status'])}</span></td>"
+            f"<td class='muted'>{escape(_fmt_ts(r['created_at']))}</td>"
+            f"<td class='muted'>{escape(_fmt_ts(r['finished_at']))}</td>"
+            f"<td class='muted'>{err_text}</td>"
+            f"<td>{report_link}</td>"
+            "</tr>"
+        )
+    table.append("</tbody></table>")
+
+    nav = "<div class='row' style='margin-top:14px'>"
+    prev_off = max(0, offset - limit)
+    next_off = offset + limit
+    nav += f"<a class='pill' href='/control/task/{escape(task_id)}?limit={limit}&offset={prev_off}'>Prev</a>"
+    nav += f"<a class='pill' href='/control/task/{escape(task_id)}?limit={limit}&offset={next_off}'>Next</a>"
+    nav += f"<span class='muted'>limit={limit} offset={offset}</span>"
+    nav += "</div>"
+
+    header = (
+        "<div class='row'>"
+        f"<span class='pill'>{escape(task['status'])}</span>"
+        f"<span class='muted'>created {_fmt_ts(task['created_at'])}</span>"
+        "</div>"
+    )
+    title = f"Task {task_id}"
+    body = header + f"<div><strong>{escape(task['title'])}</strong></div>" + spec_pre + "".join(table) + nav
+    return _html_page(title, body)
+
+
+@app.get("/control/run/{run_id}")
+def control_run(run_id: str) -> HTMLResponse:
+    run = _run_row(run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="run not found")
+
+    report = json.loads(run["report_json"]) if run["report_json"] else None
+    report_pre = (
+        f"<h2>Report</h2><div class='row'>"
+        f"<a class='pill' href='/control/run/{escape(run_id)}/report.json'>report.json</a>"
+        "</div>"
+        f"<pre>{escape(json.dumps(report, ensure_ascii=False, indent=2))}</pre>"
+        if report is not None
+        else "<h2>Report</h2><div class='muted'>No report stored</div>"
+    )
+    err = run["error"]
+    err_pre = f"<h2>Error</h2><pre>{escape(str(err))}</pre>" if err else ""
+
+    header = (
+        "<div class='row'>"
+        f"<a class='pill' href='/control/task/{escape(run['task_id'])}'>task</a>"
+        f"<span class='pill'>{escape(run['status'])}</span>"
+        f"<span class='muted'>created {_fmt_ts(run['created_at'])}</span>"
+        f"<span class='muted'>finished {_fmt_ts(run['finished_at'])}</span>"
+        "</div>"
+    )
+    body = header + report_pre + err_pre
+    return _html_page(f"Run {run_id}", body)
+
+
+@app.get("/control/run/{run_id}/report.json")
+def control_run_report_json(run_id: str) -> JSONResponse:
+    run = _run_row(run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="run not found")
+    report = json.loads(run["report_json"]) if run["report_json"] else None
+    return JSONResponse({"run_id": run_id, "task_id": run["task_id"], "report": report})
+
+
 def _tool_list() -> List[Dict[str, Any]]:
     return [
         {
@@ -157,6 +439,16 @@ def _tool_list() -> List[Dict[str, Any]]:
             "name": "get_task_report",
             "description": "Fetch the latest run report for a task.",
             "inputSchema": GetTaskReportArgs.model_json_schema(),
+        },
+        {
+            "name": "list_tasks",
+            "description": "List tasks (optionally filtered by status) with pagination.",
+            "inputSchema": ListTasksArgs.model_json_schema(),
+        },
+        {
+            "name": "list_runs",
+            "description": "List runs for a task with pagination.",
+            "inputSchema": ListRunsArgs.model_json_schema(),
         },
     ]
 
@@ -203,6 +495,28 @@ def _latest_run_row(task_id: str) -> Optional[sqlite3.Row]:
         (task_id,),
     )
     return cur.fetchone()
+
+
+def _runs_for_task(task_id: str, limit: int, offset: int) -> List[sqlite3.Row]:
+    cur = _conn.execute(
+        "SELECT * FROM runs WHERE task_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+        (task_id, limit, offset),
+    )
+    return list(cur.fetchall())
+
+
+def _list_task_rows(status: Optional[str], limit: int, offset: int) -> List[sqlite3.Row]:
+    if status:
+        cur = _conn.execute(
+            "SELECT * FROM tasks WHERE status = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (status, limit, offset),
+        )
+    else:
+        cur = _conn.execute(
+            "SELECT * FROM tasks ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (limit, offset),
+        )
+    return list(cur.fetchall())
 
 
 def _task_to_dict(row: sqlite3.Row, latest_run: Optional[sqlite3.Row]) -> Dict[str, Any]:
@@ -321,6 +635,33 @@ async def _get_task_report(args: GetTaskReportArgs) -> Dict[str, Any]:
     return {"task_id": args.task_id, "run_id": latest["run_id"], "report": report}
 
 
+async def _list_tasks(args: ListTasksArgs) -> Dict[str, Any]:
+    rows = _list_task_rows(args.status, args.limit, args.offset)
+    tasks: List[Dict[str, Any]] = []
+    for r in rows:
+        latest = _latest_run_row(r["task_id"])
+        tasks.append(_task_to_dict(r, latest))
+    return {"tasks": tasks, "limit": args.limit, "offset": args.offset}
+
+
+async def _list_runs(args: ListRunsArgs) -> Dict[str, Any]:
+    task = _task_row(args.task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="task not found")
+
+    rows = _runs_for_task(args.task_id, args.limit, args.offset)
+    runs: List[Dict[str, Any]] = []
+    for r in rows:
+        out = dict(r)
+        if out.get("report_json"):
+            out["report"] = json.loads(out["report_json"])
+        else:
+            out["report"] = None
+        out.pop("report_json", None)
+        runs.append(out)
+    return {"task_id": args.task_id, "runs": runs, "limit": args.limit, "offset": args.offset}
+
+
 async def _dispatch_tool(tool: str, args: Dict[str, Any]) -> Any:
     if tool == "create_task":
         model = CreateTaskArgs.model_validate(args)
@@ -334,6 +675,12 @@ async def _dispatch_tool(tool: str, args: Dict[str, Any]) -> Any:
     if tool == "get_task_report":
         model = GetTaskReportArgs.model_validate(args)
         return await _get_task_report(model)
+    if tool == "list_tasks":
+        model = ListTasksArgs.model_validate(args)
+        return await _list_tasks(model)
+    if tool == "list_runs":
+        model = ListRunsArgs.model_validate(args)
+        return await _list_runs(model)
     raise HTTPException(status_code=404, detail=f"unknown tool: {tool}")
 
 
@@ -383,11 +730,11 @@ async def mcp_rpc(req: Request) -> JSONResponse:
     if method == "tools/list":
         return JSONResponse({"jsonrpc": "2.0", "id": req_id, "result": {"tools": _tool_list()}})
 
-    if method == "tools/invoke":
+    if method in ("tools/invoke", "tools/call"):
         tool = (params or {}).get("name")
         args = (params or {}).get("arguments") or {}
         try:
-            res = await _dispatch_tool(str(tool), dict(args))
+            res = await _dispatch_tool(tool, args)
             return JSONResponse({"jsonrpc": "2.0", "id": req_id, "result": res})
         except HTTPException as e:
             return JSONResponse(
@@ -452,12 +799,13 @@ async def sse_messages(session_id: str, req: Request) -> JSONResponse:
         await push({"jsonrpc": "2.0", "id": req_id, "result": {"tools": _tool_list()}})
         return JSONResponse({"ok": True})
 
-    if method == "tools/invoke":
+    if method in ("tools/invoke", "tools/call"):
         tool = (params or {}).get("name")
         args = (params or {}).get("arguments") or {}
         try:
-            res = await _dispatch_tool(str(tool), dict(args))
-            await push({"jsonrpc": "2.0", "id": req_id, "result": res})
+            out = await _dispatch_tool(tool, args)
+            await push({"jsonrpc": "2.0", "id": req_id, "result": out})
+            return JSONResponse({"ok": True})
         except HTTPException as e:
             await push(
                 {
