@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import os
 import time
+import uuid
 from typing import Any, Dict, List, Optional
 
 import httpx
@@ -34,6 +35,24 @@ HTTP_TIMEOUT = float(os.getenv("MCP_RAG_TIMEOUT_SECONDS", "60"))
 
 def _utc_ms() -> int:
     return int(time.time() * 1000)
+
+
+def _to_qdrant_point_id(value: Optional[str], *, prefix: str, fallback_seed: str) -> str:
+    """Qdrant point IDs must be an unsigned int or a UUID.
+
+    We accept user-friendly string IDs and convert them into a stable UUID.
+    """
+
+    raw = (value or "").strip()
+    if raw:
+        try:
+            return str(uuid.UUID(raw))
+        except Exception:
+            # Stable mapping for arbitrary string ids
+            return str(uuid.uuid5(uuid.NAMESPACE_URL, f"{prefix}:{raw}"))
+
+    # Generate a new UUID if caller didn't provide an id.
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"{prefix}:auto:{fallback_seed}"))
 
 
 def _ensure_nonempty(value: str, name: str) -> str:
@@ -243,7 +262,7 @@ async def _handle_upsert_text(args: UpsertTextArgs) -> Dict[str, Any]:
 
     points: List[PointStruct] = []
     for it, vec in zip(args.items, vectors, strict=False):
-        point_id = it.id or f"txt_{_utc_ms()}_{abs(hash(it.text))}"
+        point_id = _to_qdrant_point_id(it.id, prefix="txt", fallback_seed=f"{_utc_ms()}:{it.text}")
         payload = {"text": it.text, **(it.metadata or {})}
         points.append(PointStruct(id=point_id, vector=vec, payload=payload))
 
@@ -286,7 +305,7 @@ def _handle_upsert_image(args: UpsertImageArgs) -> Dict[str, Any]:
 
     points: List[PointStruct] = []
     for it, vec in zip(args.items, vectors, strict=False):
-        point_id = it.id or f"img_{_utc_ms()}_{abs(hash(it.image_base64[:64]))}"
+        point_id = _to_qdrant_point_id(it.id, prefix="img", fallback_seed=f"{_utc_ms()}:{it.image_base64[:64]}")
         payload = {"mimeType": it.mime_type, **(it.metadata or {})}
         points.append(PointStruct(id=point_id, vector=vec, payload=payload))
 
