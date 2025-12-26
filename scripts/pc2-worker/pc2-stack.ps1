@@ -3,6 +3,8 @@ param(
     [string]$Action = "status"
 )
 
+. (Join-Path $PSScriptRoot '..\_lib\ssh.ps1')
+
 $sshUser = $env:PC2_SSH_USER
 if ([string]::IsNullOrWhiteSpace($sshUser)) {
     $sshUser = "chaba"
@@ -10,7 +12,7 @@ if ([string]::IsNullOrWhiteSpace($sshUser)) {
 
 $sshHost = $env:PC2_SSH_HOST
 if ([string]::IsNullOrWhiteSpace($sshHost)) {
-    $sshHost = "pc2"
+    $sshHost = "pc2.vpn"
 }
 
 $sshPort = $env:PC2_SSH_PORT
@@ -20,7 +22,7 @@ if ([string]::IsNullOrWhiteSpace($sshPort)) {
 
 $sshKeyPath = $env:PC2_SSH_KEY_PATH
 if ([string]::IsNullOrWhiteSpace($sshKeyPath)) {
-    $sshKeyPath = "/home/tonezzz/.ssh/chaba_ed25519"
+    $sshKeyPath = (Join-Path $env:USERPROFILE ".ssh\chaba_ed25519")
 }
 
 $wslUser = $env:PC2_WSL_USER
@@ -68,15 +70,14 @@ function Invoke-RemoteCommand {
         [string]$RemoteCommand
     )
 
-    $sshCommand = "ssh -i $sshKeyPath -p $sshPort $sshUser@$sshHost '$RemoteCommand'"
-    $escapedCommand = "`"$sshCommand`""
-    $wslArgs = @("-u", $wslUser, "bash", "-lc", $escapedCommand)
+    $remote = @"
+set -euo pipefail
+$RemoteCommand
+"@
+    $remoteNoCr = ($remote -replace "`r", "")
 
-    Write-Host "[pc2-stack] Running: wsl $($wslArgs -join ' ')"
-    $process = Start-Process -FilePath "wsl" -ArgumentList $wslArgs -NoNewWindow -Wait -PassThru
-    if ($process.ExitCode -ne 0) {
-        throw "Remote command failed with exit code $($process.ExitCode)"
-    }
+    Write-Host "[pc2-stack] remote via ssh.exe -> $sshUser@$sshHost"
+    Invoke-RemoteBashScript -SshUser $sshUser -SshHost $sshHost -SshPort ([int]$sshPort) -SshKeyPath $sshKeyPath -Script $remoteNoCr | Out-Null
 }
 
 function Invoke-RemoteCompose {

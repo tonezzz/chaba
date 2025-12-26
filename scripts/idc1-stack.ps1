@@ -2,23 +2,20 @@ param(
   [ValidateSet("status", "up", "down")]
   [string]$Action = "status",
   [ValidateSet("mcp-suite")]
-  [string]$Profile = "mcp-suite"
+  [string]$ComposeProfile = "mcp-suite"
 )
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot '_lib\ssh.ps1')
+
 $idc1Host = if ($env:IDC1_HOST) { $env:IDC1_HOST } else { "idc1.surf-thailand.com" }
 $idc1User = if ($env:IDC1_USER) { $env:IDC1_USER } else { "chaba" }
 $idc1StackDir = if ($env:IDC1_STACK_DIR) { $env:IDC1_STACK_DIR } else { "/home/chaba/chaba/stacks/idc1-stack" }
-$wslDistro = if ($env:IDC1_WSL_DISTRO) { $env:IDC1_WSL_DISTRO } else { "" }
-$wslUser = if ($env:IDC1_WSL_USER) { $env:IDC1_WSL_USER } else { "" }
-
-$wslArgs = @()
-if ($wslUser) { $wslArgs += @("-u", $wslUser) }
-if ($wslDistro) { $wslArgs += @("-d", $wslDistro) }
+$sshKeyWin = if ($env:IDC1_SSH_KEY_WIN) { $env:IDC1_SSH_KEY_WIN } else { (Join-Path $env:USERPROFILE ".ssh\chaba_ed25519") }
 
 $composeCmd = switch ($Action) {
-  "up" { "docker compose --profile $Profile up -d" }
+  "up" { "docker compose --profile $ComposeProfile up -d" }
   "down" { "docker compose down" }
   default { "docker compose ps" }
 }
@@ -30,13 +27,8 @@ echo "[REMOTE] host=$(hostname) user=$(whoami)"
 $composeCmd
 "@
 
-$b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes(($remote -replace "`r", "")))
+$remoteNoCr = ($remote -replace "`r", "")
 
-$ssh = "/usr/bin/ssh -i ~/.ssh/chaba_ed25519 -o IdentitiesOnly=yes -o BatchMode=yes $idc1User@$idc1Host 'bash -s'"
-$bash = "printf %s '$b64' | base64 -d | $ssh"
+Write-Host "[idc1-stack] remote via ssh.exe -> $idc1User@$idc1Host ($Action)" -ForegroundColor Cyan
 
-Write-Host "[idc1-stack] remote via WSL -> SSH -> $idc1User@$idc1Host ($Action)" -ForegroundColor Cyan
-& wsl @wslArgs bash -lc $bash
-if ($LASTEXITCODE -ne 0) {
-  throw "idc1-stack remote command failed with exit code $LASTEXITCODE"
-}
+Invoke-RemoteBashScript -SshUser $idc1User -SshHost $idc1Host -SshKeyPath $sshKeyWin -Script $remoteNoCr | Out-Null

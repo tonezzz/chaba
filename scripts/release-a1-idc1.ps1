@@ -152,7 +152,12 @@ if ([string]::IsNullOrWhiteSpace($sshKeyPath)) {
     $sshKeyPath = $env:A1_DEPLOY_SSH_KEY_PATH
 }
 if ([string]::IsNullOrWhiteSpace($sshKeyPath)) {
-    $sshKeyPath = Join-Path $repoRoot '.secrets\dev-host\.ssh\chaba_ed25519'
+    $defaultKey = Join-Path $env:USERPROFILE '.ssh\chaba_ed25519'
+    if (Test-Path $defaultKey) {
+        $sshKeyPath = $defaultKey
+    } else {
+        $sshKeyPath = Join-Path $repoRoot '.secrets\dev-host\.ssh\chaba_ed25519'
+    }
 }
 $isWslKey = $sshKeyPath.StartsWith('/')
 
@@ -201,7 +206,7 @@ try {
     }
 
     if (-not $SkipReload) {
-        $reloadCmd = "ssh -i $(ConvertTo-ShellLiteral $sshKeyPathWsl) -p $sshPort -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $sshUser@$sshHost 'sudo systemctl reload caddy'"
+        $reloadCmd = "ssh -i $(ConvertTo-ShellLiteral $sshKeyPathWsl) -p $sshPort -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $sshUser@$sshHost 'sudo systemctl reload caddy'"
         Invoke-Step "Reload Caddy on $sshHost (WSL)" {
             Invoke-WslBash -Script $reloadCmd | Write-Host
         }

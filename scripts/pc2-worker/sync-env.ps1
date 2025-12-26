@@ -2,6 +2,8 @@ param(
     [string]$SourcePath
 )
 
+. (Join-Path $PSScriptRoot '..\_lib\ssh.ps1')
+
 function Get-ConfigValue {
     param(
         [string]$Value,
@@ -29,10 +31,9 @@ function Convert-WindowsPathToWsl {
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..')
 
 $sshUser = Get-ConfigValue $env:PC2_SSH_USER 'chaba'
-$sshHost = Get-ConfigValue $env:PC2_SSH_HOST 'pc2'
+$sshHost = Get-ConfigValue $env:PC2_SSH_HOST 'pc2.vpn'
 $sshPort = Get-ConfigValue $env:PC2_SSH_PORT '22'
-$sshKeyPath = Get-ConfigValue $env:PC2_SSH_KEY_PATH '/home/tonezzz/.ssh/chaba_ed25519'
-$wslUser = Get-ConfigValue $env:PC2_WSL_USER 'tonezzz'
+$sshKeyPath = Get-ConfigValue $env:PC2_SSH_KEY_PATH (Join-Path $env:USERPROFILE '.ssh\chaba_ed25519')
 $remoteStacksDir = Get-ConfigValue $env:PC2_STACKS_DIR '/home/chaba/chaba/stacks'
 $workerDirName = Get-ConfigValue $env:PC2_WORKER_DIR 'pc2-worker'
 
@@ -57,7 +58,7 @@ if (-not $resolvedSource) {
 
 $remoteDir = "$remoteStacksDir/$workerDirName"
 $remoteEnvPath = "$remoteDir/.env"
-$sourceWslPath = Convert-WindowsPathToWsl $resolvedSource
+$sourcePath = $resolvedSource
 
 Write-Host "[pc2-sync-env] Copying $resolvedSource -> ${sshUser}@${sshHost}:${remoteEnvPath}"
 
@@ -67,30 +68,28 @@ function Invoke-WslCommand {
         [string]$Description
     )
     Write-Host "[pc2-sync-env] $Description"
-    $wslArgs = @('-u', $wslUser) + $CommandArgs
-    $output = & wsl @wslArgs 2>&1
-    $exitCode = $LASTEXITCODE
-    if ($exitCode -ne 0) {
-        throw "Command failed ($Description). Exit code: $exitCode`n$output"
-    }
-    if ($output -and $output.Trim().Length -gt 0) {
-        Write-Verbose $output
+    $process = Start-Process -FilePath $CommandArgs[0] -ArgumentList ($CommandArgs | Select-Object -Skip 1) -NoNewWindow -Wait -PassThru
+    if ($process.ExitCode -ne 0) {
+        throw "Command failed ($Description). Exit code: $($process.ExitCode)"
     }
 }
 
 Invoke-WslCommand -Args @(
-    'ssh',
-    '-i', $sshKeyPath,
-    '-p', $sshPort,
-    "${sshUser}@${sshHost}",
-    "mkdir -p '${remoteDir}' && chmod 700 '${remoteDir}'"
+    'powershell',
+    '-NoProfile',
+    '-Command',
+    'Write-Host "[pc2-sync-env] Ensuring remote dir exists"'
 ) -Description "Ensuring $remoteDir exists on $sshHost"
 
+Invoke-RemoteBashScript -SshUser $sshUser -SshHost $sshHost -SshPort ([int]$sshPort) -SshKeyPath $sshKeyPath -Script "mkdir -p '$remoteDir' && chmod 700 '$remoteDir'" | Out-Null
+
 Invoke-WslCommand -Args @(
-    'scp',
+    'scp.exe',
     '-i', $sshKeyPath,
+    '-o', 'IdentitiesOnly=yes',
+    '-o', 'BatchMode=yes',
     '-P', $sshPort,
-    $sourceWslPath,
+    $sourcePath,
     "${sshUser}@${sshHost}:${remoteEnvPath}"
 ) -Description "Uploading .env to $remoteEnvPath"
 

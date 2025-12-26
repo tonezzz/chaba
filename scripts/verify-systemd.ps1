@@ -62,7 +62,12 @@ if (-not $SshPort) {
 
 if ([string]::IsNullOrWhiteSpace($SshKeyPath)) { $SshKeyPath = $env:A1_DEPLOY_SSH_KEY_PATH }
 if ([string]::IsNullOrWhiteSpace($SshKeyPath)) {
-    $SshKeyPath = Join-Path $repoRoot '.secrets\dev-host\.ssh\chaba_ed25519'
+    $defaultKey = Join-Path $env:USERPROFILE '.ssh\chaba_ed25519'
+    if (Test-Path $defaultKey) {
+        $SshKeyPath = $defaultKey
+    } else {
+        $SshKeyPath = Join-Path $repoRoot '.secrets\dev-host\.ssh\chaba_ed25519'
+    }
 }
 if (-not (Test-Path $SshKeyPath)) {
     throw "SSH key not found at $SshKeyPath (set A1_DEPLOY_SSH_KEY_PATH or pass -SshKeyPath)."
@@ -214,6 +219,7 @@ function Invoke-RemoteCommand {
         'ssh',
         '-i', $wslKeyPath,
         '-p', $SshPort.ToString(),
+        '-o', 'IdentitiesOnly=yes',
         '-o', 'StrictHostKeyChecking=no',
         '-o', 'UserKnownHostsFile=/dev/null',
         '-o', 'GlobalKnownHostsFile=/dev/null',
