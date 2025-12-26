@@ -24,6 +24,8 @@ GLAMA_API_URL = (os.getenv("GLAMA_API_URL") or os.getenv("GLAMA_URL") or "").str
 GLAMA_API_KEY = (os.getenv("GLAMA_API_KEY") or "").strip()
 GLAMA_MODEL_DEFAULT = (os.getenv("GLAMA_MODEL") or "gpt-4o-mini").strip()
 
+MCP_LLM_TOOL_NAME = (os.getenv("OPENAI_GATEWAY_LLM_TOOL") or "").strip()
+
 MCP_AGENT_URL = (
     os.getenv("MCP_AGENT_URL")
     or os.getenv("ONE_MCP_URL")
@@ -35,6 +37,13 @@ GATEWAY_MODEL_ID = (os.getenv("OPENAI_GATEWAY_MODEL_ID") or "glama-default").str
 REQUEST_TIMEOUT_SECONDS = float(os.getenv("OPENAI_GATEWAY_TIMEOUT_SECONDS", "60"))
 
 DEBUG = (os.getenv("OPENAI_GATEWAY_DEBUG") or "").strip().lower() in ("1", "true", "yes", "on")
+
+PREFER_MCP_LLM = (os.getenv("OPENAI_GATEWAY_PREFER_MCP_LLM") or "").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
 
 
 app = FastAPI(title=APP_NAME, version=APP_VERSION)
@@ -216,6 +225,65 @@ def _tool_result_to_text(result: Any) -> str:
         return str(result)
 
 
+def _pick_mcp_llm_tool_name(tools: List[Dict[str, Any]]) -> Optional[str]:
+    if MCP_LLM_TOOL_NAME:
+        return MCP_LLM_TOOL_NAME
+
+    names: List[str] = []
+    for t in tools or []:
+        fn = (t or {}).get("function") or {}
+        name = str(fn.get("name") or "").strip()
+        if name:
+            names.append(name)
+
+    for name in names:
+        lowered = name.lower()
+        if "glama" in lowered and lowered.endswith("chat_completion"):
+            return name
+
+    for name in names:
+        if name.lower().endswith("chat_completion"):
+            return name
+
+    return None
+
+
+def _messages_for_mcp_llm(messages: List[Dict[str, Any]]) -> List[Dict[str, str]]:
+    # mcp-glama only accepts roles: user/assistant/system and requires non-empty content.
+    out: List[Dict[str, str]] = []
+    for m in messages or []:
+        role = str(m.get("role") or "").strip()
+        content = m.get("content")
+        if role not in ("user", "assistant", "system"):
+            continue
+        if not isinstance(content, str):
+            continue
+        text = content.strip()
+        if not text:
+            continue
+        out.append({"role": role, "content": text})
+    return out
+
+
+async def _mcp_llm_chat(messages: List[Dict[str, Any]], temperature: Optional[float], max_tokens: Optional[int]) -> str:
+    tools = await _mcp_tools_list()
+    tool_name = _pick_mcp_llm_tool_name(tools)
+    if not tool_name:
+        raise RuntimeError("mcp_llm_tool_not_found")
+
+    args: Dict[str, Any] = {
+        "messages": _messages_for_mcp_llm(messages),
+        "model": GLAMA_MODEL_DEFAULT,
+    }
+    if isinstance(temperature, (int, float)):
+        args["temperature"] = float(temperature)
+    if isinstance(max_tokens, int) and max_tokens > 0:
+        args["max_tokens"] = int(max_tokens)
+
+    result = await _mcp_tools_invoke(tool_name, args)
+    return (_tool_result_to_text(result) or "").strip()
+
+
 async def _mcp_tools_invoke(name: str, arguments: Dict[str, Any]) -> Any:
     res = await _mcp_rpc("tools/call", {"name": name, "arguments": arguments})
     return res
@@ -245,6 +313,17 @@ def _build_tool_awareness_system_prompt(tools: List[Dict[str, Any]]) -> str:
             lines.append(f"- {name}: {desc}")
         else:
             lines.append(f"- {name}")
+
+    tool_names = {
+        str(((t or {}).get("function") or {}).get("name") or "").strip() for t in (tools or [])
+    }
+    if "create_task" in tool_names and "approve_task" in tool_names:
+        lines.append("")
+        lines.append("Example: create and execute a task that calls another tool:")
+        lines.append(
+            "- create_task({title: '...', call: {server: 'mcp-devops', tool: 'run_workflow', args: {workflow_id: 'pc1-caddy-status', dry_run: true}}})"
+        )
+        lines.append("- approve_task({task_id: '<id>'})")
 
     return "\n".join(lines).strip()
 
@@ -439,7 +518,11 @@ async def list_models() -> Dict[str, Any]:
 
 @app.post("/v1/chat/completions")
 async def chat_completions(req: Request) -> Any:
-    body = await req.json()
+    try:
+        body = await req.json()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON: {str(e)}")
+
     parsed = ChatCompletionRequest.model_validate(body)
 
     # Map the UI-selected model to our backend model. For now we expose a single logical model id.
@@ -450,11 +533,18 @@ async def chat_completions(req: Request) -> Any:
         for m in parsed.messages
     ]
 
-    content = await _run_tool_loop(
-        initial_messages=initial_messages,
-        temperature=parsed.temperature,
-        max_tokens=parsed.max_tokens,
-    )
+    if _glama_ready() and not PREFER_MCP_LLM:
+        content = await _run_tool_loop(
+            initial_messages=initial_messages,
+            temperature=parsed.temperature,
+            max_tokens=parsed.max_tokens,
+        )
+    else:
+        content = await _mcp_llm_chat(
+            messages=initial_messages,
+            temperature=parsed.temperature,
+            max_tokens=parsed.max_tokens,
+        )
 
     if parsed.stream:
         return StreamingResponse(
