@@ -428,7 +428,8 @@ app.post('/mcp', async (req, res) => {
 });
 
 app.post('/invoke', async (req, res) => {
-  const { tool, arguments: args = {} } = req.body || {};
+  const { tool, arguments: argumentsField, args: argsField } = req.body || {};
+  const args = argumentsField ?? argsField ?? {};
   if (!tool || typeof tool !== 'string') {
     return res.status(400).json({ error: 'tool is required' });
   }
