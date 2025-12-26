@@ -18,6 +18,7 @@ APP_NAME = "mcp-glama"
 APP_VERSION = "0.1.0"
 
 GLAMA_API_URL = (os.getenv("GLAMA_API_URL") or os.getenv("GLAMA_URL") or "").strip()
+GLAMA_API_BASE = (os.getenv("GLAMA_API_BASE") or "").strip()
 GLAMA_API_KEY = (os.getenv("GLAMA_API_KEY") or "").strip()
 GLAMA_MODEL_DEFAULT = (
     os.getenv("GLAMA_MODEL")
@@ -25,6 +26,42 @@ GLAMA_MODEL_DEFAULT = (
     or os.getenv("GLAMA_MODEL_DEFAULT")
     or "gpt-4o-mini"
 ).strip()
+
+GLAMA_MODEL_EMBEDDINGS_DEFAULT = (
+    os.getenv("GLAMA_MODEL_EMBEDDINGS")
+    or os.getenv("GLAMA_MODEL_EMBED")
+    or os.getenv("GLAMA_MODEL_EMBEDDING")
+    or ""
+).strip()
+
+
+def _ensure_no_trailing_slash(value: str) -> str:
+    return (value or "").rstrip("/")
+
+
+def glama_chat_url() -> str:
+    if GLAMA_API_URL:
+        return GLAMA_API_URL
+    base = _ensure_no_trailing_slash(GLAMA_API_BASE)
+    if not base:
+        return ""
+    return f"{base}/chat/completions"
+
+
+def glama_embeddings_url() -> str:
+    base = _ensure_no_trailing_slash(GLAMA_API_BASE)
+    if base:
+        return f"{base}/embeddings"
+
+    url = _ensure_no_trailing_slash(GLAMA_API_URL)
+    if not url:
+        return ""
+
+    if url.endswith("/chat/completions"):
+        return f"{url[:-len('/chat/completions')]}/embeddings"
+    if url.endswith("/v1/chat/completions"):
+        return f"{url[:-len('/v1/chat/completions')]}/v1/embeddings"
+    return f"{url}/embeddings"
 
 def _float_env(name: str, fallback: float) -> float:
     try:
@@ -88,6 +125,21 @@ class InvokeArguments(BaseModel):
         if messages and prompt:
             raise ValueError("Provide either 'messages' or 'prompt', not both")
         return self
+
+
+class EmbeddingsArguments(BaseModel):
+    input: Any
+    model: Optional[str] = None
+
+    @validator("input")
+    def validate_input(cls, value: Any) -> Any:
+        if value is None:
+            raise ValueError("input is required")
+        if isinstance(value, str) and not value.strip():
+            raise ValueError("input cannot be empty")
+        if isinstance(value, list) and len(value) == 0:
+            raise ValueError("input cannot be empty")
+        return value
 
 
 class InvokePayload(BaseModel):
@@ -175,7 +227,7 @@ app.add_middleware(
 
 
 def glama_ready() -> bool:
-    return bool(GLAMA_API_KEY and GLAMA_API_URL)
+    return bool(GLAMA_API_KEY and (GLAMA_API_URL or GLAMA_API_BASE))
 
 
 def tool_definitions() -> List[Dict[str, Any]]:
@@ -208,6 +260,18 @@ def tool_definitions() -> List[Dict[str, Any]]:
             },
         }
         ,
+        {
+            "name": "embeddings",
+            "description": "Send OpenAI-compatible embeddings request to Glama gateway.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "input": {},
+                    "model": {"type": "string"},
+                },
+                "required": ["input"],
+            },
+        },
         {
             "name": "benchmark_models",
             "description": "Benchmark Glama model availability and latency using a fixed prompt/messages input.",
@@ -268,8 +332,12 @@ async def call_glama(arguments: InvokeArguments) -> Dict[str, Any]:
         "Authorization": f"Bearer {GLAMA_API_KEY}",
     }
 
+    url = glama_chat_url()
+    if not url:
+        raise HTTPException(status_code=503, detail="glama_unconfigured")
+
     async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT_SECONDS) as client:
-        response = await client.post(GLAMA_API_URL, json=payload, headers=headers)
+        response = await client.post(url, json=payload, headers=headers)
 
     if response.status_code >= 400:
         raise HTTPException(status_code=502, detail=response.text or f"glama_http_{response.status_code}")
@@ -285,6 +353,37 @@ async def call_glama(arguments: InvokeArguments) -> Dict[str, Any]:
 
     return {
         "response": combined_text,
+        "raw": data,
+    }
+
+
+async def call_glama_embeddings(arguments: EmbeddingsArguments) -> Dict[str, Any]:
+    if not glama_ready():
+        raise HTTPException(status_code=503, detail="glama_unconfigured")
+
+    url = glama_embeddings_url()
+    if not url:
+        raise HTTPException(status_code=503, detail="glama_unconfigured")
+
+    model = (arguments.model or GLAMA_MODEL_EMBEDDINGS_DEFAULT).strip() or None
+    payload: Dict[str, Any] = {"input": arguments.input}
+    if model:
+        payload["model"] = model
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {GLAMA_API_KEY}",
+    }
+
+    async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT_SECONDS) as client:
+        response = await client.post(url, json=payload, headers=headers)
+
+    if response.status_code >= 400:
+        raise HTTPException(status_code=502, detail=response.text or f"glama_http_{response.status_code}")
+
+    data = response.json()
+    return {
+        "embeddings": data.get("data"),
         "raw": data,
     }
 
@@ -372,6 +471,7 @@ async def health() -> Dict[str, Any]:
         "status": status,
         "glamaReady": glama_ready(),
         "model": GLAMA_MODEL_DEFAULT,
+        "modelEmbeddings": GLAMA_MODEL_EMBEDDINGS_DEFAULT,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -400,6 +500,10 @@ async def invoke(payload: Dict[str, Any] = Body(...)) -> Dict[str, Any]:
         parsed = InvokePayload(**payload)
         result = await call_glama(parsed.arguments)
         return {"tool": parsed.tool, "result": result}
+    if tool == "embeddings":
+        args = EmbeddingsArguments(**((payload or {}).get("arguments") or {}))
+        result = await call_glama_embeddings(args)
+        return {"tool": "embeddings", "result": result}
     if tool == "benchmark_models":
         parsed = BenchmarkPayload(**payload)
         result = await benchmark_models(parsed.arguments)
@@ -461,6 +565,14 @@ async def mcp_endpoint(payload: Dict[str, Any] = Body(...)):
             return JsonRpcResponse(
                 id=request.id,
                 result={"content": [{"type": "text", "text": out.get("response") or ""}]},
+            ).model_dump(exclude_none=True)
+
+        if tool_name == "embeddings":
+            parsed = EmbeddingsArguments(**(arguments_raw or {}))
+            out = await call_glama_embeddings(parsed)
+            return JsonRpcResponse(
+                id=request.id,
+                result={"content": [{"type": "text", "text": str(out)}]},
             ).model_dump(exclude_none=True)
 
         if tool_name == "benchmark_models":
