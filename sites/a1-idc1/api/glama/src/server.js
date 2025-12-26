@@ -95,7 +95,7 @@ const callGlamaChatCompletion = async ({ messages, maxTokens, temperature }) => 
 
 app.use(morgan('dev'));
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '..', '..', 'test', 'chat')));
+app.use(express.static(path.join(__dirname, '..', '..', '..', 'test', 'chat')));
 
 app.get('/api/health', (_req, res) => {
   res.json({
@@ -137,7 +137,7 @@ app.post('/api/chat', async (req, res) => {
 
 app.use((req, res, next) => {
   if (req.method !== 'GET') return next();
-  res.sendFile(path.join(__dirname, '..', '..', 'test', 'chat', 'index.html'));
+  res.sendFile(path.join(__dirname, '..', '..', '..', 'test', 'chat', 'index.html'));
 });
 
 app.listen(PORT, () => {
