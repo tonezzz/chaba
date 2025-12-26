@@ -17,12 +17,16 @@
 
 ## CI/CD (default)
 
-This repo uses GitHub Pull Requests targeting `main` as the default delivery path.
+Preferred workflow is GitHub Pull Requests targeting `main`.
 
 - **CI**: GitHub Actions workflow at `.github/workflows/ci.yml` runs on:
   - PRs to `main`
   - pushes to `main`
 - **Merge strategy**: use **Rebase and merge** for PRs into `main`.
+
+Temporary note:
+- **Direct pushes to `main` may be used temporarily** while the repo is being stabilized.
+- Once branch protection is enabled, revert to PR-only merges.
 
 Recommended GitHub repo settings (Branch protection for `main`):
 - **Require a pull request before merging**
