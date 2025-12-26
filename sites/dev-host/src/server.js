@@ -35,16 +35,14 @@ loadEnv();
 const DEV_HOST_BASE_URL = (process.env.DEV_HOST_BASE_URL || 'http://dev-host:3100').replace(/\/+$/, '');
 const DEV_HOST_PUBLISH_TOKEN = (process.env.DEV_HOST_PUBLISH_TOKEN || '').trim();
 const GLAMA_PROXY_TARGET =
-  process.env.GLAMA_PROXY_TARGET || process.env.DEV_HOST_GLAMA_TARGET || 'http://127.0.0.1:4020';
+  (process.env.GLAMA_PROXY_TARGET ?? process.env.DEV_HOST_GLAMA_TARGET ?? 'http://127.0.0.1:4020').trim();
 const AGENTS_PROXY_TARGET =
-  process.env.AGENTS_PROXY_TARGET || process.env.DEV_HOST_AGENTS_TARGET || 'http://127.0.0.1:4060';
+  (process.env.AGENTS_PROXY_TARGET ?? process.env.DEV_HOST_AGENTS_TARGET ?? 'http://127.0.0.1:4060').trim();
 const DETECTS_PROXY_TARGET =
-  process.env.DETECTS_PROXY_TARGET ||
-  process.env.DEV_HOST_DETECTS_TARGET ||
-  'http://localhost:4120';
+  (process.env.DETECTS_PROXY_TARGET ?? process.env.DEV_HOST_DETECTS_TARGET ?? 'http://localhost:4120').trim();
 const VAJA_PROXY_TARGET = (process.env.VAJA_PROXY_TARGET || process.env.DEV_HOST_VAJA_TARGET || '').trim();
 const MCP0_PROXY_TARGET =
-  process.env.MCP0_PROXY_TARGET || process.env.DEV_HOST_MCP0_TARGET || 'http://host.docker.internal:8310';
+  (process.env.MCP0_PROXY_TARGET ?? process.env.DEV_HOST_MCP0_TARGET ?? 'http://host.docker.internal:8310').trim();
 
 const workspaceRoot = path.resolve(__dirname, '..', '..');
 
