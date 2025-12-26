@@ -6,9 +6,10 @@ services:
     network_mode: "service:wg-easy"
     depends_on:
       - wg-easy
+    command: ["-conf", "/Corefile"]
     volumes:
-      - ./config/coredns/Corefile:/etc/coredns/Corefile:ro
-      - ./config/coredns/zones:/etc/coredns/zones:ro
+      - ./config/coredns/Corefile:/Corefile:ro
+      - ./config/coredns/zones:/zones:ro
 
   wg-easy:
     image: ghcr.io/wg-easy/wg-easy:latest
