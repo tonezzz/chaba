@@ -58,7 +58,7 @@ services:
       - "${MCP_AGENTS_PORT:-8046}:8046"
     environment:
       PORT: ${MCP_AGENTS_PORT:-8046}
-      AGENTS_API_BASE: ${AGENTS_API_BASE:-http://dev-host.pc1:3100/test/agents/api}
+      AGENTS_API_BASE: ${AGENTS_API_BASE:-http://host.docker.internal:3100/test/agents/api}
       AGENTS_DEFAULT_USER: ${AGENTS_DEFAULT_USER:-default}
       AGENTS_DEFAULT_LIMIT: ${AGENTS_DEFAULT_LIMIT:-12}
       JSON_BODY_LIMIT: ${AGENTS_JSON_LIMIT:-2mb}
