@@ -30,7 +30,6 @@ The Express gateway lives in `sites/dev-host/src/server.js`. It provides:
 | `/test/chat/*` | `sites/a1-idc1/test/chat` | SPA fallback replicates Caddy `try_files`. |
 | `/test/agents/*` | `sites/a1-idc1/test/agents` | SPA fallback. |
 | `/test/detects/*` | `sites/a1-idc1/test/detects` | SPA fallback. |
-| `/test/vaja/*` | `sites/a1-idc1/test/vaja` | Static assets + health widget. |
 | `/test/imagen/*` | `sites/a1-idc1/test/imagen` | Static preview wired to Imagen MCP service. |
 
 ### Local gateway workflow
@@ -45,7 +44,6 @@ The Express gateway lives in `sites/dev-host/src/server.js`. It provides:
 | `/test/chat/api/*` | `GLAMA_PROXY_TARGET` or `DEV_HOST_GLAMA_TARGET` | `http://host.docker.internal:4020` | Forwards to Glama chat backend. |
 | `/test/detects/api/*` | `DETECTS_PROXY_TARGET` or `DEV_HOST_DETECTS_TARGET` | `http://host.docker.internal:4120` | Forwards to detects service. |
 | `/test/agents/api/*` | `AGENTS_PROXY_TARGET` or `DEV_HOST_AGENTS_TARGET` | `http://127.0.0.1:4060` | Internal Agents API / observability surface. |
-| `/test/vaja/api/*` | `VAJA_PROXY_TARGET` or `DEV_HOST_VAJA_TARGET` | `http://host.docker.internal:7217` | Thai TTS service. |
 | `/test/mcp0/*` | `MCP0_PROXY_TARGET` or `DEV_HOST_MCP0_TARGET` | `http://host.docker.internal:8351` | MCP0 admin/API passthrough. |
 | `/test/imagen/api/*` | `IMAGEN_PROXY_TARGET` or `DEV_HOST_IMAGEN_TARGET` | `http://127.0.0.1:8001` | Imagen MCP preview + health checks. |
 
@@ -55,12 +53,12 @@ Both proxies add `x-dev-host-proxy` headers for easier tracing and rewrite the p
 
 ## Proxy smoke tests & `/api/health`
 
-- `GET /api/health` now aggregates downstream proxy checks (`glama`, `agents`, `detects`, `vaja`, `mcp0`, `imagen`) in addition to static site presence.
+- `GET /api/health` now aggregates downstream proxy checks (`glama`, `agents`, `detects`, `mcp0`, `imagen`) in addition to static site presence.
 - Each proxy report contains `{ status, httpStatus, latencyMs, body }`. A status of `error` paired with an `HTTP xxx` entry means the gateway could reach the backend but it returned an error; `error` with `ECONNREFUSED` indicates the service is down or mis-pointed.
 - Run `Invoke-WebRequest http://127.0.0.1:3100/api/health | ConvertFrom-Json` locally or from pc1/pc2 to confirm the aggregate payload after every deploy.
-- Individual smoke checks:  
- `Invoke-WebRequest http://127.0.0.1:3100/test/imagen/api/health` (Imagen),  
- `Invoke-WebRequest http://127.0.0.1:3100/test/vaja/api/health` (Vaja), etc. These endpoints surface the backend `/health` responses verbatim.
+- Individual smoke checks:  \
+ `Invoke-WebRequest http://127.0.0.1:3100/test/imagen/api/health` (Imagen),  \
+ etc. These endpoints surface the backend `/health` responses verbatim.
 
 ### Remote exposure (pc2 worker)
 
@@ -74,7 +72,7 @@ Bake these checks into incident runbooks so UI operators can quickly diagnose pr
 
 ## Health checks
 - Container healthcheck: `nc -z localhost 22` (SSH ready).
-- Gateway: `GET /api/health` now aggregates downstream proxy health in addition to mounted site roots. Each target (Glama, Agents, Detects, Vaja, MCP0, Imagen) reports `status`, HTTP code, latency, and the parsed `/health` body so you can see exactly which dependency is broken.
+- Gateway: `GET /api/health` now aggregates downstream proxy health in addition to mounted site roots. Each target (Glama, Agents, Detects, MCP0, Imagen) reports `status`, HTTP code, latency, and the parsed `/health` body so you can see exactly which dependency is broken.
 - The JSON payload includes `overall status` (`ok` vs. `degraded`), `proxies[]`, and `sites[]` booleans indicating whether each static root exists inside the container/workspace.
 
 ## Runbook

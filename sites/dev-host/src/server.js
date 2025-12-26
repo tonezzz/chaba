@@ -42,8 +42,6 @@ const DETECTS_PROXY_TARGET =
   process.env.DETECTS_PROXY_TARGET ||
   process.env.DEV_HOST_DETECTS_TARGET ||
   'http://localhost:4120';
-const VAJA_PROXY_TARGET =
-  process.env.VAJA_PROXY_TARGET || process.env.DEV_HOST_VAJA_TARGET || 'http://host.docker.internal:7217';
 const MCP0_PROXY_TARGET =
   process.env.MCP0_PROXY_TARGET || process.env.DEV_HOST_MCP0_TARGET || 'http://host.docker.internal:8310';
 
@@ -83,18 +81,13 @@ const additionalStaticRoutes = [
     roots: [resolveSitePath('a1-idc1', 'test', 'detects')],
     spa: true
   },
-  {
-    basePath: '/test/vaja',
-    roots: [resolveSitePath('a1-idc1', 'test', 'vaja')],
-    spa: false
-  }
+  
 ];
 
 const PROXY_CHECKS = [
-  { id: 'glama', label: 'Glama chat', target: GLAMA_PROXY_TARGET, path: '/health' },
-  { id: 'agents', label: 'Agents API', target: AGENTS_PROXY_TARGET, path: '/health' },
+  { id: 'glama', label: 'Glama chat', target: GLAMA_PROXY_TARGET, path: '/api/health' },
+  { id: 'agents', label: 'Agents API', target: AGENTS_PROXY_TARGET, path: '/api/health' },
   { id: 'detects', label: 'Detects API', target: DETECTS_PROXY_TARGET, path: '/health' },
-  { id: 'vaja', label: 'Vaja TTS', target: VAJA_PROXY_TARGET, path: '/health' },
   { id: 'mcp0', label: 'MCP0 control', target: MCP0_PROXY_TARGET, path: '/health' }
 ];
 
@@ -462,34 +455,36 @@ const wireProxies = () => {
     })
   );
 
-  app.use(
-    '/test/vaja/api',
-    createProxyMiddleware({
-      target: VAJA_PROXY_TARGET,
-      changeOrigin: true,
-      pathRewrite: (path) => path.replace(/^\/test\/vaja\/api/i, ''),
-      onProxyReq: (proxyReq) => {
-        proxyReq.setHeader('x-dev-host-proxy', 'test-vaja');
-      },
-      onError: (err, req, res) => {
-        console.error('[dev-host] /test/vaja/api proxy error', err.message);
-        if (!res.headersSent) {
-          res.status(502).json({ error: 'proxy_error', detail: err.message });
+  if (VAJA_PROXY_TARGET) {
+    app.use(
+      '/test/vaja/api',
+      createProxyMiddleware({
+        target: VAJA_PROXY_TARGET,
+        changeOrigin: true,
+        pathRewrite: (path) => path.replace(/^\/test\/vaja\/api/i, ''),
+        onProxyReq: (proxyReq) => {
+          proxyReq.setHeader('x-dev-host-proxy', 'test-vaja');
+        },
+        onError: (err, req, res) => {
+          console.error('[dev-host] /test/vaja/api proxy error', err.message);
+          if (!res.headersSent) {
+            res.status(502).json({ error: 'proxy_error', detail: err.message });
+          }
         }
-      }
-    })
-  );
+      })
+    );
 
-  app.get('/test/vaja/api/health', async (_req, res) => {
-    try {
-      const response = await fetch(`${VAJA_PROXY_TARGET.replace(/\/+$/, '')}/health`);
-      const data = await response.json();
-      return res.json(data);
-    } catch (err) {
-      console.error('[dev-host] /test/vaja/api/health error', err);
-      return res.status(502).json({ error: 'proxy_error', detail: err.message });
-    }
-  });
+    app.get('/test/vaja/api/health', async (_req, res) => {
+      try {
+        const response = await fetch(`${VAJA_PROXY_TARGET.replace(/\/+$/, '')}/health`);
+        const data = await response.json();
+        return res.json(data);
+      } catch (err) {
+        console.error('[dev-host] /test/vaja/api/health error', err);
+        return res.status(502).json({ error: 'proxy_error', detail: err.message });
+      }
+    });
+  }
 
   mountTestStaticRoutes();
   mountWwwStaticRoutes();
