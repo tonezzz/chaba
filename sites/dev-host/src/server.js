@@ -42,6 +42,7 @@ const DETECTS_PROXY_TARGET =
   process.env.DETECTS_PROXY_TARGET ||
   process.env.DEV_HOST_DETECTS_TARGET ||
   'http://localhost:4120';
+const VAJA_PROXY_TARGET = (process.env.VAJA_PROXY_TARGET || process.env.DEV_HOST_VAJA_TARGET || '').trim();
 const MCP0_PROXY_TARGET =
   process.env.MCP0_PROXY_TARGET || process.env.DEV_HOST_MCP0_TARGET || 'http://host.docker.internal:8310';
 
