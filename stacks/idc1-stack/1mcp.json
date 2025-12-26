@@ -6,25 +6,29 @@
       "connectionTimeout": 120000,
       "requestTimeout": 120000,
       "restartOnExit": true,
-      "restartDelay": 2000
+      "restartDelay": 2000,
+      "disabled": true
     },
     "mcp-devops": {
       "transport": "streamableHttp",
       "url": "http://mcp-devops:8425/mcp",
       "tags": ["idc1", "devops"],
-      "enabled": true
+      "enabled": true,
+      "disabled": true
     },
     "mcp-task": {
       "transport": "streamableHttp",
       "url": "http://mcp-task:8016/mcp",
       "tags": ["idc1", "task", "docker"],
-      "enabled": true
+      "enabled": true,
+      "disabled": true
     },
     "mcp-memory": {
       "transport": "streamableHttp",
       "url": "http://mcp-memory:8470/mcp",
       "tags": ["memory"],
-      "enabled": true
+      "enabled": true,
+      "disabled": true
     },
     "mcp-sequentialthinking": {
       "command": "npx",
@@ -33,9 +37,11 @@
       "connectionTimeout": 60000,
       "requestTimeout": 60000,
       "restartOnExit": true,
-      "restartDelay": 1000
+      "restartDelay": 1000,
+      "disabled": true
     },
     "glama": {
+      "type": "http",
       "transport": "streamableHttp",
       "url": "http://mcp-glama:8014/mcp",
       "tags": ["glama"],

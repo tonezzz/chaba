@@ -18,11 +18,15 @@ RUN mkdir -p /etc/apt/keyrings \
   && apt-get install -y --no-install-recommends nodejs \
   && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g @1mcp/agent
-
-COPY docker-mcp-stdio.sh /usr/local/bin/docker-mcp-stdio
+COPY mcp-tasks/stacks/idc1-stack/1mcp-agent/docker-mcp-stdio.sh /usr/local/bin/docker-mcp-stdio
 RUN chmod +x /usr/local/bin/docker-mcp-stdio
 
-WORKDIR /app
+RUN npm install -g corepack && corepack enable
 
-CMD ["1mcp"]
+# Build 1MCP from local source (requires docker-compose build.context = C:\chaba_wt)
+COPY voyant/1mcp-agent-src /opt/1mcp-agent-src
+WORKDIR /opt/1mcp-agent-src
+RUN pnpm install --frozen-lockfile --prefer-offline
+RUN sed -i 's/\r$//' ./scripts/build.sh && bash ./scripts/build.sh
+
+CMD ["node", "build/index.js"]

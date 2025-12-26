@@ -141,13 +141,15 @@ services:
     <<: *default-service
     profiles: ["mcp-suite"]
     build:
-      context: ./1mcp-agent
+      context: ../../..
+      dockerfile: mcp-tasks/stacks/idc1-stack/1mcp-agent/Dockerfile
     ports:
       - "127.0.0.1:${ONE_MCP_PORT:-3050}:${ONE_MCP_PORT:-3050}"
     environment:
       ONE_MCP_HOST: ${ONE_MCP_HOST:-0.0.0.0}
       ONE_MCP_PORT: ${ONE_MCP_PORT:-3050}
       ONE_MCP_EXTERNAL_URL: ${ONE_MCP_EXTERNAL_URL:-http://127.0.0.1:${ONE_MCP_PORT:-3050}}
+      ONE_MCP_ENABLE_AUTH: "true"
       ONE_MCP_LOG_LEVEL: ${ONE_MCP_LOG_LEVEL:-info}
       ONE_MCP_CONFIG: ${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}
       UV_PYTHON: python3
@@ -155,6 +157,7 @@ services:
       UV_PROJECT_ENVIRONMENT: /tmp/uv-project
     volumes:
       - ${ONE_MCP_CONFIG_FILE:-./1mcp.json}:${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}:ro
+      - one_mcp_sessions:/root/.config/1mcp/sessions
       - ${ONE_MCP_WORKSPACE_HOST_DIR:-../../}:/workspaces/chaba:cached
       - /var/run/docker.sock:/var/run/docker.sock
       - docker-mcp-venv:/opt/docker-mcp-venv
@@ -306,3 +309,4 @@ volumes:
   webtops_windsurf_cache:
   webtops_workspaces:
   docker-mcp-venv:
+  one_mcp_sessions:
