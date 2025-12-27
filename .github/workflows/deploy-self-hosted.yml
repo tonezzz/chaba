@@ -20,6 +20,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $repo = 'C:\chaba'
           if (!(Test-Path -LiteralPath $repo)) { throw "Missing repo path: $repo" }
+          git config --global --add safe.directory $repo
           git -C $repo remote -v
           git -C $repo fetch origin --prune
           git -C $repo reset --hard $env:GITHUB_SHA
@@ -43,6 +44,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $repo = 'C:\chaba'
           if (!(Test-Path -LiteralPath $repo)) { throw "Missing repo path: $repo" }
+          git config --global --add safe.directory $repo
           git -C $repo remote -v
           git -C $repo fetch origin --prune
           git -C $repo reset --hard $env:GITHUB_SHA
