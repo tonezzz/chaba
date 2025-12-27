@@ -1,0 +1,57 @@
+name: Deploy (Self-Hosted)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-self-hosted-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-pc1:
+    name: Deploy pc1
+    runs-on: [self-hosted, windows, pc1]
+    steps:
+      - name: Update repo working copy (C:\chaba)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $repo = 'C:\chaba'
+          if (!(Test-Path -LiteralPath $repo)) { throw "Missing repo path: $repo" }
+          git -C $repo remote -v
+          git -C $repo fetch origin --prune
+          git -C $repo reset --hard $env:GITHUB_SHA
+          git -C $repo submodule update --init --recursive
+          git -C $repo status --porcelain
+
+      - name: Sync secrets + restart stacks
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $repo = 'C:\chaba'
+          & pwsh -NoProfile -ExecutionPolicy Bypass -File "$repo\scripts\pc1-sync-prefixed-env.ps1" -SourcePath "C:\chaba\.secrets\pc1.env" -Restart
+
+  deploy-pc2:
+    name: Deploy pc2
+    runs-on: [self-hosted, windows, pc2]
+    steps:
+      - name: Update repo working copy (C:\chaba)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $repo = 'C:\chaba'
+          if (!(Test-Path -LiteralPath $repo)) { throw "Missing repo path: $repo" }
+          git -C $repo remote -v
+          git -C $repo fetch origin --prune
+          git -C $repo reset --hard $env:GITHUB_SHA
+          git -C $repo submodule update --init --recursive
+          git -C $repo status --porcelain
+
+      - name: Sync secrets + restart stacks
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $repo = 'C:\chaba'
+          & pwsh -NoProfile -ExecutionPolicy Bypass -File "$repo\scripts\pc2-sync-prefixed-env.ps1" -SourcePath "C:\chaba\.secrets\pc2.env" -Restart
