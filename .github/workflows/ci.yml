@@ -13,6 +13,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Security guardrails (no secrets committed)
+        run: |
+          set -euo pipefail
+          echo "Checking for committed secret files..."
+
+          if git ls-files -z | tr '\0' '\n' | grep -E '(^|/)(\.secrets/|\.env$|\.env\.local$|\.env\.dev-host$|pc1\.env$|pc2\.env$|mcp_config\.json$)' >/dev/null; then
+            echo "ERROR: Secret files appear to be committed. Remove them from git and use the prefixed env sync workflow instead." >&2
+            echo "Offending paths:" >&2
+            git ls-files -z | tr '\0' '\n' | grep -E '(^|/)(\.secrets/|\.env$|\.env\.local$|\.env\.dev-host$|pc1\.env$|pc2\.env$|mcp_config\.json$)' >&2
+            exit 2
+          fi
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
