@@ -284,6 +284,124 @@ services:
       timeout: 5s
       retries: 3
 
+  authentik-postgres:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${AUTHENTIK_POSTGRES_DB:-authentik}
+      POSTGRES_USER: ${AUTHENTIK_POSTGRES_USER:-authentik}
+      POSTGRES_PASSWORD: ${AUTHENTIK_POSTGRES_PASSWORD:-please-set-authentik-postgres-password}
+    volumes:
+      - authentik-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AUTHENTIK_POSTGRES_USER:-authentik} -d ${AUTHENTIK_POSTGRES_DB:-authentik} || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  authentik-redis:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    image: redis:7
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  authentik-server:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    image: ghcr.io/goauthentik/server:2024.8.3
+    command: ["server"]
+    environment:
+      AUTHENTIK_REDIS__HOST: authentik-redis
+      AUTHENTIK_POSTGRESQL__HOST: authentik-postgres
+      AUTHENTIK_POSTGRESQL__USER: ${AUTHENTIK_POSTGRES_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__NAME: ${AUTHENTIK_POSTGRES_DB:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_POSTGRES_PASSWORD:-authentik}
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:-please-set-authentik-secret-key}
+      AUTHENTIK_LOG_LEVEL: ${AUTHENTIK_LOG_LEVEL:-info}
+      AUTHENTIK_DISABLE_UPDATE_CHECK: ${AUTHENTIK_DISABLE_UPDATE_CHECK:-true}
+      AUTHENTIK_ERROR_REPORTING__ENABLED: ${AUTHENTIK_ERROR_REPORTING__ENABLED:-false}
+    volumes:
+      - authentik-media:/media
+      - authentik-templates:/templates
+    depends_on:
+      - authentik-postgres
+      - authentik-redis
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/-/health/live/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  authentik-worker:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    image: ghcr.io/goauthentik/server:2024.8.3
+    command: ["worker"]
+    environment:
+      AUTHENTIK_REDIS__HOST: authentik-redis
+      AUTHENTIK_POSTGRESQL__HOST: authentik-postgres
+      AUTHENTIK_POSTGRESQL__USER: ${AUTHENTIK_POSTGRES_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__NAME: ${AUTHENTIK_POSTGRES_DB:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_POSTGRES_PASSWORD:-authentik}
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:-please-set-authentik-secret-key}
+      AUTHENTIK_LOG_LEVEL: ${AUTHENTIK_LOG_LEVEL:-info}
+      AUTHENTIK_DISABLE_UPDATE_CHECK: ${AUTHENTIK_DISABLE_UPDATE_CHECK:-true}
+      AUTHENTIK_ERROR_REPORTING__ENABLED: ${AUTHENTIK_ERROR_REPORTING__ENABLED:-false}
+    volumes:
+      - authentik-media:/media
+      - authentik-templates:/templates
+    depends_on:
+      - authentik-postgres
+      - authentik-redis
+
+  minio:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    image: minio/minio:RELEASE.2024-08-17T01-24-54Z
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-please-set-minio-root-password}
+      MINIO_IDENTITY_OPENID_CONFIG_URL: ${MINIO_IDENTITY_OPENID_CONFIG_URL:-}
+      MINIO_IDENTITY_OPENID_CLIENT_ID: ${MINIO_IDENTITY_OPENID_CLIENT_ID:-}
+      MINIO_IDENTITY_OPENID_CLIENT_SECRET: ${MINIO_IDENTITY_OPENID_CLIENT_SECRET:-}
+      MINIO_IDENTITY_OPENID_DISPLAY_NAME: ${MINIO_IDENTITY_OPENID_DISPLAY_NAME:-Authentik}
+      MINIO_IDENTITY_OPENID_CLAIM_NAME: ${MINIO_IDENTITY_OPENID_CLAIM_NAME:-policy}
+      MINIO_IDENTITY_OPENID_SCOPES: ${MINIO_IDENTITY_OPENID_SCOPES:-openid,profile,email}
+      MINIO_IDENTITY_OPENID_REDIRECT_URI_DYNAMIC: ${MINIO_IDENTITY_OPENID_REDIRECT_URI_DYNAMIC:-on}
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/minio/health/live || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  vault:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    image: hashicorp/vault:1.17
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN_ID:-please-set-vault-dev-root-token}
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+      VAULT_UI: "true"
+    command: ["server", "-dev"]
+    volumes:
+      - vault-dev:/vault/file
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8200/v1/sys/health >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
   caddy:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -306,3 +424,8 @@ volumes:
   caddy-config:
   docker-mcp-venv:
   stack-sqlite:
+  authentik-postgres:
+  authentik-media:
+  authentik-templates:
+  minio-data:
+  vault-dev:
