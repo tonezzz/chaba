@@ -141,8 +141,7 @@ services:
     <<: *default-service
     profiles: ["mcp-suite"]
     build:
-      context: ../../..
-      dockerfile: mcp-tasks/stacks/idc1-stack/1mcp-agent/Dockerfile
+      context: ./1mcp-agent
     ports:
       - "127.0.0.1:${ONE_MCP_PORT:-3050}:${ONE_MCP_PORT:-3050}"
     environment:
