@@ -402,6 +402,29 @@ services:
       timeout: 5s
       retries: 5
 
+  mcp-quickchart:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_QUICKCHART_BUILD_CONTEXT:-../../mcp/mcp-quickchart}
+    container_name: pc1-mcp-quickchart
+    ports:
+      - "${MCP_QUICKCHART_PORT:-8251}:8251"
+    environment:
+      PORT: 8251
+      QUICKCHART_BASE_URL: ${QUICKCHART_BASE_URL:-https://quickchart.io}
+      QUICKCHART_API_BASE_URL: ${QUICKCHART_API_BASE_URL:-https://api.quickchart.io}
+      QUICKCHART_DEFAULT_OUTPUT_DIR: /data
+      QUICKCHART_TIMEOUT_SECONDS: ${QUICKCHART_TIMEOUT_SECONDS:-30}
+      QUICKCHART_MAX_OUTPUT_BYTES: ${QUICKCHART_MAX_OUTPUT_BYTES:-20000000}
+    volumes:
+      - quickchart-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8251/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   caddy:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -429,3 +452,4 @@ volumes:
   authentik-templates:
   minio-data:
   vault-dev:
+  quickchart-data:
