@@ -15,7 +15,7 @@ jobs:
     runs-on: [self-hosted, windows, pc1]
     steps:
       - name: Update repo working copy (C:\chaba)
-        shell: pwsh
+        shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
           $repo = 'C:\chaba'
@@ -28,18 +28,18 @@ jobs:
           git -C $repo status --porcelain
 
       - name: Sync secrets + restart stacks
-        shell: pwsh
+        shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
           $repo = 'C:\chaba'
-          & pwsh -NoProfile -ExecutionPolicy Bypass -File "$repo\scripts\pc1-sync-prefixed-env.ps1" -SourcePath "C:\chaba\.secrets\pc1.env" -Restart
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$repo\scripts\pc1-sync-prefixed-env.ps1" -SourcePath "C:\chaba\.secrets\pc1.env" -Restart
 
   deploy-pc2:
     name: Deploy pc2
     runs-on: [self-hosted, windows, pc2]
     steps:
       - name: Update repo working copy (C:\chaba)
-        shell: pwsh
+        shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
           $repo = 'C:\chaba'
@@ -52,8 +52,8 @@ jobs:
           git -C $repo status --porcelain
 
       - name: Sync secrets + restart stacks
-        shell: pwsh
+        shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
           $repo = 'C:\chaba'
-          & pwsh -NoProfile -ExecutionPolicy Bypass -File "$repo\scripts\pc2-sync-prefixed-env.ps1" -SourcePath "C:\chaba\.secrets\pc2.env" -Restart
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$repo\scripts\pc2-sync-prefixed-env.ps1" -SourcePath "C:\chaba\.secrets\pc2.env" -Restart
