@@ -115,6 +115,11 @@ def _embed_image_bytes(image_bytes: bytes) -> List[float]:
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=400, detail=f"invalid_image: {exc}")
 
+    # Transformers' CLIP image preprocessor can mis-detect channel dimension for
+    # tiny images (e.g. 1x1). Resizing avoids ambiguous (1, 1, 3) shapes.
+    if img.width < 8 or img.height < 8:
+        img = img.resize((224, 224))
+
     vec = model.encode(img, normalize_embeddings=True)
     return [float(x) for x in np.asarray(vec).tolist()]
 
@@ -184,6 +189,26 @@ class SearchTextArgs(BaseModel):
 class SearchImageArgs(BaseModel):
     image_base64: str = Field(..., alias="imageBase64")
     limit: int = 5
+
+
+class JsonRpcError(BaseModel):
+    code: int
+    message: str
+    data: Optional[Any] = None
+
+
+class JsonRpcRequest(BaseModel):
+    jsonrpc: Optional[str] = "2.0"
+    id: Optional[Any] = None
+    method: str
+    params: Optional[Dict[str, Any]] = None
+
+
+class JsonRpcResponse(BaseModel):
+    jsonrpc: str = "2.0"
+    id: Any
+    result: Optional[Any] = None
+    error: Optional[JsonRpcError] = None
 
 
 app = FastAPI(title=APP_NAME, version=APP_VERSION)
@@ -353,3 +378,70 @@ async def invoke(payload: Dict[str, Any] = Body(...)) -> Dict[str, Any]:
         return {"tool": tool, "result": _handle_search_image(parsed)}
 
     raise HTTPException(status_code=404, detail=f"unknown tool '{tool}'")
+
+
+def _jsonrpc_error(id_value: Any, code: int, message: str, data: Optional[Any] = None) -> Dict[str, Any]:
+    return JsonRpcResponse(id=id_value, error=JsonRpcError(code=code, message=message, data=data)).model_dump(
+        exclude_none=True
+    )
+
+
+@app.post("/mcp")
+async def mcp(payload: Dict[str, Any] = Body(...)) -> Any:
+    request = JsonRpcRequest(**(payload or {}))
+    if request.id is None:
+        return None
+
+    method = (request.method or "").strip()
+    params = request.params or {}
+
+    if method == "initialize":
+        return JsonRpcResponse(
+            id=request.id,
+            result={
+                "protocolVersion": "2024-11-05",
+                "serverInfo": {"name": APP_NAME, "version": APP_VERSION},
+                "capabilities": {"tools": {}},
+            },
+        ).model_dump(exclude_none=True)
+
+    if method in ("tools/list", "list_tools"):
+        return JsonRpcResponse(id=request.id, result={"tools": _tool_definitions()}).model_dump(exclude_none=True)
+
+    if method in ("tools/call", "call_tool"):
+        tool_name = (params.get("name") or params.get("tool") or "").strip()
+        arguments_raw = params.get("arguments") or {}
+        if not tool_name:
+            return _jsonrpc_error(request.id, -32602, "Missing tool name")
+
+        if tool_name == "upsert_text":
+            parsed = UpsertTextArgs(**(arguments_raw or {}))
+            out = await _handle_upsert_text(parsed)
+            return JsonRpcResponse(id=request.id, result={"content": [{"type": "text", "text": str(out)}]}).model_dump(
+                exclude_none=True
+            )
+
+        if tool_name == "search_text":
+            parsed = SearchTextArgs(**(arguments_raw or {}))
+            out = await _handle_search_text(parsed)
+            return JsonRpcResponse(id=request.id, result={"content": [{"type": "text", "text": str(out)}]}).model_dump(
+                exclude_none=True
+            )
+
+        if tool_name == "upsert_image":
+            parsed = UpsertImageArgs(**(arguments_raw or {}))
+            out = _handle_upsert_image(parsed)
+            return JsonRpcResponse(id=request.id, result={"content": [{"type": "text", "text": str(out)}]}).model_dump(
+                exclude_none=True
+            )
+
+        if tool_name == "search_image":
+            parsed = SearchImageArgs(**(arguments_raw or {}))
+            out = _handle_search_image(parsed)
+            return JsonRpcResponse(id=request.id, result={"content": [{"type": "text", "text": str(out)}]}).model_dump(
+                exclude_none=True
+            )
+
+        return _jsonrpc_error(request.id, -32601, f"Unknown tool '{tool_name}'")
+
+    return _jsonrpc_error(request.id, -32601, f"Unknown method '{method}'")
