@@ -9,6 +9,7 @@ This stack provides a VPN-only chat UI (OpenChat UI) backed by an OpenAI-compati
 - `1mcp-agent`: MCP tool aggregator (HTTP Streamable)
 - `mcp-task`: task/run service (exposed as tools via 1mcp)
 - `mcp-devops`: devops workflows (tools via 1mcp)
+- `mcp-rag`: text+image RAG (Ollama embeddings + Qdrant)
 
 ## Start
 From `stacks/pc1-stack/`:
@@ -26,6 +27,9 @@ Docker compose --profile mcp-suite up -d --build
 - OpenChat UI: `http://pc1.vpn:3170`
 - 1mcp-agent: `http://1mcp.pc1.vpn:3051/health`
 - OpenAI gateway: `http://pc1.vpn:8181/health`
+- mcp-rag (health): `http://pc1.vpn:8055/health`
+- mcp-rag (manifest): `http://pc1.vpn:8055/.well-known/mcp.json`
+- mcp-rag (mcp): `http://pc1.vpn:8055/mcp`
 
 ### VPN HTTPS (stack Caddy)
 pc1-stack runs a Caddy container using `tls internal` on host port `3443`.
@@ -34,6 +38,9 @@ pc1-stack runs a Caddy container using `tls internal` on host port `3443`.
 - OpenAI gateway (health): `https://pc1.vpn:3443/openai/health`
 - OpenAI gateway (models): `https://pc1.vpn:3443/openai/v1/models`
 - 1mcp-agent: `https://pc1.vpn:3443/1mcp/health`
+- mcp-rag (health): `https://rag.pc1.vpn/health`
+- mcp-rag (manifest): `https://rag.pc1.vpn/.well-known/mcp.json`
+- mcp-rag (mcp): `https://rag.pc1.vpn/mcp`
 
 ## Notes
 - `stacks/pc1-stack/.env` is local-only (gitignored). Do not commit real API keys.

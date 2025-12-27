@@ -341,6 +341,29 @@
               },
               "container_name": "idc1-mcp-memory"
             },
+            "mcp-rag": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_RAG_PORT:-8455}:8055"
+              ],
+              "port": 8455,
+              "container_name": "idc1-mcp-rag",
+              "type": "build",
+              "endpoints": {
+                "local": "http://localhost:8455"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_RAG_PORT:-8455}:8055"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "local": "http://localhost:8455/health"
+              }
+            },
             "coredns": {
               "profiles": [
                 "infra"
@@ -788,6 +811,33 @@
               "health_urls": {
                 "vpn": "http://pc1.vpn:${MCP_GLAMA_PORT:-7241}/health",
                 "local": "http://localhost:7241/health"
+              }
+            },
+            "mcp-rag": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_RAG_PORT:-8055}:8055"
+              ],
+              "port": 8055,
+              "container_name": "pc1-mcp-rag",
+              "type": "build",
+              "endpoints": {
+                "vpn": "http://pc1.vpn:${MCP_RAG_PORT:-8055}",
+                "vpn_ingress": "https://rag.pc1.vpn",
+                "local": "http://localhost:8055"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_RAG_PORT:-8055}:8055"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "vpn": "http://pc1.vpn:${MCP_RAG_PORT:-8055}/health",
+                "vpn_ingress": "https://rag.pc1.vpn/health",
+                "local": "http://localhost:8055/health"
               }
             },
             "mcp-tester": {
