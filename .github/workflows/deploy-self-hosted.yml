@@ -10,9 +10,41 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      pc1: ${{ steps.filter.outputs.pc1 }}
+      pc2: ${{ steps.filter.outputs.pc2 }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Path filter
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            pc1:
+              - 'stacks/pc1-stack/**'
+              - 'scripts/pc1-*'
+              - 'mcp/mcp-rag/**'
+              - 'docs/dns/**'
+              - 'stacks/idc1-vpn/**'
+              - 'stacks/pc2-vpn/**'
+            pc2:
+              - 'stacks/pc2-worker/**'
+              - 'stacks/pc2-vpn/**'
+              - 'scripts/pc2-*'
+              - 'docs/dns/**'
+
   deploy-pc1:
     name: Deploy pc1
     runs-on: [self-hosted, windows, pc1]
+    needs: changes
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.pc1 == 'true' }}
     steps:
       - name: Update repo working copy (C:\chaba)
         shell: cmd
@@ -35,6 +67,8 @@ jobs:
   deploy-pc2:
     name: Deploy pc2
     runs-on: [self-hosted, windows, pc2]
+    needs: changes
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.pc2 == 'true' }}
     steps:
       - name: Update repo working copy (C:\chaba)
         shell: cmd
