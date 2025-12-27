@@ -15,45 +15,41 @@ jobs:
     runs-on: [self-hosted, windows, pc1]
     steps:
       - name: Update repo working copy (C:\chaba)
-        shell: powershell
+        shell: cmd
         run: |
-          $ErrorActionPreference = 'Stop'
-          $repo = 'C:\chaba'
-          if (!(Test-Path -LiteralPath $repo)) { throw "Missing repo path: $repo" }
-          git config --global --add safe.directory $repo
-          git -C $repo remote -v
-          git -C $repo fetch origin --prune
-          git -C $repo reset --hard $env:GITHUB_SHA
-          git -C $repo submodule update --init --recursive
-          git -C $repo status --porcelain
+          set REPO=C:\chaba
+          if not exist "%REPO%" (echo Missing repo path: %REPO% & exit /b 2)
+          git config --global --add safe.directory "%REPO%"
+          git -C "%REPO%" remote -v
+          git -C "%REPO%" fetch origin --prune
+          git -C "%REPO%" reset --hard %GITHUB_SHA%
+          git -C "%REPO%" submodule update --init --recursive
+          git -C "%REPO%" status --porcelain
 
       - name: Sync secrets + restart stacks
-        shell: powershell
+        shell: cmd
         run: |
-          $ErrorActionPreference = 'Stop'
-          $repo = 'C:\chaba'
-          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$repo\scripts\pc1-sync-prefixed-env.ps1" -SourcePath "C:\chaba\.secrets\pc1.env" -Restart
+          set REPO=C:\chaba
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%REPO%\scripts\pc1-sync-prefixed-env.ps1" -SourcePath "C:\chaba\.secrets\pc1.env" -Restart
 
   deploy-pc2:
     name: Deploy pc2
     runs-on: [self-hosted, windows, pc2]
     steps:
       - name: Update repo working copy (C:\chaba)
-        shell: powershell
+        shell: cmd
         run: |
-          $ErrorActionPreference = 'Stop'
-          $repo = 'C:\chaba'
-          if (!(Test-Path -LiteralPath $repo)) { throw "Missing repo path: $repo" }
-          git config --global --add safe.directory $repo
-          git -C $repo remote -v
-          git -C $repo fetch origin --prune
-          git -C $repo reset --hard $env:GITHUB_SHA
-          git -C $repo submodule update --init --recursive
-          git -C $repo status --porcelain
+          set REPO=C:\chaba
+          if not exist "%REPO%" (echo Missing repo path: %REPO% & exit /b 2)
+          git config --global --add safe.directory "%REPO%"
+          git -C "%REPO%" remote -v
+          git -C "%REPO%" fetch origin --prune
+          git -C "%REPO%" reset --hard %GITHUB_SHA%
+          git -C "%REPO%" submodule update --init --recursive
+          git -C "%REPO%" status --porcelain
 
       - name: Sync secrets + restart stacks
-        shell: powershell
+        shell: cmd
         run: |
-          $ErrorActionPreference = 'Stop'
-          $repo = 'C:\chaba'
-          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$repo\scripts\pc2-sync-prefixed-env.ps1" -SourcePath "C:\chaba\.secrets\pc2.env" -Restart
+          set REPO=C:\chaba
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%REPO%\scripts\pc2-sync-prefixed-env.ps1" -SourcePath "C:\chaba\.secrets\pc2.env" -Restart
