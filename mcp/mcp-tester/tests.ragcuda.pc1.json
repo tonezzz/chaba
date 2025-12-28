@@ -1,0 +1,134 @@
+[
+  {
+    "name": "test-pc1-mcp-ragcuda-cuda-health",
+    "description": "mcp-cuda health endpoint",
+    "url": "http://mcp-cuda:8057/health",
+    "expect_status": 200,
+    "timeout_ms": 8000,
+    "retries": 1
+  },
+  {
+    "name": "test-pc1-mcp-ragcuda-cuda-torch-info",
+    "description": "mcp-cuda torch_info returns CUDA availability",
+    "url": "http://mcp-cuda:8057/invoke",
+    "method": "POST",
+    "expect_status": 200,
+    "timeout_ms": 15000,
+    "retries": 0,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "tool": "torch_info",
+      "arguments": {}
+    }
+  },
+  {
+    "name": "test-pc1-mcp-ragcuda-cuda-text-embed",
+    "description": "mcp-cuda text_embed (batch) returns 2 vectors",
+    "url": "http://mcp-cuda:8057/invoke",
+    "method": "POST",
+    "expect_status": 200,
+    "timeout_ms": 60000,
+    "retries": 0,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "tool": "text_embed",
+      "arguments": {
+        "texts": ["hello", "world"],
+        "normalize": true
+      }
+    }
+  },
+  {
+    "name": "test-pc1-mcp-ragcuda-cuda-rerank",
+    "description": "mcp-cuda rerank returns ranked results",
+    "url": "http://mcp-cuda:8057/invoke",
+    "method": "POST",
+    "expect_status": 200,
+    "timeout_ms": 60000,
+    "retries": 0,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "tool": "rerank",
+      "arguments": {
+        "query": "what is gpu offload",
+        "documents": ["cpu fallback", "gpu offload with cuda", "vector database"]
+      }
+    }
+  },
+  {
+    "name": "test-pc1-mcp-ragcuda-rag-health",
+    "description": "mcp-rag health endpoint",
+    "url": "http://mcp-rag:8055/health",
+    "expect_status": 200,
+    "timeout_ms": 8000,
+    "retries": 1
+  },
+  {
+    "name": "test-pc1-mcp-ragcuda-rag-upsert-text",
+    "description": "mcp-rag upsert_text (should use cuda text_embed when configured)",
+    "url": "http://mcp-rag:8055/invoke",
+    "method": "POST",
+    "expect_status": 200,
+    "timeout_ms": 60000,
+    "retries": 0,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "tool": "upsert_text",
+      "arguments": {
+        "group": "smoke",
+        "items": [
+          {"id": "smoke_1", "text": "GPU offload means moving compute to the GPU.", "metadata": {"group": "smoke"}},
+          {"id": "smoke_2", "text": "Qdrant stores vectors for similarity search.", "metadata": {"group": "smoke"}}
+        ]
+      }
+    }
+  },
+  {
+    "name": "test-pc1-mcp-ragcuda-rag-search-text",
+    "description": "mcp-rag search_text returns results for smoke group",
+    "url": "http://mcp-rag:8055/invoke",
+    "method": "POST",
+    "expect_status": 200,
+    "timeout_ms": 60000,
+    "retries": 0,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "tool": "search_text",
+      "arguments": {
+        "group": "smoke",
+        "query": "gpu",
+        "limit": 5
+      }
+    }
+  },
+  {
+    "name": "test-pc1-mcp-ragcuda-rag-rerank-text",
+    "description": "mcp-rag rerank_text delegates to mcp-cuda rerank",
+    "url": "http://mcp-rag:8055/invoke",
+    "method": "POST",
+    "expect_status": 200,
+    "timeout_ms": 60000,
+    "retries": 0,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "tool": "rerank_text",
+      "arguments": {
+        "query": "gpu offload",
+        "documents": ["cpu fallback", "gpu offload with cuda", "vector database"],
+        "limit": 3
+      }
+    }
+  }
+]
