@@ -73,9 +73,40 @@ if ($Restart) {
     throw "dev-host restart failed (exit $($proc2.ExitCode))"
   }
 
-  Write-Host "[pc1-sync-prefixed-env] Quick health checks (best-effort)"
-  try { (Invoke-WebRequest -UseBasicParsing "http://1mcp.pc1.vpn:3051/health/ready" -TimeoutSec 10).StatusCode | Out-Host } catch { Write-Host "1mcp.pc1.vpn health check failed" }
-  try { (Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:3100/api/health" -TimeoutSec 10).StatusCode | Out-Host } catch { Write-Host "dev-host local health check failed" }
+  Write-Host "[pc1-sync-prefixed-env] Core health gate (required services only)"
+  $attempts = 12
+  $delaySeconds = 3
+
+  $ok1mcp = $false
+  for ($i = 1; $i -le $attempts; $i++) {
+    try {
+      (Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:3051/health/ready" -TimeoutSec 10).StatusCode | Out-Null
+      $ok1mcp = $true
+      break
+    } catch {
+      Start-Sleep -Seconds $delaySeconds
+    }
+  }
+  if (-not $ok1mcp) {
+    throw "core health gate failed: 1mcp not ready on http://127.0.0.1:3051/health/ready"
+  }
+
+  $devHostOk = $false
+  for ($i = 1; $i -le $attempts; $i++) {
+    try {
+      $health = Invoke-RestMethod -Method Get -Uri "http://127.0.0.1:3100/api/health" -TimeoutSec 10
+      if ($health.status -eq "ok") {
+        $devHostOk = $true
+        break
+      }
+      Start-Sleep -Seconds $delaySeconds
+    } catch {
+      Start-Sleep -Seconds $delaySeconds
+    }
+  }
+  if (-not $devHostOk) {
+    throw "core health gate failed: dev-host /api/health did not report status=ok on http://127.0.0.1:3100/api/health"
+  }
 }
 
 Write-Host "[pc1-sync-prefixed-env] Done"

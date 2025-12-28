@@ -46,9 +46,6 @@ services:
     <<: *default-service
     image: caddy:2-alpine
     profiles: ["mcp-suite"]
-    ports:
-      - "443:443"
-      - "3100:443"
     volumes:
       - ${DEV_PROXY_CONFIG:-./dev-proxy/Caddyfile}:/etc/caddy/Caddyfile:ro
       - ${DEV_PROXY_CERTS:-./dev-proxy/certs}:/certs:ro

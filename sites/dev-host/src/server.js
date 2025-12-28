@@ -43,8 +43,6 @@ const DETECTS_PROXY_TARGET =
   process.env.DEV_HOST_DETECTS_TARGET ||
   'http://localhost:4120';
 const VAJA_PROXY_TARGET = (process.env.VAJA_PROXY_TARGET || process.env.DEV_HOST_VAJA_TARGET || '').trim();
-const MCP0_PROXY_TARGET =
-  process.env.MCP0_PROXY_TARGET || process.env.DEV_HOST_MCP0_TARGET || 'http://host.docker.internal:8310';
 
 const workspaceRoot = path.resolve(__dirname, '..', '..');
 
@@ -88,8 +86,7 @@ const additionalStaticRoutes = [
 const PROXY_CHECKS = [
   { id: 'glama', label: 'Glama chat', target: GLAMA_PROXY_TARGET, path: '/api/health' },
   { id: 'agents', label: 'Agents API', target: AGENTS_PROXY_TARGET, path: '/api/health' },
-  { id: 'detects', label: 'Detects API', target: DETECTS_PROXY_TARGET, path: '/health' },
-  { id: 'mcp0', label: 'MCP0 control', target: MCP0_PROXY_TARGET, path: '/health' }
+  { id: 'detects', label: 'Detects API', target: DETECTS_PROXY_TARGET, path: '/health', optional: true }
 ];
 
 const fetchWithTimeout = async (url, { timeout = 4000, ...options } = {}) => {
@@ -118,6 +115,7 @@ const probeProxyTargets = async () =>
         id: check.id,
         label: check.label,
         target: check.target,
+        optional: Boolean(check.optional),
         status: 'unconfigured',
         latencyMs: null
       };
@@ -148,8 +146,10 @@ const probeProxyTargets = async () =>
     })
   );
 
-const overallStatusFromProxies = (proxies) =>
-  proxies.every((entry) => entry.status === 'ok' || entry.status === 'unconfigured') ? 'ok' : 'degraded';
+const overallStatusFromProxies = (proxies) => {
+  const core = proxies.filter((entry) => !entry.optional);
+  return core.every((entry) => entry.status === 'ok' || entry.status === 'unconfigured') ? 'ok' : 'degraded';
+};
 
 const getSiteStatuses = () =>
   siteConfigs.map((site) => ({
@@ -413,24 +413,6 @@ const wireProxies = () => {
       },
       onError: (err, req, res) => {
         console.error('[dev-host] /test/agents/api proxy error', err.message);
-        if (!res.headersSent) {
-          res.status(502).json({ error: 'proxy_error', detail: err.message });
-        }
-      }
-    })
-  );
-
-  app.use(
-    '/test/mcp0',
-    createProxyMiddleware({
-      target: MCP0_PROXY_TARGET,
-      changeOrigin: true,
-      pathRewrite: (path) => path.replace(/^\/test\/mcp0/i, ''),
-      onProxyReq: (proxyReq) => {
-        proxyReq.setHeader('x-dev-host-proxy', 'test-mcp0');
-      },
-      onError: (err, req, res) => {
-        console.error('[dev-host] /test/mcp0 proxy error', err.message);
         if (!res.headersSent) {
           res.status(502).json({ error: 'proxy_error', detail: err.message });
         }
