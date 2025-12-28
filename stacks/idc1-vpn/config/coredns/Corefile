@@ -10,7 +10,16 @@ vpn:53 {
     rewrite name exact idc1.vpn idc1
     rewrite name regex (.*)\.idc1\.vpn idc1
     rewrite name regex (.*)\.pc2\.vpn pc2.vpn
-    file /etc/coredns/zones/vpn.db
+    hosts {
+        10.8.0.1 idc1.vpn idc1
+        10.8.0.11 pc1.vpn pc1
+        10.8.0.11 rag.pc1.vpn rag.pc1
+        10.8.0.12 pc2.vpn pc2
+        10.8.0.12 1mcp.pc2.vpn 1mcp.pc2
+        10.8.0.12 dev-host.pc2.vpn dev-host.pc2
+        10.8.0.12 test.pc2.vpn test.pc2
+        fallthrough
+    }
     import vitals
 }
 
