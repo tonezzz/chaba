@@ -485,7 +485,7 @@ class PreparePublishPc1StackArgs(BaseModel):
     workflow_id: str = Field(default="deploy-pc1-stack")
     run_tests: bool = Field(default=True)
     run_verify: bool = Field(default=True)
-    run_rollback: bool = Field(default=False)
+    run_rollback: bool = Field(default=True)
     rollback_workflow_id: str = Field(default="pc1-stack-down")
     test_concurrency: int = Field(default=8, ge=1, le=16)
     test_chunk_size: int = Field(default=1, ge=1)
