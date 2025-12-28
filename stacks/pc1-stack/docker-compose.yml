@@ -247,7 +247,7 @@ services:
     environment:
       PORT: 8016
       MCP_TASK_DB_PATH: /data/sqlite/mcp-task.sqlite
-      MCP_TASK_SERVERS: '[{"name":"mcp-devops","url":"http://mcp-devops:${MCP_DEVOPS_PORT:-8325}"}]'
+      MCP_TASK_SERVERS: '[{"name":"mcp-devops","url":"http://mcp-devops:${MCP_DEVOPS_PORT:-8325}"},{"name":"mcp-agents","url":"http://mcp-agents:${MCP_AGENTS_PORT:-8046}"},{"name":"mcp-glama","url":"http://mcp-glama:8014"}]'
     volumes:
       - stack-sqlite:/data/sqlite
     healthcheck:
