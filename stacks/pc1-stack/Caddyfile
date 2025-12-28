@@ -2,6 +2,10 @@ pc1.vpn {
     tls internal
 
     route {
+        handle /docs* {
+            reverse_proxy mcp-doc-archiver:8066
+        }
+
         handle_path /chat* {
             reverse_proxy openchat-ui:3000
         }

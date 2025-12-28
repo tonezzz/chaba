@@ -47,6 +47,156 @@ def _get_servers() -> Dict[str, str]:
         return {}
 
 
+def _append_conversation_message(
+    conversation_id: str,
+    role: str,
+    content: str,
+    meta: Optional[Dict[str, Any]] = None,
+) -> str:
+    conv = _conversation_row(conversation_id)
+    if conv is None:
+        raise HTTPException(status_code=404, detail="conversation not found")
+    now = _utc_ts()
+    message_id = str(uuid.uuid4())
+    meta_json = _json_dumps(meta) if isinstance(meta, dict) else None
+    _conn.execute(
+        "INSERT INTO conversation_messages (message_id, conversation_id, role, content, created_at, meta_json) VALUES (?, ?, ?, ?, ?, ?)",
+        (message_id, conversation_id, str(role), str(content), now, meta_json),
+    )
+    _conn.execute(
+        "UPDATE conversations SET updated_at=? WHERE conversation_id=?",
+        (now, conversation_id),
+    )
+    _conn.commit()
+    return message_id
+
+
+def _conversation_messages_as_llm_messages(conversation_id: str, limit: int = 200) -> List[Dict[str, str]]:
+    rows = _conversation_message_rows(conversation_id=conversation_id, limit=limit, offset=0)
+    out: List[Dict[str, str]] = []
+    for r in rows:
+        role = str(r["role"] or "user").strip().lower()
+        if role not in ("user", "assistant", "system"):
+            role = "user"
+        out.append({"role": role, "content": str(r["content"] or "")})
+    return out
+
+
+def _extract_action_json(text: str) -> Optional[Dict[str, Any]]:
+    raw = (text or "").strip()
+    if not raw:
+        return None
+    try:
+        return json.loads(raw)
+    except Exception:
+        pass
+    start = raw.find("{")
+    end = raw.rfind("}")
+    if start >= 0 and end > start:
+        candidate = raw[start : end + 1]
+        try:
+            return json.loads(candidate)
+        except Exception:
+            return None
+    return None
+
+
+async def _autopilot_step(conversation_id: str, dry_run: bool = False) -> Dict[str, Any]:
+    conv = _conversation_row(conversation_id)
+    if conv is None:
+        raise HTTPException(status_code=404, detail="conversation not found")
+
+    workflows: Any
+    try:
+        workflows = await _invoke_remote("mcp-devops", "list_workflows", {})
+    except Exception as e:
+        workflows = {"ok": False, "error": str(e)}
+
+    system_prompt = (
+        "You are an operations autopilot. You must respond with ONLY valid JSON. "
+        "Choose at most one action. Allowed action: call mcp-devops.run_workflow. "
+        "Schema: {\"action\":{\"server\":\"mcp-devops\",\"tool\":\"run_workflow\",\"args\":{\"workflow_id\":string,\"dry_run\":boolean?}}}. "
+        "If you cannot decide safely, respond with {\"action\":null,\"reason\":string}. "
+        "Available workflows are provided in the next message."
+    )
+
+    messages: List[Dict[str, str]] = [
+        {"role": "system", "content": system_prompt},
+        {"role": "system", "content": "Workflows:\n" + json.dumps(workflows, ensure_ascii=False)},
+    ]
+    messages.extend(_conversation_messages_as_llm_messages(conversation_id))
+
+    llm_res = await _invoke_remote(
+        "mcp-glama",
+        "chat_completion",
+        {
+            "messages": messages,
+            "temperature": 0.2,
+            "max_tokens": 600,
+        },
+    )
+
+    assistant_text = ""
+    if isinstance(llm_res, dict):
+        assistant_text = str(llm_res.get("response") or "")
+    _append_conversation_message(
+        conversation_id,
+        role="assistant",
+        content=assistant_text or json.dumps(llm_res, ensure_ascii=False),
+        meta={"source": "mcp-glama"},
+    )
+
+    action_obj = _extract_action_json(assistant_text)
+    if not isinstance(action_obj, dict):
+        return {"ok": False, "error": "assistant_response_not_json", "raw": llm_res}
+
+    action = action_obj.get("action")
+    if not action:
+        return {"ok": True, "action": None, "reason": action_obj.get("reason"), "raw": action_obj}
+
+    if not isinstance(action, dict):
+        return {"ok": False, "error": "invalid_action", "raw": action_obj}
+
+    server = str(action.get("server") or "")
+    tool = str(action.get("tool") or "")
+    args = action.get("args") or {}
+
+    if server != "mcp-devops" or tool != "run_workflow":
+        return {"ok": False, "error": "disallowed_action", "raw": action_obj}
+
+    if not isinstance(args, dict) or not str(args.get("workflow_id") or "").strip():
+        return {"ok": False, "error": "missing_workflow_id", "raw": action_obj}
+
+    if dry_run and "dry_run" not in args:
+        args = dict(args)
+        args["dry_run"] = True
+
+    _append_conversation_message(
+        conversation_id,
+        role="tool",
+        content=json.dumps({"server": server, "tool": tool, "args": args}, ensure_ascii=False, indent=2),
+        meta={"type": "tool_call"},
+    )
+
+    try:
+        tool_result = await _invoke_remote(server, tool, args)
+        _append_conversation_message(
+            conversation_id,
+            role="tool",
+            content=json.dumps(tool_result, ensure_ascii=False, indent=2),
+            meta={"type": "tool_result"},
+        )
+        return {"ok": True, "action": {"server": server, "tool": tool, "args": args}, "result": tool_result}
+    except Exception as e:
+        _append_conversation_message(
+            conversation_id,
+            role="tool",
+            content=str(e),
+            meta={"type": "tool_error"},
+        )
+        return {"ok": False, "action": {"server": server, "tool": tool, "args": args}, "error": str(e)}
+
+
 def _db() -> sqlite3.Connection:
     db_path = _get_db_path()
     _ensure_dir_for_file(db_path)
@@ -157,6 +307,38 @@ def _init_db(conn: sqlite3.Connection) -> None:
         )
         """
     )
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS conversations (
+            conversation_id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            source TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            meta_json TEXT
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS conversation_messages (
+            message_id TEXT PRIMARY KEY,
+            conversation_id TEXT NOT NULL,
+            role TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            meta_json TEXT,
+            FOREIGN KEY(conversation_id) REFERENCES conversations(conversation_id)
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_conversation_messages_conversation_id_created_at
+        ON conversation_messages(conversation_id, created_at)
+        """
+    )
     conn.commit()
 
 
@@ -204,6 +386,29 @@ class GetTaskReportArgs(BaseModel):
 
 class ListTasksArgs(BaseModel):
     status: Optional[str] = None
+    limit: int = Field(default=50, ge=1, le=500)
+    offset: int = Field(default=0, ge=0)
+
+
+class CreateConversationArgs(BaseModel):
+    title: Optional[str] = None
+    source: str = Field(default="chat")
+    meta: Optional[Dict[str, Any]] = None
+
+
+class AppendConversationMessageArgs(BaseModel):
+    conversation_id: str = Field(validation_alias=AliasChoices("conversation_id", "conversationId"))
+    role: str
+    content: str
+    meta: Optional[Dict[str, Any]] = None
+
+
+class GetConversationArgs(BaseModel):
+    conversation_id: str = Field(validation_alias=AliasChoices("conversation_id", "conversationId"))
+
+
+class ListConversationsArgs(BaseModel):
+    source: Optional[str] = None
     limit: int = Field(default=50, ge=1, le=500)
     offset: int = Field(default=0, ge=0)
 
@@ -341,12 +546,57 @@ def _html_page(title: str, body: str) -> HTMLResponse:
         ".pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#f3f4f6;color:#111827}"
         ".row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 12px 0}"
         "</style></head><body>"
-        f"<div class='row'><a href='/control'>Control</a><span class='muted'>/</span><span class='muted'>{escape(title)}</span></div>"
+        f"<div class='row'><a href='/control'>Control</a><span class='muted'>/</span><a href='/chat'>Chat</a><span class='muted'>/</span><a href='/agents'>Agents</a><span class='muted'>/</span><span class='muted'>{escape(title)}</span></div>"
         f"<h1>{escape(title)}</h1>"
         f"{body}"
         "</body></html>"
     )
     return HTMLResponse(html)
+
+
+def _conversation_row(conversation_id: str) -> Optional[sqlite3.Row]:
+    cur = _conn.execute(
+        "SELECT * FROM conversations WHERE conversation_id = ?",
+        (conversation_id,),
+    )
+    return cur.fetchone()
+
+
+def _conversation_message_rows(conversation_id: str, limit: int, offset: int) -> List[sqlite3.Row]:
+    cur = _conn.execute(
+        "SELECT * FROM conversation_messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT ? OFFSET ?",
+        (conversation_id, limit, offset),
+    )
+    return list(cur.fetchall())
+
+
+def _list_conversation_rows(source: Optional[str], limit: int, offset: int) -> List[sqlite3.Row]:
+    if source:
+        cur = _conn.execute(
+            "SELECT * FROM conversations WHERE source = ? ORDER BY updated_at DESC LIMIT ? OFFSET ?",
+            (source, limit, offset),
+        )
+    else:
+        cur = _conn.execute(
+            "SELECT * FROM conversations ORDER BY updated_at DESC LIMIT ? OFFSET ?",
+            (limit, offset),
+        )
+    return list(cur.fetchall())
+
+
+def _conversation_to_dict(row: sqlite3.Row, messages: Optional[List[sqlite3.Row]] = None) -> Dict[str, Any]:
+    out = dict(row)
+    out["meta"] = json.loads(out["meta_json"]) if out.get("meta_json") else None
+    out.pop("meta_json", None)
+    if messages is not None:
+        out_messages: List[Dict[str, Any]] = []
+        for m in messages:
+            md = dict(m)
+            md["meta"] = json.loads(md["meta_json"]) if md.get("meta_json") else None
+            md.pop("meta_json", None)
+            out_messages.append(md)
+        out["messages"] = out_messages
+    return out
 
 
 def _run_row(run_id: str) -> Optional[sqlite3.Row]:
@@ -417,6 +667,181 @@ def control_home(limit: int = 50, offset: int = 0, status: Optional[str] = None)
     nav += f"<span class='muted'>limit={limit} offset={offset}</span>"
     nav += "</div>"
     return _html_page("Tasks", filters + "".join(table) + nav)
+
+
+@app.get("/chat")
+def chat_home(limit: int = 50, offset: int = 0, source: Optional[str] = None) -> HTMLResponse:
+    rows = _list_conversation_rows(source=source, limit=limit, offset=offset)
+    header = (
+        "<div class='row'>"
+        "<span class='muted'>Conversations:</span>"
+        "<a class='pill' href='/chat'>all</a>"
+        "<a class='pill' href='/chat?source=chat'>chat</a>"
+        "<a class='pill' href='/chat?source=autopilot'>autopilot</a>"
+        "<a class='pill' href='/chat?source=agents'>agents</a>"
+        "</div>"
+        "<h2>New conversation</h2>"
+        "<form method='post' action='/chat/create' class='row'>"
+        "<input name='title' placeholder='title (optional)' style='flex:1;min-width:240px;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px'/>"
+        "<select name='source' style='padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px'>"
+        "<option value='chat'>chat</option>"
+        "<option value='autopilot'>autopilot</option>"
+        "</select>"
+        "<button type='submit' style='padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px;background:#111827;color:#fff'>Create</button>"
+        "</form>"
+    )
+    table = [
+        "<h2>History</h2>",
+        "<table><thead><tr><th>conversation</th><th>title</th><th>source</th><th>updated</th><th>created</th></tr></thead><tbody>",
+    ]
+    for r in rows:
+        table.append(
+            "<tr>"
+            f"<td><a href='/chat/{escape(r['conversation_id'])}'>{escape(r['conversation_id'])}</a></td>"
+            f"<td>{escape(r['title'])}</td>"
+            f"<td><span class='pill'>{escape(r['source'])}</span></td>"
+            f"<td class='muted'>{escape(_fmt_ts(r['updated_at']))}</td>"
+            f"<td class='muted'>{escape(_fmt_ts(r['created_at']))}</td>"
+            "</tr>"
+        )
+    table.append("</tbody></table>")
+    prev_off = max(0, offset - limit)
+    next_off = offset + limit
+    qs_source = f"&source={escape(source)}" if source else ""
+    nav = "<div class='row' style='margin-top:14px'>"
+    nav += f"<a class='pill' href='/chat?limit={limit}&offset={prev_off}{qs_source}'>Prev</a>"
+    nav += f"<a class='pill' href='/chat?limit={limit}&offset={next_off}{qs_source}'>Next</a>"
+    nav += f"<span class='muted'>limit={limit} offset={offset}</span>"
+    nav += "</div>"
+    return _html_page("Chat", header + "".join(table) + nav)
+
+
+@app.post("/chat/create")
+async def chat_create(request: Request) -> HTMLResponse:
+    form = await request.form()
+    title = str(form.get("title") or "").strip()
+    source = str(form.get("source") or "chat").strip() or "chat"
+    now = _utc_ts()
+    conversation_id = str(uuid.uuid4())
+    title_to_store = title or f"Conversation {conversation_id[:8]}"
+    _conn.execute(
+        "INSERT INTO conversations (conversation_id, title, source, created_at, updated_at, meta_json) VALUES (?, ?, ?, ?, ?, ?)",
+        (conversation_id, title_to_store, source, now, now, None),
+    )
+    _conn.commit()
+    return _html_page("Created", f"<div class='row'><a class='pill' href='/chat/{escape(conversation_id)}'>Open conversation</a></div>")
+
+
+@app.get("/chat/{conversation_id}")
+def chat_view(conversation_id: str, limit: int = 500, offset: int = 0) -> HTMLResponse:
+    conv = _conversation_row(conversation_id)
+    if conv is None:
+        raise HTTPException(status_code=404, detail="conversation not found")
+    rows = _conversation_message_rows(conversation_id=conversation_id, limit=limit, offset=offset)
+    items: List[str] = []
+    items.append(
+        "<div class='row'>"
+        f"<span class='pill'>{escape(conv['source'])}</span>"
+        f"<span class='muted'>created {_fmt_ts(conv['created_at'])}</span>"
+        f"<span class='muted'>updated {_fmt_ts(conv['updated_at'])}</span>"
+        "</div>"
+    )
+    items.append("<h2>Append</h2>")
+    items.append(
+        "<form method='post' action='/chat/" + escape(conversation_id) + "/append'>"
+        "<div class='row'>"
+        "<select name='role' style='padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px'>"
+        "<option value='user'>user</option>"
+        "<option value='assistant'>assistant</option>"
+        "<option value='system'>system</option>"
+        "<option value='tool'>tool</option>"
+        "</select>"
+        "</div>"
+        "<textarea name='content' rows='6' style='width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:8px' placeholder='message...'></textarea>"
+        "<div class='row' style='margin-top:10px'>"
+        "<button type='submit' style='padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px;background:#111827;color:#fff'>Add message</button>"
+        "</div>"
+        "</form>"
+    )
+
+    items.append("<h2>Transcript</h2>")
+    items.append("<table><thead><tr><th>time</th><th>role</th><th>content</th></tr></thead><tbody>")
+    for m in rows:
+        items.append(
+            "<tr>"
+            f"<td class='muted' style='white-space:nowrap'>{escape(_fmt_ts(m['created_at']))}</td>"
+            f"<td><span class='pill'>{escape(m['role'])}</span></td>"
+            f"<td><pre style='margin:0'>{escape(str(m['content'] or ''))}</pre></td>"
+            "</tr>"
+        )
+    items.append("</tbody></table>")
+    return _html_page(conv["title"], "".join(items))
+
+
+@app.post("/chat/{conversation_id}/run")
+async def chat_run(conversation_id: str, request: Request) -> HTMLResponse:
+    form = await request.form()
+    dry_run = str(form.get("dry_run") or "").strip() in ("1", "true", "True")
+    try:
+        result = await _autopilot_step(conversation_id=conversation_id, dry_run=dry_run)
+    except Exception as e:
+        result = {"ok": False, "error": str(e)}
+    _append_conversation_message(
+        conversation_id,
+        role="system",
+        content=json.dumps({"autopilot": result}, ensure_ascii=False, indent=2),
+        meta={"type": "autopilot_step"},
+    )
+    return chat_view(conversation_id)
+
+
+@app.post("/chat/{conversation_id}/run.json")
+async def chat_run_json(conversation_id: str, req: Request) -> JSONResponse:
+    body = await req.json()
+    dry_run = bool((body or {}).get("dry_run"))
+    result = await _autopilot_step(conversation_id=conversation_id, dry_run=dry_run)
+    return JSONResponse(result)
+
+
+@app.post("/chat/{conversation_id}/append")
+async def chat_append(conversation_id: str, request: Request) -> HTMLResponse:
+    conv = _conversation_row(conversation_id)
+    if conv is None:
+        raise HTTPException(status_code=404, detail="conversation not found")
+    form = await request.form()
+    role = str(form.get("role") or "user").strip() or "user"
+    content = str(form.get("content") or "")
+    now = _utc_ts()
+    message_id = str(uuid.uuid4())
+    _conn.execute(
+        "INSERT INTO conversation_messages (message_id, conversation_id, role, content, created_at, meta_json) VALUES (?, ?, ?, ?, ?, ?)",
+        (message_id, conversation_id, role, content, now, None),
+    )
+    _conn.execute(
+        "UPDATE conversations SET updated_at = ? WHERE conversation_id = ?",
+        (now, conversation_id),
+    )
+    _conn.commit()
+    return chat_view(conversation_id)
+
+
+@app.get("/agents")
+async def agents_history() -> HTMLResponse:
+    body: List[str] = []
+    body.append("<div class='muted'>Pulled live via mcp-agents (fetch_sessions / fetch_archives).</div>")
+    try:
+        sessions = await _invoke_remote("mcp-agents", "fetch_sessions", {})
+    except Exception as e:
+        sessions = {"ok": False, "error": str(e)}
+    try:
+        archives = await _invoke_remote("mcp-agents", "fetch_archives", {})
+    except Exception as e:
+        archives = {"ok": False, "error": str(e)}
+    body.append("<h2>Sessions</h2>")
+    body.append(f"<pre>{escape(json.dumps(sessions, ensure_ascii=False, indent=2))}</pre>")
+    body.append("<h2>Archives</h2>")
+    body.append(f"<pre>{escape(json.dumps(archives, ensure_ascii=False, indent=2))}</pre>")
+    return _html_page("Agents", "".join(body))
 
 
 @app.get("/control/task/{task_id}")

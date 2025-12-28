@@ -197,6 +197,32 @@ services:
       - qdrant
       - ollama
 
+  mcp-doc-archiver:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_DOC_ARCHIVER_BUILD_CONTEXT:-../../mcp/mcp-doc-archiver}
+    container_name: pc1-mcp-doc-archiver
+    ports:
+      - "${MCP_DOC_ARCHIVER_PORT:-8066}:8066"
+    environment:
+      PORT: 8066
+      DOC_ARCHIVER_DATA_DIR: /data
+      DOC_ARCHIVER_MCP_RAG_URL: ${DOC_ARCHIVER_MCP_RAG_URL:-http://mcp-rag:8055}
+      DOC_ARCHIVER_OPENAI_BASE_URL: ${DOC_ARCHIVER_OPENAI_BASE_URL:-http://mcp-openai-gateway:8181}
+      DOC_ARCHIVER_OPENAI_MODEL: ${DOC_ARCHIVER_OPENAI_MODEL:-glama-default}
+      DOC_ARCHIVER_TIMEOUT_SECONDS: ${DOC_ARCHIVER_TIMEOUT_SECONDS:-60}
+    volumes:
+      - mcp-doc-archiver-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8066/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 6
+    depends_on:
+      - mcp-rag
+      - mcp-openai-gateway
+
   mcp-tester:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -396,3 +422,4 @@ volumes:
   qdrant-data:
   ollama-data:
   mcp-rag-cache:
+  mcp-doc-archiver-data:
