@@ -284,6 +284,16 @@ async def _mcp_llm_chat(messages: List[Dict[str, Any]], temperature: Optional[fl
     return (_tool_result_to_text(result) or "").strip()
 
 
+async def _mcp_llm_chat_safe(messages: List[Dict[str, Any]], temperature: Optional[float], max_tokens: Optional[int]) -> str:
+    try:
+        return await _mcp_llm_chat(messages=messages, temperature=temperature, max_tokens=max_tokens)
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Avoid leaking low-level stack traces to clients; preserve the reason.
+        raise HTTPException(status_code=502, detail=f"mcp_llm_failed: {str(e)}")
+
+
 async def _mcp_tools_invoke(name: str, arguments: Dict[str, Any]) -> Any:
     res = await _mcp_rpc("tools/call", {"name": name, "arguments": arguments})
     return res
@@ -533,15 +543,20 @@ async def chat_completions(req: Request) -> Any:
         for m in parsed.messages
     ]
 
-    if _glama_ready() and not PREFER_MCP_LLM:
-        content = await _run_tool_loop(
-            initial_messages=initial_messages,
+    if PREFER_MCP_LLM:
+        content = await _mcp_llm_chat_safe(
+            messages=initial_messages,
             temperature=parsed.temperature,
             max_tokens=parsed.max_tokens,
         )
     else:
-        content = await _mcp_llm_chat(
-            messages=initial_messages,
+        if not _glama_ready():
+            raise HTTPException(
+                status_code=503,
+                detail="glama_unconfigured (set GLAMA_API_URL + GLAMA_API_KEY or enable OPENAI_GATEWAY_PREFER_MCP_LLM=1)",
+            )
+        content = await _run_tool_loop(
+            initial_messages=initial_messages,
             temperature=parsed.temperature,
             max_tokens=parsed.max_tokens,
         )
