@@ -28,13 +28,13 @@ services:
       - --port
       - ${ONE_MCP_PORT:-3051}
       - --external-url
-      - ${ONE_MCP_EXTERNAL_URL:-http://127.0.0.1:3051}
+      - ${ONE_MCP_EXTERNAL_URL:-https://127.0.0.1:3051}
     ports:
       - "${ONE_MCP_PORT:-3051}:${ONE_MCP_PORT:-3051}"
     environment:
       ONE_MCP_HOST: ${ONE_MCP_HOST:-0.0.0.0}
       ONE_MCP_PORT: ${ONE_MCP_PORT:-3051}
-      ONE_MCP_EXTERNAL_URL: ${ONE_MCP_EXTERNAL_URL:-http://127.0.0.1:${ONE_MCP_PORT:-3051}}
+      ONE_MCP_EXTERNAL_URL: ${ONE_MCP_EXTERNAL_URL:-https://127.0.0.1:${ONE_MCP_PORT:-3051}}
       ONE_MCP_LOG_LEVEL: ${ONE_MCP_LOG_LEVEL:-info}
       ONE_MCP_CONFIG: ${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}
       ONE_MCP_ENABLE_ASYNC_LOADING: ${ONE_MCP_ENABLE_ASYNC_LOADING:-true}
@@ -217,6 +217,29 @@ services:
       retries: 3
     volumes:
       - ${MCP_TESTER_DATA_DIR:-./data/mcp-tester}:/data
+
+  mcp-cuda:
+    <<: *default-service
+    profiles: ["gpu"]
+    build:
+      context: ${MCP_CUDA_BUILD_CONTEXT:-../../mcp/mcp-cuda}
+    container_name: pc1-mcp-cuda
+    ports:
+      - "${MCP_CUDA_PORT:-8057}:8057"
+    environment:
+      PORT: 8057
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: ${MCP_CUDA_GPU_COUNT:-1}
+              capabilities: ["gpu"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8057/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   mcp-devops:
     <<: *default-service
