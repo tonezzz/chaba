@@ -267,6 +267,8 @@ class PublishPc1StackArgs(BaseModel):
     dry_run: bool = Field(default=True)
     run_tests: bool = Field(default=True)
     run_verify: bool = Field(default=True)
+    run_rollback: bool = Field(default=False)
+    rollback_workflow_id: str = Field(default="pc1-stack-down")
     test_concurrency: int = Field(default=8, ge=1, le=16)
     test_chunk_size: int = Field(default=1, ge=1)
     test_fail_fast: bool = Field(default=False)
@@ -278,6 +280,8 @@ class PreparePublishPc1StackArgs(BaseModel):
     workflow_id: str = Field(default="deploy-pc1-stack")
     run_tests: bool = Field(default=True)
     run_verify: bool = Field(default=True)
+    run_rollback: bool = Field(default=False)
+    rollback_workflow_id: str = Field(default="pc1-stack-down")
     test_concurrency: int = Field(default=8, ge=1, le=16)
     test_chunk_size: int = Field(default=1, ge=1)
     test_fail_fast: bool = Field(default=False)
@@ -733,16 +737,36 @@ async def _verify_pc1_stack_health() -> Dict[str, Any]:
         for chk in checks:
             name = str(chk["name"])
             url = str(chk["url"])
-            try:
-                resp = await client.get(url)
-                entry = {
-                    "name": name,
-                    "url": url,
-                    "status_code": int(resp.status_code),
-                    "ok": bool(200 <= resp.status_code < 300),
-                }
-            except Exception as e:
-                entry = {"name": name, "url": url, "status_code": None, "ok": False, "error": str(e)}
+            status_code: Optional[int] = None
+            last_error: Optional[str] = None
+            entry_ok = False
+            attempts = 0
+            for attempt in range(1, 7):
+                attempts = attempt
+                try:
+                    resp = await client.get(url)
+                    status_code = int(resp.status_code)
+                    entry_ok = bool(200 <= resp.status_code < 300)
+                    last_error = None
+                except Exception as e:
+                    status_code = None
+                    entry_ok = False
+                    last_error = str(e)
+
+                if entry_ok:
+                    break
+                if attempt < 7:
+                    await asyncio.sleep(min(2.0 * (2 ** (attempt - 1)), 10.0))
+
+            entry: Dict[str, Any] = {
+                "name": name,
+                "url": url,
+                "status_code": status_code,
+                "ok": bool(entry_ok),
+                "attempts": attempts,
+            }
+            if last_error:
+                entry["error"] = last_error
             if not entry.get("ok"):
                 ok = False
             out.append(entry)
@@ -751,6 +775,7 @@ async def _verify_pc1_stack_health() -> Dict[str, Any]:
 
 async def _publish_pc1_stack(args: PublishPc1StackArgs) -> Dict[str, Any]:
     workflow_id = (args.workflow_id or "").strip() or "deploy-pc1-stack"
+    rollback_workflow_id = (args.rollback_workflow_id or "").strip() or "pc1-stack-down"
     title = (args.title or f"Publish pc1-stack ({'dry-run' if args.dry_run else 'apply'})").strip()
     if not title:
         title = f"Publish pc1-stack ({'dry-run' if args.dry_run else 'apply'})"
@@ -777,14 +802,23 @@ async def _publish_pc1_stack(args: PublishPc1StackArgs) -> Dict[str, Any]:
     if not bool(args.dry_run) and bool(args.run_verify):
         verify_out = await _verify_pc1_stack_health()
 
+    rollback_out: Optional[Dict[str, Any]] = None
+    rollback_plan: Dict[str, Any] = {
+        "enabled": bool(args.run_rollback),
+        "workflow_id": rollback_workflow_id,
+        "trigger": "deploy_succeeded_but_tests_or_verify_failed",
+    }
+
     report: Dict[str, Any] = {
         "ok": True,
         "workflow": {"workflow_id": workflow_id, "dry_run": bool(args.dry_run)},
         "deploy": deploy_out,
         "tests": tests_out,
         "verify": verify_out,
+        "rollback": {"plan": rollback_plan, "result": rollback_out},
     }
 
+    deploy_succeeded = False
     if isinstance(deploy_out, dict):
         exit_code = deploy_out.get("exit_code")
         error_code = deploy_out.get("error_code")
@@ -794,6 +828,7 @@ async def _publish_pc1_stack(args: PublishPc1StackArgs) -> Dict[str, Any]:
                 report["ok"] = False
             if error_code:
                 report["ok"] = False
+            deploy_succeeded = report["ok"] is True
 
     if tests_out and isinstance(tests_out, dict):
         inner_report = tests_out.get("report") if isinstance(tests_out.get("report"), dict) else None
@@ -802,6 +837,23 @@ async def _publish_pc1_stack(args: PublishPc1StackArgs) -> Dict[str, Any]:
 
     if verify_out and isinstance(verify_out, dict) and verify_out.get("ok") is False:
         report["ok"] = False
+
+    # Rollback hook (optional): if deploy succeeded but subsequent checks failed.
+    should_rollback = (not bool(args.dry_run)) and deploy_succeeded and (report.get("ok") is False)
+    if should_rollback:
+        rollback_plan["should_rollback"] = True
+        if bool(args.run_rollback):
+            try:
+                rollback_out = await _invoke_remote(
+                    "mcp-devops",
+                    "run_workflow",
+                    {"workflow_id": rollback_workflow_id, "dry_run": False},
+                )
+            except Exception as e:
+                rollback_out = {"ok": False, "error": str(e)}
+            report["rollback"]["result"] = rollback_out
+    else:
+        rollback_plan["should_rollback"] = False
 
     task_id = str(uuid.uuid4())
     run_id = str(uuid.uuid4())
@@ -852,6 +904,8 @@ async def _prepare_publish_pc1_stack(args: PreparePublishPc1StackArgs) -> Dict[s
             "dry_run": False,
             "run_tests": bool(args.run_tests),
             "run_verify": bool(args.run_verify),
+            "run_rollback": bool(args.run_rollback),
+            "rollback_workflow_id": (args.rollback_workflow_id or "pc1-stack-down").strip() or "pc1-stack-down",
             "test_concurrency": int(args.test_concurrency),
             "test_chunk_size": int(args.test_chunk_size),
             "test_fail_fast": bool(args.test_fail_fast),
