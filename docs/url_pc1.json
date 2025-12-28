@@ -1,0 +1,312 @@
+{
+  "schemaVersion": 1,
+  "host": {
+    "name": "pc1",
+    "vpnDomain": "pc1.vpn",
+    "notes": [
+      "Most pc1 URLs are VPN-only (require VPN DNS + routing).",
+      "Host-level ingress is stacks/pc1-host-caddy (wildcard *.pc1.vpn -> internal ports).",
+      "pc1-stack also runs its own Caddy on host ports 3080(http)/3443(https) for path-based routing on pc1.vpn."
+    ]
+  },
+  "services": [
+    {
+      "service": "Host Caddy (pc1-host-caddy)",
+      "group": "ingress",
+      "description": "First receiver for *.pc1.vpn on ports 80/443; routes select hosts to 1mcp and dev-host, otherwise to pc1-stack Caddy.",
+      "urls": [
+        {
+          "url": "https://127.0.0.1/",
+          "purpose": "Local access to host-level HTTPS ingress.",
+          "notes": "TLS will be 'internal' and hostname-based routing may require setting Host header (e.g. 1mcp.pc1.vpn)."
+        },
+        {
+          "url": "https://pc1.vpn/",
+          "purpose": "Default HTTPS entrypoint for pc1.vpn (wildcard).",
+          "notes": "Routed by pc1-host-caddy to either 1mcp/dev-host or pc1-stack Caddy depending on Host header."
+        },
+        {
+          "url": "https://1mcp.pc1.vpn/",
+          "purpose": "VPN HTTPS to 1mcp-agent (tool aggregator).",
+          "notes": "Routed by pc1-host-caddy to host.docker.internal:3051."
+        },
+        {
+          "url": "https://dev-host.pc1.vpn/",
+          "purpose": "VPN HTTPS to dev-host container (serves /test/* apps + proxies /test/*/api).",
+          "notes": "Routed by pc1-host-caddy to host.docker.internal:3100."
+        },
+        {
+          "url": "https://test.pc1.vpn/",
+          "purpose": "Alias of dev-host on pc1 (historical).",
+          "notes": "Same routing as dev-host.pc1.vpn -> host.docker.internal:3100."
+        }
+      ]
+    },
+    {
+      "service": "1mcp-agent",
+      "group": "mcp",
+      "description": "MCP HTTP server (streamable) exposing aggregated tools.",
+      "urls": [
+        {
+          "url": "http://127.0.0.1:3051/health",
+          "purpose": "Localhost health (no TLS).",
+          "notes": "Same as http://pc1.vpn:3051/health, but avoids VPN DNS."
+        },
+        {
+          "url": "http://pc1.vpn:3051/health",
+          "purpose": "Direct port health (no TLS).",
+          "notes": "From stacks/pc1-stack docker-compose.yml; port is ONE_MCP_PORT (default 3051)."
+        },
+        {
+          "url": "https://1mcp.pc1.vpn/health",
+          "purpose": "VPN HTTPS health via pc1-host-caddy.",
+          "notes": "Preferred when DNS/TLS are set up."
+        },
+        {
+          "url": "https://pc1.vpn:3443/1mcp/health",
+          "purpose": "VPN HTTPS health via pc1-stack Caddy (path-based).",
+          "notes": "pc1-stack publishes 3443->443 with tls internal."
+        }
+      ]
+    },
+    {
+      "service": "OpenChat UI",
+      "group": "apps",
+      "description": "User-facing chat UI (Next.js) using the OpenAI gateway.",
+      "urls": [
+        {
+          "url": "http://127.0.0.1:3170/",
+          "purpose": "Localhost UI (no TLS).",
+          "notes": "Same as http://pc1.vpn:3170/."
+        },
+        {
+          "url": "http://pc1.vpn:3170/",
+          "purpose": "Direct port UI (no TLS).",
+          "notes": "From stacks/pc1-stack README; port is OPENCHAT_UI_PORT (default 3170)."
+        },
+        {
+          "url": "http://127.0.0.1:3080/chat/",
+          "purpose": "Local access via pc1-stack Caddy (HTTP).",
+          "notes": "pc1-stack Caddy publishes 3080->80. This uses path-based routing (/chat/*)."
+        },
+        {
+          "url": "https://127.0.0.1:3443/chat/",
+          "purpose": "Local access via pc1-stack Caddy (HTTPS).",
+          "notes": "TLS is 'internal' and may show cert warnings depending on trust store."
+        },
+        {
+          "url": "https://openchat.pc1.vpn/",
+          "purpose": "VPN HTTPS UI via pc1-stack Caddy vhost.",
+          "notes": "Defined in stacks/pc1-stack/Caddyfile as openchat.pc1.vpn -> openchat-ui:3000."
+        },
+        {
+          "url": "https://pc1.vpn:3443/chat/",
+          "purpose": "VPN HTTPS UI via pc1-stack Caddy path route.",
+          "notes": "Defined in stacks/pc1-stack/Caddyfile handle_path /chat*."
+        }
+      ]
+    },
+    {
+      "service": "OpenAI Gateway (mcp-openai-gateway)",
+      "group": "mcp",
+      "description": "OpenAI-compatible API (/v1/*) used by OpenChat UI; backed by Glama.",
+      "urls": [
+        {
+          "url": "http://127.0.0.1:8181/health",
+          "purpose": "Localhost health (no TLS).",
+          "notes": "Same as http://pc1.vpn:8181/health."
+        },
+        {
+          "url": "http://pc1.vpn:8181/health",
+          "purpose": "Direct port health (no TLS).",
+          "notes": "From stacks/pc1-stack docker-compose.yml; port is MCP_OPENAI_GATEWAY_PORT (default 8181)."
+        },
+        {
+          "url": "https://127.0.0.1:3443/openai/health",
+          "purpose": "Local access via pc1-stack Caddy (HTTPS).",
+          "notes": "Path-based routing to the gateway. TLS is 'internal'."
+        },
+        {
+          "url": "https://127.0.0.1:3443/openai/v1/models",
+          "purpose": "Local access to model list via pc1-stack Caddy (HTTPS).",
+          "notes": "Useful for end-to-end verification without VPN DNS."
+        },
+        {
+          "url": "https://openai.pc1.vpn/health",
+          "purpose": "VPN HTTPS health via pc1-stack Caddy vhost.",
+          "notes": "Defined in stacks/pc1-stack/Caddyfile as openai.pc1.vpn -> mcp-openai-gateway:8181."
+        },
+        {
+          "url": "https://pc1.vpn:3443/openai/health",
+          "purpose": "VPN HTTPS health via pc1-stack Caddy path route.",
+          "notes": "Defined in stacks/pc1-stack/Caddyfile handle_path /openai*."
+        },
+        {
+          "url": "https://pc1.vpn:3443/openai/v1/models",
+          "purpose": "List OpenAI models via gateway.",
+          "notes": "Useful to verify gateway is reachable end-to-end."
+        }
+      ]
+    },
+    {
+      "service": "RAG (mcp-rag)",
+      "group": "mcp",
+      "description": "RAG provider (text + image) backed by Qdrant and Ollama embeddings.",
+      "urls": [
+        {
+          "url": "http://127.0.0.1:8055/health",
+          "purpose": "Localhost health (no TLS).",
+          "notes": "This port can conflict with other services; if you remap MCP_RAG_PORT, update accordingly."
+        },
+        {
+          "url": "http://127.0.0.1:8055/.well-known/mcp.json",
+          "purpose": "Localhost tool manifest (no TLS).",
+          "notes": "Use to confirm tools list + schema without VPN DNS."
+        },
+        {
+          "url": "http://127.0.0.1:8055/mcp",
+          "purpose": "Localhost JSON-RPC endpoint (no TLS).",
+          "notes": "Send Authorization header here when MCP_RAG_TOKEN or MCP_RAG_ACL is enabled."
+        },
+        {
+          "url": "http://pc1.vpn:8055/health",
+          "purpose": "Direct port health (no TLS).",
+          "notes": "From stacks/pc1-stack README; port is MCP_RAG_PORT (default 8055)."
+        },
+        {
+          "url": "http://pc1.vpn:8055/.well-known/mcp.json",
+          "purpose": "Tool manifest (no TLS).",
+          "notes": "Use to confirm tools list + schema."
+        },
+        {
+          "url": "http://pc1.vpn:8055/mcp",
+          "purpose": "JSON-RPC endpoint (no TLS).",
+          "notes": "For MCP clients that talk directly over HTTP."
+        },
+        {
+          "url": "https://rag.pc1.vpn/health",
+          "purpose": "VPN HTTPS health via pc1-stack Caddy vhost.",
+          "notes": "Defined in stacks/pc1-stack/Caddyfile as rag.pc1.vpn -> mcp-rag:8055."
+        },
+        {
+          "url": "https://rag.pc1.vpn/.well-known/mcp.json",
+          "purpose": "Tool manifest over VPN HTTPS.",
+          "notes": "Preferred for clients expecting TLS."
+        },
+        {
+          "url": "https://rag.pc1.vpn/mcp",
+          "purpose": "JSON-RPC over VPN HTTPS.",
+          "notes": "Send Authorization header here when MCP_RAG_TOKEN or MCP_RAG_ACL is enabled."
+        }
+      ]
+    },
+    {
+      "service": "GitHub Models (mcp-github-models)",
+      "group": "mcp",
+      "description": "MCP LLM provider backed by GitHub Models (quick-test). Exposes chat_completion and benchmark tools.",
+      "urls": [
+        {
+          "url": "http://127.0.0.1:7242/health",
+          "purpose": "Localhost health (no TLS).",
+          "notes": "From stacks/pc1-stack docker-compose.yml; port is MCP_GITHUB_MODELS_PORT (default 7242) mapped to container 8015."
+        },
+        {
+          "url": "http://127.0.0.1:7242/.well-known/mcp.json",
+          "purpose": "Localhost tool manifest (no TLS).",
+          "notes": "Useful to confirm tools list + schema without VPN DNS."
+        },
+        {
+          "url": "http://127.0.0.1:7242/mcp",
+          "purpose": "Localhost JSON-RPC endpoint (no TLS).",
+          "notes": "For MCP clients that talk directly over HTTP."
+        },
+        {
+          "url": "http://pc1.vpn:7242/health",
+          "purpose": "Direct port health (no TLS).",
+          "notes": "Same as localhost, but uses VPN DNS."
+        },
+        {
+          "url": "http://pc1.vpn:7242/.well-known/mcp.json",
+          "purpose": "Tool manifest (no TLS).",
+          "notes": "Same as localhost, but uses VPN DNS."
+        },
+        {
+          "url": "http://pc1.vpn:7242/mcp",
+          "purpose": "JSON-RPC endpoint (no TLS).",
+          "notes": "Same as localhost, but uses VPN DNS."
+        }
+      ]
+    },
+    {
+      "service": "Dev-host",
+      "group": "apps",
+      "description": "Local preview host that serves /test/* SPAs and proxies /test/*/api endpoints.",
+      "urls": [
+        {
+          "url": "http://127.0.0.1:3100/test/",
+          "purpose": "Localhost dev-host landing page.",
+          "notes": "Equivalent to dev-host.pc1 and avoids VPN DNS."
+        },
+        {
+          "url": "http://dev-host.pc1/test/",
+          "purpose": "Primary pc1 dev-host landing page.",
+          "notes": "This is the established pattern for local previews on pc1." 
+        },
+        {
+          "url": "https://dev-host.pc1.vpn/test/",
+          "purpose": "VPN HTTPS dev-host landing page via pc1-host-caddy.",
+          "notes": "If your VPN DNS is working, this should reverse_proxy to host.docker.internal:3100."
+        },
+        {
+          "url": "https://test.pc1.vpn/test/",
+          "purpose": "Alias of dev-host landing page.",
+          "notes": "Same as dev-host.pc1.vpn."
+        }
+      ]
+    },
+    {
+      "service": "Webtops (UX)",
+      "group": "apps",
+      "description": "Webtop UI endpoints (linuxserver/webtop) exposed on pc1 via VPN DNS. DNS aliases may require CoreDNS wildcard support.",
+      "urls": [
+        {
+          "url": "https://webtop.pc1.vpn/",
+          "purpose": "Webtop session UI (vhost).",
+          "notes": "Requires VPN DNS (*.pc1.vpn -> pc1.vpn) and routing to the correct host port." 
+        },
+        {
+          "url": "https://webtop2.pc1.vpn/",
+          "purpose": "Alternate webtop session UI.",
+          "notes": "May be pending DNS alias setup depending on wg-dns configuration." 
+        },
+        {
+          "url": "https://webtop3.pc1.vpn/",
+          "purpose": "Alternate webtop session UI.",
+          "notes": "May be pending DNS alias setup depending on wg-dns configuration." 
+        },
+        {
+          "url": "https://chaba.webtop.pc1.vpn/",
+          "purpose": "Named webtop alias (if configured).",
+          "notes": "May be pending DNS alias setup depending on wg-dns configuration." 
+        }
+      ]
+    },
+    {
+      "service": "Webtops (MCP)",
+      "group": "mcp",
+      "description": "MCP management API for webtops sessions (create/list/stop/exec/etc.).",
+      "urls": [
+        {
+          "url": "http://127.0.0.1:8091/health",
+          "purpose": "Localhost health (no TLS).",
+          "notes": "Same as http://pc1.vpn:8091/health."
+        },
+        {
+          "url": "http://pc1.vpn:8091/health",
+          "purpose": "Direct port health (no TLS).",
+          "notes": "From stacks/pc1-stack docker-compose.yml; port is MCP_WEBTOPS_PORT (default 8091)."
+        }
+      ]
+    }
+  ]
+}
