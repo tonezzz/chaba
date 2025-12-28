@@ -94,6 +94,28 @@ services:
       timeout: 5s
       retries: 3
 
+  mcp-github-models:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_GITHUB_MODELS_BUILD_CONTEXT:-../../mcp/mcp-github-models}
+    container_name: pc1-mcp-github-models
+    ports:
+      - "${MCP_GITHUB_MODELS_PORT:-7242}:8015"
+    environment:
+      PORT: 8015
+      GITHUB_MODELS_API_URL: ${GITHUB_MODELS_API_URL:-}
+      GITHUB_MODELS_API_KEY: ${GITHUB_MODELS_API_KEY:-}
+      GITHUB_MODELS_MODEL: ${GITHUB_MODELS_MODEL:-gpt-4o-mini}
+      GITHUB_MODELS_TEMPERATURE: ${GITHUB_MODELS_TEMPERATURE:-0.2}
+      GITHUB_MODELS_MAX_TOKENS: ${GITHUB_MODELS_MAX_TOKENS:-900}
+      GITHUB_MODELS_TIMEOUT_SECONDS: ${GITHUB_MODELS_TIMEOUT_SECONDS:-30}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8015/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   mcp-openai-gateway:
     <<: *default-service
     profiles: ["mcp-suite"]

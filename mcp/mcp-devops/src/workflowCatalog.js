@@ -308,7 +308,7 @@ const workflows = [
         '-Profile',
         'mcp-suite gpu',
         '-Services',
-        'caddy 1mcp-agent mcp-openai-gateway mcp-glama openchat-ui qdrant ollama mcp-rag mcp-cuda mcp-tester mcp-webtops webtops-router mcp-agents mcp-playwright'
+        'caddy 1mcp-agent mcp-openai-gateway mcp-glama mcp-github-models openchat-ui qdrant ollama mcp-rag mcp-cuda mcp-tester mcp-webtops webtops-router mcp-agents mcp-playwright'
       ],
       cwd: config.repoRoot
     },
