@@ -188,17 +188,43 @@ async def _mcp_tools_list() -> List[Dict[str, Any]]:
         return []
     tools = (res or {}).get("tools") or []
     out: List[Dict[str, Any]] = []
+
+    def _sanitize_openai_function_parameters_schema(schema: Any) -> Optional[Dict[str, Any]]:
+        # Glama/OpenAI function parameters must be a JSON Schema object.
+        # Glama rejects top-level combinators like anyOf/oneOf/allOf as well as enum/not.
+        if not isinstance(schema, dict):
+            return None
+        if schema.get("type") != "object":
+            return None
+        for bad in ("oneOf", "anyOf", "allOf", "enum", "not"):
+            if bad in schema:
+                return None
+        # Ensure required keys exist.
+        if "properties" not in schema or not isinstance(schema.get("properties"), dict):
+            schema = dict(schema)
+            schema["properties"] = {}
+        return schema
+
     for t in tools:
         name = str(t.get("name") or "").strip()
         if not name:
             continue
+
+        params = _sanitize_openai_function_parameters_schema(
+            t.get("inputSchema") or {"type": "object", "properties": {}}
+        )
+        if not params:
+            if DEBUG:
+                print(f"[{APP_NAME}] skipping tool with incompatible schema: {name}")
+            continue
+
         out.append(
             {
                 "type": "function",
                 "function": {
                     "name": name,
                     "description": (t.get("description") or "").strip(),
-                    "parameters": t.get("inputSchema") or {"type": "object", "properties": {}},
+                    "parameters": params,
                 },
             }
         )
