@@ -243,8 +243,11 @@ const handleMcpJsonRpc = async ({ payload, session, sessionId }) => {
   return { type: 'response', payload: jsonRpcError(id, -32601, `Method '${method}' not found`) };
 };
 
-const getSessionIdFromRequest = (req) =>
-  req.headers['mcp-session-id'] || req.headers['Mcp-Session-Id'];
+const getSessionIdFromRequest = (req) => {
+  // Node lowercases incoming header keys.
+  // Accept both spellings defensively.
+  return req.headers['mcp-session-id'] || req.headers['Mcp-Session-Id'] || req.get?.('mcp-session-id');
+};
 
 const ensureInitializedSession = (req) => {
   const sessionId = getSessionIdFromRequest(req);
