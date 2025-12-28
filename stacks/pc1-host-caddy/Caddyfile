@@ -1,0 +1,24 @@
+{
+    admin 0.0.0.0:2019
+}
+
+(pc1_routes) {
+    @to_1mcp host pc1.vpn 1mcp.pc1.vpn
+    handle @to_1mcp {
+        reverse_proxy http://host.docker.internal:3051
+    }
+
+    @to_devhost host dev-host.pc1.vpn test.pc1.vpn
+    handle @to_devhost {
+        reverse_proxy http://host.docker.internal:3100
+    }
+
+    handle {
+        reverse_proxy http://host.docker.internal:3080
+    }
+}
+
+pc1.vpn, *.pc1.vpn {
+    tls internal
+    import pc1_routes
+}

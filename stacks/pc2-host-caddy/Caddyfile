@@ -1,13 +1,36 @@
 {
     admin 0.0.0.0:2019
+    email {env.ACME_EMAIL}
 }
 
-pc2.vpn {
-    tls internal
-    reverse_proxy http://host.docker.internal:19081
+(godaddy_tls) {
+    tls {
+        dns godaddy {
+            api_token {env.GODADDY_API_TOKEN}
+        }
+    }
 }
 
-1mcp.pc2.vpn {
+(pc2_routes) {
+    @to_1mcp host pc2.vpn pc2.vpn.surf-thailand.com 1mcp.pc2.vpn 1mcp.pc2.vpn.surf-thailand.com
+    handle @to_1mcp {
+        reverse_proxy http://host.docker.internal:3050
+    }
+
+    @to_devhost host dev-host.pc2.vpn dev-host.pc2.vpn.surf-thailand.com test.pc2.vpn test.pc2.vpn.surf-thailand.com
+    handle @to_devhost {
+        reverse_proxy http://host.docker.internal:3100
+    }
+
+    respond 404
+}
+
+pc2.vpn.surf-thailand.com, *.pc2.vpn.surf-thailand.com {
+    import godaddy_tls
+    import pc2_routes
+}
+
+pc2.vpn, *.pc2.vpn {
     tls internal
-    reverse_proxy http://host.docker.internal:19081
+    import pc2_routes
 }

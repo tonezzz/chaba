@@ -72,6 +72,41 @@ if ($Restart) {
   if ($proc2.ExitCode -ne 0) {
     throw "dev-host restart failed (exit $($proc2.ExitCode))"
   }
+
+  Write-Host "[pc2-sync-prefixed-env] Core health gate (required services only)"
+  $attempts = 12
+  $delaySeconds = 3
+
+  $ok1mcp = $false
+  for ($i = 1; $i -le $attempts; $i++) {
+    try {
+      (Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:3050/health/ready" -TimeoutSec 10).StatusCode | Out-Null
+      $ok1mcp = $true
+      break
+    } catch {
+      Start-Sleep -Seconds $delaySeconds
+    }
+  }
+  if (-not $ok1mcp) {
+    throw "core health gate failed: 1mcp not ready on http://127.0.0.1:3050/health/ready"
+  }
+
+  $devHostOk = $false
+  for ($i = 1; $i -le $attempts; $i++) {
+    try {
+      $health = Invoke-RestMethod -Method Get -Uri "http://127.0.0.1:3100/api/health" -TimeoutSec 10
+      if ($health.status -eq "ok") {
+        $devHostOk = $true
+        break
+      }
+      Start-Sleep -Seconds $delaySeconds
+    } catch {
+      Start-Sleep -Seconds $delaySeconds
+    }
+  }
+  if (-not $devHostOk) {
+    throw "core health gate failed: dev-host /api/health did not report status=ok on http://127.0.0.1:3100/api/health"
+  }
 }
 
 Write-Host "[pc2-sync-prefixed-env] Done"

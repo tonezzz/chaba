@@ -13,11 +13,9 @@
   cmd /c "cd /d c:\chaba\docker && docker compose up -d dev-host"
   ```
 
-> **pc2 note:** pc2 commonly already uses host ports `80` (host-caddy) and `3100` (pc2-worker dev-proxy). In that case, run dev-host on an alternate port:
-> ```
-> cmd /c "set DEV_HOST_HTTP_PORT=3101 && cd /d c:\chaba\docker && docker compose up -d --build dev-host"
-> ```
-> Then open `http://127.0.0.1:3101/`.
+> **pc2 note:** pc2 now follows the single-ingress pattern (like idc1): `pc2-host-caddy` owns `:80/:443` and routes by hostname. Keep dev-host on `DEV_HOST_HTTP_PORT=3100` and access it via:
+> - `https://dev-host.pc2.vpn/`
+> - `https://test.pc2.vpn/test/`
 
 ## Secrets & env
 - Mirror production env files/keys under `.secrets/dev-host/` (same filenames as `.secrets/node-1`).
@@ -68,11 +66,12 @@ Both proxies add `x-dev-host-proxy` headers for easier tracing and rewrite the p
 
 ### Remote exposure (pc2 worker)
 
-When routing traffic through `dev-host.pc2`, ensure TCP 3100 (HTTPS) is reachable on the worker:
-1. On pc2, run (as Administrator) `New-NetFirewallRule -DisplayName "PC2 Dev Proxy HTTPS" -Direction Inbound -Protocol TCP -LocalPort 3100 -Action Allow`.
-2. Confirm the rule via `Get-NetFirewallRule "PC2 Dev Proxy HTTPS"`.
-3. From another workstation: `Test-NetConnection dev-host.pc2 -Port 3100` or `curl -k https://dev-host.pc2:3100/test/mcp0/health`.
-4. If step 3 fails, update the upstream router/NAT to forward 3100 → pc2 and repeat.
+On pc2, remote access is expected to go through `pc2-host-caddy` on `:443` using the VPN wildcard hostnames:
+1. `https://dev-host.pc2.vpn/` (dev-host gateway)
+2. `https://test.pc2.vpn/test/` (test landing)
+3. `https://1mcp.pc2.vpn/health/ready` (1mcp-agent)
+
+`DEV_HOST_HTTP_PORT=3100` remains the host port for the dev-host container, but it is an internal upstream for Caddy and not meant to be exposed directly as an HTTPS entrypoint.
 
 Bake these checks into incident runbooks so UI operators can quickly diagnose proxy issues.
 

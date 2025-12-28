@@ -122,8 +122,4 @@ if [ -n "${APP_PID:-}" ]; then
   WAIT_PIDS+=("$APP_PID")
 fi
 
-if [ "${#WAIT_PIDS[@]}" -gt 1 ]; then
-  wait -n "${WAIT_PIDS[@]}"
-else
-  wait "${WAIT_PIDS[0]}"
-fi
+wait "$SSHD_PID"
