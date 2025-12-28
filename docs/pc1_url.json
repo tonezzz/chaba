@@ -1,0 +1,143 @@
+{
+  "host": "pc1",
+  "generated_from": [
+    "docs/services_map.json",
+    "docs/stacks.md",
+    "docs/url_list.txt",
+    "stacks/pc1-stack/docker-compose.yml"
+  ],
+  "stacks": {
+    "pc1-stack": {
+      "path": "stacks/pc1-stack/",
+      "mcp": {
+        "windsurf": "https://pc1.vpn:3443/1mcp/mcp?app=windsurf",
+        "direct": "http://pc1.vpn:3051/mcp?app=windsurf"
+      },
+      "services": {
+        "1mcp-agent": {
+          "ports": {
+            "host": 3051
+          },
+          "urls": {
+            "vpn": "http://pc1.vpn:3051/mcp?app=windsurf",
+            "local": "http://127.0.0.1:3051/mcp?app=windsurf",
+            "health": "http://127.0.0.1:3051/health"
+          }
+        },
+        "caddy": {
+          "ports": {
+            "http": 3080,
+            "https": 3443
+          },
+          "urls": {
+            "stack_http_local": "http://127.0.0.1:3080/",
+            "stack_https_vpn": "https://pc1.vpn:3443/"
+          }
+        },
+        "openchat-ui": {
+          "ports": {
+            "host": 3170
+          },
+          "urls": {
+            "direct": "http://pc1.vpn:3170/",
+            "ingress": "https://pc1.vpn:3443/chat/"
+          }
+        },
+        "mcp-openai-gateway": {
+          "ports": {
+            "host": 8181
+          },
+          "urls": {
+            "direct_health": "http://pc1.vpn:8181/health",
+            "ingress_health": "https://pc1.vpn:3443/openai/health",
+            "openai_api": "http://pc1.vpn:8181/v1/chat/completions"
+          }
+        },
+        "mcp-glama": {
+          "ports": {
+            "host": 7241
+          },
+          "urls": {
+            "health": "http://pc1.vpn:7241/health",
+            "mcp": "http://pc1.vpn:7241/mcp"
+          }
+        },
+        "mcp-rag": {
+          "ports": {
+            "host": 8055
+          },
+          "urls": {
+            "direct_health": "http://pc1.vpn:8055/health",
+            "ingress_health": "https://rag.pc1.vpn/health",
+            "mcp": "https://rag.pc1.vpn/mcp",
+            "mcp_manifest": "https://rag.pc1.vpn/.well-known/mcp.json"
+          }
+        },
+        "mcp-cuda": {
+          "ports": {
+            "host": 8057
+          },
+          "urls": {
+            "health": "http://pc1.vpn:8057/health"
+          }
+        },
+        "mcp-tester": {
+          "ports": {
+            "host": 8335
+          },
+          "urls": {
+            "health": "http://pc1.vpn:8335/health",
+            "mcp": "http://pc1.vpn:8335/mcp"
+          }
+        },
+        "mcp-devops": {
+          "ports": {
+            "host": 8325
+          },
+          "urls": {
+            "health": "http://pc1.vpn:8325/health",
+            "mcp": "http://pc1.vpn:8325/mcp"
+          }
+        },
+        "mcp-task": {
+          "ports": {
+            "host": 8016
+          },
+          "urls": {
+            "health": "http://pc1.vpn:8016/health",
+            "mcp": "http://pc1.vpn:8016/mcp"
+          }
+        },
+        "qdrant": {
+          "ports": {
+            "host": 6333
+          },
+          "urls": {
+            "http": "http://pc1.vpn:6333/"
+          }
+        },
+        "ollama": {
+          "ports": {
+            "host": 11435
+          },
+          "urls": {
+            "http": "http://pc1.vpn:11435/"
+          }
+        }
+      }
+    }
+  },
+  "hostnames": {
+    "rag": [
+      "https://rag.pc1.vpn/health",
+      "https://rag.pc1.vpn/.well-known/mcp.json",
+      "https://rag.pc1.vpn/mcp"
+    ],
+    "webtops": [
+      "https://webtop.pc1.vpn",
+      "https://webtop2.pc1.vpn",
+      "https://webtop3.pc1.vpn",
+      "https://chaba.webtop.pc1.vpn"
+    ]
+  }
+}
