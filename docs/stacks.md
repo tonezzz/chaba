@@ -2,6 +2,7 @@
 
 ## pc1-stack
 - **Path**: `stacks/pc1-stack/`
+- **URLs (pc1)**: `docs/pc1_url.json`
 - **MCP URL (pc1)**: `https://pc1.vpn:3443/1mcp/mcp?app=windsurf`
 - **OpenChat UI (direct port)**: `http://pc1.vpn:3170`
 - **OpenChat UI (VPN HTTPS path)**: `https://pc1.vpn:3443/chat/`
