@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 1,
+  "repo": {
+    "name": "tonezzz/chaba",
+    "gitRoot": "C:/chaba",
+    "worktreesRoot": "C:/chaba_wt"
+  },
+  "highLevelIntent": {
+    "whyWorktrees": "Use worktrees to run multiple parallel work areas without constantly switching branches, while keeping one stable root checkout.",
+    "youSaid": {
+      "deployRagLongLived": true,
+      "userSystemPurpose": "apps & services"
+    }
+  },
+  "goals": [
+    "Keep C:/chaba stable and clean (main only).",
+    "One task = one branch = one worktree (no branch checked out in multiple folders).",
+    "Keep long-lived domains (deploy/rag, apps/services) in dedicated long-lived worktrees.",
+    "Keep local-only artifacts out of git using a standard local/ folder (gitignored) or git stash -u."
+  ],
+  "rules": {
+    "mainCheckout": {
+      "allowedWorktree": "C:/chaba",
+      "note": "Only one 'main' checkout should exist. If another worktree has main checked out, C:/chaba cannot switch to main."
+    },
+    "whereToWork": {
+      "C:/chaba": "Stable base checkout. Use for review, grepping, creating/removing worktrees. Avoid feature work here.",
+      "C:/chaba_wt/*": "All active work: features, fixes, chores, experiments, deploy branches."
+    },
+    "branchExclusivity": {
+      "rule": "A branch may only be checked out in one worktree at a time.",
+      "symptom": "fatal: '<branch>' is already used by worktree at '<path>'",
+      "fix": "Work in the existing worktree OR remove/repurpose that worktree before reusing the branch elsewhere."
+    },
+    "localFiles": {
+      "preferredLocation": "<worktree>/local/",
+      "examples": [
+        "*.bak",
+        "*.conf",
+        ".env",
+        "exported configs",
+        "scratch notes"
+      ],
+      "recommendedGitignore": [
+        "local/",
+        "*.bak",
+        "*.conf",
+        "*.env.bak"
+      ],
+      "quickCleanupCommand": "git stash -u"
+    },
+    "namingConventions": {
+      "branchPrefixes": [
+        "chore/",
+        "fix/",
+        "feat/",
+        "exp/",
+        "deploy/"
+      ],
+      "worktreeFolderName": "Use a filesystem-safe form of the branch name (replace '/' with '-').",
+      "examples": [
+        {
+          "branch": "chore/self-hosted-deploy",
+          "worktree": "C:/chaba_wt/chore-self-hosted-deploy"
+        },
+        {
+          "branch": "deploy/rag",
+          "worktree": "C:/chaba_wt/deploy-rag"
+        },
+        {
+          "branch": "user-system",
+          "worktree": "C:/chaba_wt/apps-services"
+        }
+      ]
+    },
+    "whenToUseRebase": {
+      "recommendedWhen": "If it's just you on the branch, rebase onto origin/main for clean history.",
+      "pushAfter": "git push --force-with-lease",
+      "avoidWhen": "If other people share the branch or an open PR is actively being reviewed and you want stable commit SHAs."
+    }
+  },
+  "currentStateSnapshot": {
+    "capturedFrom": "git worktree list",
+    "notes": [
+      "This snapshot can drift as you add/remove worktrees.",
+      "As of this snapshot, C:/chaba is correctly on main.",
+      "As of this snapshot, no other worktree has main checked out (so C:/chaba can always stay on main)."
+    ],
+    "worktrees": [
+      {
+        "path": "C:/chaba",
+        "branch": "main",
+        "roleNow": "repo-root-stable",
+        "recommendedChange": "Keep this worktree clean and aligned to origin/main. Avoid feature work here."
+      },
+      {
+        "path": "C:/chaba_wt/dev-features",
+        "branch": "chore/self-hosted-deploy",
+        "roleNow": "task-worktree",
+        "recommendedChange": "Optional: rename folder to C:/chaba_wt/chore-self-hosted-deploy for clarity."
+      },
+      {
+        "path": "C:/chaba_wt/dev-services",
+        "branch": "user-system",
+        "roleNow": "apps-and-services",
+        "recommendedChange": "Keep as long-lived apps/services integration worktree. Optional: rename folder to C:/chaba_wt/apps-services."
+      },
+      {
+        "path": "C:/chaba_wt/dev-system",
+        "branch": "dev-system",
+        "roleNow": "system-domain",
+        "recommendedChange": "OK as-is. Consider consolidating if dev-system and dev-system-fix can merge."
+      },
+      {
+        "path": "C:/chaba_wt/dev-system-fix",
+        "branch": "dev-system-fix",
+        "roleNow": "task-worktree",
+        "recommendedChange": "OK as-is; delete after merge."
+      },
+      {
+        "path": "C:/chaba_wt/mcp-tasks",
+        "branch": "chore/mcp-tasks-sandbox",
+        "roleNow": "sandbox",
+        "recommendedChange": "OK as-is. Keep main checked out only in C:/chaba."
+      }
+    ]
+  },
+  "targetLayout": {
+    "stableRoot": {
+      "path": "C:/chaba",
+      "branch": "main",
+      "role": "Stable base checkout; create worktrees from here; keep clean."
+    },
+    "longLivedWorktrees": [
+      {
+        "path": "C:/chaba_wt/deploy-rag",
+        "branch": "deploy/rag",
+        "role": "Long-lived deployment branch for RAG stack. Keep isolated from main until you're ready."
+      },
+      {
+        "path": "C:/chaba_wt/apps-services",
+        "branch": "user-system",
+        "role": "Long-lived apps & services integration worktree."
+      }
+    ],
+    "shortLivedWorktrees": {
+      "pathPattern": "C:/chaba_wt/<branch-with-slashes-replaced>",
+      "role": "One worktree per task branch; delete worktree after merge."
+    }
+  },
+  "workflowAndDriftControl": {
+    "preferredWorkflow": [
+      "Do work in a branch worktree (C:/chaba_wt/<branch>).",
+      "Commit + push from the branch worktree.",
+      "Merge via PR (even solo) to create a clear integration point.",
+      "Return to C:/chaba (main) and update with fast-forward pull."
+    ],
+    "whyThisReducesPain": [
+      "Keeps C:/chaba stable (less accidental WIP).",
+      "Conflicts are resolved in the branch/PR where context is fresh.",
+      "Easy to see what is deployed/current by looking at C:/chaba main."
+    ],
+    "driftChecks": {
+      "quickCheckCommands": [
+        "git -C C:/chaba status -sb",
+        "git -C C:/chaba rev-parse --abbrev-ref HEAD",
+        "git -C C:/chaba fetch origin --prune",
+        "git -C C:/chaba log --oneline --decorate -3",
+        "git -C C:/chaba worktree list"
+      ],
+      "signalsAndFixes": [
+        {
+          "signal": "C:/chaba is not on 'main'",
+          "fix": "Switch C:/chaba to main. If blocked, find which worktree is using main and repurpose/remove it."
+        },
+        {
+          "signal": "C:/chaba main is ahead/behind origin/main",
+          "fix": "For a stable base, reset or fast-forward to origin/main (do not keep local commits on C:/chaba main)."
+        },
+        {
+          "signal": "Branch checkout fails because it is already used by a worktree",
+          "fix": "Work in the existing worktree for that branch, or remove/repurpose that worktree."
+        }
+      ]
+    },
+    "recommendedPolicy": {
+      "stableRootPolicy": "Never do feature work directly in C:/chaba. Keep it clean and aligned to origin/main.",
+      "longLivedBranches": "For long-lived branches (deploy/rag, user-system), do periodic rebase/merge from origin/main in their own worktrees, not in C:/chaba."
+    }
+  },
+  "standardCommands": {
+    "createWorktreeFromMain": [
+      "git fetch origin --prune",
+      "git worktree add C:/chaba_wt/<name> -b <branch> origin/main"
+    ],
+    "updateWorktree": [
+      "git fetch origin --prune",
+      "git pull --ff-only"
+    ],
+    "syncTaskBranchWithMain_rebase": [
+      "git fetch origin --prune",
+      "git rebase origin/main",
+      "git push --force-with-lease"
+    ],
+    "cleanupUntracked": [
+      "git stash -u"
+    ],
+    "removeFinishedWorktree": [
+      "git worktree remove C:/chaba_wt/<name>",
+      "git branch -d <branch>"
+    ]
+  }
+}
