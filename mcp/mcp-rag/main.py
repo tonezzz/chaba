@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import json
 import os
 import time
 import uuid
@@ -8,10 +9,10 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 import numpy as np
-from fastapi import Body, FastAPI, HTTPException
+from fastapi import Body, FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field, validator
 from qdrant_client import QdrantClient
-from qdrant_client.http.models import Distance, PointStruct, VectorParams
+from qdrant_client.http.models import Distance, FieldCondition, Filter, MatchValue, PointStruct, VectorParams
 from sentence_transformers import SentenceTransformer
 from PIL import Image
 import io
@@ -31,6 +32,84 @@ OLLAMA_EMBED_MODEL = (os.getenv("OLLAMA_EMBED_MODEL") or "nomic-embed-text").str
 CLIP_MODEL = (os.getenv("CLIP_MODEL") or "clip-ViT-B-32").strip()
 
 HTTP_TIMEOUT = float(os.getenv("MCP_RAG_TIMEOUT_SECONDS", "60"))
+
+MCP_RAG_TOKEN = (os.getenv("MCP_RAG_TOKEN") or "").strip()
+MCP_RAG_ACL_RAW = (os.getenv("MCP_RAG_ACL") or "").strip()
+
+
+def _parse_acl() -> Dict[str, Any]:
+    if not MCP_RAG_ACL_RAW:
+        return {}
+    try:
+        out = json.loads(MCP_RAG_ACL_RAW)
+    except Exception as exc:  # noqa: BLE001
+        raise RuntimeError(f"Invalid MCP_RAG_ACL JSON: {exc}")
+    if not isinstance(out, dict):
+        raise RuntimeError("Invalid MCP_RAG_ACL JSON: expected object")
+    return out
+
+
+_ACL = _parse_acl()
+
+
+def _extract_bearer_token(authorization: Optional[str]) -> str:
+    if not authorization:
+        return ""
+    if not authorization.lower().startswith("bearer "):
+        return ""
+    return authorization.split(" ", 1)[1].strip()
+
+
+def _token_rules(token: str) -> Dict[str, Any]:
+    tokens = _ACL.get("tokens") if isinstance(_ACL, dict) else None
+    if isinstance(tokens, dict) and token in tokens and isinstance(tokens[token], dict):
+        return tokens[token]
+    default = _ACL.get("default") if isinstance(_ACL, dict) else None
+    if isinstance(default, dict):
+        return default
+    return {}
+
+
+def _is_allowed(values: Any, wanted: str) -> bool:
+    if values is None:
+        return False
+    if values == "*":
+        return True
+    if isinstance(values, str):
+        values = [values]
+    if not isinstance(values, list):
+        return False
+    return ("*" in values) or (wanted in values)
+
+
+def _require_access(
+    *,
+    authorization: Optional[str],
+    action: str,
+    datastore: str,
+    group: str,
+) -> None:
+    if not MCP_RAG_TOKEN and not MCP_RAG_ACL_RAW:
+        return
+
+    token = _extract_bearer_token(authorization)
+    if not token:
+        raise HTTPException(status_code=401, detail="missing_or_invalid_token")
+
+    if MCP_RAG_TOKEN and token != MCP_RAG_TOKEN:
+        raise HTTPException(status_code=403, detail="forbidden")
+
+    if MCP_RAG_ACL_RAW:
+        rules = _token_rules(token)
+        actions = rules.get("actions")
+        groups = rules.get("groups")
+        datastores = rules.get("datastores")
+        if actions is not None and not _is_allowed(actions, action):
+            raise HTTPException(status_code=403, detail="forbidden")
+        if groups is not None and not _is_allowed(groups, group):
+            raise HTTPException(status_code=403, detail="forbidden")
+        if datastores is not None and not _is_allowed(datastores, datastore):
+            raise HTTPException(status_code=403, detail="forbidden")
 
 
 def _utc_ms() -> int:
@@ -155,6 +234,7 @@ class UpsertTextItem(BaseModel):
 
 
 class UpsertTextArgs(BaseModel):
+    group: str = "default"
     items: List[UpsertTextItem]
 
 
@@ -172,10 +252,12 @@ class UpsertImageItem(BaseModel):
 
 
 class UpsertImageArgs(BaseModel):
+    group: str = "default"
     items: List[UpsertImageItem]
 
 
 class SearchTextArgs(BaseModel):
+    group: str = "default"
     query: str
     limit: int = 5
 
@@ -187,6 +269,7 @@ class SearchTextArgs(BaseModel):
 
 
 class SearchImageArgs(BaseModel):
+    group: str = "default"
     image_base64: str = Field(..., alias="imageBase64")
     limit: int = 5
 
@@ -272,9 +355,12 @@ def well_known() -> Dict[str, Any]:
     }
 
 
-async def _handle_upsert_text(args: UpsertTextArgs) -> Dict[str, Any]:
+async def _handle_upsert_text(args: UpsertTextArgs, *, authorization: Optional[str]) -> Dict[str, Any]:
     if not args.items:
         raise HTTPException(status_code=400, detail="items cannot be empty")
+
+    group_default = (args.group or "default").strip() or "default"
+    _require_access(authorization=authorization, action="upsert", datastore="qdrant:text", group=group_default)
 
     texts = [it.text for it in args.items]
     vectors = await _ollama_embed_text(texts)
@@ -288,14 +374,20 @@ async def _handle_upsert_text(args: UpsertTextArgs) -> Dict[str, Any]:
     points: List[PointStruct] = []
     for it, vec in zip(args.items, vectors, strict=False):
         point_id = _to_qdrant_point_id(it.id, prefix="txt", fallback_seed=f"{_utc_ms()}:{it.text}")
-        payload = {"text": it.text, **(it.metadata or {})}
+        meta = it.metadata or {}
+        group_value = (str(meta.get("group") or group_default)).strip() or group_default
+        _require_access(authorization=authorization, action="upsert", datastore="qdrant:text", group=group_value)
+        payload = {"group": group_value, "text": it.text, **meta}
         points.append(PointStruct(id=point_id, vector=vec, payload=payload))
 
     client.upsert(collection_name=QDRANT_TEXT_COLLECTION, points=points)
     return {"upserted": len(points), "collection": QDRANT_TEXT_COLLECTION}
 
 
-async def _handle_search_text(args: SearchTextArgs) -> Dict[str, Any]:
+async def _handle_search_text(args: SearchTextArgs, *, authorization: Optional[str]) -> Dict[str, Any]:
+    group_value = (args.group or "default").strip() or "default"
+    _require_access(authorization=authorization, action="search", datastore="qdrant:text", group=group_value)
+
     limit = max(1, min(int(args.limit), 50))
     vecs = await _ollama_embed_text([args.query])
     query_vec = vecs[0]
@@ -303,7 +395,12 @@ async def _handle_search_text(args: SearchTextArgs) -> Dict[str, Any]:
         raise HTTPException(status_code=502, detail="ollama_returned_empty_embedding")
 
     client = _qdrant_client()
-    hits = client.search(collection_name=QDRANT_TEXT_COLLECTION, query_vector=query_vec, limit=limit)
+    hits = client.search(
+        collection_name=QDRANT_TEXT_COLLECTION,
+        query_vector=query_vec,
+        limit=limit,
+        query_filter=Filter(must=[FieldCondition(key="group", match=MatchValue(value=group_value))]),
+    )
     results = [
         {
             "id": h.id,
@@ -315,9 +412,12 @@ async def _handle_search_text(args: SearchTextArgs) -> Dict[str, Any]:
     return {"results": results, "collection": QDRANT_TEXT_COLLECTION}
 
 
-def _handle_upsert_image(args: UpsertImageArgs) -> Dict[str, Any]:
+def _handle_upsert_image(args: UpsertImageArgs, *, authorization: Optional[str]) -> Dict[str, Any]:
     if not args.items:
         raise HTTPException(status_code=400, detail="items cannot be empty")
+
+    group_default = (args.group or "default").strip() or "default"
+    _require_access(authorization=authorization, action="upsert", datastore="qdrant:image", group=group_default)
 
     vectors: List[List[float]] = []
     for it in args.items:
@@ -331,20 +431,31 @@ def _handle_upsert_image(args: UpsertImageArgs) -> Dict[str, Any]:
     points: List[PointStruct] = []
     for it, vec in zip(args.items, vectors, strict=False):
         point_id = _to_qdrant_point_id(it.id, prefix="img", fallback_seed=f"{_utc_ms()}:{it.image_base64[:64]}")
-        payload = {"mimeType": it.mime_type, **(it.metadata or {})}
+        meta = it.metadata or {}
+        group_value = (str(meta.get("group") or group_default)).strip() or group_default
+        _require_access(authorization=authorization, action="upsert", datastore="qdrant:image", group=group_value)
+        payload = {"group": group_value, "mimeType": it.mime_type, **meta}
         points.append(PointStruct(id=point_id, vector=vec, payload=payload))
 
     client.upsert(collection_name=QDRANT_IMAGE_COLLECTION, points=points)
     return {"upserted": len(points), "collection": QDRANT_IMAGE_COLLECTION}
 
 
-def _handle_search_image(args: SearchImageArgs) -> Dict[str, Any]:
+def _handle_search_image(args: SearchImageArgs, *, authorization: Optional[str]) -> Dict[str, Any]:
+    group_value = (args.group or "default").strip() or "default"
+    _require_access(authorization=authorization, action="search", datastore="qdrant:image", group=group_value)
+
     limit = max(1, min(int(args.limit), 50))
     raw = _decode_base64_to_bytes(args.image_base64)
     query_vec = _embed_image_bytes(raw)
 
     client = _qdrant_client()
-    hits = client.search(collection_name=QDRANT_IMAGE_COLLECTION, query_vector=query_vec, limit=limit)
+    hits = client.search(
+        collection_name=QDRANT_IMAGE_COLLECTION,
+        query_vector=query_vec,
+        limit=limit,
+        query_filter=Filter(must=[FieldCondition(key="group", match=MatchValue(value=group_value))]),
+    )
     results = [
         {
             "id": h.id,
@@ -357,25 +468,25 @@ def _handle_search_image(args: SearchImageArgs) -> Dict[str, Any]:
 
 
 @app.post("/invoke")
-async def invoke(payload: Dict[str, Any] = Body(...)) -> Dict[str, Any]:
+async def invoke(payload: Dict[str, Any] = Body(...), authorization: Optional[str] = Header(default=None)) -> Dict[str, Any]:
     tool = (payload or {}).get("tool")
     args_raw = (payload or {}).get("arguments") or (payload or {}).get("args") or {}
 
     if tool == "upsert_text":
         parsed = UpsertTextArgs(**args_raw)
-        return {"tool": tool, "result": await _handle_upsert_text(parsed)}
+        return {"tool": tool, "result": await _handle_upsert_text(parsed, authorization=authorization)}
 
     if tool == "search_text":
         parsed = SearchTextArgs(**args_raw)
-        return {"tool": tool, "result": await _handle_search_text(parsed)}
+        return {"tool": tool, "result": await _handle_search_text(parsed, authorization=authorization)}
 
     if tool == "upsert_image":
         parsed = UpsertImageArgs(**args_raw)
-        return {"tool": tool, "result": _handle_upsert_image(parsed)}
+        return {"tool": tool, "result": _handle_upsert_image(parsed, authorization=authorization)}
 
     if tool == "search_image":
         parsed = SearchImageArgs(**args_raw)
-        return {"tool": tool, "result": _handle_search_image(parsed)}
+        return {"tool": tool, "result": _handle_search_image(parsed, authorization=authorization)}
 
     raise HTTPException(status_code=404, detail=f"unknown tool '{tool}'")
 
@@ -387,7 +498,7 @@ def _jsonrpc_error(id_value: Any, code: int, message: str, data: Optional[Any] =
 
 
 @app.post("/mcp")
-async def mcp(payload: Dict[str, Any] = Body(...)) -> Any:
+async def mcp(payload: Dict[str, Any] = Body(...), authorization: Optional[str] = Header(default=None)) -> Any:
     request = JsonRpcRequest(**(payload or {}))
     if request.id is None:
         return None
@@ -416,28 +527,40 @@ async def mcp(payload: Dict[str, Any] = Body(...)) -> Any:
 
         if tool_name == "upsert_text":
             parsed = UpsertTextArgs(**(arguments_raw or {}))
-            out = await _handle_upsert_text(parsed)
+            try:
+                out = await _handle_upsert_text(parsed, authorization=authorization)
+            except HTTPException as exc:
+                return _jsonrpc_error(request.id, -32001, exc.detail)
             return JsonRpcResponse(id=request.id, result={"content": [{"type": "text", "text": str(out)}]}).model_dump(
                 exclude_none=True
             )
 
         if tool_name == "search_text":
             parsed = SearchTextArgs(**(arguments_raw or {}))
-            out = await _handle_search_text(parsed)
+            try:
+                out = await _handle_search_text(parsed, authorization=authorization)
+            except HTTPException as exc:
+                return _jsonrpc_error(request.id, -32001, exc.detail)
             return JsonRpcResponse(id=request.id, result={"content": [{"type": "text", "text": str(out)}]}).model_dump(
                 exclude_none=True
             )
 
         if tool_name == "upsert_image":
             parsed = UpsertImageArgs(**(arguments_raw or {}))
-            out = _handle_upsert_image(parsed)
+            try:
+                out = _handle_upsert_image(parsed, authorization=authorization)
+            except HTTPException as exc:
+                return _jsonrpc_error(request.id, -32001, exc.detail)
             return JsonRpcResponse(id=request.id, result={"content": [{"type": "text", "text": str(out)}]}).model_dump(
                 exclude_none=True
             )
 
         if tool_name == "search_image":
             parsed = SearchImageArgs(**(arguments_raw or {}))
-            out = _handle_search_image(parsed)
+            try:
+                out = _handle_search_image(parsed, authorization=authorization)
+            except HTTPException as exc:
+                return _jsonrpc_error(request.id, -32001, exc.detail)
             return JsonRpcResponse(id=request.id, result={"content": [{"type": "text", "text": str(out)}]}).model_dump(
                 exclude_none=True
             )
