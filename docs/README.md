@@ -3,7 +3,7 @@
 ## MCP (default)
 
 - **Default MCP entrypoint (pc2)**: `http://1mcp.pc2.vpn:3050/mcp?app=windsurf`
-- **Alternative MCP entrypoint (pc1)**: `http://1mcp.pc1.vpn:3051/mcp?app=windsurf`
+- **Alternative MCP entrypoint (pc1)**: `https://pc1.vpn:3443/1mcp/mcp?app=windsurf`
 - **Alternative MCP entrypoint (idc1)**: `https://1mcp.idc1.surf-thailand.com/mcp?app=windsurf`
 
 ## OpenChat UI (pc1)
