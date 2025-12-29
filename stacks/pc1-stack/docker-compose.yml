@@ -20,7 +20,7 @@ services:
     command:
       - 1mcp
       - --config
-      - ${ONE_MCP_CONFIG:-/root/.config/1mcp/config.json}
+      - ${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}
       - --transport
       - http
       - --enable-enhanced-security=false
@@ -37,14 +37,14 @@ services:
       ONE_MCP_PORT: ${ONE_MCP_PORT:-3051}
       ONE_MCP_EXTERNAL_URL: ${ONE_MCP_EXTERNAL_URL:-https://127.0.0.1:${ONE_MCP_PORT:-3051}}
       ONE_MCP_LOG_LEVEL: ${ONE_MCP_LOG_LEVEL:-info}
-      ONE_MCP_CONFIG: ${ONE_MCP_CONFIG:-/root/.config/1mcp/config.json}
+      ONE_MCP_CONFIG: ${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}
       ONE_MCP_ENABLE_ASYNC_LOADING: ${ONE_MCP_ENABLE_ASYNC_LOADING:-false}
       ONE_MCP_ENABLE_ENHANCED_SECURITY: ${ONE_MCP_ENABLE_ENHANCED_SECURITY:-false}
       UV_PYTHON: python3
       UV_PYTHON_DOWNLOADS: never
       UV_PROJECT_ENVIRONMENT: /tmp/uv-project
     volumes:
-      - ${ONE_MCP_CONFIG_FILE:-./1mcp.json}:${ONE_MCP_CONFIG:-/root/.config/1mcp/config.json}:ro
+      - ${PC1_WORKSPACE_HOST_DIR:-C:/chaba}/stacks/pc1-stack/1mcp.json:${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}:ro
       - "${PC1_WORKSPACE_HOST_DIR:-C:/chaba}:/workspaces/chaba:cached"
       - /var/run/docker.sock:/var/run/docker.sock
       - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
