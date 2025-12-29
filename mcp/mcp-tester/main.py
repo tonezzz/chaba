@@ -93,6 +93,10 @@ class TestDefinition(BaseModel):
     expect_json_contains: Optional[Dict[str, Any]] = Field(
         None, description="JSON key/value pairs that must match for the test to pass"
     )
+    expect_json_paths: Optional[List[str]] = Field(
+        None,
+        description="Dot-path(s) that must exist and be non-null in the JSON response (e.g., ['result.status', 'image_data_url'])",
+    )
 
     @field_validator("method", mode="before")
     @classmethod
@@ -292,6 +296,67 @@ def _excerpt(text: Optional[str], limit: int = 480) -> Optional[str]:
     return snippet[: limit - 3] + "..."
 
 
+def _dig_json(payload: Any, path: str) -> Any:
+    current: Any = payload
+    for part in (path or "").split("."):
+        key = part.strip()
+        if not key:
+            continue
+        if isinstance(current, dict):
+            if key not in current:
+                raise KeyError(key)
+            current = current[key]
+            continue
+        if isinstance(current, list):
+            if not key.isdigit():
+                raise KeyError(key)
+            idx = int(key)
+            current = current[idx]
+            continue
+        raise KeyError(key)
+    return current
+
+
+def _validate_json_assertions(test: TestDefinition, response: httpx.Response) -> Optional[str]:
+    if not (test.summary_path or test.expect_json_contains or test.expect_json_paths):
+        return None
+
+    try:
+        payload = response.json()
+    except Exception as exc:  # noqa: BLE001
+        return f"Failed to parse JSON response for assertions: {exc}"
+
+    if test.expect_json_contains:
+        for key, expected in test.expect_json_contains.items():
+            try:
+                actual = _dig_json(payload, key)
+            except Exception:
+                return f"Missing expected json path '{key}'"
+            if actual != expected:
+                return f"JSON assertion failed at '{key}': expected {expected!r}, got {actual!r}"
+
+    if test.expect_json_paths:
+        for path in test.expect_json_paths:
+            try:
+                value = _dig_json(payload, path)
+            except Exception:
+                return f"Missing expected json path '{path}'"
+            if value is None:
+                return f"JSON assertion failed at '{path}': value is null"
+            if isinstance(value, str) and not value.strip():
+                return f"JSON assertion failed at '{path}': value is empty"
+
+    if test.summary_path:
+        try:
+            summary = _dig_json(payload, test.summary_path)
+        except Exception:
+            return f"Missing summary_path '{test.summary_path}'"
+        if summary is None:
+            return f"summary_path '{test.summary_path}' is null"
+
+    return None
+
+
 async def _execute_test(test: TestDefinition, overrides: RunRequest) -> TestResult:
     missing_env = [name for name in test.requires_env if not os.getenv(name)]
     if missing_env:
@@ -349,9 +414,30 @@ async def _execute_test(test: TestDefinition, overrides: RunRequest) -> TestResu
 
         latency_ms = int((datetime.now(timezone.utc) - start_ts).total_seconds() * 1000)
         if response.status_code == test.expect_status:
+            assertion_error = _validate_json_assertions(test, response)
+            if assertion_error is None:
+                return TestResult(
+                    name=test.name,
+                    status="passed",
+                    description=test.description,
+                    target_url=test.url,
+                    method=test.method,
+                    expect_status=test.expect_status,
+                    actual_status=response.status_code,
+                    latency_ms=latency_ms,
+                    attempts=attempts,
+                    error=None,
+                    body_excerpt=None,
+                )
+
+            body_preview = _excerpt(response.text)
+            last_error = assertion_error
+            if attempt < effective_retries:
+                await asyncio.sleep(effective_delay_ms / 1000)
+                continue
             return TestResult(
                 name=test.name,
-                status="passed",
+                status="failed",
                 description=test.description,
                 target_url=test.url,
                 method=test.method,
@@ -359,8 +445,8 @@ async def _execute_test(test: TestDefinition, overrides: RunRequest) -> TestResu
                 actual_status=response.status_code,
                 latency_ms=latency_ms,
                 attempts=attempts,
-                error=None,
-                body_excerpt=None,
+                error=last_error,
+                body_excerpt=body_preview,
             )
 
         body_preview = _excerpt(response.text)
