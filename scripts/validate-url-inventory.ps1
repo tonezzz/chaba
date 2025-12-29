@@ -134,6 +134,13 @@ docker run --rm --network container:idc1-wg-easy alpine:3.20 sh -lc 'set -euo pi
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 
+$InventoryPaths = @(
+  $InventoryPaths |
+    ForEach-Object { $_ -split ',' } |
+    ForEach-Object { $_.Trim() } |
+    Where-Object { $_ }
+)
+
 $inventoryAbs = @()
 foreach ($p in $InventoryPaths) {
   $inventoryAbs += (Resolve-Path -LiteralPath (Join-Path $repoRoot $p) -ErrorAction Stop).Path
