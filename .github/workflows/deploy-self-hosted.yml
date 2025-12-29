@@ -46,6 +46,28 @@ jobs:
     needs: changes
     if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.pc1 == 'true' }}
     steps:
+      - name: Deploy policy reminder (deploy from C:\chaba)
+        shell: cmd
+        run: |
+          echo.
+          echo WARNING: Deploy policy is "only deploy from C:\chaba".
+          echo This workflow deploys by resetting the working copy at C:\chaba to the commit being deployed.
+          echo.
+          echo Suggested workflow:
+          echo   1) Develop in worktrees (e.g. C:\chaba_wt\...) and push branches.
+          echo   2) Merge in GitHub or in C:\chaba, then deploy from C:\chaba with a complete stacks\pc1-stack\.env.
+          echo.
+          echo Example commands:
+          echo   ^> git push -u origin HEAD
+          echo   ^> (in C:\chaba) git switch main ^&^& git pull
+          echo   ^> (in C:\chaba) git merge origin\<branch-name>
+          echo   ^> (in C:\chaba) docker compose --profile mcp-suite -f stacks\pc1-stack\docker-compose.yml up -d --build
+          echo.
+          if /I NOT "%GITHUB_WORKSPACE%"=="C:\chaba" (
+            echo NOTE: Runner workspace is "%GITHUB_WORKSPACE%" (this is normal for GitHub Actions).
+            echo NOTE: We still deploy from C:\chaba via git -C.
+          )
+
       - name: Update repo working copy (C:\chaba)
         shell: cmd
         run: |
@@ -70,6 +92,28 @@ jobs:
     needs: changes
     if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.pc2 == 'true' }}
     steps:
+      - name: Deploy policy reminder (deploy from C:\chaba)
+        shell: cmd
+        run: |
+          echo.
+          echo WARNING: Deploy policy is "only deploy from C:\chaba".
+          echo This workflow deploys by resetting the working copy at C:\chaba to the commit being deployed.
+          echo.
+          echo Suggested workflow:
+          echo   1) Develop in worktrees (e.g. C:\chaba_wt\...) and push branches.
+          echo   2) Merge in GitHub or in C:\chaba, then deploy from C:\chaba with a complete stacks\pc2-worker\.env.
+          echo.
+          echo Example commands:
+          echo   ^> git push -u origin HEAD
+          echo   ^> (in C:\chaba) git switch main ^&^& git pull
+          echo   ^> (in C:\chaba) git merge origin\<branch-name>
+          echo   ^> (in C:\chaba) docker compose --profile mcp-suite -f stacks\pc2-worker\docker-compose.yml up -d --build
+          echo.
+          if /I NOT "%GITHUB_WORKSPACE%"=="C:\chaba" (
+            echo NOTE: Runner workspace is "%GITHUB_WORKSPACE%" (this is normal for GitHub Actions).
+            echo NOTE: We still deploy from C:\chaba via git -C.
+          )
+
       - name: Update repo working copy (C:\chaba)
         shell: cmd
         run: |
