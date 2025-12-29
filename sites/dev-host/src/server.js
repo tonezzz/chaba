@@ -393,6 +393,11 @@ const wireProxies = () => {
     );
   };
 
+  mountProxy('/test/quickchart', 'https://quickchart.io', {
+    id: 'test-quickchart',
+    pathRewrite: (path) => path.replace(/^\/test\/quickchart/i, '/chart')
+  });
+
   mountProxy('/test/agents/api', AGENTS_PROXY_TARGET, {
     id: 'test-agents-api',
     pathRewrite: (path) => path.replace(/^\/test\/agents\/api/i, '/api')
