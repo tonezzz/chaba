@@ -388,6 +388,11 @@ class ListExtractionsResponse(BaseModel):
     items: List[StoredExtraction]
 
 
+class AuditScope(BaseModel):
+    groups: List[str] = Field(default_factory=list)
+    labels: List[str] = Field(default_factory=list)
+
+
 class ExtractionQueryRequest(BaseModel):
     scope: AuditScope = Field(default_factory=AuditScope)
     kind: str = "invoice"
@@ -407,11 +412,6 @@ class ExtractionQueryResponse(BaseModel):
     group_by: str
     sum_field: str
     rows: List[ExtractionQueryRow]
-
-
-class AuditScope(BaseModel):
-    groups: List[str] = Field(default_factory=list)
-    labels: List[str] = Field(default_factory=list)
 
 
 class AuditCompareRequest(BaseModel):
