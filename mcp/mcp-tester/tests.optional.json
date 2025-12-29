@@ -24,6 +24,40 @@
     }
   },
   {
+    "name": "dev-host-imagen-ui",
+    "description": "Ensure the /test/imagen UI is served via dev-host.",
+    "url": "{{DEV_HOST_TEST_BASE}}/test/imagen/index.html",
+    "expect_status": 200,
+    "timeout_ms": 5000,
+    "retries": 1,
+    "requires_env": ["DEV_HOST_TEST_BASE"]
+  },
+  {
+    "name": "dev-host-imagen-proxy-health",
+    "description": "Ensure the /test/imagen/api proxy can reach the Imagen backend health endpoint.",
+    "url": "{{DEV_HOST_TEST_BASE}}/test/imagen/api/health",
+    "expect_status": 200,
+    "timeout_ms": 8000,
+    "retries": 1,
+    "requires_env": ["DEV_HOST_TEST_BASE"]
+  },
+  {
+    "name": "dev-host-imagen-generate",
+    "description": "Ensure Imagen generation works via dev-host -> 1mcp tool invocation adapter.",
+    "url": "{{DEV_HOST_TEST_BASE}}/test/imagen/api/generate",
+    "method": "POST",
+    "expect_status": 200,
+    "timeout_ms": 30000,
+    "retries": 0,
+    "requires_env": ["DEV_HOST_TEST_BASE"],
+    "body": {
+      "prompt": "vibrant MCP stack verification badge, flat illustration",
+      "num_inference_steps": 6,
+      "width": 256,
+      "height": 256
+    }
+  },
+  {
     "name": "dev-host-test-landing",
     "description": "Validate the /test landing page through the dev-host proxy.",
     "url": "{{DEV_HOST_TEST_BASE}}/test/",
