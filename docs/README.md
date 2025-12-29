@@ -6,6 +6,10 @@
 - **Alternative MCP entrypoint (pc1)**: `https://pc1.vpn:3443/1mcp/mcp?app=windsurf`
 - **Alternative MCP entrypoint (idc1)**: `https://1mcp.idc1.surf-thailand.com/mcp?app=windsurf`
 
+## Backlog
+
+- `docs/backlog.md`
+
 ## OpenChat UI (pc1)
 
 - **Direct port**: `http://pc1.vpn:3170`
