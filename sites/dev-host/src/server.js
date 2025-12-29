@@ -40,6 +40,10 @@ const AGENTS_PROXY_TARGET =
   (process.env.AGENTS_PROXY_TARGET ?? process.env.DEV_HOST_AGENTS_TARGET ?? 'http://127.0.0.1:4060').trim();
 const DETECTS_PROXY_TARGET =
   (process.env.DETECTS_PROXY_TARGET ?? process.env.DEV_HOST_DETECTS_TARGET ?? 'http://localhost:4120').trim();
+const ONE_MCP_BASE_URL =
+  (process.env.ONE_MCP_BASE_URL ?? process.env.DEV_HOST_ONE_MCP_TARGET ?? 'http://1mcp.pc2.vpn:3050').trim();
+const ONE_MCP_APP = (process.env.ONE_MCP_APP || process.env.DEV_HOST_ONE_MCP_APP || 'windsurf').trim();
+const IMAGEN_MCP_TOOL_NAME = (process.env.IMAGEN_MCP_TOOL_NAME || 'mcp-imagen_1mcp_generate_image').trim();
 const VAJA_PROXY_TARGET = (process.env.VAJA_PROXY_TARGET || process.env.DEV_HOST_VAJA_TARGET || '').trim();
 const MCP0_PROXY_TARGET =
   (process.env.MCP0_PROXY_TARGET ?? process.env.DEV_HOST_MCP0_TARGET ?? 'http://host.docker.internal:8310').trim();
@@ -80,14 +84,177 @@ const additionalStaticRoutes = [
     roots: [resolveSitePath('a1-idc1', 'test', 'detects')],
     spa: true
   },
+  {
+    basePath: '/test/imagen',
+    roots: [resolveSitePath('a1-idc1', 'test', 'imagen')],
+    spa: true
+  },
   
 ];
 
 const PROXY_CHECKS = [
   { id: 'glama', label: 'Glama chat', target: GLAMA_PROXY_TARGET, path: '/api/health' },
   { id: 'agents', label: 'Agents API', target: AGENTS_PROXY_TARGET, path: '/api/health' },
-  { id: 'detects', label: 'Detects API', target: DETECTS_PROXY_TARGET, path: '/health', optional: true }
+  { id: 'detects', label: 'Detects API', target: DETECTS_PROXY_TARGET, path: '/health', optional: true },
+  { id: '1mcp', label: '1mcp-agent', target: ONE_MCP_BASE_URL, path: '/health/ready', optional: true }
 ];
+
+const normalizeBaseUrl = (value) => (value || '').trim().replace(/\/+$/, '');
+
+const mcpState = {
+  sessionId: '',
+  createdAt: 0,
+  inflight: null
+};
+
+const getMcpRpcUrl = () => {
+  const base = normalizeBaseUrl(ONE_MCP_BASE_URL);
+  if (!base) return '';
+  return `${base}/mcp?app=${encodeURIComponent(ONE_MCP_APP || 'windsurf')}`;
+};
+
+const extractJsonFromSse = (raw) => {
+  const trim = (raw || '').trim();
+  if (!trim.startsWith('event:')) return null;
+  const lines = raw.split(/\r?\n/);
+  const dataLines = lines
+    .map((line) => line.trim())
+    .filter((line) => line.toLowerCase().startsWith('data:'))
+    .map((line) => line.replace(/^data:\s*/i, '').trim())
+    .filter(Boolean);
+  if (!dataLines.length) return null;
+  const last = dataLines[dataLines.length - 1];
+  try {
+    return JSON.parse(last);
+  } catch {
+    return null;
+  }
+};
+
+const parseRpcResponseBody = async (response) => {
+  const text = await response.text();
+  const sse = extractJsonFromSse(text);
+  if (sse) return sse;
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { raw: text };
+  }
+};
+
+const callMcpRpc = async ({ method, params, sessionId }) => {
+  const url = getMcpRpcUrl();
+  if (!url) {
+    throw new Error('ONE_MCP_BASE_URL not configured');
+  }
+
+  const headers = {
+    Accept: 'application/json, text/event-stream',
+    'content-type': 'application/json'
+  };
+  if (sessionId) {
+    headers['mcp-session-id'] = sessionId;
+    headers['Mcp-Session-Id'] = sessionId;
+  }
+
+  const body = {
+    jsonrpc: '2.0',
+    id: 1,
+    method,
+    params: params || {}
+  };
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body)
+  });
+
+  const parsed = await parseRpcResponseBody(response);
+  return { response, body: parsed, headers: response.headers };
+};
+
+const ensureMcpSession = async () => {
+  const now = Date.now();
+  const ttlMs = 15 * 60 * 1000;
+  if (mcpState.sessionId && now - mcpState.createdAt < ttlMs) {
+    return mcpState.sessionId;
+  }
+
+  if (mcpState.inflight) {
+    return await mcpState.inflight;
+  }
+
+  mcpState.inflight = (async () => {
+    const init = await callMcpRpc({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2024-11-05',
+        clientInfo: { name: 'dev-host-imagen', version: '1' },
+        capabilities: {}
+      }
+    });
+
+    const sessionId =
+      init.headers.get('mcp-session-id') ||
+      init.headers.get('Mcp-Session-Id') ||
+      init.headers.get('mcp-session') ||
+      '';
+
+    if (!sessionId) {
+      throw new Error('Missing mcp-session-id header from 1mcp initialize response');
+    }
+
+    try {
+      await callMcpRpc({ method: 'notifications/initialized', params: {}, sessionId });
+    } catch (err) {
+      console.warn('[dev-host] MCP notifications/initialized failed', err?.message || err);
+    }
+
+    mcpState.sessionId = sessionId;
+    mcpState.createdAt = Date.now();
+    return sessionId;
+  })();
+
+  try {
+    return await mcpState.inflight;
+  } finally {
+    mcpState.inflight = null;
+  }
+};
+
+const extractImageFromMcpContent = (content) => {
+  if (!Array.isArray(content)) return null;
+  for (const block of content) {
+    if (!block || typeof block !== 'object') continue;
+    if (block.type === 'image') {
+      const mime = block.mimeType || block.mime_type || 'image/png';
+      if (typeof block.data === 'string' && block.data) {
+        if (block.data.startsWith('data:image/')) {
+          return block.data;
+        }
+        return `data:${mime};base64,${block.data}`;
+      }
+    }
+    if (block.type === 'text' && typeof block.text === 'string') {
+      const t = block.text.trim();
+      if (t.startsWith('data:image/')) {
+        return t;
+      }
+      try {
+        const parsed = JSON.parse(t);
+        const b64 = parsed?.image || parsed?.image_base64 || parsed?.base64;
+        if (typeof b64 === 'string' && b64.trim()) {
+          return `data:image/png;base64,${b64.trim()}`;
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }
+  return null;
+};
 
 const fetchWithTimeout = async (url, { timeout = 4000, ...options } = {}) => {
   const controller = new AbortController();
@@ -416,6 +583,53 @@ const wireProxies = () => {
   mountProxy('/test/detects/api', DETECTS_PROXY_TARGET, {
     id: 'test-detects',
     pathRewrite: (path) => path.replace(/^\/test\/detects\/api/i, '')
+  });
+
+  app.use('/test/imagen/api', express.json({ limit: '2mb' }));
+
+  app.get('/test/imagen/api/health', async (_req, res) => {
+    try {
+      const base = normalizeBaseUrl(ONE_MCP_BASE_URL);
+      if (!base) {
+        return res.status(503).json({ status: 'unconfigured', error: 'ONE_MCP_BASE_URL missing' });
+      }
+
+      // Prefer /health/ready (pc1), fall back to /health (pc2).
+      let response = await fetchWithTimeout(`${base}/health/ready`, { timeout: 6000 });
+      if (!response.ok) {
+        response = await fetchWithTimeout(`${base}/health`, { timeout: 6000 });
+      }
+      const body = await safeParseBody(response);
+      return res.status(response.ok ? 200 : 502).json({ status: response.ok ? 'ok' : 'error', httpStatus: response.status, body });
+    } catch (err) {
+      return res.status(502).json({ status: 'error', error: err?.message || String(err) });
+    }
+  });
+
+  app.post('/test/imagen/api/generate', async (req, res) => {
+    try {
+      const sessionId = await ensureMcpSession();
+      const args = req.body || {};
+      const rpc = await callMcpRpc({
+        method: 'tools/call',
+        params: {
+          name: IMAGEN_MCP_TOOL_NAME,
+          arguments: args
+        },
+        sessionId
+      });
+
+      if (!rpc.response.ok) {
+        return res.status(502).json({ error: 'mcp_tool_call_failed', httpStatus: rpc.response.status, body: rpc.body });
+      }
+
+      const result = rpc.body?.result;
+      const content = result?.content || [];
+      const image_data_url = extractImageFromMcpContent(content);
+      return res.json({ ok: true, tool: IMAGEN_MCP_TOOL_NAME, image_data_url, result });
+    } catch (err) {
+      return res.status(502).json({ error: 'imagen_generate_failed', detail: err?.message || String(err) });
+    }
   });
 
   if (VAJA_PROXY_TARGET) {
