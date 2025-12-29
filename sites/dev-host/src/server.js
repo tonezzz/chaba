@@ -256,6 +256,31 @@ const extractImageFromMcpContent = (content) => {
   return null;
 };
 
+const looksLikeInvalidMcpSession = (rpc) => {
+  const status = rpc?.response?.status;
+  if (status === 401 || status === 403) return true;
+
+  const message =
+    rpc?.body?.error?.message ||
+    rpc?.body?.error?.detail ||
+    rpc?.body?.error ||
+    rpc?.body?.message ||
+    '';
+  const text = typeof message === 'string' ? message : JSON.stringify(message);
+  return /session|mcp-session|invalid\s+session|expired/i.test(text);
+};
+
+const looksLikeMissingTool = (rpc) => {
+  const message =
+    rpc?.body?.error?.message ||
+    rpc?.body?.error?.detail ||
+    rpc?.body?.error ||
+    rpc?.body?.message ||
+    '';
+  const text = typeof message === 'string' ? message : JSON.stringify(message);
+  return /tool.*not\s+found|unknown\s+tool|not\s+found/i.test(text);
+};
+
 const fetchWithTimeout = async (url, { timeout = 4000, ...options } = {}) => {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
@@ -608,9 +633,10 @@ const wireProxies = () => {
 
   app.post('/test/imagen/api/generate', async (req, res) => {
     try {
-      const sessionId = await ensureMcpSession();
       const args = req.body || {};
-      const rpc = await callMcpRpc({
+      let sessionId = await ensureMcpSession();
+
+      let rpc = await callMcpRpc({
         method: 'tools/call',
         params: {
           name: IMAGEN_MCP_TOOL_NAME,
@@ -619,8 +645,38 @@ const wireProxies = () => {
         sessionId
       });
 
+      // Common failure mode: 1mcp restarted and invalidated our cached session.
+      if (!rpc.response.ok && looksLikeInvalidMcpSession(rpc)) {
+        mcpState.sessionId = '';
+        mcpState.createdAt = 0;
+        sessionId = await ensureMcpSession();
+        rpc = await callMcpRpc({
+          method: 'tools/call',
+          params: {
+            name: IMAGEN_MCP_TOOL_NAME,
+            arguments: args
+          },
+          sessionId
+        });
+      }
+
       if (!rpc.response.ok) {
-        return res.status(502).json({ error: 'mcp_tool_call_failed', httpStatus: rpc.response.status, body: rpc.body });
+        const hints = [];
+        if (looksLikeMissingTool(rpc)) {
+          hints.push(
+            `Tool not found. Verify IMAGEN_MCP_TOOL_NAME or check tools/list on ${getMcpRpcUrl()} (app=${ONE_MCP_APP}).`
+          );
+        }
+        if (looksLikeInvalidMcpSession(rpc)) {
+          hints.push('Session rejected by 1mcp. Try again or restart dev-host to refresh session cache.');
+        }
+        return res.status(502).json({
+          error: 'mcp_tool_call_failed',
+          httpStatus: rpc.response.status,
+          tool: IMAGEN_MCP_TOOL_NAME,
+          hints,
+          body: rpc.body
+        });
       }
 
       const result = rpc.body?.result;
