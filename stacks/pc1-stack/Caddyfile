@@ -57,7 +57,26 @@ openai.pc1.vpn {
     tls internal
 }
 
-rag.pc1.vpn {
-    reverse_proxy mcp-rag:8055
+auth.pc1.vpn {
+    reverse_proxy authentik-server:9000
+    tls internal
+}
+
+minio.pc1.vpn {
+    tls internal
+
+    route {
+        handle_path /console* {
+            reverse_proxy minio:9001
+        }
+
+        handle {
+            reverse_proxy minio:9000
+        }
+    }
+}
+
+vault.pc1.vpn {
+    reverse_proxy vault:8200
     tls internal
 }

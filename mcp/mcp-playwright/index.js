@@ -5,6 +5,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const { chromium, firefox, webkit } = require('playwright');
 const { performance } = require('perf_hooks');
+const crypto = require('crypto');
 
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
@@ -18,6 +19,16 @@ const SCENARIOS_DIR = process.env.PLAYWRIGHT_SCENARIOS_DIR || path.join(__dirnam
 const OUTPUT_DIR = process.env.PLAYWRIGHT_OUTPUT_DIR || path.join(__dirname, 'output');
 
 const SUPPORTED_BROWSERS = new Set(['chromium', 'firefox', 'webkit']);
+
+const MCP_PROTOCOL_VERSION = '2024-11-05';
+const mcpSessions = new Map(); // sessionId -> { createdAt, initializedAt }
+
+const newSessionId = () => {
+  if (typeof crypto.randomUUID === 'function') {
+    return `stream-${crypto.randomUUID()}`;
+  }
+  return `stream-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
 
 const ensureDir = (dirPath) => {
   if (!fs.existsSync(dirPath)) {
@@ -377,6 +388,28 @@ const TOOL_SCHEMAS = {
   }
 };
 
+const mcpToolList = () =>
+  Object.values(TOOL_SCHEMAS).map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    inputSchema: tool.input_schema
+  }));
+
+const mcpJsonError = (id, code, message) => ({
+  jsonrpc: '2.0',
+  id: id ?? null,
+  error: {
+    code,
+    message
+  }
+});
+
+const mcpJsonResult = (id, result) => ({
+  jsonrpc: '2.0',
+  id,
+  result
+});
+
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '500kb' }));
@@ -489,6 +522,84 @@ app.post('/invoke', async (req, res) => {
     console.error('[mcp-playwright] invoke error', error);
     res.status(502).json({ error: error.message || 'playwright_error' });
   }
+});
+
+app.post('/mcp', async (req, res) => {
+  const accept = String(req.headers.accept || '');
+  if (!accept.includes('application/json') || !accept.includes('text/event-stream')) {
+    return res
+      .status(406)
+      .json(mcpJsonError(null, -32000, 'Not Acceptable: Client must accept both application/json and text/event-stream'));
+  }
+
+  const payload = req.body || {};
+  const id = payload.id;
+  const method = payload.method;
+  const params = payload.params || {};
+
+  const sessionIdHeader = req.headers['mcp-session-id'];
+  const sessionId = typeof sessionIdHeader === 'string' ? sessionIdHeader : Array.isArray(sessionIdHeader) ? sessionIdHeader[0] : null;
+
+  if (method === 'initialize') {
+    const newId = newSessionId();
+    mcpSessions.set(newId, { createdAt: new Date().toISOString(), initializedAt: null });
+    res.setHeader('mcp-session-id', newId);
+    return res.json(
+      mcpJsonResult(id ?? null, {
+        protocolVersion: MCP_PROTOCOL_VERSION,
+        capabilities: {
+          tools: { listChanged: true },
+          resources: { listChanged: false },
+          prompts: { listChanged: false },
+          logging: {}
+        },
+        serverInfo: {
+          name: APP_NAME,
+          version: APP_VERSION
+        }
+      })
+    );
+  }
+
+  if (!sessionId || !mcpSessions.has(sessionId)) {
+    return res.status(400).json(mcpJsonError(id ?? null, -32001, 'Missing mcp-session-id'));
+  }
+
+  if (method === 'notifications/initialized') {
+    const session = mcpSessions.get(sessionId);
+    session.initializedAt = session.initializedAt || new Date().toISOString();
+    mcpSessions.set(sessionId, session);
+    return res.json({});
+  }
+
+  if (method === 'tools/list') {
+    return res.json(mcpJsonResult(id ?? null, { tools: mcpToolList() }));
+  }
+
+  if (method === 'tools/call') {
+    const toolName = params.name;
+    const args = params.arguments || {};
+    if (!toolName || typeof toolName !== 'string') {
+      return res.status(400).json(mcpJsonError(id ?? null, -32602, 'Missing params.name'));
+    }
+    const handler = TOOL_HANDLERS[toolName];
+    if (!handler) {
+      return res.status(404).json(mcpJsonError(id ?? null, -32601, `Unknown tool '${toolName}'`));
+    }
+    try {
+      const outputs = await handler(args);
+      return res.json(
+        mcpJsonResult(id ?? null, {
+          content: outputs
+        })
+      );
+    } catch (error) {
+      console.error('[mcp-playwright] mcp tools/call error', error);
+      return res.status(500).json(mcpJsonError(id ?? null, -32000, error.message || 'playwright_error'));
+    }
+  }
+
+  return res.status(404).json(mcpJsonError(id ?? null, -32601, `Method '${method}' not found`));
 });
 
 app.get('/.well-known/mcp.json', (_req, res) => {
