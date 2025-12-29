@@ -46,6 +46,27 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8335/tests/run -ContentType
 
 Preferred workflow is GitHub Pull Requests targeting `main`.
 
+### Local deploy policy (Windows)
+
+Policy: **only deploy from `C:\chaba`**.
+
+Rationale:
+- `C:\chaba` is the single “deploy working copy” with the complete host secret materialization (e.g., `C:\chaba\.secrets\pc1.env` -> `stacks/pc1-stack/.env`).
+- Worktrees under `C:\chaba_wt\...` are for development only.
+
+Recommended flow:
+- Develop in a worktree (`C:\chaba_wt\...`).
+- Push your branch.
+- (Optional) Smoke deploy a branch from `C:\chaba`.
+- Merge to `main`.
+- Deploy from `C:\chaba`.
+
+Branch smoke deploy helper:
+- `pwsh -File C:\chaba\scripts\deploy-branch.ps1 -Branch <branch-name>`
+
+Notes:
+- Do not run `docker compose up --build` for the same stack from multiple worktrees concurrently (containers/ports/volumes will conflict).
+
 - **CI**: GitHub Actions workflow at `.github/workflows/ci.yml` runs on:
   - PRs to `main`
   - pushes to `main`
