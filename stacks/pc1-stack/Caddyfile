@@ -2,6 +2,10 @@ pc1.vpn {
     tls internal
 
     route {
+        handle /test* {
+            reverse_proxy dev-host:3000
+        }
+
         handle /docs* {
             reverse_proxy mcp-doc-archiver:8066
         }
