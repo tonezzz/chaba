@@ -36,6 +36,41 @@ const ensureDir = (dirPath) => {
   }
 };
 
+const MCP_SESSIONS = new Map();
+
+const jsonRpcError = (id, code, message, data) => ({
+  jsonrpc: '2.0',
+  id: id ?? null,
+  error: {
+    code,
+    message,
+    ...(data ? { data } : {})
+  }
+});
+
+const jsonRpcResult = (id, result) => ({
+  jsonrpc: '2.0',
+  id,
+  result
+});
+
+const getSessionIdFromRequest = (req) => req.headers['mcp-session-id'] || req.headers['Mcp-Session-Id'];
+
+const ensureInitializedSession = (req) => {
+  const sessionId = getSessionIdFromRequest(req);
+  if (!sessionId || typeof sessionId !== 'string') {
+    return { ok: false, error: { code: -32001, message: 'Missing mcp-session-id' } };
+  }
+  const session = MCP_SESSIONS.get(sessionId);
+  if (!session) {
+    return {
+      ok: false,
+      error: { code: -32002, message: 'Unknown session. Call initialize first.' }
+    };
+  }
+  return { ok: true, sessionId, session };
+};
+
 ensureDir(SCENARIOS_DIR);
 ensureDir(OUTPUT_DIR);
 
@@ -378,6 +413,81 @@ const mcpJsonResult = (id, result) => ({
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '500kb' }));
+
+app.post('/mcp', async (req, res) => {
+  const payload = req.body;
+  const id = payload?.id;
+  const method = payload?.method;
+
+  if (!payload || payload.jsonrpc !== '2.0' || typeof method !== 'string') {
+    return res.json(jsonRpcError(id, -32600, 'Invalid Request'));
+  }
+
+  if (method === 'initialize') {
+    const sessionId = getSessionIdFromRequest(req);
+    if (!sessionId || typeof sessionId !== 'string') {
+      return res.json(jsonRpcError(id, -32001, 'Missing mcp-session-id'));
+    }
+    MCP_SESSIONS.set(sessionId, { initialized: false, createdAt: Date.now() });
+    return res.json(
+      jsonRpcResult(id, {
+        protocolVersion: payload?.params?.protocolVersion || '2024-11-05',
+        serverInfo: { name: APP_NAME, version: APP_VERSION },
+        capabilities: { tools: {} }
+      })
+    );
+  }
+
+  if (method === 'notifications/initialized') {
+    const ensured = ensureInitializedSession(req);
+    if (!ensured.ok) {
+      return res.json(jsonRpcError(id, ensured.error.code, ensured.error.message));
+    }
+    ensured.session.initialized = true;
+    return res.json({ jsonrpc: '2.0', id: id ?? null, result: null });
+  }
+
+  const ensured = ensureInitializedSession(req);
+  if (!ensured.ok) {
+    return res.json(jsonRpcError(id, ensured.error.code, ensured.error.message));
+  }
+  if (!ensured.session.initialized) {
+    return res.json(jsonRpcError(id, -32003, 'Server not initialized'));
+  }
+
+  if (method === 'tools/list') {
+    return res.json(
+      jsonRpcResult(id, {
+        tools: Object.values(TOOL_SCHEMAS).map(({ name, description, input_schema }) => ({
+          name,
+          description,
+          inputSchema: input_schema
+        }))
+      })
+    );
+  }
+
+  if (method === 'tools/call') {
+    const toolName = payload?.params?.name;
+    const args = payload?.params?.arguments || {};
+    if (!toolName || typeof toolName !== 'string') {
+      return res.json(jsonRpcError(id, -32602, 'params.name is required'));
+    }
+    const handler = TOOL_HANDLERS[toolName];
+    if (!handler) {
+      return res.json(jsonRpcError(id, -32601, `Unknown tool '${toolName}'`));
+    }
+    try {
+      const outputs = await handler(args);
+      return res.json(jsonRpcResult(id, { content: outputs }));
+    } catch (error) {
+      console.error('[mcp-playwright] mcp error', error);
+      return res.json(jsonRpcError(id, -32000, error.message || 'playwright_error'));
+    }
+  }
+
+  return res.json(jsonRpcError(id, -32601, `Method '${method}' not found`));
+});
 
 app.get('/health', async (_req, res) => {
   try {

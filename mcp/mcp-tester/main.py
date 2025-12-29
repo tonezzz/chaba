@@ -24,6 +24,32 @@ logger = logging.getLogger("mcp-tester")
 logging.basicConfig(level=logging.INFO)
 
 
+class JsonRpcRequest(BaseModel):
+    jsonrpc: str = "2.0"
+    id: Optional[Any] = None
+    method: str
+    params: Optional[Dict[str, Any]] = None
+
+
+class JsonRpcError(BaseModel):
+    code: int
+    message: str
+    data: Optional[Any] = None
+
+
+class JsonRpcResponse(BaseModel):
+    jsonrpc: str = "2.0"
+    id: Any
+    result: Optional[Any] = None
+    error: Optional[JsonRpcError] = None
+
+
+def _jsonrpc_error(id_value: Any, code: int, message: str, data: Optional[Any] = None) -> Dict[str, Any]:
+    return JsonRpcResponse(id=id_value, error=JsonRpcError(code=code, message=message, data=data)).model_dump(
+        exclude_none=True
+    )
+
+
 class Settings(BaseSettings):
     host: str = Field("0.0.0.0", alias="MCP_TESTER_HOST")
     port: int = Field(8330, alias="MCP_TESTER_PORT")
@@ -152,13 +178,22 @@ def _load_json_entries(label: str, content: str) -> List[Dict[str, Any]]:
         return []
 
 
+def _persist_history(summary: TestRunSummary) -> None:
+    if not settings.history_file:
+        return
+    try:
+        path = Path(settings.history_file)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = summary.model_dump()
+        with path.open("a", encoding="utf-8") as fp:
+            fp.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Failed to persist run history: %s", exc)
+
+
 def load_test_definitions() -> List[TestDefinition]:
     raw_entries: Dict[str, Dict[str, Any]] = {}
     sources: List[tuple[str, str]] = []
-
-    default_file = Path(__file__).with_name("tests.example.json")
-    if default_file.exists():
-        sources.append(("tests.example.json", default_file.read_text()))
 
     suite_candidates: List[str] = []
     if settings.suite_file:
@@ -177,6 +212,11 @@ def load_test_definitions() -> List[TestDefinition]:
 
     if settings.targets_blob:
         sources.append(("MCP_TESTER_TARGETS", settings.targets_blob))
+
+    if not sources:
+        default_file = Path(__file__).with_name("tests.example.json")
+        if default_file.exists():
+            sources.append(("tests.example.json", default_file.read_text()))
 
     for label, content in sources:
         for entry in _load_json_entries(label, content):
@@ -401,7 +441,7 @@ async def service_health() -> Dict[str, Any]:
         "service": "mcp-tester",
         "status": status,
         "testsLoaded": len(tests),
-        "latestRun": latest.dict() if latest else None,
+        "latestRun": latest.model_dump(mode="json") if latest else None,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -432,12 +472,12 @@ def tool_definitions() -> List[Dict[str, Any]]:
         {
             "name": "list_tests",
             "description": "List all MCP tester checks and metadata.",
-            "input_schema": {"type": "object"},
+            "inputSchema": {"type": "object"},
         },
         {
             "name": "run_tests",
             "description": "Execute the MCP tester suite or a subset of checks.",
-            "input_schema": {
+            "inputSchema": {
                 "type": "object",
                 "properties": {
                     "tests": {"type": "array", "items": {"type": "string"}},
@@ -476,8 +516,62 @@ async def invoke_tool(payload: Dict[str, Any]) -> JSONResponse:
     if tool == "run_tests":
         run_request = RunRequest(**arguments)
         summary = await run_suite(run_request)
-        return JSONResponse({"tool": tool, "result": summary.dict()})
+        return JSONResponse({"tool": tool, "result": summary.model_dump(mode="json")})
     raise HTTPException(status_code=404, detail=f"Unknown tool '{tool}'")
+
+
+@app.post("/mcp")
+async def mcp_endpoint(payload: Dict[str, Any] = Body(...)) -> Any:
+    request = JsonRpcRequest(**(payload or {}))
+
+    if request.id is None:
+        return None
+
+    method = (request.method or "").strip()
+    params = request.params or {}
+
+    if method == "initialize":
+        return JsonRpcResponse(
+            id=request.id,
+            result={
+                "protocolVersion": "2024-11-05",
+                "serverInfo": {"name": "mcp-tester", "version": "0.1.0"},
+                "capabilities": {"tools": {}},
+            },
+        ).model_dump(exclude_none=True)
+
+    if method in ("tools/list", "list_tools"):
+        return JsonRpcResponse(
+            id=request.id,
+            result={"tools": tool_definitions()},
+        ).model_dump(exclude_none=True)
+
+    if method in ("tools/call", "call_tool"):
+        tool_name = (params.get("name") or params.get("tool") or "").strip()
+        arguments = params.get("arguments") or {}
+        if not tool_name:
+            return _jsonrpc_error(request.id, -32602, "Missing tool name")
+
+        try:
+            if tool_name == "list_tests":
+                result = {"tests": [test.dict() for test in suite_manager.list_tests()]}
+            elif tool_name == "run_tests":
+                run_request = RunRequest(**arguments)
+                summary = await run_suite(run_request)
+                result = summary.model_dump(mode="json")
+            else:
+                return _jsonrpc_error(request.id, -32601, f"Unknown tool '{tool_name}'")
+        except HTTPException as exc:
+            return _jsonrpc_error(request.id, -32001, str(exc.detail))
+        except Exception as exc:  # noqa: BLE001
+            return _jsonrpc_error(request.id, -32000, str(exc))
+
+        return JsonRpcResponse(
+            id=request.id,
+            result={"content": [{"type": "text", "text": json.dumps(result)}]},
+        ).model_dump(exclude_none=True)
+
+    return _jsonrpc_error(request.id, -32601, f"Unknown method '{method}'")
 
 
 @app.get("/")

@@ -9,25 +9,31 @@
       "restartDelay": 2000
     },
     "mcp-agents": {
-      "transportType": "http",
+      "transport": "streamableHttp",
       "url": "http://mcp-agents:8046/mcp",
       "tags": ["pc1", "agents"],
       "enabled": true
     },
     "mcp-glama": {
-      "transportType": "http",
+      "transport": "streamableHttp",
       "url": "http://mcp-glama:8014/mcp",
       "tags": ["pc1", "glama"],
       "enabled": true
     },
+    "mcp-github-models": {
+      "transport": "streamableHttp",
+      "url": "http://mcp-github-models:8015/mcp",
+      "tags": ["pc1", "github-models"],
+      "enabled": false
+    },
     "mcp-devops": {
-      "transportType": "http",
+      "transport": "streamableHttp",
       "url": "http://mcp-devops:8325/mcp",
       "tags": ["pc1", "devops"],
       "enabled": true
     },
     "mcp-task": {
-      "transportType": "http",
+      "transport": "streamableHttp",
       "url": "http://mcp-task:8016/mcp",
       "tags": ["pc1", "task"],
       "enabled": true
@@ -44,8 +50,14 @@
       "tags": ["pc1", "playwright"],
       "enabled": true
     },
+    "mcp-cuda": {
+      "transport": "streamableHttp",
+      "url": "http://mcp-cuda:8057/mcp",
+      "tags": ["pc1", "cuda"],
+      "enabled": true
+    },
     "mcp-tester": {
-      "transportType": "http",
+      "transport": "streamableHttp",
       "url": "http://mcp-tester:8335/mcp",
       "tags": ["pc1", "tester"],
       "enabled": true

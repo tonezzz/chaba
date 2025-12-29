@@ -35,17 +35,14 @@ loadEnv();
 const DEV_HOST_BASE_URL = (process.env.DEV_HOST_BASE_URL || 'http://dev-host:3100').replace(/\/+$/, '');
 const DEV_HOST_PUBLISH_TOKEN = (process.env.DEV_HOST_PUBLISH_TOKEN || '').trim();
 const GLAMA_PROXY_TARGET =
-  process.env.GLAMA_PROXY_TARGET || process.env.DEV_HOST_GLAMA_TARGET || 'http://127.0.0.1:4020';
+  (process.env.GLAMA_PROXY_TARGET ?? process.env.DEV_HOST_GLAMA_TARGET ?? 'http://127.0.0.1:4020').trim();
 const AGENTS_PROXY_TARGET =
-  process.env.AGENTS_PROXY_TARGET || process.env.DEV_HOST_AGENTS_TARGET || 'http://127.0.0.1:4060';
+  (process.env.AGENTS_PROXY_TARGET ?? process.env.DEV_HOST_AGENTS_TARGET ?? 'http://127.0.0.1:4060').trim();
 const DETECTS_PROXY_TARGET =
-  process.env.DETECTS_PROXY_TARGET ||
-  process.env.DEV_HOST_DETECTS_TARGET ||
-  'http://localhost:4120';
-const VAJA_PROXY_TARGET =
-  process.env.VAJA_PROXY_TARGET || process.env.DEV_HOST_VAJA_TARGET || 'http://host.docker.internal:7217';
+  (process.env.DETECTS_PROXY_TARGET ?? process.env.DEV_HOST_DETECTS_TARGET ?? 'http://localhost:4120').trim();
+const VAJA_PROXY_TARGET = (process.env.VAJA_PROXY_TARGET || process.env.DEV_HOST_VAJA_TARGET || '').trim();
 const MCP0_PROXY_TARGET =
-  process.env.MCP0_PROXY_TARGET || process.env.DEV_HOST_MCP0_TARGET || 'http://host.docker.internal:8310';
+  (process.env.MCP0_PROXY_TARGET ?? process.env.DEV_HOST_MCP0_TARGET ?? 'http://host.docker.internal:8310').trim();
 
 const workspaceRoot = path.resolve(__dirname, '..', '..');
 
@@ -83,19 +80,13 @@ const additionalStaticRoutes = [
     roots: [resolveSitePath('a1-idc1', 'test', 'detects')],
     spa: true
   },
-  {
-    basePath: '/test/vaja',
-    roots: [resolveSitePath('a1-idc1', 'test', 'vaja')],
-    spa: false
-  }
+  
 ];
 
 const PROXY_CHECKS = [
-  { id: 'glama', label: 'Glama chat', target: GLAMA_PROXY_TARGET, path: '/health' },
-  { id: 'agents', label: 'Agents API', target: AGENTS_PROXY_TARGET, path: '/health' },
-  { id: 'detects', label: 'Detects API', target: DETECTS_PROXY_TARGET, path: '/health' },
-  { id: 'vaja', label: 'Vaja TTS', target: VAJA_PROXY_TARGET, path: '/health' },
-  { id: 'mcp0', label: 'MCP0 control', target: MCP0_PROXY_TARGET, path: '/health' }
+  { id: 'glama', label: 'Glama chat', target: GLAMA_PROXY_TARGET, path: '/api/health' },
+  { id: 'agents', label: 'Agents API', target: AGENTS_PROXY_TARGET, path: '/api/health' },
+  { id: 'detects', label: 'Detects API', target: DETECTS_PROXY_TARGET, path: '/health', optional: true }
 ];
 
 const fetchWithTimeout = async (url, { timeout = 4000, ...options } = {}) => {
@@ -124,6 +115,7 @@ const probeProxyTargets = async () =>
         id: check.id,
         label: check.label,
         target: check.target,
+        optional: Boolean(check.optional),
         status: 'unconfigured',
         latencyMs: null
       };
@@ -154,8 +146,10 @@ const probeProxyTargets = async () =>
     })
   );
 
-const overallStatusFromProxies = (proxies) =>
-  proxies.every((entry) => entry.status === 'ok' || entry.status === 'unconfigured') ? 'ok' : 'degraded';
+const overallStatusFromProxies = (proxies) => {
+  const core = proxies.filter((entry) => !entry.optional);
+  return core.every((entry) => entry.status === 'ok' || entry.status === 'unconfigured') ? 'ok' : 'degraded';
+};
 
 const getSiteStatuses = () =>
   siteConfigs.map((site) => ({
@@ -372,124 +366,83 @@ const wireProxies = () => {
     next();
   });
 
-  app.use(
-    '/test/agents/api',
-    createProxyMiddleware({
-      target: AGENTS_PROXY_TARGET,
-      changeOrigin: true,
-      pathRewrite: (path) => path.replace(/^\/test\/agents\/api/i, '/api'),
-      onProxyReq: (proxyReq) => {
-        proxyReq.setHeader('x-dev-host-proxy', 'test-agents-api');
-      },
-      onError: (err, req, res) => {
-        console.error('[dev-host] /test/agents/api proxy error', err.message);
-        if (!res.headersSent) {
-          res.status(502).json({ error: 'proxy_error', detail: err.message });
-        }
-      }
-    })
-  );
-
-  app.use(
-    '/test/chat/api',
-    createProxyMiddleware({
-      target: GLAMA_PROXY_TARGET,
-      changeOrigin: true,
-      pathRewrite: (path) => path.replace(/^\/test\/chat\/api/i, '/api'),
-      onProxyReq: (proxyReq) => {
-        proxyReq.setHeader('x-dev-host-proxy', 'test-chat');
-      },
-      onError: (err, req, res) => {
-        console.error('[dev-host] /test/chat/api proxy error', err.message);
-        if (!res.headersSent) {
-          res.status(502).json({ error: 'proxy_error', detail: err.message });
-        }
-      }
-    })
-  );
-
-  app.use(
-    '/test/agents/api',
-    createProxyMiddleware({
-      target: AGENTS_PROXY_TARGET,
-      changeOrigin: true,
-      pathRewrite: (path) => path.replace(/^\/test\/agents\/api/i, '/api'),
-      onProxyReq: (proxyReq) => {
-        proxyReq.setHeader('x-dev-host-proxy', 'test-agents-api');
-      },
-      onError: (err, req, res) => {
-        console.error('[dev-host] /test/agents/api proxy error', err.message);
-        if (!res.headersSent) {
-          res.status(502).json({ error: 'proxy_error', detail: err.message });
-        }
-      }
-    })
-  );
-
-  app.use(
-    '/test/mcp0',
-    createProxyMiddleware({
-      target: MCP0_PROXY_TARGET,
-      changeOrigin: true,
-      pathRewrite: (path) => path.replace(/^\/test\/mcp0/i, ''),
-      onProxyReq: (proxyReq) => {
-        proxyReq.setHeader('x-dev-host-proxy', 'test-mcp0');
-      },
-      onError: (err, req, res) => {
-        console.error('[dev-host] /test/mcp0 proxy error', err.message);
-        if (!res.headersSent) {
-          res.status(502).json({ error: 'proxy_error', detail: err.message });
-        }
-      }
-    })
-  );
-
-  app.use(
-    '/test/detects/api',
-    createProxyMiddleware({
-      target: DETECTS_PROXY_TARGET,
-      changeOrigin: true,
-      pathRewrite: (path) => path.replace(/^\/test\/detects\/api/i, ''),
-      onProxyReq: (proxyReq) => {
-        proxyReq.setHeader('x-dev-host-proxy', 'test-detects');
-      },
-      onError: (err, req, res) => {
-        console.error('[dev-host] /test/detects/api proxy error', err.message);
-        if (!res.headersSent) {
-          res.status(502).json({ error: 'proxy_error', detail: err.message });
-        }
-      }
-    })
-  );
-
-  app.use(
-    '/test/vaja/api',
-    createProxyMiddleware({
-      target: VAJA_PROXY_TARGET,
-      changeOrigin: true,
-      pathRewrite: (path) => path.replace(/^\/test\/vaja\/api/i, ''),
-      onProxyReq: (proxyReq) => {
-        proxyReq.setHeader('x-dev-host-proxy', 'test-vaja');
-      },
-      onError: (err, req, res) => {
-        console.error('[dev-host] /test/vaja/api proxy error', err.message);
-        if (!res.headersSent) {
-          res.status(502).json({ error: 'proxy_error', detail: err.message });
-        }
-      }
-    })
-  );
-
-  app.get('/test/vaja/api/health', async (_req, res) => {
-    try {
-      const response = await fetch(`${VAJA_PROXY_TARGET.replace(/\/+$/, '')}/health`);
-      const data = await response.json();
-      return res.json(data);
-    } catch (err) {
-      console.error('[dev-host] /test/vaja/api/health error', err);
-      return res.status(502).json({ error: 'proxy_error', detail: err.message });
+  const mountProxy = (mountPath, target, { id, pathRewrite }) => {
+    if (!target) {
+      app.use(mountPath, (_req, res) => {
+        res.status(503).json({ error: 'proxy_unconfigured', id, mountPath });
+      });
+      return;
     }
+
+    app.use(
+      mountPath,
+      createProxyMiddleware({
+        target,
+        changeOrigin: true,
+        pathRewrite,
+        onProxyReq: (proxyReq) => {
+          proxyReq.setHeader('x-dev-host-proxy', id);
+        },
+        onError: (err, req, res) => {
+          console.error(`[dev-host] ${mountPath} proxy error`, err.message);
+          if (!res.headersSent) {
+            res.status(502).json({ error: 'proxy_error', detail: err.message });
+          }
+        }
+      })
+    );
+  };
+
+  mountProxy('/test/agents/api', AGENTS_PROXY_TARGET, {
+    id: 'test-agents-api',
+    pathRewrite: (path) => path.replace(/^\/test\/agents\/api/i, '/api')
   });
+
+  mountProxy('/test/chat/api', GLAMA_PROXY_TARGET, {
+    id: 'test-chat',
+    pathRewrite: (path) => path.replace(/^\/test\/chat\/api/i, '/api')
+  });
+
+  mountProxy('/test/mcp0', MCP0_PROXY_TARGET, {
+    id: 'test-mcp0',
+    pathRewrite: (path) => path.replace(/^\/test\/mcp0/i, '')
+  });
+
+  mountProxy('/test/detects/api', DETECTS_PROXY_TARGET, {
+    id: 'test-detects',
+    pathRewrite: (path) => path.replace(/^\/test\/detects\/api/i, '')
+  });
+
+  if (VAJA_PROXY_TARGET) {
+    app.use(
+      '/test/vaja/api',
+      createProxyMiddleware({
+        target: VAJA_PROXY_TARGET,
+        changeOrigin: true,
+        pathRewrite: (path) => path.replace(/^\/test\/vaja\/api/i, ''),
+        onProxyReq: (proxyReq) => {
+          proxyReq.setHeader('x-dev-host-proxy', 'test-vaja');
+        },
+        onError: (err, req, res) => {
+          console.error('[dev-host] /test/vaja/api proxy error', err.message);
+          if (!res.headersSent) {
+            res.status(502).json({ error: 'proxy_error', detail: err.message });
+          }
+        }
+      })
+    );
+
+    app.get('/test/vaja/api/health', async (_req, res) => {
+      try {
+        const response = await fetch(`${VAJA_PROXY_TARGET.replace(/\/+$/, '')}/health`);
+        const data = await response.json();
+        return res.json(data);
+      } catch (err) {
+        console.error('[dev-host] /test/vaja/api/health error', err);
+        return res.status(502).json({ error: 'proxy_error', detail: err.message });
+      }
+    });
+  }
 
   mountTestStaticRoutes();
   mountWwwStaticRoutes();

@@ -1,6 +1,6 @@
 ; Zone file for vpn
 @   IN  SOA ns.vpn. hostmaster.vpn. (
-        2025121801 ; serial
+        2025122702 ; serial
         3600       ; refresh
         900        ; retry
         1209600    ; expire
@@ -10,6 +10,7 @@
 ns  IN  A   127.0.0.1
 [0midc1.vpn	IN	A	10.8.0.1
 [0mpc1.vpn	IN	A	10.8.0.11
+[0mrag.pc1.vpn	IN	A	10.8.0.11
 [0mpc2.vpn	IN	A	10.8.0.12
 
 _caddy._tcp.pc1.vpn. 0 0 443 pc1.vpn.
@@ -37,6 +38,7 @@ _mcp-tester._tcp.idc1.vpn. 0 0 8435 idc1.vpn.
 _mcp-tester._tcp.pc1.vpn. 0 0 8335 pc1.vpn.
 _mcp-tester._tcp.pc2.vpn. 0 0 8330 pc2.vpn.
 _mcp-vaja._tcp.pc2.vpn. 0 0 7217 pc2.vpn.
+_mcp-rag._tcp.pc1.vpn. 0 0 443 rag.pc1.vpn.
 _mcp-webtop2._tcp.pc1.vpn. 0 0 8055 pc1.vpn.
 _mcp-webtop3._tcp.pc1.vpn. 0 0 8056 pc1.vpn.
 _mcp0._tcp.idc1.vpn. 0 0 8355 idc1.vpn.

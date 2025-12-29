@@ -188,17 +188,43 @@ async def _mcp_tools_list() -> List[Dict[str, Any]]:
         return []
     tools = (res or {}).get("tools") or []
     out: List[Dict[str, Any]] = []
+
+    def _sanitize_openai_function_parameters_schema(schema: Any) -> Optional[Dict[str, Any]]:
+        # Glama/OpenAI function parameters must be a JSON Schema object.
+        # Glama rejects top-level combinators like anyOf/oneOf/allOf as well as enum/not.
+        if not isinstance(schema, dict):
+            return None
+        if schema.get("type") != "object":
+            return None
+        for bad in ("oneOf", "anyOf", "allOf", "enum", "not"):
+            if bad in schema:
+                return None
+        # Ensure required keys exist.
+        if "properties" not in schema or not isinstance(schema.get("properties"), dict):
+            schema = dict(schema)
+            schema["properties"] = {}
+        return schema
+
     for t in tools:
         name = str(t.get("name") or "").strip()
         if not name:
             continue
+
+        params = _sanitize_openai_function_parameters_schema(
+            t.get("inputSchema") or {"type": "object", "properties": {}}
+        )
+        if not params:
+            if DEBUG:
+                print(f"[{APP_NAME}] skipping tool with incompatible schema: {name}")
+            continue
+
         out.append(
             {
                 "type": "function",
                 "function": {
                     "name": name,
                     "description": (t.get("description") or "").strip(),
-                    "parameters": t.get("inputSchema") or {"type": "object", "properties": {}},
+                    "parameters": params,
                 },
             }
         )
@@ -282,6 +308,16 @@ async def _mcp_llm_chat(messages: List[Dict[str, Any]], temperature: Optional[fl
 
     result = await _mcp_tools_invoke(tool_name, args)
     return (_tool_result_to_text(result) or "").strip()
+
+
+async def _mcp_llm_chat_safe(messages: List[Dict[str, Any]], temperature: Optional[float], max_tokens: Optional[int]) -> str:
+    try:
+        return await _mcp_llm_chat(messages=messages, temperature=temperature, max_tokens=max_tokens)
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Avoid leaking low-level stack traces to clients; preserve the reason.
+        raise HTTPException(status_code=502, detail=f"mcp_llm_failed: {str(e)}")
 
 
 async def _mcp_tools_invoke(name: str, arguments: Dict[str, Any]) -> Any:
@@ -533,15 +569,20 @@ async def chat_completions(req: Request) -> Any:
         for m in parsed.messages
     ]
 
-    if _glama_ready() and not PREFER_MCP_LLM:
-        content = await _run_tool_loop(
-            initial_messages=initial_messages,
+    if PREFER_MCP_LLM:
+        content = await _mcp_llm_chat_safe(
+            messages=initial_messages,
             temperature=parsed.temperature,
             max_tokens=parsed.max_tokens,
         )
     else:
-        content = await _mcp_llm_chat(
-            messages=initial_messages,
+        if not _glama_ready():
+            raise HTTPException(
+                status_code=503,
+                detail="glama_unconfigured (set GLAMA_API_URL + GLAMA_API_KEY or enable OPENAI_GATEWAY_PREFER_MCP_LLM=1)",
+            )
+        content = await _run_tool_loop(
+            initial_messages=initial_messages,
             temperature=parsed.temperature,
             max_tokens=parsed.max_tokens,
         )

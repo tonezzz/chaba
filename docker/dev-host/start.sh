@@ -10,9 +10,16 @@ AGENTS_ROOT="/workspace/sites/a1-idc1/api/agents"
 AGENTS_LOG="/tmp/agents-api.log"
 AGENTS_PORT="${AGENTS_PORT:-4060}"
 PUBLISH_TOKEN_FILE="/workspace/.secrets/dev-host/publish.token"
+DEV_HOST_ENV_FILE="/workspace/sites/dev-host/.env.dev-host"
 
 if [ -z "${DEV_HOST_PUBLISH_TOKEN:-}" ] && [ -f "$PUBLISH_TOKEN_FILE" ]; then
   export DEV_HOST_PUBLISH_TOKEN="$(tr -d '\r\n' < "$PUBLISH_TOKEN_FILE")"
+fi
+
+if [ -f "$DEV_HOST_ENV_FILE" ]; then
+  set -a
+  . "$DEV_HOST_ENV_FILE"
+  set +a
 fi
 
 log() {
@@ -115,8 +122,4 @@ if [ -n "${APP_PID:-}" ]; then
   WAIT_PIDS+=("$APP_PID")
 fi
 
-if [ "${#WAIT_PIDS[@]}" -gt 1 ]; then
-  wait -n "${WAIT_PIDS[@]}"
-else
-  wait "${WAIT_PIDS[0]}"
-fi
+wait "$SSHD_PID"

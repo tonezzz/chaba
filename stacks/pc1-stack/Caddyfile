@@ -2,6 +2,10 @@ pc1.vpn {
     tls internal
 
     route {
+        handle /docs* {
+            reverse_proxy mcp-doc-archiver:8066
+        }
+
         handle_path /chat* {
             reverse_proxy openchat-ui:3000
         }
@@ -11,7 +15,9 @@ pc1.vpn {
         }
 
         handle_path /1mcp* {
-            reverse_proxy 1mcp-agent:3051
+            reverse_proxy 1mcp-agent:3051 {
+                header_up Accept "application/json, text/event-stream"
+            }
         }
 
         handle {
@@ -20,18 +26,24 @@ pc1.vpn {
     }
 }
 
-webtop2.pc1.vpn {
-    reverse_proxy webtop2:3000
-    tls internal
-}
+:80 {
+    route {
+        handle_path /1mcp* {
+            reverse_proxy 1mcp-agent:3051 {
+                header_up Accept "application/json, text/event-stream"
+            }
+        }
 
-webtop3.pc1.vpn {
-    reverse_proxy webtop3:3000
-    tls internal
+        handle {
+            respond 404
+        }
+    }
 }
 
 1mcp.pc1.vpn {
-    reverse_proxy 1mcp-agent:3051
+    reverse_proxy 1mcp-agent:3051 {
+        header_up Accept "application/json, text/event-stream"
+    }
     tls internal
 }
 

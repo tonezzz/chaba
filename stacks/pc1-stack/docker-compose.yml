@@ -20,29 +20,31 @@ services:
     command:
       - 1mcp
       - --config
-      - ${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}
+      - ${ONE_MCP_CONFIG:-/root/.config/1mcp/config.json}
       - --transport
       - http
+      - --enable-enhanced-security=false
       - --host
       - ${ONE_MCP_HOST:-0.0.0.0}
       - --port
       - ${ONE_MCP_PORT:-3051}
       - --external-url
-      - ${ONE_MCP_EXTERNAL_URL:-http://127.0.0.1:3051}
+      - ${ONE_MCP_EXTERNAL_URL:-https://127.0.0.1:3051}
     ports:
       - "${ONE_MCP_PORT:-3051}:${ONE_MCP_PORT:-3051}"
     environment:
       ONE_MCP_HOST: ${ONE_MCP_HOST:-0.0.0.0}
       ONE_MCP_PORT: ${ONE_MCP_PORT:-3051}
-      ONE_MCP_EXTERNAL_URL: ${ONE_MCP_EXTERNAL_URL:-http://127.0.0.1:${ONE_MCP_PORT:-3051}}
+      ONE_MCP_EXTERNAL_URL: ${ONE_MCP_EXTERNAL_URL:-https://127.0.0.1:${ONE_MCP_PORT:-3051}}
       ONE_MCP_LOG_LEVEL: ${ONE_MCP_LOG_LEVEL:-info}
-      ONE_MCP_CONFIG: ${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}
-      ONE_MCP_ENABLE_ASYNC_LOADING: ${ONE_MCP_ENABLE_ASYNC_LOADING:-true}
+      ONE_MCP_CONFIG: ${ONE_MCP_CONFIG:-/root/.config/1mcp/config.json}
+      ONE_MCP_ENABLE_ASYNC_LOADING: ${ONE_MCP_ENABLE_ASYNC_LOADING:-false}
+      ONE_MCP_ENABLE_ENHANCED_SECURITY: ${ONE_MCP_ENABLE_ENHANCED_SECURITY:-false}
       UV_PYTHON: python3
       UV_PYTHON_DOWNLOADS: never
       UV_PROJECT_ENVIRONMENT: /tmp/uv-project
     volumes:
-      - ${ONE_MCP_CONFIG_FILE:-./1mcp.json}:${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}:ro
+      - ${ONE_MCP_CONFIG_FILE:-./1mcp.json}:${ONE_MCP_CONFIG:-/root/.config/1mcp/config.json}:ro
       - "${PC1_WORKSPACE_HOST_DIR:-C:/chaba}:/workspaces/chaba:cached"
       - /var/run/docker.sock:/var/run/docker.sock
       - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
@@ -92,6 +94,28 @@ services:
       timeout: 5s
       retries: 3
 
+  mcp-github-models:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_GITHUB_MODELS_BUILD_CONTEXT:-../../mcp/mcp-github-models}
+    container_name: pc1-mcp-github-models
+    ports:
+      - "${MCP_GITHUB_MODELS_PORT:-7242}:8015"
+    environment:
+      PORT: 8015
+      GITHUB_MODELS_API_URL: ${GITHUB_MODELS_API_URL:-}
+      GITHUB_MODELS_API_KEY: ${GITHUB_MODELS_API_KEY:-}
+      GITHUB_MODELS_MODEL: ${GITHUB_MODELS_MODEL:-gpt-4o-mini}
+      GITHUB_MODELS_TEMPERATURE: ${GITHUB_MODELS_TEMPERATURE:-0.2}
+      GITHUB_MODELS_MAX_TOKENS: ${GITHUB_MODELS_MAX_TOKENS:-900}
+      GITHUB_MODELS_TIMEOUT_SECONDS: ${GITHUB_MODELS_TIMEOUT_SECONDS:-30}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8015/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   mcp-openai-gateway:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -105,6 +129,8 @@ services:
       OPENAI_GATEWAY_MODEL_ID: ${OPENAI_GATEWAY_MODEL_ID:-glama-default}
       OPENAI_GATEWAY_TIMEOUT_SECONDS: ${OPENAI_GATEWAY_TIMEOUT_SECONDS:-60}
       OPENAI_GATEWAY_DEBUG: ${OPENAI_GATEWAY_DEBUG:-0}
+      OPENAI_GATEWAY_PREFER_MCP_LLM: ${OPENAI_GATEWAY_PREFER_MCP_LLM:-0}
+      OPENAI_GATEWAY_LLM_TOOL: ${OPENAI_GATEWAY_LLM_TOOL:-}
       MCP_AGENT_URL: ${MCP_AGENT_URL:-http://1mcp-agent:${ONE_MCP_PORT:-3051}/mcp?app=openchat}
       GLAMA_API_URL: ${GLAMA_API_URL:-}
       GLAMA_API_KEY: ${GLAMA_API_KEY:-}
@@ -134,6 +160,93 @@ services:
     depends_on:
       - mcp-openai-gateway
 
+  ollama:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    image: ollama/ollama:latest
+    container_name: pc1-ollama
+    ports:
+      - "${OLLAMA_PORT:-11435}:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/11434' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 6
+
+  qdrant:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    image: qdrant/qdrant:latest
+    container_name: pc1-qdrant
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/6333' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 6
+
+  mcp-rag:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_RAG_BUILD_CONTEXT:-../../mcp/mcp-rag}
+    container_name: pc1-mcp-rag
+    ports:
+      - "${MCP_RAG_PORT:-8055}:8055"
+    environment:
+      PORT: 8055
+      QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
+      QDRANT_TEXT_COLLECTION: ${QDRANT_TEXT_COLLECTION:-rag_text_cuda}
+      QDRANT_IMAGE_COLLECTION: ${QDRANT_IMAGE_COLLECTION:-rag_image}
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+      OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text}
+      CLIP_MODEL: ${CLIP_MODEL:-clip-ViT-B-32}
+      MCP_CUDA_URL: ${MCP_CUDA_URL:-http://mcp-cuda:8057}
+      MCP_RAG_IMAGE_EMBED_BACKEND: ${MCP_RAG_IMAGE_EMBED_BACKEND:-cuda}
+      MCP_RAG_TEXT_EMBED_BACKEND: ${MCP_RAG_TEXT_EMBED_BACKEND:-cuda}
+      MCP_RAG_RERANK_BACKEND: ${MCP_RAG_RERANK_BACKEND:-cuda}
+    volumes:
+      - mcp-rag-cache:/root/.cache
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8055/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - qdrant
+      - ollama
+
+  mcp-doc-archiver:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_DOC_ARCHIVER_BUILD_CONTEXT:-../../mcp/mcp-doc-archiver}
+    container_name: pc1-mcp-doc-archiver
+    ports:
+      - "${MCP_DOC_ARCHIVER_PORT:-8066}:8066"
+    environment:
+      PORT: 8066
+      DOC_ARCHIVER_DATA_DIR: /data
+      DOC_ARCHIVER_MCP_RAG_URL: ${DOC_ARCHIVER_MCP_RAG_URL:-http://mcp-rag:8055}
+      DOC_ARCHIVER_OPENAI_BASE_URL: ${DOC_ARCHIVER_OPENAI_BASE_URL:-http://mcp-openai-gateway:8181}
+      DOC_ARCHIVER_OPENAI_MODEL: ${DOC_ARCHIVER_OPENAI_MODEL:-glama-default}
+      DOC_ARCHIVER_TIMEOUT_SECONDS: ${DOC_ARCHIVER_TIMEOUT_SECONDS:-60}
+    volumes:
+      - mcp-doc-archiver-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8066/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 6
+    depends_on:
+      - mcp-rag
+      - mcp-openai-gateway
+
   mcp-tester:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -143,10 +256,11 @@ services:
     ports:
       - "${MCP_TESTER_PORT:-8335}:${MCP_TESTER_PORT:-8335}"
     environment:
+      PORT: ${MCP_TESTER_PORT:-8335}
       MCP_TESTER_HOST: 0.0.0.0
       MCP_TESTER_PORT: ${MCP_TESTER_PORT:-8335}
-      MCP_TESTER_SUITE_FILE: ${MCP_TESTER_SUITE_FILE:-/app/tests.example.json}
-      MCP_TESTER_SUITE_FILES: ${MCP_TESTER_SUITE_FILES:-/app/tests.optional.json}
+      MCP_TESTER_SUITE_FILE: ${MCP_TESTER_SUITE_FILE:-/app/tests.pc1.json}
+      MCP_TESTER_SUITE_FILES: ${MCP_TESTER_SUITE_FILES:-/app/tests.ragcuda.pc1.json}
       MCP_TESTER_DEFAULT_TIMEOUT_MS: ${MCP_TESTER_DEFAULT_TIMEOUT_MS:-5000}
       MCP_TESTER_HISTORY_FILE: ${MCP_TESTER_HISTORY_FILE:-/data/run-history.ndjson}
       DEV_HOST_TEST_BASE: ${DEV_HOST_TEST_BASE:-http://host.docker.internal:3100}
@@ -159,6 +273,29 @@ services:
       retries: 3
     volumes:
       - ${MCP_TESTER_DATA_DIR:-./data/mcp-tester}:/data
+
+  mcp-cuda:
+    <<: *default-service
+    profiles: ["gpu"]
+    build:
+      context: ${MCP_CUDA_BUILD_CONTEXT:-../../mcp/mcp-cuda}
+    container_name: pc1-mcp-cuda
+    ports:
+      - "${MCP_CUDA_PORT:-8057}:8057"
+    environment:
+      PORT: 8057
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: ${MCP_CUDA_GPU_COUNT:-1}
+              capabilities: ["gpu"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8057/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   mcp-devops:
     <<: *default-service
@@ -189,7 +326,7 @@ services:
     environment:
       PORT: 8016
       MCP_TASK_DB_PATH: /data/sqlite/mcp-task.sqlite
-      MCP_TASK_SERVERS: '[{"name":"mcp-devops","url":"http://mcp-devops:${MCP_DEVOPS_PORT:-8325}"}]'
+      MCP_TASK_SERVERS: '[{"name":"mcp-devops","url":"http://mcp-devops:${MCP_DEVOPS_PORT:-8325}"},{"name":"mcp-tester","url":"http://mcp-tester:${MCP_TESTER_PORT:-8335}"}]'
     volumes:
       - stack-sqlite:/data/sqlite
     healthcheck:
@@ -434,7 +571,7 @@ services:
       - "${PC1_CADDY_HTTP_PORT:-3080}:80"
       - "${PC1_CADDY_HTTPS_PORT:-3443}:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${PC1_WORKSPACE_HOST_DIR:-C:/chaba}/stacks/pc1-stack/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
 
@@ -453,3 +590,7 @@ volumes:
   minio-data:
   vault-dev:
   quickchart-data:
+  qdrant-data:
+  ollama-data:
+  mcp-rag-cache:
+  mcp-doc-archiver-data:

@@ -3,7 +3,7 @@
 ## MCP (default)
 
 - **Default MCP entrypoint (pc2)**: `http://1mcp.pc2.vpn:3050/mcp?app=windsurf`
-- **Alternative MCP entrypoint (pc1)**: `http://1mcp.pc1.vpn:3051/mcp?app=windsurf`
+- **Alternative MCP entrypoint (pc1)**: `https://pc1.vpn:3443/1mcp/mcp?app=windsurf`
 - **Alternative MCP entrypoint (idc1)**: `https://1mcp.idc1.surf-thailand.com/mcp?app=windsurf`
 
 ## OpenChat UI (pc1)
@@ -14,6 +14,29 @@
   - `https://pc1.vpn:3443/openai/v1/models`
   - `https://pc1.vpn:3443/openai/v1/chat/completions`
   - `https://pc1.vpn:3443/openai/health`
+
+## pc1-stack: local env overrides (recommended)
+
+`pc1-stack` supports overriding its compose `env_file` via `PC1_STACK_ENV_FILE`.
+
+- Put local-only secrets / overrides in: `stacks/pc1-stack/.env.local`
+- Keep `stacks/pc1-stack/.env.local` out of git (it is gitignored).
+- Start the stack using the override file:
+
+```powershell
+docker compose -f stacks/pc1-stack/docker-compose.yml --env-file stacks/pc1-stack/.env.local --profile mcp-suite up -d
+```
+
+## pc1-stack: mcp-tester (full suite)
+
+`pc1-stack` includes `mcp-tester` under the `mcp-suite` profile.
+
+- Local URL: `http://127.0.0.1:8335/health`
+- Run the full suite:
+
+```powershell
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8335/tests/run -ContentType "application/json" -Body "{}"
+```
 
 ## CI/CD (default)
 
@@ -38,6 +61,53 @@ Recommended GitHub repo settings (Pull Requests):
 - **Allow rebase merging**: enabled
 - **Allow merge commits**: disabled
 - **Allow squash merging**: disabled
+
+## Secrets (new standard)
+
+This repo does not commit real secrets. The default workflow is:
+
+- Keep a single private env file per host outside git (example locations):
+  - `C:\chaba\.secrets\pc1.env` (prefix-based)
+  - `C:\chaba\.secrets\pc2.env` (prefix-based)
+- Materialize per-stack runtime env files from that single source using prefixed sync scripts:
+  - **pc1 (local)**: `pwsh ./scripts/pc1-sync-prefixed-env.ps1 -SourcePath C:\chaba\.secrets\pc1.env -Restart`
+    - `PC1W_` → `C:\chaba\stacks\pc1-stack\.env`
+    - `DEVH_` → `C:\chaba\sites\dev-host\.env.dev-host`
+  - **pc2 (remote)**: use the `mcp-tasks` helper `scripts/pc2-worker/sync-prefixed-env.ps1` to upload `PC2W_` / `DEVH_` to pc2 and restart stacks.
+
+CI enforcement:
+- GitHub Actions runs on GitHub-hosted runners (`ubuntu-latest`) and cannot read `C:\chaba\.secrets\...`.
+- CI enforces guardrails to fail if secret files (e.g., `.secrets/`, `.env`, `.env.dev-host`) are committed.
+
+Deployment automation:
+- To run secret sync automatically in CI/CD (sync + restart stacks), use a **self-hosted runner** on pc1/pc2 (or a dedicated internal runner that has access to the secret files).
+
+### Self-hosted runner setup (pc1 + pc2)
+
+This repo includes a deploy workflow that targets self-hosted runners:
+- `.github/workflows/deploy-self-hosted.yml`
+
+It assumes each runner machine maintains a working copy at `C:\chaba` and has its private prefixed env file at:
+- pc1: `C:\chaba\.secrets\pc1.env`
+- pc2: `C:\chaba\.secrets\pc2.env`
+
+Runner requirements (each machine):
+- Docker Desktop installed and running.
+- Git installed (so the runner can `git fetch` + `git reset --hard`).
+- Repo working copy exists at `C:\chaba`.
+- Secrets file exists at the path above.
+
+How to install (high level):
+1. In the GitHub repo: **Settings → Actions → Runners → New self-hosted runner**.
+2. Choose **Windows** and follow GitHub’s commands to download + configure the runner.
+3. Install it as a Windows service (recommended by GitHub’s instructions).
+4. Add labels so jobs can target the right machine:
+   - pc1 labels: `self-hosted`, `windows`, `pc1`
+   - pc2 labels: `self-hosted`, `windows`, `pc2`
+
+Operational notes:
+- The deploy workflow updates the repo at `C:\chaba` using the commit SHA from the push event, then runs the local prefixed env sync scripts with `-Restart`.
+- Restrict deploys to trusted branches (default: `main`) and prefer PR review / branch protection, because self-hosted runners can access local files and Docker.
 
 The idc1 `1mcp` entrypoint aggregates:
 

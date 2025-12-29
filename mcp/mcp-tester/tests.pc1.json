@@ -1,0 +1,118 @@
+[
+  {
+    "name": "test-pc1-openai-gateway-health",
+    "description": "OpenAI gateway health endpoint (internal docker network)",
+    "url": "http://mcp-openai-gateway:8181/health",
+    "expect_status": 200,
+    "timeout_ms": 5000,
+    "retries": 1
+  },
+  {
+    "name": "test-pc1-openai-models",
+    "description": "OpenAI gateway models list",
+    "url": "http://mcp-openai-gateway:8181/v1/models",
+    "expect_status": 200,
+    "timeout_ms": 8000,
+    "retries": 1
+  },
+  {
+    "name": "test-pc1-openai-chat-completions",
+    "description": "OpenAI gateway chat completion (non-stream)",
+    "url": "http://mcp-openai-gateway:8181/v1/chat/completions",
+    "method": "POST",
+    "expect_status": 200,
+    "timeout_ms": 30000,
+    "retries": 0,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "model": "glama-default",
+      "messages": [
+        {"role": "user", "content": "mcp-tester smoke"}
+      ]
+    }
+  },
+  {
+    "name": "test-pc1-mcp-glama-health",
+    "description": "mcp-glama health endpoint",
+    "url": "http://mcp-glama:8014/health",
+    "expect_status": 200,
+    "timeout_ms": 5000,
+    "retries": 1
+  },
+  {
+    "name": "test-pc1-1mcp-health",
+    "description": "1mcp-agent health endpoint",
+    "url": "http://1mcp-agent:3051/health",
+    "expect_status": 200,
+    "timeout_ms": 8000,
+    "retries": 1
+  },
+  {
+    "name": "test-pc1-openchat-ui",
+    "description": "OpenChat UI homepage (internal docker network)",
+    "url": "http://openchat-ui:3000/",
+    "expect_status": 200,
+    "timeout_ms": 15000,
+    "retries": 1
+  },
+  {
+    "name": "test-pc1-mcp-devops-health",
+    "description": "mcp-devops health endpoint",
+    "url": "http://mcp-devops:8325/health",
+    "expect_status": 200,
+    "timeout_ms": 8000,
+    "retries": 1
+  },
+  {
+    "name": "test-pc1-mcp-task-health",
+    "description": "mcp-task health endpoint",
+    "url": "http://mcp-task:8016/health",
+    "expect_status": 200,
+    "timeout_ms": 8000,
+    "retries": 1
+  },
+  {
+    "name": "test-pc1-caddy-openai-health",
+    "description": "OpenAI gateway health via pc1-stack Caddy routing (HTTP + Host header)",
+    "url": "http://caddy/openai/health",
+    "expect_status": 308,
+    "timeout_ms": 8000,
+    "retries": 1,
+    "allow_redirects": false,
+    "headers": {
+      "Host": "pc1.vpn"
+    }
+  },
+  {
+    "name": "test-pc1-caddy-chat-ui",
+    "description": "OpenChat UI via pc1-stack Caddy routing (HTTP + Host header)",
+    "url": "http://caddy/chat/",
+    "expect_status": 308,
+    "timeout_ms": 15000,
+    "retries": 1,
+    "allow_redirects": false,
+    "headers": {
+      "Host": "pc1.vpn"
+    }
+  },
+  {
+    "name": "dev-host-health",
+    "description": "Dev-host gateway health (host.docker.internal)",
+    "url": "{{DEV_HOST_TEST_BASE}}/api/health",
+    "expect_status": 200,
+    "timeout_ms": 8000,
+    "retries": 1,
+    "requires_env": ["DEV_HOST_TEST_BASE"]
+  },
+  {
+    "name": "dev-host-test-landing",
+    "description": "Dev-host /test landing page",
+    "url": "{{DEV_HOST_TEST_BASE}}/test/",
+    "expect_status": 200,
+    "timeout_ms": 8000,
+    "retries": 1,
+    "requires_env": ["DEV_HOST_TEST_BASE"]
+  }
+]

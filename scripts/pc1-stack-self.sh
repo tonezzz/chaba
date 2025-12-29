@@ -4,6 +4,7 @@ set -euo pipefail
 ACTION=${ACTION:-status}
 PROFILE=${PROFILE:-mcp-suite}
 SERVICE=${SERVICE:-}
+SERVICES=${SERVICES:-}
 
 REPO_ROOT=${MCP_DEVOPS_REPO_ROOT:-/workspaces/chaba}
 COMPOSE_FILE=${COMPOSE_FILE:-"$REPO_ROOT/stacks/pc1-stack/docker-compose.yml"}
@@ -21,6 +22,30 @@ fi
 
 base=(docker compose -f "$COMPOSE_FILE" --project-name "$PROJECT")
 
+profile_args=()
+if [[ -n "${PROFILE:-}" ]]; then
+  # Allow multiple profiles via a space-separated list.
+  # Example: PROFILE="mcp-suite gpu"
+  read -r -a profiles <<< "$PROFILE"
+  for p in "${profiles[@]}"; do
+    if [[ -n "$p" ]]; then
+      profile_args+=(--profile "$p")
+    fi
+  done
+fi
+
+service_args=()
+if [[ -n "${SERVICES:-}" ]]; then
+  # Allow multiple services via a space-separated list.
+  # Example: SERVICES="caddy mcp-rag mcp-cuda"
+  read -r -a svc_list <<< "$SERVICES"
+  for s in "${svc_list[@]}"; do
+    if [[ -n "$s" ]]; then
+      service_args+=("$s")
+    fi
+  done
+fi
+
 case "$ACTION" in
   status)
     "${base[@]}" ps
@@ -29,11 +54,11 @@ case "$ACTION" in
     "${base[@]}" pull
     ;;
   up)
-    "${base[@]}" --profile "$PROFILE" up -d
+    "${base[@]}" "${profile_args[@]}" up -d "${service_args[@]}"
     ;;
   pull-up)
     "${base[@]}" pull
-    "${base[@]}" --profile "$PROFILE" up -d
+    "${base[@]}" "${profile_args[@]}" up -d "${service_args[@]}"
     ;;
   down)
     "${base[@]}" down

@@ -294,6 +294,29 @@ const workflows = [
     }
   },
   {
+    id: 'deploy-pc1-stack',
+    label: 'Deploy pc1-stack (self pull + up)',
+    description:
+      'Production-style deploy for pc1-stack: docker compose pull then up -d using profiles mcp-suite + gpu (host-side PowerShell runner to ensure Windows bind mounts resolve correctly).',
+    tags: ['deploy', 'pc1', 'stack', 'self', 'pull', 'up', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-stack.ps1'),
+      args: [
+        '-Action',
+        'pull-up',
+        '-Profile',
+        'mcp-suite gpu',
+        '-Services',
+        'caddy 1mcp-agent mcp-openai-gateway mcp-glama mcp-github-models openchat-ui qdrant ollama mcp-rag mcp-cuda mcp-tester mcp-webtops webtops-router mcp-agents mcp-playwright'
+      ],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-stack.ps1'
+    }
+  },
+  {
     id: 'deploy-dev-host-mirror',
     label: 'Deploy dev-host mirror (pc1)',
     description:

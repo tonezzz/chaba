@@ -20,6 +20,32 @@ from docker.errors import DockerException
 logger = logging.getLogger(__name__)
 
 
+class JsonRpcRequest(BaseModel):
+    jsonrpc: str = "2.0"
+    id: Optional[Any] = None
+    method: str
+    params: Optional[Dict[str, Any]] = None
+
+
+class JsonRpcError(BaseModel):
+    code: int
+    message: str
+    data: Optional[Any] = None
+
+
+class JsonRpcResponse(BaseModel):
+    jsonrpc: str = "2.0"
+    id: Any
+    result: Optional[Any] = None
+    error: Optional[JsonRpcError] = None
+
+
+def _jsonrpc_error(id_value: Any, code: int, message: str, data: Optional[Any] = None) -> Dict[str, Any]:
+    return JsonRpcResponse(id=id_value, error=JsonRpcError(code=code, message=message, data=data)).model_dump(
+        exclude_none=True
+    )
+
+
 class Settings(BaseSettings):
     app_name: str = Field("mcp-webtops", alias="WEBTOPS_APP_NAME")
     host: str = Field("0.0.0.0", alias="WEBTOPS_HOST")
@@ -445,6 +471,61 @@ async def well_known_manifest() -> Dict[str, Any]:
     }
 
 
+@app.post("/mcp")
+async def mcp_endpoint(payload: Dict[str, Any] = Body(...), authorization: Optional[str] = Header(default=None)) -> Any:
+    request = JsonRpcRequest(**(payload or {}))
+
+    if request.id is None:
+        return None
+
+    method = (request.method or "").strip()
+    params = request.params or {}
+
+    if method == "initialize":
+        return JsonRpcResponse(
+            id=request.id,
+            result={
+                "protocolVersion": "2024-11-05",
+                "serverInfo": {"name": settings.app_name, "version": "0.1.0"},
+                "capabilities": {"tools": {}},
+            },
+        ).model_dump(exclude_none=True)
+
+    if method in ("tools/list", "list_tools"):
+        tools_out = []
+        for t in tool_definitions():
+            if not isinstance(t, dict):
+                continue
+            schema = t.get("inputSchema") or t.get("input_schema") or t.get("input_schema")
+            tools_out.append(
+                {
+                    "name": t.get("name"),
+                    "description": t.get("description"),
+                    "inputSchema": schema if isinstance(schema, dict) else {"type": "object"},
+                }
+            )
+        return JsonRpcResponse(id=request.id, result={"tools": tools_out}).model_dump(exclude_none=True)
+
+    if method in ("tools/call", "call_tool"):
+        tool_name = (params.get("name") or params.get("tool") or "").strip()
+        arguments = params.get("arguments") or {}
+        if not tool_name:
+            return _jsonrpc_error(request.id, -32602, "Missing tool name")
+        try:
+            out = await invoke(InvokePayload(tool=tool_name, arguments=arguments), authorization=authorization)
+        except HTTPException as exc:
+            return _jsonrpc_error(request.id, -32001, str(exc.detail))
+        except Exception as exc:  # noqa: BLE001
+            return _jsonrpc_error(request.id, -32000, str(exc))
+
+        return JsonRpcResponse(
+            id=request.id,
+            result={"content": [{"type": "text", "text": json.dumps(out)}]},
+        ).model_dump(exclude_none=True)
+
+    return _jsonrpc_error(request.id, -32601, f"Unknown method '{method}'")
+
+
 @app.post("/invoke")
 async def invoke(payload: InvokePayload = Body(...), authorization: Optional[str] = Header(default=None)) -> Dict[str, Any]:
     tool = payload.tool
@@ -538,10 +619,6 @@ async def invoke(payload: InvokePayload = Body(...), authorization: Optional[str
         if len(name) > 200:
             raise HTTPException(status_code=400, detail="name too long")
 
-        sessions = STATE.get("sessions") or {}
-        session = sessions.get(session_id)
-        if not isinstance(session, dict):
-            raise HTTPException(status_code=404, detail="session_not_found")
 
         session["name"] = name
         _save_state(STATE)
