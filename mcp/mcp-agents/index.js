@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const fetch = require('node-fetch');
+const crypto = require('crypto');
 
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
@@ -12,6 +13,16 @@ const PORT = Number(process.env.PORT || 8046);
 const AGENTS_API_BASE = process.env.AGENTS_API_BASE || 'http://127.0.0.1:4060/api';
 const DEFAULT_USER_ID = process.env.AGENTS_DEFAULT_USER || 'default';
 const DEFAULT_LIMIT = Number(process.env.AGENTS_DEFAULT_LIMIT || 12);
+
+const MCP_PROTOCOL_VERSION = '2024-11-05';
+const mcpSessions = new Map(); // sessionId -> { createdAt, initializedAt }
+
+const newSessionId = () => {
+  if (typeof crypto.randomUUID === 'function') {
+    return `stream-${crypto.randomUUID()}`;
+  }
+  return `stream-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
 
 const TOOL_SCHEMAS = {
   fetch_sessions: {
@@ -324,17 +335,133 @@ const TOOL_HANDLERS = {
   relay_prompt: relayPrompt
 };
 
+const mcpToolList = () =>
+  Object.values(TOOL_SCHEMAS).map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    inputSchema: tool.input_schema
+  }));
+
+const mcpJsonError = (id, code, message) => ({
+  jsonrpc: '2.0',
+  id: id ?? null,
+  error: {
+    code,
+    message
+  }
+});
+
+const mcpJsonResult = (id, result) => ({
+  jsonrpc: '2.0',
+  id,
+  result
+});
+
+const mcpTextContent = (value) => {
+  if (typeof value === 'string') {
+    return value;
+  }
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+};
+
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '1mb' }));
 
 app.get('/health', async (_req, res) => {
+  const out = { status: 'ok', agents_api_base: AGENTS_API_BASE };
   try {
     const data = await fetchJson(`${AGENTS_API_BASE.replace(/\/api$/, '')}/api/health`);
-    res.json({ status: 'ok', agents: data });
+    out.agents = data;
+    out.upstream_ok = true;
   } catch (error) {
-    res.status(502).json({ status: 'error', detail: error.message });
+    out.agents = { status: 'error', detail: error.message };
+    out.upstream_ok = false;
   }
+  // Always 200 so container healthcheck reflects service health, not upstream dependency health.
+  res.json(out);
+});
+
+app.post('/mcp', async (req, res) => {
+  const accept = String(req.headers.accept || '');
+  if (!accept.includes('application/json') || !accept.includes('text/event-stream')) {
+    return res
+      .status(406)
+      .json(mcpJsonError(null, -32000, 'Not Acceptable: Client must accept both application/json and text/event-stream'));
+  }
+
+  const payload = req.body || {};
+  const id = payload.id;
+  const method = payload.method;
+  const params = payload.params || {};
+
+  const sessionIdHeader = req.headers['mcp-session-id'];
+  const sessionId = typeof sessionIdHeader === 'string' ? sessionIdHeader : Array.isArray(sessionIdHeader) ? sessionIdHeader[0] : null;
+
+  if (method === 'initialize') {
+    const newId = newSessionId();
+    mcpSessions.set(newId, { createdAt: new Date().toISOString(), initializedAt: null });
+    res.setHeader('mcp-session-id', newId);
+    return res.json(
+      mcpJsonResult(id ?? null, {
+        protocolVersion: MCP_PROTOCOL_VERSION,
+        capabilities: {
+          tools: { listChanged: true },
+          resources: { listChanged: false },
+          prompts: { listChanged: false },
+          logging: {}
+        },
+        serverInfo: {
+          name: APP_NAME,
+          version: APP_VERSION
+        }
+      })
+    );
+  }
+
+  if (!sessionId || !mcpSessions.has(sessionId)) {
+    return res.status(400).json(mcpJsonError(id ?? null, -32001, 'Missing mcp-session-id'));
+  }
+
+  if (method === 'notifications/initialized') {
+    const session = mcpSessions.get(sessionId);
+    session.initializedAt = session.initializedAt || new Date().toISOString();
+    mcpSessions.set(sessionId, session);
+    return res.json({});
+  }
+
+  if (method === 'tools/list') {
+    return res.json(mcpJsonResult(id ?? null, { tools: mcpToolList() }));
+  }
+
+  if (method === 'tools/call') {
+    const toolName = params.name;
+    const args = params.arguments || {};
+    if (!toolName || typeof toolName !== 'string') {
+      return res.status(400).json(mcpJsonError(id ?? null, -32602, 'Missing params.name'));
+    }
+    const handler = TOOL_HANDLERS[toolName];
+    if (!handler) {
+      return res.status(404).json(mcpJsonError(id ?? null, -32601, `Unknown tool '${toolName}'`));
+    }
+    try {
+      const result = await handler(args);
+      return res.json(
+        mcpJsonResult(id ?? null, {
+          content: [{ type: 'text', text: mcpTextContent(result) }]
+        })
+      );
+    } catch (error) {
+      console.error(`[${APP_NAME}] mcp tools/call error`, error);
+      return res.status(500).json(mcpJsonError(id ?? null, -32000, error.message || 'tool_error'));
+    }
+  }
+
+  return res.status(404).json(mcpJsonError(id ?? null, -32601, `Method '${method}' not found`));
 });
 
 app.post('/invoke', async (req, res) => {
