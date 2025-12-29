@@ -8,6 +8,7 @@ RUN apt-get update \
         tesseract-ocr \
         libtesseract-dev \
         ca-certificates \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
