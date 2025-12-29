@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Literal, Optional
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from pydantic import AliasChoices, BaseModel, Field
 
 
@@ -30,6 +30,39 @@ def _ensure_dir_for_file(path: str) -> None:
 
 def _get_db_path() -> str:
     return os.getenv("MCP_TASK_DB_PATH", "/data/sqlite/mcp-task.sqlite")
+
+
+def _get_control_token() -> str:
+    return str(os.getenv("MCP_TASK_CONTROL_TOKEN", "") or "").strip()
+
+
+def _get_control_token_from_request(request: Request) -> str:
+    try:
+        token = str(request.query_params.get("token") or "").strip()
+    except Exception:
+        token = ""
+    if token:
+        return token
+    # Small fallback for non-browser clients
+    header = str(request.headers.get("x-control-token") or "").strip()
+    return header
+
+
+def _require_control_auth(request: Request) -> str:
+    required = _get_control_token()
+    if not required:
+        return ""
+    provided = _get_control_token_from_request(request)
+    if not provided or provided != required:
+        raise HTTPException(status_code=401, detail="control_unauthorized")
+    return provided
+
+
+def _with_token(url: str, token: str) -> str:
+    if not token:
+        return url
+    joiner = "&" if "?" in url else "?"
+    return f"{url}{joiner}token={escape(token)}"
 
 
 def _get_servers() -> Dict[str, str]:
@@ -527,7 +560,10 @@ def _fmt_ts(ts: Optional[int]) -> str:
         return str(ts)
 
 
-def _html_page(title: str, body: str) -> HTMLResponse:
+def _html_page(title: str, body: str, control_token: str = "") -> HTMLResponse:
+    nav_control = _with_token("/control", control_token)
+    nav_chat = _with_token("/chat", control_token)
+    nav_agents = _with_token("/agents", control_token)
     html = (
         "<!doctype html>"
         "<html><head><meta charset='utf-8'/>"
@@ -546,7 +582,7 @@ def _html_page(title: str, body: str) -> HTMLResponse:
         ".pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#f3f4f6;color:#111827}"
         ".row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 12px 0}"
         "</style></head><body>"
-        f"<div class='row'><a href='/control'>Control</a><span class='muted'>/</span><a href='/chat'>Chat</a><span class='muted'>/</span><a href='/agents'>Agents</a><span class='muted'>/</span><span class='muted'>{escape(title)}</span></div>"
+        f"<div class='row'><a href='{nav_control}'>Control</a><span class='muted'>/</span><a href='{nav_chat}'>Chat</a><span class='muted'>/</span><a href='{nav_agents}'>Agents</a><span class='muted'>/</span><span class='muted'>{escape(title)}</span></div>"
         f"<h1>{escape(title)}</h1>"
         f"{body}"
         "</body></html>"
@@ -619,16 +655,17 @@ def _control_task_rows(status: Optional[str], limit: int, offset: int) -> List[s
 
 
 @app.get("/control")
-def control_home(limit: int = 50, offset: int = 0, status: Optional[str] = None) -> HTMLResponse:
+def control_home(request: Request, limit: int = 50, offset: int = 0, status: Optional[str] = None) -> HTMLResponse:
+    control_token = _require_control_auth(request)
     rows = _control_task_rows(status=status, limit=limit, offset=offset)
     filters = (
         "<div class='row'>"
         "<span class='muted'>Filters:</span>"
-        "<a class='pill' href='/control'>all</a>"
-        "<a class='pill' href='/control?status=pending'>pending</a>"
-        "<a class='pill' href='/control?status=approved'>approved</a>"
-        "<a class='pill' href='/control?status=completed'>completed</a>"
-        "<a class='pill' href='/control?status=failed'>failed</a>"
+        f"<a class='pill' href='{_with_token('/control', control_token)}'>all</a>"
+        f"<a class='pill' href='{_with_token('/control?status=pending', control_token)}'>pending</a>"
+        f"<a class='pill' href='{_with_token('/control?status=approved', control_token)}'>approved</a>"
+        f"<a class='pill' href='{_with_token('/control?status=completed', control_token)}'>completed</a>"
+        f"<a class='pill' href='{_with_token('/control?status=failed', control_token)}'>failed</a>"
         "</div>"
     )
     table = [
@@ -642,14 +679,14 @@ def control_home(limit: int = 50, offset: int = 0, status: Optional[str] = None)
         latest_cell = ""
         if latest is not None:
             latest_cell = (
-                f"<a href='/control/run/{escape(latest['run_id'])}'>{escape(latest['run_id'])}</a>"
+                f"<a href='{_with_token('/control/run/' + escape(latest['run_id']), control_token)}'>{escape(latest['run_id'])}</a>"
                 f"<div class='muted'>{escape(str(latest['status']))} · {_fmt_ts(latest['created_at'])}</div>"
             )
         last_error = r["last_error"]
         last_error_text = escape(str(last_error)) if last_error else ""
         table.append(
             "<tr>"
-            f"<td><a href='/control/task/{escape(task_id)}'>{escape(task_id)}</a></td>"
+            f"<td><a href='{_with_token('/control/task/' + escape(task_id), control_token)}'>{escape(task_id)}</a></td>"
             f"<td>{escape(r['title'])}</td>"
             f"<td><span class='pill'>{escape(r['status'])}</span></td>"
             f"<td class='muted'>{escape(_fmt_ts(r['created_at']))}</td>"
@@ -662,11 +699,11 @@ def control_home(limit: int = 50, offset: int = 0, status: Optional[str] = None)
     prev_off = max(0, offset - limit)
     next_off = offset + limit
     qs_status = f"&status={escape(status)}" if status else ""
-    nav += f"<a class='pill' href='/control?limit={limit}&offset={prev_off}{qs_status}'>Prev</a>"
-    nav += f"<a class='pill' href='/control?limit={limit}&offset={next_off}{qs_status}'>Next</a>"
+    nav += f"<a class='pill' href='{_with_token(f'/control?limit={limit}&offset={prev_off}{qs_status}', control_token)}'>Prev</a>"
+    nav += f"<a class='pill' href='{_with_token(f'/control?limit={limit}&offset={next_off}{qs_status}', control_token)}'>Next</a>"
     nav += f"<span class='muted'>limit={limit} offset={offset}</span>"
     nav += "</div>"
-    return _html_page("Tasks", filters + "".join(table) + nav)
+    return _html_page("Tasks", filters + "".join(table) + nav, control_token=control_token)
 
 
 @app.get("/chat")
@@ -845,7 +882,8 @@ async def agents_history() -> HTMLResponse:
 
 
 @app.get("/control/task/{task_id}")
-def control_task(task_id: str, limit: int = 50, offset: int = 0) -> HTMLResponse:
+def control_task(request: Request, task_id: str, limit: int = 50, offset: int = 0) -> HTMLResponse:
+    control_token = _require_control_auth(request)
     task = _task_row(task_id)
     if task is None:
         raise HTTPException(status_code=404, detail="task not found")
@@ -863,10 +901,10 @@ def control_task(task_id: str, limit: int = 50, offset: int = 0) -> HTMLResponse
     for r in rows:
         err = r["error"]
         err_text = escape(str(err)) if err else ""
-        report_link = f"<a href='/control/run/{escape(r['run_id'])}'>open</a>"
+        report_link = f"<a href='{_with_token('/control/run/' + escape(r['run_id']), control_token)}'>open</a>"
         table.append(
             "<tr>"
-            f"<td><a href='/control/run/{escape(r['run_id'])}'>{escape(r['run_id'])}</a></td>"
+            f"<td><a href='{_with_token('/control/run/' + escape(r['run_id']), control_token)}'>{escape(r['run_id'])}</a></td>"
             f"<td><span class='pill'>{escape(r['status'])}</span></td>"
             f"<td class='muted'>{escape(_fmt_ts(r['created_at']))}</td>"
             f"<td class='muted'>{escape(_fmt_ts(r['finished_at']))}</td>"
@@ -879,8 +917,8 @@ def control_task(task_id: str, limit: int = 50, offset: int = 0) -> HTMLResponse
     nav = "<div class='row' style='margin-top:14px'>"
     prev_off = max(0, offset - limit)
     next_off = offset + limit
-    nav += f"<a class='pill' href='/control/task/{escape(task_id)}?limit={limit}&offset={prev_off}'>Prev</a>"
-    nav += f"<a class='pill' href='/control/task/{escape(task_id)}?limit={limit}&offset={next_off}'>Next</a>"
+    nav += f"<a class='pill' href='{_with_token(f'/control/task/{escape(task_id)}?limit={limit}&offset={prev_off}', control_token)}'>Prev</a>"
+    nav += f"<a class='pill' href='{_with_token(f'/control/task/{escape(task_id)}?limit={limit}&offset={next_off}', control_token)}'>Next</a>"
     nav += f"<span class='muted'>limit={limit} offset={offset}</span>"
     nav += "</div>"
 
@@ -890,13 +928,39 @@ def control_task(task_id: str, limit: int = 50, offset: int = 0) -> HTMLResponse
         f"<span class='muted'>created {_fmt_ts(task['created_at'])}</span>"
         "</div>"
     )
+
+    approve_form = ""
+    if str(task["status"]) == "pending":
+        approve_url = _with_token(f"/control/task/{escape(task_id)}/approve", control_token)
+        approve_form = (
+            "<h2>Actions</h2>"
+            f"<form method='post' action='{approve_url}' class='row'>"
+            "<input name='approved_by' placeholder='approved_by (optional)' style='flex:1;min-width:220px;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px'/>"
+            "<button type='submit' style='padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px;background:#111827;color:#fff'>Approve & Run</button>"
+            "</form>"
+        )
     title = f"Task {task_id}"
-    body = header + f"<div><strong>{escape(task['title'])}</strong></div>" + spec_pre + "".join(table) + nav
-    return _html_page(title, body)
+    body = header + f"<div><strong>{escape(task['title'])}</strong></div>" + approve_form + spec_pre + "".join(table) + nav
+    return _html_page(title, body, control_token=control_token)
+
+
+@app.post("/control/task/{task_id}/approve")
+async def control_task_approve(request: Request, task_id: str) -> RedirectResponse:
+    control_token = _require_control_auth(request)
+    form = await request.form()
+    approved_by = str(form.get("approved_by") or "").strip() or None
+    await _approve_task(ApproveTaskArgs(task_id=task_id, approved_by=approved_by))
+    latest = _latest_run_row(task_id)
+    if latest is not None:
+        url = _with_token("/control/run/" + escape(str(latest["run_id"])), control_token)
+    else:
+        url = _with_token("/control/task/" + escape(task_id), control_token)
+    return RedirectResponse(url=url, status_code=303)
 
 
 @app.get("/control/run/{run_id}")
-def control_run(run_id: str) -> HTMLResponse:
+def control_run(request: Request, run_id: str) -> HTMLResponse:
+    control_token = _require_control_auth(request)
     run = _run_row(run_id)
     if run is None:
         raise HTTPException(status_code=404, detail="run not found")
@@ -904,7 +968,7 @@ def control_run(run_id: str) -> HTMLResponse:
     report = json.loads(run["report_json"]) if run["report_json"] else None
     report_pre = (
         f"<h2>Report</h2><div class='row'>"
-        f"<a class='pill' href='/control/run/{escape(run_id)}/report.json'>report.json</a>"
+        f"<a class='pill' href='{_with_token('/control/run/' + escape(run_id) + '/report.json', control_token)}'>report.json</a>"
         "</div>"
         f"<pre>{escape(json.dumps(report, ensure_ascii=False, indent=2))}</pre>"
         if report is not None
@@ -915,18 +979,19 @@ def control_run(run_id: str) -> HTMLResponse:
 
     header = (
         "<div class='row'>"
-        f"<a class='pill' href='/control/task/{escape(run['task_id'])}'>task</a>"
+        f"<a class='pill' href='{_with_token('/control/task/' + escape(run['task_id']), control_token)}'>task</a>"
         f"<span class='pill'>{escape(run['status'])}</span>"
         f"<span class='muted'>created {_fmt_ts(run['created_at'])}</span>"
         f"<span class='muted'>finished {_fmt_ts(run['finished_at'])}</span>"
         "</div>"
     )
     body = header + report_pre + err_pre
-    return _html_page(f"Run {run_id}", body)
+    return _html_page(f"Run {run_id}", body, control_token=control_token)
 
 
 @app.get("/control/run/{run_id}/report.json")
-def control_run_report_json(run_id: str) -> JSONResponse:
+def control_run_report_json(request: Request, run_id: str) -> JSONResponse:
+    _require_control_auth(request)
     run = _run_row(run_id)
     if run is None:
         raise HTTPException(status_code=404, detail="run not found")

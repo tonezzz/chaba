@@ -11,6 +11,8 @@
 - **OpenChat UI (direct port)**: `http://pc1.vpn:3170`
 - **OpenChat UI (VPN HTTPS path)**: `https://pc1.vpn:3443/chat/`
 - **OpenAI gateway health (VPN HTTPS path)**: `https://pc1.vpn:3443/openai/health`
+- **mcp-task Control UI (tasks)**: `http://127.0.0.1:8016/control`
+- **mcp-task Control UI (tasks, token)**: `http://127.0.0.1:8016/control?token=YOUR_TOKEN`
 
 ## pc2-worker
 - **Path**: `stacks/pc2-worker/`

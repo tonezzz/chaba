@@ -2,6 +2,8 @@
 
 This folder contains configuration for the `app-demo` stack.
 
+The builder/orchestrator service for this stack is intended to be named `mcp-nodehost` (renamed from `mcp-apphost`).
+
 ## Setup
 
 1. Copy `.env.example` to `.env`.
