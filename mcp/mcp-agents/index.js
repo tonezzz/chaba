@@ -102,7 +102,18 @@ const TOOL_SCHEMAS = {
         },
         attachments: {
           type: 'array',
-          description: 'Attachment descriptors passed through to the Agents API.'
+          description: 'Attachment descriptors passed through to the Agents API.',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              mime: { type: 'string' },
+              url: { type: 'string' },
+              id: { type: 'string' },
+              size: { type: 'number' }
+            },
+            required: ['name']
+          }
         },
         locale: {
           type: 'string',
