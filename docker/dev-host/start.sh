@@ -18,7 +18,10 @@ fi
 
 if [ -f "$DEV_HOST_ENV_FILE" ]; then
   set -a
-  . "$DEV_HOST_ENV_FILE"
+  CLEAN_ENV_FILE="$(mktemp)"
+  tr -d '\r' < "$DEV_HOST_ENV_FILE" | sed '1s/^\xEF\xBB\xBF//' > "$CLEAN_ENV_FILE"
+  . "$CLEAN_ENV_FILE"
+  rm -f "$CLEAN_ENV_FILE"
   set +a
 fi
 
