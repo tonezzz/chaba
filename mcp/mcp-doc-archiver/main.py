@@ -88,6 +88,22 @@ def _init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_chunks_doc_id ON chunks(doc_id)"
         )
 
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS extractions (
+                id TEXT PRIMARY KEY,
+                doc_id TEXT NOT NULL,
+                kind TEXT NOT NULL,
+                extracted_json TEXT NOT NULL,
+                created_at_ms INTEGER NOT NULL,
+                FOREIGN KEY(doc_id) REFERENCES documents(id)
+            )
+            """
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_extractions_doc_kind ON extractions(doc_id, kind)"
+        )
+
 
 def _sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
@@ -299,6 +315,8 @@ class IngestResponse(BaseModel):
     labels: List[str]
     extracted_chars: int
     chunks: int
+    indexed: bool = False
+    index_error: Optional[str] = None
 
 
 class DocInfo(BaseModel):
@@ -356,6 +374,65 @@ class ExtractResponse(BaseModel):
     doc_id: str
     kind: str
     extracted: Dict[str, Any]
+
+
+class StoredExtraction(BaseModel):
+    id: str
+    doc_id: str
+    kind: str
+    extracted: Dict[str, Any]
+    created_at_ms: int
+
+
+class ListExtractionsResponse(BaseModel):
+    items: List[StoredExtraction]
+
+
+class ExtractionQueryRequest(BaseModel):
+    scope: AuditScope = Field(default_factory=AuditScope)
+    kind: str = "invoice"
+    group_by: str = "vendor"
+    sum_field: str = "total"
+
+
+class ExtractionQueryRow(BaseModel):
+    key: str
+    sum: float
+    count: int
+    doc_ids: List[str] = Field(default_factory=list)
+
+
+class ExtractionQueryResponse(BaseModel):
+    kind: str
+    group_by: str
+    sum_field: str
+    rows: List[ExtractionQueryRow]
+
+
+class AuditScope(BaseModel):
+    groups: List[str] = Field(default_factory=list)
+    labels: List[str] = Field(default_factory=list)
+
+
+class AuditCompareRequest(BaseModel):
+    left: AuditScope
+    right: AuditScope
+    left_kind: str = "invoice"
+    right_kind: str = "bank_slip"
+    left_field: str = "total"
+    right_field: str = "amount"
+    tolerance: float = 0.0
+    auto_extract_missing: bool = True
+    max_auto_extract_docs: int = 24
+
+
+class AuditCompareResponse(BaseModel):
+    left_total: float
+    right_total: float
+    delta: float
+    ok: bool
+    left_docs: List[str] = Field(default_factory=list)
+    right_docs: List[str] = Field(default_factory=list)
 
 
 app = FastAPI(title=APP_NAME, version=APP_VERSION)
@@ -441,6 +518,7 @@ def docs_ui() -> str:
           <button id=\"uploadBtn\" type=\"button\">Ingest</button>
         </div>
       </div>
+      <div id=\"ingestStatus\" class=\"mono\" style=\"margin-top:10px\"></div>
       <div id=\"uploadOut\" class=\"mono\" style=\"margin-top:10px\"></div>
     </div>
 
@@ -518,6 +596,7 @@ def docs_ui() -> str:
     if (!file) return;
     uploadBtn.disabled = true;
     $('uploadOut').textContent = 'Uploading…';
+    $('ingestStatus').textContent = '';
     try {
       const fd = new FormData();
       fd.append('file', file);
@@ -526,6 +605,13 @@ def docs_ui() -> str:
       fd.append('doc_type', $('doctype').value || 'general');
       const r = await fetch(api('/ingest'), { method: 'POST', body: fd });
       const data = await r.json();
+      if (data?.indexed) {
+        $('ingestStatus').textContent = 'Index: OK';
+      } else if (data?.index_error) {
+        $('ingestStatus').textContent = 'Index: FAILED - ' + String(data.index_error);
+      } else {
+        $('ingestStatus').textContent = 'Index: (not attempted)';
+      }
       $('uploadOut').textContent = JSON.stringify(data, null, 2);
       if (data?.doc_id) {
         $('docId').value = data.doc_id;
@@ -671,11 +757,15 @@ async def ingest(
             )
             inserted += 1
 
+    indexed = False
+    index_error: Optional[str] = None
     if inserted > 0:
         try:
             await _index_doc(doc_id)
+            indexed = True
         except Exception:
-            pass
+            indexed = False
+            index_error = "index_failed"
 
     return IngestResponse(
         doc_id=doc_id,
@@ -684,6 +774,8 @@ async def ingest(
         labels=label_list,
         extracted_chars=len(text or ""),
         chunks=inserted,
+        indexed=indexed,
+        index_error=index_error,
     )
 
 
@@ -815,4 +907,284 @@ async def extract(req: ExtractRequest) -> ExtractResponse:
     except Exception:
         extracted = {"raw": content}
 
+    now = _utc_ms()
+    extraction_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"extract:{req.doc_id}:{kind}:{now}"))
+    with _db() as conn:
+        conn.execute(
+            "INSERT INTO extractions (id, doc_id, kind, extracted_json, created_at_ms) VALUES (?, ?, ?, ?, ?)",
+            (extraction_id, req.doc_id, kind, json.dumps(extracted, ensure_ascii=False), now),
+        )
+
     return ExtractResponse(doc_id=req.doc_id, kind=kind, extracted=extracted)
+
+
+@app.get("/docs/api/docs/{doc_id}/extractions", response_model=ListExtractionsResponse)
+def list_extractions(doc_id: str) -> ListExtractionsResponse:
+    with _db() as conn:
+        rows = conn.execute(
+            "SELECT id, doc_id, kind, extracted_json, created_at_ms FROM extractions WHERE doc_id = ? ORDER BY created_at_ms DESC",
+            (doc_id,),
+        ).fetchall()
+
+    items: List[StoredExtraction] = []
+    for r in rows:
+        try:
+            parsed = json.loads(r["extracted_json"]) if r["extracted_json"] else {}
+        except Exception:
+            parsed = {}
+        if not isinstance(parsed, dict):
+            parsed = {"raw": r["extracted_json"]}
+        items.append(
+            StoredExtraction(
+                id=str(r["id"]),
+                doc_id=str(r["doc_id"]),
+                kind=str(r["kind"]),
+                extracted=parsed,
+                created_at_ms=int(r["created_at_ms"]),
+            )
+        )
+    return ListExtractionsResponse(items=items)
+
+
+@app.post("/docs/api/extractions/query", response_model=ExtractionQueryResponse)
+def query_extractions(req: ExtractionQueryRequest) -> ExtractionQueryResponse:
+    kind = (req.kind or "invoice").strip()
+    group_by = (req.group_by or "vendor").strip()
+    sum_field = (req.sum_field or "total").strip()
+
+    where, args = _scope_where(req.scope)
+    with _db() as conn:
+        rows = conn.execute(
+            """
+            SELECT d.id AS doc_id, e.extracted_json AS extracted_json
+            FROM documents d
+            JOIN extractions e ON e.doc_id = d.id
+            WHERE """
+            + where
+            + " AND e.kind = ?",
+            [*args, kind],
+        ).fetchall()
+
+    grouped: Dict[str, Dict[str, Any]] = {}
+    for r in rows:
+        try:
+            parsed = json.loads(r["extracted_json"]) if r["extracted_json"] else {}
+        except Exception:
+            parsed = {}
+        if not isinstance(parsed, dict):
+            continue
+
+        key = _coerce_str(parsed.get(group_by)) or "(unknown)"
+        val = _coerce_float(parsed.get(sum_field))
+        if val is None:
+            continue
+
+        rec = grouped.get(key)
+        if not rec:
+            rec = {"sum": 0.0, "count": 0, "doc_ids": []}
+            grouped[key] = rec
+        rec["sum"] = float(rec["sum"]) + float(val)
+        rec["count"] = int(rec["count"]) + 1
+        rec["doc_ids"].append(str(r["doc_id"]))
+
+    out_rows: List[ExtractionQueryRow] = []
+    for k, rec in grouped.items():
+        out_rows.append(
+            ExtractionQueryRow(
+                key=str(k),
+                sum=float(rec["sum"]),
+                count=int(rec["count"]),
+                doc_ids=[str(x) for x in rec["doc_ids"]],
+            )
+        )
+    out_rows.sort(key=lambda x: x.sum, reverse=True)
+
+    return ExtractionQueryResponse(kind=kind, group_by=group_by, sum_field=sum_field, rows=out_rows)
+
+
+def _coerce_float(value: Any) -> Optional[float]:
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        try:
+            return float(value)
+        except Exception:
+            return None
+    s = str(value).strip()
+    if not s:
+        return None
+    s = re.sub(r"[^0-9.\-]", "", s)
+    if not s or s in ("-", "."):
+        return None
+    try:
+        return float(s)
+    except Exception:
+        return None
+
+
+def _scope_where(scope: AuditScope) -> Tuple[str, List[Any]]:
+    where = "1=1"
+    args: List[Any] = []
+    groups = [g.strip() for g in (scope.groups or []) if g.strip()]
+    labels = [l.strip().lower() for l in (scope.labels or []) if l.strip()]
+    if groups:
+        where += " AND d.doc_group IN (" + ",".join(["?"] * len(groups)) + ")"
+        args.extend(groups)
+    if labels:
+        parts = []
+        for l in labels:
+            parts.append("LOWER(d.labels_json) LIKE ?")
+            args.append(f"%{l}%")
+        where += " AND (" + " OR ".join(parts) + ")"
+    return where, args
+
+
+def _coerce_str(value: Any) -> Optional[str]:
+    if value is None:
+        return None
+    s = str(value).strip()
+    if not s:
+        return None
+    return s
+
+
+def _list_doc_ids_for_scope(scope: AuditScope) -> List[str]:
+    where, args = _scope_where(scope)
+    with _db() as conn:
+        rows = conn.execute(
+            "SELECT d.id AS doc_id FROM documents d WHERE " + where + " ORDER BY d.created_at_ms DESC",
+            args,
+        ).fetchall()
+    return [str(r["doc_id"]) for r in rows]
+
+
+async def _extract_doc_and_store(doc_id: str, kind: str) -> Dict[str, Any]:
+    with _db() as conn:
+        doc = conn.execute(
+            "SELECT id, extracted_text, filename, doc_group FROM documents WHERE id = ?",
+            (doc_id,),
+        ).fetchone()
+        if not doc:
+            raise HTTPException(status_code=404, detail="doc_not_found")
+
+    text = (doc["extracted_text"] or "").strip()[:12000]
+
+    if kind == "invoice":
+        schema_hint = "Return JSON with keys: vendor, invoice_no, invoice_date, currency, subtotal, tax, total, due_date, payment_terms. Use null if unknown."
+    elif kind == "bank_slip":
+        schema_hint = "Return JSON with keys: bank, payer, payee, amount, currency, date, reference, account_last4. Use null if unknown."
+    else:
+        schema_hint = "Return JSON with keys: title, meeting_date, attendees, decisions, action_items. Use null if unknown."
+
+    sys = "You extract structured data from a single document. Output ONLY valid JSON."
+    user = f"Document filename: {doc['filename']}\nGroup: {doc['doc_group']}\nText:\n{text}\n\nTask: {schema_hint}"
+
+    resp = await _openai_chat(
+        [
+            {"role": "system", "content": sys},
+            {"role": "user", "content": user},
+        ],
+        temperature=0.0,
+    )
+
+    content = _extract_content(resp)
+    extracted: Dict[str, Any] = {}
+    try:
+        extracted = json.loads(content)
+        if not isinstance(extracted, dict):
+            extracted = {"raw": content}
+    except Exception:
+        extracted = {"raw": content}
+
+    now = _utc_ms()
+    extraction_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"extract:{doc_id}:{kind}:{now}"))
+    with _db() as conn:
+        conn.execute(
+            "INSERT INTO extractions (id, doc_id, kind, extracted_json, created_at_ms) VALUES (?, ?, ?, ?, ?)",
+            (extraction_id, doc_id, kind, json.dumps(extracted, ensure_ascii=False), now),
+        )
+
+    return extracted
+
+
+def _has_extraction(doc_id: str, kind: str) -> bool:
+    with _db() as conn:
+        row = conn.execute(
+            "SELECT 1 FROM extractions WHERE doc_id = ? AND kind = ? LIMIT 1",
+            (doc_id, kind),
+        ).fetchone()
+    return bool(row)
+
+
+@app.post("/docs/api/audit/compare", response_model=AuditCompareResponse)
+async def audit_compare(req: AuditCompareRequest) -> AuditCompareResponse:
+    left_where, left_args = _scope_where(req.left)
+    right_where, right_args = _scope_where(req.right)
+
+    left_kind = (req.left_kind or "invoice").strip()
+    right_kind = (req.right_kind or "bank_slip").strip()
+    left_field = (req.left_field or "total").strip()
+    right_field = (req.right_field or "amount").strip()
+    tol = float(req.tolerance or 0.0)
+
+    if bool(req.auto_extract_missing):
+        cap = max(0, min(int(req.max_auto_extract_docs or 0), 200))
+        left_ids = _list_doc_ids_for_scope(req.left)
+        right_ids = _list_doc_ids_for_scope(req.right)
+        missing: List[Tuple[str, str]] = []
+        for did in left_ids:
+            if not _has_extraction(did, left_kind):
+                missing.append((did, left_kind))
+        for did in right_ids:
+            if not _has_extraction(did, right_kind):
+                missing.append((did, right_kind))
+
+        for did, kind in missing[:cap]:
+            try:
+                await _extract_doc_and_store(did, kind)
+            except Exception:
+                continue
+
+    def _sum_for(where: str, args: List[Any], kind: str, field: str) -> Tuple[float, List[str]]:
+        with _db() as conn:
+            rows = conn.execute(
+                """
+                SELECT d.id AS doc_id, e.extracted_json AS extracted_json
+                FROM documents d
+                JOIN extractions e ON e.doc_id = d.id
+                WHERE """
+                + where
+                + " AND e.kind = ?",
+                [*args, kind],
+            ).fetchall()
+
+        total = 0.0
+        used: List[str] = []
+        for r in rows:
+            try:
+                parsed = json.loads(r["extracted_json"]) if r["extracted_json"] else {}
+            except Exception:
+                parsed = {}
+            if not isinstance(parsed, dict):
+                continue
+            v = _coerce_float(parsed.get(field))
+            if v is None:
+                continue
+            total += v
+            used.append(str(r["doc_id"]))
+        return total, used
+
+    left_total, left_docs = _sum_for(left_where, left_args, left_kind, left_field)
+    right_total, right_docs = _sum_for(right_where, right_args, right_kind, right_field)
+
+    delta = left_total - right_total
+    ok = abs(delta) <= tol
+
+    return AuditCompareResponse(
+        left_total=float(left_total),
+        right_total=float(right_total),
+        delta=float(delta),
+        ok=bool(ok),
+        left_docs=left_docs,
+        right_docs=right_docs,
+    )
