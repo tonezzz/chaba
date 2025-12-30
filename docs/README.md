@@ -46,6 +46,10 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8335/tests/run -ContentType
 
 Preferred workflow is GitHub Pull Requests targeting `main`.
 
+Default gate:
+- After finishing work in a worktree branch, open a PR to `main` (this is the default integration/CI gate).
+- Testing and deployment may happen separately (often in a dedicated chat/session) and should not be assumed.
+
 ### Local deploy policy (Windows)
 
 Policy: **only deploy from `C:\chaba`**.
