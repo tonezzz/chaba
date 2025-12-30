@@ -89,6 +89,12 @@ const additionalStaticRoutes = [
     roots: [resolveSitePath('a1-idc1', 'test', 'detects')],
     spa: true
   },
+  {
+    basePath: '/test/vaja',
+    roots: [resolveSitePath('a1-idc1', 'test', 'vaja')],
+    spa: true,
+    skipApiFallback: true
+  },
   
 ];
 
@@ -444,36 +450,33 @@ const wireProxies = () => {
     pathRewrite: (path) => path.replace(/^\/test\/detects\/api/i, '')
   });
 
-  if (VAJA_PROXY_TARGET) {
-    app.use(
-      '/test/vaja/api',
-      createProxyMiddleware({
-        target: VAJA_PROXY_TARGET,
-        changeOrigin: true,
-        pathRewrite: (path) => path.replace(/^\/test\/vaja\/api/i, ''),
-        onProxyReq: (proxyReq) => {
-          proxyReq.setHeader('x-dev-host-proxy', 'test-vaja');
-        },
-        onError: (err, req, res) => {
-          console.error('[dev-host] /test/vaja/api proxy error', err.message);
-          if (!res.headersSent) {
-            res.status(502).json({ error: 'proxy_error', detail: err.message });
-          }
-        }
-      })
-    );
+  mountProxy('/test/vaja/api', VAJA_PROXY_TARGET, {
+    id: 'test-vaja',
+    pathRewrite: (path) => path.replace(/^\/test\/vaja\/api/i, '')
+  });
 
-    app.get('/test/vaja/api/health', async (_req, res) => {
-      try {
-        const response = await fetch(`${VAJA_PROXY_TARGET.replace(/\/+$/, '')}/health`);
+  app.get('/test/vaja/api/health', async (_req, res) => {
+    if (!VAJA_PROXY_TARGET) {
+      return res.status(503).json({ error: 'proxy_unconfigured', id: 'test-vaja', mountPath: '/test/vaja/api' });
+    }
+    try {
+      const response = await fetch(`${VAJA_PROXY_TARGET.replace(/\/+$/, '')}/health`);
+      const contentType = response.headers.get('content-type') || '';
+      if (!response.ok) {
+        const body = await safeParseBody(response);
+        return res.status(502).json({ error: 'proxy_error', detail: `HTTP ${response.status}`, body });
+      }
+      if (contentType.includes('application/json')) {
         const data = await response.json();
         return res.json(data);
-      } catch (err) {
-        console.error('[dev-host] /test/vaja/api/health error', err);
-        return res.status(502).json({ error: 'proxy_error', detail: err.message });
       }
-    });
-  }
+      const text = await response.text();
+      return res.type('text/plain').send(text);
+    } catch (err) {
+      console.error('[dev-host] /test/vaja/api/health error', err);
+      return res.status(502).json({ error: 'proxy_error', detail: err.message });
+    }
+  });
 
   mountTestStaticRoutes();
   mountWwwStaticRoutes();
