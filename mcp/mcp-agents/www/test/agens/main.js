@@ -1,12 +1,3 @@
- {
-  if (newSessionButton) {
-    newSessionButton.addEventListener('click', startFreshSession);
-  }
-  loadSessions().catch((error) => console.error('Failed to load sessions', error));
-};
-
-/* remaining existing logic from previous main.js should follow (agent selection, streaming, etc.) */
-
 const sanitizeUserId = (value = '') => {
   const trimmed = (value || '').toString().trim().toLowerCase();
   const cleaned = trimmed.replace(/[^a-z0-9-_]/g, '');
@@ -32,7 +23,8 @@ const resolveUserId = () => {
 };
 
 const userId = resolveUserId();
-const onDevHost = window.location.pathname.startsWith('/test/agents');
+const onDevHost =
+  window.location.pathname.startsWith('/test/agents') || window.location.pathname.startsWith('/test/agens');
 const API_PREFIX = onDevHost ? '/test/agents/api' : '/api';
 const apiBase = `${API_PREFIX}/users/${encodeURIComponent(userId)}`;
 const registryEndpoint = `${API_PREFIX}/agents/registry`;
