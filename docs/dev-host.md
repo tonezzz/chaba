@@ -49,7 +49,7 @@ The Express gateway lives in `sites/dev-host/src/server.js`. It provides:
 | `/test/detects/api/*` | `DETECTS_PROXY_TARGET` or `DEV_HOST_DETECTS_TARGET` | `http://host.docker.internal:4120` | Forwards to detects service. |
 | `/test/agents/api/*` | `AGENTS_PROXY_TARGET` or `DEV_HOST_AGENTS_TARGET` | `http://127.0.0.1:4060` | Internal Agents API / observability surface. |
 | `/test/mcp0/*` | `MCP0_PROXY_TARGET` or `DEV_HOST_MCP0_TARGET` | `http://host.docker.internal:8351` | MCP0 admin/API passthrough. |
-| `/test/imagen/api/*` | `IMAGEN_PROXY_TARGET` or `DEV_HOST_IMAGEN_TARGET` | `http://127.0.0.1:8001` | Imagen MCP preview + health checks. |
+| `/test/imagen/api/*` | `ONE_MCP_BASE_URL`, `ONE_MCP_APP`, `IMAGEN_MCP_TOOL_NAME` | `http://1mcp.pc1.vpn:3052` | Imagen generation via 1mcp tool invocation. |
 
 > **Canonical preview URL:** On pc1 the gateway is always available at `http://dev-host.pc1/test/`. Use that host when sharing preview links (e.g., `http://dev-host.pc1/test/detects/`, `http://dev-host.pc1/test/agents/`, `http://dev-host.pc1/test/agens/`).
 
@@ -57,7 +57,7 @@ Both proxies add `x-dev-host-proxy` headers for easier tracing and rewrite the p
 
 ## Proxy smoke tests & `/api/health`
 
-- `GET /api/health` now aggregates downstream proxy checks (`glama`, `agents`, `detects`, `mcp0`, `imagen`) in addition to static site presence.
+- `GET /api/health` now aggregates downstream proxy checks (`glama`, `agents`, `detects`, `mcp0`, `1mcp`) in addition to static site presence.
 - Each proxy report contains `{ status, httpStatus, latencyMs, body }`. A status of `error` paired with an `HTTP xxx` entry means the gateway could reach the backend but it returned an error; `error` with `ECONNREFUSED` indicates the service is down or mis-pointed.
 - Run `Invoke-WebRequest http://127.0.0.1:3100/api/health | ConvertFrom-Json` locally or from pc1/pc2 to confirm the aggregate payload after every deploy.
 - Individual smoke checks:  \
@@ -77,7 +77,7 @@ Bake these checks into incident runbooks so UI operators can quickly diagnose pr
 
 ## Health checks
 - Container healthcheck: `nc -z localhost 22` (SSH ready).
-- Gateway: `GET /api/health` now aggregates downstream proxy health in addition to mounted site roots. Each target (Glama, Agents, Detects, MCP0, Imagen) reports `status`, HTTP code, latency, and the parsed `/health` body so you can see exactly which dependency is broken.
+- Gateway: `GET /api/health` now aggregates downstream proxy health in addition to mounted site roots. Each target (Glama, Agents, Detects, MCP0, 1mcp) reports `status`, HTTP code, latency, and the parsed `/health` body so you can see exactly which dependency is broken.
 - The JSON payload includes `overall status` (`ok` vs. `degraded`), `proxies[]`, and `sites[]` booleans indicating whether each static root exists inside the container/workspace.
 
 ## Runbook
