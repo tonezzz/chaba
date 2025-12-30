@@ -362,6 +362,22 @@ const workflows = [
     }
   },
   {
+    id: 'ai-app-fast',
+    label: 'ai_app fast gates (lint/typecheck/build/publish)',
+    description:
+      'Runs npm ci + lint + typecheck + build and publishes the Next.js static export into sites/a1-idc1/test/ai_app.',
+    tags: ['ai-app', 'nextjs', 'test', 'publish', 'verify'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'ai-app-fast.ps1'),
+      cwd: config.repoRoot
+    },
+    outputs: {
+      previewUrl: `${config.devHostBaseUrl}/test/ai_app/`,
+      docs: 'scripts/ai-app-fast.ps1'
+    }
+  },
+  {
     id: 'preview-vaja',
     label: 'Preview VAJA MCP demo',
     description:

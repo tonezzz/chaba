@@ -69,6 +69,11 @@ const testLandingRoot = resolveSitePath('a1-idc1', 'test');
 const wwwRoot = resolveSitePath('a1-idc1', 'www');
 const additionalStaticRoutes = [
   {
+    basePath: '/test/ai_app',
+    roots: [resolveSitePath('a1-idc1', 'test', 'ai_app')],
+    spa: true
+  },
+  {
     basePath: '/test/chat',
     roots: [resolveSitePath('a1-idc1', 'test', 'chat')],
     spa: true
