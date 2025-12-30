@@ -41,7 +41,7 @@ const AGENTS_PROXY_TARGET =
 const DETECTS_PROXY_TARGET =
   (process.env.DETECTS_PROXY_TARGET ?? process.env.DEV_HOST_DETECTS_TARGET ?? 'http://localhost:4120').trim();
 const ONE_MCP_BASE_URL =
-  (process.env.ONE_MCP_BASE_URL ?? process.env.DEV_HOST_ONE_MCP_TARGET ?? 'http://1mcp.pc2.vpn:3050').trim();
+  (process.env.ONE_MCP_BASE_URL ?? process.env.DEV_HOST_ONE_MCP_TARGET ?? 'http://1mcp.pc1.vpn:3052').trim();
 const ONE_MCP_APP = (process.env.ONE_MCP_APP || process.env.DEV_HOST_ONE_MCP_APP || 'windsurf').trim();
 const IMAGEN_MCP_TOOL_NAME = (process.env.IMAGEN_MCP_TOOL_NAME || 'mcp-imagen_1mcp_generate_image').trim();
 const VAJA_PROXY_TARGET = (process.env.VAJA_PROXY_TARGET || process.env.DEV_HOST_VAJA_TARGET || '').trim();
@@ -51,15 +51,18 @@ const MCP0_PROXY_TARGET =
 const workspaceRoot = path.resolve(__dirname, '..', '..');
 
 const resolveSitePath = (...segments) => {
-  const direct = path.join(workspaceRoot, ...segments);
-  if (fs.existsSync(direct)) {
-    return direct;
+  const roots = [workspaceRoot, path.resolve(workspaceRoot, '..')];
+  for (const root of roots) {
+    const direct = path.join(root, ...segments);
+    if (fs.existsSync(direct)) {
+      return direct;
+    }
+    const nested = path.join(root, 'sites', ...segments);
+    if (fs.existsSync(nested)) {
+      return nested;
+    }
   }
-  const nested = path.join(workspaceRoot, 'sites', ...segments);
-  if (fs.existsSync(nested)) {
-    return nested;
-  }
-  return direct;
+  return path.join(workspaceRoot, ...segments);
 };
 
 const testLandingRoot = resolveSitePath('a1-idc1', 'test');
@@ -76,6 +79,12 @@ const additionalStaticRoutes = [
       resolveSitePath('a1-idc1', 'test', 'agents'),
       resolveSitePath('a1-idc1', 'www', 'test', 'agents')
     ],
+    spa: true,
+    skipApiFallback: true
+  },
+  {
+    basePath: '/test/agens',
+    roots: [resolveSitePath('mcp', 'mcp-agents', 'www', 'test', 'agens')],
     spa: true,
     skipApiFallback: true
   },
@@ -256,6 +265,31 @@ const extractImageFromMcpContent = (content) => {
   return null;
 };
 
+const looksLikeInvalidMcpSession = (rpc) => {
+  const status = rpc?.response?.status;
+  if (status === 401 || status === 403) return true;
+
+  const message =
+    rpc?.body?.error?.message ||
+    rpc?.body?.error?.detail ||
+    rpc?.body?.error ||
+    rpc?.body?.message ||
+    '';
+  const text = typeof message === 'string' ? message : JSON.stringify(message);
+  return /session|mcp-session|invalid\s+session|expired/i.test(text);
+};
+
+const looksLikeMissingTool = (rpc) => {
+  const message =
+    rpc?.body?.error?.message ||
+    rpc?.body?.error?.detail ||
+    rpc?.body?.error ||
+    rpc?.body?.message ||
+    '';
+  const text = typeof message === 'string' ? message : JSON.stringify(message);
+  return /tool.*not\s+found|unknown\s+tool|not\s+found/i.test(text);
+};
+
 const fetchWithTimeout = async (url, { timeout = 4000, ...options } = {}) => {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
@@ -401,6 +435,18 @@ const buildSiteRouter = (site) => {
 };
 
 app.use(morgan('dev'));
+
+app.get('/favicon.svg', (_req, res) => {
+  const candidates = [
+    resolveSitePath('site-man', 'public', 'favicon.svg'),
+    resolveSitePath('mcp', 'mcp-instrans', 'public', 'favicon.svg')
+  ];
+  const faviconPath = candidates.find((candidate) => fs.existsSync(candidate));
+  if (!faviconPath) {
+    return res.status(404).end();
+  }
+  return res.sendFile(faviconPath);
+});
 
 const mountTestStaticRoutes = () => {
   const testLandingRoot = resolveSitePath('a1-idc1', 'test');
@@ -570,6 +616,11 @@ const wireProxies = () => {
     pathRewrite: (path) => path.replace(/^\/test\/agents\/api/i, '/api')
   });
 
+  mountProxy('/test/agens/api', AGENTS_PROXY_TARGET, {
+    id: 'test-agens-api',
+    pathRewrite: (path) => path.replace(/^\/test\/agens\/api/i, '/api')
+  });
+
   mountProxy('/test/chat/api', GLAMA_PROXY_TARGET, {
     id: 'test-chat',
     pathRewrite: (path) => path.replace(/^\/test\/chat\/api/i, '/api')
@@ -608,9 +659,10 @@ const wireProxies = () => {
 
   app.post('/test/imagen/api/generate', async (req, res) => {
     try {
-      const sessionId = await ensureMcpSession();
       const args = req.body || {};
-      const rpc = await callMcpRpc({
+      let sessionId = await ensureMcpSession();
+
+      let rpc = await callMcpRpc({
         method: 'tools/call',
         params: {
           name: IMAGEN_MCP_TOOL_NAME,
@@ -619,8 +671,38 @@ const wireProxies = () => {
         sessionId
       });
 
+      // Common failure mode: 1mcp restarted and invalidated our cached session.
+      if (!rpc.response.ok && looksLikeInvalidMcpSession(rpc)) {
+        mcpState.sessionId = '';
+        mcpState.createdAt = 0;
+        sessionId = await ensureMcpSession();
+        rpc = await callMcpRpc({
+          method: 'tools/call',
+          params: {
+            name: IMAGEN_MCP_TOOL_NAME,
+            arguments: args
+          },
+          sessionId
+        });
+      }
+
       if (!rpc.response.ok) {
-        return res.status(502).json({ error: 'mcp_tool_call_failed', httpStatus: rpc.response.status, body: rpc.body });
+        const hints = [];
+        if (looksLikeMissingTool(rpc)) {
+          hints.push(
+            `Tool not found. Verify IMAGEN_MCP_TOOL_NAME or check tools/list on ${getMcpRpcUrl()} (app=${ONE_MCP_APP}).`
+          );
+        }
+        if (looksLikeInvalidMcpSession(rpc)) {
+          hints.push('Session rejected by 1mcp. Try again or restart dev-host to refresh session cache.');
+        }
+        return res.status(502).json({
+          error: 'mcp_tool_call_failed',
+          httpStatus: rpc.response.status,
+          tool: IMAGEN_MCP_TOOL_NAME,
+          hints,
+          body: rpc.body
+        });
       }
 
       const result = rpc.body?.result;
