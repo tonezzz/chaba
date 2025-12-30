@@ -41,7 +41,7 @@ const AGENTS_PROXY_TARGET =
 const DETECTS_PROXY_TARGET =
   (process.env.DETECTS_PROXY_TARGET ?? process.env.DEV_HOST_DETECTS_TARGET ?? 'http://localhost:4120').trim();
 const ONE_MCP_BASE_URL =
-  (process.env.ONE_MCP_BASE_URL ?? process.env.DEV_HOST_ONE_MCP_TARGET ?? 'http://1mcp.pc2.vpn:3050').trim();
+  (process.env.ONE_MCP_BASE_URL ?? process.env.DEV_HOST_ONE_MCP_TARGET ?? 'http://1mcp.pc1.vpn:3052').trim();
 const ONE_MCP_APP = (process.env.ONE_MCP_APP || process.env.DEV_HOST_ONE_MCP_APP || 'windsurf').trim();
 const IMAGEN_MCP_TOOL_NAME = (process.env.IMAGEN_MCP_TOOL_NAME || 'mcp-imagen_1mcp_generate_image').trim();
 const VAJA_PROXY_TARGET = (process.env.VAJA_PROXY_TARGET || process.env.DEV_HOST_VAJA_TARGET || '').trim();
