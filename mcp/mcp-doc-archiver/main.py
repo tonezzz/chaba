@@ -8,6 +8,7 @@ import re
 import sqlite3
 import time
 import uuid
+import base64
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -23,6 +24,8 @@ from PIL import Image
 APP_NAME = "mcp-doc-archiver"
 APP_VERSION = "0.1.0"
 
+MCP_PROTOCOL_VERSION = "2024-11-05"
+
 PORT = int(os.getenv("PORT", "8066"))
 
 DATA_DIR = Path(os.getenv("DOC_ARCHIVER_DATA_DIR", "/data")).resolve()
@@ -34,6 +37,168 @@ OPENAI_BASE_URL = (os.getenv("DOC_ARCHIVER_OPENAI_BASE_URL") or "http://mcp-open
 OPENAI_MODEL = (os.getenv("DOC_ARCHIVER_OPENAI_MODEL") or "glama-default").strip()
 
 HTTP_TIMEOUT = float(os.getenv("DOC_ARCHIVER_TIMEOUT_SECONDS", "60"))
+
+
+def _mcp_json_error(_id: Any, code: int, message: str) -> Dict[str, Any]:
+    return {"jsonrpc": "2.0", "id": _id, "error": {"code": int(code), "message": str(message)}}
+
+
+def _mcp_json_result(_id: Any, result: Any) -> Dict[str, Any]:
+    return {"jsonrpc": "2.0", "id": _id, "result": result}
+
+
+_MCP_SESSIONS: Dict[str, bool] = {}
+
+
+def _mcp_get_session_id(req: Request) -> Optional[str]:
+    sid = req.headers.get("mcp-session-id")
+    return sid.strip() if sid else None
+
+
+def _mcp_require_session(req: Request) -> str:
+    sid = _mcp_get_session_id(req)
+    if not sid:
+        raise HTTPException(status_code=400, detail="Missing mcp-session-id")
+    if sid not in _MCP_SESSIONS:
+        _MCP_SESSIONS[sid] = True
+    return sid
+
+
+def _mcp_tools_list() -> List[Dict[str, Any]]:
+    return [
+        {
+            "name": "doc_archiver_list_docs",
+            "description": "List recently ingested documents.",
+            "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+        },
+        {
+            "name": "doc_archiver_ingest_base64",
+            "description": "Ingest a document from base64 content; optionally auto-index.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "filename": {"type": "string"},
+                    "mime_type": {"type": "string"},
+                    "data_base64": {"type": "string", "description": "Raw bytes, base64-encoded"},
+                    "doc_group": {"type": "string", "default": "default"},
+                    "labels": {"type": "string", "description": "Comma-separated"},
+                    "doc_type": {"type": "string", "default": "general"},
+                    "auto_index": {"type": "boolean", "default": True},
+                },
+                "required": ["filename", "data_base64"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "doc_archiver_index_doc",
+            "description": "Index an ingested document into RAG.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {"doc_id": {"type": "string"}},
+                "required": ["doc_id"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "doc_archiver_chat",
+            "description": "Chat with citations over indexed documents.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string"},
+                    "scope": {
+                        "type": "object",
+                        "properties": {
+                            "groups": {"type": "array", "items": {"type": "string"}},
+                            "labels": {"type": "array", "items": {"type": "string"}},
+                        },
+                        "additionalProperties": False,
+                    },
+                    "top_k": {"type": "integer", "default": 10},
+                },
+                "required": ["query"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "doc_archiver_extract",
+            "description": "Extract structured data from a document (invoice|bank_slip|meeting_report).",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "doc_id": {"type": "string"},
+                    "kind": {"type": "string", "default": "invoice"},
+                },
+                "required": ["doc_id"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "doc_archiver_list_extractions",
+            "description": "List stored extractions for a document.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {"doc_id": {"type": "string"}},
+                "required": ["doc_id"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "doc_archiver_query_extractions",
+            "description": "Aggregate extracted fields across documents filtered by group/labels.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "scope": {
+                        "type": "object",
+                        "properties": {
+                            "groups": {"type": "array", "items": {"type": "string"}},
+                            "labels": {"type": "array", "items": {"type": "string"}},
+                        },
+                        "additionalProperties": False,
+                    },
+                    "kind": {"type": "string", "default": "invoice"},
+                    "group_by": {"type": "string", "default": "vendor"},
+                    "sum_field": {"type": "string", "default": "total"},
+                },
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "doc_archiver_audit_compare",
+            "description": "Compare two extraction scopes (e.g. invoices vs bank slips) and compute totals/delta.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "left": {
+                        "type": "object",
+                        "properties": {
+                            "groups": {"type": "array", "items": {"type": "string"}},
+                            "labels": {"type": "array", "items": {"type": "string"}},
+                        },
+                        "additionalProperties": False,
+                    },
+                    "right": {
+                        "type": "object",
+                        "properties": {
+                            "groups": {"type": "array", "items": {"type": "string"}},
+                            "labels": {"type": "array", "items": {"type": "string"}},
+                        },
+                        "additionalProperties": False,
+                    },
+                    "left_kind": {"type": "string", "default": "invoice"},
+                    "right_kind": {"type": "string", "default": "bank_slip"},
+                    "left_field": {"type": "string", "default": "total"},
+                    "right_field": {"type": "string", "default": "amount"},
+                    "tolerance": {"type": "number", "default": 0.0},
+                    "auto_extract_missing": {"type": "boolean", "default": True},
+                    "max_auto_extract_docs": {"type": "integer", "default": 24},
+                },
+                "required": ["left", "right"],
+                "additionalProperties": False,
+            },
+        },
+    ]
 
 
 def _utc_ms() -> int:
@@ -436,6 +601,179 @@ class AuditCompareResponse(BaseModel):
 
 
 app = FastAPI(title=APP_NAME, version=APP_VERSION)
+
+
+@app.post("/mcp")
+async def mcp(req: Request) -> JSONResponse:
+    try:
+        body = await req.json()
+    except Exception as e:
+        return JSONResponse(_mcp_json_error(None, -32700, f"Invalid JSON: {str(e)}"), status_code=400)
+
+    method = body.get("method")
+    _id = body.get("id")
+    params = body.get("params") or {}
+
+    if method == "initialize":
+        session_id = str(uuid.uuid4())
+        _MCP_SESSIONS[session_id] = True
+
+        result = {
+            "protocolVersion": MCP_PROTOCOL_VERSION,
+            "capabilities": {"tools": {}, "resources": {}, "prompts": {}},
+            "serverInfo": {"name": APP_NAME, "version": APP_VERSION},
+        }
+        return JSONResponse(
+            _mcp_json_result(_id, result),
+            headers={"mcp-session-id": session_id},
+        )
+
+    if method == "notifications/initialized":
+        _mcp_require_session(req)
+        return JSONResponse({"jsonrpc": "2.0", "result": True})
+
+    if method == "tools/list":
+        _mcp_require_session(req)
+        return JSONResponse(_mcp_json_result(_id, {"tools": _mcp_tools_list()}))
+
+    if method == "resources/list":
+        _mcp_require_session(req)
+        return JSONResponse(_mcp_json_result(_id, {"resources": []}))
+
+    if method == "prompts/list":
+        _mcp_require_session(req)
+        return JSONResponse(_mcp_json_result(_id, {"prompts": []}))
+
+    if method == "tools/call":
+        _mcp_require_session(req)
+        name = (params.get("name") or "").strip()
+        arguments = params.get("arguments") or {}
+        if not isinstance(arguments, dict):
+            return JSONResponse(_mcp_json_error(_id, -32602, "Invalid params: arguments must be an object"), status_code=400)
+
+        try:
+            if name == "doc_archiver_list_docs":
+                res = list_docs().model_dump()
+
+            elif name == "doc_archiver_ingest_base64":
+                filename = str(arguments.get("filename") or "upload")
+                mime_type = str(arguments.get("mime_type") or "application/octet-stream")
+                b64 = str(arguments.get("data_base64") or "")
+                if not b64:
+                    raise HTTPException(status_code=400, detail="missing_data_base64")
+                raw = base64.b64decode(b64)
+
+                doc_group = str(arguments.get("doc_group") or "default")
+                labels = str(arguments.get("labels") or "")
+                doc_type = str(arguments.get("doc_type") or "general")
+                auto_index = bool(arguments.get("auto_index") if arguments.get("auto_index") is not None else True)
+
+                # Inline version of ingest() without multipart
+                if not raw:
+                    raise HTTPException(status_code=400, detail="empty_file")
+
+                doc_id = str(uuid.uuid4())
+                sha256 = _sha256_bytes(raw)
+                label_list = _safe_labels(labels)
+                text, meta = _extract_text(filename, mime_type, raw)
+
+                ddir = _doc_dir(doc_id)
+                ddir.mkdir(parents=True, exist_ok=True)
+                _write_bytes(ddir / "source.bin", raw)
+                _write_text(ddir / "extracted.txt", text)
+                _write_text(ddir / "extract_meta.json", json.dumps(meta, ensure_ascii=False, indent=2))
+
+                now = _utc_ms()
+                with _db() as conn:
+                    conn.execute(
+                        "INSERT INTO documents (id, created_at_ms, filename, mime_type, sha256, doc_type, doc_group, labels_json, source_kind, source_uri, extracted_text, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        (
+                            doc_id,
+                            now,
+                            filename,
+                            mime_type,
+                            sha256,
+                            (doc_type or "general").strip() or "general",
+                            (doc_group or "default").strip() or "default",
+                            json.dumps(label_list, ensure_ascii=False),
+                            "base64",
+                            None,
+                            text,
+                            "ingested",
+                        ),
+                    )
+
+                chunks = _chunk_text(text)
+                inserted = 0
+                with _db() as conn:
+                    for idx, chunk in enumerate(chunks):
+                        chunk_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"{doc_id}:{idx}"))
+                        conn.execute(
+                            "INSERT OR REPLACE INTO chunks (id, doc_id, chunk_index, text, created_at_ms) VALUES (?, ?, ?, ?, ?)",
+                            (chunk_id, doc_id, idx, chunk, now),
+                        )
+                        inserted += 1
+
+                indexed = False
+                index_error: Optional[str] = None
+                if auto_index and inserted > 0:
+                    try:
+                        await _index_doc(doc_id)
+                        indexed = True
+                    except Exception:
+                        indexed = False
+                        index_error = "index_failed"
+
+                res = IngestResponse(
+                    doc_id=doc_id,
+                    sha256=sha256,
+                    doc_group=(doc_group or "default").strip() or "default",
+                    labels=label_list,
+                    extracted_chars=len(text or ""),
+                    chunks=inserted,
+                    indexed=indexed,
+                    index_error=index_error,
+                ).model_dump()
+
+            elif name == "doc_archiver_index_doc":
+                doc_id = str(arguments.get("doc_id") or "").strip()
+                if not doc_id:
+                    raise HTTPException(status_code=400, detail="missing_doc_id")
+                res = (await index_doc(doc_id)).model_dump()
+
+            elif name == "doc_archiver_chat":
+                req_obj = ChatRequest.model_validate(arguments)
+                res = (await chat(req_obj)).model_dump()
+
+            elif name == "doc_archiver_extract":
+                req_obj = ExtractRequest.model_validate(arguments)
+                res = (await extract(req_obj)).model_dump()
+
+            elif name == "doc_archiver_list_extractions":
+                doc_id = str(arguments.get("doc_id") or "").strip()
+                if not doc_id:
+                    raise HTTPException(status_code=400, detail="missing_doc_id")
+                res = list_extractions(doc_id).model_dump()
+
+            elif name == "doc_archiver_query_extractions":
+                req_obj = ExtractionQueryRequest.model_validate(arguments)
+                res = query_extractions(req_obj).model_dump()
+
+            elif name == "doc_archiver_audit_compare":
+                req_obj = AuditCompareRequest.model_validate(arguments)
+                res = (await audit_compare(req_obj)).model_dump()
+
+            else:
+                return JSONResponse(_mcp_json_error(_id, -32601, f"Unknown tool: {name}"), status_code=404)
+
+            return JSONResponse(_mcp_json_result(_id, {"content": [{"type": "text", "text": json.dumps(res, ensure_ascii=False)}]}))
+
+        except HTTPException as e:
+            return JSONResponse(_mcp_json_error(_id, -32000, str(e.detail)), status_code=200)
+        except Exception as e:
+            return JSONResponse(_mcp_json_error(_id, -32000, f"tool_error: {str(e)}"), status_code=200)
+
+    return JSONResponse(_mcp_json_error(_id, -32601, f"Method '{method}' not found"), status_code=200)
 
 
 @app.on_event("startup")

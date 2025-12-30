@@ -55,13 +55,11 @@ jobs:
           echo.
           echo Suggested workflow:
           echo   1) Develop in worktrees (e.g. C:\chaba_wt\...) and push branches.
-          echo   2) Merge in GitHub or in C:\chaba, then deploy from C:\chaba with a complete stacks\pc1-stack\.env.
+          echo   2) (Optional) Smoke deploy a branch from C:\chaba.
+          echo   3) Merge to main, then deploy from C:\chaba with complete secrets.
           echo.
-          echo Example commands:
-          echo   ^> git push -u origin HEAD
-          echo   ^> (in C:\chaba) git switch main ^&^& git pull
-          echo   ^> (in C:\chaba) git merge origin\<branch-name>
-          echo   ^> (in C:\chaba) docker compose --profile mcp-suite -f stacks\pc1-stack\docker-compose.yml up -d --build
+          echo Example branch smoke deploy:
+          echo   ^> pwsh -File C:\chaba\scripts\deploy-branch.ps1 -Branch <branch-name>
           echo.
           if /I NOT "%GITHUB_WORKSPACE%"=="C:\chaba" (
             echo NOTE: Runner workspace is "%GITHUB_WORKSPACE%" (this is normal for GitHub Actions).
@@ -101,13 +99,11 @@ jobs:
           echo.
           echo Suggested workflow:
           echo   1) Develop in worktrees (e.g. C:\chaba_wt\...) and push branches.
-          echo   2) Merge in GitHub or in C:\chaba, then deploy from C:\chaba with a complete stacks\pc2-worker\.env.
+          echo   2) (Optional) Smoke deploy a branch from C:\chaba.
+          echo   3) Merge to main, then deploy from C:\chaba with complete secrets.
           echo.
-          echo Example commands:
-          echo   ^> git push -u origin HEAD
-          echo   ^> (in C:\chaba) git switch main ^&^& git pull
-          echo   ^> (in C:\chaba) git merge origin\<branch-name>
-          echo   ^> (in C:\chaba) docker compose --profile mcp-suite -f stacks\pc2-worker\docker-compose.yml up -d --build
+          echo Example branch smoke deploy:
+          echo   ^> pwsh -File C:\chaba\scripts\deploy-branch.ps1 -Branch <branch-name>
           echo.
           if /I NOT "%GITHUB_WORKSPACE%"=="C:\chaba" (
             echo NOTE: Runner workspace is "%GITHUB_WORKSPACE%" (this is normal for GitHub Actions).
