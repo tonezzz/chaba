@@ -34,11 +34,19 @@ const els = {
   imageWrap: document.getElementById('imageWrap'),
   imagePlaceholder: document.getElementById('imagePlaceholder'),
   resultImage: document.getElementById('resultImage'),
-  rawOutput: document.getElementById('rawOutput')
+  rawOutput: document.getElementById('rawOutput'),
+  imageUrlInput: document.getElementById('imageUrlInput'),
+  copyJsonBtn: document.getElementById('copyJsonBtn'),
+  copyImageUrlBtn: document.getElementById('copyImageUrlBtn'),
+  openImageBtn: document.getElementById('openImageBtn'),
+  downloadImageBtn: document.getElementById('downloadImageBtn'),
+  refreshBackendBtn: document.getElementById('refreshBackendBtn')
 };
 
 const state = {
-  isBusy: false
+  isBusy: false,
+  lastJsonText: '',
+  lastImageUrl: ''
 };
 
 const setStatus = (text) => {
@@ -63,6 +71,49 @@ const setBusy = (busy) => {
   if (els.generateBtn) {
     els.generateBtn.disabled = state.isBusy;
     els.generateBtn.textContent = state.isBusy ? 'Generating…' : 'Generate';
+  }
+  const disabled = state.isBusy;
+  if (els.copyJsonBtn) els.copyJsonBtn.disabled = disabled;
+  if (els.copyImageUrlBtn) els.copyImageUrlBtn.disabled = disabled || !state.lastImageUrl;
+  if (els.openImageBtn) els.openImageBtn.disabled = disabled || !state.lastImageUrl;
+  if (els.downloadImageBtn) els.downloadImageBtn.disabled = disabled || !state.lastImageUrl;
+  if (els.refreshBackendBtn) els.refreshBackendBtn.disabled = disabled;
+};
+
+const setResultJson = (payload) => {
+  const text = payload ? JSON.stringify(payload, null, 2) : '';
+  state.lastJsonText = text;
+  if (els.rawOutput) {
+    els.rawOutput.textContent = text || '// Awaiting response…';
+  }
+};
+
+const setImageUrl = (url) => {
+  state.lastImageUrl = typeof url === 'string' ? url : '';
+  if (els.imageUrlInput) {
+    els.imageUrlInput.value = state.lastImageUrl;
+  }
+  // keep toolbar state in sync
+  setBusy(state.isBusy);
+};
+
+const parseErrorHint = (payload) => {
+  if (!payload || typeof payload !== 'object') return '';
+  const hints = Array.isArray(payload.hints) ? payload.hints.filter(Boolean) : [];
+  if (hints.length) return hints.join(' ');
+  if (typeof payload.error === 'string' && payload.error.trim()) return payload.error.trim();
+  if (typeof payload.detail === 'string' && payload.detail.trim()) return payload.detail.trim();
+  return '';
+};
+
+const copyText = async (text) => {
+  const value = (text || '').trim();
+  if (!value) return false;
+  try {
+    await navigator.clipboard.writeText(value);
+    return true;
+  } catch {
+    return false;
   }
 };
 
@@ -101,11 +152,13 @@ const showImageDataUrl = (dataUrl) => {
     els.resultImage.classList.add('hidden');
     els.imagePlaceholder.classList.remove('hidden');
     els.imagePlaceholder.textContent = 'No image returned.';
+    setImageUrl('');
     return;
   }
   els.resultImage.src = dataUrl;
   els.resultImage.classList.remove('hidden');
   els.imagePlaceholder.classList.add('hidden');
+  setImageUrl(dataUrl);
 };
 
 const tryExtractAdapterImage = (payload) => {
@@ -186,6 +239,12 @@ const probeBackend = async () => {
   }
 };
 
+const refreshBackend = async () => {
+  setStatus('Refreshing backend status…');
+  await probeBackend();
+  setStatus('Backend status refreshed.');
+};
+
 const buildGeneratePayload = () => {
   const prompt = (els.promptInput?.value || '').trim();
   const width = Number.parseInt(els.widthInput?.value, 10);
@@ -221,9 +280,7 @@ const generateImage = async () => {
   setBusy(true);
   setStatus('Generating image…');
   showImageDataUrl(null);
-  if (els.rawOutput) {
-    els.rawOutput.textContent = '// Awaiting response…';
-  }
+  setResultJson(null);
 
   try {
     const started = performance.now();
@@ -237,12 +294,11 @@ const generateImage = async () => {
 
     const data = await safeJson(response);
 
-    if (els.rawOutput) {
-      els.rawOutput.textContent = JSON.stringify(data, null, 2);
-    }
+    setResultJson(data);
 
     if (!response.ok) {
-      setStatus(`Generation failed (HTTP ${response.status}).`);
+      const hint = parseErrorHint(data);
+      setStatus(`Generation failed (HTTP ${response.status}).${hint ? ` ${hint}` : ''}`);
       return;
     }
 
@@ -265,6 +321,48 @@ const main = () => {
   renderPresets();
   probeBackend();
   setStatus('Waiting for a prompt…');
+
+  if (els.copyJsonBtn) {
+    els.copyJsonBtn.addEventListener('click', async () => {
+      if (!state.lastJsonText) return;
+      const ok = await copyText(state.lastJsonText);
+      setStatus(ok ? 'Copied JSON to clipboard.' : 'Copy failed (clipboard permission denied).');
+    });
+  }
+
+  if (els.copyImageUrlBtn) {
+    els.copyImageUrlBtn.addEventListener('click', async () => {
+      if (!state.lastImageUrl) return;
+      const ok = await copyText(state.lastImageUrl);
+      setStatus(ok ? 'Copied image URL to clipboard.' : 'Copy failed (clipboard permission denied).');
+    });
+  }
+
+  if (els.openImageBtn) {
+    els.openImageBtn.addEventListener('click', () => {
+      if (!state.lastImageUrl) return;
+      window.open(state.lastImageUrl, '_blank', 'noopener,noreferrer');
+    });
+  }
+
+  if (els.downloadImageBtn) {
+    els.downloadImageBtn.addEventListener('click', () => {
+      if (!state.lastImageUrl) return;
+      const a = document.createElement('a');
+      a.href = state.lastImageUrl;
+      a.download = 'imagen.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+  }
+
+  if (els.refreshBackendBtn) {
+    els.refreshBackendBtn.addEventListener('click', () => {
+      if (state.isBusy) return;
+      refreshBackend();
+    });
+  }
 
   if (els.form) {
     els.form.addEventListener('submit', (event) => {
