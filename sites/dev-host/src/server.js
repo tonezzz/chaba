@@ -47,15 +47,18 @@ const MCP0_PROXY_TARGET =
 const workspaceRoot = path.resolve(__dirname, '..', '..');
 
 const resolveSitePath = (...segments) => {
-  const direct = path.join(workspaceRoot, ...segments);
-  if (fs.existsSync(direct)) {
-    return direct;
+  const roots = [workspaceRoot, path.resolve(workspaceRoot, '..')];
+  for (const root of roots) {
+    const direct = path.join(root, ...segments);
+    if (fs.existsSync(direct)) {
+      return direct;
+    }
+    const nested = path.join(root, 'sites', ...segments);
+    if (fs.existsSync(nested)) {
+      return nested;
+    }
   }
-  const nested = path.join(workspaceRoot, 'sites', ...segments);
-  if (fs.existsSync(nested)) {
-    return nested;
-  }
-  return direct;
+  return path.join(workspaceRoot, ...segments);
 };
 
 const testLandingRoot = resolveSitePath('a1-idc1', 'test');
@@ -72,6 +75,12 @@ const additionalStaticRoutes = [
       resolveSitePath('a1-idc1', 'test', 'agents'),
       resolveSitePath('a1-idc1', 'www', 'test', 'agents')
     ],
+    spa: true,
+    skipApiFallback: true
+  },
+  {
+    basePath: '/test/agens',
+    roots: [resolveSitePath('mcp', 'mcp-agents', 'www', 'test', 'agens')],
     spa: true,
     skipApiFallback: true
   },
@@ -234,6 +243,18 @@ const buildSiteRouter = (site) => {
 };
 
 app.use(morgan('dev'));
+
+app.get('/favicon.svg', (_req, res) => {
+  const candidates = [
+    resolveSitePath('site-man', 'public', 'favicon.svg'),
+    resolveSitePath('mcp', 'mcp-instrans', 'public', 'favicon.svg')
+  ];
+  const faviconPath = candidates.find((candidate) => fs.existsSync(candidate));
+  if (!faviconPath) {
+    return res.status(404).end();
+  }
+  return res.sendFile(faviconPath);
+});
 
 const mountTestStaticRoutes = () => {
   const testLandingRoot = resolveSitePath('a1-idc1', 'test');
@@ -401,6 +422,11 @@ const wireProxies = () => {
   mountProxy('/test/agents/api', AGENTS_PROXY_TARGET, {
     id: 'test-agents-api',
     pathRewrite: (path) => path.replace(/^\/test\/agents\/api/i, '/api')
+  });
+
+  mountProxy('/test/agens/api', AGENTS_PROXY_TARGET, {
+    id: 'test-agens-api',
+    pathRewrite: (path) => path.replace(/^\/test\/agens\/api/i, '/api')
   });
 
   mountProxy('/test/chat/api', GLAMA_PROXY_TARGET, {
