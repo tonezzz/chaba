@@ -175,6 +175,27 @@ const executeScenario = async (scenario, { browserName, timeout }) => {
             timeout: action.timeout || timeout || DEFAULT_TIMEOUT
           });
           break;
+        case 'set_value': {
+          if (!action.selector) {
+            throw new Error('set_value requires selector');
+          }
+          const value = action.value ?? '';
+          await page.evaluate(
+            ({ selector, value }) => {
+              const el = document.querySelector(selector);
+              if (!el) {
+                throw new Error(`set_value: selector not found: ${selector}`);
+              }
+              el.value = String(value);
+              try {
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+              } catch (e) {}
+            },
+            { selector: action.selector, value }
+          );
+          break;
+        }
         case 'press':
           await page.press(action.selector, action.key, {
             timeout: action.timeout || timeout || DEFAULT_TIMEOUT
@@ -209,6 +230,101 @@ const executeScenario = async (scenario, { browserName, timeout }) => {
       text: `Scenario '${scenario.name || 'unnamed'}' completed in ${Math.round(
         performance.now() - start
       )} ms`
+    });
+  });
+
+  return outputs;
+};
+
+const executeFlow = async ({ actions, browserName, timeout }) => {
+  if (!Array.isArray(actions) || !actions.length) {
+    throw new Error('Flow must include an actions array');
+  }
+
+  const outputs = [];
+  await withPage({ browserName }, async (page) => {
+    const start = performance.now();
+
+    for (const action of actions) {
+      const type = String(action?.type || '').toLowerCase();
+      if (!type) {
+        throw new Error('Flow action is missing type');
+      }
+      switch (type) {
+        case 'goto':
+          await page.goto(action.url, {
+            waitUntil: action.waitUntil || 'load',
+            timeout: action.timeout || timeout || DEFAULT_TIMEOUT
+          });
+          break;
+        case 'wait_for_selector':
+          await page.waitForSelector(action.selector, {
+            timeout: action.timeout || timeout || DEFAULT_TIMEOUT,
+            state: action.state || 'visible'
+          });
+          break;
+        case 'click':
+          await page.click(action.selector, { timeout: action.timeout || timeout || DEFAULT_TIMEOUT });
+          break;
+        case 'fill':
+          await page.fill(action.selector, action.value || '', {
+            timeout: action.timeout || timeout || DEFAULT_TIMEOUT
+          });
+          break;
+        case 'press':
+          await page.press(action.selector, action.key, {
+            timeout: action.timeout || timeout || DEFAULT_TIMEOUT
+          });
+          break;
+        case 'delay':
+          await page.waitForTimeout(Number(action.ms || action.duration || 500));
+          break;
+        case 'screenshot': {
+          const fileName = action.file || `${Date.now()}-${Math.random().toString(36).slice(2)}.png`;
+          const targetPath = path.join(OUTPUT_DIR, fileName);
+          await page.screenshot({
+            path: targetPath,
+            fullPage: Boolean(action.fullPage ?? true),
+            type: action.format === 'jpeg' ? 'jpeg' : 'png',
+            quality: action.format === 'jpeg' ? Number(action.quality || 80) : undefined
+          });
+          outputs.push({
+            type: 'file',
+            path: targetPath,
+            description: action.description || 'Flow screenshot'
+          });
+          break;
+        }
+        case 'capture_html': {
+          const html = await page.content();
+          const maxChars = Number(action.maxChars || 0);
+          const out = maxChars > 0 ? html.slice(0, maxChars) : html;
+          if (action.inline === false) {
+            const fileName = action.file || `${Date.now()}-${Math.random().toString(36).slice(2)}.html`;
+            const targetPath = path.join(OUTPUT_DIR, fileName);
+            fs.writeFileSync(targetPath, out, 'utf-8');
+            outputs.push({
+              type: 'file',
+              path: targetPath,
+              description: action.description || 'Captured HTML'
+            });
+          } else {
+            outputs.push({
+              type: 'text',
+              text: out,
+              description: action.description || 'Captured HTML'
+            });
+          }
+          break;
+        }
+        default:
+          throw new Error(`Unsupported flow action '${action.type}'`);
+      }
+    }
+
+    outputs.push({
+      type: 'text',
+      text: `Flow completed in ${Math.round(performance.now() - start)} ms`
     });
   });
 
@@ -305,6 +421,13 @@ const browserProbe = async ({ url, browser, timeout }) => {
 const TOOL_HANDLERS = {
   capture_screenshot: captureScreenshot,
   browser_probe: browserProbe,
+  run_flow: async (args = {}) => {
+    return executeFlow({
+      actions: args.actions,
+      browserName: args.browser,
+      timeout: args.timeout
+    });
+  },
   run_scenario: async (args = {}) => {
     const scenarioName = args.name || args.scenario;
     if (!scenarioName) {
@@ -362,6 +485,25 @@ const TOOL_SCHEMAS = {
         url: { type: 'string', format: 'uri' },
         browser: { type: 'string', enum: Array.from(SUPPORTED_BROWSERS) },
         timeout: { type: 'integer', minimum: 1000, maximum: 60000 }
+      }
+    }
+  },
+  run_flow: {
+    name: 'run_flow',
+    description:
+      'Execute an inline action list (goto, fill, click, waits, screenshots, capture_html) without needing a scenario file.',
+    input_schema: {
+      type: 'object',
+      required: ['actions'],
+      properties: {
+        name: { type: 'string', description: 'Optional label for this run.' },
+        browser: { type: 'string', enum: Array.from(SUPPORTED_BROWSERS) },
+        timeout: { type: 'integer', minimum: 1000, maximum: 600000 },
+        actions: {
+          type: 'array',
+          minItems: 1,
+          items: { type: 'object' }
+        }
       }
     }
   },

@@ -1,7 +1,7 @@
-FROM mcr.microsoft.com/playwright:v1.48.2-jammy
+FROM mcr.microsoft.com/playwright:v1.57.0-jammy
 
 ENV NODE_ENV=production \
-    PORT=8025
+    PORT=8260
 
 WORKDIR /app
 
@@ -12,6 +12,6 @@ COPY . .
 
 RUN mkdir -p /app/output /app/scenarios
 
-EXPOSE 8025
+EXPOSE $PORT
 
 CMD ["node", "index.js"]
