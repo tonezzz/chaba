@@ -111,145 +111,12 @@ services:
       timeout: 5s
       retries: 3
 
-  mcp-glama:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ${MCP_GLAMA_BUILD_CONTEXT:-../../mcp/mcp-glama}
-    container_name: pc1-mcp-glama
-    ports:
-      - "${MCP_GLAMA_PORT:-7241}:8014"
-    environment:
-      PORT: 8014
-      GLAMA_API_URL: ${GLAMA_API_URL:-}
-      GLAMA_API_KEY: ${GLAMA_API_KEY:-}
-      GLAMA_MODEL: ${GLAMA_MODEL:-gpt-4o-mini}
-      GLAMA_TEMPERATURE: ${GLAMA_TEMPERATURE:-0.2}
-      GLAMA_MAX_TOKENS: ${GLAMA_MAX_TOKENS:-900}
-      GLAMA_TIMEOUT_SECONDS: ${GLAMA_TIMEOUT_SECONDS:-30}
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8014/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
-  mcp-github-models:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ${MCP_GITHUB_MODELS_BUILD_CONTEXT:-../../mcp/mcp-github-models}
-    container_name: pc1-mcp-github-models
-    ports:
-      - "${MCP_GITHUB_MODELS_PORT:-7242}:8015"
-    environment:
-      PORT: 8015
-      GITHUB_MODELS_API_URL: ${GITHUB_MODELS_API_URL:-}
-      GITHUB_MODELS_API_KEY: ${GITHUB_MODELS_API_KEY:-}
-      GITHUB_MODELS_MODEL: ${GITHUB_MODELS_MODEL:-gpt-4o-mini}
-      GITHUB_MODELS_TEMPERATURE: ${GITHUB_MODELS_TEMPERATURE:-0.2}
-      GITHUB_MODELS_MAX_TOKENS: ${GITHUB_MODELS_MAX_TOKENS:-900}
-      GITHUB_MODELS_TIMEOUT_SECONDS: ${GITHUB_MODELS_TIMEOUT_SECONDS:-30}
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8015/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
-  mcp-openai-gateway:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ${MCP_OPENAI_GATEWAY_BUILD_CONTEXT:-../../mcp/mcp-openai-gateway}
-    container_name: pc1-mcp-openai-gateway
-    ports:
-      - "${MCP_OPENAI_GATEWAY_PORT:-8181}:8181"
-    environment:
-      PORT: 8181
-      OPENAI_GATEWAY_MODEL_ID: ${OPENAI_GATEWAY_MODEL_ID:-glama-default}
-      OPENAI_GATEWAY_TIMEOUT_SECONDS: ${OPENAI_GATEWAY_TIMEOUT_SECONDS:-60}
-      OPENAI_GATEWAY_DEBUG: ${OPENAI_GATEWAY_DEBUG:-0}
-      OPENAI_GATEWAY_PREFER_MCP_LLM: ${OPENAI_GATEWAY_PREFER_MCP_LLM:-0}
-      OPENAI_GATEWAY_LLM_TOOL: ${OPENAI_GATEWAY_LLM_TOOL:-}
-      MCP_AGENT_URL: ${MCP_AGENT_URL:-http://1mcp-agent:${ONE_MCP_PORT:-3051}/mcp?app=openchat}
-      MCP_AGENT_URL_TOOLS: ${MCP_AGENT_URL_TOOLS:-http://1mcp-agent-dev:3052/mcp?app=openchat}
-      GLAMA_API_URL: ${GLAMA_API_URL:-}
-      GLAMA_API_KEY: ${GLAMA_API_KEY:-}
-      GLAMA_MODEL: ${GLAMA_MODEL:-gpt-4o-mini}
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8181/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
-  mcp-ws-gateway:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ${MCP_WS_GATEWAY_BUILD_CONTEXT:-../../mcp/mcp-ws-gateway}
-    container_name: pc1-mcp-ws-gateway
-    ports:
-      - "${MCP_WS_GATEWAY_PORT:-8182}:8182"
-    environment:
-      PORT: 8182
-      WS_PATH: /ws
-      OPENAI_GATEWAY_URL: http://mcp-openai-gateway:8181
-      MCP_AGENT_URL: http://1mcp-agent:${ONE_MCP_PORT:-3051}/mcp?app=windsurf
-    depends_on:
-      - mcp-openai-gateway
-      - 1mcp-agent
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8182/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
-  openchat-ui:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ${OPENCHAT_UI_BUILD_CONTEXT:-../../sites/openchat-ui}
-    container_name: pc1-openchat-ui
-    ports:
-      - "${OPENCHAT_UI_PORT:-3170}:3000"
-    environment:
-      OPENAI_API_HOST: ${OPENCHAT_OPENAI_API_HOST:-http://mcp-openai-gateway:8181}
-      OPENAI_API_KEY: ${OPENCHAT_OPENAI_API_KEY:-sk-dummy}
-      DEFAULT_MODEL: ${OPENCHAT_DEFAULT_MODEL:-glama-default}
-      NEXT_PUBLIC_DEFAULT_TEMPERATURE: ${OPENCHAT_DEFAULT_TEMPERATURE:-0.5}
-      NEXT_PUBLIC_DEFAULT_SYSTEM_PROMPT: ${OPENCHAT_DEFAULT_SYSTEM_PROMPT:-" "}
-    depends_on:
-      - mcp-openai-gateway
-
-  ollama:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    image: ollama/ollama:latest
-    container_name: pc1-ollama
-    ports:
-      - "${OLLAMA_PORT:-11435}:11434"
-    volumes:
-      - ollama-data:/root/.ollama
-    healthcheck:
-      test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/11434' || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 6
-
-  qdrant:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    image: qdrant/qdrant:latest
-    container_name: pc1-qdrant
-    ports:
-      - "${QDRANT_PORT:-6333}:6333"
-    volumes:
-      - qdrant-data:/qdrant/storage
-    healthcheck:
-      test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/6333' || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 6
-
+  
+  
+  
+  
+  
+  
   mcp-rag:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -260,10 +127,10 @@ services:
       - "${MCP_RAG_PORT:-8055}:8055"
     environment:
       PORT: 8055
-      QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
+      QDRANT_URL: ${QDRANT_URL:-http://pc1.vpn:6333}
       QDRANT_TEXT_COLLECTION: ${QDRANT_TEXT_COLLECTION:-rag_text_cuda}
       QDRANT_IMAGE_COLLECTION: ${QDRANT_IMAGE_COLLECTION:-rag_image}
-      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+      OLLAMA_URL: ${OLLAMA_URL:-http://pc1.vpn:11435}
       OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text}
       CLIP_MODEL: ${CLIP_MODEL:-clip-ViT-B-32}
       MCP_CUDA_URL: ${MCP_CUDA_URL:-http://mcp-cuda:8057}
@@ -278,35 +145,8 @@ services:
       timeout: 5s
       retries: 3
     depends_on:
-      - qdrant
-      - ollama
 
-  mcp-doc-archiver:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ${MCP_DOC_ARCHIVER_BUILD_CONTEXT:-../../mcp/mcp-doc-archiver}
-    container_name: pc1-mcp-doc-archiver
-    ports:
-      - "${MCP_DOC_ARCHIVER_PORT:-8066}:8066"
-    environment:
-      PORT: 8066
-      DOC_ARCHIVER_DATA_DIR: /data
-      DOC_ARCHIVER_MCP_RAG_URL: ${DOC_ARCHIVER_MCP_RAG_URL:-http://mcp-rag:8055}
-      DOC_ARCHIVER_OPENAI_BASE_URL: ${DOC_ARCHIVER_OPENAI_BASE_URL:-http://mcp-openai-gateway:8181}
-      DOC_ARCHIVER_OPENAI_MODEL: ${DOC_ARCHIVER_OPENAI_MODEL:-glama-default}
-      DOC_ARCHIVER_TIMEOUT_SECONDS: ${DOC_ARCHIVER_TIMEOUT_SECONDS:-60}
-    volumes:
-      - mcp-doc-archiver-data:/data
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8066/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 6
-    depends_on:
-      - mcp-rag
-      - mcp-openai-gateway
-
+  
   mcp-tester:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -334,121 +174,9 @@ services:
     volumes:
       - ${MCP_TESTER_DATA_DIR:-./data/mcp-tester}:/data
 
-  mcp-cuda:
-    <<: *default-service
-    profiles: ["gpu"]
-    build:
-      context: ${MCP_CUDA_BUILD_CONTEXT:-../../mcp/mcp-cuda}
-    container_name: pc1-mcp-cuda
-    ports:
-      - "${MCP_CUDA_PORT:-8057}:8057"
-    environment:
-      PORT: 8057
-      PC1_SDXL_MODEL_DIR: ${PC1_SDXL_MODEL_DIR:-/models/sdxl}
-    volumes:
-      - ${PC1_SDXL_MODEL_HOST_DIR:-C:/chaba/.models/sdxl}:${PC1_SDXL_MODEL_DIR:-/models/sdxl}:ro
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: ${MCP_CUDA_GPU_COUNT:-1}
-              capabilities: ["gpu"]
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8057/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
-  mcp-imagen-light:
-    <<: *default-service
-    profiles: ["gpu"]
-    build:
-      context: ${MCP_IMAGEN_LIGHT_BUILD_CONTEXT:-../../mcp/mcp-imagen-light}
-    container_name: pc1-mcp-imagen-light
-    ports:
-      - "${MCP_IMAGEN_LIGHT_PORT:-8020}:8020"
-    environment:
-      PORT: 8020
-      MCP_CUDA_URL: ${MCP_CUDA_URL:-http://mcp-cuda:8057}
-      IMAGEN_OUTPUT_DIR: ${IMAGEN_OUTPUT_DIR:-/app/images}
-      IMAGEN_BASE_URL: ${IMAGEN_BASE_URL:-http://localhost:8020}
-    volumes:
-      - mcp-imagen-light-images:/app/images
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8020/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-    depends_on:
-      - mcp-cuda
-  mcp-imagen-gpu:
-    <<: *default-service
-    profiles: ["gpu"]
-    build:
-      context: ${MCP_IMAGEN_BUILD_CONTEXT:-../../mcp/mcp-imagen}
-      args:
-        CUDA_BASE_IMAGE: ${CUDA_BASE_IMAGE:-nvidia/cuda:12.4.1-runtime-ubuntu22.04}
-        USE_GPU: "true"
-    container_name: pc1-mcp-imagen-gpu
-    ports:
-      - "${MCP_IMAGEN_PORT:-8001}:8001"
-    environment:
-      PORT: 8001
-      TORCH_DEVICE: cuda
-      IMAGE_MODEL_ID: ${IMAGE_MODEL_ID:-runwayml/stable-diffusion-v1-5}
-      IMAGE_MODEL_CACHE: /app/models
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: ${MCP_IMAGEN_GPU_COUNT:-1}
-              capabilities: ["gpu"]
-    volumes:
-      - mcp-imagen-cache:/app/models
-      - ${DIFFUSERS_CACHE_ROOT:-C:/_dev/_models/diffusers}:/app/models
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8001/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
-  mcp-devops:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ${MCP_DEVOPS_BUILD_CONTEXT:-../../mcp/mcp-devops}
-    container_name: pc1-mcp-devops
-    ports:
-      - "${MCP_DEVOPS_PORT:-8325}:${MCP_DEVOPS_PORT:-8325}"
-    environment:
-      MCP_DEVOPS_PORT: ${MCP_DEVOPS_PORT:-8325}
-      MCP_DEVOPS_HOST: 0.0.0.0
-      MCP_DEVOPS_REPO_ROOT: /workspaces/chaba
-      DEV_HOST_BASE_URL: ${DEV_HOST_BASE_URL:-http://dev-host:3000}
-      DEV_HOST_PC2_BASE_URL: ${DEV_HOST_PC2_BASE_URL:-http://dev-host.pc2:3000}
-      MCP_DEVOPS_JSON_LIMIT: ${MCP_DEVOPS_JSON_LIMIT:-2mb}
-    volumes:
-      - ../../:/workspaces/chaba:cached
-      - //var/run/docker.sock:/var/run/docker.sock
-
-  dev-host:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ${DEV_HOST_BUILD_CONTEXT:-../../docker/dev-host}
-      dockerfile: Dockerfile
-    container_name: pc1-dev-host
-    hostname: dev-host
-    ports:
-      - "${DEV_HOST_SSH_PORT:-2223}:22"
-      - "${DEV_HOST_HTTP_PORT:-3100}:3000"
-    environment:
-      NODE_ENV: development
-    volumes:
-      - ../../:/workspace:cached
-
+  
+  
+  
   mcp-http:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -477,7 +205,7 @@ services:
     environment:
       PORT: 8016
       MCP_TASK_DB_PATH: /data/sqlite/mcp-task.sqlite
-      MCP_TASK_SERVERS: '[{"name":"mcp-devops","url":"http://mcp-devops:${MCP_DEVOPS_PORT:-8325}"},{"name":"mcp-tester","url":"http://mcp-tester:${MCP_TESTER_PORT:-8335}"}]'
+      MCP_TASK_SERVERS: '[{"name":"mcp-devops","url":"http://pc1.vpn:8325"},{"name":"mcp-tester","url":"http://mcp-tester:${MCP_TESTER_PORT:-8335}"}]'
     volumes:
       - stack-sqlite:/data/sqlite
     healthcheck:
@@ -485,9 +213,7 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-    depends_on:
-      - mcp-devops
-
+    
   mcp-playwright:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -512,41 +238,14 @@ services:
       timeout: 5s
       retries: 3
 
-  authentik-postgres:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    image: postgres:16
-    environment:
-      POSTGRES_DB: ${AUTHENTIK_POSTGRES_DB:-authentik}
-      POSTGRES_USER: ${AUTHENTIK_POSTGRES_USER:-authentik}
-      POSTGRES_PASSWORD: ${AUTHENTIK_POSTGRES_PASSWORD:-please-set-authentik-postgres-password}
-    volumes:
-      - authentik-postgres:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${AUTHENTIK_POSTGRES_USER:-authentik} -d ${AUTHENTIK_POSTGRES_DB:-authentik} || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-
-  authentik-redis:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    image: redis:7
-    command: ["redis-server", "--save", "", "--appendonly", "no"]
-    healthcheck:
-      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-
   authentik-server:
     <<: *default-service
     profiles: ["mcp-suite"]
     image: ghcr.io/goauthentik/server:2024.8.3
     command: ["server"]
     environment:
-      AUTHENTIK_REDIS__HOST: authentik-redis
-      AUTHENTIK_POSTGRESQL__HOST: authentik-postgres
+      AUTHENTIK_REDIS__HOST: pc1.vpn
+      AUTHENTIK_POSTGRESQL__HOST: pc1.vpn
       AUTHENTIK_POSTGRESQL__USER: ${AUTHENTIK_POSTGRES_USER:-authentik}
       AUTHENTIK_POSTGRESQL__NAME: ${AUTHENTIK_POSTGRES_DB:-authentik}
       AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_POSTGRES_PASSWORD:-please-set-authentik-postgres-password}
@@ -557,9 +256,6 @@ services:
     volumes:
       - authentik-media:/media
       - authentik-templates:/templates
-    depends_on:
-      - authentik-postgres
-      - authentik-redis
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:9000/-/health/live/ || exit 1"]
       interval: 30s
@@ -572,8 +268,8 @@ services:
     image: ghcr.io/goauthentik/server:2024.8.3
     command: ["worker"]
     environment:
-      AUTHENTIK_REDIS__HOST: authentik-redis
-      AUTHENTIK_POSTGRESQL__HOST: authentik-postgres
+      AUTHENTIK_REDIS__HOST: pc1.vpn
+      AUTHENTIK_POSTGRESQL__HOST: pc1.vpn
       AUTHENTIK_POSTGRESQL__USER: ${AUTHENTIK_POSTGRES_USER:-authentik}
       AUTHENTIK_POSTGRESQL__NAME: ${AUTHENTIK_POSTGRES_DB:-authentik}
       AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_POSTGRES_PASSWORD:-please-set-authentik-postgres-password}
@@ -584,52 +280,9 @@ services:
     volumes:
       - authentik-media:/media
       - authentik-templates:/templates
-    depends_on:
-      - authentik-postgres
-      - authentik-redis
 
-  minio:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    image: minio/minio:RELEASE.2024-08-17T01-24-54Z
-    command: ["server", "/data", "--console-address", ":9001"]
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-please-set-minio-root-password}
-      MINIO_IDENTITY_OPENID_CONFIG_URL: ${MINIO_IDENTITY_OPENID_CONFIG_URL:-}
-      MINIO_IDENTITY_OPENID_CLIENT_ID: ${MINIO_IDENTITY_OPENID_CLIENT_ID:-}
-      MINIO_IDENTITY_OPENID_CLIENT_SECRET: ${MINIO_IDENTITY_OPENID_CLIENT_SECRET:-}
-      MINIO_IDENTITY_OPENID_DISPLAY_NAME: ${MINIO_IDENTITY_OPENID_DISPLAY_NAME:-Authentik}
-      MINIO_IDENTITY_OPENID_CLAIM_NAME: ${MINIO_IDENTITY_OPENID_CLAIM_NAME:-policy}
-      MINIO_IDENTITY_OPENID_SCOPES: ${MINIO_IDENTITY_OPENID_SCOPES:-openid,profile,email}
-      MINIO_IDENTITY_OPENID_REDIRECT_URI_DYNAMIC: ${MINIO_IDENTITY_OPENID_REDIRECT_URI_DYNAMIC:-on}
-    volumes:
-      - minio-data:/data
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:9000/minio/health/live || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-
-  vault:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    image: hashicorp/vault:1.17
-    cap_add:
-      - IPC_LOCK
-    environment:
-      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN_ID:-please-set-vault-dev-root-token}
-      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
-      VAULT_UI: "true"
-    command: ["server", "-dev"]
-    volumes:
-      - vault-dev:/vault/file
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8200/v1/sys/health >/dev/null 2>&1 || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-
+  
+  
   mcp-quickchart:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -653,22 +306,7 @@ services:
       timeout: 5s
       retries: 3
 
-  caddy:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    image: caddy:2
-    container_name: pc1-caddy
-    ports:
-      - "${PC1_CADDY_HTTP_PORT:-3080}:80"
-      - "${PC1_CADDY_HTTPS_PORT:-3443}:443"
-    volumes:
-      - ${PC1_WORKSPACE_HOST_DIR:-C:/chaba}/stacks/pc1-stack/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
-    depends_on:
-      - dev-host
-
-networks:
+  networks:
   pc1-stack-net:
     driver: bridge
 

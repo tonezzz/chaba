@@ -1,0 +1,40 @@
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - ${PC1_DEVOPS_ENV_FILE:-.env}
+  networks:
+    - pc1-devops-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  mcp-devops:
+    <<: *default-service
+    build:
+      context: ${MCP_DEVOPS_BUILD_CONTEXT:-../../mcp/mcp-devops}
+    container_name: pc1-devops-mcp-devops
+    ports:
+      - "${MCP_DEVOPS_PORT:-8325}:8325"
+    environment:
+      PORT: 8325
+      DEVOPS_WORKSPACE_DIR: ${DEVOPS_WORKSPACE_DIR:-/workspaces}
+      DEVOPS_DOCKER_SOCKET: ${DEVOPS_DOCKER_SOCKET:-/var/run/docker.sock}
+    volumes:
+      - ${PC1_WORKSPACE_HOST_DIR:-C:/chaba}:/workspaces/chaba:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8325/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  pc1-devops-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16

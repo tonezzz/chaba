@@ -1,0 +1,43 @@
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - ${PC1_DEKA_ENV_FILE:-.env}
+  networks:
+    - pc1-deka-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  mcp-deka:
+    <<: *default-service
+    build:
+      context: ${MCP_DEKA_BUILD_CONTEXT:-../../mcp/mcp-deka}
+    container_name: pc1-deka-mcp-deka
+    ports:
+      - "${MCP_DEKA_PORT:-8270}:8270"
+    environment:
+      PORT: 8270
+      DEKA_BASE_URL: ${DEKA_BASE_URL:-http://deka.supremecourt.or.th/}
+      DEKA_TIMEOUT_MS: ${DEKA_TIMEOUT_MS:-45000}
+      DEKA_MAX_PAGES: ${DEKA_MAX_PAGES:-200}
+      DEKA_MAX_CHARS: ${DEKA_MAX_CHARS:-450000}
+    volumes:
+      - mcp-deka-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8270/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  pc1-deka-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+
+volumes:
+  mcp-deka-data:

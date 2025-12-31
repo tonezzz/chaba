@@ -1,0 +1,45 @@
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - ${PC1_GPU_ENV_FILE:-.env}
+  networks:
+    - pc1-gpu-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  mcp-cuda:
+    <<: *default-service
+    build:
+      context: ${MCP_CUDA_BUILD_CONTEXT:-../../mcp/mcp-cuda}
+    container_name: pc1-gpu-mcp-cuda
+    ports:
+      - "${MCP_CUDA_PORT:-8057}:8057"
+    environment:
+      PORT: 8057
+      PC1_SDXL_MODEL_DIR: ${PC1_SDXL_MODEL_DIR:-/models/sdxl}
+    volumes:
+      - ${PC1_SDXL_MODEL_HOST_DIR:-C:/chaba/.models/sdxl}:${PC1_SDXL_MODEL_DIR:-/models/sdxl}:ro
+      - /dev/dri:/dev/dri
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: ${MCP_CUDA_GPU_COUNT:-1}
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8057/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  pc1-gpu-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
