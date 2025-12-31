@@ -60,6 +60,7 @@ services:
     hostname: dev-host
     ports:
       - "${DEV_HOST_SSH_PORT:-2223}:22"
+      - "${DEV_HOST_HTTP_PORT:-3100}:3000"
     environment:
       DEV_HOST_BASE_URL: ${DEV_HOST_BASE_URL:-http://pc1.vpn:3000}
       DEV_HOST_PC2_BASE_URL: ${DEV_HOST_PC2_BASE_URL:-http://dev-host.pc2:3000}
