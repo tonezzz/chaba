@@ -111,18 +111,6 @@
             "description": "DevOps workflows and automation",
             "containers": [
                 {
-                    "name": "pc1-mcp-agents",
-                    "service": "mcp-agents",
-                    "port": 8046,
-                    "purpose": "Multi-agent orchestration"
-                },
-                {
-                    "name": "pc1-mcp-tester",
-                    "service": "mcp-tester",
-                    "port": 8335,
-                    "purpose": "Service testing"
-                },
-                {
                     "name": "pc1-devops-mcp-devops",
                     "service": "mcp-devops",
                     "port": 8325,
@@ -149,8 +137,7 @@
                 {
                     "name": "pc1-web-dev-host",
                     "service": "dev-host",
-                    "port": 2223,
-                    "internal_port": 22,
+                    "ports": ["2223->22", "3100->3000"],
                     "purpose": "Development host environment"
                 }
             ]
@@ -165,69 +152,10 @@
                     "purpose": "MCP orchestration proxy"
                 },
                 {
-                    "name": "pc1-mcp-glama",
-                    "service": "mcp-glama",
-                    "port": 7241,
-                    "internal_port": 8014,
-                    "purpose": "LLM model gateway"
-                },
-                {
-                    "name": "pc1-mcp-github-models",
-                    "service": "mcp-github-models",
-                    "port": 7242,
-                    "internal_port": 8015,
-                    "purpose": "GitHub Models API"
-                },
-                {
-                    "name": "pc1-mcp-openai-gateway",
-                    "service": "mcp-openai-gateway",
-                    "port": 8181,
-                    "purpose": "OpenAI API proxy"
-                },
-                {
-                    "name": "pc1-openchat-ui",
-                    "service": "openchat-ui",
-                    "port": 3170,
-                    "internal_port": 3000,
-                    "purpose": "Chat interface UI"
-                },
-                {
-                    "name": "pc1-ollama",
-                    "service": "ollama",
-                    "port": 11435,
-                    "internal_port": 11434,
-                    "purpose": "Local LLM server"
-                },
-                {
-                    "name": "pc1-qdrant",
-                    "service": "qdrant",
-                    "port": 6333,
-                    "purpose": "Vector database"
-                },
-                {
-                    "name": "pc1-mcp-rag",
-                    "service": "mcp-rag",
-                    "port": 8055,
-                    "purpose": "RAG search & embeddings"
-                },
-                {
-                    "name": "pc1-mcp-doc-archiver",
-                    "service": "mcp-doc-archiver",
-                    "port": 8066,
-                    "purpose": "Document processing"
-                },
-                {
-                    "name": "pc1-mcp-imagen-light",
-                    "service": "mcp-imagen-light",
-                    "port": 8020,
-                    "purpose": "Image generation adapter"
-                },
-                {
-                    "name": "pc1-dev-host",
-                    "service": "dev-host",
-                    "port": 2223,
-                    "internal_port": 22,
-                    "purpose": "Development host"
+                    "name": "pc1-mcp-agents",
+                    "service": "mcp-agents",
+                    "port": 8046,
+                    "purpose": "Multi-agent orchestration"
                 },
                 {
                     "name": "pc1-mcp-http",
@@ -254,27 +182,6 @@
                     "purpose": "Chart generation"
                 },
                 {
-                    "name": "pc1-caddy",
-                    "service": "caddy",
-                    "ports": [
-                        "3080->80",
-                        "3443->443"
-                    ],
-                    "purpose": "Reverse proxy"
-                },
-                {
-                    "name": "pc1-authentik-postgres",
-                    "service": "authentik-postgres",
-                    "port": null,
-                    "purpose": "Auth database"
-                },
-                {
-                    "name": "pc1-authentik-redis",
-                    "service": "authentik-redis",
-                    "port": null,
-                    "purpose": "Auth cache"
-                },
-                {
                     "name": "pc1-authentik-server",
                     "service": "authentik-server",
                     "port": 9000,
@@ -287,19 +194,10 @@
                     "purpose": "Auth background jobs"
                 },
                 {
-                    "name": "pc1-minio",
-                    "service": "minio",
-                    "ports": [
-                        9000,
-                        9001
-                    ],
-                    "purpose": "Object storage"
-                },
-                {
-                    "name": "pc1-vault",
-                    "service": "vault",
-                    "port": 8200,
-                    "purpose": "Secrets management"
+                    "name": "pc1-mcp-tester",
+                    "service": "mcp-tester",
+                    "port": 8335,
+                    "purpose": "Service testing"
                 }
             ]
         }
