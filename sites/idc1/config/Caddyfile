@@ -68,3 +68,13 @@ http://1mcp.idc1.vpn {
 
     reverse_proxy http://127.0.0.1:3050
 }
+
+line.idc1.surf-thailand.com {
+    encode gzip zstd
+
+    reverse_proxy http://127.0.0.1:8088
+
+    log {
+        output file /var/log/caddy/line.idc1.access.log
+    }
+}
