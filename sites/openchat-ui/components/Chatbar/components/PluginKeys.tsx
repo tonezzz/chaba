@@ -75,17 +75,14 @@ export const PluginKeys = () => {
                 className="dark:border-netural-400 inline-block max-h-[400px] transform overflow-y-auto rounded-lg border border-gray-300 bg-white px-4 pt-5 pb-4 text-left align-bottom shadow-xl transition-all dark:bg-[#202123] sm:my-8 sm:max-h-[600px] sm:w-full sm:max-w-lg sm:p-6 sm:align-middle"
                 role="dialog"
               >
-                <div className="mb-10 text-4xl">Plugin Keys</div>
+                <div className="mb-10 text-4xl">{t('Plugin Keys')}</div>
 
                 <div className="mt-6 rounded border p-4">
-                  <div className="text-xl font-bold">Google Search Plugin</div>
-                  <div className="mt-4 italic">
-                    Please enter your Google API Key and Google CSE ID to enable
-                    the Google Search Plugin.
-                  </div>
+                  <div className="text-xl font-bold">{t('Google Search Plugin')}</div>
+                  <div className="mt-4 italic">{t('Please enter your Google API Key and Google CSE ID to enable the Google Search Plugin.')}</div>
 
                   <div className="mt-6 text-sm font-bold text-black dark:text-neutral-200">
-                    Google API Key
+                    {t('Google API Key')}
                   </div>
                   <input
                     className="mt-2 w-full rounded-lg border border-neutral-500 px-4 py-2 text-neutral-900 shadow focus:outline-none dark:border-neutral-800 dark:border-opacity-50 dark:bg-[#40414F] dark:text-neutral-100"
@@ -144,7 +141,7 @@ export const PluginKeys = () => {
                   />
 
                   <div className="mt-6 text-sm font-bold text-black dark:text-neutral-200">
-                    Google CSE ID
+                    {t('Google CSE ID')}
                   </div>
                   <input
                     className="mt-2 w-full rounded-lg border border-neutral-500 px-4 py-2 text-neutral-900 shadow focus:outline-none dark:border-neutral-800 dark:border-opacity-50 dark:bg-[#40414F] dark:text-neutral-100"
