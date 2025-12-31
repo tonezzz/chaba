@@ -1,0 +1,151 @@
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - ${PC1_DB_ENV_FILE:-.env}
+  networks:
+    - pc1-db-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  qdrant:
+    <<: *default-service
+    image: qdrant/qdrant:latest
+    container_name: pc1-db-qdrant
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+    environment:
+      QDRANT__SERVICE__HTTP_PORT: 6333
+      QDRANT__SERVICE__GRPC_PORT: 6334
+    volumes:
+      - qdrant-data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:6333/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-rag:
+    <<: *default-service
+    build:
+      context: ${MCP_RAG_BUILD_CONTEXT:-../../mcp/mcp-rag}
+    container_name: pc1-db-mcp-rag
+    ports:
+      - "${MCP_RAG_PORT:-8055}:8055"
+    environment:
+      PORT: 8055
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_TEXT_COLLECTION: ${QDRANT_TEXT_COLLECTION:-rag_text}
+      QDRANT_IMAGE_COLLECTION: ${QDRANT_IMAGE_COLLECTION:-rag_image}
+      OLLAMA_URL: ${OLLAMA_URL:-http://pc1.vpn:11435}
+      OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text}
+      CLIP_MODEL: ${CLIP_MODEL:-clip-ViT-B-32}
+    depends_on:
+      - qdrant
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8055/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-doc-archiver:
+    <<: *default-service
+    build:
+      context: ${MCP_DOC_ARCHIVER_BUILD_CONTEXT:-../../mcp/mcp-doc-archiver}
+    container_name: pc1-db-mcp-doc-archiver
+    ports:
+      - "${MCP_DOC_ARCHIVER_PORT:-8066}:8066"
+    environment:
+      PORT: 8066
+      DOC_ARCHIVER_DATA_DIR: /data
+    volumes:
+      - mcp-doc-archiver-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8066/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  authentik-postgres:
+    <<: *default-service
+    image: postgres:16
+    container_name: pc1-db-authentik-postgres
+    environment:
+      POSTGRES_DB: ${AUTHENTIK_POSTGRES_DB:-authentik}
+      POSTGRES_USER: ${AUTHENTIK_POSTGRES_USER:-authentik}
+      POSTGRES_PASSWORD: ${AUTHENTIK_POSTGRES_PASSWORD:-please-set-authentik-postgres-password}
+    volumes:
+      - authentik-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AUTHENTIK_POSTGRES_USER:-authentik} -d ${AUTHENTIK_POSTGRES_DB:-authentik} || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  authentik-redis:
+    <<: *default-service
+    image: redis:7
+    container_name: pc1-db-authentik-redis
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    <<: *default-service
+    image: minio/minio:RELEASE.2024-08-17T01-24-54Z
+    container_name: pc1-db-minio
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/minio/health/live || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  vault:
+    <<: *default-service
+    image: hashicorp/vault:1.17
+    container_name: pc1-db-vault
+    ports:
+      - "${VAULT_PORT:-8200}:8200"
+    environment:
+      VAULT_ADDR: http://localhost:8200
+      VAULT_API_ADDR: http://localhost:8200
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - vault-dev:/vault/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8200/v1/sys/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  pc1-db-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.23.0.0/16
+
+volumes:
+  qdrant-data:
+  mcp-doc-archiver-data:
+  authentik-postgres:
+  authentik-media:
+  authentik-templates:
+  minio-data:
+  vault-dev:
