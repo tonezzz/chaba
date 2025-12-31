@@ -197,6 +197,28 @@ services:
     depends_on:
       - mcp-openai-gateway
 
+  openchat-ui-deka:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${OPENCHAT_UI_BUILD_CONTEXT:-../../sites/openchat-ui}
+      args:
+        NEXT_PUBLIC_BASE_PATH: /test/deka
+        NEXT_PUBLIC_DEFAULT_LOCALE: th
+    container_name: pc1-openchat-ui-deka
+    ports:
+      - "${OPENCHAT_UI_DEKA_PORT:-3171}:3000"
+    environment:
+      OPENAI_API_HOST: http://deka-chat-api:8190
+      OPENAI_API_KEY: ${OPENCHAT_OPENAI_API_KEY:-sk-dummy}
+      DEFAULT_MODEL: deka-rag
+      NEXT_PUBLIC_BASE_PATH: /test/deka
+      NEXT_PUBLIC_DEFAULT_LOCALE: th
+      NEXT_PUBLIC_DEFAULT_TEMPERATURE: ${OPENCHAT_DEFAULT_TEMPERATURE:-0.5}
+      NEXT_PUBLIC_DEFAULT_SYSTEM_PROMPT: ${OPENCHAT_DEKA_SYSTEM_PROMPT:-"คุณเป็นผู้ช่วยสำหรับการสืบค้นคำพิพากษาศาลฎีกา (DEKA) เท่านั้น ตอบเป็นภาษาไทย และตอบโดยอ้างอิงเฉพาะหลักฐานจาก DEKA ที่ระบบให้มา"}
+    depends_on:
+      - deka-chat-api
+
   ollama:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -253,6 +275,56 @@ services:
     depends_on:
       - qdrant
       - ollama
+
+  mcp-rag-deka:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    image: pc1-stack-mcp-rag:latest
+    container_name: pc1-mcp-rag-deka
+    ports:
+      - "${MCP_RAG_DEKA_PORT:-8056}:8055"
+    environment:
+      PORT: 8055
+      QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
+      QDRANT_TEXT_COLLECTION: deka_text
+      QDRANT_IMAGE_COLLECTION: ${QDRANT_IMAGE_COLLECTION:-rag_image}
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+      OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text}
+      CLIP_MODEL: ${CLIP_MODEL:-clip-ViT-B-32}
+    volumes:
+      - mcp-rag-cache:/root/.cache
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8055/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 6
+    depends_on:
+      - qdrant
+      - ollama
+
+  deka-chat-api:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ../../mcp/deka-chat-api
+    container_name: pc1-deka-chat-api
+    ports:
+      - "${DEKA_CHAT_API_PORT:-8190}:8190"
+    environment:
+      PORT: 8190
+      MCP_RAG_DEKA_URL: http://mcp-rag-deka:8055
+      MCP_GLAMA_URL: http://mcp-glama:8014
+      DEKA_TOP_K: ${DEKA_TOP_K:-6}
+      DEKA_MIN_TOP_SCORE: ${DEKA_MIN_TOP_SCORE:-0.12}
+      DEKA_CHAT_TIMEOUT_SECONDS: ${DEKA_CHAT_TIMEOUT_SECONDS:-60}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8190/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - mcp-glama
+      - mcp-rag-deka
 
   mcp-tester:
     <<: *default-service
@@ -320,7 +392,32 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-    
+    depends_on:
+      - mcp-devops
+
+  mcp-deka:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_DEKA_BUILD_CONTEXT:-../../mcp/mcp-deka}
+    container_name: pc1-mcp-deka
+    ports:
+      - "${MCP_DEKA_PORT:-8270}:8270"
+    environment:
+      PORT: 8270
+      MCP_PLAYWRIGHT_BASE_URL: http://mcp-playwright:${MCP_PLAYWRIGHT_PORT:-8260}
+      MCP_DEKA_DB_PATH: /data/sqlite/mcp-deka.sqlite
+      MCP_DEKA_TIMEOUT_SECONDS: ${MCP_DEKA_TIMEOUT_SECONDS:-180}
+    volumes:
+      - stack-sqlite:/data/sqlite
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8270/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - mcp-playwright
+
   mcp-playwright:
     <<: *default-service
     profiles: ["mcp-suite"]
