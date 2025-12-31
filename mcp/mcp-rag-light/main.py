@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-import asyncio
-import json
 import os
-import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -17,7 +14,6 @@ APP_VERSION = "0.1.0"
 
 PORT = int(os.getenv("PORT", "8069"))
 MCP_CUDA_URL = (os.getenv("MCP_CUDA_URL") or "http://mcp-cuda:8057").strip().rstrip("/")
-PUBLIC_BASE_URL = (os.getenv("RAG_LIGHT_PUBLIC_BASE_URL") or f"http://pc1.vpn:{PORT}").strip().rstrip("/")
 HTTP_TIMEOUT = float(os.getenv("RAG_LIGHT_TIMEOUT_SECONDS", "60"))
 
 
@@ -43,30 +39,19 @@ class JsonRpcResponse(BaseModel):
 
 class TextEmbedArgs(BaseModel):
     texts: List[str]
+    normalize: bool = True
     model: Optional[str] = Field(default=None, description="Embedding model name")
 
 
 class ImageEmbedArgs(BaseModel):
-    images_base64: List[str]
-    model: Optional[str] = Field(default=None, description="CLIP model name")
-
-
-class SearchTextArgs(BaseModel):
-    query: str
-    limit: int = Field(default=10, ge=1, le=50)
-    model: Optional[str] = Field(default=None, description="Embedding model name")
-
-
-class SearchImageArgs(BaseModel):
-    image_base64: str
-    limit: int = Field(default=5, ge=1, le=50)
+    images_base64: List[str] = Field(..., alias="imagesBase64")
+    normalize: bool = True
     model: Optional[str] = Field(default=None, description="CLIP model name")
 
 
 class RerankTextArgs(BaseModel):
     query: str
     documents: List[str]
-    limit: int = Field(default=10, ge=1, le=50)
     model: Optional[str] = Field(default=None, description="Reranking model name")
 
 
@@ -82,19 +67,9 @@ def tool_definitions() -> List[Dict[str, Any]]:
             "inputSchema": TextEmbedArgs.model_json_schema(),
         },
         {
-            "name": "image_embed", 
+            "name": "clip_image_embed",
             "description": "Generate image embeddings using CLIP via mcp-cuda",
             "inputSchema": ImageEmbedArgs.model_json_schema(),
-        },
-        {
-            "name": "search_text",
-            "description": "Semantic text search using embeddings via mcp-cuda",
-            "inputSchema": SearchTextArgs.model_json_schema(),
-        },
-        {
-            "name": "search_image",
-            "description": "Search images by similarity using CLIP embeddings via mcp-cuda", 
-            "inputSchema": SearchImageArgs.model_json_schema(),
         },
         {
             "name": "rerank_text",
@@ -148,12 +123,15 @@ async def tools() -> Dict[str, Any]:
 
 
 async def _cuda_call(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
-    """Make a call to mcp-cuda service"""
+    """Make a call to mcp-cuda /invoke."""
     async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
-        r = await client.post(f"{MCP_CUDA_URL}/invoke", json={
-            "tool": tool_name,
-            "arguments": arguments
-        })
+        r = await client.post(
+            f"{MCP_CUDA_URL}/invoke",
+            json={
+                "tool": tool_name,
+                "arguments": arguments,
+            },
+        )
         if r.status_code >= 400:
             raise HTTPException(status_code=502, detail=f"cuda_call_failed: {r.text}")
         data = r.json()
@@ -174,19 +152,12 @@ async def invoke(payload: Dict[str, Any] = Body(...)) -> Dict[str, Any]:
         result = await _cuda_call("text_embed", parsed.model_dump(exclude_none=True))
         return {"tool": tool, "result": result}
     
-    elif tool == "image_embed":
+    elif tool == "clip_image_embed":
         parsed = ImageEmbedArgs(**args)
-        result = await _cuda_call("clip_image_embed", parsed.model_dump(exclude_none=True))
-        return {"tool": tool, "result": result}
-    
-    elif tool == "search_text":
-        parsed = SearchTextArgs(**args)
-        result = await _cuda_call("search_text", parsed.model_dump(exclude_none=True))
-        return {"tool": tool, "result": result}
-    
-    elif tool == "search_image":
-        parsed = SearchImageArgs(**args)
-        result = await _cuda_call("search_image", parsed.model_dump(exclude_none=True))
+        result = await _cuda_call(
+            "clip_image_embed",
+            parsed.model_dump(exclude_none=True, by_alias=True),
+        )
         return {"tool": tool, "result": result}
     
     elif tool == "rerank_text":
@@ -233,15 +204,12 @@ async def mcp_endpoint(payload: Dict[str, Any] = Body(...)):
             if tool_name == "text_embed":
                 parsed = TextEmbedArgs(**(arguments_raw or {}))
                 result = await _cuda_call("text_embed", parsed.model_dump(exclude_none=True))
-            elif tool_name == "image_embed":
+            elif tool_name == "clip_image_embed":
                 parsed = ImageEmbedArgs(**(arguments_raw or {}))
-                result = await _cuda_call("clip_image_embed", parsed.model_dump(exclude_none=True))
-            elif tool_name == "search_text":
-                parsed = SearchTextArgs(**(arguments_raw or {}))
-                result = await _cuda_call("search_text", parsed.model_dump(exclude_none=True))
-            elif tool_name == "search_image":
-                parsed = SearchImageArgs(**(arguments_raw or {}))
-                result = await _cuda_call("search_image", parsed.model_dump(exclude_none=True))
+                result = await _cuda_call(
+                    "clip_image_embed",
+                    parsed.model_dump(exclude_none=True, by_alias=True),
+                )
             elif tool_name == "rerank_text":
                 parsed = RerankTextArgs(**(arguments_raw or {}))
                 result = await _cuda_call("rerank", parsed.model_dump(exclude_none=True))
