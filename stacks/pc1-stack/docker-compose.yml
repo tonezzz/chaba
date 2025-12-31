@@ -50,6 +50,45 @@ services:
       - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
       - docker-mcp-venv:/opt/docker-mcp-venv
 
+  1mcp-agent-dev:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ./1mcp-agent
+    container_name: pc1-1mcp-agent-dev
+    command:
+      - 1mcp
+      - --config
+      - /root/.config/1mcp/mcp.json
+      - --transport
+      - http
+      - --enable-enhanced-security=false
+      - --host
+      - 0.0.0.0
+      - --port
+      - "3052"
+      - --external-url
+      - http://127.0.0.1:3052
+    ports:
+      - "3052:3052"
+    environment:
+      ONE_MCP_HOST: 0.0.0.0
+      ONE_MCP_PORT: 3052
+      ONE_MCP_EXTERNAL_URL: http://127.0.0.1:3052
+      ONE_MCP_LOG_LEVEL: ${ONE_MCP_LOG_LEVEL:-info}
+      ONE_MCP_CONFIG: /root/.config/1mcp/mcp.json
+      ONE_MCP_ENABLE_ASYNC_LOADING: ${ONE_MCP_ENABLE_ASYNC_LOADING:-false}
+      ONE_MCP_ENABLE_ENHANCED_SECURITY: ${ONE_MCP_ENABLE_ENHANCED_SECURITY:-false}
+      UV_PYTHON: python3
+      UV_PYTHON_DOWNLOADS: never
+      UV_PROJECT_ENVIRONMENT: /tmp/uv-project
+    volumes:
+      - ${PC1_WORKSPACE_HOST_DIR:-C:/chaba}/stacks/pc1-stack/1mcp-dev.json:/root/.config/1mcp/mcp.json:ro
+      - "${PC1_WORKSPACE_HOST_DIR:-C:/chaba}:/workspaces/chaba:cached"
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
+      - docker-mcp-venv:/opt/docker-mcp-venv
+
   mcp-agents:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -241,3 +280,9 @@ volumes:
   authentik-media:
   authentik-templates:
   quickchart-data:
+  mcp-imagen-cache:
+  qdrant-data:
+  ollama-data:
+  mcp-rag-cache:
+  mcp-doc-archiver-data:
+  mcp-imagen-light-images:
