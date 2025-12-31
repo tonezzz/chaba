@@ -32,6 +32,8 @@ MCP_AGENT_URL = (
     or "http://1mcp-agent:3051/mcp?app=openchat"
 ).strip()
 
+MCP_AGENT_URL_TOOLS = (os.getenv("MCP_AGENT_URL_TOOLS") or "").strip()
+
 GATEWAY_MODEL_ID = (os.getenv("OPENAI_GATEWAY_MODEL_ID") or "glama-default").strip()
 
 REQUEST_TIMEOUT_SECONDS = float(os.getenv("OPENAI_GATEWAY_TIMEOUT_SECONDS", "60"))
@@ -51,6 +53,13 @@ app = FastAPI(title=APP_NAME, version=APP_VERSION)
 
 _mcp_session_id: Optional[str] = None
 _mcp_session_lock = asyncio.Lock()
+
+_mcp_tools_session_id: Optional[str] = None
+_mcp_tools_session_lock = asyncio.Lock()
+
+_tool_routing_lock = asyncio.Lock()
+_tool_routing_updated_at: float = 0.0
+_tool_routing: Dict[str, str] = {}
 
 
 class ChatMessage(BaseModel):
@@ -147,6 +156,56 @@ async def _mcp_initialize_if_needed() -> Optional[str]:
         return _mcp_session_id
 
 
+async def _mcp_tools_initialize_if_needed() -> Optional[str]:
+    global _mcp_tools_session_id
+
+    if not MCP_AGENT_URL_TOOLS:
+        return None
+
+    async with _mcp_tools_session_lock:
+        if _mcp_tools_session_id:
+            return _mcp_tools_session_id
+
+        payload = {
+            "jsonrpc": "2.0",
+            "id": str(uuid.uuid4()),
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {"tools": {}, "resources": {}, "prompts": {}},
+                "clientInfo": {"name": APP_NAME, "version": APP_VERSION},
+            },
+        }
+
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/event-stream",
+        }
+
+        async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT_SECONDS) as client:
+            r = await client.post(MCP_AGENT_URL_TOOLS, json=payload, headers=headers)
+            r.raise_for_status()
+
+            sid = r.headers.get("mcp-session-id")
+            if sid:
+                _mcp_tools_session_id = sid
+
+            if _mcp_tools_session_id:
+                notif = {
+                    "jsonrpc": "2.0",
+                    "method": "notifications/initialized",
+                    "params": {},
+                }
+                notif_headers = {
+                    **headers,
+                    "mcp-session-id": _mcp_tools_session_id,
+                }
+                r2 = await client.post(MCP_AGENT_URL_TOOLS, json=notif, headers=notif_headers)
+                r2.raise_for_status()
+
+        return _mcp_tools_session_id
+
+
 async def _mcp_rpc(method: str, params: Dict[str, Any]) -> Any:
     payload = {"jsonrpc": "2.0", "id": str(uuid.uuid4()), "method": method, "params": params}
 
@@ -179,14 +238,49 @@ async def _mcp_rpc(method: str, params: Dict[str, Any]) -> Any:
     return data.get("result")
 
 
+async def _mcp_tools_rpc(method: str, params: Dict[str, Any]) -> Any:
+    if not MCP_AGENT_URL_TOOLS:
+        raise RuntimeError("mcp_tools_backend_unconfigured")
+
+    payload = {"jsonrpc": "2.0", "id": str(uuid.uuid4()), "method": method, "params": params}
+
+    session_id = await _mcp_tools_initialize_if_needed()
+    url = MCP_AGENT_URL_TOOLS
+
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json, text/event-stream",
+    }
+    if session_id:
+        headers["mcp-session-id"] = session_id
+
+    async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT_SECONDS) as client:
+        r = await client.post(url, json=payload, headers=headers)
+        r.raise_for_status()
+        content_type = (r.headers.get("content-type") or "").lower()
+
+        if "text/event-stream" in content_type:
+            parsed = _parse_first_sse_message(r.text)
+            if not parsed:
+                raise RuntimeError("mcp_sse_parse_failed")
+            data = parsed
+        else:
+            data = r.json()
+
+    if data.get("error"):
+        raise RuntimeError(data["error"].get("message") or "mcp_error")
+    return data.get("result")
+
+
 async def _mcp_tools_list() -> List[Dict[str, Any]]:
-    try:
-        res = await _mcp_rpc("tools/list", {})
-    except Exception as e:
-        if DEBUG:
-            print(f"[{APP_NAME}] tools/list failed: {e}")
-        return []
-    tools = (res or {}).get("tools") or []
+    async with _tool_routing_lock:
+        now = time.time()
+        # Refresh tool routing occasionally so we can route calls to the correct backend.
+        if now - _tool_routing_updated_at > 20:
+            await _refresh_tool_routing_locked(now)
+
+        tools = await _collect_tools_for_openai_locked()
+
     out: List[Dict[str, Any]] = []
 
     def _sanitize_openai_function_parameters_schema(schema: Any) -> Optional[Dict[str, Any]]:
@@ -229,6 +323,67 @@ async def _mcp_tools_list() -> List[Dict[str, Any]]:
             }
         )
     return out
+
+
+async def _refresh_tool_routing_locked(now_ts: float) -> None:
+    global _tool_routing_updated_at
+    global _tool_routing
+
+    routing: Dict[str, str] = {}
+
+    # Prefer dev/tools backend when a name exists in both.
+    try:
+        res_chat = await _mcp_rpc("tools/list", {})
+        tools_chat = (res_chat or {}).get("tools") or []
+        for t in tools_chat:
+            name = str((t or {}).get("name") or "").strip()
+            if name:
+                routing[name] = "chat"
+    except Exception as e:
+        if DEBUG:
+            print(f"[{APP_NAME}] tools/list (chat backend) failed: {e}")
+
+    if MCP_AGENT_URL_TOOLS:
+        try:
+            res_tools = await _mcp_tools_rpc("tools/list", {})
+            tools_tools = (res_tools or {}).get("tools") or []
+            for t in tools_tools:
+                name = str((t or {}).get("name") or "").strip()
+                if name:
+                    routing[name] = "tools"
+        except Exception as e:
+            if DEBUG:
+                print(f"[{APP_NAME}] tools/list (tools backend) failed: {e}")
+
+    _tool_routing = routing
+    _tool_routing_updated_at = now_ts
+
+
+async def _collect_tools_for_openai_locked() -> List[Dict[str, Any]]:
+    # Merge tool definitions from both backends, dedupe by name.
+    # If a tool is present in both, prefer the tools backend.
+    merged: Dict[str, Dict[str, Any]] = {}
+
+    try:
+        res_chat = await _mcp_rpc("tools/list", {})
+        for t in (res_chat or {}).get("tools") or []:
+            name = str((t or {}).get("name") or "").strip()
+            if name:
+                merged[name] = t
+    except Exception:
+        pass
+
+    if MCP_AGENT_URL_TOOLS:
+        try:
+            res_tools = await _mcp_tools_rpc("tools/list", {})
+            for t in (res_tools or {}).get("tools") or []:
+                name = str((t or {}).get("name") or "").strip()
+                if name:
+                    merged[name] = t
+        except Exception:
+            pass
+
+    return list(merged.values())
 
 
 def _tool_result_to_text(result: Any) -> str:
@@ -321,6 +476,17 @@ async def _mcp_llm_chat_safe(messages: List[Dict[str, Any]], temperature: Option
 
 
 async def _mcp_tools_invoke(name: str, arguments: Dict[str, Any]) -> Any:
+    backend = "chat"
+    try:
+        async with _tool_routing_lock:
+            backend = _tool_routing.get(name) or "chat"
+    except Exception:
+        backend = "chat"
+
+    if backend == "tools":
+        res = await _mcp_tools_rpc("tools/call", {"name": name, "arguments": arguments})
+        return res
+
     res = await _mcp_rpc("tools/call", {"name": name, "arguments": arguments})
     return res
 
@@ -511,6 +677,7 @@ async def health() -> Dict[str, Any]:
         "glamaReady": _glama_ready(),
         "timestamp": _utc_ts(),
         "mcpAgentUrl": MCP_AGENT_URL,
+        "mcpAgentUrlTools": MCP_AGENT_URL_TOOLS,
     }
 
 
@@ -521,7 +688,9 @@ async def debug_mcp() -> Any:
     return {
         "debug": True,
         "mcpAgentUrl": MCP_AGENT_URL,
+        "mcpAgentUrlTools": MCP_AGENT_URL_TOOLS,
         "mcpSessionId": _mcp_session_id,
+        "mcpToolsSessionId": _mcp_tools_session_id,
     }
 
 

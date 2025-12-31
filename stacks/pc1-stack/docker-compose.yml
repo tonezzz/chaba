@@ -50,6 +50,45 @@ services:
       - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
       - docker-mcp-venv:/opt/docker-mcp-venv
 
+  1mcp-agent-dev:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ./1mcp-agent
+    container_name: pc1-1mcp-agent-dev
+    command:
+      - 1mcp
+      - --config
+      - /root/.config/1mcp/mcp.json
+      - --transport
+      - http
+      - --enable-enhanced-security=false
+      - --host
+      - 0.0.0.0
+      - --port
+      - "3052"
+      - --external-url
+      - http://127.0.0.1:3052
+    ports:
+      - "3052:3052"
+    environment:
+      ONE_MCP_HOST: 0.0.0.0
+      ONE_MCP_PORT: 3052
+      ONE_MCP_EXTERNAL_URL: http://127.0.0.1:3052
+      ONE_MCP_LOG_LEVEL: ${ONE_MCP_LOG_LEVEL:-info}
+      ONE_MCP_CONFIG: /root/.config/1mcp/mcp.json
+      ONE_MCP_ENABLE_ASYNC_LOADING: ${ONE_MCP_ENABLE_ASYNC_LOADING:-false}
+      ONE_MCP_ENABLE_ENHANCED_SECURITY: ${ONE_MCP_ENABLE_ENHANCED_SECURITY:-false}
+      UV_PYTHON: python3
+      UV_PYTHON_DOWNLOADS: never
+      UV_PROJECT_ENVIRONMENT: /tmp/uv-project
+    volumes:
+      - ${PC1_WORKSPACE_HOST_DIR:-C:/chaba}/stacks/pc1-stack/1mcp-dev.json:/root/.config/1mcp/mcp.json:ro
+      - "${PC1_WORKSPACE_HOST_DIR:-C:/chaba}:/workspaces/chaba:cached"
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
+      - docker-mcp-venv:/opt/docker-mcp-venv
+
   mcp-agents:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -132,6 +171,7 @@ services:
       OPENAI_GATEWAY_PREFER_MCP_LLM: ${OPENAI_GATEWAY_PREFER_MCP_LLM:-0}
       OPENAI_GATEWAY_LLM_TOOL: ${OPENAI_GATEWAY_LLM_TOOL:-}
       MCP_AGENT_URL: ${MCP_AGENT_URL:-http://1mcp-agent:${ONE_MCP_PORT:-3051}/mcp?app=openchat}
+      MCP_AGENT_URL_TOOLS: ${MCP_AGENT_URL_TOOLS:-http://1mcp-agent-dev:3052/mcp?app=openchat}
       GLAMA_API_URL: ${GLAMA_API_URL:-}
       GLAMA_API_KEY: ${GLAMA_API_KEY:-}
       GLAMA_MODEL: ${GLAMA_MODEL:-gpt-4o-mini}
@@ -140,8 +180,28 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+
+  mcp-ws-gateway:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_WS_GATEWAY_BUILD_CONTEXT:-../../mcp/mcp-ws-gateway}
+    container_name: pc1-mcp-ws-gateway
+    ports:
+      - "${MCP_WS_GATEWAY_PORT:-8182}:8182"
+    environment:
+      PORT: 8182
+      WS_PATH: /ws
+      OPENAI_GATEWAY_URL: http://mcp-openai-gateway:8181
+      MCP_AGENT_URL: http://1mcp-agent:${ONE_MCP_PORT:-3051}/mcp?app=windsurf
     depends_on:
+      - mcp-openai-gateway
       - 1mcp-agent
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8182/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   openchat-ui:
     <<: *default-service
@@ -322,6 +382,37 @@ services:
       retries: 3
     depends_on:
       - mcp-cuda
+  mcp-imagen-gpu:
+    <<: *default-service
+    profiles: ["gpu"]
+    build:
+      context: ${MCP_IMAGEN_BUILD_CONTEXT:-../../mcp/mcp-imagen}
+      args:
+        CUDA_BASE_IMAGE: ${CUDA_BASE_IMAGE:-nvidia/cuda:12.4.1-runtime-ubuntu22.04}
+        USE_GPU: "true"
+    container_name: pc1-mcp-imagen-gpu
+    ports:
+      - "${MCP_IMAGEN_PORT:-8001}:8001"
+    environment:
+      PORT: 8001
+      TORCH_DEVICE: cuda
+      IMAGE_MODEL_ID: ${IMAGE_MODEL_ID:-runwayml/stable-diffusion-v1-5}
+      IMAGE_MODEL_CACHE: /app/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: ${MCP_IMAGEN_GPU_COUNT:-1}
+              capabilities: ["gpu"]
+    volumes:
+      - mcp-imagen-cache:/app/models
+      - ${DIFFUSERS_CACHE_ROOT:-C:/_dev/_models/diffusers}:/app/models
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   mcp-devops:
     <<: *default-service
@@ -592,6 +683,7 @@ volumes:
   minio-data:
   vault-dev:
   quickchart-data:
+  mcp-imagen-cache:
   qdrant-data:
   ollama-data:
   mcp-rag-cache:
