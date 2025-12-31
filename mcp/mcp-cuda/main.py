@@ -2,18 +2,24 @@ from __future__ import annotations
 
 import base64
 import io
+import json
 import os
 import subprocess
+import threading
+import time
+import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import numpy as np
 from fastapi import Body, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from PIL import Image
 from pydantic import BaseModel, Field
 from sentence_transformers import CrossEncoder, SentenceTransformer
 import torch
+from diffusers import StableDiffusionXLPipeline
 
 APP_NAME = "mcp-cuda"
 APP_VERSION = "0.1.0"
@@ -26,6 +32,13 @@ TEXT_EMBED_MODEL = (os.getenv("TEXT_EMBED_MODEL") or "all-MiniLM-L6-v2").strip()
 RERANK_MODEL = (os.getenv("RERANK_MODEL") or "cross-encoder/ms-marco-MiniLM-L-6-v2").strip()
 MAX_TEXT_ITEMS = int(os.getenv("MCP_CUDA_MAX_TEXT_ITEMS", "128"))
 MAX_RERANK_DOCS = int(os.getenv("MCP_CUDA_MAX_RERANK_DOCS", "64"))
+
+
+SDXL_MODEL_DIR = (os.getenv("MCP_CUDA_SDXL_MODEL_DIR") or "/models/sdxl").strip()
+SDXL_MAX_PIXELS = int(os.getenv("MCP_CUDA_SDXL_MAX_PIXELS", str(1024 * 1024)))
+SDXL_MAX_STEPS = int(os.getenv("MCP_CUDA_SDXL_MAX_STEPS", "60"))
+SDXL_DEFAULT_STEPS = int(os.getenv("MCP_CUDA_SDXL_DEFAULT_STEPS", "30"))
+SDXL_MAX_CONCURRENT_JOBS = int(os.getenv("MCP_CUDA_SDXL_MAX_CONCURRENT_JOBS", "1"))
 
 
 class JsonRpcRequest(BaseModel):
@@ -75,6 +88,24 @@ class RerankArgs(BaseModel):
     model: Optional[str] = None
 
 
+class ImagenJobCreateArgs(BaseModel):
+    prompt: str
+    negative_prompt: Optional[str] = Field(default=None, alias="negativePrompt")
+    width: Optional[int] = None
+    height: Optional[int] = None
+    num_inference_steps: Optional[int] = Field(default=None, alias="numInferenceSteps")
+    guidance_scale: Optional[float] = Field(default=None, alias="guidanceScale")
+    seed: Optional[int] = None
+
+
+class ImagenJobStatusArgs(BaseModel):
+    job_id: str = Field(..., alias="jobId")
+
+
+class ImagenJobResultArgs(BaseModel):
+    job_id: str = Field(..., alias="jobId")
+
+
 def _run(cmd: List[str], timeout_seconds: int = 10) -> Dict[str, Any]:
     try:
         completed = subprocess.run(
@@ -115,6 +146,233 @@ _clip_model: Optional[SentenceTransformer] = None
 
 _text_model: Optional[SentenceTransformer] = None
 _rerank_model: Optional[CrossEncoder] = None
+
+
+_sdxl_pipeline: Optional[StableDiffusionXLPipeline] = None
+_sdxl_pipeline_lock = threading.Lock()
+_sdxl_job_semaphore = threading.Semaphore(SDXL_MAX_CONCURRENT_JOBS)
+
+
+def _now_ms() -> int:
+    return int(time.time() * 1000)
+
+
+def _clamp_int(value: Optional[int], *, default: int, min_value: int, max_value: int) -> int:
+    v = default if value is None else int(value)
+    if v < min_value:
+        v = min_value
+    if v > max_value:
+        v = max_value
+    return v
+
+
+def _validate_imagen_args(args: ImagenJobCreateArgs) -> Dict[str, Any]:
+    prompt = (args.prompt or "").strip()
+    if not prompt:
+        raise HTTPException(status_code=400, detail="prompt_required")
+
+    width = _clamp_int(args.width, default=1024, min_value=256, max_value=2048)
+    height = _clamp_int(args.height, default=1024, min_value=256, max_value=2048)
+    if width * height > SDXL_MAX_PIXELS:
+        raise HTTPException(status_code=400, detail=f"too_many_pixels: max={SDXL_MAX_PIXELS}")
+
+    steps = _clamp_int(
+        args.num_inference_steps,
+        default=SDXL_DEFAULT_STEPS,
+        min_value=1,
+        max_value=SDXL_MAX_STEPS,
+    )
+    guidance_scale = float(args.guidance_scale) if args.guidance_scale is not None else 7.0
+    negative_prompt = (args.negative_prompt or "").strip() or None
+
+    seed = int(args.seed) if args.seed is not None else None
+    if seed is not None and seed < 0:
+        raise HTTPException(status_code=400, detail="seed_must_be_nonnegative")
+
+    return {
+        "prompt": prompt,
+        "negative_prompt": negative_prompt,
+        "width": width,
+        "height": height,
+        "steps": steps,
+        "guidance_scale": guidance_scale,
+        "seed": seed,
+    }
+
+
+def _get_sdxl_pipeline() -> StableDiffusionXLPipeline:
+    global _sdxl_pipeline
+    with _sdxl_pipeline_lock:
+        if _sdxl_pipeline is not None:
+            return _sdxl_pipeline
+
+        if not os.path.exists(SDXL_MODEL_DIR):
+            raise HTTPException(status_code=503, detail=f"sdxl_model_dir_missing: {SDXL_MODEL_DIR}")
+
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        torch_dtype = torch.float16 if device == "cuda" else torch.float32
+
+        pipe = StableDiffusionXLPipeline.from_pretrained(
+            SDXL_MODEL_DIR,
+            torch_dtype=torch_dtype,
+            local_files_only=True,
+        )
+        if device == "cuda":
+            pipe = pipe.to("cuda")
+        _sdxl_pipeline = pipe
+        return pipe
+
+
+def _encode_image_png_base64(img: Image.Image) -> str:
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode("ascii")
+
+
+class _ImagenJob:
+    def __init__(self, *, job_id: str, spec: Dict[str, Any]):
+        self.job_id = job_id
+        self.spec = spec
+        self.created_at_ms = _now_ms()
+        self.started_at_ms: Optional[int] = None
+        self.finished_at_ms: Optional[int] = None
+        self.status = "queued"  # queued|running|succeeded|failed
+        self.error: Optional[str] = None
+        self.progress = {"step": 0, "steps": int(spec.get("steps") or 0)}
+        self.result: Optional[Dict[str, Any]] = None
+        self._events: List[Dict[str, Any]] = []
+        self._events_cond = threading.Condition()
+        self._event_seq = 0
+
+    def add_event(self, event: Dict[str, Any]) -> None:
+        with self._events_cond:
+            self._event_seq += 1
+            payload = {
+                "seq": self._event_seq,
+                "ts": _now_ms(),
+                **event,
+            }
+            self._events.append(payload)
+            self._events_cond.notify_all()
+
+    def wait_for_events(self, *, after_seq: int, timeout_s: float) -> List[Dict[str, Any]]:
+        deadline = time.time() + timeout_s
+        with self._events_cond:
+            while True:
+                out = [e for e in self._events if int(e.get("seq") or 0) > after_seq]
+                if out:
+                    return out
+                remaining = deadline - time.time()
+                if remaining <= 0:
+                    return []
+                self._events_cond.wait(timeout=remaining)
+
+
+_imagen_jobs: Dict[str, _ImagenJob] = {}
+_imagen_jobs_lock = threading.Lock()
+
+
+def _get_job(job_id: str) -> _ImagenJob:
+    with _imagen_jobs_lock:
+        job = _imagen_jobs.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="job_not_found")
+    return job
+
+
+def _create_imagen_job(spec: Dict[str, Any]) -> _ImagenJob:
+    job_id = str(uuid.uuid4())
+    job = _ImagenJob(job_id=job_id, spec=spec)
+    with _imagen_jobs_lock:
+        _imagen_jobs[job_id] = job
+    job.add_event({"type": "queued", "jobId": job_id})
+    return job
+
+
+def _run_imagen_job(job: _ImagenJob) -> None:
+    acquired = _sdxl_job_semaphore.acquire(timeout=1)
+    if not acquired:
+        job.status = "failed"
+        job.error = "no_capacity"
+        job.finished_at_ms = _now_ms()
+        job.add_event({"type": "error", "message": job.error})
+        return
+
+    try:
+        job.started_at_ms = _now_ms()
+        job.status = "running"
+        job.add_event({"type": "started", "jobId": job.job_id})
+
+        pipe = _get_sdxl_pipeline()
+
+        seed = job.spec.get("seed")
+        if seed is None:
+            seed = int.from_bytes(os.urandom(4), "big")
+        generator = torch.Generator(device="cuda" if torch.cuda.is_available() else "cpu").manual_seed(int(seed))
+
+        steps = int(job.spec.get("steps") or 0)
+        job.progress = {"step": 0, "steps": steps}
+
+        def _cb(_pipe, step_idx: int, _timestep, _kwargs):
+            job.progress = {"step": int(step_idx) + 1, "steps": steps}
+            job.add_event(
+                {
+                    "type": "progress",
+                    "progress": job.progress,
+                }
+            )
+            return {}
+
+        out = pipe(
+            prompt=str(job.spec.get("prompt") or ""),
+            negative_prompt=job.spec.get("negative_prompt"),
+            width=int(job.spec.get("width") or 1024),
+            height=int(job.spec.get("height") or 1024),
+            num_inference_steps=steps,
+            guidance_scale=float(job.spec.get("guidance_scale") or 7.0),
+            generator=generator,
+            callback_on_step_end=_cb,
+        )
+
+        img = out.images[0]
+        img_b64 = _encode_image_png_base64(img)
+
+        job.result = {
+            "mimeType": "image/png",
+            "imageBase64": img_b64,
+            "seed": int(seed),
+            "width": int(img.width),
+            "height": int(img.height),
+            "steps": steps,
+        }
+        job.status = "succeeded"
+        job.finished_at_ms = _now_ms()
+        job.add_event({"type": "done", "jobId": job.job_id})
+    except HTTPException as exc:
+        job.status = "failed"
+        job.error = str(exc.detail)
+        job.finished_at_ms = _now_ms()
+        job.add_event({"type": "error", "message": job.error})
+    except RuntimeError as exc:
+        msg = str(exc)
+        if "out of memory" in msg.lower():
+            msg = "cuda_oom"
+        job.status = "failed"
+        job.error = msg
+        job.finished_at_ms = _now_ms()
+        job.add_event({"type": "error", "message": job.error})
+    except Exception as exc:  # noqa: BLE001
+        job.status = "failed"
+        job.error = f"unexpected_error: {exc}"
+        job.finished_at_ms = _now_ms()
+        job.add_event({"type": "error", "message": job.error})
+    finally:
+        try:
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+        except Exception:
+            pass
+        _sdxl_job_semaphore.release()
 
 
 def _get_clip_model(model_name: Optional[str]) -> SentenceTransformer:
@@ -283,6 +541,26 @@ def tool_definitions() -> List[Dict[str, Any]]:
             "description": "Rerank candidate documents for a query using a cross-encoder (GPU if available).",
             "inputSchema": RerankArgs.model_json_schema(),
         },
+        {
+            "name": "imagen_models",
+            "description": "Return available Imagen/SDXL model configuration.",
+            "inputSchema": {"type": "object", "properties": {}},
+        },
+        {
+            "name": "imagen_job_create",
+            "description": "Create an SDXL image generation job. Use the /imagen/jobs/{jobId}/events SSE endpoint for progress.",
+            "inputSchema": ImagenJobCreateArgs.model_json_schema(),
+        },
+        {
+            "name": "imagen_job_status",
+            "description": "Get status/progress for an SDXL image generation job.",
+            "inputSchema": ImagenJobStatusArgs.model_json_schema(),
+        },
+        {
+            "name": "imagen_job_result",
+            "description": "Fetch the final result for a completed SDXL image generation job (base64 PNG).",
+            "inputSchema": ImagenJobResultArgs.model_json_schema(),
+        },
     ]
 
 
@@ -409,7 +687,131 @@ async def invoke(payload: Dict[str, Any] = Body(...)) -> Dict[str, Any]:
             "result": _rerank(parsed.query, parsed.documents, model_name=parsed.model),
         }
 
+    if tool == "imagen_models":
+        return {
+            "tool": tool,
+            "result": {
+                "default": "sdxl",
+                "sdxl": {
+                    "modelDir": SDXL_MODEL_DIR,
+                    "localFilesOnly": True,
+                    "maxPixels": SDXL_MAX_PIXELS,
+                    "maxSteps": SDXL_MAX_STEPS,
+                    "maxConcurrentJobs": SDXL_MAX_CONCURRENT_JOBS,
+                },
+            },
+        }
+
+    if tool == "imagen_job_create":
+        parsed = ImagenJobCreateArgs(**args)
+        spec = _validate_imagen_args(parsed)
+        job = _create_imagen_job(spec)
+        t = threading.Thread(target=_run_imagen_job, args=(job,), daemon=True)
+        t.start()
+        return {
+            "tool": tool,
+            "result": {
+                "jobId": job.job_id,
+                "status": job.status,
+                "eventsUrl": f"/imagen/jobs/{job.job_id}/events",
+                "statusUrl": f"/imagen/jobs/{job.job_id}",
+                "resultUrl": f"/imagen/jobs/{job.job_id}/result",
+            },
+        }
+
+    if tool == "imagen_job_status":
+        parsed = ImagenJobStatusArgs(**args)
+        job = _get_job(parsed.job_id)
+        return {
+            "tool": tool,
+            "result": {
+                "jobId": job.job_id,
+                "status": job.status,
+                "progress": job.progress,
+                "error": job.error,
+                "createdAtMs": job.created_at_ms,
+                "startedAtMs": job.started_at_ms,
+                "finishedAtMs": job.finished_at_ms,
+            },
+        }
+
+    if tool == "imagen_job_result":
+        parsed = ImagenJobResultArgs(**args)
+        job = _get_job(parsed.job_id)
+        if job.status != "succeeded":
+            raise HTTPException(status_code=409, detail=f"job_not_succeeded: {job.status}")
+        if not isinstance(job.result, dict):
+            raise HTTPException(status_code=502, detail="missing_result")
+        return {
+            "tool": tool,
+            "result": {"jobId": job.job_id, **job.result},
+        }
+
     raise HTTPException(status_code=404, detail=f"unknown tool '{tool}'")
+
+
+@app.post("/imagen/jobs")
+async def imagen_jobs_create(payload: Dict[str, Any] = Body(...)) -> Dict[str, Any]:
+    parsed = ImagenJobCreateArgs(**(payload or {}))
+    spec = _validate_imagen_args(parsed)
+    job = _create_imagen_job(spec)
+    t = threading.Thread(target=_run_imagen_job, args=(job,), daemon=True)
+    t.start()
+    return {
+        "jobId": job.job_id,
+        "status": job.status,
+        "eventsUrl": f"/imagen/jobs/{job.job_id}/events",
+        "statusUrl": f"/imagen/jobs/{job.job_id}",
+        "resultUrl": f"/imagen/jobs/{job.job_id}/result",
+    }
+
+
+@app.get("/imagen/jobs/{job_id}")
+async def imagen_jobs_status(job_id: str) -> Dict[str, Any]:
+    job = _get_job(job_id)
+    return {
+        "jobId": job.job_id,
+        "status": job.status,
+        "progress": job.progress,
+        "error": job.error,
+        "createdAtMs": job.created_at_ms,
+        "startedAtMs": job.started_at_ms,
+        "finishedAtMs": job.finished_at_ms,
+    }
+
+
+@app.get("/imagen/jobs/{job_id}/result")
+async def imagen_jobs_result(job_id: str) -> Dict[str, Any]:
+    job = _get_job(job_id)
+    if job.status != "succeeded":
+        raise HTTPException(status_code=409, detail=f"job_not_succeeded: {job.status}")
+    if not isinstance(job.result, dict):
+        raise HTTPException(status_code=502, detail="missing_result")
+    return {"jobId": job.job_id, **job.result}
+
+
+@app.get("/imagen/jobs/{job_id}/events")
+async def imagen_jobs_events(job_id: str, after: int = 0):
+    job = _get_job(job_id)
+
+    def _iter():
+        last_seq = int(after or 0)
+        yield f"event: hello\ndata: {json.dumps({'jobId': job.job_id, 'after': last_seq})}\n\n"
+        while True:
+            events = job.wait_for_events(after_seq=last_seq, timeout_s=15.0)
+            if not events:
+                yield "event: ping\ndata: {}\n\n"
+                continue
+
+            for e in events:
+                last_seq = int(e.get("seq") or last_seq)
+                ev_type = str(e.get("type") or "message")
+                yield f"event: {ev_type}\ndata: {json.dumps(e)}\n\n"
+
+            if job.status in ("succeeded", "failed"):
+                return
+
+    return StreamingResponse(_iter(), media_type="text/event-stream")
 
 
 @app.post("/mcp")
@@ -500,6 +902,79 @@ async def mcp_endpoint(payload: Dict[str, Any] = Body(...)):
                     normalize=bool(parsed.normalize),
                     model_name=parsed.model,
                 )
+            except HTTPException as exc:
+                return _jsonrpc_error(request.id, -32001, str(exc.detail)).model_dump(exclude_none=True)
+            return JsonRpcResponse(
+                id=request.id,
+                result={"content": [{"type": "text", "text": str(out)}]},
+            ).model_dump(exclude_none=True)
+
+        if tool_name == "imagen_models":
+            out = {
+                "default": "sdxl",
+                "sdxl": {
+                    "modelDir": SDXL_MODEL_DIR,
+                    "localFilesOnly": True,
+                    "maxPixels": SDXL_MAX_PIXELS,
+                    "maxSteps": SDXL_MAX_STEPS,
+                    "maxConcurrentJobs": SDXL_MAX_CONCURRENT_JOBS,
+                },
+            }
+            return JsonRpcResponse(
+                id=request.id,
+                result={"content": [{"type": "text", "text": str(out)}]},
+            ).model_dump(exclude_none=True)
+
+        if tool_name == "imagen_job_create":
+            try:
+                parsed = ImagenJobCreateArgs(**(arguments_raw or {}))
+                spec = _validate_imagen_args(parsed)
+                job = _create_imagen_job(spec)
+                t = threading.Thread(target=_run_imagen_job, args=(job,), daemon=True)
+                t.start()
+                out = {
+                    "jobId": job.job_id,
+                    "status": job.status,
+                    "eventsUrl": f"/imagen/jobs/{job.job_id}/events",
+                    "statusUrl": f"/imagen/jobs/{job.job_id}",
+                    "resultUrl": f"/imagen/jobs/{job.job_id}/result",
+                }
+            except HTTPException as exc:
+                return _jsonrpc_error(request.id, -32001, str(exc.detail)).model_dump(exclude_none=True)
+            return JsonRpcResponse(
+                id=request.id,
+                result={"content": [{"type": "text", "text": str(out)}]},
+            ).model_dump(exclude_none=True)
+
+        if tool_name == "imagen_job_status":
+            try:
+                parsed = ImagenJobStatusArgs(**(arguments_raw or {}))
+                job = _get_job(parsed.job_id)
+                out = {
+                    "jobId": job.job_id,
+                    "status": job.status,
+                    "progress": job.progress,
+                    "error": job.error,
+                    "createdAtMs": job.created_at_ms,
+                    "startedAtMs": job.started_at_ms,
+                    "finishedAtMs": job.finished_at_ms,
+                }
+            except HTTPException as exc:
+                return _jsonrpc_error(request.id, -32001, str(exc.detail)).model_dump(exclude_none=True)
+            return JsonRpcResponse(
+                id=request.id,
+                result={"content": [{"type": "text", "text": str(out)}]},
+            ).model_dump(exclude_none=True)
+
+        if tool_name == "imagen_job_result":
+            try:
+                parsed = ImagenJobResultArgs(**(arguments_raw or {}))
+                job = _get_job(parsed.job_id)
+                if job.status != "succeeded":
+                    raise HTTPException(status_code=409, detail=f"job_not_succeeded: {job.status}")
+                if not isinstance(job.result, dict):
+                    raise HTTPException(status_code=502, detail="missing_result")
+                out = {"jobId": job.job_id, **job.result}
             except HTTPException as exc:
                 return _jsonrpc_error(request.id, -32001, str(exc.detail)).model_dump(exclude_none=True)
             return JsonRpcResponse(
