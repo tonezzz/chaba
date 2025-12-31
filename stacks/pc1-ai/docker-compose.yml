@@ -54,6 +54,8 @@ services:
       PORT: 8181
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      MCP_AGENT_URL: ${MCP_AGENT_URL:-http://pc1.vpn:3051/mcp?app=openchat}
+      MCP_AGENT_URL_TOOLS: ""
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8181/health || exit 1"]
       interval: 30s
