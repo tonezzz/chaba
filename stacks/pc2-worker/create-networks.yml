@@ -1,0 +1,17 @@
+# Docker network creation for pc2 stacks
+# Run once to create shared networks: docker-compose -f create-networks.yml up -d
+version: "3.9"
+
+networks:
+  pc2-core-net:
+    driver: bridge
+    name: pc2-core-net
+  pc2-tools-net:
+    driver: bridge
+    name: pc2-tools-net
+  pc2-web-net:
+    driver: bridge
+    name: pc2-web-net
+  pc2-devops-net:
+    driver: bridge
+    name: pc2-devops-net

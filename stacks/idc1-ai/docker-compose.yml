@@ -1,0 +1,44 @@
+version: "3.9"
+
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - .env
+  networks:
+    - idc1-ai-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  ollama:
+    <<: *default-service
+    image: ollama/ollama:latest
+    container_name: idc1-ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/11434' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 6
+
+  # Future AI services can be added here:
+  # - Text generation inference servers
+  # - Model serving endpoints
+  # - GPU acceleration services
+  # - AI model management tools
+
+networks:
+  idc1-ai-net:
+    driver: bridge
+    external: true
+
+volumes:
+  ollama-data:

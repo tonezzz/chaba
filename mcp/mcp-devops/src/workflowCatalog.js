@@ -124,6 +124,456 @@ const workflows = [
     }
   },
   {
+    id: 'pc1-ai-status',
+    label: 'pc1-ai status (docker compose ps)',
+    description: 'Shows pc1-ai container status (docker compose ps).',
+    tags: ['pc1', 'stack', 'pc1-ai', 'status', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-ai.ps1'),
+      args: ['-Action', 'status'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-ai.ps1'
+    }
+  },
+  {
+    id: 'pc1-ai-up',
+    label: 'pc1-ai up',
+    description: 'Brings up pc1-ai containers (docker compose up -d).',
+    tags: ['pc1', 'stack', 'pc1-ai', 'up', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-ai.ps1'),
+      args: ['-Action', 'up'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-ai.ps1'
+    }
+  },
+  {
+    id: 'pc1-ai-down',
+    label: 'pc1-ai down',
+    description: 'Stops pc1-ai containers (docker compose down).',
+    tags: ['pc1', 'stack', 'pc1-ai', 'down', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-ai.ps1'),
+      args: ['-Action', 'down'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-ai.ps1'
+    }
+  },
+  {
+    id: 'pc1-ai-pull',
+    label: 'pc1-ai pull images',
+    description: 'Runs docker compose pull for pc1-ai.',
+    tags: ['pc1', 'stack', 'pc1-ai', 'pull', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-ai.ps1'),
+      args: ['-Action', 'pull'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-ai.ps1'
+    }
+  },
+  {
+    id: 'pc1-ai-pull-up',
+    label: 'pc1-ai pull + up',
+    description: 'Runs docker compose pull then up -d for pc1-ai.',
+    tags: ['pc1', 'stack', 'pc1-ai', 'pull', 'up', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-ai.ps1'),
+      args: ['-Action', 'pull-up'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-ai.ps1'
+    }
+  },
+  {
+    id: 'pc1-db-status',
+    label: 'pc1-db status (docker compose ps)',
+    description: 'Shows pc1-db container status (docker compose ps).',
+    tags: ['pc1', 'stack', 'pc1-db', 'status', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-db.ps1'),
+      args: ['-Action', 'status'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-db.ps1'
+    }
+  },
+  {
+    id: 'pc1-db-up',
+    label: 'pc1-db up',
+    description: 'Brings up pc1-db containers (docker compose up -d).',
+    tags: ['pc1', 'stack', 'pc1-db', 'up', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-db.ps1'),
+      args: ['-Action', 'up'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-db.ps1'
+    }
+  },
+  {
+    id: 'pc1-db-down',
+    label: 'pc1-db down',
+    description: 'Stops pc1-db containers (docker compose down).',
+    tags: ['pc1', 'stack', 'pc1-db', 'down', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-db.ps1'),
+      args: ['-Action', 'down'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-db.ps1'
+    }
+  },
+  {
+    id: 'pc1-db-pull',
+    label: 'pc1-db pull images',
+    description: 'Runs docker compose pull for pc1-db.',
+    tags: ['pc1', 'stack', 'pc1-db', 'pull', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-db.ps1'),
+      args: ['-Action', 'pull'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-db.ps1'
+    }
+  },
+  {
+    id: 'pc1-db-pull-up',
+    label: 'pc1-db pull + up',
+    description: 'Runs docker compose pull then up -d for pc1-db.',
+    tags: ['pc1', 'stack', 'pc1-db', 'pull', 'up', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-db.ps1'),
+      args: ['-Action', 'pull-up'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-db.ps1'
+    }
+  },
+  {
+    id: 'pc1-web-status',
+    label: 'pc1-web status (docker compose ps)',
+    description: 'Shows pc1-web container status (docker compose ps).',
+    tags: ['pc1', 'stack', 'pc1-web', 'status', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-web.ps1'),
+      args: ['-Action', 'status'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-web.ps1'
+    }
+  },
+  {
+    id: 'pc1-web-up',
+    label: 'pc1-web up',
+    description: 'Brings up pc1-web containers (docker compose up -d).',
+    tags: ['pc1', 'stack', 'pc1-web', 'up', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-web.ps1'),
+      args: ['-Action', 'up'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-web.ps1'
+    }
+  },
+  {
+    id: 'pc1-web-down',
+    label: 'pc1-web down',
+    description: 'Stops pc1-web containers (docker compose down).',
+    tags: ['pc1', 'stack', 'pc1-web', 'down', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-web.ps1'),
+      args: ['-Action', 'down'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-web.ps1'
+    }
+  },
+  {
+    id: 'pc1-web-pull',
+    label: 'pc1-web pull images',
+    description: 'Runs docker compose pull for pc1-web.',
+    tags: ['pc1', 'stack', 'pc1-web', 'pull', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-web.ps1'),
+      args: ['-Action', 'pull'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-web.ps1'
+    }
+  },
+  {
+    id: 'pc1-web-pull-up',
+    label: 'pc1-web pull + up',
+    description: 'Runs docker compose pull then up -d for pc1-web.',
+    tags: ['pc1', 'stack', 'pc1-web', 'pull', 'up', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-web.ps1'),
+      args: ['-Action', 'pull-up'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-web.ps1'
+    }
+  },
+  {
+    id: 'pc1-gpu-status',
+    label: 'pc1-gpu status (docker compose ps)',
+    description: 'Shows pc1-gpu container status (docker compose ps).',
+    tags: ['pc1', 'stack', 'pc1-gpu', 'status', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-gpu.ps1'),
+      args: ['-Action', 'status'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-gpu.ps1'
+    }
+  },
+  {
+    id: 'pc1-gpu-up',
+    label: 'pc1-gpu up',
+    description: 'Brings up pc1-gpu containers (docker compose up -d).',
+    tags: ['pc1', 'stack', 'pc1-gpu', 'up', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-gpu.ps1'),
+      args: ['-Action', 'up'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-gpu.ps1'
+    }
+  },
+  {
+    id: 'pc1-gpu-down',
+    label: 'pc1-gpu down',
+    description: 'Stops pc1-gpu containers (docker compose down).',
+    tags: ['pc1', 'stack', 'pc1-gpu', 'down', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-gpu.ps1'),
+      args: ['-Action', 'down'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-gpu.ps1'
+    }
+  },
+  {
+    id: 'pc1-gpu-pull',
+    label: 'pc1-gpu pull images',
+    description: 'Runs docker compose pull for pc1-gpu.',
+    tags: ['pc1', 'stack', 'pc1-gpu', 'pull', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-gpu.ps1'),
+      args: ['-Action', 'pull'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-gpu.ps1'
+    }
+  },
+  {
+    id: 'pc1-gpu-pull-up',
+    label: 'pc1-gpu pull + up',
+    description: 'Runs docker compose pull then up -d for pc1-gpu.',
+    tags: ['pc1', 'stack', 'pc1-gpu', 'pull', 'up', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-gpu.ps1'),
+      args: ['-Action', 'pull-up'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-gpu.ps1'
+    }
+  },
+  {
+    id: 'pc1-devops-status',
+    label: 'pc1-devops status (docker compose ps)',
+    description: 'Shows pc1-devops container status (docker compose ps).',
+    tags: ['pc1', 'stack', 'pc1-devops', 'status', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-devops.ps1'),
+      args: ['-Action', 'status'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-devops.ps1'
+    }
+  },
+  {
+    id: 'pc1-devops-up',
+    label: 'pc1-devops up',
+    description: 'Brings up pc1-devops containers (docker compose up -d).',
+    tags: ['pc1', 'stack', 'pc1-devops', 'up', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-devops.ps1'),
+      args: ['-Action', 'up'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-devops.ps1'
+    }
+  },
+  {
+    id: 'pc1-devops-down',
+    label: 'pc1-devops down',
+    description: 'Stops pc1-devops containers (docker compose down).',
+    tags: ['pc1', 'stack', 'pc1-devops', 'down', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-devops.ps1'),
+      args: ['-Action', 'down'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-devops.ps1'
+    }
+  },
+  {
+    id: 'pc1-devops-pull',
+    label: 'pc1-devops pull images',
+    description: 'Runs docker compose pull for pc1-devops.',
+    tags: ['pc1', 'stack', 'pc1-devops', 'pull', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-devops.ps1'),
+      args: ['-Action', 'pull'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-devops.ps1'
+    }
+  },
+  {
+    id: 'pc1-devops-pull-up',
+    label: 'pc1-devops pull + up',
+    description: 'Runs docker compose pull then up -d for pc1-devops.',
+    tags: ['pc1', 'stack', 'pc1-devops', 'pull', 'up', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-devops.ps1'),
+      args: ['-Action', 'pull-up'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-devops.ps1'
+    }
+  },
+  {
+    id: 'pc1-deka-status',
+    label: 'pc1-deka status (docker compose ps)',
+    description: 'Shows pc1-deka container status (docker compose ps).',
+    tags: ['pc1', 'stack', 'pc1-deka', 'status', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-deka.ps1'),
+      args: ['-Action', 'status'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-deka.ps1'
+    }
+  },
+  {
+    id: 'pc1-deka-up',
+    label: 'pc1-deka up',
+    description: 'Brings up pc1-deka containers (docker compose up -d).',
+    tags: ['pc1', 'stack', 'pc1-deka', 'up', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-deka.ps1'),
+      args: ['-Action', 'up'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-deka.ps1'
+    }
+  },
+  {
+    id: 'pc1-deka-down',
+    label: 'pc1-deka down',
+    description: 'Stops pc1-deka containers (docker compose down).',
+    tags: ['pc1', 'stack', 'pc1-deka', 'down', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-deka.ps1'),
+      args: ['-Action', 'down'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-deka.ps1'
+    }
+  },
+  {
+    id: 'pc1-deka-pull',
+    label: 'pc1-deka pull images',
+    description: 'Runs docker compose pull for pc1-deka.',
+    tags: ['pc1', 'stack', 'pc1-deka', 'pull', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-deka.ps1'),
+      args: ['-Action', 'pull'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-deka.ps1'
+    }
+  },
+  {
+    id: 'pc1-deka-pull-up',
+    label: 'pc1-deka pull + up',
+    description: 'Runs docker compose pull then up -d for pc1-deka.',
+    tags: ['pc1', 'stack', 'pc1-deka', 'pull', 'up', 'docker'],
+    runner: {
+      type: 'powershell',
+      scriptPath: path.join(config.scriptsRoot, 'pc1-deka.ps1'),
+      args: ['-Action', 'pull-up'],
+      cwd: config.repoRoot
+    },
+    outputs: {
+      docs: 'scripts/pc1-deka.ps1'
+    }
+  },
+  {
     id: 'pc1-self-status',
     label: 'pc1-stack (self) status',
     description:
@@ -140,6 +590,120 @@ const workflows = [
     },
     outputs: {
       docs: 'scripts/pc1-stack-self.sh'
+    }
+  },
+  {
+    id: 'pc1-ai-self-status',
+    label: 'pc1-ai (self) status',
+    description: 'Runs docker compose ps for pc1-ai from inside mcp-devops (requires docker socket mount).',
+    tags: ['pc1', 'stack', 'pc1-ai', 'self', 'status', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        STACK: 'pc1-ai',
+        ACTION: 'status'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/stack-self.sh'
+    }
+  },
+  {
+    id: 'pc1-db-self-status',
+    label: 'pc1-db (self) status',
+    description: 'Runs docker compose ps for pc1-db from inside mcp-devops (requires docker socket mount).',
+    tags: ['pc1', 'stack', 'pc1-db', 'self', 'status', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        STACK: 'pc1-db',
+        ACTION: 'status'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/stack-self.sh'
+    }
+  },
+  {
+    id: 'pc1-web-self-status',
+    label: 'pc1-web (self) status',
+    description: 'Runs docker compose ps for pc1-web from inside mcp-devops (requires docker socket mount).',
+    tags: ['pc1', 'stack', 'pc1-web', 'self', 'status', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        STACK: 'pc1-web',
+        ACTION: 'status'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/stack-self.sh'
+    }
+  },
+  {
+    id: 'pc1-gpu-self-status',
+    label: 'pc1-gpu (self) status',
+    description: 'Runs docker compose ps for pc1-gpu from inside mcp-devops (requires docker socket mount).',
+    tags: ['pc1', 'stack', 'pc1-gpu', 'self', 'status', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        STACK: 'pc1-gpu',
+        ACTION: 'status'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/stack-self.sh'
+    }
+  },
+  {
+    id: 'pc1-devops-self-status',
+    label: 'pc1-devops (self) status',
+    description: 'Runs docker compose ps for pc1-devops from inside mcp-devops (requires docker socket mount).',
+    tags: ['pc1', 'stack', 'pc1-devops', 'self', 'status', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        STACK: 'pc1-devops',
+        ACTION: 'status'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/stack-self.sh'
+    }
+  },
+  {
+    id: 'pc1-deka-self-status',
+    label: 'pc1-deka (self) status',
+    description: 'Runs docker compose ps for pc1-deka from inside mcp-devops (requires docker socket mount).',
+    tags: ['pc1', 'stack', 'pc1-deka', 'self', 'status', 'docker'],
+    runner: {
+      type: 'posix',
+      scriptRelative: 'bash ./scripts/stack-self.sh',
+      cwd: config.repoRoot,
+      env: {
+        STACK: 'pc1-deka',
+        ACTION: 'status'
+      },
+      shell: config.deployShell
+    },
+    outputs: {
+      docs: 'scripts/stack-self.sh'
     }
   },
   {

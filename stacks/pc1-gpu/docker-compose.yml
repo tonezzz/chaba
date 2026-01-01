@@ -37,9 +37,27 @@ services:
       timeout: 5s
       retries: 3
 
+  mcp-rag-light:
+    <<: *default-service
+    build:
+      context: ${MCP_RAG_LIGHT_BUILD_CONTEXT:-../../mcp/mcp-rag-light}
+    container_name: pc1-gpu-mcp-rag-light
+    ports:
+      - "${MCP_RAG_LIGHT_PORT:-8069}:8069"
+    environment:
+      PORT: 8069
+      MCP_CUDA_URL: http://mcp-cuda:8057
+      RAG_LIGHT_PUBLIC_BASE_URL: ${RAG_LIGHT_PUBLIC_BASE_URL:-http://pc1.vpn:8069}
+      RAG_LIGHT_TIMEOUT_SECONDS: ${RAG_LIGHT_TIMEOUT_SECONDS:-60}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8069/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - mcp-cuda
+
 networks:
   pc1-gpu-net:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
+    

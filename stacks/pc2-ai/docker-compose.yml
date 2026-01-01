@@ -1,0 +1,150 @@
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - .env
+  networks:
+    - pc2-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  mcp-glama:
+    <<: *default-service
+    build:
+      context: ${MCP_GLAMA_BUILD_CONTEXT:-../../mcp/mcp-glama}
+    ports:
+      - "${MCP_GLAMA_PORT:-7214}:8014"
+    environment:
+      PORT: 8014
+      GLAMA_API_URL: ${GLAMA_API_URL:-}
+      GLAMA_API_KEY: ${GLAMA_API_KEY:-}
+      GLAMA_MODEL: ${GLAMA_MODEL:-gpt-4o-mini}
+      GLAMA_TEMPERATURE: ${GLAMA_TEMPERATURE:-0.2}
+      GLAMA_MAX_TOKENS: ${GLAMA_MAX_TOKENS:-900}
+      GLAMA_TIMEOUT_SECONDS: ${GLAMA_TIMEOUT_SECONDS:-30}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8014/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-agents:
+    <<: *default-service
+    build:
+      context: ${MCP_AGENTS_BUILD_CONTEXT:-../../mcp/mcp-agents}
+    ports:
+      - "${MCP_AGENTS_PORT:-8046}:8046"
+    environment:
+      PORT: ${MCP_AGENTS_PORT:-8046}
+      AGENTS_API_BASE: ${AGENTS_API_BASE:-http://dev-host.pc2:3100/test/agents/api}
+      AGENTS_DEFAULT_USER: ${AGENTS_DEFAULT_USER:-default}
+      AGENTS_DEFAULT_LIMIT: ${AGENTS_DEFAULT_LIMIT:-12}
+      JSON_BODY_LIMIT: ${AGENTS_JSON_LIMIT:-2mb}
+    volumes:
+      - ${MCP_AGENTS_DATA_DIR:-./data/mcp-agents}:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8046/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-playwright:
+    <<: *default-service
+    image: ${MCP_PLAYWRIGHT_IMAGE:-mcr.microsoft.com/playwright:v1.48.2-jammy}
+    ports:
+      - "${MCP_PLAYWRIGHT_PORT:-8025}:${MCP_PLAYWRIGHT_PORT:-8025}"
+    environment:
+      PORT: ${MCP_PLAYWRIGHT_PORT:-8025}
+      PLAYWRIGHT_BROWSER: ${PLAYWRIGHT_BROWSER:-chromium}
+      PLAYWRIGHT_HEADLESS: ${PLAYWRIGHT_HEADLESS:-true}
+      PLAYWRIGHT_TIMEOUT_MS: ${PLAYWRIGHT_TIMEOUT_MS:-15000}
+      PLAYWRIGHT_SCENARIOS_DIR: /app/scenarios
+      PLAYWRIGHT_OUTPUT_DIR: /app/output
+    command:
+      - bash
+      - -lc
+      - "cd /app && npm install --omit=dev && node index.js"
+    volumes:
+      - ${MCP_PLAYWRIGHT_APP_DIR:-../../mcp/mcp-playwright}:/app
+      - ${MCP_PLAYWRIGHT_SCENARIOS_DIR:-../../mcp/mcp-playwright/scenarios}:/app/scenarios
+      - ${MCP_PLAYWRIGHT_OUTPUT_DIR:-./data/mcp-playwright/output}:/app/output
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_PLAYWRIGHT_PORT:-8025}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-meeting:
+    <<: *default-service
+    build:
+      context: ${MCP_MEETING_BUILD_CONTEXT:-../../mcp/mcp-meeting}
+    ports:
+      - "${MCP_MEETING_PORT:-7208}:8008"
+    environment:
+      PORT: 8008
+      MEETING_STT_URL: ${MEETING_STT_URL:-}
+      MEETING_STT_HEALTH_PATH: ${MEETING_STT_HEALTH_PATH:-/health}
+      MEETING_MAX_SEGMENTS: ${MEETING_MAX_SEGMENTS:-1500}
+      MEETING_SUMMARY_MAX_ENTRIES: ${MEETING_SUMMARY_MAX_ENTRIES:-20}
+      MEETING_DEFAULT_LANGUAGE: ${MEETING_DEFAULT_LANGUAGE:-}
+      MEETING_DEFAULT_WHISPER_MODEL: ${MEETING_DEFAULT_WHISPER_MODEL:-}
+      MEETING_STORAGE_PATH: ${MEETING_STORAGE_PATH:-/data/meetings.json}
+    volumes:
+      - ${MEETING_STORAGE_ROOT:-./data/meeting}:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8008/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-instrans:
+    <<: *default-service
+    build:
+      context: ${MCP_INSTRANS_BUILD_CONTEXT:-../../mcp/mcp-instrans}
+    ports:
+      - "${MCP_INSTRANS_PORT:-7216}:3100"
+    environment:
+      PORT: 3100
+      INSTRANS_STT_URL: ${INSTRANS_STT_URL:-}
+      INSTRANS_PORT: ${INSTRANS_PORT:-3100}
+      INSTRANS_DEFAULT_LANG: ${INSTRANS_DEFAULT_LANG:-en}
+      INSTRANS_ALLOWED_ORIGIN: ${INSTRANS_ALLOWED_ORIGIN:-*}
+      INSTRANS_SUMMARY_SENTENCES: ${INSTRANS_SUMMARY_SENTENCES:-3}
+      INSTRANS_SSE_HEARTBEAT_MS: ${INSTRANS_SSE_HEARTBEAT_MS:-15000}
+      INSTRANS_AUDIO_CHUNK_LIMIT: ${INSTRANS_AUDIO_CHUNK_LIMIT:-5242880}
+      INSTRANS_ENABLE_TRANSLATION: ${INSTRANS_ENABLE_TRANSLATION:-true}
+      INSTRANS_ENABLE_SUMMARY: ${INSTRANS_ENABLE_SUMMARY:-true}
+      INSTRANS_JSON_LIMIT: ${INSTRANS_JSON_LIMIT:-4mb}
+      INSTRANS_URLENCODED_LIMIT: ${INSTRANS_URLENCODED_LIMIT:-4mb}
+      INSTRANS_MAX_TRANSCRIPTS: ${INSTRANS_MAX_TRANSCRIPTS:-200}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3100/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-vaja:
+    <<: *default-service
+    build:
+      context: ${MCP_VAJA_BUILD_CONTEXT:-../../mcp/mcp-vaja}
+    ports:
+      - "${MCP_VAJA_PORT:-7217}:8017"
+    environment:
+      PORT: 8017
+      AI4THAI_API_KEY: ${AI4THAI_API_KEY:-}
+      VAJA_ENDPOINT: ${VAJA_ENDPOINT:-https://api.aiforthai.in.th/vaja}
+      VAJA_OUTPUT_DIR: /output
+    volumes:
+      - ${VAJA_OUTPUT_DIR_HOST:-/home/chaba/vaja-audio}:/output
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8017/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  pc2-net:
+    external: true

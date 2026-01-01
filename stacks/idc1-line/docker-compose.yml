@@ -1,0 +1,34 @@
+version: "3.9"
+
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - .env
+  networks:
+    - idc1-line-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  mcp-line:
+    <<: *default-service
+    build:
+      context: ${MCP_LINE_BUILD_CONTEXT:-../../mcp/mcp-line}
+    ports:
+      - "127.0.0.1:${MCP_LINE_PORT:-8088}:8088"
+    environment:
+      LINE_CHANNEL_SECRET: ${LINE_CHANNEL_SECRET:-}
+      LINE_CHANNEL_ACCESS_TOKEN: ${LINE_CHANNEL_ACCESS_TOKEN:-}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8088/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  idc1-line-net:
+    driver: bridge
+    external: true

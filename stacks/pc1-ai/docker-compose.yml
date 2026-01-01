@@ -49,11 +49,16 @@ services:
       context: ${MCP_OPENAI_GATEWAY_BUILD_CONTEXT:-../../mcp/mcp-openai-gateway}
     container_name: pc1-ai-mcp-openai-gateway
     ports:
-      - "${MCP_OPENAI_GATEWAY_PORT:-8181}:8181"
+      - "8181:8181"
     environment:
       PORT: 8181
+      GLAMA_API_URL: ${GLAMA_API_URL:-}
+      GLAMA_API_KEY: ${GLAMA_API_KEY:-}
+      GLAMA_MODEL: ${GLAMA_MODEL:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      MCP_AGENT_URL: ${MCP_AGENT_URL:-http://pc1.vpn:3051/mcp?app=openchat}
+      MCP_AGENT_URL_TOOLS: ""
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8181/health || exit 1"]
       interval: 30s
@@ -102,9 +107,7 @@ services:
 networks:
   pc1-ai-net:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.24.0.0/16
+    
 
 volumes:
   ollama-data:

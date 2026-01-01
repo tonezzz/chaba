@@ -1,5 +1,5 @@
 param(
-    [string]$BaseUrl = "http://1mcp.pc1.vpn:3051",
+    [string]$BaseUrl = "http://127.0.0.1:3051",
     [string]$App = "windsurf",
     [int]$HealthTimeoutSeconds = 120
 )

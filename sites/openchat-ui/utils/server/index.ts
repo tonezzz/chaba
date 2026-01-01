@@ -67,19 +67,21 @@ export const OpenAIStream = async (
   const decoder = new TextDecoder();
 
   if (res.status !== 200) {
-    const result = await res.json();
-    if (result.error) {
-      throw new OpenAIError(
-        result.error.message,
-        result.error.type,
-        result.error.param,
-        result.error.code,
-      );
-    } else {
+    const text = await res.text();
+    try {
+      const result = JSON.parse(text);
+      if (result?.error) {
+        throw new OpenAIError(
+          result.error.message,
+          result.error.type,
+          result.error.param,
+          result.error.code,
+        );
+      }
+      throw new Error(`OpenAI API returned an error ${res.status}: ${text}`);
+    } catch {
       throw new Error(
-        `OpenAI API returned an error: ${
-          decoder.decode(result?.value) || result.statusText
-        }`,
+        `OpenAI API returned an error ${res.status}: ${text || res.statusText}`,
       );
     }
   }

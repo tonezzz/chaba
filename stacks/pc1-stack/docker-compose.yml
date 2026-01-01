@@ -37,14 +37,16 @@ services:
       ONE_MCP_PORT: ${ONE_MCP_PORT:-3051}
       ONE_MCP_EXTERNAL_URL: ${ONE_MCP_EXTERNAL_URL:-https://127.0.0.1:${ONE_MCP_PORT:-3051}}
       ONE_MCP_LOG_LEVEL: ${ONE_MCP_LOG_LEVEL:-info}
-      ONE_MCP_CONFIG: /root/.config/1mcp/mcp.json
+      ONE_MCP_CONFIG: ${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}
       ONE_MCP_ENABLE_ASYNC_LOADING: ${ONE_MCP_ENABLE_ASYNC_LOADING:-true}
       ONE_MCP_ENABLE_ENHANCED_SECURITY: ${ONE_MCP_ENABLE_ENHANCED_SECURITY:-false}
       UV_PYTHON: python3
       UV_PYTHON_DOWNLOADS: never
       UV_PROJECT_ENVIRONMENT: /tmp/uv-project
+    extra_hosts:
+      - "pc1.vpn:host-gateway"
     volumes:
-      - ${PC1_WORKSPACE_HOST_DIR:-C:/chaba}/stacks/pc1-stack/1mcp.json:/root/.config/1mcp/mcp.json:ro
+      - ${PC1_WORKSPACE_HOST_DIR:-C:/chaba}/stacks/pc1-stack/1mcp-hub.json:${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}:ro
       - "${PC1_WORKSPACE_HOST_DIR:-C:/chaba}:/workspaces/chaba:cached"
       - /var/run/docker.sock:/var/run/docker.sock
       - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
@@ -82,6 +84,8 @@ services:
       UV_PYTHON: python3
       UV_PYTHON_DOWNLOADS: never
       UV_PROJECT_ENVIRONMENT: /tmp/uv-project
+    extra_hosts:
+      - "pc1.vpn:host-gateway"
     volumes:
       - ${PC1_WORKSPACE_HOST_DIR:-C:/chaba}/stacks/pc1-stack/1mcp-dev.json:/root/.config/1mcp/mcp.json:ro
       - "${PC1_WORKSPACE_HOST_DIR:-C:/chaba}:/workspaces/chaba:cached"
@@ -111,152 +115,9 @@ services:
       timeout: 5s
       retries: 3
 
-  mcp-glama:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ${MCP_GLAMA_BUILD_CONTEXT:-../../mcp/mcp-glama}
-    container_name: pc1-mcp-glama
-    ports:
-      - "${MCP_GLAMA_PORT:-7241}:8014"
-    environment:
-      PORT: 8014
-      GLAMA_API_URL: ${GLAMA_API_URL:-}
-      GLAMA_API_KEY: ${GLAMA_API_KEY:-}
-      GLAMA_MODEL: ${GLAMA_MODEL:-gpt-4o-mini}
-      GLAMA_TEMPERATURE: ${GLAMA_TEMPERATURE:-0.2}
-      GLAMA_MAX_TOKENS: ${GLAMA_MAX_TOKENS:-900}
-      GLAMA_TIMEOUT_SECONDS: ${GLAMA_TIMEOUT_SECONDS:-30}
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8014/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
-  mcp-github-models:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ${MCP_GITHUB_MODELS_BUILD_CONTEXT:-../../mcp/mcp-github-models}
-    container_name: pc1-mcp-github-models
-    ports:
-      - "${MCP_GITHUB_MODELS_PORT:-7242}:8015"
-    environment:
-      PORT: 8015
-      GITHUB_MODELS_API_URL: ${GITHUB_MODELS_API_URL:-}
-      GITHUB_MODELS_API_KEY: ${GITHUB_MODELS_API_KEY:-}
-      GITHUB_MODELS_MODEL: ${GITHUB_MODELS_MODEL:-gpt-4o-mini}
-      GITHUB_MODELS_TEMPERATURE: ${GITHUB_MODELS_TEMPERATURE:-0.2}
-      GITHUB_MODELS_MAX_TOKENS: ${GITHUB_MODELS_MAX_TOKENS:-900}
-      GITHUB_MODELS_TIMEOUT_SECONDS: ${GITHUB_MODELS_TIMEOUT_SECONDS:-30}
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8015/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
-  mcp-openai-gateway:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ${MCP_OPENAI_GATEWAY_BUILD_CONTEXT:-../../mcp/mcp-openai-gateway}
-    container_name: pc1-mcp-openai-gateway
-    ports:
-      - "${MCP_OPENAI_GATEWAY_PORT:-8181}:8181"
-    environment:
-      PORT: 8181
-      OPENAI_GATEWAY_MODEL_ID: ${OPENAI_GATEWAY_MODEL_ID:-glama-default}
-      OPENAI_GATEWAY_TIMEOUT_SECONDS: ${OPENAI_GATEWAY_TIMEOUT_SECONDS:-600}
-      OPENAI_GATEWAY_DEBUG: ${OPENAI_GATEWAY_DEBUG:-0}
-      OPENAI_GATEWAY_PREFER_MCP_LLM: ${OPENAI_GATEWAY_PREFER_MCP_LLM:-0}
-      OPENAI_GATEWAY_LLM_TOOL: ${OPENAI_GATEWAY_LLM_TOOL:-}
-      OPENAI_GATEWAY_GLAMA_RETRY_ATTEMPTS: ${OPENAI_GATEWAY_GLAMA_RETRY_ATTEMPTS:-2}
-      OPENAI_GATEWAY_GLAMA_RETRY_BACKOFF_SECONDS: ${OPENAI_GATEWAY_GLAMA_RETRY_BACKOFF_SECONDS:-1.0}
-      OPENAI_GATEWAY_FALLBACK_TO_MCP_LLM_ON_GLAMA_ERROR: ${OPENAI_GATEWAY_FALLBACK_TO_MCP_LLM_ON_GLAMA_ERROR:-1}
-      MCP_AGENT_URL: ${MCP_AGENT_URL:-http://1mcp-agent:${ONE_MCP_PORT:-3051}/mcp?app=openchat}
-      GLAMA_API_URL: ${GLAMA_API_URL:-}
-      GLAMA_API_KEY: ${GLAMA_API_KEY:-}
-      GLAMA_MODEL: ${GLAMA_MODEL:-gpt-4o-mini}
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8181/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-    depends_on:
-      - 1mcp-agent
-
-  openchat-ui:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ${OPENCHAT_UI_BUILD_CONTEXT:-../../sites/openchat-ui}
-    container_name: pc1-openchat-ui
-    ports:
-      - "${OPENCHAT_UI_PORT:-3170}:3000"
-    environment:
-      OPENAI_API_HOST: ${OPENCHAT_OPENAI_API_HOST:-http://mcp-openai-gateway:8181}
-      OPENAI_API_KEY: ${OPENCHAT_OPENAI_API_KEY:-sk-dummy}
-      DEFAULT_MODEL: ${OPENCHAT_DEFAULT_MODEL:-glama-default}
-      NEXT_PUBLIC_DEFAULT_TEMPERATURE: ${OPENCHAT_DEFAULT_TEMPERATURE:-0.5}
-      NEXT_PUBLIC_DEFAULT_SYSTEM_PROMPT: ${OPENCHAT_DEFAULT_SYSTEM_PROMPT:-" "}
-    depends_on:
-      - mcp-openai-gateway
-
-  openchat-ui-deka:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ${OPENCHAT_UI_BUILD_CONTEXT:-../../sites/openchat-ui}
-      args:
-        NEXT_PUBLIC_BASE_PATH: /test/deka
-        NEXT_PUBLIC_DEFAULT_LOCALE: th
-    container_name: pc1-openchat-ui-deka
-    ports:
-      - "${OPENCHAT_UI_DEKA_PORT:-3171}:3000"
-    environment:
-      OPENAI_API_HOST: http://deka-chat-api:8190
-      OPENAI_API_KEY: ${OPENCHAT_OPENAI_API_KEY:-sk-dummy}
-      DEFAULT_MODEL: deka-rag
-      NEXT_PUBLIC_BASE_PATH: /test/deka
-      NEXT_PUBLIC_DEFAULT_LOCALE: th
-      NEXT_PUBLIC_DEFAULT_TEMPERATURE: ${OPENCHAT_DEFAULT_TEMPERATURE:-0.5}
-      NEXT_PUBLIC_DEFAULT_SYSTEM_PROMPT: ${OPENCHAT_DEKA_SYSTEM_PROMPT:-"คุณเป็นผู้ช่วยสำหรับการสืบค้นคำพิพากษาศาลฎีกา (DEKA) เท่านั้น ตอบเป็นภาษาไทย และตอบโดยอ้างอิงเฉพาะหลักฐานจาก DEKA ที่ระบบให้มา"}
-    depends_on:
-      - deka-chat-api
-
-  ollama:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    image: ollama/ollama:latest
-    container_name: pc1-ollama
-    ports:
-      - "${OLLAMA_PORT:-11435}:11434"
-    volumes:
-      - ollama-data:/root/.ollama
-    healthcheck:
-      test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/11434' || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 6
-
-  qdrant:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    image: qdrant/qdrant:latest
-    container_name: pc1-qdrant
-    ports:
-      - "${QDRANT_PORT:-6333}:6333"
-    volumes:
-      - qdrant-data:/qdrant/storage
-    healthcheck:
-      test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/6333' || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 6
-
   mcp-rag:
     <<: *default-service
-    profiles: ["mcp-suite"]
+    profiles: ["legacy-db"]
     build:
       context: ${MCP_RAG_BUILD_CONTEXT:-../../mcp/mcp-rag}
     container_name: pc1-mcp-rag
@@ -264,72 +125,23 @@ services:
       - "${MCP_RAG_PORT:-8055}:8055"
     environment:
       PORT: 8055
-      QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
-      QDRANT_TEXT_COLLECTION: ${QDRANT_TEXT_COLLECTION:-rag_text}
+      QDRANT_URL: ${QDRANT_URL:-http://pc1.vpn:6333}
+      QDRANT_TEXT_COLLECTION: ${QDRANT_TEXT_COLLECTION:-rag_text_cuda}
       QDRANT_IMAGE_COLLECTION: ${QDRANT_IMAGE_COLLECTION:-rag_image}
-      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+      OLLAMA_URL: ${OLLAMA_URL:-http://pc1.vpn:11435}
       OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text}
       CLIP_MODEL: ${CLIP_MODEL:-clip-ViT-B-32}
+      MCP_CUDA_URL: ${MCP_CUDA_URL:-http://mcp-cuda:8057}
+      MCP_RAG_IMAGE_EMBED_BACKEND: ${MCP_RAG_IMAGE_EMBED_BACKEND:-cuda}
+      MCP_RAG_TEXT_EMBED_BACKEND: ${MCP_RAG_TEXT_EMBED_BACKEND:-cuda}
+      MCP_RAG_RERANK_BACKEND: ${MCP_RAG_RERANK_BACKEND:-cuda}
     volumes:
       - mcp-rag-cache:/root/.cache
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8055/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 6
-    depends_on:
-      - qdrant
-      - ollama
-
-  mcp-rag-deka:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    image: pc1-stack-mcp-rag:latest
-    container_name: pc1-mcp-rag-deka
-    ports:
-      - "${MCP_RAG_DEKA_PORT:-8056}:8055"
-    environment:
-      PORT: 8055
-      QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
-      QDRANT_TEXT_COLLECTION: deka_text
-      QDRANT_IMAGE_COLLECTION: ${QDRANT_IMAGE_COLLECTION:-rag_image}
-      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
-      OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text}
-      CLIP_MODEL: ${CLIP_MODEL:-clip-ViT-B-32}
-    volumes:
-      - mcp-rag-cache:/root/.cache
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8055/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 6
-    depends_on:
-      - qdrant
-      - ollama
-
-  deka-chat-api:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ../../mcp/deka-chat-api
-    container_name: pc1-deka-chat-api
-    ports:
-      - "${DEKA_CHAT_API_PORT:-8190}:8190"
-    environment:
-      PORT: 8190
-      MCP_RAG_DEKA_URL: http://mcp-rag-deka:8055
-      MCP_GLAMA_URL: http://mcp-glama:8014
-      DEKA_TOP_K: ${DEKA_TOP_K:-6}
-      DEKA_MIN_TOP_SCORE: ${DEKA_MIN_TOP_SCORE:-0.12}
-      DEKA_CHAT_TIMEOUT_SECONDS: ${DEKA_CHAT_TIMEOUT_SECONDS:-60}
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8190/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
-    depends_on:
-      - mcp-glama
-      - mcp-rag-deka
 
   mcp-tester:
     <<: *default-service
@@ -537,7 +349,7 @@ services:
 
   authentik-server:
     <<: *default-service
-    profiles: ["mcp-suite"]
+    profiles: ["authentik"]
     image: ghcr.io/goauthentik/server:2024.8.3
     command: ["server"]
     environment:
@@ -561,7 +373,7 @@ services:
 
   authentik-worker:
     <<: *default-service
-    profiles: ["mcp-suite"]
+    profiles: ["authentik"]
     image: ghcr.io/goauthentik/server:2024.8.3
     command: ["worker"]
     environment:
