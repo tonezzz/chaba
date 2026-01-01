@@ -48,11 +48,10 @@ function Invoke-Mcp {
     $bodyObj = @{ jsonrpc = '2.0'; id = 1; method = $Method; params = $Params }
     $bodyJson = $bodyObj | ConvertTo-Json -Depth 20 -Compress
 
-    $rh = $null
-    $resp = Invoke-WebRequest -Method Post -Uri $McpUrl -ContentType 'application/json' -Headers $headers -Body $bodyJson -ResponseHeadersVariable rh
+    $resp = Invoke-WebRequest -UseBasicParsing -Method Post -Uri $McpUrl -ContentType 'application/json' -Headers $headers -Body $bodyJson
 
     $content = $resp.Content | ConvertFrom-Json
-    return @{ Body = $content; Headers = $rh }
+    return @{ Body = $content; Headers = $resp.Headers }
 }
 
 $healthUrl = "$BaseUrl/health"
