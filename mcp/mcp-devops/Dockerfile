@@ -13,9 +13,9 @@ RUN apt-get update \
       openssh-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Docker CLI + docker compose plugin (v2) from Debian repositories.
+# Install Docker CLI from Debian repositories.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends docker.io docker-compose-plugin \
+    && apt-get install -y --no-install-recommends docker.io \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PowerShell (pwsh) for running PowerShell-based workflows inside the container.
