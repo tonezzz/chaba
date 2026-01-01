@@ -1,0 +1,143 @@
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - ${DEKA_STACK_ENV_FILE:-.env}
+  networks:
+    - deka-stack-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  qdrant:
+    <<: *default-service
+    image: qdrant/qdrant:latest
+    container_name: deka-qdrant
+    ports:
+      - "${DEKA_QDRANT_PORT:-6334}:6333"
+    volumes:
+      - deka-qdrant-data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/6333' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 6
+
+  ollama:
+    <<: *default-service
+    image: ollama/ollama:latest
+    container_name: deka-ollama
+    ports:
+      - "${DEKA_OLLAMA_PORT:-11436}:11434"
+    volumes:
+      - deka-ollama:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 6
+
+  mcp-playwright:
+    <<: *default-service
+    build:
+      context: ${DEKA_MCP_PLAYWRIGHT_BUILD_CONTEXT:-../../mcp/mcp-playwright}
+    container_name: deka-mcp-playwright
+    ports:
+      - "${DEKA_MCP_PLAYWRIGHT_PORT:-8261}:8260"
+    environment:
+      PORT: 8260
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+    volumes:
+      - deka-playwright:/ms-playwright
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8260/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-rag-deka:
+    <<: *default-service
+    build:
+      context: ${DEKA_MCP_RAG_BUILD_CONTEXT:-../../mcp/mcp-rag}
+    container_name: deka-mcp-rag-deka
+    ports:
+      - "${DEKA_MCP_RAG_DEKA_PORT:-8058}:8055"
+    environment:
+      PORT: 8055
+      QDRANT_URL: ${DEKA_QDRANT_URL:-http://qdrant:6333}
+      QDRANT_TEXT_COLLECTION: ${DEKA_QDRANT_TEXT_COLLECTION:-deka_text}
+      QDRANT_IMAGE_COLLECTION: ${DEKA_QDRANT_IMAGE_COLLECTION:-rag_image}
+      OLLAMA_URL: ${DEKA_OLLAMA_URL:-http://ollama:11434}
+      OLLAMA_EMBED_MODEL: ${DEKA_OLLAMA_EMBED_MODEL:-nomic-embed-text}
+      CLIP_MODEL: ${DEKA_CLIP_MODEL:-clip-ViT-B-32}
+    volumes:
+      - deka-mcp-rag-cache:/root/.cache
+    depends_on:
+      - qdrant
+      - ollama
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8055/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 6
+
+  mcp-deka:
+    <<: *default-service
+    build:
+      context: ${DEKA_MCP_DEKA_BUILD_CONTEXT:-../../mcp/mcp-deka}
+    container_name: deka-mcp-deka
+    ports:
+      - "${DEKA_MCP_DEKA_PORT:-8271}:8270"
+    environment:
+      PORT: 8270
+      MCP_PLAYWRIGHT_BASE_URL: ${DEKA_MCP_PLAYWRIGHT_URL:-http://mcp-playwright:8260}
+      MCP_DEKA_DB_PATH: /data/sqlite/mcp-deka.sqlite
+      MCP_DEKA_TIMEOUT_SECONDS: ${DEKA_MCP_DEKA_TIMEOUT_SECONDS:-180}
+      MCP_DEKA_PLAYWRIGHT_RETRIES: ${DEKA_MCP_DEKA_PLAYWRIGHT_RETRIES:-2}
+      MCP_DEKA_PLAYWRIGHT_RETRY_BACKOFF_SECONDS: ${DEKA_MCP_DEKA_PLAYWRIGHT_RETRY_BACKOFF_SECONDS:-1.0}
+      MCP_DEKA_LOG_LEVEL: ${DEKA_MCP_DEKA_LOG_LEVEL:-info}
+    volumes:
+      - deka-sqlite:/data/sqlite
+    depends_on:
+      - mcp-playwright
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8270/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  deka-chat-api:
+    <<: *default-service
+    build:
+      context: ${DEKA_CHAT_API_BUILD_CONTEXT:-../../mcp/deka-chat-api}
+    container_name: deka-deka-chat-api
+    ports:
+      - "${DEKA_CHAT_API_PORT:-8191}:8190"
+    environment:
+      PORT: 8190
+      MCP_RAG_DEKA_URL: ${DEKA_MCP_RAG_DEKA_URL:-http://mcp-rag-deka:8055}
+      MCP_GLAMA_URL: ${DEKA_MCP_GLAMA_URL:-http://host.docker.internal:7241}
+      DEKA_TOP_K: ${DEKA_TOP_K:-6}
+      DEKA_MIN_TOP_SCORE: ${DEKA_MIN_TOP_SCORE:-0.12}
+      DEKA_CHAT_TIMEOUT_SECONDS: ${DEKA_CHAT_TIMEOUT_SECONDS:-60}
+      DEKA_CHAT_LOG_LEVEL: ${DEKA_CHAT_LOG_LEVEL:-info}
+    depends_on:
+      - mcp-rag-deka
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8190/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  deka-stack-net:
+    name: deka-stack-net
+
+volumes:
+  deka-sqlite:
+  deka-qdrant-data:
+  deka-ollama:
+  deka-playwright:
+  deka-mcp-rag-cache:
