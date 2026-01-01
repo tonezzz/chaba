@@ -117,7 +117,7 @@ services:
 
   mcp-rag:
     <<: *default-service
-    profiles: ["mcp-suite"]
+    profiles: ["legacy-db"]
     build:
       context: ${MCP_RAG_BUILD_CONTEXT:-../../mcp/mcp-rag}
     container_name: pc1-mcp-rag
@@ -236,7 +236,7 @@ services:
 
   authentik-server:
     <<: *default-service
-    profiles: ["mcp-suite"]
+    profiles: ["authentik"]
     image: ghcr.io/goauthentik/server:2024.8.3
     command: ["server"]
     environment:
@@ -260,7 +260,7 @@ services:
 
   authentik-worker:
     <<: *default-service
-    profiles: ["mcp-suite"]
+    profiles: ["authentik"]
     image: ghcr.io/goauthentik/server:2024.8.3
     command: ["worker"]
     environment:
