@@ -1,0 +1,40 @@
+# Template for modular stack docker-compose.yml
+# Copy and customize for each host/stack combination
+version: "3.9"
+
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - .env
+  networks:
+    - {{STACK_NAME}}-{{HOST}}-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  # Add services here following the pattern:
+  # service-name:
+  #   <<: *default-service
+  #   build:
+  #     context: ${SERVICE_BUILD_CONTEXT:-../../mcp/mcp-service}
+  #   ports:
+  #     - "${SERVICE_PORT:-8080}:8080"
+  #   environment:
+  #     PORT: 8080
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+
+networks:
+  {{STACK_NAME}}-{{HOST}}-net:
+    driver: bridge
+    external: true
+
+volumes:
+  # Add named volumes here
+  # volume-name:
