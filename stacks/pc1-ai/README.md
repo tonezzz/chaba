@@ -20,10 +20,6 @@ Dedicated stack for AI/ML services, model gateways, and image generation.
   - Port: 11435 → 11434
   - Purpose: Local AI model hosting
 
-- **mcp-imagen-light** - Image generation adapter
-  - Port: 8020
-  - Purpose: SDXL image generation via GPU stack
-
 ## Usage
 
 ```bash
@@ -35,17 +31,12 @@ curl http://localhost:7241/health  # Glama
 curl http://localhost:7242/health  # GitHub Models
 curl http://localhost:8181/health  # OpenAI Gateway
 curl http://localhost:11435/health # Ollama
-curl http://localhost:8020/health  # Imagen
 
 # Test model gateway
 curl -X POST http://localhost:7241/invoke \
   -H "Content-Type: application/json" \
   -d '{"tool":"chat_completion","arguments":{"model":"llama3.1","messages":[{"role":"user","content":"Hello"}]}}'
 
-# Test image generation
-curl -X POST http://localhost:8020/invoke \
-  -H "Content-Type: application/json" \
-  -d '{"tool":"generate_image","arguments":{"prompt":"A beautiful sunset","steps":20}}'
 ```
 
 ## Cross-Host Access
@@ -122,21 +113,16 @@ cp .env.example .env
 
 ### Image Generation
 - **SDXL Integration**: Connects to GPU stack for generation
-- **FastAPI Adapter**: RESTful image generation API
-- **Progress Tracking**: Real-time generation progress
-- **Output Management**: Persistent image storage
 
 ## Requirements
 
 - API keys for external services (Glama, GitHub, OpenAI)
 - Network access to pc1-gpu stack for image generation
 - Sufficient memory for AI models
-- GPU access for accelerated inference
 
 ## Data Persistence
 
 - **ollama-data**: Downloaded AI models and caches
-- **mcp-imagen-light-images**: Generated images and outputs
 
 ## Security Considerations
 

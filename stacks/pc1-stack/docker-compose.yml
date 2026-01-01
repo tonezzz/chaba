@@ -193,39 +193,6 @@ services:
       timeout: 5s
       retries: 3
 
-  mcp-imagen-gpu:
-    <<: *default-service
-    profiles: ["gpu"]
-    build:
-      context: ${MCP_IMAGEN_BUILD_CONTEXT:-../../mcp/mcp-imagen}
-      args:
-        CUDA_BASE_IMAGE: ${CUDA_BASE_IMAGE:-nvidia/cuda:12.4.1-runtime-ubuntu22.04}
-        USE_GPU: "true"
-    container_name: pc1-mcp-imagen-gpu
-    ports:
-      - "${MCP_IMAGEN_PORT:-8001}:8001"
-    environment:
-      PORT: 8001
-      TORCH_DEVICE: cuda
-      IMAGE_MODEL_ID: ${IMAGE_MODEL_ID:-runwayml/stable-diffusion-v1-5}
-      IMAGE_DTYPE: ${IMAGE_DTYPE:-fp32}
-      IMAGE_MODEL_CACHE: /app/models
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: ${MCP_IMAGEN_GPU_COUNT:-1}
-              capabilities: ["gpu"]
-    volumes:
-      - mcp-imagen-cache:/app/models
-      - ${DIFFUSERS_CACHE_ROOT:-C:/_dev/_models/diffusers}:/app/models
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8001/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
   mcp-devops:
     <<: *default-service
     profiles: ["mcp-suite"]
@@ -425,9 +392,8 @@ volumes:
   authentik-media:
   authentik-templates:
   quickchart-data:
-  mcp-imagen-cache:
   qdrant-data:
   ollama-data:
   mcp-rag-cache:
   mcp-doc-archiver-data:
-  mcp-imagen-light-images:
+ 
