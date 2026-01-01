@@ -115,6 +115,13 @@ $call = Invoke-Mcp -McpUrl $mcpUrl -Method 'tools/call' -Params @{ name = $glama
 
 $callText = ($call.Body.result.content | Where-Object { $_.type -eq 'text' } | Select-Object -First 1).text
 if (-not $callText) {
+    Write-Host "[smoke-test] tools/call raw response:" -ForegroundColor Yellow
+    try {
+        ($call.Body | ConvertTo-Json -Depth 50) | Write-Host
+    }
+    catch {
+        Write-Host $call.Body
+    }
     throw 'tools/call returned no text content'
 }
 
