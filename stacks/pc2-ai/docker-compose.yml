@@ -46,7 +46,7 @@ services:
     volumes:
       - ${MCP_AGENTS_DATA_DIR:-./data/mcp-agents}:/app/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8046/health || exit 1"]
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:8046/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3

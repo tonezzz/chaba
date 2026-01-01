@@ -32,6 +32,31 @@ function Wait-ForHealthy {
     throw "Timed out waiting for healthy at $Url. Last error: $lastError"
 }
 
+function Parse-McpResponse {
+    param(
+        [string]$Raw
+    )
+
+    if (-not $Raw) {
+        throw 'Empty MCP response'
+    }
+
+    $trim = $Raw.Trim()
+
+    # Some 1mcp responses come back as SSE frames:
+    # event: message\n
+    # data: {...json...}\n\n
+    if ($trim.StartsWith('event:')) {
+        $m = [regex]::Matches($Raw, '(?m)^data:\s*(\{.*\})\s*$')
+        if (-not $m -or $m.Count -eq 0) {
+            throw "Unable to locate SSE data payload in response: $Raw"
+        }
+        return ($m[$m.Count - 1].Groups[1].Value | ConvertFrom-Json)
+    }
+
+    return ($Raw | ConvertFrom-Json)
+}
+
 function Invoke-Mcp {
     param(
         [string]$McpUrl,
@@ -48,11 +73,10 @@ function Invoke-Mcp {
     $bodyObj = @{ jsonrpc = '2.0'; id = 1; method = $Method; params = $Params }
     $bodyJson = $bodyObj | ConvertTo-Json -Depth 20 -Compress
 
-    $rh = $null
-    $resp = Invoke-WebRequest -Method Post -Uri $McpUrl -ContentType 'application/json' -Headers $headers -Body $bodyJson -ResponseHeadersVariable rh
+    $resp = Invoke-WebRequest -UseBasicParsing -Method Post -Uri $McpUrl -ContentType 'application/json' -Headers $headers -Body $bodyJson
 
-    $content = $resp.Content | ConvertFrom-Json
-    return @{ Body = $content; Headers = $rh }
+    $content = Parse-McpResponse -Raw $resp.Content
+    return @{ Body = $content; Headers = $resp.Headers }
 }
 
 $healthUrl = "$BaseUrl/health"
