@@ -1,0 +1,104 @@
+version: "3.9"
+
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - .env
+  networks:
+    - idc1-devops-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  mcp-devops:
+    <<: *default-service
+    build:
+      context: ${MCP_DEVOPS_BUILD_CONTEXT:-../../mcp/mcp-devops}
+    ports:
+      - "${MCP_DEVOPS_PORT:-8425}:${MCP_DEVOPS_PORT:-8425}"
+    environment:
+      MCP_DEVOPS_PORT: ${MCP_DEVOPS_PORT:-8425}
+      MCP_DEVOPS_HOST: 0.0.0.0
+      DEV_HOST_BASE_URL: ${DEV_HOST_BASE_URL:-https://test.idc1.surf-thailand.com}
+      DEV_HOST_PC2_BASE_URL: ${DEV_HOST_PC2_BASE_URL:-https://test.idc1.surf-thailand.com}
+      MCP_DEVOPS_JSON_LIMIT: ${MCP_DEVOPS_JSON_LIMIT:-2mb}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_DEVOPS_PORT:-8425}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-task:
+    <<: *default-service
+    build:
+      context: ${MCP_TASK_BUILD_CONTEXT:-../../mcp/mcp-task}
+    environment:
+      PORT: 8016
+      MCP_TASK_DB_PATH: /data/sqlite/mcp-task.sqlite
+      MCP_TASK_SERVERS: '[{"name":"mcp-devops","url":"http://mcp-devops:${MCP_DEVOPS_PORT:-8425}"}]'
+    volumes:
+      - stack-sqlite:/data/sqlite
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8016/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - mcp-devops
+
+  mcp-tester:
+    <<: *default-service
+    build:
+      context: ${MCP_TESTER_BUILD_CONTEXT:-../../mcp/mcp-tester}
+    ports:
+      - "${MCP_TESTER_PORT:-8435}:${MCP_TESTER_PORT:-8435}"
+    environment:
+      MCP_TESTER_HOST: 0.0.0.0
+      MCP_TESTER_PORT: ${MCP_TESTER_PORT:-8435}
+      MCP_TESTER_SUITE_FILE: ${MCP_TESTER_SUITE_FILE:-/app/tests.example.json}
+      MCP_TESTER_SUITE_FILES: ${MCP_TESTER_SUITE_FILES:-/app/tests.optional.json}
+      MCP_TESTER_DEFAULT_TIMEOUT_MS: ${MCP_TESTER_DEFAULT_TIMEOUT_MS:-5000}
+      MCP_TESTER_HISTORY_FILE: ${MCP_TESTER_HISTORY_FILE:-/data/run-history.ndjson}
+      DEV_HOST_TEST_BASE: ${DEV_HOST_TEST_BASE:-https://test.idc1.surf-thailand.com}
+      A1_IDC1_BASE_URL: ${A1_IDC1_BASE_URL:-https://a1.idc1.surf-thailand.com}
+      A1_IDC1_TEST_URL: ${A1_IDC1_TEST_URL:-https://test.idc1.surf-thailand.com}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_TESTER_PORT:-8435}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - ${MCP_TESTER_DATA_DIR:-./data/mcp-tester}:/data
+
+  mcp-playwright:
+    <<: *default-service
+    build:
+      context: ${MCP_PLAYWRIGHT_BUILD_CONTEXT:-../../mcp/mcp-playwright}
+    ports:
+      - "${MCP_PLAYWRIGHT_PORT:-8460}:${MCP_PLAYWRIGHT_PORT:-8460}"
+    environment:
+      PORT: ${MCP_PLAYWRIGHT_PORT:-8460}
+      PLAYWRIGHT_BROWSER: ${PLAYWRIGHT_BROWSER:-chromium}
+      PLAYWRIGHT_HEADLESS: ${PLAYWRIGHT_HEADLESS:-true}
+      PLAYWRIGHT_TIMEOUT_MS: ${PLAYWRIGHT_TIMEOUT_MS:-15000}
+      PLAYWRIGHT_SCENARIOS_DIR: /app/scenarios
+      PLAYWRIGHT_OUTPUT_DIR: /app/output
+    volumes:
+      - ${MCP_PLAYWRIGHT_SCENARIOS_DIR:-./data/mcp-playwright/scenarios}:/app/scenarios
+      - ${MCP_PLAYWRIGHT_OUTPUT_DIR:-./data/mcp-playwright/output}:/app/output
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_PLAYWRIGHT_PORT:-8460}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  idc1-devops-net:
+    driver: bridge
+    external: true
+
+volumes:
+  stack-sqlite:
