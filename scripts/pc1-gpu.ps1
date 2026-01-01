@@ -1,6 +1,7 @@
 param(
   [ValidateSet('up', 'down', 'status', 'pull', 'pull-up', 'restart-service')]
   [string]$Action = 'status',
+  [switch]$RemoveVolumes,
   [string]$Profile = '',
   [string]$Services = '',
   [string]$Service = ''
@@ -12,7 +13,7 @@ if (-not (Test-Path $runner)) {
   throw "stack runner not found at $runner"
 }
 
-& $runner -Stack 'pc1-gpu' -Action $Action -Profile $Profile -Services $Services -Service $Service
+& $runner -Stack 'pc1-gpu' -Action $Action -RemoveVolumes:$RemoveVolumes -Profile $Profile -Services $Services -Service $Service
 if ($LASTEXITCODE -ne 0) {
   throw "pc1-gpu script failed with exit code $LASTEXITCODE"
 }

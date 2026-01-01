@@ -13,7 +13,8 @@ This runbook describes how to operate the **split PC1 Docker Compose stacks** af
 ## Preconditions
 
 - **Docker Desktop** running
-- You are using **docker-compose** (not `docker compose`) on this machine
+- Prefer the repo scripts under `scripts/` for stack lifecycle (`pc1-*.ps1`, `pc1-start-all-stacks.ps1`, `pc1-stop-all-stacks.ps1`).
+- The generic runner `scripts/stack.ps1` uses `docker compose` when available and falls back to `docker-compose`.
 - VPN DNS `pc1.vpn` resolves correctly from containers/host where used
 
 ## Environment Files
@@ -42,7 +43,20 @@ Start in dependency order so downstream services can connect immediately:
 
 ### Commands
 
-Run from each stack directory:
+Preferred: use the scripts (recommended):
+
+```powershell
+# Start all stacks (recommended order)
+scripts/pc1-start-all-stacks.ps1
+
+# Stop all stacks
+scripts/pc1-stop-all-stacks.ps1
+
+# Stop and remove volumes
+scripts/pc1-stop-all-stacks.ps1 -RemoveVolumes
+```
+
+Alternative: run from each stack directory:
 
 ```bash
 # pc1-db

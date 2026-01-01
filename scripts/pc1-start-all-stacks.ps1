@@ -31,7 +31,8 @@ function Initialize-EnvFile {
 function Invoke-Stack {
   param(
     [Parameter(Mandatory = $true)][string]$StackName,
-    [Parameter(Mandatory = $true)][string[]]$Args
+    [Parameter(Mandatory = $true)][string]$Action,
+    [string]$Profile = ''
   )
 
   $stackDir = Join-Path $repoRoot (Join-Path "stacks" $StackName)
@@ -41,16 +42,19 @@ function Invoke-Stack {
 
   Initialize-EnvFile -StackDir $stackDir
 
-  Write-Host "[$StackName] docker-compose $($Args -join ' ')"
-  Push-Location $stackDir
-  try {
-    & docker-compose @Args
-    if ($LASTEXITCODE -ne 0) {
-      throw "docker-compose failed for $StackName (exit $LASTEXITCODE)"
-    }
+  $wrapper = Join-Path $repoRoot (Join-Path "scripts" ("$StackName.ps1"))
+  if (-not (Test-Path $wrapper)) {
+    throw "Stack wrapper script not found: $wrapper"
   }
-  finally {
-    Pop-Location
+
+  Write-Host "[$StackName] $wrapper -Action $Action"
+  if ($Profile) {
+    & $wrapper -Action $Action -Profile $Profile
+  } else {
+    & $wrapper -Action $Action
+  }
+  if ($LASTEXITCODE -ne 0) {
+    throw "Stack action failed for $StackName (exit $LASTEXITCODE)"
   }
 }
 
@@ -69,14 +73,14 @@ if (-not $SkipDeka) {
 
 foreach ($stack in $startOrder) {
   if ($Pull) {
-    Invoke-Stack -StackName $stack -Args @("pull")
+    Invoke-Stack -StackName $stack -Action 'pull'
   }
 
   if ($stack -eq "pc1-stack") {
-    Invoke-Stack -StackName $stack -Args @("--profile", $ComposeProfile, "up", "-d")
+    Invoke-Stack -StackName $stack -Action 'up' -Profile $ComposeProfile
   }
   else {
-    Invoke-Stack -StackName $stack -Args @("up", "-d")
+    Invoke-Stack -StackName $stack -Action 'up'
   }
 }
 

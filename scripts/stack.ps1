@@ -6,6 +6,8 @@ param(
   [ValidateSet('up', 'down', 'status', 'pull', 'pull-up', 'restart-service')]
   [string]$Action = 'status',
 
+  [switch]$RemoveVolumes,
+
   [string]$Profile = '',
   [string]$Services = '',
   [string]$Service = ''
@@ -54,11 +56,31 @@ function Invoke-Compose {
   param(
     [string[]]$ComposeArgs
   )
-  $argList = @('compose', '-f', $composeFile, '--project-name', $Stack) + $ComposeArgs
-  Write-Host "[$Stack] docker $($argList -join ' ')"
+
+  $useDockerCli = $true
+  try {
+    & docker compose version *>$null
+    if ($LASTEXITCODE -ne 0) {
+      $useDockerCli = $false
+    }
+  } catch {
+    $useDockerCli = $false
+  }
+
+  if ($useDockerCli) {
+    $argList = @('compose', '-f', $composeFile, '--project-name', $Stack) + $ComposeArgs
+    Write-Host "[$Stack] docker $($argList -join ' ')"
+  } else {
+    $argList = @('-f', $composeFile, '--project-name', $Stack) + $ComposeArgs
+    Write-Host "[$Stack] docker-compose $($argList -join ' ')"
+  }
   Push-Location $stackDir
   try {
-    & docker @argList
+    if ($useDockerCli) {
+      & docker @argList
+    } else {
+      & docker-compose @argList
+    }
     if ($LASTEXITCODE -ne 0) {
       throw "docker compose command failed with exit code $LASTEXITCODE"
     }
@@ -84,7 +106,11 @@ switch ($Action) {
     Invoke-Compose -ComposeArgs @($profileArgs + @('up', '-d') + $serviceArgs)
   }
   'down' {
-    Invoke-Compose -ComposeArgs @('down')
+    $args = @('down')
+    if ($RemoveVolumes) {
+      $args += '-v'
+    }
+    Invoke-Compose -ComposeArgs $args
   }
   'restart-service' {
     if (-not $Service) {

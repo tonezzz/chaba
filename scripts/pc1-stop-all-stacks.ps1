@@ -11,7 +11,8 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 function Invoke-Stack {
   param(
     [Parameter(Mandatory = $true)][string]$StackName,
-    [Parameter(Mandatory = $true)][string[]]$Args
+    [Parameter(Mandatory = $true)][string]$Action,
+    [string]$Profile = ''
   )
 
   $stackDir = Join-Path $repoRoot (Join-Path "stacks" $StackName)
@@ -19,16 +20,19 @@ function Invoke-Stack {
     throw "Stack directory not found: $stackDir"
   }
 
-  Write-Host "[$StackName] docker-compose $($Args -join ' ')"
-  Push-Location $stackDir
-  try {
-    & docker-compose @Args
-    if ($LASTEXITCODE -ne 0) {
-      throw "docker-compose failed for $StackName (exit $LASTEXITCODE)"
-    }
+  $wrapper = Join-Path $repoRoot (Join-Path "scripts" ("$StackName.ps1"))
+  if (-not (Test-Path $wrapper)) {
+    throw "Stack wrapper script not found: $wrapper"
   }
-  finally {
-    Pop-Location
+
+  Write-Host "[$StackName] $wrapper -Action $Action"
+  if ($Profile) {
+    & $wrapper -Action $Action -Profile $Profile -RemoveVolumes:$RemoveVolumes
+  } else {
+    & $wrapper -Action $Action -RemoveVolumes:$RemoveVolumes
+  }
+  if ($LASTEXITCODE -ne 0) {
+    throw "Stack action failed for $StackName (exit $LASTEXITCODE)"
   }
 }
 
@@ -47,18 +51,11 @@ if (-not $SkipDeka) {
 }
 
 foreach ($stack in $stopOrder) {
-  $composeArgs = @("down")
-
-  # Mirror start script behavior (pc1-stack is started with profiles)
   if ($stack -eq "pc1-stack") {
-    $composeArgs = @("--profile", $ComposeProfile, "down")
+    Invoke-Stack -StackName $stack -Action 'down' -Profile $ComposeProfile
+  } else {
+    Invoke-Stack -StackName $stack -Action 'down'
   }
-
-  if ($RemoveVolumes) {
-    $composeArgs += "-v"
-  }
-
-  Invoke-Stack -StackName $stack -Args $composeArgs
 }
 
 Write-Host "[pc1-stop-all-stacks] Done."
