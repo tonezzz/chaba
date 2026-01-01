@@ -414,7 +414,7 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '500kb' }));
 
-app.post('/mcp', async (req, res) => {
+app.post('/mcp-legacy', async (req, res) => {
   const payload = req.body;
   const id = payload?.id;
   const method = payload?.method;
@@ -537,8 +537,13 @@ app.post('/mcp', async (req, res) => {
   const method = payload.method;
   const params = payload.params || {};
 
-  const sessionIdHeader = req.headers['mcp-session-id'];
-  const sessionId = typeof sessionIdHeader === 'string' ? sessionIdHeader : Array.isArray(sessionIdHeader) ? sessionIdHeader[0] : null;
+  const sessionIdHeader = req.headers['mcp-session-id'] || req.headers['Mcp-Session-Id'];
+  const sessionId =
+    typeof sessionIdHeader === 'string'
+      ? sessionIdHeader
+      : Array.isArray(sessionIdHeader)
+        ? sessionIdHeader[0]
+        : null;
 
   if (method === 'initialize') {
     const newId = newSessionId();
