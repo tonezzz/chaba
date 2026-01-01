@@ -13,14 +13,9 @@ RUN apt-get update \
       openssh-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Docker CLI + docker compose plugin (v2) from Docker's official repository.
-RUN install -m 0755 -d /etc/apt/keyrings \
-    && curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
-    && chmod a+r /etc/apt/keyrings/docker.gpg \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable" \
-      > /etc/apt/sources.list.d/docker.list \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin \
+# Install Docker CLI + docker compose plugin (v2) from Debian repositories.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends docker.io docker-compose-plugin \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PowerShell (pwsh) for running PowerShell-based workflows inside the container.
