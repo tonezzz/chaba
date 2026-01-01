@@ -68,6 +68,7 @@ function Invoke-Mcp {
     $headers = @{ Accept = 'application/json, text/event-stream' }
     if ($SessionId) {
         $headers['Mcp-Session-Id'] = $SessionId
+        $headers['mcp-session-id'] = $SessionId
     }
 
     $bodyObj = @{ jsonrpc = '2.0'; id = 1; method = $Method; params = $Params }
@@ -89,6 +90,9 @@ Write-Host "[smoke-test] MCP initialize: $mcpUrl"
 $init = Invoke-Mcp -McpUrl $mcpUrl -Method 'initialize' -Params @{ protocolVersion = '2024-11-05'; clientInfo = @{ name = 'pc2-smoke-test'; version = '1' }; capabilities = @{} }
 
 $sessionId = $init.Headers['Mcp-Session-Id']
+if (-not $sessionId) {
+    $sessionId = $init.Headers['mcp-session-id']
+}
 if (-not $sessionId) {
     throw 'Missing Mcp-Session-Id header from initialize response'
 }
