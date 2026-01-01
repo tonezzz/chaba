@@ -10,7 +10,8 @@ if [ ! -d "$PROJECT_DIR" ]; then
 fi
 
 ensure_venv() {
-  rm -rf "$VENV_DIR"
+  mkdir -p "$VENV_DIR"
+  find "$VENV_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
   python3 -m venv "$VENV_DIR"
   ln -sf "$VENV_DIR/bin/python" "$VENV_DIR/bin/python3"
   "$VENV_DIR/bin/python" -m pip install --upgrade pip setuptools wheel
