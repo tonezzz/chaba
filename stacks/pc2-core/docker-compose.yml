@@ -1,0 +1,71 @@
+version: "3.9"
+
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - .env
+  networks:
+    - pc2-core-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  node-runner:
+    <<: *default-service
+    image: node:22-alpine
+    profiles: ["base-tools"]
+    working_dir: /work
+    entrypoint: ["sleep", "infinity"]
+    volumes:
+      - ${HOST_REPO:-/home/tonezzz/repos}:/work:cached
+      - ${HOST_SSH_AUTH_SOCK:-/home/tonezzz/.ssh/ssh-agent.socket}:/ssh-agent
+    environment:
+      SSH_AUTH_SOCK: /ssh-agent
+
+  python-runner:
+    <<: *default-service
+    image: python:3.11-slim
+    profiles: ["base-tools"]
+    working_dir: /work
+    entrypoint: ["sleep", "infinity"]
+    volumes:
+      - ${HOST_REPO:-/home/tonezzz/repos}:/work:cached
+      - ${HOST_PIP_CACHE:-/home/tonezzz/.cache/pip}:/root/.cache/pip
+
+  redis:
+    <<: *default-service
+    image: redis:7-alpine
+    profiles: ["base-tools"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  dev-proxy:
+    <<: *default-service
+    image: caddy:2-alpine
+    profiles: ["base-tools"]
+    volumes:
+      - ${DEV_PROXY_CONFIG:-./dev-proxy/Caddyfile}:/etc/caddy/Caddyfile:ro
+      - ${DEV_PROXY_CERTS:-./dev-proxy/certs}:/certs:ro
+    environment:
+      CADDY_ADMIN: "0.0.0.0:2019"
+      DEV_HOST_VAJA_TARGET: http://mcp-vaja.pc2-tools-net:8017
+    ports:
+      - "${DEV_PROXY_ADMIN_PORT:-2019}:2019"
+
+networks:
+  pc2-core-net:
+    driver: bridge
+    external: true
+
+volumes:
+  redis-data:
