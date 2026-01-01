@@ -68,6 +68,7 @@ function Invoke-Mcp {
     $headers = @{ Accept = 'application/json, text/event-stream' }
     if ($SessionId) {
         $headers['Mcp-Session-Id'] = $SessionId
+        $headers['mcp-session-id'] = $SessionId
     }
 
     $bodyObj = @{ jsonrpc = '2.0'; id = 1; method = $Method; params = $Params }
@@ -90,6 +91,9 @@ $init = Invoke-Mcp -McpUrl $mcpUrl -Method 'initialize' -Params @{ protocolVersi
 
 $sessionId = $init.Headers['Mcp-Session-Id']
 if (-not $sessionId) {
+    $sessionId = $init.Headers['mcp-session-id']
+}
+if (-not $sessionId) {
     throw 'Missing Mcp-Session-Id header from initialize response'
 }
 
@@ -111,6 +115,13 @@ $call = Invoke-Mcp -McpUrl $mcpUrl -Method 'tools/call' -Params @{ name = $glama
 
 $callText = ($call.Body.result.content | Where-Object { $_.type -eq 'text' } | Select-Object -First 1).text
 if (-not $callText) {
+    Write-Host "[smoke-test] tools/call raw response:" -ForegroundColor Yellow
+    try {
+        ($call.Body | ConvertTo-Json -Depth 50) | Write-Host
+    }
+    catch {
+        Write-Host $call.Body
+    }
     throw 'tools/call returned no text content'
 }
 

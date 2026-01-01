@@ -15,6 +15,9 @@ services:
     <<: *default-service
     build:
       context: ${MCP_GLAMA_BUILD_CONTEXT:-../../mcp/mcp-glama}
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     ports:
       - "${MCP_GLAMA_PORT:-7214}:8014"
     environment:
@@ -37,6 +40,8 @@ services:
       context: ${MCP_AGENTS_BUILD_CONTEXT:-../../mcp/mcp-agents}
     ports:
       - "${MCP_AGENTS_PORT:-8046}:8046"
+    extra_hosts:
+      - "dev-host.pc2:host-gateway"
     environment:
       PORT: ${MCP_AGENTS_PORT:-8046}
       AGENTS_API_BASE: ${AGENTS_API_BASE:-http://dev-host.pc2:3100/test/agents/api}
