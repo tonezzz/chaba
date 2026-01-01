@@ -8,9 +8,15 @@ export const config = {
 
 const handler = async (req: Request): Promise<Response> => {
   try {
-    const { key } = (await req.json()) as {
-      key: string;
-    };
+    let key = '';
+    if (req.method === 'POST') {
+      try {
+        const body = (await req.json()) as { key?: string };
+        key = body?.key || '';
+      } catch {
+        key = '';
+      }
+    }
 
     let url = `${OPENAI_API_HOST}/v1/models`;
     if (OPENAI_API_TYPE === 'azure') {
@@ -32,18 +38,15 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
 
-    if (response.status === 401) {
-      return new Response(response.body, {
-        status: 500,
-        headers: response.headers,
+    if (!response.ok) {
+      const text = await response.text();
+      console.error(`OpenAI API returned an error ${response.status}: ${text}`);
+      return new Response(text || 'Upstream error', {
+        status: response.status,
+        headers: {
+          'Content-Type': response.headers.get('content-type') || 'text/plain',
+        },
       });
-    } else if (response.status !== 200) {
-      console.error(
-        `OpenAI API returned an error ${
-          response.status
-        }: ${await response.text()}`,
-      );
-      throw new Error('OpenAI API returned an error');
     }
 
     const json = await response.json();
@@ -64,7 +67,12 @@ const handler = async (req: Request): Promise<Response> => {
       })
       .filter(Boolean) as OpenAIModel[];
 
-    return new Response(JSON.stringify(models), { status: 200 });
+    return new Response(JSON.stringify(models), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   } catch (error) {
     console.error(error);
     return new Response('Error', { status: 500 });

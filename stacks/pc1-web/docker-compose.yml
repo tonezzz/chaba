@@ -16,6 +16,8 @@ services:
     build:
       context: ${OPENCHAT_UI_BUILD_CONTEXT:-../../sites/openchat-ui}
     container_name: pc1-web-openchat-ui
+    extra_hosts:
+      - "pc1.vpn:${PC1_VPN_IP:-10.8.0.11}"
     ports:
       - "${OPENCHAT_UI_PORT:-3170}:3000"
     environment:

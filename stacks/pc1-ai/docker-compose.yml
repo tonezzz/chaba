@@ -49,7 +49,7 @@ services:
       context: ${MCP_OPENAI_GATEWAY_BUILD_CONTEXT:-../../mcp/mcp-openai-gateway}
     container_name: pc1-ai-mcp-openai-gateway
     ports:
-      - "${MCP_OPENAI_GATEWAY_PORT:-8181}:8181"
+      - "8181:8181"
     environment:
       PORT: 8181
       OPENAI_API_KEY: ${OPENAI_API_KEY}
