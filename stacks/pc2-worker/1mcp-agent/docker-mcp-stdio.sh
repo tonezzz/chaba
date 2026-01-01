@@ -13,18 +13,25 @@ ensure_venv() {
   mkdir -p "$VENV_DIR"
   find "$VENV_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
   python3 -m venv "$VENV_DIR"
-  ln -sf "$VENV_DIR/bin/python" "$VENV_DIR/bin/python3"
   "$VENV_DIR/bin/python" -m pip install --upgrade pip setuptools wheel
 }
 
-if [ ! -x "$VENV_DIR/bin/python" ] || [ ! -x "$VENV_DIR/bin/python3" ]; then
+if [ ! -x "$VENV_DIR/bin/python" ] || [ ! -e "$VENV_DIR/bin/python3" ]; then
   ensure_venv
-else
-  # Even if the files exist, the interpreter symlink can point at a deleted
-  # system python after base image changes. Validate by executing it.
-  if ! "$VENV_DIR/bin/python3" --version >/dev/null 2>&1; then
-    ensure_venv
-  fi
+fi
+
+# Validate the interpreter actually works (venv may contain stale/broken links)
+if ! "$VENV_DIR/bin/python" --version >/dev/null 2>&1; then
+  ensure_venv
+fi
+
+if [ -e "$VENV_DIR/bin/python3" ] && ! "$VENV_DIR/bin/python3" --version >/dev/null 2>&1; then
+  ensure_venv
+fi
+
+# Some entrypoints expect python3. Provide a shim only if python3 is missing.
+if [ ! -e "$VENV_DIR/bin/python3" ]; then
+  ln -sf "$VENV_DIR/bin/python" "$VENV_DIR/bin/python3"
 fi
 
 "$VENV_DIR/bin/python" -m pip install -e "$PROJECT_DIR"
