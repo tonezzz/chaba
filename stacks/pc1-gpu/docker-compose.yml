@@ -57,7 +57,40 @@ services:
     depends_on:
       - mcp-cuda
 
+  mcp-imagen-light:
+    <<: *default-service
+    build:
+      context: ${MCP_IMAGEN_LIGHT_BUILD_CONTEXT:-../../mcp/mcp-imagen-light}
+    container_name: pc1-gpu-mcp-imagen-light
+    ports:
+      - "${MCP_IMAGEN_LIGHT_PORT:-8020}:8020"
+    environment:
+      PORT: 8020
+      MCP_CUDA_URL: http://mcp-cuda:8057
+      IMAGEN_OUTPUT_DIR: ${IMAGEN_OUTPUT_DIR:-/app/images}
+      IMAGEN_BASE_URL: ${IMAGEN_BASE_URL:-http://pc1.vpn:8020}
+    volumes:
+      - mcp-imagen-light-images:/app/images
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: ${MCP_CUDA_GPU_COUNT:-1}
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8020/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - mcp-cuda
+
 networks:
   pc1-gpu-net:
     driver: bridge
+    
+
+volumes:
+  mcp-imagen-light-images:
     
