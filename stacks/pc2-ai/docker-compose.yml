@@ -15,6 +15,9 @@ services:
     <<: *default-service
     build:
       context: ${MCP_GLAMA_BUILD_CONTEXT:-../../mcp/mcp-glama}
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     ports:
       - "${MCP_GLAMA_PORT:-7214}:8014"
     environment:
