@@ -549,6 +549,7 @@ app.post('/mcp', async (req, res) => {
     const newId = newSessionId();
     mcpSessions.set(newId, { createdAt: new Date().toISOString(), initializedAt: null });
     res.setHeader('mcp-session-id', newId);
+    res.setHeader('Mcp-Session-Id', newId);
     return res.json(
       mcpJsonResult(id ?? null, {
         protocolVersion: MCP_PROTOCOL_VERSION,
