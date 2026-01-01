@@ -1,0 +1,68 @@
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - .env
+  networks:
+    - pc2-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  1mcp-agent:
+    <<: *default-service
+    build:
+      context: ../pc2-worker/1mcp-agent
+    command:
+      - 1mcp
+      - --config
+      - ${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}
+      - --transport
+      - http
+      - --enable-enhanced-security=false
+      - --host
+      - ${ONE_MCP_HOST:-0.0.0.0}
+      - --port
+      - ${ONE_MCP_PORT:-3050}
+      - --external-url
+      - ${ONE_MCP_EXTERNAL_URL:-http://127.0.0.1:${ONE_MCP_PORT:-3050}}
+    ports:
+      - "${ONE_MCP_PORT:-3050}:${ONE_MCP_PORT:-3050}"
+    environment:
+      ONE_MCP_HOST: ${ONE_MCP_HOST:-0.0.0.0}
+      ONE_MCP_PORT: ${ONE_MCP_PORT:-3050}
+      ONE_MCP_EXTERNAL_URL: ${ONE_MCP_EXTERNAL_URL:-http://127.0.0.1:${ONE_MCP_PORT:-3050}}
+      ONE_MCP_LOG_LEVEL: ${ONE_MCP_LOG_LEVEL:-info}
+      ONE_MCP_CONFIG: ${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}
+      ONE_MCP_ENABLE_ASYNC_LOADING: ${ONE_MCP_ENABLE_ASYNC_LOADING:-true}
+      ONE_MCP_ENABLE_ENHANCED_SECURITY: ${ONE_MCP_ENABLE_ENHANCED_SECURITY:-false}
+      UV_PYTHON: python3
+      UV_PYTHON_DOWNLOADS: never
+      UV_PROJECT_ENVIRONMENT: /tmp/uv-project
+    volumes:
+      - ${ONE_MCP_CONFIG_FILE:-./1mcp-hub.json}:${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}:ro
+      - ${PC2_WORKSPACE_HOST_DIR:-/mnt/c/chaba}:/workspaces/chaba:rw
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
+      - docker-mcp-venv:/opt/docker-mcp-venv
+
+  mcp-docker:
+    <<: *default-service
+    build:
+      context: ${MCP_DOCKER_BUILD_CONTEXT:-../../mcp/mcp-docker}
+    ports:
+      - "${MCP_DOCKER_PORT:-8340}:${MCP_DOCKER_PORT:-8340}"
+    environment:
+      DOCKER_HOST: ${MCP_DOCKER_DOCKER_HOST:-unix:///var/run/docker.sock}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
+
+networks:
+  pc2-net:
+    external: true
+
+volumes:
+  docker-mcp-venv:
