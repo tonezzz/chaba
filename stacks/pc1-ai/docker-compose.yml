@@ -52,6 +52,9 @@ services:
       - "8181:8181"
     environment:
       PORT: 8181
+      GLAMA_API_URL: ${GLAMA_API_URL:-}
+      GLAMA_API_KEY: ${GLAMA_API_KEY:-}
+      GLAMA_MODEL: ${GLAMA_MODEL:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       MCP_AGENT_URL: ${MCP_AGENT_URL:-http://pc1.vpn:3051/mcp?app=openchat}
