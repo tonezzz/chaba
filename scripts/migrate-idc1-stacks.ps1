@@ -12,7 +12,7 @@ Write-Host "=== IDC1 Stack Migration ===" -ForegroundColor Cyan
 
 $StacksDir = "stacks"
 $Idc1StackDir = "$StacksDir/idc1-stack"
-$NewStacks = @("idc1-db", "idc1-web", "idc1-devops", "idc1-line")
+$NewStacks = @("idc1-db", "idc1-web", "idc1-devops", "idc1-line", "idc1-ai")
 
 # Safety checks
 if (-not $Force) {
@@ -58,6 +58,8 @@ Write-Host ""
 Write-Host "3. Start new modular stacks:" -ForegroundColor White
 Write-Host "   # Core services" -ForegroundColor Gray
 Write-Host "   cd $Idc1StackDir && docker-compose --profile mcp-suite up -d" -ForegroundColor Gray
+Write-Host "   # AI stack (ollama)" -ForegroundColor Gray
+Write-Host "   cd $StacksDir/idc1-ai && docker-compose up -d" -ForegroundColor Gray
 Write-Host "   # Database stack" -ForegroundColor Gray
 Write-Host "   cd $StacksDir/idc1-db && docker-compose up -d" -ForegroundColor Gray
 Write-Host "   # Web services" -ForegroundColor Gray

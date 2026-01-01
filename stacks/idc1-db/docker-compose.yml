@@ -13,19 +13,19 @@ x-default-service: &default-service
       max-file: "3"
 
 services:
-  ollama:
-    <<: *default-service
-    image: ollama/ollama:latest
-    container_name: idc1-ollama
-    ports:
-      - "${OLLAMA_PORT:-11434}:11434"
-    volumes:
-      - ollama-data:/root/.ollama
-    healthcheck:
-      test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/11434' || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 6
+  # ollama: (MOVED to idc1-ai stack)
+  # <<: *default-service
+  # image: ollama/ollama:latest
+  # container_name: idc1-ollama
+  # ports:
+  #   - "${OLLAMA_PORT:-11434}:11434"
+  # volumes:
+  #   - ollama-data:/root/.ollama
+  # healthcheck:
+  #   test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/11434' || exit 1"]
+  #   interval: 30s
+  #   timeout: 5s
+  #   retries: 6
 
   qdrant:
     <<: *default-service
@@ -53,7 +53,7 @@ services:
       QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
       QDRANT_TEXT_COLLECTION: ${QDRANT_TEXT_COLLECTION:-rag_text}
       QDRANT_IMAGE_COLLECTION: ${QDRANT_IMAGE_COLLECTION:-rag_image}
-      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama.idc1-ai-net:11434}
       OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text}
       CLIP_MODEL: ${CLIP_MODEL:-clip-ViT-B-32}
     volumes:
@@ -65,7 +65,6 @@ services:
       retries: 6
     depends_on:
       - qdrant
-      - ollama
 
   mcp-memory:
     <<: *default-service
@@ -92,5 +91,4 @@ networks:
 volumes:
   mcp-memory-data:
   qdrant-data:
-  ollama-data:
   mcp-rag-cache:

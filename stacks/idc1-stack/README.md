@@ -11,14 +11,16 @@ This directory contains the core IDC1 stack services. The original monolithic `i
 
 ### Supporting Stacks
 
-#### `idc1-db/` - Data & RAG Services
+#### `idc1-ai/` - AI/ML Services
 - **ollama**: Local LLM inference server
+- *Future*: Text generation, model serving, GPU acceleration
+
+#### `idc1-db/` - Data & RAG Services
 - **qdrant**: Vector database for embeddings
 - **mcp-rag**: RAG (Retrieval-Augmented Generation) service
 - **mcp-memory**: Persistent memory storage
 
 #### `idc1-web/` - User Interfaces
-- **code-server**: VS Code in the browser
 - **webtops-router**: Webtop session router
 - **mcp-webtops**: Webtop session management
 - **webtops-cp**: Webtop control panel
@@ -75,11 +77,10 @@ cp stacks/idc1-line/.env.example stacks/idc1-line/.env
 | core | 1mcp-agent | 3050 | MCP aggregation |
 | core | mcp-agents | 8446 | Agents API |
 | core | mcp-glama | 7441 | Glama gateway |
-| db | ollama | 11434 | LLM inference |
+| ai | ollama | 11434 | LLM inference |
 | db | qdrant | 6333 | Vector database |
 | db | mcp-rag | 8455 | RAG service |
 | db | mcp-memory | 8470 | Memory storage |
-| web | code-server | 8080 | VS Code web |
 | web | webtops-router | 3001 | Webtop router |
 | web | mcp-webtops | 8091 | Webtop management |
 | web | webtops-cp | 3005 | Control panel |
@@ -92,6 +93,7 @@ cp stacks/idc1-line/.env.example stacks/idc1-line/.env
 
 All stacks share external networks for inter-stack communication:
 - `idc1-stack-net`: Core stack network
+- `idc1-ai-net`: AI/ML services network
 - `idc1-db-net`: Database services network  
 - `idc1-web-net`: Web services network
 - `idc1-devops-net`: DevOps tools network
@@ -107,13 +109,16 @@ Each stack has its own `.env.example` file. Key variables to configure:
 - `MCP_GLAMA_PORT`: Glama gateway port (default: 7441)
 - `GLAMA_API_KEY`: Glama API key (required)
 
-### Database Stack
+### AI Stack
 - `OLLAMA_PORT`: Ollama server port (default: 11434)
+- `OLLAMA_HOST`: Ollama bind host (default: 0.0.0.0)
+
+### Database Stack
 - `QDRANT_PORT`: Qdrant port (default: 6333)
 - `MCP_RAG_PORT`: RAG service port (default: 8455)
+- `OLLAMA_URL`: External Ollama URL (default: http://ollama.idc1-ai-net:11434)
 
 ### Web Stack
-- `CODE_SERVER_PORT`: Code server port (default: 8080)
 - `WEBTOPS_ROUTER_PORT`: Webtop router port (default: 3001)
 - `WEBTOPS_ADMIN_TOKEN`: Webtop admin token (required)
 

@@ -2,7 +2,7 @@
 # Startup script for modular idc1 stacks
 
 param(
-    [string[]]$Stacks = @("core", "db", "web", "devops", "line"),
+    [string[]]$Stacks = @("core", "ai", "db", "web", "devops", "line"),
     [switch]$Stop,
     [switch]$Status,
     [switch]$Logs
@@ -17,15 +17,20 @@ $StackCommands = @{
         "compose" = "docker-compose --profile mcp-suite"
         "description" = "Core MCP services (1mcp-agent, mcp-agents, mcp-glama)"
     }
+    "ai" = @{
+        "path" = "$StacksDir/idc1-ai"
+        "compose" = "docker-compose"
+        "description" = "AI/ML services (ollama)"
+    }
     "db" = @{
         "path" = "$StacksDir/idc1-db"
         "compose" = "docker-compose"
-        "description" = "Database stack (ollama, qdrant, mcp-rag, mcp-memory)"
+        "description" = "Database stack (qdrant, mcp-rag, mcp-memory)"
     }
     "web" = @{
         "path" = "$StacksDir/idc1-web"
         "compose" = "docker-compose"
-        "description" = "Web services (code-server, webtops)"
+        "description" = "Web services (webtops)"
     }
     "devops" = @{
         "path" = "$StacksDir/idc1-devops"
