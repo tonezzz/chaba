@@ -9,14 +9,13 @@ if [ ! -d "$PROJECT_DIR" ]; then
   exit 1
 fi
 
-if [ ! -x "$VENV_DIR/bin/python" ]; then
+if [ ! -x "$VENV_DIR/bin/python" ] || [ ! -x "$VENV_DIR/bin/python3" ]; then
+  rm -rf "$VENV_DIR"
   python3 -m venv "$VENV_DIR"
   "$VENV_DIR/bin/python" -m pip install --upgrade pip setuptools wheel
 fi
 
-if [ ! -x "$VENV_DIR/bin/python3" ]; then
-  ln -sf "$VENV_DIR/bin/python" "$VENV_DIR/bin/python3"
-fi
+ln -sf "$VENV_DIR/bin/python" "$VENV_DIR/bin/python3"
 
 "$VENV_DIR/bin/python" -m pip install -e "$PROJECT_DIR"
 
