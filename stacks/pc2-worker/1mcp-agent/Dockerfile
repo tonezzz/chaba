@@ -1,15 +1,7 @@
-FROM python:3.12-slim-bookworm
+FROM node:22-bookworm-slim
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends bash ca-certificates curl gnupg docker.io \
-  && rm -rf /var/lib/apt/lists/*
-
-# Install Node.js 22 (required for @1mcp/agent)
-RUN mkdir -p /etc/apt/keyrings \
-  && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
-  && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" > /etc/apt/sources.list.d/nodesource.list \
-  && apt-get update \
-  && apt-get install -y --no-install-recommends nodejs \
+  && apt-get install -y --no-install-recommends bash ca-certificates curl docker.io \
   && rm -rf /var/lib/apt/lists/*
 
 RUN npm install -g @1mcp/agent

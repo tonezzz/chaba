@@ -10,13 +10,20 @@ RUN apt-get update \
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir uv
-
-COPY pyproject.toml uv.lock README.md ./
-RUN uv sync --frozen --no-dev
+COPY pyproject.toml README.md ./
+RUN pip install --no-cache-dir \
+      fastapi \
+      httpx \
+      mcp \
+      python-dotenv \
+      python-on-whales \
+      pyyaml \
+      "uvicorn[standard]"
 
 COPY . .
 
 EXPOSE 8340
 
-CMD ["sh", "-c", "uv run uvicorn docker_mcp.http_server:create_app --host 0.0.0.0 --port ${PORT:-8340}"]
+ENV PYTHONPATH=/app/src
+
+CMD ["sh", "-c", "uvicorn docker_mcp.http_server:create_app --host 0.0.0.0 --port ${PORT:-8340}"]
