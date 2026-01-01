@@ -74,6 +74,12 @@ const additionalStaticRoutes = [
     spa: true
   },
   {
+    basePath: '/test/deka',
+    roots: [resolveSitePath('a1-idc1', 'test', 'deka')],
+    spa: true,
+    skipApiFallback: true
+  },
+  {
     basePath: '/test/agents',
     roots: [
       resolveSitePath('a1-idc1', 'test', 'agents'),
@@ -98,6 +104,8 @@ const additionalStaticRoutes = [
     roots: [resolveSitePath('a1-idc1', 'test', 'vaja')],
     spa: true,
     skipApiFallback: true
+  },
+  {
     basePath: '/test/imagen',
     roots: [resolveSitePath('a1-idc1', 'test', 'imagen')],
     spa: true
@@ -113,6 +121,9 @@ const PROXY_CHECKS = [
 ];
 
 const normalizeBaseUrl = (value) => (value || '').trim().replace(/\/+$/, '');
+
+const DEKA_PROXY_TARGET =
+  (process.env.DEKA_PROXY_TARGET ?? process.env.DEV_HOST_DEKA_TARGET ?? 'http://pc1.vpn:8270').trim();
 
 const mcpState = {
   sessionId: '',
@@ -644,6 +655,95 @@ const wireProxies = () => {
     id: 'test-vaja',
     pathRewrite: (path) => path.replace(/^\/test\/vaja\/api/i, '')
   });
+
+  app.use('/test/deka/api', express.json({ limit: '2mb' }));
+
+  app.get('/test/deka/api/stats', async (_req, res) => {
+    const base = normalizeBaseUrl(DEKA_PROXY_TARGET);
+    if (!base) {
+      return res.status(503).json({ status: 'unconfigured', error: 'DEKA_PROXY_TARGET missing' });
+    }
+    try {
+      const response = await fetchWithTimeout(`${base}/status`, { timeout: 8000 });
+      const body = await safeParseBody(response);
+      return res.status(response.ok ? 200 : 502).json({ ok: response.ok, httpStatus: response.status, body });
+    } catch (err) {
+      return res.status(502).json({ ok: false, error: 'deka_unreachable', detail: err?.message || String(err) });
+    }
+  });
+
+  const looksLikeDekaDocsQuestion = (text) => {
+    const t = (text || '').toLowerCase();
+    if (!t) return false;
+    if (t.includes('deka') && (t.includes('how many') || t.includes('count') || t.includes('documents'))) {
+      return true;
+    }
+    if ((t.includes('how many') || t.includes('count')) && t.includes('documents')) {
+      return true;
+    }
+    return false;
+  };
+
+  const formatDekaStatsText = (body) => {
+    const discovered = body?.total_discovered;
+    const runs = body?.total_runs;
+    const lines = [];
+    if (typeof discovered === 'number') lines.push(`Discovered documents: ${discovered}`);
+    if (typeof runs === 'number') lines.push(`Runs recorded: ${runs}`);
+    if (!lines.length) return 'DEKA stats unavailable.';
+    return lines.join('\n');
+  };
+
+  app.post('/test/deka/api/chat', async (req, res) => {
+    try {
+      const message = (req.body?.message || '').trim();
+      const history = Array.isArray(req.body?.history) ? req.body.history : [];
+      if (!message) {
+        return res.status(400).json({ error: 'missing_message' });
+      }
+
+      const lower = message.toLowerCase();
+      if (lower.startsWith('/deka') || lower.startsWith('/stats')) {
+        const base = normalizeBaseUrl(DEKA_PROXY_TARGET);
+        const response = await fetchWithTimeout(`${base}/status`, { timeout: 8000 });
+        const body = await safeParseBody(response);
+        const reply = response.ok ? formatDekaStatsText(body) : `DEKA error: HTTP ${response.status}`;
+        return res.status(200).json({ reply, mode: 'command', raw: body });
+      }
+
+      if (looksLikeDekaDocsQuestion(message)) {
+        const base = normalizeBaseUrl(DEKA_PROXY_TARGET);
+        const response = await fetchWithTimeout(`${base}/status`, { timeout: 8000 });
+        const body = await safeParseBody(response);
+        if (response.ok) {
+          const reply = formatDekaStatsText(body);
+          return res.status(200).json({ reply, mode: 'stats', raw: body });
+        }
+      }
+
+      const target = normalizeBaseUrl(GLAMA_PROXY_TARGET);
+      if (!target) {
+        return res.status(503).json({ error: 'glama_unconfigured' });
+      }
+
+      const response = await fetchWithTimeout(`${target}/api/chat`, {
+        timeout: 60000,
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ message, history })
+      });
+
+      if (!response.ok) {
+        const body = await safeParseBody(response);
+        return res.status(502).json({ error: 'glama_proxy_error', httpStatus: response.status, body });
+      }
+
+      const data = await response.json();
+      return res.status(200).json({ reply: data?.reply || '', mode: 'glama', raw: data });
+    } catch (err) {
+      return res.status(502).json({ error: 'chat_failed', detail: err?.message || String(err) });
+    }
+  });
   app.use('/test/imagen/api', express.json({ limit: '2mb' }));
 
   app.get('/test/imagen/api/health', async (_req, res) => {
@@ -740,6 +840,8 @@ const wireProxies = () => {
         }
       })
     );
+
+  }
 
   app.get('/test/vaja/api/health', async (_req, res) => {
     if (!VAJA_PROXY_TARGET) {
