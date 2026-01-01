@@ -1,0 +1,60 @@
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - .env
+  networks:
+    - pc2-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  mcp-devops:
+    <<: *default-service
+    build:
+      context: ${MCP_DEVOPS_BUILD_CONTEXT:-../../mcp/mcp-devops}
+    ports:
+      - "${MCP_DEVOPS_PORT:-8325}:${MCP_DEVOPS_PORT:-8325}"
+    environment:
+      MCP_DEVOPS_PORT: ${MCP_DEVOPS_PORT:-8325}
+      MCP_DEVOPS_HOST: 0.0.0.0
+      MCP_DEVOPS_REPO_ROOT: /workspaces/chaba
+      DEV_HOST_BASE_URL: ${DEV_HOST_BASE_URL:-http://dev-host.pc2}
+      DEV_HOST_PC2_BASE_URL: ${DEV_HOST_PC2_BASE_URL:-http://dev-host.pc2:3000}
+      MCP_DEVOPS_JSON_LIMIT: ${MCP_DEVOPS_JSON_LIMIT:-2mb}
+    volumes:
+      - ../../:/workspaces/chaba:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_DEVOPS_PORT:-8325}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-task:
+    <<: *default-service
+    build:
+      context: ${MCP_TASK_BUILD_CONTEXT:-../../mcp/mcp-task}
+    environment:
+      PORT: 8016
+      MCP_TASK_DB_PATH: /data/sqlite/mcp-task.sqlite
+      MCP_TASK_SERVERS: '[{"name":"mcp-devops","url":"http://mcp-devops:${MCP_DEVOPS_PORT:-8325}"}]'
+    volumes:
+      - stack-sqlite:/data/sqlite
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8016/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - mcp-devops
+
+networks:
+  pc2-net:
+    external: true
+
+volumes:
+  stack-sqlite:
