@@ -118,7 +118,7 @@ const TOOL_REGISTRY = {
 app.get('/health', (_req, res) => {
   try {
     if (!process.env.AI4THAI_API_KEY) {
-      return res.status(500).json({ status: 'error', detail: 'AI4THAI_API_KEY missing' });
+      return res.status(200).json({ status: 'warn', detail: 'AI4THAI_API_KEY missing' });
     }
     return res.json({ status: 'ok', endpoint: process.env.VAJA_ENDPOINT || DEFAULT_VAJA_ENDPOINT });
   } catch (err) {
