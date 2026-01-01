@@ -1,13 +1,15 @@
 # syntax=docker/dockerfile:1.7
 ARG NODE_VERSION=20.18.0
-FROM node:${NODE_VERSION}-alpine
+FROM node:${NODE_VERSION}-bookworm-slim
 
 WORKDIR /app
 
-RUN apk add --no-cache curl
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 COPY src ./src
 COPY public ./public
