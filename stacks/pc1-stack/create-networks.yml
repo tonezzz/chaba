@@ -1,0 +1,17 @@
+# Docker network creation for pc1 stacks
+# Run once to create shared networks: docker-compose -f create-networks.yml up -d
+version: "3.9"
+
+networks:
+  pc1-stack-net:
+    driver: bridge
+    name: pc1-stack-net
+  pc1-auth-net:
+    driver: bridge
+    name: pc1-auth-net
+  pc1-web-net:
+    driver: bridge
+    name: pc1-web-net
+  pc1-devops-net:
+    driver: bridge
+    name: pc1-devops-net
