@@ -1,0 +1,78 @@
+version: "3.9"
+
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - .env
+  networks:
+    - pc1-auth-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  authentik-server:
+    <<: *default-service
+    image: ghcr.io/goauthentik/server:2024.8.3
+    command: ["server"]
+    environment:
+      AUTHENTIK_REDIS__HOST: ${AUTHENTIK_REDIS_HOST:-pc1.vpn}
+      AUTHENTIK_POSTGRESQL__HOST: ${AUTHENTIK_POSTGRESQL_HOST:-pc1.vpn}
+      AUTHENTIK_POSTGRESQL__USER: ${AUTHENTIK_POSTGRES_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__NAME: ${AUTHENTIK_POSTGRES_NAME:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_POSTGRES_PASSWORD:-__REPLACE_ME__}
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:-__REPLACE_ME__}
+      AUTHENTIK_BOOTSTRAP_PASSWORD: ${AUTHENTIK_BOOTSTRAP_PASSWORD:-__REPLACE_ME__}
+      AUTHENTIK_BOOTSTRAP_TOKEN: ${AUTHENTIK_BOOTSTRAP_TOKEN:-__REPLACE_ME__}
+      AUTHENTIK_ERROR_REPORTING__ENABLED: ${AUTHENTIK_ERROR_REPORTING_ENABLED:-false}
+      AUTHENTIK_LOG_LEVEL: ${AUTHENTIK_LOG_LEVEL:-info}
+      AUTHENTIK_DISABLE_UPDATE_CHECK: ${AUTHENTIK_DISABLE_UPDATE_CHECK:-true}
+    volumes:
+      - authentik-media:/media
+      - authentik-templates:/templates
+    ports:
+      - "${AUTHENTIK_HTTP_PORT:-9000}:9000"
+      - "${AUTHENTIK_HTTPS_PORT:-9443}:9443"
+    depends_on:
+      - authentik-worker
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/-/health/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  authentik-worker:
+    <<: *default-service
+    image: ghcr.io/goauthentik/server:2024.8.3
+    command: ["worker"]
+    environment:
+      AUTHENTIK_REDIS__HOST: ${AUTHENTIK_REDIS_HOST:-pc1.vpn}
+      AUTHENTIK_POSTGRESQL__HOST: ${AUTHENTIK_POSTGRESQL_HOST:-pc1.vpn}
+      AUTHENTIK_POSTGRESQL__USER: ${AUTHENTIK_POSTGRES_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__NAME: ${AUTHENTIK_POSTGRES_NAME:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_POSTGRES_PASSWORD:-__REPLACE_ME__}
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:-__REPLACE_ME__}
+      AUTHENTIK_BOOTSTRAP_PASSWORD: ${AUTHENTIK_BOOTSTRAP_PASSWORD:-__REPLACE_ME__}
+      AUTHENTIK_BOOTSTRAP_TOKEN: ${AUTHENTIK_BOOTSTRAP_TOKEN:-__REPLACE_ME__}
+      AUTHENTIK_ERROR_REPORTING__ENABLED: ${AUTHENTIK_ERROR_REPORTING_ENABLED:-false}
+      AUTHENTIK_LOG_LEVEL: ${AUTHENTIK_LOG_LEVEL:-info}
+      AUTHENTIK_DISABLE_UPDATE_CHECK: ${AUTHENTIK_DISABLE_UPDATE_CHECK:-true}
+    volumes:
+      - authentik-media:/media
+      - authentik-templates:/templates
+    healthcheck:
+      test: ["CMD-SHELL", "ps aux | grep 'authentik worker' | grep -v grep || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  pc1-auth-net:
+    driver: bridge
+    external: true
+
+volumes:
+  authentik-media:
+  authentik-templates:

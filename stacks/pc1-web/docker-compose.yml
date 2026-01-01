@@ -1,7 +1,9 @@
+version: "3.9"
+
 x-default-service: &default-service
   restart: unless-stopped
   env_file:
-    - ${PC1_WEB_ENV_FILE:-.env}
+    - .env
   networks:
     - pc1-web-net
   logging:
@@ -11,69 +13,72 @@ x-default-service: &default-service
       max-file: "3"
 
 services:
-  openchat-ui:
+  webtop2:
     <<: *default-service
-    build:
-      context: ${OPENCHAT_UI_BUILD_CONTEXT:-../../sites/openchat-ui}
-    container_name: pc1-web-openchat-ui
-    extra_hosts:
-      - "pc1.vpn:${PC1_VPN_IP:-10.8.0.11}"
-    ports:
-      - "${OPENCHAT_UI_PORT:-3170}:3000"
+    image: lscr.io/linuxserver/webtop:latest
+    container_name: pc1-webtop2
     environment:
-      OPENAI_API_HOST: ${OPENCHAT_OPENAI_API_HOST:-http://pc1.vpn:8181}
-      OPENAI_API_KEY: ${OPENCHAT_OPENAI_API_KEY:-sk-dummy}
-      DEFAULT_MODEL: ${OPENCHAT_DEFAULT_MODEL:-glama-default}
-      NEXT_PUBLIC_DEFAULT_TEMPERATURE: ${OPENCHAT_DEFAULT_TEMPERATURE:-0.5}
-      NEXT_PUBLIC_DEFAULT_SYSTEM_PROMPT: ${OPENCHAT_DEFAULT_SYSTEM_PROMPT:-" "}
+      - PUID=${WEBTOP2_PUID:-1000}
+      - PGID=${WEBTOP2_PGID:-1000}
+      - TZ=${WEBTOP2_TZ:-Asia/Bangkok}
+      - SUBTITLE=${WEBTOP2_SUBTITLE:-PC1 Webtop}
+      - TITLE=${WEBTOP2_TITLE:-PC1 Development Environment}
+    volumes:
+      - webtop2-config:/config
+      - ${PC1_WORKSPACE_HOST_DIR:-C:/chaba}:/workspaces/chaba:cached
+    ports:
+      - "${WEBTOP2_PORT:-3003}:3000"
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      test: ["CMD-SHELL", "curl -sf http://localhost:3000 || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
 
-  caddy:
-    <<: *default-service
-    image: caddy:2.8-alpine
-    container_name: pc1-web-caddy
-    ports:
-      - "${CADDY_HTTP_PORT:-3080}:80"
-      - "${CADDY_HTTPS_PORT:-3443}:443"
-    environment:
-      CADDY_INGRESS_DOMAINS: ${CADDY_INGRESS_DOMAINS:-localhost}
-      CADDY_INGRESS_EMAIL: ${CADDY_INGRESS_EMAIL:-}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-config:/config
-      - caddy-data:/data
-    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile"]
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:80/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
-  dev-host:
+  mcp-webtop:
     <<: *default-service
     build:
-      context: ${DEV_HOST_BUILD_CONTEXT:-../../docker/dev-host}
-      dockerfile: Dockerfile
-    container_name: pc1-web-dev-host
-    hostname: dev-host
+      context: ${MCP_WEBTOP_BUILD_CONTEXT:-../../mcp/mcp-webtop}
+    container_name: pc1-mcp-webtop
     ports:
-      - "${DEV_HOST_SSH_PORT:-2223}:22"
-      - "${DEV_HOST_HTTP_PORT:-3100}:3000"
+      - "${MCP_WEBTOP_PORT:-8055}:8055"
     environment:
-      DEV_HOST_BASE_URL: ${DEV_HOST_BASE_URL:-http://pc1.vpn:3000}
-      DEV_HOST_PC2_BASE_URL: ${DEV_HOST_PC2_BASE_URL:-http://dev-host.pc2:3000}
-      A1_IDC1_BASE_URL: ${A1_IDC1_BASE_URL:-https://a1.idc1.surf-thailand.com}
-      A1_IDC1_TEST_URL: ${A1_IDC1_TEST_URL:-https://a1.idc1.surf-thailand.com/test}
+      WEBTOPS_HOST: 0.0.0.0
+      PORT: ${MCP_WEBTOP_PORT:-8055}
+      WEBTOPS_ADMIN_TOKEN: ${WEBTOPS_ADMIN_TOKEN:-}
+      WEBTOPS_PUBLIC_BASE_URL: ${WEBTOPS_PUBLIC_BASE_URL:-https://webtop2.pc1.vpn/webtop/}
+      WEBTOPS_BASE_PATH: ${WEBTOPS_BASE_PATH:-/webtop/}
+      WEBTOPS_ROUTER_BASE_URL: http://webtop2:3000
+      WEBTOPS_ROUTER_ADMIN_TOKEN: ${WEBTOPS_ROUTER_ADMIN_TOKEN:-}
+      WEBTOPS_BACKEND: ${WEBTOPS_BACKEND:-local}
+      WEBTOPS_DOCKER_NETWORK: ${WEBTOPS_DOCKER_NETWORK:-pc1-web-net}
+      WEBTOPS_SESSION_INTERNAL_PORT: ${WEBTOPS_SESSION_INTERNAL_PORT:-3000}
+      WEBTOPS_SESSION_IMAGE: ${WEBTOPS_SESSION_IMAGE:-lscr.io/linuxserver/webtop:latest}
+
+      WEBTOPS_SESSION_IMAGE_WINDSURF: ${WEBTOPS_SESSION_IMAGE_WINDSURF:-webtops-windsurf-runtime:stable}
+      WEBTOPS_WINDSURF_VERSION: ${WEBTOPS_WINDSURF_VERSION:-}
+      WEBTOPS_WINDSURF_DOWNLOAD_URL_TEMPLATE: ${WEBTOPS_WINDSURF_DOWNLOAD_URL_TEMPLATE:-}
+      WEBTOPS_WINDSURF_INSTALL_MODE: ${WEBTOPS_WINDSURF_INSTALL_MODE:-deb_extract}
+      WEBTOPS_WINDSURF_DEB_URL_TEMPLATE: ${WEBTOPS_WINDSURF_DEB_URL_TEMPLATE:-}
+
+      WEBTOPS_WINDSURF_CACHE_VOLUME: ${WEBTOPS_WINDSURF_CACHE_VOLUME:-webtops_windsurf_cache}
+      WEBTOPS_WINDSURF_CACHE_MOUNT_PATH: ${WEBTOPS_WINDSURF_CACHE_MOUNT_PATH:-/windsurf-cache}
+
+      WEBTOPS_WORKSPACES_VOLUME: ${WEBTOPS_WORKSPACES_VOLUME:-webtops_workspaces}
+      WEBTOPS_WORKSPACES_MOUNT_PATH: ${WEBTOPS_WORKSPACES_MOUNT_PATH:-/workspaces}
+      WEBTOPS_WORKSPACES_REPO_URL: ${WEBTOPS_WORKSPACES_REPO_URL:-}
+      WEBTOPS_WORKSPACES_REPO_BRANCH: ${WEBTOPS_WORKSPACES_REPO_BRANCH:-}
+      WEBTOPS_WORKSPACES_REPO_DIR: ${WEBTOPS_WORKSPACES_REPO_DIR:-/workspaces/chaba}
+
+      WEBTOPS_SNAPSHOT_DIR: /snapshots
+      WEBTOPS_STATE_DIR: /state
     volumes:
-      - ../../:/workspaces/chaba:cached
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
+      - webtop2-config:/webtop-config:ro
+      - ${WEBTOPS_SNAPSHOT_HOST_DIR:-./data/mcp-webtops/snapshots}:/snapshots
+      - ${WEBTOPS_STATE_HOST_DIR:-./data/mcp-webtops/state}:/state
+    depends_on:
+      - webtop2
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:3000/health || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_WEBTOP_PORT:-8055}/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -81,8 +86,9 @@ services:
 networks:
   pc1-web-net:
     driver: bridge
-    
+    external: true
 
 volumes:
-  caddy-config:
-  caddy-data:
+  webtop2-config:
+  webtops_windsurf_cache:
+  webtops_workspaces:

@@ -1,0 +1,387 @@
+version: "3.9"
+
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - .env
+  networks:
+    - idc1-stack-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  mcp-agents:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_AGENTS_BUILD_CONTEXT:-../../mcp/mcp-agents}
+    ports:
+      - "${MCP_AGENTS_PORT:-8446}:8046"
+    environment:
+      PORT: ${MCP_AGENTS_PORT:-8446}
+      AGENTS_API_BASE: ${AGENTS_API_BASE:-https://test.idc1.surf-thailand.com/agents/api}
+      AGENTS_DEFAULT_USER: ${AGENTS_DEFAULT_USER:-default}
+      AGENTS_DEFAULT_LIMIT: ${AGENTS_DEFAULT_LIMIT:-12}
+      JSON_BODY_LIMIT: ${AGENTS_JSON_LIMIT:-2mb}
+    volumes:
+      - ${MCP_AGENTS_DATA_DIR:-./data/mcp-agents}:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8046/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-glama:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_GLAMA_BUILD_CONTEXT:-../../mcp/mcp-glama}
+    ports:
+      - "${MCP_GLAMA_PORT:-7441}:8014"
+    environment:
+      PORT: 8014
+      GLAMA_API_URL: ${GLAMA_API_URL:-}
+      GLAMA_API_KEY: ${GLAMA_API_KEY:-}
+      GLAMA_MODEL: ${GLAMA_MODEL:-gpt-4o-mini}
+      GLAMA_TEMPERATURE: ${GLAMA_TEMPERATURE:-0.2}
+      GLAMA_MAX_TOKENS: ${GLAMA_MAX_TOKENS:-900}
+      GLAMA_TIMEOUT_SECONDS: ${GLAMA_TIMEOUT_SECONDS:-30}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8014/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-line:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_LINE_BUILD_CONTEXT:-../../mcp/mcp-line}
+    ports:
+      - "127.0.0.1:${MCP_LINE_PORT:-8088}:8088"
+    environment:
+      LINE_CHANNEL_SECRET: ${LINE_CHANNEL_SECRET:-}
+      LINE_CHANNEL_ACCESS_TOKEN: ${LINE_CHANNEL_ACCESS_TOKEN:-}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8088/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-tester:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_TESTER_BUILD_CONTEXT:-../../mcp/mcp-tester}
+    ports:
+      - "${MCP_TESTER_PORT:-8435}:${MCP_TESTER_PORT:-8435}"
+    environment:
+      MCP_TESTER_HOST: 0.0.0.0
+      MCP_TESTER_PORT: ${MCP_TESTER_PORT:-8435}
+      MCP_TESTER_SUITE_FILE: ${MCP_TESTER_SUITE_FILE:-/app/tests.example.json}
+      MCP_TESTER_SUITE_FILES: ${MCP_TESTER_SUITE_FILES:-/app/tests.optional.json}
+      MCP_TESTER_DEFAULT_TIMEOUT_MS: ${MCP_TESTER_DEFAULT_TIMEOUT_MS:-5000}
+      MCP_TESTER_HISTORY_FILE: ${MCP_TESTER_HISTORY_FILE:-/data/run-history.ndjson}
+      DEV_HOST_TEST_BASE: ${DEV_HOST_TEST_BASE:-https://test.idc1.surf-thailand.com}
+      A1_IDC1_BASE_URL: ${A1_IDC1_BASE_URL:-https://a1.idc1.surf-thailand.com}
+      A1_IDC1_TEST_URL: ${A1_IDC1_TEST_URL:-https://test.idc1.surf-thailand.com}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_TESTER_PORT:-8435}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - ${MCP_TESTER_DATA_DIR:-./data/mcp-tester}:/data
+
+  mcp-devops:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_DEVOPS_BUILD_CONTEXT:-../../mcp/mcp-devops}
+    ports:
+      - "${MCP_DEVOPS_PORT:-8425}:${MCP_DEVOPS_PORT:-8425}"
+    environment:
+      MCP_DEVOPS_PORT: ${MCP_DEVOPS_PORT:-8425}
+      MCP_DEVOPS_HOST: 0.0.0.0
+      DEV_HOST_BASE_URL: ${DEV_HOST_BASE_URL:-https://test.idc1.surf-thailand.com}
+      DEV_HOST_PC2_BASE_URL: ${DEV_HOST_PC2_BASE_URL:-https://test.idc1.surf-thailand.com}
+      MCP_DEVOPS_JSON_LIMIT: ${MCP_DEVOPS_JSON_LIMIT:-2mb}
+
+
+  mcp-task:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_TASK_BUILD_CONTEXT:-../../mcp/mcp-task}
+    environment:
+      PORT: 8016
+      MCP_TASK_DB_PATH: /data/sqlite/mcp-task.sqlite
+      MCP_TASK_SERVERS: '[{"name":"mcp-devops","url":"http://mcp-devops:${MCP_DEVOPS_PORT:-8425}"}]'
+    volumes:
+      - stack-sqlite:/data/sqlite
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8016/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - mcp-devops
+
+  mcp-playwright:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_PLAYWRIGHT_BUILD_CONTEXT:-../../mcp/mcp-playwright}
+    ports:
+      - "${MCP_PLAYWRIGHT_PORT:-8460}:${MCP_PLAYWRIGHT_PORT:-8460}"
+    environment:
+      PORT: ${MCP_PLAYWRIGHT_PORT:-8460}
+      PLAYWRIGHT_BROWSER: ${PLAYWRIGHT_BROWSER:-chromium}
+      PLAYWRIGHT_HEADLESS: ${PLAYWRIGHT_HEADLESS:-true}
+      PLAYWRIGHT_TIMEOUT_MS: ${PLAYWRIGHT_TIMEOUT_MS:-15000}
+      PLAYWRIGHT_SCENARIOS_DIR: /app/scenarios
+      PLAYWRIGHT_OUTPUT_DIR: /app/output
+    volumes:
+      - ${MCP_PLAYWRIGHT_SCENARIOS_DIR:-./data/mcp-playwright/scenarios}:/app/scenarios
+      - ${MCP_PLAYWRIGHT_OUTPUT_DIR:-./data/mcp-playwright/output}:/app/output
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_PLAYWRIGHT_PORT:-8460}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  1mcp-agent:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ./1mcp-agent
+    ports:
+      - "127.0.0.1:${ONE_MCP_PORT:-3050}:${ONE_MCP_PORT:-3050}"
+    environment:
+      ONE_MCP_HOST: ${ONE_MCP_HOST:-0.0.0.0}
+      ONE_MCP_PORT: ${ONE_MCP_PORT:-3050}
+      ONE_MCP_EXTERNAL_URL: ${ONE_MCP_EXTERNAL_URL:-http://127.0.0.1:${ONE_MCP_PORT:-3050}}
+      ONE_MCP_ENABLE_AUTH: "true"
+      ONE_MCP_LOG_LEVEL: ${ONE_MCP_LOG_LEVEL:-info}
+      ONE_MCP_CONFIG: ${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}
+      UV_PYTHON: python3
+      UV_PYTHON_DOWNLOADS: never
+      UV_PROJECT_ENVIRONMENT: /tmp/uv-project
+    volumes:
+      - ${ONE_MCP_CONFIG_FILE:-./1mcp.json}:${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}:ro
+      - one_mcp_sessions:/root/.config/1mcp/sessions
+      - ${ONE_MCP_WORKSPACE_HOST_DIR:-../../}:/workspaces/chaba:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+      - docker-mcp-venv:/opt/docker-mcp-venv
+
+  # code-server: (ARCHIVED - moved to idc1-web stack)
+  # <<: *default-service
+  # profiles: ["mcp-suite"]
+  # image: codercom/code-server:${CODE_SERVER_IMAGE_TAG:-4.95.1}
+  # container_name: idc1-code-server
+  # user: "${CODE_SERVER_UID:-1000}:${CODE_SERVER_GID:-1000}"
+  # environment:
+  #   PASSWORD: ${CODE_SERVER_PASSWORD:-}
+  #   HASHED_PASSWORD: ${CODE_SERVER_HASHED_PASSWORD:-}
+  #   DEFAULT_WORKSPACE: ${CODE_SERVER_WORKSPACE:-/workspaces/chaba}
+  #   TZ: ${CODE_SERVER_TZ:-Asia/Bangkok}
+  # command: >
+  #   --bind-addr 0.0.0.0:8080
+  #   --cert false
+  #   --disable-getting-started-override
+  #   --disable-telemetry
+  #   ${CODE_SERVER_EXTRA_ARGS:-${CODE_SERVER_WORKSPACE:-/workspaces/chaba}}
+  # volumes:
+  #   - ${CODE_SERVER_REPO_ROOT:-../../}:/workspaces/chaba:cached
+  #   - ${CODE_SERVER_DATA_DIR:-./data/code-server}:/home/coder/.local/share/code-server
+  # ports:
+  #   - "${CODE_SERVER_PORT:-8080}:8080"
+  # healthcheck:
+  #   test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+  #   interval: 30s
+  #   timeout: 5s
+  #   retries: 3
+
+  mcp-memory:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_MEMORY_BUILD_CONTEXT:-../../mcp/mcp-memory}
+    ports:
+      - "${MCP_MEMORY_PORT:-8470}:8470"
+    environment:
+      PORT: 8470
+      MEMORY_FILE_PATH: /data/memory.jsonl
+    volumes:
+      - mcp-memory-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8470/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  ollama:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    image: ollama/ollama:latest
+    container_name: idc1-ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/11434' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 6
+
+  qdrant:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    image: qdrant/qdrant:latest
+    container_name: idc1-qdrant
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/6333' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 6
+
+  mcp-rag:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_RAG_BUILD_CONTEXT:-../../mcp/mcp-rag}
+    container_name: idc1-mcp-rag
+    ports:
+      - "${MCP_RAG_PORT:-8455}:8055"
+    environment:
+      PORT: 8055
+      QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
+      QDRANT_TEXT_COLLECTION: ${QDRANT_TEXT_COLLECTION:-rag_text}
+      QDRANT_IMAGE_COLLECTION: ${QDRANT_IMAGE_COLLECTION:-rag_image}
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+      OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text}
+      CLIP_MODEL: ${CLIP_MODEL:-clip-ViT-B-32}
+    volumes:
+      - mcp-rag-cache:/root/.cache
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8055/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 6
+    depends_on:
+      - qdrant
+      - ollama
+
+  webtops-router:
+    <<: *default-service
+    profiles: ["webtops"]
+    build:
+      context: ${WEBTOPS_ROUTER_BUILD_CONTEXT:-../../mcp/webtops-router}
+    ports:
+      - "${WEBTOPS_ROUTER_PORT:-3001}:${WEBTOPS_ROUTER_PORT:-3001}"
+    environment:
+      ROUTER_HOST: 0.0.0.0
+      ROUTER_PORT: ${WEBTOPS_ROUTER_PORT:-3001}
+      ROUTER_BASE_PATH: ${WEBTOPS_BASE_PATH:-/webtop}
+      ROUTER_ADMIN_TOKEN: ${WEBTOPS_ROUTER_ADMIN_TOKEN:-}
+      ROUTER_STATE_FILE: /state/router.json
+    volumes:
+      - ${WEBTOPS_ROUTER_STATE_DIR:-./data/webtops-router}:/state
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${WEBTOPS_ROUTER_PORT:-3001}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-webtops:
+    <<: *default-service
+    profiles: ["webtops"]
+    build:
+      context: ${MCP_WEBTOPS_BUILD_CONTEXT:-../../mcp/mcp-webtops}
+    ports:
+      - "${MCP_WEBTOPS_PORT:-8091}:${MCP_WEBTOPS_PORT:-8091}"
+    environment:
+      WEBTOPS_HOST: 0.0.0.0
+      PORT: ${MCP_WEBTOPS_PORT:-8091}
+      WEBTOPS_ADMIN_TOKEN: ${WEBTOPS_ADMIN_TOKEN:-}
+      WEBTOPS_PUBLIC_BASE_URL: ${WEBTOPS_PUBLIC_BASE_URL:-https://webtops.idc1.surf-thailand.com/webtop/}
+      WEBTOPS_BASE_PATH: ${WEBTOPS_BASE_PATH:-/webtop/}
+      WEBTOPS_ROUTER_BASE_URL: http://webtops-router:${WEBTOPS_ROUTER_PORT:-3001}
+      WEBTOPS_ROUTER_ADMIN_TOKEN: ${WEBTOPS_ROUTER_ADMIN_TOKEN:-}
+      WEBTOPS_BACKEND: ${WEBTOPS_BACKEND:-docker}
+      WEBTOPS_DOCKER_NETWORK: ${WEBTOPS_DOCKER_NETWORK:-idc1-stack-net}
+      WEBTOPS_SESSION_INTERNAL_PORT: ${WEBTOPS_SESSION_INTERNAL_PORT:-3000}
+      WEBTOPS_SESSION_IMAGE: ${WEBTOPS_SESSION_IMAGE:-lscr.io/linuxserver/webtop:latest}
+
+      WEBTOPS_SESSION_IMAGE_WINDSURF: ${WEBTOPS_SESSION_IMAGE_WINDSURF:-webtops-windsurf-runtime:stable}
+      WEBTOPS_WINDSURF_VERSION: ${WEBTOPS_WINDSURF_VERSION:-}
+      WEBTOPS_WINDSURF_DOWNLOAD_URL_TEMPLATE: ${WEBTOPS_WINDSURF_DOWNLOAD_URL_TEMPLATE:-}
+      WEBTOPS_WINDSURF_INSTALL_MODE: ${WEBTOPS_WINDSURF_INSTALL_MODE:-deb_extract}
+      WEBTOPS_WINDSURF_DEB_URL_TEMPLATE: ${WEBTOPS_WINDSURF_DEB_URL_TEMPLATE:-}
+      WEBTOPS_WINDSURF_CACHE_VOLUME: ${WEBTOPS_WINDSURF_CACHE_VOLUME:-webtops_windsurf_cache}
+      WEBTOPS_WINDSURF_CACHE_MOUNT_PATH: ${WEBTOPS_WINDSURF_CACHE_MOUNT_PATH:-/windsurf-cache}
+
+      WEBTOPS_WORKSPACES_VOLUME: ${WEBTOPS_WORKSPACES_VOLUME:-webtops_workspaces}
+      WEBTOPS_WORKSPACES_MOUNT_PATH: ${WEBTOPS_WORKSPACES_MOUNT_PATH:-/workspaces}
+      WEBTOPS_WORKSPACES_REPO_URL: ${WEBTOPS_WORKSPACES_REPO_URL:-}
+      WEBTOPS_WORKSPACES_REPO_BRANCH: ${WEBTOPS_WORKSPACES_REPO_BRANCH:-}
+      WEBTOPS_WORKSPACES_REPO_DIR: ${WEBTOPS_WORKSPACES_REPO_DIR:-/workspaces/chaba}
+
+      WEBTOPS_SNAPSHOT_DIR: /snapshots
+      WEBTOPS_STATE_DIR: /state
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${WEBTOPS_SNAPSHOT_HOST_DIR:-./data/mcp-webtops/snapshots}:/snapshots
+      - ${WEBTOPS_STATE_HOST_DIR:-./data/mcp-webtops/state}:/state
+    depends_on:
+      - webtops-router
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_WEBTOPS_PORT:-8091}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  webtops-cp:
+    <<: *default-service
+    profiles: ["webtops"]
+    build:
+      context: ${WEBTOPS_CP_BUILD_CONTEXT:-../../mcp/webtops-cp}
+    ports:
+      - "${WEBTOPS_CP_PORT:-3005}:${WEBTOPS_CP_PORT:-3005}"
+    environment:
+      WEBTOPS_CP_HOST: 0.0.0.0
+      WEBTOPS_CP_PORT: ${WEBTOPS_CP_PORT:-3005}
+      WEBTOPS_CP_USERNAME: ${WEBTOPS_CP_USERNAME:-admin}
+      WEBTOPS_CP_PASSWORD: ${WEBTOPS_CP_PASSWORD:-}
+      WEBTOPS_CP_WEBTOPS_BASE_URL: http://mcp-webtops:${MCP_WEBTOPS_PORT:-8091}
+      WEBTOPS_ADMIN_TOKEN: ${WEBTOPS_ADMIN_TOKEN:-}
+    depends_on:
+      - mcp-webtops
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${WEBTOPS_CP_PORT:-3005}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  idc1-stack-net:
+    driver: bridge
+
+volumes:
+  mcp-memory-data:
+  stack-sqlite:
+  webtops_windsurf_cache:
+  webtops_workspaces:
+  docker-mcp-venv:
+  one_mcp_sessions:
+  qdrant-data:
+  ollama-data:
+  mcp-rag-cache:

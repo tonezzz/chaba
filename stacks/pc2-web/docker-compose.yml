@@ -1,0 +1,101 @@
+version: "3.9"
+
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - .env
+  networks:
+    - pc2-web-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  webtops-router:
+    <<: *default-service
+    build:
+      context: ${WEBTOPS_ROUTER_BUILD_CONTEXT:-../../mcp/webtops-router}
+    container_name: pc2-webtops-router
+    ports:
+      - "${WEBTOPS_ROUTER_PORT:-3001}:${WEBTOPS_ROUTER_PORT:-3001}"
+    environment:
+      ROUTER_HOST: 0.0.0.0
+      ROUTER_PORT: ${WEBTOPS_ROUTER_PORT:-3001}
+      ROUTER_ADMIN_TOKEN: ${WEBTOPS_ROUTER_ADMIN_TOKEN:-}
+      ROUTER_DEFAULT_IMAGE: ${WEBTOPS_ROUTER_DEFAULT_IMAGE:-lscr.io/linuxserver/webtop:latest}
+      ROUTER_DOCKER_NETWORK: ${WEBTOPS_ROUTER_DOCKER_NETWORK:-pc2-web-net}
+      ROUTER_SESSION_INTERNAL_PORT: ${WEBTOPS_ROUTER_SESSION_INTERNAL_PORT:-3000}
+      ROUTER_SESSION_MOUNT_PATH: ${ROUTER_SESSION_MOUNT_PATH:-/config}
+      ROUTER_SESSION_TZ: ${ROUTER_SESSION_TZ:-Asia/Bangkok}
+      ROUTER_SESSION_PUID: ${ROUTER_SESSION_PUID:-1000}
+      ROUTER_SESSION_PGID: ${ROUTER_SESSION_PGID:-1000}
+      ROUTER_SESSION_PASSWORD: ${ROUTER_SESSION_PASSWORD:-}
+      ROUTER_SESSION_SUBTITLE: ${ROUTER_SESSION_SUBTITLE:-PC2 Webtop}
+      ROUTER_SESSION_TITLE: ${ROUTER_SESSION_TITLE:-PC2 Development Environment}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${WEBTOPS_ROUTER_PORT:-3001}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-webtops:
+    <<: *default-service
+    build:
+      context: ${MCP_WEBTOPS_BUILD_CONTEXT:-../../mcp/mcp-webtops}
+    container_name: pc2-mcp-webtops
+    ports:
+      - "${MCP_WEBTOPS_PORT:-8091}:8091"
+    environment:
+      WEBTOPS_HOST: 0.0.0.0
+      PORT: ${MCP_WEBTOPS_PORT:-8091}
+      WEBTOPS_ADMIN_TOKEN: ${WEBTOPS_ADMIN_TOKEN:-}
+      WEBTOPS_ROUTER_BASE_URL: http://webtops-router:${WEBTOPS_ROUTER_PORT:-3001}
+      WEBTOPS_ROUTER_ADMIN_TOKEN: ${WEBTOPS_ROUTER_ADMIN_TOKEN:-}
+      WEBTOPS_BACKEND: ${WEBTOPS_BACKEND:-router}
+      WEBTOPS_DOCKER_NETWORK: ${WEBTOPS_DOCKER_NETWORK:-pc2-web-net}
+      WEBTOPS_SESSION_INTERNAL_PORT: ${WEBTOPS_SESSION_INTERNAL_PORT:-3000}
+      WEBTOPS_SESSION_IMAGE: ${WEBTOPS_SESSION_IMAGE:-lscr.io/linuxserver/webtop:latest}
+      WEBTOPS_SESSION_IMAGE_PULL: ${WEBTOPS_SESSION_IMAGE_PULL:-true}
+      WEBTOPS_SESSION_UPSTREAM_SCHEME: ${WEBTOPS_SESSION_UPSTREAM_SCHEME:-http}
+      WEBTOPS_SESSION_MOUNT_PATH: ${WEBTOPS_SESSION_MOUNT_PATH:-/config}
+      WEBTOPS_SESSION_TZ: ${WEBTOPS_SESSION_TZ:-Asia/Bangkok}
+      WEBTOPS_SESSION_PUID: ${WEBTOPS_SESSION_PUID:-1000}
+      WEBTOPS_SESSION_PGID: ${WEBTOPS_SESSION_PGID:-1000}
+      WEBTOPS_SESSION_PASSWORD: ${WEBTOPS_SESSION_PASSWORD:-}
+      WEBTOPS_SESSION_SUBTITLE: ${WEBTOPS_SESSION_SUBTITLE:-PC2 Webtop}
+      WEBTOPS_SESSION_TITLE: ${WEBTOPS_SESSION_TITLE:-PC2 Development Environment}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_WEBTOPS_PORT:-8091}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - webtops-router
+
+  webtops-cp:
+    <<: *default-service
+    build:
+      context: ${WEBTOPS_CP_BUILD_CONTEXT:-../../mcp/webtops-cp}
+    container_name: pc2-webtops-cp
+    ports:
+      - "${WEBTOPS_CP_PORT:-3005}:${WEBTOPS_CP_PORT:-3005}"
+    environment:
+      WEBTOPS_CP_HOST: 0.0.0.0
+      WEBTOPS_CP_PORT: ${WEBTOPS_CP_PORT:-3005}
+      WEBTOPS_CP_ROUTER_BASE_URL: http://webtops-router:${WEBTOPS_ROUTER_PORT:-3001}
+      WEBTOPS_CP_ROUTER_ADMIN_TOKEN: ${WEBTOPS_CP_ROUTER_ADMIN_TOKEN:-}
+      WEBTOPS_CP_DOCKER_NETWORK: ${WEBTOPS_CP_DOCKER_NETWORK:-pc2-web-net}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${WEBTOPS_CP_PORT:-3005}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - webtops-router
+
+networks:
+  pc2-web-net:
+    driver: bridge
+    external: true
