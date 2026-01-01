@@ -177,33 +177,33 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - docker-mcp-venv:/opt/docker-mcp-venv
 
-  code-server:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    image: codercom/code-server:${CODE_SERVER_IMAGE_TAG:-4.95.1}
-    container_name: idc1-code-server
-    user: "${CODE_SERVER_UID:-1000}:${CODE_SERVER_GID:-1000}"
-    environment:
-      PASSWORD: ${CODE_SERVER_PASSWORD:-}
-      HASHED_PASSWORD: ${CODE_SERVER_HASHED_PASSWORD:-}
-      DEFAULT_WORKSPACE: ${CODE_SERVER_WORKSPACE:-/workspaces/chaba}
-      TZ: ${CODE_SERVER_TZ:-Asia/Bangkok}
-    command: >
-      --bind-addr 0.0.0.0:8080
-      --cert false
-      --disable-getting-started-override
-      --disable-telemetry
-      ${CODE_SERVER_EXTRA_ARGS:-${CODE_SERVER_WORKSPACE:-/workspaces/chaba}}
-    volumes:
-      - ${CODE_SERVER_REPO_ROOT:-../../}:/workspaces/chaba:cached
-      - ${CODE_SERVER_DATA_DIR:-./data/code-server}:/home/coder/.local/share/code-server
-    ports:
-      - "${CODE_SERVER_PORT:-8080}:8080"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+  # code-server: (ARCHIVED - moved to idc1-web stack)
+  # <<: *default-service
+  # profiles: ["mcp-suite"]
+  # image: codercom/code-server:${CODE_SERVER_IMAGE_TAG:-4.95.1}
+  # container_name: idc1-code-server
+  # user: "${CODE_SERVER_UID:-1000}:${CODE_SERVER_GID:-1000}"
+  # environment:
+  #   PASSWORD: ${CODE_SERVER_PASSWORD:-}
+  #   HASHED_PASSWORD: ${CODE_SERVER_HASHED_PASSWORD:-}
+  #   DEFAULT_WORKSPACE: ${CODE_SERVER_WORKSPACE:-/workspaces/chaba}
+  #   TZ: ${CODE_SERVER_TZ:-Asia/Bangkok}
+  # command: >
+  #   --bind-addr 0.0.0.0:8080
+  #   --cert false
+  #   --disable-getting-started-override
+  #   --disable-telemetry
+  #   ${CODE_SERVER_EXTRA_ARGS:-${CODE_SERVER_WORKSPACE:-/workspaces/chaba}}
+  # volumes:
+  #   - ${CODE_SERVER_REPO_ROOT:-../../}:/workspaces/chaba:cached
+  #   - ${CODE_SERVER_DATA_DIR:-./data/code-server}:/home/coder/.local/share/code-server
+  # ports:
+  #   - "${CODE_SERVER_PORT:-8080}:8080"
+  # healthcheck:
+  #   test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+  #   interval: 30s
+  #   timeout: 5s
+  #   retries: 3
 
   mcp-memory:
     <<: *default-service
