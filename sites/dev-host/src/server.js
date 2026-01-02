@@ -117,6 +117,12 @@ const additionalStaticRoutes = [
     roots: [resolveSitePath('a1-idc1', 'test', 'imagen')],
     spa: true
   },
+  {
+    basePath: '/test/project',
+    roots: [resolveSitePath('a1-idc1', 'test', 'project')],
+    spa: true,
+    skipApiFallback: true
+  },
   
 ];
 
@@ -846,6 +852,100 @@ const wireProxies = () => {
       return res.json({ ok: true, tool: IMAGEN_MCP_TOOL_NAME, image_data_url, result });
     } catch (err) {
       return res.status(502).json({ error: 'imagen_generate_failed', detail: err?.message || String(err) });
+    }
+  });
+
+  app.use('/test/project/api', express.json({ limit: '2mb' }));
+
+  app.get('/test/project/api/tools', async (_req, res) => {
+    try {
+      let sessionId = await ensureMcpSession();
+
+      let rpc = await callMcpRpc({
+        method: 'tools/list',
+        params: {},
+        sessionId
+      });
+
+      if (!rpc.response.ok && looksLikeInvalidMcpSession(rpc)) {
+        mcpState.sessionId = '';
+        mcpState.createdAt = 0;
+        sessionId = await ensureMcpSession();
+        rpc = await callMcpRpc({
+          method: 'tools/list',
+          params: {},
+          sessionId
+        });
+      }
+
+      if (!rpc.response.ok) {
+        return res.status(502).json({
+          error: 'mcp_tools_list_failed',
+          httpStatus: rpc.response.status,
+          body: rpc.body
+        });
+      }
+
+      const tools = rpc.body?.result?.tools || rpc.body?.tools || [];
+      return res.json({ ok: true, tools, raw: rpc.body });
+    } catch (err) {
+      return res.status(502).json({ error: 'mcp_tools_list_failed', detail: err?.message || String(err) });
+    }
+  });
+
+  app.post('/test/project/api/call', async (req, res) => {
+    try {
+      const name = (req.body?.name || '').trim();
+      const args = req.body?.arguments || {};
+      if (!name) {
+        return res.status(400).json({ error: 'missing_tool_name' });
+      }
+
+      let sessionId = await ensureMcpSession();
+
+      let rpc = await callMcpRpc({
+        method: 'tools/call',
+        params: {
+          name,
+          arguments: args
+        },
+        sessionId
+      });
+
+      if (!rpc.response.ok && looksLikeInvalidMcpSession(rpc)) {
+        mcpState.sessionId = '';
+        mcpState.createdAt = 0;
+        sessionId = await ensureMcpSession();
+        rpc = await callMcpRpc({
+          method: 'tools/call',
+          params: {
+            name,
+            arguments: args
+          },
+          sessionId
+        });
+      }
+
+      if (!rpc.response.ok) {
+        const hints = [];
+        if (looksLikeMissingTool(rpc)) {
+          hints.push(`Tool not found. Check tools/list on ${getMcpRpcUrl()} (app=${ONE_MCP_APP}).`);
+        }
+        if (looksLikeInvalidMcpSession(rpc)) {
+          hints.push('Session rejected by 1mcp. Try again or restart dev-host to refresh session cache.');
+        }
+        return res.status(502).json({
+          error: 'mcp_tool_call_failed',
+          httpStatus: rpc.response.status,
+          tool: name,
+          hints,
+          body: rpc.body
+        });
+      }
+
+      return res.json({ ok: true, tool: name, result: rpc.body?.result, raw: rpc.body });
+    } catch (err) {
+      return res.status(502).json({ error: 'mcp_tool_call_failed', detail: err?.message || String(err) });
     }
   });
 

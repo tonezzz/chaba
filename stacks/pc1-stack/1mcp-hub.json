@@ -83,6 +83,19 @@
       "url": "http://pc1.vpn:8046/mcp",
       "tags": ["pc1", "agents"],
       "enabled": true
+    },
+    "mcp-project-manager": {
+      "command": "npx",
+      "args": ["-y", "mcp-project-manager"],
+      "env": {
+        "MCP_TASK_DATA_DIR": "/data/pm"
+      },
+      "tags": ["pc1", "project", "pm"],
+      "connectionTimeout": 60000,
+      "requestTimeout": 60000,
+      "restartOnExit": true,
+      "restartDelay": 1000,
+      "enabled": true
     }
   }
 }

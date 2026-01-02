@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Project tools playground</title>
+    <link rel="stylesheet" href="/test/project/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Surf Thailand • MCP</p>
+          <h1>Project Manager + MCP tools</h1>
+          <p class="lede">
+            Simple UI that lists tools and calls them via the dev-host proxy at <code>/test/project/api</code>.
+          </p>
+        </div>
+        <div class="hero-meta">
+          <div class="meta-chip">
+            <span>Backend</span>
+            <strong id="backendStatus">Checking…</strong>
+          </div>
+        </div>
+      </header>
+
+      <section class="panel">
+        <div class="card" id="pmCard">
+          <div class="card-head">
+            <h2>Project Manager</h2>
+            <p class="muted">Quick actions powered by <code>mcp-project-manager</code> (auto-detected from <code>tools/list</code>).</p>
+          </div>
+
+          <div class="row">
+            <div class="meta-chip wide">
+              <span>Detected tool prefix</span>
+              <strong id="pmPrefix">—</strong>
+            </div>
+            <div class="meta-chip wide">
+              <span>Detected PM tools</span>
+              <strong id="pmToolCount">—</strong>
+            </div>
+          </div>
+
+          <div class="pm-grid">
+            <div class="pm-actions">
+              <h3>Quick actions</h3>
+              <div class="row wrap">
+                <button id="pmListTasksBtn" type="button">List tasks</button>
+                <button id="pmLoadListTasksBtn" type="button" class="secondary">Load args into editor</button>
+              </div>
+              <div class="row wrap">
+                <button id="pmCreateTaskBtn" type="button">Create task</button>
+                <button id="pmLoadCreateTaskBtn" type="button" class="secondary">Load args into editor</button>
+              </div>
+              <div id="pmStatus" class="status">Waiting for tools…</div>
+            </div>
+
+            <div class="pm-form">
+              <h3>Create task</h3>
+              <label class="field">
+                <span>Title</span>
+                <input id="pmTitle" type="text" placeholder="e.g. Implement /test/project UI" />
+              </label>
+              <label class="field">
+                <span>Description</span>
+                <textarea id="pmDescription" rows="5" placeholder="Optional details"></textarea>
+              </label>
+              <div class="two-col">
+                <label class="field">
+                  <span>Priority</span>
+                  <select id="pmPriority">
+                    <option value="">(default)</option>
+                    <option value="low">low</option>
+                    <option value="medium">medium</option>
+                    <option value="high">high</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Status</span>
+                  <select id="pmTaskStatus">
+                    <option value="">(default)</option>
+                    <option value="todo">todo</option>
+                    <option value="in_progress">in_progress</option>
+                    <option value="blocked">blocked</option>
+                    <option value="done">done</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Tools</h2>
+            <p class="muted">Fetched from 1mcp via <code>tools/list</code>.</p>
+          </div>
+          <div class="row">
+            <button id="refreshBtn" type="button">Refresh tools</button>
+            <input id="filterInput" type="text" placeholder="filter (e.g. project, pm, imagen)" />
+          </div>
+          <div class="grid">
+            <div>
+              <label class="field">
+                <span>Tool</span>
+                <select id="toolSelect"></select>
+              </label>
+              <label class="field">
+                <span>Arguments (JSON)</span>
+                <textarea id="argsInput" rows="10" spellcheck="false">{}</textarea>
+              </label>
+              <div class="row">
+                <button id="callBtn" type="button">Call tool</button>
+                <button id="copyBtn" type="button" class="secondary">Copy result</button>
+              </div>
+              <div id="status" class="status">Ready.</div>
+            </div>
+            <div>
+              <label class="field">
+                <span>Result</span>
+                <pre id="result" class="output">// waiting…</pre>
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <small>
+          Tip: Once <code>mcp-project-manager</code> is registered in 1mcp, its tools should appear here.
+        </small>
+      </footer>
+    </main>
+
+    <script type="module" src="/test/project/app.js"></script>
+  </body>
+</html>
