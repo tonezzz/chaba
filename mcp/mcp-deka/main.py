@@ -304,6 +304,22 @@ def health() -> Dict[str, Any]:
     }
 
 
+@app.get("/status")
+def status() -> Dict[str, Any]:
+    _ensure_db()
+    try:
+        result = _handle_status(StatusArgs())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    return {
+        "ok": True,
+        "service": APP_NAME,
+        "version": APP_VERSION,
+        "ts": _utc_ts(),
+        "result": result,
+    }
+
+
 @app.get("/.well-known/mcp.json")
 def well_known() -> Dict[str, Any]:
     return {

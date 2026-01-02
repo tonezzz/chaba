@@ -54,6 +54,21 @@ def health() -> Dict[str, Any]:
     }
 
 
+@app.get("/status")
+def status() -> Dict[str, Any]:
+    return {
+        "ok": True,
+        "service": APP_NAME,
+        "version": APP_VERSION,
+        "timestamp": _utc_ts(),
+        "mcpRag": MCP_RAG_DEKA_URL,
+        "mcpGlama": MCP_GLAMA_URL,
+        "topK": DEFAULT_TOP_K,
+        "minTopScore": MIN_TOP_SCORE,
+        "timeoutSeconds": HTTP_TIMEOUT_SECONDS,
+    }
+
+
 def _model_list() -> Dict[str, Any]:
     return {
         "object": "list",

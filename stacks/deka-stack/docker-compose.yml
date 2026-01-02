@@ -41,8 +41,7 @@ services:
 
   mcp-playwright:
     <<: *default-service
-    build:
-      context: ${DEKA_MCP_PLAYWRIGHT_BUILD_CONTEXT:-../../mcp/mcp-playwright}
+    image: ${DEKA_MCP_PLAYWRIGHT_IMAGE:-pc1-stack-mcp-playwright:latest}
     container_name: deka-mcp-playwright
     ports:
       - "${DEKA_MCP_PLAYWRIGHT_PORT:-8261}:8260"
@@ -59,8 +58,7 @@ services:
 
   mcp-rag-deka:
     <<: *default-service
-    build:
-      context: ${DEKA_MCP_RAG_BUILD_CONTEXT:-../../mcp/mcp-rag}
+    image: ${DEKA_MCP_RAG_DEKA_IMAGE:-pc1-stack-mcp-rag-deka:latest}
     container_name: deka-mcp-rag-deka
     ports:
       - "${DEKA_MCP_RAG_DEKA_PORT:-8058}:8055"
@@ -85,8 +83,7 @@ services:
 
   mcp-deka:
     <<: *default-service
-    build:
-      context: ${DEKA_MCP_DEKA_BUILD_CONTEXT:-../../mcp/mcp-deka}
+    image: ${DEKA_MCP_DEKA_IMAGE:-pc1-stack-mcp-deka:latest}
     container_name: deka-mcp-deka
     ports:
       - "${DEKA_MCP_DEKA_PORT:-8271}:8270"
@@ -110,8 +107,7 @@ services:
 
   deka-chat-api:
     <<: *default-service
-    build:
-      context: ${DEKA_CHAT_API_BUILD_CONTEXT:-../../mcp/deka-chat-api}
+    image: ${DEKA_CHAT_API_IMAGE:-pc1-stack-deka-chat-api:latest}
     container_name: deka-deka-chat-api
     ports:
       - "${DEKA_CHAT_API_PORT:-8191}:8190"
