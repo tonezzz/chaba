@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "host": {
+    "name": "pc2",
+    "vpn_domain": "pc2.vpn"
+  },
+  "stack": {
+    "id": "pc2-stack",
+    "path": "stacks/pc2-stack",
+    "compose": "docker-compose.yml",
+    "network": "pc2-net",
+    "description": "PC2 MCP entrypoint (1mcp-agent) and helper services"
+  },
+  "services": [
+    {
+      "service": "1mcp-agent",
+      "container": "pc2-stack-1mcp-agent-1",
+      "ports": ["3050->3050"],
+      "health": {"url": "http://127.0.0.1:3050/health"},
+      "config": {
+        "hub_file": "stacks/pc2-stack/1mcp-hub.json",
+        "container_path": "/root/.config/1mcp/mcp.json"
+      }
+    },
+    {
+      "service": "mcp-docker",
+      "container": "pc2-stack-mcp-docker-1",
+      "ports": ["8340->8340"],
+      "health": {"url": "http://127.0.0.1:8340/health"},
+      "notes": [
+        "This service exposes a REST wrapper (GET /health, GET /tools, POST /invoke).",
+        "It is not an MCP Streamable HTTP endpoint at /mcp; keep it disabled in 1mcp hub if it causes degraded health."
+      ]
+    }
+  ],
+  "recovery": {
+    "common_failures": [
+      {
+        "id": "port_3050_in_use",
+        "symptom": "1mcp-agent fails to start due to port 3050",
+        "verify": ["netstat -ano | findstr :3050"],
+        "fix": ["Stop the conflicting process or change ONE_MCP_PORT"]
+      },
+      {
+        "id": "1mcp_degraded",
+        "symptom": "GET /health returns degraded",
+        "verify": ["curl.exe http://127.0.0.1:3050/health"],
+        "fix": [
+          "Check stacks/pc2-stack/1mcp-hub.json for unreachable servers",
+          "Disable servers that are not MCP streamable HTTP-compatible"
+        ]
+      }
+    ],
+    "restart": {
+      "windows_powershell": [
+        "docker compose -f C:/chaba/stacks/pc2-stack/docker-compose.yml up -d --force-recreate 1mcp-agent",
+        "curl.exe http://127.0.0.1:3050/health"
+      ]
+    }
+  }
+}

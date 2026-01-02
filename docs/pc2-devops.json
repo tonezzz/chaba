@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "host": {
+    "name": "pc2",
+    "vpn_domain": "pc2.vpn"
+  },
+  "stack": {
+    "id": "pc2-devops",
+    "path": "stacks/pc2-devops",
+    "compose": "docker-compose.yml",
+    "description": "PC2 devops automation services"
+  },
+  "services": [
+    {
+      "service": "mcp-devops",
+      "container": "pc2-devops-mcp-devops-1",
+      "port": 8325,
+      "health": "/health",
+      "port_conflict_notes": ["Only one stack should publish 8325 on the host at a time."]
+    },
+    {
+      "service": "mcp-task",
+      "container": "pc2-devops-mcp-task-1",
+      "port": null,
+      "internal_port": 8016,
+      "health": "/health",
+      "notes": ["If you need host access, publish 8016 explicitly in compose."]
+    }
+  ],
+  "recovery": {
+    "common_failures": [
+      {
+        "id": "port_8325_in_use",
+        "symptom": "mcp-devops fails to start due to port 8325 already allocated",
+        "verify": ["netstat -ano | findstr :8325", "docker ps --filter publish=8325"],
+        "fix": ["Stop the other container binding 8325 or change MCP_DEVOPS_PORT mapping"]
+      }
+    ],
+    "restart": {
+      "windows_powershell": [
+        "docker compose -f C:/chaba/stacks/pc2-devops/docker-compose.yml up -d"
+      ]
+    }
+  }
+}

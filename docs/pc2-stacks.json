@@ -1,4 +1,35 @@
 {
+  "host": {
+    "name": "pc2",
+    "vpn": {
+      "ip": "10.8.0.12",
+      "domain": "pc2.vpn"
+    },
+    "dns": {
+      "domains": [
+        "pc2.vpn",
+        "*.pc2.vpn",
+        "1mcp.pc2.vpn",
+        "dev-host.pc2.vpn"
+      ]
+    },
+    "ingress": {
+      "service": "pc2-host-caddy",
+      "ports": [80, 443]
+    },
+    "endpoints": {
+      "1mcp": {
+        "local": "http://127.0.0.1:3050/health",
+        "vpn": "http://pc2.vpn:3050/health",
+        "vpn_mcp": "http://1mcp.pc2.vpn/mcp?app=windsurf"
+      },
+      "dev_host": {
+        "local": "http://127.0.0.1:3100/api/health",
+        "vpn": "http://pc2.vpn:3100/api/health",
+        "vpn_https": "https://dev-host.pc2.vpn/api/health"
+      }
+    }
+  },
   "stacks": {
     "pc2-host-caddy": {
       "description": "Host-level Caddy ingress for *.pc2.vpn",
