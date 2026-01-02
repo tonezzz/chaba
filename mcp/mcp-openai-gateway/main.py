@@ -38,6 +38,12 @@ GATEWAY_MODEL_ID = (os.getenv("OPENAI_GATEWAY_MODEL_ID") or "glama-default").str
 
 REQUEST_TIMEOUT_SECONDS = float(os.getenv("OPENAI_GATEWAY_TIMEOUT_SECONDS", "60"))
 
+GLAMA_RETRY_ATTEMPTS = int(os.getenv("OPENAI_GATEWAY_GLAMA_RETRY_ATTEMPTS", "2"))
+GLAMA_RETRY_BACKOFF_SECONDS = float(os.getenv("OPENAI_GATEWAY_GLAMA_RETRY_BACKOFF_SECONDS", "1.0"))
+FALLBACK_TO_MCP_LLM_ON_GLAMA_ERROR = (
+    os.getenv("OPENAI_GATEWAY_FALLBACK_TO_MCP_LLM_ON_GLAMA_ERROR") or ""
+).strip().lower() in ("1", "true", "yes", "on")
+
 DEBUG = (os.getenv("OPENAI_GATEWAY_DEBUG") or "").strip().lower() in ("1", "true", "yes", "on")
 
 PREFER_MCP_LLM = (os.getenv("OPENAI_GATEWAY_PREFER_MCP_LLM") or "").strip().lower() in (
@@ -545,7 +551,13 @@ def _inject_system_prompt(messages: List[Dict[str, Any]], extra_system_text: str
     return [{"role": "system", "content": extra_system_text}] + messages
 
 
-async def _glama_chat(messages: List[Dict[str, Any]], tools: List[Dict[str, Any]], temperature: Optional[float], max_tokens: Optional[int]) -> Dict[str, Any]:
+async def _glama_chat(
+    messages: List[Dict[str, Any]],
+    tools: List[Dict[str, Any]],
+    temperature: Optional[float],
+    max_tokens: Optional[int],
+    tool_choice: Optional[Any] = None,
+) -> Dict[str, Any]:
     if not _glama_ready():
         raise HTTPException(status_code=503, detail="glama_unconfigured")
 
@@ -558,14 +570,38 @@ async def _glama_chat(messages: List[Dict[str, Any]], tools: List[Dict[str, Any]
         payload["max_tokens"] = max_tokens
     if tools:
         payload["tools"] = tools
-        payload["tool_choice"] = "auto"
+        payload["tool_choice"] = tool_choice if tool_choice is not None else "auto"
 
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {GLAMA_API_KEY}"}
+
+    attempts = max(1, GLAMA_RETRY_ATTEMPTS)
+    last_err: Optional[str] = None
     async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT_SECONDS) as client:
-        r = await client.post(GLAMA_API_URL, json=payload, headers=headers)
-        if r.status_code >= 400:
-            raise HTTPException(status_code=502, detail=r.text or f"glama_http_{r.status_code}")
-        return r.json()
+        for i in range(attempts):
+            try:
+                r = await client.post(GLAMA_API_URL, json=payload, headers=headers)
+                if r.status_code >= 400:
+                    # Treat upstream 5xx as transient; retryable.
+                    if r.status_code in (502, 503, 504) and i < attempts - 1:
+                        last_err = r.text or f"glama_http_{r.status_code}"
+                        await asyncio.sleep(GLAMA_RETRY_BACKOFF_SECONDS * (i + 1))
+                        continue
+                    raise HTTPException(status_code=502, detail=r.text or f"glama_http_{r.status_code}")
+                return r.json()
+            except httpx.TimeoutException:
+                last_err = "glama_timeout"
+                if i < attempts - 1:
+                    await asyncio.sleep(GLAMA_RETRY_BACKOFF_SECONDS * (i + 1))
+                    continue
+                raise HTTPException(status_code=502, detail=last_err)
+            except httpx.RequestError as e:
+                last_err = f"glama_request_error:{str(e)}"
+                if i < attempts - 1:
+                    await asyncio.sleep(GLAMA_RETRY_BACKOFF_SECONDS * (i + 1))
+                    continue
+                raise HTTPException(status_code=502, detail=last_err)
+
+    raise HTTPException(status_code=502, detail=last_err or "glama_failed")
 
 
 def _extract_assistant_message(resp: Dict[str, Any]) -> Dict[str, Any]:
@@ -576,13 +612,24 @@ def _extract_assistant_message(resp: Dict[str, Any]) -> Dict[str, Any]:
     return msg
 
 
-async def _run_tool_loop(initial_messages: List[Dict[str, Any]], temperature: Optional[float], max_tokens: Optional[int]) -> str:
+async def _run_tool_loop(
+    initial_messages: List[Dict[str, Any]],
+    temperature: Optional[float],
+    max_tokens: Optional[int],
+    tool_choice: Optional[Any] = None,
+) -> str:
     tools = await _mcp_tools_list()
 
     messages = list(initial_messages)
     messages = _inject_system_prompt(messages, _build_tool_awareness_system_prompt(tools))
     for _ in range(8):
-        resp = await _glama_chat(messages=messages, tools=tools, temperature=temperature, max_tokens=max_tokens)
+        resp = await _glama_chat(
+            messages=messages,
+            tools=tools,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            tool_choice=tool_choice,
+        )
         assistant = _extract_assistant_message(resp)
 
         tool_calls = assistant.get("tool_calls") or []
@@ -750,11 +797,23 @@ async def chat_completions(req: Request) -> Any:
                 status_code=503,
                 detail="glama_unconfigured (set GLAMA_API_URL + GLAMA_API_KEY or enable OPENAI_GATEWAY_PREFER_MCP_LLM=1)",
             )
-        content = await _run_tool_loop(
-            initial_messages=initial_messages,
-            temperature=parsed.temperature,
-            max_tokens=parsed.max_tokens,
-        )
+        try:
+            content = await _run_tool_loop(
+                initial_messages=initial_messages,
+                temperature=parsed.temperature,
+                max_tokens=parsed.max_tokens,
+                tool_choice=parsed.tool_choice,
+            )
+        except HTTPException as e:
+            # Common transient: upstream Glama 504 leading to gateway 502. Optionally fall back.
+            if FALLBACK_TO_MCP_LLM_ON_GLAMA_ERROR and e.status_code in (502, 503):
+                content = await _mcp_llm_chat_safe(
+                    messages=initial_messages,
+                    temperature=parsed.temperature,
+                    max_tokens=parsed.max_tokens,
+                )
+            else:
+                raise
 
     if parsed.stream:
         return StreamingResponse(

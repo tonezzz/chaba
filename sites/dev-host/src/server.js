@@ -37,6 +37,9 @@ const sanitizeEnvValue = (value) => (value ?? '').replace(/[\r\n]/g, '').trim();
 const DEV_HOST_PUBLISH_TOKEN = sanitizeEnvValue(process.env.DEV_HOST_PUBLISH_TOKEN);
 const GLAMA_PROXY_TARGET =
   sanitizeEnvValue(process.env.GLAMA_PROXY_TARGET ?? process.env.DEV_HOST_GLAMA_TARGET ?? 'http://127.0.0.1:4020');
+  (process.env.GLAMA_PROXY_TARGET ?? process.env.DEV_HOST_GLAMA_TARGET ?? 'http://127.0.0.1:4020').trim();
+const DEKA_CHAT_PROXY_TARGET = (process.env.DEKA_CHAT_PROXY_TARGET ?? 'http://host.docker.internal:8190').trim();
+const DEKA_UI_PROXY_TARGET = (process.env.DEKA_UI_PROXY_TARGET ?? 'http://host.docker.internal:3171').trim();
 const AGENTS_PROXY_TARGET =
   sanitizeEnvValue(process.env.AGENTS_PROXY_TARGET ?? process.env.DEV_HOST_AGENTS_TARGET ?? 'http://127.0.0.1:4060');
 const DETECTS_PROXY_TARGET =
@@ -69,6 +72,11 @@ const resolveSitePath = (...segments) => {
 const testLandingRoot = resolveSitePath('a1-idc1', 'test');
 const wwwRoot = resolveSitePath('a1-idc1', 'www');
 const additionalStaticRoutes = [
+  {
+    basePath: '/test/ai_app',
+    roots: [resolveSitePath('a1-idc1', 'test', 'ai_app')],
+    spa: true
+  },
   {
     basePath: '/test/chat',
     roots: [resolveSitePath('a1-idc1', 'test', 'chat')],
@@ -646,6 +654,26 @@ const wireProxies = () => {
   mountProxy('/test/chat/api', GLAMA_PROXY_TARGET, {
     id: 'test-chat',
     pathRewrite: (path) => path.replace(/^\/test\/chat\/api/i, '/api')
+  });
+
+  mountProxy('/test/deka/api/v1', DEKA_CHAT_PROXY_TARGET, {
+    id: 'test-deka-api-v1',
+    pathRewrite: (path) => path.replace(/^\/test\/deka\/api\/v1/i, '/v1')
+  });
+
+  mountProxy('/test/deka/api/health', DEKA_CHAT_PROXY_TARGET, {
+    id: 'test-deka-api-health',
+    pathRewrite: () => '/health'
+  });
+
+  mountProxy('/test/deka/api/models', DEKA_CHAT_PROXY_TARGET, {
+    id: 'test-deka-api-models',
+    pathRewrite: () => '/models'
+  });
+
+  mountProxy('/test/deka', DEKA_UI_PROXY_TARGET, {
+    id: 'test-deka-ui',
+    pathRewrite: (path) => path
   });
 
   mountProxy('/test/mcp0', MCP0_PROXY_TARGET, {

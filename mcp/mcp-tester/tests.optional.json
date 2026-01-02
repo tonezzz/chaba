@@ -1,8 +1,8 @@
 [
   {
     "name": "imagen-health",
-    "description": "Ensure the Imagen GPU service reports healthy.",
-    "url": "http://mcp-imagen-gpu:8001/health",
+    "description": "Ensure the Imagen service (GPU on pc1) reports healthy.",
+    "url": "http://pc1.vpn:8020/health",
     "expect_status": 200,
     "timeout_ms": 8000,
     "retries": 2,
@@ -10,17 +10,23 @@
   },
   {
     "name": "imagen-generate",
-    "description": "Smoke-test image generation with a fast, low-cost request.",
-    "url": "http://mcp-imagen-gpu:8001/generate",
+    "description": "Smoke-test image generation via mcp-imagen-light (GPU on pc1).",
+    "url": "http://pc1.vpn:8020/invoke",
     "method": "POST",
     "expect_status": 200,
     "timeout_ms": 20000,
     "retries": 0,
+    "headers": {
+      "Content-Type": "application/json"
+    },
     "body": {
-      "prompt": "vibrant MCP stack verification badge, flat illustration",
-      "num_inference_steps": 6,
-      "width": 256,
-      "height": 256
+      "tool": "imagen_generate",
+      "arguments": {
+        "prompt": "vibrant MCP stack verification badge, flat illustration",
+        "num_inference_steps": 6,
+        "width": 256,
+        "height": 256
+      }
     }
   },
   {

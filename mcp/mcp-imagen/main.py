@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import contextlib
 import io
 import json
 import os
@@ -23,6 +24,7 @@ PORT = int(os.getenv("PORT", "8001"))
 
 _MODEL_ID = os.getenv("IMAGE_MODEL_ID", "runwayml/stable-diffusion-v1-5")
 _TORCH_DEVICE = os.getenv("TORCH_DEVICE", "cpu").lower()
+_IMAGE_DTYPE = os.getenv("IMAGE_DTYPE", "auto").lower()
 _DEFAULT_STEPS = int(os.getenv("IMAGE_STEPS", "25"))
 _MAX_STEPS = int(os.getenv("IMAGE_MAX_STEPS", "60"))
 _MIN_STEPS = 5
@@ -76,6 +78,8 @@ def _validate_multiple_of_eight(value: Optional[int], fallback: int) -> int:
 
 def _resolve_dtype() -> torch.dtype:
     if _TORCH_DEVICE.startswith("cuda"):
+        if _IMAGE_DTYPE in ("fp32", "float32"):
+            return torch.float32
         return torch.float16
     return torch.float32
 
@@ -143,18 +147,37 @@ def _generate_image(args: GenerateImageArgs) -> Dict[str, Any]:
             used_seed = None
 
     started = time.time()
-    result = pipeline(
-        prompt=prompt,
-        negative_prompt=args.negative_prompt.strip() if isinstance(args.negative_prompt, str) else None,
-        guidance_scale=float(args.guidance_scale or 7.0),
-        num_inference_steps=steps,
-        width=resolved_width,
-        height=resolved_height,
-        generator=generator,
+    dtype = _resolve_dtype()
+    autocast_ctx = (
+        torch.autocast(device_type="cuda")
+        if _TORCH_DEVICE.startswith("cuda") and dtype == torch.float16
+        else contextlib.nullcontext()
     )
+    with torch.inference_mode(), autocast_ctx:
+        result = pipeline(
+            prompt=prompt,
+            negative_prompt=args.negative_prompt.strip() if isinstance(args.negative_prompt, str) else None,
+            guidance_scale=float(args.guidance_scale or 7.0),
+            num_inference_steps=steps,
+            width=resolved_width,
+            height=resolved_height,
+            generator=generator,
+            output_type="np",
+        )
     duration_ms = int((time.time() - started) * 1000)
 
-    image = result.images[0]
+    np_image = result.images[0]
+    if not isinstance(np_image, np.ndarray):
+        raise RuntimeError("unexpected_image_type")
+    if np_image.ndim != 3 or np_image.shape[-1] != 3:
+        raise RuntimeError(f"unexpected_image_shape:{getattr(np_image, 'shape', None)}")
+
+    np_image_uint8 = (np.clip(np_image, 0.0, 1.0) * 255.0).round().astype(np.uint8)
+    image = Image.fromarray(np_image_uint8, mode="RGB")
+    extrema = image.getextrema()
+    pixel_min = int(np_image_uint8.min()) if np_image_uint8.size else 0
+    pixel_max = int(np_image_uint8.max()) if np_image_uint8.size else 0
+    pixel_mean = float(np_image_uint8.mean()) if np_image_uint8.size else 0.0
 
     return {
         "image_base64": _image_to_base64(image),
@@ -168,6 +191,11 @@ def _generate_image(args: GenerateImageArgs) -> Dict[str, Any]:
         "duration_ms": duration_ms,
         "model": _MODEL_ID,
         "device": _TORCH_DEVICE,
+        "dtype": str(dtype).replace("torch.", ""),
+        "pixel_min": pixel_min,
+        "pixel_max": pixel_max,
+        "pixel_mean": pixel_mean,
+        "extrema": extrema,
     }
 
 

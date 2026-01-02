@@ -9,6 +9,9 @@ export interface GetModelsRequestProps {
 const useApiService = () => {
   const fetchService = useFetch();
 
+  const basePath = (process.env.NEXT_PUBLIC_BASE_PATH || '').trim();
+  const prefix = basePath ? basePath.replace(/\/+$/, '') : '';
+
   // const getModels = useCallback(
   // 	(
   // 		params: GetManagementRoutineInstanceDetailedParams,
@@ -27,15 +30,12 @@ const useApiService = () => {
 
   const getModels = useCallback(
     (params: GetModelsRequestProps, signal?: AbortSignal) => {
-      return fetchService.post<GetModelsRequestProps>(`/api/models`, {
-        body: { key: params.key },
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      void params;
+      return fetchService.get<any>(`${prefix}/api/v1/models`, {
         signal,
       });
     },
-    [fetchService],
+    [fetchService, prefix],
   );
 
   return {

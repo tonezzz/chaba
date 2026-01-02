@@ -88,19 +88,41 @@ export const OpenAIStream = async (
 
   const stream = new ReadableStream({
     async start(controller) {
+      let closed = false;
+
+      const safeClose = () => {
+        if (closed) return;
+        closed = true;
+        try {
+          controller.close();
+        } catch (e) {
+          // ignore double-close / invalid state
+        }
+      };
+
       const onParse = (event: ParsedEvent | ReconnectInterval) => {
         if (event.type === 'event') {
           const data = event.data;
 
+          if (data === '[DONE]') {
+            safeClose();
+            return;
+          }
+
           try {
             const json = JSON.parse(data);
             if (json.choices[0].finish_reason != null) {
-              controller.close();
+              safeClose();
               return;
             }
-            const text = json.choices[0].delta.content;
-            const queue = encoder.encode(text);
-            controller.enqueue(queue);
+
+            const text = json?.choices?.[0]?.delta?.content;
+            if (typeof text === 'string' && text.length > 0) {
+              if (!closed) {
+                const queue = encoder.encode(text);
+                controller.enqueue(queue);
+              }
+            }
           } catch (e) {
             controller.error(e);
           }

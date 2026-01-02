@@ -1561,21 +1561,6 @@
               },
               "container_name": "pc2-mcp-vaja"
             },
-            "mcp-imagen-gpu": {
-              "profiles": [
-                "mcp-suite"
-              ],
-              "port": 8001,
-              "type": "external",
-              "endpoints": {
-                "stack": "http://mcp-imagen-gpu:8001",
-                "health": "http://mcp-imagen-gpu:8001/health",
-                "generate": "http://mcp-imagen-gpu:8001/generate"
-              },
-              "health_path": "/health",
-              "container_name": "mcp-imagen-gpu",
-              "notes": "Imagen backend referenced by dev-host and mcp-tester (not defined in stacks/pc2-worker/docker-compose.yml)."
-            },
             "mcp-tester": {
               "profiles": [
                 "mcp-suite"

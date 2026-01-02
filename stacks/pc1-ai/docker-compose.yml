@@ -82,28 +82,6 @@ services:
       timeout: 5s
       retries: 6
 
-  mcp-imagen-light:
-    <<: *default-service
-    build:
-      context: ${MCP_IMAGEN_LIGHT_BUILD_CONTEXT:-../../mcp/mcp-imagen-light}
-    container_name: pc1-ai-mcp-imagen-light
-    ports:
-      - "${MCP_IMAGEN_LIGHT_PORT:-8020}:8020"
-    environment:
-      PORT: 8020
-      MCP_CUDA_URL: ${MCP_CUDA_URL:-http://pc1.vpn:8057}
-      IMAGEN_OUTPUT_DIR: ${IMAGEN_OUTPUT_DIR:-/app/images}
-      IMAGEN_BASE_URL: ${IMAGEN_BASE_URL:-http://localhost:8020}
-    volumes:
-      - mcp-imagen-light-images:/app/images
-    depends_on:
-      - ollama
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8020/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
 networks:
   pc1-ai-net:
     driver: bridge
@@ -111,4 +89,3 @@ networks:
 
 volumes:
   ollama-data:
-  mcp-imagen-light-images:
