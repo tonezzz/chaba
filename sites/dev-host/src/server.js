@@ -33,20 +33,21 @@ const loadEnv = () => {
 loadEnv();
 
 const DEV_HOST_BASE_URL = (process.env.DEV_HOST_BASE_URL || 'http://dev-host:3100').replace(/\/+$/, '');
-const DEV_HOST_PUBLISH_TOKEN = (process.env.DEV_HOST_PUBLISH_TOKEN || '').trim();
+const sanitizeEnvValue = (value) => (value ?? '').replace(/[\r\n]/g, '').trim();
+const DEV_HOST_PUBLISH_TOKEN = sanitizeEnvValue(process.env.DEV_HOST_PUBLISH_TOKEN);
 const GLAMA_PROXY_TARGET =
-  (process.env.GLAMA_PROXY_TARGET ?? process.env.DEV_HOST_GLAMA_TARGET ?? 'http://127.0.0.1:4020').trim();
+  sanitizeEnvValue(process.env.GLAMA_PROXY_TARGET ?? process.env.DEV_HOST_GLAMA_TARGET ?? 'http://127.0.0.1:4020');
 const AGENTS_PROXY_TARGET =
-  (process.env.AGENTS_PROXY_TARGET ?? process.env.DEV_HOST_AGENTS_TARGET ?? 'http://127.0.0.1:4060').trim();
+  sanitizeEnvValue(process.env.AGENTS_PROXY_TARGET ?? process.env.DEV_HOST_AGENTS_TARGET ?? 'http://127.0.0.1:4060');
 const DETECTS_PROXY_TARGET =
-  (process.env.DETECTS_PROXY_TARGET ?? process.env.DEV_HOST_DETECTS_TARGET ?? 'http://localhost:4120').trim();
+  sanitizeEnvValue(process.env.DETECTS_PROXY_TARGET ?? process.env.DEV_HOST_DETECTS_TARGET ?? '');
 const ONE_MCP_BASE_URL =
-  (process.env.ONE_MCP_BASE_URL ?? process.env.DEV_HOST_ONE_MCP_TARGET ?? 'http://1mcp.pc1.vpn:3052').trim();
-const ONE_MCP_APP = (process.env.ONE_MCP_APP || process.env.DEV_HOST_ONE_MCP_APP || 'windsurf').trim();
-const IMAGEN_MCP_TOOL_NAME = (process.env.IMAGEN_MCP_TOOL_NAME || 'mcp-imagen_1mcp_generate_image').trim();
-const VAJA_PROXY_TARGET = (process.env.VAJA_PROXY_TARGET || process.env.DEV_HOST_VAJA_TARGET || '').trim();
+  sanitizeEnvValue(process.env.ONE_MCP_BASE_URL ?? process.env.DEV_HOST_ONE_MCP_TARGET ?? 'http://1mcp.pc1.vpn:3052');
+const ONE_MCP_APP = sanitizeEnvValue(process.env.ONE_MCP_APP || process.env.DEV_HOST_ONE_MCP_APP || 'windsurf');
+const IMAGEN_MCP_TOOL_NAME = sanitizeEnvValue(process.env.IMAGEN_MCP_TOOL_NAME || 'mcp-imagen_1mcp_generate_image');
+const VAJA_PROXY_TARGET = sanitizeEnvValue(process.env.VAJA_PROXY_TARGET || process.env.DEV_HOST_VAJA_TARGET || '');
 const MCP0_PROXY_TARGET =
-  (process.env.MCP0_PROXY_TARGET ?? process.env.DEV_HOST_MCP0_TARGET ?? 'http://host.docker.internal:8310').trim();
+  sanitizeEnvValue(process.env.MCP0_PROXY_TARGET ?? process.env.DEV_HOST_MCP0_TARGET ?? '');
 
 const workspaceRoot = path.resolve(__dirname, '..', '..');
 
@@ -120,10 +121,10 @@ const PROXY_CHECKS = [
   { id: '1mcp', label: '1mcp-agent', target: ONE_MCP_BASE_URL, path: '/health/ready', optional: true }
 ];
 
-const normalizeBaseUrl = (value) => (value || '').trim().replace(/\/+$/, '');
+const normalizeBaseUrl = (value) => sanitizeEnvValue(value).replace(/\/+$/, '');
 
 const DEKA_PROXY_TARGET =
-  (process.env.DEKA_PROXY_TARGET ?? process.env.DEV_HOST_DEKA_TARGET ?? 'http://pc1.vpn:8270').trim();
+  sanitizeEnvValue(process.env.DEKA_PROXY_TARGET ?? process.env.DEV_HOST_DEKA_TARGET ?? 'http://pc1.vpn:8270');
 
 const mcpState = {
   sessionId: '',
