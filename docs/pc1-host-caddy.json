@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "host": {
+    "name": "pc1",
+    "vpn_domain": "pc1.vpn"
+  },
+  "stack": {
+    "id": "pc1-host-caddy",
+    "path": "stacks/pc1-host-caddy",
+    "compose": "docker-compose.yml",
+    "description": "Host-level Caddy ingress for *.pc1.vpn"
+  },
+  "ingress": {
+    "ports_required": [80, 443],
+    "admin": "0.0.0.0:2019",
+    "tls": "internal",
+    "caddyfile": "stacks/pc1-host-caddy/Caddyfile"
+  },
+  "routes": [
+    {"host": "pc1.vpn", "upstream": "host.docker.internal:3080"},
+    {"host": "1mcp.pc1.vpn", "upstream": "host.docker.internal:3051"},
+    {"host": "dev-host.pc1.vpn", "upstream": "host.docker.internal:3100"},
+    {"host": "test.pc1.vpn", "upstream": "host.docker.internal:3100"}
+  ],
+  "recovery": {
+    "verify": {
+      "commands": [
+        "curl.exe -k https://pc1.vpn:3443/",
+        "curl.exe -k https://dev-host.pc1.vpn/api/health",
+        "curl.exe http://pc1.vpn:3051/health"
+      ]
+    },
+    "restart": {
+      "windows_powershell": [
+        "docker compose -f C:/chaba/stacks/pc1-host-caddy/docker-compose.yml up -d",
+        "netstat -ano | findstr :80",
+        "netstat -ano | findstr :443"
+      ]
+    }
+  }
+}

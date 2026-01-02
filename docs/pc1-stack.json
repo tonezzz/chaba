@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "host": {
+    "name": "pc1",
+    "vpn_domain": "pc1.vpn"
+  },
+  "stack": {
+    "id": "pc1-stack",
+    "path": "stacks/pc1-stack",
+    "compose": "docker-compose.yml",
+    "network": "pc1-stack-net",
+    "description": "Core pc1 MCP services (1mcp-agent + common MCP servers)"
+  },
+  "entrypoints": {
+    "mcp": {
+      "vpn": "http://pc1.vpn:3051/mcp?app=windsurf",
+      "vpn_https": "https://pc1.vpn:3443/1mcp/mcp?app=windsurf"
+    },
+    "health": {
+      "local": "http://127.0.0.1:3051/health"
+    }
+  },
+  "services": [
+    {"service": "1mcp-agent", "port": 3051, "health": "/health"},
+    {"service": "mcp-agents", "port": 8046, "health": "/health"},
+    {"service": "mcp-http", "port": 8067, "health": "/health"},
+    {"service": "mcp-task", "port": 8016, "health": "/health"},
+    {"service": "mcp-playwright", "port": 8260, "health": "/health"},
+    {"service": "mcp-quickchart", "port": 8251, "health": "/health"},
+    {"service": "mcp-tester", "port": 8335, "health": "/health"}
+  ],
+  "recovery": {
+    "verify": {
+      "urls": [
+        "http://127.0.0.1:3051/health",
+        "http://127.0.0.1:8016/health",
+        "http://127.0.0.1:8046/health",
+        "http://127.0.0.1:8067/health",
+        "http://127.0.0.1:8260/health",
+        "http://127.0.0.1:8251/health",
+        "http://127.0.0.1:8335/health"
+      ]
+    },
+    "restart": {
+      "windows_powershell": [
+        "docker compose -f C:/chaba/stacks/pc1-stack/docker-compose.yml --profile mcp-suite up -d",
+        "curl.exe http://127.0.0.1:3051/health"
+      ]
+    },
+    "common_failures": [
+      {
+        "id": "port_conflicts",
+        "ports": [3051, 8016, 8046, 8067, 8251, 8260, 8335],
+        "verify": ["netstat -ano | findstr :3051"],
+        "fix": ["Stop the conflicting process or adjust the host port mapping in the stack env"]
+      }
+    ]
+  }
+}

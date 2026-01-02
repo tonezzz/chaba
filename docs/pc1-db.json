@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "host": {
+    "name": "pc1",
+    "vpn_domain": "pc1.vpn"
+  },
+  "stack": {
+    "id": "pc1-db",
+    "path": "stacks/pc1-db",
+    "compose": "docker-compose.yml",
+    "description": "PC1 databases + RAG services"
+  },
+  "services": [
+    {"service": "qdrant", "port": 6333, "health": "/health"},
+    {"service": "mcp-rag", "port": 8055, "health": "/health"},
+    {"service": "mcp-doc-archiver", "port": 8066, "health": "/health"},
+    {"service": "minio", "ports": [9000, 9001]},
+    {"service": "vault", "port": 8200}
+  ],
+  "recovery": {
+    "verify": {
+      "urls": [
+        "http://pc1.vpn:6333/health",
+        "http://pc1.vpn:8055/health",
+        "http://pc1.vpn:8066/health"
+      ]
+    },
+    "restart": {
+      "windows_powershell": [
+        "docker compose -f C:/chaba/stacks/pc1-db/docker-compose.yml up -d"
+      ]
+    }
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "host": {
+    "name": "idc1",
+    "os": "linux",
+    "public_domain": "idc1.surf-thailand.com",
+    "vpn_domain": "idc1.vpn",
+    "wireguard": {
+      "subnet": "10.8.0.0/24",
+      "server_ip": "10.8.0.1",
+      "udp_port": 51820
+    }
+  },
+  "stack": {
+    "id": "idc1-vpn",
+    "path": "stacks/idc1-vpn",
+    "compose": "docker-compose.yml",
+    "description": "WireGuard (wg-easy) + CoreDNS for *.vpn"
+  },
+  "services": [
+    {
+      "service": "wg-easy",
+      "container": "idc1-wg-easy",
+      "ports": ["51820/udp", "127.0.0.1:51821/tcp"],
+      "purpose": "WireGuard server + web UI"
+    },
+    {
+      "service": "wg-dns",
+      "container": "idc1-wg-dns",
+      "ports": ["10.8.0.1:53"],
+      "purpose": "CoreDNS answering .vpn"
+    }
+  ],
+  "recovery": {
+    "verify": {
+      "linux": [
+        "docker logs --tail 200 idc1-wg-easy",
+        "docker logs --tail 200 idc1-wg-dns",
+        "ss -lunp | grep 51820",
+        "curl -sf http://127.0.0.1:51821 || true",
+        "nslookup pc1.vpn 10.8.0.1 || true"
+      ],
+      "client": [
+        "nslookup idc1.vpn 10.8.0.1",
+        "ping 10.8.0.1"
+      ]
+    },
+    "restart": {
+      "linux": [
+        "cd /home/chaba/chaba/stacks/idc1-vpn && docker compose up -d --force-recreate wg-easy wg-dns"
+      ]
+    }
+  }
+}
