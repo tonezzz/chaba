@@ -117,36 +117,16 @@ docker-compose down
 
 ## Health Checks / Smoke Tests
 
-### Core (pc1-stack)
-- **1mcp-agent**: `http://127.0.0.1:3051/health`
-- **mcp-agents**: `http://127.0.0.1:8046/health`
-- **mcp-http**: `http://127.0.0.1:8067/health`
-- **mcp-task**: `http://127.0.0.1:8016/health`
-- **mcp-playwright**: `http://127.0.0.1:8260/health`
-- **mcp-quickchart**: `http://127.0.0.1:8251/health`
-- **mcp-tester**: `http://127.0.0.1:8335/health`
+See the authoritative per-stack runbooks:
 
-### Web (pc1-web)
-- **OpenChat UI**: `http://127.0.0.1:3170/`
-- **Caddy health**: `http://127.0.0.1:3080/health`
-- **Dev-host** (host-mapped): `http://127.0.0.1:3100/health`
-
-Note: `pc1-stack` references `dev-host` via `http://pc1.vpn:3100/...`.
-
-### AI (pc1-ai)
-- **mcp-openai-gateway**: `http://127.0.0.1:8181/health`
-- **ollama**: TCP port open on `127.0.0.1:11435` (container 11434)
-- **mcp-imagen-light**: `http://127.0.0.1:8020/health`
-- **mcp-glama**: `http://127.0.0.1:7241/health` (if implemented)
-- **mcp-github-models**: `http://127.0.0.1:7242/health` (if implemented)
-
-### GPU (pc1-gpu)
-- **mcp-cuda**: `http://127.0.0.1:8057/health`
-
-### DB (pc1-db)
-- **qdrant**: `http://127.0.0.1:6333/health`
-- **mcp-rag**: `http://127.0.0.1:8055/health`
-- **mcp-doc-archiver**: `http://127.0.0.1:8066/health`
+- `docs/stacks.md`
+- `docs/pc1-stack.json`
+- `docs/pc1-web.json`
+- `docs/pc1-ai.json`
+- `docs/pc1-gpu.json`
+- `docs/pc1-db.json`
+- `docs/pc1-devops.json`
+- `docs/pc1-deka.json`
 
 ## Common Issues
 

@@ -8,14 +8,10 @@
 - **Ports:** `2223:22` for SSH, `3100:3000` for HTTP.
 - **Entry point:** `start-dev-host.sh` runs `sshd` plus the gateway server automatically and tails logs to `/tmp/dev-host.log`.
 - **Volumes:** `../:/workspace` so all site folders are editable from the host.
-- **Bring up:**
-  ```
-  cmd /c "cd /d c:\chaba\docker && docker compose up -d dev-host"
-  ```
-
-> **pc2 note:** pc2 now follows the single-ingress pattern (like idc1): `pc2-host-caddy` owns `:80/:443` and routes by hostname. Keep dev-host on `DEV_HOST_HTTP_PORT=3100` and access it via:
-> - `https://dev-host.pc2.vpn/`
-> - `https://test.pc2.vpn/test/`
+- **Runbook (pc2)**: `docs/pc2-docker-dev-host.json`
+- **Ingress (pc2)**: `docs/pc2-host-caddy.json`
+- **Runbook (pc1)**: `docs/pc1-web.json`
+- **Index**: `docs/stacks.md`
 
 ## Secrets & env
 - Mirror production env files/keys under `.secrets/dev-host/` (same filenames as `.secrets/node-1`).
@@ -51,7 +47,7 @@ The Express gateway lives in `sites/dev-host/src/server.js`. It provides:
 | `/test/mcp0/*` | `MCP0_PROXY_TARGET` or `DEV_HOST_MCP0_TARGET` | `http://host.docker.internal:8351` | MCP0 admin/API passthrough. |
 | `/test/imagen/api/*` | `ONE_MCP_BASE_URL`, `ONE_MCP_APP`, `IMAGEN_MCP_TOOL_NAME` | `http://1mcp.pc1.vpn:3052` | Imagen generation via 1mcp tool invocation. |
 
-> **Canonical preview URL:** On pc1 the gateway is always available at `http://dev-host.pc1/test/`. Use that host when sharing preview links (e.g., `http://dev-host.pc1/test/detects/`, `http://dev-host.pc1/test/agents/`, `http://dev-host.pc1/test/agens/`).
+For canonical hostnames and ingress, use `docs/stacks.md` and the per-stack runbooks.
 
 Both proxies add `x-dev-host-proxy` headers for easier tracing and rewrite the path to match the backend expectations.
 
@@ -65,15 +61,10 @@ Both proxies add `x-dev-host-proxy` headers for easier tracing and rewrite the p
  etc. These endpoints surface the backend `/health` responses verbatim.
 
 ### Remote exposure (pc2 worker)
+On pc2, remote access is expected to go through host ingress (Caddy) using VPN wildcard hostnames. See:
 
-On pc2, remote access is expected to go through `pc2-host-caddy` on `:443` using the VPN wildcard hostnames:
-1. `https://dev-host.pc2.vpn/` (dev-host gateway)
-2. `https://test.pc2.vpn/test/` (test landing)
-3. `https://1mcp.pc2.vpn/health/ready` (1mcp-agent)
-
-`DEV_HOST_HTTP_PORT=3100` remains the host port for the dev-host container, but it is an internal upstream for Caddy and not meant to be exposed directly as an HTTPS entrypoint.
-
-Bake these checks into incident runbooks so UI operators can quickly diagnose proxy issues.
+- `docs/pc2-host-caddy.json`
+- `docs/pc2-docker-dev-host.json`
 
 ## Health checks
 - Container healthcheck: `nc -z localhost 22` (SSH ready).
@@ -82,10 +73,10 @@ Bake these checks into incident runbooks so UI operators can quickly diagnose pr
 
 ## Runbook
 
-### Startup
-1. `cmd /c "cd /d c:\chaba\docker && docker compose up -d dev-host"`
-2. (Optional) Tail logs: `docker compose logs -f dev-host`
-3. Verify health: `Invoke-WebRequest http://127.0.0.1:3100/api/health`
+Use the per-host per-stack runbooks:
+
+- pc2: `docs/pc2-docker-dev-host.json`
+- pc1: `docs/pc1-web.json`
 
 ### Switching proxy targets
 | Service | Env var | Default |
@@ -113,14 +104,6 @@ Set in `.env` or export before running compose. Restart container to apply.
 | `ssh chaba@dev-host` succeeds but UI buttons fail to publish | Missing or stale `.secrets/dev-host/publish.token` | `/api/health` still ok; `/api/deploy/*` responds 401 | Regenerate token, place in `.secrets/dev-host/publish.token`, restart container |
 | `ssh <user>@dev-host` fails with `Permission denied` or `Connection reset` | Wrong user/key, SSH service down, or security group blocking | Try `ssh -vvv <user>@dev-host`; check `docker compose logs dev-host` for `sshd` errors | Confirm correct username (`chaba`), ensure private key matches `authorized_keys`, restart container if sshd crashed; verify host firewall allows port 22/2223 |
 | `ssh chaba@pc2` works but gateway routes still break | Remote worker reachable but services not running | After login run `pm2 list`/`docker ps` on pc2; check `/api/health` from that host | Start the missing PM2 apps or docker stack on pc2, then re-hit dev-host proxies |
-
-## Runbook
-
-### Startup
-1. `cmd /c "cd /d c:\chaba\docker && docker compose up -d dev-host"`
-2. `docker compose build dev-host` when Dockerfile/start script changes.
-3. `docker compose restart dev-host`.
-4. Re-run health checks above.
 
 ## Architecture diagrams
 
@@ -168,32 +151,6 @@ With the idc1 stack upgrade we can now edit the repo directly on that host via V
 1. Copy `stacks/idc1-stack/.env.example` → `.env` (kept outside git) if you have not already.
 2. Add/update these entries (example values):
    ```
-   CODE_SERVER_PORT=8443
-   CODE_SERVER_PASSWORD=<strong passphrase>
-   CODE_SERVER_WORKSPACE=/workspaces/chaba
-   CODE_SERVER_UID=1000
-   CODE_SERVER_GID=1000
-   ```
-   - Prefer `CODE_SERVER_HASHED_PASSWORD` (argon2) if sharing access broadly.
-   - Choosing 1000/1000 keeps file ownership aligned with the existing repo volume.
-
-### Bring code-server online
-1. From `c:\chaba\stacks\idc1-stack`, run:
-   ```
-   cmd /c "cd /d c:\chaba\stacks\idc1-stack && docker compose --profile mcp-suite up -d code-server"
-   ```
-   (Use `up -d` without `code-server` to launch the whole stack.)
-2. Tail logs and verify health:
-   ```
-   cmd /c "cd /d c:\chaba\stacks\idc1-stack && docker compose logs -f code-server"
-   ```
-   Wait for `http://localhost:8080/healthz` OK messages.
-
-### Secure exposure
-1. On idc1, allow the port through the firewall (`New-NetFirewallRule -DisplayName "IDC1 Code Server" -Direction Inbound -Protocol TCP -LocalPort 8443 -Action Allow`).
-2. Prefer encrypted access:
-   - **SSH tunnel:** `ssh -L 8443:127.0.0.1:8080 tonezzz@idc1.surf-thailand.com`.
-   - **Reverse proxy:** terminate HTTPS via Caddy/NGINX with HTTP Basic Auth before forwarding to `code-server`.
 3. Rotate the password whenever staff change; keep it in the internal secrets manager rather than the repo.
 
 ### Daily usage
