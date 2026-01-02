@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "host": {
+    "name": "pc1",
+    "vpn_domain": "pc1.vpn"
+  },
+  "stack": {
+    "id": "pc1-devops",
+    "path": "stacks/pc1-devops",
+    "compose": "docker-compose.yml",
+    "description": "PC1 devops automation services"
+  },
+  "services": [
+    {"service": "mcp-devops", "port": 8325, "health": "/health"}
+  ],
+  "recovery": {
+    "common_failures": [
+      {
+        "id": "port_8325_in_use",
+        "symptom": "mcp-devops fails to start due to port 8325",
+        "verify": ["netstat -ano | findstr :8325"],
+        "fix": ["Stop the conflicting process/container or change the host port mapping"]
+      }
+    ],
+    "restart": {
+      "windows_powershell": [
+        "docker compose -f C:/chaba/stacks/pc1-devops/docker-compose.yml up -d"
+      ]
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "host": {
+    "name": "pc2",
+    "vpn_domain": "pc2.vpn"
+  },
+  "stack": {
+    "id": "pc2-webtops",
+    "path": "stacks/pc2-webtops",
+    "compose": "docker-compose.yml",
+    "description": "PC2 webtops UI + management"
+  },
+  "services": [
+    {"service": "webtops-router", "container": "pc2-webtops-webtops-router-1", "port": 3001},
+    {"service": "webtops-cp", "container": "pc2-webtops-webtops-cp-1", "port": 3005},
+    {"service": "mcp-webtops", "container": "pc2-webtops-mcp-webtops-1", "port": 8091, "health": "/health"}
+  ],
+  "recovery": {
+    "verify": {
+      "urls": [
+        "http://pc2.vpn:3001",
+        "http://pc2.vpn:3005",
+        "http://pc2.vpn:8091/health"
+      ]
+    },
+    "restart": {
+      "windows_powershell": [
+        "docker compose -f C:/chaba/stacks/pc2-webtops/docker-compose.yml up -d"
+      ]
+    }
+  }
+}
