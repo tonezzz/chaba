@@ -42,7 +42,7 @@ const AGENTS_PROXY_TARGET =
 const DETECTS_PROXY_TARGET =
   sanitizeEnvValue(process.env.DETECTS_PROXY_TARGET ?? process.env.DEV_HOST_DETECTS_TARGET ?? '');
 const ONE_MCP_BASE_URL =
-  sanitizeEnvValue(process.env.ONE_MCP_BASE_URL ?? process.env.DEV_HOST_ONE_MCP_TARGET ?? 'http://1mcp.pc1.vpn:3052');
+  sanitizeEnvValue(process.env.ONE_MCP_BASE_URL ?? process.env.DEV_HOST_ONE_MCP_TARGET ?? '');
 const ONE_MCP_APP = sanitizeEnvValue(process.env.ONE_MCP_APP || process.env.DEV_HOST_ONE_MCP_APP || 'windsurf');
 const IMAGEN_MCP_TOOL_NAME = sanitizeEnvValue(process.env.IMAGEN_MCP_TOOL_NAME || 'mcp-imagen_1mcp_generate_image');
 const VAJA_PROXY_TARGET = sanitizeEnvValue(process.env.VAJA_PROXY_TARGET || process.env.DEV_HOST_VAJA_TARGET || '');
@@ -116,10 +116,16 @@ const additionalStaticRoutes = [
 
 const PROXY_CHECKS = [
   { id: 'glama', label: 'Glama chat', target: GLAMA_PROXY_TARGET, path: '/api/health' },
-  { id: 'agents', label: 'Agents API', target: AGENTS_PROXY_TARGET, path: '/api/health' },
-  { id: 'detects', label: 'Detects API', target: DETECTS_PROXY_TARGET, path: '/health', optional: true },
-  { id: '1mcp', label: '1mcp-agent', target: ONE_MCP_BASE_URL, path: '/health/ready', optional: true }
+  { id: 'agents', label: 'Agents API', target: AGENTS_PROXY_TARGET, path: '/api/health' }
 ];
+
+if (DETECTS_PROXY_TARGET) {
+  PROXY_CHECKS.push({ id: 'detects', label: 'Detects API', target: DETECTS_PROXY_TARGET, path: '/health', optional: true });
+}
+
+if (ONE_MCP_BASE_URL) {
+  PROXY_CHECKS.push({ id: '1mcp', label: '1mcp-agent', target: ONE_MCP_BASE_URL, path: '/health/ready', optional: true });
+}
 
 const normalizeBaseUrl = (value) => sanitizeEnvValue(value).replace(/\/+$/, '');
 
