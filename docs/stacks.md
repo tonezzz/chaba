@@ -14,12 +14,15 @@
 - **mcp-task Control UI (tasks)**: `http://127.0.0.1:8016/control`
 - **mcp-task Control UI (tasks, token)**: `http://127.0.0.1:8016/control?token=YOUR_TOKEN`
 
-## pc2-worker
-- **Path**: `stacks/pc2-worker/`
-- **Runbook**: `stacks/pc2-worker/README.md`
+## pc2 (current)
+- **Inventory (pc2)**: `docs/pc2-stacks.json`
 - **URLs (pc2)**: `docs/pc2_url.json`
 - **Windsurf MCP URL (default)**: `http://1mcp.pc2.vpn:3050/mcp?app=windsurf`
 - **Windsurf MCP URL (pc1 alternative)**: `https://pc1.vpn:3443/1mcp/mcp?app=windsurf`
+
+## pc2-worker (legacy / optional)
+- **Path**: `stacks/pc2-worker/`
+- **Runbook**: `stacks/pc2-worker/README.md`
 
 ## app-demo
 - **Path**: `stacks/app-demo/`
