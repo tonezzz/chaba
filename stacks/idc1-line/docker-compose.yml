@@ -27,6 +27,16 @@ services:
       LINE_CHANNEL_ACCESS_TOKEN: ${LINE_CHANNEL_ACCESS_TOKEN:-}
       LINE_USE_GLAMA: ${LINE_USE_GLAMA:-}
       MCP_GLAMA_URL: ${MCP_GLAMA_URL:-http://host.docker.internal:7441}
+      MCP_LINE_DB_PATH: ${MCP_LINE_DB_PATH:-/data/sqlite/mcp-line.sqlite}
+      MCP_LINE_CONTROL_TOKEN: ${MCP_LINE_CONTROL_TOKEN:-}
+      MCP_LINE_AGENT_ENABLED: ${MCP_LINE_AGENT_ENABLED:-false}
+      ONE_MCP_URL: ${ONE_MCP_URL:-}
+      ONE_MCP_BASIC_AUTH: ${ONE_MCP_BASIC_AUTH:-}
+      ONE_MCP_USERNAME: ${ONE_MCP_USERNAME:-}
+      ONE_MCP_PASSWORD: ${ONE_MCP_PASSWORD:-}
+      MCP_LINE_ALLOWED_TOOLS: ${MCP_LINE_ALLOWED_TOOLS:-}
+    volumes:
+      - ${MCP_LINE_DATA_DIR:-./data/mcp-line}:/data
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8088/health || exit 1"]
       interval: 30s
