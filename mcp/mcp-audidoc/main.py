@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import hashlib
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -135,6 +136,20 @@ class PdfGeneralInfoArgs(BaseModel):
     max_chars_per_page: int = Field(1200, description="Max characters of extracted text per page (bounded)")
 
 
+class AuditCrossChecksArgs(BaseModel):
+    paths: List[str] = Field(default_factory=list, description="PDF paths relative to AUDIDOC_ROOT")
+    auto_discover: bool = Field(True, description="If true, ignore paths and scan AUDIDOC_PDF_DIR")
+    required_doc_types: List[str] = Field(
+        default_factory=lambda: ["บัญชี", "เช็ค"],
+        description="Doc types required for each (project, period) group",
+    )
+    period_filter: str = Field("", description="Optional period filter (e.g. 2568-08)")
+
+
+class ChatArgs(BaseModel):
+    message: str
+
+
 def _tool_definitions() -> List[Dict[str, Any]]:
     return [
         {
@@ -154,7 +169,155 @@ def _tool_definitions() -> List[Dict[str, Any]]:
             "description": "Extract general info from PDFs: metadata, sha256, page count, and text preview/stats.",
             "inputSchema": PdfGeneralInfoArgs.model_json_schema(),
         }
+        ,
+        {
+            "name": "audit_cross_checks",
+            "description": "Minimal cross-doc checks across PDFs using filename/folder claims (project, period, doc_type).",
+            "inputSchema": AuditCrossChecksArgs.model_json_schema(),
+        }
     ]
+
+
+def _normalize_text(v: str) -> str:
+    return " ".join((v or "").strip().split())
+
+
+def _infer_project_from_path(path: Path) -> Optional[str]:
+    root = Path(AUDIDOC_ROOT).resolve()
+    try:
+        rel = path.resolve().relative_to(root)
+    except Exception:
+        rel = path
+
+    parts = list(rel.parts)
+    if not parts:
+        return None
+    if parts[0].lower() == AUDIDOC_PDF_DIR.lower() and len(parts) >= 2:
+        return _normalize_text(parts[1]) or None
+    if len(parts) >= 2:
+        return _normalize_text(parts[0]) or None
+    return None
+
+
+def _infer_doc_type_from_path(path: Path) -> Optional[str]:
+    name = _normalize_text(path.parent.name)
+    if not name:
+        return None
+    lowered = name.lower()
+    if "บัญชี" in lowered:
+        return "บัญชี"
+    if "เช็ค" in lowered:
+        return "เช็ค"
+    if "รายรับ" in lowered:
+        return "รายรับ"
+    return name
+
+
+def _infer_period_from_path(path: Path) -> Optional[str]:
+    text = _normalize_text(path.name)
+    m = re.search(r"(\d{4})-(\d{2})", text)
+    if m:
+        return f"{m.group(1)}-{m.group(2)}"
+    m2 = re.search(r"(\d{4})-(\d{2})", _normalize_text(path.parent.name))
+    if m2:
+        return f"{m2.group(1)}-{m2.group(2)}"
+    return None
+
+
+def _extract_claims_from_path(path: Path) -> Dict[str, Any]:
+    project = _infer_project_from_path(path)
+    period = _infer_period_from_path(path)
+    doc_type = _infer_doc_type_from_path(path)
+    issues: List[Dict[str, Any]] = []
+    if not project:
+        issues.append({"code": "missing_project_claim", "path": str(path)})
+    if not period:
+        issues.append({"code": "missing_period_claim", "path": str(path)})
+    if not doc_type:
+        issues.append({"code": "missing_doc_type_claim", "path": str(path)})
+    return {
+        "path": str(path),
+        "claims": {"project": project, "period": period, "doc_type": doc_type},
+        "issues": issues,
+    }
+
+
+def _audit_cross_checks(args: AuditCrossChecksArgs) -> Dict[str, Any]:
+    root = Path(AUDIDOC_ROOT).resolve()
+    pdfs: List[Path]
+    if args.auto_discover:
+        pdfs = _discover_pdfs()
+    else:
+        pdfs = [_safe_resolve_under_root(p) for p in (args.paths or [])]
+
+    period_filter = _normalize_text(args.period_filter)
+    required = [_normalize_text(x) for x in (args.required_doc_types or []) if _normalize_text(x)]
+    if not required:
+        required = ["บัญชี", "เช็ค"]
+
+    docs: List[Dict[str, Any]] = []
+    groups: Dict[str, Dict[str, Any]] = {}
+    for p in pdfs:
+        if p.suffix.lower() != ".pdf":
+            continue
+        doc = _extract_claims_from_path(p)
+        claims = doc.get("claims") or {}
+        project = claims.get("project")
+        period = claims.get("period")
+        doc_type = claims.get("doc_type")
+
+        try:
+            rel_out = str(p.relative_to(root))
+        except Exception:
+            rel_out = str(p)
+        doc["path"] = rel_out
+        docs.append(doc)
+
+        if period_filter and period != period_filter:
+            continue
+        if not project or not period:
+            continue
+
+        key = f"{project}::{period}"
+        g = groups.get(key)
+        if not g:
+            g = {
+                "project": project,
+                "period": period,
+                "docs": [],
+                "doc_types": [],
+                "issues": [],
+            }
+            groups[key] = g
+
+        g["docs"].append({"path": rel_out, "doc_type": doc_type})
+        if isinstance(doc_type, str) and doc_type not in g["doc_types"]:
+            g["doc_types"].append(doc_type)
+
+    cross_issues: List[Dict[str, Any]] = []
+    for key, g in groups.items():
+        types = g.get("doc_types") or []
+        missing = [t for t in required if t not in types]
+        if missing:
+            issue = {
+                "code": "missing_required_doc_type",
+                "project": g.get("project"),
+                "period": g.get("period"),
+                "missing": missing,
+            }
+            g["issues"].append(issue)
+            cross_issues.append(issue)
+
+    return {
+        "root": str(root),
+        "pdf_dir": AUDIDOC_PDF_DIR,
+        "required_doc_types": required,
+        "period_filter": period_filter or None,
+        "documents": docs,
+        "groups": list(groups.values()),
+        "issues": cross_issues,
+        "timestampMs": _utc_ms(),
+    }
 
 
 def _canonicalize_frontmatter(frontmatter: Dict[str, Any], field_aliases: Dict[str, List[str]]) -> Dict[str, Any]:
@@ -514,6 +677,11 @@ def _pdf_general_info_one(path: Path, args: PdfGeneralInfoArgs) -> Dict[str, Any
 app = FastAPI(title=APP_NAME, version=APP_VERSION)
 
 
+@app.get("/", response_class=HTMLResponse)
+async def home() -> str:
+    return """<!doctype html><html><head><meta charset='utf-8' /><meta http-equiv='refresh' content='0; url=/www/status' /></head><body><a href='/www/status'>Open status</a></body></html>"""
+
+
 @app.get("/health")
 async def health() -> Dict[str, Any]:
     return {
@@ -606,6 +774,7 @@ async def status_page(max_pages: int = 1, max_chars_per_page: int = 0) -> str:
     <div class=\"toolbar\">
       <h1 style=\"flex:1;\">mcp-audidoc · Documents ({_html_escape(data.get('count'))})</h1>
       <a class=\"btn secondary\" href=\"/status?max_pages={int(max_pages)}&max_chars_per_page={int(max_chars_per_page)}\">JSON</a>
+      <a class=\"btn secondary\" href=\"/www/chat\">Chat</a>
       <a class=\"btn\" href=\"/www/status?max_pages={int(max_pages)}&max_chars_per_page={int(max_chars_per_page)}\">Refresh</a>
     </div>
     <div class=\"meta\">
@@ -629,6 +798,202 @@ async def status_page(max_pages: int = 1, max_chars_per_page: int = 0) -> str:
   </body>
 </html>
 """
+
+
+def _summarize_paths(paths: List[Path]) -> List[Dict[str, Any]]:
+    root = Path(AUDIDOC_ROOT).resolve()
+    out: List[Dict[str, Any]] = []
+    for i, p in enumerate(paths, start=1):
+        try:
+            rel = str(p.relative_to(root))
+        except Exception:
+            rel = str(p)
+        out.append({"index": i, "path": rel})
+    return out
+
+
+def _search_previews_in_status(docs: List[Dict[str, Any]], query: str) -> List[Dict[str, Any]]:
+    q = (query or "").strip().lower()
+    if not q:
+        return []
+    hits: List[Dict[str, Any]] = []
+    for d in docs:
+        previews = d.get("text_preview")
+        if not isinstance(previews, list):
+            continue
+        for p in previews:
+            if not isinstance(p, dict):
+                continue
+            preview_text = str(p.get("preview") or "")
+            if q in preview_text.lower():
+                hits.append(
+                    {
+                        "path": d.get("path"),
+                        "page": p.get("page"),
+                        "snippet": preview_text,
+                    }
+                )
+                break
+    return hits
+
+
+@app.post("/api/chat")
+async def chat(req: ChatArgs = Body(...)) -> Dict[str, Any]:
+    msg = (req.message or "").strip()
+    if not msg:
+        raise HTTPException(status_code=400, detail="missing_message")
+
+    lower = msg.lower().strip()
+    pdfs = _discover_pdfs()
+
+    if lower in {"help", "?"}:
+        return {
+            "reply": "Commands:\n- list\n- show <index>\n- show <path>\n- search <text>\n- cross\n- cross <period>\n\nNotes: 'cross' runs minimal cross-doc checks using folder/filename claims.",
+            "mode": "help",
+        }
+
+    if lower in {"list", "ls"}:
+        items = _summarize_paths(pdfs)
+        return {"reply": json.dumps({"documents": items}, ensure_ascii=False, indent=2), "mode": "list"}
+
+    if lower.startswith("show "):
+        arg = msg[5:].strip()
+        if not arg:
+            raise HTTPException(status_code=400, detail="missing_show_arg")
+
+        selected: Optional[Path] = None
+        if arg.isdigit():
+            idx = int(arg)
+            if 1 <= idx <= len(pdfs):
+                selected = pdfs[idx - 1]
+        else:
+            try:
+                selected = _safe_resolve_under_root(arg)
+            except HTTPException:
+                selected = None
+
+        if not selected:
+            return {"reply": json.dumps({"error": "not_found"}, ensure_ascii=False), "mode": "show"}
+
+        info = _pdf_general_info_one(selected, PdfGeneralInfoArgs(paths=[], max_pages=5, max_chars_per_page=1200))
+        return {"reply": json.dumps(info, ensure_ascii=False, indent=2), "mode": "show"}
+
+    if lower.startswith("search "):
+        q = msg[7:].strip()
+        data = await status(max_pages=1, max_chars_per_page=800)
+        docs = data.get("documents") or []
+        hits = _search_previews_in_status(docs, q)
+        return {"reply": json.dumps({"query": q, "hits": hits}, ensure_ascii=False, indent=2), "mode": "search"}
+
+    if lower == "cross":
+        out = _audit_cross_checks(AuditCrossChecksArgs(auto_discover=True))
+        compact = {"groups": out.get("groups"), "issues": out.get("issues"), "required": out.get("required_doc_types")}
+        return {"reply": json.dumps(compact, ensure_ascii=False, indent=2), "mode": "cross"}
+
+    if lower.startswith("cross "):
+        period = msg[6:].strip()
+        out = _audit_cross_checks(AuditCrossChecksArgs(auto_discover=True, period_filter=period))
+        compact = {"groups": out.get("groups"), "issues": out.get("issues"), "required": out.get("required_doc_types")}
+        return {"reply": json.dumps(compact, ensure_ascii=False, indent=2), "mode": "cross"}
+
+    return {
+        "reply": "Try: list | show <index> | search <text> | cross | help",
+        "mode": "unknown",
+    }
+
+
+@app.get("/www/chat", response_class=HTMLResponse)
+async def chat_page() -> str:
+    return """<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>mcp-audidoc chat</title>
+    <style>
+      body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; background: #0f1115; color: #e5e7eb; margin: 0; }
+      .wrap { max-width: 980px; margin: 0 auto; padding: 18px; }
+      .top { display:flex; gap:10px; align-items:center; margin-bottom: 12px; }
+      .top a { color: #7dd3fc; text-decoration: none; }
+      .top a:hover { text-decoration: underline; }
+      h1 { margin: 0; font-size: 18px; flex: 1; }
+      .log { background: #151922; border: 1px solid #262b36; border-radius: 12px; padding: 12px; height: 60vh; overflow: auto; white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12.5px; }
+      .bar { display:flex; gap:10px; margin-top: 12px; }
+      input { flex:1; background:#0b0d12; border:1px solid #262b36; color:#e5e7eb; border-radius: 10px; padding: 10px 12px; }
+      button { background:#2563eb; border:none; color:white; border-radius: 10px; padding: 10px 14px; cursor:pointer; }
+      button.secondary { background:#374151; }
+      .hint { opacity:.8; font-size: 12px; margin-top: 10px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="top">
+        <h1>mcp-audidoc · chat</h1>
+        <a href="/www/status">status</a>
+      </div>
+      <div id="log" class="log"></div>
+      <div class="bar">
+        <input id="msg" placeholder="Try: list | show 1 | search สิงหาคม | help" autocomplete="off" />
+        <button id="send">Send</button>
+        <button id="clear" class="secondary">Clear</button>
+      </div>
+      <div class="hint">This is a simple local chat helper (no external LLM). It can list docs, show PDF info, and search text previews.</div>
+    </div>
+
+    <script>
+      const log = document.getElementById('log');
+      const msg = document.getElementById('msg');
+      const send = document.getElementById('send');
+      const clear = document.getElementById('clear');
+
+      function write(role, text) {
+        const prefix = role === 'you' ? '> ' : '';
+        log.textContent += `${prefix}${text}\n\n`;
+        log.scrollTop = log.scrollHeight;
+      }
+
+      async function callChat(message) {
+        const r = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+        const data = await r.json();
+        if (!r.ok) {
+          throw new Error(data?.detail || data?.error || 'chat_failed');
+        }
+        return data;
+      }
+
+      async function doSend() {
+        const text = (msg.value || '').trim();
+        if (!text) return;
+        msg.value = '';
+        write('you', text);
+        try {
+          const out = await callChat(text);
+          write('bot', out.reply || JSON.stringify(out));
+        } catch (e) {
+          write('bot', `error: ${e.message}`);
+        }
+      }
+
+      send.addEventListener('click', doSend);
+      clear.addEventListener('click', () => { log.textContent = ''; });
+      msg.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') doSend();
+      });
+
+      (async () => {
+        write('bot', 'Type "help" for commands.');
+        try {
+          const out = await callChat('list');
+          write('bot', out.reply || '');
+        } catch {}
+      })();
+    </script>
+  </body>
+</html>"""
 
 
 @app.get("/.well-known/mcp.json")
@@ -687,6 +1052,11 @@ async def invoke(payload: Dict[str, Any] = Body(...)) -> Dict[str, Any]:
             docs.append({"path": rel_out, **info})
         return {"tool": tool, "result": {"documents": docs}}
 
+    if tool == "audit_cross_checks":
+        args = AuditCrossChecksArgs.model_validate(args_raw or {})
+        result = _audit_cross_checks(args)
+        return {"tool": tool, "result": result}
+
     raise HTTPException(status_code=404, detail=f"unknown tool '{tool}'")
 
 
@@ -738,6 +1108,14 @@ async def mcp(payload: Dict[str, Any] = Body(...)) -> Any:
                     issues.extend(doc_issues)
 
                 out = {"documents": docs, "issues": issues}
+                return JsonRpcResponse(
+                    id=request.id,
+                    result={"content": [{"type": "text", "text": json.dumps(out, ensure_ascii=False)}]},
+                ).model_dump(exclude_none=True)
+
+            if tool_name == "audit_cross_checks":
+                args = AuditCrossChecksArgs.model_validate(arguments_raw or {})
+                out = _audit_cross_checks(args)
                 return JsonRpcResponse(
                     id=request.id,
                     result={"content": [{"type": "text", "text": json.dumps(out, ensure_ascii=False)}]},
