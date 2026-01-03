@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import hashlib
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -135,6 +136,16 @@ class PdfGeneralInfoArgs(BaseModel):
     max_chars_per_page: int = Field(1200, description="Max characters of extracted text per page (bounded)")
 
 
+class AuditCrossChecksArgs(BaseModel):
+    paths: List[str] = Field(default_factory=list, description="PDF paths relative to AUDIDOC_ROOT")
+    auto_discover: bool = Field(True, description="If true, ignore paths and scan AUDIDOC_PDF_DIR")
+    required_doc_types: List[str] = Field(
+        default_factory=lambda: ["บัญชี", "เช็ค"],
+        description="Doc types required for each (project, period) group",
+    )
+    period_filter: str = Field("", description="Optional period filter (e.g. 2568-08)")
+
+
 class ChatArgs(BaseModel):
     message: str
 
@@ -158,7 +169,155 @@ def _tool_definitions() -> List[Dict[str, Any]]:
             "description": "Extract general info from PDFs: metadata, sha256, page count, and text preview/stats.",
             "inputSchema": PdfGeneralInfoArgs.model_json_schema(),
         }
+        ,
+        {
+            "name": "audit_cross_checks",
+            "description": "Minimal cross-doc checks across PDFs using filename/folder claims (project, period, doc_type).",
+            "inputSchema": AuditCrossChecksArgs.model_json_schema(),
+        }
     ]
+
+
+def _normalize_text(v: str) -> str:
+    return " ".join((v or "").strip().split())
+
+
+def _infer_project_from_path(path: Path) -> Optional[str]:
+    root = Path(AUDIDOC_ROOT).resolve()
+    try:
+        rel = path.resolve().relative_to(root)
+    except Exception:
+        rel = path
+
+    parts = list(rel.parts)
+    if not parts:
+        return None
+    if parts[0].lower() == AUDIDOC_PDF_DIR.lower() and len(parts) >= 2:
+        return _normalize_text(parts[1]) or None
+    if len(parts) >= 2:
+        return _normalize_text(parts[0]) or None
+    return None
+
+
+def _infer_doc_type_from_path(path: Path) -> Optional[str]:
+    name = _normalize_text(path.parent.name)
+    if not name:
+        return None
+    lowered = name.lower()
+    if "บัญชี" in lowered:
+        return "บัญชี"
+    if "เช็ค" in lowered:
+        return "เช็ค"
+    if "รายรับ" in lowered:
+        return "รายรับ"
+    return name
+
+
+def _infer_period_from_path(path: Path) -> Optional[str]:
+    text = _normalize_text(path.name)
+    m = re.search(r"(\d{4})-(\d{2})", text)
+    if m:
+        return f"{m.group(1)}-{m.group(2)}"
+    m2 = re.search(r"(\d{4})-(\d{2})", _normalize_text(path.parent.name))
+    if m2:
+        return f"{m2.group(1)}-{m2.group(2)}"
+    return None
+
+
+def _extract_claims_from_path(path: Path) -> Dict[str, Any]:
+    project = _infer_project_from_path(path)
+    period = _infer_period_from_path(path)
+    doc_type = _infer_doc_type_from_path(path)
+    issues: List[Dict[str, Any]] = []
+    if not project:
+        issues.append({"code": "missing_project_claim", "path": str(path)})
+    if not period:
+        issues.append({"code": "missing_period_claim", "path": str(path)})
+    if not doc_type:
+        issues.append({"code": "missing_doc_type_claim", "path": str(path)})
+    return {
+        "path": str(path),
+        "claims": {"project": project, "period": period, "doc_type": doc_type},
+        "issues": issues,
+    }
+
+
+def _audit_cross_checks(args: AuditCrossChecksArgs) -> Dict[str, Any]:
+    root = Path(AUDIDOC_ROOT).resolve()
+    pdfs: List[Path]
+    if args.auto_discover:
+        pdfs = _discover_pdfs()
+    else:
+        pdfs = [_safe_resolve_under_root(p) for p in (args.paths or [])]
+
+    period_filter = _normalize_text(args.period_filter)
+    required = [_normalize_text(x) for x in (args.required_doc_types or []) if _normalize_text(x)]
+    if not required:
+        required = ["บัญชี", "เช็ค"]
+
+    docs: List[Dict[str, Any]] = []
+    groups: Dict[str, Dict[str, Any]] = {}
+    for p in pdfs:
+        if p.suffix.lower() != ".pdf":
+            continue
+        doc = _extract_claims_from_path(p)
+        claims = doc.get("claims") or {}
+        project = claims.get("project")
+        period = claims.get("period")
+        doc_type = claims.get("doc_type")
+
+        try:
+            rel_out = str(p.relative_to(root))
+        except Exception:
+            rel_out = str(p)
+        doc["path"] = rel_out
+        docs.append(doc)
+
+        if period_filter and period != period_filter:
+            continue
+        if not project or not period:
+            continue
+
+        key = f"{project}::{period}"
+        g = groups.get(key)
+        if not g:
+            g = {
+                "project": project,
+                "period": period,
+                "docs": [],
+                "doc_types": [],
+                "issues": [],
+            }
+            groups[key] = g
+
+        g["docs"].append({"path": rel_out, "doc_type": doc_type})
+        if isinstance(doc_type, str) and doc_type not in g["doc_types"]:
+            g["doc_types"].append(doc_type)
+
+    cross_issues: List[Dict[str, Any]] = []
+    for key, g in groups.items():
+        types = g.get("doc_types") or []
+        missing = [t for t in required if t not in types]
+        if missing:
+            issue = {
+                "code": "missing_required_doc_type",
+                "project": g.get("project"),
+                "period": g.get("period"),
+                "missing": missing,
+            }
+            g["issues"].append(issue)
+            cross_issues.append(issue)
+
+    return {
+        "root": str(root),
+        "pdf_dir": AUDIDOC_PDF_DIR,
+        "required_doc_types": required,
+        "period_filter": period_filter or None,
+        "documents": docs,
+        "groups": list(groups.values()),
+        "issues": cross_issues,
+        "timestampMs": _utc_ms(),
+    }
 
 
 def _canonicalize_frontmatter(frontmatter: Dict[str, Any], field_aliases: Dict[str, List[str]]) -> Dict[str, Any]:
@@ -689,7 +848,7 @@ async def chat(req: ChatArgs = Body(...)) -> Dict[str, Any]:
 
     if lower in {"help", "?"}:
         return {
-            "reply": "Commands:\n- list\n- show <index>\n- show <path>\n- search <text>\n\nNotes: 'show' returns general info + a short text preview.",
+            "reply": "Commands:\n- list\n- show <index>\n- show <path>\n- search <text>\n- cross\n- cross <period>\n\nNotes: 'cross' runs minimal cross-doc checks using folder/filename claims.",
             "mode": "help",
         }
 
@@ -726,8 +885,19 @@ async def chat(req: ChatArgs = Body(...)) -> Dict[str, Any]:
         hits = _search_previews_in_status(docs, q)
         return {"reply": json.dumps({"query": q, "hits": hits}, ensure_ascii=False, indent=2), "mode": "search"}
 
+    if lower == "cross":
+        out = _audit_cross_checks(AuditCrossChecksArgs(auto_discover=True))
+        compact = {"groups": out.get("groups"), "issues": out.get("issues"), "required": out.get("required_doc_types")}
+        return {"reply": json.dumps(compact, ensure_ascii=False, indent=2), "mode": "cross"}
+
+    if lower.startswith("cross "):
+        period = msg[6:].strip()
+        out = _audit_cross_checks(AuditCrossChecksArgs(auto_discover=True, period_filter=period))
+        compact = {"groups": out.get("groups"), "issues": out.get("issues"), "required": out.get("required_doc_types")}
+        return {"reply": json.dumps(compact, ensure_ascii=False, indent=2), "mode": "cross"}
+
     return {
-        "reply": "Try: list | show <index> | search <text> | help",
+        "reply": "Try: list | show <index> | search <text> | cross | help",
         "mode": "unknown",
     }
 
@@ -882,6 +1052,11 @@ async def invoke(payload: Dict[str, Any] = Body(...)) -> Dict[str, Any]:
             docs.append({"path": rel_out, **info})
         return {"tool": tool, "result": {"documents": docs}}
 
+    if tool == "audit_cross_checks":
+        args = AuditCrossChecksArgs.model_validate(args_raw or {})
+        result = _audit_cross_checks(args)
+        return {"tool": tool, "result": result}
+
     raise HTTPException(status_code=404, detail=f"unknown tool '{tool}'")
 
 
@@ -933,6 +1108,14 @@ async def mcp(payload: Dict[str, Any] = Body(...)) -> Any:
                     issues.extend(doc_issues)
 
                 out = {"documents": docs, "issues": issues}
+                return JsonRpcResponse(
+                    id=request.id,
+                    result={"content": [{"type": "text", "text": json.dumps(out, ensure_ascii=False)}]},
+                ).model_dump(exclude_none=True)
+
+            if tool_name == "audit_cross_checks":
+                args = AuditCrossChecksArgs.model_validate(arguments_raw or {})
+                out = _audit_cross_checks(args)
                 return JsonRpcResponse(
                     id=request.id,
                     result={"content": [{"type": "text", "text": json.dumps(out, ensure_ascii=False)}]},
