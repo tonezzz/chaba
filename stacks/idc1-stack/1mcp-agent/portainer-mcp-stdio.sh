@@ -12,9 +12,8 @@ if [ -z "${PORTAINER_TOKEN:-}" ]; then
 fi
 
 SERVER="${PORTAINER_SERVER}"
-if [[ "${SERVER}" != http://* && "${SERVER}" != https://* ]]; then
-  SERVER="http://${SERVER}"
-fi
+SERVER="${SERVER#http://}"
+SERVER="${SERVER#https://}"
 
 TOOLS_PATH="${PORTAINER_TOOLS_PATH:-/tmp/portainer-tools.yaml}"
 
