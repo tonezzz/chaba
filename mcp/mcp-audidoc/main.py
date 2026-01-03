@@ -135,6 +135,10 @@ class PdfGeneralInfoArgs(BaseModel):
     max_chars_per_page: int = Field(1200, description="Max characters of extracted text per page (bounded)")
 
 
+class ChatArgs(BaseModel):
+    message: str
+
+
 def _tool_definitions() -> List[Dict[str, Any]]:
     return [
         {
@@ -514,6 +518,11 @@ def _pdf_general_info_one(path: Path, args: PdfGeneralInfoArgs) -> Dict[str, Any
 app = FastAPI(title=APP_NAME, version=APP_VERSION)
 
 
+@app.get("/", response_class=HTMLResponse)
+async def home() -> str:
+    return """<!doctype html><html><head><meta charset='utf-8' /><meta http-equiv='refresh' content='0; url=/www/status' /></head><body><a href='/www/status'>Open status</a></body></html>"""
+
+
 @app.get("/health")
 async def health() -> Dict[str, Any]:
     return {
@@ -606,6 +615,7 @@ async def status_page(max_pages: int = 1, max_chars_per_page: int = 0) -> str:
     <div class=\"toolbar\">
       <h1 style=\"flex:1;\">mcp-audidoc · Documents ({_html_escape(data.get('count'))})</h1>
       <a class=\"btn secondary\" href=\"/status?max_pages={int(max_pages)}&max_chars_per_page={int(max_chars_per_page)}\">JSON</a>
+      <a class=\"btn secondary\" href=\"/www/chat\">Chat</a>
       <a class=\"btn\" href=\"/www/status?max_pages={int(max_pages)}&max_chars_per_page={int(max_chars_per_page)}\">Refresh</a>
     </div>
     <div class=\"meta\">
@@ -629,6 +639,191 @@ async def status_page(max_pages: int = 1, max_chars_per_page: int = 0) -> str:
   </body>
 </html>
 """
+
+
+def _summarize_paths(paths: List[Path]) -> List[Dict[str, Any]]:
+    root = Path(AUDIDOC_ROOT).resolve()
+    out: List[Dict[str, Any]] = []
+    for i, p in enumerate(paths, start=1):
+        try:
+            rel = str(p.relative_to(root))
+        except Exception:
+            rel = str(p)
+        out.append({"index": i, "path": rel})
+    return out
+
+
+def _search_previews_in_status(docs: List[Dict[str, Any]], query: str) -> List[Dict[str, Any]]:
+    q = (query or "").strip().lower()
+    if not q:
+        return []
+    hits: List[Dict[str, Any]] = []
+    for d in docs:
+        previews = d.get("text_preview")
+        if not isinstance(previews, list):
+            continue
+        for p in previews:
+            if not isinstance(p, dict):
+                continue
+            preview_text = str(p.get("preview") or "")
+            if q in preview_text.lower():
+                hits.append(
+                    {
+                        "path": d.get("path"),
+                        "page": p.get("page"),
+                        "snippet": preview_text,
+                    }
+                )
+                break
+    return hits
+
+
+@app.post("/api/chat")
+async def chat(req: ChatArgs = Body(...)) -> Dict[str, Any]:
+    msg = (req.message or "").strip()
+    if not msg:
+        raise HTTPException(status_code=400, detail="missing_message")
+
+    lower = msg.lower().strip()
+    pdfs = _discover_pdfs()
+
+    if lower in {"help", "?"}:
+        return {
+            "reply": "Commands:\n- list\n- show <index>\n- show <path>\n- search <text>\n\nNotes: 'show' returns general info + a short text preview.",
+            "mode": "help",
+        }
+
+    if lower in {"list", "ls"}:
+        items = _summarize_paths(pdfs)
+        return {"reply": json.dumps({"documents": items}, ensure_ascii=False, indent=2), "mode": "list"}
+
+    if lower.startswith("show "):
+        arg = msg[5:].strip()
+        if not arg:
+            raise HTTPException(status_code=400, detail="missing_show_arg")
+
+        selected: Optional[Path] = None
+        if arg.isdigit():
+            idx = int(arg)
+            if 1 <= idx <= len(pdfs):
+                selected = pdfs[idx - 1]
+        else:
+            try:
+                selected = _safe_resolve_under_root(arg)
+            except HTTPException:
+                selected = None
+
+        if not selected:
+            return {"reply": json.dumps({"error": "not_found"}, ensure_ascii=False), "mode": "show"}
+
+        info = _pdf_general_info_one(selected, PdfGeneralInfoArgs(paths=[], max_pages=5, max_chars_per_page=1200))
+        return {"reply": json.dumps(info, ensure_ascii=False, indent=2), "mode": "show"}
+
+    if lower.startswith("search "):
+        q = msg[7:].strip()
+        data = await status(max_pages=1, max_chars_per_page=800)
+        docs = data.get("documents") or []
+        hits = _search_previews_in_status(docs, q)
+        return {"reply": json.dumps({"query": q, "hits": hits}, ensure_ascii=False, indent=2), "mode": "search"}
+
+    return {
+        "reply": "Try: list | show <index> | search <text> | help",
+        "mode": "unknown",
+    }
+
+
+@app.get("/www/chat", response_class=HTMLResponse)
+async def chat_page() -> str:
+    return """<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>mcp-audidoc chat</title>
+    <style>
+      body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; background: #0f1115; color: #e5e7eb; margin: 0; }
+      .wrap { max-width: 980px; margin: 0 auto; padding: 18px; }
+      .top { display:flex; gap:10px; align-items:center; margin-bottom: 12px; }
+      .top a { color: #7dd3fc; text-decoration: none; }
+      .top a:hover { text-decoration: underline; }
+      h1 { margin: 0; font-size: 18px; flex: 1; }
+      .log { background: #151922; border: 1px solid #262b36; border-radius: 12px; padding: 12px; height: 60vh; overflow: auto; white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12.5px; }
+      .bar { display:flex; gap:10px; margin-top: 12px; }
+      input { flex:1; background:#0b0d12; border:1px solid #262b36; color:#e5e7eb; border-radius: 10px; padding: 10px 12px; }
+      button { background:#2563eb; border:none; color:white; border-radius: 10px; padding: 10px 14px; cursor:pointer; }
+      button.secondary { background:#374151; }
+      .hint { opacity:.8; font-size: 12px; margin-top: 10px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="top">
+        <h1>mcp-audidoc · chat</h1>
+        <a href="/www/status">status</a>
+      </div>
+      <div id="log" class="log"></div>
+      <div class="bar">
+        <input id="msg" placeholder="Try: list | show 1 | search สิงหาคม | help" autocomplete="off" />
+        <button id="send">Send</button>
+        <button id="clear" class="secondary">Clear</button>
+      </div>
+      <div class="hint">This is a simple local chat helper (no external LLM). It can list docs, show PDF info, and search text previews.</div>
+    </div>
+
+    <script>
+      const log = document.getElementById('log');
+      const msg = document.getElementById('msg');
+      const send = document.getElementById('send');
+      const clear = document.getElementById('clear');
+
+      function write(role, text) {
+        const prefix = role === 'you' ? '> ' : '';
+        log.textContent += `${prefix}${text}\n\n`;
+        log.scrollTop = log.scrollHeight;
+      }
+
+      async function callChat(message) {
+        const r = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+        const data = await r.json();
+        if (!r.ok) {
+          throw new Error(data?.detail || data?.error || 'chat_failed');
+        }
+        return data;
+      }
+
+      async function doSend() {
+        const text = (msg.value || '').trim();
+        if (!text) return;
+        msg.value = '';
+        write('you', text);
+        try {
+          const out = await callChat(text);
+          write('bot', out.reply || JSON.stringify(out));
+        } catch (e) {
+          write('bot', `error: ${e.message}`);
+        }
+      }
+
+      send.addEventListener('click', doSend);
+      clear.addEventListener('click', () => { log.textContent = ''; });
+      msg.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') doSend();
+      });
+
+      (async () => {
+        write('bot', 'Type "help" for commands.');
+        try {
+          const out = await callChat('list');
+          write('bot', out.reply || '');
+        } catch {}
+      })();
+    </script>
+  </body>
+</html>"""
 
 
 @app.get("/.well-known/mcp.json")
