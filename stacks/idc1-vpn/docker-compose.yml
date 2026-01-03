@@ -34,11 +34,23 @@ services:
       WG_POST_UP: >-
         iptables -t nat -A PREROUTING -i wg0 -p tcp --dport 22 -j DNAT --to-destination ${WG_EASY_HOST_GW:-172.20.0.1}:22;
         iptables -A FORWARD -i wg0 -p tcp -d ${WG_EASY_HOST_GW:-172.20.0.1} --dport 22 -j ACCEPT;
-        iptables -t nat -A POSTROUTING -p tcp -d ${WG_EASY_HOST_GW:-172.20.0.1} --dport 22 -j MASQUERADE
+        iptables -t nat -A POSTROUTING -p tcp -d ${WG_EASY_HOST_GW:-172.20.0.1} --dport 22 -j MASQUERADE;
+        iptables -t nat -A PREROUTING -i wg0 -p tcp --dport 80 -j DNAT --to-destination ${WG_EASY_HOST_GW:-172.20.0.1}:80;
+        iptables -A FORWARD -i wg0 -p tcp -d ${WG_EASY_HOST_GW:-172.20.0.1} --dport 80 -j ACCEPT;
+        iptables -t nat -A POSTROUTING -p tcp -d ${WG_EASY_HOST_GW:-172.20.0.1} --dport 80 -j MASQUERADE;
+        iptables -t nat -A PREROUTING -i wg0 -p tcp --dport 443 -j DNAT --to-destination ${WG_EASY_HOST_GW:-172.20.0.1}:443;
+        iptables -A FORWARD -i wg0 -p tcp -d ${WG_EASY_HOST_GW:-172.20.0.1} --dport 443 -j ACCEPT;
+        iptables -t nat -A POSTROUTING -p tcp -d ${WG_EASY_HOST_GW:-172.20.0.1} --dport 443 -j MASQUERADE
       WG_POST_DOWN: >-
         iptables -t nat -D PREROUTING -i wg0 -p tcp --dport 22 -j DNAT --to-destination ${WG_EASY_HOST_GW:-172.20.0.1}:22 || true;
         iptables -D FORWARD -i wg0 -p tcp -d ${WG_EASY_HOST_GW:-172.20.0.1} --dport 22 -j ACCEPT || true;
-        iptables -t nat -D POSTROUTING -p tcp -d ${WG_EASY_HOST_GW:-172.20.0.1} --dport 22 -j MASQUERADE || true
+        iptables -t nat -D POSTROUTING -p tcp -d ${WG_EASY_HOST_GW:-172.20.0.1} --dport 22 -j MASQUERADE || true;
+        iptables -t nat -D PREROUTING -i wg0 -p tcp --dport 80 -j DNAT --to-destination ${WG_EASY_HOST_GW:-172.20.0.1}:80 || true;
+        iptables -D FORWARD -i wg0 -p tcp -d ${WG_EASY_HOST_GW:-172.20.0.1} --dport 80 -j ACCEPT || true;
+        iptables -t nat -D POSTROUTING -p tcp -d ${WG_EASY_HOST_GW:-172.20.0.1} --dport 80 -j MASQUERADE || true;
+        iptables -t nat -D PREROUTING -i wg0 -p tcp --dport 443 -j DNAT --to-destination ${WG_EASY_HOST_GW:-172.20.0.1}:443 || true;
+        iptables -D FORWARD -i wg0 -p tcp -d ${WG_EASY_HOST_GW:-172.20.0.1} --dport 443 -j ACCEPT || true;
+        iptables -t nat -D POSTROUTING -p tcp -d ${WG_EASY_HOST_GW:-172.20.0.1} --dport 443 -j MASQUERADE || true
       PASSWORD: ${WG_EASY_PASSWORD:-}
     volumes:
       - wg-easy-data:/etc/wireguard
