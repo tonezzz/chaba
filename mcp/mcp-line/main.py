@@ -64,19 +64,12 @@ async def health() -> Dict[str, Any]:
 @app.post("/webhook/line")
 async def webhook_line(
     request: Request,
-    x_line_signature: Optional[str] = Header(default=None, convert_underscores=False),
+    x_line_signature: Optional[str] = Header(default=None, alias="X-Line-Signature"),
 ) -> Any:
     raw = await request.body()
-    
-    # Debug logging
-    print(f"Received raw body: {raw}")
-    print(f"Received signature: {x_line_signature}")
-    
+
     if not _verify_line_signature(raw, x_line_signature):
-        print("Signature verification failed")
         raise HTTPException(status_code=401, detail="invalid_signature")
-    
-    print("Signature verification passed")
 
     try:
         body = await request.json()
