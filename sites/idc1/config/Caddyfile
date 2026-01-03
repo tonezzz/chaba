@@ -102,7 +102,7 @@ deka.idc1.surf-thailand.com {
 portainer.idc1.surf-thailand.com {
     encode gzip zstd
 
-    @vpn_only not remote_ip 10.8.0.0/24 127.0.0.1
+    @vpn_only not remote_ip 10.8.0.0/24 172.16.0.0/12 127.0.0.1
     respond @vpn_only 403
 
     reverse_proxy http://127.0.0.1:9000
@@ -115,7 +115,7 @@ portainer.idc1.surf-thailand.com {
 http://portainer.idc1.vpn {
     encode gzip zstd
 
-    @vpn_only not remote_ip 10.8.0.0/24 127.0.0.1
+    @vpn_only not remote_ip 10.8.0.0/24 172.16.0.0/12 127.0.0.1
     respond @vpn_only 403
 
     reverse_proxy http://127.0.0.1:9000
