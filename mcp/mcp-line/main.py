@@ -1,6 +1,7 @@
 import base64
 import hmac
 import hashlib
+import logging
 import os
 from typing import Any, Dict, List, Optional
 
@@ -9,6 +10,8 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 app = FastAPI()
+
+logger = logging.getLogger("mcp-line")
 
 LINE_CHANNEL_SECRET = (os.getenv("LINE_CHANNEL_SECRET") or "").strip()
 LINE_CHANNEL_ACCESS_TOKEN = (os.getenv("LINE_CHANNEL_ACCESS_TOKEN") or "").strip()
@@ -42,7 +45,11 @@ async def _reply_message(reply_token: str, text: str) -> None:
     async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.post(url, headers=headers, json=payload)
         if resp.status_code >= 400:
-            raise RuntimeError(f"line_reply_failed_{resp.status_code}")
+            detail = (resp.text or "").strip()
+            if len(detail) > 500:
+                detail = detail[:500] + "..."
+            logger.warning("LINE reply failed: status=%s body=%s", resp.status_code, detail)
+            raise RuntimeError(f"line_reply_failed_{resp.status_code}:{detail}")
 
 
 @app.get("/health")
