@@ -1,0 +1,169 @@
+{
+  "host": {
+    "name": "pc2",
+    "vpn": {
+      "ip": "10.8.0.12",
+      "domain": "pc2.vpn"
+    },
+    "dns": {
+      "domains": [
+        "pc2.vpn",
+        "*.pc2.vpn",
+        "1mcp.pc2.vpn",
+        "dev-host.pc2.vpn"
+      ]
+    },
+    "ingress": {
+      "service": "pc2-host-caddy",
+      "ports": [80, 443]
+    },
+    "endpoints": {
+      "1mcp": {
+        "local": "http://127.0.0.1:3050/health",
+        "vpn": "http://pc2.vpn:3050/health",
+        "vpn_mcp": "http://1mcp.pc2.vpn/mcp?app=windsurf"
+      },
+      "dev_host": {
+        "local": "http://127.0.0.1:3100/api/health",
+        "vpn": "http://pc2.vpn:3100/api/health",
+        "vpn_https": "https://dev-host.pc2.vpn/api/health"
+      }
+    }
+  },
+  "stacks": {
+    "pc2-host-caddy": {
+      "description": "Host-level Caddy ingress for *.pc2.vpn",
+      "containers": [
+        {
+          "name": "pc2-host-caddy-host-caddy-1",
+          "service": "host-caddy",
+          "ports": [80, 443],
+          "purpose": "Reverse proxy + tls internal for *.pc2.vpn"
+        }
+      ]
+    },
+    "pc2-stack": {
+      "description": "PC2 core MCP entrypoint (1mcp) and related helpers",
+      "containers": [
+        {
+          "name": "pc2-stack-1mcp-agent-1",
+          "service": "1mcp-agent",
+          "port": 3050,
+          "purpose": "MCP aggregation gateway (HTTP/SSE + streamable HTTP)"
+        },
+        {
+          "name": "pc2-stack-mcp-docker-1",
+          "service": "mcp-docker",
+          "port": 8340,
+          "purpose": "HTTP wrapper for Docker tools (health/tools/invoke)"
+        }
+      ]
+    },
+    "docker-dev-host": {
+      "description": "Standalone dev-host compose stack under docker/",
+      "containers": [
+        {
+          "name": "dev-host",
+          "service": "dev-host",
+          "ports": ["2223->22", "3100->3000"],
+          "purpose": "Dev gateway + local glama (4020) + agents (4060) launcher"
+        }
+      ]
+    },
+    "pc2-ai": {
+      "description": "PC2 AI/ML MCP services",
+      "containers": [
+        {
+          "name": "pc2-ai-mcp-agents-1",
+          "service": "mcp-agents",
+          "port": 8046,
+          "purpose": "Agents API"
+        },
+        {
+          "name": "pc2-ai-mcp-glama-1",
+          "service": "mcp-glama",
+          "port": 7214,
+          "internal_port": 8014,
+          "purpose": "Glama model gateway"
+        },
+        {
+          "name": "pc2-ai-mcp-playwright-1",
+          "service": "mcp-playwright",
+          "port": 8025,
+          "purpose": "Browser automation"
+        },
+        {
+          "name": "pc2-ai-mcp-vaja-1",
+          "service": "mcp-vaja",
+          "port": 7217,
+          "internal_port": 8017,
+          "purpose": "Thai language processing"
+        },
+        {
+          "name": "pc2-ai-mcp-meeting-1",
+          "service": "mcp-meeting",
+          "port": 7208,
+          "internal_port": 8008,
+          "purpose": "Meeting transcription"
+        },
+        {
+          "name": "pc2-ai-mcp-instrans-1",
+          "service": "mcp-instrans",
+          "port": 7216,
+          "internal_port": 3100,
+          "purpose": "Thai speech-to-text"
+        }
+      ]
+    },
+    "pc2-webtops": {
+      "description": "PC2 webtops (UI + management)",
+      "containers": [
+        {
+          "name": "pc2-webtops-webtops-router-1",
+          "service": "webtops-router",
+          "port": 3001,
+          "purpose": "Webtops routing"
+        },
+        {
+          "name": "pc2-webtops-webtops-cp-1",
+          "service": "webtops-cp",
+          "port": 3005,
+          "purpose": "Webtops control panel"
+        },
+        {
+          "name": "pc2-webtops-mcp-webtops-1",
+          "service": "mcp-webtops",
+          "port": 8091,
+          "purpose": "Webtops management API"
+        }
+      ]
+    },
+    "pc2-devops": {
+      "description": "PC2 DevOps services",
+      "containers": [
+        {
+          "name": "pc2-devops-mcp-devops-1",
+          "service": "mcp-devops",
+          "port": 8325,
+          "purpose": "DevOps automation / workflows"
+        },
+        {
+          "name": "pc2-devops-mcp-task-1",
+          "service": "mcp-task",
+          "port": null,
+          "internal_port": 8016,
+          "purpose": "Task runner API (internal-only unless port is published)"
+        }
+      ]
+    }
+  },
+  "summary": {
+    "stack_count": 6,
+    "notes": [
+      "This file is based on observed running containers on PC2 (Windows) and is intended as an operator reference.",
+      "Some services are internal-only depending on whether their ports are published by compose." 
+    ],
+    "main_ingress": "pc2-host-caddy",
+    "main_mcp_entrypoint": "pc2-stack/1mcp-agent"
+  }
+}

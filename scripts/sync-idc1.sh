@@ -12,8 +12,13 @@ REMOTE_PATH="${REMOTE_PATH:-/home/chaba/chaba}"
 
 EXCLUDES=(
   --exclude '.git'
+  --exclude '.worktrees'
   --exclude '.venv'
   --exclude '.secrets'
+  --exclude '**/__pycache__'
+  --exclude '**/*.pyc'
+  --exclude 'stacks/*/data'
+  --exclude 'stacks/*/data/**'
 )
 
 echo "[sync-idc1] Syncing ${REPO_ROOT} → ${SSH_USER}@${SSH_HOST}:${REMOTE_PATH}"

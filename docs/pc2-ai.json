@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "host": {
+    "name": "pc2",
+    "vpn_domain": "pc2.vpn"
+  },
+  "stack": {
+    "id": "pc2-ai",
+    "path": "stacks/pc2-ai",
+    "compose": "docker-compose.yml",
+    "description": "PC2 AI/ML MCP services"
+  },
+  "services": [
+    {"service": "mcp-agents", "container": "pc2-ai-mcp-agents-1", "port": 8046, "health": "/health"},
+    {"service": "mcp-glama", "container": "pc2-ai-mcp-glama-1", "port": 7214, "internal_port": 8014, "health": "/health"},
+    {"service": "mcp-playwright", "container": "pc2-ai-mcp-playwright-1", "port": 8025, "health": "/health"},
+    {"service": "mcp-vaja", "container": "pc2-ai-mcp-vaja-1", "port": 7217, "internal_port": 8017, "health": "/health"},
+    {"service": "mcp-meeting", "container": "pc2-ai-mcp-meeting-1", "port": 7208, "internal_port": 8008, "health": "/health"},
+    {"service": "mcp-instrans", "container": "pc2-ai-mcp-instrans-1", "port": 7216, "internal_port": 3100, "health": "/health"}
+  ],
+  "recovery": {
+    "verify": {
+      "urls": [
+        "http://pc2.vpn:8046/health",
+        "http://pc2.vpn:7214/health",
+        "http://pc2.vpn:8025/health",
+        "http://pc2.vpn:7217/health",
+        "http://pc2.vpn:7208/health",
+        "http://pc2.vpn:7216/health"
+      ]
+    },
+    "restart": {
+      "windows_powershell": [
+        "docker compose -f C:/chaba/stacks/pc2-ai/docker-compose.yml up -d"
+      ]
+    }
+  }
+}

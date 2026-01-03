@@ -1,3 +1,9 @@
+{
+    servers {
+        protocols h1 h2
+    }
+}
+
 test.idc1.surf-thailand.com {
     encode gzip zstd
 
@@ -76,5 +82,19 @@ line.idc1.surf-thailand.com {
 
     log {
         output file /var/log/caddy/line.idc1.access.log
+    }
+}
+
+deka.idc1.surf-thailand.com {
+    encode gzip zstd
+
+    handle_path /api/* {
+        reverse_proxy http://127.0.0.1:8191
+    }
+
+    reverse_proxy http://127.0.0.1:8181
+
+    log {
+        output file /var/log/caddy/deka.idc1.access.log
     }
 }

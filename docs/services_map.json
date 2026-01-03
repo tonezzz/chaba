@@ -37,9 +37,6 @@
         "ssh": [
           "22:22"
         ],
-        "mcp0": [
-          "${MCP0_PORT:-8355}:${MCP0_PORT:-8355}"
-        ],
         "mcp-agents": [
           "${MCP_AGENTS_PORT:-8446}:8046"
         ],
@@ -81,40 +78,6 @@
             "compose": "docker-compose.yml"
           },
           "containers": {
-            "mcp0": {
-              "profiles": [
-                "mcp-suite"
-              ],
-              "ports": [
-                "${MCP0_PORT:-8355}:${MCP0_PORT:-8355}"
-              ],
-              "port": 8355,
-              "type": "build",
-              "endpoints": {
-                "www": "http://idc1.surf-thailand.com:${MCP0_PORT:-8355}",
-                "vpn": "http://idc1.vpn:${MCP0_PORT:-8355}",
-                "local": "http://localhost:8355"
-              },
-              "ports_map": [
-                {
-                  "raw": "${MCP0_PORT:-8355}:${MCP0_PORT:-8355}"
-                }
-              ],
-              "health_path": "/health",
-              "health_urls": {
-                "www": "http://idc1.surf-thailand.com:${MCP0_PORT:-8355}/health",
-                "vpn": "http://idc1.vpn:${MCP0_PORT:-8355}/health",
-                "local": "http://localhost:8355/health"
-              },
-              "container_name": "idc1-mcp0",
-              "volumes": [
-                {
-                  "source": "//var/run/docker.sock",
-                  "target": "/var/run/docker.sock",
-                  "source_kind": "bind"
-                }
-              ]
-            },
             "mcp-agents": {
               "profiles": [
                 "mcp-suite"
@@ -289,7 +252,6 @@
               "endpoints": {
                 "www": "http://idc1.surf-thailand.com:${MCP_DOCKER_PORT:-8340}",
                 "vpn": "http://idc1.vpn:${MCP_DOCKER_PORT:-8340}",
-                "vpn_alias": "http://mcp0.idc1.vpn:${MCP_DOCKER_PORT:-8340}",
                 "local": "http://localhost:8340"
               },
               "ports_map": [
@@ -301,11 +263,10 @@
               "health_urls": {
                 "www": "http://idc1.surf-thailand.com:${MCP_DOCKER_PORT:-8340}/health",
                 "vpn": "http://idc1.vpn:${MCP_DOCKER_PORT:-8340}/health",
-                "vpn_alias": "http://mcp0.idc1.vpn:${MCP_DOCKER_PORT:-8340}/health",
                 "local": "http://localhost:8340/health"
               },
               "container_name": "idc1-mcp-docker",
-              "notes": "Accessible over VPN as mcp0.idc1.vpn via wg-dns rewrite (*.idc1.vpn -> idc1.vpn) + wg-easy forwarding of MCP_DOCKER_PORT to host gateway"
+              "notes": "Accessible over VPN as idc1.vpn via wg-dns rewrite (*.idc1.vpn -> idc1.vpn) + wg-easy forwarding of MCP_DOCKER_PORT to host gateway"
             },
             "mcp-memory": {
               "profiles": [

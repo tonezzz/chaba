@@ -1,23 +1,17 @@
 # Chaba infrastructure notes
 
-## MCP (default)
+## Stacks (source of truth)
 
-- **Default MCP entrypoint (pc2)**: `http://1mcp.pc2.vpn:3050/mcp?app=windsurf`
-- **Alternative MCP entrypoint (pc1)**: `https://pc1.vpn:3443/1mcp/mcp?app=windsurf`
-- **Alternative MCP entrypoint (idc1)**: `https://1mcp.idc1.surf-thailand.com/mcp?app=windsurf`
+Operational truth (ports, entrypoints, restart commands, health checks) lives in:
+
+- `docs/stacks.md`
+- Per-stack recovery/runbook JSON docs under `docs/{pc2,pc1,idc1}-*.json`
+
+Other inventory files may exist for discovery, but should not be treated as authoritative.
 
 ## Backlog
 
 - `docs/backlog.md`
-
-## OpenChat UI (pc1)
-
-- **Direct port**: `http://pc1.vpn:3170`
-- **VPN HTTPS path**: `https://pc1.vpn:3443/chat/`
-- **OpenAI gateway (via VPN HTTPS path)**:
-  - `https://pc1.vpn:3443/openai/v1/models`
-  - `https://pc1.vpn:3443/openai/v1/chat/completions`
-  - `https://pc1.vpn:3443/openai/health`
 
 ## pc1-stack: local env overrides (recommended)
 
@@ -102,7 +96,7 @@ This repo does not commit real secrets. The default workflow is:
   - **pc1 (local)**: `pwsh ./scripts/pc1-sync-prefixed-env.ps1 -SourcePath C:\chaba\.secrets\pc1.env -Restart`
     - `PC1W_` → `C:\chaba\stacks\pc1-stack\.env`
     - `DEVH_` → `C:\chaba\sites\dev-host\.env.dev-host`
-  - **pc2 (remote)**: use the `mcp-tasks` helper `scripts/pc2-worker/sync-prefixed-env.ps1` to upload `PC2W_` / `DEVH_` to pc2 and restart stacks.
+  - **pc2 (local on pc2)**: `pwsh ./scripts/pc2-sync-prefixed-env.ps1 -SourcePath C:\chaba\.secrets\pc2.env -Restart`
 
 CI enforcement:
 - GitHub Actions runs on GitHub-hosted runners (`ubuntu-latest`) and cannot read `C:\chaba\.secrets\...`.
@@ -138,18 +132,6 @@ Operational notes:
 - The deploy workflow updates the repo at `C:\chaba` using the commit SHA from the push event, then runs the local prefixed env sync scripts with `-Restart`.
 - Restrict deploys to trusted branches (default: `main`) and prefer PR review / branch protection, because self-hosted runners can access local files and Docker.
 
-The idc1 `1mcp` entrypoint aggregates:
-
-- `docker`
-- `mcp-devops`
-- `mcp-memory`
-- `mcp-sequentialthinking`
-- `mcp-glama`
-
-Notes:
-- `pc2-worker` runs `1mcp-agent` with the config mounted at `/root/.config/1mcp/mcp.json`.
-- The `filesystem` MCP server is intentionally not enabled (stdio noise/handshake issues) — use `docker` + `mcp-devops` for hands-off automation.
-
 ## Stacks
 
 - `docs/stacks.md`
@@ -161,19 +143,10 @@ Notes:
 - **HTTP/HTTPS ingress (default)**: Host Caddy is the first receiver for inbound web traffic and should own `80/tcp` + `443/tcp` on hosts that act as public HTTP/HTTPS entrypoints.
 - **Routing**: Caddy terminates TLS (when applicable) and routes by hostname/path via `reverse_proxy` to internal services (Docker or host processes).
 - **Exceptions**:
-  - VPN-only / dev environments may terminate HTTPS in a container (e.g. `pc1-stack` Caddy, `pc2-worker` dev-proxy).
+  - VPN-only / dev environments may terminate HTTPS in a container.
   - Non-HTTP(S) ingress (SSH, WireGuard, custom TCP/UDP ports) is controlled by whatever service binds that port or receives DNAT/forwarded traffic.
 
-### VPN hostnames: host Caddy -> per-stack Caddy (Windows)
-
-- **Goal**: Host Caddy owns `80/443` and terminates TLS (`tls internal`) for `*.pc1.vpn` / `*.pc2.vpn`, then forwards to a stack-local Caddy which handles all internal routing.
-- **Hostname convention**:
-  - `<stack>.pc1.vpn` and `*. <stack>.pc1.vpn` route to the `pc1` stack ingress.
-  - `<stack>.pc2.vpn` and `*. <stack>.pc2.vpn` route to the `pc2` stack ingress.
-- **Upstream ports (examples)**:
-  - `pc1-stack` stack Caddy: `127.0.0.1:18081` (published as `18081:80`)
-  - `pc2-worker` stack Caddy: `127.0.0.1:19081` (published as `19081:80`)
-  - `app-demo` stack Caddy: `127.0.0.1:${APP_DEMO_HTTP_PORT}` (published as `${APP_DEMO_HTTP_PORT}:80`)
+For host-level ingress specifics per machine, use the per-stack runbooks referenced from `docs/stacks.md`.
 
 ### Production (idc1 / a1-idc1)
 - **Front-end**: Caddy 2 running on the idc1 VM via systemd, using the configs under `sites/a1-idc1/config/Caddyfile*` which expose `idc1.surf-thailand.com` and `a1.idc1.surf-thailand.com` with automatic HTTPS handling.@sites/a1-idc1/config/Caddyfile#1-38@sites/a1-idc1/config/Caddyfile.remote#58-69
@@ -193,32 +166,8 @@ Notes:
 > - Our first deploy copied files as `root`, preventing Caddy (running as the `caddy` user) from reading `/var/www/a1`. Running `sudo chown -R caddy:www-data /var/www/a1` resolved the `permission denied` errors in `journalctl`.
 > - We briefly enabled the ACME staging endpoint while testing (`acme_ca https://acme-staging-v02.api.letsencrypt.org/directory`) and forgot to revert, which produced “(STAGING)“ certificates. Removing the stanza and forcing `caddy reload` swapped us back to production certs.
 
-### pc2 (WSL dev proxy)
-- **Use case**: provide real HTTPS for local stacks exposed from WSL2 so Windows browsers stop warning during MCP/UI testing.
-- **Certificate authority**: `mkcert` root installed in both Windows and the Ubuntu 24.04 WSL distribution. Run `mkcert -install` in PowerShell (to import into Windows trust) and again inside WSL (so CLI tools like curl trust it).@docs/system-inventory/pc2/stack-plan.md#45-67
-- **Issuance workflow**:
-  1. Choose a dev domain that resolves to localhost everywhere (we use `*.pc2.localtest.me` so DNS automatically points to `127.0.0.1`).
-  2. Inside WSL: `mkdir -p ~/stacks/pc2-worker/dev-proxy/certs && cd ~/stacks/pc2-worker/dev-proxy/certs`.
-  3. Issue the cert: `mkcert pc2.localtest.me *.pc2.localtest.me`.
-  4. Reference the generated `pc2.localtest.me+2.pem`/`-key.pem` from the dev Caddy (or nginx) config. For Caddy we add:
-     ```
-     https://pc2.localtest.me {
-       tls /home/tonezzz/stacks/pc2-worker/dev-proxy/certs/pc2.localtest.me+2.pem \
-           /home/tonezzz/stacks/pc2-worker/dev-proxy/certs/pc2.localtest.me+2-key.pem
-       reverse_proxy 127.0.0.1:3100
-     }
-     ```
-  5. Restart the proxy container (`docker compose --profile mcp-suite restart dev-proxy`) so it picks up the files.
-- **Sharing with Windows browsers**: export the mkcert root that lives in `%LOCALAPPDATA%\mkcert` and drop it into “Trusted Root Certification Authorities” in `certmgr.msc` for the `Local Computer` store. That keeps Chrome/Edge happy even though traffic terminates inside WSL.
-
-> **Side notes & fixes**
-> - Running `mkcert` only inside WSL meant Windows trusted nothing; Edge kept throwing `NET::ERR_CERT_AUTHORITY_INVALID`. Installing the root in Windows’ trust store fixed it.
-> - Caddy’s container could not read the certs when we stored them on the Windows side (`/mnt/c/...`). Copying them into the WSL home directory and setting `chmod 600` allowed the `caddy` process to load the keys.
-> - After resuming from sleep the WSL clock drifted, causing TLS handshakes to fail with `certificate has expired` even though the cert was new. `wsl --shutdown` (or `sudo hwclock -s`) re-synced the clock and the errors disappeared.
-
 ### Checklist
 - Confirm DNS records + firewall rules (ports 80/443) before touching certificates.
-- Keep `mkcert` roots versioned in `~/.config/mkcert` backups so new laptops can trust our dev domains immediately.
 - Document any ACME outages (rate limits, staging certs) in `docs/system-inventory/<host>/YYYY-MM-DD.md` for future auditing.
 
 ## Standard WSL → SSH → idc1 template (unattended)
@@ -339,9 +288,8 @@ Start/recreate VPN services:
 
 Verify (client):
 - `nslookup idc1.vpn 10.8.0.1`
-- `nslookup mcp0.idc1.vpn 10.8.0.1`
 - `ssh chaba@idc1.vpn`
-- `curl -sf http://mcp0.idc1.vpn:${MCP_DOCKER_PORT:-8340}/health`
+- `curl -sf http://idc1.vpn:${MCP_DOCKER_PORT:-8340}/health`
 
 ## SSH over VPN (idc1.vpn)
 `idc1.vpn` resolves to `10.8.0.1`, which is the `wg0` IP **inside** the `idc1-wg-easy` container.

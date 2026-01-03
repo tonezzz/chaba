@@ -1,14 +1,5 @@
 {
     admin 0.0.0.0:2019
-    email {env.ACME_EMAIL}
-}
-
-(godaddy_tls) {
-    tls {
-        dns godaddy {
-            api_token {env.GODADDY_API_TOKEN}
-        }
-    }
 }
 
 (pc2_routes) {
@@ -23,11 +14,6 @@
     }
 
     respond 404
-}
-
-pc2.vpn.surf-thailand.com, *.pc2.vpn.surf-thailand.com {
-    import godaddy_tls
-    import pc2_routes
 }
 
 pc2.vpn, *.pc2.vpn {

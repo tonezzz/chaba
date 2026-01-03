@@ -51,6 +51,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
       - docker-mcp-venv:/opt/docker-mcp-venv
+      - mcp-project-manager-data:/data/pm
 
   1mcp-agent-dev:
     <<: *default-service
@@ -92,6 +93,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
       - docker-mcp-venv:/opt/docker-mcp-venv
+      - mcp-project-manager-data:/data/pm
 
   mcp-agents:
     <<: *default-service
@@ -388,6 +390,7 @@ networks:
 
 volumes:
   docker-mcp-venv:
+  mcp-project-manager-data:
   stack-sqlite:
   authentik-media:
   authentik-templates:

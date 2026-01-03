@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "host": {
+    "name": "pc1",
+    "vpn_domain": "pc1.vpn"
+  },
+  "stack": {
+    "id": "pc1-web",
+    "path": "stacks/pc1-web",
+    "compose": "docker-compose.yml",
+    "description": "PC1 web UI stack (OpenChat UI + stack-local Caddy + dev-host)"
+  },
+  "services": [
+    {
+      "service": "openchat-ui",
+      "port": 3170,
+      "purpose": "Chat UI"
+    },
+    {
+      "service": "caddy",
+      "ports": ["3080->80", "3443->443"],
+      "purpose": "VPN HTTPS for pc1 stack paths"
+    },
+    {
+      "service": "dev-host",
+      "ports": ["2223->22", "3100->3000"],
+      "purpose": "Dev gateway"
+    }
+  ],
+  "recovery": {
+    "verify": {
+      "urls": [
+        "http://pc1.vpn:3170/",
+        "https://pc1.vpn:3443/chat/",
+        "http://pc1.vpn:3100/api/health"
+      ]
+    },
+    "restart": {
+      "windows_powershell": [
+        "docker compose -f C:/chaba/stacks/pc1-web/docker-compose.yml up -d",
+        "curl.exe http://127.0.0.1:3170/"
+      ]
+    }
+  }
+}

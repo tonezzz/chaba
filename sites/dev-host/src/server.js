@@ -33,22 +33,24 @@ const loadEnv = () => {
 loadEnv();
 
 const DEV_HOST_BASE_URL = (process.env.DEV_HOST_BASE_URL || 'http://dev-host:3100').replace(/\/+$/, '');
-const DEV_HOST_PUBLISH_TOKEN = (process.env.DEV_HOST_PUBLISH_TOKEN || '').trim();
+const sanitizeEnvValue = (value) => (value ?? '').replace(/[\r\n]/g, '').trim();
+const DEV_HOST_PUBLISH_TOKEN = sanitizeEnvValue(process.env.DEV_HOST_PUBLISH_TOKEN);
 const GLAMA_PROXY_TARGET =
+  sanitizeEnvValue(process.env.GLAMA_PROXY_TARGET ?? process.env.DEV_HOST_GLAMA_TARGET ?? 'http://127.0.0.1:4020');
   (process.env.GLAMA_PROXY_TARGET ?? process.env.DEV_HOST_GLAMA_TARGET ?? 'http://127.0.0.1:4020').trim();
 const DEKA_CHAT_PROXY_TARGET = (process.env.DEKA_CHAT_PROXY_TARGET ?? 'http://host.docker.internal:8190').trim();
 const DEKA_UI_PROXY_TARGET = (process.env.DEKA_UI_PROXY_TARGET ?? 'http://host.docker.internal:3171').trim();
 const AGENTS_PROXY_TARGET =
-  (process.env.AGENTS_PROXY_TARGET ?? process.env.DEV_HOST_AGENTS_TARGET ?? 'http://127.0.0.1:4060').trim();
+  sanitizeEnvValue(process.env.AGENTS_PROXY_TARGET ?? process.env.DEV_HOST_AGENTS_TARGET ?? 'http://127.0.0.1:4060');
 const DETECTS_PROXY_TARGET =
-  (process.env.DETECTS_PROXY_TARGET ?? process.env.DEV_HOST_DETECTS_TARGET ?? 'http://localhost:4120').trim();
+  sanitizeEnvValue(process.env.DETECTS_PROXY_TARGET ?? process.env.DEV_HOST_DETECTS_TARGET ?? '');
 const ONE_MCP_BASE_URL =
-  (process.env.ONE_MCP_BASE_URL ?? process.env.DEV_HOST_ONE_MCP_TARGET ?? 'http://1mcp.pc1.vpn:3052').trim();
-const ONE_MCP_APP = (process.env.ONE_MCP_APP || process.env.DEV_HOST_ONE_MCP_APP || 'windsurf').trim();
-const IMAGEN_MCP_TOOL_NAME = (process.env.IMAGEN_MCP_TOOL_NAME || 'mcp-imagen_1mcp_generate_image').trim();
-const VAJA_PROXY_TARGET = (process.env.VAJA_PROXY_TARGET || process.env.DEV_HOST_VAJA_TARGET || '').trim();
+  sanitizeEnvValue(process.env.ONE_MCP_BASE_URL ?? process.env.DEV_HOST_ONE_MCP_TARGET ?? '');
+const ONE_MCP_APP = sanitizeEnvValue(process.env.ONE_MCP_APP || process.env.DEV_HOST_ONE_MCP_APP || 'windsurf');
+const IMAGEN_MCP_TOOL_NAME = sanitizeEnvValue(process.env.IMAGEN_MCP_TOOL_NAME || 'mcp-imagen_1mcp_generate_image');
+const VAJA_PROXY_TARGET = sanitizeEnvValue(process.env.VAJA_PROXY_TARGET || process.env.DEV_HOST_VAJA_TARGET || '');
 const MCP0_PROXY_TARGET =
-  (process.env.MCP0_PROXY_TARGET ?? process.env.DEV_HOST_MCP0_TARGET ?? 'http://host.docker.internal:8310').trim();
+  sanitizeEnvValue(process.env.MCP0_PROXY_TARGET ?? process.env.DEV_HOST_MCP0_TARGET ?? '');
 
 const workspaceRoot = path.resolve(__dirname, '..', '..');
 
@@ -117,20 +119,32 @@ const additionalStaticRoutes = [
     roots: [resolveSitePath('a1-idc1', 'test', 'imagen')],
     spa: true
   },
+  {
+    basePath: '/test/project',
+    roots: [resolveSitePath('a1-idc1', 'test', 'project')],
+    spa: true,
+    skipApiFallback: true
+  },
   
 ];
 
 const PROXY_CHECKS = [
   { id: 'glama', label: 'Glama chat', target: GLAMA_PROXY_TARGET, path: '/api/health' },
-  { id: 'agents', label: 'Agents API', target: AGENTS_PROXY_TARGET, path: '/api/health' },
-  { id: 'detects', label: 'Detects API', target: DETECTS_PROXY_TARGET, path: '/health', optional: true },
-  { id: '1mcp', label: '1mcp-agent', target: ONE_MCP_BASE_URL, path: '/health/ready', optional: true }
+  { id: 'agents', label: 'Agents API', target: AGENTS_PROXY_TARGET, path: '/api/health' }
 ];
 
-const normalizeBaseUrl = (value) => (value || '').trim().replace(/\/+$/, '');
+if (DETECTS_PROXY_TARGET) {
+  PROXY_CHECKS.push({ id: 'detects', label: 'Detects API', target: DETECTS_PROXY_TARGET, path: '/health', optional: true });
+}
+
+if (ONE_MCP_BASE_URL) {
+  PROXY_CHECKS.push({ id: '1mcp', label: '1mcp-agent', target: ONE_MCP_BASE_URL, path: '/health/ready', optional: true });
+}
+
+const normalizeBaseUrl = (value) => sanitizeEnvValue(value).replace(/\/+$/, '');
 
 const DEKA_PROXY_TARGET =
-  (process.env.DEKA_PROXY_TARGET ?? process.env.DEV_HOST_DEKA_TARGET ?? 'http://pc1.vpn:8270').trim();
+  sanitizeEnvValue(process.env.DEKA_PROXY_TARGET ?? process.env.DEV_HOST_DEKA_TARGET ?? 'http://pc1.vpn:8270');
 
 const mcpState = {
   sessionId: '',
@@ -846,6 +860,100 @@ const wireProxies = () => {
       return res.json({ ok: true, tool: IMAGEN_MCP_TOOL_NAME, image_data_url, result });
     } catch (err) {
       return res.status(502).json({ error: 'imagen_generate_failed', detail: err?.message || String(err) });
+    }
+  });
+
+  app.use('/test/project/api', express.json({ limit: '2mb' }));
+
+  app.get('/test/project/api/tools', async (_req, res) => {
+    try {
+      let sessionId = await ensureMcpSession();
+
+      let rpc = await callMcpRpc({
+        method: 'tools/list',
+        params: {},
+        sessionId
+      });
+
+      if (!rpc.response.ok && looksLikeInvalidMcpSession(rpc)) {
+        mcpState.sessionId = '';
+        mcpState.createdAt = 0;
+        sessionId = await ensureMcpSession();
+        rpc = await callMcpRpc({
+          method: 'tools/list',
+          params: {},
+          sessionId
+        });
+      }
+
+      if (!rpc.response.ok) {
+        return res.status(502).json({
+          error: 'mcp_tools_list_failed',
+          httpStatus: rpc.response.status,
+          body: rpc.body
+        });
+      }
+
+      const tools = rpc.body?.result?.tools || rpc.body?.tools || [];
+      return res.json({ ok: true, tools, raw: rpc.body });
+    } catch (err) {
+      return res.status(502).json({ error: 'mcp_tools_list_failed', detail: err?.message || String(err) });
+    }
+  });
+
+  app.post('/test/project/api/call', async (req, res) => {
+    try {
+      const name = (req.body?.name || '').trim();
+      const args = req.body?.arguments || {};
+      if (!name) {
+        return res.status(400).json({ error: 'missing_tool_name' });
+      }
+
+      let sessionId = await ensureMcpSession();
+
+      let rpc = await callMcpRpc({
+        method: 'tools/call',
+        params: {
+          name,
+          arguments: args
+        },
+        sessionId
+      });
+
+      if (!rpc.response.ok && looksLikeInvalidMcpSession(rpc)) {
+        mcpState.sessionId = '';
+        mcpState.createdAt = 0;
+        sessionId = await ensureMcpSession();
+        rpc = await callMcpRpc({
+          method: 'tools/call',
+          params: {
+            name,
+            arguments: args
+          },
+          sessionId
+        });
+      }
+
+      if (!rpc.response.ok) {
+        const hints = [];
+        if (looksLikeMissingTool(rpc)) {
+          hints.push(`Tool not found. Check tools/list on ${getMcpRpcUrl()} (app=${ONE_MCP_APP}).`);
+        }
+        if (looksLikeInvalidMcpSession(rpc)) {
+          hints.push('Session rejected by 1mcp. Try again or restart dev-host to refresh session cache.');
+        }
+        return res.status(502).json({
+          error: 'mcp_tool_call_failed',
+          httpStatus: rpc.response.status,
+          tool: name,
+          hints,
+          body: rpc.body
+        });
+      }
+
+      return res.json({ ok: true, tool: name, result: rpc.body?.result, raw: rpc.body });
+    } catch (err) {
+      return res.status(502).json({ error: 'mcp_tool_call_failed', detail: err?.message || String(err) });
     }
   });
 

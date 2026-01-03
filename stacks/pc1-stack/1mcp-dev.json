@@ -67,6 +67,19 @@
       "url": "http://pc1.vpn:8020/mcp",
       "tags": ["pc1", "imagen", "sdxl", "dev"],
       "enabled": true
+    },
+    "mcp-project-manager": {
+      "command": "npx",
+      "args": ["-y", "mcp-project-manager"],
+      "env": {
+        "MCP_TASK_DATA_DIR": "/data/pm"
+      },
+      "tags": ["pc1", "project", "pm", "dev"],
+      "connectionTimeout": 60000,
+      "requestTimeout": 60000,
+      "restartOnExit": true,
+      "restartDelay": 1000,
+      "enabled": true
     }
   }
 }

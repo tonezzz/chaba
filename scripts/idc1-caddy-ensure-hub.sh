@@ -6,7 +6,7 @@ set -eu
 : "${SSH_KEY_PATH:?Set SSH_KEY_PATH}"
 
 SSH_PORT=${SSH_PORT:-22}
-MCP0_BACKEND=${MCP0_BACKEND:-http://127.0.0.1:8355}
+ONE_MCP_BACKEND=${ONE_MCP_BACKEND:-http://127.0.0.1:3050}
 GUAC_BACKEND=${GUAC_BACKEND:-http://127.0.0.1:3002}
 
 echo "[IDC1] Ensuring Caddy hub vhost + /guac route on $SSH_HOST as $SSH_USER"
@@ -17,7 +17,7 @@ ssh \
   -o StrictHostKeyChecking=no \
   -o UserKnownHostsFile=/dev/null \
   "$SSH_USER@$SSH_HOST" \
-  MCP0_BACKEND="$MCP0_BACKEND" \
+  ONE_MCP_BACKEND="$ONE_MCP_BACKEND" \
   GUAC_BACKEND="$GUAC_BACKEND" \
   bash -s <<'EOF'
 set -euo pipefail
@@ -70,20 +70,20 @@ else
   sudo -n mv "$TMPFILE" "$CADDYFILE"
 fi
 
-# 2) Ensure mcp0.idc1.surf-thailand.com vhost exists.
-if sudo -n grep -q "^mcp0\.idc1\.surf-thailand\.com[[:space:]]*{" "$CADDYFILE"; then
-  echo "[REMOTE] mcp0.idc1 vhost already present"
+# 2) Ensure 1mcp.idc1.surf-thailand.com vhost exists.
+if sudo -n grep -q "^1mcp\.idc1\.surf-thailand\.com[[:space:]]*{" "$CADDYFILE"; then
+  echo "[REMOTE] 1mcp.idc1 vhost already present"
 else
-  echo "[REMOTE] Appending mcp0.idc1 vhost"
+  echo "[REMOTE] Appending 1mcp.idc1 vhost"
   sudo -n tee -a "$CADDYFILE" >/dev/null <<VHOST
 
-mcp0.idc1.surf-thailand.com {
+1mcp.idc1.surf-thailand.com {
     encode gzip zstd
 
-    reverse_proxy ${MCP0_BACKEND}
+    reverse_proxy ${ONE_MCP_BACKEND}
 
     log {
-        output file /var/log/caddy/mcp0.idc1.access.log
+        output file /var/log/caddy/1mcp.idc1.access.log
     }
 }
 VHOST

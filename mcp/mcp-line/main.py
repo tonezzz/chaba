@@ -1,6 +1,7 @@
 import base64
 import hmac
 import hashlib
+import logging
 import os
 from typing import Any, Dict, List, Optional
 
@@ -10,8 +11,49 @@ from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
+logger = logging.getLogger("mcp-line")
+
 LINE_CHANNEL_SECRET = (os.getenv("LINE_CHANNEL_SECRET") or "").strip()
 LINE_CHANNEL_ACCESS_TOKEN = (os.getenv("LINE_CHANNEL_ACCESS_TOKEN") or "").strip()
+
+LINE_USE_GLAMA = (os.getenv("LINE_USE_GLAMA") or "").strip().lower() in ("1", "true", "yes", "y")
+MCP_GLAMA_URL = (os.getenv("MCP_GLAMA_URL") or "http://host.docker.internal:7441").rstrip("/")
+
+
+async def _glama_reply(text: str) -> Optional[str]:
+    if not LINE_USE_GLAMA:
+        return None
+
+    if not MCP_GLAMA_URL:
+        return None
+
+    invoke = {
+        "tool": "chat_completion",
+        "arguments": {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a helpful assistant responding to LINE messages. Reply briefly.",
+                },
+                {"role": "user", "content": text},
+            ],
+            "temperature": 0.2,
+            "maxTokens": 300,
+        },
+    }
+
+    try:
+        timeout = httpx.Timeout(timeout=12.0, connect=5.0)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            resp = await client.post(f"{MCP_GLAMA_URL}/invoke", json=invoke)
+        if resp.status_code >= 400:
+            return None
+        data = resp.json() if resp.content else {}
+        result = (data or {}).get("result") or {}
+        out = (result.get("response") or "").strip()
+        return out or None
+    except Exception:
+        return None
 
 
 def _verify_line_signature(raw_body: bytes, signature_b64: Optional[str]) -> bool:
@@ -42,7 +84,11 @@ async def _reply_message(reply_token: str, text: str) -> None:
     async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.post(url, headers=headers, json=payload)
         if resp.status_code >= 400:
-            raise RuntimeError(f"line_reply_failed_{resp.status_code}")
+            detail = (resp.text or "").strip()
+            if len(detail) > 500:
+                detail = detail[:500] + "..."
+            logger.warning("LINE reply failed: status=%s body=%s", resp.status_code, detail)
+            raise RuntimeError(f"line_reply_failed_{resp.status_code}:{detail}")
 
 
 @app.get("/health")
@@ -51,6 +97,8 @@ async def health() -> Dict[str, Any]:
         "status": "ok",
         "signatureConfigured": bool(LINE_CHANNEL_SECRET),
         "accessTokenConfigured": bool(LINE_CHANNEL_ACCESS_TOKEN),
+        "useGlama": LINE_USE_GLAMA,
+        "mcpGlamaUrl": MCP_GLAMA_URL,
     }
 
 
@@ -92,7 +140,13 @@ async def webhook_line(
             text = message.get("text")
 
             if evt_type == "message" and message_type == "text" and reply_token:
-                await _reply_message(reply_token=reply_token, text=f"ok: {text}")
+                prompt = (text or "").strip()
+                if not prompt:
+                    continue
+
+                generated = await _glama_reply(prompt)
+                reply_text = generated if generated else f"ok: {prompt}"
+                await _reply_message(reply_token=reply_token, text=reply_text)
         except Exception as exc:
             reply_errors.append(str(exc))
 
