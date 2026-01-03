@@ -144,6 +144,10 @@ class AuditCrossChecksArgs(BaseModel):
         description="Doc types required for each (project, period) group",
     )
     period_filter: str = Field("", description="Optional period filter (e.g. 2568-08)")
+    extract_amounts: bool = Field(True, description="If true, attempt to extract a total amount from PDF text")
+    amount_max_pages: int = Field(2, description="Max pages to scan for amounts (bounded)")
+    amount_tolerance_abs: float = Field(1.0, description="Allowed absolute difference between amounts")
+    amount_tolerance_pct: float = Field(0.001, description="Allowed relative difference (e.g. 0.001 = 0.1%)")
 
 
 class ChatArgs(BaseModel):
@@ -251,6 +255,235 @@ def _extract_claims_from_path(path: Path) -> Dict[str, Any]:
     }
 
 
+def _parse_amount_token(token: str) -> Optional[float]:
+    t = (token or "").strip()
+    if not t:
+        return None
+    t = t.replace(" ", "")
+    # Common formats: 12,345.67 or 12345.67 or 12345
+    if not re.fullmatch(r"\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?", t):
+        return None
+    try:
+        return float(t.replace(",", ""))
+    except Exception:
+        return None
+
+
+def _compact_number_separators(text: str) -> str:
+    if not text:
+        return ""
+    out = text
+    # Join numbers that have spaces around separators: "30 ,599 . 6 7" -> "30,599.67"
+    for _ in range(3):
+        out = re.sub(r"(\d)\s*,\s*(\d)", r"\1,\2", out)
+        out = re.sub(r"(\d)\s*\.\s*(\d)", r"\1.\2", out)
+    # Join digits split by spaces when it looks like a number chunk (best-effort)
+    out = re.sub(r"(\d)\s+(\d{3})(\b)", r"\1\2\3", out)
+    return out
+
+
+def _extract_amount_candidates(text: str, *, keywords: List[str]) -> List[Dict[str, Any]]:
+    if not text:
+        return []
+    raw = _compact_number_separators(text)
+    candidates: List[Dict[str, Any]] = []
+
+    money_re = re.compile(r"(\d{1,3}(?:,\d{3})*\.\d{2}|\d+\.\d{2})")
+    any_number_re = re.compile(r"(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)")
+    baht_money_re = re.compile(r"(\d{1,3}(?:,\d{3})*\.\d{2}|\d+\.\d{2})\s*บาท")
+
+    lowered = raw.lower()
+    for kw in keywords:
+        kw_l = kw.lower()
+        start = 0
+        while True:
+            idx = lowered.find(kw_l, start)
+            if idx < 0:
+                break
+            window = raw[idx : idx + 300]
+            # Prefer values explicitly marked as Baht
+            baht_tokens = baht_money_re.findall(window)
+            tokens = baht_tokens if baht_tokens else money_re.findall(window)
+            if not tokens:
+                tokens = any_number_re.findall(window)
+            if tokens:
+                token = tokens[-1]
+                val = _parse_amount_token(token)
+                if val is not None and float(val) >= 10:
+                    candidates.append({"value": float(val), "source": "keyword", "keyword": kw, "token": token})
+            start = idx + len(kw_l)
+            if len(candidates) >= 20:
+                break
+        if len(candidates) >= 20:
+            break
+
+    return candidates
+
+
+def _extract_pdf_total_amount(
+    path: Path, *, max_pages: int, keywords: List[str]
+) -> Tuple[Optional[float], List[Dict[str, Any]]]:
+    issues: List[Dict[str, Any]] = []
+    try:
+        reader = PdfReader(str(path))
+    except Exception as exc:
+        issues.append({"code": "pdf_parse_failed", "path": str(path), "detail": str(exc)})
+        return None, issues
+
+    page_count = len(reader.pages) if getattr(reader, "pages", None) is not None else 0
+    pages_to_read = min(max(0, max_pages), page_count, 10)
+    if pages_to_read <= 0:
+        return None, issues
+
+    texts: List[str] = []
+    for i in range(pages_to_read):
+        try:
+            texts.append(reader.pages[i].extract_text() or "")
+        except Exception as exc:
+            issues.append({"code": "pdf_text_extract_failed", "path": str(path), "page": i + 1, "detail": str(exc)})
+    combined = "\n".join(texts)
+    combined = _normalize_text(combined)
+
+    candidates = _extract_amount_candidates(combined, keywords=keywords)
+    if not candidates:
+        return None, issues
+
+    # Choose by keyword priority (first keyword wins), taking the last occurrence of that keyword
+    for kw in keywords:
+        vals = [
+            c.get("value")
+            for c in candidates
+            if c.get("keyword") == kw and isinstance(c.get("value"), (int, float))
+        ]
+        if vals:
+            return float(vals[-1]), issues
+
+    vals2 = [c.get("value") for c in candidates if isinstance(c.get("value"), (int, float))]
+    if vals2:
+        return float(vals2[-1]), issues
+    return None, issues
+
+
+def _extract_pdf_receipts_sum(path: Path, *, max_pages: int) -> Tuple[Optional[float], List[Dict[str, Any]]]:
+    issues: List[Dict[str, Any]] = []
+    try:
+        reader = PdfReader(str(path))
+    except Exception as exc:
+        issues.append({"code": "pdf_parse_failed", "path": str(path), "detail": str(exc)})
+        return None, issues
+
+    page_count = len(reader.pages) if getattr(reader, "pages", None) is not None else 0
+    pages_to_read = min(max(0, max_pages), page_count, 10)
+    if pages_to_read <= 0:
+        return None, issues
+
+    total = 0.0
+    saw_any = False
+    for i in range(pages_to_read):
+        try:
+            text = reader.pages[i].extract_text() or ""
+        except Exception as exc:
+            issues.append({"code": "pdf_text_extract_failed", "path": str(path), "page": i + 1, "detail": str(exc)})
+            text = ""
+        text = _compact_number_separators(text)
+        # Example: (7,800.00) (200.00)
+        for m in re.findall(r"\((\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)\)", text):
+            v = _parse_amount_token(m)
+            if v is None:
+                continue
+            saw_any = True
+            total += abs(float(v))
+
+    if not saw_any:
+        return None, issues
+    return float(total), issues
+
+
+def _extract_pdf_max_money(path: Path, *, max_pages: int) -> Tuple[Optional[float], List[Dict[str, Any]]]:
+    issues: List[Dict[str, Any]] = []
+    try:
+        reader = PdfReader(str(path))
+    except Exception as exc:
+        issues.append({"code": "pdf_parse_failed", "path": str(path), "detail": str(exc)})
+        return None, issues
+
+    page_count = len(reader.pages) if getattr(reader, "pages", None) is not None else 0
+    pages_to_read = min(max(0, max_pages), page_count, 10)
+    if pages_to_read <= 0:
+        return None, issues
+
+    money_re = re.compile(r"(\d{1,3}(?:,\d{3})*\.\d{2}|\d+\.\d{2})")
+    best: Optional[float] = None
+
+    for i in range(pages_to_read):
+        try:
+            text = reader.pages[i].extract_text() or ""
+        except Exception as exc:
+            issues.append({"code": "pdf_text_extract_failed", "path": str(path), "page": i + 1, "detail": str(exc)})
+            continue
+
+        text = _compact_number_separators(text)
+        for token in money_re.findall(text):
+            v = _parse_amount_token(token)
+            if v is None:
+                continue
+            if v < 10:
+                continue
+            if best is None or float(v) > best:
+                best = float(v)
+
+    return best, issues
+
+
+def _extract_pdf_money_tokens(path: Path, *, max_pages: int) -> Tuple[List[float], List[Dict[str, Any]]]:
+    issues: List[Dict[str, Any]] = []
+    tokens: List[float] = []
+    try:
+        reader = PdfReader(str(path))
+    except Exception as exc:
+        issues.append({"code": "pdf_parse_failed", "path": str(path), "detail": str(exc)})
+        return tokens, issues
+
+    page_count = len(reader.pages) if getattr(reader, "pages", None) is not None else 0
+    pages_to_read = min(max(0, max_pages), page_count, 10)
+    if pages_to_read <= 0:
+        return tokens, issues
+
+    money_re = re.compile(r"(\d{1,3}(?:,\d{3})*\.\d{2}|\d+\.\d{2})")
+    for i in range(pages_to_read):
+        try:
+            text = reader.pages[i].extract_text() or ""
+        except Exception as exc:
+            issues.append({"code": "pdf_text_extract_failed", "path": str(path), "page": i + 1, "detail": str(exc)})
+            continue
+
+        text = _compact_number_separators(text)
+        for token in money_re.findall(text):
+            v = _parse_amount_token(token)
+            if v is None:
+                continue
+            if v < 10:
+                continue
+            tokens.append(float(v))
+
+    # de-dup while preserving order
+    seen: set[float] = set()
+    out: List[float] = []
+    for v in tokens:
+        if v in seen:
+            continue
+        seen.add(v)
+        out.append(v)
+    return out, issues
+
+
+def _extract_pdf_last_money(path: Path, *, max_pages: int) -> Tuple[Optional[float], List[float], List[Dict[str, Any]]]:
+    tokens, issues = _extract_pdf_money_tokens(path, max_pages=max_pages)
+    if not tokens:
+        return None, [], issues
+    return float(tokens[-1]), tokens, issues
+
+
 def _audit_cross_checks(args: AuditCrossChecksArgs) -> Dict[str, Any]:
     root = Path(AUDIDOC_ROOT).resolve()
     pdfs: List[Path]
@@ -264,6 +497,19 @@ def _audit_cross_checks(args: AuditCrossChecksArgs) -> Dict[str, Any]:
     if not required:
         required = ["บัญชี", "เช็ค"]
 
+    max_pages = int(args.amount_max_pages or 0)
+    if max_pages < 0:
+        max_pages = 0
+    max_pages = min(max_pages, 10)
+
+    tol_abs = float(args.amount_tolerance_abs or 0.0)
+    if tol_abs < 0:
+        tol_abs = 0.0
+
+    tol_pct = float(args.amount_tolerance_pct or 0.0)
+    if tol_pct < 0:
+        tol_pct = 0.0
+
     docs: List[Dict[str, Any]] = []
     groups: Dict[str, Dict[str, Any]] = {}
     for p in pdfs:
@@ -274,6 +520,35 @@ def _audit_cross_checks(args: AuditCrossChecksArgs) -> Dict[str, Any]:
         project = claims.get("project")
         period = claims.get("period")
         doc_type = claims.get("doc_type")
+        amount_total: Optional[float] = None
+        money_tokens: List[float] = []
+
+        if args.extract_amounts:
+            dt = str(doc_type or "").strip()
+            if dt == "เช็ค":
+                amount_total, money_tokens, amount_issues = _extract_pdf_last_money(p, max_pages=max_pages)
+            elif dt == "บัญชี":
+                amount_total, amount_issues = _extract_pdf_total_amount(
+                    p,
+                    max_pages=max_pages,
+                    keywords=["ยอดรวม", "รวมทั้งสิ้น", "รวมเงิน"],
+                )
+            elif dt == "รายรับ":
+                amount_total, amount_issues = _extract_pdf_receipts_sum(p, max_pages=max_pages)
+            else:
+                amount_total, amount_issues = _extract_pdf_total_amount(
+                    p,
+                    max_pages=max_pages,
+                    keywords=["ยอดรวม", "รวมทั้งสิ้น", "รวมเงิน", "total", "grand total"],
+                )
+
+            if amount_issues:
+                (doc.get("issues") or []).extend(amount_issues)  # type: ignore[union-attr]
+            if amount_total is not None:
+                (doc.get("claims") or {})["amount_total"] = float(amount_total)  # type: ignore[union-attr]
+            if dt == "เช็ค" and money_tokens:
+                # keep a short list for cross-doc matching against subtotals
+                (doc.get("claims") or {})["money_tokens"] = money_tokens[-30:]  # type: ignore[union-attr]
 
         try:
             rel_out = str(p.relative_to(root))
@@ -295,13 +570,18 @@ def _audit_cross_checks(args: AuditCrossChecksArgs) -> Dict[str, Any]:
                 "period": period,
                 "docs": [],
                 "doc_types": [],
+                "amounts": {},
                 "issues": [],
             }
             groups[key] = g
 
-        g["docs"].append({"path": rel_out, "doc_type": doc_type})
+        g["docs"].append({"path": rel_out, "doc_type": doc_type, "amount_total": amount_total})
         if isinstance(doc_type, str) and doc_type not in g["doc_types"]:
             g["doc_types"].append(doc_type)
+        if isinstance(doc_type, str) and isinstance(amount_total, (int, float)):
+            # keep first value per doc type
+            if doc_type not in (g.get("amounts") or {}):
+                g["amounts"][doc_type] = float(amount_total)
 
     cross_issues: List[Dict[str, Any]] = []
     for key, g in groups.items():
@@ -317,11 +597,60 @@ def _audit_cross_checks(args: AuditCrossChecksArgs) -> Dict[str, Any]:
             g["issues"].append(issue)
             cross_issues.append(issue)
 
+        # Amount consistency (minimal): compare บัญชี vs เช็ค if both amounts exist
+        amounts = g.get("amounts") or {}
+        a = amounts.get("บัญชี")
+        b = amounts.get("เช็ค")
+        if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+            diff = abs(float(a) - float(b))
+            denom = max(abs(float(a)), abs(float(b)), 0.0)
+            pct = (diff / denom) if denom > 0 else 0.0
+            allowed = max(tol_abs, denom * tol_pct)
+            cheque_tokens: List[float] = []
+            for doc_item in (docs or []):
+                claims = doc_item.get("claims") or {}
+                if claims.get("project") == g.get("project") and claims.get("period") == g.get("period") and claims.get("doc_type") == "เช็ค":
+                    mt = claims.get("money_tokens")
+                    if isinstance(mt, list):
+                        for v in mt:
+                            if isinstance(v, (int, float)):
+                                cheque_tokens.append(float(v))
+
+            subtotal_match = False
+            for v in cheque_tokens:
+                if abs(float(a) - float(v)) <= max(tol_abs, max(abs(float(a)), abs(float(v))) * tol_pct):
+                    subtotal_match = True
+                    break
+
+            if diff > allowed and not subtotal_match:
+                issue = {
+                    "code": "amount_mismatch",
+                    "project": g.get("project"),
+                    "period": g.get("period"),
+                    "a_type": "บัญชี",
+                    "b_type": "เช็ค",
+                    "a_amount": float(a),
+                    "b_amount": float(b),
+                    "diff": diff,
+                    "allowed": allowed,
+                    "tolerance_abs": tol_abs,
+                    "tolerance_pct": tol_pct,
+                    "subtotal_match": subtotal_match,
+                }
+                g["issues"].append(issue)
+                cross_issues.append(issue)
+
     return {
         "root": str(root),
         "pdf_dir": AUDIDOC_PDF_DIR,
         "required_doc_types": required,
         "period_filter": period_filter or None,
+        "amount": {
+            "extract": bool(args.extract_amounts),
+            "max_pages": max_pages,
+            "tolerance_abs": tol_abs,
+            "tolerance_pct": tol_pct,
+        },
         "documents": docs,
         "groups": list(groups.values()),
         "issues": cross_issues,
