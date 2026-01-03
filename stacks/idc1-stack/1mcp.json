@@ -11,6 +11,12 @@
     },
     "portainer": {
       "command": "portainer-mcp-stdio",
+      "env": {
+        "PORTAINER_SERVER": "${PORTAINER_SERVER}",
+        "PORTAINER_TOKEN": "${PORTAINER_TOKEN}",
+        "PORTAINER_READ_ONLY": "${PORTAINER_READ_ONLY}",
+        "PORTAINER_DISABLE_VERSION_CHECK": "${PORTAINER_DISABLE_VERSION_CHECK}"
+      },
       "tags": ["portainer", "docker"],
       "connectionTimeout": 120000,
       "requestTimeout": 120000,
