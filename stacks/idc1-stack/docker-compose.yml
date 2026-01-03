@@ -81,6 +81,19 @@ services:
     profiles: ["mcp-suite"]
     build:
       context: ./1mcp-agent
+    command:
+      - 1mcp
+      - --config
+      - ${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}
+      - --transport
+      - http
+      - --enable-enhanced-security=false
+      - --host
+      - ${ONE_MCP_HOST:-0.0.0.0}
+      - --port
+      - ${ONE_MCP_PORT:-3050}
+      - --external-url
+      - ${ONE_MCP_EXTERNAL_URL:-http://127.0.0.1:${ONE_MCP_PORT:-3050}}
     ports:
       - "127.0.0.1:${ONE_MCP_PORT:-3050}:${ONE_MCP_PORT:-3050}"
     extra_hosts:

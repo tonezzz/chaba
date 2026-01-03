@@ -33,10 +33,8 @@ RUN curl -fsSL -o /tmp/portainer-mcp.tar.gz \
 COPY portainer-mcp-stdio.sh /usr/local/bin/portainer-mcp-stdio
 RUN chmod +x /usr/local/bin/portainer-mcp-stdio
 
-# Build 1MCP from local source (requires docker-compose build.context = C:\chaba_wt)
-COPY voyant/1mcp-agent-src /opt/1mcp-agent-src
-WORKDIR /opt/1mcp-agent-src
-RUN pnpm install --frozen-lockfile --prefer-offline
-RUN sed -i 's/\r$//' ./scripts/build.sh && bash ./scripts/build.sh
+RUN npm install -g @1mcp/agent
 
-CMD ["node", "build/index.js"]
+WORKDIR /app
+
+CMD ["1mcp"]
