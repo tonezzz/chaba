@@ -19,9 +19,13 @@ services:
       context: ${MCP_LINE_BUILD_CONTEXT:-../../mcp/mcp-line}
     ports:
       - "127.0.0.1:${MCP_LINE_PORT:-8088}:8088"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       LINE_CHANNEL_SECRET: ${LINE_CHANNEL_SECRET:-}
       LINE_CHANNEL_ACCESS_TOKEN: ${LINE_CHANNEL_ACCESS_TOKEN:-}
+      LINE_USE_GLAMA: ${LINE_USE_GLAMA:-}
+      MCP_GLAMA_URL: ${MCP_GLAMA_URL:-http://host.docker.internal:7441}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8088/health || exit 1"]
       interval: 30s
