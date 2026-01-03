@@ -4,6 +4,7 @@ import json
 import hashlib
 import os
 import re
+import statistics
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -26,6 +27,70 @@ def _utc_ms() -> int:
     import time
 
     return int(time.time() * 1000)
+
+
+def _overrides_path() -> Path:
+    return Path(AUDIDOC_ROOT).resolve() / ".audidoc_overrides.json"
+
+
+def _load_overrides() -> Dict[str, Any]:
+    p = _overrides_path()
+    if not p.exists():
+        return {"version": 1, "overrides": {}}
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            return {"version": 1, "overrides": {}}
+        if not isinstance(data.get("overrides"), dict):
+            data["overrides"] = {}
+        if not isinstance(data.get("version"), int):
+            data["version"] = 1
+        return data
+    except Exception:
+        return {"version": 1, "overrides": {}}
+
+
+def _save_overrides(data: Dict[str, Any]) -> None:
+    p = _overrides_path()
+    p.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _get_override_for_relpath(relpath: str) -> Dict[str, Any]:
+    data = _load_overrides()
+    ov = (data.get("overrides") or {}).get(relpath)
+    return ov if isinstance(ov, dict) else {}
+
+
+def _set_override_for_relpath(relpath: str, field: str, value: Any) -> None:
+    data = _load_overrides()
+    ovs = data.get("overrides")
+    if not isinstance(ovs, dict):
+        ovs = {}
+        data["overrides"] = ovs
+    item = ovs.get(relpath)
+    if not isinstance(item, dict):
+        item = {}
+        ovs[relpath] = item
+    item[field] = value
+    _save_overrides(data)
+
+
+def _clear_override_for_relpath(relpath: str, field: Optional[str] = None) -> None:
+    data = _load_overrides()
+    ovs = data.get("overrides")
+    if not isinstance(ovs, dict):
+        return
+    if relpath not in ovs:
+        return
+    if field:
+        item = ovs.get(relpath)
+        if isinstance(item, dict) and field in item:
+            item.pop(field, None)
+        if not item:
+            ovs.pop(relpath, None)
+    else:
+        ovs.pop(relpath, None)
+    _save_overrides(data)
 
 
 def _safe_resolve_under_root(raw_path: str) -> Path:
@@ -310,7 +375,17 @@ def _extract_amount_candidates(text: str, *, keywords: List[str]) -> List[Dict[s
                 token = tokens[-1]
                 val = _parse_amount_token(token)
                 if val is not None and float(val) >= 10:
-                    candidates.append({"value": float(val), "source": "keyword", "keyword": kw, "token": token})
+                    snippet = re.sub(r"\s+", " ", window[:180]).strip()
+                    candidates.append(
+                        {
+                            "value": float(val),
+                            "source": "keyword",
+                            "keyword": kw,
+                            "token": token,
+                            "snippet": snippet,
+                            "confidence": 0.9 if baht_tokens else 0.75,
+                        }
+                    )
             start = idx + len(kw_l)
             if len(candidates) >= 20:
                 break
@@ -484,6 +559,141 @@ def _extract_pdf_last_money(path: Path, *, max_pages: int) -> Tuple[Optional[flo
     return float(tokens[-1]), tokens, issues
 
 
+def _extract_pdf_last_money_evidence(path: Path, *, max_pages: int) -> Tuple[Optional[float], List[float], Optional[Dict[str, Any]], List[Dict[str, Any]]]:
+    text, issues = _extract_pdf_text_combined(path, max_pages=max_pages)
+    tokens, issues2 = _extract_pdf_money_tokens(path, max_pages=max_pages)
+    issues.extend(issues2)
+    if not tokens:
+        return None, [], None, issues
+    last = float(tokens[-1])
+    money_re = re.compile(r"(\d{1,3}(?:,\d{3})*\.\d{2}|\d+\.\d{2})")
+    m = None
+    if text:
+        for mm in money_re.finditer(text):
+            token = mm.group(1)
+            v = _parse_amount_token(token)
+            if v is not None and abs(float(v) - last) < 0.0001:
+                m = mm
+    ev = None
+    if m:
+        start = max(0, m.start() - 60)
+        end = min(len(text), m.end() + 60)
+        snippet = re.sub(r"\s+", " ", text[start:end]).strip()
+        ev = {"source": "last_money", "value": last, "snippet": snippet, "confidence": 0.7}
+    else:
+        ev = {"source": "last_money", "value": last, "snippet": None, "confidence": 0.55}
+    return last, tokens, ev, issues
+
+
+def _extract_pdf_text_combined(path: Path, *, max_pages: int) -> Tuple[str, List[Dict[str, Any]]]:
+    issues: List[Dict[str, Any]] = []
+    try:
+        reader = PdfReader(str(path))
+    except Exception as exc:
+        issues.append({"code": "pdf_parse_failed", "path": str(path), "detail": str(exc)})
+        return "", issues
+
+    page_count = len(reader.pages) if getattr(reader, "pages", None) is not None else 0
+    pages_to_read = min(max(0, max_pages), page_count, 10)
+    if pages_to_read <= 0:
+        return "", issues
+
+    texts: List[str] = []
+    for i in range(pages_to_read):
+        try:
+            texts.append(reader.pages[i].extract_text() or "")
+        except Exception as exc:
+            issues.append({"code": "pdf_text_extract_failed", "path": str(path), "page": i + 1, "detail": str(exc)})
+
+    combined = "\n".join(texts)
+    combined = _compact_number_separators(_normalize_text(combined))
+    return combined, issues
+
+
+def _extract_cheque_items(path: Path, *, max_pages: int) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    text, issues = _extract_pdf_text_combined(path, max_pages=max_pages)
+    if not text:
+        return [], issues
+
+    money_re = re.compile(r"(\d{1,3}(?:,\d{3})*\.\d{2}|\d+\.\d{2})")
+    cheque_no_re = re.compile(r"\b\d{10}\b")
+    items: List[Dict[str, Any]] = []
+    for line in text.splitlines():
+        l = line.strip()
+        if not l or not re.match(r"^\d+\s", l):
+            continue
+        tokens = money_re.findall(l)
+        if not tokens:
+            continue
+        amt = _parse_amount_token(tokens[-1])
+        if amt is None or amt < 10:
+            continue
+        cheque_nos = cheque_no_re.findall(l)
+        cheque_no = cheque_nos[-1] if cheque_nos else None
+        desc = l
+        for t in tokens:
+            desc = desc.replace(t, " ")
+        desc = re.sub(r"\s+", " ", desc).strip()
+        if desc:
+            items.append({"amount": float(amt), "text": desc, "cheque_no": cheque_no, "confidence": 0.65})
+        if len(items) >= 80:
+            break
+
+    return items, issues
+
+
+def _extract_income_snippets(path: Path, *, max_pages: int) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    text, issues = _extract_pdf_text_combined(path, max_pages=max_pages)
+    if not text:
+        return [], issues
+
+    money_re = re.compile(r"(\d{1,3}(?:,\d{3})*\.\d{2}|\d+\.\d{2})")
+    out: List[Dict[str, Any]] = []
+    seen: set[str] = set()
+
+    for m in money_re.finditer(text):
+        token = m.group(1)
+        amt = _parse_amount_token(token)
+        if amt is None or amt < 10:
+            continue
+        start = max(0, m.start() - 40)
+        end = min(len(text), m.end() + 40)
+        snippet = re.sub(r"\s+", " ", text[start:end]).strip()
+        key = f"{float(amt)}::{snippet}"
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append({"amount": float(amt), "text": snippet, "confidence": 0.45})
+        if len(out) >= 120:
+            break
+
+    return out, issues
+
+
+def _parse_period(period: str) -> Optional[Tuple[int, int]]:
+    m = re.fullmatch(r"(\d{4})-(\d{2})", (period or "").strip())
+    if not m:
+        return None
+    try:
+        y = int(m.group(1))
+        mo = int(m.group(2))
+        if mo < 1 or mo > 12:
+            return None
+        return (y, mo)
+    except Exception:
+        return None
+
+
+def _period_to_index(y: int, m: int) -> int:
+    return y * 12 + (m - 1)
+
+
+def _index_to_period(idx: int) -> str:
+    y = idx // 12
+    m = (idx % 12) + 1
+    return f"{y:04d}-{m:02d}"
+
+
 def _audit_cross_checks(args: AuditCrossChecksArgs) -> Dict[str, Any]:
     root = Path(AUDIDOC_ROOT).resolve()
     pdfs: List[Path]
@@ -512,6 +722,7 @@ def _audit_cross_checks(args: AuditCrossChecksArgs) -> Dict[str, Any]:
 
     docs: List[Dict[str, Any]] = []
     groups: Dict[str, Dict[str, Any]] = {}
+    root = Path(AUDIDOC_ROOT).resolve()
     for p in pdfs:
         if p.suffix.lower() != ".pdf":
             continue
@@ -522,38 +733,70 @@ def _audit_cross_checks(args: AuditCrossChecksArgs) -> Dict[str, Any]:
         doc_type = claims.get("doc_type")
         amount_total: Optional[float] = None
         money_tokens: List[float] = []
+        expense_items: List[Dict[str, Any]] = []
+        income_items: List[Dict[str, Any]] = []
+
+        try:
+            rel_out = str(p.relative_to(root))
+        except Exception:
+            rel_out = str(p)
+
+        ov = _get_override_for_relpath(rel_out)
+        if isinstance(ov.get("project"), str) and ov.get("project"):
+            project = ov.get("project")
+            claims["project"] = project
+        if isinstance(ov.get("period"), str) and ov.get("period"):
+            period = ov.get("period")
+            claims["period"] = period
+        if isinstance(ov.get("doc_type"), str) and ov.get("doc_type"):
+            doc_type = ov.get("doc_type")
+            claims["doc_type"] = doc_type
 
         if args.extract_amounts:
             dt = str(doc_type or "").strip()
             if dt == "เช็ค":
-                amount_total, money_tokens, amount_issues = _extract_pdf_last_money(p, max_pages=max_pages)
+                amount_total, money_tokens, ev, amount_issues = _extract_pdf_last_money_evidence(p, max_pages=max_pages)
+                expense_items, extra_issues = _extract_cheque_items(p, max_pages=max_pages)
+                amount_issues.extend(extra_issues)
             elif dt == "บัญชี":
                 amount_total, amount_issues = _extract_pdf_total_amount(
                     p,
                     max_pages=max_pages,
                     keywords=["ยอดรวม", "รวมทั้งสิ้น", "รวมเงิน"],
                 )
+                ev = None
             elif dt == "รายรับ":
                 amount_total, amount_issues = _extract_pdf_receipts_sum(p, max_pages=max_pages)
+                income_items, extra_issues = _extract_income_snippets(p, max_pages=max_pages)
+                amount_issues.extend(extra_issues)
+                ev = None
             else:
                 amount_total, amount_issues = _extract_pdf_total_amount(
                     p,
                     max_pages=max_pages,
                     keywords=["ยอดรวม", "รวมทั้งสิ้น", "รวมเงิน", "total", "grand total"],
                 )
+                ev = None
 
             if amount_issues:
                 (doc.get("issues") or []).extend(amount_issues)  # type: ignore[union-attr]
+
+            if isinstance(ov.get("amount_total"), (int, float)):
+                amount_total = float(ov.get("amount_total"))
+                (doc.get("issues") or []).append({"code": "amount_overridden", "path": rel_out})  # type: ignore[union-attr]
+
             if amount_total is not None:
                 (doc.get("claims") or {})["amount_total"] = float(amount_total)  # type: ignore[union-attr]
+            if ev is not None:
+                (doc.get("claims") or {})["amount_evidence"] = ev  # type: ignore[union-attr]
             if dt == "เช็ค" and money_tokens:
                 # keep a short list for cross-doc matching against subtotals
                 (doc.get("claims") or {})["money_tokens"] = money_tokens[-30:]  # type: ignore[union-attr]
+            if dt == "เช็ค" and expense_items:
+                (doc.get("claims") or {})["expense_items"] = expense_items[:50]  # type: ignore[union-attr]
+            if dt == "รายรับ" and income_items:
+                (doc.get("claims") or {})["income_items"] = income_items[:80]  # type: ignore[union-attr]
 
-        try:
-            rel_out = str(p.relative_to(root))
-        except Exception:
-            rel_out = str(p)
         doc["path"] = rel_out
         docs.append(doc)
 
@@ -584,6 +827,7 @@ def _audit_cross_checks(args: AuditCrossChecksArgs) -> Dict[str, Any]:
                 g["amounts"][doc_type] = float(amount_total)
 
     cross_issues: List[Dict[str, Any]] = []
+    anomaly_issues: List[Dict[str, Any]] = []
     for key, g in groups.items():
         types = g.get("doc_types") or []
         missing = [t for t in required if t not in types]
@@ -640,6 +884,92 @@ def _audit_cross_checks(args: AuditCrossChecksArgs) -> Dict[str, Any]:
                 g["issues"].append(issue)
                 cross_issues.append(issue)
 
+        amounts2 = g.get("amounts") or {}
+        income_total = amounts2.get("รายรับ") if isinstance(amounts2.get("รายรับ"), (int, float)) else None
+        expense_total = amounts2.get("เช็ค") if isinstance(amounts2.get("เช็ค"), (int, float)) else None
+        ledger_total = amounts2.get("บัญชี") if isinstance(amounts2.get("บัญชี"), (int, float)) else None
+        net = None
+        if isinstance(income_total, (int, float)) and isinstance(expense_total, (int, float)):
+            net = float(income_total) - float(expense_total)
+        g["summary"] = {
+            "income_total": float(income_total) if isinstance(income_total, (int, float)) else None,
+            "expense_total": float(expense_total) if isinstance(expense_total, (int, float)) else None,
+            "ledger_total": float(ledger_total) if isinstance(ledger_total, (int, float)) else None,
+            "net": net,
+        }
+
+        cheque_nos: List[str] = []
+        for doc_item in (docs or []):
+            claims = doc_item.get("claims") or {}
+            if claims.get("project") == g.get("project") and claims.get("period") == g.get("period") and claims.get("doc_type") == "เช็ค":
+                items = claims.get("expense_items")
+                if isinstance(items, list):
+                    for it in items:
+                        if isinstance(it, dict) and isinstance(it.get("cheque_no"), str) and it.get("cheque_no"):
+                            cheque_nos.append(it.get("cheque_no"))
+        if cheque_nos:
+            dup = sorted({x for x in cheque_nos if cheque_nos.count(x) > 1})
+            if dup:
+                issue = {"code": "duplicate_cheque_no", "project": g.get("project"), "period": g.get("period"), "cheque_no": dup}
+                g["issues"].append(issue)
+                anomaly_issues.append(issue)
+
+    by_project: Dict[str, List[Dict[str, Any]]] = {}
+    for g in groups.values():
+        p = g.get("project")
+        if not isinstance(p, str) or not p:
+            continue
+        by_project.setdefault(p, []).append(g)
+
+    for proj, gs in by_project.items():
+        period_idxs: List[int] = []
+        income_vals: List[float] = []
+        expense_vals: List[float] = []
+        for g in gs:
+            pr = _parse_period(str(g.get("period") or ""))
+            if pr:
+                period_idxs.append(_period_to_index(pr[0], pr[1]))
+            s = g.get("summary") or {}
+            if isinstance(s.get("income_total"), (int, float)):
+                income_vals.append(float(s.get("income_total")))
+            if isinstance(s.get("expense_total"), (int, float)):
+                expense_vals.append(float(s.get("expense_total")))
+
+        if len(period_idxs) >= 2:
+            lo = min(period_idxs)
+            hi = max(period_idxs)
+            missing = []
+            have = set(period_idxs)
+            for idx in range(lo, hi + 1):
+                if idx not in have:
+                    missing.append(_index_to_period(idx))
+            if missing:
+                issue = {"code": "missing_periods", "project": proj, "missing": missing}
+                anomaly_issues.append(issue)
+
+        def _flag_outliers(vals: List[float], field: str) -> None:
+            if len(vals) < 3:
+                return
+            med = statistics.median(vals)
+            if med <= 0:
+                return
+            for g in gs:
+                s = g.get("summary") or {}
+                v = s.get(field)
+                if not isinstance(v, (int, float)):
+                    continue
+                if float(v) > med * 2.5:
+                    issue = {"code": "outlier_high", "project": proj, "period": g.get("period"), "field": field, "value": float(v), "median": float(med)}
+                    g["issues"].append(issue)
+                    anomaly_issues.append(issue)
+                if float(v) < med * 0.2:
+                    issue = {"code": "outlier_low", "project": proj, "period": g.get("period"), "field": field, "value": float(v), "median": float(med)}
+                    g["issues"].append(issue)
+                    anomaly_issues.append(issue)
+
+        _flag_outliers(income_vals, "income_total")
+        _flag_outliers(expense_vals, "expense_total")
+
     return {
         "root": str(root),
         "pdf_dir": AUDIDOC_PDF_DIR,
@@ -653,7 +983,7 @@ def _audit_cross_checks(args: AuditCrossChecksArgs) -> Dict[str, Any]:
         },
         "documents": docs,
         "groups": list(groups.values()),
-        "issues": cross_issues,
+        "issues": [*cross_issues, *anomaly_issues],
         "timestampMs": _utc_ms(),
     }
 
@@ -1186,7 +1516,7 @@ async def chat(req: ChatArgs = Body(...)) -> Dict[str, Any]:
 
     if lower in {"help", "?"}:
         return {
-            "reply": "Commands:\n- list\n- show <index>\n- show <path>\n- search <text>\n- cross\n- cross <period>\n\nNotes: 'cross' runs minimal cross-doc checks using folder/filename claims.",
+            "reply": "Commands:\n- list\n- show <index>\n- show <path>\n- search <text>\n- cross\n- cross <period>\n- overrides\n- set <index|path> <field> <value>\n- clear <index|path> [field]\n\nFields: project | period | doc_type | amount_total\nNotes: 'cross' runs cross-doc checks using folder/filename claims + any overrides.",
             "mode": "help",
         }
 
@@ -1222,6 +1552,93 @@ async def chat(req: ChatArgs = Body(...)) -> Dict[str, Any]:
         docs = data.get("documents") or []
         hits = _search_previews_in_status(docs, q)
         return {"reply": json.dumps({"query": q, "hits": hits}, ensure_ascii=False, indent=2), "mode": "search"}
+
+    if lower in {"overrides", "override"}:
+        data = _load_overrides()
+        ovs = data.get("overrides") if isinstance(data, dict) else {}
+        keys = sorted(list(ovs.keys())) if isinstance(ovs, dict) else []
+        return {
+            "reply": json.dumps({"path": str(_overrides_path()), "count": len(keys), "keys": keys, "overrides": ovs}, ensure_ascii=False, indent=2),
+            "mode": "overrides",
+        }
+
+    if lower.startswith("set "):
+        rest = msg[4:].strip()
+        parts = rest.split(None, 2)
+        if len(parts) < 3:
+            raise HTTPException(status_code=400, detail="invalid_set_syntax")
+        target, field, value_raw = parts[0].strip(), parts[1].strip(), parts[2].strip()
+        if field not in {"project", "period", "doc_type", "amount_total"}:
+            raise HTTPException(status_code=400, detail="invalid_override_field")
+
+        selected: Optional[Path] = None
+        if target.isdigit():
+            idx = int(target)
+            if 1 <= idx <= len(pdfs):
+                selected = pdfs[idx - 1]
+        else:
+            try:
+                selected = _safe_resolve_under_root(target)
+            except HTTPException:
+                selected = None
+        if not selected:
+            raise HTTPException(status_code=404, detail="not_found")
+
+        root = Path(AUDIDOC_ROOT).resolve()
+        try:
+            rel_out = str(selected.relative_to(root))
+        except Exception:
+            rel_out = str(selected)
+
+        value: Any = value_raw
+        if field == "amount_total":
+            try:
+                value = float(value_raw)
+            except Exception:
+                raise HTTPException(status_code=400, detail="invalid_amount_total")
+
+        _set_override_for_relpath(rel_out, field, value)
+        return {
+            "reply": json.dumps({"ok": True, "path": rel_out, "field": field, "value": value}, ensure_ascii=False, indent=2),
+            "mode": "set",
+        }
+
+    if lower.startswith("clear "):
+        rest = msg[6:].strip()
+        parts = rest.split(None, 1)
+        if not parts:
+            raise HTTPException(status_code=400, detail="invalid_clear_syntax")
+        target = parts[0].strip()
+        field = parts[1].strip() if len(parts) > 1 else None
+        if field == "":
+            field = None
+        if field is not None and field not in {"project", "period", "doc_type", "amount_total"}:
+            raise HTTPException(status_code=400, detail="invalid_override_field")
+
+        selected = None
+        if target.isdigit():
+            idx = int(target)
+            if 1 <= idx <= len(pdfs):
+                selected = pdfs[idx - 1]
+        else:
+            try:
+                selected = _safe_resolve_under_root(target)
+            except HTTPException:
+                selected = None
+        if not selected:
+            raise HTTPException(status_code=404, detail="not_found")
+
+        root = Path(AUDIDOC_ROOT).resolve()
+        try:
+            rel_out = str(selected.relative_to(root))
+        except Exception:
+            rel_out = str(selected)
+
+        _clear_override_for_relpath(rel_out, field)
+        return {
+            "reply": json.dumps({"ok": True, "path": rel_out, "cleared": field or "*"}, ensure_ascii=False, indent=2),
+            "mode": "clear",
+        }
 
     if lower == "cross":
         out = _audit_cross_checks(AuditCrossChecksArgs(auto_discover=True))
