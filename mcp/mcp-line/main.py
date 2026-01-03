@@ -16,6 +16,11 @@ logger = logging.getLogger("mcp-line")
 LINE_CHANNEL_SECRET = (os.getenv("LINE_CHANNEL_SECRET") or "").strip()
 LINE_CHANNEL_ACCESS_TOKEN = (os.getenv("LINE_CHANNEL_ACCESS_TOKEN") or "").strip()
 
+LINE_USE_GLAMA = (os.getenv("LINE_USE_GLAMA") or "").strip().lower() in ("1", "true", "yes", "on")
+GLAMA_MCP_URL = (os.getenv("GLAMA_MCP_URL") or "").strip()
+GLAMA_MODEL = (os.getenv("GLAMA_MODEL") or "").strip()
+GLAMA_SYSTEM_PROMPT = (os.getenv("GLAMA_SYSTEM_PROMPT") or "").strip()
+
 
 def _verify_line_signature(raw_body: bytes, signature_b64: Optional[str]) -> bool:
     if not LINE_CHANNEL_SECRET:
@@ -52,12 +57,50 @@ async def _reply_message(reply_token: str, text: str) -> None:
             raise RuntimeError(f"line_reply_failed_{resp.status_code}:{detail}")
 
 
+async def _generate_reply(text: str) -> str:
+    cleaned = (text or "").strip()
+    if not cleaned:
+        return "ok"
+
+    if not (LINE_USE_GLAMA and GLAMA_MCP_URL):
+        return f"ok: {cleaned}"
+
+    system_prompt = GLAMA_SYSTEM_PROMPT or "You are a helpful assistant replying to a LINE chat message. Keep replies concise."
+    payload: Dict[str, Any] = {
+        "tool": "chat_completion",
+        "arguments": {
+            "prompt": cleaned,
+            "system_prompt": system_prompt,
+        },
+    }
+    if GLAMA_MODEL:
+        payload["arguments"]["model"] = GLAMA_MODEL
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(GLAMA_MCP_URL, json=payload)
+        if resp.status_code >= 400:
+            logger.warning("Glama invoke failed: status=%s body=%s", resp.status_code, (resp.text or "").strip())
+            return f"ok: {cleaned}"
+
+        data = resp.json() if resp.headers.get("content-type", "").lower().startswith("application/json") else {}
+        result = (data or {}).get("result") or {}
+        out = (result or {}).get("response") or ""
+        out = (out or "").strip()
+        return out or f"ok: {cleaned}"
+    except Exception as exc:
+        logger.warning("Glama invoke exception: %s", str(exc))
+        return f"ok: {cleaned}"
+
+
 @app.get("/health")
 async def health() -> Dict[str, Any]:
     return {
         "status": "ok",
         "signatureConfigured": bool(LINE_CHANNEL_SECRET),
         "accessTokenConfigured": bool(LINE_CHANNEL_ACCESS_TOKEN),
+        "useGlama": bool(LINE_USE_GLAMA and GLAMA_MCP_URL),
+        "glamaUrl": GLAMA_MCP_URL,
     }
 
 
@@ -92,7 +135,8 @@ async def webhook_line(
             text = message.get("text")
 
             if evt_type == "message" and message_type == "text" and reply_token:
-                await _reply_message(reply_token=reply_token, text=f"ok: {text}")
+                reply_text = await _generate_reply(text=text or "")
+                await _reply_message(reply_token=reply_token, text=reply_text)
         except Exception as exc:
             reply_errors.append(str(exc))
 

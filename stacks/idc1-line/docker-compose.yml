@@ -6,6 +6,7 @@ x-default-service: &default-service
     - .env
   networks:
     - idc1-line-net
+    - idc1-stack-net
   logging:
     driver: "json-file"
     options:
@@ -30,5 +31,9 @@ services:
 
 networks:
   idc1-line-net:
+    driver: bridge
+    external: true
+
+  idc1-stack-net:
     driver: bridge
     external: true
