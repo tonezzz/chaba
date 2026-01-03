@@ -18,10 +18,20 @@ RUN mkdir -p /etc/apt/keyrings \
   && apt-get install -y --no-install-recommends nodejs \
   && rm -rf /var/lib/apt/lists/*
 
-COPY mcp-tasks/stacks/idc1-stack/1mcp-agent/docker-mcp-stdio.sh /usr/local/bin/docker-mcp-stdio
+COPY docker-mcp-stdio.sh /usr/local/bin/docker-mcp-stdio
 RUN chmod +x /usr/local/bin/docker-mcp-stdio
 
 RUN npm install -g corepack && corepack enable
+
+# Install portainer-mcp (MCP server for Portainer)
+RUN curl -fsSL -o /tmp/portainer-mcp.tar.gz \
+    https://github.com/portainer/portainer-mcp/releases/download/v0.6.0/portainer-mcp-v0.6.0-linux-amd64.tar.gz \
+  && tar -xzf /tmp/portainer-mcp.tar.gz -C /usr/local/bin \
+  && rm -f /tmp/portainer-mcp.tar.gz \
+  && chmod +x /usr/local/bin/portainer-mcp
+
+COPY portainer-mcp-stdio.sh /usr/local/bin/portainer-mcp-stdio
+RUN chmod +x /usr/local/bin/portainer-mcp-stdio
 
 # Build 1MCP from local source (requires docker-compose build.context = C:\chaba_wt)
 COPY voyant/1mcp-agent-src /opt/1mcp-agent-src
