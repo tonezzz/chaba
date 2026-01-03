@@ -98,3 +98,16 @@ deka.idc1.surf-thailand.com {
         output file /var/log/caddy/deka.idc1.access.log
     }
 }
+
+portainer.idc1.surf-thailand.com {
+    encode gzip zstd
+
+    @vpn_only not remote_ip 10.8.0.0/24 127.0.0.1
+    respond @vpn_only 403
+
+    reverse_proxy http://127.0.0.1:9000
+
+    log {
+        output file /var/log/caddy/portainer.idc1.access.log
+    }
+}
