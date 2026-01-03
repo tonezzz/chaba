@@ -32,24 +32,24 @@ def _safe_resolve_under_root(raw_path: str) -> Path:
     if not raw_path or not isinstance(raw_path, str):
         raise HTTPException(status_code=400, detail="missing_path")
 
-    root = Path(AUDIDOC_ROOT).resolve()
-    candidate = (root / raw_path).resolve()
-
-    try:
-        candidate.relative_to(root)
-    except Exception:
+    raw = str(raw_path).strip().replace("/", os.sep).replace("\\", os.sep)
+    rel = Path(raw)
+    if rel.is_absolute() or rel.drive:
+        raise HTTPException(status_code=403, detail="path_outside_root")
+    if any(part == ".." for part in rel.parts):
         raise HTTPException(status_code=403, detail="path_outside_root")
 
+    root = Path(AUDIDOC_ROOT).resolve()
+    candidate = root / rel
     return candidate
 
 
 def _discover_pdfs() -> List[Path]:
     root = Path(AUDIDOC_ROOT).resolve()
-    base = (root / AUDIDOC_PDF_DIR).resolve()
-    try:
-        base.relative_to(root)
-    except Exception:
+    rel = Path((AUDIDOC_PDF_DIR or "").strip().replace("/", os.sep).replace("\\", os.sep))
+    if rel.is_absolute() or rel.drive or any(part == ".." for part in rel.parts) or str(rel) in ("", "."):
         raise HTTPException(status_code=500, detail="AUDIDOC_PDF_DIR_outside_root")
+    base = root / rel
     if not base.exists() or not base.is_dir():
         return []
     pdfs = sorted([p for p in base.rglob("*.pdf") if p.is_file()])
@@ -185,12 +185,21 @@ def _normalize_text(v: str) -> str:
 def _infer_project_from_path(path: Path) -> Optional[str]:
     root = Path(AUDIDOC_ROOT).resolve()
     try:
-        rel = path.resolve().relative_to(root)
+        rel = path.relative_to(root)
     except Exception:
-        rel = path
+        rel = None
 
-    parts = list(rel.parts)
+    parts = list(rel.parts) if rel is not None else []
     if not parts:
+        # best-effort fallback: look for '\\audidoc-pdfs\\<project>\\' in the raw path
+        s = str(path)
+        marker = os.sep + AUDIDOC_PDF_DIR + os.sep
+        idx = s.lower().find(marker.lower())
+        if idx >= 0:
+            tail = s[idx + len(marker) :]
+            project = tail.split(os.sep, 1)[0] if tail else ""
+            project = _normalize_text(project)
+            return project or None
         return None
     if parts[0].lower() == AUDIDOC_PDF_DIR.lower() and len(parts) >= 2:
         return _normalize_text(parts[1]) or None
