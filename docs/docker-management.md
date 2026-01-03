@@ -70,10 +70,6 @@ In `stacks/idc1-stack/.env`:
 - `MCP_DOCKER_BUILD_CONTEXT=../../mcp/mcp-docker`
 - `MCP_DOCKER_PORT=8340`
 
-### mcp0 provider registration
-`stacks/idc1-stack/.env.example` registers `mcp-docker` in `MCP0_PROVIDERS`:
-- `mcp-docker:http://mcp-docker:${MCP_DOCKER_PORT}|health=/health|capabilities=/.well-known/mcp.json`
-
 ### Bring up
 On the idc1 host:
 - Copy `stacks/idc1-stack/.env.example` to `stacks/idc1-stack/.env`

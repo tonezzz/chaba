@@ -288,9 +288,8 @@ Start/recreate VPN services:
 
 Verify (client):
 - `nslookup idc1.vpn 10.8.0.1`
-- `nslookup mcp0.idc1.vpn 10.8.0.1`
 - `ssh chaba@idc1.vpn`
-- `curl -sf http://mcp0.idc1.vpn:${MCP_DOCKER_PORT:-8340}/health`
+- `curl -sf http://idc1.vpn:${MCP_DOCKER_PORT:-8340}/health`
 
 ## SSH over VPN (idc1.vpn)
 `idc1.vpn` resolves to `10.8.0.1`, which is the `wg0` IP **inside** the `idc1-wg-easy` container.
