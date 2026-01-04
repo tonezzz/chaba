@@ -13,22 +13,22 @@ $StacksDir = "stacks"
 $StackCommands = @{
     "core" = @{
         "path" = "$StacksDir/pc2-core"
-        "compose" = "docker-compose --profile base-tools"
+        "profile" = "base-tools"
         "description" = "Core services (node-runner, python-runner, redis, dev-proxy)"
     }
     "tools" = @{
         "path" = "$StacksDir/pc2-tools"
-        "compose" = "docker-compose --profile mcp-suite"
+        "profile" = "mcp-suite"
         "description" = "MCP tools (mcp-docker, mcp-glama, mcp-devops)"
     }
     "web" = @{
         "path" = "$StacksDir/pc2-web"
-        "compose" = "docker-compose"
+        "profile" = ""
         "description" = "Web services (webtops-router, mcp-webtops, webtops-cp)"
     }
     "devops" = @{
         "path" = "$StacksDir/pc2-devops"
-        "compose" = "docker-compose --profile mcp-suite"
+        "profile" = "mcp-suite"
         "description" = "DevOps tools (mcp-tester, mcp-agents, mcp-playwright, specialized services)"
     }
 }
@@ -37,8 +37,13 @@ function Start-Stack {
     param($StackName, $Command)
     
     Write-Host "Starting $StackName..." -ForegroundColor Cyan
-    Set-Location $Command.path
-    & $Command.compose up -d
+    $stackId = Split-Path -Leaf $Command.path
+    $profile = $Command.profile
+    if ($profile) {
+        & (Join-Path $PSScriptRoot 'stack.ps1') -Stack $stackId -Action up -Profile $profile
+    } else {
+        & (Join-Path $PSScriptRoot 'stack.ps1') -Stack $stackId -Action up
+    }
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to start $StackName" -ForegroundColor Red
         return $false
@@ -51,8 +56,8 @@ function Stop-Stack {
     param($StackName, $Command)
     
     Write-Host "Stopping $StackName..." -ForegroundColor Yellow
-    Set-Location $Command.path
-    docker-compose down
+    $stackId = Split-Path -Leaf $Command.path
+    & (Join-Path $PSScriptRoot 'stack.ps1') -Stack $stackId -Action down
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to stop $StackName" -ForegroundColor Red
         return $false
@@ -64,10 +69,9 @@ function Stop-Stack {
 function Get-StackStatus {
     param($StackName, $Command)
     
-    Set-Location $Command.path
-    $status = docker-compose ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
+    $stackId = Split-Path -Leaf $Command.path
+    & (Join-Path $PSScriptRoot 'stack.ps1') -Stack $stackId -Action status
     Write-Host "`n=== $StackName Status ===" -ForegroundColor Cyan
-    Write-Host $status
 }
 
 function Get-StackLogs {
