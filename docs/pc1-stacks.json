@@ -118,24 +118,24 @@
                 }
             ]
         },
-        "pc1-web": {
+        "pc1-apps": {
             "description": "Web services and user interfaces",
             "containers": [
                 {
-                    "name": "pc1-web-openchat-ui",
+                    "name": "pc1-apps-openchat-ui",
                     "service": "openchat-ui",
                     "port": 3170,
                     "internal_port": 3000,
                     "purpose": "Chat interface UI"
                 },
                 {
-                    "name": "pc1-web-caddy",
+                    "name": "pc1-apps-caddy",
                     "service": "caddy",
                     "ports": ["3080->80", "3443->443"],
                     "purpose": "Reverse proxy and web server"
                 },
                 {
-                    "name": "pc1-web-dev-host",
+                    "name": "pc1-apps-dev-host",
                     "service": "dev-host",
                     "ports": ["2223->22", "3100->3000"],
                     "purpose": "Development host environment"
@@ -210,7 +210,7 @@
         "ai_services": 5,
         "db_services": 7,
         "web_services": 3,
-        "specialized_stacks": ["pc1-gpu", "pc1-deka", "pc1-devops", "pc1-ai", "pc1-db", "pc1-web"],
+        "specialized_stacks": ["pc1-gpu", "pc1-deka", "pc1-devops", "pc1-ai", "pc1-db", "pc1-apps"],
         "main_stack": "pc1-stack"
     }
 }
