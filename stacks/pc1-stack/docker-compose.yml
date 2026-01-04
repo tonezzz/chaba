@@ -230,6 +230,26 @@ services:
     volumes:
       - ../../:/workspace:cached
 
+  mcp-docker:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_DOCKER_BUILD_CONTEXT:-../../mcp/mcp-docker}
+    container_name: pc1-mcp-docker
+    ports:
+      - "${MCP_DOCKER_PORT:-8340}:${MCP_DOCKER_PORT:-8340}"
+    environment:
+      DOCKER_HOST: ${MCP_DOCKER_DOCKER_HOST:-unix:///var/run/docker.sock}
+      PORT: ${MCP_DOCKER_PORT:-8340}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_DOCKER_PORT:-8340}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   mcp-http:
     <<: *default-service
     profiles: ["mcp-suite"]

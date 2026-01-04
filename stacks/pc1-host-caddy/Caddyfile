@@ -8,6 +8,25 @@
     }
 }
 
+line.pc1.vpn {
+    tls internal
+
+    route {
+        handle_path /openai* {
+            reverse_proxy http://host.docker.internal:8181
+        }
+
+        handle /docs* {
+            reverse_proxy http://host.docker.internal:8066
+        }
+
+        handle {
+            root * /srv/line-ui
+            file_server
+        }
+    }
+}
+
 pc1.vpn, *.pc1.vpn {
     tls internal
     import pc1_routes
