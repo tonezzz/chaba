@@ -23,6 +23,81 @@ AUDIDOC_ROOT = (os.getenv("AUDIDOC_ROOT") or os.getcwd()).strip()
 AUDIDOC_PDF_DIR = (os.getenv("AUDIDOC_PDF_DIR") or "audidoc-pdfs").strip()
 
 
+def _ocr_enabled() -> bool:
+    v = (os.getenv("OCR_ENABLED") or "").strip().lower()
+    return v in {"1", "true", "yes", "y", "on"}
+
+
+def _text_looks_garbled(text: str) -> bool:
+    s = text or ""
+    if not s:
+        return True
+    s2 = "".join(s.split())
+    if not s2:
+        return True
+    q = s2.count("?")
+    q_ratio = q / max(1, len(s2))
+    thai = len(re.findall(r"[\u0E00-\u0E7F]", s))
+    if thai >= 10:
+        return False
+    return q_ratio >= 0.03
+
+
+def _ocr_pdf_text(path: Path, *, max_pages: int) -> Tuple[str, List[Dict[str, Any]]]:
+    issues: List[Dict[str, Any]] = []
+    try:
+        from pdf2image import convert_from_path  # type: ignore
+    except Exception as exc:
+        issues.append({"code": "ocr_deps_missing", "path": str(path), "detail": f"pdf2image: {exc}"})
+        return "", issues
+
+    try:
+        import pytesseract  # type: ignore
+    except Exception as exc:
+        issues.append({"code": "ocr_deps_missing", "path": str(path), "detail": f"pytesseract: {exc}"})
+        return "", issues
+
+    tcmd = (os.getenv("OCR_TESSERACT_CMD") or "").strip()
+    if tcmd:
+        try:
+            pytesseract.pytesseract.tesseract_cmd = tcmd
+        except Exception:
+            issues.append({"code": "ocr_tesseract_cmd_set_failed", "path": str(path)})
+
+    lang = (os.getenv("OCR_LANG") or "tha+eng").strip() or "tha+eng"
+    poppler_path = (os.getenv("OCR_POPPLER_PATH") or "").strip() or None
+
+    pages_to_read = min(max(0, max_pages), 10)
+    if pages_to_read <= 0:
+        return "", issues
+
+    try:
+        images = convert_from_path(
+            str(path),
+            first_page=1,
+            last_page=pages_to_read,
+            poppler_path=poppler_path,
+        )
+    except Exception as exc:
+        issues.append({"code": "ocr_render_failed", "path": str(path), "detail": str(exc)})
+        return "", issues
+
+    texts: List[str] = []
+    for i, img in enumerate(images, start=1):
+        try:
+            t = pytesseract.image_to_string(img, lang=lang) or ""
+        except Exception as exc:
+            issues.append({"code": "ocr_tesseract_failed", "path": str(path), "page": i, "detail": str(exc)})
+            t = ""
+        texts.append(t)
+
+    combined = "\n".join(texts)
+    combined = _compact_number_separators(_normalize_text(combined))
+    if combined:
+        issues.append({"code": "ocr_used", "path": str(path), "pages": min(pages_to_read, len(images)), "lang": lang})
+    return combined, issues
+
+
 def _utc_ms() -> int:
     import time
 
@@ -399,24 +474,8 @@ def _extract_pdf_total_amount(
     path: Path, *, max_pages: int, keywords: List[str]
 ) -> Tuple[Optional[float], List[Dict[str, Any]]]:
     issues: List[Dict[str, Any]] = []
-    try:
-        reader = PdfReader(str(path))
-    except Exception as exc:
-        issues.append({"code": "pdf_parse_failed", "path": str(path), "detail": str(exc)})
-        return None, issues
-
-    page_count = len(reader.pages) if getattr(reader, "pages", None) is not None else 0
-    pages_to_read = min(max(0, max_pages), page_count, 10)
-    if pages_to_read <= 0:
-        return None, issues
-
-    texts: List[str] = []
-    for i in range(pages_to_read):
-        try:
-            texts.append(reader.pages[i].extract_text() or "")
-        except Exception as exc:
-            issues.append({"code": "pdf_text_extract_failed", "path": str(path), "page": i + 1, "detail": str(exc)})
-    combined = "\n".join(texts)
+    combined, extra_issues = _extract_pdf_text_combined(path, max_pages=max_pages)
+    issues.extend(extra_issues)
     combined = _normalize_text(combined)
 
     candidates = _extract_amount_candidates(combined, keywords=keywords)
@@ -441,33 +500,19 @@ def _extract_pdf_total_amount(
 
 def _extract_pdf_receipts_sum(path: Path, *, max_pages: int) -> Tuple[Optional[float], List[Dict[str, Any]]]:
     issues: List[Dict[str, Any]] = []
-    try:
-        reader = PdfReader(str(path))
-    except Exception as exc:
-        issues.append({"code": "pdf_parse_failed", "path": str(path), "detail": str(exc)})
-        return None, issues
-
-    page_count = len(reader.pages) if getattr(reader, "pages", None) is not None else 0
-    pages_to_read = min(max(0, max_pages), page_count, 10)
-    if pages_to_read <= 0:
-        return None, issues
+    text, extra_issues = _extract_pdf_text_combined(path, max_pages=max_pages)
+    issues.extend(extra_issues)
+    text = _compact_number_separators(text)
 
     total = 0.0
     saw_any = False
-    for i in range(pages_to_read):
-        try:
-            text = reader.pages[i].extract_text() or ""
-        except Exception as exc:
-            issues.append({"code": "pdf_text_extract_failed", "path": str(path), "page": i + 1, "detail": str(exc)})
-            text = ""
-        text = _compact_number_separators(text)
-        # Example: (7,800.00) (200.00)
-        for m in re.findall(r"\((\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)\)", text):
-            v = _parse_amount_token(m)
-            if v is None:
-                continue
-            saw_any = True
-            total += abs(float(v))
+    # Example: (7,800.00) (200.00)
+    for m in re.findall(r"\((\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)\)", text):
+        v = _parse_amount_token(m)
+        if v is None:
+            continue
+        saw_any = True
+        total += abs(float(v))
 
     if not saw_any:
         return None, issues
@@ -512,34 +557,18 @@ def _extract_pdf_max_money(path: Path, *, max_pages: int) -> Tuple[Optional[floa
 
 def _extract_pdf_money_tokens(path: Path, *, max_pages: int) -> Tuple[List[float], List[Dict[str, Any]]]:
     issues: List[Dict[str, Any]] = []
+    text, extra_issues = _extract_pdf_text_combined(path, max_pages=max_pages)
+    issues.extend(extra_issues)
+
     tokens: List[float] = []
-    try:
-        reader = PdfReader(str(path))
-    except Exception as exc:
-        issues.append({"code": "pdf_parse_failed", "path": str(path), "detail": str(exc)})
-        return tokens, issues
-
-    page_count = len(reader.pages) if getattr(reader, "pages", None) is not None else 0
-    pages_to_read = min(max(0, max_pages), page_count, 10)
-    if pages_to_read <= 0:
-        return tokens, issues
-
     money_re = re.compile(r"(\d{1,3}(?:,\d{3})*\.\d{2}|\d+\.\d{2})")
-    for i in range(pages_to_read):
-        try:
-            text = reader.pages[i].extract_text() or ""
-        except Exception as exc:
-            issues.append({"code": "pdf_text_extract_failed", "path": str(path), "page": i + 1, "detail": str(exc)})
+    for token in money_re.findall(_compact_number_separators(text)):
+        v = _parse_amount_token(token)
+        if v is None:
             continue
-
-        text = _compact_number_separators(text)
-        for token in money_re.findall(text):
-            v = _parse_amount_token(token)
-            if v is None:
-                continue
-            if v < 10:
-                continue
-            tokens.append(float(v))
+        if v < 10:
+            continue
+        tokens.append(float(v))
 
     # de-dup while preserving order
     seen: set[float] = set()
@@ -607,6 +636,11 @@ def _extract_pdf_text_combined(path: Path, *, max_pages: int) -> Tuple[str, List
 
     combined = "\n".join(texts)
     combined = _compact_number_separators(_normalize_text(combined))
+    if _ocr_enabled() and _text_looks_garbled(combined):
+        ocr_text, ocr_issues = _ocr_pdf_text(path, max_pages=max_pages)
+        issues.extend(ocr_issues)
+        if ocr_text:
+            return ocr_text, issues
     return combined, issues
 
 
@@ -1516,8 +1550,15 @@ async def chat(req: ChatArgs = Body(...)) -> Dict[str, Any]:
 
     if lower in {"help", "?"}:
         return {
-            "reply": "Commands:\n- list\n- show <index>\n- show <path>\n- search <text>\n- cross\n- cross <period>\n- overrides\n- set <index|path> <field> <value>\n- clear <index|path> [field]\n\nFields: project | period | doc_type | amount_total\nNotes: 'cross' runs cross-doc checks using folder/filename claims + any overrides.",
+            "reply": "Commands:\n- list\n- show <index>\n- show <path>\n- search <text>\n- cross\n- cross <period>\n- tools\n- overrides\n- set <index|path> <field> <value>\n- clear <index|path> [field]\n\nFields: project | period | doc_type | amount_total\nNotes: 'cross' runs cross-doc checks using folder/filename claims + any overrides.",
             "mode": "help",
+        }
+
+    if lower in {"tools", "tool", "tool list", "tools list"}:
+        tools = _tool_definitions()
+        return {
+            "reply": json.dumps({"tools": tools}, ensure_ascii=False, indent=2),
+            "mode": "tools",
         }
 
     if lower in {"list", "ls"}:
