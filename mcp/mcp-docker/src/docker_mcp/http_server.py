@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+from json import JSONDecodeError
 import os
 from typing import Any, Dict, List
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from python_on_whales import DockerException
@@ -115,6 +116,13 @@ class InvokeResponse(BaseModel):
     outputs: List[Dict[str, str]]
 
 
+class JsonRpcResponse(BaseModel):
+    jsonrpc: str = "2.0"
+    id: Any
+    result: Dict[str, Any] | None = None
+    error: Dict[str, Any] | None = None
+
+
 app = FastAPI(title=APP_NAME, version=APP_VERSION)
 app.add_middleware(
     CORSMiddleware,
@@ -186,6 +194,79 @@ async def invoke(request: InvokeRequest) -> InvokeResponse:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
     return InvokeResponse(tool=tool_name, outputs=_serialize_outputs(outputs))
+
+
+@app.post("/mcp")
+async def mcp_jsonrpc(request: Request) -> Any:
+    try:
+        payload = await request.json()
+    except JSONDecodeError:
+        return {
+            "jsonrpc": "2.0",
+            "id": None,
+            "error": {"code": -32700, "message": "Parse error"},
+        }
+
+    if isinstance(payload, list):
+        return [await _handle_mcp_message(item) for item in payload]
+
+    return await _handle_mcp_message(payload)
+
+
+async def _handle_mcp_message(message: Dict[str, Any]) -> Dict[str, Any]:
+    rpc_id = message.get("id")
+    method = message.get("method")
+    params = message.get("params") or {}
+
+    response: Dict[str, Any] = {"jsonrpc": "2.0", "id": rpc_id}
+
+    try:
+        if method == "tools/list":
+            tools: List[Dict[str, Any]] = []
+            for tool in _tool_definitions():
+                tools.append(
+                    {
+                        "name": tool.get("name"),
+                        "description": tool.get("description", ""),
+                        "inputSchema": tool.get("input_schema") or {"type": "object"},
+                    }
+                )
+
+            response["result"] = {"tools": tools}
+            return response
+
+        if method == "tools/call":
+            tool_name = (params.get("name") or "").strip()
+            arguments = params.get("arguments") or {}
+
+            handler = TOOL_DISPATCH.get(tool_name)
+            if not handler:
+                response["error"] = {
+                    "code": -32601,
+                    "message": f"Tool '{tool_name}' not found",
+                }
+                return response
+
+            outputs = await handler(arguments)
+            response["result"] = {"content": _serialize_outputs(outputs)}
+            return response
+
+        if method == "resources/list":
+            response["result"] = {"resources": []}
+            return response
+
+        if method == "prompts/list":
+            response["result"] = {"prompts": []}
+            return response
+
+        response["error"] = {"code": -32601, "message": f"Method '{method}' not found"}
+        return response
+    except HTTPException as exc:
+        response["error"] = {"code": -32000, "message": str(exc.detail)}
+        return response
+    except Exception as exc:  # noqa: BLE001
+        response["error"] = {"code": -32000, "message": str(exc)}
+        return response
 
 
 def create_app() -> FastAPI:
