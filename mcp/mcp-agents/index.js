@@ -428,7 +428,6 @@ app.get('/health', async (_req, res) => {
     out.agents = { status: 'error', detail: error.message };
     out.upstream_ok = false;
   }
-  // Always 200 so container healthcheck reflects service health, not upstream dependency health.
   res.json(out);
 });
 
