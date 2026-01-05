@@ -13,6 +13,21 @@ x-default-service: &default-service
       max-file: "3"
 
 services:
+  caddy:
+    <<: *default-service
+    image: caddy:2-alpine
+    container_name: pc1-web-caddy
+    ports:
+      - "10.8.0.11:80:80"
+      - "10.8.0.11:443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../pc1-host-caddy/line-ui:/srv/line-ui:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    environment:
+      CADDY_ADMIN: "0.0.0.0:2019"
+
   webtop2:
     <<: *default-service
     image: lscr.io/linuxserver/webtop:latest
@@ -92,3 +107,5 @@ volumes:
   webtop2-config:
   webtops_windsurf_cache:
   webtops_workspaces:
+  caddy-data:
+  caddy-config:
