@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
+import datetime
 import json
 import logging
+import math
 import os
 import re
-import socket
 import subprocess
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, AsyncGenerator, Dict, Iterable, List, Literal, Optional, Tuple
 from urllib.parse import urlparse, urlunparse
 from urllib.parse import urljoin
 
@@ -140,6 +142,333 @@ def _maybe_extract_filter_from_message(message: str) -> Dict[str, str]:
     if m:
         out["receipt"] = m.group(1)
     return out
+
+
+def _parse_query_args_from_message(message: str) -> Optional[AccQueryArgs]:
+    msg = str(message or "").strip()
+    if not msg:
+        return None
+
+    lower = msg.lower()
+    sheet: Literal["income", "expense", "both"] = "both"
+    if "income" in lower or "รายรับ" in msg:
+        sheet = "income"
+    if "expense" in lower or "รายจ่าย" in msg:
+        sheet = "expense" if sheet == "both" else sheet
+    if "both" in lower or "ทั้ง" in msg:
+        sheet = "both"
+
+    yy_mm = ""
+    m = re.search(r"\b\d{2}_\d{2}\b", msg)
+    if m:
+        yy_mm = m.group(0)
+    else:
+        m2 = re.search(r"yy_mm\s*[:=]\s*([0-9]{2}_[0-9]{2})", lower)
+        if m2:
+            yy_mm = m2.group(1)
+
+    unit = ""
+    m = re.search(r"\b[a-zA-Z]\s*[-_ ]?\s*\d{1,4}\b", msg)
+    if m:
+        unit = m.group(0)
+    else:
+        m2 = re.search(r"unit\s*[:=]\s*([a-zA-Z]-\d{1,4})", msg)
+        if m2:
+            unit = m2.group(1)
+
+    receipt = ""
+    # Common formats: 2029/1465, NAI2568.009, NAC2567.001
+    m = re.search(r"\b\d{3,5}/\d{2,6}\b", msg)
+    if m:
+        receipt = m.group(0)
+    else:
+        m3 = re.search(r"\b[A-Z]{2,4}\d{4}\.\d{3}\b", msg)
+        if m3:
+            receipt = m3.group(0)
+        else:
+            m2 = re.search(r"receipt\s*[:=]\s*([^\s]+)", lower)
+            if m2:
+                receipt = m2.group(1)
+
+    if unit:
+        unit = unit.replace(" ", "").replace("_", "-")
+        m_unit = re.match(r"^([A-Za-z])(\d{1,4})$", unit)
+        if m_unit:
+            unit = f"{m_unit.group(1)}-{m_unit.group(2)}"
+
+    pv = ""
+    m = re.search(r"\bpv\s*[:=]\s*([^\s]+)", msg, flags=re.IGNORECASE)
+    if m:
+        pv = m.group(1)
+
+    contains = ""
+    m = re.search(r"contains\s*[:=]\s*(.+)$", msg, flags=re.IGNORECASE)
+    if m:
+        contains = m.group(1).strip()
+
+    should_query = False
+    if yy_mm or unit or receipt or pv or contains:
+        should_query = True
+    if lower.startswith("list") or lower.startswith("show") or "หา" in msg or "ค้น" in msg:
+        should_query = True
+
+    if not should_query:
+        return None
+
+    return AccQueryArgs(sheet=sheet, contains=contains, receipt=receipt, pv=pv, unit=unit, yy_mm=yy_mm, limit=50)
+
+
+def _parse_query_intent_from_message(message: str) -> Tuple[str, Optional[AccQueryArgs], Optional[int]]:
+    # Returns (mode, args, top_n). mode in: table|sum|top|none
+    msg = str(message or "").strip()
+    if not msg:
+        return ("none", None, None)
+    lower = msg.lower()
+
+    qargs = _parse_query_args_from_message(msg)
+    if qargs is None:
+        return ("none", None, None)
+
+    if (
+        lower.startswith("sum")
+        or "รวม" in msg
+        or "ยอดรวม" in msg
+        or "สรุป" in msg
+        or "สรุปยอด" in msg
+        or "total" in lower
+    ):
+        return ("sum", qargs, None)
+
+    m = re.search(r"\btop\s*(\d{1,2})\b", lower)
+    if m:
+        return ("top", qargs, int(m.group(1)))
+    if lower.startswith("top"):
+        return ("top", qargs, 10)
+
+    # Thai top-N patterns
+    m = re.search(r"(?:ท็อป|ทอป|top)\s*(\d{1,2})", msg, flags=re.IGNORECASE)
+    if m:
+        return ("top", qargs, int(m.group(1)))
+    m = re.search(r"\b(\d{1,2})\s*(?:อันดับ|รายการ)\b", msg)
+    if m:
+        return ("top", qargs, int(m.group(1)))
+    if "มากที่สุด" in msg or "สูงสุด" in msg:
+        # Default to top 10 for 'most' queries
+        return ("top", qargs, 10)
+
+    return ("table", qargs, None)
+
+
+def _iter_matching_records(records: List[Dict[str, Any]], args: AccQueryArgs) -> Iterable[Dict[str, Any]]:
+    for r in records:
+        if not isinstance(r, dict):
+            continue
+        if _record_matches_query(r, args):
+            yield r
+
+
+def _extract_amount_for_summary(r: Dict[str, Any]) -> Optional[float]:
+    for k in ("ยอดเงิน", "จำนวนเงิน", "amount", "total", "TOTAL"):
+        v = _parse_amount(r.get(k))
+        if v is not None:
+            return float(v)
+    v2 = _pick_amount_from_record(r)
+    return float(v2) if v2 is not None else None
+
+
+def _render_query_summary(results: Dict[str, Any], args: AccQueryArgs) -> str:
+    def _sum_rows(rows: List[Dict[str, Any]]) -> Tuple[int, float]:
+        c = 0
+        s = 0.0
+        for r in rows:
+            amt = _extract_amount_for_summary(r)
+            if amt is None:
+                continue
+            c += 1
+            s += float(amt)
+        return c, s
+
+    income_rows = (results.get("income") or []) if isinstance(results, dict) else []
+    expense_rows = (results.get("expense") or []) if isinstance(results, dict) else []
+    ic, isum = _sum_rows(income_rows if isinstance(income_rows, list) else [])
+    ec, esum = _sum_rows(expense_rows if isinstance(expense_rows, list) else [])
+    lines: List[str] = []
+    lines.append("สรุปยอด (query)")
+    lines.append(f"- sheet: {args.sheet}")
+    if args.yy_mm:
+        lines.append(f"- yy_mm: {args.yy_mm}")
+    if args.unit:
+        lines.append(f"- unit: {args.unit}")
+    if args.receipt:
+        lines.append(f"- receipt: {args.receipt}")
+    if args.contains:
+        lines.append(f"- contains: {args.contains}")
+    lines.append("")
+    if args.sheet in ("income", "both"):
+        lines.append(f"income: {ic} rows, total={_fmt_money(isum)}")
+    if args.sheet in ("expense", "both"):
+        lines.append(f"expense: {ec} rows, total={_fmt_money(esum)}")
+    return "\n".join(lines).strip() + "\n"
+
+
+def _query_results_from_cache(cache: Dict[str, Any], args: AccQueryArgs) -> Dict[str, Any]:
+    sheets = (cache.get("sheets") or {}) if isinstance(cache, dict) else {}
+    income_records = ((sheets.get("income") or {}).get("records") or [])
+    expense_records = ((sheets.get("expense") or {}).get("records") or [])
+    results: Dict[str, Any] = {"income": [], "expense": []}
+    if args.sheet in ("income", "both"):
+        results["income"] = _query_records(income_records, args)
+    if args.sheet in ("expense", "both"):
+        results["expense"] = _query_records(expense_records, args)
+    return results
+
+
+def _render_query_intent(cache: Dict[str, Any], mode: str, args: AccQueryArgs, top_n: Optional[int]) -> str:
+    results = _query_results_from_cache(cache, args)
+    if mode == "sum":
+        return _render_query_summary(results, args)
+    if mode == "top":
+        n = int(top_n or 10)
+        return _render_query_top(results, args, n)
+    return _render_query_results(results, args)
+
+
+def _render_query_top(results: Dict[str, Any], args: AccQueryArgs, top_n: int) -> str:
+    def _decorate(rows: List[Dict[str, Any]]) -> List[Tuple[float, Dict[str, Any]]]:
+        out: List[Tuple[float, Dict[str, Any]]] = []
+        for r in rows:
+            amt = _extract_amount_for_summary(r)
+            if amt is None:
+                continue
+            out.append((float(amt), r))
+        out.sort(key=lambda x: x[0], reverse=True)
+        return out
+
+    income_rows = (results.get("income") or []) if isinstance(results, dict) else []
+    expense_rows = (results.get("expense") or []) if isinstance(results, dict) else []
+
+    lines: List[str] = []
+    lines.append(f"Top {top_n} (query)")
+    lines.append(f"- sheet: {args.sheet}")
+    if args.yy_mm:
+        lines.append(f"- yy_mm: {args.yy_mm}")
+    if args.unit:
+        lines.append(f"- unit: {args.unit}")
+    if args.contains:
+        lines.append(f"- contains: {args.contains}")
+    lines.append("")
+
+    def _emit(title: str, decorated: List[Tuple[float, Dict[str, Any]]]):
+        lines.append(f"{title}: {min(top_n, len(decorated))}/{len(decorated)}")
+        if not decorated:
+            lines.append("")
+            return
+        lines.append("amount | date | unit | receipt | item")
+        lines.append("---:|---|---|---|---")
+        for amt, r in decorated[:top_n]:
+            dt = str(r.get("วันที่") or r.get("วันที") or r.get("date") or "")
+            un = str(r.get("ยูนิต") or r.get("unit") or "")
+            rc = str(r.get("ใบเสร็จ") or r.get("receipt") or "")
+            desc = str(r.get("รายการ") or r.get("รายละเอียด") or r.get("desc") or "")
+            desc = desc.replace("\n", " ").strip()
+            if len(desc) > 80:
+                desc = desc[:80] + "…"
+            lines.append(f"{_fmt_money(amt)} | {dt} | {un} | {rc} | {desc}")
+        lines.append("")
+
+    if args.sheet in ("income", "both"):
+        _emit("income", _decorate(income_rows if isinstance(income_rows, list) else []))
+    if args.sheet in ("expense", "both"):
+        _emit("expense", _decorate(expense_rows if isinstance(expense_rows, list) else []))
+
+    return "\n".join(lines).strip() + "\n"
+
+
+def _render_query_results(results: Dict[str, Any], args: AccQueryArgs) -> str:
+    def _pick_amount(r: Dict[str, Any]) -> Optional[float]:
+        if not isinstance(r, dict):
+            return None
+        for k in ("ยอดเงิน", "จำนวนเงิน", "amount", "total", "TOTAL"):
+            v = _parse_amount(r.get(k))
+            if v is not None:
+                return float(v)
+        v2 = _pick_amount_from_record(r)
+        return float(v2) if v2 is not None else None
+
+    def _pick_date(r: Dict[str, Any]) -> str:
+        for k in ("วันที่", "วันที", "date"):
+            v = r.get(k)
+            if v:
+                return str(v)
+        return ""
+
+    def _pick_desc(r: Dict[str, Any]) -> str:
+        for k in ("รายการ", "รายละเอียด", "desc", "description"):
+            v = r.get(k)
+            if v:
+                return str(v)
+        return ""
+
+    def _pick_receipt(r: Dict[str, Any]) -> str:
+        for k in ("ใบเสร็จ", "receipt"):
+            v = r.get(k)
+            if v:
+                return str(v)
+        return ""
+
+    def _pick_unit(r: Dict[str, Any]) -> str:
+        for k in ("ยูนิต", "unit"):
+            v = r.get(k)
+            if v:
+                return str(v)
+        return ""
+
+    lines: List[str] = []
+    lines.append("ผลลัพธ์จากชีท (query)")
+    lines.append("")
+    lines.append(f"- sheet: {args.sheet}")
+    if args.yy_mm:
+        lines.append(f"- yy_mm: {args.yy_mm}")
+    if args.unit:
+        lines.append(f"- unit: {args.unit}")
+    if args.receipt:
+        lines.append(f"- receipt: {args.receipt}")
+    if args.pv:
+        lines.append(f"- pv: {args.pv}")
+    if args.contains:
+        lines.append(f"- contains: {args.contains}")
+    lines.append("")
+
+    income = results.get("income") if isinstance(results, dict) else None
+    expense = results.get("expense") if isinstance(results, dict) else None
+    income_rows = income if isinstance(income, list) else []
+    expense_rows = expense if isinstance(expense, list) else []
+
+    def _emit_block(title: str, rows: List[Dict[str, Any]]):
+        lines.append(f"{title}: {len(rows)}")
+        if not rows:
+            lines.append("")
+            return
+        lines.append("date | unit | receipt | amount | item")
+        lines.append("---|---|---|---:|---")
+        for r in rows[: min(len(rows), 25)]:
+            dt = _pick_date(r)
+            un = _pick_unit(r)
+            rc = _pick_receipt(r)
+            am = _pick_amount(r)
+            desc = _pick_desc(r)
+            desc = desc.replace("\n", " ").strip()
+            if len(desc) > 80:
+                desc = desc[:80] + "…"
+            lines.append(f"{dt} | {un} | {rc} | {_fmt_money(am) if am is not None else ''} | {desc}")
+        lines.append("")
+
+    if args.sheet in ("income", "both"):
+        _emit_block("income", income_rows)
+    if args.sheet in ("expense", "both"):
+        _emit_block("expense", expense_rows)
+
+    return "\n".join(lines).strip() + "\n"
 
 
 def _build_llm_context(cache: Dict[str, Any], message: str, *, max_rows: int = 3) -> Dict[str, Any]:
@@ -891,6 +1220,10 @@ class ChatArgs(BaseModel):
     message: str = Field(default="")
 
 
+class AccQueryTextArgs(BaseModel):
+    message: str = Field(default="")
+
+
 class JsonRpcRequest(BaseModel):
     jsonrpc: str = "2.0"
     id: Optional[Any] = None
@@ -929,6 +1262,11 @@ def _tool_definitions() -> List[Dict[str, Any]]:
             "inputSchema": AccQueryArgs.model_json_schema(),
         },
         {
+            "name": "acc_query_text",
+            "description": "Query cached sheets using a natural-ish message, returning deterministic text (table/sum/top) without LLM.",
+            "inputSchema": AccQueryTextArgs.model_json_schema(),
+        },
+        {
             "name": "acc_reconcile_pdfs",
             "description": "Verify PDFs (via mcp-audidoc amount extraction) against cached sheet rows.",
             "inputSchema": AccReconcilePdfsArgs.model_json_schema(),
@@ -951,46 +1289,64 @@ def _normalize(s: Any) -> str:
     return str(s or "").strip().lower()
 
 
-def _query_records(records: List[Dict[str, Any]], args: AccQueryArgs) -> List[Dict[str, Any]]:
+def _normalize_unit_token(s: Any) -> str:
+    # Normalize unit tokens so A43, A-43, a 43 all match.
+    raw = str(s or "").strip().upper()
+    raw = raw.replace(" ", "").replace("_", "").replace("/", "")
+    raw = raw.replace("-", "")
+    return raw
+
+
+def _record_matches_query(r: Dict[str, Any], args: "AccQueryArgs") -> bool:
     q_contains = _normalize(args.contains)
     q_receipt = _normalize(args.receipt)
     q_pv = _normalize(args.pv)
-    q_unit = _normalize(args.unit)
+    q_unit = _normalize_unit_token(args.unit)
     q_yy_mm = _normalize(args.yy_mm)
 
+    if q_receipt:
+        # Receipt may appear in ใบเสร็จ or other identifiers.
+        receipt_val = _normalize(r.get("ใบเสร็จ"))
+        if q_receipt not in receipt_val:
+            # Some rows store IDs elsewhere; fall back to searching the row blob.
+            blob_receipt = " ".join(_normalize(v) for v in r.values())
+            if q_receipt not in blob_receipt:
+                return False
+
+    if q_pv:
+        pv_val = _normalize(r.get("PV"))
+        if q_pv not in pv_val:
+            return False
+
+    if q_unit:
+        unit_val = _normalize_unit_token(r.get("ยูนิต"))
+        if not unit_val:
+            unit_val = _normalize_unit_token(r.get("unit"))
+        if q_unit not in unit_val:
+            return False
+
+    if q_yy_mm:
+        yy_mm_val = _normalize(r.get("yy_mm"))
+        if not yy_mm_val:
+            yy_mm_val = _normalize(r.get("หมายเหตุ"))
+        if q_yy_mm not in yy_mm_val:
+            return False
+
+    if q_contains:
+        blob = " ".join(_normalize(v) for v in r.values())
+        if q_contains not in blob:
+            return False
+
+    return True
+
+
+def _query_records(records: List[Dict[str, Any]], args: AccQueryArgs) -> List[Dict[str, Any]]:
     out: List[Dict[str, Any]] = []
     for r in records:
-        # Match receipt
-        if q_receipt:
-            receipt_val = _normalize(r.get("ใบเสร็จ"))
-            if q_receipt not in receipt_val:
-                continue
-
-        if q_pv:
-            pv_val = _normalize(r.get("PV"))
-            if q_pv not in pv_val:
-                continue
-
-        if q_unit:
-            unit_val = _normalize(r.get("ยูนิต"))
-            if not unit_val:
-                # expense sheet doesn't have ยูนิต; allow matching other columns if present
-                unit_val = _normalize(r.get("unit"))
-            if q_unit not in unit_val:
-                continue
-
-        if q_yy_mm:
-            yy_mm_val = _normalize(r.get("yy_mm"))
-            if not yy_mm_val:
-                yy_mm_val = _normalize(r.get("หมายเหตุ"))
-            if q_yy_mm not in yy_mm_val:
-                continue
-
-        if q_contains:
-            blob = " ".join(_normalize(v) for v in r.values())
-            if q_contains not in blob:
-                continue
-
+        if not isinstance(r, dict):
+            continue
+        if not _record_matches_query(r, args):
+            continue
         out.append(r)
         if len(out) >= args.limit:
             break
@@ -1151,8 +1507,13 @@ async def www_chat() -> str:
 async def www_chat_examples() -> str:
     examples = [
         "สรุปรายรับทั้งหมด และแยกตาม yy_mm",
-        "สรุปรายจ่ายทั้งหมด และ Top 10 รายการที่จ่ายมากที่สุด",
-        "เดือน 68_12 ยูนิต A-43 มีรายรับอะไรบ้าง รวมเท่าไร",
+        "สรุปยอดรายจ่าย yy_mm 67_01",
+        "ยอดรวมรายจ่าย yy_mm 67_01",
+        "ท็อป 5 รายจ่าย yy_mm 67_01",
+        "5 อันดับ รายจ่าย yy_mm 67_01",
+        "รายจ่ายมากที่สุด yy_mm 67_01",
+        "เดือน 68_12 ยูนิต A-43 มีรายรับอะไรบ้าง",
+        "หาใบเสร็จ NAC2567.001",
         "หาใบเสร็จ 2029/1465 อยู่ในรายรับหรือรายจ่าย? จำนวนเท่าไร",
         "ช่วยสรุป mismatch ที่สำคัญที่สุด 10 อันดับ (PDF vs ชีท)",
         "period 2568-06 จาก PDF มีรายการไหนที่ match กับชีทไม่ได้",
@@ -1193,6 +1554,18 @@ async def api_chat(payload: Dict[str, Any] = Body(...)) -> Dict[str, Any]:
         cache = _read_json_file(MCP_ACC_DATA_PATH)
         if not cache:
             cache = await _refresh_cache(income_url=DEFAULT_SHEET_INCOME_URL, expense_url=DEFAULT_SHEET_EXPENSE_URL)
+
+        mode, qargs, top_n = _parse_query_intent_from_message(msg)
+        if qargs is not None and mode != "none":
+            reply_txt = _render_query_intent(cache, mode, qargs, top_n)
+            return {
+                "reply": reply_txt,
+                "meta": {
+                    "mode": f"query:{mode}",
+                    "query": qargs.model_dump(),
+                    "top_n": top_n,
+                },
+            }
 
         # Keep context small to avoid overloading the LLM gateway. The assistant can ask follow-up questions.
         context = _build_llm_context(cache, msg, max_rows=3)
@@ -1246,6 +1619,15 @@ async def api_chat_stream(payload: Dict[str, Any] = Body(...)) -> StreamingRespo
         cache = _read_json_file(MCP_ACC_DATA_PATH)
         if not cache:
             cache = await _refresh_cache(income_url=DEFAULT_SHEET_INCOME_URL, expense_url=DEFAULT_SHEET_EXPENSE_URL)
+
+        mode, qargs, top_n = _parse_query_intent_from_message(msg)
+        if qargs is not None and mode != "none":
+            reply_txt = _render_query_intent(cache, mode, qargs, top_n)
+
+            async def gen_query():
+                yield reply_txt
+
+            return StreamingResponse(gen_query(), media_type="text/plain; charset=utf-8")
 
         context = _build_llm_context(cache, msg, max_rows=3)
 
@@ -1345,6 +1727,38 @@ async def invoke(payload: Dict[str, Any] = Body(...)) -> Dict[str, Any]:
             results["expense"] = _query_records(expense_records, args)
 
         return {"tool": tool, "result": {"ok": True, "query": args.model_dump(), "results": results}}
+
+    if tool == "acc_query_text":
+        args = AccQueryTextArgs.model_validate(args_raw or {})
+        msg = (args.message or "").strip()
+        if not msg:
+            raise HTTPException(status_code=400, detail="missing_message")
+        existing = _read_json_file(MCP_ACC_DATA_PATH)
+        if not existing:
+            raise HTTPException(status_code=404, detail="cache_not_found")
+
+        mode, qargs, top_n = _parse_query_intent_from_message(msg)
+        if qargs is None or mode == "none":
+            return {
+                "tool": tool,
+                "result": {
+                    "ok": True,
+                    "mode": "none",
+                    "text": "(no deterministic query intent detected)",
+                },
+            }
+
+        text = _render_query_intent(existing, mode, qargs, top_n)
+        return {
+            "tool": tool,
+            "result": {
+                "ok": True,
+                "mode": mode,
+                "query": qargs.model_dump(),
+                "top_n": top_n,
+                "text": text,
+            },
+        }
 
     if tool == "acc_reconcile_pdfs":
         args = AccReconcilePdfsArgs.model_validate(args_raw or {})
