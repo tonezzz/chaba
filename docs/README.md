@@ -270,7 +270,7 @@ Use this pattern for any remote command to avoid PowerShell quoting issues (espe
  CoreDNS (VPN DNS):
  - container: `idc1-wg-dns` (CoreDNS)
  - DNS server IP (inside wg-easy netns): `10.8.0.1:53`
- - `.vpn` hosts records live in `/home/chaba/chaba/stacks/idc1-stack/config/coredns/Corefile`.
+ - `.vpn` hosts records live in `/home/chaba/chaba/stacks/idc1-vpn/config/coredns/Corefile`.
 
  Verification (client):
  - `ping 10.8.0.1`
@@ -280,11 +280,11 @@ Use this pattern for any remote command to avoid PowerShell quoting issues (espe
  Recovery note (important):
  - If `WG_ALLOWED_IPS`/`WG_DEFAULT_DNS` changes require recreating `wg-easy`, VPN DNS can stop responding if `wg-dns` is not recreated to re-attach to the wg-easy network namespace.
  - Fix:
-   - `cd /home/chaba/chaba/stacks/idc1-stack && docker compose --profile vpn up -d --force-recreate wg-easy wg-dns`
+   - `cd /home/chaba/chaba/stacks/idc1-vpn && docker compose up -d --force-recreate wg-easy wg-dns`
 
 ### VPN stack quickstart (idc1)
 Start/recreate VPN services:
-- `cd /home/chaba/chaba/stacks/idc1-stack && docker compose --profile vpn up -d --force-recreate wg-easy wg-dns`
+- `cd /home/chaba/chaba/stacks/idc1-vpn && docker compose up -d --force-recreate wg-easy wg-dns`
 
 Verify (client):
 - `nslookup idc1.vpn 10.8.0.1`
@@ -297,16 +297,22 @@ Verify (client):
 Because host `sshd` is not bound to `10.8.0.1` (the host typically has no `wg0`), `idc1.vpn:22` must be forwarded from the wg-easy container to the host.
 
 Default behavior:
-- `idc1.vpn:22` is forwarded to host `sshd` using `iptables` DNAT rules applied by wg-easy on interface up (`WG_POST_UP` in `stacks/idc1-stack/docker-compose.yml`).
+- `idc1.vpn:22` is forwarded to host `sshd` using `iptables` DNAT rules applied by wg-easy on interface up (`WG_POST_UP` in `stacks/idc1-vpn/docker-compose.yml`).
+- DNAT is restricted to traffic destined for the VPN server IP (`10.8.0.1`).
 
 Notes:
-- The forwarding target is `${WG_EASY_HOST_GW:-172.20.0.1}` (Docker host gateway as seen from inside the `idc1-wg-easy` container). If the Docker bridge gateway differs on your host, set `WG_EASY_HOST_GW` in `stacks/idc1-stack/.env`.
+- The forwarding target is `${WG_EASY_HOST_GW:-172.20.0.1}` (Docker host gateway as seen from inside the `idc1-wg-easy` container). If the Docker bridge gateway differs on your host, set `WG_EASY_HOST_GW` in `stacks/idc1-vpn/.env`.
 
 Recovery:
 - If `ssh chaba@idc1.vpn` returns `Connection refused` after recreating/restarting `wg-easy`, recreate the VPN services so `WG_POST_UP` runs:
-  - `cd /home/chaba/chaba/stacks/idc1-stack && docker compose --profile vpn up -d --force-recreate wg-easy wg-dns`
+  - `cd /home/chaba/chaba/stacks/idc1-vpn && docker compose up -d --force-recreate wg-easy wg-dns`
 - Fallback (if you need to patch a running system without recreating containers):
   - `scripts/idc1-fix-mcp0-vpn.sh`
+
+## Portainer over VPN (idc1)
+- URL: `https://portainer.idc1.vpn/`
+- Portainer is bound to `127.0.0.1:9000` on the host and is reverse proxied by the existing IDC1 Caddy ingress.
+- If Portainer shows the Docker environment as unreachable immediately after an upgrade, hard-refresh the browser to avoid stale cached frontend assets.
 
 ## Windows SSH key ACL fix
  When NTFS permissions prevent WSL/OpenSSH from using a private key (the “UNPROTECTED PRIVATE KEY FILE” error), run the following in an elevated PowerShell session. This consistently resets ownership and grants read-only access to the current user:
