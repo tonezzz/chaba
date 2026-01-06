@@ -7,6 +7,11 @@
 test.idc1.surf-thailand.com {
     encode gzip zstd
 
+    handle_path /agents/* {
+        uri strip_prefix /agents
+        reverse_proxy http://127.0.0.1:4060
+    }
+
     handle /cp {
         redir /cp /test/cp/
     }
@@ -31,6 +36,10 @@ test.idc1.surf-thailand.com {
         root * /www/idc1.surf-thailand.com/test/current
         try_files {path} {path}/ {path}/index.html /index.html
         file_server
+    }
+
+    handle {
+        respond 404
     }
 
     log {
@@ -67,12 +76,33 @@ cp.idc1.surf-thailand.com {
 }
 
 http://1mcp.idc1.vpn {
+    redir https://1mcp.idc1.vpn{uri} permanent
+}
+
+1mcp.idc1.vpn {
     encode gzip zstd
+
+    tls /etc/caddy/certs/idc1-vpn.crt /etc/caddy/certs/idc1-vpn.key
 
     @vpn_only not remote_ip 10.8.0.0/24 127.0.0.1
     respond @vpn_only 403
 
     reverse_proxy http://127.0.0.1:3050
+}
+
+http://portainer.idc1.vpn {
+    redir https://portainer.idc1.vpn{uri} permanent
+}
+
+portainer.idc1.vpn {
+    encode gzip zstd
+
+    tls /etc/caddy/certs/idc1-vpn.crt /etc/caddy/certs/idc1-vpn.key
+
+    @vpn_only not remote_ip 10.8.0.0/24 127.0.0.1
+    respond @vpn_only 403
+
+    reverse_proxy http://127.0.0.1:9000
 }
 
 line.idc1.surf-thailand.com {
