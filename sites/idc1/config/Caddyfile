@@ -84,7 +84,7 @@ http://1mcp.idc1.vpn {
 
     tls /etc/caddy/certs/idc1-vpn.crt /etc/caddy/certs/idc1-vpn.key
 
-    @vpn_only not remote_ip 10.8.0.0/24 127.0.0.1
+    @vpn_only not remote_ip 10.8.0.0/24 172.23.0.0/16 127.0.0.1
     respond @vpn_only 403
 
     reverse_proxy http://127.0.0.1:3050
@@ -99,7 +99,7 @@ portainer.idc1.vpn {
 
     tls /etc/caddy/certs/idc1-vpn.crt /etc/caddy/certs/idc1-vpn.key
 
-    @vpn_only not remote_ip 10.8.0.0/24 127.0.0.1
+    @vpn_only not remote_ip 10.8.0.0/24 172.23.0.0/16 127.0.0.1
     respond @vpn_only 403
 
     reverse_proxy http://127.0.0.1:9000
