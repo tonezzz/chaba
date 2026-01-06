@@ -222,14 +222,33 @@ const clampHistoryLimit = (value, fallback = 20, max = 200) => {
   return Math.min(parsed, max);
 };
 
+const FETCH_TIMEOUT_MS = Number(process.env.FETCH_TIMEOUT_MS || 5000);
+
 const fetchJson = async (url, options = {}) => {
-  const response = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {})
-    },
-    ...options
-  });
+  const timeoutMs = Number(options.timeoutMs ?? FETCH_TIMEOUT_MS);
+  const controller = new AbortController();
+  const timeoutId = Number.isFinite(timeoutMs) && timeoutMs > 0 ? setTimeout(() => controller.abort(), timeoutMs) : null;
+
+  let response;
+  try {
+    response = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      },
+      signal: controller.signal,
+      ...options
+    });
+  } catch (error) {
+    if (error && (error.name === 'AbortError' || String(error.message || '').includes('aborted'))) {
+      throw new Error(`Request timed out after ${timeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
   if (!response.ok) {
     const text = await response.text();
     const error = new Error(`Request failed (${response.status}): ${text || 'no body'}`);
