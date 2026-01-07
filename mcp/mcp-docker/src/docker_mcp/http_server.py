@@ -221,6 +221,31 @@ async def _handle_mcp_message(message: Dict[str, Any]) -> Dict[str, Any]:
     response: Dict[str, Any] = {"jsonrpc": "2.0", "id": rpc_id}
 
     try:
+        if method == "initialize":
+            protocol_version = params.get("protocolVersion") or "2024-11-05"
+            response["result"] = {
+                "protocolVersion": protocol_version,
+                "capabilities": {
+                    "tools": {},
+                    "resources": {},
+                    "prompts": {},
+                },
+                "serverInfo": {
+                    "name": APP_NAME,
+                    "version": APP_VERSION,
+                },
+            }
+            return response
+
+        if method == "initialized":
+            # Notification (usually no id). Acknowledge with empty result if an id is present.
+            response["result"] = {}
+            return response
+
+        if method == "ping":
+            response["result"] = {}
+            return response
+
         if method == "tools/list":
             tools: List[Dict[str, Any]] = []
             for tool in _tool_definitions():
