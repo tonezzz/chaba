@@ -105,6 +105,21 @@ portainer.idc1.vpn {
     reverse_proxy http://127.0.0.1:9000
 }
 
+http://line.idc1.vpn {
+    redir https://line.idc1.vpn{uri} permanent
+}
+
+line.idc1.vpn {
+    encode gzip zstd
+
+    tls /etc/caddy/certs/idc1-vpn.crt /etc/caddy/certs/idc1-vpn.key
+
+    @vpn_only not remote_ip 10.8.0.0/24 172.23.0.0/16 127.0.0.1
+    respond @vpn_only 403
+
+    reverse_proxy http://127.0.0.1:8088
+}
+
 line.idc1.surf-thailand.com {
     encode gzip zstd
 
