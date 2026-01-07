@@ -25,6 +25,9 @@ MCP_GLAMA_URL = (os.getenv("MCP_GLAMA_URL") or "http://host.docker.internal:7441
 GLAMA_MODEL = (os.getenv("GLAMA_MODEL") or "").strip()
 GLAMA_SYSTEM_PROMPT = (os.getenv("GLAMA_SYSTEM_PROMPT") or "").strip()
 
+MCP_ASSISTANT_URL = (os.getenv("MCP_ASSISTANT_URL") or "").strip().rstrip("/")
+MCP_ASSISTANT_CONTROL_TOKEN = (os.getenv("MCP_ASSISTANT_CONTROL_TOKEN") or "").strip()
+
 ONE_MCP_URL = (os.getenv("ONE_MCP_URL") or "").strip()
 MCP_LINE_ALLOWED_TOOLS = (os.getenv("MCP_LINE_ALLOWED_TOOLS") or "").strip()
 MCP_LINE_AGENT_ENABLED = (os.getenv("MCP_LINE_AGENT_ENABLED") or "").strip().lower() in ("1", "true", "yes", "on")
@@ -431,7 +434,9 @@ async def _agent_decide_and_reply(*, user_text: str) -> Dict[str, Any]:
 
 
 async def _process_text_event_and_reply(*, evt: Dict[str, Any], reply_token: str) -> None:
-    if not (MCP_LINE_AGENT_ENABLED and GLAMA_MCP_URL):
+    if not MCP_LINE_AGENT_ENABLED:
+        return
+    if not (MCP_ASSISTANT_URL or GLAMA_MCP_URL):
         return
     message = evt.get("message") or {}
     if not isinstance(message, dict):
@@ -439,6 +444,40 @@ async def _process_text_event_and_reply(*, evt: Dict[str, Any], reply_token: str
     if str(message.get("type") or "").strip() != "text":
         return
     user_text = str(message.get("text") or "")
+
+    if MCP_ASSISTANT_URL:
+        try:
+            src = _conversation_source(evt) or {}
+            src_type = str(src.get("type") or "").strip() or "unknown"
+            src_id = str(src.get("id") or "").strip() or "unknown"
+            conversation_id = _get_or_create_conversation(src_type, src_id)
+
+            headers: Dict[str, str] = {}
+            if MCP_ASSISTANT_CONTROL_TOKEN:
+                headers["x-control-token"] = MCP_ASSISTANT_CONTROL_TOKEN
+
+            payload: Dict[str, Any] = {
+                "conversation_id": conversation_id,
+                "text": user_text,
+                "line_event": evt,
+            }
+
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                resp = await client.post(f"{MCP_ASSISTANT_URL}/integrations/line/reply", json=payload, headers=headers)
+
+            if resp.status_code >= 400:
+                raise RuntimeError(f"assistant_http_{resp.status_code}")
+
+            data = resp.json() if resp.headers.get("content-type", "").lower().startswith("application/json") else {}
+            messages = (data or {}).get("messages")
+            if isinstance(messages, list) and messages:
+                await _reply_messages(reply_token=reply_token, messages=messages)
+                return
+        except Exception as exc:
+            logger.warning("assistant forward failed: %s", str(exc))
+
+    if not GLAMA_MCP_URL:
+        return
 
     try:
         decision = await _agent_decide_and_reply(user_text=user_text)
@@ -510,7 +549,7 @@ async def health() -> Dict[str, Any]:
         "accessTokenConfigured": bool(LINE_CHANNEL_ACCESS_TOKEN),
         "useGlama": bool(LINE_USE_GLAMA and base_url),
         "glamaUrl": base_url,
-        "agentEnabled": bool(MCP_LINE_AGENT_ENABLED and GLAMA_MCP_URL),
+        "agentEnabled": bool(MCP_LINE_AGENT_ENABLED and (MCP_ASSISTANT_URL or GLAMA_MCP_URL)),
         "oneMcpUrl": ONE_MCP_URL,
         "allowedTools": _allowed_tools(),
         "dbPath": _get_db_path(),
@@ -688,7 +727,7 @@ async def webhook_line(
 
             if evt_type == "message" and message_type == "text" and reply_token:
                 # Fast webhook: run the heavy work in a background task.
-                if MCP_LINE_AGENT_ENABLED and GLAMA_MCP_URL:
+                if MCP_LINE_AGENT_ENABLED and (MCP_ASSISTANT_URL or GLAMA_MCP_URL):
                     background_tasks.add_task(_process_text_event_and_reply, evt=evt, reply_token=str(reply_token))
                 else:
                     reply_text = await _generate_reply(text=text or "")
