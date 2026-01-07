@@ -2,7 +2,7 @@
   "mcpServers": {
     "mcp-glama": {
       "transport": "streamableHttp",
-      "url": "http://pc1.vpn:7241/mcp",
+      "url": "http://host.docker.internal:7241/mcp",
       "tags": ["pc1", "ai", "glama"],
       "enabled": true
     },
@@ -14,19 +14,23 @@
     },
     "mcp-imagen-light": {
       "transport": "streamableHttp",
-      "url": "http://pc1.vpn:8020/mcp",
+      "url": "http://host.docker.internal:8020/mcp",
       "tags": ["pc1", "imagen", "sdxl"],
+      "connectionTimeout": 60000,
+      "requestTimeout": 300000,
       "enabled": true
     },
     "mcp-cuda": {
       "transport": "streamableHttp",
-      "url": "http://pc1.vpn:8057/mcp",
+      "url": "http://host.docker.internal:8057/mcp",
       "tags": ["pc1", "gpu", "cuda"],
+      "connectionTimeout": 60000,
+      "requestTimeout": 300000,
       "enabled": true
     },
     "mcp-rag": {
       "transport": "streamableHttp",
-      "url": "http://pc1.vpn:8055/mcp",
+      "url": "http://pc1-db-mcp-rag:8055/mcp",
       "tags": ["pc1", "rag"],
       "enabled": true
     },
@@ -42,12 +46,6 @@
       "tags": ["pc1", "http"],
       "enabled": true
     },
-    "mcp-playwright": {
-      "transport": "streamableHttp",
-      "url": "http://pc1.vpn:8260/mcp",
-      "tags": ["pc1", "playwright"],
-      "enabled": false
-    },
     "mcp-quickchart": {
       "transport": "streamableHttp",
       "url": "http://pc1.vpn:8251/mcp",
@@ -62,21 +60,21 @@
     },
     "mcp-task": {
       "transport": "streamableHttp",
-      "url": "http://pc1.vpn:8016/mcp",
+      "url": "http://mcp-task:8016/mcp",
       "tags": ["pc1", "task"],
       "enabled": true
     },
     "mcp-devops": {
       "transport": "streamableHttp",
-      "url": "http://pc1.vpn:8325/mcp",
+      "url": "http://host.docker.internal:8325/mcp",
       "tags": ["pc1", "devops"],
       "enabled": true
     },
     "mcp-docker": {
       "transport": "streamableHttp",
-      "url": "http://mcp-docker:8340/mcp",
-      "tags": ["pc1", "docker"],
-      "enabled": false
+      "url": "http://host.docker.internal:8340/mcp",
+      "tags": ["pc1", "docker", "ai"],
+      "enabled": true
     },
     "mcp-deka": {
       "transport": "streamableHttp",
@@ -86,7 +84,7 @@
     },
     "mcp-agents": {
       "transport": "streamableHttp",
-      "url": "http://pc1.vpn:8046/mcp",
+      "url": "http://mcp-agents:8046/mcp",
       "tags": ["pc1", "agents"],
       "enabled": true
     },

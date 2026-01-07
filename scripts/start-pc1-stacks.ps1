@@ -2,35 +2,51 @@
 # Startup script for modular pc1 stacks
 
 param(
-    [string[]]$Stacks = @("core", "auth", "web", "devops"),
+    [string[]]$Stacks = @("ingress", "mcp", "services", "db", "gpu", "devops", "auth"),
     [switch]$Stop,
     [switch]$Status,
     [switch]$Logs
 )
 
 $StacksDir = "stacks"
-$Pc1StackDir = "$StacksDir/pc1-stack"
+$ScriptDir = Split-Path -Parent $PSCommandPath
+$StackScript = Join-Path $ScriptDir 'stack.ps1'
 
 $StackCommands = @{
-    "core" = @{
-        "path" = $Pc1StackDir
-        "compose" = "docker-compose --profile mcp-suite"
-        "description" = "Core MCP services (1mcp-agent, mcp-agents, mcp-rag, mcp-tester, mcp-playwright)"
+    "ingress" = @{
+        "stack" = "pc1-web"
+        "profile" = ""
+        "description" = "Ingress + web UI (Caddy on :80/:443, webtop2, mcp-webtop)"
     }
-    "auth" = @{
-        "path" = "$StacksDir/pc1-auth"
-        "compose" = "docker-compose --profile authentik"
-        "description" = "Authentication services (authentik-server, authentik-worker)"
+    "mcp" = @{
+        "stack" = "pc1-stack"
+        "profile" = "mcp-suite"
+        "description" = "1MCP hub (3051/3052) + core MCP servers that still live in pc1-stack"
     }
-    "web" = @{
-        "path" = "$StacksDir/pc1-web"
-        "compose" = "docker-compose"
-        "description" = "Web services (webtop2, mcp-webtop)"
+    "services" = @{
+        "stack" = "pc1-services"
+        "profile" = ""
+        "description" = "Shared app services (mcp-glama, mcp-github-models, mcp-openai-gateway, ollama, etc.)"
+    }
+    "db" = @{
+        "stack" = "pc1-db"
+        "profile" = ""
+        "description" = "Database + storage (qdrant, mcp-rag, mcp-doc-archiver, minio, vault, etc.)"
+    }
+    "gpu" = @{
+        "stack" = "pc1-gpu"
+        "profile" = ""
+        "description" = "GPU services (mcp-cuda, mcp-imagen-light, mcp-rag-light)"
     }
     "devops" = @{
-        "path" = "$StacksDir/pc1-devops"
-        "compose" = "docker-compose"
-        "description" = "DevOps tools (mcp-devops, mcp-quickchart)"
+        "stack" = "pc1-devops"
+        "profile" = ""
+        "description" = "DevOps MCP tools (mcp-devops, mcp-quickchart)"
+    }
+    "auth" = @{
+        "stack" = "pc1-auth"
+        "profile" = ""
+        "description" = "Authentication (authentik server/worker)"
     }
 }
 
@@ -38,8 +54,7 @@ function Start-Stack {
     param($StackName, $Command)
     
     Write-Host "Starting $StackName..." -ForegroundColor Cyan
-    Set-Location $Command.path
-    docker-compose --profile mcp-suite up -d
+    & pwsh $StackScript -Stack $Command.stack -Action up -Profile $Command.profile
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to start $StackName" -ForegroundColor Red
         return $false
@@ -52,8 +67,7 @@ function Stop-Stack {
     param($StackName, $Command)
     
     Write-Host "Stopping $StackName..." -ForegroundColor Yellow
-    Set-Location $Command.path
-    docker-compose down
+    & pwsh $StackScript -Stack $Command.stack -Action down
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to stop $StackName" -ForegroundColor Red
         return $false
@@ -65,18 +79,15 @@ function Stop-Stack {
 function Get-StackStatus {
     param($StackName, $Command)
     
-    Set-Location $Command.path
-    $status = docker-compose ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
     Write-Host "`n=== $StackName Status ===" -ForegroundColor Cyan
-    Write-Host $status
+    & pwsh $StackScript -Stack $Command.stack -Action status -Profile $Command.profile
 }
 
 function Get-StackLogs {
     param($StackName, $Command)
     
-    Set-Location $Command.path
     Write-Host "`n=== $StackName Logs ===" -ForegroundColor Cyan
-    docker-compose logs -f --tail=50
+    & pwsh $StackScript -Stack $Command.stack -Action logs -Profile $Command.profile
 }
 
 # Main execution

@@ -45,6 +45,9 @@ services:
       UV_PROJECT_ENVIRONMENT: /tmp/uv-project
     extra_hosts:
       - "pc1.vpn:host-gateway"
+    networks:
+      - pc1-stack-net
+      - pc1-db-net
     volumes:
       - ${PC1_WORKSPACE_HOST_DIR:-C:/chaba}/stacks/pc1-stack/1mcp-hub.json:${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}:ro
       - "${PC1_WORKSPACE_HOST_DIR:-C:/chaba}:/workspaces/chaba:cached"
@@ -87,6 +90,9 @@ services:
       UV_PROJECT_ENVIRONMENT: /tmp/uv-project
     extra_hosts:
       - "pc1.vpn:host-gateway"
+    networks:
+      - pc1-stack-net
+      - pc1-db-net
     volumes:
       - ${PC1_WORKSPACE_HOST_DIR:-C:/chaba}/stacks/pc1-stack/1mcp-dev.json:/root/.config/1mcp/mcp.json:ro
       - "${PC1_WORKSPACE_HOST_DIR:-C:/chaba}:/workspaces/chaba:cached"
@@ -123,8 +129,6 @@ services:
     build:
       context: ${MCP_RAG_BUILD_CONTEXT:-../../mcp/mcp-rag}
     container_name: pc1-mcp-rag
-    ports:
-      - "${MCP_RAG_PORT:-8055}:8055"
     environment:
       PORT: 8055
       QDRANT_URL: ${QDRANT_URL:-http://pc1.vpn:6333}
@@ -229,26 +233,6 @@ services:
       NODE_ENV: development
     volumes:
       - ../../:/workspace:cached
-
-  mcp-docker:
-    <<: *default-service
-    profiles: ["mcp-suite"]
-    build:
-      context: ${MCP_DOCKER_BUILD_CONTEXT:-../../mcp/mcp-docker}
-    container_name: pc1-mcp-docker
-    ports:
-      - "${MCP_DOCKER_PORT:-8340}:${MCP_DOCKER_PORT:-8340}"
-    environment:
-      DOCKER_HOST: ${MCP_DOCKER_DOCKER_HOST:-unix:///var/run/docker.sock}
-      PORT: ${MCP_DOCKER_PORT:-8340}
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_DOCKER_PORT:-8340}/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
 
   mcp-http:
     <<: *default-service
@@ -407,6 +391,10 @@ services:
 networks:
   pc1-stack-net:
     driver: bridge
+
+  pc1-db-net:
+    external: true
+    name: pc1-db_pc1-db-net
 
 volumes:
   docker-mcp-venv:

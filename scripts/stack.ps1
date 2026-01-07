@@ -3,7 +3,7 @@ param(
   [ValidatePattern('^[a-zA-Z0-9-]+$')]
   [string]$Stack,
 
-  [ValidateSet('up', 'down', 'status', 'pull', 'pull-up', 'restart-service')]
+  [ValidateSet('up', 'down', 'status', 'pull', 'pull-up', 'restart-service', 'logs')]
   [string]$Action = 'status',
 
   [switch]$RemoveVolumes,
@@ -17,6 +17,10 @@ $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $stackDir = Join-Path $repoRoot (Join-Path 'stacks' $Stack)
+
+if ($Service -and (-not $Services)) {
+  $Services = $Service
+}
 
 if (-not (Test-Path $stackDir)) {
   throw "stack directory not found at $stackDir"
@@ -117,6 +121,10 @@ switch ($Action) {
       throw 'Missing -Service for -Action restart-service'
     }
     Invoke-Compose -ComposeArgs @('restart', $Service)
+  }
+  'logs' {
+    $serviceArgs = Get-ServiceArgs -ServicesValue $Services
+    Invoke-Compose -ComposeArgs @(@('logs', '-f', '--tail=50') + $serviceArgs)
   }
   default {
     Invoke-Compose -ComposeArgs @('ps')
