@@ -1,0 +1,60 @@
+version: "3.9"
+
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - .env
+  networks:
+    - pc1-stack-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  mcp-assistant:
+    <<: *default-service
+    build:
+      context: ${MCP_ASSISTANT_BUILD_CONTEXT:-../../mcp/mcp-assistant}
+    ports:
+      - "127.0.0.1:${MCP_ASSISTANT_PORT:-18099}:8099"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8099/health', timeout=2).read()\" || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  line-debug-ui:
+    <<: *default-service
+    image: nginx:alpine
+    ports:
+      - "127.0.0.1:${LINE_DEBUG_UI_PORT:-8098}:80"
+    volumes:
+      - ../shared/line-debug-ui:/usr/share/nginx/html:ro
+
+  mcp-line:
+    <<: *default-service
+    build:
+      context: ${MCP_LINE_BUILD_CONTEXT:-../../mcp/mcp-line}
+    ports:
+      - "127.0.0.1:${MCP_LINE_PORT:-18088}:8088"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ${MCP_LINE_DATA_DIR:-./data/mcp-line}:/data
+    depends_on:
+      - mcp-assistant
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8088/health', timeout=2).read()\" || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  pc1-stack-net:
+    driver: bridge
+    external: true
+    name: pc1-stack_pc1-stack-net

@@ -33,12 +33,54 @@ services:
       context: ${MCP_GITHUB_MODELS_BUILD_CONTEXT:-../../mcp/mcp-github-models}
     container_name: pc1-services-mcp-github-models
     ports:
-      - "${MCP_GITHUB_MODELS_PORT:-7242}:8015"
+      - "${MCP_GITHUB_MODELS_PORT:-7243}:8015"
     environment:
       PORT: 8015
       GITHUB_TOKEN: ${GITHUB_TOKEN}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8015/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-imagen-light:
+    <<: *default-service
+    build:
+      context: ${MCP_IMAGEN_LIGHT_BUILD_CONTEXT:-../../mcp/mcp-imagen-light}
+    container_name: pc1-services-mcp-imagen-light
+    ports:
+      - "${MCP_IMAGEN_LIGHT_PORT:-8020}:8020"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      PORT: 8020
+      MCP_CUDA_URL: ${MCP_CUDA_URL:-http://host.docker.internal:8057}
+      IMAGEN_OUTPUT_DIR: ${IMAGEN_OUTPUT_DIR:-/app/images}
+      IMAGEN_BASE_URL: ${IMAGEN_BASE_URL:-http://pc1.vpn:8020}
+    volumes:
+      - mcp-imagen-light-images:/app/images
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8020/health', timeout=2).read()\" || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-rag-light:
+    <<: *default-service
+    build:
+      context: ${MCP_RAG_LIGHT_BUILD_CONTEXT:-../../mcp/mcp-rag-light}
+    container_name: pc1-services-mcp-rag-light
+    ports:
+      - "${MCP_RAG_LIGHT_PORT:-8069}:8069"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      PORT: 8069
+      MCP_CUDA_URL: ${MCP_CUDA_URL:-http://host.docker.internal:8057}
+      RAG_LIGHT_PUBLIC_BASE_URL: ${RAG_LIGHT_PUBLIC_BASE_URL:-http://pc1.vpn:8069}
+      RAG_LIGHT_TIMEOUT_SECONDS: ${RAG_LIGHT_TIMEOUT_SECONDS:-60}
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8069/health', timeout=2).read()\" || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -128,3 +170,4 @@ networks:
 volumes:
   ollama-data:
   mcp-acc-data:
+  mcp-imagen-light-images:
