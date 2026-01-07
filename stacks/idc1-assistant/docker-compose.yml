@@ -1,0 +1,89 @@
+version: "3.9"
+
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - .env
+  networks:
+    - idc1-line-net
+    - idc1-stack-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  mcp-assistant:
+    <<: *default-service
+    build:
+      context: ${MCP_ASSISTANT_BUILD_CONTEXT:-../../mcp/mcp-assistant}
+    ports:
+      - "127.0.0.1:${MCP_ASSISTANT_PORT:-8099}:8099"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      PORT: 8099
+      MCP_ASSISTANT_CONTROL_TOKEN: ${MCP_ASSISTANT_CONTROL_TOKEN:-}
+      ONE_MCP_URL: ${ONE_MCP_URL:-}
+      ONE_MCP_BASIC_AUTH: ${ONE_MCP_BASIC_AUTH:-}
+      ONE_MCP_USERNAME: ${ONE_MCP_USERNAME:-}
+      ONE_MCP_PASSWORD: ${ONE_MCP_PASSWORD:-}
+      MCP_ASSISTANT_ALLOWED_TOOLS: ${MCP_ASSISTANT_ALLOWED_TOOLS:-}
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8099/health', timeout=2).read()\" || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  line-debug-ui:
+    <<: *default-service
+    image: nginx:alpine
+    ports:
+      - "127.0.0.1:${LINE_DEBUG_UI_PORT:-8098}:80"
+    volumes:
+      - ../shared/line-debug-ui:/usr/share/nginx/html:ro
+
+  mcp-line:
+    <<: *default-service
+    build:
+      context: ${MCP_LINE_BUILD_CONTEXT:-../../mcp/mcp-line}
+    ports:
+      - "127.0.0.1:${MCP_LINE_PORT:-8088}:8088"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      LINE_CHANNEL_SECRET: ${LINE_CHANNEL_SECRET:-}
+      LINE_CHANNEL_ACCESS_TOKEN: ${LINE_CHANNEL_ACCESS_TOKEN:-}
+      LINE_USE_GLAMA: ${LINE_USE_GLAMA:-}
+      MCP_GLAMA_URL: ${MCP_GLAMA_URL:-http://host.docker.internal:7441}
+      MCP_LINE_DB_PATH: ${MCP_LINE_DB_PATH:-/data/sqlite/mcp-line.sqlite}
+      MCP_LINE_CONTROL_TOKEN: ${MCP_LINE_CONTROL_TOKEN:-}
+      MCP_LINE_AGENT_ENABLED: ${MCP_LINE_AGENT_ENABLED:-false}
+      MCP_ASSISTANT_URL: ${MCP_ASSISTANT_URL:-http://mcp-assistant:8099}
+      MCP_ASSISTANT_CONTROL_TOKEN: ${MCP_ASSISTANT_CONTROL_TOKEN:-}
+      ONE_MCP_URL: ${ONE_MCP_URL:-}
+      ONE_MCP_BASIC_AUTH: ${ONE_MCP_BASIC_AUTH:-}
+      ONE_MCP_USERNAME: ${ONE_MCP_USERNAME:-}
+      ONE_MCP_PASSWORD: ${ONE_MCP_PASSWORD:-}
+      MCP_LINE_ALLOWED_TOOLS: ${MCP_LINE_ALLOWED_TOOLS:-}
+    volumes:
+      - ${MCP_LINE_DATA_DIR:-./data/mcp-line}:/data
+    depends_on:
+      - mcp-assistant
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8088/health', timeout=2).read()\" || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  idc1-line-net:
+    driver: bridge
+    external: true
+    name: idc1-line-net
+
+  idc1-stack-net:
+    driver: bridge
+    external: true
+    name: idc1-stack_idc1-stack-net
