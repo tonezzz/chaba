@@ -23,7 +23,7 @@ services:
     volumes:
       - qdrant-data:/qdrant/storage
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:6333/health || exit 1"]
+      test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/6333' || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -40,7 +40,7 @@ services:
       QDRANT_URL: http://qdrant:6333
       QDRANT_TEXT_COLLECTION: ${QDRANT_TEXT_COLLECTION:-rag_text}
       QDRANT_IMAGE_COLLECTION: ${QDRANT_IMAGE_COLLECTION:-rag_image}
-      OLLAMA_URL: ${OLLAMA_URL:-http://pc1.vpn:11435}
+      OLLAMA_URL: ${OLLAMA_URL:-http://pc1.vpn:11437}
       OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text}
       CLIP_MODEL: ${CLIP_MODEL:-clip-ViT-B-32}
     depends_on:
@@ -129,7 +129,7 @@ services:
     volumes:
       - vault-dev:/vault/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8200/v1/sys/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8200/v1/sys/health > /dev/null || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
