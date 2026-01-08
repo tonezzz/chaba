@@ -84,3 +84,7 @@ cp .env.example .env
 - NVIDIA GPU with CUDA support
 - Docker with NVIDIA Container Toolkit
 - Local SDXL model weights in `C:\chaba\.models\sdxl`
+
+## Troubleshooting
+
+If `mcp-imagen-light` jobs show `status=failed` with `sd15_model_file_missing`, the request reached PC1 but the server couldn't find the required SD1.5 checkpoint file. Check the `mcp-imagen-light` container logs to see the exact missing path and ensure the model file is present/mounted, or reconfigure `mcp-imagen-light` to use SDXL-only.
