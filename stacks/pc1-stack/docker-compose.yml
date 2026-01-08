@@ -18,18 +18,15 @@ services:
       context: ./1mcp-agent
     container_name: pc1-1mcp-agent
     command:
-      - 1mcp
-      - --config
-      - /root/.config/1mcp/mcp.json
-      - --transport
-      - http
-      - --enable-enhanced-security=false
-      - --host
-      - ${ONE_MCP_HOST:-0.0.0.0}
-      - --port
-      - ${ONE_MCP_PORT:-3051}
-      - --external-url
-      - ${ONE_MCP_EXTERNAL_URL:-https://127.0.0.1:3051}
+      - sh
+      - -lc
+      - |
+        set -e
+        if [ -f /mnt/portainer-mcp/portainer-mcp ]; then
+          cp -f /mnt/portainer-mcp/portainer-mcp /usr/local/bin/portainer-mcp
+          chmod +x /usr/local/bin/portainer-mcp
+        fi
+        exec 1mcp --config /root/.config/1mcp/mcp.json --transport http --enable-enhanced-security=false --host ${ONE_MCP_HOST:-0.0.0.0} --port ${ONE_MCP_PORT:-3051} --external-url ${ONE_MCP_EXTERNAL_URL:-https://127.0.0.1:3051}
     ports:
       - "${ONE_MCP_PORT:-3051}:${ONE_MCP_PORT:-3051}"
     environment:
@@ -40,6 +37,7 @@ services:
       ONE_MCP_CONFIG: ${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}
       ONE_MCP_ENABLE_ASYNC_LOADING: ${ONE_MCP_ENABLE_ASYNC_LOADING:-true}
       ONE_MCP_ENABLE_ENHANCED_SECURITY: ${ONE_MCP_ENABLE_ENHANCED_SECURITY:-false}
+      PORTAINER_MCP_TOKEN: ${PORTAINER_MCP_TOKEN:-}
       UV_PYTHON: python3
       UV_PYTHON_DOWNLOADS: never
       UV_PROJECT_ENVIRONMENT: /tmp/uv-project
@@ -49,12 +47,13 @@ services:
       - pc1-stack-net
       - pc1-db-net
     volumes:
-      - ${PC1_WORKSPACE_HOST_DIR:-C:/chaba}/stacks/pc1-stack/1mcp-hub.json:${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}:ro
+      - ${ONE_MCP_HUB_HOST_PATH:-${PC1_WORKSPACE_HOST_DIR:-C:/chaba}/stacks/pc1-stack/1mcp-hub.json}:${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}:ro
       - "${PC1_WORKSPACE_HOST_DIR:-C:/chaba}:/workspaces/chaba:cached"
       - /var/run/docker.sock:/var/run/docker.sock
       - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
       - docker-mcp-venv:/opt/docker-mcp-venv
       - mcp-project-manager-data:/data/pm
+      - ${PORTAINER_MCP_BINARY_HOST_PATH:-${PC1_WORKSPACE_HOST_DIR:-C:/chaba}/.tools/portainer-mcp/portainer-mcp}:/mnt/portainer-mcp/portainer-mcp:ro
 
   1mcp-agent-dev:
     <<: *default-service
