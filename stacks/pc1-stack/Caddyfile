@@ -56,6 +56,20 @@ openchat.pc1.vpn {
     tls internal
 }
 
+deka.pc1.vpn {
+    tls internal
+
+    route {
+        handle_path /chat* {
+            reverse_proxy openchat-ui:3000
+        }
+
+        handle {
+            redir /chat/ 302
+        }
+    }
+}
+
 openai.pc1.vpn {
     reverse_proxy mcp-openai-gateway:8181
     tls internal

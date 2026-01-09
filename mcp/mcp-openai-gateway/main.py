@@ -331,6 +331,18 @@ async def _mcp_tools_list() -> List[Dict[str, Any]]:
     return out
 
 
+async def _mcp_tools_list_raw() -> List[Dict[str, Any]]:
+    # Same source as _mcp_tools_list(), but without converting/sanitizing into OpenAI function schema.
+    # Important for selecting the MCP LLM tool: many tools have JSON Schemas (anyOf/oneOf/etc.) that
+    # are incompatible with OpenAI function parameters and would be filtered out.
+    async with _tool_routing_lock:
+        now = time.time()
+        if now - _tool_routing_updated_at > 20:
+            await _refresh_tool_routing_locked(now)
+        tools = await _collect_tools_for_openai_locked()
+    return tools
+
+
 async def _refresh_tool_routing_locked(now_ts: float) -> None:
     global _tool_routing_updated_at
     global _tool_routing
@@ -418,8 +430,14 @@ def _pick_mcp_llm_tool_name(tools: List[Dict[str, Any]]) -> Optional[str]:
 
     names: List[str] = []
     for t in tools or []:
-        fn = (t or {}).get("function") or {}
+        tt = t or {}
+        # tools/list can come back in either:
+        # - OpenAI-style: {type:'function', function:{name, ...}}
+        # - MCP-style: {name:'...', description:'...', inputSchema:{...}}
+        fn = tt.get("function") or {}
         name = str(fn.get("name") or "").strip()
+        if not name:
+            name = str(tt.get("name") or "").strip()
         if name:
             names.append(name)
 
@@ -453,7 +471,7 @@ def _messages_for_mcp_llm(messages: List[Dict[str, Any]]) -> List[Dict[str, str]
 
 
 async def _mcp_llm_chat(messages: List[Dict[str, Any]], temperature: Optional[float], max_tokens: Optional[int]) -> str:
-    tools = await _mcp_tools_list()
+    tools = await _mcp_tools_list_raw()
     tool_name = _pick_mcp_llm_tool_name(tools)
     if not tool_name:
         raise RuntimeError("mcp_llm_tool_not_found")
@@ -602,6 +620,52 @@ async def _glama_chat(
                 raise HTTPException(status_code=502, detail=last_err)
 
     raise HTTPException(status_code=502, detail=last_err or "glama_failed")
+
+
+async def _glama_stream(
+    messages: List[Dict[str, Any]],
+    temperature: Optional[float],
+    max_tokens: Optional[int],
+) -> Any:
+    if not _glama_ready():
+        raise HTTPException(status_code=503, detail="glama_unconfigured")
+
+    payload: Dict[str, Any] = {
+        "model": GLAMA_MODEL_DEFAULT,
+        "messages": messages,
+        "temperature": temperature if isinstance(temperature, (int, float)) else 0.2,
+        "stream": True,
+    }
+    if isinstance(max_tokens, int) and max_tokens > 0:
+        payload["max_tokens"] = max_tokens
+
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "text/event-stream",
+        "Accept-Encoding": "identity",
+        "Authorization": f"Bearer {GLAMA_API_KEY}",
+    }
+
+    timeout = httpx.Timeout(
+        connect=min(10.0, REQUEST_TIMEOUT_SECONDS),
+        read=max(REQUEST_TIMEOUT_SECONDS, 60.0),
+        write=min(30.0, REQUEST_TIMEOUT_SECONDS),
+        pool=max(REQUEST_TIMEOUT_SECONDS, 60.0),
+    )
+
+    async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
+        async with client.stream("POST", GLAMA_API_URL, json=payload, headers=headers) as r:
+            if r.status_code >= 400:
+                body = ""
+                try:
+                    body = (await r.aread()).decode("utf-8", errors="replace")[:2000]
+                except Exception:
+                    body = ""
+                raise HTTPException(status_code=502, detail=body or f"glama_http_{r.status_code}")
+
+            async for chunk in r.aiter_raw():
+                if chunk:
+                    yield chunk
 
 
 def _extract_assistant_message(resp: Dict[str, Any]) -> Dict[str, Any]:
@@ -785,41 +849,42 @@ async def chat_completions(req: Request) -> Any:
         for m in parsed.messages
     ]
 
+    if parsed.stream:
+        # True streaming: proxy Glama SSE directly so clients get bytes immediately.
+        return StreamingResponse(
+            _glama_stream(messages=initial_messages, temperature=parsed.temperature, max_tokens=parsed.max_tokens),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
+        )
+
     if PREFER_MCP_LLM:
         content = await _mcp_llm_chat_safe(
             messages=initial_messages,
             temperature=parsed.temperature,
             max_tokens=parsed.max_tokens,
         )
-    else:
-        if not _glama_ready():
-            raise HTTPException(
-                status_code=503,
-                detail="glama_unconfigured (set GLAMA_API_URL + GLAMA_API_KEY or enable OPENAI_GATEWAY_PREFER_MCP_LLM=1)",
-            )
-        try:
-            content = await _run_tool_loop(
-                initial_messages=initial_messages,
+        return JSONResponse(_openai_chat_completion_response(content, model=GATEWAY_MODEL_ID))
+
+    if not _glama_ready():
+        raise HTTPException(
+            status_code=503,
+            detail="glama_unconfigured (set GLAMA_API_URL + GLAMA_API_KEY or enable OPENAI_GATEWAY_PREFER_MCP_LLM=1)",
+        )
+    try:
+        content = await _run_tool_loop(
+            initial_messages=initial_messages,
+            temperature=parsed.temperature,
+            max_tokens=parsed.max_tokens,
+            tool_choice=parsed.tool_choice,
+        )
+    except HTTPException as e:
+        if FALLBACK_TO_MCP_LLM_ON_GLAMA_ERROR and e.status_code in (502, 503):
+            content = await _mcp_llm_chat_safe(
+                messages=initial_messages,
                 temperature=parsed.temperature,
                 max_tokens=parsed.max_tokens,
-                tool_choice=parsed.tool_choice,
             )
-        except HTTPException as e:
-            # Common transient: upstream Glama 504 leading to gateway 502. Optionally fall back.
-            if FALLBACK_TO_MCP_LLM_ON_GLAMA_ERROR and e.status_code in (502, 503):
-                content = await _mcp_llm_chat_safe(
-                    messages=initial_messages,
-                    temperature=parsed.temperature,
-                    max_tokens=parsed.max_tokens,
-                )
-            else:
-                raise
-
-    if parsed.stream:
-        return StreamingResponse(
-            _stream_single_message(content, model=GATEWAY_MODEL_ID),
-            media_type="text/event-stream",
-            headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
-        )
+        else:
+            raise
 
     return JSONResponse(_openai_chat_completion_response(content, model=GATEWAY_MODEL_ID))

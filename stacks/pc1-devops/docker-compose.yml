@@ -34,21 +34,21 @@ services:
       timeout: 5s
       retries: 3
 
-  mcp-quickchart:
+  mcp-docker:
     <<: *default-service
     build:
-      context: ${MCP_QUICKCHART_BUILD_CONTEXT:-../../mcp/mcp-quickchart}
-    container_name: pc1-mcp-quickchart
+      context: ${MCP_DOCKER_BUILD_CONTEXT:-../../mcp/mcp-docker}
+    container_name: pc1-mcp-docker
     ports:
-      - "${MCP_QUICKCHART_PORT:-8270}:8270"
+      - "${MCP_DOCKER_PORT:-8340}:${MCP_DOCKER_PORT:-8340}"
     environment:
-      PORT: 8270
-      MCP_QUICKCHART_HOST: 0.0.0.0
-      MCP_QUICKCHART_DEFAULT_WIDTH: ${MCP_QUICKCHART_DEFAULT_WIDTH:-500}
-      MCP_QUICKCHART_DEFAULT_HEIGHT: ${MCP_QUICKCHART_DEFAULT_HEIGHT:-300}
-      MCP_QUICKCHART_DEFAULT_FORMAT: ${MCP_QUICKCHART_DEFAULT_FORMAT:-png}
+      DOCKER_HOST: ${MCP_DOCKER_DOCKER_HOST:-unix:///var/run/docker.sock}
+      PORT: ${MCP_DOCKER_PORT:-8340}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8270/health || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_DOCKER_PORT:-8340}/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -57,4 +57,4 @@ networks:
   pc1-devops-net:
     driver: bridge
     external: true
-    
+

@@ -22,7 +22,7 @@ services:
     ports:
       - "${MCP_AGENTS_PORT:-8446}:8046"
     environment:
-      PORT: ${MCP_AGENTS_PORT:-8446}
+      PORT: 8046
       AGENTS_API_BASE: ${AGENTS_API_BASE:-https://test.idc1.surf-thailand.com/agents/api}
       AGENTS_DEFAULT_USER: ${AGENTS_DEFAULT_USER:-default}
       AGENTS_DEFAULT_LIMIT: ${AGENTS_DEFAULT_LIMIT:-12}
@@ -30,7 +30,7 @@ services:
     volumes:
       - ${MCP_AGENTS_DATA_DIR:-./data/mcp-agents}:/app/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8046/health || exit 1"]
+      test: ["CMD-SHELL", "node -e \"const net=require('net'); const s=net.connect(8046,'127.0.0.1'); s.setTimeout(2000); s.on('connect',()=>process.exit(0)); s.on('timeout',()=>process.exit(1)); s.on('error',()=>process.exit(1));\" || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

@@ -1,5 +1,3 @@
-version: "3.9"
-
 x-default-service: &default-service
   restart: unless-stopped
   env_file:
@@ -13,37 +11,16 @@ x-default-service: &default-service
       max-file: "3"
 
 services:
-  webtop2:
-    <<: *default-service
-    image: lscr.io/linuxserver/webtop:latest
-    container_name: pc1-webtop2
-    environment:
-      - PUID=${WEBTOP2_PUID:-1000}
-      - PGID=${WEBTOP2_PGID:-1000}
-      - TZ=${WEBTOP2_TZ:-Asia/Bangkok}
-      - SUBTITLE=${WEBTOP2_SUBTITLE:-PC1 Webtop}
-      - TITLE=${WEBTOP2_TITLE:-PC1 Development Environment}
-    volumes:
-      - webtop2-config:/config
-      - ${PC1_WORKSPACE_HOST_DIR:-C:/chaba}:/workspaces/chaba:cached
-    ports:
-      - "${WEBTOP2_PORT:-3003}:3000"
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:3000 || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
   mcp-webtop:
     <<: *default-service
     build:
-      context: ${MCP_WEBTOP_BUILD_CONTEXT:-../../mcp/mcp-webtop}
+      context: ${MCP_WEBTOP_BUILD_CONTEXT:-../../mcp/mcp-webtops}
     container_name: pc1-mcp-webtop
     ports:
-      - "${MCP_WEBTOP_PORT:-8055}:8055"
+      - "${MCP_WEBTOP_PORT:-8056}:8091"
     environment:
       WEBTOPS_HOST: 0.0.0.0
-      PORT: ${MCP_WEBTOP_PORT:-8055}
+      PORT: 8091
       WEBTOPS_ADMIN_TOKEN: ${WEBTOPS_ADMIN_TOKEN:-}
       WEBTOPS_PUBLIC_BASE_URL: ${WEBTOPS_PUBLIC_BASE_URL:-https://webtop2.pc1.vpn/webtop/}
       WEBTOPS_BASE_PATH: ${WEBTOPS_BASE_PATH:-/webtop/}
@@ -72,13 +49,32 @@ services:
       WEBTOPS_SNAPSHOT_DIR: /snapshots
       WEBTOPS_STATE_DIR: /state
     volumes:
-      - webtop2-config:/webtop-config:ro
       - ${WEBTOPS_SNAPSHOT_HOST_DIR:-./data/mcp-webtops/snapshots}:/snapshots
       - ${WEBTOPS_STATE_HOST_DIR:-./data/mcp-webtops/state}:/state
-    depends_on:
-      - webtop2
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_WEBTOP_PORT:-8055}/health || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:8091/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-audidoc:
+    <<: *default-service
+    build:
+      context: ${MCP_AUDIDOC_BUILD_CONTEXT:-../../mcp/mcp-audidoc}
+    container_name: pc1-apps-mcp-audidoc
+    ports:
+      - "${MCP_AUDIDOC_PORT:-8076}:8075"
+    environment:
+      PORT: 8075
+      OCR_ENABLED: ${OCR_ENABLED:-1}
+      OCR_LANG: ${OCR_LANG:-tha+eng}
+      AUDIDOC_ROOT: /data
+      AUDIDOC_PDF_DIR: audidoc-pdfs
+    volumes:
+      - ${AUDIDOC_PDFS_HOST_DIR:-C:/chaba_wt/audidoc/data/mcp-audidoc/pdfs}:/data/audidoc-pdfs:ro
+      - ${MCP_AUDIDOC_DATA_DIR:-./data/mcp-audidoc/data}:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8075/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -87,8 +83,8 @@ networks:
   pc1-web-net:
     driver: bridge
     external: true
+    name: pc1-web_pc1-web-net
 
 volumes:
-  webtop2-config:
   webtops_windsurf_cache:
   webtops_workspaces:

@@ -33,6 +33,16 @@ Docker compose --profile mcp-suite up -d --build
 - mcp-doc-archiver (health): `http://pc1.vpn:8066/health`
 - mcp-doc-archiver (UI): `http://pc1.vpn:8066/docs/`
 
+### MCP Assistant (dev chat UI + async image)
+- Chat UI: `http://127.0.0.1:8099/`
+- Health: `http://127.0.0.1:8099/health`
+
+### Async Imagen jobs (mcp-imagen-light)
+- Health: `http://127.0.0.1:8020/health`
+- Create job: `POST http://127.0.0.1:8020/imagen/jobs`
+- Job status: `GET http://127.0.0.1:8020/imagen/jobs/{jobId}`
+- Job result: `GET http://127.0.0.1:8020/imagen/jobs/{jobId}/result`
+
 ### VPN HTTPS (stack Caddy)
 pc1-stack runs a Caddy container using `tls internal` on host port `3443`.
 
@@ -80,3 +90,20 @@ pc1-stack runs a Caddy container using `tls internal` on host port `3443`.
 ## Notes
 - `stacks/pc1-stack/.env` is local-only (gitignored). Do not commit real API keys.
 - `OPENAI_GATEWAY_DEBUG=1` enables `/debug/*` endpoints on the gateway for troubleshooting.
+
+## MCP Assistant + Async Imagen (runbook)
+### How it works
+- `mcp-assistant` calls `mcp-imagen-light` which returns immediately with `job_id/status_url/result_url`.
+- The web UI polls `result_url` until it returns `imageUrl` and then renders the image.
+
+### Common issues
+#### "job_failed: no_capacity"
+- This usually means `mcp-cuda` is already running at max concurrency.
+- Mitigations:
+  - Wait (jobs retry/queue).
+  - Reduce `numInferenceSteps`.
+  - Increase capacity (if GPU supports it) via `MCP_CUDA_IMAGEN_MAX_CONCURRENT_JOBS`.
+
+### Key tuning env vars
+- `IMAGEN_LIGHT_CUDA_NO_CAPACITY_RETRIES` / `IMAGEN_LIGHT_CUDA_NO_CAPACITY_BACKOFF_SECONDS` (pc1-services `mcp-imagen-light`)
+- `MCP_CUDA_IMAGEN_MAX_CONCURRENT_JOBS` / `MCP_CUDA_IMAGEN_ACQUIRE_TIMEOUT_SECONDS` (pc1-gpu `mcp-cuda`)
