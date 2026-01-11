@@ -2,9 +2,10 @@ version: "3.9"
 
 services:
   portainer:
-    image: portainer/portainer-ce:2.31.2
+    image: portainer/portainer-ce:2.33.6
     container_name: idc1-portainer
     restart: unless-stopped
+    command: ["-H", "unix:///var/run/docker.sock"]
     ports:
       - "127.0.0.1:${PORTAINER_HTTP_PORT:-9000}:9000"
     volumes:
