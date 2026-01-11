@@ -11,10 +11,14 @@ if [ -z "${PORTAINER_TOKEN:-}" ]; then
   exit 1
 fi
 
+SERVER="${PORTAINER_SERVER}"
+SERVER="${SERVER#http://}"
+SERVER="${SERVER#https://}"
+
 TOOLS_PATH="${PORTAINER_TOOLS_PATH:-/tmp/portainer-tools.yaml}"
 
 ARGS=(
-  -server "${PORTAINER_SERVER}"
+  -server "${SERVER}"
   -token "${PORTAINER_TOKEN}"
   -tools "${TOOLS_PATH}"
 )

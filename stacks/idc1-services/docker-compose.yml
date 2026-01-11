@@ -1,0 +1,46 @@
+version: "3.9"
+
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - .env
+  networks:
+    - idc1-services-net
+    - idc1-stack-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  mcp-glama:
+    <<: *default-service
+    build:
+      context: ${MCP_GLAMA_BUILD_CONTEXT:-../../mcp/mcp-glama}
+    ports:
+      - "127.0.0.1:${MCP_GLAMA_PORT:-7441}:8014"
+    environment:
+      PORT: 8014
+      GLAMA_API_URL: ${GLAMA_API_URL:-}
+      GLAMA_API_KEY: ${GLAMA_API_KEY:-}
+      GLAMA_MODEL: ${GLAMA_MODEL:-gpt-4o-mini}
+      GLAMA_TEMPERATURE: ${GLAMA_TEMPERATURE:-0.2}
+      GLAMA_MAX_TOKENS: ${GLAMA_MAX_TOKENS:-900}
+      GLAMA_TIMEOUT_SECONDS: ${GLAMA_TIMEOUT_SECONDS:-30}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8014/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  idc1-services-net:
+    driver: bridge
+    external: true
+    name: idc1-services-net
+
+  idc1-stack-net:
+    driver: bridge
+    external: true
+    name: idc1-stack-net
