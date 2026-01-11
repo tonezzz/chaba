@@ -352,13 +352,13 @@ Keep `docs/services_map.json` as a small index / compatibility layer that points
 - `.env` (gitignored) should include:
   - `WEBTOP_PUID=1000`
   - `WEBTOP_PGID=1000`
-- `stacks/idc1-stack/docker-compose.yml` maps these to LinuxServer `PUID/PGID` for `webtop`/`webtop2`.
+- `stacks/idc1-stack/docker-compose.yml` maps these to LinuxServer `PUID/PGID` for webtops sessions.
 
-Recreate `webtop2` (example):
+Recreate webtops session container (example):
 
 ```bash
 cd /workspaces/chaba/stacks/idc1-stack
-docker compose --profile mcp-suite up -d --force-recreate webtop2
+docker compose --profile mcp-suite up -d --force-recreate
 ```
 
 Verification notes:
@@ -366,20 +366,16 @@ Verification notes:
 - Verify the mapped user instead:
 
 ```bash
-docker exec -it idc1-webtop2 id abc
-docker exec -it --user 1000:1000 idc1-webtop2 id
+docker exec -it <webtops-container> id abc
+docker exec -it --user 1000:1000 <webtops-container> id
 ```
 
 ## pc1-stack webtop sessions (multi-user / isolated)
-pc1 keeps only the `mcp-webtop*` helpers for managing persistent webtop `/config` volumes (export/import). The Webtop UI containers are not part of `pc1-stack`.
+pc1 uses the canonical **mcp-webtops** service in `stacks/pc1-web`.
 
-### Sessions
-- **mcp-webtop2**
-  - config volume: `webtop2-config`
-  - config API: `mcp-webtop2` on `http://pc1.vpn:8055`
-- **mcp-webtop3**
-  - config volume: `webtop3-config`
-  - config API: `mcp-webtop3` on `http://pc1.vpn:8056`
+### MCP endpoint
+- MCP (host port): `http://pc1.vpn:8056/mcp`
+- Health: `http://pc1.vpn:8056/health`
 
 ### pc1-stack Caddy (VPN HTTPS, tls internal) — key workflow
 pc1 runs Caddy as a Docker container (`pc1-caddy`) with an internal CA (`tls internal`) to provide HTTPS for VPN hostnames.

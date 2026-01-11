@@ -628,7 +628,7 @@
         ]
       }
     },
-    "pc1": { 
+    "pc1": {
       "repos": {
         "chaba": "C:\\chaba"
       },
@@ -908,80 +908,6 @@
                 "local": "http://localhost:8260/health"
               }
             },
-            "mcp-webtop2": {
-              "profiles": [
-                "mcp-suite"
-              ],
-              "ports": [
-                "${MCP_WEBTOP_PORT:-8055}:8055"
-              ],
-              "port": 8055,
-              "container_name": "pc1-mcp-webtop2",
-              "type": "build",
-              "volumes": [
-                {
-                  "source": "webtop2-config",
-                  "target": "/webtop-config",
-                  "source_kind": "volume"
-                },
-                {
-                  "source": "${MCP_WEBTOP_DATA_DIR:-./data/mcp-webtop}",
-                  "target": "/data",
-                  "source_kind": "bind"
-                }
-              ],
-              "endpoints": {
-                "vpn": "http://pc1.vpn:${MCP_WEBTOP_PORT:-8055}",
-                "local": "http://localhost:8055"
-              },
-              "ports_map": [
-                {
-                  "raw": "${MCP_WEBTOP_PORT:-8055}:8055"
-                }
-              ],
-              "health_path": "/health",
-              "health_urls": {
-                "vpn": "http://pc1.vpn:${MCP_WEBTOP_PORT:-8055}/health",
-                "local": "http://localhost:8055/health"
-              }
-            },
-            "mcp-webtop3": {
-              "profiles": [
-                "mcp-suite"
-              ],
-              "ports": [
-                "${MCP_WEBTOP3_PORT:-8056}:8056"
-              ],
-              "port": 8056,
-              "container_name": "pc1-mcp-webtop3",
-              "type": "build",
-              "volumes": [
-                {
-                  "source": "webtop3-config",
-                  "target": "/webtop-config",
-                  "source_kind": "volume"
-                },
-                {
-                  "source": "${MCP_WEBTOP3_DATA_DIR:-./data/mcp-webtop3}",
-                  "target": "/data",
-                  "source_kind": "bind"
-                }
-              ],
-              "endpoints": {
-                "vpn": "http://pc1.vpn:${MCP_WEBTOP3_PORT:-8056}",
-                "local": "http://localhost:8056"
-              },
-              "ports_map": [
-                {
-                  "raw": "${MCP_WEBTOP3_PORT:-8056}:8056"
-                }
-              ],
-              "health_path": "/health",
-              "health_urls": {
-                "vpn": "http://pc1.vpn:${MCP_WEBTOP3_PORT:-8056}/health",
-                "local": "http://localhost:8056/health"
-              }
-            },
             "mcp-docker": {
               "profiles": [
                 "mcp-suite"
@@ -1053,6 +979,32 @@
                 "vpn": "http://pc1-stack.pc1.vpn",
                 "local": "http://localhost:${PC1_CADDY_HTTP_PORT:-3080}"
               }
+            },
+            "mcp-webtops": {
+              "profiles": [
+                "mcp-suite"
+              ],
+              "ports": [
+                "${MCP_WEBTOPS_PORT:-8056}:8091"
+              ],
+              "port": 8056,
+              "container_name": "pc1-mcp-webtops",
+              "type": "build",
+              "endpoints": {
+                "vpn": "http://pc1.vpn:${MCP_WEBTOPS_PORT:-8056}",
+                "local": "http://localhost:8056"
+              },
+              "ports_map": [
+                {
+                  "raw": "${MCP_WEBTOPS_PORT:-8056}:8091"
+                }
+              ],
+              "health_path": "/health",
+              "health_urls": {
+                "vpn": "http://pc1.vpn:${MCP_WEBTOPS_PORT:-8056}/health",
+                "local": "http://localhost:8056/health"
+              },
+              "notes": "Canonical webtops MCP runs in stacks/pc1-web and is consumed by pc1-stack/1mcp via host.docker.internal."
             }
           }
         },
@@ -1084,12 +1036,6 @@
         ],
         "mcp-playwright": [
           "${MCP_PLAYWRIGHT_PORT:-8260}:${MCP_PLAYWRIGHT_PORT:-8260}"
-        ],
-        "mcp-webtop2": [
-          "${MCP_WEBTOP_PORT:-8055}:8055"
-        ],
-        "mcp-webtop3": [
-          "${MCP_WEBTOP3_PORT:-8056}:8056"
         ],
         "mcp-docker": [
           "${MCP_DOCKER_PORT:-8340}:8340"
@@ -1154,20 +1100,10 @@
             "scheme": "http"
           }
         ],
-        "mcp-webtop2": [
+        "mcp-webtops": [
           {
-            "raw": "${MCP_WEBTOP_PORT:-8055}:8055",
-            "raw_host": "${MCP_WEBTOP_PORT",
-            "raw_container": "-8055}",
-            "host": null,
-            "container": null,
-            "scheme": "http"
-          }
-        ],
-        "mcp-webtop3": [
-          {
-            "raw": "${MCP_WEBTOP3_PORT:-8056}:8056",
-            "raw_host": "${MCP_WEBTOP3_PORT",
+            "raw": "${MCP_WEBTOPS_PORT:-8056}:8091",
+            "raw_host": "${MCP_WEBTOPS_PORT",
             "raw_container": "-8056}",
             "host": null,
             "container": null,
@@ -1623,19 +1559,19 @@
               },
               "container_name": "pc2-mcp-playwright"
             },
-            "webtop3": {
+            "webtops": {
               "profiles": [
                 "mcp-suite"
               ],
               "ports": [
-                "${WEBTOP3_PORT:-3004}:3000"
+                "${WEBTOPS_PORT:-3004}:3000"
               ],
               "port": 3004,
-              "container_name": "pc2-webtop3",
+              "container_name": "pc2-webtops",
               "type": "build",
               "volumes": [
                 {
-                  "source": "webtop3-config",
+                  "source": "webtops-config",
                   "target": "/config",
                   "source_kind": "volume"
                 },
@@ -1653,49 +1589,49 @@
                 }
               ],
               "endpoints": {
-                "vpn": "http://pc2.vpn:${WEBTOP3_PORT:-3004}",
+                "vpn": "http://pc2.vpn:${WEBTOPS_PORT:-3004}",
                 "local": "http://localhost:3004"
               },
               "ports_map": [
                 {
-                  "raw": "${WEBTOP3_PORT:-3004}:3000"
+                  "raw": "${WEBTOPS_PORT:-3004}:3000"
                 }
               ]
             },
-            "mcp-webtop3": {
+            "mcp-webtops": {
               "profiles": [
                 "mcp-suite"
               ],
               "ports": [
-                "${MCP_WEBTOP3_PORT:-8056}:8056"
+                "${MCP_WEBTOPS_PORT:-8056}:8056"
               ],
               "port": 8056,
-              "container_name": "pc2-mcp-webtop3",
+              "container_name": "pc2-mcp-webtops",
               "type": "build",
               "volumes": [
                 {
-                  "source": "webtop3-config",
+                  "source": "webtops-config",
                   "target": "/webtop-config",
                   "source_kind": "volume"
                 },
                 {
-                  "source": "${MCP_WEBTOP3_DATA_DIR:-./data/mcp-webtop3}",
+                  "source": "${MCP_WEBTOPS_DATA_DIR:-./data/mcp-webtops}",
                   "target": "/data",
                   "source_kind": "bind"
                 }
               ],
               "endpoints": {
-                "vpn": "http://pc2.vpn:${MCP_WEBTOP3_PORT:-8056}",
+                "vpn": "http://pc2.vpn:${MCP_WEBTOPS_PORT:-8056}",
                 "local": "http://localhost:8056"
               },
               "ports_map": [
                 {
-                  "raw": "${MCP_WEBTOP3_PORT:-8056}:8056"
+                  "raw": "${MCP_WEBTOPS_PORT:-8056}:8056"
                 }
               ],
               "health_path": "/health",
               "health_urls": {
-                "vpn": "http://pc2.vpn:${MCP_WEBTOP3_PORT:-8056}/health",
+                "vpn": "http://pc2.vpn:${MCP_WEBTOPS_PORT:-8056}/health",
                 "local": "http://localhost:8056/health"
               }
             },
@@ -1799,14 +1735,14 @@
         "mcp-playwright": [
           "${MCP_PLAYWRIGHT_PORT:-8025}:${MCP_PLAYWRIGHT_PORT:-8025}"
         ],
-        "webtop3": [
-          "${WEBTOP3_PORT:-3004}:3000"
-        ],
-        "mcp-webtop3": [
-          "${MCP_WEBTOP3_PORT:-8056}:8056"
-        ],
         "cadvisor": [
           "8080:8080"
+        ],
+        "webtops": [
+          "${WEBTOPS_PORT:-3004}:3000"
+        ],
+        "mcp-webtops": [
+          "${MCP_WEBTOPS_PORT:-8056}:8056"
         ]
       },
       "ports_map": {
@@ -1928,26 +1864,6 @@
             "scheme": "http"
           }
         ],
-        "webtop3": [
-          {
-            "raw": "${WEBTOP3_PORT:-3004}:3000",
-            "raw_host": "${WEBTOP3_PORT",
-            "raw_container": "-3004}",
-            "host": null,
-            "container": null,
-            "scheme": "http"
-          }
-        ],
-        "mcp-webtop3": [
-          {
-            "raw": "${MCP_WEBTOP3_PORT:-8056}:8056",
-            "raw_host": "${MCP_WEBTOP3_PORT",
-            "raw_container": "-8056}",
-            "host": null,
-            "container": null,
-            "scheme": "http"
-          }
-        ],
         "cadvisor": [
           {
             "raw": "8080:8080",
@@ -1955,6 +1871,26 @@
             "raw_container": "8080",
             "host": 8080,
             "container": 8080,
+            "scheme": "http"
+          }
+        ],
+        "webtops": [
+          {
+            "raw": "${WEBTOPS_PORT:-3004}:3000",
+            "raw_host": "${WEBTOPS_PORT",
+            "raw_container": "-3004}",
+            "host": null,
+            "container": null,
+            "scheme": "http"
+          }
+        ],
+        "mcp-webtops": [
+          {
+            "raw": "${MCP_WEBTOPS_PORT:-8056}:8056",
+            "raw_host": "${MCP_WEBTOPS_PORT",
+            "raw_container": "-8056}",
+            "host": null,
+            "container": null,
             "scheme": "http"
           }
         ]
