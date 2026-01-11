@@ -16,7 +16,7 @@ $StackCommands = @{
     "ingress" = @{
         "stack" = "pc1-web"
         "profile" = ""
-        "description" = "Ingress + web UI (Caddy on :80/:443, webtop2, mcp-webtop)"
+        "description" = "Ingress + web UI (Caddy on :80/:443, mcp-webtops)"
     }
     "mcp" = @{
         "stack" = "pc1-stack"

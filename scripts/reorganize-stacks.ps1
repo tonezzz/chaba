@@ -37,7 +37,7 @@ $HostConfigs = @{
         "Services" = @{
             "core" = @("1mcp-agent", "mcp-agents", "mcp-rag", "mcp-tester", "mcp-playwright")
             "auth" = @("authentik-server", "authentik-worker")
-            "web" = @("webtop2", "mcp-webtop")
+            "web" = @("mcp-webtops")
             "devops" = @("mcp-devops", "mcp-quickchart")
         }
     }
