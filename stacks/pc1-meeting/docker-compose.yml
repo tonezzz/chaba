@@ -1,0 +1,54 @@
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - ${PC1_MEETING_ENV_FILE:-.env}
+  networks:
+    - pc1-meeting-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  mcp-meeting:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_MEETING_BUILD_CONTEXT:-../../mcp/mcp-meeting}
+    container_name: pc1-mcp-meeting
+    ports:
+      - "${MCP_MEETING_PORT:-7208}:8008"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      PORT: 8008
+      MEETING_LOG_LEVEL: ${MEETING_LOG_LEVEL:-INFO}
+
+      MEETING_STORAGE_PATH: ${MEETING_STORAGE_PATH:-/data/meetings.json}
+      MEETING_MAX_SEGMENTS: ${MEETING_MAX_SEGMENTS:-1500}
+      MEETING_SUMMARY_MAX_ENTRIES: ${MEETING_SUMMARY_MAX_ENTRIES:-20}
+
+      MEETING_STT_URL: ${MEETING_STT_URL:-}
+      MEETING_STT_HEALTH_PATH: ${MEETING_STT_HEALTH_PATH:-/health}
+      MEETING_STT_TIMEOUT_SECONDS: ${MEETING_STT_TIMEOUT_SECONDS:-45}
+      MEETING_DEFAULT_LANGUAGE: ${MEETING_DEFAULT_LANGUAGE:-}
+      MEETING_DEFAULT_WHISPER_MODEL: ${MEETING_DEFAULT_WHISPER_MODEL:-}
+
+      MEETING_LLM_BASE_URL: ${MEETING_LLM_BASE_URL:-http://host.docker.internal:8181/v1}
+      MEETING_LLM_API_KEY: ${MEETING_LLM_API_KEY:-}
+      MEETING_LLM_MODEL: ${MEETING_LLM_MODEL:-glama-default}
+      MEETING_LLM_TEMPERATURE: ${MEETING_LLM_TEMPERATURE:-0.2}
+      MEETING_LLM_TIMEOUT_SECONDS: ${MEETING_LLM_TIMEOUT_SECONDS:-60}
+      MEETING_SUMMARY_USE_LLM: ${MEETING_SUMMARY_USE_LLM:-0}
+    volumes:
+      - ${MEETING_STORAGE_ROOT:-./data/meeting}:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8008/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  pc1-meeting-net:
+    driver: bridge
