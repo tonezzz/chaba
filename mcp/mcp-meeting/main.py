@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 APP_NAME = "mcp-meeting"
@@ -206,6 +207,14 @@ class MeetingManager:
             self._save_to_disk_locked()
             return summary
 
+    async def set_summary(self, session_id: str, summary: str) -> str:
+        async with self._lock:
+            session = self._require_session_unlocked(session_id)
+            session.summary = (summary or "").strip() or None
+            session.updated_at = utcnow()
+            self._save_to_disk_locked()
+            return session.summary or ""
+
     async def _get_session(self, session_id: str) -> MeetingSession:
         async with self._lock:
             return self._require_session_unlocked(session_id)
@@ -308,9 +317,96 @@ class MeetingService:
         self.default_whisper_model = os.getenv("MEETING_DEFAULT_WHISPER_MODEL")
         self.summary_window = int(os.getenv("MEETING_SUMMARY_MAX_ENTRIES", "20"))
 
+        self._llm_base_url = (os.getenv("MEETING_LLM_BASE_URL") or "").strip().rstrip("/")
+        self._llm_api_key = (os.getenv("MEETING_LLM_API_KEY") or os.getenv("OPENAI_API_KEY") or "").strip()
+        self._llm_model = (os.getenv("MEETING_LLM_MODEL") or "glama-default").strip() or "glama-default"
+        self._llm_temperature = float(os.getenv("MEETING_LLM_TEMPERATURE", "0.2"))
+        self._llm_timeout = float(os.getenv("MEETING_LLM_TIMEOUT_SECONDS", "60"))
+        self._summary_use_llm_default = (os.getenv("MEETING_SUMMARY_USE_LLM") or "").strip().lower() in (
+            "1",
+            "true",
+            "yes",
+            "on",
+        )
+
     @property
     def stt_url(self) -> str:
         return self._stt_url
+
+    def llm_ready(self) -> bool:
+        return bool(self._llm_base_url)
+
+    async def summarize_with_llm(
+        self,
+        session_id: str,
+        *,
+        max_entries: int,
+        model: Optional[str] = None,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> str:
+        session = await self.manager._get_session(session_id)
+        entries = session.entries[-max_entries:] if max_entries else session.entries
+        if not entries:
+            return "No transcript has been captured yet."
+
+        lines: List[str] = []
+        for entry in entries:
+            speaker = (entry.speaker or "speaker").strip() or "speaker"
+            text = (entry.text or "").strip()
+            if not text:
+                continue
+            if len(text) > 1200:
+                text = text[:1197] + "..."
+            lines.append(f"{speaker}: {text}")
+
+        transcript = "\n".join(lines).strip() or "(empty)"
+
+        system_prompt = (
+            "You are a meeting assistant. Summarize the meeting transcript into a concise, actionable note. "
+            "Prefer bullet points. Include: decisions, action items (with owners if present), open questions, and key context. "
+            "Do not invent facts."
+        )
+        user_prompt = f"Meeting transcript (most recent {len(entries)} entries):\n\n{transcript}\n\nReturn the summary." 
+
+        payload: Dict[str, Any] = {
+            "model": (model or self._llm_model).strip() or self._llm_model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "temperature": self._llm_temperature if temperature is None else float(temperature),
+            "stream": False,
+        }
+        if max_tokens is not None:
+            payload["max_tokens"] = int(max_tokens)
+
+        url = self._llm_base_url.rstrip("/") + "/chat/completions"
+        headers = {"Content-Type": "application/json"}
+        if self._llm_api_key:
+            headers["Authorization"] = f"Bearer {self._llm_api_key}"
+
+        async with httpx.AsyncClient(timeout=self._llm_timeout) as client:
+            response = await client.post(url, json=payload, headers=headers)
+
+        if response.status_code >= 400:
+            raise HTTPException(status_code=502, detail=f"llm_error:{response.status_code}")
+
+        try:
+            data = response.json()
+        except ValueError as exc:
+            raise HTTPException(status_code=502, detail="llm_invalid_json") from exc
+
+        choices = data.get("choices") or []
+        content = ""
+        if choices and isinstance(choices, list):
+            msg = (choices[0] or {}).get("message") or {}
+            content = (msg.get("content") or "").strip()
+
+        if not content:
+            raise HTTPException(status_code=502, detail="llm_empty")
+
+        return content
 
     async def transcribe_and_store(
         self,
@@ -488,8 +584,48 @@ async def tool_summarize_meeting(arguments: Dict[str, Any]) -> Dict[str, Any]:
         max_entries = int(max_entries)
     except (TypeError, ValueError):
         raise HTTPException(status_code=400, detail="max_entries must be numeric")
-    summary = await meeting_service.manager.summarize_session(session_id, max_entries=max_entries)
-    return {"session_id": session_id, "summary": summary, "entries_considered": max_entries}
+
+    use_llm_value = arguments.get("use_llm")
+    use_llm = meeting_service._summary_use_llm_default
+    if use_llm_value is not None:
+        use_llm = bool(use_llm_value)
+
+    model = arguments.get("llm_model")
+    temperature = arguments.get("llm_temperature")
+    max_tokens = arguments.get("llm_max_tokens")
+
+    summary: str
+    summary_source = "heuristic"
+    if use_llm and meeting_service.llm_ready():
+        try:
+            temp_value: Optional[float] = None
+            if temperature is not None:
+                temp_value = float(temperature)
+            tokens_value: Optional[int] = None
+            if max_tokens is not None:
+                tokens_value = int(max_tokens)
+            summary = await meeting_service.summarize_with_llm(
+                session_id,
+                max_entries=max_entries,
+                model=str(model) if model is not None else None,
+                temperature=temp_value,
+                max_tokens=tokens_value,
+            )
+            await meeting_service.manager.set_summary(session_id, summary)
+            summary_source = "llm"
+        except Exception as exc:  # noqa: BLE001
+            LOGGER.warning("llm summary failed, falling back to heuristic: %s", exc)
+            summary = await meeting_service.manager.summarize_session(session_id, max_entries=max_entries)
+    else:
+        summary = await meeting_service.manager.summarize_session(session_id, max_entries=max_entries)
+
+    return {
+        "session_id": session_id,
+        "summary": summary,
+        "entries_considered": max_entries,
+        "source": summary_source,
+        "llm_ready": meeting_service.llm_ready(),
+    }
 
 
 async def tool_list_sessions(arguments: Dict[str, Any]) -> Dict[str, Any]:
@@ -596,13 +732,17 @@ tool_schemas: Dict[str, Dict[str, Any]] = {
     },
     "summarize_meeting": {
         "name": "summarize_meeting",
-        "description": "Generate a lightweight heuristic summary over the recent transcript window.",
+        "description": "Generate a meeting summary (heuristic by default; can optionally use an OpenAI-compatible LLM gateway).",
         "input_schema": {
             "type": "object",
             "required": ["session_id"],
             "properties": {
                 "session_id": {"type": "string"},
                 "max_entries": {"type": "integer", "minimum": 1},
+                "use_llm": {"type": "boolean", "description": "If true, attempt LLM summary then fall back to heuristic."},
+                "llm_model": {"type": "string", "description": "Override MEETING_LLM_MODEL for this request."},
+                "llm_temperature": {"type": "number"},
+                "llm_max_tokens": {"type": "integer", "minimum": 1},
             },
         },
     },
@@ -642,6 +782,177 @@ async def sessions(include_archived: bool = False) -> Dict[str, Any]:
 @app.get("/sessions/{session_id}")
 async def session_detail(session_id: str, entry_limit: Optional[int] = None) -> Dict[str, Any]:
     return await meeting_service.manager.meeting_notes(session_id, entry_limit=entry_limit)
+
+
+@app.get("/", response_class=HTMLResponse)
+@app.get("/ui", response_class=HTMLResponse)
+async def ui() -> HTMLResponse:
+    html = """<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>mcp-meeting</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 16px; }
+    .wrap { max-width: 1100px; margin: 0 auto; }
+    h1 { margin: 0 0 8px; font-size: 20px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 900px) { .row { grid-template-columns: 1fr; } }
+    .card { border: 1px solid rgba(127,127,127,0.35); border-radius: 10px; padding: 12px; }
+    label { display: block; font-size: 12px; opacity: .8; margin-top: 10px; }
+    input, textarea, select { width: 100%; box-sizing: border-box; padding: 8px; border-radius: 8px; border: 1px solid rgba(127,127,127,0.35); background: transparent; }
+    textarea { min-height: 92px; resize: vertical; }
+    .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    button { padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(127,127,127,0.35); background: rgba(127,127,127,0.12); cursor: pointer; }
+    button.primary { background: rgba(0,120,255,0.22); border-color: rgba(0,120,255,0.45); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    pre { white-space: pre-wrap; word-break: break-word; margin: 0; }
+    .small { font-size: 12px; opacity: .8; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 600px) { .grid2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>mcp-meeting console</h1>
+  <div class="small">Calls <span class="mono">/invoke</span> and <span class="mono">/sessions</span> on this server.</div>
+
+  <div class="row" style="margin-top: 12px;">
+    <div class="card">
+      <div class="grid2">
+        <div>
+          <label>Session ID</label>
+          <input id="sessionId" placeholder="e.g. standup-2026-01-11"/>
+        </div>
+        <div>
+          <label>Speaker (optional)</label>
+          <input id="speaker" placeholder="e.g. chaba"/>
+        </div>
+      </div>
+
+      <label>Title (start_meeting)</label>
+      <input id="title" placeholder="Optional meeting title"/>
+
+      <div class="grid2">
+        <div>
+          <label>Participants (comma-separated)</label>
+          <input id="participants" placeholder="alice,bob"/>
+        </div>
+        <div>
+          <label>Tags (comma-separated)</label>
+          <input id="tags" placeholder="work,planning"/>
+        </div>
+      </div>
+
+      <label>Append text (append_transcript)</label>
+      <textarea id="text" placeholder="Paste a note or transcript snippet..."></textarea>
+
+      <div class="grid2">
+        <div>
+          <label>Summary max_entries</label>
+          <input id="maxEntries" type="number" min="1" value="20"/>
+        </div>
+        <div>
+          <label>Summary mode</label>
+          <select id="summaryMode">
+            <option value="heuristic" selected>heuristic</option>
+            <option value="llm">llm (if configured)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="btns">
+        <button class="primary" onclick="startMeeting()">start_meeting</button>
+        <button onclick="endMeeting()">end_meeting</button>
+        <button onclick="appendText()">append_transcript</button>
+        <button onclick="summarize()">summarize_meeting</button>
+        <button onclick="refreshSessions()">list_sessions</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="small" style="margin-bottom: 8px;">Response</div>
+      <pre id="out" class="mono">(no output yet)</pre>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 12px;">
+    <div class="small" style="margin-bottom: 8px;">Sessions</div>
+    <pre id="sessions" class="mono">(click list_sessions)</pre>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  function csvToList(v) {
+    const s = (v || '').trim();
+    if (!s) return [];
+    return s.split(',').map(x => x.trim()).filter(Boolean);
+  }
+
+  async function invoke(tool, argumentsObj) {
+    const res = await fetch('/invoke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tool, arguments: argumentsObj || {} })
+    });
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch { data = text; }
+    $('out').textContent = JSON.stringify({ ok: res.ok, status: res.status, data }, null, 2);
+    if (!res.ok) throw new Error(typeof data === 'string' ? data : JSON.stringify(data));
+    return data;
+  }
+
+  async function startMeeting() {
+    const session_id = $('sessionId').value.trim();
+    await invoke('start_meeting', {
+      session_id,
+      title: $('title').value || undefined,
+      participants: csvToList($('participants').value),
+      tags: csvToList($('tags').value),
+    });
+    await refreshSessions();
+  }
+
+  async function endMeeting() {
+    const session_id = $('sessionId').value.trim();
+    await invoke('end_meeting', { session_id });
+    await refreshSessions();
+  }
+
+  async function appendText() {
+    const session_id = $('sessionId').value.trim();
+    const text = $('text').value;
+    await invoke('append_transcript', {
+      session_id,
+      text,
+      speaker: $('speaker').value || undefined,
+    });
+  }
+
+  async function summarize() {
+    const session_id = $('sessionId').value.trim();
+    const max_entries = parseInt($('maxEntries').value || '20', 10);
+    const use_llm = $('summaryMode').value === 'llm';
+    await invoke('summarize_meeting', { session_id, max_entries, use_llm });
+  }
+
+  async function refreshSessions() {
+    const include_archived = true;
+    const res = await fetch('/sessions?include_archived=' + String(include_archived));
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch { data = text; }
+    $('sessions').textContent = JSON.stringify(data, null, 2);
+  }
+</script>
+</body>
+</html>"""
+    return HTMLResponse(content=html)
 
 
 @app.post("/invoke")
