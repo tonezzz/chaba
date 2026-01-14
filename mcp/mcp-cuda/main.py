@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import contextlib
 import io
 import json
 import os
@@ -19,7 +20,7 @@ from PIL import Image
 from pydantic import BaseModel, Field
 from sentence_transformers import CrossEncoder, SentenceTransformer
 import torch
-from diffusers import StableDiffusionXLPipeline
+from diffusers import StableDiffusionPipeline, StableDiffusionXLPipeline
 
 APP_NAME = "mcp-cuda"
 APP_VERSION = "0.1.0"
@@ -35,6 +36,13 @@ MAX_RERANK_DOCS = int(os.getenv("MCP_CUDA_MAX_RERANK_DOCS", "64"))
 
 
 SDXL_MODEL_DIR = (os.getenv("MCP_CUDA_SDXL_MODEL_DIR") or "/models/sdxl").strip()
+SD15_MODEL_FILE = (os.getenv("MCP_CUDA_SD15_MODEL_FILE") or "").strip()
+DISABLE_SAFETY_CHECKER = (os.getenv("MCP_CUDA_DISABLE_SAFETY_CHECKER") or "0").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+)
+ENABLE_XFORMERS = (os.getenv("MCP_CUDA_ENABLE_XFORMERS") or "0").strip().lower() in ("1", "true", "yes")
 SDXL_MAX_PIXELS = int(os.getenv("MCP_CUDA_SDXL_MAX_PIXELS", str(1024 * 1024)))
 SDXL_MAX_STEPS = int(os.getenv("MCP_CUDA_SDXL_MAX_STEPS", "60"))
 SDXL_DEFAULT_STEPS = int(os.getenv("MCP_CUDA_SDXL_DEFAULT_STEPS", "30"))
@@ -151,6 +159,7 @@ _rerank_model: Optional[CrossEncoder] = None
 
 
 _sdxl_pipeline: Optional[StableDiffusionXLPipeline] = None
+_sd15_pipeline: Optional[StableDiffusionPipeline] = None
 _sdxl_pipeline_lock = threading.Lock()
 _sdxl_job_semaphore = threading.Semaphore(SDXL_MAX_CONCURRENT_JOBS)
 
@@ -168,6 +177,14 @@ def _clamp_int(value: Optional[int], *, default: int, min_value: int, max_value:
     return v
 
 
+def _round_down_multiple(value: int, *, base: int) -> int:
+    if base <= 1:
+        return int(value)
+    v = int(value)
+    v -= v % int(base)
+    return v
+
+
 def _validate_imagen_args(args: ImagenJobCreateArgs) -> Dict[str, Any]:
     prompt = (args.prompt or "").strip()
     if not prompt:
@@ -175,6 +192,8 @@ def _validate_imagen_args(args: ImagenJobCreateArgs) -> Dict[str, Any]:
 
     width = _clamp_int(args.width, default=1024, min_value=256, max_value=2048)
     height = _clamp_int(args.height, default=1024, min_value=256, max_value=2048)
+    width = max(256, _round_down_multiple(width, base=8))
+    height = max(256, _round_down_multiple(height, base=8))
     if width * height > SDXL_MAX_PIXELS:
         raise HTTPException(status_code=400, detail=f"too_many_pixels: max={SDXL_MAX_PIXELS}")
 
@@ -241,6 +260,60 @@ def _get_sdxl_pipeline() -> StableDiffusionXLPipeline:
         if device == "cuda":
             pipe = pipe.to("cuda")
         _sdxl_pipeline = pipe
+        return pipe
+
+
+def _get_sd15_pipeline() -> StableDiffusionPipeline:
+    global _sd15_pipeline
+    with _sdxl_pipeline_lock:
+        if _sd15_pipeline is not None:
+            return _sd15_pipeline
+
+        model_file = (SD15_MODEL_FILE or "").strip()
+        if not model_file:
+            raise HTTPException(status_code=503, detail="sd15_model_file_not_configured")
+        if not os.path.exists(model_file):
+            raise HTTPException(status_code=503, detail=f"sd15_model_file_missing: {model_file}")
+
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        torch_dtype = torch.float16 if device == "cuda" else torch.float32
+
+        try:
+            pipe = StableDiffusionPipeline.from_single_file(
+                model_file,
+                torch_dtype=torch_dtype,
+                local_files_only=True,
+            )
+        except TypeError:
+            pipe = StableDiffusionPipeline.from_single_file(
+                model_file,
+                torch_dtype=torch_dtype,
+            )
+
+        if DISABLE_SAFETY_CHECKER:
+            try:
+                pipe.safety_checker = None
+                pipe.requires_safety_checker = False
+            except Exception:
+                pass
+
+        try:
+            pipe.enable_attention_slicing()
+        except Exception:
+            pass
+        try:
+            pipe.enable_vae_slicing()
+        except Exception:
+            pass
+        if ENABLE_XFORMERS:
+            try:
+                pipe.enable_xformers_memory_efficient_attention()
+            except Exception:
+                pass
+
+        if device == "cuda":
+            pipe = pipe.to("cuda")
+        _sd15_pipeline = pipe
         return pipe
 
 
@@ -338,7 +411,8 @@ def _run_imagen_job(job: _ImagenJob) -> None:
         job.status = "running"
         job.add_event({"type": "started", "jobId": job.job_id})
 
-        pipe = _get_sdxl_pipeline()
+        using = "sd15_single" if (SD15_MODEL_FILE and os.path.exists(SD15_MODEL_FILE)) else "sdxl"
+        pipe = _get_sd15_pipeline() if using == "sd15_single" else _get_sdxl_pipeline()
 
         seed = job.spec.get("seed")
         if seed is None:
@@ -348,37 +422,63 @@ def _run_imagen_job(job: _ImagenJob) -> None:
         steps = int(job.spec.get("steps") or 0)
         job.progress = {"step": 0, "steps": steps}
 
-        def _cb(_pipe, step_idx: int, _timestep, _kwargs):
-            job.progress = {"step": int(step_idx) + 1, "steps": steps}
-            every = int(SDXL_PREVIEW_EVERY_N_STEPS or 0)
-            if every > 0 and (int(job.progress.get("step") or 0) % every == 0):
-                b64 = _latents_to_preview_png_base64(pipe, (_kwargs or {}).get("latents"))
-                if isinstance(b64, str) and b64:
-                    job.preview = {
-                        "jobId": job.job_id,
-                        "status": job.status,
+        autocast_ctx = torch.autocast(device_type="cuda") if torch.cuda.is_available() else contextlib.nullcontext()
+        if using == "sdxl":
+            def _cb(_pipe, step_idx: int, _timestep, _kwargs):
+                job.progress = {"step": int(step_idx) + 1, "steps": steps}
+                every = int(SDXL_PREVIEW_EVERY_N_STEPS or 0)
+                if every > 0 and (int(job.progress.get("step") or 0) % every == 0):
+                    b64 = _latents_to_preview_png_base64(pipe, (_kwargs or {}).get("latents"))
+                    if isinstance(b64, str) and b64:
+                        job.preview = {
+                            "jobId": job.job_id,
+                            "status": job.status,
+                            "progress": job.progress,
+                            "mimeType": "image/png",
+                            "imageBase64": b64,
+                        }
+                job.add_event(
+                    {
+                        "type": "progress",
                         "progress": job.progress,
-                        "mimeType": "image/png",
-                        "imageBase64": b64,
                     }
-            job.add_event(
-                {
-                    "type": "progress",
-                    "progress": job.progress,
-                }
-            )
-            return {}
+                )
+                return {}
 
-        out = pipe(
-            prompt=str(job.spec.get("prompt") or ""),
-            negative_prompt=job.spec.get("negative_prompt"),
-            width=int(job.spec.get("width") or 1024),
-            height=int(job.spec.get("height") or 1024),
-            num_inference_steps=steps,
-            guidance_scale=float(job.spec.get("guidance_scale") or 7.0),
-            generator=generator,
-            callback_on_step_end=_cb,
-        )
+            with torch.inference_mode(), autocast_ctx:
+                out = pipe(
+                    prompt=str(job.spec.get("prompt") or ""),
+                    negative_prompt=job.spec.get("negative_prompt"),
+                    width=int(job.spec.get("width") or 1024),
+                    height=int(job.spec.get("height") or 1024),
+                    num_inference_steps=steps,
+                    guidance_scale=float(job.spec.get("guidance_scale") or 7.0),
+                    generator=generator,
+                    callback_on_step_end=_cb,
+                )
+        else:
+            # StableDiffusionPipeline uses callback(step, timestep, latents)
+            def _cb_sd15(step_idx: int, _timestep, _latents):
+                job.progress = {"step": int(step_idx) + 1, "steps": steps}
+                job.add_event(
+                    {
+                        "type": "progress",
+                        "progress": job.progress,
+                    }
+                )
+
+            with torch.inference_mode(), autocast_ctx:
+                out = pipe(
+                    prompt=str(job.spec.get("prompt") or ""),
+                    negative_prompt=job.spec.get("negative_prompt"),
+                    width=int(job.spec.get("width") or 1024),
+                    height=int(job.spec.get("height") or 1024),
+                    num_inference_steps=steps,
+                    guidance_scale=float(job.spec.get("guidance_scale") or 7.0),
+                    generator=generator,
+                    callback=_cb_sd15,
+                    callback_steps=1,
+                )
 
         img = out.images[0]
         nsfw_content_detected = None
@@ -407,6 +507,7 @@ def _run_imagen_job(job: _ImagenJob) -> None:
         img_b64 = _encode_image_png_base64(img)
 
         job.result = {
+            "model": using,
             "mimeType": "image/png",
             "imageBase64": img_b64,
             "seed": int(seed),
@@ -765,9 +866,16 @@ async def invoke(payload: Dict[str, Any] = Body(...)) -> Dict[str, Any]:
         return {
             "tool": tool,
             "result": {
-                "default": "sdxl",
+                "default": "sd15_single" if (SD15_MODEL_FILE and os.path.exists(SD15_MODEL_FILE)) else "sdxl",
                 "sdxl": {
                     "modelDir": SDXL_MODEL_DIR,
+                    "localFilesOnly": True,
+                    "maxPixels": SDXL_MAX_PIXELS,
+                    "maxSteps": SDXL_MAX_STEPS,
+                    "maxConcurrentJobs": SDXL_MAX_CONCURRENT_JOBS,
+                },
+                "sd15_single": {
+                    "modelFile": SD15_MODEL_FILE,
                     "localFilesOnly": True,
                     "maxPixels": SDXL_MAX_PIXELS,
                     "maxSteps": SDXL_MAX_STEPS,
