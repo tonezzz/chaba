@@ -459,7 +459,7 @@ def _run_imagen_job(job: _ImagenJob) -> None:
         else:
             # StableDiffusionPipeline uses callback(step, timestep, latents)
             def _cb_sd15(step_idx: int, _timestep, _latents):
-                job.progress = {"step": int(step_idx) + 1, "steps": steps}
+                job.progress = {"step": min(int(step_idx) + 1, steps), "steps": steps}
                 job.add_event(
                     {
                         "type": "progress",
@@ -478,9 +478,24 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                     generator=generator,
                     callback=_cb_sd15,
                     callback_steps=1,
+                    output_type="np",
                 )
 
         img = out.images[0]
+        if isinstance(img, np.ndarray):
+            arr = img
+            try:
+                arr = np.nan_to_num(arr, nan=0.0, posinf=1.0, neginf=0.0)
+                # Diffusers typically returns float images in [0, 1]. Some pipelines may output [0, 255].
+                maxv = float(np.max(arr)) if arr.size else 0.0
+                if maxv > 1.5:
+                    arr_u8 = np.clip(arr, 0.0, 255.0).round().astype(np.uint8)
+                else:
+                    arr_u8 = (np.clip(arr, 0.0, 1.0) * 255.0).round().astype(np.uint8)
+                if arr_u8.ndim == 3 and arr_u8.shape[-1] in (3, 4):
+                    img = Image.fromarray(arr_u8)
+            except Exception:
+                pass
         nsfw_content_detected = None
         try:
             nsfw_content_detected = getattr(out, "nsfw_content_detected", None)
