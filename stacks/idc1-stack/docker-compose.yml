@@ -126,6 +126,29 @@ services:
       timeout: 5s
       retries: 3
 
+  mcp-imagen-light:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_IMAGEN_LIGHT_BUILD_CONTEXT:-../../mcp/mcp-imagen-light}
+    ports:
+      - "127.0.0.1:${MCP_IMAGEN_LIGHT_PORT:-8068}:8020"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      PORT: 8020
+      MCP_CUDA_URL: ${MCP_CUDA_URL:-http://pc1.vpn:8057}
+      IMAGEN_LIGHT_IMAGES_DIR: ${IMAGEN_LIGHT_IMAGES_DIR:-/data/images}
+      IMAGEN_LIGHT_PUBLIC_BASE_URL: ${IMAGEN_LIGHT_PUBLIC_BASE_URL:-https://line.idc1.surf-thailand.com}
+      IMAGEN_LIGHT_CLEANUP_HOURS: ${IMAGEN_LIGHT_CLEANUP_HOURS:-24}
+    volumes:
+      - ${MCP_IMAGEN_LIGHT_DATA_DIR:-./data/mcp-imagen-light}:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8020/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
 networks:
   idc1-stack-net:
     driver: bridge

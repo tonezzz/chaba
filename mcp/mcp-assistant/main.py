@@ -413,6 +413,7 @@ def _extract_imagen_job_from_1mcp_result(res: Dict[str, Any]) -> Dict[str, str]:
 
     job_id = str(result_obj.get("job_id") or result_obj.get("jobId") or "").strip()
     status_url = str(result_obj.get("status_url") or result_obj.get("statusUrl") or "").strip()
+    preview_url = str(result_obj.get("preview_url") or result_obj.get("previewUrl") or "").strip()
     result_url = str(result_obj.get("result_url") or result_obj.get("resultUrl") or "").strip()
 
     if not job_id or not result_url:
@@ -421,6 +422,7 @@ def _extract_imagen_job_from_1mcp_result(res: Dict[str, Any]) -> Dict[str, str]:
     return {
         "job_id": job_id,
         "status_url": status_url,
+        "preview_url": preview_url,
         "result_url": result_url,
     }
 
@@ -763,6 +765,20 @@ async def integrations_line_reply(request: Request) -> Dict[str, Any]:
                     "previewImageUrl": url,
                 }
             ],
+        }
+
+    if reply.get("reply_type") == "image_job" and str(reply.get("job_id") or "").strip():
+        job = {
+            "job_id": str(reply.get("job_id") or "").strip(),
+            "status_url": str(reply.get("status_url") or "").strip(),
+            "preview_url": str(reply.get("preview_url") or "").strip(),
+            "result_url": str(reply.get("result_url") or "").strip(),
+        }
+        return {
+            "ok": True,
+            "conversation_id": conversation_id,
+            "messages": [{"type": "text", "text": str(reply.get("text") or "Image job started.")[:2000]}],
+            "image_job": job,
         }
 
     text_out = str(reply.get("text") or "ok")

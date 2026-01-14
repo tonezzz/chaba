@@ -21,8 +21,14 @@ services:
     environment:
       PORT: 8057
       PC1_SDXL_MODEL_DIR: ${PC1_SDXL_MODEL_DIR:-/models/sdxl}
+      MCP_CUDA_SDXL_MODEL_DIR: ${PC1_SDXL_MODEL_DIR:-/models/sdxl}
+      MCP_CUDA_IMAGEN_BACKEND: ${MCP_CUDA_IMAGEN_BACKEND:-sd15_single}
+      MCP_CUDA_SD15_MODEL_FILE: ${MCP_CUDA_SD15_MODEL_FILE:-/models/checkpoints/realisticVisionV60B1_v20Novae.safetensors}
+      MCP_CUDA_SDXL_PREVIEW_EVERY_N_STEPS: ${MCP_CUDA_SDXL_PREVIEW_EVERY_N_STEPS:-5}
+      MCP_CUDA_SDXL_PREVIEW_MAX_SIZE: ${MCP_CUDA_SDXL_PREVIEW_MAX_SIZE:-512}
     volumes:
       - ${PC1_SDXL_MODEL_HOST_DIR:-C:/chaba/.models/sdxl}:${PC1_SDXL_MODEL_DIR:-/models/sdxl}:ro
+      - ${PC1_CHECKPOINTS_HOST_DIR:-C:/chaba/.models/checkpoints}:/models/checkpoints:ro
       - /dev/dri:/dev/dri
     deploy:
       resources:

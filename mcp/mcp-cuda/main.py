@@ -39,6 +39,8 @@ SDXL_MAX_PIXELS = int(os.getenv("MCP_CUDA_SDXL_MAX_PIXELS", str(1024 * 1024)))
 SDXL_MAX_STEPS = int(os.getenv("MCP_CUDA_SDXL_MAX_STEPS", "60"))
 SDXL_DEFAULT_STEPS = int(os.getenv("MCP_CUDA_SDXL_DEFAULT_STEPS", "30"))
 SDXL_MAX_CONCURRENT_JOBS = int(os.getenv("MCP_CUDA_SDXL_MAX_CONCURRENT_JOBS", "1"))
+SDXL_PREVIEW_EVERY_N_STEPS = int(os.getenv("MCP_CUDA_SDXL_PREVIEW_EVERY_N_STEPS", "0"))
+SDXL_PREVIEW_MAX_SIZE = int(os.getenv("MCP_CUDA_SDXL_PREVIEW_MAX_SIZE", "512"))
 
 
 class JsonRpcRequest(BaseModel):
@@ -229,6 +231,25 @@ def _encode_image_png_base64(img: Image.Image) -> str:
     return base64.b64encode(buf.getvalue()).decode("ascii")
 
 
+def _latents_to_preview_png_base64(pipe: StableDiffusionXLPipeline, latents: Any) -> Optional[str]:
+    if latents is None or not torch.is_tensor(latents):
+        return None
+    try:
+        with torch.no_grad():
+            scaled = latents / float(getattr(pipe.vae.config, "scaling_factor", 1.0) or 1.0)
+            decoded = pipe.vae.decode(scaled, return_dict=False)[0]
+            image = (decoded / 2 + 0.5).clamp(0, 1)
+            image = image.detach().float().cpu()
+            image = image.permute(0, 2, 3, 1).numpy()
+            pil = pipe.image_processor.numpy_to_pil(image)[0]
+        max_size = int(SDXL_PREVIEW_MAX_SIZE or 0)
+        if max_size > 0:
+            pil.thumbnail((max_size, max_size), Image.LANCZOS)
+        return _encode_image_png_base64(pil)
+    except Exception:
+        return None
+
+
 class _ImagenJob:
     def __init__(self, *, job_id: str, spec: Dict[str, Any]):
         self.job_id = job_id
@@ -240,6 +261,7 @@ class _ImagenJob:
         self.error: Optional[str] = None
         self.progress = {"step": 0, "steps": int(spec.get("steps") or 0)}
         self.result: Optional[Dict[str, Any]] = None
+        self.preview: Optional[Dict[str, Any]] = None
         self._events: List[Dict[str, Any]] = []
         self._events_cond = threading.Condition()
         self._event_seq = 0
@@ -290,13 +312,7 @@ def _create_imagen_job(spec: Dict[str, Any]) -> _ImagenJob:
 
 
 def _run_imagen_job(job: _ImagenJob) -> None:
-    acquired = _sdxl_job_semaphore.acquire(timeout=1)
-    if not acquired:
-        job.status = "failed"
-        job.error = "no_capacity"
-        job.finished_at_ms = _now_ms()
-        job.add_event({"type": "error", "message": job.error})
-        return
+    _sdxl_job_semaphore.acquire()
 
     try:
         job.started_at_ms = _now_ms()
@@ -315,6 +331,17 @@ def _run_imagen_job(job: _ImagenJob) -> None:
 
         def _cb(_pipe, step_idx: int, _timestep, _kwargs):
             job.progress = {"step": int(step_idx) + 1, "steps": steps}
+            every = int(SDXL_PREVIEW_EVERY_N_STEPS or 0)
+            if every > 0 and (int(job.progress.get("step") or 0) % every == 0):
+                b64 = _latents_to_preview_png_base64(pipe, (_kwargs or {}).get("latents"))
+                if isinstance(b64, str) and b64:
+                    job.preview = {
+                        "jobId": job.job_id,
+                        "status": job.status,
+                        "progress": job.progress,
+                        "mimeType": "image/png",
+                        "imageBase64": b64,
+                    }
             job.add_event(
                 {
                     "type": "progress",
@@ -778,6 +805,19 @@ async def imagen_jobs_status(job_id: str) -> Dict[str, Any]:
         "startedAtMs": job.started_at_ms,
         "finishedAtMs": job.finished_at_ms,
     }
+
+
+@app.get("/imagen/jobs/{job_id}/preview")
+async def imagen_jobs_preview(job_id: str) -> Dict[str, Any]:
+    job = _get_job(job_id)
+    if not isinstance(job.preview, dict):
+        return {
+            "jobId": job.job_id,
+            "status": job.status,
+            "progress": job.progress,
+            "available": False,
+        }
+    return {**job.preview, "available": True}
 
 
 @app.get("/imagen/jobs/{job_id}/result")

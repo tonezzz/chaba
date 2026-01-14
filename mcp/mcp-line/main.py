@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import hmac
 import hashlib
@@ -10,11 +11,13 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 
 app = FastAPI()
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("mcp-line")
+logger.setLevel(logging.INFO)
 
 LINE_CHANNEL_SECRET = (os.getenv("LINE_CHANNEL_SECRET") or "").strip()
 LINE_CHANNEL_ACCESS_TOKEN = (os.getenv("LINE_CHANNEL_ACCESS_TOKEN") or "").strip()
@@ -298,6 +301,129 @@ async def _reply_messages(reply_token: str, messages: List[Dict[str, Any]]) -> N
             raise RuntimeError(f"line_reply_failed_{resp.status_code}:{detail}")
 
 
+async def _push_messages(to: str, messages: List[Dict[str, Any]]) -> None:
+    if not LINE_CHANNEL_ACCESS_TOKEN:
+        return
+    if not to:
+        return
+
+    url = "https://api.line.me/v2/bot/message/push"
+    headers = {
+        "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "to": to,
+        "messages": messages,
+    }
+
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        resp = await client.post(url, headers=headers, json=payload)
+        if resp.status_code >= 400:
+            detail = (resp.text or "").strip()
+            if len(detail) > 500:
+                detail = detail[:500] + "..."
+            logger.warning("LINE push failed: status=%s body=%s", resp.status_code, detail)
+            raise RuntimeError(f"line_push_failed_{resp.status_code}:{detail}")
+
+
+async def _poll_imagen_job_and_push(*, line_user_id: str, job: Dict[str, Any]) -> None:
+    job_id = str(job.get("job_id") or "").strip()
+    status_url = str(job.get("status_url") or "").strip()
+    preview_url = str(job.get("preview_url") or "").strip()
+    result_url = str(job.get("result_url") or "").strip()
+
+    poll_base = str(os.getenv("MCP_LINE_IMAGEN_POLL_BASE_URL", "http://mcp-imagen-light:8020") or "").strip().rstrip("/")
+
+    def _rewrite_poll_url(u: str) -> str:
+        u = (u or "").strip()
+        if not u:
+            return u
+        if (u.startswith("https://line.idc1.surf-thailand.com/") or u.startswith("http://line.idc1.surf-thailand.com/")) and "/imagen/" in u and poll_base:
+            path = u.split(".com", 1)[1]
+            return poll_base + path
+        return u
+
+    status_url = _rewrite_poll_url(status_url)
+    preview_url = _rewrite_poll_url(preview_url)
+    result_url = _rewrite_poll_url(result_url)
+
+    if not job_id or not result_url or not line_user_id:
+        return
+
+    poll_interval_s = float(os.getenv("MCP_LINE_IMAGEN_POLL_INTERVAL_SECONDS", "5"))
+    max_previews = int(os.getenv("MCP_LINE_IMAGEN_MAX_PREVIEWS", "8"))
+    max_seconds = float(os.getenv("MCP_LINE_IMAGEN_MAX_SECONDS", "1800"))
+
+    last_preview_sig = ""
+    previews_sent = 0
+    started = time.time()
+
+    timeout = httpx.Timeout(connect=10.0, read=20.0, write=20.0, pool=10.0)
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        while True:
+            if (time.time() - started) > max_seconds:
+                try:
+                    await _push_messages(to=line_user_id, messages=[{"type": "text", "text": "Image generation timed out."}])
+                except Exception:
+                    return
+                return
+
+            if preview_url and previews_sent < max_previews:
+                try:
+                    r = await client.get(preview_url)
+                    if r.status_code == 200 and str(r.headers.get("content-type") or "").lower().startswith("application/json"):
+                        pj = r.json()
+                        if isinstance(pj, dict) and pj.get("available") is True:
+                            p_url = str(pj.get("url") or pj.get("image_url") or "").strip()
+                            prog = pj.get("progress") if isinstance(pj.get("progress"), dict) else {}
+                            sig = f"{p_url}|{prog.get('step')}|{prog.get('steps')}"
+                            if p_url and sig != last_preview_sig:
+                                last_preview_sig = sig
+                                previews_sent += 1
+                                await _push_messages(
+                                    to=line_user_id,
+                                    messages=[{"type": "image", "originalContentUrl": p_url, "previewImageUrl": p_url}],
+                                )
+                except Exception as exc:
+                    logger.warning("imagen preview poll failed: job_id=%s err=%s", job_id, str(exc))
+
+            try:
+                r = await client.get(result_url)
+                if r.status_code == 200 and str(r.headers.get("content-type") or "").lower().startswith("application/json"):
+                    resj = r.json()
+                    if isinstance(resj, dict) and resj.get("available") is True:
+                        final_url = str(resj.get("url") or resj.get("image_url") or "").strip()
+                        if final_url:
+                            await _push_messages(
+                                to=line_user_id,
+                                messages=[{"type": "image", "originalContentUrl": final_url, "previewImageUrl": final_url}],
+                            )
+                            return
+                elif r.status_code >= 500:
+                    # If imagen-light rejects a suspicious/blank output, stop polling and notify user.
+                    body = (r.text or "")[:500]
+                    if "cuda_result_suspicious_image" in body:
+                        await _push_messages(to=line_user_id, messages=[{"type": "text", "text": "Image generation failed: suspicious/blank output (black image)."}])
+                        return
+            except Exception as exc:
+                logger.warning("imagen result poll failed: job_id=%s err=%s", job_id, str(exc))
+
+            if status_url:
+                try:
+                    r = await client.get(status_url)
+                    if r.status_code == 200 and str(r.headers.get("content-type") or "").lower().startswith("application/json"):
+                        sj = r.json()
+                        if isinstance(sj, dict) and sj.get("status") == "failed":
+                            err = str(sj.get("error") or "job_failed").strip()
+                            await _push_messages(to=line_user_id, messages=[{"type": "text", "text": f"Image generation failed: {err}"[:2000]}])
+                            return
+                except Exception:
+                    pass
+
+            await asyncio.sleep(max(1.0, poll_interval_s))
+
+
 def _allowed_tools() -> List[str]:
     raw = (MCP_LINE_ALLOWED_TOOLS or "").strip()
     if not raw:
@@ -315,6 +441,102 @@ def _allowed_tools() -> List[str]:
     return [s.strip() for s in raw.split(",") if s.strip()]
 
 
+def _one_mcp_accept_headers() -> Dict[str, str]:
+    return {"Accept": "application/json, text/event-stream"}
+
+
+def _one_mcp_headers() -> Dict[str, str]:
+    headers: Dict[str, str] = {}
+    if ONE_MCP_BASIC_AUTH:
+        headers["Authorization"] = f"Basic {ONE_MCP_BASIC_AUTH}"
+    elif ONE_MCP_USERNAME and ONE_MCP_PASSWORD:
+        pair = f"{ONE_MCP_USERNAME}:{ONE_MCP_PASSWORD}".encode("utf-8")
+        headers["Authorization"] = "Basic " + base64.b64encode(pair).decode("utf-8")
+    return headers
+
+
+def _parse_1mcp_response(resp: httpx.Response) -> Dict[str, Any]:
+    ctype = str(resp.headers.get("content-type") or "").lower()
+    if ctype.startswith("application/json"):
+        try:
+            data = resp.json()
+            return data if isinstance(data, dict) else {}
+        except Exception:
+            return {}
+
+    if "text/event-stream" in ctype:
+        text = resp.text or ""
+        for line in text.splitlines():
+            if line.startswith("data:"):
+                payload = line[5:].strip()
+                if not payload:
+                    continue
+                try:
+                    import json
+
+                    data = json.loads(payload)
+                    return data if isinstance(data, dict) else {}
+                except Exception:
+                    continue
+        return {}
+
+    return {}
+
+
+async def _one_mcp_initialize_session() -> str:
+    if not ONE_MCP_URL:
+        raise RuntimeError("one_mcp_url_not_configured")
+
+    init_payload: Dict[str, Any] = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+            "protocolVersion": "2024-11-05",
+            "clientInfo": {"name": "mcp-line", "version": "0.1"},
+            "capabilities": {},
+        },
+    }
+
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        resp = await client.post(
+            ONE_MCP_URL,
+            json=init_payload,
+            headers={**_one_mcp_headers(), **_one_mcp_accept_headers()},
+        )
+
+    if resp.status_code >= 400:
+        detail = (resp.text or "").strip()
+        if len(detail) > 500:
+            detail = detail[:500] + "..."
+        raise RuntimeError(f"one_mcp_init_failed_{resp.status_code}:{detail}")
+
+    data = _parse_1mcp_response(resp)
+    if not isinstance(data, dict) or "error" in data:
+        raise RuntimeError(f"one_mcp_init_rpc_error:{(data or {}).get('error')}")
+
+    session_id = str(resp.headers.get("mcp-session-id") or "").strip()
+    if not session_id:
+        result = data.get("result") or {}
+        session_id = str(result.get("sessionId") or "").strip()
+    if not session_id:
+        raise RuntimeError("one_mcp_init_missing_session")
+
+    inited_payload: Dict[str, Any] = {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}}
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        _ = await client.post(
+            ONE_MCP_URL,
+            json=inited_payload,
+            headers={
+                **_one_mcp_headers(),
+                **_one_mcp_accept_headers(),
+                "mcp-session-id": session_id,
+            },
+        )
+
+    return session_id
+
+
 async def _invoke_mcp(tool: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
     if not ONE_MCP_URL:
         raise RuntimeError("one_mcp_url_not_configured")
@@ -322,28 +544,30 @@ async def _invoke_mcp(tool: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
     if allowed and tool not in allowed:
         raise RuntimeError("tool_not_allowed")
 
-    headers: Dict[str, str] = {}
-    if ONE_MCP_BASIC_AUTH:
-        headers["Authorization"] = f"Basic {ONE_MCP_BASIC_AUTH}"
-    elif ONE_MCP_USERNAME and ONE_MCP_PASSWORD:
-        pair = f"{ONE_MCP_USERNAME}:{ONE_MCP_PASSWORD}".encode("utf-8")
-        headers["Authorization"] = "Basic " + base64.b64encode(pair).decode("utf-8")
+    session_id = await _one_mcp_initialize_session()
 
-    # 1mcp expects MCP JSON-RPC.
     payload: Dict[str, Any] = {
         "jsonrpc": "2.0",
         "id": 1,
-        "method": "tools/invoke",
+        "method": "tools/call",
         "params": {"name": tool, "arguments": arguments or {}},
     }
     async with httpx.AsyncClient(timeout=120.0) as client:
-        resp = await client.post(ONE_MCP_URL, json=payload, headers=headers)
+        resp = await client.post(
+            ONE_MCP_URL,
+            json=payload,
+            headers={
+                **_one_mcp_headers(),
+                **_one_mcp_accept_headers(),
+                "mcp-session-id": session_id,
+            },
+        )
         if resp.status_code >= 400:
             detail = (resp.text or "").strip()
             if len(detail) > 500:
                 detail = detail[:500] + "..."
             raise RuntimeError(f"mcp_call_failed_{resp.status_code}:{detail}")
-        data = resp.json() if resp.headers.get("content-type", "").lower().startswith("application/json") else {}
+        data = _parse_1mcp_response(resp)
         if not isinstance(data, dict):
             return {"ok": True, "result": data}
         if "error" in data:
@@ -445,6 +669,18 @@ async def _process_text_event_and_reply(*, evt: Dict[str, Any], reply_token: str
         return
     user_text = str(message.get("text") or "")
 
+    # Long-running work (LLM/tool calls) may exceed LINE replyToken lifetime.
+    # Prefer push when we have a userId.
+    line_user_id: str = ""
+    src_obj = evt.get("source") or {}
+    if isinstance(src_obj, dict):
+        line_user_id = str(src_obj.get("userId") or "").strip()
+
+    if line_user_id:
+        logger.info("process_text_event: line_user_id=%s user_text_len=%s", line_user_id, len(user_text))
+    else:
+        logger.info("process_text_event: no_line_user_id user_text_len=%s", len(user_text))
+
     if MCP_ASSISTANT_URL:
         try:
             src = _conversation_source(evt) or {}
@@ -462,16 +698,54 @@ async def _process_text_event_and_reply(*, evt: Dict[str, Any], reply_token: str
                 "line_event": evt,
             }
 
-            async with httpx.AsyncClient(timeout=120.0) as client:
+            logger.info(
+                "assistant request start: url=%s conversation_id=%s text_len=%s",
+                f"{MCP_ASSISTANT_URL}/integrations/line/reply",
+                conversation_id,
+                len(user_text),
+            )
+
+            started = time.time()
+            timeout = httpx.Timeout(connect=10.0, read=360.0, write=30.0, pool=10.0)
+            async with httpx.AsyncClient(timeout=timeout) as client:
                 resp = await client.post(f"{MCP_ASSISTANT_URL}/integrations/line/reply", json=payload, headers=headers)
+
+            logger.info("assistant request done: elapsed_s=%.2f status=%s", (time.time() - started), resp.status_code)
 
             if resp.status_code >= 400:
                 raise RuntimeError(f"assistant_http_{resp.status_code}")
 
-            data = resp.json() if resp.headers.get("content-type", "").lower().startswith("application/json") else {}
+            ct = str(resp.headers.get("content-type") or "")
+            logger.info(
+                "assistant http ok: status=%s content_type=%s body_len=%s",
+                resp.status_code,
+                ct,
+                len(resp.content or b""),
+            )
+
+            data: Dict[str, Any] = {}
+            if ct.lower().startswith("application/json"):
+                try:
+                    data = resp.json()
+                except Exception as exc:
+                    snippet = (resp.text or "")[:500]
+                    logger.warning("assistant json parse failed: %s body=%s", str(exc), snippet)
+                    data = {}
             messages = (data or {}).get("messages")
             if isinstance(messages, list) and messages:
-                await _reply_messages(reply_token=reply_token, messages=messages)
+                logger.info(
+                    "assistant returned messages: count=%s delivery=%s",
+                    len(messages),
+                    "push" if line_user_id else ("reply" if reply_token else "none"),
+                )
+                if line_user_id:
+                    await _push_messages(to=line_user_id, messages=messages)
+                elif reply_token:
+                    await _reply_messages(reply_token=reply_token, messages=messages)
+
+                image_job = (data or {}).get("image_job")
+                if line_user_id and isinstance(image_job, dict):
+                    asyncio.create_task(_poll_imagen_job_and_push(line_user_id=line_user_id, job=image_job))
                 return
         except Exception as exc:
             logger.warning("assistant forward failed: %s", str(exc))
@@ -482,23 +756,30 @@ async def _process_text_event_and_reply(*, evt: Dict[str, Any], reply_token: str
     try:
         decision = await _agent_decide_and_reply(user_text=user_text)
         if isinstance(decision, dict) and decision.get("type") == "image":
-            await _reply_messages(
-                reply_token=reply_token,
-                messages=[
-                    {
-                        "type": "image",
-                        "originalContentUrl": decision.get("originalContentUrl"),
-                        "previewImageUrl": decision.get("previewImageUrl"),
-                    }
-                ],
-            )
+            messages = [
+                {
+                    "type": "image",
+                    "originalContentUrl": decision.get("originalContentUrl"),
+                    "previewImageUrl": decision.get("previewImageUrl"),
+                }
+            ]
+            if line_user_id:
+                await _push_messages(to=line_user_id, messages=messages)
+            elif reply_token:
+                await _reply_messages(reply_token=reply_token, messages=messages)
             return
         text = str((decision or {}).get("text") or "ok")
-        await _reply_message(reply_token=reply_token, text=text)
+        if line_user_id:
+            await _push_messages(to=line_user_id, messages=[{"type": "text", "text": text}])
+        elif reply_token:
+            await _reply_message(reply_token=reply_token, text=text)
     except Exception as exc:
         logger.warning("agent processing failed: %s", str(exc))
         try:
-            await _reply_message(reply_token=reply_token, text="Sorry, I had an error while processing that.")
+            if line_user_id:
+                await _push_messages(to=line_user_id, messages=[{"type": "text", "text": "Sorry, I had an error while processing that."}])
+            elif reply_token:
+                await _reply_message(reply_token=reply_token, text="Sorry, I had an error while processing that.")
         except Exception:
             return
 
@@ -627,24 +908,27 @@ async def admin_selftest_1mcp(request: Request) -> Dict[str, Any]:
     if not ONE_MCP_URL:
         return {"ok": False, "error": "one_mcp_url_not_configured"}
 
-    headers: Dict[str, str] = {}
-    if ONE_MCP_BASIC_AUTH:
-        headers["Authorization"] = f"Basic {ONE_MCP_BASIC_AUTH}"
-    elif ONE_MCP_USERNAME and ONE_MCP_PASSWORD:
-        pair = f"{ONE_MCP_USERNAME}:{ONE_MCP_PASSWORD}".encode("utf-8")
-        headers["Authorization"] = "Basic " + base64.b64encode(pair).decode("utf-8")
-
-    payload: Dict[str, Any] = {"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}}
     try:
+        session_id = await _one_mcp_initialize_session()
+
+        payload: Dict[str, Any] = {"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}}
         async with httpx.AsyncClient(timeout=20.0) as client:
-            resp = await client.post(ONE_MCP_URL, json=payload, headers=headers)
+            resp = await client.post(
+                ONE_MCP_URL,
+                json=payload,
+                headers={
+                    **_one_mcp_headers(),
+                    **_one_mcp_accept_headers(),
+                    "mcp-session-id": session_id,
+                },
+            )
         if resp.status_code >= 400:
             detail = (resp.text or "").strip()
             if len(detail) > 500:
                 detail = detail[:500] + "..."
             return {"ok": False, "error": "one_mcp_http_error", "status": resp.status_code, "detail": detail}
 
-        data = resp.json() if resp.headers.get("content-type", "").lower().startswith("application/json") else {}
+        data = _parse_1mcp_response(resp)
         if not isinstance(data, dict):
             return {"ok": False, "error": "one_mcp_invalid_response", "raw": str(data)[:500]}
         if "error" in data:
@@ -679,6 +963,13 @@ async def webhook_line(
 ) -> Any:
     raw = await request.body()
 
+    logger.info(
+        "webhook_line raw: body_len=%s sig_present=%s sig_prefix=%s",
+        len(raw or b""),
+        bool(x_line_signature),
+        str(x_line_signature or "")[:10],
+    )
+
     if not _verify_line_signature(raw, x_line_signature):
         raise HTTPException(status_code=401, detail="invalid_signature")
 
@@ -688,6 +979,8 @@ async def webhook_line(
         raise HTTPException(status_code=400, detail=f"invalid_json: {exc}")
 
     events: List[Dict[str, Any]] = body.get("events") or []
+
+    logger.info("webhook_line received: events=%s", len(events))
 
     # Minimal behavior:
     # - If message event with a replyToken, echo back short text.
@@ -707,10 +1000,24 @@ async def webhook_line(
             message_type = message.get("type")
             text = message.get("text")
 
+            logger.info(
+                "webhook_line event: evt_type=%s message_type=%s has_reply_token=%s",
+                str(evt_type or ""),
+                str(message_type or ""),
+                bool(reply_token),
+            )
+
             line_user_id = None
             src_obj = evt.get("source") or {}
             if isinstance(src_obj, dict):
                 line_user_id = str(src_obj.get("userId") or "").strip() or None
+
+            if evt_type == "message" and message_type == "text":
+                logger.info(
+                    "webhook_line text: line_user_id=%s text_len=%s",
+                    line_user_id or "",
+                    len(str(text or "")),
+                )
             if line_user_id:
                 _upsert_line_identity(line_user_id)
             person_id = _person_id_for_line_user(line_user_id or "") if line_user_id else None
@@ -728,11 +1035,20 @@ async def webhook_line(
             if evt_type == "message" and message_type == "text" and reply_token:
                 # Fast webhook: run the heavy work in a background task.
                 if MCP_LINE_AGENT_ENABLED and (MCP_ASSISTANT_URL or GLAMA_MCP_URL):
-                    background_tasks.add_task(_process_text_event_and_reply, evt=evt, reply_token=str(reply_token))
+                    # Reply token is one-time use; acknowledge immediately, then push final result.
+                    logger.info(
+                        "processing ack delivery=%s",
+                        "reply" if reply_token else "none",
+                    )
+                    logger.info("sending processing reply")
+                    await _reply_message(reply_token=str(reply_token), text="Processing...")
+                    logger.info("processing reply sent")
+                    background_tasks.add_task(_process_text_event_and_reply, evt=evt, reply_token="")
                 else:
                     reply_text = await _generate_reply(text=text or "")
                     await _reply_message(reply_token=reply_token, text=reply_text)
         except Exception as exc:
+            logger.warning("webhook event processing failed: %s", str(exc))
             reply_errors.append(str(exc))
 
-    return JSONResponse({"status": "ok", "events": len(events), "replyErrors": reply_errors})
+    return PlainTextResponse("OK")

@@ -123,6 +123,14 @@ line.idc1.vpn {
 line.idc1.surf-thailand.com {
     encode gzip zstd
 
+    handle /images/* {
+        reverse_proxy http://127.0.0.1:8068
+    }
+
+    handle /imagen/* {
+        reverse_proxy http://127.0.0.1:8068
+    }
+
     reverse_proxy http://127.0.0.1:8088
 
     log {
