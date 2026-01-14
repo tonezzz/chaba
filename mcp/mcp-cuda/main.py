@@ -43,6 +43,7 @@ DISABLE_SAFETY_CHECKER = (os.getenv("MCP_CUDA_DISABLE_SAFETY_CHECKER") or "0").s
     "yes",
 )
 ENABLE_XFORMERS = (os.getenv("MCP_CUDA_ENABLE_XFORMERS") or "0").strip().lower() in ("1", "true", "yes")
+MAX_DIMENSION = int(os.getenv("MCP_CUDA_MAX_DIMENSION", "2048"))
 SDXL_MAX_PIXELS = int(os.getenv("MCP_CUDA_SDXL_MAX_PIXELS", str(1024 * 1024)))
 SDXL_MAX_STEPS = int(os.getenv("MCP_CUDA_SDXL_MAX_STEPS", "60"))
 SDXL_DEFAULT_STEPS = int(os.getenv("MCP_CUDA_SDXL_DEFAULT_STEPS", "30"))
@@ -190,8 +191,9 @@ def _validate_imagen_args(args: ImagenJobCreateArgs) -> Dict[str, Any]:
     if not prompt:
         raise HTTPException(status_code=400, detail="prompt_required")
 
-    width = _clamp_int(args.width, default=1024, min_value=256, max_value=2048)
-    height = _clamp_int(args.height, default=1024, min_value=256, max_value=2048)
+    max_dim = max(256, int(MAX_DIMENSION or 2048))
+    width = _clamp_int(args.width, default=1024, min_value=256, max_value=max_dim)
+    height = _clamp_int(args.height, default=1024, min_value=256, max_value=max_dim)
     width = max(256, _round_down_multiple(width, base=8))
     height = max(256, _round_down_multiple(height, base=8))
     if width * height > SDXL_MAX_PIXELS:
