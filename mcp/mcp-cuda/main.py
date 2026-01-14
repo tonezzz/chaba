@@ -346,6 +346,25 @@ def _latents_to_preview_png_base64(pipe: StableDiffusionXLPipeline, latents: Any
         return None
 
 
+def _sd15_latents_to_preview_png_base64(pipe: StableDiffusionPipeline, latents: Any) -> Optional[str]:
+    if latents is None or not torch.is_tensor(latents):
+        return None
+    try:
+        with torch.no_grad():
+            scaled = latents / float(getattr(pipe.vae.config, "scaling_factor", 1.0) or 1.0)
+            decoded = pipe.vae.decode(scaled, return_dict=False)[0]
+            image = (decoded / 2 + 0.5).clamp(0, 1)
+            image = image.detach().float().cpu()
+            image = image.permute(0, 2, 3, 1).numpy()
+            pil = pipe.image_processor.numpy_to_pil(image)[0]
+        max_size = int(SDXL_PREVIEW_MAX_SIZE or 0)
+        if max_size > 0:
+            pil.thumbnail((max_size, max_size), Image.LANCZOS)
+        return _encode_image_png_base64(pil)
+    except Exception:
+        return None
+
+
 class _ImagenJob:
     def __init__(self, *, job_id: str, spec: Dict[str, Any]):
         self.job_id = job_id
@@ -434,13 +453,15 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                 if every > 0 and (int(job.progress.get("step") or 0) % every == 0):
                     b64 = _latents_to_preview_png_base64(pipe, (_kwargs or {}).get("latents"))
                     if isinstance(b64, str) and b64:
-                        job.preview = {
+                        payload = {
                             "jobId": job.job_id,
                             "status": job.status,
                             "progress": job.progress,
                             "mimeType": "image/png",
                             "imageBase64": b64,
                         }
+                        job.preview = payload
+                        job.add_event({"type": "preview", "preview": payload})
                 job.add_event(
                     {
                         "type": "progress",
@@ -465,6 +486,19 @@ def _run_imagen_job(job: _ImagenJob) -> None:
             autocast_ctx = contextlib.nullcontext()
             def _cb_sd15(step_idx: int, _timestep, _latents):
                 job.progress = {"step": min(int(step_idx) + 1, steps), "steps": steps}
+                every = int(SDXL_PREVIEW_EVERY_N_STEPS or 0)
+                if every > 0 and (int(job.progress.get("step") or 0) % every == 0):
+                    b64 = _sd15_latents_to_preview_png_base64(pipe, _latents)
+                    if isinstance(b64, str) and b64:
+                        payload = {
+                            "jobId": job.job_id,
+                            "status": job.status,
+                            "progress": job.progress,
+                            "mimeType": "image/png",
+                            "imageBase64": b64,
+                        }
+                        job.preview = payload
+                        job.add_event({"type": "preview", "preview": payload})
                 job.add_event(
                     {
                         "type": "progress",
