@@ -219,6 +219,25 @@ def _get_sdxl_pipeline() -> StableDiffusionXLPipeline:
             torch_dtype=torch_dtype,
             local_files_only=True,
         )
+        if DISABLE_SAFETY_CHECKER:
+            try:
+                pipe.safety_checker = None
+                pipe.requires_safety_checker = False
+            except Exception:
+                pass
+        try:
+            pipe.enable_attention_slicing()
+        except Exception:
+            pass
+        try:
+            pipe.enable_vae_slicing()
+        except Exception:
+            pass
+        if ENABLE_XFORMERS:
+            try:
+                pipe.enable_xformers_memory_efficient_attention()
+            except Exception:
+                pass
         if device == "cuda":
             pipe = pipe.to("cuda")
         _sdxl_pipeline = pipe
@@ -362,6 +381,29 @@ def _run_imagen_job(job: _ImagenJob) -> None:
         )
 
         img = out.images[0]
+        nsfw_content_detected = None
+        try:
+            nsfw_content_detected = getattr(out, "nsfw_content_detected", None)
+        except Exception:
+            nsfw_content_detected = None
+        extrema = None
+        pixel_min = None
+        pixel_max = None
+        pixel_mean = None
+        try:
+            extrema = img.getextrema()
+            arr_u8 = np.asarray(img)
+            if arr_u8.size:
+                pixel_min = int(arr_u8.min())
+                pixel_max = int(arr_u8.max())
+                pixel_mean = float(arr_u8.mean())
+        except Exception:
+            pass
+
+        # Guard: avoid reporting succeeded when the output is clearly unusable.
+        # Common cause: safety checker replaced output with black.
+        if pixel_max == 0:
+            raise RuntimeError("suspicious_black_image")
         img_b64 = _encode_image_png_base64(img)
 
         job.result = {
@@ -371,6 +413,11 @@ def _run_imagen_job(job: _ImagenJob) -> None:
             "width": int(img.width),
             "height": int(img.height),
             "steps": steps,
+            "pixel_min": pixel_min,
+            "pixel_max": pixel_max,
+            "pixel_mean": pixel_mean,
+            "extrema": extrema,
+            "nsfw_content_detected": nsfw_content_detected,
         }
         job.status = "succeeded"
         job.finished_at_ms = _now_ms()
