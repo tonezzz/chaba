@@ -276,7 +276,9 @@ def _get_sd15_pipeline() -> StableDiffusionPipeline:
             raise HTTPException(status_code=503, detail=f"sd15_model_file_missing: {model_file}")
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        torch_dtype = torch.float16 if device == "cuda" else torch.float32
+        # SD1.5 single-file checkpoints are more prone to NaN/black outputs in fp16 on some setups.
+        # Prefer fp32 for stability.
+        torch_dtype = torch.float32
 
         try:
             pipe = StableDiffusionPipeline.from_single_file(
@@ -458,6 +460,7 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                 )
         else:
             # StableDiffusionPipeline uses callback(step, timestep, latents)
+            autocast_ctx = contextlib.nullcontext()
             def _cb_sd15(step_idx: int, _timestep, _latents):
                 job.progress = {"step": min(int(step_idx) + 1, steps), "steps": steps}
                 job.add_event(
