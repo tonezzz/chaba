@@ -157,6 +157,42 @@ async def control_line_richmenu_cancel_default(request: Request) -> Dict[str, An
     return {"ok": True}
 
 
+@app.post("/control/line/richmenu/bootstrap")
+async def control_line_richmenu_bootstrap(request: Request, payload: Dict[str, Any]) -> Dict[str, Any]:
+    _require_control_auth(request)
+
+    rich_menu = (payload or {}).get("richMenu")
+    if not isinstance(rich_menu, dict):
+        raise HTTPException(status_code=400, detail="richMenu_required")
+
+    b64 = str((payload or {}).get("imageBase64") or "").strip()
+    if not b64:
+        raise HTTPException(status_code=400, detail="imageBase64_required")
+
+    mime = str((payload or {}).get("mimeType") or "image/png").strip() or "image/png"
+    set_default = bool((payload or {}).get("setDefault") if "setDefault" in (payload or {}) else True)
+
+    created = await _line_api_json("POST", "/v2/bot/richmenu", json_body=rich_menu)
+    rich_menu_id = str((created or {}).get("richMenuId") or "").strip()
+    if not rich_menu_id:
+        raise HTTPException(status_code=502, detail=f"line_create_richmenu_missing_id: {created}")
+
+    try:
+        raw = base64.b64decode(b64)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"invalid_base64: {exc}")
+    await _line_api_bytes("POST", f"/v2/bot/richmenu/{rich_menu_id}/content", body=raw, content_type=mime)
+
+    if set_default:
+        await _line_api_json("POST", f"/v2/bot/user/all/richmenu/{rich_menu_id}")
+
+    return {
+        "ok": True,
+        "richMenuId": rich_menu_id,
+        "setDefault": set_default,
+    }
+
+
 @app.delete("/control/line/richmenu/{rich_menu_id}")
 async def control_line_richmenu_delete(request: Request, rich_menu_id: str) -> Dict[str, Any]:
     _require_control_auth(request)
