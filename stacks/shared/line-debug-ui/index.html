@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LINE Debug UI</title>
+    <style>
+      body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; }
+      .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+      textarea { width: 100%; min-height: 110px; }
+      input[type="text"], input[type="password"] { padding: 8px; min-width: 340px; }
+      button { padding: 8px 12px; cursor: pointer; }
+      pre { background: #0b1020; color: #d7e1ff; padding: 12px; overflow: auto; border-radius: 8px; }
+      .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; margin: 12px 0; }
+      .muted { color: #6b7280; font-size: 12px; }
+      .ok { color: #065f46; }
+      .bad { color: #991b1b; }
+    </style>
+  </head>
+  <body>
+    <h1>LINE Debug UI</h1>
+    <div class="muted">
+      Calls are proxied via the same origin:
+      <br />
+      <code>/api/line/*</code> → mcp-line, <code>/api/glama/*</code> → mcp-glama
+    </div>
+
+    <div class="card">
+      <h3>Config</h3>
+      <div class="row">
+        <label>
+          Control token (optional)
+          <br />
+          <input id="token" type="password" placeholder="x-control-token or ?token=" />
+        </label>
+        <label>
+          Recent limit
+          <br />
+          <input id="limit" type="text" value="50" />
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Health</h3>
+      <div class="row">
+        <button onclick="callLineHealth()">mcp-line /health</button>
+        <button onclick="callOneMcpSelftest()">mcp-line /admin/selftest_1mcp</button>
+      </div>
+      <pre id="healthOut"></pre>
+    </div>
+
+    <div class="card">
+      <h3>Recent messages</h3>
+      <div class="row">
+        <button onclick="callRecent()">Load /admin/recent</button>
+      </div>
+      <pre id="recentOut"></pre>
+    </div>
+
+    <div class="card">
+      <h3>Glama direct test</h3>
+      <div class="row">
+        <label style="flex:1; min-width: 320px;">
+          Prompt
+          <br />
+          <input id="glamaPrompt" type="text" value="Hello" style="width: 100%;" />
+        </label>
+      </div>
+      <div class="row">
+        <button onclick="callGlama()">POST /api/glama/invoke</button>
+      </div>
+      <pre id="glamaOut"></pre>
+    </div>
+
+    <div class="card">
+      <h3>Simulate LINE webhook (dev only)</h3>
+      <div class="muted">
+        This calls <code>/api/line/webhook/line</code> without a valid signature unless you provide one.
+        Useful only if you temporarily disable signature verification or use a known secret.
+      </div>
+      <textarea id="webhookBody">{"events":[{"type":"message","message":{"type":"text","text":"hello"},"source":{"type":"user","userId":"debug-user"},"replyToken":"debug-reply-token"}]}</textarea>
+      <div class="row">
+        <label>
+          X-Line-Signature (optional)
+          <br />
+          <input id="lineSig" type="text" placeholder="base64" />
+        </label>
+        <button onclick="callWebhook()">POST /webhook/line</button>
+      </div>
+      <pre id="webhookOut"></pre>
+    </div>
+
+    <script>
+      function tokenHeaders() {
+        const t = document.getElementById('token').value.trim();
+        if (!t) return {};
+        return { 'x-control-token': t };
+      }
+
+      async function fetchJson(url, opts) {
+        const res = await fetch(url, opts);
+        const text = await res.text();
+        let obj;
+        try { obj = JSON.parse(text); } catch { obj = { raw: text }; }
+        return { status: res.status, ok: res.ok, data: obj };
+      }
+
+      function render(outEl, payload) {
+        outEl.textContent = JSON.stringify(payload, null, 2);
+      }
+
+      async function callLineHealth() {
+        const out = document.getElementById('healthOut');
+        render(out, { loading: true });
+        const r = await fetchJson('/api/line/health', { headers: { ...tokenHeaders() } });
+        render(out, r);
+      }
+
+      async function callOneMcpSelftest() {
+        const out = document.getElementById('healthOut');
+        render(out, { loading: true });
+        const r = await fetchJson('/api/line/admin/selftest_1mcp', { headers: { ...tokenHeaders() } });
+        render(out, r);
+      }
+
+      async function callRecent() {
+        const out = document.getElementById('recentOut');
+        render(out, { loading: true });
+        const limit = encodeURIComponent(document.getElementById('limit').value.trim() || '50');
+        const r = await fetchJson(`/api/line/admin/recent?limit=${limit}`, { headers: { ...tokenHeaders() } });
+        render(out, r);
+      }
+
+      async function callGlama() {
+        const out = document.getElementById('glamaOut');
+        render(out, { loading: true });
+        const prompt = document.getElementById('glamaPrompt').value;
+        const payload = { tool: 'chat_completion', arguments: { prompt, system_prompt: 'Reply concisely.' } };
+        const r = await fetchJson('/api/glama/invoke', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        render(out, r);
+      }
+
+      async function callWebhook() {
+        const out = document.getElementById('webhookOut');
+        render(out, { loading: true });
+        const body = document.getElementById('webhookBody').value;
+        const sig = document.getElementById('lineSig').value.trim();
+        const headers = { 'content-type': 'application/json' };
+        if (sig) headers['X-Line-Signature'] = sig;
+        const r = await fetchJson('/api/line/webhook/line', {
+          method: 'POST',
+          headers,
+          body
+        });
+        render(out, r);
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,153 @@
+a1.idc1.surf-thailand.com {
+	root * /var/www/a1
+	encode gzip zstd
+	tls ops@surf-thailand.com
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://a1.idc1.surf-thailand.com https://idc1.surf-thailand.com"
+		X-Frame-Options "DENY"
+		Referrer-Policy "same-origin"
+	}
+
+	@chatApi path /test/chat/api/*
+	handle @chatApi {
+		uri strip_prefix /test/chat
+		reverse_proxy 127.0.0.1:4020 {
+			transport http {
+				dial_timeout 5s
+				read_timeout 30s
+			}
+			health_uri /health
+			health_interval 20s
+		}
+	}
+
+	@detectsApi path /test/detects/api/*
+	handle @detectsApi {
+		uri strip_prefix /test/detects/api
+		reverse_proxy 127.0.0.1:4120 {
+			transport http {
+				dial_timeout 5s
+				read_timeout 60s
+			}
+			health_uri /health
+			health_interval 20s
+		}
+	}
+
+	@agentsApi path /test/agents/api/*
+	handle @agentsApi {
+		uri strip_prefix /test/agents/api
+		reverse_proxy 127.0.0.1:4060 {
+			transport http {
+				dial_timeout 5s
+				read_timeout 30s
+			}
+			health_uri /health
+		}
+	}
+
+	@mcp0 path /test/mcp0/*
+	handle @mcp0 {
+		uri strip_prefix /test/mcp0
+		reverse_proxy 127.0.0.1:8310
+	}
+
+	@vajaApi path /test/vaja/api/*
+	handle @vajaApi {
+		uri strip_prefix /test/vaja/api
+		reverse_proxy host.docker.internal:7217 {
+			transport http {
+				dial_timeout 5s
+				read_timeout 30s
+			}
+			health_uri /health
+		}
+	}
+
+	@imagenApi path /test/imagen/api/*
+	handle @imagenApi {
+		uri strip_prefix /test/imagen/api
+		reverse_proxy 127.0.0.1:8001 {
+			transport http {
+				dial_timeout 5s
+				read_timeout 45s
+			}
+			health_uri /health
+		}
+	}
+
+	@chatApp path /test/chat/* /test/chat
+	handle @chatApp {
+		uri strip_prefix /test/chat
+		root * /var/www/a1/test/chat
+		try_files {path} {path}/ /index.html
+		file_server
+	}
+
+	@detectsApp path /test/detects/* /test/detects
+	handle @detectsApp {
+		uri strip_prefix /test/detects
+		root * /var/www/a1/test/detects
+		try_files {path} {path}/ /index.html
+		file_server
+	}
+
+	@agentsApp path /test/agents/* /test/agents
+	handle @agentsApp {
+		uri strip_prefix /test/agents
+		root * /var/www/a1/test/agents
+		try_files {path} {path}/ /index.html
+		file_server
+	}
+
+	@vajaApp path /test/vaja/* /test/vaja
+	handle @vajaApp {
+		uri strip_prefix /test/vaja
+		root * /var/www/a1/test/vaja
+		try_files {path} {path}/ /index.html
+		file_server
+	}
+
+	@imagenApp path /test/imagen/* /test/imagen
+	handle @imagenApp {
+		uri strip_prefix /test/imagen
+		root * /var/www/a1/test/imagen
+		try_files {path} {path}/ /index.html
+		file_server
+	}
+
+	@testLanding path /test /test/
+	handle @testLanding {
+		root * /var/www/a1/test
+		try_files {path} {path}/ /index.html
+		file_server
+	}
+
+	file_server
+}
+
+idc1.surf-thailand.com {
+	tls ops@surf-thailand.com
+	encode gzip zstd
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'"
+		X-Frame-Options "DENY"
+		Referrer-Policy "same-origin"
+	}
+
+	handle {
+		root * /var/www/idc1
+		try_files {path} {path}/ /index.html
+		file_server
+	}
+}
+
+code.idc1.surf-thailand.com {
+	tls ops@surf-thailand.com
+	encode gzip zstd
+	reverse_proxy 127.0.0.1:8080
+}

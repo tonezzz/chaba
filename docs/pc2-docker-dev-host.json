@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "host": {
+    "name": "pc2",
+    "vpn_domain": "pc2.vpn"
+  },
+  "stack": {
+    "id": "docker-dev-host",
+    "path": "docker",
+    "compose": "docker-compose.yml",
+    "description": "Standalone dev-host container (runs gateway + launches glama+agents processes inside container)"
+  },
+  "service": {
+    "container": "dev-host",
+    "ports": ["2223->22", "3100->3000"],
+    "health": {
+      "local": "http://127.0.0.1:3100/api/health",
+      "vpn": "http://pc2.vpn:3100/api/health",
+      "vpn_https": "https://dev-host.pc2.vpn/api/health"
+    },
+    "env": {
+      "loaded_by_entrypoint": "/workspace/sites/dev-host/.env.dev-host",
+      "notes": [
+        "Do not commit real .env.dev-host; keep in sync via prefixed env scripts.",
+        "If detects appears in /api/health, remove DETECTS_PROXY_TARGET from .env.dev-host."
+      ]
+    }
+  },
+  "recovery": {
+    "verify": {
+      "commands": [
+        "curl.exe http://127.0.0.1:3100/api/health",
+        "curl.exe -k https://dev-host.pc2.vpn/api/health"
+      ]
+    },
+    "restart": {
+      "windows_powershell": [
+        "docker compose -f C:/chaba/docker/docker-compose.yml up -d --build --force-recreate dev-host"
+      ]
+    }
+  }
+}

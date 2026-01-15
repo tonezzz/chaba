@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "host": {
+    "name": "pc2",
+    "vpn_domain": "pc2.vpn",
+    "vpn_ip": "10.8.0.12"
+  },
+  "stack": {
+    "id": "pc2-host-caddy",
+    "path": "stacks/pc2-host-caddy",
+    "compose": "docker-compose.yml",
+    "description": "Host-level Caddy ingress for *.pc2.vpn"
+  },
+  "ingress": {
+    "ports_required": [80, 443],
+    "container": "pc2-host-caddy-host-caddy-1",
+    "caddyfile": "stacks/pc2-host-caddy/Caddyfile",
+    "admin": "0.0.0.0:2019",
+    "tls": "internal"
+  },
+  "routes": [
+    {
+      "host": "1mcp.pc2.vpn",
+      "upstream": "host.docker.internal:3050",
+      "purpose": "Expose 1mcp-agent"
+    },
+    {
+      "host": "dev-host.pc2.vpn",
+      "upstream": "host.docker.internal:3100",
+      "purpose": "Expose dev-host"
+    }
+  ],
+  "recovery": {
+    "common_failures": [
+      {
+        "id": "port_80_443_in_use",
+        "symptom": "Caddy container fails to start, cannot bind 80/443",
+        "verify": ["netstat -ano | findstr :80", "netstat -ano | findstr :443"],
+        "fix": ["Stop the conflicting service or change host ingress strategy"]
+      },
+      {
+        "id": "tls_trust",
+        "symptom": "Browser shows cert warning",
+        "verify": ["curl.exe -k https://dev-host.pc2.vpn/api/health"],
+        "fix": ["Import Caddy internal CA root into client trust store if needed"]
+      }
+    ],
+    "restart": {
+      "windows_powershell": [
+        "docker compose -f C:/chaba/stacks/pc2-host-caddy/docker-compose.yml up -d --build",
+        "curl.exe -k https://dev-host.pc2.vpn/api/health"
+      ]
+    }
+  }
+}

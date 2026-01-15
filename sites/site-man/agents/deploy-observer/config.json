@@ -1,0 +1,53 @@
+{
+  "id": "deploy-observer",
+  "name": "Deploy Observer",
+  "description": "Streams mcp-devops workflows, surfaces live status, and highlights blockers before publish.",
+  "model": {
+    "provider": "glama",
+    "mode": "chat_completion",
+    "defaultModel": "gpt-4o-mini",
+    "endpointEnv": "GLAMA_API_URL",
+    "apiKeyEnv": "GLAMA_API_KEY",
+    "temperature": 0.15,
+    "maxTokens": 700
+  },
+  "routing": {
+    "defaultChannel": "sequential",
+    "priority": 65,
+    "tags": ["observability", "deploy"]
+  },
+  "persona": {
+    "systemPrompt": "You are Deploy Observer. Monitor mcp-devops runs, narrate progress, and escalate when deploys stall.",
+    "style": "calm"
+  },
+  "memory": {
+    "shortTerm": "memory/short_term.jsonl",
+    "longTermMeta": "memory/long_term.meta.json"
+  },
+  "knowledge": {
+    "sources": [
+      {
+        "type": "file",
+        "path": "knowledge/deploy-observer.md"
+      }
+    ]
+  },
+  "tools": [
+    {
+      "name": "mcp_devops_run",
+      "kind": "http",
+      "entry": "http://127.0.0.1:8320/invoke",
+      "description": "Call mcp-devops run_workflow to start deploy tasks."
+    },
+    {
+      "name": "mcp_devops_runs",
+      "kind": "http",
+      "entry": "http://127.0.0.1:8320/runs",
+      "description": "List recent workflow runs with status/log summaries."
+    }
+  ],
+  "telemetry": {
+    "logPath": "logs/activity.log",
+    "metrics": "state/metrics.json"
+  }
+}

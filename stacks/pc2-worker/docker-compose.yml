@@ -1,0 +1,411 @@
+x-default-service: &default-service
+  restart: unless-stopped
+  networks:
+    - pc2-worker-net
+  env_file:
+    - .env
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  node-runner:
+    <<: *default-service
+    image: node:22-alpine
+    profiles: ["base-tools"]
+    working_dir: /work
+    entrypoint: ["sleep", "infinity"]
+    volumes:
+      - ${HOST_REPO:-/home/tonezzz/repos}:/work:cached
+      - ${HOST_SSH_AUTH_SOCK:-/home/tonezzz/.ssh/ssh-agent.socket}:/ssh-agent
+    environment:
+      SSH_AUTH_SOCK: /ssh-agent
+
+  python-runner:
+    <<: *default-service
+    image: python:3.11-slim
+    profiles: ["base-tools"]
+    working_dir: /work
+    entrypoint: ["sleep", "infinity"]
+    volumes:
+      - ${HOST_REPO:-/home/tonezzz/repos}:/work:cached
+      - ${HOST_PIP_CACHE:-/home/tonezzz/.cache/pip}:/root/.cache/pip
+
+  redis:
+    <<: *default-service
+    image: redis:7-alpine
+    profiles: ["base-tools"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+
+  dev-proxy:
+    <<: *default-service
+    image: caddy:2-alpine
+    profiles: ["mcp-suite"]
+    volumes:
+      - ${DEV_PROXY_CONFIG:-./dev-proxy/Caddyfile}:/etc/caddy/Caddyfile:ro
+      - ${DEV_PROXY_CERTS:-./dev-proxy/certs}:/certs:ro
+    environment:
+      CADDY_ADMIN: "0.0.0.0:2019"
+      DEV_HOST_VAJA_TARGET: http://mcp-vaja:8017
+
+  mcp-docker:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_DOCKER_BUILD_CONTEXT:-../../mcp/mcp-docker}
+    ports:
+      - "${MCP_DOCKER_PORT:-8340}:${MCP_DOCKER_PORT:-8340}"
+    environment:
+      DOCKER_HOST: ${MCP_DOCKER_DOCKER_HOST:-unix:///var/run/docker.sock}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
+
+  mcp-glama:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_GLAMA_BUILD_CONTEXT:-../../mcp/mcp-glama}
+    ports:
+      - "${MCP_GLAMA_PORT:-7214}:8014"
+    environment:
+      PORT: 8014
+      GLAMA_API_URL: ${GLAMA_API_URL:-}
+      GLAMA_API_KEY: ${GLAMA_API_KEY:-}
+      GLAMA_MODEL: ${GLAMA_MODEL:-gpt-4o-mini}
+      GLAMA_TEMPERATURE: ${GLAMA_TEMPERATURE:-0.2}
+      GLAMA_MAX_TOKENS: ${GLAMA_MAX_TOKENS:-900}
+      GLAMA_TIMEOUT_SECONDS: ${GLAMA_TIMEOUT_SECONDS:-30}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8014/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-devops:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_DEVOPS_BUILD_CONTEXT:-../../mcp/mcp-devops}
+    ports:
+      - "${MCP_DEVOPS_PORT:-8325}:${MCP_DEVOPS_PORT:-8325}"
+    environment:
+      MCP_DEVOPS_PORT: ${MCP_DEVOPS_PORT:-8325}
+      MCP_DEVOPS_HOST: 0.0.0.0
+      MCP_DEVOPS_REPO_ROOT: /workspaces/chaba
+      DEV_HOST_BASE_URL: ${DEV_HOST_BASE_URL:-http://dev-host.pc2}
+      DEV_HOST_PC2_BASE_URL: ${DEV_HOST_PC2_BASE_URL:-http://dev-host.pc2:3000}
+      MCP_DEVOPS_JSON_LIMIT: ${MCP_DEVOPS_JSON_LIMIT:-2mb}
+    volumes:
+      - ../../:/workspaces/chaba:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_DEVOPS_PORT:-8325}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-task:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_TASK_BUILD_CONTEXT:-../../mcp/mcp-task}
+    environment:
+      PORT: 8016
+      MCP_TASK_DB_PATH: /data/sqlite/mcp-task.sqlite
+      MCP_TASK_SERVERS: '[{"name":"mcp-devops","url":"http://mcp-devops:${MCP_DEVOPS_PORT:-8325}"}]'
+    volumes:
+      - stack-sqlite:/data/sqlite
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8016/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - mcp-devops
+
+  mcp-instrans:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_INSTRANS_BUILD_CONTEXT:-../../mcp/mcp-instrans}
+    ports:
+      - "${MCP_INSTRANS_PORT:-7216}:3100"
+    environment:
+      PORT: 3100
+      INSTRANS_STT_URL: ${INSTRANS_STT_URL:-}
+      INSTRANS_PORT: ${INSTRANS_PORT:-3100}
+      INSTRANS_DEFAULT_LANG: ${INSTRANS_DEFAULT_LANG:-en}
+      INSTRANS_ALLOWED_ORIGIN: ${INSTRANS_ALLOWED_ORIGIN:-*}
+      INSTRANS_SUMMARY_SENTENCES: ${INSTRANS_SUMMARY_SENTENCES:-3}
+      INSTRANS_SSE_HEARTBEAT_MS: ${INSTRANS_SSE_HEARTBEAT_MS:-15000}
+      INSTRANS_AUDIO_CHUNK_LIMIT: ${INSTRANS_AUDIO_CHUNK_LIMIT:-5242880}
+      INSTRANS_ENABLE_TRANSLATION: ${INSTRANS_ENABLE_TRANSLATION:-true}
+      INSTRANS_ENABLE_SUMMARY: ${INSTRANS_ENABLE_SUMMARY:-true}
+      INSTRANS_JSON_LIMIT: ${INSTRANS_JSON_LIMIT:-4mb}
+      INSTRANS_URLENCODED_LIMIT: ${INSTRANS_URLENCODED_LIMIT:-4mb}
+      INSTRANS_MAX_TRANSCRIPTS: ${INSTRANS_MAX_TRANSCRIPTS:-200}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3100/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-meeting:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_MEETING_BUILD_CONTEXT:-../../mcp/mcp-meeting}
+    ports:
+      - "${MCP_MEETING_PORT:-7208}:8008"
+    environment:
+      PORT: 8008
+      MEETING_STT_URL: ${MEETING_STT_URL:-}
+      MEETING_STT_HEALTH_PATH: ${MEETING_STT_HEALTH_PATH:-/health}
+      MEETING_MAX_SEGMENTS: ${MEETING_MAX_SEGMENTS:-1500}
+      MEETING_SUMMARY_MAX_ENTRIES: ${MEETING_SUMMARY_MAX_ENTRIES:-20}
+      MEETING_DEFAULT_LANGUAGE: ${MEETING_DEFAULT_LANGUAGE:-}
+      MEETING_DEFAULT_WHISPER_MODEL: ${MEETING_DEFAULT_WHISPER_MODEL:-}
+      MEETING_STORAGE_PATH: ${MEETING_STORAGE_PATH:-/data/meetings.json}
+    volumes:
+      - ${MEETING_STORAGE_ROOT:-./data/meeting}:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8008/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-vaja:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_VAJA_BUILD_CONTEXT:-../../mcp/mcp-vaja}
+    ports:
+      - "${MCP_VAJA_PORT:-7217}:8017"
+    environment:
+      PORT: 8017
+      AI4THAI_API_KEY: ${AI4THAI_API_KEY:-}
+      VAJA_ENDPOINT: ${VAJA_ENDPOINT:-https://api.aiforthai.in.th/vaja}
+      VAJA_OUTPUT_DIR: /output
+    volumes:
+      - ${VAJA_OUTPUT_DIR:-/home/tonezzz/vaja-audio}:/output
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8017/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-tester:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_TESTER_BUILD_CONTEXT:-../../mcp/mcp-tester}
+    ports:
+      - "${MCP_TESTER_PORT:-8330}:${MCP_TESTER_PORT:-8330}"
+    environment:
+      MCP_TESTER_HOST: 0.0.0.0
+      MCP_TESTER_PORT: ${MCP_TESTER_PORT:-8330}
+      MCP_TESTER_SUITE_FILE: ${MCP_TESTER_SUITE_FILE:-/app/tests.example.json}
+      MCP_TESTER_SUITE_FILES: ${MCP_TESTER_SUITE_FILES:-/app/tests.optional.json}
+      MCP_TESTER_DEFAULT_TIMEOUT_MS: ${MCP_TESTER_DEFAULT_TIMEOUT_MS:-5000}
+      MCP_TESTER_HISTORY_FILE: ${MCP_TESTER_HISTORY_FILE:-/data/run-history.ndjson}
+      DEV_HOST_TEST_BASE: ${DEV_HOST_TEST_BASE:-http://dev-host.pc1:3000}
+      A1_IDC1_BASE_URL: ${A1_IDC1_BASE_URL:-https://a1.idc1.surf-thailand.com}
+      A1_IDC1_TEST_URL: ${A1_IDC1_TEST_URL:-https://a1.idc1.surf-thailand.com/test}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_TESTER_PORT:-8330}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - ${MCP_TESTER_DATA_DIR:-./data/mcp-tester}:/data
+
+  mcp-agents:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_AGENTS_BUILD_CONTEXT:-../../mcp/mcp-agents}
+    ports:
+      - "${MCP_AGENTS_PORT:-8046}:8046"
+    environment:
+      PORT: ${MCP_AGENTS_PORT:-8046}
+      AGENTS_API_BASE: ${AGENTS_API_BASE:-http://dev-host.pc2:3100/test/agents/api}
+      AGENTS_DEFAULT_USER: ${AGENTS_DEFAULT_USER:-default}
+      AGENTS_DEFAULT_LIMIT: ${AGENTS_DEFAULT_LIMIT:-12}
+      JSON_BODY_LIMIT: ${AGENTS_JSON_LIMIT:-2mb}
+    volumes:
+      - ${MCP_AGENTS_DATA_DIR:-./data/mcp-agents}:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8046/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-playwright:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_PLAYWRIGHT_BUILD_CONTEXT:-../../mcp/mcp-playwright}
+    ports:
+      - "${MCP_PLAYWRIGHT_PORT:-8025}:${MCP_PLAYWRIGHT_PORT:-8025}"
+    environment:
+      PORT: ${MCP_PLAYWRIGHT_PORT:-8025}
+      PLAYWRIGHT_BROWSER: ${PLAYWRIGHT_BROWSER:-chromium}
+      PLAYWRIGHT_HEADLESS: ${PLAYWRIGHT_HEADLESS:-true}
+      PLAYWRIGHT_TIMEOUT_MS: ${PLAYWRIGHT_TIMEOUT_MS:-15000}
+      PLAYWRIGHT_SCENARIOS_DIR: /app/scenarios
+      PLAYWRIGHT_OUTPUT_DIR: /app/output
+    volumes:
+      - ${MCP_PLAYWRIGHT_SCENARIOS_DIR:-./data/mcp-playwright/scenarios}:/app/scenarios
+      - ${MCP_PLAYWRIGHT_OUTPUT_DIR:-./data/mcp-playwright/output}:/app/output
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_PLAYWRIGHT_PORT:-8025}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  1mcp-agent:
+    <<: *default-service
+    build:
+      context: ./1mcp-agent
+    profiles: ["mcp-suite"]
+    ports:
+      - "${ONE_MCP_PORT:-3050}:${ONE_MCP_PORT:-3050}"
+    environment:
+      ONE_MCP_HOST: ${ONE_MCP_HOST:-0.0.0.0}
+      ONE_MCP_PORT: ${ONE_MCP_PORT:-3050}
+      ONE_MCP_EXTERNAL_URL: ${ONE_MCP_EXTERNAL_URL:-http://127.0.0.1:${ONE_MCP_PORT:-3050}}
+      ONE_MCP_LOG_LEVEL: ${ONE_MCP_LOG_LEVEL:-info}
+      ONE_MCP_CONFIG: /root/.config/1mcp/mcp.json
+      UV_PYTHON: python3
+      UV_PYTHON_DOWNLOADS: never
+      UV_PROJECT_ENVIRONMENT: /tmp/uv-project
+    volumes:
+      - ${ONE_MCP_CONFIG_FILE:-./1mcp.json}:/root/.config/1mcp/mcp.json:ro
+      - "${ONE_MCP_WORKSPACE_HOST_DIR:-/home/chaba/chaba}:/workspaces/chaba:rw"
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
+      - docker-mcp-venv:/opt/docker-mcp-venv
+
+  webtops-router:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${WEBTOPS_ROUTER_BUILD_CONTEXT:-../../mcp/webtops-router}
+    ports:
+      - "${WEBTOPS_ROUTER_PORT:-3001}:${WEBTOPS_ROUTER_PORT:-3001}"
+    environment:
+      ROUTER_HOST: 0.0.0.0
+      ROUTER_PORT: ${WEBTOPS_ROUTER_PORT:-3001}
+      ROUTER_BASE_PATH: ${WEBTOPS_BASE_PATH:-/webtop}
+      ROUTER_ADMIN_TOKEN: ${WEBTOPS_ROUTER_ADMIN_TOKEN:-}
+      ROUTER_STATE_FILE: /state/router.json
+    volumes:
+      - ${WEBTOPS_ROUTER_STATE_DIR:-./data/webtops-router}:/state
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${WEBTOPS_ROUTER_PORT:-3001}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-webtops:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${MCP_WEBTOPS_BUILD_CONTEXT:-../../mcp/mcp-webtops}
+    ports:
+      - "${MCP_WEBTOPS_PORT:-8091}:${MCP_WEBTOPS_PORT:-8091}"
+    environment:
+      WEBTOPS_HOST: 0.0.0.0
+      PORT: ${MCP_WEBTOPS_PORT:-8091}
+      WEBTOPS_ADMIN_TOKEN: ${WEBTOPS_ADMIN_TOKEN:-}
+      WEBTOPS_PUBLIC_BASE_URL: ${WEBTOPS_PUBLIC_BASE_URL:-http://localhost:${WEBTOPS_ROUTER_PORT:-3001}/webtop/}
+      WEBTOPS_BASE_PATH: ${WEBTOPS_BASE_PATH:-/webtop/}
+      WEBTOPS_ROUTER_BASE_URL: http://webtops-router:${WEBTOPS_ROUTER_PORT:-3001}
+      WEBTOPS_ROUTER_ADMIN_TOKEN: ${WEBTOPS_ROUTER_ADMIN_TOKEN:-}
+      WEBTOPS_BACKEND: ${WEBTOPS_BACKEND:-docker}
+      WEBTOPS_DOCKER_NETWORK: ${WEBTOPS_DOCKER_NETWORK:-pc2-worker-net}
+      WEBTOPS_SESSION_INTERNAL_PORT: ${WEBTOPS_SESSION_INTERNAL_PORT:-3000}
+      WEBTOPS_SESSION_IMAGE_WINDSURF: ${WEBTOPS_SESSION_IMAGE_WINDSURF:-}
+      WEBTOPS_WINDSURF_VERSION: ${WEBTOPS_WINDSURF_VERSION:-}
+      WEBTOPS_WINDSURF_DOWNLOAD_URL_TEMPLATE: ${WEBTOPS_WINDSURF_DOWNLOAD_URL_TEMPLATE:-}
+      WEBTOPS_WINDSURF_INSTALL_MODE: ${WEBTOPS_WINDSURF_INSTALL_MODE:-deb_extract}
+      WEBTOPS_WINDSURF_DEB_URL_TEMPLATE: ${WEBTOPS_WINDSURF_DEB_URL_TEMPLATE:-}
+      WEBTOPS_WINDSURF_CACHE_VOLUME: ${WEBTOPS_WINDSURF_CACHE_VOLUME:-webtops_windsurf_cache}
+      WEBTOPS_WINDSURF_CACHE_MOUNT_PATH: ${WEBTOPS_WINDSURF_CACHE_MOUNT_PATH:-/windsurf-cache}
+      WEBTOPS_WORKSPACES_VOLUME: ${WEBTOPS_WORKSPACES_VOLUME:-webtops_workspaces}
+      WEBTOPS_WORKSPACES_MOUNT_PATH: ${WEBTOPS_WORKSPACES_MOUNT_PATH:-/workspaces}
+      WEBTOPS_WORKSPACES_REPO_URL: ${WEBTOPS_WORKSPACES_REPO_URL:-}
+      WEBTOPS_WORKSPACES_REPO_BRANCH: ${WEBTOPS_WORKSPACES_REPO_BRANCH:-}
+      WEBTOPS_WORKSPACES_REPO_DIR: ${WEBTOPS_WORKSPACES_REPO_DIR:-/workspaces/chaba}
+      WEBTOPS_SNAPSHOT_DIR: /snapshots
+      WEBTOPS_STATE_DIR: /state
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${WEBTOPS_SNAPSHOT_HOST_DIR:-./data/mcp-webtops/snapshots}:/snapshots
+      - ${WEBTOPS_STATE_HOST_DIR:-./data/mcp-webtops/state}:/state
+    depends_on:
+      - webtops-router
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_WEBTOPS_PORT:-8091}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  webtops-cp:
+    <<: *default-service
+    profiles: ["mcp-suite"]
+    build:
+      context: ${WEBTOPS_CP_BUILD_CONTEXT:-../../mcp/webtops-cp}
+    ports:
+      - "${WEBTOPS_CP_PORT:-3005}:${WEBTOPS_CP_PORT:-3005}"
+    environment:
+      WEBTOPS_CP_HOST: 0.0.0.0
+      WEBTOPS_CP_PORT: ${WEBTOPS_CP_PORT:-3005}
+      WEBTOPS_CP_USERNAME: ${WEBTOPS_CP_USERNAME:-admin}
+      WEBTOPS_CP_PASSWORD: ${WEBTOPS_CP_PASSWORD:-}
+      WEBTOPS_CP_WEBTOPS_BASE_URL: http://mcp-webtops:${MCP_WEBTOPS_PORT:-8091}
+      WEBTOPS_ADMIN_TOKEN: ${WEBTOPS_ADMIN_TOKEN:-}
+    depends_on:
+      - mcp-webtops
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${WEBTOPS_CP_PORT:-3005}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  node-exporter:
+    <<: *default-service
+    image: prom/node-exporter:v1.8.1
+    profiles: ["monitoring"]
+    command:
+      - "--path.rootfs=/host"
+    volumes:
+      - /:/host:ro,rslave
+
+  cadvisor:
+    <<: *default-service
+    image: gcr.io/cadvisor/cadvisor:v0.49.2
+    profiles: ["monitoring"]
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+
+networks:
+  pc2-worker-net:
+    driver: bridge
+
+volumes:
+  redis-data:
+  docker-mcp-venv:
+  stack-sqlite:

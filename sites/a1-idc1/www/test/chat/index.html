@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>a1.idc1 · Glama test console</title>
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%230b1224' stroke='%237ef2c9' stroke-width='4'/%3E%3Cpath d='M18 38c5 6 11 10 14 10s9-4 14-10' stroke='%237ef2c9' stroke-width='4' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='24' cy='28' r='4' fill='%23fefefe'/%3E%3Ccircle cx='40' cy='28' r='4' fill='%23fefefe'/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <main class="layout">
+      <header>
+        <div class="header-text">
+          <p class="eyebrow">Surf Thailand • Edge node a1</p>
+          <h1>Glama verification console</h1>
+          <p class="subtext">
+            Talk to Glama through the new a1.idc1 backend. Use this panel to measure latency, behavior, and streaming cadence before wiring it into production flows.
+          </p>
+        </div>
+        <div class="header-tools">
+          <label class="language-picker">
+            <span>Preferred language</span>
+            <select id="language-select" aria-label="Preferred language"></select>
+          </label>
+          <div class="status" id="status" role="status">Checking status…</div>
+        </div>
+      </header>
+
+      <section class="chat-log" id="chat-log" aria-live="polite"></section>
+
+      <form id="chat-form" autocomplete="off">
+        <label class="field">
+          <span class="field-label">Prompt</span>
+          <textarea id="chat-input" rows="4" placeholder="Ask anything…" required></textarea>
+        </label>
+        <div class="controls">
+          <label class="toggle">
+            <input type="checkbox" id="enter-toggle" />
+            <span>Press Enter to send</span>
+          </label>
+          <label class="temp-field">
+            <span>Temperature</span>
+            <input type="number" id="temperature" min="0" max="2" step="0.1" value="0.2" />
+          </label>
+          <button type="submit" id="send-button">Send</button>
+        </div>
+      </form>
+    </main>
+
+    <template id="message-template">
+      <article class="message">
+        <header>
+          <div class="message-headline">
+            <span class="message-role"></span>
+            <time class="message-time"></time>
+          </div>
+          <div class="message-actions">
+            <span class="message-lang" hidden></span>
+            <button
+              type="button"
+              class="message-speaker"
+              aria-label="Play reply audio"
+              title="Play reply audio"
+              hidden
+            >
+              🔊
+            </button>
+          </div>
+        </header>
+        <p class="message-body"></p>
+      </article>
+    </template>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

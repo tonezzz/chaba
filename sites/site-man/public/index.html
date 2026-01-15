@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>node-1 Sample Site</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="hero">
+      <section class="card">
+        <p class="badge">node-1.h3.surf-thailand.com</p>
+        <h1>Welcome to your sample Node.js site</h1>
+        <p>
+          This page is served by an Express server with a simple API, ready for deployment on
+          your Plesk-managed host.
+        </p>
+        <div class="actions">
+          <a class="button" href="/api/health" target="_blank" rel="noreferrer">
+            View health JSON
+          </a>
+          <button id="ping">Ping greeting API</button>
+        </div>
+        <pre id="response">Click “Ping greeting API” to fetch data...</pre>
+      </section>
+    </main>
+    <script>
+      document.getElementById('ping').addEventListener('click', async () => {
+        const res = await fetch('/api/greeting?name=Surf+Thailand');
+        const data = await res.json();
+        document.getElementById('response').textContent = JSON.stringify(data, null, 2);
+      });
+    </script>
+  </body>
+</html>

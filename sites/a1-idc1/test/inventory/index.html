@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PC1 Web Inventory</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: 'Space Grotesk', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        --bg: radial-gradient(circle at 10% -10%, #00c2b0, transparent 35%), radial-gradient(circle at 80% 0%, #3144ff, transparent 45%), #03040b;
+        --panel: rgba(8, 12, 26, 0.86);
+        --border: rgba(255, 255, 255, 0.1);
+        --accent: #7ef2c9;
+        --accent-2: #24c1ff;
+        --subtle: #b4bad8;
+        --danger: #ff6b6b;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: #f4f7ff;
+        display: flex;
+        justify-content: center;
+        padding: clamp(1.5rem, 4vw, 3rem);
+      }
+      main {
+        width: min(1100px, 100%);
+        display: flex;
+        flex-direction: column;
+        gap: 1.2rem;
+      }
+      header {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        padding: clamp(1.6rem, 4vw, 2.4rem);
+        box-shadow: 0 30px 70px rgba(0, 5, 20, 0.55);
+      }
+      .eyebrow {
+        margin: 0 0 0.4rem;
+        font-size: 0.9rem;
+        letter-spacing: 0.32em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+      h1 {
+        margin: 0 0 0.6rem;
+        font-size: clamp(2rem, 4.5vw, 2.6rem);
+        letter-spacing: 0.08em;
+      }
+      p {
+        margin: 0;
+        color: var(--subtle);
+        line-height: 1.6;
+        max-width: 75ch;
+      }
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        padding: 1rem 1.2rem;
+      }
+      .search {
+        flex: 1;
+        min-width: 240px;
+        display: flex;
+        gap: 0.6rem;
+        align-items: center;
+      }
+      input[type='search'] {
+        width: 100%;
+        padding: 0.7rem 0.9rem;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(2, 4, 12, 0.55);
+        color: #f4f7ff;
+        outline: none;
+        font-family: 'JetBrains Mono', 'Fira Code', 'SFMono-Regular', Menlo, Consolas, monospace;
+        font-size: 0.9rem;
+      }
+      .btn {
+        appearance: none;
+        border: 1px solid rgba(126, 242, 201, 0.5);
+        background: rgba(4, 10, 24, 0.9);
+        color: #7ef2c9;
+        border-radius: 999px;
+        padding: 0.55rem 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+      }
+      .btn:hover {
+        opacity: 0.92;
+        transform: translateY(-1px);
+      }
+      .meta {
+        font-size: 0.9rem;
+        color: var(--subtle);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        padding: 1.2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+        transition: transform 0.2s ease, border-color 0.2s ease;
+      }
+      .card:hover {
+        transform: translateY(-3px);
+        border-color: rgba(126, 242, 201, 0.35);
+      }
+      .row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.8rem;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.35rem 0.9rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.07);
+        font-size: 0.75rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--accent-2);
+      }
+      .name {
+        margin: 0;
+        font-size: 1.15rem;
+        letter-spacing: 0.02em;
+      }
+      .url {
+        margin: 0;
+        font-size: 0.82rem;
+        color: rgba(180, 186, 216, 0.9);
+        font-family: 'JetBrains Mono', 'Fira Code', 'SFMono-Regular', Menlo, Consolas, monospace;
+        word-break: break-all;
+      }
+      .desc {
+        margin: 0;
+        color: var(--subtle);
+      }
+      .actions {
+        margin-top: auto;
+        display: flex;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .muted {
+        color: rgba(180, 186, 216, 0.8);
+        font-weight: 500;
+      }
+      .error {
+        background: rgba(255, 107, 107, 0.12);
+        border: 1px solid rgba(255, 107, 107, 0.25);
+        color: #ffd7d7;
+        border-radius: 18px;
+        padding: 1rem 1.2rem;
+      }
+      footer {
+        text-align: center;
+        color: var(--subtle);
+        font-size: 0.9rem;
+        padding: 0.75rem 0 0.25rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">PC1 · Web inventory</p>
+        <h1>Sites & pages</h1>
+        <p>
+          This page lists all known PC1 endpoints (dev-host preview + pc1-stack VPN services). Data source:
+          <a class="muted" href="./inventory.json" target="_blank" rel="noreferrer">inventory.json</a>.
+        </p>
+      </header>
+
+      <section class="toolbar">
+        <div class="search">
+          <input id="search" type="search" placeholder="Filter by name, URL, category…" autocomplete="off" />
+        </div>
+        <button id="reload" class="btn" type="button">Reload</button>
+        <div class="meta" id="meta">Loading…</div>
+      </section>
+
+      <section id="error" class="error" style="display: none"></section>
+
+      <section id="grid" class="grid"></section>
+
+      <footer>
+        <a class="muted" href="/test/">Back to /test</a>
+      </footer>
+
+      <script type="module">
+        const grid = document.getElementById('grid');
+        const search = document.getElementById('search');
+        const meta = document.getElementById('meta');
+        const errorBox = document.getElementById('error');
+        const reload = document.getElementById('reload');
+
+        const normalize = (value) => String(value || '').toLowerCase();
+
+        const fetchInventory = async () => {
+          const response = await fetch('./inventory.json', { cache: 'no-store' });
+          if (!response.ok) {
+            throw new Error(`Failed to load inventory.json (HTTP ${response.status})`);
+          }
+          return await response.json();
+        };
+
+        const groupBy = (items, keyFn) => {
+          return items.reduce((acc, item) => {
+            const key = keyFn(item) || 'other';
+            acc[key] = acc[key] || [];
+            acc[key].push(item);
+            return acc;
+          }, {});
+        };
+
+        const render = (inventory, filterText) => {
+          const items = Array.isArray(inventory?.items) ? inventory.items : [];
+          const q = normalize(filterText);
+
+          const filtered = !q
+            ? items
+            : items.filter((item) => {
+                const blob = [item.category, item.name, item.url, item.description].map(normalize).join(' ');
+                return blob.includes(q);
+              });
+
+          const grouped = groupBy(filtered, (item) => item.category);
+          const categories = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
+
+          meta.textContent = `${filtered.length} item(s) · ${categories.length} category(s) · updated ${inventory?.generated_at || 'unknown'}`;
+
+          grid.innerHTML = categories
+            .map((category) => {
+              const cards = grouped[category]
+                .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')))
+                .map((item) => {
+                  const safeUrl = item.url || '';
+                  const canOpen = /^https?:\/\//i.test(safeUrl);
+                  return `
+                    <article class="card">
+                      <div class="row">
+                        <span class="chip">${category}</span>
+                        ${canOpen ? `<a href="${safeUrl}" target="_blank" rel="noreferrer">Open</a>` : '<span class="muted">No URL</span>'}
+                      </div>
+                      <h2 class="name">${item.name || 'Untitled'}</h2>
+                      <p class="url">${safeUrl || '—'}</p>
+                      <p class="desc">${item.description || ''}</p>
+                      <div class="actions">
+                        ${canOpen ? `<a href="${safeUrl}" target="_blank" rel="noreferrer">Launch</a>` : ''}
+                        ${safeUrl ? `<a class="muted" href="#" data-copy="${safeUrl}">Copy URL</a>` : ''}
+                      </div>
+                    </article>
+                  `;
+                })
+                .join('');
+
+              return cards;
+            })
+            .join('');
+
+          grid.querySelectorAll('[data-copy]').forEach((el) => {
+            el.addEventListener('click', async (event) => {
+              event.preventDefault();
+              const value = el.getAttribute('data-copy') || '';
+              try {
+                await navigator.clipboard.writeText(value);
+                el.textContent = 'Copied';
+                setTimeout(() => {
+                  el.textContent = 'Copy URL';
+                }, 900);
+              } catch {
+                el.textContent = 'Copy failed';
+                setTimeout(() => {
+                  el.textContent = 'Copy URL';
+                }, 900);
+              }
+            });
+          });
+        };
+
+        const setError = (message) => {
+          if (!message) {
+            errorBox.style.display = 'none';
+            errorBox.textContent = '';
+            return;
+          }
+          errorBox.style.display = 'block';
+          errorBox.textContent = message;
+        };
+
+        let currentInventory = null;
+
+        const load = async () => {
+          setError('');
+          meta.textContent = 'Loading…';
+          grid.innerHTML = '';
+          try {
+            currentInventory = await fetchInventory();
+            render(currentInventory, search.value);
+          } catch (err) {
+            setError(err.message || String(err));
+            meta.textContent = 'Failed to load.';
+          }
+        };
+
+        search.addEventListener('input', () => {
+          if (!currentInventory) return;
+          render(currentInventory, search.value);
+        });
+        reload.addEventListener('click', load);
+
+        load();
+      </script>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,62 @@
+a1.idc1.surf-thailand.com {
+    root * /www/a1.idc1.surf-thailand.com/a1-idc1/current
+    encode gzip zstd
+
+    handle /test/chat/api/* {
+        uri strip_prefix /test/chat
+        reverse_proxy 127.0.0.1:4020
+    }
+
+    handle /test/chat/* {
+        uri strip_prefix /test/chat
+        root * /www/a1.idc1.surf-thailand.com/a1-idc1/current/test/chat
+        try_files {path} {path}/ /index.html
+        file_server
+    }
+
+    handle /test/detects/api/* {
+        uri strip_prefix /test/detects/api
+        reverse_proxy 127.0.0.1:4120
+    }
+
+    handle /test/detects/* {
+        uri strip_prefix /test/detects
+        root * /www/a1.idc1.surf-thailand.com/a1-idc1/current/test/detects
+        try_files {path} {path}/ /index.html
+        file_server
+    }
+
+    handle /test/vaja/* {
+        uri strip_prefix /test/vaja
+        root * /www/a1.idc1.surf-thailand.com/a1-idc1/current/test/vaja
+        try_files {path} {path}/ /index.html
+        file_server
+    }
+
+    handle /test/agents/api/* {
+        uri strip_prefix /test/agents
+        reverse_proxy 127.0.0.1:4060
+    }
+
+    handle /test/agents/* {
+        uri strip_prefix /test/agents
+        root * /www/a1.idc1.surf-thailand.com/a1-idc1/current/test/agents
+        try_files {path} {path}/ /index.html
+        file_server
+    }
+
+    file_server
+}
+
+code.idc1.surf-thailand.com {
+    encode gzip zstd
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "same-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    }
+    tls ops@surf-thailand.com
+    reverse_proxy 127.0.0.1:8080
+}

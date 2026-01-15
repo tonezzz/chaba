@@ -1,0 +1,69 @@
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - .env
+  networks:
+    - pc1-web-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  mcp-webtops:
+    <<: *default-service
+    build:
+      context: ${MCP_WEBTOPS_BUILD_CONTEXT:-../../mcp/mcp-webtops}
+    container_name: pc1-mcp-webtops
+    ports:
+      - "${MCP_WEBTOPS_PORT:-8056}:8091"
+    environment:
+      WEBTOPS_HOST: 0.0.0.0
+      PORT: 8091
+      WEBTOPS_ADMIN_TOKEN: ${WEBTOPS_ADMIN_TOKEN:-}
+      WEBTOPS_PUBLIC_BASE_URL: ${WEBTOPS_PUBLIC_BASE_URL:-https://webtops.pc1.vpn/webtop/}
+      WEBTOPS_BASE_PATH: ${WEBTOPS_BASE_PATH:-/webtop/}
+      WEBTOPS_ROUTER_BASE_URL: ${WEBTOPS_ROUTER_BASE_URL:-}
+      WEBTOPS_ROUTER_ADMIN_TOKEN: ${WEBTOPS_ROUTER_ADMIN_TOKEN:-}
+      WEBTOPS_BACKEND: ${WEBTOPS_BACKEND:-local}
+      WEBTOPS_DOCKER_NETWORK: ${WEBTOPS_DOCKER_NETWORK:-pc1-web-net}
+      WEBTOPS_SESSION_INTERNAL_PORT: ${WEBTOPS_SESSION_INTERNAL_PORT:-3000}
+      WEBTOPS_SESSION_IMAGE: ${WEBTOPS_SESSION_IMAGE:-lscr.io/linuxserver/webtop:latest}
+
+      WEBTOPS_SESSION_IMAGE_WINDSURF: ${WEBTOPS_SESSION_IMAGE_WINDSURF:-webtops-windsurf-runtime:stable}
+      WEBTOPS_WINDSURF_VERSION: ${WEBTOPS_WINDSURF_VERSION:-}
+      WEBTOPS_WINDSURF_DOWNLOAD_URL_TEMPLATE: ${WEBTOPS_WINDSURF_DOWNLOAD_URL_TEMPLATE:-}
+      WEBTOPS_WINDSURF_INSTALL_MODE: ${WEBTOPS_WINDSURF_INSTALL_MODE:-deb_extract}
+      WEBTOPS_WINDSURF_DEB_URL_TEMPLATE: ${WEBTOPS_WINDSURF_DEB_URL_TEMPLATE:-}
+
+      WEBTOPS_WINDSURF_CACHE_VOLUME: ${WEBTOPS_WINDSURF_CACHE_VOLUME:-webtops_windsurf_cache}
+      WEBTOPS_WINDSURF_CACHE_MOUNT_PATH: ${WEBTOPS_WINDSURF_CACHE_MOUNT_PATH:-/windsurf-cache}
+
+      WEBTOPS_WORKSPACES_VOLUME: ${WEBTOPS_WORKSPACES_VOLUME:-webtops_workspaces}
+      WEBTOPS_WORKSPACES_MOUNT_PATH: ${WEBTOPS_WORKSPACES_MOUNT_PATH:-/workspaces}
+      WEBTOPS_WORKSPACES_REPO_URL: ${WEBTOPS_WORKSPACES_REPO_URL:-}
+      WEBTOPS_WORKSPACES_REPO_BRANCH: ${WEBTOPS_WORKSPACES_REPO_BRANCH:-}
+      WEBTOPS_WORKSPACES_REPO_DIR: ${WEBTOPS_WORKSPACES_REPO_DIR:-/workspaces/chaba}
+
+      WEBTOPS_SNAPSHOT_DIR: /snapshots
+      WEBTOPS_STATE_DIR: /state
+    volumes:
+      - ${WEBTOPS_SNAPSHOT_HOST_DIR:-./data/mcp-webtops/snapshots}:/snapshots
+      - ${WEBTOPS_STATE_HOST_DIR:-./data/mcp-webtops/state}:/state
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8091/health', timeout=2).read()\" || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  pc1-web-net:
+    driver: bridge
+    external: true
+    name: pc1-web_pc1-web-net
+
+volumes:
+  webtops_windsurf_cache:
+  webtops_workspaces:
+

@@ -1,0 +1,93 @@
+# Python/AI project artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.env
+venv/
+.env.local
+
+# Local stack env overrides (may contain secrets)
+stacks/pc1-stack/.env.devops
+stacks/pc1-stack/.env.local
+
+# Node / general
+node_modules/
+pnpm-lock.yaml
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+build/
+
+# Project-specific
+/secrets/
+/.secrets/
+/data/
+/artifacts/
+/logs/
+
+# Stack runtime volumes (never commit)
+stacks/*/data/
+stacks/*/data/**
+stacks/**/data/
+stacks/**/data/**
+
+# Common runtime caches/logs
+**/.cache/
+**/.cache/**
+**/logs/
+**/logs/**
+**/*.log
+
+# IDE / agent workspace state
+.windsurf/
+
+/.models/
+/_Caddyfile.txt
+
+# Local temp outputs
+temp/
+tmp/
+temp_test_image.jpg
+
+# Local reverse-proxy scratch (do not commit)
+docker-compose.nginx.yml
+config/nginx/
+config/ssl/
+config/ssl/*.key
+config/ssl/*.crt
+
+# User document drop folder (do not commit PDFs)
+audidoc-pdfs/**
+!audidoc-pdfs/.gitkeep
+
+# Local scratch files (do not commit)
+pc1-caddy-root.crt
+index.js
+test_connection.js
+mcp_custom_config.json
+mcp_idc1_config.json
+plugin.json
+
+# Local helper scripts (do not commit)
+scripts/verify-github-pat-env.ps1
+scripts/set-github-pat-user.ps1
+
+*.sock
+
+# Installer/CI temp files
+installer/.env
+installer/.cache/
+sites/site-sample/.env
+sites/site-logger/.env
+sites/site-chat/.env
+
+# dev-host local overrides (may contain secrets)
+sites/dev-host/.env.dev-host
+
+# Generated preview artifacts (do not commit)
+sites/a1-idc1/test/ai_app/
+sites/a1-idc1/test/ai_app_src/out/
+sites/a1-idc1/test/ai_app_src/.next/

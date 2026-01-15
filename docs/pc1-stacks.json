@@ -1,0 +1,216 @@
+{
+    "stacks": {
+        "pc1-gpu": {
+            "description": "GPU-accelerated services",
+            "containers": [
+                {
+                    "name": "pc1-gpu-mcp-cuda",
+                    "service": "mcp-cuda",
+                    "port": 8057,
+                    "purpose": "GPU-accelerated ML & SDXL image generation"
+                }
+            ]
+        },
+        "pc1-deka": {
+            "description": "Thai Supreme Court document scraping",
+            "containers": [
+                {
+                    "name": "pc1-deka-mcp-deka",
+                    "service": "mcp-deka",
+                    "port": 8270,
+                    "purpose": "Thai Supreme Court document scraping"
+                }
+            ]
+        },
+        "pc1-ai": {
+            "description": "AI/ML services and model gateways",
+            "containers": [
+                {
+                    "name": "pc1-ai-mcp-glama",
+                    "service": "mcp-glama",
+                    "port": 7241,
+                    "internal_port": 8014,
+                    "purpose": "Glama model gateway"
+                },
+                {
+                    "name": "pc1-ai-mcp-github-models",
+                    "service": "mcp-github-models",
+                    "port": 7242,
+                    "internal_port": 8015,
+                    "purpose": "GitHub Models API gateway"
+                },
+                {
+                    "name": "pc1-ai-mcp-openai-gateway",
+                    "service": "mcp-openai-gateway",
+                    "port": 8181,
+                    "purpose": "OpenAI API proxy"
+                },
+                {
+                    "name": "pc1-ai-ollama",
+                    "service": "ollama",
+                    "port": 11435,
+                    "internal_port": 11434,
+                    "purpose": "Local LLM server"
+                },
+                {
+                    "name": "pc1-ai-mcp-imagen-light",
+                    "service": "mcp-imagen-light",
+                    "port": 8020,
+                    "purpose": "Image generation adapter"
+                }
+            ]
+        },
+        "pc1-db": {
+            "description": "Data storage and database services",
+            "containers": [
+                {
+                    "name": "pc1-db-qdrant",
+                    "service": "qdrant",
+                    "port": 6333,
+                    "purpose": "Vector database for embeddings and similarity search"
+                },
+                {
+                    "name": "pc1-db-mcp-rag",
+                    "service": "mcp-rag",
+                    "port": 8055,
+                    "purpose": "RAG search and embeddings service"
+                },
+                {
+                    "name": "pc1-db-mcp-doc-archiver",
+                    "service": "mcp-doc-archiver",
+                    "port": 8066,
+                    "purpose": "Document processing and archiving"
+                },
+                {
+                    "name": "pc1-db-authentik-postgres",
+                    "service": "authentik-postgres",
+                    "port": null,
+                    "purpose": "Authentication database"
+                },
+                {
+                    "name": "pc1-db-authentik-redis",
+                    "service": "authentik-redis",
+                    "port": null,
+                    "purpose": "Authentication cache"
+                },
+                {
+                    "name": "pc1-db-minio",
+                    "service": "minio",
+                    "ports": [9000, 9001],
+                    "purpose": "Object storage"
+                },
+                {
+                    "name": "pc1-db-vault",
+                    "service": "vault",
+                    "port": 8200,
+                    "purpose": "Secrets management"
+                }
+            ]
+        },
+        "pc1-devops": {
+            "description": "DevOps workflows and automation",
+            "containers": [
+                {
+                    "name": "pc1-devops-mcp-devops",
+                    "service": "mcp-devops",
+                    "port": 8325,
+                    "purpose": "Development workflows and automation"
+                }
+            ]
+        },
+        "pc1-apps": {
+            "description": "Web services and user interfaces",
+            "containers": [
+                {
+                    "name": "pc1-apps-openchat-ui",
+                    "service": "openchat-ui",
+                    "port": 3170,
+                    "internal_port": 3000,
+                    "purpose": "Chat interface UI"
+                },
+                {
+                    "name": "pc1-apps-caddy",
+                    "service": "caddy",
+                    "ports": ["3080->80", "3443->443"],
+                    "purpose": "Reverse proxy and web server"
+                },
+                {
+                    "name": "pc1-apps-dev-host",
+                    "service": "dev-host",
+                    "ports": ["2223->22", "3100->3000"],
+                    "purpose": "Development host environment"
+                }
+            ]
+        },
+        "pc1-stack": {
+            "description": "General MCP services",
+            "containers": [
+                {
+                    "name": "pc1-1mcp-agent",
+                    "service": "1mcp-agent",
+                    "port": 3051,
+                    "purpose": "MCP orchestration proxy"
+                },
+                {
+                    "name": "pc1-mcp-agents",
+                    "service": "mcp-agents",
+                    "port": 8046,
+                    "purpose": "Multi-agent orchestration"
+                },
+                {
+                    "name": "pc1-mcp-http",
+                    "service": "mcp-http",
+                    "port": 8067,
+                    "purpose": "HTTP utilities"
+                },
+                {
+                    "name": "pc1-mcp-task",
+                    "service": "mcp-task",
+                    "port": 8016,
+                    "purpose": "Task management"
+                },
+                {
+                    "name": "pc1-mcp-playwright",
+                    "service": "mcp-playwright",
+                    "port": 8260,
+                    "purpose": "Browser automation"
+                },
+                {
+                    "name": "pc1-mcp-quickchart",
+                    "service": "mcp-quickchart",
+                    "port": 8251,
+                    "purpose": "Chart generation"
+                },
+                {
+                    "name": "pc1-authentik-server",
+                    "service": "authentik-server",
+                    "port": 9000,
+                    "purpose": "Authentication service"
+                },
+                {
+                    "name": "pc1-authentik-worker",
+                    "service": "authentik-worker",
+                    "port": null,
+                    "purpose": "Auth background jobs"
+                },
+                {
+                    "name": "pc1-mcp-tester",
+                    "service": "mcp-tester",
+                    "port": 8335,
+                    "purpose": "Service testing"
+                }
+            ]
+        }
+    },
+    "summary": {
+        "total_containers": 26,
+        "stack_count": 7,
+        "gpu_services": 1,
+        "devops_services": 1,
+        "ai_services": 5,
+        "db_services": 7,
+        "web_services": 3,
+        "specialized_stacks": ["pc1-gpu", "pc1-deka", "pc1-devops", "pc1-ai", "pc1-db", "pc1-apps"],
+        "main_stack": "pc1-stack"
+    }
+}

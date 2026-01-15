@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "host": {
+    "name": "idc1",
+    "os": "linux",
+    "public_domain": "idc1.surf-thailand.com",
+    "vpn_domain": "idc1.vpn"
+  },
+  "stack": {
+    "id": "idc1-stack",
+    "path": "stacks/idc1-stack",
+    "compose": "docker-compose.yml",
+    "description": "Core idc1 MCP services"
+  },
+  "entrypoints": {
+    "mcp": {
+      "windsurf": "https://1mcp.idc1.surf-thailand.com/mcp?app=windsurf"
+    }
+  },
+  "services": [
+    {"service": "1mcp-agent", "port": 3050, "health": "/health"},
+    {"service": "mcp-agents", "port": 8446, "health": "/health"},
+    {"service": "mcp-glama", "port": 7441, "health": "/health"},
+    {"service": "mcp-tester", "port": 8435, "health": "/health"},
+    {"service": "mcp-devops", "port": 8425},
+    {"service": "mcp-playwright", "port": 8460, "health": "/health"},
+    {"service": "mcp-docker", "port": 8340, "health": "/health"},
+    {"service": "mcp-memory", "port": 8470, "health": "/health"}
+  ],
+  "recovery": {
+    "verify": {
+      "urls": [
+        "http://127.0.0.1:3050/health",
+        "http://idc1.surf-thailand.com:8340/health",
+        "http://idc1.surf-thailand.com:8446/health",
+        "http://idc1.surf-thailand.com:7441/health",
+        "http://idc1.surf-thailand.com:8435/health",
+        "http://idc1.surf-thailand.com:8460/health",
+        "http://idc1.surf-thailand.com:8470/health"
+      ]
+    },
+    "restart": {
+      "linux": [
+        "cd /home/chaba/chaba/stacks/idc1-stack && docker compose --profile mcp-suite up -d",
+        "curl -sf http://127.0.0.1:3050/health"
+      ]
+    }
+  }
+}

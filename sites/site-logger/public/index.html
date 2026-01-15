@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>node-1 Logger Demo</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="card">
+        <h1>Logger demo</h1>
+        <p>Use the buttons below to generate log entries, then fetch the latest 100 lines.</p>
+        <div class="actions">
+          <button id="hit-log">Generate WARN log</button>
+          <button id="custom-log">Send custom event</button>
+          <button id="view-log">Fetch last 100 lines</button>
+        </div>
+        <textarea id="output" readonly placeholder="Logs will appear here..."></textarea>
+      </section>
+    </main>
+    <script>
+      const out = document.getElementById('output');
+      const write = (text) => {
+        out.value = `${text}\n${out.value}`.slice(0, 8000);
+      };
+
+      document.getElementById('hit-log').onclick = async () => {
+        const res = await fetch('/api/log-demo');
+        write(await res.text());
+      };
+
+      document.getElementById('custom-log').onclick = async () => {
+        const res = await fetch('/api/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'button_press',
+            ts: new Date().toISOString()
+          })
+        });
+        write(await res.text());
+      };
+
+      document.getElementById('view-log').onclick = async () => {
+        const res = await fetch('/api/logs');
+        const data = await res.json();
+        write(JSON.stringify(data, null, 2));
+      };
+    </script>
+  </body>
+</html>

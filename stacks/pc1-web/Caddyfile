@@ -1,0 +1,61 @@
+{
+  admin 0.0.0.0:2019
+}
+
+(pc1_routes) {
+  route {
+    handle_path /1mcp* {
+      reverse_proxy http://host.docker.internal:3051 {
+        header_up Accept "application/json, text/event-stream"
+      }
+    }
+
+    handle_path /openai* {
+      reverse_proxy http://host.docker.internal:8181
+    }
+
+    handle /docs* {
+      reverse_proxy http://host.docker.internal:8066
+    }
+
+    handle {
+      reverse_proxy http://host.docker.internal:3100
+    }
+  }
+}
+
+1mcp.pc1.vpn {
+  tls internal
+  reverse_proxy http://host.docker.internal:3051 {
+    header_up Accept "application/json, text/event-stream"
+  }
+}
+
+line.pc1.vpn {
+  tls internal
+
+  route {
+    handle_path /openai* {
+      reverse_proxy http://host.docker.internal:8181
+    }
+
+    handle /docs* {
+      reverse_proxy http://host.docker.internal:8066
+    }
+
+    handle {
+      root * /srv/line-ui
+      file_server
+    }
+  }
+}
+
+assistant.pc1.vpn {
+  tls internal
+  reverse_proxy http://host.docker.internal:8099
+}
+
+pc1.vpn, *.pc1.vpn {
+  tls internal
+  import pc1_routes
+}

@@ -1,0 +1,212 @@
+#!/usr/bin/with-contenv bash
+set -euo pipefail
+
+WINDSURF_INSTALL_MODE="${WINDSURF_INSTALL_MODE:-}"
+WINDSURF_VERSION="${WINDSURF_VERSION:-}"
+WINDSURF_DOWNLOAD_URL_TEMPLATE="${WINDSURF_DOWNLOAD_URL_TEMPLATE:-}"
+WINDSURF_DEB_URL_TEMPLATE="${WINDSURF_DEB_URL_TEMPLATE:-}"
+WINDSURF_CACHE_ROOT="${WINDSURF_CACHE_ROOT:-}"
+
+WORKSPACES_ROOT="${WORKSPACES_ROOT:-/workspaces}"
+WORKSPACES_REPO_DIR="${WORKSPACES_REPO_DIR:-$WORKSPACES_ROOT/chaba}"
+WORKSPACES_REPO_URL="${WORKSPACES_REPO_URL:-}"
+WORKSPACES_REPO_BRANCH="${WORKSPACES_REPO_BRANCH:-}"
+
+if [ -z "$WINDSURF_INSTALL_MODE" ]; then
+  WINDSURF_INSTALL_MODE="deb_extract"
+fi
+
+mkdir -p "$WORKSPACES_ROOT" "$WORKSPACES_REPO_DIR" || true
+
+OWNER_UID="${PUID:-$(id -u abc 2>/dev/null || echo 1000)}"
+OWNER_GID="${PGID:-$(id -g abc 2>/dev/null || echo 1000)}"
+OWNER="${OWNER_UID}:${OWNER_GID}"
+chown "$OWNER" "$WORKSPACES_ROOT" 2>/dev/null || true
+chown -R "$OWNER" "$WORKSPACES_REPO_DIR" 2>/dev/null || true
+
+if [ -n "$WORKSPACES_REPO_URL" ] && command -v git >/dev/null 2>&1; then
+  GIT_RUNNER=""
+  if id abc >/dev/null 2>&1 && command -v s6-setuidgid >/dev/null 2>&1; then
+    GIT_RUNNER="s6-setuidgid abc"
+  fi
+
+  if [ ! -d "$WORKSPACES_REPO_DIR/.git" ]; then
+    if [ -n "$GIT_RUNNER" ]; then
+      $GIT_RUNNER git clone "$WORKSPACES_REPO_URL" "$WORKSPACES_REPO_DIR" || true
+    else
+      git clone "$WORKSPACES_REPO_URL" "$WORKSPACES_REPO_DIR" || true
+    fi
+  fi
+
+  if [ -d "$WORKSPACES_REPO_DIR/.git" ]; then
+    if [ -n "$WORKSPACES_REPO_BRANCH" ]; then
+      if [ -n "$GIT_RUNNER" ]; then
+        $GIT_RUNNER git -C "$WORKSPACES_REPO_DIR" fetch --all --prune || true
+        $GIT_RUNNER git -C "$WORKSPACES_REPO_DIR" checkout "$WORKSPACES_REPO_BRANCH" || true
+        $GIT_RUNNER git -C "$WORKSPACES_REPO_DIR" pull --ff-only || true
+      else
+        git -C "$WORKSPACES_REPO_DIR" fetch --all --prune || true
+        git -C "$WORKSPACES_REPO_DIR" checkout "$WORKSPACES_REPO_BRANCH" || true
+        git -C "$WORKSPACES_REPO_DIR" pull --ff-only || true
+      fi
+    else
+      if [ -n "$GIT_RUNNER" ]; then
+        $GIT_RUNNER git -C "$WORKSPACES_REPO_DIR" pull --ff-only || true
+      else
+        git -C "$WORKSPACES_REPO_DIR" pull --ff-only || true
+      fi
+    fi
+  fi
+
+  if [ ! -f /etc/gitconfig ]; then
+    : > /etc/gitconfig 2>/dev/null || true
+  fi
+  if [ -f /etc/gitconfig ] && ! grep -Fq "directory = $WORKSPACES_REPO_DIR" /etc/gitconfig 2>/dev/null; then
+    printf '%s\n' "[safe]" "  directory = $WORKSPACES_REPO_DIR" >> /etc/gitconfig 2>/dev/null || true
+  fi
+
+  HOME=/root git config --global --add safe.directory "$WORKSPACES_REPO_DIR" 2>/dev/null || true
+  if [ -n "$GIT_RUNNER" ]; then
+    $GIT_RUNNER env HOME=/config git config --global --add safe.directory "$WORKSPACES_REPO_DIR" 2>/dev/null || true
+  fi
+fi
+
+if [ -z "$WINDSURF_VERSION" ]; then
+  exit 0
+fi
+
+if [ "$WINDSURF_INSTALL_MODE" = "deb_extract" ]; then
+  if [ -z "$WINDSURF_DEB_URL_TEMPLATE" ]; then
+    exit 0
+  fi
+
+  CONFIG_DIR="/config"
+  if [ -z "$WINDSURF_CACHE_ROOT" ]; then
+    WINDSURF_CACHE_ROOT="$CONFIG_DIR/.cache/windsurf"
+  fi
+  CACHE_DIR="$WINDSURF_CACHE_ROOT/$WINDSURF_VERSION"
+  BIN_DIR="$CONFIG_DIR/.local/bin"
+  DEB_PATH="$CACHE_DIR/windsurf.deb"
+  EXTRACT_DIR="$CACHE_DIR/root"
+
+  mkdir -p "$CACHE_DIR" "$BIN_DIR" "$EXTRACT_DIR"
+
+  if [ ! -f "$DEB_PATH" ]; then
+    URL="${WINDSURF_DEB_URL_TEMPLATE//\{version\}/$WINDSURF_VERSION}"
+    TMP_DEB="$DEB_PATH.tmp"
+    rm -f "$TMP_DEB"
+    curl -fL --retry 3 --connect-timeout 10 --max-time 600 -sS "$URL" -o "$TMP_DEB"
+    mv -f "$TMP_DEB" "$DEB_PATH"
+  fi
+
+  if ! ar t "$DEB_PATH" >/dev/null 2>&1; then
+    rm -f "$DEB_PATH"
+    exit 1
+  fi
+  if ! ar t "$DEB_PATH" 2>/dev/null | grep -qx "debian-binary"; then
+    rm -f "$DEB_PATH"
+    exit 1
+  fi
+
+  # Extract .deb (ar archive) into cache
+  if [ ! -x "$EXTRACT_DIR/usr/bin/windsurf" ] && [ ! -x "$EXTRACT_DIR/usr/share/windsurf/windsurf" ]; then
+    rm -rf "$EXTRACT_DIR"/*
+    (cd "$EXTRACT_DIR" && ar x "$DEB_PATH")
+    # data.tar.* contains payload
+    DATA_TAR="$(ls -1 "$EXTRACT_DIR"/data.tar.* 2>/dev/null | head -n 1 || true)"
+    if [ -z "$DATA_TAR" ]; then
+      exit 1
+    fi
+    if command -v bsdtar >/dev/null 2>&1; then
+      bsdtar -xf "$DATA_TAR" -C "$EXTRACT_DIR"
+    else
+      tar -xf "$DATA_TAR" -C "$EXTRACT_DIR"
+    fi
+  fi
+
+  if [ -x "$EXTRACT_DIR/usr/bin/windsurf" ]; then
+    ln -sf "$EXTRACT_DIR/usr/bin/windsurf" "$BIN_DIR/windsurf"
+  elif [ -x "$EXTRACT_DIR/usr/share/windsurf/windsurf" ]; then
+    ln -sf "$EXTRACT_DIR/usr/share/windsurf/windsurf" "$BIN_DIR/windsurf"
+  else
+    exit 1
+  fi
+
+  USER_APPS_DIR="$CONFIG_DIR/.local/share/applications"
+  DESKTOP_DIR="$CONFIG_DIR/Desktop"
+  mkdir -p "$USER_APPS_DIR" "$DESKTOP_DIR"
+
+  OWNER_UID="${PUID:-$(id -u abc 2>/dev/null || echo 1000)}"
+  OWNER_GID="${PGID:-$(id -g abc 2>/dev/null || echo 1000)}"
+  OWNER="${OWNER_UID}:${OWNER_GID}"
+
+  DESKTOP_ENTRY_CONTENT="[Desktop Entry]
+Name=Windsurf
+Comment=Windsurf IDE
+Exec=/usr/local/bin/windsurf-launch
+Icon=code
+Terminal=false
+Type=Application
+Categories=Development;IDE;"
+
+  echo "$DESKTOP_ENTRY_CONTENT" > "/usr/share/applications/windsurf.desktop"
+  echo "$DESKTOP_ENTRY_CONTENT" > "$USER_APPS_DIR/windsurf.desktop"
+  cp -f "$USER_APPS_DIR/windsurf.desktop" "$DESKTOP_DIR/Windsurf.desktop" || true
+
+  chown "$OWNER" "$DESKTOP_DIR" 2>/dev/null || true
+  chown "$OWNER" "$USER_APPS_DIR/windsurf.desktop" 2>/dev/null || true
+  chown "$OWNER" "$DESKTOP_DIR/Windsurf.desktop" 2>/dev/null || true
+  chmod +x "$DESKTOP_DIR/Windsurf.desktop" 2>/dev/null || true
+
+  exit 0
+fi
+
+if [ -z "$WINDSURF_DOWNLOAD_URL_TEMPLATE" ]; then
+  exit 0
+fi
+
+CONFIG_DIR="/config"
+if [ -z "$WINDSURF_CACHE_ROOT" ]; then
+  WINDSURF_CACHE_ROOT="$CONFIG_DIR/.cache/windsurf"
+fi
+CACHE_DIR="$WINDSURF_CACHE_ROOT/$WINDSURF_VERSION"
+BIN_DIR="$CONFIG_DIR/.local/bin"
+APPIMAGE_PATH="$CACHE_DIR/windsurf.AppImage"
+
+mkdir -p "$CACHE_DIR" "$BIN_DIR"
+
+if [ ! -f "$APPIMAGE_PATH" ]; then
+  URL="${WINDSURF_DOWNLOAD_URL_TEMPLATE//\{version\}/$WINDSURF_VERSION}"
+  curl -fsSL "$URL" -o "$APPIMAGE_PATH"
+  chmod +x "$APPIMAGE_PATH"
+fi
+
+ln -sf "$APPIMAGE_PATH" "$BIN_DIR/windsurf"
+
+USER_APPS_DIR="$CONFIG_DIR/.local/share/applications"
+DESKTOP_DIR="$CONFIG_DIR/Desktop"
+mkdir -p "$USER_APPS_DIR" "$DESKTOP_DIR"
+
+OWNER_UID="${PUID:-$(id -u abc 2>/dev/null || echo 1000)}"
+OWNER_GID="${PGID:-$(id -g abc 2>/dev/null || echo 1000)}"
+OWNER="${OWNER_UID}:${OWNER_GID}"
+
+DESKTOP_ENTRY_CONTENT="[Desktop Entry]
+Name=Windsurf
+Comment=Windsurf IDE
+Exec=/usr/local/bin/windsurf-launch
+Icon=code
+Terminal=false
+Type=Application
+Categories=Development;IDE;"
+
+echo "$DESKTOP_ENTRY_CONTENT" > "/usr/share/applications/windsurf.desktop"
+echo "$DESKTOP_ENTRY_CONTENT" > "$USER_APPS_DIR/windsurf.desktop"
+cp -f "$USER_APPS_DIR/windsurf.desktop" "$DESKTOP_DIR/Windsurf.desktop" || true
+
+chown "$OWNER" "$DESKTOP_DIR" 2>/dev/null || true
+chown "$OWNER" "$USER_APPS_DIR/windsurf.desktop" 2>/dev/null || true
+chown "$OWNER" "$DESKTOP_DIR/Windsurf.desktop" 2>/dev/null || true
+chmod +x "$DESKTOP_DIR/Windsurf.desktop" 2>/dev/null || true
+
+exit 0

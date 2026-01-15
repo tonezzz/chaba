@@ -1,0 +1,24 @@
+{
+  "name": "dev_host_home",
+  "description": "Smoke test for dev-host /test landing page.",
+  "actions": [
+    {
+      "type": "goto",
+      "url": "https://dev-host.pc2/test/",
+      "waitUntil": "domcontentloaded",
+      "timeout": 20000
+    },
+    {
+      "type": "wait_for_selector",
+      "selector": "body",
+      "state": "visible",
+      "timeout": 10000
+    },
+    {
+      "type": "screenshot",
+      "description": "Dev-host /test landing",
+      "file": "dev-host-test.png",
+      "fullPage": true
+    }
+  ]
+}

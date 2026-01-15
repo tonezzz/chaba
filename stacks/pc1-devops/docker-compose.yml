@@ -1,0 +1,60 @@
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - ${PC1_DEVOPS_ENV_FILE:-.env}
+  networks:
+    - pc1-devops-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  mcp-devops:
+    <<: *default-service
+    build:
+      context: ${MCP_DEVOPS_BUILD_CONTEXT:-../../mcp/mcp-devops}
+    container_name: pc1-mcp-devops
+    ports:
+      - "${MCP_DEVOPS_PORT:-8325}:8325"
+    environment:
+      PORT: 8325
+      MCP_DEVOPS_HOST: 0.0.0.0
+      MCP_DEVOPS_REPO_ROOT: /workspaces/chaba
+      DEV_HOST_BASE_URL: ${DEV_HOST_BASE_URL:-http://dev-host.pc1}
+      MCP_DEVOPS_JSON_LIMIT: ${MCP_DEVOPS_JSON_LIMIT:-2mb}
+    volumes:
+      - ${PC1_WORKSPACE_HOST_DIR:-C:/chaba}:/workspaces/chaba:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8325/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-docker:
+    <<: *default-service
+    build:
+      context: ${MCP_DOCKER_BUILD_CONTEXT:-../../mcp/mcp-docker}
+    container_name: pc1-mcp-docker
+    ports:
+      - "${MCP_DOCKER_PORT:-8340}:${MCP_DOCKER_PORT:-8340}"
+    environment:
+      DOCKER_HOST: ${MCP_DOCKER_DOCKER_HOST:-unix:///var/run/docker.sock}
+      PORT: ${MCP_DOCKER_PORT:-8340}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/wsl/docker-desktop/run/docker.sock:/var/run/docker-desktop.sock:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${MCP_DOCKER_PORT:-8340}/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  pc1-devops-net:
+    driver: bridge
+    external: true
+

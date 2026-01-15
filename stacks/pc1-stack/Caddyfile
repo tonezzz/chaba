@@ -1,0 +1,100 @@
+pc1.vpn {
+    tls internal
+
+    route {
+        handle /test* {
+            reverse_proxy dev-host:3000
+        }
+
+        handle /docs* {
+            reverse_proxy mcp-doc-archiver:8066
+        }
+
+        handle_path /chat* {
+            reverse_proxy openchat-ui:3000
+        }
+
+        handle_path /openai* {
+            reverse_proxy mcp-openai-gateway:8181
+        }
+
+        handle_path /1mcp* {
+            reverse_proxy 1mcp-agent:3051 {
+                header_up Accept "application/json, text/event-stream"
+            }
+        }
+
+        handle {
+            redir /chat/ 302
+        }
+    }
+}
+
+:80 {
+    route {
+        handle_path /1mcp* {
+            reverse_proxy 1mcp-agent:3051 {
+                header_up Accept "application/json, text/event-stream"
+            }
+        }
+
+        handle {
+            respond 404
+        }
+    }
+}
+
+1mcp.pc1.vpn {
+    reverse_proxy 1mcp-agent:3051 {
+        header_up Accept "application/json, text/event-stream"
+    }
+    tls internal
+}
+
+openchat.pc1.vpn {
+    reverse_proxy openchat-ui:3000
+    tls internal
+}
+
+deka.pc1.vpn {
+    tls internal
+
+    route {
+        handle_path /chat* {
+            reverse_proxy openchat-ui:3000
+        }
+
+        handle {
+            redir /chat/ 302
+        }
+    }
+}
+
+openai.pc1.vpn {
+    reverse_proxy mcp-openai-gateway:8181
+    tls internal
+}
+
+auth.pc1.vpn {
+    reverse_proxy authentik-server:9000
+    tls internal
+}
+
+minio.pc1.vpn {
+    tls internal
+
+    route {
+        handle_path /console* {
+            reverse_proxy minio:9001
+        }
+
+        handle {
+            reverse_proxy minio:9000
+        }
+    }
+}
+
+vault.pc1.vpn {
+    reverse_proxy vault:8200
+    tls internal
+}

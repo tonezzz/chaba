@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0f172a" />
+    <title>Chaba · Voice Chat</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Glama-powered assistant</p>
+          <h1>Hands-free chat</h1>
+          <p class="lede">Tap to speak, let Glama respond, and hear the reply instantly.</p>
+        </div>
+        <div class="status" id="status" role="status">Initializing…</div>
+      </header>
+
+      <section class="card controls">
+        <label class="field">
+          <span>Speech language</span>
+          <select id="langSelect"></select>
+        </label>
+        <button id="listenBtn" class="primary" type="button">🎙️ Tap to speak</button>
+      </section>
+
+      <section class="card transcript">
+        <header>
+          <h2>What we heard</h2>
+          <small id="transcriptMeta">—</small>
+        </header>
+        <p id="transcriptText">No input yet.</p>
+      </section>
+
+      <section class="card reply">
+        <header>
+          <h2>Assistant reply</h2>
+          <div class="reply-actions">
+            <button id="playReplyBtn" class="ghost" type="button" disabled>🔊 Play reply</button>
+          </div>
+        </header>
+        <p id="replyText">No response yet.</p>
+      </section>
+
+      <footer class="fine-print">
+        <p>
+          Powered by browser speech recognition and <strong>Glama GPT-4.1</strong>. Best experienced in Safari or Chrome.
+        </p>
+      </footer>
+    </main>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

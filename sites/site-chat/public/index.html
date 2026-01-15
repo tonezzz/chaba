@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>node-1 Chat Panel</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <header>
+        <h1>Surf Thailand • LLM Console</h1>
+        <p>Connected to Glama directly on node-1.</p>
+        <div class="status" id="status">Checking status…</div>
+      </header>
+      <section class="chat" id="chat-log"></section>
+      <form id="chat-form">
+        <textarea id="chat-input" rows="3" placeholder="Say something…" required></textarea>
+        <div class="actions">
+          <label>
+            Temperature
+            <input type="number" id="temperature" min="0" max="2" step="0.1" value="0.2" />
+          </label>
+          <button type="submit">Send</button>
+        </div>
+      </form>
+    </main>
+    <script>
+      const statusEl = document.getElementById('status');
+      const chatLog = document.getElementById('chat-log');
+      const chatInput = document.getElementById('chat-input');
+      const chatForm = document.getElementById('chat-form');
+      const history = [];
+
+      const appendMessage = (role, content) => {
+        const entry = document.createElement('article');
+        entry.className = `message ${role}`;
+        entry.innerHTML = `<strong>${role === 'user' ? 'You' : 'Glama'}</strong><p>${content}</p>`;
+        chatLog.appendChild(entry);
+        chatLog.scrollTop = chatLog.scrollHeight;
+      };
+
+      const refreshStatus = async () => {
+        try {
+          const res = await fetch('/api/health');
+          if (!res.ok) throw new Error('status ' + res.status);
+          const data = await res.json();
+          statusEl.textContent = data.status === 'ok' ? `Ready · ${data.model}` : 'Glama not configured';
+          statusEl.classList.toggle('ok', data.status === 'ok');
+        } catch (error) {
+          statusEl.textContent = 'Status check failed';
+          statusEl.classList.remove('ok');
+        }
+      };
+
+      chatForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const message = chatInput.value.trim();
+        if (!message) return;
+        appendMessage('user', message);
+        chatInput.value = '';
+
+        const payload = {
+          message,
+          history,
+          temperature: Number(document.getElementById('temperature').value)
+        };
+
+        history.push({ role: 'user', content: message });
+
+        const placeholder = document.createElement('article');
+        placeholder.className = 'message assistant pending';
+        placeholder.innerHTML = '<strong>Glama</strong><p>…thinking</p>';
+        chatLog.appendChild(placeholder);
+        chatLog.scrollTop = chatLog.scrollHeight;
+
+        try {
+          const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) {
+            throw new Error(await res.text());
+          }
+          const data = await res.json();
+          placeholder.remove();
+          appendMessage('assistant', data.reply);
+          history.push({ role: 'assistant', content: data.reply });
+        } catch (error) {
+          placeholder.remove();
+          appendMessage('assistant', `Error: ${error.message || 'Failed to reach Glama'}`);
+        }
+      });
+
+      refreshStatus();
+    </script>
+  </body>
+</html>

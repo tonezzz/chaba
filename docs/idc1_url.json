@@ -1,0 +1,127 @@
+{
+  "host": "idc1",
+  "generated_from": [
+    "docs/services_map.json",
+    "docs/README.md",
+    "docs/dns/surf-thailand.com.srv.txt"
+  ],
+  "mcp": {
+    "windsurf": "https://1mcp.idc1.surf-thailand.com/mcp?app=windsurf"
+  },
+  "stacks": {
+    "idc1-stack": {
+      "path": "stacks/idc1-stack/",
+      "services": {
+        "mcp-agents": {
+          "ports": {
+            "host": 8446
+          },
+          "urls": {
+            "www": "http://idc1.surf-thailand.com:8446",
+            "vpn": "http://idc1.vpn:8446",
+            "health": "http://idc1.surf-thailand.com:8446/health"
+          }
+        },
+        "mcp-glama": {
+          "ports": {
+            "host": 7441
+          },
+          "urls": {
+            "www": "http://idc1.surf-thailand.com:7441",
+            "vpn": "http://idc1.vpn:7441",
+            "health": "http://idc1.surf-thailand.com:7441/health"
+          }
+        },
+        "mcp-tester": {
+          "ports": {
+            "host": 8435
+          },
+          "urls": {
+            "www": "http://idc1.surf-thailand.com:8435",
+            "vpn": "http://idc1.vpn:8435",
+            "health": "http://idc1.surf-thailand.com:8435/health"
+          }
+        },
+        "mcp-devops": {
+          "ports": {
+            "host": 8425
+          },
+          "urls": {
+            "www": "http://idc1.surf-thailand.com:8425",
+            "vpn": "http://idc1.vpn:8425"
+          }
+        },
+        "mcp-playwright": {
+          "ports": {
+            "host": 8460
+          },
+          "urls": {
+            "www": "http://idc1.surf-thailand.com:8460",
+            "vpn": "http://idc1.vpn:8460",
+            "health": "http://idc1.surf-thailand.com:8460/health"
+          }
+        },
+        "mcp-docker": {
+          "ports": {
+            "host": 8340
+          },
+          "urls": {
+            "www": "http://idc1.surf-thailand.com:8340",
+            "vpn": "http://idc1.vpn:8340",
+            "health": "http://idc1.surf-thailand.com:8340/health"
+          }
+        },
+        "mcp-memory": {
+          "ports": {
+            "host": 8470
+          },
+          "urls": {
+            "www": "http://idc1.surf-thailand.com:8470",
+            "vpn": "http://idc1.vpn:8470",
+            "health": "http://idc1.surf-thailand.com:8470/health",
+            "vpn_dns": "http://memory.idc1.vpn/mcp"
+          }
+        },
+        "coredns": {
+          "ports": {
+            "dns": 53,
+            "http": 8080,
+            "metrics": 9153
+          },
+          "urls": {
+            "www": "http://idc1.surf-thailand.com:8080",
+            "vpn": "http://idc1.vpn:8080",
+            "health": "http://idc1.surf-thailand.com:8080/health"
+          }
+        },
+        "wg-easy": {
+          "ports": {
+            "ui": 51821,
+            "wireguard_udp": 51820
+          },
+          "urls": {
+            "www": "http://idc1.surf-thailand.com:51821",
+            "vpn": "http://idc1.vpn:51821",
+            "wireguard": "udp://idc1.surf-thailand.com:51820"
+          }
+        }
+      }
+    }
+  },
+  "public": {
+    "sites": [
+      "https://idc1.surf-thailand.com",
+      "https://cp.idc1.surf-thailand.com",
+      "https://test.idc1.surf-thailand.com"
+    ],
+    "webtops": [
+      "https://webtop2.idc1.surf-thailand.com"
+    ]
+  },
+  "vpn": {
+    "hostnames": [
+      "idc1.vpn",
+      "memory.idc1.vpn"
+    ]
+  }
+}

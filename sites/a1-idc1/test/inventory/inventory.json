@@ -1,0 +1,171 @@
+{
+  "generated_at": "2025-12-27",
+  "host": "pc1",
+  "base_notes": [
+    "This page is served from dev-host; dev-host hostnames vary by environment. Prefer relative /test/* links.",
+    "Typical local preview base is http://dev-host.pc1:3000/test/ (started by scripts/preview-test.ps1).",
+    "VPN-only services are typically reachable via pc1.vpn and *.pc1.vpn.",
+    "If direct HTTP ports are blocked/unreachable, prefer the pc1-stack Caddy endpoints on https://pc1.vpn:3443/*"
+  ],
+  "items": [
+    {
+      "category": "dev-host",
+      "name": "/test landing",
+      "url": "/test/",
+      "description": "Test surface landing page served by dev-host from sites/a1-idc1/test/index.html"
+    },
+    {
+      "category": "dev-host",
+      "name": "/test/chat",
+      "url": "/test/chat",
+      "description": "Glama verification console (static SPA)."
+    },
+    {
+      "category": "dev-host",
+      "name": "/test/chat/api/health",
+      "url": "/test/chat/api/health",
+      "description": "Proxied Glama health/metadata endpoint."
+    },
+    {
+      "category": "dev-host",
+      "name": "/test/agents",
+      "url": "/test/agents",
+      "description": "Multi-agent demo UI (static SPA)."
+    },
+    {
+      "category": "dev-host",
+      "name": "/test/agens",
+      "url": "/test/agens",
+      "description": "Agents observability UI (static SPA served from mcp-agents www assets)."
+    },
+    {
+      "category": "dev-host",
+      "name": "/test/agents/api/health",
+      "url": "/test/agents/api/health",
+      "description": "Proxied Agents backend health."
+    },
+    {
+      "category": "dev-host",
+      "name": "/test/agens/api/health",
+      "url": "/test/agens/api/health",
+      "description": "Proxied Agents backend health (alias for /test/agents/api/health)."
+    },
+    {
+      "category": "dev-host",
+      "name": "/test/detects",
+      "url": "/test/detects",
+      "description": "Detects playground UI (static SPA)."
+    },
+    {
+      "category": "dev-host",
+      "name": "/test/detects/api/health",
+      "url": "/test/detects/api/health",
+      "description": "Proxied Detects backend health."
+    },
+    {
+      "category": "dev-host",
+      "name": "/test/vaja",
+      "url": "/test/vaja",
+      "description": "Vaja TTS bench (static)."
+    },
+    {
+      "category": "dev-host",
+      "name": "/test/vaja/api/health",
+      "url": "/test/vaja/api/health",
+      "description": "Proxied Vaja health."
+    },
+    {
+      "category": "dev-host",
+      "name": "/test/mcp0/providers",
+      "url": "/test/mcp0/providers",
+      "description": "Proxied MCP0 providers list (depends on dev-host MCP0 proxy target)."
+    },
+
+    {
+      "category": "pc1-stack (VPN)",
+      "name": "OpenChat UI (direct)",
+      "url": "http://pc1.vpn:3170/",
+      "description": "OpenChat UI (Next.js) exposed via direct host port."
+    },
+    {
+      "category": "pc1-stack (VPN)",
+      "name": "OpenChat UI (preferred via Caddy)",
+      "url": "https://pc1.vpn:3443/chat/",
+      "description": "OpenChat UI behind pc1-stack Caddy (tls internal)."
+    },
+    {
+      "category": "pc1-stack (VPN)",
+      "name": "OpenAI gateway (health)",
+      "url": "http://pc1.vpn:8181/health",
+      "description": "OpenAI-compatible gateway health (FastAPI)."
+    },
+    {
+      "category": "pc1-stack (VPN)",
+      "name": "OpenAI gateway (preferred via Caddy)",
+      "url": "https://pc1.vpn:3443/openai/health",
+      "description": "OpenAI gateway behind pc1-stack Caddy (tls internal)."
+    },
+    {
+      "category": "pc1-stack (VPN)",
+      "name": "1mcp-agent (health)",
+      "url": "http://1mcp.pc1.vpn:3051/health",
+      "description": "1mcp agent health (HTTP transport)."
+    },
+    {
+      "category": "pc1-stack (VPN)",
+      "name": "1mcp-agent (preferred via Caddy)",
+      "url": "https://pc1.vpn:3443/1mcp/health",
+      "description": "1mcp-agent behind pc1-stack Caddy (tls internal)."
+    },
+    {
+      "category": "pc1-stack (VPN)",
+      "name": "Windsurf MCP endpoint (preferred)",
+      "url": "https://pc1.vpn:3443/1mcp/mcp?app=windsurf",
+      "description": "Use this in Windsurf as the MCP server URL (works if pc1-stack Caddy + 1mcp-agent are up)."
+    },
+
+    {
+      "category": "pc1-stack (VPN)",
+      "name": "mcp-devops (health)",
+      "url": "http://pc1.vpn:8325/health",
+      "description": "MCP DevOps service health."
+    },
+    {
+      "category": "pc1-stack (VPN)",
+      "name": "mcp-task (health)",
+      "url": "http://pc1.vpn:8016/health",
+      "description": "MCP task service health."
+    },
+    {
+      "category": "pc1-stack (VPN)",
+      "name": "mcp-tester (health)",
+      "url": "http://pc1.vpn:8335/health",
+      "description": "MCP tester service health."
+    },
+    {
+      "category": "pc1-stack (VPN)",
+      "name": "mcp-playwright (health)",
+      "url": "http://pc1.vpn:8260/health",
+      "description": "MCP playwright service health."
+    },
+    {
+      "category": "pc1-stack (VPN)",
+      "name": "mcp-agents (health)",
+      "url": "http://pc1.vpn:8046/health",
+      "description": "Agents observability MCP service health."
+    },
+    {
+      "category": "pc1-stack (VPN)",
+      "name": "mcp-glama (health)",
+      "url": "http://pc1.vpn:7241/health",
+      "description": "Glama MCP adapter health."
+    },
+
+    {
+      "category": "pc1 webtops (VPN)",
+      "name": "webtops",
+      "url": "(removed)",
+      "description": "Webtops routes removed from pc1-stack (no longer needed)."
+    }
+  ]
+}

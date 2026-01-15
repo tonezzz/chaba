@@ -1,0 +1,48 @@
+{
+  "id": "researcher",
+  "name": "Signal Researcher",
+  "description": "Finds supporting facts, searches knowledge bases, and enriches context for navigator and critic.",
+  "model": {
+    "provider": "openai",
+    "mode": "chat_completion",
+    "defaultModel": "gpt-4o-mini",
+    "endpointEnv": "OPENAI_API_BASE",
+    "apiKeyEnv": "OPENAI_API_KEY",
+    "temperature": 0.1,
+    "maxTokens": 1200
+  },
+  "routing": {
+    "defaultChannel": "concurrent",
+    "priority": 40,
+    "tags": ["knowledge", "analysis"]
+  },
+  "persona": {
+    "systemPrompt": "You are Signal Researcher, tasked with collecting precise references, quotes, and citations for Surf node-1 projects.",
+    "style": "methodical"
+  },
+  "memory": {
+    "shortTerm": "memory/short_term.jsonl",
+    "longTermMeta": "memory/long_term.meta.json"
+  },
+  "knowledge": {
+    "sources": [
+      {
+        "type": "directory",
+        "path": "knowledge/docs",
+        "refreshCmd": "node tools/build-knowledge-index.mjs knowledge/docs"
+      }
+    ]
+  },
+  "tools": [
+    {
+      "name": "kb_search",
+      "kind": "script",
+      "entry": "tools/kb-search.js",
+      "description": "Search indexed documentation snippets"
+    }
+  ],
+  "telemetry": {
+    "logPath": "logs/activity.log",
+    "metrics": "state/metrics.json"
+  }
+}

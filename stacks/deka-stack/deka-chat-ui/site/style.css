@@ -1,0 +1,210 @@
+:root {
+  color-scheme: dark;
+  --bg: #070b18;
+  --panel: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.12);
+  --text: #e9ecff;
+  --muted: rgba(233, 236, 255, 0.72);
+  --accent: #a8b5ff;
+  --accent-2: #7ef2c9;
+  --danger: #ff6b8a;
+  --shadow: rgba(0, 0, 0, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: radial-gradient(1200px 800px at 20% 10%, rgba(168, 181, 255, 0.16), transparent 60%),
+    radial-gradient(1200px 800px at 90% 40%, rgba(126, 242, 201, 0.08), transparent 55%),
+    var(--bg);
+  color: var(--text);
+}
+
+.layout {
+  width: min(1100px, 92vw);
+  margin: 40px auto;
+  display: grid;
+  gap: 18px;
+}
+
+header {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  justify-content: space-between;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  border-radius: 18px;
+  padding: 20px 22px;
+  box-shadow: 0 12px 40px var(--shadow);
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+h1 {
+  margin: 10px 0 6px;
+  font-size: 26px;
+}
+
+.subtext {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.subtext code {
+  color: var(--accent);
+}
+
+.status {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.18);
+  min-width: 180px;
+  text-align: center;
+}
+
+.status.ok {
+  color: var(--accent-2);
+  border-color: rgba(126, 242, 201, 0.38);
+}
+
+.chat-log {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  border-radius: 18px;
+  padding: 18px;
+  min-height: 360px;
+  max-height: 56vh;
+  overflow: auto;
+  box-shadow: 0 12px 40px var(--shadow);
+}
+
+.message {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.message.user {
+  border-color: rgba(168, 181, 255, 0.35);
+}
+
+.message.assistant {
+  border-color: rgba(126, 242, 201, 0.25);
+}
+
+.message.pending {
+  opacity: 0.7;
+}
+
+.message header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: none;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+  margin-bottom: 8px;
+}
+
+.message-headline {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.message-role {
+  font-weight: 650;
+}
+
+.message-time {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.message-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.message-body {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field-label {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+textarea {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  padding: 12px 12px;
+  resize: vertical;
+  outline: none;
+}
+
+textarea:focus {
+  border-color: rgba(168, 181, 255, 0.55);
+  box-shadow: 0 0 0 3px rgba(168, 181, 255, 0.18);
+}
+
+.controls {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.toggle {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+button {
+  border: 1px solid rgba(168, 181, 255, 0.45);
+  background: rgba(168, 181, 255, 0.15);
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: rgba(168, 181, 255, 0.22);
+}

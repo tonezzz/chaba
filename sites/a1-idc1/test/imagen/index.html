@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Imagen playground</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23ffb703'/%3E%3Cstop offset='100%25' stop-color='%23833ab4'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='12' fill='url(%23g)'/%3E%3Ctext x='50%25' y='58%25' text-anchor='middle' font-size='30' font-family='Segoe UI,system-ui,sans-serif' fill='white'%3EIMG%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="/test/imagen/style.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Surf Thailand • Imagen</p>
+          <h1>Text-to-image playground</h1>
+          <p class="lede">
+            Lightweight UI that calls the Imagen service via the dev-host proxy at <code>/test/imagen/api</code>.
+          </p>
+        </div>
+        <div class="hero-meta">
+          <div class="meta-chip">
+            <span>Backend</span>
+            <strong id="backendStatus">Checking…</strong>
+          </div>
+          <div class="meta-chip">
+            <span>Latency</span>
+            <strong id="latencyTag">—</strong>
+          </div>
+        </div>
+      </header>
+
+      <section class="panel">
+        <form id="generateForm" class="form">
+          <div class="grid">
+            <div class="card">
+              <div class="card-head">
+                <h2>1. Prompt</h2>
+                <p class="muted">Describe what you want to generate.</p>
+              </div>
+              <label class="field">
+                <span>Prompt</span>
+                <textarea
+                  id="promptInput"
+                  rows="6"
+                  placeholder="e.g. vibrant MCP stack verification badge, flat illustration"
+                  required
+                ></textarea>
+              </label>
+              <div class="chips" id="promptChips"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <h2>2. Settings</h2>
+                <p class="muted">Keep it small + fast for demos.</p>
+              </div>
+              <div class="two-col">
+                <label class="field">
+                  <span>Width</span>
+                  <input id="widthInput" type="number" min="64" max="1024" step="64" value="512" />
+                </label>
+                <label class="field">
+                  <span>Height</span>
+                  <input id="heightInput" type="number" min="64" max="1024" step="64" value="512" />
+                </label>
+              </div>
+              <div class="two-col">
+                <label class="field">
+                  <span>Steps</span>
+                  <input id="stepsInput" type="number" min="1" max="60" step="1" value="8" />
+                </label>
+                <label class="field">
+                  <span>Seed (optional)</span>
+                  <input id="seedInput" type="number" placeholder="random" />
+                </label>
+              </div>
+              <div class="cta-row">
+                <div class="status" id="statusBanner">Waiting for a prompt…</div>
+                <button type="submit" id="generateBtn">Generate</button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="card">
+          <div class="card-head">
+            <h2>Result</h2>
+            <p class="muted">The response is shown below. If the API returns a base64 image, we’ll render it.</p>
+          </div>
+          <div class="result-tools">
+            <button type="button" class="tool-btn" id="copyJsonBtn">Copy JSON</button>
+            <button type="button" class="tool-btn" id="copyImageUrlBtn">Copy image URL</button>
+            <button type="button" class="tool-btn" id="openImageBtn">Open image</button>
+            <button type="button" class="tool-btn" id="downloadImageBtn">Download</button>
+            <button type="button" class="tool-btn" id="refreshBackendBtn">Refresh backend</button>
+          </div>
+          <div class="field">
+            <span>Image URL</span>
+            <input id="imageUrlInput" type="text" readonly placeholder="(no image yet)" />
+          </div>
+          <div class="result-grid">
+            <div class="preview" id="imageWrap">
+              <div class="placeholder" id="imagePlaceholder">No image yet.</div>
+              <img id="resultImage" alt="Generated output" class="hidden" />
+            </div>
+            <div>
+              <pre id="rawOutput" class="raw">// Awaiting response…</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/test/imagen/app.js"></script>
+  </body>
+</html>

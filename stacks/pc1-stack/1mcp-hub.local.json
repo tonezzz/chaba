@@ -1,0 +1,128 @@
+{
+  "mcpServers": {
+    "mcp-glama": {
+      "transport": "streamableHttp",
+      "url": "http://host.docker.internal:7241/mcp",
+      "tags": ["pc1", "ai", "glama"],
+      "enabled": true
+    },
+    "mcp-github-models": {
+      "transport": "streamableHttp",
+      "url": "http://host.docker.internal:7243/mcp",
+      "tags": ["pc1", "ai", "github-models"],
+      "enabled": true
+    },
+    "mcp-imagen-light": {
+      "transport": "streamableHttp",
+      "url": "http://host.docker.internal:8020/mcp",
+      "tags": ["pc1", "imagen", "sdxl"],
+      "connectionTimeout": 60000,
+      "requestTimeout": 300000,
+      "enabled": true
+    },
+    "mcp-cuda": {
+      "transport": "streamableHttp",
+      "url": "http://host.docker.internal:8057/mcp",
+      "tags": ["pc1", "gpu", "cuda"],
+      "connectionTimeout": 60000,
+      "requestTimeout": 300000,
+      "enabled": true
+    },
+    "mcp-rag": {
+      "transport": "streamableHttp",
+      "url": "http://pc1-db-mcp-rag:8055/mcp",
+      "tags": ["pc1", "rag"],
+      "enabled": true
+    },
+    "mcp-doc-archiver": {
+      "transport": "streamableHttp",
+      "url": "http://pc1.vpn:8066/mcp",
+      "tags": ["pc1", "doc-archiver"],
+      "enabled": true
+    },
+    "mcp-http": {
+      "transport": "streamableHttp",
+      "url": "http://pc1.vpn:8067/mcp",
+      "tags": ["pc1", "http"],
+      "enabled": true
+    },
+    "mcp-quickchart": {
+      "transport": "streamableHttp",
+      "url": "http://pc1.vpn:8251/mcp",
+      "tags": ["pc1", "quickchart"],
+      "enabled": true
+    },
+    "mcp-tester": {
+      "transport": "streamableHttp",
+      "url": "http://pc1.vpn:8335/mcp",
+      "tags": ["pc1", "tester"],
+      "enabled": true
+    },
+    "mcp-task": {
+      "transport": "streamableHttp",
+      "url": "http://mcp-task:8016/mcp",
+      "tags": ["pc1", "task"],
+      "enabled": true
+    },
+    "mcp-devops": {
+      "transport": "streamableHttp",
+      "url": "http://host.docker.internal:8325/mcp",
+      "tags": ["pc1", "devops"],
+      "enabled": true
+    },
+    "mcp-docker": {
+      "transport": "streamableHttp",
+      "url": "http://host.docker.internal:8340/mcp",
+      "tags": ["pc1", "docker", "ai"],
+      "enabled": true
+    },
+    "mcp-deka": {
+      "transport": "streamableHttp",
+      "url": "http://pc1.vpn:8270/mcp",
+      "tags": ["pc1", "deka"],
+      "enabled": true
+    },
+    "mcp-agents": {
+      "transport": "streamableHttp",
+      "url": "http://mcp-agents:8046/mcp",
+      "tags": ["pc1", "agents"],
+      "enabled": true
+    },
+    "mcp-webtops": {
+      "transport": "streamableHttp",
+      "url": "http://host.docker.internal:8056/mcp",
+      "tags": ["pc1", "webtops"],
+      "enabled": true
+    },
+    "mcp-project-manager": {
+      "command": "npx",
+      "args": ["-y", "mcp-project-manager"],
+      "env": {
+        "MCP_TASK_DATA_DIR": "/data/pm"
+      },
+      "tags": ["pc1", "project", "pm"],
+      "connectionTimeout": 60000,
+      "requestTimeout": 60000,
+      "restartOnExit": true,
+      "restartDelay": 1000,
+      "enabled": true
+    },
+    "mcp-portainer": {
+      "command": "/usr/local/bin/portainer-mcp",
+      "args": [
+        "-server",
+        "https://portainer.idc1.vpn",
+        "-token",
+        "${PORTAINER_MCP_TOKEN}",
+        "-read-only",
+        "-disable-version-check"
+      ],
+      "tags": ["pc1", "portainer", "docker"],
+      "connectionTimeout": 120000,
+      "requestTimeout": 120000,
+      "restartOnExit": true,
+      "restartDelay": 2000,
+      "enabled": true
+    }
+  }
+}

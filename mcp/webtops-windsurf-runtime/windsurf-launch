@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ -x /config/.local/bin/windsurf ]; then
+  WINDSURF_BIN="/config/.local/bin/windsurf"
+  REAL_BIN="$WINDSURF_BIN"
+  if command -v readlink >/dev/null 2>&1; then
+    REAL_BIN="$(readlink -f "$WINDSURF_BIN" 2>/dev/null || echo "$WINDSURF_BIN")"
+  fi
+
+  APP_DIR="$(dirname "$REAL_BIN")"
+  export LD_LIBRARY_PATH="$APP_DIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+  # Electron apps in containers commonly fail with sandbox enabled.
+  exec "$WINDSURF_BIN" \
+    --no-sandbox \
+    --disable-dev-shm-usage \
+    --disable-gpu \
+    --no-zygote \
+    --enable-logging \
+    --v=1 \
+    "$@"
+fi
+
+echo "windsurf not installed" 1>&2
+exit 1

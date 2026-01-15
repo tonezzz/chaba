@@ -1,0 +1,18 @@
+[Unit]
+Description=A1 IDC1 agents API
+After=network.target
+
+[Service]
+Type=simple
+User=chaba
+Group=chaba
+WorkingDirectory=/www/a1.idc1.surf-thailand.com/a1-idc1/current/api/agents
+Environment=NODE_ENV=production
+EnvironmentFile=/www/a1.idc1.surf-thailand.com/a1-idc1/current/api/agents/.env
+ExecStart=/usr/bin/node -r dotenv/config src/server.js
+Restart=on-failure
+RestartSec=3
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

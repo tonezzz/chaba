@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DEKA chat</title>
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%230b1224' stroke='%23a8b5ff' stroke-width='4'/%3E%3Cpath d='M18 40h28' stroke='%23a8b5ff' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M22 22h20' stroke='%23a8b5ff' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <main class="layout">
+      <header>
+        <div class="header-text">
+          <p class="eyebrow">Surf Thailand • IDC1</p>
+          <h1>DEKA chat</h1>
+          <p class="subtext">
+            Ask questions about Thai Supreme Court DEKA documents. Commands:
+            <code>/deka stats</code>, <code>/stats</code>
+          </p>
+        </div>
+        <div class="header-tools">
+          <div class="status" id="status" role="status">Checking status…</div>
+        </div>
+      </header>
+
+      <section class="chat-log" id="chat-log" aria-live="polite"></section>
+
+      <form id="chat-form" autocomplete="off">
+        <label class="field">
+          <span class="field-label">Prompt</span>
+          <textarea id="chat-input" rows="4" placeholder="Try: /deka stats or ask about a DEKA topic" required></textarea>
+        </label>
+        <div class="controls">
+          <label class="toggle">
+            <input type="checkbox" id="enter-toggle" />
+            <span>Press Enter to send</span>
+          </label>
+          <button type="submit" id="send-button">Send</button>
+        </div>
+      </form>
+    </main>
+
+    <template id="message-template">
+      <article class="message">
+        <header>
+          <div class="message-headline">
+            <span class="message-role"></span>
+            <time class="message-time"></time>
+          </div>
+          <div class="message-actions">
+            <span class="message-meta" hidden></span>
+          </div>
+        </header>
+        <pre class="message-body"></pre>
+      </article>
+    </template>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

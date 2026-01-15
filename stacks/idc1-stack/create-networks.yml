@@ -1,0 +1,26 @@
+# Docker network creation for idc1 stacks
+# Run once to create shared networks: docker-compose -f create-networks.yml up -d
+version: "3.9"
+
+networks:
+  idc1-stack-net:
+    driver: bridge
+    name: idc1-stack-net
+  idc1-services-net:
+    driver: bridge
+    name: idc1-services-net
+  idc1-db-net:
+    driver: bridge
+    name: idc1-db-net
+  idc1-web-net:
+    driver: bridge
+    name: idc1-web-net
+  idc1-devops-net:
+    driver: bridge
+    name: idc1-devops-net
+  idc1-line-net:
+    driver: bridge
+    name: idc1-line-net
+  idc1-ai-net:
+    driver: bridge
+    name: idc1-ai-net

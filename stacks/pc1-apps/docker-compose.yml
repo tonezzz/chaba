@@ -1,0 +1,90 @@
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - .env
+  networks:
+    - pc1-web-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  mcp-webtop:
+    <<: *default-service
+    build:
+      context: ${MCP_WEBTOP_BUILD_CONTEXT:-../../mcp/mcp-webtops}
+    container_name: pc1-mcp-webtop
+    ports:
+      - "${MCP_WEBTOP_PORT:-8056}:8091"
+    environment:
+      WEBTOPS_HOST: 0.0.0.0
+      PORT: 8091
+      WEBTOPS_ADMIN_TOKEN: ${WEBTOPS_ADMIN_TOKEN:-}
+      WEBTOPS_PUBLIC_BASE_URL: ${WEBTOPS_PUBLIC_BASE_URL:-https://webtop2.pc1.vpn/webtop/}
+      WEBTOPS_BASE_PATH: ${WEBTOPS_BASE_PATH:-/webtop/}
+      WEBTOPS_ROUTER_BASE_URL: http://webtop2:3000
+      WEBTOPS_ROUTER_ADMIN_TOKEN: ${WEBTOPS_ROUTER_ADMIN_TOKEN:-}
+      WEBTOPS_BACKEND: ${WEBTOPS_BACKEND:-local}
+      WEBTOPS_DOCKER_NETWORK: ${WEBTOPS_DOCKER_NETWORK:-pc1-web-net}
+      WEBTOPS_SESSION_INTERNAL_PORT: ${WEBTOPS_SESSION_INTERNAL_PORT:-3000}
+      WEBTOPS_SESSION_IMAGE: ${WEBTOPS_SESSION_IMAGE:-lscr.io/linuxserver/webtop:latest}
+
+      WEBTOPS_SESSION_IMAGE_WINDSURF: ${WEBTOPS_SESSION_IMAGE_WINDSURF:-webtops-windsurf-runtime:stable}
+      WEBTOPS_WINDSURF_VERSION: ${WEBTOPS_WINDSURF_VERSION:-}
+      WEBTOPS_WINDSURF_DOWNLOAD_URL_TEMPLATE: ${WEBTOPS_WINDSURF_DOWNLOAD_URL_TEMPLATE:-}
+      WEBTOPS_WINDSURF_INSTALL_MODE: ${WEBTOPS_WINDSURF_INSTALL_MODE:-deb_extract}
+      WEBTOPS_WINDSURF_DEB_URL_TEMPLATE: ${WEBTOPS_WINDSURF_DEB_URL_TEMPLATE:-}
+
+      WEBTOPS_WINDSURF_CACHE_VOLUME: ${WEBTOPS_WINDSURF_CACHE_VOLUME:-webtops_windsurf_cache}
+      WEBTOPS_WINDSURF_CACHE_MOUNT_PATH: ${WEBTOPS_WINDSURF_CACHE_MOUNT_PATH:-/windsurf-cache}
+
+      WEBTOPS_WORKSPACES_VOLUME: ${WEBTOPS_WORKSPACES_VOLUME:-webtops_workspaces}
+      WEBTOPS_WORKSPACES_MOUNT_PATH: ${WEBTOPS_WORKSPACES_MOUNT_PATH:-/workspaces}
+      WEBTOPS_WORKSPACES_REPO_URL: ${WEBTOPS_WORKSPACES_REPO_URL:-}
+      WEBTOPS_WORKSPACES_REPO_BRANCH: ${WEBTOPS_WORKSPACES_REPO_BRANCH:-}
+      WEBTOPS_WORKSPACES_REPO_DIR: ${WEBTOPS_WORKSPACES_REPO_DIR:-/workspaces/chaba}
+
+      WEBTOPS_SNAPSHOT_DIR: /snapshots
+      WEBTOPS_STATE_DIR: /state
+    volumes:
+      - ${WEBTOPS_SNAPSHOT_HOST_DIR:-./data/mcp-webtops/snapshots}:/snapshots
+      - ${WEBTOPS_STATE_HOST_DIR:-./data/mcp-webtops/state}:/state
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8091/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-audidoc:
+    <<: *default-service
+    build:
+      context: ${MCP_AUDIDOC_BUILD_CONTEXT:-../../mcp/mcp-audidoc}
+    container_name: pc1-apps-mcp-audidoc
+    ports:
+      - "${MCP_AUDIDOC_PORT:-8076}:8075"
+    environment:
+      PORT: 8075
+      OCR_ENABLED: ${OCR_ENABLED:-1}
+      OCR_LANG: ${OCR_LANG:-tha+eng}
+      AUDIDOC_ROOT: /data
+      AUDIDOC_PDF_DIR: audidoc-pdfs
+    volumes:
+      - ${AUDIDOC_PDFS_HOST_DIR:-C:/chaba_wt/audidoc/data/mcp-audidoc/pdfs}:/data/audidoc-pdfs:ro
+      - ${MCP_AUDIDOC_DATA_DIR:-./data/mcp-audidoc/data}:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8075/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  pc1-web-net:
+    driver: bridge
+    external: true
+    name: pc1-web_pc1-web-net
+
+volumes:
+  webtops_windsurf_cache:
+  webtops_workspaces:

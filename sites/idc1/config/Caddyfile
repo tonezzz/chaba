@@ -1,0 +1,166 @@
+{
+    servers {
+        protocols h1 h2
+    }
+}
+
+test.idc1.surf-thailand.com {
+    encode gzip zstd
+
+    handle_path /agents/* {
+        uri strip_prefix /agents
+        reverse_proxy http://127.0.0.1:4060
+    }
+
+    handle /cp {
+        redir /cp /test/cp/
+    }
+
+    handle /cp/ {
+        redir /cp/ /test/cp/
+    }
+
+    handle_path /cp/* {
+        redir /cp/* /test/cp{uri}
+    }
+
+    handle / {
+        redir / /test/
+    }
+
+    handle /test {
+        redir /test /test/
+    }
+
+    handle_path /test/* {
+        root * /www/idc1.surf-thailand.com/test/current
+        try_files {path} {path}/ {path}/index.html /index.html
+        file_server
+    }
+
+    handle {
+        respond 404
+    }
+
+    log {
+        output file /var/log/caddy/test.idc1.access.log
+    }
+}
+
+cp.idc1.surf-thailand.com {
+    encode gzip zstd
+
+    basicauth {
+        cpadmin $2a$14$ikQeiweORPhj4DQn3AcBpe8dbpsTajCaDMNAfroIOdUA/Heygr8He
+    }
+
+    reverse_proxy http://127.0.0.1:8425
+
+    log {
+        output file /var/log/caddy/cp.idc1.access.log
+    }
+}
+
+1mcp.idc1.surf-thailand.com {
+    encode gzip zstd
+
+    basicauth {
+        chaba $2a$14$QP8RRMul3Fp63soF9Q8Bluqw/EnTU80Yt9pv/8JngQOTSbkUUvmOq
+    }
+
+    reverse_proxy http://127.0.0.1:3050
+
+    log {
+        output file /var/log/caddy/1mcp.idc1.access.log
+    }
+}
+
+http://1mcp.idc1.vpn {
+    redir https://1mcp.idc1.vpn{uri} permanent
+}
+
+1mcp.idc1.vpn {
+    encode gzip zstd
+
+    tls /etc/caddy/certs/idc1-vpn.crt /etc/caddy/certs/idc1-vpn.key
+
+    @vpn_only not remote_ip 10.8.0.0/24 172.23.0.0/16 127.0.0.1
+    respond @vpn_only 403
+
+    reverse_proxy http://127.0.0.1:3050
+}
+
+http://portainer.idc1.vpn {
+    redir https://portainer.idc1.vpn{uri} permanent
+}
+
+portainer.idc1.vpn {
+    encode gzip zstd
+
+    tls /etc/caddy/certs/idc1-vpn.crt /etc/caddy/certs/idc1-vpn.key
+
+    @vpn_only not remote_ip 10.8.0.0/24 172.23.0.0/16 127.0.0.1
+    respond @vpn_only 403
+
+    reverse_proxy http://127.0.0.1:9000
+}
+
+http://line.idc1.vpn {
+    redir https://line.idc1.vpn{uri} permanent
+}
+
+line.idc1.vpn {
+    encode gzip zstd
+
+    tls /etc/caddy/certs/idc1-vpn.crt /etc/caddy/certs/idc1-vpn.key
+
+    @vpn_only not remote_ip 10.8.0.0/24 172.23.0.0/16 127.0.0.1
+    respond @vpn_only 403
+
+    reverse_proxy http://127.0.0.1:8088
+}
+
+line.idc1.surf-thailand.com {
+    encode gzip zstd
+
+    handle /images/* {
+        reverse_proxy http://127.0.0.1:8068
+    }
+
+    handle /imagen/* {
+        reverse_proxy http://127.0.0.1:8068
+    }
+
+    reverse_proxy http://127.0.0.1:8088
+
+    log {
+        output file /var/log/caddy/line.idc1.access.log
+    }
+}
+
+deka.idc1.surf-thailand.com {
+    encode gzip zstd
+
+    handle /api/* {
+        reverse_proxy http://127.0.0.1:8191
+    }
+
+    reverse_proxy http://127.0.0.1:8181
+
+    log {
+        output file /var/log/caddy/deka.idc1.access.log
+    }
+}
+
+portainer.idc1.surf-thailand.com {
+    encode gzip zstd
+
+    @vpn_only not remote_ip 10.8.0.0/24 172.16.0.0/12 127.0.0.1
+    respond @vpn_only 403
+
+    reverse_proxy http://127.0.0.1:9000
+
+    log {
+        output file /var/log/caddy/portainer.idc1.access.log
+    }
+}

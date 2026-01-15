@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>test.idc1 — preview surface</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+  <main class="layout">
+    <header class="hero">
+      <p class="eyebrow">IDC1 Host</p>
+      <h1>test.idc1.surf-thailand.com</h1>
+      <p class="lede">
+        Lightweight staging surface for MCP experiments and UI smoke tests, served from the idc1 host. Static bundles
+        land here before they graduate to a1.idc1 or production.
+      </p>
+      <div class="cta-row">
+        <a class="btn primary" href="/test/glama" rel="noopener">
+          Open Glama console
+        </a>
+        <a class="btn ghost" href="https://a1.idc1.surf-thailand.com/test" target="_blank" rel="noreferrer">
+          View A1 /test
+        </a>
+        <a class="btn ghost" href="mailto:ops@surf-thailand.com">Contact ops</a>
+      </div>
+    </header>
+
+    <section class="panels">
+      <article>
+        <h2>What lives here</h2>
+        <p>
+          Static builds synced from <code>sites/idc1/test</code>. Ideal for HTML prototypes and content reviews before
+          promoting to production.
+        </p>
+      </article>
+      <article>
+        <h2>Deployment workflow</h2>
+        <p>
+          Use <code>scripts/deploy-idc1-test.sh</code> (or the matching MCP DevOps workflow) to rsync assets, rotate
+          releases, and reload Caddy.
+        </p>
+      </article>
+      <article>
+        <h2>Health &amp; access</h2>
+        <p>
+          Caddy terminates TLS for <code>test.idc1.surf-thailand.com</code> and proxies locally. Verify via
+          <code>scripts/verify-idc1-test.sh</code>.
+        </p>
+      </article>
+    </section>
+  </main>
+</body>
+
+</html>

@@ -1,0 +1,24 @@
+{
+    admin 0.0.0.0:2019
+    auto_https disable_redirects
+}
+
+{$DEV_PROXY_DOMAIN} {
+    tls internal
+    reverse_proxy {$DEV_PROXY_TARGET}
+    encode gzip
+    log {
+        output stdout
+        format console
+    }
+}
+
+{$DEV_HOST_DOMAIN} {
+    tls internal
+    reverse_proxy {$DEV_PROXY_TARGET}
+    encode gzip
+    log {
+        output stdout
+        format console
+    }
+}

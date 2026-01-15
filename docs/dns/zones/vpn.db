@@ -1,0 +1,48 @@
+; Zone file for vpn
+@   IN  SOA ns.vpn. hostmaster.vpn. (
+        2025122702 ; serial
+        3600       ; refresh
+        900        ; retry
+        1209600    ; expire
+        300 )      ; minimum
+
+@   IN  NS  ns.vpn.
+ns  IN  A   127.0.0.1
+[0midc1.vpn	IN	A	10.8.0.1
+[0mpc1.vpn	IN	A	10.8.0.11
+[0mrag.pc1.vpn	IN	A	10.8.0.11
+[0mpc2.vpn	IN	A	10.8.0.12
+
+_caddy._tcp.pc1.vpn. 0 0 443 pc1.vpn.
+_cadvisor._tcp.pc2.vpn. 0 0 8080 pc2.vpn.
+_coredns._tcp.idc1.vpn. 0 0 8080 idc1.vpn.
+_dev-proxy._tcp.pc2.vpn. 0 0 443 pc2.vpn.
+_mcp-agents._tcp.idc1.vpn. 0 0 8446 idc1.vpn.
+_mcp-agents._tcp.pc1.vpn. 0 0 8046 pc1.vpn.
+_mcp-agents._tcp.pc2.vpn. 0 0 8046 pc2.vpn.
+_mcp-devops._tcp.idc1.vpn. 0 0 8425 idc1.vpn.
+_mcp-devops._tcp.pc1.vpn. 0 0 8325 pc1.vpn.
+_mcp-docker._tcp.idc1.vpn. 0 0 8340 idc1.vpn.
+_mcp-docker._tcp.pc1.vpn. 0 0 8340 pc1.vpn.
+_mcp-docker._tcp.pc2.vpn. 0 0 8340 pc2.vpn.
+_mcp-glama._tcp.idc1.vpn. 0 0 7441 idc1.vpn.
+_mcp-glama._tcp.pc1.vpn. 0 0 7241 pc1.vpn.
+_mcp-glama._tcp.pc2.vpn. 0 0 7214 pc2.vpn.
+_mcp-instrans._tcp.pc2.vpn. 0 0 7216 pc2.vpn.
+_mcp-meeting._tcp.pc2.vpn. 0 0 7208 pc2.vpn.
+_mcp-memory._tcp.idc1.vpn. 0 0 8470 idc1.vpn.
+_mcp-playwright._tcp.idc1.vpn. 0 0 8460 idc1.vpn.
+_mcp-playwright._tcp.pc1.vpn. 0 0 8260 pc1.vpn.
+_mcp-playwright._tcp.pc2.vpn. 0 0 8025 pc2.vpn.
+_mcp-tester._tcp.idc1.vpn. 0 0 8435 idc1.vpn.
+_mcp-tester._tcp.pc1.vpn. 0 0 8335 pc1.vpn.
+_mcp-tester._tcp.pc2.vpn. 0 0 8330 pc2.vpn.
+_mcp-vaja._tcp.pc2.vpn. 0 0 7217 pc2.vpn.
+_mcp-rag._tcp.pc1.vpn. 0 0 443 rag.pc1.vpn.
+_mcp-webtop2._tcp.pc1.vpn. 0 0 8055 pc1.vpn.
+_mcp-webtop3._tcp.pc1.vpn. 0 0 8056 pc1.vpn.
+_mcp0._tcp.pc1.vpn. 0 0 8351 pc1.vpn.
+_mcp0._tcp.pc2.vpn. 0 0 8310 pc2.vpn.
+_redis._tcp.pc2.vpn. 0 0 6379 pc2.vpn.
+_wg-easy._tcp.idc1.vpn. 0 0 51821 idc1.vpn.
+_wireguard._udp.idc1.vpn. 0 0 51820 idc1.vpn.

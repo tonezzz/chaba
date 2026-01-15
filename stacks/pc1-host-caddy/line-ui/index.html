@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LINE Test Chat (pc1)</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
+          "Apple Color Emoji", "Segoe UI Emoji";
+        background: #0b1220;
+        color: #e6eefc;
+      }
+      header {
+        padding: 16px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+      }
+      header h1 {
+        font-size: 14px;
+        font-weight: 600;
+        margin: 0;
+        letter-spacing: 0.2px;
+      }
+      header .meta {
+        font-size: 12px;
+        opacity: 0.8;
+      }
+      main {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 16px 20px 24px;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+      .panel {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .panel .title {
+        padding: 10px 12px;
+        font-size: 12px;
+        opacity: 0.85;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      #chat {
+        height: 52vh;
+        overflow: auto;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .msg {
+        display: flex;
+        gap: 10px;
+      }
+      .bubble {
+        padding: 10px 12px;
+        border-radius: 12px;
+        line-height: 1.35;
+        white-space: pre-wrap;
+        word-break: break-word;
+        max-width: 90%;
+      }
+      .user {
+        justify-content: flex-end;
+      }
+      .user .bubble {
+        background: rgba(0, 198, 255, 0.18);
+        border: 1px solid rgba(0, 198, 255, 0.35);
+      }
+      .assistant .bubble {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+      }
+      .sys {
+        font-size: 12px;
+        opacity: 0.75;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 12px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      textarea {
+        width: 100%;
+        min-height: 80px;
+        resize: vertical;
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 10px;
+        padding: 10px 12px;
+        color: inherit;
+        outline: none;
+      }
+      .controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+      .controls .left {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      select,
+      input[type="text"] {
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 10px;
+        padding: 8px 10px;
+        color: inherit;
+        outline: none;
+      }
+      button {
+        background: #1f6feb;
+        border: 0;
+        color: white;
+        padding: 9px 14px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .hint {
+        font-size: 12px;
+        opacity: 0.8;
+      }
+      a {
+        color: #79c0ff;
+      }
+      code {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        padding: 1px 6px;
+        border-radius: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>LINE Test Chat UI (pc1.vpn)</h1>
+        <div class="meta">Calls <code>/openai/v1/chat/completions</code> via same-origin reverse proxy.</div>
+      </div>
+      <div class="meta">
+        <a href="/docs/" target="_blank" rel="noreferrer">Doc Archiver UI</a>
+      </div>
+    </header>
+
+    <main>
+      <div class="panel">
+        <div class="title">Chat</div>
+        <div id="chat"></div>
+        <div class="row">
+          <textarea id="input" placeholder="Type a message... (Shift+Enter for newline, Enter to send)"></textarea>
+          <div class="controls">
+            <div class="left">
+              <label class="hint">Model</label>
+              <input id="model" type="text" value="glama-default" />
+              <label class="hint">Temperature</label>
+              <select id="temp">
+                <option value="0">0.0</option>
+                <option value="0.2" selected>0.2</option>
+                <option value="0.5">0.5</option>
+                <option value="0.8">0.8</option>
+              </select>
+            </div>
+            <div class="left">
+              <button id="send">Send</button>
+              <button id="clear" type="button">Clear</button>
+            </div>
+          </div>
+          <div class="hint sys">
+            Tip: Try <code>Summarize the system status</code> or <code>What tools are available?</code>.
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      const chatEl = document.getElementById('chat');
+      const inputEl = document.getElementById('input');
+      const sendBtn = document.getElementById('send');
+      const clearBtn = document.getElementById('clear');
+      const modelEl = document.getElementById('model');
+      const tempEl = document.getElementById('temp');
+
+      /** @type {{role: 'system'|'user'|'assistant', content: string}[]} */
+      const messages = [
+        {
+          role: 'system',
+          content:
+            'You are a test assistant for a LINE bot deployment. Keep responses short and actionable. If asked to use documents, suggest using the doc archiver UI at /docs/.',
+        },
+      ];
+
+      function addMsg(role, content) {
+        const wrap = document.createElement('div');
+        wrap.className = 'msg ' + role;
+
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.textContent = content;
+
+        wrap.appendChild(bubble);
+        chatEl.appendChild(wrap);
+        chatEl.scrollTop = chatEl.scrollHeight;
+      }
+
+      function setBusy(busy) {
+        sendBtn.disabled = busy;
+        inputEl.disabled = busy;
+      }
+
+      async function send() {
+        const text = inputEl.value.trim();
+        if (!text) return;
+
+        inputEl.value = '';
+        addMsg('user', text);
+        messages.push({ role: 'user', content: text });
+
+        setBusy(true);
+        try {
+          const payload = {
+            model: (modelEl.value || 'glama-default').trim(),
+            messages,
+            temperature: Number(tempEl.value || '0.2'),
+            stream: false,
+          };
+
+          const r = await fetch('/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+
+          const data = await r.json().catch(() => ({}));
+
+          if (!r.ok) {
+            const msg = data?.error?.message || 'request_failed';
+            addMsg('assistant', `Error: ${msg}`);
+            return;
+          }
+
+          const content =
+            data?.choices?.[0]?.message?.content ||
+            data?.choices?.[0]?.delta?.content ||
+            JSON.stringify(data);
+
+          addMsg('assistant', content);
+          messages.push({ role: 'assistant', content });
+        } catch (e) {
+          addMsg('assistant', `Error: ${e?.message || e}`);
+        } finally {
+          setBusy(false);
+          inputEl.focus();
+        }
+      }
+
+      sendBtn.addEventListener('click', () => void send());
+      clearBtn.addEventListener('click', () => {
+        chatEl.innerHTML = '';
+        while (messages.length > 1) messages.pop();
+      });
+
+      inputEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          void send();
+        }
+      });
+
+      addMsg('assistant', 'Ready. This UI calls /openai via reverse proxy on line.pc1.vpn.');
+    </script>
+  </body>
+</html>

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>idc1 control panel</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        background: radial-gradient(circle at top, #1d2747 0%, #05060f 70%);
+        color: #eef2ff;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 2.5rem;
+      }
+      .card {
+        width: min(820px, 100%);
+        padding: 2.75rem;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        box-shadow: 0 30px 70px rgba(4, 6, 17, 0.5);
+        backdrop-filter: blur(18px);
+      }
+      h1 {
+        margin: 0 0 0.75rem;
+        font-size: clamp(1.7rem, 4vw, 2.2rem);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      p {
+        margin: 0.35rem 0;
+        color: #c7d4ff;
+        line-height: 1.5;
+      }
+      .grid {
+        margin-top: 1.75rem;
+        display: grid;
+        gap: 1rem;
+      }
+      .item {
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.06);
+        padding: 1.05rem 1.2rem;
+      }
+      .item-title {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+      a {
+        color: #a5b4fc;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+          'Courier New', monospace;
+        color: #dbeafe;
+      }
+      .desc {
+        margin-top: 0.4rem;
+        color: #d1dcff;
+      }
+      .note {
+        margin-top: 1.75rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(148, 163, 255, 0.25);
+        color: #c7d4ff;
+        font-size: 0.95rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>idc1 control panel</h1>
+      <p>Quick links for this node. This page is static and deployed under <code>/test/cp/</code>.</p>
+      <p>Aliases: <a href="/cp/">/cp/</a> redirects here for convenience.</p>
+
+      <div class="grid">
+        <div class="item">
+          <div class="item-title">
+            <a href="/test/"><code>/test/</code></a>
+            <span>Static placeholder site</span>
+          </div>
+          <p class="desc">Served by Caddy from the deployed directory <code>/www/idc1.surf-thailand.com/test/current</code>.</p>
+        </div>
+
+        <div class="item">
+          <div class="item-title">
+            <a href="/cp/"><code>/cp/</code></a>
+            <span>Control panel (this page)</span>
+          </div>
+          <p class="desc">A simple index of known URLs and services on this host.</p>
+        </div>
+
+        <div class="item">
+          <div class="item-title">
+            <a href="/webtop/"><code>/webtop/</code></a>
+            <span>Webtop (reverse proxy)</span>
+          </div>
+          <p class="desc">Proxied by Caddy to <code>127.0.0.1:3001</code>. Routes beneath this are owned by the backend service.</p>
+        </div>
+
+        <div class="item">
+          <div class="item-title">
+            <a href="/guac/"><code>/guac/</code></a>
+            <span>Guacamole (reverse proxy)</span>
+          </div>
+          <p class="desc">Proxied by Caddy to <code>127.0.0.1:3002</code>. Routes beneath this are owned by the backend service.</p>
+        </div>
+
+        <div class="item">
+          <div class="item-title">
+            <a href="https://cp.idc1.surf-thailand.com/"><code>https://cp.idc1.surf-thailand.com/</code></a>
+            <span>DevOps control plane (basic auth)</span>
+          </div>
+          <p class="desc">Reverse proxied to <code>127.0.0.1:8425</code>. Authentication is enforced at Caddy.</p>
+        </div>
+
+        <div class="item">
+          <div class="item-title">
+            <a href="https://mcp0.idc1.surf-thailand.com/"><code>https://mcp0.idc1.surf-thailand.com/</code></a>
+            <span>MCP0 proxy</span>
+          </div>
+          <p class="desc">Reverse proxied to <code>127.0.0.1:8355</code> (health/status endpoints, etc.).</p>
+        </div>
+      </div>
+
+      <p class="note">
+        Note: this list is based on repo-defined Caddy routing. Any additional URLs under <code>/webtop/*</code>
+        and <code>/guac/*</code> depend on their respective services.
+      </p>
+    </div>
+  </body>
+</html>

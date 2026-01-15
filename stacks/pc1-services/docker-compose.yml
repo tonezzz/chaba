@@ -1,0 +1,173 @@
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - ${PC1_AI_ENV_FILE:-.env}
+  networks:
+    - pc1-ai-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  mcp-glama:
+    <<: *default-service
+    build:
+      context: ${MCP_GLAMA_BUILD_CONTEXT:-../../mcp/mcp-glama}
+    container_name: pc1-services-mcp-glama
+    ports:
+      - "${MCP_GLAMA_PORT:-7241}:8014"
+    environment:
+      PORT: 8014
+      GLAMA_API_KEY: ${GLAMA_API_KEY}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8014/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-github-models:
+    <<: *default-service
+    build:
+      context: ${MCP_GITHUB_MODELS_BUILD_CONTEXT:-../../mcp/mcp-github-models}
+    container_name: pc1-services-mcp-github-models
+    ports:
+      - "${MCP_GITHUB_MODELS_PORT:-7243}:8015"
+    environment:
+      PORT: 8015
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8015/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-imagen-light:
+    <<: *default-service
+    build:
+      context: ${MCP_IMAGEN_LIGHT_BUILD_CONTEXT:-../../mcp/mcp-imagen-light}
+    container_name: pc1-services-mcp-imagen-light
+    ports:
+      - "${MCP_IMAGEN_LIGHT_PORT:-8020}:8020"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      PORT: 8020
+      MCP_CUDA_URL: ${MCP_CUDA_URL:-http://host.docker.internal:8057}
+      IMAGEN_OUTPUT_DIR: ${IMAGEN_OUTPUT_DIR:-/app/images}
+      IMAGEN_BASE_URL: ${IMAGEN_BASE_URL:-http://pc1.vpn:8020}
+    volumes:
+      - mcp-imagen-light-images:/app/images
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8020/health', timeout=2).read()\" || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-rag-light:
+    <<: *default-service
+    build:
+      context: ${MCP_RAG_LIGHT_BUILD_CONTEXT:-../../mcp/mcp-rag-light}
+    container_name: pc1-services-mcp-rag-light
+    ports:
+      - "${MCP_RAG_LIGHT_PORT:-8069}:8069"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      PORT: 8069
+      MCP_CUDA_URL: ${MCP_CUDA_URL:-http://host.docker.internal:8057}
+      RAG_LIGHT_PUBLIC_BASE_URL: ${RAG_LIGHT_PUBLIC_BASE_URL:-http://pc1.vpn:8069}
+      RAG_LIGHT_TIMEOUT_SECONDS: ${RAG_LIGHT_TIMEOUT_SECONDS:-60}
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8069/health', timeout=2).read()\" || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-openai-gateway:
+    <<: *default-service
+    build:
+      context: ${MCP_OPENAI_GATEWAY_BUILD_CONTEXT:-../../mcp/mcp-openai-gateway}
+    container_name: pc1-services-mcp-openai-gateway
+    ports:
+      - "8181:8181"
+    environment:
+      PORT: 8181
+      GLAMA_API_URL: ${GLAMA_API_URL:-}
+      GLAMA_API_KEY: ${GLAMA_API_KEY:-}
+      GLAMA_MODEL: ${GLAMA_MODEL:-}
+      OPENAI_GATEWAY_MODEL_ID: ${OPENAI_GATEWAY_MODEL_ID:-glama-default}
+      OPENAI_GATEWAY_TIMEOUT_SECONDS: ${OPENAI_GATEWAY_TIMEOUT_SECONDS:-180}
+      OPENAI_GATEWAY_GLAMA_RETRY_ATTEMPTS: ${OPENAI_GATEWAY_GLAMA_RETRY_ATTEMPTS:-2}
+      OPENAI_GATEWAY_GLAMA_RETRY_BACKOFF_SECONDS: ${OPENAI_GATEWAY_GLAMA_RETRY_BACKOFF_SECONDS:-1.0}
+      OPENAI_GATEWAY_PREFER_MCP_LLM: ${OPENAI_GATEWAY_PREFER_MCP_LLM:-1}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      MCP_AGENT_URL: ${MCP_AGENT_URL:-http://pc1.vpn:3051/mcp?app=openchat}
+      MCP_AGENT_URL_TOOLS: ""
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8181/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  ollama:
+    <<: *default-service
+    image: ollama/ollama:latest
+    container_name: pc1-services-ollama
+    ports:
+      - "${OLLAMA_PORT:-11437}:11434"
+    environment:
+      OLLAMA_HOST: 0.0.0.0
+      OLLAMA_PORT: 11434
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc 'echo > /dev/tcp/127.0.0.1/11434' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 6
+
+  mcp-acc:
+    <<: *default-service
+    build:
+      context: ${MCP_ACC_BUILD_CONTEXT:-../../mcp/mcp-acc}
+    container_name: pc1-services-mcp-acc
+    networks:
+      - pc1-ai-net
+      - pc1-ai-shared
+    ports:
+      - "${MCP_ACC_PORT:-8092}:8092"
+    environment:
+      PORT: 8092
+      MCP_ACC_DATA_PATH: ${MCP_ACC_DATA_PATH:-/data/mcp-acc/cache.json}
+      MCP_ACC_CACHE_TTL_SECONDS: ${MCP_ACC_CACHE_TTL_SECONDS:-3600}
+      MCP_ACC_TIMEOUT_SECONDS: ${MCP_ACC_TIMEOUT_SECONDS:-45}
+      MCP_AUDIDOC_BASE_URL: ${MCP_AUDIDOC_BASE_URL:-http://host.docker.internal:8076}
+      MCP_ACC_LLM_BASE_URL: ${MCP_ACC_LLM_BASE_URL:-http://mcp-openai-gateway:8181/v1}
+      MCP_ACC_LLM_MODEL: ${MCP_ACC_LLM_MODEL:-glama-default}
+      MCP_ACC_LLM_TEMPERATURE: ${MCP_ACC_LLM_TEMPERATURE:-0.2}
+      MCP_ACC_LLM_TIMEOUT_SECONDS: ${MCP_ACC_LLM_TIMEOUT_SECONDS:-120}
+      MCP_ACC_SHEET_INCOME_URL: ${MCP_ACC_SHEET_INCOME_URL:-https://docs.google.com/spreadsheets/d/e/2PACX-1vRz4D64DEUgKWHCr2jOqu7SMbg4j-PYODnVTfsxqOBrdllbtU3TgctOxFSnXBbge-c2K_FuTDp6OuLo/pubhtml/sheet?headers=false&gid=2136721077}
+      MCP_ACC_SHEET_EXPENSE_URL: ${MCP_ACC_SHEET_EXPENSE_URL:-https://docs.google.com/spreadsheets/d/e/2PACX-1vRz4D64DEUgKWHCr2jOqu7SMbg4j-PYODnVTfsxqOBrdllbtU3TgctOxFSnXBbge-c2K_FuTDp6OuLo/pubhtml/sheet?headers=false&gid=2097719843}
+    volumes:
+      - mcp-acc-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8092/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  pc1-ai-net:
+    driver: bridge
+  pc1-ai-shared:
+    external: true
+    name: pc1-ai_pc1-ai-net
+    
+
+volumes:
+  ollama-data:
+  mcp-acc-data:
+  mcp-imagen-light-images:

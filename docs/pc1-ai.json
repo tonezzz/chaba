@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "host": {
+    "name": "pc1",
+    "vpn_domain": "pc1.vpn"
+  },
+  "stack": {
+    "id": "pc1-ai",
+    "path": "stacks/pc1-ai",
+    "compose": "docker-compose.yml",
+    "description": "PC1 AI gateways + Ollama + Imagen adapter"
+  },
+  "services": [
+    {"service": "mcp-glama", "port": 7241, "internal_port": 8014, "health": "/health"},
+    {"service": "mcp-github-models", "port": 7242, "internal_port": 8015, "health": "/health"},
+    {"service": "mcp-openai-gateway", "port": 8181, "health": "/health"},
+    {"service": "ollama", "port": 11435, "internal_port": 11434},
+    {"service": "mcp-imagen-light", "port": 8020, "health": "/health"}
+  ],
+  "recovery": {
+    "verify": {
+      "urls": [
+        "http://pc1.vpn:8181/health",
+        "http://pc1.vpn:8020/health",
+        "http://pc1.vpn:7241/health",
+        "http://pc1.vpn:7242/health"
+      ]
+    },
+    "restart": {
+      "windows_powershell": [
+        "docker compose -f C:/chaba/stacks/pc1-ai/docker-compose.yml up -d"
+      ]
+    }
+  }
+}

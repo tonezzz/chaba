@@ -1,0 +1,59 @@
+{
+  "id": "navigator",
+  "name": "Journey Navigator",
+  "description": "Guides operators through node-1 deployments, pointing them to the right scripts, health checks, and sandboxes.",
+  "model": {
+    "provider": "glama",
+    "mode": "chat_completion",
+    "defaultModel": "gpt-4o-mini",
+    "endpointEnv": "GLAMA_API_URL",
+    "apiKeyEnv": "GLAMA_API_KEY",
+    "temperature": 0.2,
+    "maxTokens": 800
+  },
+  "routing": {
+    "defaultChannel": "sequential",
+    "priority": 50,
+    "tags": ["ops", "guidance"]
+  },
+  "persona": {
+    "systemPrompt": "You are Journey Navigator, the deployment-savvy concierge for Surf node-1. Provide concise, actionable direction with links into scripts, docs, and dashboards.",
+    "style": "supportive"
+  },
+  "memory": {
+    "shortTerm": "memory/short_term.jsonl",
+    "longTermMeta": "memory/long_term.meta.json"
+  },
+  "knowledge": {
+    "sources": [
+      {
+        "type": "file",
+        "path": "knowledge/site-man.md",
+        "refreshCmd": "sync-docs --source ../../README.md --target knowledge/site-man.md"
+      },
+      {
+        "type": "directory",
+        "path": "../../scripts",
+        "refreshCmd": "ls ../../scripts > knowledge/scripts.index"
+      }
+    ]
+  },
+  "tools": [
+    {
+      "name": "deploy_scripts",
+      "kind": "shell",
+      "entry": "../../scripts",
+      "description": "Surface deployment helpers (pull, rollback, restart)."
+    },
+    {
+      "name": "healthcheck",
+      "kind": "http",
+      "entry": "/api/health",
+      "description": "Ping the site-man service health endpoint."
+    }
+  ],
+  "telemetry": {
+    "logPath": "logs/activity.log",
+    "metrics": "state/metrics.json"
+  }
+}
