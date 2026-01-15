@@ -471,8 +471,29 @@ async def imagen_jobs_preview(job_id: str) -> Dict[str, Any]:
     cached = _try_cached_preview_response(cache_job_id)
     if isinstance(cached, dict):
         return cached
-    async with httpx.AsyncClient(timeout=httpx.Timeout(IMAGEN_LIGHT_CUDA_TIMEOUT_SECONDS)) as client:
-        r = await client.get(f"{MCP_CUDA_URL}/imagen/jobs/{job_id}/preview")
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(IMAGEN_LIGHT_CUDA_TIMEOUT_SECONDS)) as client:
+            r = await client.get(f"{MCP_CUDA_URL}/imagen/jobs/{job_id}/preview")
+    except httpx.TimeoutException:
+        cached = _try_cached_preview_response(cache_job_id)
+        if isinstance(cached, dict):
+            return cached
+        return {
+            "job_id": queue_job_id or cache_job_id,
+            "available": False,
+            "status": "timeout",
+            "progress": None,
+        }
+    except httpx.RequestError:
+        cached = _try_cached_preview_response(cache_job_id)
+        if isinstance(cached, dict):
+            return cached
+        return {
+            "job_id": queue_job_id or cache_job_id,
+            "available": False,
+            "status": "unreachable",
+            "progress": None,
+        }
     if r.status_code == 404:
         # CUDA jobs are in-memory; if CUDA restarted, the stored cuda_job_id may be stale.
         # Re-queue by clearing cuda_job_id so the worker can resubmit.
