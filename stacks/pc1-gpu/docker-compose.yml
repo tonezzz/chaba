@@ -17,17 +17,17 @@ services:
       context: ${MCP_CUDA_BUILD_CONTEXT:-../../mcp/mcp-cuda}
     container_name: pc1-gpu-mcp-cuda
     ports:
-      - "${MCP_CUDA_PORT:-8057}:8057"
+      - "8057:8057"
     environment:
-      PORT: 8057
-      MCP_CUDA_IMAGEN_BACKEND: sd15_single
-      MCP_CUDA_SD15_MODEL_FILE: /models/checkpoints/realisticVisionV60B1_v20Novae.safetensors
-      MCP_CUDA_MAX_DIMENSION: ${MCP_CUDA_MAX_DIMENSION:-2048}
-      MCP_CUDA_SDXL_MAX_PIXELS: ${MCP_CUDA_SDXL_MAX_PIXELS:-1048576}
-      MCP_CUDA_SDXL_PREVIEW_EVERY_N_STEPS: ${MCP_CUDA_SDXL_PREVIEW_EVERY_N_STEPS:-5}
-      MCP_CUDA_SDXL_PREVIEW_MAX_SIZE: ${MCP_CUDA_SDXL_PREVIEW_MAX_SIZE:-512}
-      MCP_CUDA_PREVIEW_EVERY_STEPS: 5
-      MCP_CUDA_INSTANCE_ID: ${MCP_CUDA_INSTANCE_ID:-mcp-cuda-${HOSTNAME}}
+      - MCP_CUDA_PREVIEW_EVERY_STEPS=5
+      - MCP_CUDA_INSTANCE_ID=mcp-cuda-${CONTAINER_ID:-default}
+      - PORT=8057
+      - MCP_CUDA_IMAGEN_BACKEND=sd15_single
+      - MCP_CUDA_SD15_MODEL_FILE=/models/checkpoints/realisticVisionV60B1_v20Novae.safetensors
+      - MCP_CUDA_MAX_DIMENSION=${MCP_CUDA_MAX_DIMENSION:-2048}
+      - MCP_CUDA_SDXL_MAX_PIXELS=${MCP_CUDA_SDXL_MAX_PIXELS:-1048576}
+      - MCP_CUDA_SDXL_PREVIEW_EVERY_N_STEPS=${MCP_CUDA_SDXL_PREVIEW_EVERY_N_STEPS:-5}
+      - MCP_CUDA_SDXL_PREVIEW_MAX_SIZE=${MCP_CUDA_SDXL_PREVIEW_MAX_SIZE:-512}
     volumes:
       - ${PC1_SD15_MODEL_DIR:-c:/chaba/.models/checkpoints}:/models/checkpoints:ro
       - /dev/dri:/dev/dri
