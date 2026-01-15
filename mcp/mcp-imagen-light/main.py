@@ -6,6 +6,7 @@ import io
 import json
 import os
 import sqlite3
+import traceback
 import time
 import uuid
 from datetime import datetime, timezone
@@ -44,6 +45,9 @@ def _ts_ms() -> int:
 
 
 _queue_conn: Optional[sqlite3.Connection] = None
+
+
+_UNSET = object()
 
 
 def _get_queue_conn() -> sqlite3.Connection:
@@ -103,18 +107,25 @@ def _queue_job_get(job_id: str) -> Optional[Dict[str, Any]]:
     }
 
 
-def _queue_job_update(*, job_id: str, status: str, cuda_job_id: Optional[str] = None, last_error: Optional[str] = None, attempts: Optional[int] = None) -> None:
+def _queue_job_update(
+    *,
+    job_id: str,
+    status: str,
+    cuda_job_id: Any = _UNSET,
+    last_error: Any = _UNSET,
+    attempts: Any = _UNSET,
+) -> None:
     conn = _get_queue_conn()
     now = _ts_ms()
     sets: List[str] = ["updated_at_ms = ?", "status = ?"]
     params: List[Any] = [now, status]
-    if cuda_job_id is not None:
+    if cuda_job_id is not _UNSET:
         sets.append("cuda_job_id = ?")
         params.append(cuda_job_id)
-    if last_error is not None:
+    if last_error is not _UNSET:
         sets.append("last_error = ?")
         params.append(last_error)
-    if attempts is not None:
+    if attempts is not _UNSET:
         sets.append("attempts = ?")
         params.append(int(attempts))
     params.append(job_id)
@@ -136,6 +147,7 @@ def _queue_job_next_queued() -> Optional[Dict[str, Any]]:
 async def _queue_worker_loop() -> None:
     if not IMAGEN_LIGHT_QUEUE_ENABLE:
         return
+    print("[imagen-light] queue worker loop started", flush=True)
     timeout = httpx.Timeout(IMAGEN_LIGHT_CUDA_TIMEOUT_SECONDS)
     async with httpx.AsyncClient(timeout=timeout) as client:
         while True:
@@ -151,6 +163,9 @@ async def _queue_worker_loop() -> None:
                     args = json.loads(str(item.get("args_json") or "{}"))
                 except Exception:
                     args = {}
+
+                if isinstance(args, dict) and args.get("approved") is None:
+                    args["approved"] = True
 
                 attempts += 1
                 r = await client.post(f"{MCP_CUDA_URL}/imagen/jobs", json=args)
@@ -172,7 +187,12 @@ async def _queue_worker_loop() -> None:
                     continue
 
                 _queue_job_update(job_id=job_id, status="submitted", cuda_job_id=str(cuda_job_id), last_error=None, attempts=attempts)
-            except Exception:
+            except Exception as exc:
+                try:
+                    print(f"[imagen-light] queue worker error: {exc}", flush=True)
+                    print(traceback.format_exc(), flush=True)
+                except Exception:
+                    pass
                 await asyncio.sleep(max(0.5, IMAGEN_LIGHT_QUEUE_POLL_SECONDS))
 
 
@@ -205,6 +225,7 @@ class ImagenGenerateArgs(BaseModel):
     num_inference_steps: Optional[int] = Field(default=None, alias="numInferenceSteps")
     guidance_scale: Optional[float] = Field(default=None, alias="guidanceScale")
     seed: Optional[int] = None
+    approved: Optional[bool] = None
 
 
 def _now_ms() -> int:
@@ -225,6 +246,24 @@ def _save_image_from_base64(b64: str, filename: str) -> str:
 
 def _public_image_url(filename: str) -> str:
     return f"{PUBLIC_BASE_URL}/images/{filename}"
+
+
+def _try_cached_preview_response(job_id: str) -> Optional[Dict[str, Any]]:
+    filename = f"preview_{job_id}.png"
+    path = os.path.join(IMAGES_DIR, filename)
+    try:
+        if os.path.isfile(path) and os.path.getsize(path) >= max(1, IMAGEN_LIGHT_MIN_PNG_BYTES):
+            return {
+                "job_id": job_id,
+                "available": True,
+                "status": "cached",
+                "progress": None,
+                "url": _public_image_url(filename),
+                "image_url": _public_image_url(filename),
+            }
+    except Exception:
+        return None
+    return None
 
 
 def _cleanup_old_images() -> None:
@@ -260,6 +299,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def _startup() -> None:
     if IMAGEN_LIGHT_QUEUE_ENABLE:
+        print("[imagen-light] queue enabled; starting worker", flush=True)
         _get_queue_conn()
         asyncio.create_task(_queue_worker_loop())
 
@@ -358,6 +398,24 @@ async def imagen_jobs_status(job_id: str) -> Dict[str, Any]:
             if cuda_job_id:
                 async with httpx.AsyncClient(timeout=httpx.Timeout(IMAGEN_LIGHT_CUDA_TIMEOUT_SECONDS)) as client:
                     r = await client.get(f"{MCP_CUDA_URL}/imagen/jobs/{cuda_job_id}")
+                if r.status_code == 404:
+                    # CUDA jobs are stored in-memory; if mcp-cuda restarted, the jobId can disappear.
+                    # Re-queue the job so the worker can resubmit it.
+                    prev_attempts = int(q.get("attempts") or 0)
+                    _queue_job_update(
+                        job_id=job_id,
+                        status="queued",
+                        cuda_job_id=None,
+                        last_error="cuda_job_not_found_requeued",
+                        attempts=prev_attempts,
+                    )
+                    return {
+                        "jobId": job_id,
+                        "status": "queued",
+                        "progress": None,
+                        "error": "cuda_job_not_found_requeued",
+                        "cudaJobId": None,
+                    }
                 if r.status_code >= 400:
                     return {
                         "jobId": job_id,
@@ -391,16 +449,59 @@ async def imagen_jobs_status(job_id: str) -> Dict[str, Any]:
 @app.get("/imagen/jobs/{job_id}/preview")
 async def imagen_jobs_preview(job_id: str) -> Dict[str, Any]:
     queue_job_id = None
+    cache_job_id = job_id
+    queue_row: Optional[Dict[str, Any]] = None
     if IMAGEN_LIGHT_QUEUE_ENABLE:
         q = _queue_job_get(job_id)
         if isinstance(q, dict):
+            queue_row = q
             queue_job_id = job_id
+            cache_job_id = job_id
             cuda_job_id = str(q.get("cuda_job_id") or "").strip()
             if not cuda_job_id:
+                cached = _try_cached_preview_response(cache_job_id)
+                if isinstance(cached, dict):
+                    cached["status"] = str(q.get("status") or "queued")
+                    return cached
                 return {"job_id": job_id, "available": False, "status": str(q.get("status") or "queued"), "progress": None}
             job_id = cuda_job_id
+
+    cached = _try_cached_preview_response(cache_job_id)
+    if isinstance(cached, dict):
+        return cached
     async with httpx.AsyncClient(timeout=httpx.Timeout(IMAGEN_LIGHT_CUDA_TIMEOUT_SECONDS)) as client:
         r = await client.get(f"{MCP_CUDA_URL}/imagen/jobs/{job_id}/preview")
+    if r.status_code == 404:
+        # CUDA jobs are in-memory; if CUDA restarted, the stored cuda_job_id may be stale.
+        # Re-queue by clearing cuda_job_id so the worker can resubmit.
+        if IMAGEN_LIGHT_QUEUE_ENABLE and queue_job_id and isinstance(queue_row, dict):
+            prev_attempts = int(queue_row.get("attempts") or 0)
+            _queue_job_update(
+                job_id=queue_job_id,
+                status="queued",
+                cuda_job_id=None,
+                last_error="cuda_job_not_found_requeued",
+                attempts=prev_attempts,
+            )
+        cached = _try_cached_preview_response(cache_job_id)
+        if isinstance(cached, dict):
+            return cached
+        return {
+            "job_id": queue_job_id or job_id,
+            "available": False,
+            "status": "not_found",
+            "progress": None,
+        }
+    if r.status_code == 409:
+        cached = _try_cached_preview_response(cache_job_id)
+        if isinstance(cached, dict):
+            return cached
+        return {
+            "job_id": queue_job_id or job_id,
+            "available": False,
+            "status": "not_ready",
+            "progress": None,
+        }
     if r.status_code >= 400:
         raise HTTPException(status_code=502, detail=f"cuda_preview_failed: {r.text}")
     data = r.json() if r.headers.get("content-type", "").lower().startswith("application/json") else {}
@@ -425,7 +526,7 @@ async def imagen_jobs_preview(job_id: str) -> Dict[str, Any]:
             "progress": data.get("progress"),
         }
 
-    filename = f"preview_{queue_job_id or job_id}.png"
+    filename = f"preview_{cache_job_id}.png"
     path = _save_image_from_base64(b64, filename)
     try:
         if os.path.getsize(path) < max(1, IMAGEN_LIGHT_MIN_PNG_BYTES):
@@ -450,9 +551,11 @@ async def imagen_jobs_preview(job_id: str) -> Dict[str, Any]:
 @app.get("/imagen/jobs/{job_id}/result")
 async def imagen_jobs_result(job_id: str) -> Dict[str, Any]:
     queue_job_id = None
+    queue_row: Optional[Dict[str, Any]] = None
     if IMAGEN_LIGHT_QUEUE_ENABLE:
         q = _queue_job_get(job_id)
         if isinstance(q, dict):
+            queue_row = q
             queue_job_id = job_id
             cuda_job_id = str(q.get("cuda_job_id") or "").strip()
             if not cuda_job_id:
@@ -461,12 +564,36 @@ async def imagen_jobs_result(job_id: str) -> Dict[str, Any]:
     async with httpx.AsyncClient(timeout=httpx.Timeout(IMAGEN_LIGHT_CUDA_TIMEOUT_SECONDS)) as client:
         status_r = await client.get(f"{MCP_CUDA_URL}/imagen/jobs/{job_id}")
         if status_r.status_code >= 400:
+            if status_r.status_code == 404:
+                if IMAGEN_LIGHT_QUEUE_ENABLE and queue_job_id and isinstance(queue_row, dict):
+                    prev_attempts = int(queue_row.get("attempts") or 0)
+                    _queue_job_update(
+                        job_id=queue_job_id,
+                        status="queued",
+                        cuda_job_id=None,
+                        last_error="cuda_job_not_found_requeued",
+                        attempts=prev_attempts,
+                    )
+                raise HTTPException(status_code=409, detail="job_not_found")
             raise HTTPException(status_code=502, detail=f"cuda_status_failed: {status_r.text}")
         status = status_r.json() if status_r.headers.get("content-type", "").lower().startswith("application/json") else {}
         if isinstance(status, dict) and status.get("status") != "succeeded":
             raise HTTPException(status_code=409, detail=f"job_not_succeeded: {status.get('status')}")
 
         r = await client.get(f"{MCP_CUDA_URL}/imagen/jobs/{job_id}/result")
+    if r.status_code == 404:
+        if IMAGEN_LIGHT_QUEUE_ENABLE and queue_job_id and isinstance(queue_row, dict):
+            prev_attempts = int(queue_row.get("attempts") or 0)
+            _queue_job_update(
+                job_id=queue_job_id,
+                status="queued",
+                cuda_job_id=None,
+                last_error="cuda_job_not_found_requeued",
+                attempts=prev_attempts,
+            )
+        raise HTTPException(status_code=409, detail="job_not_found")
+    if r.status_code == 409:
+        raise HTTPException(status_code=409, detail="job_not_succeeded")
     if r.status_code >= 400:
         raise HTTPException(status_code=502, detail=f"cuda_result_failed: {r.text}")
     data = r.json() if r.headers.get("content-type", "").lower().startswith("application/json") else {}
