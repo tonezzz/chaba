@@ -20,7 +20,7 @@ from PIL import Image
 from pydantic import BaseModel, Field
 from sentence_transformers import CrossEncoder, SentenceTransformer
 import torch
-from diffusers import StableDiffusionPipeline, StableDiffusionXLPipeline
+from diffusers import StableDiffusionImg2ImgPipeline, StableDiffusionPipeline, StableDiffusionXLPipeline
 from concurrent.futures import ThreadPoolExecutor
 
 APP_NAME = "mcp-cuda"
@@ -111,6 +111,7 @@ class ImagenJobCreateArgs(BaseModel):
     height: Optional[int] = None
     num_inference_steps: Optional[int] = Field(default=None, alias="numInferenceSteps")
     guidance_scale: Optional[float] = Field(default=None, alias="guidanceScale")
+    strength: Optional[float] = None
     seed: Optional[int] = None
     reference_image_base64: Optional[str] = Field(default=None, alias="referenceImageBase64")
     reference_image_dimensions: Optional[tuple[int, int]] = Field(default=None, alias="referenceImageDimensions")
@@ -168,6 +169,7 @@ _rerank_model: Optional[CrossEncoder] = None
 
 _sdxl_pipeline: Optional[StableDiffusionXLPipeline] = None
 _sd15_pipeline: Optional[StableDiffusionPipeline] = None
+_sd15_img2img_pipeline: Optional[StableDiffusionImg2ImgPipeline] = None
 _sdxl_pipeline_lock = threading.Lock()
 _imagen_executor = ThreadPoolExecutor(max_workers=SDXL_MAX_CONCURRENT_JOBS)
 
@@ -206,7 +208,10 @@ def _validate_imagen_args(args: ImagenJobCreateArgs) -> Dict[str, Any]:
     if width * height > SDXL_MAX_PIXELS:
         raise HTTPException(status_code=400, detail=f"too_many_pixels: max={SDXL_MAX_PIXELS}")
 
-    # Validate reference image dimensions if provided
+    # referenceImageDimensions is optional.
+    # If it is provided, we validate it matches the decoded image dimensions.
+    if args.reference_image_dimensions and not args.reference_image_base64:
+        raise HTTPException(status_code=400, detail="reference_image_dimensions_without_image")
     if args.reference_image_base64 and args.reference_image_dimensions:
         img_data = base64.b64decode(args.reference_image_base64)
         img = Image.open(io.BytesIO(img_data))
@@ -220,21 +225,32 @@ def _validate_imagen_args(args: ImagenJobCreateArgs) -> Dict[str, Any]:
         max_value=SDXL_MAX_STEPS,
     )
     guidance_scale = float(args.guidance_scale) if args.guidance_scale is not None else 7.0
+    strength = float(args.strength) if args.strength is not None else 0.75
+    if strength <= 0.0 or strength > 1.0:
+        raise HTTPException(status_code=400, detail="strength_out_of_range")
     negative_prompt = (args.negative_prompt or "").strip() or None
 
     seed = int(args.seed) if args.seed is not None else None
     if seed is not None and seed < 0:
         raise HTTPException(status_code=400, detail="seed_must_be_nonnegative")
 
-    return {
+    out: Dict[str, Any] = {
         "prompt": prompt,
         "negative_prompt": negative_prompt,
         "width": width,
         "height": height,
         "steps": steps,
         "guidance_scale": guidance_scale,
+        "strength": strength,
         "seed": seed,
     }
+
+    if args.reference_image_base64:
+        out["reference_image_base64"] = str(args.reference_image_base64)
+    if args.reference_image_dimensions:
+        out["reference_image_dimensions"] = tuple(args.reference_image_dimensions)
+
+    return out
 
 
 def _get_sdxl_pipeline() -> StableDiffusionXLPipeline:
@@ -333,6 +349,43 @@ def _get_sd15_pipeline() -> StableDiffusionPipeline:
             pipe = pipe.to("cuda")
         _sd15_pipeline = pipe
         return pipe
+
+
+def _get_sd15_img2img_pipeline() -> StableDiffusionImg2ImgPipeline:
+    global _sd15_img2img_pipeline
+    with _sdxl_pipeline_lock:
+        if _sd15_img2img_pipeline is not None:
+            return _sd15_img2img_pipeline
+
+        base = _get_sd15_pipeline()
+        img2img = StableDiffusionImg2ImgPipeline(**base.components)
+
+        if DISABLE_SAFETY_CHECKER:
+            try:
+                img2img.safety_checker = None
+                img2img.requires_safety_checker = False
+            except Exception:
+                pass
+
+        try:
+            img2img.enable_attention_slicing()
+        except Exception:
+            pass
+        try:
+            img2img.enable_vae_slicing()
+        except Exception:
+            pass
+        if ENABLE_XFORMERS:
+            try:
+                img2img.enable_xformers_memory_efficient_attention()
+            except Exception:
+                pass
+
+        if torch.cuda.is_available():
+            img2img = img2img.to("cuda")
+
+        _sd15_img2img_pipeline = img2img
+        return img2img
 
 
 def _encode_image_png_base64(img: Image.Image) -> str:
@@ -528,17 +581,38 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                 print(f"[DEBUG] Before SD1.5 pipe() call", flush=True)
                 with torch.inference_mode(), autocast_ctx:
                     print(f"[DEBUG] Inside torch inference context", flush=True)
-                    out = pipe(
-                        prompt=str(job.spec.get("prompt") or ""),
-                        negative_prompt=job.spec.get("negative_prompt"),
-                        width=int(job.spec.get("width") or 1024),
-                        height=int(job.spec.get("height") or 1024),
-                        num_inference_steps=steps,
-                        guidance_scale=float(job.spec.get("guidance_scale") or 7.0),
-                        generator=generator,
-                        callback_on_step_end=_cb_sd15,
-                        output_type="np",
-                    )
+                    ref_b64 = job.spec.get("reference_image_base64")
+                    if isinstance(ref_b64, str) and ref_b64.strip():
+                        img2img = _get_sd15_img2img_pipeline()
+                        ref_raw = base64.b64decode(ref_b64)
+                        init_image = Image.open(io.BytesIO(ref_raw)).convert("RGB")
+                        w = int(job.spec.get("width") or 1024)
+                        h = int(job.spec.get("height") or 1024)
+                        if init_image.size != (w, h):
+                            init_image = init_image.resize((w, h), Image.LANCZOS)
+                        out = img2img(
+                            prompt=str(job.spec.get("prompt") or ""),
+                            negative_prompt=job.spec.get("negative_prompt"),
+                            image=init_image,
+                            strength=float(job.spec.get("strength") or 0.75),
+                            num_inference_steps=steps,
+                            guidance_scale=float(job.spec.get("guidance_scale") or 7.0),
+                            generator=generator,
+                            callback_on_step_end=_cb_sd15,
+                            output_type="np",
+                        )
+                    else:
+                        out = pipe(
+                            prompt=str(job.spec.get("prompt") or ""),
+                            negative_prompt=job.spec.get("negative_prompt"),
+                            width=int(job.spec.get("width") or 1024),
+                            height=int(job.spec.get("height") or 1024),
+                            num_inference_steps=steps,
+                            guidance_scale=float(job.spec.get("guidance_scale") or 7.0),
+                            generator=generator,
+                            callback_on_step_end=_cb_sd15,
+                            output_type="np",
+                        )
                 print(f"[DEBUG] After SD1.5 pipe() call", flush=True)
                 print(f"[DEBUG] SD1.5 output: {out}", flush=True)
 
@@ -815,17 +889,17 @@ def tool_definitions() -> List[Dict[str, Any]]:
         },
         {
             "name": "imagen_job_create",
-            "description": "Create an SDXL image generation job. Use the /imagen/jobs/{jobId}/events SSE endpoint for progress.",
+            "description": "Create an image generation job. Model selection depends on server configuration: if MCP_CUDA_SD15_MODEL_FILE exists, SD1.5 is used; otherwise SDXL is used. If referenceImageBase64 is provided, SD1.5 runs img2img (uses strength in (0,1]); otherwise it runs txt2img. referenceImageDimensions is optional (used only for validation when provided). Use /imagen/jobs/{jobId}/events (SSE) for progress events.",
             "inputSchema": ImagenJobCreateArgs.model_json_schema(),
         },
         {
             "name": "imagen_job_status",
-            "description": "Get status/progress for an SDXL image generation job.",
+            "description": "Get status/progress for an image generation job (SDXL or SD1.5 depending on configuration).",
             "inputSchema": ImagenJobStatusArgs.model_json_schema(),
         },
         {
             "name": "imagen_job_result",
-            "description": "Fetch the final result for a completed SDXL image generation job (base64 PNG).",
+            "description": "Fetch the final result for a completed image generation job (base64 PNG).",
             "inputSchema": ImagenJobResultArgs.model_json_schema(),
         },
     ]
