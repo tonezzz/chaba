@@ -4,8 +4,10 @@ import base64
 import contextlib
 import io
 import json
+import math
 import os
-import subprocess
+import socket
+import re
 import threading
 import time
 import uuid
@@ -51,6 +53,12 @@ SDXL_DEFAULT_STEPS = int(os.getenv("MCP_CUDA_SDXL_DEFAULT_STEPS", "30"))
 SDXL_MAX_CONCURRENT_JOBS = int(os.getenv("MCP_CUDA_SDXL_MAX_CONCURRENT_JOBS", "1"))
 SDXL_PREVIEW_EVERY_N_STEPS = int(os.getenv("MCP_CUDA_SDXL_PREVIEW_EVERY_N_STEPS", "0"))
 SDXL_PREVIEW_MAX_SIZE = int(os.getenv("MCP_CUDA_SDXL_PREVIEW_MAX_SIZE", "512"))
+
+# Backwards compatible preview cadence config.
+# Prefer MCP_CUDA_PREVIEW_EVERY_N_STEPS if set; otherwise fall back to SDXL-specific env.
+MCP_CUDA_PREVIEW_EVERY_N_STEPS = int(os.getenv("MCP_CUDA_PREVIEW_EVERY_N_STEPS", str(SDXL_PREVIEW_EVERY_N_STEPS or 0)))
+
+MCP_CUDA_INSTANCE_ID = os.getenv("MCP_CUDA_INSTANCE_ID") or str(uuid.uuid4())
 
 # Configurable job retention settings
 JOB_RETENTION_DAYS = float(os.getenv("MCP_CUDA_JOB_RETENTION_DAYS", "7"))  # Keep jobs for 7 days by default
@@ -522,7 +530,7 @@ def _run_imagen_job(job: _ImagenJob) -> None:
             if using == "sdxl":
                 def _cb(_pipe, step_idx: int, _timestep, _kwargs):
                     job.progress = {"step": int(step_idx) + 1, "steps": steps}
-                    every = int(SDXL_PREVIEW_EVERY_N_STEPS or 0)
+                    every = int(MCP_CUDA_PREVIEW_EVERY_N_STEPS or 0)
                     if every > 0 and (int(job.progress.get("step") or 0) % every == 0):
                         b64 = _latents_to_preview_png_base64(pipe, (_kwargs or {}).get("latents"))
                         if isinstance(b64, str) and b64:
@@ -552,6 +560,7 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                     guidance_scale=float(job.spec.get("guidance_scale") or 7.0),
                     generator=generator,
                     callback_on_step_end=_cb,
+                    callback_on_step_end_tensor_inputs=["latents"],
                 )
             else:
                 # SD1.5 pipeline path
@@ -561,7 +570,7 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                 def _cb_sd15(pipe, step, timestep, kwargs):
                     print(f"[DEBUG] SD1.5 callback - step: {step}", flush=True)
                     job.progress = {"step": min(int(step) + 1, steps), "steps": steps}
-                    every = int(SDXL_PREVIEW_EVERY_N_STEPS or 0)
+                    every = int(MCP_CUDA_PREVIEW_EVERY_N_STEPS or 0)
                     if every > 0 and (int(job.progress.get("step") or 0) % every == 0):
                         print(f"[DEBUG] Generating preview for step {step}", flush=True)
                         b64 = _sd15_latents_to_preview_png_base64(pipe, kwargs.get("latents"))
@@ -599,6 +608,7 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                             guidance_scale=float(job.spec.get("guidance_scale") or 7.0),
                             generator=generator,
                             callback_on_step_end=_cb_sd15,
+                            callback_on_step_end_tensor_inputs=["latents"],
                             output_type="np",
                         )
                     else:
@@ -611,6 +621,7 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                             guidance_scale=float(job.spec.get("guidance_scale") or 7.0),
                             generator=generator,
                             callback_on_step_end=_cb_sd15,
+                            callback_on_step_end_tensor_inputs=["latents"],
                             output_type="np",
                         )
                 print(f"[DEBUG] After SD1.5 pipe() call", flush=True)
@@ -964,7 +975,10 @@ async def health() -> Dict[str, Any]:
         "status": status,
         "service": APP_NAME,
         "version": APP_VERSION,
-        "nvidiaSmi": smi.get("ok"),
+        "instanceId": MCP_CUDA_INSTANCE_ID,
+        "hostname": socket.gethostname(),
+        "pid": os.getpid(),
+        "nvidiaSmi": bool(smi.get("ok")),
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -1289,6 +1303,80 @@ async def imagen_jobs_create(payload: Dict[str, Any] = Body(...)):
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/imagen/jobs/{job_id}")
+async def imagen_jobs_status(job_id: str) -> Dict[str, Any]:
+    job = _get_job(job_id)
+    return {
+        "jobId": job.job_id,
+        "status": job.status,
+        "progress": job.progress,
+        "error": job.error,
+        "createdAtMs": job.created_at_ms,
+        "startedAtMs": job.started_at_ms,
+        "finishedAtMs": job.finished_at_ms,
+        "eventsUrl": f"/imagen/jobs/{job.job_id}/events",
+        "statusUrl": f"/imagen/jobs/{job.job_id}",
+        "resultUrl": f"/imagen/jobs/{job.job_id}/result",
+    }
+
+
+@app.get("/imagen/jobs/{job_id}/preview")
+async def imagen_jobs_preview_get(job_id: str) -> Dict[str, Any]:
+    job = _get_job(job_id)
+    if not isinstance(job.preview, dict):
+        return {
+            "jobId": job.job_id,
+            "available": False,
+            "status": job.status,
+            "progress": job.progress,
+        }
+    out = {
+        "jobId": job.job_id,
+        "available": True,
+        "status": job.status,
+        "progress": job.progress,
+        **job.preview,
+    }
+    return out
+
+
+@app.get("/imagen/jobs/{job_id}/result")
+async def imagen_jobs_result(job_id: str) -> Dict[str, Any]:
+    job = _get_job(job_id)
+    if job.status != "succeeded":
+        raise HTTPException(status_code=409, detail=f"job_not_succeeded: {job.status}")
+    if not isinstance(job.result, dict):
+        raise HTTPException(status_code=502, detail="result_missing")
+    return job.result
+
+
+@app.get("/imagen/jobs/{job_id}/events")
+async def imagen_jobs_events(job_id: str, after: int = 0, timeout: float = 20.0):
+    job = _get_job(job_id)
+
+    async def _iter():
+        last_seq = int(after or 0)
+        yield f"event: hello\ndata: {json.dumps({'jobId': job.job_id, 'after': last_seq})}\n\n"
+        while True:
+            events = job.wait_for_events(after_seq=last_seq, timeout_s=float(timeout or 20.0))
+            if not events:
+                yield "event: ping\ndata: {}\n\n"
+                continue
+            for e in events:
+                try:
+                    seq = int(e.get("seq") or last_seq)
+                except Exception:
+                    seq = last_seq
+                if seq > last_seq:
+                    last_seq = seq
+                ev_type = str(e.get("type") or "message")
+                yield f"event: {ev_type}\ndata: {json.dumps(e, ensure_ascii=False)}\n\n"
+                if ev_type in ("done", "error"):
+                    return
+
+    return StreamingResponse(_iter(), media_type="text/event-stream")
 
 
 @app.post("/imagen/preprocess")
