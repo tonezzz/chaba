@@ -26,6 +26,8 @@ services:
       MCP_CUDA_SDXL_MAX_PIXELS: ${MCP_CUDA_SDXL_MAX_PIXELS:-1048576}
       MCP_CUDA_SDXL_PREVIEW_EVERY_N_STEPS: ${MCP_CUDA_SDXL_PREVIEW_EVERY_N_STEPS:-5}
       MCP_CUDA_SDXL_PREVIEW_MAX_SIZE: ${MCP_CUDA_SDXL_PREVIEW_MAX_SIZE:-512}
+      MCP_CUDA_PREVIEW_EVERY_STEPS: 5
+      MCP_CUDA_INSTANCE_ID: ${MCP_CUDA_INSTANCE_ID:-mcp-cuda-${HOSTNAME}}
     volumes:
       - ${PC1_SD15_MODEL_DIR:-c:/chaba/.models/checkpoints}:/models/checkpoints:ro
       - /dev/dri:/dev/dri

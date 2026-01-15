@@ -27,7 +27,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 APP_NAME = "mcp-cuda"
 APP_VERSION = "0.1.0"
-
+MCP_CUDA_INSTANCE_ID = os.getenv("MCP_CUDA_INSTANCE_ID", f"mcp-cuda-{uuid.uuid4().hex[:8]}")
 
 CLIP_MODEL = (os.getenv("CLIP_MODEL") or "clip-ViT-B-32").strip()
 MAX_IMAGE_ITEMS = int(os.getenv("MCP_CUDA_MAX_IMAGE_ITEMS", "32"))
@@ -57,8 +57,6 @@ SDXL_PREVIEW_MAX_SIZE = int(os.getenv("MCP_CUDA_SDXL_PREVIEW_MAX_SIZE", "512"))
 # Backwards compatible preview cadence config.
 # Prefer MCP_CUDA_PREVIEW_EVERY_N_STEPS if set; otherwise fall back to SDXL-specific env.
 MCP_CUDA_PREVIEW_EVERY_N_STEPS = int(os.getenv("MCP_CUDA_PREVIEW_EVERY_N_STEPS", str(SDXL_PREVIEW_EVERY_N_STEPS or 0)))
-
-MCP_CUDA_INSTANCE_ID = os.getenv("MCP_CUDA_INSTANCE_ID") or str(uuid.uuid4())
 
 # Configurable job retention settings
 JOB_RETENTION_DAYS = float(os.getenv("MCP_CUDA_JOB_RETENTION_DAYS", "7"))  # Keep jobs for 7 days by default
