@@ -26,15 +26,17 @@ MCP_CUDA_URL = (os.getenv("MCP_CUDA_URL") or "http://mcp-cuda:8057").strip().rst
 IMAGES_DIR = (os.getenv("IMAGEN_LIGHT_IMAGES_DIR") or "/data/images").strip()
 PUBLIC_BASE_URL = (os.getenv("IMAGEN_LIGHT_PUBLIC_BASE_URL") or f"http://pc1.vpn:{PORT}").strip().rstrip("/")
 CLEANUP_HOURS = int(os.getenv("IMAGEN_LIGHT_CLEANUP_HOURS", "24"))
-IMAGEN_LIGHT_NO_CAPACITY_RETRIES = int(os.getenv("IMAGEN_LIGHT_NO_CAPACITY_RETRIES", "3"))
-IMAGEN_LIGHT_NO_CAPACITY_BACKOFF_SECONDS = float(os.getenv("IMAGEN_LIGHT_NO_CAPACITY_BACKOFF_SECONDS", "10"))
 IMAGEN_LIGHT_CUDA_TIMEOUT_SECONDS = float(os.getenv("IMAGEN_LIGHT_CUDA_TIMEOUT_SECONDS", "20"))
 
-IMAGEN_LIGHT_QUEUE_DB_PATH = (os.getenv("IMAGEN_LIGHT_QUEUE_DB_PATH") or "/data/sqlite/imagen-light.sqlite").strip()
+IMAGEN_LIGHT_NO_CAPACITY_RETRIES = int(os.getenv("IMAGEN_LIGHT_NO_CAPACITY_RETRIES", "3"))
+IMAGEN_LIGHT_NO_CAPACITY_BACKOFF_SECONDS = float(os.getenv("IMAGEN_LIGHT_NO_CAPACITY_BACKOFF_SECONDS", "2"))
+
+IMAGEN_LIGHT_QUEUE_DB_PATH = os.getenv("IMAGEN_LIGHT_QUEUE_DB_PATH", "/data/sqlite/imagen-light.sqlite")
 IMAGEN_LIGHT_QUEUE_POLL_SECONDS = float(os.getenv("IMAGEN_LIGHT_QUEUE_POLL_SECONDS", "2"))
 IMAGEN_LIGHT_QUEUE_ENABLE = (os.getenv("IMAGEN_LIGHT_QUEUE_ENABLE") or "true").strip().lower() in ("1", "true", "yes", "y", "on")
 
 IMAGEN_LIGHT_MIN_PNG_BYTES = int(os.getenv("IMAGEN_LIGHT_MIN_PNG_BYTES", "2048"))
+IMAGEN_LIGHT_MIN_PREVIEW_PNG_BYTES = int(os.getenv("IMAGEN_LIGHT_MIN_PREVIEW_PNG_BYTES", "1"))
 
 os.makedirs(IMAGES_DIR, exist_ok=True)
 os.makedirs(os.path.dirname(IMAGEN_LIGHT_QUEUE_DB_PATH) or ".", exist_ok=True)
@@ -252,7 +254,7 @@ def _try_cached_preview_response(job_id: str) -> Optional[Dict[str, Any]]:
     filename = f"preview_{job_id}.png"
     path = os.path.join(IMAGES_DIR, filename)
     try:
-        if os.path.isfile(path) and os.path.getsize(path) >= max(1, IMAGEN_LIGHT_MIN_PNG_BYTES):
+        if os.path.isfile(path) and os.path.getsize(path) >= max(1, IMAGEN_LIGHT_MIN_PREVIEW_PNG_BYTES):
             return {
                 "job_id": job_id,
                 "available": True,
@@ -529,7 +531,7 @@ async def imagen_jobs_preview(job_id: str) -> Dict[str, Any]:
     filename = f"preview_{cache_job_id}.png"
     path = _save_image_from_base64(b64, filename)
     try:
-        if os.path.getsize(path) < max(1, IMAGEN_LIGHT_MIN_PNG_BYTES):
+        if os.path.getsize(path) < max(1, IMAGEN_LIGHT_MIN_PREVIEW_PNG_BYTES):
             return {
                 "job_id": job_id,
                 "available": False,
