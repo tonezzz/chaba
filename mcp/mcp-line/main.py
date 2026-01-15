@@ -78,6 +78,92 @@ def _require_control_auth(request: Request) -> None:
         raise HTTPException(status_code=401, detail="control_unauthorized")
 
 
+def _line_auth_headers(content_type: Optional[str] = None) -> Dict[str, str]:
+    if not LINE_CHANNEL_ACCESS_TOKEN:
+        raise HTTPException(status_code=500, detail="line_channel_access_token_not_configured")
+    headers: Dict[str, str] = {"Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}"}
+    if content_type:
+        headers["Content-Type"] = content_type
+    return headers
+
+
+async def _line_api_json(method: str, path: str, *, json_body: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    url = f"https://api.line.me{path}"
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        r = await client.request(method.upper(), url, headers=_line_auth_headers("application/json"), json=json_body)
+    if r.status_code >= 400:
+        body = (r.text or "")[:800]
+        raise HTTPException(status_code=502, detail=f"line_api_{r.status_code}: {body}")
+    if r.headers.get("content-type", "").lower().startswith("application/json"):
+        return r.json()  # type: ignore[no-any-return]
+    return {}
+
+
+async def _line_api_bytes(method: str, path: str, *, body: bytes, content_type: str) -> Dict[str, Any]:
+    url = f"https://api.line.me{path}"
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        r = await client.request(method.upper(), url, headers=_line_auth_headers(content_type), content=body)
+    if r.status_code >= 400:
+        body_txt = (r.text or "")[:800]
+        raise HTTPException(status_code=502, detail=f"line_api_{r.status_code}: {body_txt}")
+    if r.headers.get("content-type", "").lower().startswith("application/json"):
+        return r.json()  # type: ignore[no-any-return]
+    return {}
+
+
+@app.get("/control/line/richmenu/list")
+async def control_line_richmenu_list(request: Request) -> Dict[str, Any]:
+    _require_control_auth(request)
+    return await _line_api_json("GET", "/v2/bot/richmenu/list")
+
+
+@app.post("/control/line/richmenu/create")
+async def control_line_richmenu_create(request: Request, payload: Dict[str, Any]) -> Dict[str, Any]:
+    _require_control_auth(request)
+    data = await _line_api_json("POST", "/v2/bot/richmenu", json_body=payload)
+    rich_menu_id = str((data or {}).get("richMenuId") or "").strip()
+    return {"richMenuId": rich_menu_id, "raw": data}
+
+
+@app.post("/control/line/richmenu/{rich_menu_id}/content")
+async def control_line_richmenu_upload_content(request: Request, rich_menu_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    _require_control_auth(request)
+    b64 = str((payload or {}).get("imageBase64") or "").strip()
+    if not b64:
+        raise HTTPException(status_code=400, detail="imageBase64_required")
+    mime = str((payload or {}).get("mimeType") or "image/png").strip() or "image/png"
+    try:
+        raw = base64.b64decode(b64)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"invalid_base64: {exc}")
+    await _line_api_bytes("POST", f"/v2/bot/richmenu/{rich_menu_id}/content", body=raw, content_type=mime)
+    return {"ok": True, "richMenuId": rich_menu_id}
+
+
+@app.post("/control/line/richmenu/default")
+async def control_line_richmenu_set_default(request: Request, payload: Dict[str, Any]) -> Dict[str, Any]:
+    _require_control_auth(request)
+    rich_menu_id = str((payload or {}).get("richMenuId") or "").strip()
+    if not rich_menu_id:
+        raise HTTPException(status_code=400, detail="richMenuId_required")
+    await _line_api_json("POST", f"/v2/bot/user/all/richmenu/{rich_menu_id}")
+    return {"ok": True, "richMenuId": rich_menu_id}
+
+
+@app.post("/control/line/richmenu/default/cancel")
+async def control_line_richmenu_cancel_default(request: Request) -> Dict[str, Any]:
+    _require_control_auth(request)
+    await _line_api_json("DELETE", "/v2/bot/user/all/richmenu")
+    return {"ok": True}
+
+
+@app.delete("/control/line/richmenu/{rich_menu_id}")
+async def control_line_richmenu_delete(request: Request, rich_menu_id: str) -> Dict[str, Any]:
+    _require_control_auth(request)
+    await _line_api_json("DELETE", f"/v2/bot/richmenu/{rich_menu_id}")
+    return {"ok": True, "richMenuId": rich_menu_id}
+
+
 _conn: Optional[sqlite3.Connection] = None
 
 
