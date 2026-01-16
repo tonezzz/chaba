@@ -429,37 +429,32 @@ def _truncate_prompt_77(pipe: Any, prompt: Any) -> (str, Dict[str, Any]):
         if tok is None and tok2 is None:
             return p, {"prompt_truncated": False, "original_tokens": None, "used_tokens": used_tokens}
 
-        def _count_tokens(t):
+        def _count_tokens(t) -> Optional[int]:
             if t is None:
                 return None
-            ids_full = t(p, truncation=False, add_special_tokens=True).input_ids
-            ids_trunc = t(p, truncation=True, max_length=used_tokens, add_special_tokens=True).input_ids
-            full_len = len(ids_full[0]) if ids_full and len(ids_full) > 0 else 0
-            trunc_len = len(ids_trunc[0]) if ids_trunc and len(ids_trunc) > 0 else 0
-            return full_len, trunc_len, ids_trunc
-
-        full1 = trunc1 = 0
-        ids_trunc = None
-        c1 = _count_tokens(tok)
-        if c1 is not None:
-            full1, trunc1, ids_trunc = c1
-
-        full2 = trunc2 = 0
-        c2 = _count_tokens(tok2)
-        if c2 is not None:
-            full2, trunc2, _ = c2
-
-        original_tokens = max(int(full1 or 0), int(full2 or 0))
-        prompt_truncated = bool(original_tokens > int(used_tokens))
-
-        if prompt_truncated and ids_trunc is not None:
             try:
-                t = tok or tok2
-                p = t.decode(ids_trunc[0], skip_special_tokens=True)
+                enc = t(p, add_special_tokens=True, truncation=False)
+                ids = enc.get("input_ids") if isinstance(enc, dict) else None
+                if isinstance(ids, list):
+                    return int(len(ids))
             except Exception:
-                pass
+                return None
+            return None
 
-        return p, {"prompt_truncated": prompt_truncated, "original_tokens": original_tokens, "used_tokens": used_tokens}
+        # For SDXL we have two tokenizers; take the max token count as the effective length.
+        counts = [c for c in (_count_tokens(tok), _count_tokens(tok2)) if isinstance(c, int)]
+        original_tokens = max(counts) if counts else None
+        if isinstance(original_tokens, int) and original_tokens > used_tokens:
+            # Truncate for each tokenizer and decode back to a safe prompt string.
+            # For SDXL, either decode should be acceptable; prefer tokenizer_2 if present.
+            t = tok2 or tok
+            enc_trunc = t(p, add_special_tokens=True, truncation=True, max_length=used_tokens)
+            ids_trunc = enc_trunc.get("input_ids") if isinstance(enc_trunc, dict) else None
+            if isinstance(ids_trunc, list) and ids_trunc:
+                p = t.decode(ids_trunc, skip_special_tokens=True)
+            return p, {"prompt_truncated": True, "original_tokens": original_tokens, "used_tokens": used_tokens}
+
+        return p, {"prompt_truncated": False, "original_tokens": original_tokens, "used_tokens": used_tokens}
     except Exception:
         return p, {"prompt_truncated": False, "original_tokens": None, "used_tokens": used_tokens}
 
