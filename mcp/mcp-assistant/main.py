@@ -53,6 +53,11 @@ APP_VERSION = "0.1.0"
 _messages_by_conversation: Dict[str, List[Dict[str, Any]]] = {}
 _max_messages_per_conversation = int(os.getenv("MCP_ASSISTANT_MAX_MESSAGES", "200"))
 
+_imagen_pending_by_conversation: Dict[str, Dict[str, Any]] = {}
+_imagen_last_job_by_conversation: Dict[str, Dict[str, str]] = {}
+_imagen_expect_refine_by_conversation: Dict[str, bool] = {}
+_imagen_jobs_by_conversation: Dict[str, List[Dict[str, Any]]] = {}
+
 _one_mcp_session_by_conversation: Dict[str, str] = {}
 _one_mcp_session_locks: Dict[str, asyncio.Lock] = {}
 
@@ -427,6 +432,68 @@ def _extract_imagen_job_from_1mcp_result(res: Dict[str, Any]) -> Dict[str, str]:
     }
 
 
+async def _refresh_job_status(job: Dict[str, Any]) -> None:
+    url = str(job.get("status_url") or "").strip()
+    if not url:
+        return
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            r = await client.get(url)
+        if r.status_code >= 400:
+            return
+        data = r.json() if r.headers.get("content-type", "").lower().startswith("application/json") else {}
+        if isinstance(data, dict):
+            status = str(data.get("status") or "").strip()
+            if status:
+                job["status"] = status
+            progress = data.get("progress")
+            if isinstance(progress, dict):
+                step = progress.get("step")
+                steps = progress.get("steps")
+                if step is not None:
+                    job["step"] = int(step)
+                if steps is not None:
+                    job["steps"] = int(steps)
+    except Exception:
+        return
+
+
+async def _refresh_job_preview(job: Dict[str, Any]) -> None:
+    url = str(job.get("preview_url") or "").strip()
+    if not url:
+        return
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            r = await client.get(url)
+        if r.status_code >= 400:
+            return
+        data = r.json() if r.headers.get("content-type", "").lower().startswith("application/json") else {}
+        if not isinstance(data, dict):
+            return
+        if data.get("available") is True:
+            p_url = str(data.get("url") or data.get("image_url") or "").strip()
+            if p_url:
+                job["preview"] = p_url
+    except Exception:
+        return
+
+
+def _format_jobs_table(jobs: List[Dict[str, Any]]) -> str:
+    rows: List[str] = []
+    rows.append("job_id\tstatus\tprogress\tpreview")
+    for j in jobs:
+        jid = str(j.get("job_id") or "").strip()
+        st = str(j.get("status") or "").strip() or "unknown"
+        step = j.get("step")
+        steps = j.get("steps")
+        prog = ""
+        if step is not None and steps is not None:
+            prog = f"{int(step)}/{int(steps)}"
+        preview = str(j.get("preview") or "").strip()
+        rows.append(f"{jid}\t{st}\t{prog}\t{preview}")
+    return "\n".join(rows)[:2000]
+
+
 async def _glama_chat_completion(prompt: str, system_prompt: str) -> str:
     if not GLAMA_MCP_URL:
         raise RuntimeError("glama_mcp_url_not_configured")
@@ -457,9 +524,170 @@ async def _agent_reply(*, text: str, conversation_id: str, user_id: str) -> Dict
     if not cleaned:
         return {"reply_type": "text", "text": "ok"}
 
+    if cleaned.lower().startswith("imagen:"):
+        cleaned = "imagen " + cleaned[len("imagen:") :].lstrip()
+
     _append_message(conversation_id, "user", cleaned)
 
     lowered = cleaned.lower()
+
+    cid = str(conversation_id or "").strip() or "__default__"
+    if _imagen_expect_refine_by_conversation.get(cid):
+        if lowered.startswith("imagen "):
+            new_prompt = cleaned[len("imagen ") :].strip()
+        else:
+            new_prompt = cleaned
+        if new_prompt:
+            _imagen_expect_refine_by_conversation[cid] = False
+            pending = {
+                "prompt": new_prompt,
+                "width": int(MCP_ASSISTANT_IMAGEN_WIDTH) if MCP_ASSISTANT_IMAGEN_SET_SIZE else None,
+                "height": int(MCP_ASSISTANT_IMAGEN_HEIGHT) if MCP_ASSISTANT_IMAGEN_SET_SIZE else None,
+                "updatedAt": _utc_ts(),
+            }
+            _imagen_pending_by_conversation[cid] = pending
+            msg = "Ready. Click: imagen approve / imagen cancel / imagen status / imagen help"
+            out = {"reply_type": "text", "text": msg}
+            _append_message(conversation_id, "assistant", out["text"])
+            return out
+
+    if lowered == "imagen" or lowered.startswith("imagen "):
+        cmd = lowered
+        rest = ""
+        if cmd != "imagen":
+            rest = cleaned[len("imagen ") :].strip()
+            cmd = "imagen " + rest.lower()
+
+        if cmd in ("imagen help",):
+            msg = (
+                "Imagen menu commands:\n"
+                "- imagen <prompt>: set prompt (no generation yet)\n"
+                "- imagen approve: start generation\n"
+                "- imagen refine: replace prompt\n"
+                "- imagen status: show last job\n"
+                "- imagen cancel: clear pending\n"
+                "- imagen clear: clear cached jobs"
+            )
+            out = {"reply_type": "text", "text": msg}
+            _append_message(conversation_id, "assistant", out["text"])
+            return out
+
+        if cmd in ("imagen cancel",):
+            _imagen_pending_by_conversation.pop(cid, None)
+            _imagen_expect_refine_by_conversation[cid] = False
+            out = {"reply_type": "text", "text": "Canceled."}
+            _append_message(conversation_id, "assistant", out["text"])
+            return out
+
+        if cmd in ("imagen clear", "imagen reset"):
+            _imagen_pending_by_conversation.pop(cid, None)
+            _imagen_expect_refine_by_conversation[cid] = False
+            _imagen_jobs_by_conversation.pop(cid, None)
+            _imagen_last_job_by_conversation.pop(cid, None)
+            out = {"reply_type": "text", "text": "Cleared imagen state."}
+            _append_message(conversation_id, "assistant", out["text"])
+            return out
+
+        if cmd in ("imagen refine",):
+            _imagen_expect_refine_by_conversation[cid] = True
+            out = {"reply_type": "text", "text": "Send the new prompt (either plain text or 'imagen <prompt>')."}
+            _append_message(conversation_id, "assistant", out["text"])
+            return out
+
+        if cmd in ("imagen status",):
+            jobs = list(_imagen_jobs_by_conversation.get(cid) or [])
+            if not jobs:
+                last = _imagen_last_job_by_conversation.get(cid) or {}
+                if last:
+                    jobs = [dict(last)]
+            if not jobs:
+                out = {"reply_type": "text", "text": "No image job yet."}
+                _append_message(conversation_id, "assistant", out["text"])
+                return out
+            jobs = jobs[-10:]
+            for j in jobs:
+                await _refresh_job_status(j)
+                await _refresh_job_preview(j)
+            out = {"reply_type": "text", "text": _format_jobs_table(jobs)}
+            _append_message(conversation_id, "assistant", out["text"])
+            return out
+
+        if cmd in ("imagen approve",):
+            pending = _imagen_pending_by_conversation.get(cid) or {}
+            prompt = str(pending.get("prompt") or "").strip()
+            if not prompt:
+                out = {"reply_type": "text", "text": "No pending prompt. Send: imagen <prompt>"}
+                _append_message(conversation_id, "assistant", out["text"])
+                return out
+            tool_name = "mcp-imagen-light_1mcp_imagen_generate"
+            allowed = _allowed_tools_for_user(user_id)
+            if allowed and tool_name not in allowed:
+                out = {"reply_type": "text", "text": "Image tool not allowed."}
+                _append_message(conversation_id, "assistant", out["text"])
+                return out
+            args: Dict[str, Any] = {"prompt": prompt}
+            if MCP_ASSISTANT_IMAGEN_SET_SIZE:
+                args["width"] = int(MCP_ASSISTANT_IMAGEN_WIDTH)
+                args["height"] = int(MCP_ASSISTANT_IMAGEN_HEIGHT)
+            args["approved"] = True
+            try:
+                res = await _invoke_1mcp(tool_name, args, conversation_id, user_id)
+                job = _extract_imagen_job_from_1mcp_result(res)
+                if job:
+                    record: Dict[str, Any] = {**job, "status": "submitted", "createdAt": _utc_ts()}
+                    lst = _imagen_jobs_by_conversation.get(cid)
+                    if lst is None:
+                        lst = []
+                        _imagen_jobs_by_conversation[cid] = lst
+                    lst.append(record)
+                    if len(lst) > 50:
+                        del lst[: max(0, len(lst) - 50)]
+                    _imagen_last_job_by_conversation[cid] = job
+                    _imagen_pending_by_conversation.pop(cid, None)
+                    out = {
+                        "reply_type": "image_job",
+                        "text": "Image job started.",
+                        **job,
+                    }
+                    _append_message(conversation_id, "assistant", out["text"])
+                    return out
+                url = _extract_url_from_1mcp_result(res)
+                if url:
+                    _imagen_pending_by_conversation.pop(cid, None)
+                    out = {"reply_type": "image", "text": url, "url": url}
+                    _append_message(conversation_id, "assistant", url)
+                    return out
+                out = {"reply_type": "text", "text": "Started, but no job info returned."}
+                _append_message(conversation_id, "assistant", out["text"])
+                return out
+            except Exception as exc:
+                msg = str(exc)
+                logger.warning("imagen_call_failed: %s", msg)
+                out = {"reply_type": "text", "text": f"Image generation failed: {msg}"}
+                _append_message(conversation_id, "assistant", out["text"][:2000])
+                return out
+
+        if rest:
+            pending = {
+                "prompt": rest,
+                "width": int(MCP_ASSISTANT_IMAGEN_WIDTH) if MCP_ASSISTANT_IMAGEN_SET_SIZE else None,
+                "height": int(MCP_ASSISTANT_IMAGEN_HEIGHT) if MCP_ASSISTANT_IMAGEN_SET_SIZE else None,
+                "updatedAt": _utc_ts(),
+            }
+            _imagen_pending_by_conversation[cid] = pending
+            msg = "Ready. Click: imagen approve / imagen refine / imagen cancel / imagen status / imagen help"
+            out = {"reply_type": "text", "text": msg}
+            _append_message(conversation_id, "assistant", out["text"])
+            return out
+
+        pending = _imagen_pending_by_conversation.get(cid) or {}
+        prompt = str(pending.get("prompt") or "").strip()
+        if prompt:
+            out = {"reply_type": "text", "text": "Pending prompt exists. Click: imagen approve / imagen refine / imagen cancel"}
+        else:
+            out = {"reply_type": "text", "text": "Send: imagen <prompt>"}
+        _append_message(conversation_id, "assistant", out["text"])
+        return out
     wants_image = any(
         k in lowered
         for k in (
@@ -474,37 +702,19 @@ async def _agent_reply(*, text: str, conversation_id: str, user_id: str) -> Dict
     )
 
     if wants_image:
-        tool_name = "mcp-imagen-light_1mcp_imagen_generate"
-        allowed = _allowed_tools_for_user(user_id)
-        if (not allowed) or (tool_name in allowed):
-            args: Dict[str, Any] = {"prompt": cleaned}
-            if MCP_ASSISTANT_IMAGEN_SET_SIZE:
-                args["width"] = int(MCP_ASSISTANT_IMAGEN_WIDTH)
-                args["height"] = int(MCP_ASSISTANT_IMAGEN_HEIGHT)
-            try:
-                res = await _invoke_1mcp(tool_name, args, conversation_id, user_id)
-
-                job = _extract_imagen_job_from_1mcp_result(res)
-                if job:
-                    out = {
-                        "reply_type": "image_job",
-                        "text": "Image job started.",
-                        **job,
-                    }
-                    _append_message(conversation_id, "assistant", out["text"])
-                    return out
-
-                url = _extract_url_from_1mcp_result(res)
-                if url:
-                    out = {"reply_type": "image", "text": url, "url": url}
-                    _append_message(conversation_id, "assistant", url)
-                    return out
-            except Exception as exc:
-                msg = str(exc)
-                logger.warning("imagen_call_failed: %s", msg)
-                out = {"reply_type": "text", "text": f"Image generation failed: {msg}"}
-                _append_message(conversation_id, "assistant", out["text"][:2000])
-                return out
+        pending = {
+            "prompt": cleaned,
+            "width": int(MCP_ASSISTANT_IMAGEN_WIDTH) if MCP_ASSISTANT_IMAGEN_SET_SIZE else None,
+            "height": int(MCP_ASSISTANT_IMAGEN_HEIGHT) if MCP_ASSISTANT_IMAGEN_SET_SIZE else None,
+            "updatedAt": _utc_ts(),
+        }
+        _imagen_pending_by_conversation[cid] = pending
+        out = {
+            "reply_type": "text",
+            "text": "Ready. Click: imagen approve / imagen refine / imagen cancel / imagen status / imagen help",
+        }
+        _append_message(conversation_id, "assistant", out["text"])
+        return out
 
     # For now: single-step tool choice.
     # Output must be STRICT JSON. This is intentionally narrow for dev stability.
