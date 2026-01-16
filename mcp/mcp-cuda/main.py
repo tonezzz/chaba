@@ -768,24 +768,28 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                 print(f"[DEBUG] SD1.5 output: {out}", flush=True)
 
             img = out.images[0]
+            img_np_u8: Optional[np.ndarray] = None
             if isinstance(img, np.ndarray):
                 arr = img
-                try:
-                    if arr.size and bool(np.isnan(arr).any()):
-                        nan_count = int(np.isnan(arr).sum())
-                        print(f"[ERROR] SD output contains NaNs: nan_count={nan_count}", flush=True)
-                        raise RuntimeError("nan_output")
-                    arr = np.nan_to_num(arr, nan=0.0, posinf=1.0, neginf=0.0)
-                    # Diffusers typically returns float images in [0, 1]. Some pipelines may output [0, 255].
-                    maxv = float(np.max(arr)) if arr.size else 0.0
-                    if maxv > 1.5:
-                        arr_u8 = np.clip(arr, 0.0, 255.0).round().astype(np.uint8)
-                    else:
-                        arr_u8 = (np.clip(arr, 0.0, 1.0) * 255.0).round().astype(np.uint8)
-                    if arr_u8.ndim == 3 and arr_u8.shape[-1] in (3, 4):
-                        img = Image.fromarray(arr_u8)
-                except Exception:
-                    pass
+                if arr.ndim == 4:
+                    arr = arr[0]
+                if arr.size and bool(np.isnan(arr).any()):
+                    nan_count = int(np.isnan(arr).sum())
+                    print(f"[ERROR] SD output contains NaNs: nan_count={nan_count}", flush=True)
+                    raise RuntimeError("nan_output")
+                arr = np.nan_to_num(arr, nan=0.0, posinf=1.0, neginf=0.0)
+                # Diffusers typically returns float images in [0, 1]. Some pipelines may output [0, 255].
+                maxv = float(np.max(arr)) if arr.size else 0.0
+                if maxv > 1.5:
+                    img_np_u8 = np.clip(arr, 0.0, 255.0).round().astype(np.uint8)
+                else:
+                    img_np_u8 = (np.clip(arr, 0.0, 1.0) * 255.0).round().astype(np.uint8)
+                if img_np_u8.ndim == 2:
+                    img_np_u8 = np.stack([img_np_u8, img_np_u8, img_np_u8], axis=-1)
+                if img_np_u8.ndim != 3 or img_np_u8.shape[-1] not in (3, 4):
+                    raise RuntimeError(f"invalid_output_image_shape: {getattr(img_np_u8, 'shape', None)}")
+                img = Image.fromarray(img_np_u8)
+
             nsfw_content_detected = None
             try:
                 nsfw_content_detected = getattr(out, "nsfw_content_detected", None)
@@ -797,7 +801,7 @@ def _run_imagen_job(job: _ImagenJob) -> None:
             pixel_mean = None
             try:
                 extrema = img.getextrema()
-                arr_u8 = np.asarray(img)
+                arr_u8 = img_np_u8 if isinstance(img_np_u8, np.ndarray) else np.asarray(img)
                 if arr_u8.size:
                     pixel_min = int(arr_u8.min())
                     pixel_max = int(arr_u8.max())
@@ -811,13 +815,21 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                 raise RuntimeError("suspicious_black_image")
             img_b64 = _encode_image_png_base64(img)
 
+            try:
+                width_out = int(img.width)
+                height_out = int(img.height)
+            except Exception:
+                # Should not happen (img should be a PIL image by now), but keep response robust.
+                width_out = int(job.spec.get("width") or 0)
+                height_out = int(job.spec.get("height") or 0)
+
             job.result = {
                 "model": using,
                 "mimeType": "image/png",
                 "imageBase64": img_b64,
                 "seed": int(seed),
-                "width": int(img.width),
-                "height": int(img.height),
+                "width": width_out,
+                "height": height_out,
                 "steps": steps,
                 **(trunc_info or {}),
                 "pixel_min": pixel_min,
