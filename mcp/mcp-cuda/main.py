@@ -397,6 +397,24 @@ def _get_sd15_img2img_pipeline() -> StableDiffusionImg2ImgPipeline:
 
 
 def _encode_image_png_base64(img: Image.Image) -> str:
+    if isinstance(img, np.ndarray):
+        arr = img
+        if arr.ndim == 4:
+            arr = arr[0]
+        if arr.ndim == 2:
+            arr = np.stack([arr, arr, arr], axis=-1)
+        if arr.ndim != 3 or arr.shape[-1] not in (3, 4):
+            raise ValueError(f"unsupported_numpy_image_shape: {getattr(arr, 'shape', None)}")
+        if arr.dtype != np.uint8:
+            maxv = float(np.nanmax(arr)) if arr.size else 0.0
+            if maxv <= 1.5:
+                arr_u8 = (np.clip(arr, 0.0, 1.0) * 255.0).round().astype(np.uint8)
+            else:
+                arr_u8 = np.clip(arr, 0.0, 255.0).round().astype(np.uint8)
+        else:
+            arr_u8 = arr
+        img = Image.fromarray(arr_u8)
+
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     return base64.b64encode(buf.getvalue()).decode("ascii")
@@ -1487,6 +1505,8 @@ async def imagen_jobs_events(job_id: str, after: int = 0, timeout: float = 20.0)
 
     async def _iter():
         last_seq = int(after or 0)
+        # Send an initial comment/padding to force intermediaries to flush the stream immediately.
+        yield ": ready\n" + (" " * 2048) + "\n\n"
         yield f"event: hello\ndata: {json.dumps({'jobId': job.job_id, 'after': last_seq})}\n\n"
         while True:
             events = job.wait_for_events(after_seq=last_seq, timeout_s=float(timeout or 20.0))
@@ -1505,7 +1525,14 @@ async def imagen_jobs_events(job_id: str, after: int = 0, timeout: float = 20.0)
                 if ev_type in ("done", "error"):
                     return
 
-    return StreamingResponse(_iter(), media_type="text/event-stream")
+    return StreamingResponse(
+        _iter(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @app.post("/imagen/preprocess")
