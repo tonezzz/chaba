@@ -710,6 +710,7 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                 with torch.inference_mode(), autocast_ctx:
                     print(f"[DEBUG] Inside torch inference context", flush=True)
                     prompt_str, trunc_info = _truncate_prompt_77(pipe, job.spec.get("prompt"))
+                    neg_prompt_str, neg_trunc_info = _truncate_prompt_77(pipe, job.spec.get("negative_prompt"))
                     ref_b64 = job.spec.get("reference_image_base64")
                     if isinstance(ref_b64, str) and ref_b64.strip():
                         img2img = _get_sd15_img2img_pipeline()
@@ -721,7 +722,7 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                             init_image = init_image.resize((w, h), Image.LANCZOS)
                         out = img2img(
                             prompt=prompt_str,
-                            negative_prompt=job.spec.get("negative_prompt"),
+                            negative_prompt=neg_prompt_str,
                             image=init_image,
                             width=w,
                             height=h,
@@ -735,7 +736,7 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                     else:
                         out = pipe(
                             prompt=prompt_str,
-                            negative_prompt=job.spec.get("negative_prompt"),
+                            negative_prompt=neg_prompt_str,
                             width=int(job.spec.get("width") or 1024),
                             height=int(job.spec.get("height") or 1024),
                             num_inference_steps=steps,
@@ -752,6 +753,10 @@ def _run_imagen_job(job: _ImagenJob) -> None:
             if isinstance(img, np.ndarray):
                 arr = img
                 try:
+                    if arr.size and bool(np.isnan(arr).any()):
+                        nan_count = int(np.isnan(arr).sum())
+                        print(f"[ERROR] SD output contains NaNs: nan_count={nan_count}", flush=True)
+                        raise RuntimeError("nan_output")
                     arr = np.nan_to_num(arr, nan=0.0, posinf=1.0, neginf=0.0)
                     # Diffusers typically returns float images in [0, 1]. Some pipelines may output [0, 255].
                     maxv = float(np.max(arr)) if arr.size else 0.0
