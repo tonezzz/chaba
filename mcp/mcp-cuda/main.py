@@ -520,6 +520,15 @@ def _sd15_latents_to_preview_png_base64(pipe: StableDiffusionPipeline, latents: 
         with torch.no_grad():
             lat_f32 = latents.detach().float()
 
+            # If latents contain NaN/inf, skip decoding to avoid noisy warnings
+            # from downstream numpy/uint8 conversions.
+            try:
+                if bool(torch.isnan(lat_f32).any()) or bool(torch.isinf(lat_f32).any()):
+                    print("[WARN] SD15 preview skipped (latents contain NaN/inf)", flush=True)
+                    return None
+            except Exception:
+                pass
+
             try:
                 if lat_f32.numel() > 0:
                     print(
@@ -702,6 +711,20 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                 def _cb_sd15(pipe, step, timestep, kwargs):
                     print(f"[DEBUG] SD1.5 callback - step: {step}", flush=True)
                     job.progress = {"step": min(int(step) + 1, steps), "steps": steps}
+
+                    # Early abort if latents become non-finite.
+                    try:
+                        lat = (kwargs or {}).get("latents")
+                        if torch.is_tensor(lat):
+                            lat_f32 = lat.detach().float()
+                            if bool(torch.isnan(lat_f32).any()) or bool(torch.isinf(lat_f32).any()):
+                                print("[ERROR] SD1.5 latents contain NaN/inf; aborting early", flush=True)
+                                raise RuntimeError("nan_latents")
+                    except RuntimeError:
+                        raise
+                    except Exception:
+                        pass
+
                     every = int(MCP_CUDA_PREVIEW_EVERY_N_STEPS or 0)
                     if every > 0 and (int(job.progress.get("step") or 0) % every == 0):
                         print(f"[DEBUG] Generating preview for step {step}", flush=True)
