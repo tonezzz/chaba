@@ -308,17 +308,42 @@ async def _startup() -> None:
 
 @app.get("/health")
 async def health() -> Dict[str, Any]:
+    cuda_ok = False
+    cuda_status_code: Optional[int] = None
+    cuda_error: Optional[str] = None
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
             r = await client.get(f"{MCP_CUDA_URL}/health")
+            cuda_status_code = int(r.status_code)
             cuda_ok = r.status_code == 200
-    except Exception:
+            if not cuda_ok:
+                cuda_error = (r.text or "").strip()[:500] or f"http_{r.status_code}"
+    except Exception as exc:
         cuda_ok = False
+        cuda_error = str(exc)[:500]
+
+    queue_ok = True
+    queue_error: Optional[str] = None
+    queue_jobs: Optional[int] = None
+    if IMAGEN_LIGHT_QUEUE_ENABLE:
+        try:
+            conn = _get_queue_conn()
+            cur = conn.execute("SELECT COUNT(*) FROM imagen_jobs")
+            queue_jobs = int((cur.fetchone() or [0])[0] or 0)
+        except Exception as exc:
+            queue_ok = False
+            queue_error = str(exc)[:500]
     return {
-        "status": "ok" if cuda_ok else "degraded",
+        "status": "ok" if (cuda_ok and queue_ok) else "degraded",
         "service": APP_NAME,
         "version": APP_VERSION,
         "mcp_cuda": cuda_ok,
+        "cuda_status_code": cuda_status_code,
+        "cuda_error": cuda_error,
+        "queue_enabled": bool(IMAGEN_LIGHT_QUEUE_ENABLE),
+        "queue_ok": queue_ok,
+        "queue_error": queue_error,
+        "queue_jobs": queue_jobs,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -654,10 +679,22 @@ async def imagen_jobs_events(job_id: str, after: int = 0):
     async def _iter():
         last_seq = int(after or 0)
         yield f"event: hello\ndata: {json.dumps({'jobId': job_id, 'after': last_seq})}\n\n"
+        queue_job_id = None
+        queue_row: Optional[Dict[str, Any]] = None
+        cuda_job_id = job_id
+        if IMAGEN_LIGHT_QUEUE_ENABLE:
+            q = _queue_job_get(job_id)
+            if isinstance(q, dict):
+                queue_row = q
+                queue_job_id = job_id
+                cuda_job_id = str(q.get("cuda_job_id") or "").strip()
+                if not cuda_job_id:
+                    yield f"event: progress\ndata: {json.dumps({'seq': last_seq, 'type': 'progress', 'progress': None, 'queueStatus': str(q.get('status') or 'queued')})}\n\n"
+                    return
         while True:
             try:
                 async with httpx.AsyncClient(timeout=20) as client:
-                    r = await client.get(f"{MCP_CUDA_URL}/imagen/jobs/{job_id}/events?after={last_seq}")
+                    r = await client.get(f"{MCP_CUDA_URL}/imagen/jobs/{cuda_job_id}/events?after={last_seq}")
                     if r.status_code == 200:
                         async for line in r.aiter_lines():
                             if line.startswith("data: "):
@@ -671,6 +708,18 @@ async def imagen_jobs_events(job_id: str, after: int = 0):
                                     pass
                             elif line.startswith("event: "):
                                 yield line + "\n"
+                    elif r.status_code == 404:
+                        if IMAGEN_LIGHT_QUEUE_ENABLE and queue_job_id and isinstance(queue_row, dict):
+                            prev_attempts = int(queue_row.get("attempts") or 0)
+                            _queue_job_update(
+                                job_id=queue_job_id,
+                                status="queued",
+                                cuda_job_id=None,
+                                last_error="cuda_job_not_found_requeued",
+                                attempts=prev_attempts,
+                            )
+                        yield "event: error\ndata: {\"message\":\"job_not_found\"}\n\n"
+                        return
                     else:
                         yield "event: error\ndata: {\"message\":\"cuda_unreachable\"}\n\n"
                         return
