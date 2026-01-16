@@ -451,48 +451,47 @@ def _latents_to_preview_png_base64(pipe: StableDiffusionXLPipeline, latents: Any
         return None
     try:
         with torch.no_grad():
-            scaling_factor = float(getattr(pipe.vae.config, "scaling_factor", 1.0) or 1.0)
-            scaled = latents / scaling_factor
+            lat_f32 = latents.detach().float()
 
-            # Diagnostics: if preview looks constant/black, dump quick stats to logs.
+            # Diagnostics: latents stats.
             try:
-                lt = latents.detach().float()
-                scaled_t = scaled.detach().float()
-                if lt.numel() > 0:
+                if lat_f32.numel() > 0:
                     print(
-                        f"[DEBUG] SDXL preview latents stats: min={float(lt.min()):.4f} max={float(lt.max()):.4f} mean={float(lt.mean()):.4f} std={float(lt.std()):.4f} has_nan={bool(torch.isnan(lt).any())} has_inf={bool(torch.isinf(lt).any())}",
-                        flush=True,
-                    )
-                if scaled_t.numel() > 0:
-                    print(
-                        f"[DEBUG] SDXL preview scaled stats: min={float(scaled_t.min()):.4f} max={float(scaled_t.max()):.4f} mean={float(scaled_t.mean()):.4f} std={float(scaled_t.std()):.4f}",
+                        f"[DEBUG] SDXL preview latents stats: min={float(lat_f32.min()):.4f} max={float(lat_f32.max()):.4f} mean={float(lat_f32.mean()):.4f} std={float(lat_f32.std()):.4f} has_nan={bool(torch.isnan(lat_f32).any())} has_inf={bool(torch.isinf(lat_f32).any())}",
                         flush=True,
                     )
             except Exception:
                 pass
 
-            decoded = pipe.vae.decode(scaled, return_dict=False)[0]
-            image = (decoded / 2 + 0.5).clamp(0, 1)
-
+            # Prefer pipeline's own decode path when available.
+            pil = None
             try:
-                img_t = image.detach().float()
-                if img_t.numel() > 0:
-                    img_min = float(img_t.min())
-                    img_max = float(img_t.max())
-                    img_mean = float(img_t.mean())
-                    img_std = float(img_t.std())
-                    # Only print the expensive diagnostics when it looks suspiciously constant.
-                    if img_max <= 1e-6 or img_std <= 1e-6:
-                        print(
-                            f"[WARN] SDXL preview image looks constant/black: min={img_min:.6f} max={img_max:.6f} mean={img_mean:.6f} std={img_std:.6f}",
-                            flush=True,
-                        )
+                decode_latents = getattr(pipe, "decode_latents", None)
+                if callable(decode_latents):
+                    img_np = decode_latents(lat_f32)
+                    # decode_latents usually returns NHWC float in [0,1]
+                    pil = pipe.image_processor.numpy_to_pil(img_np)[0]
             except Exception:
-                pass
+                pil = None
 
-            image = image.detach().float().cpu()
-            image = image.permute(0, 2, 3, 1).numpy()
-            pil = pipe.image_processor.numpy_to_pil(image)[0]
+            if pil is None:
+                scaling_factor = float(getattr(pipe.vae.config, "scaling_factor", 1.0) or 1.0)
+                scaled = lat_f32 / scaling_factor
+                decoded = pipe.vae.decode(scaled.to(device=pipe.vae.device), return_dict=False)[0]
+                image = (decoded / 2 + 0.5).clamp(0, 1)
+                image = image.detach().float().cpu()
+                image = image.permute(0, 2, 3, 1).numpy()
+                pil = pipe.image_processor.numpy_to_pil(image)[0]
+
+        # Suppress meaningless black previews (these cause useless cached preview images in imagen-light/LINE).
+        try:
+            extrema = pil.convert("L").getextrema()
+            if isinstance(extrema, tuple) and len(extrema) == 2 and int(extrema[1]) == 0:
+                print("[WARN] SDXL preview suppressed (decoded preview is constant black)", flush=True)
+                return None
+        except Exception:
+            pass
+
         max_size = int(SDXL_PREVIEW_MAX_SIZE or 0)
         if max_size > 0:
             pil.thumbnail((max_size, max_size), Image.LANCZOS)
@@ -506,40 +505,43 @@ def _sd15_latents_to_preview_png_base64(pipe: StableDiffusionPipeline, latents: 
         return None
     try:
         with torch.no_grad():
-            scaling_factor = float(getattr(pipe.vae.config, "scaling_factor", 1.0) or 1.0)
-            scaled = latents / scaling_factor
+            lat_f32 = latents.detach().float()
 
             try:
-                lt = latents.detach().float()
-                if lt.numel() > 0:
+                if lat_f32.numel() > 0:
                     print(
-                        f"[DEBUG] SD15 preview latents stats: min={float(lt.min()):.4f} max={float(lt.max()):.4f} mean={float(lt.mean()):.4f} std={float(lt.std()):.4f} has_nan={bool(torch.isnan(lt).any())} has_inf={bool(torch.isinf(lt).any())}",
+                        f"[DEBUG] SD15 preview latents stats: min={float(lat_f32.min()):.4f} max={float(lat_f32.max()):.4f} mean={float(lat_f32.mean()):.4f} std={float(lat_f32.std()):.4f} has_nan={bool(torch.isnan(lat_f32).any())} has_inf={bool(torch.isinf(lat_f32).any())}",
                         flush=True,
                     )
             except Exception:
                 pass
 
-            decoded = pipe.vae.decode(scaled, return_dict=False)[0]
-            image = (decoded / 2 + 0.5).clamp(0, 1)
-
+            pil = None
             try:
-                img_t = image.detach().float()
-                if img_t.numel() > 0:
-                    img_min = float(img_t.min())
-                    img_max = float(img_t.max())
-                    img_mean = float(img_t.mean())
-                    img_std = float(img_t.std())
-                    if img_max <= 1e-6 or img_std <= 1e-6:
-                        print(
-                            f"[WARN] SD15 preview image looks constant/black: min={img_min:.6f} max={img_max:.6f} mean={img_mean:.6f} std={img_std:.6f}",
-                            flush=True,
-                        )
+                decode_latents = getattr(pipe, "decode_latents", None)
+                if callable(decode_latents):
+                    img_np = decode_latents(lat_f32)
+                    pil = pipe.image_processor.numpy_to_pil(img_np)[0]
             except Exception:
-                pass
+                pil = None
 
-            image = image.detach().float().cpu()
-            image = image.permute(0, 2, 3, 1).numpy()
-            pil = pipe.image_processor.numpy_to_pil(image)[0]
+            if pil is None:
+                scaling_factor = float(getattr(pipe.vae.config, "scaling_factor", 1.0) or 1.0)
+                scaled = lat_f32 / scaling_factor
+                decoded = pipe.vae.decode(scaled.to(device=pipe.vae.device), return_dict=False)[0]
+                image = (decoded / 2 + 0.5).clamp(0, 1)
+                image = image.detach().float().cpu()
+                image = image.permute(0, 2, 3, 1).numpy()
+                pil = pipe.image_processor.numpy_to_pil(image)[0]
+
+        try:
+            extrema = pil.convert("L").getextrema()
+            if isinstance(extrema, tuple) and len(extrema) == 2 and int(extrema[1]) == 0:
+                print("[WARN] SD15 preview suppressed (decoded preview is constant black)", flush=True)
+                return None
+        except Exception:
+            pass
+
         max_size = int(SDXL_PREVIEW_MAX_SIZE or 0)
         if max_size > 0:
             pil.thumbnail((max_size, max_size), Image.LANCZOS)
