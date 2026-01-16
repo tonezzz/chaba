@@ -14,6 +14,7 @@ import time
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+import traceback
 
 import numpy as np
 from fastapi import Body, FastAPI, HTTPException
@@ -401,14 +402,94 @@ def _encode_image_png_base64(img: Image.Image) -> str:
     return base64.b64encode(buf.getvalue()).decode("ascii")
 
 
+def _truncate_prompt_77(pipe: Any, prompt: Any) -> (str, Dict[str, Any]):
+    p = str(prompt or "")
+    used_tokens = 77
+    try:
+        tok = getattr(pipe, "tokenizer", None)
+        tok2 = getattr(pipe, "tokenizer_2", None)
+        if tok is None and tok2 is None:
+            return p, {"prompt_truncated": False, "original_tokens": None, "used_tokens": used_tokens}
+
+        def _count_tokens(t):
+            if t is None:
+                return None
+            ids_full = t(p, truncation=False, add_special_tokens=True).input_ids
+            ids_trunc = t(p, truncation=True, max_length=used_tokens, add_special_tokens=True).input_ids
+            full_len = len(ids_full[0]) if ids_full and len(ids_full) > 0 else 0
+            trunc_len = len(ids_trunc[0]) if ids_trunc and len(ids_trunc) > 0 else 0
+            return full_len, trunc_len, ids_trunc
+
+        full1 = trunc1 = 0
+        ids_trunc = None
+        c1 = _count_tokens(tok)
+        if c1 is not None:
+            full1, trunc1, ids_trunc = c1
+
+        full2 = trunc2 = 0
+        c2 = _count_tokens(tok2)
+        if c2 is not None:
+            full2, trunc2, _ = c2
+
+        original_tokens = max(int(full1 or 0), int(full2 or 0))
+        prompt_truncated = bool(original_tokens > int(used_tokens))
+
+        if prompt_truncated and ids_trunc is not None:
+            try:
+                t = tok or tok2
+                p = t.decode(ids_trunc[0], skip_special_tokens=True)
+            except Exception:
+                pass
+
+        return p, {"prompt_truncated": prompt_truncated, "original_tokens": original_tokens, "used_tokens": used_tokens}
+    except Exception:
+        return p, {"prompt_truncated": False, "original_tokens": None, "used_tokens": used_tokens}
+
+
 def _latents_to_preview_png_base64(pipe: StableDiffusionXLPipeline, latents: Any) -> Optional[str]:
     if latents is None or not torch.is_tensor(latents):
         return None
     try:
         with torch.no_grad():
-            scaled = latents / float(getattr(pipe.vae.config, "scaling_factor", 1.0) or 1.0)
+            scaling_factor = float(getattr(pipe.vae.config, "scaling_factor", 1.0) or 1.0)
+            scaled = latents / scaling_factor
+
+            # Diagnostics: if preview looks constant/black, dump quick stats to logs.
+            try:
+                lt = latents.detach().float()
+                scaled_t = scaled.detach().float()
+                if lt.numel() > 0:
+                    print(
+                        f"[DEBUG] SDXL preview latents stats: min={float(lt.min()):.4f} max={float(lt.max()):.4f} mean={float(lt.mean()):.4f} std={float(lt.std()):.4f} has_nan={bool(torch.isnan(lt).any())} has_inf={bool(torch.isinf(lt).any())}",
+                        flush=True,
+                    )
+                if scaled_t.numel() > 0:
+                    print(
+                        f"[DEBUG] SDXL preview scaled stats: min={float(scaled_t.min()):.4f} max={float(scaled_t.max()):.4f} mean={float(scaled_t.mean()):.4f} std={float(scaled_t.std()):.4f}",
+                        flush=True,
+                    )
+            except Exception:
+                pass
+
             decoded = pipe.vae.decode(scaled, return_dict=False)[0]
             image = (decoded / 2 + 0.5).clamp(0, 1)
+
+            try:
+                img_t = image.detach().float()
+                if img_t.numel() > 0:
+                    img_min = float(img_t.min())
+                    img_max = float(img_t.max())
+                    img_mean = float(img_t.mean())
+                    img_std = float(img_t.std())
+                    # Only print the expensive diagnostics when it looks suspiciously constant.
+                    if img_max <= 1e-6 or img_std <= 1e-6:
+                        print(
+                            f"[WARN] SDXL preview image looks constant/black: min={img_min:.6f} max={img_max:.6f} mean={img_mean:.6f} std={img_std:.6f}",
+                            flush=True,
+                        )
+            except Exception:
+                pass
+
             image = image.detach().float().cpu()
             image = image.permute(0, 2, 3, 1).numpy()
             pil = pipe.image_processor.numpy_to_pil(image)[0]
@@ -425,9 +506,37 @@ def _sd15_latents_to_preview_png_base64(pipe: StableDiffusionPipeline, latents: 
         return None
     try:
         with torch.no_grad():
-            scaled = latents / float(getattr(pipe.vae.config, "scaling_factor", 1.0) or 1.0)
+            scaling_factor = float(getattr(pipe.vae.config, "scaling_factor", 1.0) or 1.0)
+            scaled = latents / scaling_factor
+
+            try:
+                lt = latents.detach().float()
+                if lt.numel() > 0:
+                    print(
+                        f"[DEBUG] SD15 preview latents stats: min={float(lt.min()):.4f} max={float(lt.max()):.4f} mean={float(lt.mean()):.4f} std={float(lt.std()):.4f} has_nan={bool(torch.isnan(lt).any())} has_inf={bool(torch.isinf(lt).any())}",
+                        flush=True,
+                    )
+            except Exception:
+                pass
+
             decoded = pipe.vae.decode(scaled, return_dict=False)[0]
             image = (decoded / 2 + 0.5).clamp(0, 1)
+
+            try:
+                img_t = image.detach().float()
+                if img_t.numel() > 0:
+                    img_min = float(img_t.min())
+                    img_max = float(img_t.max())
+                    img_mean = float(img_t.mean())
+                    img_std = float(img_t.std())
+                    if img_max <= 1e-6 or img_std <= 1e-6:
+                        print(
+                            f"[WARN] SD15 preview image looks constant/black: min={img_min:.6f} max={img_max:.6f} mean={img_mean:.6f} std={img_std:.6f}",
+                            flush=True,
+                        )
+            except Exception:
+                pass
+
             image = image.detach().float().cpu()
             image = image.permute(0, 2, 3, 1).numpy()
             pil = pipe.image_processor.numpy_to_pil(image)[0]
@@ -525,33 +634,42 @@ def _run_imagen_job(job: _ImagenJob) -> None:
         job.progress = {"step": 0, "steps": steps}
         
         autocast_ctx = torch.autocast(device_type="cuda") if torch.cuda.is_available() else contextlib.nullcontext()
+        trunc_info: Dict[str, Any] = {"prompt_truncated": False, "original_tokens": None, "used_tokens": 77}
         with autocast_ctx:
             if using == "sdxl":
+                prompt_str, trunc_info = _truncate_prompt_77(pipe, job.spec.get("prompt"))
                 def _cb(_pipe, step_idx: int, _timestep, _kwargs):
                     job.progress = {"step": int(step_idx) + 1, "steps": steps}
                     every = int(MCP_CUDA_PREVIEW_EVERY_N_STEPS or 0)
                     if every > 0 and (int(job.progress.get("step") or 0) % every == 0):
-                        b64 = _latents_to_preview_png_base64(pipe, (_kwargs or {}).get("latents"))
-                        if isinstance(b64, str) and b64:
-                            payload = {
-                                "jobId": job.job_id,
-                                "status": job.status,
-                                "progress": job.progress,
-                                "mimeType": "image/png",
-                                "imageBase64": b64,
-                            }
-                            job.preview = payload
-                            job.add_event({"type": "preview", "preview": payload})
-                    job.add_event(
-                        {
-                            "type": "progress",
-                            "progress": job.progress,
-                        }
-                    )
+                        print(f"[DEBUG] Generating SDXL preview for step {step_idx}", flush=True)
+                        try:
+                            latents = (_kwargs or {}).get("latents")
+                            if latents is None:
+                                print("[WARNING] No latents available for preview generation", flush=True)
+                                return {}
+                                
+                            b64 = _latents_to_preview_png_base64(pipe, latents)
+                            if isinstance(b64, str) and b64:
+                                payload = {
+                                    "jobId": job.job_id,
+                                    "status": job.status,
+                                    "progress": job.progress,
+                                    "mimeType": "image/png",
+                                    "imageBase64": b64,
+                                }
+                                job.preview = payload
+                                job.add_event({"type": "preview", "preview": payload})
+                                print(f"[DEBUG] SDXL preview generated for step {step_idx}", flush=True)
+                        except Exception as e:
+                            print(f"[ERROR] Failed to generate SDXL preview: {str(e)}", flush=True)
+                            print(traceback.format_exc(), flush=True)
+                    
+                    job.add_event({"type": "progress", "progress": job.progress})
                     return {}
 
                 out = pipe(
-                    prompt=str(job.spec.get("prompt") or ""),
+                    prompt=prompt_str,
                     negative_prompt=job.spec.get("negative_prompt"),
                     width=int(job.spec.get("width") or 1024),
                     height=int(job.spec.get("height") or 1024),
@@ -589,6 +707,7 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                 print(f"[DEBUG] Before SD1.5 pipe() call", flush=True)
                 with torch.inference_mode(), autocast_ctx:
                     print(f"[DEBUG] Inside torch inference context", flush=True)
+                    prompt_str, trunc_info = _truncate_prompt_77(pipe, job.spec.get("prompt"))
                     ref_b64 = job.spec.get("reference_image_base64")
                     if isinstance(ref_b64, str) and ref_b64.strip():
                         img2img = _get_sd15_img2img_pipeline()
@@ -599,10 +718,11 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                         if init_image.size != (w, h):
                             init_image = init_image.resize((w, h), Image.LANCZOS)
                         out = img2img(
-                            prompt=str(job.spec.get("prompt") or ""),
+                            prompt=prompt_str,
                             negative_prompt=job.spec.get("negative_prompt"),
                             image=init_image,
-                            strength=float(job.spec.get("strength") or 0.75),
+                            width=w,
+                            height=h,
                             num_inference_steps=steps,
                             guidance_scale=float(job.spec.get("guidance_scale") or 7.0),
                             generator=generator,
@@ -612,7 +732,7 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                         )
                     else:
                         out = pipe(
-                            prompt=str(job.spec.get("prompt") or ""),
+                            prompt=prompt_str,
                             negative_prompt=job.spec.get("negative_prompt"),
                             width=int(job.spec.get("width") or 1024),
                             height=int(job.spec.get("height") or 1024),
@@ -674,6 +794,7 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                 "width": int(img.width),
                 "height": int(img.height),
                 "steps": steps,
+                **(trunc_info or {}),
                 "pixel_min": pixel_min,
                 "pixel_max": pixel_max,
                 "pixel_mean": pixel_mean,
@@ -1331,12 +1452,14 @@ async def imagen_jobs_preview_get(job_id: str) -> Dict[str, Any]:
             "status": job.status,
             "progress": job.progress,
         }
+    # Important: job.preview may contain stale fields like status="running".
+    # Always override with the authoritative job.status/job.progress.
     out = {
         "jobId": job.job_id,
         "available": True,
+        **job.preview,
         "status": job.status,
         "progress": job.progress,
-        **job.preview,
     }
     return out
 
