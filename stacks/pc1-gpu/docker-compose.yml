@@ -44,6 +44,47 @@ services:
       timeout: 5s
       retries: 3
 
+  mcp-sana:
+    <<: *default-service
+    build:
+      context: ${MCP_SANA_BUILD_CONTEXT:-../../mcp/mcp-sana}
+    container_name: pc1-gpu-mcp-sana
+    ports:
+      - "8070:8070"
+    environment:
+      - PORT=8070
+      - MCP_SANA_INSTANCE_ID=mcp-sana-${CONTAINER_ID:-default}
+      - MCP_SANA_MODEL_ID=${MCP_SANA_MODEL_ID:-Efficient-Large-Model/SANA1.5_1.6B_1024px_diffusers}
+      - MCP_SANA_DTYPE=${MCP_SANA_DTYPE:-bf16}
+      - MCP_SANA_MAX_CONCURRENT_JOBS=${MCP_SANA_MAX_CONCURRENT_JOBS:-1}
+      - MCP_SANA_MAX_DIMENSION=${MCP_SANA_MAX_DIMENSION:-1024}
+      - MCP_SANA_MAX_PIXELS=${MCP_SANA_MAX_PIXELS:-1048576}
+      - MCP_SANA_MAX_STEPS=${MCP_SANA_MAX_STEPS:-60}
+      - MCP_SANA_DEFAULT_STEPS=${MCP_SANA_DEFAULT_STEPS:-20}
+      - HF_HOME=/data/hf
+      - HUGGINGFACE_HUB_CACHE=/data/hf/hub
+      - TRANSFORMERS_CACHE=/data/hf/transformers
+      - HF_HUB_ETAG_TIMEOUT=60
+      - HF_HUB_DOWNLOAD_TIMEOUT=600
+      - HF_HUB_DISABLE_TELEMETRY=1
+    volumes:
+      - pc1-gpu-hf-cache:/data/hf
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: ${MCP_SANA_GPU_COUNT:-1}
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8070/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
 networks:
   pc1-gpu-net:
     driver: bridge
+
+volumes:
+  pc1-gpu-hf-cache:

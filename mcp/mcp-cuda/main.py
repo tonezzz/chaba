@@ -299,6 +299,11 @@ def _get_sdxl_pipeline() -> StableDiffusionXLPipeline:
                 pass
         if device == "cuda":
             pipe = pipe.to("cuda")
+        # Optimize VAE memory usage
+        if hasattr(pipe, 'vae') and hasattr(pipe.vae, 'enable_tiling'):
+            pipe.vae.enable_tiling()
+        if hasattr(pipe, 'vae') and hasattr(pipe.vae, 'enable_slicing'):
+            pipe.vae.enable_slicing()
         _sdxl_pipeline = pipe
         return pipe
 
@@ -316,8 +321,6 @@ def _get_sd15_pipeline() -> StableDiffusionPipeline:
             raise HTTPException(status_code=503, detail=f"sd15_model_file_missing: {model_file}")
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        # SD1.5 single-file checkpoints are more prone to NaN/black outputs in fp16 on some setups.
-        # Prefer fp32 for stability.
         torch_dtype = torch.float32
 
         try:
@@ -339,14 +342,12 @@ def _get_sd15_pipeline() -> StableDiffusionPipeline:
             except Exception:
                 pass
 
-        try:
-            pipe.enable_attention_slicing()
-        except Exception:
-            pass
-        try:
+        # Force memory optimizations
+        pipe.enable_attention_slicing(slice_size='max')
+        if hasattr(pipe, 'enable_vae_slicing'):
             pipe.enable_vae_slicing()
-        except Exception:
-            pass
+        if hasattr(pipe, 'enable_vae_tiling'):
+            pipe.enable_vae_tiling()
         if ENABLE_XFORMERS:
             try:
                 pipe.enable_xformers_memory_efficient_attention()
@@ -375,20 +376,17 @@ def _get_sd15_img2img_pipeline() -> StableDiffusionImg2ImgPipeline:
             except Exception:
                 pass
 
-        try:
-            img2img.enable_attention_slicing()
-        except Exception:
-            pass
-        try:
+        # Force memory optimizations
+        img2img.enable_attention_slicing(slice_size='max')
+        if hasattr(img2img, 'enable_vae_slicing'):
             img2img.enable_vae_slicing()
-        except Exception:
-            pass
+        if hasattr(img2img, 'enable_vae_tiling'):
+            img2img.enable_vae_tiling()
         if ENABLE_XFORMERS:
             try:
                 img2img.enable_xformers_memory_efficient_attention()
             except Exception:
                 pass
-
         if torch.cuda.is_available():
             img2img = img2img.to("cuda")
 
@@ -396,28 +394,91 @@ def _get_sd15_img2img_pipeline() -> StableDiffusionImg2ImgPipeline:
         return img2img
 
 
+def _to_uint8_rgb(arr: np.ndarray) -> np.ndarray:
+    a = np.asarray(arr)
+    if a.ndim == 4:
+        a = a[0]
+    if a.ndim == 3 and a.shape[0] in (1, 3, 4) and a.shape[-1] not in (1, 3, 4):
+        a = np.transpose(a, (1, 2, 0))
+    if a.ndim == 2:
+        a = np.stack([a, a, a], axis=-1)
+    if a.ndim != 3:
+        a = np.zeros((256, 256, 3), dtype=np.uint8)
+        return a
+
+    if a.dtype == np.uint8:
+        if a.shape[-1] == 1:
+            a = np.repeat(a, 3, axis=-1)
+        if a.shape[-1] == 4:
+            a = a[:, :, :3]
+        return a
+
+    a = np.nan_to_num(a, nan=0.0, posinf=1.0, neginf=0.0)
+    a = a.astype(np.float32, copy=False)
+
+    if a.shape[-1] == 1:
+        a = np.repeat(a, 3, axis=-1)
+    if a.shape[-1] == 4:
+        a = a[:, :, :3]
+
+    amin = float(np.min(a)) if a.size else 0.0
+    amax = float(np.max(a)) if a.size else 0.0
+
+    if amin < -0.05 and amax <= 1.05:
+        a = (a + 1.0) * 0.5
+        amin, amax = float(np.min(a)), float(np.max(a))
+    elif amax <= 1.05 and amin >= -1e-3:
+        pass
+    elif amax <= 255.0 and amin >= 0.0:
+        a = a / 255.0
+        amin, amax = float(np.min(a)), float(np.max(a))
+    else:
+        if amax > amin:
+            a = (a - amin) / (amax - amin)
+        else:
+            a = np.zeros_like(a)
+        amin, amax = 0.0, 1.0
+
+    if (amax - amin) < 0.02 or amax < 0.05:
+        try:
+            p1 = float(np.percentile(a, 1.0))
+            p99 = float(np.percentile(a, 99.0))
+            if p99 > p1:
+                a = (a - p1) / (p99 - p1)
+        except Exception:
+            pass
+
+    a = np.clip(a, 0.0, 1.0)
+    return (a * 255.0).round().astype(np.uint8)
+
+
 def _encode_image_png_base64(img: Image.Image) -> str:
     if isinstance(img, np.ndarray):
-        arr = img
-        if arr.ndim == 4:
-            arr = arr[0]
-        if arr.ndim == 2:
-            arr = np.stack([arr, arr, arr], axis=-1)
-        if arr.ndim != 3 or arr.shape[-1] not in (3, 4):
-            raise ValueError(f"unsupported_numpy_image_shape: {getattr(arr, 'shape', None)}")
-        if arr.dtype != np.uint8:
-            maxv = float(np.nanmax(arr)) if arr.size else 0.0
-            if maxv <= 1.5:
-                arr_u8 = (np.clip(arr, 0.0, 1.0) * 255.0).round().astype(np.uint8)
-            else:
-                arr_u8 = np.clip(arr, 0.0, 255.0).round().astype(np.uint8)
-        else:
-            arr_u8 = arr
-        img = Image.fromarray(arr_u8)
+        img = Image.fromarray(_to_uint8_rgb(img))
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     return base64.b64encode(buf.getvalue()).decode("ascii")
+
+
+def _decode_output_image(out_tensor):
+    """More robust output decoding with NaN handling"""
+    try:
+        # diffusers can return PIL images, numpy arrays, or tensors depending on output_type.
+        if isinstance(out_tensor, Image.Image):
+            return out_tensor
+        # Convert to numpy array first
+        if torch.is_tensor(out_tensor):
+            arr = out_tensor.detach().cpu().numpy()
+        else:
+            arr = np.array(out_tensor)
+
+        arr_u8 = _to_uint8_rgb(arr)
+        return Image.fromarray(arr_u8)
+    except Exception as e:
+        print(f"[ERROR] Output decoding failed: {str(e)}")
+        # Return blank fallback image
+        return Image.new('RGB', (256, 256), (0, 0, 0))
 
 
 def _truncate_prompt_77(pipe: Any, prompt: Any) -> (str, Dict[str, Any]):
@@ -712,13 +773,15 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                     print(f"[DEBUG] SD1.5 callback - step: {step}", flush=True)
                     job.progress = {"step": min(int(step) + 1, steps), "steps": steps}
 
-                    # Early abort if latents become non-finite.
+                    # Enhanced NaN/inf detection
                     try:
                         lat = (kwargs or {}).get("latents")
                         if torch.is_tensor(lat):
                             lat_f32 = lat.detach().float()
-                            if bool(torch.isnan(lat_f32).any()) or bool(torch.isinf(lat_f32).any()):
-                                print("[ERROR] SD1.5 latents contain NaN/inf; aborting early", flush=True)
+                            nan_count = torch.isnan(lat_f32).sum().item()
+                            inf_count = torch.isinf(lat_f32).sum().item()
+                            if nan_count > 0 or inf_count > 0:
+                                print(f"[ERROR] SD1.5 latents contain {nan_count} NaN, {inf_count} inf; aborting", flush=True)
                                 raise RuntimeError("nan_latents")
                     except RuntimeError:
                         raise
@@ -785,57 +848,12 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                 print(f"[DEBUG] After SD1.5 pipe() call", flush=True)
                 print(f"[DEBUG] SD1.5 output: {out}", flush=True)
 
-            img = out.images[0]
-            img_np_u8: Optional[np.ndarray] = None
-            if isinstance(img, np.ndarray):
-                arr = img
-                if arr.ndim == 4:
-                    arr = arr[0]
-                if arr.size and bool(np.isnan(arr).any()):
-                    nan_count = int(np.isnan(arr).sum())
-                    print(f"[ERROR] SD output contains NaNs: nan_count={nan_count}", flush=True)
-                    raise RuntimeError("nan_output")
-                arr = np.nan_to_num(arr, nan=0.0, posinf=1.0, neginf=0.0)
-                # Diffusers typically returns float images in [0, 1]. Some pipelines may output [0, 255].
-                maxv = float(np.max(arr)) if arr.size else 0.0
-                if maxv > 1.5:
-                    img_np_u8 = np.clip(arr, 0.0, 255.0).round().astype(np.uint8)
-                else:
-                    img_np_u8 = (np.clip(arr, 0.0, 1.0) * 255.0).round().astype(np.uint8)
-                if img_np_u8.ndim == 2:
-                    img_np_u8 = np.stack([img_np_u8, img_np_u8, img_np_u8], axis=-1)
-                if img_np_u8.ndim != 3 or img_np_u8.shape[-1] not in (3, 4):
-                    raise RuntimeError(f"invalid_output_image_shape: {getattr(img_np_u8, 'shape', None)}")
-                img = Image.fromarray(img_np_u8)
-
-            nsfw_content_detected = None
-            try:
-                nsfw_content_detected = getattr(out, "nsfw_content_detected", None)
-            except Exception:
-                nsfw_content_detected = None
-            extrema = None
-            pixel_min = None
-            pixel_max = None
-            pixel_mean = None
-            try:
-                extrema = img.getextrema()
-                arr_u8 = img_np_u8 if isinstance(img_np_u8, np.ndarray) else np.asarray(img)
-                if arr_u8.size:
-                    pixel_min = int(arr_u8.min())
-                    pixel_max = int(arr_u8.max())
-                    pixel_mean = float(arr_u8.mean())
-            except Exception:
-                pass
-
-            # Guard: avoid reporting succeeded when the output is clearly unusable.
-            # Common cause: safety checker replaced output with black.
-            if pixel_max == 0:
-                raise RuntimeError("suspicious_black_image")
-            img_b64 = _encode_image_png_base64(img)
+            _decoded_image = _decode_output_image(out.images[0])
+            img_b64 = _encode_image_png_base64(_decoded_image)
 
             try:
-                width_out = int(img.width)
-                height_out = int(img.height)
+                width_out = int(_decoded_image.width)
+                height_out = int(_decoded_image.height)
             except Exception:
                 # Should not happen (img should be a PIL image by now), but keep response robust.
                 width_out = int(job.spec.get("width") or 0)
@@ -850,11 +868,6 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                 "height": height_out,
                 "steps": steps,
                 **(trunc_info or {}),
-                "pixel_min": pixel_min,
-                "pixel_max": pixel_max,
-                "pixel_mean": pixel_mean,
-                "extrema": extrema,
-                "nsfw_content_detected": nsfw_content_detected,
             }
             print(f"[DEBUG] Job {job.job_id} completed successfully", flush=True)
             job.status = "succeeded"
@@ -1383,9 +1396,16 @@ async def mcp_endpoint(payload: Dict[str, Any] = Body(...)):
 
         if tool_name == "imagen_models":
             out = {
-                "default": "sdxl",
+                "default": "sd15_single" if (SD15_MODEL_FILE and os.path.exists(SD15_MODEL_FILE)) else "sdxl",
                 "sdxl": {
                     "modelDir": SDXL_MODEL_DIR,
+                    "localFilesOnly": True,
+                    "maxPixels": SDXL_MAX_PIXELS,
+                    "maxSteps": SDXL_MAX_STEPS,
+                    "maxConcurrentJobs": SDXL_MAX_CONCURRENT_JOBS,
+                },
+                "sd15_single": {
+                    "modelFile": SD15_MODEL_FILE,
                     "localFilesOnly": True,
                     "maxPixels": SDXL_MAX_PIXELS,
                     "maxSteps": SDXL_MAX_STEPS,

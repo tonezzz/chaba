@@ -18,12 +18,20 @@
       "tags": ["pc1", "imagen", "sdxl"],
       "connectionTimeout": 60000,
       "requestTimeout": 300000,
-      "enabled": true
+      "enabled": false
     },
     "mcp-cuda": {
       "transport": "streamableHttp",
       "url": "http://host.docker.internal:8057/mcp",
       "tags": ["pc1", "gpu", "cuda"],
+      "connectionTimeout": 60000,
+      "requestTimeout": 300000,
+      "enabled": true
+    },
+    "mcp-sana": {
+      "transport": "streamableHttp",
+      "url": "http://pc1.vpn:8070/mcp",
+      "tags": ["pc1", "gpu", "sana"],
       "connectionTimeout": 60000,
       "requestTimeout": 300000,
       "enabled": true
@@ -80,7 +88,7 @@
       "transport": "streamableHttp",
       "url": "http://pc1.vpn:8270/mcp",
       "tags": ["pc1", "deka"],
-      "enabled": true
+      "enabled": false
     },
     "mcp-agents": {
       "transport": "streamableHttp",
