@@ -14,9 +14,9 @@ $StackScript = Join-Path $ScriptDir 'stack.ps1'
 
 $StackCommands = @{
     "ingress" = @{
-        "stack" = "pc1-web"
+        "stack" = "pc1-host-caddy"
         "profile" = ""
-        "description" = "Ingress + web UI (Caddy on :80/:443, mcp-webtops)"
+        "description" = "Ingress (Caddy on :80/:443)"
     }
     "mcp" = @{
         "stack" = "pc1-stack"
