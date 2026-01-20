@@ -7,6 +7,7 @@ import os
 import sqlite3
 import time
 import uuid
+import urllib.parse
 from typing import Any, Dict, List, Optional
 
 import httpx
@@ -456,14 +457,53 @@ async def _poll_imagen_job_and_push(*, line_user_id: str, job: Dict[str, Any]) -
     result_url = str(job.get("result_url") or "").strip()
 
     poll_base = str(os.getenv("MCP_LINE_IMAGEN_POLL_BASE_URL", "http://mcp-imagen-light:8020") or "").strip().rstrip("/")
+    public_base = str(os.getenv("MCP_LINE_IMAGEN_PUBLIC_BASE_URL", "https://line.idc1.surf-thailand.com") or "").strip().rstrip("/")
 
     def _rewrite_poll_url(u: str) -> str:
         u = (u or "").strip()
         if not u:
             return u
-        if (u.startswith("https://line.idc1.surf-thailand.com/") or u.startswith("http://line.idc1.surf-thailand.com/")) and "/imagen/" in u and poll_base:
+        if not poll_base:
+            return u
+
+        try:
+            parsed = urllib.parse.urlparse(u)
+        except Exception:
+            parsed = None
+
+        if parsed and parsed.scheme in ("http", "https") and parsed.netloc and parsed.path.startswith("/imagen/"):
+            rewritten = poll_base + parsed.path
+            if parsed.query:
+                rewritten += "?" + parsed.query
+            return rewritten
+
+        if (u.startswith("https://line.idc1.surf-thailand.com/") or u.startswith("http://line.idc1.surf-thailand.com/")) and "/imagen/" in u:
             path = u.split(".com", 1)[1]
             return poll_base + path
+
+        return u
+
+    def _ensure_https_image_url(*, kind: str, u: str) -> str:
+        kind = str(kind or "").strip().lower()
+        u = (u or "").strip()
+        if not u:
+            return u
+        if kind in ("preview", "result") and job_id and public_base:
+            # Ensure we always send a direct, cacheable image URL to LINE.
+            if "/imagen/" in u or u.endswith("/preview") or u.endswith("/result"):
+                if kind == "preview":
+                    u = f"{public_base}/images/preview_{job_id}.png"
+                else:
+                    u = f"{public_base}/images/{job_id}.png"
+        if u.startswith("http://") and public_base.startswith("https://"):
+            try:
+                parsed = urllib.parse.urlparse(u)
+                if parsed.scheme == "http" and parsed.netloc:
+                    u = "https://" + parsed.netloc + parsed.path
+                    if parsed.query:
+                        u += "?" + parsed.query
+            except Exception:
+                pass
         return u
 
     status_url = _rewrite_poll_url(status_url)
@@ -477,7 +517,7 @@ async def _poll_imagen_job_and_push(*, line_user_id: str, job: Dict[str, Any]) -
     max_previews = int(os.getenv("MCP_LINE_IMAGEN_MAX_PREVIEWS", "8"))
     max_seconds = float(os.getenv("MCP_LINE_IMAGEN_MAX_SECONDS", "1800"))
 
-    last_preview_sig = ""
+    last_preview_url = ""
     previews_sent = 0
     started = time.time()
 
@@ -499,9 +539,9 @@ async def _poll_imagen_job_and_push(*, line_user_id: str, job: Dict[str, Any]) -
                         if isinstance(pj, dict) and pj.get("available") is True:
                             p_url = str(pj.get("url") or pj.get("image_url") or "").strip()
                             prog = pj.get("progress") if isinstance(pj.get("progress"), dict) else {}
-                            sig = f"{p_url}|{prog.get('step')}|{prog.get('steps')}"
-                            if p_url and sig != last_preview_sig:
-                                last_preview_sig = sig
+                            p_url = _ensure_https_image_url(kind="preview", u=p_url)
+                            if p_url and p_url != last_preview_url:
+                                last_preview_url = p_url
                                 previews_sent += 1
                                 await _push_messages(
                                     to=line_user_id,
@@ -516,6 +556,7 @@ async def _poll_imagen_job_and_push(*, line_user_id: str, job: Dict[str, Any]) -
                     resj = r.json()
                     if isinstance(resj, dict) and resj.get("available") is True:
                         final_url = str(resj.get("url") or resj.get("image_url") or "").strip()
+                        final_url = _ensure_https_image_url(kind="result", u=final_url)
                         if final_url:
                             await _push_messages(
                                 to=line_user_id,
@@ -779,7 +820,7 @@ async def _agent_decide_and_reply(*, user_text: str) -> Dict[str, Any]:
     return {"type": "text", "text": assistant_text[:2000]}
 
 
-async def _process_text_event_and_reply(*, evt: Dict[str, Any], reply_token: str) -> None:
+async def _process_text_event_and_reply(*, evt: Dict[str, Any], reply_token: str, prefer_reply: bool = False) -> None:
     if not MCP_LINE_AGENT_ENABLED:
         return
     if not (MCP_ASSISTANT_URL or GLAMA_MCP_URL):
@@ -787,9 +828,28 @@ async def _process_text_event_and_reply(*, evt: Dict[str, Any], reply_token: str
     message = evt.get("message") or {}
     if not isinstance(message, dict):
         return
-    if str(message.get("type") or "").strip() != "text":
-        return
+    message_type = str(message.get("type") or "").strip()
     user_text = str(message.get("text") or "")
+    image_b64 = ""
+    image_mime = ""
+    image_message_id = ""
+
+    if message_type == "image":
+        image_message_id = str(message.get("id") or "").strip()
+        if LINE_CHANNEL_ACCESS_TOKEN and image_message_id:
+            url = f"https://api-data.line.me/v2/bot/message/{image_message_id}/content"
+            headers = {"Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}"}
+            try:
+                async with httpx.AsyncClient(timeout=20.0) as client:
+                    resp = await client.get(url, headers=headers)
+                if resp.status_code < 400 and resp.content:
+                    image_b64 = base64.b64encode(resp.content).decode("utf-8")
+                    image_mime = str(resp.headers.get("content-type") or "application/octet-stream").split(";", 1)[0].strip()
+            except Exception as exc:
+                logger.warning("line image fetch failed: message_id=%s err=%s", image_message_id, str(exc))
+
+    if message_type not in ("text", "image"):
+        return
 
     # Long-running work (LLM/tool calls) may exceed LINE replyToken lifetime.
     # Prefer push when we have a userId.
@@ -819,16 +879,24 @@ async def _process_text_event_and_reply(*, evt: Dict[str, Any], reply_token: str
                 "text": user_text,
                 "line_event": evt,
             }
+            if message_type == "image":
+                payload["line_message"] = {
+                    "type": "image",
+                    "messageId": image_message_id,
+                    "mimeType": image_mime,
+                    "imageBase64": image_b64,
+                }
 
             logger.info(
-                "assistant request start: url=%s conversation_id=%s text_len=%s",
+                "assistant request start: url=%s conversation_id=%s text_len=%s prefer_reply=%s",
                 f"{MCP_ASSISTANT_URL}/integrations/line/reply",
                 conversation_id,
                 len(user_text),
+                bool(prefer_reply),
             )
 
             started = time.time()
-            timeout = httpx.Timeout(connect=10.0, read=360.0, write=30.0, pool=10.0)
+            timeout = httpx.Timeout(connect=10.0, read=25.0 if prefer_reply else 360.0, write=30.0, pool=10.0)
             async with httpx.AsyncClient(timeout=timeout) as client:
                 resp = await client.post(f"{MCP_ASSISTANT_URL}/integrations/line/reply", json=payload, headers=headers)
 
@@ -858,9 +926,11 @@ async def _process_text_event_and_reply(*, evt: Dict[str, Any], reply_token: str
                 logger.info(
                     "assistant returned messages: count=%s delivery=%s",
                     len(messages),
-                    "push" if line_user_id else ("reply" if reply_token else "none"),
+                    "reply" if (prefer_reply and reply_token) else ("push" if line_user_id else ("reply" if reply_token else "none")),
                 )
-                if line_user_id:
+                if prefer_reply and reply_token:
+                    await _reply_messages(reply_token=reply_token, messages=messages)
+                elif line_user_id:
                     await _push_messages(to=line_user_id, messages=messages)
                 elif reply_token:
                     await _reply_messages(reply_token=reply_token, messages=messages)
@@ -1078,11 +1148,8 @@ async def admin_selftest_1mcp(request: Request) -> Dict[str, Any]:
 
 
 @app.post("/webhook/line")
-async def webhook_line(
-    request: Request,
-    background_tasks: BackgroundTasks,
-    x_line_signature: Optional[str] = Header(default=None, alias="X-Line-Signature"),
-) -> Any:
+async def webhook_line(request: Request, background_tasks: BackgroundTasks) -> PlainTextResponse:
+    x_line_signature = request.headers.get("X-Line-Signature")
     raw = await request.body()
 
     logger.info(
@@ -1154,18 +1221,23 @@ async def webhook_line(
                 text=str(text) if text is not None else None,
             )
 
-            if evt_type == "message" and message_type == "text" and reply_token:
-                # Fast webhook: run the heavy work in a background task.
+            if evt_type == "message" and message_type in ("text", "image") and reply_token:
                 if MCP_LINE_AGENT_ENABLED and (MCP_ASSISTANT_URL or GLAMA_MCP_URL):
-                    # Reply token is one-time use; acknowledge immediately, then push final result.
-                    logger.info(
-                        "processing ack delivery=%s",
-                        "reply" if reply_token else "none",
-                    )
-                    logger.info("sending processing reply")
-                    await _reply_message(reply_token=str(reply_token), text="Processing...")
-                    logger.info("processing reply sent")
-                    background_tasks.add_task(_process_text_event_and_reply, evt=evt, reply_token="")
+                    # Prefer a fast synchronous reply when possible.
+                    # This avoids LINE push quota issues and gives immediate UX for quick commands.
+                    try:
+                        await _process_text_event_and_reply(evt=evt, reply_token=str(reply_token), prefer_reply=True)
+                    except Exception as exc:
+                        logger.warning("sync reply path failed: %s", str(exc))
+                        # Fallback: acknowledge immediately, then push final result.
+                        logger.info(
+                            "processing ack delivery=%s",
+                            "reply" if reply_token else "none",
+                        )
+                        logger.info("sending processing reply")
+                        await _reply_message(reply_token=str(reply_token), text="Processing...")
+                        logger.info("processing reply sent")
+                        background_tasks.add_task(_process_text_event_and_reply, evt=evt, reply_token="")
                 else:
                     reply_text = await _generate_reply(text=text or "")
                     await _reply_message(reply_token=reply_token, text=reply_text)

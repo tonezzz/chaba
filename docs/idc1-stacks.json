@@ -1,0 +1,79 @@
+{
+    "host": {
+        "name": "idc1",
+        "vpn": {
+            "ip": "10.8.0.1",
+            "domain": "idc1.vpn"
+        },
+        "dns": {
+            "domains": [
+                "idc1.vpn",
+                "*.idc1.vpn",
+                "1mcp.idc1.vpn",
+                "imagen-light.idc1.vpn"
+            ],
+            "servers": [
+                "10.8.0.1"
+            ]
+        },
+        "ingress": {
+            "service": "idc1-host-caddy",
+            "ports": [80, 443]
+        },
+        "endpoints": {
+            "1mcp": {
+                "local": "http://127.0.0.1:3050/health",
+                "vpn": "http://10.8.0.1:3050/health",
+                "vpn_mcp": "http://10.8.0.1:3050/mcp?app=windsurf"
+            },
+            "imagen_light": {
+                "local": "http://127.0.0.1:8068/health",
+                "vpn": "http://10.8.0.1:8068/health"
+            }
+        }
+    },
+    "stacks": {
+        "idc1-host-caddy": {
+            "description": "Host-level Caddy ingress for *.idc1.vpn",
+            "containers": [
+                {
+                    "name": "idc1-host-caddy-host-caddy-1",
+                    "service": "host-caddy",
+                    "ports": [80, 443],
+                    "purpose": "Reverse proxy + tls internal for *.idc1.vpn"
+                }
+            ]
+        },
+        "idc1-ai": {
+            "description": "AI/ML services on idc1 (vpn: 10.8.0.1)",
+            "containers": [
+                {
+                    "name": "idc1-ai-mcp-imagen-light",
+                    "service": "mcp-imagen-light",
+                    "port": 8068,
+                    "purpose": "Image generation adapter (proxies to pc1 mcp-cuda)"
+                }
+            ]
+        },
+        "idc1-stack": {
+            "description": "General MCP services on idc1 (vpn: 10.8.0.1)",
+            "containers": [
+                {
+                    "name": "idc1-1mcp-agent",
+                    "service": "1mcp-agent",
+                    "port": 3050,
+                    "purpose": "MCP orchestration proxy"
+                }
+            ]
+        }
+    },
+    "summary": {
+        "stack_count": 3,
+        "notes": [
+            "This file is intended as an operator reference for idc1 (vpn: 10.8.0.1).",
+            "Some services and ports may differ depending on whether they are published by compose / host networking."
+        ],
+        "main_ingress": "idc1-host-caddy",
+        "main_mcp_entrypoint": "idc1-stack/1mcp-agent"
+    }
+}

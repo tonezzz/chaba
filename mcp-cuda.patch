@@ -1,0 +1,335 @@
+diff --git a/mcp/mcp-cuda/main.py b/mcp/mcp-cuda/main.py
+index 7ffb101..51f1405 100644
+--- a/mcp/mcp-cuda/main.py
++++ b/mcp/mcp-cuda/main.py
+@@ -13,12 +13,14 @@ import subprocess
+ import threading
+ import time
+ import uuid
++import hashlib
++import logging
+ from datetime import datetime, timezone
+ from typing import Any, Dict, List, Optional
+ import traceback
+ 
+ import numpy as np
+-from fastapi import Body, FastAPI, HTTPException
++from fastapi import Body, FastAPI, HTTPException, Request, Response
+ from fastapi.middleware.cors import CORSMiddleware
+ from fastapi.responses import StreamingResponse
+ from PIL import Image
+@@ -32,6 +34,9 @@ APP_NAME = "mcp-cuda"
+ APP_VERSION = "0.1.0"
+ MCP_CUDA_INSTANCE_ID = os.getenv("MCP_CUDA_INSTANCE_ID", f"mcp-cuda-{uuid.uuid4().hex[:8]}")
+ 
++logger = logging.getLogger("mcp-cuda")
++logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
++
+ CLIP_MODEL = (os.getenv("CLIP_MODEL") or "clip-ViT-B-32").strip()
+ MAX_IMAGE_ITEMS = int(os.getenv("MCP_CUDA_MAX_IMAGE_ITEMS", "32"))
+ 
+@@ -64,6 +69,15 @@ MCP_CUDA_PREVIEW_EVERY_N_STEPS = int(os.getenv("MCP_CUDA_PREVIEW_EVERY_N_STEPS",
+ 
+ # Configurable job retention settings
+ JOB_RETENTION_DAYS = float(os.getenv("MCP_CUDA_JOB_RETENTION_DAYS", "7"))  # Keep jobs for 7 days by default
++
++MCP_CUDA_HEALTH_SMI_TTL_SECONDS = float(os.getenv("MCP_CUDA_HEALTH_SMI_TTL_SECONDS", "60"))
++MCP_CUDA_IMAGEN_DEDUPE_WINDOW_SECONDS = float(os.getenv("MCP_CUDA_IMAGEN_DEDUPE_WINDOW_SECONDS", "60"))
++
++_health_cache_lock = threading.Lock()
++_health_cache: Dict[str, Any] = {"ts": 0.0, "ok": False}
++
++_imagen_dedupe_lock = threading.Lock()
++_imagen_dedupe: Dict[str, Dict[str, Any]] = {}
+ MAX_JOBS_TO_RETAIN = int(os.getenv("MCP_CUDA_MAX_JOBS_TO_RETAIN", "100"))  # Max jobs to keep
+ 
+ 
+@@ -705,34 +719,52 @@ _imagen_jobs: Dict[str, _ImagenJob] = {}
+ _imagen_jobs_lock = threading.Lock()
+ 
+ 
++def _sha1_text(s: str) -> str:
++    return hashlib.sha1((s or "").encode("utf-8"), usedforsecurity=False).hexdigest()
++
++
++def _imagen_dedupe_key(spec: Dict[str, Any]) -> str:
++    # Keep this stable and short; do NOT include the full reference image in the key.
++    ref = spec.get("reference_image_base64")
++    ref_sig = _sha1_text(ref[:2048] if isinstance(ref, str) else "") if ref else ""
++    parts = {
++        "prompt": spec.get("prompt"),
++        "negative_prompt": spec.get("negative_prompt"),
++        "width": spec.get("width"),
++        "height": spec.get("height"),
++        "steps": spec.get("steps"),
++        "guidance_scale": spec.get("guidance_scale"),
++        "strength": spec.get("strength"),
++        "seed": spec.get("seed"),
++        "ref_sig": ref_sig,
++    }
++    raw = json.dumps(parts, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
++    return _sha1_text(raw)
++
++
+ def _create_imagen_job(spec: Dict[str, Any]) -> _ImagenJob:
+     job_id = str(uuid.uuid4())
+-    print(f"[DEBUG] Creating new job with ID: {job_id}", flush=True)
++    logger.info("imagen_job_create: job_id=%s", job_id)
+     job = _ImagenJob(job_id=job_id, spec=spec)
+     with _imagen_jobs_lock:
+         _imagen_jobs[job_id] = job
+-        print(f"[DEBUG] Added job to dictionary. Current jobs: {len(_imagen_jobs)}. All job IDs: {list(_imagen_jobs.keys())}", flush=True)
+     job.add_event({"type": "queued", "jobId": job_id})
+     return job
+ 
+ 
+ def _get_job(job_id: str) -> _ImagenJob:
+-    print(f"[DEBUG] Looking up job ID: {job_id}", flush=True)
+     with _imagen_jobs_lock:
+         job = _imagen_jobs.get(job_id)
+-        print(f"[DEBUG] Current jobs in dictionary: {len(_imagen_jobs)}. All job IDs: {list(_imagen_jobs.keys())}", flush=True)
+     if job is None:
+-        print(f"[ERROR] Job not found: {job_id}", flush=True)
+         raise HTTPException(status_code=404, detail="job_not_found")
+     return job
+ 
+ 
+ def _run_imagen_job(job: _ImagenJob) -> None:
+-    print(f"[DEBUG] Starting job execution for {job.job_id}", flush=True)
++    logger.info("imagen_job_start: job_id=%s", job.job_id)
+     try:
+         job.started_at_ms = _now_ms()
+         job.status = "running"
+-        print(f"[DEBUG] Job status set to running for {job.job_id}", flush=True)
+         job.add_event({"type": "started", "jobId": job.job_id})
+         
+         sd15_file = _current_sd15_model_file()
+@@ -757,11 +789,9 @@ def _run_imagen_job(job: _ImagenJob) -> None:
+                     job.progress = {"step": int(step_idx) + 1, "steps": steps}
+                     every = int(MCP_CUDA_PREVIEW_EVERY_N_STEPS or 0)
+                     if every > 0 and (int(job.progress.get("step") or 0) % every == 0):
+-                        print(f"[DEBUG] Generating SDXL preview for step {step_idx}", flush=True)
+                         try:
+                             latents = (_kwargs or {}).get("latents")
+                             if latents is None:
+-                                print("[WARNING] No latents available for preview generation", flush=True)
+                                 return {}
+                                 
+                             b64 = _latents_to_preview_png_base64(pipe, latents)
+@@ -775,10 +805,8 @@ def _run_imagen_job(job: _ImagenJob) -> None:
+                                 }
+                                 job.preview = payload
+                                 job.add_event({"type": "preview", "preview": payload})
+-                                print(f"[DEBUG] SDXL preview generated for step {step_idx}", flush=True)
+                         except Exception as e:
+-                            print(f"[ERROR] Failed to generate SDXL preview: {str(e)}", flush=True)
+-                            print(traceback.format_exc(), flush=True)
++                            logger.warning("sdxl_preview_failed: job_id=%s err=%s", job.job_id, str(e))
+                     
+                     job.add_event({"type": "progress", "progress": job.progress})
+                     return {}
+@@ -819,7 +847,6 @@ def _run_imagen_job(job: _ImagenJob) -> None:
+ 
+                 every = int(MCP_CUDA_PREVIEW_EVERY_N_STEPS or 0)
+                 if every > 0 and (int(job.progress.get("step") or 0) % every == 0):
+-                    print(f"[DEBUG] Generating preview for step {step}", flush=True)
+                     b64 = _sd15_latents_to_preview_png_base64(pipe, kwargs.get("latents"))
+                     if isinstance(b64, str) and b64:
+                         payload = {
+@@ -918,23 +945,22 @@ def _run_imagen_job(job: _ImagenJob) -> None:
+         job.finished_at_ms = _now_ms()
+         job.add_event({"type": "error", "message": job.error})
+     except Exception as exc:  # noqa: BLE001
+-        print(f"[ERROR] Job {job.job_id} failed with unexpected error: {exc}", flush=True)
++        logger.info("imagen_job_succeeded: job_id=%s", job.job_id)
++        job.add_event({"type": "done", "jobId": job.job_id})
++    except Exception as exc:
+         job.status = "failed"
+-        job.error = f"unexpected_error: {exc}"
+-        job.finished_at_ms = _now_ms()
+-        job.add_event({"type": "error", "message": job.error})
++        job.error = str(exc)
++        job.add_event({"type": "error", "jobId": job.job_id, "error": job.error})
++        logger.warning("imagen_job_failed: job_id=%s err=%s", job.job_id, job.error)
++        logger.debug("imagen_job_failed_traceback: %s", traceback.format_exc())
+     finally:
+-        try:
+-            if torch.cuda.is_available():
+-                torch.cuda.empty_cache()
+-        except Exception:
+-            pass
+-        print(f"[DEBUG] Final job state for {job.job_id}: status={job.status}, error={job.error}", flush=True)
++        job.finished_at_ms = _now_ms()
++        logger.info("imagen_job_finished: job_id=%s status=%s", job.job_id, job.status)
+         with _imagen_jobs_lock:
+-            print(f"[DEBUG] Current jobs in dictionary: {len(_imagen_jobs)}. All job IDs: {list(_imagen_jobs.keys())}", flush=True)
++            logger.info("Current jobs in dictionary: %s. All job IDs: %s", len(_imagen_jobs), list(_imagen_jobs.keys()))
+             # Ensure job remains in dictionary permanently
+             if job.job_id not in _imagen_jobs:
+-                print(f"[PERSIST] Re-adding completed job {job.job_id} to dictionary", flush=True)
++                logger.info("Re-adding completed job %s to dictionary", job.job_id)
+                 _imagen_jobs[job.job_id] = job
+             else:
+                 print(f"[PERSIST] Job {job.job_id} remains in dictionary", flush=True)
+@@ -1219,11 +1245,8 @@ def tool_definitions() -> List[Dict[str, Any]]:
+     return [
+         {
+             "name": "cuda_info",
+-            "description": "Return basic GPU/CUDA availability info via nvidia-smi.",
+-            "inputSchema": {
+-                "type": "object",
+-                "properties": {},
+-            },
++            "description": "Return basic CUDA info.",
++            "inputSchema": {"type": "object", "properties": {}},
+         },
+         {
+             "name": "nvidia_smi_query",
+@@ -1290,6 +1313,11 @@ def tool_definitions() -> List[Dict[str, Any]]:
+                 "required": ["model"],
+             },
+         },
++        {
++            "name": "imagen_model_clear",
++            "description": "Clear the selected SD1.5 checkpoint model (switches back to default behavior; if no MCP_CUDA_SD15_MODEL_FILE is set, this results in SDXL).",
++            "inputSchema": {"type": "object", "properties": {}},
++        },
+         {
+             "name": "imagen_job_create",
+             "description": "Create an image generation job. Model selection depends on server configuration: if MCP_CUDA_SD15_MODEL_FILE exists, SD1.5 is used; otherwise SDXL is used. If referenceImageBase64 is provided, SD1.5 runs img2img (uses strength in (0,1]); otherwise it runs txt2img. referenceImageDimensions is optional (used only for validation when provided). Use /imagen/jobs/{jobId}/events (SSE) for progress events.",
+@@ -1361,8 +1389,14 @@ app.add_middleware(
+ 
+ @app.get("/health")
+ async def health() -> Dict[str, Any]:
+-    smi = _run(["nvidia-smi", "-L"], timeout_seconds=5)
+-    status = "ok" if smi.get("ok") else "degraded"
++    now = time.time()
++    with _health_cache_lock:
++        cached_ts = float(_health_cache.get("ts") or 0.0)
++        if (now - cached_ts) >= MCP_CUDA_HEALTH_SMI_TTL_SECONDS:
++            smi = _run(["nvidia-smi", "-L"], timeout_seconds=3)
++            _health_cache.update({"ts": now, "ok": bool(smi.get("ok")), "smi": smi})
++        smi_ok = bool(_health_cache.get("ok"))
++    status = "ok" if smi_ok else "degraded"
+     return {
+         "status": status,
+         "service": APP_NAME,
+@@ -1370,11 +1404,20 @@ async def health() -> Dict[str, Any]:
+         "instanceId": MCP_CUDA_INSTANCE_ID,
+         "hostname": socket.gethostname(),
+         "pid": os.getpid(),
+-        "nvidiaSmi": bool(smi.get("ok")),
++        "nvidiaSmi": bool(smi_ok),
+         "timestamp": datetime.now(timezone.utc).isoformat(),
+     }
+ 
+ 
++def _job_etag(job: _ImagenJob) -> str:
++    # Cheap, changes whenever progress changes / preview changes / status changes.
++    p = job.progress or {}
++    step = int(p.get("step") or 0)
++    status = str(job.status or "")
++    has_preview = "1" if isinstance(job.preview, dict) else "0"
++    return f"W/\"{job.job_id}:{status}:{step}:{has_preview}:{int(job.finished_at_ms or 0)}\""
++
++
+ @app.get("/.well-known/mcp.json")
+ async def well_known_manifest() -> Dict[str, Any]:
+     return {
+@@ -1478,6 +1521,12 @@ async def invoke(payload: Dict[str, Any] = Body(...)) -> Dict[str, Any]:
+         _reset_sd15_pipelines()
+         return {"tool": tool, "result": {"sd15_model_file": resolved, "ok": True}}
+ 
++    if tool == "imagen_model_clear":
++        _set_state_value("sd15_model_file", "")
++        _reset_sd15_pipelines()
++        sd15_file = _current_sd15_model_file()
++        return {"tool": tool, "result": {"sd15_model_file": sd15_file, "ok": True}}
++
+     if tool == "imagen_job_create":
+         try:
+             args = ImagenJobCreateArgs(**payload)
+@@ -1683,6 +1732,16 @@ async def mcp_endpoint(payload: Dict[str, Any] = Body(...)):
+                 result={"content": [{"type": "text", "text": str(out)}]},
+             ).model_dump(exclude_none=True)
+ 
++        if tool_name == "imagen_model_clear":
++            _set_state_value("sd15_model_file", "")
++            _reset_sd15_pipelines()
++            sd15_file = _current_sd15_model_file()
++            out = {"sd15_model_file": sd15_file, "ok": True}
++            return JsonRpcResponse(
++                id=request.id,
++                result={"content": [{"type": "text", "text": str(out)}]},
++            ).model_dump(exclude_none=True)
++
+         if tool_name == "imagen_job_create":
+             try:
+                 parsed = ImagenJobCreateArgs(**(arguments_raw or {}))
+@@ -1755,8 +1814,32 @@ async def imagen_jobs_create(payload: Dict[str, Any] = Body(...)):
+     try:
+         args = ImagenJobCreateArgs(**payload)
+         spec = _validate_imagen_args(args)
+-        job = _create_imagen_job(spec)
+-        _imagen_executor.submit(_run_imagen_job, job)
++        key = _imagen_dedupe_key(spec)
++        now = time.time()
++        with _imagen_dedupe_lock:
++            # Clean expired keys
++            cutoff = now - MCP_CUDA_IMAGEN_DEDUPE_WINDOW_SECONDS
++            expired = [k for k, v in _imagen_dedupe.items() if float(v.get("ts") or 0.0) < cutoff]
++            for k in expired:
++                _imagen_dedupe.pop(k, None)
++
++            existing = _imagen_dedupe.get(key) or {}
++            existing_job_id = str(existing.get("job_id") or "").strip()
++
++        job: Optional[_ImagenJob] = None
++        if existing_job_id:
++            try:
++                job = _get_job(existing_job_id)
++            except Exception:
++                job = None
++
++        if job is None:
++            job = _create_imagen_job(spec)
++            with _imagen_dedupe_lock:
++                _imagen_dedupe[key] = {"ts": now, "job_id": job.job_id}
++            _imagen_executor.submit(_run_imagen_job, job)
++        else:
++            logger.info("imagen_job_deduped: job_id=%s", job.job_id)
+         return {
+             "jobId": job.job_id,
+             "status": job.status,
+@@ -1767,8 +1850,14 @@ async def imagen_jobs_create(payload: Dict[str, Any] = Body(...)):
+ 
+ 
+ @app.get("/imagen/jobs/{job_id}")
+-async def imagen_jobs_status(job_id: str) -> Dict[str, Any]:
++async def imagen_jobs_status(job_id: str, request: Request, response: Response) -> Dict[str, Any]:
+     job = _get_job(job_id)
++    etag = _job_etag(job)
++    response.headers["ETag"] = etag
++    inm = str(request.headers.get("if-none-match") or "").strip()
++    if inm and inm == etag:
++        response.status_code = 304
++        return {}
+     return {
+         "jobId": job.job_id,
+         "status": job.status,
+@@ -1784,8 +1873,14 @@ async def imagen_jobs_status(job_id: str) -> Dict[str, Any]:
+ 
+ 
+ @app.get("/imagen/jobs/{job_id}/preview")
+-async def imagen_jobs_preview_get(job_id: str) -> Dict[str, Any]:
++async def imagen_jobs_preview_get(job_id: str, request: Request, response: Response) -> Dict[str, Any]:
+     job = _get_job(job_id)
++    etag = _job_etag(job)
++    response.headers["ETag"] = etag
++    inm = str(request.headers.get("if-none-match") or "").strip()
++    if inm and inm == etag:
++        response.status_code = 304
++        return {}
+     if not isinstance(job.preview, dict):
+         return {
+             "jobId": job.job_id,

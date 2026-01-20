@@ -10,7 +10,7 @@ import traceback
 import time
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
 from fastapi import Body, FastAPI, HTTPException
@@ -227,7 +227,12 @@ class ImagenGenerateArgs(BaseModel):
     num_inference_steps: Optional[int] = Field(default=None, alias="numInferenceSteps")
     guidance_scale: Optional[float] = Field(default=None, alias="guidanceScale")
     seed: Optional[int] = None
+    reference_image_base64: Optional[str] = Field(default=None, alias="referenceImageBase64")
+    reference_image_dimensions: Optional[Tuple[int, int]] = Field(default=None, alias="referenceImageDimensions")
     approved: Optional[bool] = None
+
+
+ImagenGenerateArgs.model_rebuild()
 
 
 def _now_ms() -> int:
@@ -328,7 +333,7 @@ async def health() -> Dict[str, Any]:
     if IMAGEN_LIGHT_QUEUE_ENABLE:
         try:
             conn = _get_queue_conn()
-            cur = conn.execute("SELECT COUNT(*) FROM imagen_jobs")
+            cur = conn.execute("SELECT COUNT(*) FROM imagen_jobs WHERE status = 'queued'")
             queue_jobs = int((cur.fetchone() or [0])[0] or 0)
         except Exception as exc:
             queue_ok = False
