@@ -270,24 +270,9 @@
       "description": "Webtop UI endpoints (linuxserver/webtop) exposed on pc1 via VPN DNS. DNS aliases may require CoreDNS wildcard support.",
       "urls": [
         {
-          "url": "https://webtop.pc1.vpn/",
-          "purpose": "Webtop session UI (vhost).",
-          "notes": "Requires VPN DNS (*.pc1.vpn -> pc1.vpn) and routing to the correct host port." 
-        },
-        {
-          "url": "https://webtop2.pc1.vpn/",
-          "purpose": "Alternate webtop session UI.",
-          "notes": "May be pending DNS alias setup depending on wg-dns configuration." 
-        },
-        {
-          "url": "https://webtop3.pc1.vpn/",
-          "purpose": "Alternate webtop session UI.",
-          "notes": "May be pending DNS alias setup depending on wg-dns configuration." 
-        },
-        {
-          "url": "https://chaba.webtop.pc1.vpn/",
-          "purpose": "Named webtop alias (if configured).",
-          "notes": "May be pending DNS alias setup depending on wg-dns configuration." 
+          "url": "https://webtops.pc1.vpn/",
+          "purpose": "Webtops session UI (canonical).",
+          "notes": "Requires VPN DNS (*.pc1.vpn -> pc1.vpn) and routing to the correct host port."
         }
       ]
     },
@@ -297,14 +282,14 @@
       "description": "MCP management API for webtops sessions (create/list/stop/exec/etc.).",
       "urls": [
         {
-          "url": "http://127.0.0.1:8091/health",
+          "url": "http://127.0.0.1:8056/health",
           "purpose": "Localhost health (no TLS).",
-          "notes": "Same as http://pc1.vpn:8091/health."
+          "notes": "Host port for mcp-webtops (pc1-web stack)."
         },
         {
-          "url": "http://pc1.vpn:8091/health",
+          "url": "http://pc1.vpn:8056/health",
           "purpose": "Direct port health (no TLS).",
-          "notes": "From stacks/pc1-stack docker-compose.yml; port is MCP_WEBTOPS_PORT (default 8091)."
+          "notes": "From stacks/pc1-web docker-compose.yml; port is MCP_WEBTOPS_PORT (default 8056)."
         }
       ]
     }

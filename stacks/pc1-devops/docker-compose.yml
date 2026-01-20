@@ -53,6 +53,18 @@ services:
       timeout: 5s
       retries: 3
 
+  portainer-agent:
+    <<: *default-service
+    profiles: ["portainer"]
+    image: portainer/agent:latest
+    container_name: pc1-portainer-agent
+    env_file: []
+    ports:
+      - "${PORTAINER_AGENT_HOST_PORT:-9002}:9001"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes
+
 networks:
   pc1-devops-net:
     driver: bridge

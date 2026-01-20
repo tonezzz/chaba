@@ -34,8 +34,7 @@ pc1-auth/           # Authentication services
 └── authentik-worker
 
 pc1-web/            # Web interfaces
-├── webtop2         # Linux desktop environment
-└── mcp-webtop      # Webtop management
+└── mcp-webtops     # Webtops management (canonical)
 
 pc1-devops/         # Development tools
 ├── mcp-devops       # DevOps automation
@@ -54,9 +53,8 @@ environment:
 
 #### Webtop Integration
 ```yaml
-# mcp-webtop mounts webtop2 config for management
-volumes:
-  - webtop2-config:/webtop-config:ro
+# mcp-webtops runs as its own service in pc1-web
+# pc1-1mcp-agent should reach it via host.docker.internal:${MCP_WEBTOPS_PORT}
 ```
 
 #### Profile-Based Services
@@ -136,8 +134,7 @@ volumes:
    - Update DNS routing for authentication endpoints
 
 2. **Phase 2**: Move webtop services to pc1-web
-   - Preserve webtop2 configuration volume
-   - Update mcp-webtop mount paths
+   - Consolidate to mcp-webtops only
 
 3. **Phase 3**: Consolidate DevOps tools in pc1-devops
    - Add mcp-quickchart for visualization
@@ -163,7 +160,7 @@ volumes:
 ```yaml
 # Webtop management across stacks
 environment:
-  WEBTOPS_ROUTER_BASE_URL: http://webtop2.pc1-web-net:3000
+  WEBTOPS_ROUTER_BASE_URL: ""
 
 # DevOps accessing core services
 environment:
@@ -193,8 +190,7 @@ environment:
 | core | mcp-playwright | 8260 | Browser automation |
 | auth | authentik-http | 9000 | Auth HTTP |
 | auth | authentik-https | 9443 | Auth HTTPS |
-| web | webtop2 | 3003 | Webtop UI |
-| web | mcp-webtop | 8055 | Webtop management |
+| web | mcp-webtops | 8056 | Webtops MCP (host port) |
 | devops | mcp-devops | 8325 | DevOps tools |
 | devops | mcp-quickchart | 8270 | Chart generation |
 
@@ -220,7 +216,7 @@ environment:
 
 ### PC1-Specific Considerations
 - **Authentication**: Authentik requires external database setup
-- **Webtop Migration**: Preserve existing webtop2 configurations
+- **Webtops Migration**: Consolidate to canonical mcp-webtops
 - **DNS Updates**: Update routing for authentication endpoints
 
 ### PC2-Specific Considerations
@@ -237,7 +233,7 @@ environment:
 
 ### PC1 Success Criteria
 - ✅ Authentik services accessible via VPN
-- ✅ Webtop2 sessions preserved and manageable
+- ✅ Webtops sessions manageable via mcp-webtops
 - ✅ DevOps tools can access core services
 - ✅ Cross-stack communication functional
 

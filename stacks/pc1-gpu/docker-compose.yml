@@ -16,13 +16,18 @@ services:
     build:
       context: ${MCP_CUDA_BUILD_CONTEXT:-../../mcp/mcp-cuda}
     container_name: pc1-gpu-mcp-cuda
+    runtime: nvidia
     ports:
       - "${MCP_CUDA_PORT:-8057}:8057"
     environment:
       PORT: 8057
-      PC1_SDXL_MODEL_DIR: ${PC1_SDXL_MODEL_DIR:-/models/sdxl}
+      MCP_CUDA_SDXL_MODEL_DIR: ${PC1_SDXL_MODEL_DIR:-/models/sdxl}
+      MCP_CUDA_SD15_MODEL_FILE: ${PC1_SD15_MODEL_FILE:-/models/checkpoints/realisticVisionV60B1_v20Novae.safetensors}
+      NVIDIA_VISIBLE_DEVICES: ${MCP_CUDA_NVIDIA_VISIBLE_DEVICES:-all}
+      NVIDIA_DRIVER_CAPABILITIES: ${MCP_CUDA_NVIDIA_DRIVER_CAPABILITIES:-compute,utility}
     volumes:
       - ${PC1_SDXL_MODEL_HOST_DIR:-C:/chaba/.models/sdxl}:${PC1_SDXL_MODEL_DIR:-/models/sdxl}:ro
+      - ${PC1_CHECKPOINTS_HOST_DIR:-C:/chaba/.models/checkpoints}:/models/checkpoints:ro
       - /dev/dri:/dev/dri
     deploy:
       resources:
