@@ -6,6 +6,7 @@ import io
 import json
 import math
 import os
+import pathlib
 import socket
 import re
 import subprocess
@@ -39,9 +40,10 @@ RERANK_MODEL = (os.getenv("RERANK_MODEL") or "cross-encoder/ms-marco-MiniLM-L-6-
 MAX_TEXT_ITEMS = int(os.getenv("MCP_CUDA_MAX_TEXT_ITEMS", "128"))
 MAX_RERANK_DOCS = int(os.getenv("MCP_CUDA_MAX_RERANK_DOCS", "64"))
 
-
 SDXL_MODEL_DIR = (os.getenv("MCP_CUDA_SDXL_MODEL_DIR") or "/models/sdxl").strip()
 SD15_MODEL_FILE = (os.getenv("MCP_CUDA_SD15_MODEL_FILE") or "").strip()
+MCP_CUDA_STATE_DIR = (os.getenv("MCP_CUDA_STATE_DIR") or "/data").strip()
+MCP_CUDA_SD15_MODELS_DIRS = (os.getenv("MCP_CUDA_SD15_MODELS_DIRS") or "").strip()
 DISABLE_SAFETY_CHECKER = (os.getenv("MCP_CUDA_DISABLE_SAFETY_CHECKER") or "0").strip().lower() in (
     "1",
     "true",
@@ -314,7 +316,7 @@ def _get_sd15_pipeline() -> StableDiffusionPipeline:
         if _sd15_pipeline is not None:
             return _sd15_pipeline
 
-        model_file = (SD15_MODEL_FILE or "").strip()
+        model_file = _current_sd15_model_file()
         if not model_file:
             raise HTTPException(status_code=503, detail="sd15_model_file_not_configured")
         if not os.path.exists(model_file):
@@ -413,6 +415,10 @@ def _to_uint8_rgb(arr: np.ndarray) -> np.ndarray:
             a = a[:, :, :3]
         return a
 
+    if np.isnan(arr).any() or np.isinf(arr).any():
+        print("[ERROR] Output contains NaN/inf", flush=True)
+        raise RuntimeError("nan_output")
+
     a = np.nan_to_num(a, nan=0.0, posinf=1.0, neginf=0.0)
     a = a.astype(np.float32, copy=False)
 
@@ -466,19 +472,41 @@ def _decode_output_image(out_tensor):
     try:
         # diffusers can return PIL images, numpy arrays, or tensors depending on output_type.
         if isinstance(out_tensor, Image.Image):
+            try:
+                arr0 = np.asarray(out_tensor.convert("L"))
+                if arr0.size and int(arr0.max()) == 0:
+                    raise RuntimeError("suspicious_black_image")
+            except RuntimeError:
+                raise
+            except Exception:
+                pass
             return out_tensor
-        # Convert to numpy array first
+
         if torch.is_tensor(out_tensor):
             arr = out_tensor.detach().cpu().numpy()
         else:
-            arr = np.array(out_tensor)
+            arr = np.asarray(out_tensor)
 
-        arr_u8 = _to_uint8_rgb(arr)
-        return Image.fromarray(arr_u8)
+        if np.isnan(arr).any() or np.isinf(arr).any():
+            print("[ERROR] Output contains NaN/inf", flush=True)
+            raise RuntimeError("nan_output")
+
+        # If this is float data, assume [0,1] and scale.
+        if arr.dtype != np.uint8:
+            arr = np.clip(arr, 0.0, 1.0)
+            arr = (arr * 255.0).round().astype(np.uint8)
+
+        # Convert to HWC if needed.
+        if arr.ndim == 3 and arr.shape[0] == 3 and arr.shape[-1] not in (3, 4):  # CHW
+            arr = np.transpose(arr, (1, 2, 0))
+
+        if arr.size and int(arr.max()) == 0:
+            raise RuntimeError("suspicious_black_image")
+
+        return Image.fromarray(arr)
     except Exception as e:
         print(f"[ERROR] Output decoding failed: {str(e)}")
-        # Return blank fallback image
-        return Image.new('RGB', (256, 256), (0, 0, 0))
+        raise
 
 
 def _truncate_prompt_77(pipe: Any, prompt: Any) -> (str, Dict[str, Any]):
@@ -707,7 +735,8 @@ def _run_imagen_job(job: _ImagenJob) -> None:
         print(f"[DEBUG] Job status set to running for {job.job_id}", flush=True)
         job.add_event({"type": "started", "jobId": job.job_id})
         
-        using = "sd15_single" if (SD15_MODEL_FILE and os.path.exists(SD15_MODEL_FILE)) else "sdxl"
+        sd15_file = _current_sd15_model_file()
+        using = "sd15_single" if (sd15_file and os.path.exists(sd15_file)) else "sdxl"
         pipe = _get_sd15_pipeline() if using == "sd15_single" else _get_sdxl_pipeline()
         
         seed = job.spec.get("seed")
@@ -718,10 +747,11 @@ def _run_imagen_job(job: _ImagenJob) -> None:
         steps = int(job.spec.get("steps") or 0)
         job.progress = {"step": 0, "steps": steps}
         
-        autocast_ctx = torch.autocast(device_type="cuda") if torch.cuda.is_available() else contextlib.nullcontext()
         trunc_info: Dict[str, Any] = {"prompt_truncated": False, "original_tokens": None, "used_tokens": 77}
-        with autocast_ctx:
-            if using == "sdxl":
+
+        if using == "sdxl":
+            autocast_ctx = torch.autocast(device_type="cuda") if torch.cuda.is_available() else contextlib.nullcontext()
+            with autocast_ctx:
                 prompt_str, trunc_info = _truncate_prompt_77(pipe, job.spec.get("prompt"))
                 def _cb(_pipe, step_idx: int, _timestep, _kwargs):
                     job.progress = {"step": int(step_idx) + 1, "steps": steps}
@@ -764,87 +794,86 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                     callback_on_step_end=_cb,
                     callback_on_step_end_tensor_inputs=["latents"],
                 )
-            else:
-                # SD1.5 pipeline path
-                print(f"[DEBUG] Starting SD1.5 generation with params: {job.spec}", flush=True)
-                autocast_ctx = contextlib.nullcontext()
+        else:
+            # SD1.5 pipeline path (DO NOT run under CUDA autocast; keep fp32 stability)
+            print(f"[DEBUG] Starting SD1.5 generation with params: {job.spec}", flush=True)
                 
-                def _cb_sd15(pipe, step, timestep, kwargs):
-                    print(f"[DEBUG] SD1.5 callback - step: {step}", flush=True)
-                    job.progress = {"step": min(int(step) + 1, steps), "steps": steps}
+            def _cb_sd15(pipe, step, timestep, kwargs):
+                print(f"[DEBUG] SD1.5 callback - step: {step}", flush=True)
+                job.progress = {"step": min(int(step) + 1, steps), "steps": steps}
 
-                    # Enhanced NaN/inf detection
-                    try:
-                        lat = (kwargs or {}).get("latents")
-                        if torch.is_tensor(lat):
-                            lat_f32 = lat.detach().float()
-                            nan_count = torch.isnan(lat_f32).sum().item()
-                            inf_count = torch.isinf(lat_f32).sum().item()
-                            if nan_count > 0 or inf_count > 0:
-                                print(f"[ERROR] SD1.5 latents contain {nan_count} NaN, {inf_count} inf; aborting", flush=True)
-                                raise RuntimeError("nan_latents")
-                    except RuntimeError:
-                        raise
-                    except Exception:
-                        pass
+                # Enhanced NaN/inf detection
+                try:
+                    lat = (kwargs or {}).get("latents")
+                    if torch.is_tensor(lat):
+                        lat_f32 = lat.detach().float()
+                        nan_count = torch.isnan(lat_f32).sum().item()
+                        inf_count = torch.isinf(lat_f32).sum().item()
+                        if nan_count > 0 or inf_count > 0:
+                            print(f"[ERROR] SD1.5 latents contain {nan_count} NaN, {inf_count} inf; aborting", flush=True)
+                            raise RuntimeError("nan_latents")
+                except RuntimeError:
+                    raise
+                except Exception:
+                    pass
 
-                    every = int(MCP_CUDA_PREVIEW_EVERY_N_STEPS or 0)
-                    if every > 0 and (int(job.progress.get("step") or 0) % every == 0):
-                        print(f"[DEBUG] Generating preview for step {step}", flush=True)
-                        b64 = _sd15_latents_to_preview_png_base64(pipe, kwargs.get("latents"))
-                        if isinstance(b64, str) and b64:
-                            payload = {
-                                "jobId": job.job_id,
-                                "status": job.status,
-                                "progress": job.progress,
-                                "mimeType": "image/png",
-                                "imageBase64": b64,
-                            }
-                            job.preview = payload
-                            job.add_event({"type": "preview", "preview": payload})
-                    job.add_event({"type": "progress", "progress": job.progress})
-                    return {}
-                
-                print(f"[DEBUG] Before SD1.5 pipe() call", flush=True)
-                with torch.inference_mode(), autocast_ctx:
-                    print(f"[DEBUG] Inside torch inference context", flush=True)
-                    prompt_str, trunc_info = _truncate_prompt_77(pipe, job.spec.get("prompt"))
-                    neg_prompt_str, neg_trunc_info = _truncate_prompt_77(pipe, job.spec.get("negative_prompt"))
-                    ref_b64 = job.spec.get("reference_image_base64")
-                    if isinstance(ref_b64, str) and ref_b64.strip():
-                        img2img = _get_sd15_img2img_pipeline()
-                        ref_raw = base64.b64decode(ref_b64)
-                        init_image = Image.open(io.BytesIO(ref_raw)).convert("RGB")
-                        w = int(job.spec.get("width") or 1024)
-                        h = int(job.spec.get("height") or 1024)
-                        if init_image.size != (w, h):
-                            init_image = init_image.resize((w, h), Image.LANCZOS)
-                        out = img2img(
-                            prompt=prompt_str,
-                            negative_prompt=neg_prompt_str,
-                            image=init_image,
-                            width=w,
-                            height=h,
-                            num_inference_steps=steps,
-                            guidance_scale=float(job.spec.get("guidance_scale") or 7.0),
-                            generator=generator,
-                            callback_on_step_end=_cb_sd15,
-                            callback_on_step_end_tensor_inputs=["latents"],
-                            output_type="np",
-                        )
-                    else:
-                        out = pipe(
-                            prompt=prompt_str,
-                            negative_prompt=neg_prompt_str,
-                            width=int(job.spec.get("width") or 1024),
-                            height=int(job.spec.get("height") or 1024),
-                            num_inference_steps=steps,
-                            guidance_scale=float(job.spec.get("guidance_scale") or 7.0),
-                            generator=generator,
-                            callback_on_step_end=_cb_sd15,
-                            callback_on_step_end_tensor_inputs=["latents"],
-                            output_type="np",
-                        )
+                every = int(MCP_CUDA_PREVIEW_EVERY_N_STEPS or 0)
+                if every > 0 and (int(job.progress.get("step") or 0) % every == 0):
+                    print(f"[DEBUG] Generating preview for step {step}", flush=True)
+                    b64 = _sd15_latents_to_preview_png_base64(pipe, kwargs.get("latents"))
+                    if isinstance(b64, str) and b64:
+                        payload = {
+                            "jobId": job.job_id,
+                            "status": job.status,
+                            "progress": job.progress,
+                            "mimeType": "image/png",
+                            "imageBase64": b64,
+                        }
+                        job.preview = payload
+                        job.add_event({"type": "preview", "preview": payload})
+                job.add_event({"type": "progress", "progress": job.progress})
+                return {}
+            
+            print(f"[DEBUG] Before SD1.5 pipe() call", flush=True)
+            with torch.inference_mode():
+                print(f"[DEBUG] Inside torch inference context", flush=True)
+                prompt_str, trunc_info = _truncate_prompt_77(pipe, job.spec.get("prompt"))
+                neg_prompt_str, neg_trunc_info = _truncate_prompt_77(pipe, job.spec.get("negative_prompt"))
+                ref_b64 = job.spec.get("reference_image_base64")
+                if isinstance(ref_b64, str) and ref_b64.strip():
+                    img2img = _get_sd15_img2img_pipeline()
+                    ref_raw = base64.b64decode(ref_b64)
+                    init_image = Image.open(io.BytesIO(ref_raw)).convert("RGB")
+                    w = int(job.spec.get("width") or 1024)
+                    h = int(job.spec.get("height") or 1024)
+                    if init_image.size != (w, h):
+                        init_image = init_image.resize((w, h), Image.LANCZOS)
+                    out = img2img(
+                        prompt=prompt_str,
+                        negative_prompt=neg_prompt_str,
+                        image=init_image,
+                        width=w,
+                        height=h,
+                        num_inference_steps=steps,
+                        guidance_scale=float(job.spec.get("guidance_scale") or 7.0),
+                        generator=generator,
+                        callback_on_step_end=_cb_sd15,
+                        callback_on_step_end_tensor_inputs=["latents"],
+                        output_type="pil",
+                    )
+                else:
+                    out = pipe(
+                        prompt=prompt_str,
+                        negative_prompt=neg_prompt_str,
+                        width=int(job.spec.get("width") or 1024),
+                        height=int(job.spec.get("height") or 1024),
+                        num_inference_steps=steps,
+                        guidance_scale=float(job.spec.get("guidance_scale") or 7.0),
+                        generator=generator,
+                        callback_on_step_end=_cb_sd15,
+                        callback_on_step_end_tensor_inputs=["latents"],
+                        output_type="pil",
+                    )
                 print(f"[DEBUG] After SD1.5 pipe() call", flush=True)
                 print(f"[DEBUG] SD1.5 output: {out}", flush=True)
 
@@ -1032,6 +1061,160 @@ def _rerank(query: str, documents: List[str], *, model_name: Optional[str]) -> D
     }
 
 
+def _state_path() -> str:
+    base = MCP_CUDA_STATE_DIR or "/data"
+    try:
+        os.makedirs(base, exist_ok=True)
+    except Exception:
+        pass
+    return os.path.join(base, "mcp-cuda-state.json")
+
+
+def _load_state() -> Dict[str, Any]:
+    try:
+        path = _state_path()
+        if not os.path.isfile(path):
+            return {}
+        with open(path, "r", encoding="utf-8") as f:
+            obj = json.load(f)
+        return obj if isinstance(obj, dict) else {}
+    except Exception:
+        return {}
+
+
+def _save_state(state: Dict[str, Any]) -> None:
+    try:
+        path = _state_path()
+        tmp = path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(state or {}, f, ensure_ascii=False, separators=(",", ":"))
+        os.replace(tmp, path)
+    except Exception:
+        return
+
+
+_state_cache: Optional[Dict[str, Any]] = None
+_state_lock = threading.Lock()
+
+
+def _get_state() -> Dict[str, Any]:
+    global _state_cache
+    with _state_lock:
+        if _state_cache is None:
+            _state_cache = _load_state()
+        return dict(_state_cache or {})
+
+
+def _set_state_value(key: str, value: Any) -> None:
+    global _state_cache
+    with _state_lock:
+        st = _get_state()
+        if value is None:
+            st.pop(key, None)
+        else:
+            st[key] = value
+        _state_cache = dict(st)
+        _save_state(_state_cache)
+
+
+def _current_sd15_model_file() -> str:
+    st = _get_state()
+    selected = str(st.get("sd15_model_file") or "").strip()
+    return selected or (SD15_MODEL_FILE or "").strip()
+
+
+def _reset_sd15_pipelines() -> None:
+    global _sd15_pipeline
+    global _sd15_img2img_pipeline
+    with _sdxl_pipeline_lock:
+        _sd15_pipeline = None
+        _sd15_img2img_pipeline = None
+
+
+def _parse_model_dirs() -> List[str]:
+    # Standard location.
+    dirs: List[str] = ["/models/checkpoints"]
+
+    # Also include the directory of the configured/selected model file (if any).
+    current = _current_sd15_model_file()
+    try:
+        if current and os.path.exists(current):
+            d = os.path.dirname(current)
+            if d:
+                dirs.append(d)
+    except Exception:
+        pass
+
+    # Optional extra dirs.
+    extra = [s.strip() for s in (MCP_CUDA_SD15_MODELS_DIRS or "").split(",") if s.strip()]
+    dirs.extend(extra)
+
+    # De-dupe while preserving order.
+    out: List[str] = []
+    seen = set()
+    for d in dirs:
+        key = d.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(d)
+    return out
+
+
+def _discover_sd15_models() -> List[Dict[str, Any]]:
+    models: List[Dict[str, Any]] = []
+    exts = {".ckpt", ".safetensors"}
+    seen_paths = set()
+    for d in _parse_model_dirs():
+        try:
+            if not os.path.isdir(d):
+                continue
+            for p in pathlib.Path(d).iterdir():
+                if not p.is_file():
+                    continue
+                if p.suffix.lower() not in exts:
+                    continue
+                full = str(p)
+                key = full.lower()
+                if key in seen_paths:
+                    continue
+                seen_paths.add(key)
+                try:
+                    st = p.stat()
+                    size = int(st.st_size)
+                    mtime = int(st.st_mtime)
+                except Exception:
+                    size = None
+                    mtime = None
+                models.append(
+                    {
+                        "name": p.name,
+                        "path": full,
+                        "size_bytes": size,
+                        "mtime": mtime,
+                        "type": "sd15_single",
+                    }
+                )
+        except Exception:
+            continue
+    models.sort(key=lambda x: str(x.get("name") or "").lower())
+    return models
+
+
+def _resolve_model_path(selection: str) -> str:
+    sel = str(selection or "").strip()
+    if not sel:
+        return ""
+    if os.path.isabs(sel) and os.path.exists(sel):
+        return sel
+    cand = sel.lower()
+    for m in _discover_sd15_models():
+        name = str(m.get("name") or "").lower()
+        if name == cand:
+            return str(m.get("path") or "")
+    return ""
+
+
 def tool_definitions() -> List[Dict[str, Any]]:
     return [
         {
@@ -1052,7 +1235,7 @@ def tool_definitions() -> List[Dict[str, Any]]:
                         "type": "array",
                         "items": {"type": "string"},
                         "minItems": 1,
-                        "description": "nvidia-smi --query-gpu fields (e.g. name,driver_version,memory.total,memory.used)",
+                        "description": "nvidia-smi --query-gpu fields (e.g. name,driver_version,memory.total,memory.used,memory.free,utilization.gpu,temperature.gpu)",
                     }
                 },
                 "required": ["fields"],
@@ -1085,6 +1268,27 @@ def tool_definitions() -> List[Dict[str, Any]]:
             "name": "imagen_models",
             "description": "Return available Imagen/SDXL model configuration.",
             "inputSchema": {"type": "object", "properties": {}},
+        },
+        {
+            "name": "imagen_model_list",
+            "description": "List available SD1.5 single-file checkpoint models (.ckpt/.safetensors) discovered under /models/checkpoints.",
+            "inputSchema": {"type": "object", "properties": {}},
+        },
+        {
+            "name": "imagen_model_get",
+            "description": "Get the currently selected SD1.5 single-file checkpoint model path.",
+            "inputSchema": {"type": "object", "properties": {}},
+        },
+        {
+            "name": "imagen_model_set",
+            "description": "Select the active SD1.5 single-file checkpoint model (by filename or absolute path) and hot-reload the pipeline.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "model": {"type": "string"},
+                },
+                "required": ["model"],
+            },
         },
         {
             "name": "imagen_job_create",
@@ -1231,10 +1435,11 @@ async def invoke(payload: Dict[str, Any] = Body(...)) -> Dict[str, Any]:
         }
 
     if tool == "imagen_models":
+        sd15_file = _current_sd15_model_file()
         return {
             "tool": tool,
             "result": {
-                "default": "sd15_single" if (SD15_MODEL_FILE and os.path.exists(SD15_MODEL_FILE)) else "sdxl",
+                "default": "sd15_single" if (sd15_file and os.path.exists(sd15_file)) else "sdxl",
                 "sdxl": {
                     "modelDir": SDXL_MODEL_DIR,
                     "localFilesOnly": True,
@@ -1243,58 +1448,88 @@ async def invoke(payload: Dict[str, Any] = Body(...)) -> Dict[str, Any]:
                     "maxConcurrentJobs": SDXL_MAX_CONCURRENT_JOBS,
                 },
                 "sd15_single": {
-                    "modelFile": SD15_MODEL_FILE,
+                    "modelFile": sd15_file,
                     "localFilesOnly": True,
                     "maxPixels": SDXL_MAX_PIXELS,
                     "maxSteps": SDXL_MAX_STEPS,
-                    "maxConcurrentJobs": SDXL_MAX_CONCURRENT_JOBS,
                 },
+                "sd15_models": _discover_sd15_models(),
             },
         }
+
+    if tool == "imagen_model_list":
+        return {"tool": tool, "result": {"sd15_models": _discover_sd15_models()}}
+
+    if tool == "imagen_model_get":
+        sd15_file = _current_sd15_model_file()
+        return {
+            "tool": tool,
+            "result": {"sd15_model_file": sd15_file, "exists": bool(sd15_file and os.path.exists(sd15_file))},
+        }
+
+    if tool == "imagen_model_set":
+        selection = str((args or {}).get("model") or "").strip()
+        resolved = _resolve_model_path(selection)
+        if not resolved:
+            raise HTTPException(status_code=400, detail="model_not_found")
+        if not os.path.exists(resolved):
+            raise HTTPException(status_code=400, detail="model_missing")
+        _set_state_value("sd15_model_file", resolved)
+        _reset_sd15_pipelines()
+        return {"tool": tool, "result": {"sd15_model_file": resolved, "ok": True}}
 
     if tool == "imagen_job_create":
-        parsed = ImagenJobCreateArgs(**args)
-        spec = _validate_imagen_args(parsed)
-        job = _create_imagen_job(spec)
-        _imagen_executor.submit(_run_imagen_job, job)
-        return {
-            "tool": tool,
-            "result": {
-                "jobId": job.job_id,
-                "status": job.status,
-                "eventsUrl": f"/imagen/jobs/{job.job_id}/events",
-                "statusUrl": f"/imagen/jobs/{job.job_id}",
-                "resultUrl": f"/imagen/jobs/{job.job_id}/result",
-            },
-        }
+        try:
+            args = ImagenJobCreateArgs(**payload)
+            spec = _validate_imagen_args(args)
+            job = _create_imagen_job(spec)
+            _imagen_executor.submit(_run_imagen_job, job)
+            return {
+                "tool": tool,
+                "result": {
+                    "jobId": job.job_id,
+                    "status": job.status,
+                    "eventsUrl": f"/imagen/jobs/{job.job_id}/events",
+                    "statusUrl": f"/imagen/jobs/{job.job_id}",
+                    "resultUrl": f"/imagen/jobs/{job.job_id}/result",
+                },
+            }
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
     if tool == "imagen_job_status":
-        parsed = ImagenJobStatusArgs(**args)
-        job = _get_job(parsed.job_id)
-        return {
-            "tool": tool,
-            "result": {
-                "jobId": job.job_id,
-                "status": job.status,
-                "progress": job.progress,
-                "error": job.error,
-                "createdAtMs": job.created_at_ms,
-                "startedAtMs": job.started_at_ms,
-                "finishedAtMs": job.finished_at_ms,
-            },
-        }
+        try:
+            args = ImagenJobStatusArgs(**payload)
+            job = _get_job(args.job_id)
+            return {
+                "tool": tool,
+                "result": {
+                    "jobId": job.job_id,
+                    "status": job.status,
+                    "progress": job.progress,
+                    "error": job.error,
+                    "createdAtMs": job.created_at_ms,
+                    "startedAtMs": job.started_at_ms,
+                    "finishedAtMs": job.finished_at_ms,
+                },
+            }
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
     if tool == "imagen_job_result":
-        parsed = ImagenJobResultArgs(**args)
-        job = _get_job(parsed.job_id)
-        if job.status != "succeeded":
-            raise HTTPException(status_code=409, detail=f"job_not_succeeded: {job.status}")
-        if not isinstance(job.result, dict):
-            raise HTTPException(status_code=502, detail="missing_result")
-        return {
-            "tool": tool,
-            "result": {"jobId": job.job_id, **job.result},
-        }
+        try:
+            args = ImagenJobResultArgs(**payload)
+            job = _get_job(args.job_id)
+            if job.status != "succeeded":
+                raise HTTPException(status_code=409, detail=f"job_not_succeeded: {job.status}")
+            if not isinstance(job.result, dict):
+                raise HTTPException(status_code=502, detail="result_missing")
+            return {
+                "tool": tool,
+                "result": {"jobId": job.job_id, **job.result},
+            }
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
     raise HTTPException(status_code=404, detail=f"unknown tool '{tool}'")
 
@@ -1395,8 +1630,9 @@ async def mcp_endpoint(payload: Dict[str, Any] = Body(...)):
             ).model_dump(exclude_none=True)
 
         if tool_name == "imagen_models":
+            sd15_file = _current_sd15_model_file()
             out = {
-                "default": "sd15_single" if (SD15_MODEL_FILE and os.path.exists(SD15_MODEL_FILE)) else "sdxl",
+                "default": "sd15_single" if (sd15_file and os.path.exists(sd15_file)) else "sdxl",
                 "sdxl": {
                     "modelDir": SDXL_MODEL_DIR,
                     "localFilesOnly": True,
@@ -1405,13 +1641,43 @@ async def mcp_endpoint(payload: Dict[str, Any] = Body(...)):
                     "maxConcurrentJobs": SDXL_MAX_CONCURRENT_JOBS,
                 },
                 "sd15_single": {
-                    "modelFile": SD15_MODEL_FILE,
+                    "modelFile": sd15_file,
                     "localFilesOnly": True,
                     "maxPixels": SDXL_MAX_PIXELS,
                     "maxSteps": SDXL_MAX_STEPS,
-                    "maxConcurrentJobs": SDXL_MAX_CONCURRENT_JOBS,
                 },
+                "sd15_models": _discover_sd15_models(),
             }
+            return JsonRpcResponse(
+                id=request.id,
+                result={"content": [{"type": "text", "text": str(out)}]},
+            ).model_dump(exclude_none=True)
+
+        if tool_name == "imagen_model_list":
+            out = {"sd15_models": _discover_sd15_models()}
+            return JsonRpcResponse(
+                id=request.id,
+                result={"content": [{"type": "text", "text": str(out)}]},
+            ).model_dump(exclude_none=True)
+
+        if tool_name == "imagen_model_get":
+            sd15_file = _current_sd15_model_file()
+            out = {"sd15_model_file": sd15_file, "exists": bool(sd15_file and os.path.exists(sd15_file))}
+            return JsonRpcResponse(
+                id=request.id,
+                result={"content": [{"type": "text", "text": str(out)}]},
+            ).model_dump(exclude_none=True)
+
+        if tool_name == "imagen_model_set":
+            selection = str((arguments_raw or {}).get("model") or "").strip()
+            resolved = _resolve_model_path(selection)
+            if not resolved:
+                return _jsonrpc_error(request.id, -32602, "model_not_found").model_dump(exclude_none=True)
+            if not os.path.exists(resolved):
+                return _jsonrpc_error(request.id, -32602, "model_missing").model_dump(exclude_none=True)
+            _set_state_value("sd15_model_file", resolved)
+            _reset_sd15_pipelines()
+            out = {"sd15_model_file": resolved, "ok": True}
             return JsonRpcResponse(
                 id=request.id,
                 result={"content": [{"type": "text", "text": str(out)}]},

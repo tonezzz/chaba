@@ -20,6 +20,39 @@ Environment variables control persistence behavior:
 - `/imagen/jobs/{jobId}` (GET): Get job status
 - `/imagen/jobs/{jobId}/events` (GET): Stream job events
 
+## Checkpoint directory (SD1.5 single-file)
+
+Store `.ckpt`/`.safetensors` files in:
+
+- Host (Windows): `C:\chaba\.models\checkpoints\`
+- Container: `/models/checkpoints`
+
+`mcp-cuda` discovers models by scanning `/models/checkpoints`.
+
+## Model selection
+
+`mcp-cuda` supports selecting the active SD1.5 checkpoint at runtime. The selected model is persisted in `/data/mcp-cuda-state.json` (override with `MCP_CUDA_STATE_DIR`). Changing the model hot-reloads the SD1.5 pipeline.
+
+### Tools
+
+- `imagen_model_list`: list available `.ckpt`/`.safetensors` under `/models/checkpoints`
+- `imagen_model_get`: show current selected checkpoint (or fallback env `MCP_CUDA_SD15_MODEL_FILE`)
+- `imagen_model_set`: set by filename (recommended) or absolute container path
+
+### Example (HTTP /invoke)
+
+List models:
+
+```json
+{ "tool": "imagen_model_list", "arguments": {} }
+```
+
+Select a model:
+
+```json
+{ "tool": "imagen_model_set", "arguments": { "model": "Inkpunk-Diffusion-v2.ckpt" } }
+```
+
 ## Debugging
 
 Enable debug logging to monitor job lifecycle:
