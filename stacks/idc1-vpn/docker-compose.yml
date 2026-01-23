@@ -8,3 +8,25 @@ services:
     volumes:
       - ./config/coredns/Corefile:/Corefile:ro
       - ./config/coredns/zones:/etc/coredns/zones:ro
+
+  wgdashboard:
+    image: ghcr.io/wgdashboard/wgdashboard:latest
+    container_name: idc1-wgdashboard
+    restart: unless-stopped
+    environment:
+      tz: ${tz:-Asia/Bangkok}
+      wgd_port: ${wgd_port:-10086}
+      username: ${username:-}
+      password: ${password:-}
+      enable_totp: ${enable_totp:-true}
+      wg_autostart: ${wg_autostart:-}
+    ports:
+      - "127.0.0.1:${wgd_port:-10086}:${wgd_port:-10086}"
+    volumes:
+      - /etc/wireguard:/etc/wireguard
+      - wgdashboard_data:/data
+    cap_add:
+      - NET_ADMIN
+
+volumes:
+  wgdashboard_data:
