@@ -24,7 +24,7 @@ services:
       - "${WGD_BIND_IP:-10.8.0.1}:${wgd_port:-10086}:${wgd_port:-10086}"
     volumes:
       - /etc/wireguard:/etc/wireguard
-      - wgdashboard_data:/data
+      - "${WGD_DATA_VOL:-wgdashboard_data}:/data"
     cap_add:
       - NET_ADMIN
 
