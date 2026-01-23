@@ -21,7 +21,7 @@ services:
       enable_totp: ${enable_totp:-true}
       wg_autostart: ${wg_autostart:-}
     ports:
-      - "10.8.0.1:${wgd_port:-10086}:${wgd_port:-10086}"
+      - "${WGD_BIND_IP:-10.8.0.1}:${wgd_port:-10086}:${wgd_port:-10086}"
     volumes:
       - /etc/wireguard:/etc/wireguard
       - wgdashboard_data:/data
