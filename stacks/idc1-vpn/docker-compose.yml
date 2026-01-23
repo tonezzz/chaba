@@ -13,6 +13,7 @@ services:
     image: ghcr.io/wgdashboard/wgdashboard:latest
     container_name: idc1-wgdashboard
     restart: unless-stopped
+    network_mode: "host"
     environment:
       tz: ${tz:-Asia/Bangkok}
       wgd_port: ${wgd_port:-10086}
@@ -20,8 +21,6 @@ services:
       password: ${WG_PASSWORD:-}
       enable_totp: ${enable_totp:-true}
       wg_autostart: ${wg_autostart:-}
-    ports:
-      - "${WGD_BIND_IP:-10.8.0.1}:${wgd_port:-10086}:${wgd_port:-10086}"
     volumes:
       - /etc/wireguard:/etc/wireguard
       - "${WGD_DATA_VOL:-wgdashboard_data}:/data"
