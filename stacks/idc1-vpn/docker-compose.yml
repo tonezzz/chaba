@@ -3,7 +3,6 @@ services:
     image: coredns/coredns:1.11.1
     container_name: idc1-wg-dns
     restart: unless-stopped
-    profiles: ["wg-easy"]
     network_mode: "service:wg-easy"
     depends_on:
       - wg-easy
@@ -15,7 +14,6 @@ services:
     image: ghcr.io/wg-easy/wg-easy:latest
     container_name: idc1-wg-easy
     restart: unless-stopped
-    profiles: ["wg-easy"]
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
