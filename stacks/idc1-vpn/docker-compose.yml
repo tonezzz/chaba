@@ -4,8 +4,9 @@ services:
     container_name: idc1-wg-dns
     restart: unless-stopped
     network_mode: "host"
+    command: ["-conf", "/Corefile"]
     volumes:
-      - ./config/coredns/Corefile:/etc/coredns/Corefile:ro
+      - ./config/coredns/Corefile:/Corefile:ro
       - ./config/coredns/zones:/etc/coredns/zones:ro
 
   portainer:
