@@ -57,18 +57,18 @@ services:
     build:
       context: ./1mcp-agent
     command:
-      - sh
-      - -lc
-      - |
-        mkdir -p "${ONE_MCP_CONFIG:-/root/.config/1mcp-config}" && \
-        (test -d /root/.config/1mcp/mcp.json && rm -rf /root/.config/1mcp/mcp.json || true) && \
-        exec 1mcp \
-          --config "${ONE_MCP_CONFIG:-/root/.config/1mcp-config}" \
-          --transport http \
-          --enable-enhanced-security=false \
-          --host "${ONE_MCP_HOST:-0.0.0.0}" \
-          --port "${ONE_MCP_PORT:-3050}" \
-          --external-url "${ONE_MCP_EXTERNAL_URL:-http://127.0.0.1:${ONE_MCP_PORT:-3050}}"
+      - 1mcp
+      - --config
+      - ${ONE_MCP_CONFIG:-/root/.config/1mcp-config/mcp.json}
+      - --transport
+      - http
+      - --enable-enhanced-security=false
+      - --host
+      - ${ONE_MCP_HOST:-0.0.0.0}
+      - --port
+      - ${ONE_MCP_PORT:-3050}
+      - --external-url
+      - ${ONE_MCP_EXTERNAL_URL:-http://127.0.0.1:${ONE_MCP_PORT:-3050}}
     ports:
       - "127.0.0.1:${ONE_MCP_PORT:-3050}:${ONE_MCP_PORT:-3050}"
     extra_hosts:
@@ -79,7 +79,7 @@ services:
       ONE_MCP_EXTERNAL_URL: ${ONE_MCP_EXTERNAL_URL:-http://127.0.0.1:${ONE_MCP_PORT:-3050}}
       ONE_MCP_ENABLE_AUTH: "false"
       ONE_MCP_LOG_LEVEL: ${ONE_MCP_LOG_LEVEL:-info}
-      ONE_MCP_CONFIG: ${ONE_MCP_CONFIG:-/root/.config/1mcp-config}
+      ONE_MCP_CONFIG: ${ONE_MCP_CONFIG:-/root/.config/1mcp-config/mcp.json}
       MCP_TASK_DATA_DIR: ${MCP_TASK_DATA_DIR:-/data/mcp-project-manager}
       PORTAINER_SERVER: ${PORTAINER_SERVER:-host.docker.internal:${PORTAINER_HTTP_PORT:-9000}}
       PORTAINER_TOKEN: ${PORTAINER_TOKEN:-}
@@ -89,8 +89,8 @@ services:
       UV_PYTHON_DOWNLOADS: never
       UV_PROJECT_ENVIRONMENT: /tmp/uv-project
     volumes:
-      - ${ONE_MCP_CONFIG_FILE:-./stacks/idc1-services/1mcp.json}:${ONE_MCP_CONFIG:-/root/.config/1mcp-config}/mcp.json:ro
-      - one_mcp_sessions:${ONE_MCP_CONFIG:-/root/.config/1mcp-config}/sessions
+      - ${ONE_MCP_CONFIG_FILE:-./stacks/idc1-services/1mcp.json}:${ONE_MCP_CONFIG:-/root/.config/1mcp-config/mcp.json}:ro
+      - one_mcp_sessions:/root/.config/1mcp-config/sessions
       - ${ONE_MCP_WORKSPACE_HOST_DIR:-../../}:/workspaces/chaba:cached
       - /var/run/docker.sock:/var/run/docker.sock
       - docker-mcp-venv:/opt/docker-mcp-venv
