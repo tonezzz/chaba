@@ -32,6 +32,42 @@ services:
       timeout: 5s
       retries: 3
 
+  mcp-agents:
+    <<: *default-service
+    build:
+      context: ${MCP_AGENTS_BUILD_CONTEXT:-../../mcp/mcp-agents}
+    ports:
+      - "${MCP_AGENTS_PORT:-8446}:8046"
+    environment:
+      PORT: 8046
+      AGENTS_API_BASE: ${AGENTS_API_BASE:-https://test.idc1.surf-thailand.com/agents/api}
+      AGENTS_DEFAULT_USER: ${AGENTS_DEFAULT_USER:-default}
+      AGENTS_DEFAULT_LIMIT: ${AGENTS_DEFAULT_LIMIT:-12}
+      JSON_BODY_LIMIT: ${AGENTS_JSON_LIMIT:-2mb}
+    volumes:
+      - ${MCP_AGENTS_DATA_DIR:-./data/mcp-agents}:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"const net=require('net'); const s=net.connect(8046,'127.0.0.1'); s.setTimeout(2000); s.on('connect',()=>process.exit(0)); s.on('timeout',()=>process.exit(1)); s.on('error',()=>process.exit(1));\" || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-docker:
+    <<: *default-service
+    image: docker/mcp-gateway
+    command:
+      - --transport
+      - streaming
+      - --port
+      - "8340"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8340/mcp || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   1mcp-agent:
     <<: *default-service
     build:
