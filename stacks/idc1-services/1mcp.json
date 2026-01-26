@@ -1,13 +1,10 @@
 {
   "mcpServers": {
     "docker": {
-      "command": "docker-mcp-stdio",
+      "transport": "streamableHttp",
+      "url": "http://mcp-docker:8340/mcp",
       "tags": ["docker"],
-      "connectionTimeout": 120000,
-      "requestTimeout": 120000,
-      "restartOnExit": true,
-      "restartDelay": 2000,
-      "enabled": false
+      "enabled": true
     },
     "portainer": {
       "command": "portainer-mcp-stdio",

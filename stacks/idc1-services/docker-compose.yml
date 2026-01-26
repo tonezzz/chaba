@@ -52,6 +52,22 @@ services:
       timeout: 5s
       retries: 3
 
+  mcp-docker:
+    <<: *default-service
+    image: docker/mcp-gateway
+    command:
+      - --transport
+      - streaming
+      - --port
+      - "8340"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8340/mcp || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   1mcp-agent:
     <<: *default-service
     build:
