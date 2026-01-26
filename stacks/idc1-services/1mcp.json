@@ -1,0 +1,46 @@
+{
+  "mcpServers": {
+    "docker": {
+      "command": "docker-mcp-stdio",
+      "tags": ["docker"],
+      "connectionTimeout": 120000,
+      "requestTimeout": 120000,
+      "restartOnExit": true,
+      "restartDelay": 2000,
+      "enabled": true
+    },
+    "1mcp": {
+      "transport": "streamableHttp",
+      "url": "http://127.0.0.1:3050/mcp",
+      "tags": ["1mcp"],
+      "enabled": true
+    },
+    "portainer": {
+      "command": "portainer-mcp-stdio",
+      "env": {
+        "PORTAINER_SERVER": "${PORTAINER_SERVER}",
+        "PORTAINER_TOKEN": "${PORTAINER_TOKEN}",
+        "PORTAINER_READ_ONLY": "${PORTAINER_READ_ONLY}",
+        "PORTAINER_DISABLE_VERSION_CHECK": "${PORTAINER_DISABLE_VERSION_CHECK}"
+      },
+      "tags": ["portainer", "docker"],
+      "connectionTimeout": 120000,
+      "requestTimeout": 120000,
+      "restartOnExit": true,
+      "restartDelay": 2000,
+      "enabled": true
+    },
+    "pm": {
+      "command": "mcp-project-manager-stdio",
+      "env": {
+        "MCP_TASK_DATA_DIR": "${MCP_TASK_DATA_DIR}"
+      },
+      "tags": ["project-manager"],
+      "connectionTimeout": 120000,
+      "requestTimeout": 120000,
+      "restartOnExit": true,
+      "restartDelay": 2000,
+      "enabled": true
+    }
+  }
+}
