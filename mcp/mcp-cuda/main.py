@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import numpy as np
-from fastapi import Body, FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from PIL import Image
@@ -371,6 +371,35 @@ def _sd15_latents_to_preview_png_base64(pipe: StableDiffusionPipeline, latents) 
         return _encode_image_png_base64(img)
 
 
+def _sdxl_latents_to_preview_png_base64(pipe: StableDiffusionXLPipeline, latents) -> str:
+    # Best-effort: decode SDXL intermediate latents into an RGB image.
+    # SDXL callback_on_step_end can provide latents in callback kwargs depending on diffusers version.
+    with torch.no_grad():
+        l = latents
+        if hasattr(l, "detach"):
+            l = l.detach()
+        if hasattr(l, "to"):
+            l = l.to("cuda" if torch.cuda.is_available() else "cpu")
+
+        scaling = 1.0
+        try:
+            scaling = float(getattr(getattr(pipe, "vae", None), "config", None).scaling_factor)  # type: ignore[attr-defined]
+        except Exception:
+            scaling = 1.0
+
+        if scaling and scaling != 0:
+            l = l / float(scaling)
+
+        decoded = pipe.vae.decode(l).sample  # type: ignore[union-attr]
+        decoded = (decoded / 2 + 0.5).clamp(0, 1)
+        arr = decoded[0].permute(1, 2, 0).float().cpu().numpy()
+        arr = np.nan_to_num(arr, nan=0.0, posinf=1.0, neginf=0.0)
+        arr = np.clip(arr, 0.0, 1.0)
+        img = Image.fromarray((arr * 255.0).round().astype("uint8"))
+        img = _maybe_resize_preview(img)
+        return _encode_image_png_base64(img)
+
+
 class _ImagenJob:
     def __init__(self, *, job_id: str, spec: Dict[str, Any]):
         self.job_id = job_id
@@ -473,6 +502,34 @@ def _run_imagen_job(job: _ImagenJob) -> None:
                         "progress": job.progress,
                     }
                 )
+
+                if not ENABLE_PREVIEW_IMAGES:
+                    return {}
+                every = max(1, int(PREVIEW_EVERY_STEPS or 1))
+                if (int(step_idx) + 1) % every != 0 and (int(step_idx) + 1) != steps:
+                    return {}
+
+                try:
+                    latents = None
+                    if isinstance(_kwargs, dict):
+                        # Different diffusers versions may use different keys.
+                        latents = _kwargs.get("latents")
+                        if latents is None:
+                            latents = _kwargs.get("latent")
+                    if latents is None:
+                        return {}
+
+                    b64 = _sdxl_latents_to_preview_png_base64(pipe, latents)
+                    payload = {
+                        "mimeType": "image/png",
+                        "imageBase64": b64,
+                        "step": int(job.progress.get("step") or 0),
+                        "steps": int(job.progress.get("steps") or 0),
+                    }
+                    job.preview = payload
+                    job.add_event({"type": "preview", "preview": payload})
+                except Exception:
+                    return {}
                 return {}
 
             with torch.inference_mode(), autocast_ctx:
@@ -1019,7 +1076,7 @@ async def imagen_jobs_result(job_id: str) -> Dict[str, Any]:
 async def imagen_jobs_preview(job_id: str) -> Dict[str, Any]:
     job = _get_job(job_id)
     if not job.preview:
-        raise HTTPException(status_code=404, detail="preview_not_available")
+        return Response(status_code=204)
     return {"jobId": job.job_id, **job.preview}
 
 
