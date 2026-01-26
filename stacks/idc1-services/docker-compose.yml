@@ -59,7 +59,7 @@ services:
       ONE_MCP_EXTERNAL_URL: ${ONE_MCP_EXTERNAL_URL:-http://127.0.0.1:${ONE_MCP_PORT:-3050}}
       ONE_MCP_ENABLE_AUTH: "false"
       ONE_MCP_LOG_LEVEL: ${ONE_MCP_LOG_LEVEL:-info}
-      ONE_MCP_CONFIG: ${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}
+      ONE_MCP_CONFIG: ${ONE_MCP_CONFIG:-/root/.config/1mcp/config.json}
       PORTAINER_SERVER: ${PORTAINER_SERVER:-host.docker.internal:${PORTAINER_HTTP_PORT:-9000}}
       PORTAINER_TOKEN: ${PORTAINER_TOKEN:-}
       PORTAINER_READ_ONLY: ${PORTAINER_READ_ONLY:-1}
@@ -69,7 +69,7 @@ services:
       UV_PYTHON_DOWNLOADS: never
       UV_PROJECT_ENVIRONMENT: /tmp/uv-project
     volumes:
-      - ${ONE_MCP_CONFIG_FILE:-./1mcp.json}:${ONE_MCP_CONFIG:-/root/.config/1mcp/mcp.json}:ro
+      - ${ONE_MCP_CONFIG_FILE:-./1mcp.json}:${ONE_MCP_CONFIG:-/root/.config/1mcp/config.json}:ro
       - one_mcp_sessions:/root/.config/1mcp/sessions
       - mcp-project-manager-data:${MCP_TASK_DATA_DIR:-/data/mcp-project-manager}
       - ${ONE_MCP_WORKSPACE_HOST_DIR:-../../}:/workspaces/chaba:cached
