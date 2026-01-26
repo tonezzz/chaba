@@ -2,8 +2,6 @@ version: "3.9"
 
 x-default-service: &default-service
   restart: unless-stopped
-  env_file:
-    - .env
   networks:
     - idc1-line-net
     - idc1-stack-net
@@ -86,4 +84,4 @@ networks:
   idc1-stack-net:
     driver: bridge
     external: true
-    name: idc1-stack_idc1-stack-net
+    name: idc1-stack-net
