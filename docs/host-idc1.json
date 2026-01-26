@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "host": {
+    "name": "idc1",
+    "os": "linux",
+    "domains": {
+      "vpn": "idc1.vpn",
+      "public": "idc1.surf-thailand.com"
+    },
+    "roles": [
+      "production",
+      "vpn",
+      "mcp-suite",
+      "dns"
+    ]
+  },
+  "repos": {
+    "chaba": "/home/chaba/chaba"
+  },
+  "ssh": {
+    "vpn": "chaba@idc1.vpn",
+    "public": "chaba@idc1.surf-thailand.com"
+  },
+  "ingress": {
+    "http_https": {
+      "service": "host-caddy",
+      "ports": [80, 443],
+      "description": "Primary HTTP/HTTPS ingress for idc1. Terminates TLS and routes hostnames/paths to stacks/services."
+    }
+  },
+  "stacks": [
+    {
+      "id": "idc1-stack",
+      "path": "stacks/idc1-stack",
+      "description": "Core idc1 MCP services",
+      "docs": ["docs/idc1-stack.json", "docs/idc1_url.json", "docs/stacks-idc1.json"]
+    },
+    {
+      "id": "idc1-vpn",
+      "path": "stacks/idc1-vpn",
+      "description": "WireGuard + CoreDNS stack for VPN connectivity and VPN DNS",
+      "docs": ["docs/idc1-vpn.json"]
+    }
+  ],
+  "entrypoints": {
+    "mcp": {
+      "windsurf": "https://1mcp.idc1.surf-thailand.com/mcp?app=windsurf"
+    }
+  },
+  "description": "idc1 is the primary Linux host for production-facing services and VPN infrastructure (WireGuard + CoreDNS), and also runs the core MCP suite.",
+  "sources": [
+    "docs/services_map.json",
+    "docs/idc1_url.json",
+    "docs/idc1-stack.json",
+    "docs/idc1-vpn.json"
+  ]
+}

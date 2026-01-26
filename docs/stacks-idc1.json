@@ -1,0 +1,108 @@
+{
+  "host": {
+    "name": "idc1",
+    "domains": {
+      "vpn": "idc1.vpn",
+      "public": "idc1.surf-thailand.com"
+    },
+    "vpn": {
+      "hostnames": ["idc1.vpn", "memory.idc1.vpn"],
+      "wireguard_udp": 51820
+    },
+    "ingress": {
+      "service": "host-caddy",
+      "ports": [80, 443]
+    },
+    "endpoints": {
+      "1mcp": {
+        "windsurf": "https://1mcp.idc1.surf-thailand.com/mcp?app=windsurf"
+      }
+    },
+    "public": {
+      "sites": [
+        "https://idc1.surf-thailand.com",
+        "https://cp.idc1.surf-thailand.com",
+        "https://test.idc1.surf-thailand.com"
+      ],
+      "webtops": ["https://webtops.idc1.surf-thailand.com"]
+    }
+  },
+  "stacks": {
+    "idc1-stack": {
+      "description": "Core idc1 MCP services",
+      "containers": [
+        {
+          "name": "idc1-1mcp-agent",
+          "service": "1mcp-agent",
+          "port": 3050,
+          "purpose": "MCP aggregation gateway (HTTP/SSE + streamable HTTP)"
+        },
+        {
+          "name": "idc1-mcp-agents",
+          "service": "mcp-agents",
+          "port": 8446,
+          "purpose": "Agents API"
+        },
+        {
+          "name": "idc1-mcp-glama",
+          "service": "mcp-glama",
+          "port": 7441,
+          "purpose": "Glama model gateway"
+        },
+        {
+          "name": "idc1-mcp-tester",
+          "service": "mcp-tester",
+          "port": 8435,
+          "purpose": "Test runner"
+        },
+        {
+          "name": "idc1-mcp-devops",
+          "service": "mcp-devops",
+          "port": 8425,
+          "purpose": "DevOps workflows and automation"
+        },
+        {
+          "name": "idc1-mcp-playwright",
+          "service": "mcp-playwright",
+          "port": 8460,
+          "purpose": "Browser automation"
+        },
+        {
+          "name": "idc1-mcp-docker",
+          "service": "mcp-docker",
+          "port": 8340,
+          "purpose": "Docker tools provider"
+        },
+        {
+          "name": "idc1-mcp-memory",
+          "service": "mcp-memory",
+          "port": 8470,
+          "purpose": "Memory provider"
+        }
+      ]
+    },
+    "idc1-vpn": {
+      "description": "WireGuard (wg-easy) + CoreDNS for *.vpn",
+      "containers": [
+        {
+          "name": "idc1-wg-easy",
+          "service": "wg-easy",
+          "ports": ["51820/udp", "127.0.0.1:51821/tcp"],
+          "purpose": "WireGuard server + web UI"
+        },
+        {
+          "name": "idc1-wg-dns",
+          "service": "wg-dns",
+          "ports": ["10.8.0.1:53"],
+          "purpose": "CoreDNS answering .vpn"
+        }
+      ]
+    }
+  },
+  "sources": [
+    "docs/services_map.json",
+    "docs/idc1_url.json",
+    "docs/idc1-stack.json",
+    "docs/idc1-vpn.json"
+  ]
+}

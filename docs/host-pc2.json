@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "host": {
+    "name": "pc2",
+    "os": "windows",
+    "domains": {
+      "vpn": "pc2.vpn",
+      "public": "pc2.surf-thailand.com",
+      "mcp_ingress": "1mcp.pc2.vpn"
+    },
+    "roles": [
+      "worker",
+      "mcp-entrypoint",
+      "mcp-suite"
+    ]
+  },
+  "repos": {
+    "chaba": "C:\\chaba"
+  },
+  "ingress": {
+    "http_https": {
+      "service": "pc2-host-caddy",
+      "ports": [80, 443],
+      "description": "Host Caddy binds :80/:443 on pc2 and routes 1mcp.pc2.vpn to pc2-worker dev-proxy upstream (host.docker.internal:19081)."
+    }
+  },
+  "stacks": [
+    {
+      "id": "pc2-worker",
+      "path": "stacks/pc2-worker",
+      "description": "Worker stack providing 1mcp ingress (dev-proxy) and MCP services (mcp0 aggregator and downstream providers)",
+      "docs": ["docs/pc2_url.json", "docs/stacks-pc2.json"]
+    },
+    {
+      "id": "pc2-stack",
+      "path": "stacks/pc2-stack",
+      "description": "Alternate/minimal 1mcp-agent entrypoint and helper services",
+      "docs": ["docs/pc2-stack.json"]
+    }
+  ],
+  "entrypoints": {
+    "mcp": {
+      "windsurf": "http://1mcp.pc2.vpn:3050/mcp?app=windsurf"
+    }
+  },
+  "description": "pc2 is a Windows worker host and the preferred single MCP entrypoint (1mcp.pc2.vpn) for remote clients.",
+  "sources": [
+    "docs/services_map.json",
+    "docs/pc2_url.json",
+    "docs/pc2-stack.json"
+  ]
+}
