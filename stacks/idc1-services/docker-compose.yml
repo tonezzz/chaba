@@ -91,7 +91,7 @@ services:
     volumes:
       - ${ONE_MCP_CONFIG_FILE:-./stacks/idc1-services/1mcp.json}:${ONE_MCP_CONFIG:-/root/.config/1mcp-config/mcp.json}:ro
       - one_mcp_sessions:/root/.config/1mcp-config/sessions
-      - ${ONE_MCP_WORKSPACE_HOST_DIR:-../../}:/workspaces/chaba:cached
+      - ${ONE_MCP_WORKSPACE_HOST_DIR:-.}:/workspaces/chaba:cached
       - /var/run/docker.sock:/var/run/docker.sock
       - docker-mcp-venv:/opt/docker-mcp-venv
       - one_mcp_project_manager_data:/data/mcp-project-manager
