@@ -8,9 +8,9 @@ Authoritative per-stack recovery/runbook docs:
 - `docs/idc1-*.json`
 
 Derived inventories / URL lists (useful for discovery, but do not treat as operational truth):
-- `docs/pc2-stacks.json`, `docs/pc2_url.json`
-- `docs/pc1-stacks.json`, `docs/pc1_url.json`
-- `docs/idc1_url.json`
+- `docs/stacks-pc2.json`, `docs/pc2_url.json`
+- `docs/stacks-pc1.json`, `docs/pc1_url.json`
+- `docs/stacks-idc1.json`, `docs/idc1_url.json`
 
 ## pc2
 - **VPN + DNS runbook**: `docs/pc2-stack-vpn.json`

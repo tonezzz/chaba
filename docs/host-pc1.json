@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "host": {
+    "name": "pc1",
+    "os": "windows",
+    "domains": {
+      "vpn": "pc1.vpn",
+      "public": "pc1.surf-thailand.com"
+    },
+    "roles": [
+      "workstation",
+      "dev",
+      "mcp-suite"
+    ]
+  },
+  "repos": {
+    "chaba": "C:\\chaba"
+  },
+  "ssh": {
+    "vpn": "chaba@pc1.vpn",
+    "public": "chaba@pc1.surf-thailand.com"
+  },
+  "ingress": {
+    "http_https": {
+      "service": "host-caddy",
+      "ports": [80, 443],
+      "description": "Host-level Caddy should own :80/:443 and forward to stack ingress (pc1-stack Caddy on 3080/3443)."
+    }
+  },
+  "stacks": [
+    {
+      "id": "pc1-stack",
+      "path": "stacks/pc1-stack",
+      "description": "Core pc1 MCP services (1mcp-agent + common MCP servers)",
+      "docs": ["docs/pc1-stack.json", "docs/pc1_url.json"]
+    }
+  ],
+  "entrypoints": {
+    "mcp": {
+      "windsurf": "http://pc1.vpn:3051/mcp?app=windsurf",
+      "windsurf_https": "https://pc1.vpn:3443/1mcp/mcp?app=windsurf"
+    },
+    "preview": {
+      "dev_host_test": "http://dev-host.pc1/test/"
+    }
+  },
+  "description": "pc1 is the main Windows workstation. It hosts the primary local development environment (dev-host previews) and a core MCP suite.",
+  "sources": [
+    "docs/services_map.json",
+    "docs/pc1_url.json",
+    "docs/pc1-stack.json"
+  ]
+}
