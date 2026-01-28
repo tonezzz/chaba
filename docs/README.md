@@ -85,6 +85,35 @@ Recommended GitHub repo settings (Pull Requests):
 - **Allow merge commits**: disabled
 - **Allow squash merging**: disabled
 
+## Git workflow notes (Windows / PowerShell)
+
+### Avoid merge editor prompts
+If you don't want Git to open an editor for the merge commit message:
+
+```powershell
+git merge --no-edit <branch>
+```
+
+If you do use an editor, make sure you don't accidentally commit the commented template text.
+
+### PowerShell quoting for stash refs
+PowerShell can misparse braces in stash refs like `stash@{0}`. Use quotes:
+
+```powershell
+git stash pop "stash@{0}"
+git stash show -p "stash@{0}"
+```
+
+### LF/CRLF warnings when staging docs
+If `git add docs` prints warnings about `LF will be replaced by CRLF`, it's usually harmless, but it can create noisy diffs.
+Align your local Git line-ending behavior (example options):
+
+```powershell
+git config --global core.autocrlf true
+# or
+git config --global core.autocrlf input
+```
+
 ## Secrets (new standard)
 
 This repo does not commit real secrets. The default workflow is:
