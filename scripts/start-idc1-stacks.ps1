@@ -28,7 +28,7 @@ $StackCommands = @{
         "description" = "Database stack (qdrant, mcp-rag, mcp-memory)"
     }
     "web" = @{
-        "path" = "$StacksDir/idc1-web"
+        "path" = "$StacksDir/idc1-webtop"
         "compose" = "docker-compose"
         "description" = "Web services (webtops)"
     }

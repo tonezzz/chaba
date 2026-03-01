@@ -20,7 +20,7 @@ This directory contains the core IDC1 stack services. The original monolithic `i
 - **mcp-rag**: RAG (Retrieval-Augmented Generation) service
 - **mcp-memory**: Persistent memory storage
 
-#### `idc1-web/` - User Interfaces
+#### `idc1-webtop/` - User Interfaces
 - **webtops-router**: Webtop session router
 - **mcp-webtops**: Webtop session management
 - **webtops-cp**: Webtop control panel
@@ -42,7 +42,7 @@ This directory contains the core IDC1 stack services. The original monolithic `i
 
 # Create environment files
 cp stacks/idc1-db/.env.example stacks/idc1-db/.env
-cp stacks/idc1-web/.env.example stacks/idc1-web/.env
+cp stacks/idc1-webtop/.env.example stacks/idc1-webtop/.env
 cp stacks/idc1-devops/.env.example stacks/idc1-devops/.env
 cp stacks/idc1-line/.env.example stacks/idc1-line/.env
 ```
