@@ -77,11 +77,14 @@ async def _webtops_invoke(tool: str, arguments: Dict[str, Any], require_admin: b
         headers["Authorization"] = f"Bearer {token}"
     payload = {"tool": tool, "arguments": arguments}
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        resp = await client.post(url, headers=headers, json=payload)
-        if resp.status_code >= 400:
-            raise HTTPException(status_code=502, detail=f"webtops_invoke_failed: HTTP {resp.status_code}: {resp.text}")
-        return resp.json()
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            resp = await client.post(url, headers=headers, json=payload)
+            if resp.status_code >= 400:
+                raise HTTPException(status_code=502, detail=f"webtops_invoke_failed: HTTP {resp.status_code}: {resp.text}")
+            return resp.json()
+    except httpx.TimeoutException as exc:
+        raise HTTPException(status_code=504, detail=f"webtops_invoke_timeout: {exc}")
 
 
 class CreateSessionRequest(BaseModel):
@@ -180,7 +183,13 @@ function fmtTs(ts) {
 
 async function refresh() {
   setStatus('Loading...');
-  const data = await api('api/sessions');
+  let data;
+  try {
+    data = await api('api/sessions');
+  } catch (e) {
+    setStatus('Error: ' + (e && e.message ? e.message : String(e)));
+    return;
+  }
   const rows = document.getElementById('rows');
   rows.innerHTML = '';
   for (const s of (data.sessions || [])) {
@@ -231,11 +240,16 @@ async function createSession() {
   const ttlStr = document.getElementById('ttl').value;
   const ttl = ttlStr ? Number(ttlStr) : null;
   setStatus('Creating...');
-  await api('api/sessions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user_id: user, ttl_minutes: ttl, profile: profile })
-  });
+  try {
+    await api('api/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user, ttl_minutes: ttl, profile: profile })
+    });
+  } catch (e) {
+    setStatus('Error: ' + (e && e.message ? e.message : String(e)));
+    return;
+  }
   await refresh();
 }
 
