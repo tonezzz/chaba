@@ -1,0 +1,63 @@
+#!/usr/bin/with-contenv bash
+set -euo pipefail
+
+DEFAULT_MODEL="${CLAUDE_DEFAULT_MODEL:-haiku}"
+CONFIG_DIR="/config"
+BIN_DIR="$CONFIG_DIR/.local/bin"
+
+# Try to locate the real Claude Code binary installed under /config
+REAL_BIN=""
+if [ -x "$CONFIG_DIR/.local/share/claude/versions" ] 2>/dev/null; then
+  :
+fi
+
+if [ -d "$CONFIG_DIR/.local/share/claude/versions" ]; then
+  REAL_BIN="$(find "$CONFIG_DIR/.local/share/claude/versions" -maxdepth 1 -type f -perm -111 2>/dev/null | sort -V | tail -n 1 || true)"
+fi
+
+if [ -z "$REAL_BIN" ]; then
+  # Fallback: if /usr/local/bin/claude is a symlink, use its target
+  if [ -L /usr/local/bin/claude ]; then
+    REAL_BIN="$(readlink -f /usr/local/bin/claude 2>/dev/null || true)"
+  fi
+fi
+
+mkdir -p "$BIN_DIR" 2>/dev/null || true
+
+# Ensure claude.real exists (the wrapper execs this)
+if [ -n "$REAL_BIN" ] && [ -x "$REAL_BIN" ]; then
+  ln -sf "$REAL_BIN" "$BIN_DIR/claude.real" 2>/dev/null || true
+fi
+
+# Write wrapper that injects --model unless explicitly provided
+cat > "$BIN_DIR/claude" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+DEFAULT_MODEL="${CLAUDE_DEFAULT_MODEL:-haiku}"
+SCRIPT_PATH="$(readlink -f "$0" 2>/dev/null || echo "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
+REAL_BIN="$SCRIPT_DIR/claude.real"
+if [ ! -x "$REAL_BIN" ]; then
+  echo "claude wrapper error: missing $REAL_BIN" >&2
+  exit 127
+fi
+for arg in "$@"; do
+  if [ "$arg" = "--model" ] || [[ "$arg" == --model=* ]]; then
+    exec "$REAL_BIN" "$@"
+  fi
+done
+exec "$REAL_BIN" --model "$DEFAULT_MODEL" "$@"
+EOF
+
+chmod +x "$BIN_DIR/claude" 2>/dev/null || true
+
+OWNER_UID="${PUID:-$(id -u abc 2>/dev/null || echo 1000)}"
+OWNER_GID="${PGID:-$(id -g abc 2>/dev/null || echo 1000)}"
+OWNER="${OWNER_UID}:${OWNER_GID}"
+chown -R "$OWNER" "$BIN_DIR" 2>/dev/null || true
+
+# Ensure /usr/local/bin/claude points at the wrapper
+ln -sf "$BIN_DIR/claude" /usr/local/bin/claude 2>/dev/null || true
+
+# Keep the default model visible in logs
+echo "[claude] default model: $DEFAULT_MODEL" 2>/dev/null || true
