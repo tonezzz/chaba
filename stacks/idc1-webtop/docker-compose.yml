@@ -40,6 +40,9 @@ services:
 
   webtops-router:
     <<: *default-service
+    networks:
+      - idc1-web-net
+      - idc1-stack-net
     build:
       context: ${WEBTOPS_ROUTER_BUILD_CONTEXT:-../../mcp/webtops-router}
     ports:
@@ -129,6 +132,10 @@ services:
 
 networks:
   idc1-web-net:
+    driver: bridge
+    external: true
+
+  idc1-stack-net:
     driver: bridge
     external: true
 
