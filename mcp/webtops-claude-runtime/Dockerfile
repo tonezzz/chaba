@@ -2,6 +2,8 @@ FROM lscr.io/linuxserver/webtop:ubuntu-xfce
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+WORKDIR /tmp
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         bash \
@@ -22,9 +24,11 @@ RUN set -eux; \
     rm -rf /var/lib/apt/lists/*
 
 # Claude Code (official install script)
+ENV PATH="/root/.local/bin:${PATH}"
 RUN set -eux; \
-    npm install -g @anthropic-ai/claude-code --force --no-os-check; \
+    curl -fsSL https://claude.ai/install.sh | bash; \
     command -v claude; \
+    ln -sf /root/.local/bin/claude /usr/local/bin/claude; \
     claude --version || true
 
 RUN git config --system --add safe.directory /workspaces/chaba
