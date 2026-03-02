@@ -23,7 +23,8 @@ RUN set -eux; \
 
 # Claude Code (official install script)
 RUN set -eux; \
-    curl -fsSL https://claude.ai/install.sh | bash; \
-    command -v claude
+    npm install -g @anthropic-ai/claude-code --force --no-os-check; \
+    command -v claude; \
+    claude --version || true
 
 RUN git config --system --add safe.directory /workspaces/chaba
