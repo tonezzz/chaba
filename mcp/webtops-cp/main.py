@@ -130,6 +130,7 @@ async def index(request: Request, authorization: Optional[str] = Header(default=
     <select id="profile">
       <option value="default">default</option>
       <option value="windsurf" selected>windsurf</option>
+      <option value="claude">claude</option>
     </select>
     <label>TTL (min)</label>
     <input id="ttl" placeholder="optional" />
