@@ -27,8 +27,14 @@ RUN set -eux; \
 ENV PATH="/root/.local/bin:${PATH}"
 RUN set -eux; \
     curl -fsSL https://claude.ai/install.sh | bash; \
-    command -v claude; \
-    ln -sf /root/.local/bin/claude /usr/local/bin/claude; \
+    export PATH="$HOME/.local/bin:$PATH"; \
+    if command -v claude >/dev/null 2>&1; then \
+      CLAUDE_BIN="$(command -v claude)"; \
+    else \
+      CLAUDE_BIN="$(find "$HOME" -type f -name claude -path '*/.local/bin/claude' -print -quit || true)"; \
+    fi; \
+    test -n "$CLAUDE_BIN"; \
+    ln -sf "$CLAUDE_BIN" /usr/local/bin/claude; \
     claude --version || true
 
 RUN git config --system --add safe.directory /workspaces/chaba
