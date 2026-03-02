@@ -4,6 +4,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /tmp
 
+COPY cont-init.d/10-claude-perms /etc/cont-init.d/10-claude-perms
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         bash \
@@ -36,5 +38,8 @@ RUN set -eux; \
     test -n "$CLAUDE_BIN"; \
     ln -sf "$CLAUDE_BIN" /usr/local/bin/claude; \
     claude --version || true
+
+RUN sed -i 's/\r$//' /etc/cont-init.d/10-claude-perms \
+    && chmod +x /etc/cont-init.d/10-claude-perms
 
 RUN git config --system --add safe.directory /workspaces/chaba

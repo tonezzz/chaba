@@ -1,0 +1,24 @@
+#!/usr/bin/with-contenv bash
+set -euo pipefail
+
+CONFIG_DIR="/config"
+
+OWNER_UID="${PUID:-$(id -u abc 2>/dev/null || echo 1000)}"
+OWNER_GID="${PGID:-$(id -g abc 2>/dev/null || echo 1000)}"
+OWNER="${OWNER_UID}:${OWNER_GID}"
+
+mkdir -p \
+  "$CONFIG_DIR/.claude" \
+  "$CONFIG_DIR/.cache/claude" \
+  "$CONFIG_DIR/.local/state/claude" \
+  2>/dev/null || true
+
+chown -R "$OWNER" \
+  "$CONFIG_DIR/.claude" \
+  "$CONFIG_DIR/.cache/claude" \
+  "$CONFIG_DIR/.local/state/claude" \
+  2>/dev/null || true
+
+if ls "$CONFIG_DIR"/.claude.json* >/dev/null 2>&1; then
+  chown "$OWNER" "$CONFIG_DIR"/.claude.json* 2>/dev/null || true
+fi
