@@ -179,7 +179,7 @@ function fmtTs(ts) {
 
 async function refresh() {
   setStatus('Loading...');
-  const data = await api('/api/sessions');
+  const data = await api('api/sessions');
   const rows = document.getElementById('rows');
   rows.innerHTML = '';
   for (const s of (data.sessions || [])) {
@@ -216,7 +216,7 @@ async function renameSession(sessionId, currentName) {
   const trimmed = String(name || '').trim();
   if (!trimmed) return;
   setStatus('Renaming...');
-  await api(`/api/sessions/${sessionId}/rename`, {
+  await api(`api/sessions/${sessionId}/rename`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: trimmed })
@@ -230,7 +230,7 @@ async function createSession() {
   const ttlStr = document.getElementById('ttl').value;
   const ttl = ttlStr ? Number(ttlStr) : null;
   setStatus('Creating...');
-  await api('/api/sessions', {
+  await api('api/sessions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ user_id: user, ttl_minutes: ttl, profile: profile })
@@ -240,14 +240,14 @@ async function createSession() {
 
 async function stopSession(sessionId) {
   setStatus('Stopping...');
-  await api(`/api/sessions/${sessionId}/stop`, { method: 'POST' });
+  await api(`api/sessions/${sessionId}/stop`, { method: 'POST' });
   await refresh();
 }
 
 async function deleteSession(sessionId) {
   if (!confirm('Delete session ' + sessionId + '? This will remove the container and volume.')) return;
   setStatus('Deleting...');
-  await api(`/api/sessions/${sessionId}`, { method: 'DELETE' });
+  await api(`api/sessions/${sessionId}`, { method: 'DELETE' });
   await refresh();
 }
 
