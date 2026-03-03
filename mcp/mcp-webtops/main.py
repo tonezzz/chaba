@@ -65,6 +65,7 @@ class Settings(BaseSettings):
 
     session_image: str = Field("lscr.io/linuxserver/webtop:latest", alias="WEBTOPS_SESSION_IMAGE")
     session_image_pull: bool = Field(True, alias="WEBTOPS_SESSION_IMAGE_PULL")
+    session_image_pull_always: bool = Field(False, alias="WEBTOPS_SESSION_IMAGE_PULL_ALWAYS")
 
     session_image_windsurf: str = Field("", alias="WEBTOPS_SESSION_IMAGE_WINDSURF")
     session_image_claude: str = Field("", alias="WEBTOPS_SESSION_IMAGE_CLAUDE")
@@ -302,6 +303,15 @@ def _make_upstream(container_name: str) -> str:
 
 
 def _ensure_image(client: docker.DockerClient, image: str) -> None:
+    # Mutable tags like :latest won't be refreshed unless we explicitly pull.
+    # Keep the current default behavior (pull only when missing), but allow opt-in
+    # forced pulls via WEBTOPS_SESSION_IMAGE_PULL_ALWAYS.
+    if settings.session_image_pull and settings.session_image_pull_always:
+        try:
+            client.images.pull(image)
+        except DockerException as exc:
+            raise HTTPException(status_code=502, detail=f"docker_image_pull_failed: {exc}")
+
     try:
         client.images.get(image)
         return
@@ -313,7 +323,7 @@ def _ensure_image(client: docker.DockerClient, image: str) -> None:
         except DockerException as exc:
             raise HTTPException(status_code=502, detail=f"docker_image_pull_failed: {exc}")
     except DockerException as exc:
-        raise HTTPException(status_code=503, detail=f"docker_image_check_failed: {exc}")
+        raise HTTPException(status_code=502, detail=f"docker_image_get_failed: {exc}")
 
 
 def _copy_docker_volume(
