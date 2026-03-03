@@ -30,12 +30,17 @@ fi
 
 mkdir -p "$BIN_DIR" 2>/dev/null || true
 
-# Write wrapper that injects --model unless explicitly provided
-cat > "/usr/local/bin/claude" <<'EOF'
+# Keep a stable pointer to the upstream Claude binary.
+rm -f "$BIN_DIR/claude.real" 2>/dev/null || true
+ln -sf /usr/local/bin/claude.real "$BIN_DIR/claude.real" 2>/dev/null || true
+
+rm -f "$BIN_DIR/claude" 2>/dev/null || true
+
+cat > "$BIN_DIR/claude" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 DEFAULT_MODEL="${CLAUDE_DEFAULT_MODEL:-haiku}"
-REAL_BIN="/usr/local/bin/claude.real"
+REAL_BIN="/config/.local/bin/claude.real"
 if [ ! -x "$REAL_BIN" ]; then
   echo "claude wrapper error: missing $REAL_BIN" >&2
   exit 127
@@ -51,24 +56,12 @@ done
 exec "$REAL_BIN" --model "$DEFAULT_MODEL" "$@"
 EOF
 
-chmod +x "/usr/local/bin/claude" 2>/dev/null || true
-
-rm -f "$BIN_DIR/claude" 2>/dev/null || true
-
-cat > "$BIN_DIR/claude" <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
-exec /usr/local/bin/claude "$@"
-EOF
-
 chmod +x "$BIN_DIR/claude" 2>/dev/null || true
 
 OWNER_UID="${PUID:-$(id -u abc 2>/dev/null || echo 1000)}"
 OWNER_GID="${PGID:-$(id -g abc 2>/dev/null || echo 1000)}"
 OWNER="${OWNER_UID}:${OWNER_GID}"
 chown -R "$OWNER" "$BIN_DIR" 2>/dev/null || true
-
-chown "$OWNER" /usr/local/bin/claude 2>/dev/null || true
 
 # Keep the default model visible in logs
 echo "[claude] default model: $DEFAULT_MODEL" 2>/dev/null || true
