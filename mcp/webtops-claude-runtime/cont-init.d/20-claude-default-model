@@ -50,6 +50,8 @@ EOF
 
 chmod +x "/usr/local/bin/claude" 2>/dev/null || true
 
+rm -f "$BIN_DIR/claude" 2>/dev/null || true
+
 cat > "$BIN_DIR/claude" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
