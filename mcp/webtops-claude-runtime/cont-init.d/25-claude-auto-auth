@@ -23,6 +23,8 @@ LOG_DIR="/config/.claude/debug"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/auto-auth.expect.log"
 
+export LOG_FILE
+
 set +e
 expect <<'EOF'
   set timeout 180
