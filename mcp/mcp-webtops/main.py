@@ -77,6 +77,7 @@ class Settings(BaseSettings):
     windsurf_cache_mount_path: str = Field("/windsurf-cache", alias="WEBTOPS_WINDSURF_CACHE_MOUNT_PATH")
 
     anthropic_api_key: str = Field("", alias="ANTHROPIC_API_KEY")
+    glama_api_url: str = Field("", alias="GLAMA_API_URL")
     glama_api_key: str = Field("", alias="GLAMA_API_KEY")
 
     workspaces_volume: str = Field("webtops_workspaces", alias="WEBTOPS_WORKSPACES_VOLUME")
@@ -775,6 +776,8 @@ async def invoke(payload: InvokePayload = Body(...), authorization: Optional[str
             # Initially duplicates 'claude' behavior (can be changed later when Glama backend integration is implemented).
             if settings.anthropic_api_key:
                 extra_env["ANTHROPIC_API_KEY"] = settings.anthropic_api_key
+            if settings.glama_api_url:
+                extra_env["GLAMA_API_URL"] = settings.glama_api_url
             if settings.glama_api_key:
                 extra_env["GLAMA_API_KEY"] = settings.glama_api_key
 
@@ -962,6 +965,8 @@ async def invoke(payload: InvokePayload = Body(...), authorization: Optional[str
                 # Initially duplicates 'claude' behavior (can be changed later when Glama backend integration is implemented).
                 if settings.anthropic_api_key:
                     extra_env["ANTHROPIC_API_KEY"] = settings.anthropic_api_key
+                if settings.glama_api_url:
+                    extra_env["GLAMA_API_URL"] = settings.glama_api_url
                 if settings.glama_api_key:
                     extra_env["GLAMA_API_KEY"] = settings.glama_api_key
 

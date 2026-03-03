@@ -6,6 +6,7 @@ WORKDIR /tmp
 
 COPY cont-init.d/10-claude-perms /etc/cont-init.d/10-claude-perms
 COPY cont-init.d/20-claude-default-model /etc/cont-init.d/20-claude-default-model
+COPY cont-init.d/30-glama-cli /etc/cont-init.d/30-glama-cli
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -42,6 +43,7 @@ RUN set -eux; \
 
 RUN sed -i 's/\r$//' /etc/cont-init.d/10-claude-perms \
     /etc/cont-init.d/20-claude-default-model \
-    && chmod +x /etc/cont-init.d/10-claude-perms /etc/cont-init.d/20-claude-default-model
+    /etc/cont-init.d/30-glama-cli \
+    && chmod +x /etc/cont-init.d/10-claude-perms /etc/cont-init.d/20-claude-default-model /etc/cont-init.d/30-glama-cli
 
 RUN git config --system --add safe.directory /workspaces/chaba

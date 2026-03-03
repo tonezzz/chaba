@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BIN_DIR="/config/.local/bin"
+mkdir -p "$BIN_DIR"
+
+cat > "$BIN_DIR/glama" <<'EOF'
+#!/usr/bin/env node
+
+const fs = require('fs');
+
+function env(name, fallback = '') {
+  return (process.env[name] || fallback).toString().trim();
+}
+
+async function main() {
+  const apiUrl = env('GLAMA_API_URL');
+  const apiKey = env('GLAMA_API_KEY');
+  const model = env('GLAMA_MODEL', env('GLAMA_MODEL_DEFAULT', 'gpt-4o-mini'));
+
+  if (!apiUrl) {
+    console.error('glama: missing GLAMA_API_URL');
+    process.exit(2);
+  }
+  if (!apiKey) {
+    console.error('glama: missing GLAMA_API_KEY');
+    process.exit(2);
+  }
+
+  const prompt = process.argv.slice(2).join(' ').trim();
+  if (!prompt) {
+    console.error('usage: glama <prompt>');
+    process.exit(2);
+  }
+
+  const payload = {
+    model,
+    messages: [{ role: 'user', content: prompt }],
+  };
+
+  const res = await fetch(apiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const text = await res.text();
+  if (!res.ok) {
+    console.error(`glama: HTTP ${res.status}`);
+    console.error(text.slice(0, 2000));
+    process.exit(1);
+  }
+
+  let data = {};
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    console.error('glama: invalid JSON response');
+    console.error(text.slice(0, 2000));
+    process.exit(1);
+  }
+
+  const content =
+    data &&
+    data.choices &&
+    data.choices[0] &&
+    data.choices[0].message &&
+    typeof data.choices[0].message.content === 'string'
+      ? data.choices[0].message.content
+      : '';
+
+  process.stdout.write((content || '').toString().trim() + '\n');
+}
+
+main().catch((err) => {
+  console.error(`glama: error: ${err && err.message ? err.message : String(err)}`);
+  process.exit(1);
+});
+EOF
+
+chmod +x "$BIN_DIR/glama" 2>/dev/null || true
+
+OWNER_UID="${PUID:-$(id -u abc 2>/dev/null || echo 1000)}"
+OWNER_GID="${PGID:-$(id -g abc 2>/dev/null || echo 1000)}"
+OWNER="${OWNER_UID}:${OWNER_GID}"
+chown -R "$OWNER" "$BIN_DIR" 2>/dev/null || true
+
+ln -sf "$BIN_DIR/glama" /usr/local/bin/glama 2>/dev/null || true
