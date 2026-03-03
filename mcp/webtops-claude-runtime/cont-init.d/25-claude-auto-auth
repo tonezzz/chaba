@@ -18,14 +18,29 @@ if ! command -v expect >/dev/null 2>&1; then
   echo "[claude] auto-auth skipped: expect not installed" >&2
   exit 0
 fi
+
+LOG_DIR="/config/.claude/debug"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/auto-auth.expect.log"
+
+set +e
 expect <<'EOF'
   set timeout 180
   log_user 1
 
-  spawn claude -p "ping"
+  if { [info exists env(LOG_FILE)] } {
+    log_file -a $env(LOG_FILE)
+  }
+
+  # Force API-key mode selection on first run. Inherit ANTHROPIC_API_KEY from env.
+  spawn env ANTHROPIC_API_KEY=$env(ANTHROPIC_API_KEY) claude -p "ping"
 
   expect {
     -re {Select login method:} {
+      send "2\r"
+      exp_continue
+    }
+    -re {How would you like to (log in|sign in|authenticate)[^\n]*:} {
       send "2\r"
       exp_continue
     }
@@ -42,7 +57,14 @@ expect <<'EOF'
     }
   }
 EOF
-touch "$MARKER_FILE"
+EXPECT_RC=$?
+set -e
+
+if [ "$EXPECT_RC" -eq 0 ]; then
+  touch "$MARKER_FILE"
+else
+  echo "[claude] auto-auth did not complete successfully (rc=$EXPECT_RC); see $LOG_FILE" >&2
+fi
 
 OWNER_UID="${PUID:-$(id -u abc 2>/dev/null || echo 1000)}"
 OWNER_GID="${PGID:-$(id -g abc 2>/dev/null || echo 1000)}"
