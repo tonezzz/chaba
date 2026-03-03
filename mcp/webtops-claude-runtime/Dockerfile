@@ -5,6 +5,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /tmp
 
 COPY cont-init.d/10-claude-perms /etc/cont-init.d/10-claude-perms
+COPY cont-init.d/25-claude-auto-auth /etc/cont-init.d/25-claude-auto-auth
 COPY cont-init.d/20-claude-default-model /etc/cont-init.d/20-claude-default-model
 COPY cont-init.d/30-glama-cli /etc/cont-init.d/30-glama-cli
 
@@ -13,6 +14,7 @@ RUN apt-get update \
         bash \
         ca-certificates \
         curl \
+        expect \
         git \
         gnupg \
         openssh-client \
@@ -43,7 +45,8 @@ RUN set -eux; \
 
 RUN sed -i 's/\r$//' /etc/cont-init.d/10-claude-perms \
     /etc/cont-init.d/20-claude-default-model \
+    /etc/cont-init.d/25-claude-auto-auth \
     /etc/cont-init.d/30-glama-cli \
-    && chmod +x /etc/cont-init.d/10-claude-perms /etc/cont-init.d/20-claude-default-model /etc/cont-init.d/30-glama-cli
+    && chmod +x /etc/cont-init.d/10-claude-perms /etc/cont-init.d/20-claude-default-model /etc/cont-init.d/25-claude-auto-auth /etc/cont-init.d/30-glama-cli
 
 RUN git config --system --add safe.directory /workspaces/chaba

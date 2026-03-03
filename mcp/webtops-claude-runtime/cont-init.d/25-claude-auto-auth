@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+  exit 0
+fi
+
+MARKER_DIR="/config/.claude"
+MARKER_FILE="$MARKER_DIR/.auto_auth_done"
+
+mkdir -p "$MARKER_DIR"
+
+if [ -f "$MARKER_FILE" ]; then
+  exit 0
+fi
+
+if ! command -v expect >/dev/null 2>&1; then
+  echo "[claude] auto-auth skipped: expect not installed" >&2
+  exit 0
+fi
+expect <<'EOF'
+  set timeout 180
+  log_user 1
+
+  spawn claude -p "ping"
+
+  expect {
+    -re {Select login method:} {
+      send "2\r"
+      exp_continue
+    }
+    -re {Anthropic Console account} {
+      exp_continue
+    }
+    -re {Invalid API key} {
+      exit 2
+    }
+    eof {
+    }
+    timeout {
+      exit 3
+    }
+  }
+EOF
+touch "$MARKER_FILE"
+
+OWNER_UID="${PUID:-$(id -u abc 2>/dev/null || echo 1000)}"
+OWNER_GID="${PGID:-$(id -g abc 2>/dev/null || echo 1000)}"
+OWNER="${OWNER_UID}:${OWNER_GID}"
+chown -R "$OWNER" "$MARKER_DIR" 2>/dev/null || true
