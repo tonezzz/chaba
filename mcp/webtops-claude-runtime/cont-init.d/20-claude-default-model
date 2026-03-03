@@ -41,6 +41,9 @@ if [ ! -x "$REAL_BIN" ]; then
   exit 127
 fi
 for arg in "$@"; do
+  if [ "$arg" = "--version" ] || [ "$arg" = "-V" ] || [ "$arg" = "--help" ] || [ "$arg" = "-h" ]; then
+    exec "$REAL_BIN" "$@"
+  fi
   if [ "$arg" = "--model" ] || [[ "$arg" == --model=* ]]; then
     exec "$REAL_BIN" "$@"
   fi
