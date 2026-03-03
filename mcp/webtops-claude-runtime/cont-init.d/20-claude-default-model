@@ -11,8 +11,14 @@ if [ -x "$CONFIG_DIR/.local/share/claude/versions" ] 2>/dev/null; then
   :
 fi
 
+if [ -x /usr/local/bin/claude.real ]; then
+  REAL_BIN="/usr/local/bin/claude.real"
+fi
+
 if [ -d "$CONFIG_DIR/.local/share/claude/versions" ]; then
-  REAL_BIN="$(find "$CONFIG_DIR/.local/share/claude/versions" -maxdepth 1 -type f -perm -111 2>/dev/null | sort -V | tail -n 1 || true)"
+  if [ -z "$REAL_BIN" ]; then
+    REAL_BIN="$(find "$CONFIG_DIR/.local/share/claude/versions" -maxdepth 1 -type f -perm -111 2>/dev/null | sort -V | tail -n 1 || true)"
+  fi
 fi
 
 if [ -z "$REAL_BIN" ]; then

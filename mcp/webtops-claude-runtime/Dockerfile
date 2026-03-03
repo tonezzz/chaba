@@ -41,6 +41,7 @@ RUN set -eux; \
     fi; \
     test -n "$CLAUDE_BIN"; \
     ln -sf "$CLAUDE_BIN" /usr/local/bin/claude; \
+    ln -sf "$CLAUDE_BIN" /usr/local/bin/claude.real; \
     claude --version || true
 
 RUN sed -i 's/\r$//' /etc/cont-init.d/10-claude-perms \
