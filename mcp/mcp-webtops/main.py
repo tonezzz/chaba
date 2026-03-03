@@ -68,6 +68,7 @@ class Settings(BaseSettings):
 
     session_image_windsurf: str = Field("", alias="WEBTOPS_SESSION_IMAGE_WINDSURF")
     session_image_claude: str = Field("", alias="WEBTOPS_SESSION_IMAGE_CLAUDE")
+    session_image_glama: str = Field("", alias="WEBTOPS_SESSION_IMAGE_GLAMA")
     windsurf_version: str = Field("", alias="WEBTOPS_WINDSURF_VERSION")
     windsurf_download_url_template: str = Field("", alias="WEBTOPS_WINDSURF_DOWNLOAD_URL_TEMPLATE")
     windsurf_install_mode: str = Field("deb_extract", alias="WEBTOPS_WINDSURF_INSTALL_MODE")
@@ -76,6 +77,7 @@ class Settings(BaseSettings):
     windsurf_cache_mount_path: str = Field("/windsurf-cache", alias="WEBTOPS_WINDSURF_CACHE_MOUNT_PATH")
 
     anthropic_api_key: str = Field("", alias="ANTHROPIC_API_KEY")
+    glama_api_key: str = Field("", alias="GLAMA_API_KEY")
 
     workspaces_volume: str = Field("webtops_workspaces", alias="WEBTOPS_WORKSPACES_VOLUME")
     workspaces_mount_path: str = Field("/workspaces", alias="WEBTOPS_WORKSPACES_MOUNT_PATH")
@@ -286,7 +288,7 @@ def _normalize_profile(profile: Any) -> str:
     if not isinstance(profile, str):
         raise HTTPException(status_code=400, detail="options.profile must be a string")
     p = profile.strip().lower()
-    if p in {"default", "windsurf", "claude"}:
+    if p in {"default", "windsurf", "claude", "glama"}:
         return p
     raise HTTPException(status_code=400, detail="unsupported_profile")
 
@@ -766,6 +768,16 @@ async def invoke(payload: InvokePayload = Body(...), authorization: Optional[str
             if settings.anthropic_api_key:
                 extra_env["ANTHROPIC_API_KEY"] = settings.anthropic_api_key
 
+        if profile == "glama":
+            if not settings.session_image_glama:
+                raise HTTPException(status_code=503, detail="glama_profile_missing_image (WEBTOPS_SESSION_IMAGE_GLAMA)")
+            session_image = settings.session_image_glama
+            # Initially duplicates 'claude' behavior (can be changed later when Glama backend integration is implemented).
+            if settings.anthropic_api_key:
+                extra_env["ANTHROPIC_API_KEY"] = settings.anthropic_api_key
+            if settings.glama_api_key:
+                extra_env["GLAMA_API_KEY"] = settings.glama_api_key
+
         _ensure_image(client, session_image)
 
         container_name = f"{settings.session_container_name_prefix}-{session_id}"
@@ -942,6 +954,16 @@ async def invoke(payload: InvokePayload = Body(...), authorization: Optional[str
                 session_image = settings.session_image_claude
                 if settings.anthropic_api_key:
                     extra_env["ANTHROPIC_API_KEY"] = settings.anthropic_api_key
+
+            if profile == "glama":
+                if not settings.session_image_glama:
+                    raise HTTPException(status_code=503, detail="glama_profile_missing_image (WEBTOPS_SESSION_IMAGE_GLAMA)")
+                session_image = settings.session_image_glama
+                # Initially duplicates 'claude' behavior (can be changed later when Glama backend integration is implemented).
+                if settings.anthropic_api_key:
+                    extra_env["ANTHROPIC_API_KEY"] = settings.anthropic_api_key
+                if settings.glama_api_key:
+                    extra_env["GLAMA_API_KEY"] = settings.glama_api_key
 
             _ensure_image(client, session_image)
 
