@@ -40,8 +40,10 @@ RUN set -eux; \
       CLAUDE_BIN="$(find "$HOME" -type f -name claude -path '*/.local/bin/claude' -print -quit || true)"; \
     fi; \
     test -n "$CLAUDE_BIN"; \
-    ln -sf "$CLAUDE_BIN" /usr/local/bin/claude; \
-    ln -sf "$CLAUDE_BIN" /usr/local/bin/claude.real; \
+    mkdir -p /usr/local/libexec/claude; \
+    install -m 0755 "$CLAUDE_BIN" /usr/local/libexec/claude/claude; \
+    ln -sf /usr/local/libexec/claude/claude /usr/local/bin/claude; \
+    ln -sf /usr/local/libexec/claude/claude /usr/local/bin/claude.real; \
     claude --version || true
 
 RUN sed -i 's/\r$//' /etc/cont-init.d/10-claude-perms \
