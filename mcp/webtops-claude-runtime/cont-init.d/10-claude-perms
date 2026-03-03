@@ -9,14 +9,24 @@ OWNER="${OWNER_UID}:${OWNER_GID}"
 
 mkdir -p \
   "$CONFIG_DIR/.claude" \
+  "$CONFIG_DIR/.config/claude" \
   "$CONFIG_DIR/.cache/claude" \
+  "$CONFIG_DIR/.cache/claude-code" \
   "$CONFIG_DIR/.local/state/claude" \
+  "$CONFIG_DIR/.local/state/claude-code" \
+  "$CONFIG_DIR/.local/share/claude" \
+  "$CONFIG_DIR/.local/share/claude-code" \
   2>/dev/null || true
 
 chown -R "$OWNER" \
   "$CONFIG_DIR/.claude" \
+  "$CONFIG_DIR/.config/claude" \
   "$CONFIG_DIR/.cache/claude" \
+  "$CONFIG_DIR/.cache/claude-code" \
   "$CONFIG_DIR/.local/state/claude" \
+  "$CONFIG_DIR/.local/state/claude-code" \
+  "$CONFIG_DIR/.local/share/claude" \
+  "$CONFIG_DIR/.local/share/claude-code" \
   2>/dev/null || true
 
 if ls "$CONFIG_DIR"/.claude.json* >/dev/null 2>&1; then
