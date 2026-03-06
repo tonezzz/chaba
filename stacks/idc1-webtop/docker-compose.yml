@@ -142,6 +142,24 @@ services:
       timeout: 5s
       retries: 3
 
+  mcp-admin:
+    <<: *default-service
+    build:
+      context: ${MCP_ADMIN_BUILD_CONTEXT:-../../mcp/mcp-admin}
+    networks:
+      - idc1-stack-net
+    ports:
+      - "127.0.0.1:${MCP_ADMIN_SSH_PORT:-2222}:22"
+    environment:
+      TZ: ${TZ:-Asia/Bangkok}
+      MCP_ADMIN_USER: ${MCP_ADMIN_USER:-mcp}
+      MCP_ADMIN_UID: ${MCP_ADMIN_UID:-1000}
+      MCP_ADMIN_GID: ${MCP_ADMIN_GID:-1000}
+    volumes:
+      - mcp_admin_home:/home/${MCP_ADMIN_USER:-mcp}
+      - mcp_admin_ssh_keys:/etc/ssh
+      - ${MCP_ADMIN_AUTHORIZED_KEYS_PATH:-./data/mcp-admin/authorized_keys}:/authorized_keys:ro
+
 networks:
   idc1-web-net:
     driver: bridge
@@ -154,3 +172,5 @@ networks:
 volumes:
   webtops_windsurf_cache:
   webtops_workspaces:
+  mcp_admin_home:
+  mcp_admin_ssh_keys:
