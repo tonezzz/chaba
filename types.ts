@@ -19,6 +19,7 @@ export interface MessageLog {
     image?: string;
     sources?: GroundingSource[];
     type?: 'search' | 'image_gen' | 'reimagine' | 'text';
+    source?: 'input' | 'output';
   };
 }
 

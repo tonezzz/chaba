@@ -2,7 +2,13 @@
  * Decodes base64 string to a Uint8Array.
  */
 export function base64ToUint8Array(base64: string): Uint8Array {
-  const binaryString = atob(base64);
+  const normalized = (() => {
+    const s = String(base64 || "");
+    const urlSafe = s.replace(/-/g, "+").replace(/_/g, "/").replace(/\s+/g, "");
+    const padLen = (4 - (urlSafe.length % 4)) % 4;
+    return urlSafe + "=".repeat(padLen);
+  })();
+  const binaryString = atob(normalized);
   const len = binaryString.length;
   const bytes = new Uint8Array(len);
   for (let i = 0; i < len; i++) {
