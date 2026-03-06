@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - idc1-assistance
+      - idc1-assistance2
 
 permissions:
   contents: read
@@ -36,7 +37,7 @@ jobs:
         with:
           images: ${{ env.IMAGE_PREFIX }}/jarvis-backend
           tags: |
-            type=raw,value=idc1-assistance
+            type=ref,event=branch
             type=sha,format=short,prefix=sha-
 
       - name: Build and push (backend)
@@ -56,7 +57,7 @@ jobs:
         with:
           images: ${{ env.IMAGE_PREFIX }}/jarvis-frontend
           tags: |
-            type=raw,value=idc1-assistance
+            type=ref,event=branch
             type=sha,format=short,prefix=sha-
 
       - name: Build and push (frontend)
