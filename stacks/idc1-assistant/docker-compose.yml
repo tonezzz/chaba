@@ -77,6 +77,27 @@ services:
       timeout: 5s
       retries: 3
 
+  jarvis-backend:
+    <<: *default-service
+    image: ghcr.io/tonezzz/chaba/jarvis-backend:idc1-assistance
+    ports:
+      - "127.0.0.1:18018:8018"
+    environment:
+      PORT: 8018
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_LIVE_MODEL: ${GEMINI_LIVE_MODEL:-gemini-2.5-flash-native-audio-preview-12-2025}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8018/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  jarvis-frontend:
+    <<: *default-service
+    image: ghcr.io/tonezzz/chaba/jarvis-frontend:idc1-assistance
+    ports:
+      - "127.0.0.1:18080:80"
+
   mcp-linebot:
     <<: *default-service
     build:
