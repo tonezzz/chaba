@@ -2,6 +2,8 @@ import asyncio
 import base64
 import os
 import logging
+import sqlite3
+import time
 from typing import Any, Optional
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -29,6 +31,54 @@ logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="jarvis-backend", version="0.1.0")
 
+
+SESSION_DB_PATH = os.getenv("JARVIS_SESSION_DB", "/app/jarvis_sessions.sqlite")
+
+
+def _init_session_db() -> None:
+    os.makedirs(os.path.dirname(SESSION_DB_PATH) or ".", exist_ok=True)
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sessions (
+              session_id TEXT PRIMARY KEY,
+              active_trip_id TEXT,
+              active_trip_name TEXT,
+              updated_at INTEGER
+            )
+            """
+        )
+        conn.commit()
+
+
+def _get_session_state(session_id: str) -> dict[str, Optional[str]]:
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        cur = conn.execute(
+            "SELECT active_trip_id, active_trip_name FROM sessions WHERE session_id = ?",
+            (session_id,),
+        )
+        row = cur.fetchone()
+        if not row:
+            return {"active_trip_id": None, "active_trip_name": None}
+        return {"active_trip_id": row[0], "active_trip_name": row[1]}
+
+
+def _set_session_state(session_id: str, active_trip_id: Optional[str], active_trip_name: Optional[str]) -> None:
+    now = int(time.time())
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        conn.execute(
+            """
+            INSERT INTO sessions(session_id, active_trip_id, active_trip_name, updated_at)
+            VALUES(?, ?, ?, ?)
+            ON CONFLICT(session_id) DO UPDATE SET
+              active_trip_id=excluded.active_trip_id,
+              active_trip_name=excluded.active_trip_name,
+              updated_at=excluded.updated_at
+            """,
+            (session_id, active_trip_id, active_trip_name, now),
+        )
+        conn.commit()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -48,6 +98,32 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
     while True:
         msg = await ws.receive_json()
         msg_type = msg.get("type")
+
+        # Session control messages (handled locally, never forwarded to Gemini)
+        if msg_type == "get_active_trip":
+            session_id = getattr(ws.state, "session_id", None)
+            if not session_id:
+                await ws.send_json({"type": "active_trip", "active_trip_id": None, "active_trip_name": None})
+                continue
+            state = _get_session_state(str(session_id))
+            await ws.send_json({"type": "active_trip", **state})
+            continue
+
+        if msg_type == "set_active_trip":
+            session_id = getattr(ws.state, "session_id", None)
+            active_trip_id = msg.get("active_trip_id")
+            active_trip_name = msg.get("active_trip_name")
+            if not session_id:
+                await ws.send_json({"type": "error", "message": "missing_session_id"})
+                continue
+            _set_session_state(
+                str(session_id),
+                str(active_trip_id) if active_trip_id is not None else None,
+                str(active_trip_name) if active_trip_name is not None else None,
+            )
+            state = _get_session_state(str(session_id))
+            await ws.send_json({"type": "active_trip", **state})
+            continue
 
         if msg_type == "audio":
             data_b64 = str(msg.get("data") or "")
@@ -177,6 +253,18 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
 @app.websocket("/ws/live")
 async def ws_live(ws: WebSocket) -> None:
     await ws.accept()
+
+    # Sticky session support: the frontend provides ?session_id=... so we can persist
+    # per-session state (e.g., active trip) across reconnects.
+    session_id = str(ws.query_params.get("session_id") or "").strip() or None
+    ws.state.session_id = session_id
+    if session_id:
+        try:
+            _init_session_db()
+            state = _get_session_state(session_id)
+            await ws.send_json({"type": "active_trip", **state})
+        except Exception as e:
+            logger.warning("session_db_init_failed error=%s", e)
 
     try:
         api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()

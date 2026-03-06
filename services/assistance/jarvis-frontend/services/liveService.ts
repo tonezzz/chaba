@@ -11,6 +11,22 @@ export class LiveService {
   private currentCameraFrame: string | null = null;
   private isStreamingAudio: boolean = false;
 
+	private getOrCreateSessionId(): string {
+		const storageKey = "jarvis_session_id";
+		try {
+			const existing = String(window.localStorage.getItem(storageKey) || "").trim();
+			if (existing) return existing;
+			const newId =
+				(typeof crypto !== "undefined" && typeof (crypto as any).randomUUID === "function"
+					? (crypto as any).randomUUID()
+					: `${Date.now()}_${Math.random().toString(16).slice(2)}`);
+			window.localStorage.setItem(storageKey, newId);
+			return newId;
+		} catch {
+			return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+		}
+	}
+
   public onStateChange: (state: ConnectionState) => void = () => {};
   public onMessage: (msg: MessageLog) => void = () => {};
   public onVolume: (vol: number) => void = () => {};
@@ -49,7 +65,17 @@ export class LiveService {
       const defaultWsUrl = isJarvisSubpath
         ? `${proto}://${location.host}/jarvis/ws/live`
         : `${proto}://${location.hostname}:8018/ws/live`;
-      const wsUrl = (backendUrl || defaultWsUrl).trim();
+      const baseWsUrl = (backendUrl || defaultWsUrl).trim();
+		const sessionId = this.getOrCreateSessionId();
+		let wsUrl = baseWsUrl;
+		try {
+			const u = new URL(baseWsUrl);
+			u.searchParams.set("session_id", sessionId);
+			wsUrl = u.toString();
+		} catch {
+			// If URL parsing fails, fall back to appending query param.
+			wsUrl = baseWsUrl.includes("?") ? `${baseWsUrl}&session_id=${encodeURIComponent(sessionId)}` : `${baseWsUrl}?session_id=${encodeURIComponent(sessionId)}`;
+		}
 
       this.ws = new WebSocket(wsUrl);
       this.ws.onopen = () => {

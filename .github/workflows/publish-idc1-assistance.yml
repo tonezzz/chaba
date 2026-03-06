@@ -43,8 +43,8 @@ jobs:
       - name: Build and push (backend)
         uses: docker/build-push-action@v6
         with:
-          context: ./backend
-          file: ./backend/Dockerfile
+          context: ./services/assistance/jarvis-backend
+          file: ./services/assistance/jarvis-backend/Dockerfile
           push: true
           tags: ${{ steps.meta_backend.outputs.tags }}
           labels: ${{ steps.meta_backend.outputs.labels }}
@@ -63,8 +63,8 @@ jobs:
       - name: Build and push (frontend)
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: ./Dockerfile.frontend
+          context: ./services/assistance/jarvis-frontend
+          file: ./services/assistance/jarvis-frontend/Dockerfile.frontend
           push: true
           tags: ${{ steps.meta_frontend.outputs.tags }}
           labels: ${{ steps.meta_frontend.outputs.labels }}
