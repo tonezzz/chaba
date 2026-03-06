@@ -1,0 +1,208 @@
+import { base64ToUint8Array, float32To16BitPCM, arrayBufferToBase64, pcm16ToAudioBuffer } from "./audioUtils";
+import { ConnectionState, MessageLog } from "../types";
+
+export class LiveService {
+  private ws: WebSocket | null = null;
+  private inputAudioContext: AudioContext | null = null;
+  private outputAudioContext: AudioContext | null = null;
+  private inputSource: MediaStreamAudioSourceNode | null = null;
+  private processor: ScriptProcessorNode | null = null;
+  private nextStartTime: number = 0;
+  private currentCameraFrame: string | null = null;
+  private isStreamingAudio: boolean = false;
+
+  public onStateChange: (state: ConnectionState) => void = () => {};
+  public onMessage: (msg: MessageLog) => void = () => {};
+  public onVolume: (vol: number) => void = () => {};
+
+  constructor() {}
+
+  public startStreaming() {
+    this.isStreamingAudio = true;
+  }
+
+  public stopStreaming() {
+    this.isStreamingAudio = false;
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: "audio_stream_end" }));
+    }
+  }
+
+  public updateCameraFrame(base64: string) {
+    this.currentCameraFrame = base64;
+    // Push frame to model to give it vision
+    return;
+  }
+
+  public async connect() {
+    this.onStateChange(ConnectionState.CONNECTING);
+
+    try {
+      this.inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+      this.outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      const backendUrl = (import.meta as any).env?.VITE_JARVIS_WS_URL as string | undefined;
+      const proto = location.protocol === "https:" ? "wss" : "ws";
+      const isJarvisSubpath = location.pathname.startsWith("/jarvis");
+      const defaultWsUrl = isJarvisSubpath
+        ? `${proto}://${location.host}/jarvis/ws/live`
+        : `${proto}://${location.hostname}:8018/ws/live`;
+      const wsUrl = (backendUrl || defaultWsUrl).trim();
+
+      this.ws = new WebSocket(wsUrl);
+      this.ws.onopen = () => {
+        this.onStateChange(ConnectionState.CONNECTED);
+        this.onMessage({
+          id: `${Date.now()}_ws_open`,
+          role: "system",
+          text: "connected",
+          timestamp: new Date(),
+        });
+        this.setupAudioInput(stream);
+      };
+      this.ws.onclose = () => {
+        this.onStateChange(ConnectionState.DISCONNECTED);
+        this.onMessage({
+          id: `${Date.now()}_ws_close`,
+          role: "system",
+          text: "disconnected",
+          timestamp: new Date(),
+        });
+      };
+      this.ws.onerror = (err) => {
+        console.error(err);
+        this.onStateChange(ConnectionState.ERROR);
+        this.onMessage({
+          id: `${Date.now()}_ws_error`,
+          role: "system",
+          text: "connection_error",
+          timestamp: new Date(),
+        });
+      };
+      this.ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          this.handleBackendMessage(msg);
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+    } catch (error) {
+      console.error("Connection failed", error);
+      this.onStateChange(ConnectionState.ERROR);
+    }
+  }
+
+  public async disconnect() {
+    if (this.ws) {
+      try {
+        this.ws.send(JSON.stringify({ type: "close" }));
+      } catch (e) {
+        console.error(e);
+      }
+      this.ws.close();
+    }
+    
+    if (this.inputSource) this.inputSource.disconnect();
+    if (this.processor) {
+        this.processor.disconnect();
+        this.processor.onaudioprocess = null;
+    }
+    if (this.inputAudioContext) await this.inputAudioContext.close();
+    if (this.outputAudioContext) await this.outputAudioContext.close();
+    
+    this.inputAudioContext = null;
+    this.outputAudioContext = null;
+    this.ws = null;
+    this.onStateChange(ConnectionState.DISCONNECTED);
+  }
+
+  private setupAudioInput(stream: MediaStream) {
+    if (!this.inputAudioContext) return;
+    
+    this.inputSource = this.inputAudioContext.createMediaStreamSource(stream);
+    this.processor = this.inputAudioContext.createScriptProcessor(4096, 1, 1);
+    
+    this.processor.onaudioprocess = (e) => {
+      const inputData = e.inputBuffer.getChannelData(0);
+      
+      // Calculate volume for visualizer
+      let sum = 0;
+      for (let i = 0; i < inputData.length; i++) {
+        sum += inputData[i] * inputData[i];
+      }
+      const rms = Math.sqrt(sum / inputData.length);
+      this.onVolume(rms);
+
+      const pcm16 = float32To16BitPCM(inputData);
+      const base64 = arrayBufferToBase64(pcm16);
+
+      if (this.isStreamingAudio && this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({ type: "audio", mimeType: "audio/pcm;rate=16000", data: base64 }));
+      }
+    };
+
+    this.inputSource.connect(this.processor);
+    this.processor.connect(this.inputAudioContext.destination);
+  }
+
+  private async handleBackendMessage(message: any) {
+    if (message?.type === "state" && message?.state) {
+      this.onMessage({
+        id: `${Date.now()}_state`,
+        role: "system",
+        text: String(message.state),
+        timestamp: new Date(),
+      });
+      return;
+    }
+
+    if (message?.type === "audio" && message?.data && this.outputAudioContext) {
+      this.nextStartTime = Math.max(this.nextStartTime, this.outputAudioContext.currentTime);
+      const pcmBytes = base64ToUint8Array(message.data);
+      const audioBuffer = await pcm16ToAudioBuffer(pcmBytes, this.outputAudioContext, message.sampleRate || 24000);
+
+      const source = this.outputAudioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(this.outputAudioContext.destination);
+      source.start(this.nextStartTime);
+      this.nextStartTime += audioBuffer.duration;
+      return;
+    }
+
+    if (message?.type === "transcript" && message?.text) {
+      this.onMessage({
+        id: `${Date.now()}_tr`,
+        role: "system",
+        text: String(message.text),
+        timestamp: new Date(),
+        metadata: { type: "text", source: message?.source === "output" ? "output" : "input" },
+      });
+      return;
+    }
+
+    if (message?.type === "text" && message?.text) {
+      this.onMessage({
+        id: `${Date.now()}`,
+        role: "model",
+        text: String(message.text),
+        timestamp: new Date(),
+      });
+      return;
+    }
+
+    if (message?.type === "error" && message?.message) {
+      this.onMessage({
+        id: `${Date.now()}_err`,
+        role: "system",
+        text: String(message.message),
+        timestamp: new Date(),
+      });
+      this.onStateChange(ConnectionState.ERROR);
+      return;
+    }
+  }
+}

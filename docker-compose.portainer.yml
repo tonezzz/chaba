@@ -1,0 +1,23 @@
+services:
+  jarvis-backend:
+    image: ghcr.io/tonezzz/chaba/jarvis-backend:idc1-assistance
+    restart: unless-stopped
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_LIVE_MODEL=${GEMINI_LIVE_MODEL:-gemini-2.5-flash-native-audio-preview-12-2025}
+      - PORT=8018
+    ports:
+      - "127.0.0.1:18018:8018"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8018/health').read()"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+
+  jarvis-frontend:
+    image: ghcr.io/tonezzz/chaba/jarvis-frontend:idc1-assistance
+    restart: unless-stopped
+    environment:
+      - NGINX_ENTRYPOINT_QUIET_LOGS=1
+    ports:
+      - "127.0.0.1:18080:80"
