@@ -1,0 +1,41 @@
+version: "3.9"
+
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - .env
+  networks:
+    - idc1-stack-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  jarvis-backend:
+    <<: *default-service
+    image: ghcr.io/tonezzz/chaba/jarvis-backend:idc1-assistance
+    ports:
+      - "127.0.0.1:18018:8018"
+    environment:
+      PORT: 8018
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_LIVE_MODEL: ${GEMINI_LIVE_MODEL:-gemini-2.5-flash-native-audio-preview-12-2025}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8018/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  jarvis-frontend:
+    <<: *default-service
+    image: ghcr.io/tonezzz/chaba/jarvis-frontend:idc1-assistance
+    ports:
+      - "127.0.0.1:18080:80"
+
+networks:
+  idc1-stack-net:
+    driver: bridge
+    external: true
+    name: idc1-stack-net
