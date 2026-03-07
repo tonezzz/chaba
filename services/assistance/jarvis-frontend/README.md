@@ -16,7 +16,7 @@ A real-time, multimodal AI assistant built with React and the Google GenAI SDK. 
 
 ## Documentation
 
-- **[Architecture](docs/ARCHITECTURE.md)**: Overview of the technical stack, core services (`LiveService`, `ToolService`), and data flow.
+- **[Architecture](ARCHITECTURE.md)**: Overview of the technical stack, core services (`LiveService`, `ToolService`), and data flow.
 - **[API Keys & Configuration](docs/API_KEYS.md)**: Instructions for setting up the app with **Gemini Developer API** (AI Studio) or **Vertex AI** (Google Cloud).
 - **[Prompt](docs/PROMPT.md)**: The original system prompt used to bootstrap the application.
 
