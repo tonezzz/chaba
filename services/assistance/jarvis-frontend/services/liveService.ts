@@ -10,6 +10,7 @@ export class LiveService {
   private nextStartTime: number = 0;
   private currentCameraFrame: string | null = null;
   private isStreamingAudio: boolean = false;
+  private sessionId: string | null = null;
 
 	private getOrCreateSessionId(): string {
 		const storageKey = "jarvis_session_id";
@@ -27,9 +28,15 @@ export class LiveService {
 		}
 	}
 
+  public getSessionId(): string {
+    if (!this.sessionId) this.sessionId = this.getOrCreateSessionId();
+    return this.sessionId;
+  }
+
   public onStateChange: (state: ConnectionState) => void = () => {};
   public onMessage: (msg: MessageLog) => void = () => {};
   public onVolume: (vol: number) => void = () => {};
+  public onActiveTrip: (trip: { active_trip_id: string | null; active_trip_name: string | null }) => void = () => {};
 
   constructor() {}
 
@@ -66,7 +73,7 @@ export class LiveService {
         ? `${proto}://${location.host}/jarvis/ws/live`
         : `${proto}://${location.hostname}:8018/ws/live`;
       const baseWsUrl = (backendUrl || defaultWsUrl).trim();
-		const sessionId = this.getOrCreateSessionId();
+		const sessionId = this.getSessionId();
 		let wsUrl = baseWsUrl;
 		try {
 			const u = new URL(baseWsUrl);
@@ -146,6 +153,24 @@ export class LiveService {
     this.onStateChange(ConnectionState.DISCONNECTED);
   }
 
+	public requestActiveTrip() {
+		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			this.ws.send(JSON.stringify({ type: "get_active_trip" }));
+		}
+	}
+
+	public setActiveTrip(active_trip_id: string | null, active_trip_name: string | null) {
+		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			this.ws.send(
+				JSON.stringify({
+					type: "set_active_trip",
+					active_trip_id,
+					active_trip_name,
+				})
+			);
+		}
+	}
+
   private setupAudioInput(stream: MediaStream) {
     if (!this.inputAudioContext) return;
     
@@ -185,6 +210,19 @@ export class LiveService {
       });
       return;
     }
+
+		if (message?.type === "active_trip") {
+			const active_trip_id = message?.active_trip_id != null ? String(message.active_trip_id) : null;
+			const active_trip_name = message?.active_trip_name != null ? String(message.active_trip_name) : null;
+			this.onActiveTrip({ active_trip_id, active_trip_name });
+			this.onMessage({
+				id: `${Date.now()}_trip_state`,
+				role: "system",
+				text: `active_trip=${active_trip_id || "(none)"}${active_trip_name ? ` (${active_trip_name})` : ""}`,
+				timestamp: new Date(),
+			});
+			return;
+		}
 
     if (message?.type === "audio" && message?.data && this.outputAudioContext) {
       this.nextStartTime = Math.max(this.nextStartTime, this.outputAudioContext.currentTime);
