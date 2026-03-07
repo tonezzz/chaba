@@ -305,7 +305,7 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             text = str(msg.get("text") or "")
             if not text:
                 continue
-            await session.send_client_content(turns=text, turn_complete=True)
+            await session.send_client_content(turns={"parts": [{"text": text}]}, turn_complete=True)
             continue
 
         if msg_type == "audio_stream_end":
@@ -355,11 +355,13 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
             tool_call = getattr(server_msg, "tool_call", None)
             if tool_call is not None:
                 function_calls = getattr(tool_call, "function_calls", None) or []
+                logger.info("gemini_tool_call count=%s", len(function_calls))
                 function_responses: list[Any] = []
                 for fc in function_calls:
                     fc_id = getattr(fc, "id", None)
                     fc_name = str(getattr(fc, "name", "") or "")
                     fc_args = _fc_args(fc)
+                    logger.info("gemini_tool_call_item name=%s args_keys=%s", fc_name, list(fc_args.keys()))
                     try:
                         result = await _handle_trip_tool_call(fc_name, fc_args)
                         function_responses.append(
@@ -370,6 +372,7 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                             )
                         )
                     except HTTPException as e:
+                        logger.info("gemini_tool_call_error name=%s status_code=%s", fc_name, e.status_code)
                         function_responses.append(
                             types.FunctionResponse(
                                 id=fc_id,
@@ -378,6 +381,7 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                             )
                         )
                     except Exception as e:
+                        logger.info("gemini_tool_call_exception name=%s error=%s", fc_name, str(e))
                         function_responses.append(
                             types.FunctionResponse(
                                 id=fc_id,
