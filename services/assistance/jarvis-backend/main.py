@@ -7,7 +7,7 @@ import time
 from typing import Any, Optional
 
 import httpx
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import Body, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from dotenv import load_dotenv
@@ -108,9 +108,44 @@ async def _trip_get(path: str) -> Any:
         return res.json()
 
 
+async def _trip_post(path: str, payload: Any) -> Any:
+    if not TRIP_API_TOKEN:
+        raise HTTPException(status_code=500, detail="missing_TRIP_API_TOKEN")
+    url = f"{TRIP_BASE_URL}{path}"
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        res = await client.post(url, json=payload, headers={"X-Api-Token": TRIP_API_TOKEN})
+        res.raise_for_status()
+        return res.json()
+
+
+def _require_confirmation(confirm: bool, action: str, payload: Any) -> None:
+    if confirm:
+        return
+    raise HTTPException(
+        status_code=409,
+        detail={
+            "requires_confirmation": True,
+            "action": action,
+            "payload": payload,
+        },
+    )
+
+
 @app.get("/trip/by_token/categories")
 async def trip_by_token_categories() -> Any:
     return await _trip_get("/api/by_token/categories")
+
+
+@app.post("/trip/by_token/google_search")
+async def trip_by_token_google_search(payload: dict[str, Any] = Body(...)) -> Any:
+    return await _trip_post("/api/by_token/google-search", payload)
+
+
+@app.post("/trip/by_token/place")
+async def trip_by_token_create_place(payload: dict[str, Any] = Body(...)) -> Any:
+    confirm = bool(payload.pop("confirm", False))
+    _require_confirmation(confirm, action="trip_create_place", payload=payload)
+    return await _trip_post("/api/by_token/place", payload)
 
 
 async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
