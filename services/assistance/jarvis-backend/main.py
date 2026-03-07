@@ -6,7 +6,8 @@ import sqlite3
 import time
 from typing import Any, Optional
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+import httpx
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from dotenv import load_dotenv
@@ -30,6 +31,10 @@ logger = logging.getLogger("jarvis-backend")
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="jarvis-backend", version="0.1.0")
+
+
+TRIP_BASE_URL = str(os.getenv("TRIP_BASE_URL") or "http://trip:8000").strip().rstrip("/")
+TRIP_API_TOKEN = str(os.getenv("TRIP_API_TOKEN") or "").strip()
 
 
 SESSION_DB_PATH = os.getenv("JARVIS_SESSION_DB", "/app/jarvis_sessions.sqlite")
@@ -91,6 +96,21 @@ app.add_middleware(
 @app.get("/health")
 def health() -> dict[str, Any]:
     return {"ok": True, "service": "jarvis-backend"}
+
+
+async def _trip_get(path: str) -> Any:
+    if not TRIP_API_TOKEN:
+        raise HTTPException(status_code=500, detail="missing_TRIP_API_TOKEN")
+    url = f"{TRIP_BASE_URL}{path}"
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        res = await client.get(url, headers={"X-Api-Token": TRIP_API_TOKEN})
+        res.raise_for_status()
+        return res.json()
+
+
+@app.get("/trip/by_token/categories")
+async def trip_by_token_categories() -> Any:
+    return await _trip_get("/api/by_token/categories")
 
 
 async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
