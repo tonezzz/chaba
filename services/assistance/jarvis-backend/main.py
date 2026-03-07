@@ -2,6 +2,7 @@ import asyncio
 import base64
 import os
 import logging
+import json
 import sqlite3
 import time
 from typing import Any, Optional
@@ -53,6 +54,17 @@ def _init_session_db() -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS pending_writes (
+              confirmation_id TEXT PRIMARY KEY,
+              session_id TEXT NOT NULL,
+              action TEXT NOT NULL,
+              payload_json TEXT NOT NULL,
+              created_at INTEGER NOT NULL
+            )
+            """
+        )
         conn.commit()
 
 
@@ -83,6 +95,79 @@ def _set_session_state(session_id: str, active_trip_id: Optional[str], active_tr
             (session_id, active_trip_id, active_trip_name, now),
         )
         conn.commit()
+
+
+def _create_pending_write(session_id: str, action: str, payload: Any) -> str:
+    _init_session_db()
+    confirmation_id = f"pw_{int(time.time())}_{os.urandom(6).hex()}"
+    created_at = int(time.time())
+    payload_json = json.dumps(payload, ensure_ascii=False)
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        conn.execute(
+            "INSERT INTO pending_writes(confirmation_id, session_id, action, payload_json, created_at) VALUES(?, ?, ?, ?, ?)",
+            (confirmation_id, session_id, action, payload_json, created_at),
+        )
+        conn.commit()
+    return confirmation_id
+
+
+def _list_pending_writes(session_id: str) -> list[dict[str, Any]]:
+    _init_session_db()
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        cur = conn.execute(
+            "SELECT confirmation_id, action, payload_json, created_at FROM pending_writes WHERE session_id = ? ORDER BY created_at DESC",
+            (session_id,),
+        )
+        rows = cur.fetchall() or []
+    out: list[dict[str, Any]] = []
+    for confirmation_id, action, payload_json, created_at in rows:
+        try:
+            payload = json.loads(payload_json)
+        except Exception:
+            payload = payload_json
+        out.append(
+            {
+                "confirmation_id": confirmation_id,
+                "action": action,
+                "payload": payload,
+                "created_at": created_at,
+            }
+        )
+    return out
+
+
+def _pop_pending_write(session_id: str, confirmation_id: str) -> Optional[dict[str, Any]]:
+    _init_session_db()
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        cur = conn.execute(
+            "SELECT action, payload_json, created_at FROM pending_writes WHERE session_id = ? AND confirmation_id = ?",
+            (session_id, confirmation_id),
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+        action, payload_json, created_at = row
+        conn.execute(
+            "DELETE FROM pending_writes WHERE session_id = ? AND confirmation_id = ?",
+            (session_id, confirmation_id),
+        )
+        conn.commit()
+    try:
+        payload = json.loads(payload_json)
+    except Exception:
+        payload = payload_json
+    return {"action": action, "payload": payload, "created_at": created_at}
+
+
+def _cancel_pending_write(session_id: str, confirmation_id: str) -> bool:
+    _init_session_db()
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        cur = conn.execute(
+            "DELETE FROM pending_writes WHERE session_id = ? AND confirmation_id = ?",
+            (session_id, confirmation_id),
+        )
+        conn.commit()
+        return (cur.rowcount or 0) > 0
 
 app.add_middleware(
     CORSMiddleware,
@@ -194,10 +279,6 @@ def _trip_tool_declarations() -> list[dict[str, Any]]:
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "confirm": {
-                        "type": "boolean",
-                        "description": "Must be true to perform the write. If omitted/false, the tool will return requires_confirmation.",
-                    },
                     "name": {"type": "string"},
                     "lat": {"type": "number"},
                     "lng": {"type": "number"},
@@ -211,6 +292,32 @@ def _trip_tool_declarations() -> list[dict[str, Any]]:
                     "image": {"type": "string", "description": "Optional image URL or base64 image supported by TRIP."},
                 },
                 "required": ["name", "lat", "lng", "category"],
+            },
+        },
+        {
+            "name": "trip_list_pending_writes",
+            "description": "List queued pending TRIP write actions waiting for confirmation.",
+        },
+        {
+            "name": "trip_confirm_write",
+            "description": "Confirm and execute a previously queued pending TRIP write action.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "confirmation_id": {"type": "string"},
+                },
+                "required": ["confirmation_id"],
+            },
+        },
+        {
+            "name": "trip_cancel_write",
+            "description": "Cancel a previously queued pending TRIP write action.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "confirmation_id": {"type": "string"},
+                },
+                "required": ["confirmation_id"],
             },
         },
     ]
@@ -234,7 +341,7 @@ def _fc_args(fc: Any) -> dict[str, Any]:
     return {}
 
 
-async def _handle_trip_tool_call(tool_name: str, args: dict[str, Any]) -> Any:
+async def _handle_trip_tool_call(session_id: Optional[str], tool_name: str, args: dict[str, Any]) -> Any:
     if tool_name == "trip_list_categories":
         return await _trip_get("/api/by_token/categories")
 
@@ -249,10 +356,47 @@ async def _handle_trip_tool_call(tool_name: str, args: dict[str, Any]) -> Any:
         return await _trip_post("/api/by_token/google-search", payload)
 
     if tool_name == "trip_create_place":
-        confirm = bool(args.get("confirm", False))
-        place_payload = {k: v for k, v in args.items() if k != "confirm"}
-        _require_confirmation(confirm, action="trip_create_place", payload=place_payload)
-        return await _trip_post("/api/by_token/place", place_payload)
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        place_payload = dict(args)
+        confirmation_id = _create_pending_write(session_id, action="trip_create_place", payload=place_payload)
+        return {
+            "requires_confirmation": True,
+            "confirmation_id": confirmation_id,
+            "action": "trip_create_place",
+            "payload": place_payload,
+        }
+
+    if tool_name == "trip_list_pending_writes":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        return _list_pending_writes(session_id)
+
+    if tool_name == "trip_confirm_write":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        confirmation_id = str(args.get("confirmation_id") or "").strip()
+        if not confirmation_id:
+            raise HTTPException(status_code=400, detail="missing_confirmation_id")
+        pending = _pop_pending_write(session_id, confirmation_id)
+        if not pending:
+            raise HTTPException(status_code=404, detail="pending_write_not_found")
+        action = str(pending.get("action") or "")
+        payload = pending.get("payload")
+        if action == "trip_create_place":
+            return await _trip_post("/api/by_token/place", payload)
+        raise HTTPException(status_code=400, detail={"unknown_pending_action": action})
+
+    if tool_name == "trip_cancel_write":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        confirmation_id = str(args.get("confirmation_id") or "").strip()
+        if not confirmation_id:
+            raise HTTPException(status_code=400, detail="missing_confirmation_id")
+        ok = _cancel_pending_write(session_id, confirmation_id)
+        if not ok:
+            raise HTTPException(status_code=404, detail="pending_write_not_found")
+        return {"ok": True}
 
     raise HTTPException(status_code=400, detail={"unknown_tool": tool_name})
 
@@ -363,7 +507,8 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                     fc_args = _fc_args(fc)
                     logger.info("gemini_tool_call_item name=%s args_keys=%s", fc_name, list(fc_args.keys()))
                     try:
-                        result = await _handle_trip_tool_call(fc_name, fc_args)
+                        session_id = getattr(ws.state, "session_id", None)
+                        result = await _handle_trip_tool_call(session_id, fc_name, fc_args)
                         function_responses.append(
                             types.FunctionResponse(
                                 id=fc_id,
