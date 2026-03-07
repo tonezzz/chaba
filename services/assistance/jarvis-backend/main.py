@@ -104,7 +104,13 @@ async def _trip_get(path: str) -> Any:
     url = f"{TRIP_BASE_URL}{path}"
     async with httpx.AsyncClient(timeout=10.0) as client:
         res = await client.get(url, headers={"X-Api-Token": TRIP_API_TOKEN})
-        res.raise_for_status()
+        if res.status_code >= 400:
+            detail: Any
+            try:
+                detail = res.json()
+            except Exception:
+                detail = res.text
+            raise HTTPException(status_code=res.status_code, detail=detail)
         return res.json()
 
 
@@ -114,7 +120,13 @@ async def _trip_post(path: str, payload: Any) -> Any:
     url = f"{TRIP_BASE_URL}{path}"
     async with httpx.AsyncClient(timeout=30.0) as client:
         res = await client.post(url, json=payload, headers={"X-Api-Token": TRIP_API_TOKEN})
-        res.raise_for_status()
+        if res.status_code >= 400:
+            detail: Any
+            try:
+                detail = res.json()
+            except Exception:
+                detail = res.text
+            raise HTTPException(status_code=res.status_code, detail=detail)
         return res.json()
 
 
@@ -134,6 +146,16 @@ def _require_confirmation(confirm: bool, action: str, payload: Any) -> None:
 @app.get("/trip/by_token/categories")
 async def trip_by_token_categories() -> Any:
     return await _trip_get("/api/by_token/categories")
+
+
+@app.get("/trip/by_token/verify")
+async def trip_by_token_verify() -> dict[str, Any]:
+    categories = await _trip_get("/api/by_token/categories")
+    return {
+        "ok": True,
+        "trip_base_url": TRIP_BASE_URL,
+        "categories_count": len(categories) if isinstance(categories, list) else None,
+    }
 
 
 @app.post("/trip/by_token/google_search")
