@@ -170,6 +170,93 @@ async def trip_by_token_create_place(payload: dict[str, Any] = Body(...)) -> Any
     return await _trip_post("/api/by_token/place", payload)
 
 
+def _trip_tool_declarations() -> list[dict[str, Any]]:
+    return [
+        {
+            "name": "trip_list_categories",
+            "description": "List TRIP categories for the authenticated user.",
+        },
+        {
+            "name": "trip_google_search",
+            "description": "Search places (via TRIP providers) and return structured place results.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "q": {"type": "string", "description": "Search query (text or Google Maps URL)."},
+                    "category": {"type": "string", "description": "Optional category name to use for results."},
+                },
+                "required": ["q"],
+            },
+        },
+        {
+            "name": "trip_create_place",
+            "description": "Create a place in TRIP. Requires confirmation for writes.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "confirm": {
+                        "type": "boolean",
+                        "description": "Must be true to perform the write. If omitted/false, the tool will return requires_confirmation.",
+                    },
+                    "name": {"type": "string"},
+                    "lat": {"type": "number"},
+                    "lng": {"type": "number"},
+                    "category": {"type": "string", "description": "Category name (must exist in TRIP)."},
+                    "place": {"type": "string"},
+                    "description": {"type": "string"},
+                    "price": {"type": "number"},
+                    "duration": {"type": "number"},
+                    "allowdog": {"type": "boolean"},
+                    "gpx": {"type": "string"},
+                    "image": {"type": "string", "description": "Optional image URL or base64 image supported by TRIP."},
+                },
+                "required": ["name", "lat", "lng", "category"],
+            },
+        },
+    ]
+
+
+def _fc_args(fc: Any) -> dict[str, Any]:
+    args = getattr(fc, "args", None)
+    if isinstance(args, dict):
+        return args
+    args = getattr(fc, "arguments", None)
+    if isinstance(args, dict):
+        return args
+    # Fallback: try model_dump if present
+    try:
+        dumped = fc.model_dump()  # type: ignore[attr-defined]
+        for k in ("args", "arguments"):
+            if isinstance(dumped.get(k), dict):
+                return dumped[k]
+    except Exception:
+        pass
+    return {}
+
+
+async def _handle_trip_tool_call(tool_name: str, args: dict[str, Any]) -> Any:
+    if tool_name == "trip_list_categories":
+        return await _trip_get("/api/by_token/categories")
+
+    if tool_name == "trip_google_search":
+        q = str(args.get("q") or "").strip()
+        if not q:
+            raise HTTPException(status_code=400, detail="missing_q")
+        payload: dict[str, Any] = {"q": q}
+        category = args.get("category")
+        if category is not None:
+            payload["category"] = str(category)
+        return await _trip_post("/api/by_token/google-search", payload)
+
+    if tool_name == "trip_create_place":
+        confirm = bool(args.get("confirm", False))
+        place_payload = {k: v for k, v in args.items() if k != "confirm"}
+        _require_confirmation(confirm, action="trip_create_place", payload=place_payload)
+        return await _trip_post("/api/by_token/place", place_payload)
+
+    raise HTTPException(status_code=400, detail={"unknown_tool": tool_name})
+
+
 async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
     audio_frames = 0
     while True:
@@ -265,6 +352,44 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
     logged_server_content_shape = False
     while True:
         async for server_msg in session.receive():
+            tool_call = getattr(server_msg, "tool_call", None)
+            if tool_call is not None:
+                function_calls = getattr(tool_call, "function_calls", None) or []
+                function_responses: list[Any] = []
+                for fc in function_calls:
+                    fc_id = getattr(fc, "id", None)
+                    fc_name = str(getattr(fc, "name", "") or "")
+                    fc_args = _fc_args(fc)
+                    try:
+                        result = await _handle_trip_tool_call(fc_name, fc_args)
+                        function_responses.append(
+                            types.FunctionResponse(
+                                id=fc_id,
+                                name=fc_name,
+                                response={"ok": True, "result": result},
+                            )
+                        )
+                    except HTTPException as e:
+                        function_responses.append(
+                            types.FunctionResponse(
+                                id=fc_id,
+                                name=fc_name,
+                                response={"ok": False, "error": e.detail, "status_code": e.status_code},
+                            )
+                        )
+                    except Exception as e:
+                        function_responses.append(
+                            types.FunctionResponse(
+                                id=fc_id,
+                                name=fc_name,
+                                response={"ok": False, "error": str(e)},
+                            )
+                        )
+
+                if function_responses:
+                    await session.send_tool_response(function_responses=function_responses)
+                continue
+
             transcription = getattr(server_msg, "transcription", None)
             if transcription is not None:
                 text = getattr(transcription, "text", None)
@@ -352,6 +477,7 @@ async def ws_live(ws: WebSocket) -> None:
             "response_modalities": ["AUDIO"],
             "input_audio_transcription": {},
             "output_audio_transcription": {},
+            "tools": [{"function_declarations": _trip_tool_declarations()}],
         }
 
         logger.info("gemini_live_connect model=%s", MODEL)
