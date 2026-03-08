@@ -39,9 +39,9 @@ services:
       ONE_MCP_PORT: 3050
       ONE_MCP_EXTERNAL_URL: http://127.0.0.1:3051
       ONE_MCP_LOG_LEVEL: info
-      ONE_MCP_CONFIG: /app/mcp.json
+      ONE_MCP_CONFIG: /app/mcp-config/mcp.json
     volumes:
-      - ./mcp.json:/app/mcp.json:ro
+      - ./mcp-config:/app/mcp-config:ro
       - mcp-bundle-data:/root/.config/1mcp
       - mcp-bundle-cache:/root/.cache
     healthcheck:

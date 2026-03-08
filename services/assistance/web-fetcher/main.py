@@ -18,6 +18,8 @@ MAX_REDIRECTS = int(os.getenv("WEB_FETCH_MAX_REDIRECTS", "5"))
 CONNECT_TIMEOUT_S = float(os.getenv("WEB_FETCH_CONNECT_TIMEOUT_S", "5"))
 READ_TIMEOUT_S = float(os.getenv("WEB_FETCH_READ_TIMEOUT_S", "15"))
 
+CA_BUNDLE = str(os.getenv("WEB_FETCH_CA_BUNDLE") or "/etc/ssl/certs/ca-certificates.crt").strip()
+
 ALLOWED_CONTENT_TYPES = tuple(
     ct.strip().lower()
     for ct in (os.getenv("WEB_FETCH_ALLOWED_CONTENT_TYPES") or "text/html,text/plain,application/json").split(",")
@@ -184,7 +186,7 @@ async def fetch(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
         "Accept": ", ".join(ALLOWED_CONTENT_TYPES),
     }
 
-    async with httpx.AsyncClient(timeout=timeout, headers=headers, follow_redirects=False) as client:
+    async with httpx.AsyncClient(timeout=timeout, headers=headers, follow_redirects=False, verify=CA_BUNDLE) as client:
         current = url
         for _ in range(MAX_REDIRECTS + 1):
             result = await _fetch_once(client, current)
