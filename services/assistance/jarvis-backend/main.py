@@ -37,6 +37,8 @@ app = FastAPI(title="jarvis-backend", version="0.1.0")
 TRIP_BASE_URL = str(os.getenv("TRIP_BASE_URL") or "http://trip:8000").strip().rstrip("/")
 TRIP_API_TOKEN = str(os.getenv("TRIP_API_TOKEN") or "").strip()
 
+WEB_FETCHER_BASE_URL = str(os.getenv("WEB_FETCHER_BASE_URL") or "http://web-fetcher:8028").strip().rstrip("/")
+
 
 SESSION_DB_PATH = os.getenv("JARVIS_SESSION_DB", "/app/jarvis_sessions.sqlite")
 
@@ -215,6 +217,20 @@ async def _trip_post(path: str, payload: Any) -> Any:
         return res.json()
 
 
+async def _web_fetcher_post(path: str, payload: Any) -> Any:
+    url = f"{WEB_FETCHER_BASE_URL}{path}"
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        res = await client.post(url, json=payload)
+        if res.status_code >= 400:
+            detail: Any
+            try:
+                detail = res.json()
+            except Exception:
+                detail = res.text
+            raise HTTPException(status_code=res.status_code, detail=detail)
+        return res.json()
+
+
 def _require_confirmation(confirm: bool, action: str, payload: Any) -> None:
     if confirm:
         return
@@ -260,6 +276,17 @@ def _trip_tool_declarations() -> list[dict[str, Any]]:
         {
             "name": "trip_list_categories",
             "description": "List TRIP categories for the authenticated user.",
+        },
+        {
+            "name": "web_fetch",
+            "description": "Fetch and extract readable text from a URL via the web-fetcher service.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string", "description": "HTTP(S) URL to fetch."},
+                },
+                "required": ["url"],
+            },
         },
         {
             "name": "trip_google_search",
@@ -344,6 +371,12 @@ def _fc_args(fc: Any) -> dict[str, Any]:
 async def _handle_trip_tool_call(session_id: Optional[str], tool_name: str, args: dict[str, Any]) -> Any:
     if tool_name == "trip_list_categories":
         return await _trip_get("/api/by_token/categories")
+
+    if tool_name == "web_fetch":
+        url = str(args.get("url") or "").strip()
+        if not url:
+            raise HTTPException(status_code=400, detail="missing_url")
+        return await _web_fetcher_post("/fetch", {"url": url})
 
     if tool_name == "trip_google_search":
         q = str(args.get("q") or "").strip()
