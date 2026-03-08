@@ -31,7 +31,7 @@ services:
 
   mcp-bundle:
     <<: *default-service
-    image: ghcr.io/1mcp-app/agent:lite
+    image: ghcr.io/tonezzz/chaba/mcp-bundle:idc1-assistance
     ports:
       - "127.0.0.1:3051:3050"
     command:
@@ -39,7 +39,7 @@ services:
       - -lc
       - |
         cat > /app/mcp-config/mcp.json <<'EOF'
-        { "mcpServers": { "server-sequential-thinking": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"], "tags": ["thinking"], "disabled": false }, "playwright": { "command": "npx", "args": ["-y", "@playwright/mcp@latest"], "tags": ["playwright", "web", "browser"], "disabled": false } } }
+        { "mcpServers": { "fetch": { "command": "python3", "args": ["-m", "mcp_server_fetch"], "tags": ["fetch", "web"], "disabled": false }, "server-sequential-thinking": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"], "tags": ["thinking"], "disabled": false }, "playwright": { "command": "npx", "args": ["-y", "@playwright/mcp@latest"], "tags": ["playwright", "web", "browser"], "disabled": false } } }
         EOF
         exec node index.js
     environment:

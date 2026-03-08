@@ -92,3 +92,23 @@ jobs:
           labels: ${{ steps.meta_web_fetcher.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Docker meta (mcp-bundle)
+        id: meta_mcp_bundle
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_PREFIX }}/mcp-bundle
+          tags: |
+            type=ref,event=branch
+            type=sha,format=short,prefix=sha-
+
+      - name: Build and push (mcp-bundle)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/assistance/mcp-bundle
+          file: ./services/assistance/mcp-bundle/Dockerfile
+          push: true
+          tags: ${{ steps.meta_mcp_bundle.outputs.tags }}
+          labels: ${{ steps.meta_mcp_bundle.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
