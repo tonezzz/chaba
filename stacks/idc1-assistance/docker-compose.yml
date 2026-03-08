@@ -34,7 +34,14 @@ services:
     image: ghcr.io/1mcp-app/agent:lite
     ports:
       - "127.0.0.1:3051:3050"
-    command: ["sh", "-lc", "cp -f /app/mcp-seed/mcp.json /app/mcp-config/mcp.json && exec 1mcp"]
+    command:
+      - sh
+      - -lc
+      - |
+        cat > /app/mcp-config/mcp.json <<'EOF'
+        { "mcpServers": { "server-sequential-thinking": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"], "tags": ["thinking"], "disabled": false }, "playwright": { "command": "npx", "args": ["-y", "@playwright/mcp@latest"], "tags": ["playwright", "web", "browser"], "disabled": false } } }
+        EOF
+        exec 1mcp
     environment:
       ONE_MCP_HOST: 0.0.0.0
       ONE_MCP_PORT: 3050
@@ -44,7 +51,6 @@ services:
       ONE_MCP_CONFIG: /app/mcp-config/mcp.json
     volumes:
       - ./mcp-config:/app/mcp-config
-      - ./mcp-seed:/app/mcp-seed:ro
       - mcp-bundle-data:/root/.config/1mcp
       - mcp-bundle-cache:/root/.cache
     healthcheck:
