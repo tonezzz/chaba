@@ -39,7 +39,7 @@ services:
       - -lc
       - |
         cat > /app/mcp-config/mcp.json <<'EOF'
-        { "mcpServers": { "fetch": { "command": "python3", "args": ["-m", "mcp_server_fetch"], "tags": ["fetch", "web"], "disabled": false }, "server-sequential-thinking": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"], "tags": ["thinking"], "disabled": false }, "playwright": { "command": "npx", "args": ["-y", "@playwright/mcp@latest"], "tags": ["playwright", "web", "browser"], "disabled": false } } }
+        { "mcpServers": { "fetch": { "command": "/opt/venv/bin/python", "args": ["-m", "mcp_server_fetch"], "tags": ["fetch", "web"], "disabled": false }, "server-sequential-thinking": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"], "tags": ["thinking"], "disabled": false }, "playwright": { "command": "npx", "args": ["-y", "@playwright/mcp@latest"], "tags": ["playwright", "web", "browser"], "disabled": false } } }
         EOF
         exec node index.js
     environment:
