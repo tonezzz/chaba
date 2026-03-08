@@ -68,7 +68,7 @@ Notes:
 - **CI**: GitHub Actions workflow at `.github/workflows/ci.yml` runs on:
   - PRs to `main`
   - pushes to `main`
-- **Merge strategy**: use **Rebase and merge** for PRs into `main`.
+- **Merge strategy**: use **Rebase and merge** for PRs into `main`. See [`docs/merge-guide.md`](merge-guide.md) for a step-by-step walkthrough.
 
 Temporary note:
 - **Direct pushes to `main` may be used temporarily** while the repo is being stabilized.
