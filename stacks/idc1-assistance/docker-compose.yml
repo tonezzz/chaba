@@ -41,7 +41,7 @@ services:
         cat > /app/mcp-config/mcp.json <<'EOF'
         { "mcpServers": { "server-sequential-thinking": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"], "tags": ["thinking"], "disabled": false }, "playwright": { "command": "npx", "args": ["-y", "@playwright/mcp@latest"], "tags": ["playwright", "web", "browser"], "disabled": false } } }
         EOF
-        exec 1mcp
+        exec node index.js
     environment:
       ONE_MCP_HOST: 0.0.0.0
       ONE_MCP_PORT: 3050
