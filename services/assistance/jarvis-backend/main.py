@@ -10,9 +10,10 @@ import re
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from typing import Any, Optional
+from pathlib import Path
 
 import httpx
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Body
 from fastapi.middleware.cors import CORSMiddleware
 
 from dotenv import load_dotenv
@@ -47,6 +48,8 @@ AIM_MCP_BASE_URL = str(os.getenv("AIM_MCP_BASE_URL") or "").strip().rstrip("/")
 
 SESSION_DB_PATH = os.getenv("JARVIS_SESSION_DB", "/app/jarvis_sessions.sqlite")
 
+AGENTS_DIR = str(os.getenv("JARVIS_AGENTS_DIR") or "/app/agents").strip() or "/app/agents"
+
 DEFAULT_USER_ID = str(os.getenv("JARVIS_DEFAULT_USER_ID") or "default").strip() or "default"
 DEFAULT_TIMEZONE = str(os.getenv("JARVIS_DEFAULT_TIMEZONE") or "Asia/Bangkok").strip() or "Asia/Bangkok"
 MORNING_BRIEF_HOUR = int(str(os.getenv("JARVIS_MORNING_BRIEF_HOUR") or "8").strip() or "8")
@@ -54,6 +57,8 @@ MORNING_BRIEF_MINUTE = int(str(os.getenv("JARVIS_MORNING_BRIEF_MINUTE") or "0").
 
 _ws_by_user: dict[str, set[WebSocket]] = {}
 _reminder_task: Optional[asyncio.Task[None]] = None
+
+_agent_defs: dict[str, dict[str, Any]] = {}
 
 
 def _init_session_db() -> None:
@@ -100,7 +105,265 @@ def _init_session_db() -> None:
             """
         )
         conn.execute("CREATE INDEX IF NOT EXISTS idx_reminders_user_notify ON reminders(user_id, notify_at)")
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS agent_status (
+              user_id TEXT NOT NULL,
+              agent_id TEXT NOT NULL,
+              payload_json TEXT NOT NULL,
+              updated_at INTEGER NOT NULL,
+              PRIMARY KEY(user_id, agent_id)
+            )
+            """
+        )
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_agent_status_user_updated ON agent_status(user_id, updated_at)")
         conn.commit()
+
+
+def _parse_agent_md(md_text: str) -> Optional[dict[str, Any]]:
+    text = str(md_text or "")
+    if not text.strip().startswith("---"):
+        return None
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return None
+
+    meta: dict[str, Any] = {}
+    i = 1
+    while i < len(lines):
+        line = lines[i]
+        if line.strip() == "---":
+            break
+        if ":" in line:
+            k, v = line.split(":", 1)
+            key = str(k).strip()
+            val = str(v).strip()
+            if key:
+                meta[key] = val
+        i += 1
+
+    if i >= len(lines) or lines[i].strip() != "---":
+        return None
+
+    body = "\n".join(lines[i + 1 :]).strip()
+    if body:
+        meta["body"] = body
+    return meta
+
+
+def _load_agent_defs() -> dict[str, dict[str, Any]]:
+    defs: dict[str, dict[str, Any]] = {}
+    root = Path(AGENTS_DIR)
+    if not root.exists() or not root.is_dir():
+        return defs
+
+    for p in sorted(root.rglob("*.md")):
+        try:
+            md = p.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        parsed = _parse_agent_md(md)
+        if not isinstance(parsed, dict):
+            continue
+        agent_id = str(parsed.get("id") or "").strip()
+        if not agent_id:
+            continue
+        parsed["path"] = str(p)
+        defs[agent_id] = parsed
+    return defs
+
+
+def _agents_snapshot() -> dict[str, dict[str, Any]]:
+    global _agent_defs
+    if not _agent_defs:
+        _agent_defs = _load_agent_defs()
+    return dict(_agent_defs)
+
+
+def _upsert_agent_status(user_id: str, agent_id: str, payload: Any) -> None:
+    _init_session_db()
+    now_ts = int(time.time())
+    payload_json = json.dumps(payload, ensure_ascii=False)
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        conn.execute(
+            """
+            INSERT INTO agent_status(user_id, agent_id, payload_json, updated_at)
+            VALUES(?, ?, ?, ?)
+            ON CONFLICT(user_id, agent_id) DO UPDATE SET
+              payload_json=excluded.payload_json,
+              updated_at=excluded.updated_at
+            """,
+            (user_id, agent_id, payload_json, now_ts),
+        )
+        conn.commit()
+
+
+def _get_agent_statuses(user_id: str) -> list[dict[str, Any]]:
+    _init_session_db()
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        cur = conn.execute(
+            "SELECT agent_id, payload_json, updated_at FROM agent_status WHERE user_id = ? ORDER BY updated_at DESC",
+            (user_id,),
+        )
+        rows = cur.fetchall() or []
+    out: list[dict[str, Any]] = []
+    for agent_id, payload_json, updated_at in rows:
+        try:
+            payload = json.loads(payload_json)
+        except Exception:
+            payload = payload_json
+        out.append({"agent_id": agent_id, "payload": payload, "updated_at": updated_at})
+    return out
+
+
+def _render_daily_brief(user_id: str) -> dict[str, Any]:
+    agents = _agents_snapshot()
+    statuses = _get_agent_statuses(user_id)
+    status_by_agent: dict[str, dict[str, Any]] = {}
+    for s in statuses:
+        aid = str(s.get("agent_id") or "").strip()
+        if aid and aid not in status_by_agent:
+            status_by_agent[aid] = s
+
+    now_ts = int(time.time())
+    upcoming_reminders = _list_due_reminders(user_id, now_ts + 24 * 3600)
+
+    lines: list[str] = []
+    lines.append(f"Daily Brief ({datetime.now(tz=_get_user_timezone(user_id)).isoformat()})")
+
+    lines.append("\nAgents")
+    for agent_id in sorted(agents.keys()):
+        name = str(agents[agent_id].get("name") or agent_id)
+        s = status_by_agent.get(agent_id)
+        if not s:
+            lines.append(f"- {name}: no recent status")
+            continue
+        payload = s.get("payload")
+        summary = ""
+        if isinstance(payload, dict):
+            summary = str(payload.get("summary") or payload.get("status") or "").strip()
+        updated_at = int(s.get("updated_at") or 0)
+        when = datetime.fromtimestamp(updated_at, tz=timezone.utc).isoformat() if updated_at else ""
+        if summary:
+            lines.append(f"- {name}: {summary} ({when})")
+        else:
+            lines.append(f"- {name}: updated ({when})")
+
+    if upcoming_reminders:
+        lines.append("\nReminders (next 24h)")
+        for r in upcoming_reminders[:20]:
+            title = str(r.get("title") or "").strip() or "Reminder"
+            notify_at = r.get("notify_at")
+            due_at = r.get("due_at")
+            lines.append(f"- {title} (notify_at={notify_at}, due_at={due_at})")
+
+    return {
+        "user_id": user_id,
+        "generated_at": int(time.time()),
+        "agent_count": len(agents),
+        "status_count": len(statuses),
+        "brief_text": "\n".join(lines).strip(),
+    }
+
+
+def _extract_reminder_setup_title(text: str) -> str:
+    s = str(text or "").strip()
+    m = re.search(r"\breminder\s+setup\b\s*[:\-]?\s*(.*)$", s, flags=re.IGNORECASE)
+    if not m:
+        return "Reminder"
+    tail = str(m.group(1) or "").strip()
+    if not tail:
+        return "Reminder"
+    # Keep titles short and stable.
+    return tail[:120]
+
+
+async def _handle_reminder_setup_trigger(ws: WebSocket, text: str) -> bool:
+    if not re.search(r"\breminder\s+setup\b", str(text or ""), flags=re.IGNORECASE):
+        return False
+
+    title = _extract_reminder_setup_title(text)
+    tz = _get_user_timezone(DEFAULT_USER_ID)
+    now = datetime.now(tz=timezone.utc)
+    due_at_utc, local_iso = _parse_time_from_text(text, now, tz)
+    if due_at_utc is None:
+        await ws.send_json(
+            {
+                "type": "error",
+                "message": "reminder_setup_missing_time",
+                "hint": "Include a time like 'today at 5pm' or 'tomorrow 09:00'.",
+            }
+        )
+        return True
+
+    result: Any
+    reminder_id: Optional[str] = None
+
+    if AIM_MCP_BASE_URL:
+        session_id = getattr(ws.state, "session_id", None)
+        try:
+            result = await _handle_mcp_tool_call(
+                session_id,
+                "aim_memory_store",
+                {
+                    "name": title,
+                    "description": text,
+                },
+            )
+            if isinstance(result, dict):
+                reminder = result.get("reminder")
+                if isinstance(reminder, dict):
+                    reminder_id = str(reminder.get("reminder_id") or "").strip() or None
+        except HTTPException as e:
+            result = {"ok": False, "error": e.detail, "status_code": e.status_code}
+        except Exception as e:
+            result = {"ok": False, "error": str(e)}
+    else:
+        schedule_type = "morning_brief"
+        notify_at_local = _next_morning_brief_at(now, tz, due_at_utc)
+        notify_at_utc = notify_at_local.astimezone(timezone.utc)
+        reminder_id = _create_reminder(
+            user_id=DEFAULT_USER_ID,
+            title=title,
+            due_at_utc=due_at_utc,
+            tz=tz,
+            schedule_type=schedule_type,
+            notify_at_utc=notify_at_utc,
+            source_text=text,
+            aim_entity_name=None,
+        )
+        result = {
+            "ok": True,
+            "reminder": {
+                "reminder_id": reminder_id,
+                "schedule_type": schedule_type,
+                "due_at_utc": due_at_utc.replace(tzinfo=timezone.utc).isoformat(),
+                "local_time": local_iso,
+                "timezone": tz.key,
+            },
+        }
+
+    _upsert_agent_status(
+        DEFAULT_USER_ID,
+        "reminder-setup",
+        {
+            "summary": f"created reminder: {title}",
+            "reminder_id": reminder_id,
+            "result": result,
+            "updated_at": int(time.time()),
+        },
+    )
+
+    await ws.send_json(
+        {
+            "type": "reminder_setup",
+            "title": title,
+            "reminder_id": reminder_id,
+            "result": result,
+        }
+    )
+    return True
 
 
 def _get_user_timezone(user_id: str) -> ZoneInfo:
@@ -424,6 +687,41 @@ app.add_middleware(
 @app.get("/health")
 def health() -> dict[str, Any]:
     return {"ok": True, "service": "jarvis-backend"}
+
+
+@app.get("/agents")
+def list_agents() -> dict[str, Any]:
+    agents = _agents_snapshot()
+    out: list[dict[str, Any]] = []
+    for agent_id, meta in agents.items():
+        out.append(
+            {
+                "id": agent_id,
+                "name": meta.get("name") or agent_id,
+                "kind": meta.get("kind") or "",
+                "version": meta.get("version") or "",
+                "path": meta.get("path") or "",
+            }
+        )
+    return {"ok": True, "agents": out}
+
+
+@app.post("/agents/{agent_id}/status")
+def post_agent_status(agent_id: str, payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    agents = _agents_snapshot()
+    agent_id = str(agent_id or "").strip()
+    if agent_id not in agents:
+        raise HTTPException(status_code=404, detail="agent_not_found")
+    _upsert_agent_status(DEFAULT_USER_ID, agent_id, payload)
+    return {"ok": True}
+
+
+@app.get("/daily-brief")
+def daily_brief() -> dict[str, Any]:
+    agents = _agents_snapshot()
+    if "daily-brief" not in agents:
+        raise HTTPException(status_code=500, detail="daily_brief_agent_missing")
+    return {"ok": True, "brief": _render_daily_brief(DEFAULT_USER_ID)}
 
 
 def _parse_sse_first_message_data(text: str) -> dict[str, Any]:
@@ -1120,6 +1418,9 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
         if msg_type == "text":
             text = str(msg.get("text") or "")
             if not text:
+                continue
+            handled = await _handle_reminder_setup_trigger(ws, text)
+            if handled:
                 continue
             await session.send_client_content(turns={"parts": [{"text": text}]}, turn_complete=True)
             continue

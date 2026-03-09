@@ -7,6 +7,20 @@ Python/FastAPI backend container (Gemini Live bridge + tool/router logic).
 - Exposes `GET /health`
 - Exposes `WS /ws/live`
 
+## Agents (MD-based)
+- Agent definitions live under `agents/*.md` in this service.
+- Runtime agent directory is controlled via `JARVIS_AGENTS_DIR` (default `/app/agents`).
+- The backend exposes:
+  - `GET /agents` (list loaded agent defs)
+  - `POST /agents/{agent_id}/status` (persist latest agent status payload)
+  - `GET /daily-brief` (aggregate latest agent statuses + reminder snapshot)
+
+## Reminder Setup trigger
+- If a user message contains the phrase `reminder setup`, the backend will handle it locally (not forwarded to Gemini):
+  - Creates an AIM memory reminder entity if AIM is configured
+  - Ensures a local reminder is scheduled in the session SQLite DB
+  - Emits a websocket message of type `reminder_setup`
+
 ## WebSocket contract (high-level)
 - Client provides `session_id` via query param: `WS /ws/live?session_id=...`
 - Backend may emit an `active_trip` message on connect.
