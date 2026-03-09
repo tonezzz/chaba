@@ -3,7 +3,7 @@ import { LiveService } from './services/liveService';
 import { ConnectionState, MessageLog } from './types';
 import Visualizer from './components/Visualizer';
 import CameraFeed from './components/CameraFeed';
-import { Play, Mic, MicOff, Search, Image as ImageIcon, Camera, Activity, Lock, ChevronRight } from 'lucide-react';
+import { Play, Mic, MicOff, Search, Image as ImageIcon, Camera, Activity, Lock, ChevronRight, Paperclip, Send, X } from 'lucide-react';
 
 export default function App() {
   const [hasKey, setHasKey] = useState(false);
@@ -18,6 +18,17 @@ export default function App() {
 	const [activeTripName, setActiveTripName] = useState<string>("");
 	const [tripIdInput, setTripIdInput] = useState<string>("");
 	const [tripNameInput, setTripNameInput] = useState<string>("");
+	const [composerText, setComposerText] = useState<string>("");
+	const [attachments, setAttachments] = useState<
+		Array<{
+			id: string;
+			name: string;
+			size: number;
+			kind: "image" | "pdf" | "text";
+			text?: string;
+		}>
+	>([]);
+	const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const checkKey = async () => {
@@ -94,6 +105,114 @@ export default function App() {
 		const id = tripIdInput.trim();
 		const name = tripNameInput.trim();
 		liveService.current?.setActiveTrip(id || null, name || null);
+	};
+
+	const handlePickFiles = () => {
+		if (state !== ConnectionState.CONNECTED) return;
+		fileInputRef.current?.click();
+	};
+
+	const handleFilesSelected = async (files: FileList | null) => {
+		if (!files || files.length === 0) return;
+		const next: Array<{ id: string; name: string; size: number; kind: "image" | "pdf" | "text"; text?: string }> = [];
+		for (const f of Array.from(files)) {
+			const name = String(f.name || "file");
+			const size = Number(f.size || 0);
+			const type = String(f.type || "");
+			const isPdf = type === "application/pdf" || name.toLowerCase().endsWith(".pdf");
+			const isImage = type.startsWith("image/");
+			const isText = type.startsWith("text/") || name.toLowerCase().endsWith(".md") || name.toLowerCase().endsWith(".json");
+			if (!isPdf && !isImage && !isText) {
+				setMessages(prev => [
+					{
+						id: `${Date.now()}_attach_err_${Math.random().toString(16).slice(2)}`,
+						role: "system",
+						text: `unsupported_file_type: ${name}`,
+						timestamp: new Date(),
+					},
+					...prev,
+				]);
+				continue;
+			}
+			if (isImage && size > 5 * 1024 * 1024) {
+				setMessages(prev => [
+					{
+						id: `${Date.now()}_attach_err_${Math.random().toString(16).slice(2)}`,
+						role: "system",
+						text: `image_too_large(5MB): ${name}`,
+						timestamp: new Date(),
+					},
+					...prev,
+				]);
+				continue;
+			}
+			if (isPdf && size > 10 * 1024 * 1024) {
+				setMessages(prev => [
+					{
+						id: `${Date.now()}_attach_err_${Math.random().toString(16).slice(2)}`,
+						role: "system",
+						text: `pdf_too_large(10MB): ${name}`,
+						timestamp: new Date(),
+					},
+					...prev,
+				]);
+				continue;
+			}
+			let text: string | undefined = undefined;
+			let kind: "image" | "pdf" | "text" = isPdf ? "pdf" : isImage ? "image" : "text";
+			if (kind === "text") {
+				try {
+					text = await f.text();
+				} catch {
+					text = "";
+				}
+			}
+			next.push({
+				id: `${Date.now()}_${Math.random().toString(16).slice(2)}`,
+				name,
+				size,
+				kind,
+				text,
+			});
+		}
+		if (next.length) setAttachments(prev => [...next, ...prev]);
+	};
+
+	const handleRemoveAttachment = (id: string) => {
+		setAttachments(prev => prev.filter(a => a.id !== id));
+	};
+
+	const handleSendComposer = () => {
+		if (state !== ConnectionState.CONNECTED) return;
+		const base = composerText.trim();
+		const textAttachments = attachments.filter(a => a.kind === "text" && typeof a.text === "string");
+		const pendingAttachments = attachments.filter(a => a.kind !== "text");
+		const blocks: string[] = [];
+		if (base) blocks.push(base);
+		for (const a of textAttachments) {
+			const body = String(a.text || "");
+			blocks.push(`Attached file: ${a.name}\n\n\`\`\`\n${body}\n\`\`\``);
+		}
+		if (pendingAttachments.length) {
+			const summary = pendingAttachments
+				.map(a => `${a.name} (${a.kind}, ${Math.round(a.size / 1024)}KB)`)
+				.join(", ");
+			blocks.push(`Attachments pending (not extracted yet): ${summary}`);
+		}
+		const finalText = blocks.join("\n\n").trim();
+		if (!finalText) return;
+		liveService.current?.sendText(finalText);
+		setComposerText("");
+		setAttachments([]);
+		setMessages(prev => [
+			{
+				id: `${Date.now()}_user_text`,
+				role: "user",
+				text: base || "(sent attachments)",
+				timestamp: new Date(),
+			},
+			...prev,
+		]);
 	};
 
   const handleToggleTalk = () => {
@@ -262,6 +381,67 @@ export default function App() {
         </div>
 
         <div className="shrink-0 mt-auto -mx-4 md:-mx-6 px-4 md:px-6 pt-4 pb-4 bg-slate-900/95 backdrop-blur-md border-t border-slate-800">
+          <div className="mb-3">
+            {attachments.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {attachments.map((a) => (
+                  <div key={a.id} className="flex items-center gap-2 px-2 py-1 rounded-md bg-slate-950/40 border border-slate-800">
+                    <span className="text-[11px] font-mono text-slate-200 max-w-[220px] truncate">{a.name}</span>
+                    <button
+                      onClick={() => handleRemoveAttachment(a.id)}
+                      className="text-slate-400 hover:text-slate-200"
+                      disabled={state !== ConnectionState.CONNECTED}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handlePickFiles}
+                disabled={state !== ConnectionState.CONNECTED}
+                className="shrink-0 w-10 h-10 rounded-xl border border-slate-700 bg-slate-950/40 text-slate-200 hover:bg-slate-800/60 disabled:opacity-50 disabled:hover:bg-slate-950/40 flex items-center justify-center"
+                aria-label="Attach files"
+              >
+                <Paperclip className="w-4 h-4" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                accept="image/*,application/pdf,text/plain,text/markdown,application/json,.md,.txt,.json,.pdf"
+                onChange={(e) => {
+                  void handleFilesSelected(e.target.files);
+                  e.currentTarget.value = "";
+                }}
+              />
+              <input
+                value={composerText}
+                onChange={(e) => setComposerText(e.target.value)}
+                placeholder="Type a message..."
+                disabled={state !== ConnectionState.CONNECTED}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendComposer();
+                  }
+                }}
+                className="flex-1 px-3 py-2 rounded-xl text-sm font-mono bg-slate-950 border border-slate-800 text-slate-200 placeholder:text-slate-600 disabled:opacity-50"
+              />
+              <button
+                onClick={handleSendComposer}
+                disabled={state !== ConnectionState.CONNECTED}
+                className="shrink-0 w-10 h-10 rounded-xl border border-cyan-500/40 bg-cyan-950/20 text-cyan-200 hover:bg-cyan-950/40 disabled:opacity-50 disabled:hover:bg-cyan-950/20 flex items-center justify-center"
+                aria-label="Send"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
           <button
             onClick={handleConnect}
             disabled={state === ConnectionState.CONNECTING}

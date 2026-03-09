@@ -51,6 +51,14 @@ export class LiveService {
     }
   }
 
+  public sendText(text: string) {
+    const trimmed = String(text || "").trim();
+    if (!trimmed) return;
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: "text", text: trimmed }));
+    }
+  }
+
   public updateCameraFrame(base64: string) {
     this.currentCameraFrame = base64;
     // Push frame to model to give it vision
