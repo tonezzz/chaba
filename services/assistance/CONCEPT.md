@@ -17,6 +17,35 @@ This policy exists to:
   mcp-servers/
 ```
 
+```mermaid
+flowchart LR
+  U[User] <-->|WebSocket audio/text| FE[Jarvis Frontend]
+  FE -->|WS /ws/live| BE[Jarvis Backend]
+
+  BE -->|tools/call| MCP[mcp-bundle :3050]
+  BE -->|tools/call| AIM[aim-mcp-gateway :3050]
+
+  BE -->|writes| DB[(jarvis_sessions.sqlite)]
+  DB -->|due reminders| BE
+  BE -->|{type: reminder}| FE
+```
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant FE as Frontend
+  participant BE as Backend
+  participant AIM as AIM MCP
+  participant DB as SQLite
+
+  U->>FE: "Remember check out tomorrow 9am"
+  FE->>BE: WS text
+  BE->>AIM: aim_memory_store(entities...)
+  BE->>DB: insert reminder (notify_at=morning brief)
+  Note over BE: Scheduler loop checks DB
+  BE->>FE: WS {type: "reminder", reminder: {...}}
+```
+
 ## Service docs
 - `jarvis-backend/ARCHITECTURE.md`
 - `jarvis-frontend/ARCHITECTURE.md`
