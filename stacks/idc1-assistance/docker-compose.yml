@@ -20,8 +20,11 @@ services:
       PORT: 8018
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_LIVE_MODEL: ${GEMINI_LIVE_MODEL:-gemini-2.5-flash-native-audio-preview-12-2025}
+      TRIP_BASE_URL: ${TRIP_BASE_URL:-http://trip:8000}
+      TRIP_API_TOKEN: ${TRIP_API_TOKEN:-}
       WEB_FETCHER_BASE_URL: ${WEB_FETCHER_BASE_URL:-http://web-fetcher:8028}
       MCP_BASE_URL: ${MCP_BASE_URL:-http://mcp-bundle:3050}
+      AIM_MCP_BASE_URL: ${AIM_MCP_BASE_URL:-http://aim-mcp-gateway:3050}
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8018/health || exit 1"]
       interval: 30s
@@ -54,6 +57,58 @@ services:
       - mcp-bundle-cache:/root/.cache
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3050/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  aim-mcp-gateway:
+    <<: *default-service
+    image: ghcr.io/tonezzz/chaba/mcp-bundle:idc1-assistance
+    command:
+      - sh
+      - -lc
+      - |
+        cat > /app/mcp-config/mcp.json <<'EOF'
+        {
+          "mcpServers": {
+            "aim-kg": {
+              "command": "npx",
+              "args": ["-y", "mcp-knowledge-graph", "--memory-path", "/data"],
+              "tags": ["memory", "knowledge-graph"],
+              "disabled": false
+            }
+          }
+        }
+        EOF
+        exec node index.js
+    environment:
+      ONE_MCP_HOST: 0.0.0.0
+      ONE_MCP_PORT: 3050
+      ONE_MCP_EXTERNAL_URL: http://127.0.0.1:3050
+      ONE_MCP_LOG_LEVEL: info
+      ONE_MCP_CONFIG_DIR: /app/mcp-config
+      ONE_MCP_CONFIG: /app/mcp-config/mcp.json
+    volumes:
+      - aim-mcp-gateway-config:/app/mcp-config
+      - aim-kg-data:/data
+      - aim-mcp-gateway-data:/root/.config/1mcp
+      - aim-mcp-gateway-cache:/root/.cache
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3050/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  trip:
+    <<: *default-service
+    image: ghcr.io/tonezzz/chaba/trip:idc1-assistance
+    environment:
+      PORT: 8000
+      TRIP_API_TOKEN: ${TRIP_API_TOKEN:-}
+    volumes:
+      - trip-storage:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -94,5 +149,10 @@ networks:
     name: idc1-stack-net
 
 volumes:
+  trip-storage:
   mcp-bundle-data:
   mcp-bundle-cache:
+  aim-kg-data:
+  aim-mcp-gateway-config:
+  aim-mcp-gateway-data:
+  aim-mcp-gateway-cache:

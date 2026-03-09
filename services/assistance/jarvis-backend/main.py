@@ -39,6 +39,8 @@ WEB_FETCHER_BASE_URL = str(os.getenv("WEB_FETCHER_BASE_URL") or "http://web-fetc
 
 MCP_BASE_URL = str(os.getenv("MCP_BASE_URL") or "http://mcp-bundle:3050").strip().rstrip("/")
 
+AIM_MCP_BASE_URL = str(os.getenv("AIM_MCP_BASE_URL") or "").strip().rstrip("/")
+
 
 SESSION_DB_PATH = os.getenv("JARVIS_SESSION_DB", "/app/jarvis_sessions.sqlite")
 
@@ -199,8 +201,18 @@ def _parse_sse_first_message_data(text: str) -> dict[str, Any]:
 
 
 async def _mcp_rpc(method: str, params: dict[str, Any]) -> Any:
+    return await _mcp_rpc_base(MCP_BASE_URL, method, params)
+
+
+async def _aim_mcp_rpc(method: str, params: dict[str, Any]) -> Any:
+    if not AIM_MCP_BASE_URL:
+        raise HTTPException(status_code=500, detail="aim_mcp_base_url_not_configured")
+    return await _mcp_rpc_base(AIM_MCP_BASE_URL, method, params)
+
+
+async def _mcp_rpc_base(base_url: str, method: str, params: dict[str, Any]) -> Any:
     session_id = str(uuid.uuid4())
-    url = f"{MCP_BASE_URL}/mcp?sessionId={session_id}"
+    url = f"{base_url}/mcp?sessionId={session_id}"
 
     async with httpx.AsyncClient(timeout=20.0) as client:
         init_req = {
@@ -257,6 +269,10 @@ async def _mcp_tools_list() -> list[dict[str, Any]]:
 
 async def _mcp_tools_call(name: str, arguments: dict[str, Any]) -> Any:
     return await _mcp_rpc("tools/call", {"name": name, "arguments": arguments})
+
+
+async def _aim_mcp_tools_call(name: str, arguments: dict[str, Any]) -> Any:
+    return await _aim_mcp_rpc("tools/call", {"name": name, "arguments": arguments})
 
 
 async def _web_fetcher_post(path: str, payload: Any) -> Any:
@@ -385,6 +401,77 @@ MCP_TOOL_MAP: dict[str, dict[str, Any]] = {
         },
         "requires_confirmation": False,
     },
+
+    "aim_memory_store": {
+        "mcp_name": "aim-kg_1mcp_aim_memory_store",
+        "description": "Store entities/observations in the AIM knowledge graph memory store.",
+        "parameters": {"type": "object"},
+        "requires_confirmation": False,
+        "mcp_base": "aim",
+    },
+    "aim_memory_add_facts": {
+        "mcp_name": "aim-kg_1mcp_aim_memory_add_facts",
+        "description": "Add facts/observations to an existing memory entity.",
+        "parameters": {"type": "object"},
+        "requires_confirmation": False,
+        "mcp_base": "aim",
+    },
+    "aim_memory_link": {
+        "mcp_name": "aim-kg_1mcp_aim_memory_link",
+        "description": "Link two memory entities together.",
+        "parameters": {"type": "object"},
+        "requires_confirmation": False,
+        "mcp_base": "aim",
+    },
+    "aim_memory_search": {
+        "mcp_name": "aim-kg_1mcp_aim_memory_search",
+        "description": "Search memory entities by keyword.",
+        "parameters": {"type": "object"},
+        "requires_confirmation": False,
+        "mcp_base": "aim",
+    },
+    "aim_memory_get": {
+        "mcp_name": "aim-kg_1mcp_aim_memory_get",
+        "description": "Get memory entities by exact name.",
+        "parameters": {"type": "object"},
+        "requires_confirmation": False,
+        "mcp_base": "aim",
+    },
+    "aim_memory_read_all": {
+        "mcp_name": "aim-kg_1mcp_aim_memory_read_all",
+        "description": "Read all memories from a store.",
+        "parameters": {"type": "object"},
+        "requires_confirmation": False,
+        "mcp_base": "aim",
+    },
+    "aim_memory_list_stores": {
+        "mcp_name": "aim-kg_1mcp_aim_memory_list_stores",
+        "description": "List available memory stores/databases.",
+        "parameters": {"type": "object"},
+        "requires_confirmation": False,
+        "mcp_base": "aim",
+    },
+    "aim_memory_forget": {
+        "mcp_name": "aim-kg_1mcp_aim_memory_forget",
+        "description": "Forget/delete memories.",
+        "parameters": {"type": "object"},
+        "requires_confirmation": True,
+        "mcp_base": "aim",
+    },
+    "aim_memory_remove_facts": {
+        "mcp_name": "aim-kg_1mcp_aim_memory_remove_facts",
+        "description": "Remove facts from an existing memory entity.",
+        "parameters": {"type": "object"},
+        "requires_confirmation": True,
+        "mcp_base": "aim",
+    },
+    "aim_memory_unlink": {
+        "mcp_name": "aim-kg_1mcp_aim_memory_unlink",
+        "description": "Remove links between memory entities.",
+        "parameters": {"type": "object"},
+        "requires_confirmation": True,
+        "mcp_base": "aim",
+    },
 }
 
 
@@ -448,8 +535,11 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
                 raise HTTPException(status_code=400, detail="invalid_pending_payload")
             mcp_name = str(payload.get("mcp_name") or "")
             mcp_args = payload.get("arguments")
+            mcp_base = str(payload.get("mcp_base") or "").strip().lower()
             if not mcp_name or not isinstance(mcp_args, dict):
                 raise HTTPException(status_code=400, detail="invalid_pending_payload")
+            if mcp_base == "aim":
+                return await _aim_mcp_tools_call(mcp_name, mcp_args)
             return await _mcp_tools_call(mcp_name, mcp_args)
         raise HTTPException(status_code=400, detail={"unknown_pending_action": action})
 
@@ -473,13 +563,14 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         raise HTTPException(status_code=500, detail="mcp_tool_missing_mapping")
 
     requires_confirmation = bool(meta.get("requires_confirmation"))
+    mcp_base = str(meta.get("mcp_base") or "").strip().lower()
     if requires_confirmation:
         if not session_id:
             raise HTTPException(status_code=400, detail="missing_session_id")
         confirmation_id = _create_pending_write(
             session_id,
             action="mcp_tools_call",
-            payload={"mcp_name": mcp_name, "arguments": dict(args)},
+            payload={"mcp_name": mcp_name, "arguments": dict(args), "mcp_base": mcp_base},
         )
         return {
             "requires_confirmation": True,
@@ -488,6 +579,8 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             "payload": args,
         }
 
+    if mcp_base == "aim":
+        return await _aim_mcp_tools_call(mcp_name, dict(args))
     return await _mcp_tools_call(mcp_name, dict(args))
 
 
