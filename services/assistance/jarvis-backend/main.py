@@ -9,7 +9,7 @@ import uuid
 from typing import Any, Optional
 
 import httpx
-from fastapi import Body, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from dotenv import load_dotenv
@@ -34,9 +34,6 @@ logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="jarvis-backend", version="0.1.0")
 
-
-TRIP_BASE_URL = str(os.getenv("TRIP_BASE_URL") or "http://trip:8000").strip().rstrip("/")
-TRIP_API_TOKEN = str(os.getenv("TRIP_API_TOKEN") or "").strip()
 
 WEB_FETCHER_BASE_URL = str(os.getenv("WEB_FETCHER_BASE_URL") or "http://web-fetcher:8028").strip().rstrip("/")
 
@@ -188,22 +185,6 @@ def health() -> dict[str, Any]:
     return {"ok": True, "service": "jarvis-backend"}
 
 
-async def _trip_get(path: str) -> Any:
-    if not TRIP_API_TOKEN:
-        raise HTTPException(status_code=500, detail="missing_TRIP_API_TOKEN")
-    url = f"{TRIP_BASE_URL}{path}"
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        res = await client.get(url, headers={"X-Api-Token": TRIP_API_TOKEN})
-        if res.status_code >= 400:
-            detail: Any
-            try:
-                detail = res.json()
-            except Exception:
-                detail = res.text
-            raise HTTPException(status_code=res.status_code, detail=detail)
-        return res.json()
-
-
 def _parse_sse_first_message_data(text: str) -> dict[str, Any]:
     # 1MCP returns text/event-stream where each JSON-RPC response is on a `data: {...}` line.
     for line in (text or "").splitlines():
@@ -276,22 +257,6 @@ async def _mcp_tools_list() -> list[dict[str, Any]]:
 
 async def _mcp_tools_call(name: str, arguments: dict[str, Any]) -> Any:
     return await _mcp_rpc("tools/call", {"name": name, "arguments": arguments})
-
-
-async def _trip_post(path: str, payload: Any) -> Any:
-    if not TRIP_API_TOKEN:
-        raise HTTPException(status_code=500, detail="missing_TRIP_API_TOKEN")
-    url = f"{TRIP_BASE_URL}{path}"
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        res = await client.post(url, json=payload, headers={"X-Api-Token": TRIP_API_TOKEN})
-        if res.status_code >= 400:
-            detail: Any
-            try:
-                detail = res.json()
-            except Exception:
-                detail = res.text
-            raise HTTPException(status_code=res.status_code, detail=detail)
-        return res.json()
 
 
 async def _web_fetcher_post(path: str, payload: Any) -> Any:
@@ -526,101 +491,6 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
     return await _mcp_tools_call(mcp_name, dict(args))
 
 
-@app.get("/trip/by_token/categories")
-async def trip_by_token_categories() -> Any:
-    return await _trip_get("/api/by_token/categories")
-
-
-@app.get("/trip/by_token/verify")
-async def trip_by_token_verify() -> dict[str, Any]:
-    categories = await _trip_get("/api/by_token/categories")
-    return {
-        "ok": True,
-        "trip_base_url": TRIP_BASE_URL,
-        "categories_count": len(categories) if isinstance(categories, list) else None,
-    }
-
-
-@app.post("/trip/by_token/google_search")
-async def trip_by_token_google_search(payload: dict[str, Any] = Body(...)) -> Any:
-    return await _trip_post("/api/by_token/google-search", payload)
-
-
-@app.post("/trip/by_token/place")
-async def trip_by_token_create_place(payload: dict[str, Any] = Body(...)) -> Any:
-    confirm = bool(payload.pop("confirm", False))
-    _require_confirmation(confirm, action="trip_create_place", payload=payload)
-    return await _trip_post("/api/by_token/place", payload)
-
-
-def _trip_tool_declarations() -> list[dict[str, Any]]:
-    return [
-        {
-            "name": "trip_list_categories",
-            "description": "List TRIP categories for the authenticated user.",
-        },
-        {
-            "name": "trip_google_search",
-            "description": "Search places (via TRIP providers) and return structured place results.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "q": {"type": "string", "description": "Search query (text or Google Maps URL)."},
-                    "category": {"type": "string", "description": "Optional category name to use for results."},
-                },
-                "required": ["q"],
-            },
-        },
-        {
-            "name": "trip_create_place",
-            "description": "Create a place in TRIP. Requires confirmation for writes.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "name": {"type": "string"},
-                    "lat": {"type": "number"},
-                    "lng": {"type": "number"},
-                    "category": {"type": "string", "description": "Category name (must exist in TRIP)."},
-                    "place": {"type": "string"},
-                    "description": {"type": "string"},
-                    "price": {"type": "number"},
-                    "duration": {"type": "number"},
-                    "allowdog": {"type": "boolean"},
-                    "gpx": {"type": "string"},
-                    "image": {"type": "string", "description": "Optional image URL or base64 image supported by TRIP."},
-                },
-                "required": ["name", "lat", "lng", "category"],
-            },
-        },
-        {
-            "name": "trip_list_pending_writes",
-            "description": "List queued pending TRIP write actions waiting for confirmation.",
-        },
-        {
-            "name": "trip_confirm_write",
-            "description": "Confirm and execute a previously queued pending TRIP write action.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "confirmation_id": {"type": "string"},
-                },
-                "required": ["confirmation_id"],
-            },
-        },
-        {
-            "name": "trip_cancel_write",
-            "description": "Cancel a previously queued pending TRIP write action.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "confirmation_id": {"type": "string"},
-                },
-                "required": ["confirmation_id"],
-            },
-        },
-    ]
-
-
 def _fc_args(fc: Any) -> dict[str, Any]:
     args = getattr(fc, "args", None)
     if isinstance(args, dict):
@@ -637,66 +507,6 @@ def _fc_args(fc: Any) -> dict[str, Any]:
     except Exception:
         pass
     return {}
-
-
-async def _handle_trip_tool_call(session_id: Optional[str], tool_name: str, args: dict[str, Any]) -> Any:
-    if tool_name == "trip_list_categories":
-        return await _trip_get("/api/by_token/categories")
-
-    if tool_name == "trip_google_search":
-        q = str(args.get("q") or "").strip()
-        if not q:
-            raise HTTPException(status_code=400, detail="missing_q")
-        payload: dict[str, Any] = {"q": q}
-        category = args.get("category")
-        if category is not None:
-            payload["category"] = str(category)
-        return await _trip_post("/api/by_token/google-search", payload)
-
-    if tool_name == "trip_create_place":
-        if not session_id:
-            raise HTTPException(status_code=400, detail="missing_session_id")
-        place_payload = dict(args)
-        confirmation_id = _create_pending_write(session_id, action="trip_create_place", payload=place_payload)
-        return {
-            "requires_confirmation": True,
-            "confirmation_id": confirmation_id,
-            "action": "trip_create_place",
-            "payload": place_payload,
-        }
-
-    if tool_name == "trip_list_pending_writes":
-        if not session_id:
-            raise HTTPException(status_code=400, detail="missing_session_id")
-        return _list_pending_writes(session_id)
-
-    if tool_name == "trip_confirm_write":
-        if not session_id:
-            raise HTTPException(status_code=400, detail="missing_session_id")
-        confirmation_id = str(args.get("confirmation_id") or "").strip()
-        if not confirmation_id:
-            raise HTTPException(status_code=400, detail="missing_confirmation_id")
-        pending = _pop_pending_write(session_id, confirmation_id)
-        if not pending:
-            raise HTTPException(status_code=404, detail="pending_write_not_found")
-        action = str(pending.get("action") or "")
-        payload = pending.get("payload")
-        if action == "trip_create_place":
-            return await _trip_post("/api/by_token/place", payload)
-        raise HTTPException(status_code=400, detail={"unknown_pending_action": action})
-
-    if tool_name == "trip_cancel_write":
-        if not session_id:
-            raise HTTPException(status_code=400, detail="missing_session_id")
-        confirmation_id = str(args.get("confirmation_id") or "").strip()
-        if not confirmation_id:
-            raise HTTPException(status_code=400, detail="missing_confirmation_id")
-        ok = _cancel_pending_write(session_id, confirmation_id)
-        if not ok:
-            raise HTTPException(status_code=404, detail="pending_write_not_found")
-        return {"ok": True}
-
-    raise HTTPException(status_code=400, detail={"unknown_tool": tool_name})
 
 
 async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
@@ -809,7 +619,7 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                         if fc_name in MCP_TOOL_MAP or fc_name in ("pending_list", "pending_confirm", "pending_cancel"):
                             result = await _handle_mcp_tool_call(session_id, fc_name, fc_args)
                         else:
-                            result = await _handle_trip_tool_call(session_id, fc_name, fc_args)
+                            raise HTTPException(status_code=400, detail={"unknown_tool": fc_name})
                         function_responses.append(
                             types.FunctionResponse(
                                 id=fc_id,
@@ -929,7 +739,6 @@ async def ws_live(ws: WebSocket) -> None:
             "output_audio_transcription": {},
             "tools": [
                 {"function_declarations": _mcp_tool_declarations()},
-                {"function_declarations": _trip_tool_declarations()},
             ],
         }
 

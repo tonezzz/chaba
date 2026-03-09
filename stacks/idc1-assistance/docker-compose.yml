@@ -20,8 +20,6 @@ services:
       PORT: 8018
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_LIVE_MODEL: ${GEMINI_LIVE_MODEL:-gemini-2.5-flash-native-audio-preview-12-2025}
-      TRIP_BASE_URL: ${TRIP_BASE_URL:-http://trip:8000}
-      TRIP_API_TOKEN: ${TRIP_API_TOKEN:-}
       WEB_FETCHER_BASE_URL: ${WEB_FETCHER_BASE_URL:-http://web-fetcher:8028}
       MCP_BASE_URL: ${MCP_BASE_URL:-http://mcp-bundle:3050}
     healthcheck:
@@ -83,15 +81,6 @@ services:
       timeout: 5s
       retries: 3
 
-  trip:
-    <<: *default-service
-    image: ghcr.io/itskovacs/trip:1
-    ports:
-      - "127.0.0.1:18081:8000"
-    volumes:
-      - trip-storage:/app/storage
-    command: ["fastapi", "run", "/app/trip/main.py", "--host", "0.0.0.0", "--port", "8000"]
-
   jarvis-frontend:
     <<: *default-service
     image: ghcr.io/tonezzz/chaba/jarvis-frontend:idc1-assistance
@@ -105,6 +94,5 @@ networks:
     name: idc1-stack-net
 
 volumes:
-  trip-storage:
   mcp-bundle-data:
   mcp-bundle-cache:
