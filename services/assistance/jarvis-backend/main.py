@@ -45,6 +45,9 @@ MCP_BASE_URL = str(os.getenv("MCP_BASE_URL") or "http://mcp-bundle:3050").strip(
 
 AIM_MCP_BASE_URL = str(os.getenv("AIM_MCP_BASE_URL") or "").strip().rstrip("/")
 
+WEAVIATE_URL = str(os.getenv("WEAVIATE_URL") or "").strip().rstrip("/")
+GEMINI_EMBEDDING_MODEL = str(os.getenv("GEMINI_EMBEDDING_MODEL") or "text-embedding-004").strip() or "text-embedding-004"
+
 
 SESSION_DB_PATH = os.getenv("JARVIS_SESSION_DB", "/app/jarvis_sessions.sqlite")
 
@@ -55,10 +58,16 @@ DEFAULT_TIMEZONE = str(os.getenv("JARVIS_DEFAULT_TIMEZONE") or "Asia/Bangkok").s
 MORNING_BRIEF_HOUR = int(str(os.getenv("JARVIS_MORNING_BRIEF_HOUR") or "8").strip() or "8")
 MORNING_BRIEF_MINUTE = int(str(os.getenv("JARVIS_MORNING_BRIEF_MINUTE") or "0").strip() or "0")
 
+AGENT_CONTINUE_WINDOW_SECONDS = int(str(os.getenv("JARVIS_AGENT_CONTINUE_WINDOW_SECONDS") or "120").strip() or "120")
+
 _ws_by_user: dict[str, set[WebSocket]] = {}
 _reminder_task: Optional[asyncio.Task[None]] = None
 
 _agent_defs: dict[str, dict[str, Any]] = {}
+
+_agent_triggers: dict[str, list[str]] = {}
+
+_weaviate_schema_ready: bool = False
 
 
 def _init_session_db() -> None:
@@ -137,6 +146,291 @@ def _init_session_db() -> None:
         conn.commit()
 
 
+def _weaviate_enabled() -> bool:
+    return bool(WEAVIATE_URL)
+
+
+def _weaviate_object_uuid(external_key: str) -> str:
+    # Deterministic UUID for idempotent upserts.
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"jarvis::{external_key}"))
+
+
+async def _gemini_embed_text(text: str) -> list[float]:
+    api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
+    if not api_key:
+        raise RuntimeError("Missing required env var: API_KEY (or GEMINI_API_KEY)")
+    client = genai.Client(api_key=api_key)
+    # google-genai embedding API surface has changed across versions; try a couple patterns.
+    try:
+        res = await client.aio.models.embed_content(model=GEMINI_EMBEDDING_MODEL, contents=text)
+        emb = getattr(res, "embedding", None)
+        values = getattr(emb, "values", None)
+        if isinstance(values, list) and values:
+            return [float(x) for x in values]
+    except Exception:
+        pass
+    try:
+        res = await client.aio.models.embed_content(model=GEMINI_EMBEDDING_MODEL, content=text)
+        emb = getattr(res, "embedding", None)
+        values = getattr(emb, "values", None)
+        if isinstance(values, list) and values:
+            return [float(x) for x in values]
+    except Exception as e:
+        raise RuntimeError(f"gemini_embedding_failed: {e}")
+    raise RuntimeError("gemini_embedding_failed")
+
+
+async def _weaviate_request(method: str, path: str, payload: Any = None) -> Any:
+    if not _weaviate_enabled():
+        raise HTTPException(status_code=500, detail="weaviate_not_configured")
+    url = f"{WEAVIATE_URL}{path}"
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        res = await client.request(method, url, json=payload)
+        if res.status_code >= 400:
+            detail: Any
+            try:
+                detail = res.json()
+            except Exception:
+                detail = res.text
+            raise HTTPException(status_code=502, detail={"weaviate_error": detail})
+        if not res.text:
+            return None
+        try:
+            return res.json()
+        except Exception:
+            return res.text
+
+
+async def _weaviate_ensure_schema() -> None:
+    global _weaviate_schema_ready
+    if _weaviate_schema_ready:
+        return
+    if not _weaviate_enabled():
+        return
+
+    schema = {
+        "class": "JarvisMemoryItem",
+        "description": "Jarvis authoritative memory items (reminders, todos, notes, agent status).",
+        "vectorizer": "none",
+        "properties": [
+            {"name": "external_key", "dataType": ["text"]},
+            {"name": "kind", "dataType": ["text"]},
+            {"name": "title", "dataType": ["text"]},
+            {"name": "body", "dataType": ["text"]},
+            {"name": "status", "dataType": ["text"]},
+            {"name": "due_at", "dataType": ["number"]},
+            {"name": "notify_at", "dataType": ["number"]},
+            {"name": "timezone", "dataType": ["text"]},
+            {"name": "source", "dataType": ["text"]},
+            {"name": "created_at", "dataType": ["number"]},
+            {"name": "updated_at", "dataType": ["number"]},
+        ],
+    }
+
+    try:
+        await _weaviate_request("GET", "/v1/schema/JarvisMemoryItem")
+        _weaviate_schema_ready = True
+        return
+    except Exception:
+        pass
+
+    await _weaviate_request("POST", "/v1/schema", schema)
+    _weaviate_schema_ready = True
+
+
+async def _weaviate_upsert_memory_item(
+    *,
+    external_key: str,
+    kind: str,
+    title: str,
+    body: str,
+    status: str,
+    due_at: Optional[int],
+    notify_at: Optional[int],
+    timezone_name: str,
+    source: str,
+) -> dict[str, Any]:
+    await _weaviate_ensure_schema()
+    now_ts = int(time.time())
+    obj_id = _weaviate_object_uuid(external_key)
+
+    vector_text = "\n".join([str(kind), str(title), str(body)]).strip()
+    vector = await _gemini_embed_text(vector_text)
+
+    existing_created_at: Optional[float] = None
+    try:
+        existing = await _weaviate_request("GET", f"/v1/objects/{obj_id}")
+        if isinstance(existing, dict):
+            props0 = existing.get("properties")
+            if isinstance(props0, dict) and props0.get("created_at") is not None:
+                try:
+                    existing_created_at = float(props0.get("created_at"))
+                except Exception:
+                    existing_created_at = None
+    except Exception:
+        existing_created_at = None
+
+    props: dict[str, Any] = {
+        "external_key": external_key,
+        "kind": kind,
+        "title": title,
+        "body": body,
+        "status": status,
+        "timezone": timezone_name,
+        "source": source,
+        "updated_at": now_ts,
+    }
+    if due_at is not None:
+        props["due_at"] = float(due_at)
+    if notify_at is not None:
+        props["notify_at"] = float(notify_at)
+
+    # First write uses created_at; subsequent writes keep the original created_at.
+    if existing_created_at is not None:
+        props["created_at"] = float(existing_created_at)
+    else:
+        props["created_at"] = float(now_ts)
+
+    payload = {
+        "class": "JarvisMemoryItem",
+        "id": obj_id,
+        "properties": props,
+        "vector": vector,
+    }
+
+    await _weaviate_request("PUT", f"/v1/objects/{obj_id}", payload)
+    return {"id": obj_id, "external_key": external_key}
+
+
+async def _weaviate_query_upcoming_reminders(*, start_ts: int, end_ts: int, limit: int) -> list[dict[str, Any]]:
+    await _weaviate_ensure_schema()
+    lim = max(1, min(int(limit or 50), 500))
+    query = {
+        "query": """
+        {
+          Get {
+            JarvisMemoryItem(
+              where: {
+                operator: And
+                operands: [
+                  { path: [\"kind\"], operator: Equal, valueText: \"reminder\" }
+                  { path: [\"status\"], operator: Equal, valueText: \"pending\" }
+                  { path: [\"notify_at\"], operator: GreaterThanEqual, valueNumber: %START% }
+                  { path: [\"notify_at\"], operator: LessThanEqual, valueNumber: %END% }
+                ]
+              }
+              limit: %LIMIT%
+            ) {
+              external_key
+              title
+              body
+              status
+              due_at
+              notify_at
+              timezone
+              updated_at
+            }
+          }
+        }
+        """
+        .replace("%START%", str(float(int(start_ts))))
+        .replace("%END%", str(float(int(end_ts))))
+        .replace("%LIMIT%", str(int(lim)))
+    }
+    res = await _weaviate_request("POST", "/v1/graphql", query)
+    items = (
+        res.get("data", {})
+        .get("Get", {})
+        .get("JarvisMemoryItem", [])
+        if isinstance(res, dict)
+        else []
+    )
+    out: list[dict[str, Any]] = []
+    if isinstance(items, list):
+        for it in items:
+            if isinstance(it, dict):
+                out.append(it)
+    return out
+
+
+def _local_reminder_id_from_external_key(external_key: str) -> str:
+    s = str(external_key or "").strip()
+    # Prefer decoding when possible to avoid generating new local ids for existing reminders.
+    if s.startswith("reminder::"):
+        tail = s[len("reminder::") :].strip()
+        if tail:
+            return tail
+    # Stable local PK so restart sync can still upsert deterministically.
+    u = uuid.uuid5(uuid.NAMESPACE_URL, f"jarvis_local::{s}")
+    return f"r_{u.hex[:18]}"
+
+
+def _upsert_local_reminder_from_memory_item(user_id: str, item: dict[str, Any]) -> Optional[str]:
+    external_key = str(item.get("external_key") or "").strip()
+    if not external_key:
+        return None
+    reminder_id = _local_reminder_id_from_external_key(external_key)
+    title = str(item.get("title") or "Reminder").strip() or "Reminder"
+    tz_name = str(item.get("timezone") or DEFAULT_TIMEZONE).strip() or DEFAULT_TIMEZONE
+    schedule_type = "memory"
+    source_text = str(item.get("body") or "").strip()
+
+    due_at = item.get("due_at")
+    notify_at = item.get("notify_at")
+    try:
+        due_at_ts = int(float(due_at)) if due_at is not None else None
+    except Exception:
+        due_at_ts = None
+    try:
+        notify_at_ts = int(float(notify_at)) if notify_at is not None else None
+    except Exception:
+        notify_at_ts = None
+
+    if notify_at_ts is None:
+        return None
+
+    dedupe_key = _reminder_dedupe_key(title, due_at_ts, schedule_type)
+
+    _init_session_db()
+    now_ts = int(time.time())
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        conn.execute(
+            """
+            INSERT INTO reminders(
+              reminder_id, user_id, title, dedupe_key, due_at, timezone, schedule_type, notify_at, status,
+              source_text, aim_entity_name, created_at, updated_at
+            ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(reminder_id) DO UPDATE SET
+              title=excluded.title,
+              dedupe_key=excluded.dedupe_key,
+              due_at=excluded.due_at,
+              timezone=excluded.timezone,
+              schedule_type=excluded.schedule_type,
+              notify_at=excluded.notify_at,
+              status=excluded.status,
+              source_text=excluded.source_text,
+              updated_at=excluded.updated_at
+            """,
+            (
+                reminder_id,
+                user_id,
+                title,
+                dedupe_key,
+                due_at_ts,
+                tz_name,
+                schedule_type,
+                notify_at_ts,
+                "pending",
+                source_text,
+                external_key,
+                now_ts,
+                now_ts,
+            ),
+        )
+        conn.commit()
+    return reminder_id
+
+
 def _parse_agent_md(md_text: str) -> Optional[dict[str, Any]]:
     text = str(md_text or "")
     if not text.strip().startswith("---"):
@@ -197,6 +491,30 @@ def _agents_snapshot() -> dict[str, dict[str, Any]]:
     return dict(_agent_defs)
 
 
+def _agent_triggers_snapshot() -> dict[str, list[str]]:
+    global _agent_triggers
+    if _agent_triggers:
+        return dict(_agent_triggers)
+
+    agents = _agents_snapshot()
+    out: dict[str, list[str]] = {}
+    for agent_id, meta in agents.items():
+        raw = meta.get("trigger_phrases")
+        if raw is None:
+            continue
+        phrases: list[str] = []
+        if isinstance(raw, str):
+            # Support simple comma-separated values (frontmatter is parsed as strings).
+            for part in raw.split(","):
+                p = part.strip()
+                if p:
+                    phrases.append(p)
+        if phrases:
+            out[agent_id] = phrases
+    _agent_triggers = out
+    return dict(_agent_triggers)
+
+
 def _upsert_agent_status(user_id: str, agent_id: str, payload: Any) -> None:
     _init_session_db()
     now_ts = int(time.time())
@@ -233,6 +551,130 @@ def _get_agent_statuses(user_id: str) -> list[dict[str, Any]]:
     return out
 
 
+def _list_upcoming_pending_reminders(
+    *,
+    user_id: str,
+    start_ts: int,
+    end_ts: int,
+    time_field: str,
+    limit: int,
+) -> list[dict[str, Any]]:
+    _init_session_db()
+    field = str(time_field or "notify_at").strip().lower() or "notify_at"
+    if field not in ("notify_at", "due_at"):
+        raise HTTPException(status_code=400, detail="invalid_time_field")
+
+    start_v = int(start_ts)
+    end_v = int(end_ts)
+    if end_v < start_v:
+        raise HTTPException(status_code=400, detail="invalid_time_window")
+
+    lim = max(1, min(int(limit or 50), 500))
+
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        cur = conn.execute(
+            f"""
+            SELECT reminder_id, title, due_at, timezone, schedule_type, notify_at, source_text, aim_entity_name
+            FROM reminders
+            WHERE user_id = ?
+              AND status = 'pending'
+              AND {field} IS NOT NULL
+              AND {field} >= ?
+              AND {field} <= ?
+            ORDER BY {field} ASC
+            LIMIT ?
+            """,
+            (user_id, start_v, end_v, lim),
+        )
+        rows = cur.fetchall() or []
+
+    out: list[dict[str, Any]] = []
+    for reminder_id, title, due_at, tz_name, schedule_type, notify_at, source_text, aim_entity_name in rows:
+        out.append(
+            {
+                "reminder_id": reminder_id,
+                "title": title,
+                "due_at": due_at,
+                "timezone": tz_name,
+                "schedule_type": schedule_type,
+                "notify_at": notify_at,
+                "source_text": source_text,
+                "aim_entity_name": aim_entity_name,
+            }
+        )
+    return out
+
+
+def _list_reminders(
+    *,
+    user_id: str,
+    status: str,
+    limit: int,
+    offset: int,
+    order: str,
+) -> list[dict[str, Any]]:
+    _init_session_db()
+    status_norm = str(status or "all").strip().lower() or "all"
+    order_norm = str(order or "desc").strip().lower() or "desc"
+    lim = max(1, min(int(limit or 50), 500))
+    off = max(0, int(offset or 0))
+
+    if status_norm not in ("all", "pending", "fired"):
+        raise HTTPException(status_code=400, detail="invalid_status")
+    if order_norm not in ("asc", "desc"):
+        raise HTTPException(status_code=400, detail="invalid_order")
+
+    status_clause = ""
+    params: list[Any] = [user_id]
+    if status_norm != "all":
+        status_clause = " AND status = ?"
+        params.append(status_norm)
+
+    sql = (
+        "SELECT reminder_id, title, due_at, timezone, schedule_type, notify_at, status, source_text, aim_entity_name, created_at, updated_at "
+        "FROM reminders "
+        "WHERE user_id = ?" + status_clause + " "
+        f"ORDER BY updated_at {order_norm.upper()} "
+        "LIMIT ? OFFSET ?"
+    )
+    params.extend([lim, off])
+
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        cur = conn.execute(sql, tuple(params))
+        rows = cur.fetchall() or []
+
+    out: list[dict[str, Any]] = []
+    for (
+        reminder_id,
+        title,
+        due_at,
+        tz_name,
+        schedule_type,
+        notify_at,
+        status_value,
+        source_text,
+        aim_entity_name,
+        created_at,
+        updated_at,
+    ) in rows:
+        out.append(
+            {
+                "reminder_id": reminder_id,
+                "title": title,
+                "due_at": due_at,
+                "timezone": tz_name,
+                "schedule_type": schedule_type,
+                "notify_at": notify_at,
+                "status": status_value,
+                "source_text": source_text,
+                "aim_entity_name": aim_entity_name,
+                "created_at": created_at,
+                "updated_at": updated_at,
+            }
+        )
+    return out
+
+
 def _render_daily_brief(user_id: str) -> dict[str, Any]:
     agents = _agents_snapshot()
     statuses = _get_agent_statuses(user_id)
@@ -243,7 +685,13 @@ def _render_daily_brief(user_id: str) -> dict[str, Any]:
             status_by_agent[aid] = s
 
     now_ts = int(time.time())
-    upcoming_reminders = _list_due_reminders(user_id, now_ts + 24 * 3600)
+    upcoming_reminders = _list_upcoming_pending_reminders(
+        user_id=user_id,
+        start_ts=now_ts,
+        end_ts=now_ts + 24 * 3600,
+        time_field="notify_at",
+        limit=50,
+    )
 
     lines: list[str] = []
     lines.append(f"Daily Brief ({datetime.now(tz=_get_user_timezone(user_id)).isoformat()})")
@@ -296,9 +744,6 @@ def _extract_reminder_setup_title(text: str) -> str:
 
 
 async def _handle_reminder_setup_trigger(ws: WebSocket, text: str) -> bool:
-    if not re.search(r"\breminder\s+setup\b", str(text or ""), flags=re.IGNORECASE):
-        return False
-
     title = _extract_reminder_setup_title(text)
     tz = _get_user_timezone(DEFAULT_USER_ID)
     now = datetime.now(tz=timezone.utc)
@@ -313,52 +758,63 @@ async def _handle_reminder_setup_trigger(ws: WebSocket, text: str) -> bool:
         )
         return True
 
-    result: Any
-    reminder_id: Optional[str] = None
+    # Weaviate-authoritative: write local first for reliability, then write-through to Weaviate.
+    schedule_type = "morning_brief"
+    notify_at_local = _next_morning_brief_at(now, tz, due_at_utc)
+    notify_at_utc = notify_at_local.astimezone(timezone.utc)
+    external_key: Optional[str] = None
 
-    if AIM_MCP_BASE_URL:
-        session_id = getattr(ws.state, "session_id", None)
+    reminder_id = _create_reminder(
+        user_id=DEFAULT_USER_ID,
+        title=title,
+        due_at_utc=due_at_utc,
+        tz=tz,
+        schedule_type=schedule_type,
+        notify_at_utc=notify_at_utc,
+        source_text=text,
+        aim_entity_name=None,
+    )
+
+    external_key = f"reminder::{reminder_id}"
+
+    result: Any = {
+        "ok": True,
+        "reminder": {
+            "reminder_id": reminder_id,
+            "schedule_type": schedule_type,
+            "due_at_utc": due_at_utc.replace(tzinfo=timezone.utc).isoformat(),
+            "local_time": local_iso,
+            "timezone": tz.key,
+        },
+    }
+
+    if _weaviate_enabled():
         try:
-            result = await _handle_mcp_tool_call(
-                session_id,
-                "aim_memory_store",
-                {
-                    "name": title,
-                    "description": text,
-                },
+            wv = await _weaviate_upsert_memory_item(
+                external_key=external_key,
+                kind="reminder",
+                title=title,
+                body=text,
+                status="pending",
+                due_at=int(due_at_utc.timestamp()),
+                notify_at=int(notify_at_utc.timestamp()),
+                timezone_name=tz.key,
+                source="jarvis",
             )
-            if isinstance(result, dict):
-                reminder = result.get("reminder")
-                if isinstance(reminder, dict):
-                    reminder_id = str(reminder.get("reminder_id") or "").strip() or None
-        except HTTPException as e:
-            result = {"ok": False, "error": e.detail, "status_code": e.status_code}
+            # Store a stable mapping for later debug/sync.
+            try:
+                _init_session_db()
+                with sqlite3.connect(SESSION_DB_PATH) as conn:
+                    conn.execute(
+                        "UPDATE reminders SET aim_entity_name = ?, updated_at = ? WHERE reminder_id = ?",
+                        (external_key, int(time.time()), reminder_id),
+                    )
+                    conn.commit()
+            except Exception:
+                pass
+            result = {**result, "weaviate": wv}
         except Exception as e:
-            result = {"ok": False, "error": str(e)}
-    else:
-        schedule_type = "morning_brief"
-        notify_at_local = _next_morning_brief_at(now, tz, due_at_utc)
-        notify_at_utc = notify_at_local.astimezone(timezone.utc)
-        reminder_id = _create_reminder(
-            user_id=DEFAULT_USER_ID,
-            title=title,
-            due_at_utc=due_at_utc,
-            tz=tz,
-            schedule_type=schedule_type,
-            notify_at_utc=notify_at_utc,
-            source_text=text,
-            aim_entity_name=None,
-        )
-        result = {
-            "ok": True,
-            "reminder": {
-                "reminder_id": reminder_id,
-                "schedule_type": schedule_type,
-                "due_at_utc": due_at_utc.replace(tzinfo=timezone.utc).isoformat(),
-                "local_time": local_iso,
-                "timezone": tz.key,
-            },
-        }
+            result = {**result, "weaviate": {"ok": False, "error": str(e)}}
 
     _upsert_agent_status(
         DEFAULT_USER_ID,
@@ -380,6 +836,65 @@ async def _handle_reminder_setup_trigger(ws: WebSocket, text: str) -> bool:
         }
     )
     return True
+
+
+async def _startup_resync_from_weaviate() -> None:
+    if not _weaviate_enabled():
+        return
+    try:
+        now_ts = int(time.time())
+        # Keep local scheduler warm for the next 7 days.
+        items = await _weaviate_query_upcoming_reminders(
+            start_ts=now_ts,
+            end_ts=now_ts + 7 * 24 * 3600,
+            limit=500,
+        )
+        for it in items:
+            _upsert_local_reminder_from_memory_item(DEFAULT_USER_ID, it)
+    except Exception as e:
+        logger.warning("weaviate_startup_resync_failed error=%s", e)
+
+
+async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
+    # Continuation handling: if a sub-agent is active for this websocket, let it handle followups.
+    now_ts = int(time.time())
+    active_agent_id = str(getattr(ws.state, "active_agent_id", "") or "").strip() or None
+    active_until = getattr(ws.state, "active_agent_until_ts", None)
+    try:
+        active_until_ts = int(active_until) if active_until is not None else 0
+    except Exception:
+        active_until_ts = 0
+
+    async def _run_agent(agent_id: str) -> bool:
+        agent_id_norm = str(agent_id or "").strip()
+        if agent_id_norm == "reminder-setup":
+            handled = await _handle_reminder_setup_trigger(ws, text)
+            if handled:
+                ws.state.active_agent_id = agent_id_norm
+                ws.state.active_agent_until_ts = int(time.time()) + AGENT_CONTINUE_WINDOW_SECONDS
+            return handled
+        return False
+
+    if active_agent_id and active_until_ts >= now_ts:
+        handled = await _run_agent(active_agent_id)
+        if handled:
+            return True
+
+    # Trigger matching.
+    triggers = _agent_triggers_snapshot()
+    s = str(text or "")
+    for agent_id, phrases in triggers.items():
+        for phrase in phrases:
+            if phrase and phrase.lower() in s.lower():
+                handled = await _run_agent(agent_id)
+                if handled:
+                    return True
+
+    # Clear expired continuation state.
+    if active_agent_id and active_until_ts < now_ts:
+        ws.state.active_agent_id = None
+        ws.state.active_agent_until_ts = None
+    return False
 
 
 def _get_user_timezone(user_id: str) -> ZoneInfo:
@@ -613,6 +1128,10 @@ async def _startup() -> None:
         _init_session_db()
     except Exception as e:
         logger.warning("session_db_init_failed error=%s", e)
+    try:
+        await _startup_resync_from_weaviate()
+    except Exception as e:
+        logger.warning("startup_resync_failed error=%s", e)
     if _reminder_task is None or _reminder_task.done():
         _reminder_task = asyncio.create_task(_reminder_scheduler_loop())
 
@@ -773,6 +1292,40 @@ def daily_brief() -> dict[str, Any]:
     if "daily-brief" not in agents:
         raise HTTPException(status_code=500, detail="daily_brief_agent_missing")
     return {"ok": True, "brief": _render_daily_brief(DEFAULT_USER_ID)}
+
+
+@app.get("/reminders")
+def list_reminders(status: str = "all", limit: int = 50, offset: int = 0, order: str = "desc") -> dict[str, Any]:
+    reminders = _list_reminders(user_id=DEFAULT_USER_ID, status=status, limit=limit, offset=offset, order=order)
+    return {"ok": True, "reminders": reminders}
+
+
+@app.get("/reminders/upcoming")
+def upcoming_reminders(window_hours: int = 48, time_field: str = "notify_at", limit: int = 50) -> dict[str, Any]:
+    now_ts = int(time.time())
+    end_ts = now_ts + max(1, int(window_hours or 48)) * 3600
+    reminders = _list_upcoming_pending_reminders(
+        user_id=DEFAULT_USER_ID,
+        start_ts=now_ts,
+        end_ts=end_ts,
+        time_field=time_field,
+        limit=limit,
+    )
+    return {"ok": True, "now": now_ts, "end": end_ts, "time_field": time_field, "reminders": reminders}
+
+
+@app.get("/debug/agents")
+def debug_agents() -> dict[str, Any]:
+    agents = _agents_snapshot()
+    triggers = _agent_triggers_snapshot()
+    return {
+        "ok": True,
+        "agents_dir": AGENTS_DIR,
+        "agent_count": len(agents),
+        "agents": agents,
+        "triggers": triggers,
+        "continuation_window_seconds": AGENT_CONTINUE_WINDOW_SECONDS,
+    }
 
 
 def _parse_sse_first_message_data(text: str) -> dict[str, Any]:
@@ -1294,6 +1847,40 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
             },
         }
     )
+
+    decls.append(
+        {
+            "name": "reminders_list",
+            "description": "List reminders from the local Jarvis session DB (including fired/old reminders).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "status": {"type": "string", "description": "Filter by status: all|pending|fired"},
+                    "limit": {"type": "integer", "description": "Max rows (default 50, max 500)"},
+                    "offset": {"type": "integer", "description": "Offset for pagination"},
+                    "order": {"type": "string", "description": "Sort by updated_at: asc|desc"},
+                },
+            },
+        }
+    )
+
+    decls.append(
+        {
+            "name": "reminders_upcoming",
+            "description": "List upcoming pending reminders in the next N hours (defaults to 48).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "window_hours": {"type": "integer", "description": "How far ahead to look (hours)."},
+                    "time_field": {
+                        "type": "string",
+                        "description": "Which timestamp to use: notify_at|due_at (default notify_at).",
+                    },
+                    "limit": {"type": "integer", "description": "Max rows (default 50, max 500)."},
+                },
+            },
+        }
+    )
     return decls
 
 
@@ -1339,6 +1926,27 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         if not ok:
             raise HTTPException(status_code=404, detail="pending_write_not_found")
         return {"ok": True}
+
+    if tool_name == "reminders_list":
+        status = str(args.get("status") or "all")
+        limit = int(args.get("limit") or 50)
+        offset = int(args.get("offset") or 0)
+        order = str(args.get("order") or "desc")
+        return _list_reminders(user_id=DEFAULT_USER_ID, status=status, limit=limit, offset=offset, order=order)
+
+    if tool_name == "reminders_upcoming":
+        window_hours = int(args.get("window_hours") or 48)
+        time_field = str(args.get("time_field") or "notify_at")
+        limit = int(args.get("limit") or 50)
+        now_ts = int(time.time())
+        end_ts = now_ts + max(1, window_hours) * 3600
+        return _list_upcoming_pending_reminders(
+            user_id=DEFAULT_USER_ID,
+            start_ts=now_ts,
+            end_ts=end_ts,
+            time_field=time_field,
+            limit=limit,
+        )
 
     meta = MCP_TOOL_MAP.get(tool_name)
     if not meta:
@@ -1470,7 +2078,7 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             text = str(msg.get("text") or "")
             if not text:
                 continue
-            handled = await _handle_reminder_setup_trigger(ws, text)
+            handled = await _dispatch_sub_agents(ws, text)
             if handled:
                 continue
             await session.send_client_content(turns={"parts": [{"text": text}]}, turn_complete=True)

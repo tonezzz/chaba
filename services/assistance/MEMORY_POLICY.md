@@ -1,22 +1,22 @@
 # MEMORY POLICY
 
+- `README.md`
+- `CONCEPT.md`
+- `TOOLS_POLICY.md`
+
 ## Purpose
 
-This document defines how Jarvis uses AIM memory to store, retrieve, and operate on user information.
+This document defines how Jarvis stores, retrieves, and operates on user information.
 
-## Storage model (AIM knowledge graph)
+## Storage model (Weaviate + local scheduler)
 
-### Entities
+### Authoritative memory
 
-Jarvis stores information as "entities". Each entity has:
+Jarvis stores long-lived information in Weaviate as memory items (e.g. reminders, todos, notes). Items should be written idempotently and be queryable by both structured filters and (optionally) semantic search.
 
-- name
-- entityType
-- observations (array of strings)
+### Operational scheduler cache
 
-### Context
-
-Jarvis may store entities in different contexts (e.g. `work`, `personal`). If unspecified, the master context is used.
+Jarvis also stores machine-readable reminder schedule state locally (SQLite) for reliable time-based notification delivery.
 
 ## What Jarvis should store
 
@@ -55,7 +55,7 @@ Jarvis should use a consistent taxonomy. Recommended values:
 
 When the user expresses a time-based intention (e.g. "Remember I need to check out tomorrow at 9am"), Jarvis should:
 
-1. Store a human-readable memory entity in AIM (for recall/search)
+1. Store a human-readable memory item in Weaviate (for recall/search)
 2. Store a machine-readable reminder record in the backend reminders table (for notifications)
 
 ### Time normalization
@@ -79,5 +79,5 @@ When a due time is detected, Jarvis should add the following observations:
 
 ## Retention and deletion
 
-- Users can request forgetting data using AIM delete tools
+- Users can request forgetting data by deleting or updating memory items in Weaviate
 - Reminder records should be marked fired/done when delivered

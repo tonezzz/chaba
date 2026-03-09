@@ -1,5 +1,9 @@
 # TOOLS POLICY
 
+- `README.md`
+- `CONCEPT.md`
+- `MEMORY_POLICY.md`
+
 ## Purpose
 
 This document defines general rules for how Jarvis uses tools.

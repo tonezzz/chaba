@@ -3,6 +3,10 @@
 ## Purpose
 The `/services/assistance/` tree is the source-of-truth for all *Assistance* application code that is deployed via the `idc1-assistance` stack (Jarvis, TRIP, MCP servers, and any future assistance services).
 
+- `README.md`
+- `TOOLS_POLICY.md`
+- `MEMORY_POLICY.md`
+
 This policy exists to:
 - Keep application code separate from deployment configuration.
 - Standardize paths for CI builds (GHCR) and Portainer deploys.
@@ -23,7 +27,7 @@ flowchart LR
   FE -->|WS /ws/live| BE[Jarvis Backend]
 
   BE -->|tools/call| MCP[mcp-bundle :3050]
-  BE -->|tools/call| AIM[aim-mcp-gateway :3050]
+  BE -->|memory read/write| WV[weaviate :8080]
 
   BE -->|writes| DB[(jarvis_sessions.sqlite)]
   DB -->|due reminders| BE
@@ -35,13 +39,13 @@ sequenceDiagram
   participant U as User
   participant FE as Frontend
   participant BE as Backend
-  participant AIM as AIM MCP
+  participant WV as Weaviate
   participant DB as SQLite
 
   U->>FE: "Remember check out tomorrow 9am"
   FE->>BE: WS text
-  BE->>AIM: aim_memory_store(entities...)
   BE->>DB: insert reminder (notify_at=morning brief)
+  BE->>WV: upsert memory item (kind=reminder, vector)
   Note over BE: Scheduler loop checks DB
   BE->>FE: WS {type: "reminder", reminder: {...}}
 ```
