@@ -20,8 +20,6 @@ services:
       PORT: 8018
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_LIVE_MODEL: ${GEMINI_LIVE_MODEL:-gemini-2.5-flash-native-audio-preview-12-2025}
-      TRIP_BASE_URL: ${TRIP_BASE_URL:-http://trip:8000}
-      TRIP_API_TOKEN: ${TRIP_API_TOKEN:-}
       WEB_FETCHER_BASE_URL: ${WEB_FETCHER_BASE_URL:-http://web-fetcher:8028}
       MCP_BASE_URL: ${MCP_BASE_URL:-http://mcp-bundle:3050}
       AIM_MCP_BASE_URL: ${AIM_MCP_BASE_URL:-http://aim-mcp-gateway:3050}
@@ -99,20 +97,6 @@ services:
       timeout: 5s
       retries: 3
 
-  trip:
-    <<: *default-service
-    image: ghcr.io/itskovacs/trip:1
-    environment:
-      PORT: 8000
-      TRIP_API_TOKEN: ${TRIP_API_TOKEN:-}
-    volumes:
-      - trip-storage:/data
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8000/health >/dev/null 2>&1 || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
   web-fetcher:
     <<: *default-service
     image: ghcr.io/tonezzz/chaba/web-fetcher:idc1-assistance
@@ -149,7 +133,6 @@ networks:
     name: idc1-stack-net
 
 volumes:
-  trip-storage:
   mcp-bundle-data:
   mcp-bundle-cache:
   aim-kg-data:
