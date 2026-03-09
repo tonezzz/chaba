@@ -302,6 +302,46 @@ def _require_confirmation(confirm: bool, action: str, payload: Any) -> None:
     )
 
 
+def _adapt_aim_tool_args(tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+    if tool_name != "aim_memory_store":
+        return args
+
+    if isinstance(args.get("entities"), list):
+        return args
+
+    name = str(args.get("name") or "").strip() or "Memory"
+    description = str(args.get("description") or "").strip()
+    if not description:
+        raise HTTPException(status_code=400, detail="missing_description")
+
+    entity_type = str(args.get("entityType") or args.get("entity_type") or "note").strip() or "note"
+    observations = args.get("observations")
+    if not isinstance(observations, list):
+        observations = [description]
+    else:
+        # Normalize observations to strings
+        observations = [str(o) for o in observations if str(o).strip()]
+        if not observations:
+            observations = [description]
+
+    out: dict[str, Any] = {}
+    context = args.get("context")
+    if context is not None:
+        out["context"] = str(context)
+    location = args.get("location")
+    if location is not None:
+        out["location"] = str(location)
+
+    out["entities"] = [
+        {
+            "name": name,
+            "entityType": entity_type,
+            "observations": observations,
+        }
+    ]
+    return out
+
+
 MCP_TOOL_MAP: dict[str, dict[str, Any]] = {
     "web_fetch": {
         "mcp_name": "fetch_1mcp_fetch",
@@ -405,70 +445,215 @@ MCP_TOOL_MAP: dict[str, dict[str, Any]] = {
     "aim_memory_store": {
         "mcp_name": "aim-kg_1mcp_aim_memory_store",
         "description": "Store entities/observations in the AIM knowledge graph memory store.",
-        "parameters": {"type": "object"},
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "context": {
+                    "type": "string",
+                    "description": "Optional memory context. Defaults to master database if not specified.",
+                },
+                "location": {
+                    "type": "string",
+                    "enum": ["project", "global"],
+                    "description": "Optional storage location override.",
+                },
+                "entities": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string", "description": "The name of the entity"},
+                            "entityType": {"type": "string", "description": "The type of the entity"},
+                            "observations": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "Observations associated with the entity",
+                            },
+                        },
+                        "required": ["name", "entityType", "observations"],
+                    },
+                },
+            },
+            "required": ["entities"],
+        },
         "requires_confirmation": False,
         "mcp_base": "aim",
     },
     "aim_memory_add_facts": {
         "mcp_name": "aim-kg_1mcp_aim_memory_add_facts",
         "description": "Add facts/observations to an existing memory entity.",
-        "parameters": {"type": "object"},
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "context": {"type": "string", "description": "Optional memory context."},
+                "location": {
+                    "type": "string",
+                    "enum": ["project", "global"],
+                    "description": "Optional storage location override.",
+                },
+                "observations": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "entityName": {"type": "string"},
+                            "contents": {"type": "array", "items": {"type": "string"}},
+                        },
+                        "required": ["entityName", "contents"],
+                    },
+                },
+            },
+            "required": ["observations"],
+        },
         "requires_confirmation": False,
         "mcp_base": "aim",
     },
     "aim_memory_link": {
         "mcp_name": "aim-kg_1mcp_aim_memory_link",
         "description": "Link two memory entities together.",
-        "parameters": {"type": "object"},
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "context": {"type": "string", "description": "Optional memory context."},
+                "location": {
+                    "type": "string",
+                    "enum": ["project", "global"],
+                    "description": "Optional storage location override.",
+                },
+                "relations": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "from": {"type": "string"},
+                            "to": {"type": "string"},
+                            "relationType": {"type": "string"},
+                        },
+                        "required": ["from", "to", "relationType"],
+                    },
+                },
+            },
+            "required": ["relations"],
+        },
         "requires_confirmation": False,
         "mcp_base": "aim",
     },
     "aim_memory_search": {
         "mcp_name": "aim-kg_1mcp_aim_memory_search",
         "description": "Search memory entities by keyword.",
-        "parameters": {"type": "object"},
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "context": {"type": "string"},
+                "location": {"type": "string", "enum": ["project", "global"]},
+                "query": {"type": "string"},
+                "format": {"type": "string", "enum": ["json", "pretty"]},
+            },
+            "required": ["query"],
+        },
         "requires_confirmation": False,
         "mcp_base": "aim",
     },
     "aim_memory_get": {
         "mcp_name": "aim-kg_1mcp_aim_memory_get",
         "description": "Get memory entities by exact name.",
-        "parameters": {"type": "object"},
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "context": {"type": "string"},
+                "location": {"type": "string", "enum": ["project", "global"]},
+                "names": {"type": "array", "items": {"type": "string"}},
+                "format": {"type": "string", "enum": ["json", "pretty"]},
+            },
+            "required": ["names"],
+        },
         "requires_confirmation": False,
         "mcp_base": "aim",
     },
     "aim_memory_read_all": {
         "mcp_name": "aim-kg_1mcp_aim_memory_read_all",
         "description": "Read all memories from a store.",
-        "parameters": {"type": "object"},
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "context": {"type": "string"},
+                "location": {"type": "string", "enum": ["project", "global"]},
+                "format": {"type": "string", "enum": ["json", "pretty"]},
+            },
+        },
         "requires_confirmation": False,
         "mcp_base": "aim",
     },
     "aim_memory_list_stores": {
         "mcp_name": "aim-kg_1mcp_aim_memory_list_stores",
         "description": "List available memory stores/databases.",
-        "parameters": {"type": "object"},
+        "parameters": {"type": "object", "properties": {}},
         "requires_confirmation": False,
         "mcp_base": "aim",
     },
     "aim_memory_forget": {
         "mcp_name": "aim-kg_1mcp_aim_memory_forget",
         "description": "Forget/delete memories.",
-        "parameters": {"type": "object"},
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "context": {"type": "string"},
+                "location": {"type": "string", "enum": ["project", "global"]},
+                "entityNames": {"type": "array", "items": {"type": "string"}},
+            },
+            "required": ["entityNames"],
+        },
         "requires_confirmation": True,
         "mcp_base": "aim",
     },
     "aim_memory_remove_facts": {
         "mcp_name": "aim-kg_1mcp_aim_memory_remove_facts",
         "description": "Remove facts from an existing memory entity.",
-        "parameters": {"type": "object"},
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "context": {"type": "string"},
+                "location": {"type": "string", "enum": ["project", "global"]},
+                "deletions": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "entityName": {"type": "string"},
+                            "observations": {"type": "array", "items": {"type": "string"}},
+                        },
+                        "required": ["entityName", "observations"],
+                    },
+                },
+            },
+            "required": ["deletions"],
+        },
         "requires_confirmation": True,
         "mcp_base": "aim",
     },
     "aim_memory_unlink": {
         "mcp_name": "aim-kg_1mcp_aim_memory_unlink",
         "description": "Remove links between memory entities.",
-        "parameters": {"type": "object"},
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "context": {"type": "string"},
+                "location": {"type": "string", "enum": ["project", "global"]},
+                "relations": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "from": {"type": "string"},
+                            "to": {"type": "string"},
+                            "relationType": {"type": "string"},
+                        },
+                        "required": ["from", "to", "relationType"],
+                    },
+                },
+            },
+            "required": ["relations"],
+        },
         "requires_confirmation": True,
         "mcp_base": "aim",
     },
@@ -536,10 +721,12 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             mcp_name = str(payload.get("mcp_name") or "")
             mcp_args = payload.get("arguments")
             mcp_base = str(payload.get("mcp_base") or "").strip().lower()
+            original_tool_name = str(payload.get("tool_name") or "").strip()
             if not mcp_name or not isinstance(mcp_args, dict):
                 raise HTTPException(status_code=400, detail="invalid_pending_payload")
             if mcp_base == "aim":
-                return await _aim_mcp_tools_call(mcp_name, mcp_args)
+                adapted = _adapt_aim_tool_args(original_tool_name or "", dict(mcp_args))
+                return await _aim_mcp_tools_call(mcp_name, adapted)
             return await _mcp_tools_call(mcp_name, mcp_args)
         raise HTTPException(status_code=400, detail={"unknown_pending_action": action})
 
@@ -570,7 +757,7 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         confirmation_id = _create_pending_write(
             session_id,
             action="mcp_tools_call",
-            payload={"mcp_name": mcp_name, "arguments": dict(args), "mcp_base": mcp_base},
+            payload={"mcp_name": mcp_name, "arguments": dict(args), "mcp_base": mcp_base, "tool_name": tool_name},
         )
         return {
             "requires_confirmation": True,
@@ -580,7 +767,8 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         }
 
     if mcp_base == "aim":
-        return await _aim_mcp_tools_call(mcp_name, dict(args))
+        adapted = _adapt_aim_tool_args(tool_name, dict(args))
+        return await _aim_mcp_tools_call(mcp_name, adapted)
     return await _mcp_tools_call(mcp_name, dict(args))
 
 
