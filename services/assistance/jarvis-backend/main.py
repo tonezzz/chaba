@@ -92,6 +92,7 @@ def _init_session_db() -> None:
               reminder_id TEXT PRIMARY KEY,
               user_id TEXT NOT NULL,
               title TEXT NOT NULL,
+              dedupe_key TEXT,
               due_at INTEGER,
               timezone TEXT NOT NULL,
               schedule_type TEXT NOT NULL,
@@ -105,6 +106,21 @@ def _init_session_db() -> None:
             """
         )
         conn.execute("CREATE INDEX IF NOT EXISTS idx_reminders_user_notify ON reminders(user_id, notify_at)")
+        # Backwards-compatible migration: ensure dedupe_key exists for older DBs.
+        try:
+            cols = [r[1] for r in conn.execute("PRAGMA table_info(reminders)").fetchall()]
+            if "dedupe_key" not in cols:
+                conn.execute("ALTER TABLE reminders ADD COLUMN dedupe_key TEXT")
+        except Exception:
+            pass
+        # Prevent duplicates among pending reminders.
+        # SQLite supports partial indexes (>= 3.8.0), which is the norm on modern distros.
+        try:
+            conn.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_reminders_pending_dedupe ON reminders(user_id, dedupe_key) WHERE status = 'pending'"
+            )
+        except Exception:
+            pass
 
         conn.execute(
             """
@@ -432,6 +448,13 @@ def _parse_time_from_text(text: str, now: datetime, tz: ZoneInfo) -> tuple[Optio
     return candidate.astimezone(timezone.utc), f"{candidate.isoformat()}"
 
 
+def _reminder_dedupe_key(title: str, due_at_ts: Optional[int], schedule_type: str) -> str:
+    t = " ".join(str(title or "").strip().lower().split())
+    d = str(int(due_at_ts)) if due_at_ts is not None else "none"
+    s = " ".join(str(schedule_type or "").strip().lower().split())
+    return f"{t}|{d}|{s}"[:512]
+
+
 def _create_reminder(
     *,
     user_id: str,
@@ -444,22 +467,50 @@ def _create_reminder(
     aim_entity_name: Optional[str],
 ) -> str:
     _init_session_db()
-    reminder_id = f"r_{int(time.time())}_{os.urandom(6).hex()}"
     now_ts = int(time.time())
     due_at_ts = int(due_at_utc.timestamp()) if due_at_utc is not None else None
     notify_at_ts = int(notify_at_utc.timestamp())
+    dedupe_key = _reminder_dedupe_key(title, due_at_ts, schedule_type)
+
     with sqlite3.connect(SESSION_DB_PATH) as conn:
+        # If an equivalent pending reminder already exists, reuse it and update notify_at to the earliest.
+        cur = conn.execute(
+            """
+            SELECT reminder_id, notify_at
+            FROM reminders
+            WHERE user_id = ? AND dedupe_key = ? AND status = 'pending'
+            LIMIT 1
+            """,
+            (user_id, dedupe_key),
+        )
+        row = cur.fetchone()
+        if row:
+            existing_id, existing_notify_at = row
+            try:
+                existing_notify_at_int = int(existing_notify_at)
+            except Exception:
+                existing_notify_at_int = notify_at_ts
+            new_notify_at = min(existing_notify_at_int, notify_at_ts)
+            conn.execute(
+                "UPDATE reminders SET notify_at = ?, updated_at = ? WHERE reminder_id = ?",
+                (new_notify_at, now_ts, existing_id),
+            )
+            conn.commit()
+            return str(existing_id)
+
+        reminder_id = f"r_{int(time.time())}_{os.urandom(6).hex()}"
         conn.execute(
             """
             INSERT INTO reminders(
-              reminder_id, user_id, title, due_at, timezone, schedule_type, notify_at, status,
+              reminder_id, user_id, title, dedupe_key, due_at, timezone, schedule_type, notify_at, status,
               source_text, aim_entity_name, created_at, updated_at
-            ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """ ,
             (
                 reminder_id,
                 user_id,
                 title,
+                dedupe_key,
                 due_at_ts,
                 str(tz.key),
                 schedule_type,
