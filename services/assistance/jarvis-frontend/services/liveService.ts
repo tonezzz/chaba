@@ -219,6 +219,20 @@ export class LiveService {
       return;
     }
 
+    if (message?.type === "reminder" && message?.reminder) {
+      const r = message.reminder;
+      const title = r?.title != null ? String(r.title) : "Reminder";
+      const schedule = r?.schedule_type != null ? String(r.schedule_type) : "";
+      const text = schedule ? `reminder: ${title} (${schedule})` : `reminder: ${title}`;
+      this.onMessage({
+        id: `${Date.now()}_reminder`,
+        role: "system",
+        text,
+        timestamp: new Date(),
+      });
+      return;
+    }
+
 		if (message?.type === "active_trip") {
 			const active_trip_id = message?.active_trip_id != null ? String(message.active_trip_id) : null;
 			const active_trip_name = message?.active_trip_name != null ? String(message.active_trip_name) : null;

@@ -6,6 +6,9 @@ import json
 import sqlite3
 import time
 import uuid
+import re
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from typing import Any, Optional
 
 import httpx
@@ -44,6 +47,14 @@ AIM_MCP_BASE_URL = str(os.getenv("AIM_MCP_BASE_URL") or "").strip().rstrip("/")
 
 SESSION_DB_PATH = os.getenv("JARVIS_SESSION_DB", "/app/jarvis_sessions.sqlite")
 
+DEFAULT_USER_ID = str(os.getenv("JARVIS_DEFAULT_USER_ID") or "default").strip() or "default"
+DEFAULT_TIMEZONE = str(os.getenv("JARVIS_DEFAULT_TIMEZONE") or "Asia/Bangkok").strip() or "Asia/Bangkok"
+MORNING_BRIEF_HOUR = int(str(os.getenv("JARVIS_MORNING_BRIEF_HOUR") or "8").strip() or "8")
+MORNING_BRIEF_MINUTE = int(str(os.getenv("JARVIS_MORNING_BRIEF_MINUTE") or "0").strip() or "0")
+
+_ws_by_user: dict[str, set[WebSocket]] = {}
+_reminder_task: Optional[asyncio.Task[None]] = None
+
 
 def _init_session_db() -> None:
     os.makedirs(os.path.dirname(SESSION_DB_PATH) or ".", exist_ok=True)
@@ -69,7 +80,235 @@ def _init_session_db() -> None:
             )
             """
         )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS reminders (
+              reminder_id TEXT PRIMARY KEY,
+              user_id TEXT NOT NULL,
+              title TEXT NOT NULL,
+              due_at INTEGER,
+              timezone TEXT NOT NULL,
+              schedule_type TEXT NOT NULL,
+              notify_at INTEGER NOT NULL,
+              status TEXT NOT NULL,
+              source_text TEXT,
+              aim_entity_name TEXT,
+              created_at INTEGER NOT NULL,
+              updated_at INTEGER NOT NULL
+            )
+            """
+        )
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_reminders_user_notify ON reminders(user_id, notify_at)")
         conn.commit()
+
+
+def _get_user_timezone(user_id: str) -> ZoneInfo:
+    # Placeholder for future user-profile timezone retrieval.
+    # For now, use a default timezone.
+    try:
+        return ZoneInfo(DEFAULT_TIMEZONE)
+    except Exception:
+        return ZoneInfo("UTC")
+
+
+def _next_morning_brief_at(now: datetime, tz: ZoneInfo, due_at: Optional[datetime]) -> datetime:
+    base = due_at.astimezone(tz) if due_at is not None else now.astimezone(tz)
+    candidate = datetime(
+        year=base.year,
+        month=base.month,
+        day=base.day,
+        hour=MORNING_BRIEF_HOUR,
+        minute=MORNING_BRIEF_MINUTE,
+        tzinfo=tz,
+    )
+    if candidate <= now.astimezone(tz):
+        candidate = candidate + timedelta(days=1)
+    return candidate
+
+
+def _parse_time_from_text(text: str, now: datetime, tz: ZoneInfo) -> tuple[Optional[datetime], Optional[str]]:
+    s = str(text or "").strip().lower()
+    if not s:
+        return None, None
+
+    day: Optional[datetime] = None
+    if re.search(r"\btomorrow\b", s):
+        local = now.astimezone(tz)
+        day = datetime(local.year, local.month, local.day, tzinfo=tz) + timedelta(days=1)
+    elif re.search(r"\btoday\b", s):
+        local = now.astimezone(tz)
+        day = datetime(local.year, local.month, local.day, tzinfo=tz)
+
+    time_match = re.search(r"\b(at\s*)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b", s)
+    if not time_match and day is None:
+        return None, None
+
+    hour = 9
+    minute = 0
+    meridiem = None
+    if time_match:
+        hour = int(time_match.group(2))
+        minute = int(time_match.group(3) or "0")
+        meridiem = time_match.group(4)
+        if meridiem == "pm" and hour < 12:
+            hour += 12
+        if meridiem == "am" and hour == 12:
+            hour = 0
+
+    if day is None:
+        local = now.astimezone(tz)
+        day = datetime(local.year, local.month, local.day, tzinfo=tz)
+        # If time already passed today, treat it as tomorrow.
+        candidate = day.replace(hour=hour, minute=minute)
+        if candidate <= local:
+            candidate = candidate + timedelta(days=1)
+        return candidate.astimezone(timezone.utc), f"{candidate.isoformat()}"
+
+    candidate = day.replace(hour=hour, minute=minute)
+    return candidate.astimezone(timezone.utc), f"{candidate.isoformat()}"
+
+
+def _create_reminder(
+    *,
+    user_id: str,
+    title: str,
+    due_at_utc: Optional[datetime],
+    tz: ZoneInfo,
+    schedule_type: str,
+    notify_at_utc: datetime,
+    source_text: str,
+    aim_entity_name: Optional[str],
+) -> str:
+    _init_session_db()
+    reminder_id = f"r_{int(time.time())}_{os.urandom(6).hex()}"
+    now_ts = int(time.time())
+    due_at_ts = int(due_at_utc.timestamp()) if due_at_utc is not None else None
+    notify_at_ts = int(notify_at_utc.timestamp())
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        conn.execute(
+            """
+            INSERT INTO reminders(
+              reminder_id, user_id, title, due_at, timezone, schedule_type, notify_at, status,
+              source_text, aim_entity_name, created_at, updated_at
+            ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """ ,
+            (
+                reminder_id,
+                user_id,
+                title,
+                due_at_ts,
+                str(tz.key),
+                schedule_type,
+                notify_at_ts,
+                "pending",
+                source_text,
+                aim_entity_name,
+                now_ts,
+                now_ts,
+            ),
+        )
+        conn.commit()
+    return reminder_id
+
+
+def _mark_reminder_fired(reminder_id: str) -> None:
+    _init_session_db()
+    now_ts = int(time.time())
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        conn.execute(
+            "UPDATE reminders SET status = ?, updated_at = ? WHERE reminder_id = ?",
+            ("fired", now_ts, reminder_id),
+        )
+        conn.commit()
+
+
+def _list_due_reminders(user_id: str, now_ts: int) -> list[dict[str, Any]]:
+    _init_session_db()
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        cur = conn.execute(
+            """
+            SELECT reminder_id, title, due_at, timezone, schedule_type, notify_at, source_text, aim_entity_name
+            FROM reminders
+            WHERE user_id = ? AND status = 'pending' AND notify_at <= ?
+            ORDER BY notify_at ASC
+            """,
+            (user_id, now_ts),
+        )
+        rows = cur.fetchall() or []
+
+    out: list[dict[str, Any]] = []
+    for reminder_id, title, due_at, tz_name, schedule_type, notify_at, source_text, aim_entity_name in rows:
+        out.append(
+            {
+                "reminder_id": reminder_id,
+                "title": title,
+                "due_at": due_at,
+                "timezone": tz_name,
+                "schedule_type": schedule_type,
+                "notify_at": notify_at,
+                "source_text": source_text,
+                "aim_entity_name": aim_entity_name,
+            }
+        )
+    return out
+
+
+async def _broadcast_to_user(user_id: str, payload: dict[str, Any]) -> None:
+    conns = list(_ws_by_user.get(user_id, set()))
+    if not conns:
+        return
+    dead: list[WebSocket] = []
+    for ws in conns:
+        try:
+            await ws.send_json(payload)
+        except Exception:
+            dead.append(ws)
+    if dead:
+        s = _ws_by_user.get(user_id)
+        if s is not None:
+            for ws in dead:
+                s.discard(ws)
+
+
+async def _reminder_scheduler_loop() -> None:
+    while True:
+        try:
+            now_ts = int(time.time())
+            reminders = _list_due_reminders(DEFAULT_USER_ID, now_ts)
+            for r in reminders:
+                reminder_id = str(r.get("reminder_id") or "")
+                if reminder_id:
+                    _mark_reminder_fired(reminder_id)
+                await _broadcast_to_user(
+                    DEFAULT_USER_ID,
+                    {
+                        "type": "reminder",
+                        "reminder": r,
+                    },
+                )
+        except Exception as e:
+            logger.warning("reminder_scheduler_error error=%s", e)
+        await asyncio.sleep(15)
+
+
+@app.on_event("startup")
+async def _startup() -> None:
+    global _reminder_task
+    try:
+        _init_session_db()
+    except Exception as e:
+        logger.warning("session_db_init_failed error=%s", e)
+    if _reminder_task is None or _reminder_task.done():
+        _reminder_task = asyncio.create_task(_reminder_scheduler_loop())
+
+
+@app.on_event("shutdown")
+async def _shutdown() -> None:
+    global _reminder_task
+    if _reminder_task is not None:
+        _reminder_task.cancel()
+        _reminder_task = None
 
 
 def _get_session_state(session_id: str) -> dict[str, Optional[str]]:
@@ -315,6 +554,11 @@ def _adapt_aim_tool_args(tool_name: str, args: dict[str, Any]) -> dict[str, Any]
         raise HTTPException(status_code=400, detail="missing_description")
 
     entity_type = str(args.get("entityType") or args.get("entity_type") or "note").strip() or "note"
+    tz = _get_user_timezone(DEFAULT_USER_ID)
+    now = datetime.now(tz=timezone.utc)
+    due_at_utc, local_iso = _parse_time_from_text(description, now, tz)
+    if due_at_utc is not None:
+        entity_type = "reminder"
     observations = args.get("observations")
     if not isinstance(observations, list):
         observations = [description]
@@ -323,6 +567,12 @@ def _adapt_aim_tool_args(tool_name: str, args: dict[str, Any]) -> dict[str, Any]
         observations = [str(o) for o in observations if str(o).strip()]
         if not observations:
             observations = [description]
+
+    if due_at_utc is not None and local_iso is not None:
+        observations = list(observations)
+        observations.append(f"TIMEZONE: {tz.key}")
+        observations.append(f"ISO_TIME: {due_at_utc.replace(tzinfo=timezone.utc).isoformat()}")
+        observations.append(f"LOCAL_TIME: {local_iso}")
 
     out: dict[str, Any] = {}
     context = args.get("context")
@@ -768,7 +1018,40 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
 
     if mcp_base == "aim":
         adapted = _adapt_aim_tool_args(tool_name, dict(args))
-        return await _aim_mcp_tools_call(mcp_name, adapted)
+        result = await _aim_mcp_tools_call(mcp_name, adapted)
+
+        if tool_name == "aim_memory_store":
+            try:
+                entities = adapted.get("entities")
+                if isinstance(entities, list) and entities:
+                    ent0 = entities[0] if isinstance(entities[0], dict) else {}
+                    title = str(ent0.get("name") or "Reminder").strip() or "Reminder"
+                    obs = ent0.get("observations")
+                    source_text = ""
+                    if isinstance(obs, list) and obs:
+                        source_text = str(obs[0])
+
+                    tz = _get_user_timezone(DEFAULT_USER_ID)
+                    now = datetime.now(tz=timezone.utc)
+                    due_at_utc, _ = _parse_time_from_text(source_text, now, tz)
+                    if due_at_utc is not None:
+                        schedule_type = "morning_brief"
+                        notify_at_local = _next_morning_brief_at(now, tz, due_at_utc)
+                        notify_at_utc = notify_at_local.astimezone(timezone.utc)
+                        reminder_id = _create_reminder(
+                            user_id=DEFAULT_USER_ID,
+                            title=title,
+                            due_at_utc=due_at_utc,
+                            tz=tz,
+                            schedule_type=schedule_type,
+                            notify_at_utc=notify_at_utc,
+                            source_text=source_text,
+                            aim_entity_name=title,
+                        )
+                        return {"aim": result, "reminder": {"reminder_id": reminder_id, "schedule_type": schedule_type}}
+            except Exception as e:
+                logger.warning("reminder_create_failed error=%s", e)
+        return result
     return await _mcp_tools_call(mcp_name, dict(args))
 
 
@@ -997,6 +1280,9 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
 async def ws_live(ws: WebSocket) -> None:
     await ws.accept()
 
+    user_id = DEFAULT_USER_ID
+    _ws_by_user.setdefault(user_id, set()).add(ws)
+
     # Sticky session support: the frontend provides ?session_id=... so we can persist
     # per-session state (e.g., active trip) across reconnects.
     session_id = str(ws.query_params.get("session_id") or "").strip() or None
@@ -1047,3 +1333,7 @@ async def ws_live(ws: WebSocket) -> None:
         except Exception:
             pass
         return
+    finally:
+        s = _ws_by_user.get(user_id)
+        if s is not None:
+            s.discard(ws)
