@@ -5,6 +5,7 @@ import logging
 import json
 import sqlite3
 import time
+import uuid
 from typing import Any, Optional
 
 import httpx
@@ -38,6 +39,8 @@ TRIP_BASE_URL = str(os.getenv("TRIP_BASE_URL") or "http://trip:8000").strip().rs
 TRIP_API_TOKEN = str(os.getenv("TRIP_API_TOKEN") or "").strip()
 
 WEB_FETCHER_BASE_URL = str(os.getenv("WEB_FETCHER_BASE_URL") or "http://web-fetcher:8028").strip().rstrip("/")
+
+MCP_BASE_URL = str(os.getenv("MCP_BASE_URL") or "http://mcp-bundle:3050").strip().rstrip("/")
 
 
 SESSION_DB_PATH = os.getenv("JARVIS_SESSION_DB", "/app/jarvis_sessions.sqlite")
@@ -201,6 +204,80 @@ async def _trip_get(path: str) -> Any:
         return res.json()
 
 
+def _parse_sse_first_message_data(text: str) -> dict[str, Any]:
+    # 1MCP returns text/event-stream where each JSON-RPC response is on a `data: {...}` line.
+    for line in (text or "").splitlines():
+        if line.startswith("data: "):
+            try:
+                parsed = json.loads(line[len("data: ") :].strip())
+            except Exception:
+                continue
+            if isinstance(parsed, dict):
+                return parsed
+    return {}
+
+
+async def _mcp_rpc(method: str, params: dict[str, Any]) -> Any:
+    session_id = str(uuid.uuid4())
+    url = f"{MCP_BASE_URL}/mcp?sessionId={session_id}"
+
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        init_req = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": {"name": "jarvis-backend", "version": "0.1"},
+            },
+        }
+        init_res = await client.post(
+            url,
+            json=init_req,
+            headers={"Accept": "application/json, text/event-stream"},
+        )
+        if init_res.status_code >= 400:
+            raise HTTPException(status_code=502, detail={"mcp_initialize_failed": init_res.text})
+
+        mcp_session_id = init_res.headers.get("mcp-session-id") or ""
+        if not mcp_session_id:
+            raise HTTPException(status_code=502, detail="mcp_missing_session_header")
+
+        req = {"jsonrpc": "2.0", "id": 2, "method": method, "params": params}
+        res = await client.post(
+            url,
+            json=req,
+            headers={
+                "Accept": "application/json, text/event-stream",
+                "mcp-session-id": mcp_session_id,
+            },
+        )
+        if res.status_code >= 400:
+            raise HTTPException(status_code=502, detail={"mcp_rpc_failed": res.text})
+
+        msg = _parse_sse_first_message_data(res.text)
+        if msg.get("error") is not None:
+            raise HTTPException(status_code=502, detail={"mcp_error": msg.get("error")})
+        return msg.get("result")
+
+
+async def _mcp_tools_list() -> list[dict[str, Any]]:
+    result = await _mcp_rpc("tools/list", {})
+    tools = result.get("tools") if isinstance(result, dict) else None
+    if not isinstance(tools, list):
+        return []
+    out: list[dict[str, Any]] = []
+    for t in tools:
+        if isinstance(t, dict) and isinstance(t.get("name"), str):
+            out.append(t)
+    return out
+
+
+async def _mcp_tools_call(name: str, arguments: dict[str, Any]) -> Any:
+    return await _mcp_rpc("tools/call", {"name": name, "arguments": arguments})
+
+
 async def _trip_post(path: str, payload: Any) -> Any:
     if not TRIP_API_TOKEN:
         raise HTTPException(status_code=500, detail="missing_TRIP_API_TOKEN")
@@ -244,6 +321,211 @@ def _require_confirmation(confirm: bool, action: str, payload: Any) -> None:
     )
 
 
+MCP_TOOL_MAP: dict[str, dict[str, Any]] = {
+    "web_fetch": {
+        "mcp_name": "fetch_1mcp_fetch",
+        "description": "Fetch and extract readable text from a URL via the 1MCP fetch server.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "url": {"type": "string", "description": "HTTP(S) URL to fetch."},
+                "max_length": {"type": "integer", "description": "Maximum number of characters to return."},
+                "start_index": {"type": "integer", "description": "Start content from this character index."},
+                "raw": {"type": "boolean", "description": "Return raw content without markdown conversion."},
+            },
+            "required": ["url"],
+        },
+        "requires_confirmation": False,
+    },
+    "sequential_thinking": {
+        "mcp_name": "server-sequential-thinking_1mcp_sequentialthinking",
+        "description": "Run a step of Sequential Thinking (via 1MCP).",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "thought": {"type": "string"},
+                "nextThoughtNeeded": {"type": "boolean"},
+                "thoughtNumber": {"type": "integer"},
+                "totalThoughts": {"type": "integer"},
+                "isRevision": {"type": "boolean"},
+                "revisesThought": {"type": "integer"},
+                "branchFromThought": {"type": "integer"},
+                "branchId": {"type": "string"},
+                "needsMoreThoughts": {"type": "boolean"},
+            },
+            "required": ["thought", "nextThoughtNeeded", "thoughtNumber", "totalThoughts"],
+        },
+        "requires_confirmation": False,
+    },
+    "browser_navigate": {
+        "mcp_name": "playwright_1mcp_browser_navigate",
+        "description": "Navigate the browser to a URL (via 1MCP Playwright). Requires confirmation.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "url": {"type": "string"},
+            },
+            "required": ["url"],
+        },
+        "requires_confirmation": True,
+    },
+    "browser_snapshot": {
+        "mcp_name": "playwright_1mcp_browser_snapshot",
+        "description": "Capture an accessibility snapshot of the page (via 1MCP Playwright).",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "selector": {"type": "string"},
+            },
+        },
+        "requires_confirmation": False,
+    },
+    "browser_click": {
+        "mcp_name": "playwright_1mcp_browser_click",
+        "description": "Click an element (via 1MCP Playwright). Requires confirmation.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "element": {"type": "string"},
+                "ref": {"type": "string"},
+            },
+            "required": ["ref"],
+        },
+        "requires_confirmation": True,
+    },
+    "browser_type": {
+        "mcp_name": "playwright_1mcp_browser_type",
+        "description": "Type into an element (via 1MCP Playwright). Requires confirmation.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "element": {"type": "string"},
+                "ref": {"type": "string"},
+                "text": {"type": "string"},
+            },
+            "required": ["ref", "text"],
+        },
+        "requires_confirmation": True,
+    },
+    "browser_wait_for": {
+        "mcp_name": "playwright_1mcp_browser_wait_for",
+        "description": "Wait for text or time (via 1MCP Playwright).",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "time": {"type": "number"},
+                "text": {"type": "string"},
+                "textGone": {"type": "string"},
+            },
+        },
+        "requires_confirmation": False,
+    },
+}
+
+
+def _mcp_tool_declarations() -> list[dict[str, Any]]:
+    decls: list[dict[str, Any]] = []
+    for name, meta in MCP_TOOL_MAP.items():
+        decl: dict[str, Any] = {
+            "name": name,
+            "description": str(meta.get("description") or ""),
+        }
+        params = meta.get("parameters")
+        if isinstance(params, dict):
+            decl["parameters"] = params
+        decls.append(decl)
+
+    decls.append({"name": "pending_list", "description": "List queued pending actions waiting for confirmation."})
+    decls.append(
+        {
+            "name": "pending_confirm",
+            "description": "Confirm and execute a queued pending action.",
+            "parameters": {
+                "type": "object",
+                "properties": {"confirmation_id": {"type": "string"}},
+                "required": ["confirmation_id"],
+            },
+        }
+    )
+    decls.append(
+        {
+            "name": "pending_cancel",
+            "description": "Cancel a queued pending action.",
+            "parameters": {
+                "type": "object",
+                "properties": {"confirmation_id": {"type": "string"}},
+                "required": ["confirmation_id"],
+            },
+        }
+    )
+    return decls
+
+
+async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: dict[str, Any]) -> Any:
+    if tool_name == "pending_list":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        return _list_pending_writes(session_id)
+
+    if tool_name == "pending_confirm":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        confirmation_id = str(args.get("confirmation_id") or "").strip()
+        if not confirmation_id:
+            raise HTTPException(status_code=400, detail="missing_confirmation_id")
+        pending = _pop_pending_write(session_id, confirmation_id)
+        if not pending:
+            raise HTTPException(status_code=404, detail="pending_write_not_found")
+        action = str(pending.get("action") or "")
+        payload = pending.get("payload")
+        if action == "mcp_tools_call":
+            if not isinstance(payload, dict):
+                raise HTTPException(status_code=400, detail="invalid_pending_payload")
+            mcp_name = str(payload.get("mcp_name") or "")
+            mcp_args = payload.get("arguments")
+            if not mcp_name or not isinstance(mcp_args, dict):
+                raise HTTPException(status_code=400, detail="invalid_pending_payload")
+            return await _mcp_tools_call(mcp_name, mcp_args)
+        raise HTTPException(status_code=400, detail={"unknown_pending_action": action})
+
+    if tool_name == "pending_cancel":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        confirmation_id = str(args.get("confirmation_id") or "").strip()
+        if not confirmation_id:
+            raise HTTPException(status_code=400, detail="missing_confirmation_id")
+        ok = _cancel_pending_write(session_id, confirmation_id)
+        if not ok:
+            raise HTTPException(status_code=404, detail="pending_write_not_found")
+        return {"ok": True}
+
+    meta = MCP_TOOL_MAP.get(tool_name)
+    if not meta:
+        raise HTTPException(status_code=400, detail={"unknown_tool": tool_name})
+
+    mcp_name = str(meta.get("mcp_name") or "")
+    if not mcp_name:
+        raise HTTPException(status_code=500, detail="mcp_tool_missing_mapping")
+
+    requires_confirmation = bool(meta.get("requires_confirmation"))
+    if requires_confirmation:
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        confirmation_id = _create_pending_write(
+            session_id,
+            action="mcp_tools_call",
+            payload={"mcp_name": mcp_name, "arguments": dict(args)},
+        )
+        return {
+            "requires_confirmation": True,
+            "confirmation_id": confirmation_id,
+            "action": tool_name,
+            "payload": args,
+        }
+
+    return await _mcp_tools_call(mcp_name, dict(args))
+
+
 @app.get("/trip/by_token/categories")
 async def trip_by_token_categories() -> Any:
     return await _trip_get("/api/by_token/categories")
@@ -276,17 +558,6 @@ def _trip_tool_declarations() -> list[dict[str, Any]]:
         {
             "name": "trip_list_categories",
             "description": "List TRIP categories for the authenticated user.",
-        },
-        {
-            "name": "web_fetch",
-            "description": "Fetch and extract readable text from a URL via the web-fetcher service.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "url": {"type": "string", "description": "HTTP(S) URL to fetch."},
-                },
-                "required": ["url"],
-            },
         },
         {
             "name": "trip_google_search",
@@ -371,12 +642,6 @@ def _fc_args(fc: Any) -> dict[str, Any]:
 async def _handle_trip_tool_call(session_id: Optional[str], tool_name: str, args: dict[str, Any]) -> Any:
     if tool_name == "trip_list_categories":
         return await _trip_get("/api/by_token/categories")
-
-    if tool_name == "web_fetch":
-        url = str(args.get("url") or "").strip()
-        if not url:
-            raise HTTPException(status_code=400, detail="missing_url")
-        return await _web_fetcher_post("/fetch", {"url": url})
 
     if tool_name == "trip_google_search":
         q = str(args.get("q") or "").strip()
@@ -541,7 +806,10 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                     logger.info("gemini_tool_call_item name=%s args_keys=%s", fc_name, list(fc_args.keys()))
                     try:
                         session_id = getattr(ws.state, "session_id", None)
-                        result = await _handle_trip_tool_call(session_id, fc_name, fc_args)
+                        if fc_name in MCP_TOOL_MAP or fc_name in ("pending_list", "pending_confirm", "pending_cancel"):
+                            result = await _handle_mcp_tool_call(session_id, fc_name, fc_args)
+                        else:
+                            result = await _handle_trip_tool_call(session_id, fc_name, fc_args)
                         function_responses.append(
                             types.FunctionResponse(
                                 id=fc_id,
@@ -659,7 +927,10 @@ async def ws_live(ws: WebSocket) -> None:
             "response_modalities": ["AUDIO"],
             "input_audio_transcription": {},
             "output_audio_transcription": {},
-            "tools": [{"function_declarations": _trip_tool_declarations()}],
+            "tools": [
+                {"function_declarations": _mcp_tool_declarations()},
+                {"function_declarations": _trip_tool_declarations()},
+            ],
         }
 
         logger.info("gemini_live_connect model=%s", MODEL)
