@@ -2924,6 +2924,19 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
             decl["parameters"] = params
         decls.append(decl)
 
+    decls.append(
+        {
+            "name": "time_now",
+            "description": "Return the authoritative current server time (UTC + local timezone).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "timezone": {"type": "string", "description": "IANA timezone name (e.g. Asia/Bangkok)."},
+                },
+            },
+        }
+    )
+
     decls.append({"name": "pending_list", "description": "List queued pending actions waiting for confirmation."})
     decls.append(
         {
@@ -2997,6 +3010,24 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
 
 
 async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: dict[str, Any]) -> Any:
+    if tool_name == "time_now":
+        tz_raw = str(args.get("timezone") or "").strip()
+        if tz_raw:
+            try:
+                tz = ZoneInfo(tz_raw)
+            except Exception:
+                tz = _get_user_timezone(DEFAULT_USER_ID)
+        else:
+            tz = _get_user_timezone(DEFAULT_USER_ID)
+        now_utc = datetime.now(tz=timezone.utc)
+        now_local = now_utc.astimezone(tz)
+        return {
+            "unix_ts": int(now_utc.timestamp()),
+            "utc_iso": now_utc.replace(tzinfo=timezone.utc).isoformat(),
+            "local_iso": now_local.isoformat(),
+            "timezone": tz.key,
+        }
+
     if tool_name == "pending_list":
         if not session_id:
             raise HTTPException(status_code=400, detail="missing_session_id")
@@ -3269,7 +3300,15 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                     logger.info("gemini_tool_call_item name=%s args_keys=%s", fc_name, list(fc_args.keys()))
                     try:
                         session_id = getattr(ws.state, "session_id", None)
-                        if fc_name in MCP_TOOL_MAP or fc_name in ("pending_list", "pending_confirm", "pending_cancel"):
+                        if fc_name in MCP_TOOL_MAP or fc_name in (
+                            "time_now",
+                            "pending_list",
+                            "pending_confirm",
+                            "pending_cancel",
+                            "reminders_list",
+                            "reminders_upcoming",
+                            "reminders_done",
+                        ):
                             result = await _handle_mcp_tool_call(session_id, fc_name, fc_args)
                         else:
                             raise HTTPException(status_code=400, detail={"unknown_tool": fc_name})
@@ -3401,6 +3440,21 @@ async def ws_live(ws: WebSocket) -> None:
         logger.info("gemini_live_connect model=%s", MODEL)
         async with client.aio.live.connect(model=MODEL, config=config) as session:
             await ws.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
+
+            try:
+                tz = _get_user_timezone(DEFAULT_USER_ID)
+                now_utc = datetime.now(tz=timezone.utc)
+                now_local = now_utc.astimezone(tz)
+                time_ctx = (
+                    "TIME_CONTEXT (authoritative server time)\n"
+                    f"TIMEZONE: {tz.key}\n"
+                    f"NOW_UTC: {now_utc.replace(tzinfo=timezone.utc).isoformat()}\n"
+                    f"NOW_LOCAL: {now_local.isoformat()}\n"
+                    "Use this as the reference for all relative time calculations."
+                )
+                await session.send_client_content(turns={"parts": [{"text": time_ctx}]}, turn_complete=True)
+            except Exception as e:
+                logger.info("time_context_inject_failed error=%s", str(e))
 
             to_gemini = asyncio.create_task(_ws_to_gemini_loop(ws, session))
             to_ws = asyncio.create_task(_gemini_to_ws_loop(ws, session))

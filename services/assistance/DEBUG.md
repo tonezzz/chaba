@@ -21,6 +21,11 @@ This is a practical runbook for debugging the `idc1-assistance` stack.
 - Readiness:
   - `GET http://weaviate:8080/v1/.well-known/ready`
 
+Note: Weaviate readiness returns HTTP 200 with an empty body; container healthchecks should only check the status code (not grep for `true`).
+
+### Deep research worker (optional)
+- `GET http://deep-research-worker:8030/health`
+
 ## Common issues
 
 ### WebSocket connects but no responses

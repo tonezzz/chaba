@@ -16,6 +16,7 @@ The `/services/assistance/` tree is the source-of-truth for all *Assistance* app
   - `GET /daily-brief`
   - `GET /reminders`
   - `GET /reminders/upcoming`
+  - `POST /reminders/{reminder_id}/done`
 - Jarvis Backend (WebSocket):
   - `WS /ws/live`
 
@@ -57,6 +58,7 @@ How this is more advanced than a plain backend "skill":
 - Ground truth specs:
   - `docs/IMAGEN.md`
   - `docs/WEAVIATE.md`
+  - `TOKEN_OPTIMIZE.md`
 
 ## Memory (current direction)
 - Authoritative store: Weaviate (internal-only container in the `idc1-assistance` stack)
@@ -67,6 +69,15 @@ Reminder semantics (current direction):
 - SQLite is a local scheduler cache that should be hydrated from Weaviate on startup/reconnect.
 - Reminders should support multiple distinct tasks at the same time (e.g. job1 9:00am + job2 9:00am).
 - Reminder lifecycle includes a completion state: `done` (completed reminders should disappear from "today" views).
+
+Reminder tools (Gemini Live function calls):
+- `reminders_list`, `reminders_upcoming`, `reminders_done` are implemented in the Jarvis backend (not in 1MCP).
+- If `JARVIS_TOOL_ALLOWLIST` is set, ensure it includes these names or the model will not be able to call them.
+
+## Deep research
+
+The stack includes an optional `deep-research-worker` service used by the `deep-research` agent/handler in `jarvis-backend/main.py`.
+The backend calls the worker over HTTP (configured by `DEEP_RESEARCH_WORKER_BASE_URL`).
 
 ## Deployment
 - Stack configuration lives under:

@@ -124,6 +124,15 @@ Weaviate container env (current stack direction):
 - Check container healthcheck and logs.
 - Confirm internal networking DNS works (`weaviate` hostname resolves from backend container).
 
+Note: `GET /v1/.well-known/ready` returns HTTP 200 with an empty body. Healthchecks should only validate the HTTP status code (do not grep the response body for `true`).
+
+### Disk usage warnings
+
+Weaviate periodically logs disk usage warnings when the underlying filesystem is above its internal threshold (default 80%) at `PERSISTENCE_DATA_PATH` (`/var/lib/weaviate`).
+If this triggers:
+- Free disk on the host volume backing `/var/lib/weaviate`.
+- Avoid raising thresholds unless you have strong operational reasons.
+
 ### Schema missing / query failures
 - Confirm the backend schema bootstrap ran.
 - Check `GET /v1/schema/JarvisMemoryItem`.
