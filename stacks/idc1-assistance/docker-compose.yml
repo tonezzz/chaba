@@ -27,7 +27,6 @@ services:
       JARVIS_IMAGE_ALLOWED_MODELS: ${JARVIS_IMAGE_ALLOWED_MODELS:-gemini-3.1-flash-image-preview}
       WEB_FETCHER_BASE_URL: ${WEB_FETCHER_BASE_URL:-http://web-fetcher:8028}
       MCP_BASE_URL: ${MCP_BASE_URL:-http://mcp-bundle:3050}
-      AIM_MCP_BASE_URL: ${AIM_MCP_BASE_URL:-http://aim-mcp-gateway:3050}
       WEAVIATE_URL: ${WEAVIATE_URL:-http://weaviate:8080}
     volumes:
       - jarvis-imagen-assets:${JARVIS_IMAGEN_ASSETS_DIR:-/app/imagen_assets}
@@ -61,44 +60,6 @@ services:
       - ./mcp-config:/app/mcp-config
       - mcp-bundle-data:/root/.config/1mcp
       - mcp-bundle-cache:/root/.cache
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3050/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
-  aim-mcp-gateway:
-    <<: *default-service
-    image: ghcr.io/tonezzz/chaba/mcp-bundle:idc1-assistance
-    command:
-      - sh
-      - -lc
-      - |
-        cat > /app/mcp-config/mcp.json <<'EOF'
-        {
-          "mcpServers": {
-            "aim-kg": {
-              "command": "npx",
-              "args": ["-y", "mcp-knowledge-graph", "--memory-path", "/data"],
-              "tags": ["memory", "knowledge-graph"],
-              "disabled": false
-            }
-          }
-        }
-        EOF
-        exec node index.js
-    environment:
-      ONE_MCP_HOST: 0.0.0.0
-      ONE_MCP_PORT: 3050
-      ONE_MCP_EXTERNAL_URL: http://127.0.0.1:3050
-      ONE_MCP_LOG_LEVEL: info
-      ONE_MCP_CONFIG_DIR: /app/mcp-config
-      ONE_MCP_CONFIG: /app/mcp-config/mcp.json
-    volumes:
-      - aim-mcp-gateway-config:/app/mcp-config
-      - aim-kg-data:/data
-      - aim-mcp-gateway-data:/root/.config/1mcp
-      - aim-mcp-gateway-cache:/root/.cache
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3050/health || exit 1"]
       interval: 30s
@@ -161,9 +122,5 @@ networks:
 volumes:
   mcp-bundle-data:
   mcp-bundle-cache:
-  aim-kg-data:
-  aim-mcp-gateway-config:
-  aim-mcp-gateway-data:
-  aim-mcp-gateway-cache:
   weaviate-data:
   jarvis-imagen-assets:

@@ -642,7 +642,7 @@ async def _weaviate_query_reminders(*, status: str, limit: int) -> list[dict[str
     await _weaviate_ensure_schema()
     lim = max(1, min(int(limit or 50), 500))
     status_norm = str(status or "all").strip().lower() or "all"
-    if status_norm not in ("all", "pending", "fired"):
+    if status_norm not in ("all", "pending", "fired", "done"):
         raise HTTPException(status_code=400, detail="invalid_status")
 
     where_status = "" if status_norm == "all" else f"{{ path: [\\\"status\\\"], operator: Equal, valueText: \\\"{status_norm}\\\" }}"
@@ -967,7 +967,7 @@ def _list_reminders(
     lim = max(1, min(int(limit or 50), 500))
     off = max(0, int(offset or 0))
 
-    if status_norm not in ("all", "pending", "fired"):
+    if status_norm not in ("all", "pending", "fired", "done"):
         raise HTTPException(status_code=400, detail="invalid_status")
     if order_norm not in ("asc", "desc"):
         raise HTTPException(status_code=400, detail="invalid_order")
@@ -1411,6 +1411,127 @@ def _mark_reminder_fired(reminder_id: str) -> None:
         conn.commit()
 
 
+def _mark_reminder_done(reminder_id: str) -> bool:
+    _init_session_db()
+    now_ts = int(time.time())
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        cur = conn.execute(
+            "UPDATE reminders SET status = ?, updated_at = ? WHERE reminder_id = ? AND status != ?",
+            ("done", now_ts, reminder_id, "done"),
+        )
+        conn.commit()
+        return bool(cur.rowcount and int(cur.rowcount) > 0)
+
+
+def _get_local_reminder_by_id(reminder_id: str) -> Optional[dict[str, Any]]:
+    _init_session_db()
+    rid = str(reminder_id or "").strip()
+    if not rid:
+        return None
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        cur = conn.execute(
+            "SELECT reminder_id, title, due_at, timezone, schedule_type, notify_at, status, source_text, aim_entity_name, created_at, updated_at "
+            "FROM reminders WHERE reminder_id = ? LIMIT 1",
+            (rid,),
+        )
+        row = cur.fetchone()
+    if not row:
+        return None
+    (
+        reminder_id_v,
+        title,
+        due_at,
+        tz_name,
+        schedule_type,
+        notify_at,
+        status_value,
+        source_text,
+        aim_entity_name,
+        created_at,
+        updated_at,
+    ) = row
+    return {
+        "reminder_id": reminder_id_v,
+        "title": title,
+        "due_at": due_at,
+        "timezone": tz_name,
+        "schedule_type": schedule_type,
+        "notify_at": notify_at,
+        "status": status_value,
+        "source_text": source_text,
+        "aim_entity_name": aim_entity_name,
+        "created_at": created_at,
+        "updated_at": updated_at,
+    }
+
+
+async def _weaviate_get_memory_item_by_external_key(external_key: str) -> Optional[dict[str, Any]]:
+    await _weaviate_ensure_schema()
+    ek = str(external_key or "").strip()
+    if not ek:
+        return None
+    obj_id = _weaviate_object_uuid(ek)
+    try:
+        existing = await _weaviate_request("GET", f"/v1/objects/{obj_id}")
+    except Exception:
+        return None
+    if not isinstance(existing, dict):
+        return None
+    props = existing.get("properties")
+    if not isinstance(props, dict):
+        return None
+    return props
+
+
+async def _mark_reminder_done_weaviate(reminder_id: str) -> dict[str, Any]:
+    if not _weaviate_enabled():
+        return {"ok": False, "skipped": True}
+
+    rid = str(reminder_id or "").strip()
+    if not rid:
+        raise HTTPException(status_code=400, detail="missing_reminder_id")
+
+    local = _get_local_reminder_by_id(rid)
+    external_key = None
+    if isinstance(local, dict):
+        external_key = str(local.get("aim_entity_name") or "").strip()
+    if not external_key:
+        external_key = f"reminder::{rid}"
+
+    props = await _weaviate_get_memory_item_by_external_key(external_key)
+    title = str((props or {}).get("title") or (local or {}).get("title") or "Reminder").strip() or "Reminder"
+    body = str((props or {}).get("body") or (local or {}).get("source_text") or "").strip()
+    tz_name = str((props or {}).get("timezone") or (local or {}).get("timezone") or DEFAULT_TIMEZONE).strip() or DEFAULT_TIMEZONE
+
+    def _num(v: Any) -> Optional[int]:
+        if v is None:
+            return None
+        try:
+            return int(float(v))
+        except Exception:
+            return None
+
+    due_at = _num((props or {}).get("due_at"))
+    notify_at = _num((props or {}).get("notify_at"))
+    if due_at is None and isinstance(local, dict):
+        due_at = _num(local.get("due_at"))
+    if notify_at is None and isinstance(local, dict):
+        notify_at = _num(local.get("notify_at"))
+
+    wv = await _weaviate_upsert_memory_item(
+        external_key=external_key,
+        kind="reminder",
+        title=title,
+        body=body,
+        status="done",
+        due_at=due_at,
+        notify_at=notify_at,
+        timezone_name=tz_name,
+        source="jarvis",
+    )
+    return {"ok": True, "weaviate": wv, "external_key": external_key}
+
+
 def _list_due_reminders(user_id: str, now_ts: int) -> list[dict[str, Any]]:
     _init_session_db()
     with sqlite3.connect(SESSION_DB_PATH) as conn:
@@ -1685,6 +1806,27 @@ async def list_reminders(status: str = "all", limit: int = 50, offset: int = 0, 
 
     reminders = _list_reminders(user_id=DEFAULT_USER_ID, status=status, limit=limit, offset=offset, order=order)
     return {"ok": True, "source": "sqlite", "instance_id": INSTANCE_ID, "reminders": reminders}
+
+
+@app.post("/reminders/{reminder_id}/done")
+async def reminders_done(reminder_id: str) -> dict[str, Any]:
+    rid = str(reminder_id or "").strip()
+    if not rid:
+        raise HTTPException(status_code=400, detail="missing_reminder_id")
+
+    changed = _mark_reminder_done(rid)
+    wv: Optional[dict[str, Any]] = None
+    if _weaviate_enabled():
+        try:
+            wv = await _mark_reminder_done_weaviate(rid)
+        except Exception as e:
+            wv = {"ok": False, "error": str(e)}
+
+    await _broadcast_to_user(
+        DEFAULT_USER_ID,
+        {"type": "reminder_done", "reminder_id": rid, "changed": changed, "weaviate": wv, "instance_id": INSTANCE_ID},
+    )
+    return {"ok": True, "reminder_id": rid, "changed": changed, "weaviate": wv, "instance_id": INSTANCE_ID}
 
 
 @app.get("/reminders/upcoming")
@@ -2225,6 +2367,8 @@ MCP_TOOL_MAP: dict[str, dict[str, Any]] = {
 def _mcp_tool_declarations() -> list[dict[str, Any]]:
     decls: list[dict[str, Any]] = []
     for name, meta in MCP_TOOL_MAP.items():
+        if str(meta.get("mcp_base") or "").strip().lower() == "aim" and not AIM_MCP_BASE_URL:
+            continue
         decl: dict[str, Any] = {
             "name": name,
             "description": str(meta.get("description") or ""),
@@ -2265,7 +2409,7 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "status": {"type": "string", "description": "Filter by status: all|pending|fired"},
+                    "status": {"type": "string", "description": "Filter by status: all|pending|fired|done"},
                     "limit": {"type": "integer", "description": "Max rows (default 50, max 500)"},
                     "offset": {"type": "integer", "description": "Offset for pagination"},
                     "order": {"type": "string", "description": "Sort by updated_at: asc|desc"},
@@ -2288,6 +2432,18 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
                     },
                     "limit": {"type": "integer", "description": "Max rows (default 50, max 500)."},
                 },
+            },
+        }
+    )
+
+    decls.append(
+        {
+            "name": "reminders_done",
+            "description": "Mark a reminder as done/completed so it disappears from upcoming/today views.",
+            "parameters": {
+                "type": "object",
+                "properties": {"reminder_id": {"type": "string"}},
+                "required": ["reminder_id"],
             },
         }
     )
@@ -2357,6 +2513,23 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             time_field=time_field,
             limit=limit,
         )
+
+    if tool_name == "reminders_done":
+        reminder_id = str(args.get("reminder_id") or "").strip()
+        if not reminder_id:
+            raise HTTPException(status_code=400, detail="missing_reminder_id")
+        changed = _mark_reminder_done(reminder_id)
+        wv: Optional[dict[str, Any]] = None
+        if _weaviate_enabled():
+            try:
+                wv = await _mark_reminder_done_weaviate(reminder_id)
+            except Exception as e:
+                wv = {"ok": False, "error": str(e)}
+        await _broadcast_to_user(
+            DEFAULT_USER_ID,
+            {"type": "reminder_done", "reminder_id": reminder_id, "changed": changed, "weaviate": wv, "instance_id": INSTANCE_ID},
+        )
+        return {"ok": True, "reminder_id": reminder_id, "changed": changed, "weaviate": wv}
 
     meta = MCP_TOOL_MAP.get(tool_name)
     if not meta:
