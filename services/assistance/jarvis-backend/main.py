@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from typing import Any, Optional
 from pathlib import Path
+import xml.etree.ElementTree as ET
 
 import httpx
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Body
@@ -51,6 +52,13 @@ AIM_MCP_BASE_URL = str(os.getenv("AIM_MCP_BASE_URL") or "").strip().rstrip("/")
 
 WEAVIATE_URL = str(os.getenv("WEAVIATE_URL") or "").strip().rstrip("/")
 GEMINI_EMBEDDING_MODEL = str(os.getenv("GEMINI_EMBEDDING_MODEL") or "text-embedding-004").strip() or "text-embedding-004"
+
+JARVIS_TOOL_ALLOWLIST = [
+    t.strip()
+    for t in str(os.getenv("JARVIS_TOOL_ALLOWLIST") or "").split(",")
+    if t.strip()
+]
+JARVIS_EMBED_CACHE_MAX = max(0, int(os.getenv("JARVIS_EMBED_CACHE_MAX") or "512"))
 
 IMAGEN_MODEL_DEFAULT = str(os.getenv("JARVIS_IMAGEN_MODEL") or "imagen-4.0-generate-001").strip() or "imagen-4.0-generate-001"
 IMAGEN_ALLOWED_MODELS = [
@@ -428,7 +436,63 @@ def _init_session_db() -> None:
             """
         )
         conn.execute("CREATE INDEX IF NOT EXISTS idx_agent_status_user_updated ON agent_status(user_id, updated_at)")
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS news_cache (
+              cache_key TEXT PRIMARY KEY,
+              payload_json TEXT NOT NULL,
+              updated_at INTEGER NOT NULL
+            )
+            """
+        )
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_news_cache_updated ON news_cache(updated_at)")
         conn.commit()
+
+
+def _get_news_cache(cache_key: str) -> Optional[dict[str, Any]]:
+    _init_session_db()
+    k = str(cache_key or "").strip()
+    if not k:
+        return None
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        cur = conn.execute(
+            "SELECT payload_json, updated_at FROM news_cache WHERE cache_key = ? LIMIT 1",
+            (k,),
+        )
+        row = cur.fetchone()
+    if not row:
+        return None
+    payload_json, updated_at = row
+    try:
+        payload = json.loads(payload_json)
+    except Exception:
+        payload = payload_json
+    if isinstance(payload, dict):
+        payload.setdefault("updated_at", updated_at)
+    return {"cache_key": k, "payload": payload, "updated_at": updated_at}
+
+
+def _set_news_cache(cache_key: str, payload: Any) -> dict[str, Any]:
+    _init_session_db()
+    k = str(cache_key or "").strip()
+    if not k:
+        raise HTTPException(status_code=400, detail="missing_cache_key")
+    now_ts = int(time.time())
+    payload_json = json.dumps(payload, ensure_ascii=False)
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        conn.execute(
+            """
+            INSERT INTO news_cache(cache_key, payload_json, updated_at)
+            VALUES(?, ?, ?)
+            ON CONFLICT(cache_key) DO UPDATE SET
+              payload_json=excluded.payload_json,
+              updated_at=excluded.updated_at
+            """,
+            (k, payload_json, now_ts),
+        )
+        conn.commit()
+    return {"ok": True, "cache_key": k, "updated_at": now_ts}
 
 
 def _weaviate_enabled() -> bool:
@@ -540,7 +604,7 @@ async def _weaviate_upsert_memory_item(
     obj_id = _weaviate_object_uuid(external_key)
 
     vector_text = "\n".join([str(kind), str(title), str(body)]).strip()
-    vector = await _gemini_embed_text(vector_text)
+    vector = await _gemini_embed_text_cached(vector_text)
 
     existing_created_at: Optional[float] = None
     try:
@@ -1232,6 +1296,12 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
                 ws.state.active_agent_id = agent_id_norm
                 ws.state.active_agent_until_ts = int(time.time()) + AGENT_CONTINUE_WINDOW_SECONDS
             return handled
+        if agent_id_norm == "current-news":
+            handled = await _handle_current_news_trigger(ws, text)
+            if handled:
+                ws.state.active_agent_id = agent_id_norm
+                ws.state.active_agent_until_ts = int(time.time()) + AGENT_CONTINUE_WINDOW_SECONDS
+            return handled
         return False
 
     if active_agent_id and active_until_ts >= now_ts:
@@ -1254,6 +1324,280 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
         ws.state.active_agent_id = None
         ws.state.active_agent_until_ts = None
     return False
+
+
+def _extract_mcp_text(result: Any) -> str:
+    if not isinstance(result, dict):
+        return ""
+    content = result.get("content")
+    if isinstance(content, list):
+        parts: list[str] = []
+        for c in content:
+            if isinstance(c, dict) and c.get("type") == "text":
+                t = c.get("text")
+                if isinstance(t, str) and t.strip():
+                    parts.append(t)
+        return "\n".join(parts).strip()
+    t2 = result.get("text")
+    if isinstance(t2, str):
+        return t2.strip()
+    return ""
+
+
+async def _mcp_web_fetch_text(url: str, max_length: int = 200000) -> str:
+    meta = MCP_TOOL_MAP.get("web_fetch") or {}
+    mcp_name = str(meta.get("mcp_name") or "").strip()
+    if not mcp_name:
+        raise HTTPException(status_code=500, detail="mcp_web_fetch_missing")
+    result = await _mcp_tools_call(mcp_name, {"url": url, "max_length": int(max_length)})
+    return _extract_mcp_text(result)
+
+
+def _parse_rss_items(xml_text: str) -> list[dict[str, Any]]:
+    s = str(xml_text or "")
+    if not s.strip():
+        return []
+    try:
+        root = ET.fromstring(s)
+    except Exception:
+        return []
+
+    items: list[dict[str, Any]] = []
+    for it in root.findall(".//item"):
+        title = (it.findtext("title") or "").strip()
+        link = (it.findtext("link") or "").strip()
+        pub = (it.findtext("pubDate") or "").strip()
+        desc = (it.findtext("description") or "").strip()
+        if not title and not link:
+            continue
+        items.append({"title": title, "link": link, "pubDate": pub, "description": desc})
+    return items
+
+
+def _topic_match(text: str, keywords: list[str]) -> bool:
+    s = " ".join(str(text or "").lower().split())
+    if not s:
+        return False
+    for k in keywords:
+        if k and k.lower() in s:
+            return True
+    return False
+
+
+def _build_current_news_context(items: list[dict[str, Any]]) -> dict[str, Any]:
+    def pick(keywords: list[str], limit: int = 6) -> list[dict[str, Any]]:
+        out: list[dict[str, Any]] = []
+        for it in items:
+            blob = f"{it.get('title','')} {it.get('description','')}"
+            if _topic_match(blob, keywords):
+                out.append(it)
+            if len(out) >= limit:
+                break
+        return out
+
+    iran = pick(
+        [
+            "iran",
+            "israel",
+            "tehran",
+            "gaza",
+            "hezbollah",
+            "missile",
+            "drone",
+            "strike",
+            "ceasefire",
+            "u.s.",
+            "us ",
+            "pentagon",
+        ]
+    )
+    gold = pick(["gold", "bullion", "xau"], limit=4)
+    usd = pick(["dollar", "usd", "treasury", "yield", "fed"], limit=4)
+    oil = pick(["oil", "crude", "brent", "wti", "opec"], limit=4)
+    thb = pick(["thai baht", "baht", "thb", "usd/thb", "thb/usd", "bank of thailand", "bot"], limit=4)
+
+    sources: list[str] = []
+    for it in (iran + gold + usd + oil + thb):
+        link = str(it.get("link") or "").strip()
+        if link and link not in sources:
+            sources.append(link)
+
+    def brief_lines(section_items: list[dict[str, Any]], max_lines: int) -> list[str]:
+        lines: list[str] = []
+        for it in section_items[:max_lines]:
+            t = str(it.get("title") or "").strip()
+            if t:
+                lines.append(t)
+        return lines
+
+    now_ts = int(time.time())
+    return {
+        "summary": "CNN current-news context refreshed",
+        "updated_at": now_ts,
+        "sources": sources,
+        "topics": {
+            "iran_war": {"headlines": brief_lines(iran, 5), "items": iran},
+            "gold": {"headlines": brief_lines(gold, 3), "items": gold},
+            "usd": {"headlines": brief_lines(usd, 3), "items": usd},
+            "oil": {"headlines": brief_lines(oil, 3), "items": oil},
+            "thb": {"headlines": brief_lines(thb, 3), "items": thb},
+        },
+    }
+
+
+def _render_current_news_brief(ctx: dict[str, Any]) -> str:
+    topics = ctx.get("topics") if isinstance(ctx, dict) else None
+    if not isinstance(topics, dict):
+        return "Current news: no cached context available. Say 'current news refresh' to fetch from CNN."
+
+    def block(title: str, key: str, max_lines: int) -> str:
+        sec = topics.get(key)
+        headlines = sec.get("headlines") if isinstance(sec, dict) else None
+        if not isinstance(headlines, list) or not headlines:
+            return f"{title}: (no recent CNN headlines found)"
+        lines = [f"{title}:"]
+        for h in headlines[:max_lines]:
+            hh = str(h or "").strip()
+            if hh:
+                lines.append(f"- {hh}")
+        return "\n".join(lines)
+
+    parts = [
+        block("Iran war", "iran_war", 5),
+        block("Gold", "gold", 3),
+        block("Dollar/US rates", "usd", 3),
+        block("Oil", "oil", 3),
+        block("Thai Baht", "thb", 3),
+        "\nYou can ask: 'details iran', 'details oil', 'details baht', 'list sources', or 'refresh current news'.",
+    ]
+    return "\n\n".join([p for p in parts if p.strip()])
+
+
+async def _refresh_current_news_cache() -> dict[str, Any]:
+    feeds = [
+        "https://rss.cnn.com/rss/edition.rss",
+        "https://rss.cnn.com/rss/edition_world.rss",
+        "https://rss.cnn.com/rss/money_latest.rss",
+    ]
+    all_items: list[dict[str, Any]] = []
+    for url in feeds:
+        xml_text = await _mcp_web_fetch_text(url, max_length=250000)
+        all_items.extend(_parse_rss_items(xml_text))
+
+    seen: set[str] = set()
+    deduped: list[dict[str, Any]] = []
+    for it in all_items:
+        key = str(it.get("link") or "") or str(it.get("title") or "")
+        key = key.strip()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        deduped.append(it)
+
+    ctx = _build_current_news_context(deduped)
+    _set_news_cache("current-news", ctx)
+    _upsert_agent_status(DEFAULT_USER_ID, "current-news", ctx)
+    return ctx
+
+
+async def _handle_current_news_trigger(ws: WebSocket, text: str) -> bool:
+    s = " ".join(str(text or "").strip().lower().split())
+    if not s:
+        return False
+
+    wants_refresh = any(
+        p in s
+        for p in (
+            "refresh current news",
+            "current news refresh",
+            "refresh news",
+            "update current news",
+            "current news update",
+        )
+    )
+    wants_sources = "list sources" in s or s == "sources"
+    wants_details = s.startswith("details ") or s.startswith("detail ")
+    is_trigger = (
+        ("current news" in s)
+        or ("cnn news" in s)
+        or ("thai baht" in s)
+        or (" baht" in f" {s}")
+        or ("thb" in s)
+        or wants_refresh
+        or wants_details
+        or wants_sources
+    )
+    if not is_trigger:
+        return False
+
+    cached = _get_news_cache("current-news")
+    ctx: Optional[dict[str, Any]] = None
+    if cached and isinstance(cached.get("payload"), dict):
+        ctx = cached["payload"]
+
+    if wants_refresh or ctx is None:
+        ctx = await _refresh_current_news_cache()
+
+    if not isinstance(ctx, dict):
+        return False
+
+    if wants_sources:
+        await ws.send_json(
+            {"type": "current_news_sources", "sources": ctx.get("sources") or [], "updated_at": ctx.get("updated_at")}
+        )
+        return True
+
+    if wants_details:
+        topic = str(s.split(" ", 1)[1] if " " in s else "").strip()
+        topics = ctx.get("topics") if isinstance(ctx.get("topics"), dict) else {}
+        key_map = {
+            "iran": "iran_war",
+            "iran war": "iran_war",
+            "war": "iran_war",
+            "gold": "gold",
+            "dollar": "usd",
+            "usd": "usd",
+            "oil": "oil",
+            "baht": "thb",
+            "thai baht": "thb",
+            "thb": "thb",
+            "usd/thb": "thb",
+        }
+        chosen = key_map.get(topic, "")
+        if chosen and isinstance(topics, dict) and isinstance(topics.get(chosen), dict):
+            await ws.send_json(
+                {"type": "current_news_details", "topic": chosen, "data": topics.get(chosen), "updated_at": ctx.get("updated_at")}
+            )
+        else:
+            await ws.send_json(
+                {
+                    "type": "current_news_details",
+                    "topic": topic,
+                    "error": "unknown_topic",
+                    "hint": "Try: details iran | details gold | details usd | details oil",
+                }
+            )
+        return True
+
+    brief = _render_current_news_brief(ctx)
+    await ws.send_json({"type": "current_news", "brief": brief, "context": ctx, "updated_at": ctx.get("updated_at")})
+    return True
+
+
+@app.get("/current-news/brief")
+async def current_news_brief() -> dict[str, Any]:
+    cached = _get_news_cache("current-news")
+    if cached and isinstance(cached.get("payload"), dict):
+        ctx = cached["payload"]
+        return {"ok": True, "cached": True, "brief": _render_current_news_brief(ctx), "context": ctx}
+    ctx2 = await _refresh_current_news_cache()
+    return {"ok": True, "cached": False, "brief": _render_current_news_brief(ctx2), "context": ctx2}
+
+
+@app.post("/current-news/refresh")
+async def current_news_refresh() -> dict[str, Any]:
+    ctx = await _refresh_current_news_cache()
+    return {"ok": True, "context": ctx}
 
 
 def _get_user_timezone(user_id: str) -> ZoneInfo:
@@ -2368,6 +2712,8 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
     decls: list[dict[str, Any]] = []
     for name, meta in MCP_TOOL_MAP.items():
         if str(meta.get("mcp_base") or "").strip().lower() == "aim" and not AIM_MCP_BASE_URL:
+            continue
+        if JARVIS_TOOL_ALLOWLIST and name not in JARVIS_TOOL_ALLOWLIST:
             continue
         decl: dict[str, Any] = {
             "name": name,

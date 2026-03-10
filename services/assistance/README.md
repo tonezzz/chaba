@@ -25,6 +25,30 @@ The `/services/assistance/` tree is the source-of-truth for all *Assistance* app
 - Trigger wiring and handlers live in:
   - `jarvis-backend/main.py`
 
+Terminology:
+- **Agent**: a conversation-aware routing/orchestration module (trigger phrases, continuation window, status reporting).
+- **Skill**: a deterministic capability invoked by agents or the main LLM session (HTTP endpoints / tool calls).
+
+### Sub-agents (mechanism)
+
+In this codebase, a "sub-agent" is not a separate continuously-running model.
+It is a backend routing mechanism that can intercept user input and run a dedicated handler.
+
+High-level flow:
+1. The frontend sends user input to the backend over `WS /ws/live`.
+2. The backend tries to dispatch the message to a sub-agent based on:
+   - trigger phrase matches from `jarvis-backend/agents/*.md`, or
+   - an active-agent continuation window (recent agent stays active for follow-ups).
+3. If dispatched, the backend calls a Python handler in `main.py` (for example, the reminder setup handler).
+4. The handler performs deterministic work (e.g. parse time, write SQLite, write-through to Weaviate) and emits WebSocket events for the UI.
+5. If not dispatched, the backend forwards the message to the main LLM session (Gemini) and may receive tool calls.
+
+How this is more advanced than a plain backend "skill":
+- **Conversation-aware routing**: supports trigger phrases plus a continuation window so follow-up messages can stay within the same intent.
+- **WebSocket-first UX**: handlers can emit structured events for lifecycle updates (e.g. reminder created/fired) without waiting for an LLM response.
+- **Hybrid with tool calls**: reminders can also be created via LLM tool calls; the sub-agent path is a backend-first fast path.
+- **Separation of concerns**: agent definition is data-driven (`*.md`), while handler logic remains in code.
+
 ## Service docs
 - `jarvis-backend/ARCHITECTURE.md`
 - `jarvis-frontend/ARCHITECTURE.md`
@@ -37,6 +61,12 @@ The `/services/assistance/` tree is the source-of-truth for all *Assistance* app
 ## Memory (current direction)
 - Authoritative store: Weaviate (internal-only container in the `idc1-assistance` stack)
 - Operational cache/scheduler: Jarvis backend SQLite (`JARVIS_SESSION_DB`)
+
+Reminder semantics (current direction):
+- Weaviate is the authoritative source for reminder retrieval (cross-device consistency).
+- SQLite is a local scheduler cache that should be hydrated from Weaviate on startup/reconnect.
+- Reminders should support multiple distinct tasks at the same time (e.g. job1 9:00am + job2 9:00am).
+- Reminder lifecycle includes a completion state: `done` (completed reminders should disappear from "today" views).
 
 ## Deployment
 - Stack configuration lives under:

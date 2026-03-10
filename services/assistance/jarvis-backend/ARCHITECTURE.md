@@ -8,6 +8,7 @@ This file is intentionally a thin index to reduce staleness.
   - `GET /daily-brief`
   - `GET /reminders`
   - `GET /reminders/upcoming`
+  - `POST /reminders/{reminder_id}/done`
   - `GET /debug/agents`
   - `WS /ws/live`
 - Agent definitions (the “what”): `agents/*.md`
@@ -20,6 +21,9 @@ This file is intentionally a thin index to reduce staleness.
 ## Agent system (high-level)
 - Agents are defined as Markdown under `agents/*.md`.
 - Runtime agent directory is controlled via `JARVIS_AGENTS_DIR` (default `/app/agents`).
+- Terminology:
+  - Agent: routing/orchestration (trigger phrases, continuation window, status reporting).
+  - Skill: deterministic capability (HTTP endpoints / tool calls) invoked by agents or the main LLM session.
 - Triggering:
   - The backend builds a trigger map from agent frontmatter `trigger_phrases` (comma-separated string).
   - When a trigger matches, the backend dispatches to a code handler (see `main.py`).
