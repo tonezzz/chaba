@@ -15,4 +15,4 @@ ENV ONE_MCP_HOST=0.0.0.0 \
 
 EXPOSE 3050
 
-CMD ["sh", "-lc", "mkdir -p /pipeline/mcp-config && cat > /pipeline/mcp-config/mcp.json <<'EOF'\n{\"mcpServers\":{\"image-pipeline\":{\"command\":\"node\",\"args\":[\"/pipeline/server.js\"],\"tags\":[\"image\",\"pipeline\"],\"disabled\":false,\"env\":{\"GEMINI_API_KEY\":\"${GEMINI_API_KEY}\",\"API_KEY\":\"${GEMINI_API_KEY}\"}}}}\nEOF\n&& exec node /usr/src/app/index.js"]
+CMD ["sh", "-lc", "mkdir -p /pipeline/mcp-config && printf '%s' '{\"mcpServers\":{\"image-pipeline\":{\"command\":\"node\",\"args\":[\"/pipeline/server.js\"],\"tags\":[\"image\",\"pipeline\"],\"disabled\":false,\"env\":{\"GEMINI_API_KEY\":\"${GEMINI_API_KEY}\",\"API_KEY\":\"${GEMINI_API_KEY}\"}}}}' > /pipeline/mcp-config/mcp.json && exec node /usr/src/app/index.js"]
