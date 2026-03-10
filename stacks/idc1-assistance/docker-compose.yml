@@ -66,6 +66,28 @@ services:
       timeout: 5s
       retries: 3
 
+  mcp-image-pipeline:
+    <<: *default-service
+    image: ghcr.io/tonezzz/chaba/mcp-image-pipeline:idc1-assistance
+    ports:
+      - "127.0.0.1:3052:3050"
+    environment:
+      ONE_MCP_HOST: 0.0.0.0
+      ONE_MCP_PORT: 3050
+      ONE_MCP_EXTERNAL_URL: http://127.0.0.1:3052
+      ONE_MCP_LOG_LEVEL: info
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      IMAGE_PIPELINE_ASSETS_DIR: ${IMAGE_PIPELINE_ASSETS_DIR:-/data/assets}
+      IMAGE_PIPELINE_MODEL: ${IMAGE_PIPELINE_MODEL:-gemini-3.1-flash-image-preview}
+      IMAGE_PIPELINE_ALLOWED_MODELS: ${IMAGE_PIPELINE_ALLOWED_MODELS:-gemini-3.1-flash-image-preview}
+    volumes:
+      - image-pipeline-assets:${IMAGE_PIPELINE_ASSETS_DIR:-/data/assets}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3050/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   web-fetcher:
     <<: *default-service
     image: ghcr.io/tonezzz/chaba/web-fetcher:idc1-assistance
@@ -124,3 +146,4 @@ volumes:
   mcp-bundle-cache:
   weaviate-data:
   jarvis-imagen-assets:
+  image-pipeline-assets:

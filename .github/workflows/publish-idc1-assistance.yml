@@ -112,3 +112,23 @@ jobs:
           labels: ${{ steps.meta_mcp_bundle.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Docker meta (mcp-image-pipeline)
+        id: meta_mcp_image_pipeline
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_PREFIX }}/mcp-image-pipeline
+          tags: |
+            type=ref,event=branch
+            type=sha,format=short,prefix=sha-
+
+      - name: Build and push (mcp-image-pipeline)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/assistance/mcp-image-pipeline
+          file: ./services/assistance/mcp-image-pipeline/Dockerfile
+          push: true
+          tags: ${{ steps.meta_mcp_image_pipeline.outputs.tags }}
+          labels: ${{ steps.meta_mcp_image_pipeline.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
