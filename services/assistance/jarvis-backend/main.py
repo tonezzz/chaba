@@ -48,6 +48,8 @@ WEB_FETCHER_BASE_URL = str(os.getenv("WEB_FETCHER_BASE_URL") or "http://web-fetc
 
 MCP_BASE_URL = str(os.getenv("MCP_BASE_URL") or "http://mcp-bundle:3050").strip().rstrip("/")
 
+DEEP_RESEARCH_WORKER_BASE_URL = str(os.getenv("DEEP_RESEARCH_WORKER_BASE_URL") or "").strip().rstrip("/")
+
 AIM_MCP_BASE_URL = str(os.getenv("AIM_MCP_BASE_URL") or "").strip().rstrip("/")
 
 WEAVIATE_URL = str(os.getenv("WEAVIATE_URL") or "").strip().rstrip("/")
@@ -548,6 +550,38 @@ async def _weaviate_request(method: str, path: str, payload: Any = None) -> Any:
             return res.json()
         except Exception:
             return res.text
+
+
+async def _deep_research_worker_post(path: str, payload: Any) -> Any:
+    if not DEEP_RESEARCH_WORKER_BASE_URL:
+        raise HTTPException(status_code=500, detail="deep_research_worker_not_configured")
+    url = f"{DEEP_RESEARCH_WORKER_BASE_URL}{path}"
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        res = await client.post(url, json=payload)
+        if res.status_code >= 400:
+            detail: Any
+            try:
+                detail = res.json()
+            except Exception:
+                detail = res.text
+            raise HTTPException(status_code=res.status_code, detail=detail)
+        return res.json()
+
+
+async def _deep_research_worker_get(path: str) -> Any:
+    if not DEEP_RESEARCH_WORKER_BASE_URL:
+        raise HTTPException(status_code=500, detail="deep_research_worker_not_configured")
+    url = f"{DEEP_RESEARCH_WORKER_BASE_URL}{path}"
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        res = await client.get(url)
+        if res.status_code >= 400:
+            detail: Any
+            try:
+                detail = res.json()
+            except Exception:
+                detail = res.text
+            raise HTTPException(status_code=res.status_code, detail=detail)
+        return res.json()
 
 
 async def _weaviate_ensure_schema() -> None:
@@ -1302,6 +1336,12 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
                 ws.state.active_agent_id = agent_id_norm
                 ws.state.active_agent_until_ts = int(time.time()) + AGENT_CONTINUE_WINDOW_SECONDS
             return handled
+        if agent_id_norm == "deep-research":
+            handled = await _handle_deep_research_trigger(ws, text)
+            if handled:
+                ws.state.active_agent_id = agent_id_norm
+                ws.state.active_agent_until_ts = int(time.time()) + AGENT_CONTINUE_WINDOW_SECONDS
+            return handled
         return False
 
     if active_agent_id and active_until_ts >= now_ts:
@@ -1598,6 +1638,166 @@ async def current_news_brief() -> dict[str, Any]:
 async def current_news_refresh() -> dict[str, Any]:
     ctx = await _refresh_current_news_cache()
     return {"ok": True, "context": ctx}
+
+
+def _parse_deep_research_command(text: str) -> dict[str, str]:
+    raw = str(text or "").strip()
+    s = " ".join(raw.lower().split())
+    if not s:
+        return {"action": "", "arg": ""}
+
+    # Start commands
+    if s.startswith("deep research:") or s.startswith("deep research "):
+        arg = raw.split(":", 1)[1].strip() if ":" in raw else raw.split(" ", 2)[2].strip() if len(raw.split()) >= 3 else ""
+        return {"action": "start", "arg": arg}
+    if s.startswith("research:") or s.startswith("research "):
+        arg = raw.split(":", 1)[1].strip() if ":" in raw else raw.split(" ", 1)[1].strip()
+        return {"action": "start", "arg": arg}
+
+    # Status/result commands
+    if s.startswith("research status"):
+        return {"action": "status", "arg": raw[len("research status") :].strip()}
+    if s.startswith("research result"):
+        return {"action": "result", "arg": raw[len("research result") :].strip()}
+    if s.startswith("research poll"):
+        return {"action": "poll", "arg": raw[len("research poll") :].strip()}
+
+    # Follow-up command
+    if s.startswith("research followup:") or s.startswith("research followup "):
+        arg = raw.split(":", 1)[1].strip() if ":" in raw else raw.split(" ", 2)[2].strip() if len(raw.split()) >= 3 else ""
+        return {"action": "followup", "arg": arg}
+    if s.startswith("followup:") or s.startswith("followup "):
+        arg = raw.split(":", 1)[1].strip() if ":" in raw else raw.split(" ", 1)[1].strip()
+        return {"action": "followup", "arg": arg}
+
+    # If the user just says "deep research" with no query, treat as help.
+    if s == "deep research" or s == "research" or s == "deep-research":
+        return {"action": "help", "arg": ""}
+
+    return {"action": "", "arg": ""}
+
+
+async def _handle_deep_research_trigger(ws: WebSocket, text: str) -> bool:
+    cmd = _parse_deep_research_command(text)
+    action = cmd.get("action") or ""
+    arg = cmd.get("arg") or ""
+
+    # Trigger matching should also route generic mentions.
+    s = " ".join(str(text or "").lower().split())
+    is_trigger = (
+        action != ""
+        or ("deep research" in s)
+        or ("research" in s)
+        or ("investigate" in s)
+        or ("research report" in s)
+    )
+    if not is_trigger:
+        return False
+
+    async def _send_help() -> None:
+        await ws.send_json(
+            {
+                "type": "deep_research_help",
+                "message": "Use: 'deep research: <question>' then 'research status' or 'research result'. For followups: 'research followup: <question>'.",
+            }
+        )
+
+    if action == "help" or (action == "start" and not arg.strip()):
+        await _send_help()
+        return True
+
+    # Session state: remember last job and interaction for convenience.
+    last_job_id = str(getattr(ws.state, "deep_research_job_id", "") or "").strip()
+    last_interaction_id = str(getattr(ws.state, "deep_research_interaction_id", "") or "").strip()
+
+    if action == "start":
+        res = await _deep_research_worker_post("/deep-research/start", {"query": arg})
+        job_id = str(res.get("job_id") or "").strip()
+        interaction_id = str(res.get("interaction_id") or "").strip()
+        status = res.get("status")
+        ws.state.deep_research_job_id = job_id
+        ws.state.deep_research_interaction_id = interaction_id
+        _upsert_agent_status(
+            DEFAULT_USER_ID,
+            "deep-research",
+            {
+                "summary": f"deep research started (status={status})",
+                "job_id": job_id,
+                "interaction_id": interaction_id,
+                "status": status,
+                "updated_at": int(time.time()),
+            },
+        )
+        await ws.send_json({"type": "deep_research_started", "worker": res})
+        return True
+
+    # Determine target job id.
+    target = arg.strip() or last_job_id
+    if action in ("status", "poll", "result") and not target:
+        await ws.send_json({"type": "deep_research_error", "message": "missing_job_id", "hint": "Start with: deep research: <question>"})
+        return True
+
+    if action in ("status", "result"):
+        data = await _deep_research_worker_get(f"/deep-research/jobs/{target}")
+        job = data.get("job") if isinstance(data, dict) else None
+        await ws.send_json({"type": f"deep_research_{action}", "job": job})
+        return True
+
+    if action == "poll":
+        data = await _deep_research_worker_post(f"/deep-research/poll/{target}", {})
+        job = data.get("job") if isinstance(data, dict) else None
+        if isinstance(job, dict):
+            st = job.get("status")
+            if st in ("completed", "failed", "cancelled"):
+                # Prefer continuing followups from the completed interaction id.
+                ws.state.deep_research_interaction_id = str(job.get("interaction_id") or "")
+            _upsert_agent_status(
+                DEFAULT_USER_ID,
+                "deep-research",
+                {
+                    "summary": f"deep research poll (status={st})",
+                    "job_id": str(job.get("job_id") or target),
+                    "interaction_id": str(job.get("interaction_id") or ""),
+                    "status": st,
+                    "updated_at": int(time.time()),
+                },
+            )
+        await ws.send_json({"type": "deep_research_poll", "job": job})
+        return True
+
+    if action == "followup":
+        prev = last_interaction_id
+        if not prev:
+            await ws.send_json(
+                {
+                    "type": "deep_research_error",
+                    "message": "missing_previous_interaction_id",
+                    "hint": "Run a deep research first and poll until completed.",
+                }
+            )
+            return True
+        res = await _deep_research_worker_post("/deep-research/followup", {"previous_interaction_id": prev, "question": arg})
+        job_id = str(res.get("job_id") or "").strip()
+        interaction_id = str(res.get("interaction_id") or "").strip()
+        status = res.get("status")
+        ws.state.deep_research_job_id = job_id
+        ws.state.deep_research_interaction_id = interaction_id
+        _upsert_agent_status(
+            DEFAULT_USER_ID,
+            "deep-research",
+            {
+                "summary": f"deep research followup started (status={status})",
+                "job_id": job_id,
+                "interaction_id": interaction_id,
+                "status": status,
+                "updated_at": int(time.time()),
+            },
+        )
+        await ws.send_json({"type": "deep_research_followup_started", "worker": res})
+        return True
+
+    await _send_help()
+    return True
 
 
 def _get_user_timezone(user_id: str) -> ZoneInfo:

@@ -31,3 +31,18 @@ backend/.venv/
 *.njsproj
 *.sln
 *.sw?
+
+# Local secrets / runtime data (never commit)
+.secrets/
+data/
+*.crt
+*.key
+
+# Local AI tooling state
+.windsurf/
+
+# Stack runtime state (local deployments)
+stacks/**/data/
+stacks/**/.env
+stacks/**/.env.*
+stacks/idc1-assistance/mcp-config/sessions/
