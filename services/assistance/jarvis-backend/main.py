@@ -52,8 +52,15 @@ AIM_MCP_BASE_URL = str(os.getenv("AIM_MCP_BASE_URL") or "").strip().rstrip("/")
 WEAVIATE_URL = str(os.getenv("WEAVIATE_URL") or "").strip().rstrip("/")
 GEMINI_EMBEDDING_MODEL = str(os.getenv("GEMINI_EMBEDDING_MODEL") or "text-embedding-004").strip() or "text-embedding-004"
 
-IMAGEN_MODEL_DEFAULT = str(os.getenv("JARVIS_IMAGEN_MODEL") or "gemini-3-pro-image-preview").strip() or "gemini-3-pro-image-preview"
-IMAGEN_ALLOWED_MODELS = [m.strip() for m in str(os.getenv("JARVIS_IMAGEN_ALLOWED_MODELS") or IMAGEN_MODEL_DEFAULT).split(",") if m.strip()]
+IMAGEN_MODEL_DEFAULT = str(os.getenv("JARVIS_IMAGEN_MODEL") or "imagen-4.0-generate-001").strip() or "imagen-4.0-generate-001"
+IMAGEN_ALLOWED_MODELS = [
+    m.strip()
+    for m in str(
+        os.getenv("JARVIS_IMAGEN_ALLOWED_MODELS")
+        or "imagen-4.0-generate-001,imagen-4.0-ultra-generate-001,imagen-4.0-fast-generate-001"
+    ).split(",")
+    if m.strip()
+]
 IMAGEN_ASSETS_DIR = str(os.getenv("JARVIS_IMAGEN_ASSETS_DIR") or "/app/imagen_assets").strip() or "/app/imagen_assets"
 
 
@@ -83,6 +90,8 @@ class ImagenGenerateRequest(BaseModel):
     model: Optional[str] = None
     aspect_ratio: Optional[str] = None
     image_size: Optional[str] = None
+    number_of_images: int = 1
+    person_generation: Optional[str] = None
     return_data_url: bool = True
 
 
@@ -128,6 +137,34 @@ def _extract_inline_image(res: Any) -> tuple[bytes, str]:
     raise HTTPException(status_code=502, detail="imagen_no_inline_image")
 
 
+def _extract_generated_image(res: Any) -> tuple[bytes, str]:
+    generated = getattr(res, "generated_images", None) or getattr(res, "generatedImages", None) or []
+    if isinstance(generated, list) and generated:
+        gi0 = generated[0]
+        img = getattr(gi0, "image", None) or gi0
+        mime_type = getattr(img, "mime_type", None) or getattr(img, "mimeType", None) or "image/png"
+        data = (
+            getattr(img, "image_bytes", None)
+            or getattr(img, "imageBytes", None)
+            or getattr(img, "bytes", None)
+            or getattr(img, "data", None)
+        )
+        if isinstance(data, (bytes, bytearray)):
+            return (bytes(data), str(mime_type))
+        if isinstance(data, str) and data:
+            try:
+                return (base64.b64decode(data), str(mime_type))
+            except Exception:
+                return (data.encode("utf-8"), str(mime_type))
+        try:
+            as_bytes = bytes(data)
+            if as_bytes:
+                return (as_bytes, str(mime_type))
+        except Exception:
+            pass
+    raise HTTPException(status_code=502, detail="imagen_no_generated_images")
+
+
 def _ensure_imagen_assets_dir() -> None:
     os.makedirs(IMAGEN_ASSETS_DIR, exist_ok=True)
 
@@ -148,20 +185,29 @@ async def imagen_generate(req: ImagenGenerateRequest) -> ImagenGenerateResponse:
 
     _ensure_imagen_assets_dir()
     client = genai.Client(api_key=api_key)
-    cfg: dict[str, Any] = {"imageConfig": {}}
-    if req.aspect_ratio:
-        cfg["imageConfig"]["aspectRatio"] = str(req.aspect_ratio)
-    if req.image_size:
-        cfg["imageConfig"]["imageSize"] = str(req.image_size)
-    if not cfg["imageConfig"]:
-        cfg.pop("imageConfig", None)
-
+    is_imagen = model.startswith("imagen-")
     try:
-        res = await client.aio.models.generate_content(model=model, contents=req.prompt, config=cfg or None)
+        if is_imagen:
+            cfg = types.GenerateImagesConfig(
+                number_of_images=max(1, min(int(req.number_of_images or 1), 4)),
+                aspect_ratio=str(req.aspect_ratio) if req.aspect_ratio else None,
+                image_size=str(req.image_size) if req.image_size else None,
+                person_generation=str(req.person_generation) if req.person_generation else None,
+            )
+            res = await client.aio.models.generate_images(model=model, prompt=req.prompt, config=cfg)
+            img_bytes, mime_type = _extract_generated_image(res)
+        else:
+            cfg2: dict[str, Any] = {"imageConfig": {}}
+            if req.aspect_ratio:
+                cfg2["imageConfig"]["aspectRatio"] = str(req.aspect_ratio)
+            if req.image_size:
+                cfg2["imageConfig"]["imageSize"] = str(req.image_size)
+            if not cfg2["imageConfig"]:
+                cfg2.pop("imageConfig", None)
+            res = await client.aio.models.generate_content(model=model, contents=req.prompt, config=cfg2 or None)
+            img_bytes, mime_type = _extract_inline_image(res)
     except Exception as e:
         raise HTTPException(status_code=502, detail={"imagen_generate_failed": str(e)})
-
-    img_bytes, mime_type = _extract_inline_image(res)
     import hashlib
 
     digest = hashlib.sha256(img_bytes).hexdigest()
@@ -177,6 +223,8 @@ async def imagen_generate(req: ImagenGenerateRequest) -> ImagenGenerateResponse:
         "prompt": req.prompt,
         "aspect_ratio": req.aspect_ratio,
         "image_size": req.image_size,
+        "number_of_images": int(req.number_of_images or 1),
+        "person_generation": req.person_generation,
         "created_at": int(time.time()),
     }
     with open(meta_path, "w", encoding="utf-8") as f:
