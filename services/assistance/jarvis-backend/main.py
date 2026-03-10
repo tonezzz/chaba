@@ -888,7 +888,7 @@ def _list_reminders(
     return out
 
 
-def _render_daily_brief(user_id: str) -> dict[str, Any]:
+async def _render_daily_brief(user_id: str) -> dict[str, Any]:
     agents = _agents_snapshot()
     statuses = _get_agent_statuses(user_id)
     status_by_agent: dict[str, dict[str, Any]] = {}
@@ -901,8 +901,10 @@ def _render_daily_brief(user_id: str) -> dict[str, Any]:
     upcoming_reminders: list[dict[str, Any]] = []
     if _weaviate_enabled():
         try:
-            upcoming_reminders = asyncio.get_event_loop().run_until_complete(
-                _weaviate_query_upcoming_reminders(start_ts=now_ts, end_ts=now_ts + 24 * 3600, limit=50)
+            upcoming_reminders = await _weaviate_query_upcoming_reminders(
+                start_ts=now_ts,
+                end_ts=now_ts + 24 * 3600,
+                limit=50,
             )
         except Exception:
             upcoming_reminders = []
@@ -1509,19 +1511,19 @@ def post_agent_status(agent_id: str, payload: dict[str, Any] = Body(...)) -> dic
 
 
 @app.get("/daily-brief")
-def daily_brief() -> dict[str, Any]:
+async def daily_brief() -> dict[str, Any]:
     agents = _agents_snapshot()
     if "daily-brief" not in agents:
         raise HTTPException(status_code=500, detail="daily_brief_agent_missing")
-    return {"ok": True, "brief": _render_daily_brief(DEFAULT_USER_ID)}
+    return {"ok": True, "brief": await _render_daily_brief(DEFAULT_USER_ID)}
 
 
 @app.get("/reminders")
-def list_reminders(status: str = "all", limit: int = 50, offset: int = 0, order: str = "desc") -> dict[str, Any]:
+async def list_reminders(status: str = "all", limit: int = 50, offset: int = 0, order: str = "desc") -> dict[str, Any]:
     # Cross-device consistency: when Weaviate is enabled, prefer it as the authoritative read path.
     if _weaviate_enabled():
         try:
-            items = asyncio.get_event_loop().run_until_complete(_weaviate_query_reminders(status=status, limit=limit))
+            items = await _weaviate_query_reminders(status=status, limit=limit)
             # Map Weaviate items into the same shape as SQLite reminders.
             out: list[dict[str, Any]] = []
             for it in items:
@@ -1551,14 +1553,12 @@ def list_reminders(status: str = "all", limit: int = 50, offset: int = 0, order:
 
 
 @app.get("/reminders/upcoming")
-def upcoming_reminders(window_hours: int = 48, time_field: str = "notify_at", limit: int = 50) -> dict[str, Any]:
+async def upcoming_reminders(window_hours: int = 48, time_field: str = "notify_at", limit: int = 50) -> dict[str, Any]:
     now_ts = int(time.time())
     end_ts = now_ts + max(1, int(window_hours or 48)) * 3600
     if _weaviate_enabled() and str(time_field or "").strip().lower() == "notify_at":
         try:
-            items = asyncio.get_event_loop().run_until_complete(
-                _weaviate_query_upcoming_reminders(start_ts=now_ts, end_ts=end_ts, limit=limit)
-            )
+            items = await _weaviate_query_upcoming_reminders(start_ts=now_ts, end_ts=end_ts, limit=limit)
             out: list[dict[str, Any]] = []
             for it in items:
                 title = str(it.get("title") or "Reminder").strip() or "Reminder"
