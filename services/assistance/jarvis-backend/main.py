@@ -3429,7 +3429,7 @@ async def ws_live(ws: WebSocket) -> None:
             raise RuntimeError("Missing required env var: API_KEY (or GEMINI_API_KEY)")
         client = genai.Client(api_key=api_key)
         config = {
-            "response_modalities": ["AUDIO"],
+            "response_modalities": ["AUDIO", "TEXT"],
             "input_audio_transcription": {},
             "output_audio_transcription": {},
             "tools": [
