@@ -17,6 +17,41 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: backend
+            image: jarvis-backend
+            context: ./services/assistance/jarvis-backend
+            file: ./services/assistance/jarvis-backend/Dockerfile
+            build_args: ""
+          - name: frontend
+            image: jarvis-frontend
+            context: ./services/assistance/jarvis-frontend
+            file: ./services/assistance/jarvis-frontend/Dockerfile.frontend
+            build_args: |
+              VITE_BASE_PATH=/jarvis/
+          - name: web-fetcher
+            image: web-fetcher
+            context: ./services/assistance/web-fetcher
+            file: ./services/assistance/web-fetcher/Dockerfile
+            build_args: ""
+          - name: mcp-bundle
+            image: mcp-bundle
+            context: ./services/assistance/mcp-bundle
+            file: ./services/assistance/mcp-bundle/Dockerfile
+            build_args: ""
+          - name: mcp-image-pipeline
+            image: mcp-image-pipeline
+            context: ./services/assistance/mcp-image-pipeline
+            file: ./services/assistance/mcp-image-pipeline/Dockerfile
+            build_args: ""
+          - name: deep-research-worker
+            image: deep-research-worker
+            context: ./services/assistance/deep-research-worker
+            file: ./services/assistance/deep-research-worker/Dockerfile
+            build_args: ""
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,104 +66,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker meta (backend)
-        id: meta_backend
+      - name: Docker meta
+        id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.IMAGE_PREFIX }}/jarvis-backend
+          images: ${{ env.IMAGE_PREFIX }}/${{ matrix.image }}
           tags: |
             type=ref,event=branch
             type=sha,format=short,prefix=sha-
 
-      - name: Build and push (backend)
+      - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ./services/assistance/jarvis-backend
-          file: ./services/assistance/jarvis-backend/Dockerfile
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
           push: true
-          tags: ${{ steps.meta_backend.outputs.tags }}
-          labels: ${{ steps.meta_backend.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Docker meta (frontend)
-        id: meta_frontend
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE_PREFIX }}/jarvis-frontend
-          tags: |
-            type=ref,event=branch
-            type=sha,format=short,prefix=sha-
-
-      - name: Build and push (frontend)
-        uses: docker/build-push-action@v6
-        with:
-          context: ./services/assistance/jarvis-frontend
-          file: ./services/assistance/jarvis-frontend/Dockerfile.frontend
-          push: true
-          tags: ${{ steps.meta_frontend.outputs.tags }}
-          labels: ${{ steps.meta_frontend.outputs.labels }}
-          build-args: |
-            VITE_BASE_PATH=/jarvis/
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Docker meta (web-fetcher)
-        id: meta_web_fetcher
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE_PREFIX }}/web-fetcher
-          tags: |
-            type=ref,event=branch
-            type=sha,format=short,prefix=sha-
-
-      - name: Build and push (web-fetcher)
-        uses: docker/build-push-action@v6
-        with:
-          context: ./services/assistance/web-fetcher
-          file: ./services/assistance/web-fetcher/Dockerfile
-          push: true
-          tags: ${{ steps.meta_web_fetcher.outputs.tags }}
-          labels: ${{ steps.meta_web_fetcher.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Docker meta (mcp-bundle)
-        id: meta_mcp_bundle
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE_PREFIX }}/mcp-bundle
-          tags: |
-            type=ref,event=branch
-            type=sha,format=short,prefix=sha-
-
-      - name: Build and push (mcp-bundle)
-        uses: docker/build-push-action@v6
-        with:
-          context: ./services/assistance/mcp-bundle
-          file: ./services/assistance/mcp-bundle/Dockerfile
-          push: true
-          tags: ${{ steps.meta_mcp_bundle.outputs.tags }}
-          labels: ${{ steps.meta_mcp_bundle.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Docker meta (mcp-image-pipeline)
-        id: meta_mcp_image_pipeline
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE_PREFIX }}/mcp-image-pipeline
-          tags: |
-            type=ref,event=branch
-            type=sha,format=short,prefix=sha-
-
-      - name: Build and push (mcp-image-pipeline)
-        uses: docker/build-push-action@v6
-        with:
-          context: ./services/assistance/mcp-image-pipeline
-          file: ./services/assistance/mcp-image-pipeline/Dockerfile
-          push: true
-          tags: ${{ steps.meta_mcp_image_pipeline.outputs.tags }}
-          labels: ${{ steps.meta_mcp_image_pipeline.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: ${{ matrix.build_args }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
