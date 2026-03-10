@@ -8,6 +8,9 @@
 
 This document defines how Jarvis stores, retrieves, and operates on user information.
 
+Ground truth spec:
+- `docs/WEAVIATE.md`
+
 ## Storage model (Weaviate + local scheduler)
 
 ### Authoritative memory

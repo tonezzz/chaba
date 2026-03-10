@@ -30,6 +30,9 @@ The `/services/assistance/` tree is the source-of-truth for all *Assistance* app
 - `jarvis-frontend/ARCHITECTURE.md`
 - `trip/ARCHITECTURE.md`
 - `mcp-servers/ARCHITECTURE.md`
+- Ground truth specs:
+  - `docs/IMAGEN.md`
+  - `docs/WEAVIATE.md`
 
 ## Memory (current direction)
 - Authoritative store: Weaviate (internal-only container in the `idc1-assistance` stack)

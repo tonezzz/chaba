@@ -15,11 +15,13 @@ from pathlib import Path
 import httpx
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Body
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 
 from dotenv import load_dotenv
 
 from google import genai
 from google.genai import types
+from pydantic import BaseModel, Field
 
 
 def _require_env(name: str) -> str:
@@ -32,6 +34,8 @@ def _require_env(name: str) -> str:
 load_dotenv()
 
 MODEL = os.getenv("GEMINI_LIVE_MODEL", "gemini-2.5-flash-native-audio-preview-12-2025")
+
+INSTANCE_ID = str(os.getenv("JARVIS_INSTANCE_ID") or "").strip() or f"jarvis_{uuid.uuid4().hex[:10]}"
 
 logger = logging.getLogger("jarvis-backend")
 logging.basicConfig(level=logging.INFO)
@@ -47,6 +51,10 @@ AIM_MCP_BASE_URL = str(os.getenv("AIM_MCP_BASE_URL") or "").strip().rstrip("/")
 
 WEAVIATE_URL = str(os.getenv("WEAVIATE_URL") or "").strip().rstrip("/")
 GEMINI_EMBEDDING_MODEL = str(os.getenv("GEMINI_EMBEDDING_MODEL") or "text-embedding-004").strip() or "text-embedding-004"
+
+IMAGEN_MODEL_DEFAULT = str(os.getenv("JARVIS_IMAGEN_MODEL") or "gemini-3-pro-image-preview").strip() or "gemini-3-pro-image-preview"
+IMAGEN_ALLOWED_MODELS = [m.strip() for m in str(os.getenv("JARVIS_IMAGEN_ALLOWED_MODELS") or IMAGEN_MODEL_DEFAULT).split(",") if m.strip()]
+IMAGEN_ASSETS_DIR = str(os.getenv("JARVIS_IMAGEN_ASSETS_DIR") or "/app/imagen_assets").strip() or "/app/imagen_assets"
 
 
 SESSION_DB_PATH = os.getenv("JARVIS_SESSION_DB", "/app/jarvis_sessions.sqlite")
@@ -68,6 +76,148 @@ _agent_defs: dict[str, dict[str, Any]] = {}
 _agent_triggers: dict[str, list[str]] = {}
 
 _weaviate_schema_ready: bool = False
+
+
+class ImagenGenerateRequest(BaseModel):
+    prompt: str = Field(min_length=1, max_length=8000)
+    model: Optional[str] = None
+    aspect_ratio: Optional[str] = None
+    image_size: Optional[str] = None
+    return_data_url: bool = True
+
+
+class ImagenGenerateResponse(BaseModel):
+    asset_id: str
+    model: str
+    mime_type: str
+    sha256: str
+    data_url: Optional[str] = None
+
+
+def _imagen_allowed_model(model: Optional[str]) -> str:
+    m = (str(model or "").strip() or IMAGEN_MODEL_DEFAULT).strip()
+    if m not in IMAGEN_ALLOWED_MODELS:
+        raise HTTPException(status_code=400, detail={"imagen_model_not_allowed": m, "allowed": IMAGEN_ALLOWED_MODELS})
+    return m
+
+
+def _extract_inline_image(res: Any) -> tuple[bytes, str]:
+    candidates = getattr(res, "candidates", None) or []
+    cand0 = candidates[0] if isinstance(candidates, list) and candidates else None
+    content = getattr(cand0, "content", None) if cand0 is not None else None
+    parts = getattr(content, "parts", None) if content is not None else None
+    for part in parts or []:
+        inline_data = getattr(part, "inline_data", None) or getattr(part, "inlineData", None)
+        if not inline_data:
+            continue
+        mime_type = getattr(inline_data, "mime_type", None) or getattr(inline_data, "mimeType", None) or "image/png"
+        data = getattr(inline_data, "data", None)
+        if isinstance(data, (bytes, bytearray)):
+            return (bytes(data), str(mime_type))
+        if isinstance(data, str) and data:
+            try:
+                return (base64.b64decode(data), str(mime_type))
+            except Exception:
+                return (data.encode("utf-8"), str(mime_type))
+        try:
+            as_bytes = bytes(data)
+            if as_bytes:
+                return (as_bytes, str(mime_type))
+        except Exception:
+            pass
+    raise HTTPException(status_code=502, detail="imagen_no_inline_image")
+
+
+def _ensure_imagen_assets_dir() -> None:
+    os.makedirs(IMAGEN_ASSETS_DIR, exist_ok=True)
+
+
+def _asset_paths(asset_id: str) -> tuple[str, str]:
+    safe_id = re.sub(r"[^a-zA-Z0-9_\-]", "_", str(asset_id))
+    blob_path = os.path.join(IMAGEN_ASSETS_DIR, f"{safe_id}.bin")
+    meta_path = os.path.join(IMAGEN_ASSETS_DIR, f"{safe_id}.json")
+    return blob_path, meta_path
+
+
+@app.post("/imagen/generate", response_model=ImagenGenerateResponse)
+async def imagen_generate(req: ImagenGenerateRequest) -> ImagenGenerateResponse:
+    api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
+    if not api_key:
+        raise HTTPException(status_code=500, detail="missing_api_key")
+    model = _imagen_allowed_model(req.model)
+
+    _ensure_imagen_assets_dir()
+    client = genai.Client(api_key=api_key)
+    cfg: dict[str, Any] = {"imageConfig": {}}
+    if req.aspect_ratio:
+        cfg["imageConfig"]["aspectRatio"] = str(req.aspect_ratio)
+    if req.image_size:
+        cfg["imageConfig"]["imageSize"] = str(req.image_size)
+    if not cfg["imageConfig"]:
+        cfg.pop("imageConfig", None)
+
+    try:
+        res = await client.aio.models.generate_content(model=model, contents=req.prompt, config=cfg or None)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail={"imagen_generate_failed": str(e)})
+
+    img_bytes, mime_type = _extract_inline_image(res)
+    import hashlib
+
+    digest = hashlib.sha256(img_bytes).hexdigest()
+    asset_id = f"img_{uuid.uuid4().hex[:24]}"
+    blob_path, meta_path = _asset_paths(asset_id)
+    with open(blob_path, "wb") as f:
+        f.write(img_bytes)
+    meta = {
+        "asset_id": asset_id,
+        "model": model,
+        "mime_type": mime_type,
+        "sha256": digest,
+        "prompt": req.prompt,
+        "aspect_ratio": req.aspect_ratio,
+        "image_size": req.image_size,
+        "created_at": int(time.time()),
+    }
+    with open(meta_path, "w", encoding="utf-8") as f:
+        json.dump(meta, f, ensure_ascii=False)
+
+    data_url = None
+    if req.return_data_url:
+        data_url = f"data:{mime_type};base64,{base64.b64encode(img_bytes).decode('ascii')}"
+    return ImagenGenerateResponse(asset_id=asset_id, model=model, mime_type=mime_type, sha256=digest, data_url=data_url)
+
+
+@app.get("/imagen/assets/{asset_id}/blob")
+async def imagen_asset_blob(asset_id: str) -> Response:
+    blob_path, _ = _asset_paths(asset_id)
+    if not os.path.exists(blob_path):
+        raise HTTPException(status_code=404, detail="asset_not_found")
+    data = Path(blob_path).read_bytes()
+    _, meta_path = _asset_paths(asset_id)
+    mime_type = "application/octet-stream"
+    try:
+        if os.path.exists(meta_path):
+            meta = json.loads(Path(meta_path).read_text(encoding="utf-8"))
+            if isinstance(meta, dict) and meta.get("mime_type"):
+                mime_type = str(meta.get("mime_type"))
+    except Exception:
+        pass
+    return Response(content=data, media_type=mime_type)
+
+
+@app.get("/imagen/assets/{asset_id}")
+async def imagen_asset_meta(asset_id: str) -> dict[str, Any]:
+    _, meta_path = _asset_paths(asset_id)
+    if not os.path.exists(meta_path):
+        raise HTTPException(status_code=404, detail="asset_not_found")
+    try:
+        meta = json.loads(Path(meta_path).read_text(encoding="utf-8"))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={"asset_meta_read_failed": str(e)})
+    if not isinstance(meta, dict):
+        raise HTTPException(status_code=500, detail="asset_meta_invalid")
+    return meta
 
 
 def _init_session_db() -> None:
@@ -337,6 +487,69 @@ async def _weaviate_query_upcoming_reminders(*, start_ts: int, end_ts: int, limi
         .replace("%END%", str(float(int(end_ts))))
         .replace("%LIMIT%", str(int(lim)))
     }
+    res = await _weaviate_request("POST", "/v1/graphql", query)
+    items = (
+        res.get("data", {})
+        .get("Get", {})
+        .get("JarvisMemoryItem", [])
+        if isinstance(res, dict)
+        else []
+    )
+    out: list[dict[str, Any]] = []
+    if isinstance(items, list):
+        for it in items:
+            if isinstance(it, dict):
+                out.append(it)
+    return out
+
+
+async def _weaviate_query_reminders(*, status: str, limit: int) -> list[dict[str, Any]]:
+    await _weaviate_ensure_schema()
+    lim = max(1, min(int(limit or 50), 500))
+    status_norm = str(status or "all").strip().lower() or "all"
+    if status_norm not in ("all", "pending", "fired"):
+        raise HTTPException(status_code=400, detail="invalid_status")
+
+    where_status = "" if status_norm == "all" else f"{{ path: [\\\"status\\\"], operator: Equal, valueText: \\\"{status_norm}\\\" }}"
+    operands = "\n".join(
+        [
+            '{ path: ["kind"], operator: Equal, valueText: "reminder" }',
+            where_status,
+        ]
+    ).strip()
+    # Remove any empty lines if status is all.
+    operands = "\n".join([l for l in operands.splitlines() if l.strip()])
+
+    query = {
+        "query": f"""
+        {{
+          Get {{
+            JarvisMemoryItem(
+              where: {{
+                operator: And
+                operands: [
+{operands}
+                ]
+              }}
+              limit: {int(lim)}
+              sort: [{{ path: [\"updated_at\"], order: desc }}]
+            ) {{
+              external_key
+              title
+              body
+              status
+              due_at
+              notify_at
+              timezone
+              created_at
+              updated_at
+              source
+            }}
+          }}
+        }}
+        """
+    }
+
     res = await _weaviate_request("POST", "/v1/graphql", query)
     items = (
         res.get("data", {})
@@ -685,13 +898,22 @@ def _render_daily_brief(user_id: str) -> dict[str, Any]:
             status_by_agent[aid] = s
 
     now_ts = int(time.time())
-    upcoming_reminders = _list_upcoming_pending_reminders(
-        user_id=user_id,
-        start_ts=now_ts,
-        end_ts=now_ts + 24 * 3600,
-        time_field="notify_at",
-        limit=50,
-    )
+    upcoming_reminders: list[dict[str, Any]] = []
+    if _weaviate_enabled():
+        try:
+            upcoming_reminders = asyncio.get_event_loop().run_until_complete(
+                _weaviate_query_upcoming_reminders(start_ts=now_ts, end_ts=now_ts + 24 * 3600, limit=50)
+            )
+        except Exception:
+            upcoming_reminders = []
+    if not upcoming_reminders:
+        upcoming_reminders = _list_upcoming_pending_reminders(
+            user_id=user_id,
+            start_ts=now_ts,
+            end_ts=now_ts + 24 * 3600,
+            time_field="notify_at",
+            limit=50,
+        )
 
     lines: list[str] = []
     lines.append(f"Daily Brief ({datetime.now(tz=_get_user_timezone(user_id)).isoformat()})")
@@ -1256,7 +1478,7 @@ app.add_middleware(
 
 @app.get("/health")
 def health() -> dict[str, Any]:
-    return {"ok": True, "service": "jarvis-backend"}
+    return {"ok": True, "service": "jarvis-backend", "instance_id": INSTANCE_ID, "weaviate_enabled": _weaviate_enabled()}
 
 
 @app.get("/agents")
@@ -1296,14 +1518,67 @@ def daily_brief() -> dict[str, Any]:
 
 @app.get("/reminders")
 def list_reminders(status: str = "all", limit: int = 50, offset: int = 0, order: str = "desc") -> dict[str, Any]:
+    # Cross-device consistency: when Weaviate is enabled, prefer it as the authoritative read path.
+    if _weaviate_enabled():
+        try:
+            items = asyncio.get_event_loop().run_until_complete(_weaviate_query_reminders(status=status, limit=limit))
+            # Map Weaviate items into the same shape as SQLite reminders.
+            out: list[dict[str, Any]] = []
+            for it in items:
+                title = str(it.get("title") or "Reminder").strip() or "Reminder"
+                tz_name = str(it.get("timezone") or DEFAULT_TIMEZONE).strip() or DEFAULT_TIMEZONE
+                out.append(
+                    {
+                        "reminder_id": _local_reminder_id_from_external_key(str(it.get("external_key") or "")),
+                        "title": title,
+                        "due_at": int(float(it["due_at"])) if it.get("due_at") is not None else None,
+                        "timezone": tz_name,
+                        "schedule_type": "memory",
+                        "notify_at": int(float(it["notify_at"])) if it.get("notify_at") is not None else None,
+                        "status": str(it.get("status") or "").strip() or "pending",
+                        "source_text": str(it.get("body") or ""),
+                        "aim_entity_name": str(it.get("external_key") or ""),
+                        "created_at": int(float(it["created_at"])) if it.get("created_at") is not None else None,
+                        "updated_at": int(float(it["updated_at"])) if it.get("updated_at") is not None else None,
+                    }
+                )
+            return {"ok": True, "source": "weaviate", "instance_id": INSTANCE_ID, "reminders": out}
+        except Exception as e:
+            return {"ok": True, "source": "sqlite_fallback", "instance_id": INSTANCE_ID, "error": str(e), "reminders": _list_reminders(user_id=DEFAULT_USER_ID, status=status, limit=limit, offset=offset, order=order)}
+
     reminders = _list_reminders(user_id=DEFAULT_USER_ID, status=status, limit=limit, offset=offset, order=order)
-    return {"ok": True, "reminders": reminders}
+    return {"ok": True, "source": "sqlite", "instance_id": INSTANCE_ID, "reminders": reminders}
 
 
 @app.get("/reminders/upcoming")
 def upcoming_reminders(window_hours: int = 48, time_field: str = "notify_at", limit: int = 50) -> dict[str, Any]:
     now_ts = int(time.time())
     end_ts = now_ts + max(1, int(window_hours or 48)) * 3600
+    if _weaviate_enabled() and str(time_field or "").strip().lower() == "notify_at":
+        try:
+            items = asyncio.get_event_loop().run_until_complete(
+                _weaviate_query_upcoming_reminders(start_ts=now_ts, end_ts=end_ts, limit=limit)
+            )
+            out: list[dict[str, Any]] = []
+            for it in items:
+                title = str(it.get("title") or "Reminder").strip() or "Reminder"
+                tz_name = str(it.get("timezone") or DEFAULT_TIMEZONE).strip() or DEFAULT_TIMEZONE
+                out.append(
+                    {
+                        "reminder_id": _local_reminder_id_from_external_key(str(it.get("external_key") or "")),
+                        "title": title,
+                        "due_at": int(float(it["due_at"])) if it.get("due_at") is not None else None,
+                        "timezone": tz_name,
+                        "schedule_type": "memory",
+                        "notify_at": int(float(it["notify_at"])) if it.get("notify_at") is not None else None,
+                        "source_text": str(it.get("body") or ""),
+                        "aim_entity_name": str(it.get("external_key") or ""),
+                    }
+                )
+            return {"ok": True, "source": "weaviate", "instance_id": INSTANCE_ID, "now": now_ts, "end": end_ts, "time_field": time_field, "reminders": out}
+        except Exception as e:
+            pass
+
     reminders = _list_upcoming_pending_reminders(
         user_id=DEFAULT_USER_ID,
         start_ts=now_ts,
@@ -1311,7 +1586,7 @@ def upcoming_reminders(window_hours: int = 48, time_field: str = "notify_at", li
         time_field=time_field,
         limit=limit,
     )
-    return {"ok": True, "now": now_ts, "end": end_ts, "time_field": time_field, "reminders": reminders}
+    return {"ok": True, "source": "sqlite", "instance_id": INSTANCE_ID, "now": now_ts, "end": end_ts, "time_field": time_field, "reminders": reminders}
 
 
 @app.get("/debug/agents")
@@ -2271,7 +2546,7 @@ async def ws_live(ws: WebSocket) -> None:
 
         logger.info("gemini_live_connect model=%s", MODEL)
         async with client.aio.live.connect(model=MODEL, config=config) as session:
-            await ws.send_json({"type": "state", "state": "connected"})
+            await ws.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
 
             to_gemini = asyncio.create_task(_ws_to_gemini_loop(ws, session))
             to_ws = asyncio.create_task(_gemini_to_ws_loop(ws, session))
