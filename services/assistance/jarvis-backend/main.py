@@ -63,6 +63,13 @@ IMAGEN_ALLOWED_MODELS = [
 ]
 IMAGEN_ASSETS_DIR = str(os.getenv("JARVIS_IMAGEN_ASSETS_DIR") or "/app/imagen_assets").strip() or "/app/imagen_assets"
 
+IMAGE_MODEL_DEFAULT = str(os.getenv("JARVIS_IMAGE_MODEL") or "gemini-3.1-flash-image-preview").strip() or "gemini-3.1-flash-image-preview"
+IMAGE_ALLOWED_MODELS = [
+    m.strip()
+    for m in str(os.getenv("JARVIS_IMAGE_ALLOWED_MODELS") or "gemini-3.1-flash-image-preview").split(",")
+    if m.strip()
+]
+
 
 SESSION_DB_PATH = os.getenv("JARVIS_SESSION_DB", "/app/jarvis_sessions.sqlite")
 
@@ -103,10 +110,33 @@ class ImagenGenerateResponse(BaseModel):
     data_url: Optional[str] = None
 
 
+class ImageGenerateRequest(BaseModel):
+    prompt: str = Field(min_length=1, max_length=8000)
+    model: Optional[str] = None
+    aspect_ratio: Optional[str] = None
+    image_size: Optional[str] = None
+    return_data_url: bool = True
+
+
+class ImageGenerateResponse(BaseModel):
+    asset_id: str
+    model: str
+    mime_type: str
+    sha256: str
+    data_url: Optional[str] = None
+
+
 def _imagen_allowed_model(model: Optional[str]) -> str:
     m = (str(model or "").strip() or IMAGEN_MODEL_DEFAULT).strip()
     if m not in IMAGEN_ALLOWED_MODELS:
         raise HTTPException(status_code=400, detail={"imagen_model_not_allowed": m, "allowed": IMAGEN_ALLOWED_MODELS})
+    return m
+
+
+def _image_allowed_model(model: Optional[str]) -> str:
+    m = (str(model or "").strip() or IMAGE_MODEL_DEFAULT).strip()
+    if m not in IMAGE_ALLOWED_MODELS:
+        raise HTTPException(status_code=400, detail={"image_model_not_allowed": m, "allowed": IMAGE_ALLOWED_MODELS})
     return m
 
 
@@ -236,6 +266,53 @@ async def imagen_generate(req: ImagenGenerateRequest) -> ImagenGenerateResponse:
     return ImagenGenerateResponse(asset_id=asset_id, model=model, mime_type=mime_type, sha256=digest, data_url=data_url)
 
 
+@app.post("/image/generate", response_model=ImageGenerateResponse)
+async def image_generate(req: ImageGenerateRequest) -> ImageGenerateResponse:
+    api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
+    if not api_key:
+        raise HTTPException(status_code=500, detail="missing_api_key")
+    model = _image_allowed_model(req.model)
+
+    _ensure_imagen_assets_dir()
+    client = genai.Client(api_key=api_key)
+    try:
+        cfg2: dict[str, Any] = {"imageConfig": {}}
+        if req.aspect_ratio:
+            cfg2["imageConfig"]["aspectRatio"] = str(req.aspect_ratio)
+        if req.image_size:
+            cfg2["imageConfig"]["imageSize"] = str(req.image_size)
+        if not cfg2["imageConfig"]:
+            cfg2.pop("imageConfig", None)
+        res = await client.aio.models.generate_content(model=model, contents=req.prompt, config=cfg2 or None)
+        img_bytes, mime_type = _extract_inline_image(res)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail={"image_generate_failed": str(e)})
+    import hashlib
+
+    digest = hashlib.sha256(img_bytes).hexdigest()
+    asset_id = f"gimg_{uuid.uuid4().hex[:24]}"
+    blob_path, meta_path = _asset_paths(asset_id)
+    with open(blob_path, "wb") as f:
+        f.write(img_bytes)
+    meta = {
+        "asset_id": asset_id,
+        "model": model,
+        "mime_type": mime_type,
+        "sha256": digest,
+        "prompt": req.prompt,
+        "aspect_ratio": req.aspect_ratio,
+        "image_size": req.image_size,
+        "created_at": int(time.time()),
+    }
+    with open(meta_path, "w", encoding="utf-8") as f:
+        json.dump(meta, f, ensure_ascii=False)
+
+    data_url = None
+    if req.return_data_url:
+        data_url = f"data:{mime_type};base64,{base64.b64encode(img_bytes).decode('ascii')}"
+    return ImageGenerateResponse(asset_id=asset_id, model=model, mime_type=mime_type, sha256=digest, data_url=data_url)
+
+
 @app.get("/imagen/assets/{asset_id}/blob")
 async def imagen_asset_blob(asset_id: str) -> Response:
     blob_path, _ = _asset_paths(asset_id)
@@ -254,6 +331,11 @@ async def imagen_asset_blob(asset_id: str) -> Response:
     return Response(content=data, media_type=mime_type)
 
 
+@app.get("/image/assets/{asset_id}/blob")
+async def image_asset_blob(asset_id: str) -> Response:
+    return await imagen_asset_blob(asset_id)
+
+
 @app.get("/imagen/assets/{asset_id}")
 async def imagen_asset_meta(asset_id: str) -> dict[str, Any]:
     _, meta_path = _asset_paths(asset_id)
@@ -266,6 +348,11 @@ async def imagen_asset_meta(asset_id: str) -> dict[str, Any]:
     if not isinstance(meta, dict):
         raise HTTPException(status_code=500, detail="asset_meta_invalid")
     return meta
+
+
+@app.get("/image/assets/{asset_id}")
+async def image_asset_meta(asset_id: str) -> dict[str, Any]:
+    return await imagen_asset_meta(asset_id)
 
 
 def _init_session_db() -> None:
