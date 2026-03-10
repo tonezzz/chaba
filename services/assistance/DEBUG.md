@@ -26,6 +26,11 @@ Note: Weaviate readiness returns HTTP 200 with an empty body; container healthch
 ### Deep research worker (optional)
 - `GET http://deep-research-worker:8030/health`
 
+Common failure mode:
+- `sqlite3.OperationalError: unable to open database file`
+  - The worker stores job state in SQLite at `DEEP_RESEARCH_DB` (stack default: `/data/deep_research.sqlite`).
+  - Ensure the `/data` mount exists and is writable by the container's non-root user.
+
 ## Common issues
 
 ### WebSocket connects but no responses
@@ -63,6 +68,9 @@ Look at logs for these containers first:
 - `jarvis-backend`
 - `jarvis-frontend` (reverse proxy errors if any)
 - `weaviate`
+
+If you are debugging MCP image pipeline routing, also check:
+- `mcp-image-pipeline`
 
 ## Service-specific runbooks
 

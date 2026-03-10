@@ -74,10 +74,24 @@ Reminder tools (Gemini Live function calls):
 - `reminders_list`, `reminders_upcoming`, `reminders_done` are implemented in the Jarvis backend (not in 1MCP).
 - If `JARVIS_TOOL_ALLOWLIST` is set, ensure it includes these names or the model will not be able to call them.
 
+Time tool (Gemini Live function call):
+- `time_now` returns authoritative server time in UTC and the user timezone (see `local_iso`, `utc_iso`, `unix_ts`).
+
 ## Deep research
 
 The stack includes an optional `deep-research-worker` service used by the `deep-research` agent/handler in `jarvis-backend/main.py`.
 The backend calls the worker over HTTP (configured by `DEEP_RESEARCH_WORKER_BASE_URL`).
+
+Persistence:
+- The worker stores job state in SQLite at `DEEP_RESEARCH_DB` (stack default: `/data/deep_research.sqlite`).
+- The `/data` mount must be writable by the worker process (runs as a non-root user in the container).
+
+## MCP image pipeline
+
+The stack runs `mcp-image-pipeline` (1MCP) as a separate HTTP MCP gateway.
+
+Healthcheck note:
+- Container healthchecks should not assume `curl` exists; use `wget` or a similar minimal tool.
 
 ## Deployment
 - Stack configuration lives under:
