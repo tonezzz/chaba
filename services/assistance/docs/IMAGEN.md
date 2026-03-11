@@ -163,6 +163,18 @@ Example retrieval queries:
 - **Local asset storage**
   - `JARVIS_IMAGEN_ASSETS_DIR` (default `/app/imagen_assets`)
 
+Related: MCP image pipeline (separate service)
+
+The `idc1-assistance` stack also includes `mcp-image-pipeline`, which exposes image generation tools via a 1MCP HTTP gateway.
+
+Runtime configuration (stack / compose):
+- `IMAGE_PIPELINE_MODEL`
+  - Default model used by `mcp-image-pipeline` when tool callers omit `model`.
+- `IMAGE_PIPELINE_ALLOWED_MODELS`
+  - Comma-separated allowlist. The tool call will fail with `model_not_allowed` if the requested model is not in this list.
+- `IMAGE_PIPELINE_ASSETS_DIR`
+  - Blob storage directory for generated images (should be volume-mounted for persistence).
+
 ## Deployment note (local disk storage)
 - If `JARVIS_IMAGEN_ASSETS_DIR` is inside a container filesystem and not backed by a volume mount, assets will be lost on container rebuild/redeploy.
 - Production should mount a persistent volume to the assets directory.
@@ -177,5 +189,22 @@ Example retrieval queries:
 - **HTTP 429 / RESOURCE_EXHAUSTED** from upstream usually indicates quota/billing limits for the selected model.
   - Prefer switching `JARVIS_IMAGEN_MODEL` to an Imagen model with available quota (e.g. `imagen-4.0-generate-001`).
   - Ensure the selected model is included in `JARVIS_IMAGEN_ALLOWED_MODELS`.
+
+### MCP image pipeline: model selection trial-and-error
+
+Common errors you may see when calling `image-pipeline_1mcp_image_generate` (via 1MCP):
+
+- `model_not_allowed`
+  - Meaning: the `model` argument (or the default `IMAGE_PIPELINE_MODEL`) is not present in `IMAGE_PIPELINE_ALLOWED_MODELS`.
+  - Fix: update `IMAGE_PIPELINE_ALLOWED_MODELS` in the stack and redeploy `mcp-image-pipeline`.
+
+- `RESOURCE_EXHAUSTED` / quota exceeded (HTTP 429)
+  - Meaning: the API key/project has no quota for the upstream model.
+  - Note: errors may reference a slightly different model name than you requested (e.g. requesting `gemini-3.1-flash-image-preview` can return quota errors that mention `gemini-3.1-flash-image`). Treat this as a quota issue, not a local allowlist issue.
+  - Fix: use a key/project with quota enabled for the relevant image model(s), or switch to a different allowed model.
+
+- Imagen model not supported by the JS SDK
+  - If the server is configured to use an `imagen-*` model but the JS SDK does not expose `generateImages`, generation will fail with `imagen_generate_images_not_supported_in_js_sdk`.
+  - Fix: either use a Gemini-native image model path (generateContent + inline image extraction) or update dependencies to a version that supports the Imagen API surface.
 - **HTTP 404 NOT_FOUND** mentioning “not supported for generateContent” typically indicates the backend is calling `generate_content` against an Imagen model.
   - Ensure the backend is using the Imagen-specific API (`generate_images` / `:predict`) for `imagen-*` models.
