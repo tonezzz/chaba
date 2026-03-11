@@ -16,6 +16,8 @@ This is a practical runbook for debugging the `idc1-assistance` stack.
 - `POST /reminders/{reminder_id}/later?days=1`
 - `GET /reminders/{reminder_id}/reschedule/suggest`
 - `POST /reminders/{reminder_id}/reschedule?notify_at=<unix_ts>`
+- `GET /agents` (ensure `follow_news` is discovered)
+- `GET /daily-brief` (ensure `follow_news` status payload shows up after refresh)
 
 ### Jarvis Frontend
 - Confirm the SPA loads
@@ -54,6 +56,13 @@ Common failure mode:
   - Quota / billing limits (429 RESOURCE_EXHAUSTED)
   - Unsupported model name in `GEMINI_LIVE_MODEL`
 
+### Gemini Live fails mid-session but the UI should stay connected
+- Expected behavior:
+  - The backend should keep `WS /ws/live` open.
+  - The backend should emit a structured error event:
+    - `{ "type": "error", "message": "gemini_session_failed", ... }`
+  - Deterministic sub-agent handlers (e.g. `reminder setup: ...`) should still work.
+
 ### Agent trigger not firing
 - Confirm the agent is loaded:
   - `GET /agents`
@@ -61,6 +70,11 @@ Common failure mode:
   - `GET /debug/agents`
 - Confirm your agent MD includes `trigger_phrases` and that your message contains the phrase.
 - If a sub-agent recently ran, remember the continuation window may route follow-ups without re-triggering.
+
+Quick smoke commands:
+- `follow news refresh`
+- `follow news`
+- `report: <summary_id>`
 
 ### Reminders are missing (tomorrow/next day)
 - Check history vs upcoming:
@@ -70,8 +84,25 @@ Common failure mode:
   - Confirm `notify_at` and timezone logic.
   - Confirm the reminder isn't hidden via `hide_until`:
     - `GET /reminders?status=pending&include_hidden=true`
+  - If logs show `no such column: hide_until`:
+    - Your persisted `JARVIS_SESSION_DB` likely predates the migration.
+    - Redeploy a jarvis-backend image that includes the `reminders` table migration logic.
+    - Confirm the DB mount is writable so the migration can rebuild the table if needed.
   - Confirm the SQLite DB is persisted (volume/bind mount for `JARVIS_SESSION_DB`).
   - If `WEAVIATE_URL` is configured, reminder retrieval prefers Weaviate; confirm Weaviate contains the reminder objects.
+
+### Follow News agent quick usage
+- List focus:
+  - Send: `โฟกัสข่าว`
+- Add/remove focus:
+  - `โฟกัสข่าว เพิ่ม: <คำ/หัวข้อ>`
+  - `โฟกัสข่าว ลบ: <คำ/หัวข้อ>`
+- Refresh summaries:
+  - `ติดตามข่าว รีเฟรช`
+- List stored summaries:
+  - `ติดตามข่าว`
+- Report a specific stored summary:
+  - `รายงานข่าว: <summary_id>`
 
 ### Too many reminders in Today
 - Use `later` (hide until) to temporarily hide an item:

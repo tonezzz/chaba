@@ -25,12 +25,17 @@ The `/services/assistance/` tree is the source-of-truth for all *Assistance* app
 
 Troubleshooting:
 - If the UI disconnects immediately after clicking Initialize, check `jarvis-backend` logs for Gemini Live connection errors (and ensure Portainer actually pulled the latest image digest on redeploy).
+- If Gemini Live fails mid-session, the backend should keep the client WebSocket open and emit an error event (see `services/assistance/DEBUG.md`).
 
 ## Agents
 - Agent definitions live under:
   - `jarvis-backend/agents/*.md`
 - Trigger wiring and handlers live in:
   - `jarvis-backend/main.py`
+
+Notable sub-agents:
+- `reminder-setup`: deterministic reminder creation via chat messages like `reminder setup: ...`
+- `follow_news`: configurable news-follow workflow (focus list, refresh, stored summaries)
 
 Terminology:
 - **Agent**: a conversation-aware routing/orchestration module (trigger phrases, continuation window, status reporting).
@@ -49,6 +54,19 @@ High-level flow:
 3. If dispatched, the backend calls a Python handler in `main.py` (for example, the reminder setup handler).
 4. The handler performs deterministic work (e.g. parse time, write SQLite, write-through to Weaviate) and emits WebSocket events for the UI.
 5. If not dispatched, the backend forwards the message to the main LLM session (Gemini) and may receive tool calls.
+
+### Sub-agent: follow_news (Follow News / ติดตามข่าว)
+
+Purpose:
+- Track user-defined news focus topics across multiple RSS sources, store summaries, and let the user choose which summary to report.
+
+Common commands:
+- `follow news` / `ติดตามข่าว`
+- `follow news refresh` / `ติดตามข่าว รีเฟรช`
+- `focus list` / `โฟกัสข่าว`
+- `focus add: <topic>` / `โฟกัสข่าว เพิ่ม: <หัวข้อ>`
+- `focus remove: <topic>` / `โฟกัสข่าว ลบ: <หัวข้อ>`
+- `report: <summary_id>` / `รายงานข่าว: <summary_id>`
 
 How this is more advanced than a plain backend "skill":
 - **Conversation-aware routing**: supports trigger phrases plus a continuation window so follow-up messages can stay within the same intent.
@@ -85,6 +103,10 @@ Reminder visibility:
 Unscheduled reminders:
 - `notify_at` can be null for "no time set" reminders.
 - These reminders remain `pending` but will not appear in upcoming-notification lists until scheduled.
+
+SQLite schema migration note:
+- If `JARVIS_SESSION_DB` is persisted from older deployments, the backend may need to migrate the `reminders` table to add new columns (e.g. `hide_until`).
+- If you see errors like `no such column: hide_until`, redeploy an image that includes the migration logic and confirm the DB path is writable.
 
 Reminder tools (Gemini Live function calls):
 - `reminders_list`, `reminders_upcoming`, `reminders_done` are implemented in the Jarvis backend (not in 1MCP).

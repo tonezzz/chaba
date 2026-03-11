@@ -1471,6 +1471,257 @@ async def _startup_resync_from_weaviate() -> None:
         logger.warning("weaviate_startup_resync_failed error=%s", e)
 
 
+def _parse_news_follow_command(text: str) -> dict[str, str]:
+    raw = str(text or "").strip()
+    s = " ".join(raw.lower().split())
+    if not s:
+        return {"action": "", "arg": ""}
+
+    # English focus commands
+    if s == "focus list" or s == "list focus":
+        return {"action": "focus_list", "arg": ""}
+    if s.startswith("focus add:") or s.startswith("focus add "):
+        arg = raw.split(":", 1)[1].strip() if ":" in raw else raw.split(" ", 2)[2].strip() if len(raw.split()) >= 3 else ""
+        return {"action": "focus_add", "arg": arg}
+    if s.startswith("focus remove:") or s.startswith("focus remove "):
+        arg = raw.split(":", 1)[1].strip() if ":" in raw else raw.split(" ", 2)[2].strip() if len(raw.split()) >= 3 else ""
+        return {"action": "focus_remove", "arg": arg}
+
+    if s.startswith("โฟกัสข่าว เพิ่ม:") or s.startswith("โฟกัสข่าว เพิ่ม "):
+        arg = raw.split(":", 1)[1].strip() if ":" in raw else raw.split(" ", 2)[2].strip() if len(raw.split()) >= 3 else ""
+        return {"action": "focus_add", "arg": arg}
+    if s.startswith("เพิ่มโฟกัสข่าว:") or s.startswith("เพิ่มโฟกัสข่าว "):
+        arg = raw.split(":", 1)[1].strip() if ":" in raw else raw.split(" ", 1)[1].strip() if len(raw.split()) >= 2 else ""
+        return {"action": "focus_add", "arg": arg}
+
+    if s.startswith("โฟกัสข่าว ลบ:") or s.startswith("โฟกัสข่าว ลบ "):
+        arg = raw.split(":", 1)[1].strip() if ":" in raw else raw.split(" ", 2)[2].strip() if len(raw.split()) >= 3 else ""
+        return {"action": "focus_remove", "arg": arg}
+    if s.startswith("ลบโฟกัสข่าว:") or s.startswith("ลบโฟกัสข่าว "):
+        arg = raw.split(":", 1)[1].strip() if ":" in raw else raw.split(" ", 1)[1].strip() if len(raw.split()) >= 2 else ""
+        return {"action": "focus_remove", "arg": arg}
+
+    if s == "โฟกัสข่าว" or s == "รายการโฟกัสข่าว":
+        return {"action": "focus_list", "arg": ""}
+
+    if s.startswith("รายงานข่าว:") or s.startswith("รายงานข่าว "):
+        arg = raw.split(":", 1)[1].strip() if ":" in raw else raw.split(" ", 1)[1].strip() if len(raw.split()) >= 2 else ""
+        return {"action": "report", "arg": arg}
+
+    if s.startswith("report:") or s.startswith("report "):
+        arg = raw.split(":", 1)[1].strip() if ":" in raw else raw.split(" ", 1)[1].strip() if len(raw.split()) >= 2 else ""
+        return {"action": "report", "arg": arg}
+
+    if "รีเฟรช" in s or "refresh" in s:
+        if "ติดตามข่าว" in s or "follow_news" in s or "follow news" in s or "track news" in s:
+            return {"action": "refresh", "arg": ""}
+
+    if "ติดตามข่าว" in s or "สรุปข่าวติดตาม" in s or "follow_news" in s or "follow news" in s or "news follow" in s or "track news" in s:
+        return {"action": "list", "arg": ""}
+
+    return {"action": "", "arg": ""}
+
+
+def _news_follow_cache_key_focus(user_id: str) -> str:
+    return f"news-follow::{user_id}::focus"
+
+
+def _news_follow_cache_key_summaries(user_id: str) -> str:
+    return f"news-follow::{user_id}::summaries"
+
+
+def _get_news_follow_focus(user_id: str) -> list[str]:
+    cached = _get_news_cache(_news_follow_cache_key_focus(user_id))
+    payload = cached.get("payload") if isinstance(cached, dict) else None
+    focus = payload.get("focus") if isinstance(payload, dict) else None
+    if isinstance(focus, list):
+        out: list[str] = []
+        seen: set[str] = set()
+        for f in focus:
+            t = str(f or "").strip()
+            k = t.lower()
+            if t and k not in seen:
+                seen.add(k)
+                out.append(t)
+        return out
+    return ["Thai Baht", "USD/THB", "gold", "oil", "Iran"]
+
+
+def _set_news_follow_focus(user_id: str, focus: list[str]) -> None:
+    _set_news_cache(_news_follow_cache_key_focus(user_id), {"focus": focus, "updated_at": int(time.time())})
+
+
+def _get_news_follow_summaries(user_id: str) -> list[dict[str, Any]]:
+    cached = _get_news_cache(_news_follow_cache_key_summaries(user_id))
+    payload = cached.get("payload") if isinstance(cached, dict) else None
+    items = payload.get("summaries") if isinstance(payload, dict) else None
+    if isinstance(items, list):
+        out: list[dict[str, Any]] = []
+        for it in items:
+            if isinstance(it, dict):
+                out.append(it)
+        return out
+    return []
+
+
+def _set_news_follow_summaries(user_id: str, summaries: list[dict[str, Any]]) -> None:
+    _set_news_cache(_news_follow_cache_key_summaries(user_id), {"summaries": summaries, "updated_at": int(time.time())})
+
+
+async def _refresh_news_follow_summaries(user_id: str, focus: list[str]) -> dict[str, Any]:
+    feeds = [
+        "https://rss.cnn.com/rss/edition.rss",
+        "https://rss.cnn.com/rss/edition_world.rss",
+        "https://rss.cnn.com/rss/money_latest.rss",
+        "https://feeds.bbci.co.uk/news/world/rss.xml",
+        "https://feeds.bbci.co.uk/news/business/rss.xml",
+    ]
+    all_items: list[dict[str, Any]] = []
+    for url in feeds:
+        xml_text = await _mcp_web_fetch_text(url, max_length=250000)
+        all_items.extend(_parse_rss_items(xml_text))
+
+    seen: set[str] = set()
+    deduped: list[dict[str, Any]] = []
+    for it in all_items:
+        key = str(it.get("link") or "") or str(it.get("title") or "")
+        key = key.strip()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        deduped.append(it)
+
+    focus_norm = [str(f or "").strip() for f in focus if str(f or "").strip()]
+    matched: list[dict[str, Any]] = []
+    for it in deduped:
+        blob = f"{it.get('title','')} {it.get('description','')}"
+        if _topic_match(blob, focus_norm):
+            matched.append(it)
+
+    sources: list[str] = []
+    lines: list[str] = []
+    for it in matched[:20]:
+        title = str(it.get("title") or "").strip()
+        link = str(it.get("link") or "").strip()
+        if link and link not in sources:
+            sources.append(link)
+        if title:
+            if link:
+                lines.append(f"- {title} ({link})")
+            else:
+                lines.append(f"- {title}")
+
+    summary_text = "\n".join(lines).strip()
+    now_ts = int(time.time())
+    summary_id = f"nf_{uuid.uuid4().hex[:12]}"
+    summary_obj = {
+        "summary_id": summary_id,
+        "title": "ติดตามข่าว: สรุปล่าสุด",
+        "focus": focus_norm,
+        "text": summary_text,
+        "sources": sources,
+        "created_at": now_ts,
+    }
+
+    summaries = _get_news_follow_summaries(user_id)
+    summaries = [summary_obj] + [s for s in summaries if isinstance(s, dict) and str(s.get("summary_id") or "") != summary_id]
+    summaries = summaries[:20]
+    _set_news_follow_summaries(user_id, summaries)
+    payload = {"summary": "news-follow refreshed", "focus": focus_norm, "summaries": summaries, "updated_at": now_ts}
+    _upsert_agent_status(user_id, "follow_news", payload)
+    return payload
+
+
+async def _handle_news_follow_trigger(ws: WebSocket, text: str) -> bool:
+    cmd = _parse_news_follow_command(text)
+    action = cmd.get("action") or ""
+    arg = cmd.get("arg") or ""
+
+    s = " ".join(str(text or "").lower().split())
+    is_trigger = action != "" or ("ติดตามข่าว" in s) or ("โฟกัสข่าว" in s) or ("follow_news" in s) or ("follow news" in s) or ("news follow" in s) or ("track news" in s)
+    if not is_trigger:
+        return False
+
+    user_id = DEFAULT_USER_ID
+    focus = _get_news_follow_focus(user_id)
+    summaries = _get_news_follow_summaries(user_id)
+
+    if action == "focus_list":
+        await ws.send_json({"type": "news_follow_focus", "focus": focus})
+        return True
+
+    if action == "focus_add":
+        item = str(arg or "").strip()
+        if not item:
+            await ws.send_json({"type": "news_follow_error", "message": "missing_focus_item"})
+            return True
+        new_focus = focus + [item]
+        _set_news_follow_focus(user_id, new_focus)
+        await ws.send_json({"type": "news_follow_focus_updated", "focus": _get_news_follow_focus(user_id)})
+        return True
+
+    if action == "focus_remove":
+        item = str(arg or "").strip().lower()
+        if not item:
+            await ws.send_json({"type": "news_follow_error", "message": "missing_focus_item"})
+            return True
+        new_focus = [f for f in focus if str(f or "").strip().lower() != item]
+        _set_news_follow_focus(user_id, new_focus)
+        await ws.send_json({"type": "news_follow_focus_updated", "focus": _get_news_follow_focus(user_id)})
+        return True
+
+    if action == "refresh":
+        payload = await _refresh_news_follow_summaries(user_id, focus)
+        await ws.send_json({"type": "news_follow_refreshed", "status": payload})
+        return True
+
+    if action == "report":
+        target = str(arg or "").strip()
+        if not target:
+            await ws.send_json({"type": "news_follow_error", "message": "missing_summary_id"})
+            return True
+        chosen: Optional[dict[str, Any]] = None
+        for it in summaries:
+            if isinstance(it, dict) and str(it.get("summary_id") or "").strip() == target:
+                chosen = it
+                break
+        if not chosen:
+            await ws.send_json({"type": "news_follow_error", "message": "summary_not_found", "summary_id": target})
+            return True
+        await ws.send_json({"type": "news_follow_report", "summary": chosen})
+        return True
+
+    if not summaries:
+        await ws.send_json(
+            {
+                "type": "news_follow",
+                "message": "ยังไม่มีสรุปที่เก็บไว้ พิมพ์: ติดตามข่าว รีเฟรช",
+                "focus": focus,
+            }
+        )
+        return True
+
+    available = [
+        {
+            "summary_id": str(it.get("summary_id") or ""),
+            "title": str(it.get("title") or ""),
+            "created_at": it.get("created_at"),
+            "focus": it.get("focus"),
+        }
+        for it in summaries
+        if isinstance(it, dict)
+    ]
+    await ws.send_json(
+        {
+            "type": "news_follow_available",
+            "focus": focus,
+            "summaries": available,
+            "message": "ต้องการให้รายงานอันไหน? พิมพ์: รายงานข่าว: <summary_id> หรือ ติดตามข่าว รีเฟรช",
+        }
+    )
+    return True
+
+
 async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
     # Continuation handling: if a sub-agent is active for this websocket, let it handle followups.
     now_ts = int(time.time())
@@ -1497,6 +1748,12 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
             return handled
         if agent_id_norm == "deep-research":
             handled = await _handle_deep_research_trigger(ws, text)
+            if handled:
+                ws.state.active_agent_id = agent_id_norm
+                ws.state.active_agent_until_ts = int(time.time()) + AGENT_CONTINUE_WINDOW_SECONDS
+            return handled
+        if agent_id_norm == "follow_news":
+            handled = await _handle_news_follow_trigger(ws, text)
             if handled:
                 ws.state.active_agent_id = agent_id_norm
                 ws.state.active_agent_until_ts = int(time.time()) + AGENT_CONTINUE_WINDOW_SECONDS
