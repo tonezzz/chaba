@@ -4169,6 +4169,25 @@ async def ws_live(ws: WebSocket) -> None:
         if not api_key:
             raise RuntimeError("Missing required env var: API_KEY (or GEMINI_API_KEY)")
         client = genai.Client(api_key=api_key)
+
+        def _classify_gemini_live_error(err: Exception) -> dict[str, Any]:
+            msg = str(err)
+            status_code = getattr(err, "status_code", None)
+            if status_code == 1008 or "requested entity was not found" in msg.lower():
+                return {
+                    "kind": "gemini_model_not_found",
+                    "message": "gemini_live_model_not_found",
+                    "model": MODEL,
+                    "hint": "Set GEMINI_LIVE_MODEL to a model your API key can access.",
+                    "detail": msg,
+                }
+            return {
+                "kind": "gemini_session_failed",
+                "message": "gemini_session_failed",
+                "model": MODEL,
+                "detail": msg,
+            }
+
         base_config = {
             "response_modalities": ["AUDIO", "TEXT"],
             "input_audio_transcription": {},
@@ -4185,9 +4204,13 @@ async def ws_live(ws: WebSocket) -> None:
             try:
                 await _gemini_to_ws_loop(ws2, session2)
             except Exception as e:
-                logger.exception("gemini_to_ws_failed error=%s", str(e))
+                classified = _classify_gemini_live_error(e)
+                if classified.get("kind") == "gemini_model_not_found":
+                    logger.warning("gemini_to_ws_failed_model_not_found model=%s error=%s", MODEL, classified.get("detail"))
+                else:
+                    logger.exception("gemini_to_ws_failed error=%s", str(e))
                 try:
-                    await ws2.send_json({"type": "error", "message": "gemini_session_failed", "detail": str(e)})
+                    await ws2.send_json({"type": "error", **classified})
                 except Exception:
                     pass
 
@@ -4234,6 +4257,14 @@ async def ws_live(ws: WebSocket) -> None:
         except Exception as e:
             msg = str(e)
             if "invalid argument" not in msg.lower():
+                classified = _classify_gemini_live_error(e)
+                if classified.get("kind") == "gemini_model_not_found":
+                    logger.warning("gemini_live_session_model_not_found model=%s error=%s", MODEL, classified.get("detail"))
+                    try:
+                        await ws.send_json({"type": "error", **classified})
+                    except Exception:
+                        pass
+                    return
                 logger.exception("gemini_live_session_failed model=%s", MODEL)
                 raise
             fallback_config = dict(base_config)
