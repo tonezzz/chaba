@@ -73,3 +73,80 @@ flowchart LR
   CARS -->|plates| PLATES[plates/]
   CARS -->|car crops| CROPS[cars/]
 ```
+
+## 5) Reminders (authoritative store + cache + lifecycle)
+
+```mermaid
+flowchart LR
+  FE[Jarvis Frontend]
+  BE[Jarvis Backend]
+  DB[(SQLite: jarvis_sessions.sqlite)]
+  WV[(Weaviate: JarvisMemoryItem)]
+
+  FE -->|WS text: reminder setup/add| BE
+  BE -->|create/update| DB
+  BE -->|write-through (if enabled)| WV
+
+  BE -->|list reminders (prefers Weaviate)| WV
+  BE -->|fallback list on error| DB
+
+  DB -->|scheduler loop: due check| BE
+  BE -->|WS event: reminder_*| FE
+
+  subgraph Lifecycle
+    P[pending]
+    H[hidden]
+    D[done]
+    P -->|later: hide_until| H
+    H -->|hide_until passes| P
+    P -->|done| D
+    P -->|reschedule: notify_at| P
+  end
+```
+
+## 6) WebSocket contract (high-level)
+
+```mermaid
+flowchart TB
+  subgraph Inbound[Client -> Backend (/ws/live)]
+    IN_TEXT["text: {text}"]
+    IN_AUDIO["audio: {data,sampleRate}"]
+    IN_CLOSE["close"]
+    IN_SET_TRIP["set_active_trip"]
+  end
+
+  subgraph Outbound[Backend -> Client (/ws/live)]
+    OUT_STATE["state: connected"]
+    OUT_ERR["error: gemini_* or other"]
+    OUT_TR_IN["transcript (input)"]
+    OUT_TR_OUT["transcript (output)"]
+    OUT_TXT["text"]
+    OUT_AUDIO["audio"]
+    OUT_TRIP["active_trip"]
+    OUT_REM["reminder / reminder_* events"]
+  end
+```
+
+## 7) Deploy / runtime boundaries
+
+```mermaid
+flowchart LR
+  U[User Browser]
+  PUB[Public HTTPS Ingress]
+  FE[Jarvis Frontend (/jarvis/)]
+  BE[Jarvis Backend (:8018)]
+
+  subgraph DockerNet[Docker network: idc1-stack-net]
+    MCP[mcp-bundle :3050]
+    WV[weaviate :8080]
+    DR[deep-research-worker :8030]
+  end
+
+  U -->|https://.../jarvis/| PUB
+  PUB --> FE
+  FE -->|wss /jarvis/ws/live| BE
+
+  BE --> MCP
+  BE --> WV
+  BE --> DR
+```
