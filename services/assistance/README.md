@@ -16,6 +16,16 @@ flowchart LR
 
   DB -->|due reminders| BE
   BE -->|structured events| FE
+
+  subgraph MCP_bundle["mcp-bundle (MCP gateway)"]
+    MCPF[fetch]
+    MCPP[playwright]
+    MCPS[server-sequential-thinking]
+  end
+
+  MCP --> MCPF
+  MCP --> MCPP
+  MCP --> MCPS
 ```
 
 ## What this folder is
