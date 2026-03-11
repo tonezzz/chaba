@@ -755,18 +755,27 @@ async def _weaviate_upsert_memory_item(
     vector_text = "\n".join([str(kind), str(title), str(body)]).strip()
     vector = await _gemini_embed_text_cached(vector_text)
 
+    exists = False
     existing_created_at: Optional[float] = None
     try:
         existing = await _weaviate_request("GET", f"/v1/objects/{obj_id}")
         if isinstance(existing, dict):
+            exists = True
             props0 = existing.get("properties")
             if isinstance(props0, dict) and props0.get("created_at") is not None:
                 try:
                     existing_created_at = float(props0.get("created_at"))
                 except Exception:
                     existing_created_at = None
-    except Exception:
+    except HTTPException as e:
+        # 404 means this is a new object; we must create via POST /v1/objects.
+        if int(getattr(e, "status_code", 0) or 0) != 404:
+            raise
+        exists = False
         existing_created_at = None
+    except Exception:
+        # Non-HTTP failures (e.g., network) should bubble up to the caller.
+        raise
 
     props: dict[str, Any] = {
         "external_key": external_key,
@@ -798,7 +807,11 @@ async def _weaviate_upsert_memory_item(
         "vector": vector,
     }
 
-    await _weaviate_request("PUT", f"/v1/objects/{obj_id}", payload)
+    if exists:
+        await _weaviate_request("PUT", f"/v1/objects/{obj_id}", payload)
+    else:
+        # Weaviate creates objects via POST /v1/objects. PUT /v1/objects/{id} only updates.
+        await _weaviate_request("POST", "/v1/objects", payload)
     return {"id": obj_id, "external_key": external_key}
 
 

@@ -119,6 +119,14 @@ Quick smoke commands:
   - To include hidden reminders:
     - `GET /reminders?status=pending&include_hidden=true`
 
+### Reminder helper (WS quick commands)
+- `reminder add: <text>`
+- `reminder list pending`
+- `reminder done: <reminder_id>`
+- `reminder later: <reminder_id> 1`
+- `reminder reschedule: <reminder_id> tomorrow 09:00`
+- `reminder delete: <reminder_id>`
+
 ### Reschedule an overdue reminder
 - Get a backend-suggested next time (uses user TZ, defaults to next morning 08:30 when it's late):
   - `GET /reminders/{reminder_id}/reschedule/suggest`
