@@ -436,8 +436,11 @@ def _init_session_db() -> None:
             )
             """
         )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_reminders_user_notify ON reminders(user_id, notify_at)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_reminders_user_hide_until ON reminders(user_id, hide_until)")
+        # Index creation must tolerate older DBs missing newly added columns.
+        try:
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_reminders_user_notify ON reminders(user_id, notify_at)")
+        except Exception:
+            pass
         # Backwards-compatible migration: ensure dedupe_key exists for older DBs.
         try:
             cols = [r[1] for r in conn.execute("PRAGMA table_info(reminders)").fetchall()]
@@ -504,6 +507,14 @@ def _init_session_db() -> None:
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_reminders_user_hide_until ON reminders(user_id, hide_until)")
         except Exception as e:
             logger.warning("reminders_schema_migration_failed error=%s", str(e))
+
+        # Ensure hide_until index exists (after migration) when the column is present.
+        try:
+            cols2 = [r[1] for r in conn.execute("PRAGMA table_info(reminders)").fetchall()]
+            if "hide_until" in cols2:
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_reminders_user_hide_until ON reminders(user_id, hide_until)")
+        except Exception:
+            pass
         # Prevent duplicates among pending reminders.
         # SQLite supports partial indexes (>= 3.8.0), which is the norm on modern distros.
         try:
