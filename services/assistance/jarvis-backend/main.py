@@ -136,6 +136,29 @@ class ImageGenerateResponse(BaseModel):
     data_url: Optional[str] = None
 
 
+def _classify_image_generation_error(message: str) -> Optional[dict[str, Any]]:
+    msg = str(message or "").strip()
+    low = msg.lower()
+    if not low:
+        return None
+
+    if "only available on paid plans" in low or "upgrade your account" in low:
+        return {
+            "image_generation_unavailable": True,
+            "reason": "paid_plan_required",
+            "message": msg,
+        }
+
+    if "resource_exhausted" in low or "quota exceeded" in low or "exceeded your current quota" in low:
+        return {
+            "image_generation_unavailable": True,
+            "reason": "quota_exhausted",
+            "message": msg,
+        }
+
+    return None
+
+
 def _imagen_allowed_model(model: Optional[str]) -> str:
     m = (str(model or "").strip() or IMAGEN_MODEL_DEFAULT).strip()
     if m not in IMAGEN_ALLOWED_MODELS:
@@ -247,6 +270,9 @@ async def imagen_generate(req: ImagenGenerateRequest) -> ImagenGenerateResponse:
             res = await client.aio.models.generate_content(model=model, contents=req.prompt, config=cfg2 or None)
             img_bytes, mime_type = _extract_inline_image(res)
     except Exception as e:
+        classified = _classify_image_generation_error(str(e))
+        if classified is not None:
+            raise HTTPException(status_code=503, detail=classified)
         raise HTTPException(status_code=502, detail={"imagen_generate_failed": str(e)})
     import hashlib
 
