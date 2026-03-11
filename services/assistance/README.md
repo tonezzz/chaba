@@ -16,6 +16,11 @@ flowchart LR
 
   DB -->|due reminders| BE
   BE -->|structured events| FE
+```
+
+```mermaid
+flowchart LR
+  MCP[mcp-bundle :3050]
 
   subgraph MCP_bundle["mcp-bundle (MCP gateway)"]
     MCPF[fetch]
@@ -26,16 +31,19 @@ flowchart LR
   MCP --> MCPF
   MCP --> MCPP
   MCP --> MCPS
+```
 
+```mermaid
+flowchart TB
   subgraph WEAVIATE["Weaviate (vector DB)"]
     WVC[JarvisMemoryItem]
     WVK[external_key]
     WVKind[kind]
+    WVTitle[title]
     WVStatus[status]
     WVDue[due_at]
     WVNotify[notify_at]
     WVHide[hide_until]
-    WVTitle[title]
   end
 
   WVC --> WVK
