@@ -24,6 +24,36 @@ This file is intentionally a thin index to reduce staleness.
 WebSocket resilience expectation:
 - If Gemini Live fails mid-session, the backend should emit an error event and keep the client WebSocket open so deterministic sub-agent handlers can continue.
 
+## Runtime lifecycle (from start)
+
+1) Process boot
+- Entry module is `main.py` (FastAPI app + routes + WS endpoint).
+- Configuration is loaded from env (see constants at top of file such as `MODEL`, `WEAVIATE_URL`, `SESSION_DB_PATH`, `AGENTS_DIR`).
+
+2) FastAPI startup (`@app.on_event("startup")` -> `_startup`)
+- Initializes / migrates the local SQLite session DB:
+  - `_init_session_db()`
+- If Weaviate is enabled, re-syncs reminders from Weaviate into the local scheduler cache:
+  - `_startup_resync_from_weaviate()`
+- Starts the reminder scheduler background loop:
+  - `asyncio.create_task(_reminder_scheduler_loop())`
+
+3) Reminder scheduler loop (`_reminder_scheduler_loop`)
+- Every ~15 seconds:
+  - Finds due reminders (`_list_due_reminders(...)`).
+  - Marks them fired (`_mark_reminder_fired(...)`).
+  - Broadcasts to connected clients:
+    - `{ "type": "reminder", "reminder": {...} }`
+
+4) WebSocket session (`WS /ws/live` -> `ws_live`)
+- Accepts the client WebSocket.
+- Reads session identity from `session_id` query param (provided by the frontend).
+- Establishes a Gemini Live session.
+- Runs two concurrent loops:
+  - `ws_to_gemini`: forwards client audio/text to Gemini when available.
+  - `gemini_to_ws`: streams Gemini outputs/tool calls back to the client.
+- Deterministic sub-agent handlers (agent triggers) can intercept messages before they reach Gemini.
+
 ## Agent system (high-level)
 - Agents are defined as Markdown under `agents/*.md`.
 - Runtime agent directory is controlled via `JARVIS_AGENTS_DIR` (default `/app/agents`).
