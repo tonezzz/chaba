@@ -4743,11 +4743,13 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                 if input_tr is not None:
                     text = getattr(input_tr, "text", None)
                     if text:
+                        logger.info("live_input_transcript text=%s", str(text)[:300])
                         # Voice UX: allow local sub-agents (e.g., reminders) to trigger from
                         # input transcription even if Gemini doesn't emit a tool_call.
                         try:
                             handled = await _dispatch_sub_agents(ws, str(text))
                             if handled:
+                                logger.info("live_input_transcript_dispatched handled=true")
                                 continue
                         except Exception as e:
                             logger.info("input_transcript_dispatch_failed error=%s", str(e))
