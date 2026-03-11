@@ -254,49 +254,6 @@ export default function App() {
            <div className="w-16 h-16 bg-cyan-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-cyan-500/30">
               <Lock className="w-8 h-8 text-cyan-400" />
            </div>
-
-				{/* Debug / Trip */}
-				<div className="p-4 rounded-lg border border-slate-800 bg-slate-950/40">
-					<div className="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Debug / Trip</div>
-					<div className="space-y-2">
-						<div className="text-xs font-mono text-slate-400">
-							active_trip_id: <span className="text-slate-200 break-all">{activeTripId || "(none)"}</span>
-						</div>
-						<div className="text-xs font-mono text-slate-400">
-							active_trip_name: <span className="text-slate-200 break-all">{activeTripName || "(none)"}</span>
-						</div>
-						<div className="flex gap-2">
-							<button
-								onClick={handleRefreshTrip}
-								disabled={state !== ConnectionState.CONNECTED}
-								className="px-3 py-2 rounded-md text-xs font-mono border border-slate-700 text-slate-200 hover:bg-slate-800 disabled:opacity-50 disabled:hover:bg-transparent"
-							>
-								Refresh
-							</button>
-						</div>
-						<div className="grid grid-cols-1 gap-2">
-							<input
-								value={tripIdInput}
-								onChange={(e) => setTripIdInput(e.target.value)}
-								placeholder="trip id"
-								className="w-full px-3 py-2 rounded-md text-xs font-mono bg-slate-950 border border-slate-800 text-slate-200"
-							/>
-							<input
-								value={tripNameInput}
-								onChange={(e) => setTripNameInput(e.target.value)}
-								placeholder="trip name"
-								className="w-full px-3 py-2 rounded-md text-xs font-mono bg-slate-950 border border-slate-800 text-slate-200"
-							/>
-							<button
-								onClick={handleSetTrip}
-								disabled={state !== ConnectionState.CONNECTED}
-								className="px-3 py-2 rounded-md text-xs font-mono border border-cyan-500/40 text-cyan-300 hover:bg-cyan-950/30 disabled:opacity-50 disabled:hover:bg-transparent"
-							>
-								Set Active Trip
-							</button>
-						</div>
-					</div>
-				</div>
            
            <h1 className="text-3xl font-bold font-hud text-white mb-2 tracking-wide">JARVIS SYSTEM</h1>
            <p className="text-slate-400 mb-8 font-mono text-sm">Authentication Required for Neural Link</p>
