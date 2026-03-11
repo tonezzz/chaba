@@ -70,6 +70,7 @@ services:
       - -lc
       - |
         set -e
+
         if [ ! -x /usr/local/bin/portainer-mcp ]; then
           arch="$(uname -m)"
           case "$arch" in
@@ -78,14 +79,39 @@ services:
           esac
           version="v0.2.0"
           tmpdir="$(mktemp -d)"
-          curl -fsSL -o "$tmpdir/portainer-mcp.tgz" "https://github.com/portainer/portainer-mcp/releases/download/${version}/portainer-mcp-${version}-linux-${arch}.tar.gz"
-          tar -xzf "$tmpdir/portainer-mcp.tgz" -C "$tmpdir"
-          install -m 0755 "$tmpdir/portainer-mcp" /usr/local/bin/portainer-mcp
+
+          url="https://github.com/portainer/portainer-mcp/releases/download/${version}/portainer-mcp-${version}-linux-${arch}.tar.gz"
+          if ! curl -fsSL -o "$tmpdir/portainer-mcp.tgz" "$url"; then
+            if [ "$arch" = "arm64" ]; then
+              url="https://github.com/portainer/portainer-mcp/releases/download/${version}/portainer-mcp-${version}-linux-amd64.tar.gz"
+              curl -fsSL -o "$tmpdir/portainer-mcp.tgz" "$url" || true
+            fi
+          fi
+
+          if [ -s "$tmpdir/portainer-mcp.tgz" ]; then
+            tar -xzf "$tmpdir/portainer-mcp.tgz" -C "$tmpdir" || true
+            if [ -f "$tmpdir/portainer-mcp" ]; then
+              install -m 0755 "$tmpdir/portainer-mcp" /usr/local/bin/portainer-mcp
+            fi
+          fi
+
           rm -rf "$tmpdir"
         fi
+
         cat > /app/mcp-config/mcp.json <<'EOF'
-        { "mcpServers": { "fetch": { "command": "/opt/venv/bin/python", "args": ["-m", "mcp_server_fetch"], "tags": ["fetch", "web"], "disabled": false }, "server-sequential-thinking": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"], "tags": ["thinking"], "disabled": false }, "playwright": { "command": "npx", "args": ["-y", "@playwright/mcp@latest"], "tags": ["playwright", "web", "browser"], "disabled": false }, "portainer": { "command": "sh", "args": ["-lc", "/usr/local/bin/portainer-mcp -server \"$PORTAINER_SERVER\" -token \"$PORTAINER_TOKEN\" ${PORTAINER_READ_ONLY:+-read-only} ${PORTAINER_DISABLE_VERSION_CHECK:+-disable-version-check}"], "tags": ["portainer", "containers"], "disabled": false } } }
+        { "mcpServers": { "fetch": { "command": "/opt/venv/bin/python", "args": ["-m", "mcp_server_fetch"], "tags": ["fetch", "web"], "disabled": false }, "server-sequential-thinking": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"], "tags": ["thinking"], "disabled": false }, "playwright": { "command": "npx", "args": ["-y", "@playwright/mcp@latest"], "tags": ["playwright", "web", "browser"], "disabled": false }
         EOF
+
+        if [ -x /usr/local/bin/portainer-mcp ]; then
+          cat >> /app/mcp-config/mcp.json <<'EOF'
+        , "portainer": { "command": "sh", "args": ["-lc", "/usr/local/bin/portainer-mcp -server \"$PORTAINER_SERVER\" -token \"$PORTAINER_TOKEN\" ${PORTAINER_READ_ONLY:+-read-only} ${PORTAINER_DISABLE_VERSION_CHECK:+-disable-version-check}"], "tags": ["portainer", "containers"], "disabled": false }
+        EOF
+        fi
+
+        cat >> /app/mcp-config/mcp.json <<'EOF'
+         } }
+        EOF
+
         exec node index.js
     environment:
       ONE_MCP_HOST: 0.0.0.0
