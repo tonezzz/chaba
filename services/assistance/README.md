@@ -26,6 +26,25 @@ flowchart LR
   MCP --> MCPF
   MCP --> MCPP
   MCP --> MCPS
+
+  subgraph WEAVIATE["Weaviate (vector DB)"]
+    WVC[JarvisMemoryItem]
+    WVK[external_key]
+    WVKind[kind]
+    WVStatus[status]
+    WVDue[due_at]
+    WVNotify[notify_at]
+    WVHide[hide_until]
+    WVTitle[title]
+  end
+
+  WVC --> WVK
+  WVC --> WVKind
+  WVC --> WVTitle
+  WVC --> WVStatus
+  WVC --> WVDue
+  WVC --> WVNotify
+  WVC --> WVHide
 ```
 
 ## What this folder is
