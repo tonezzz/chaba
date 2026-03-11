@@ -20,6 +20,9 @@ The `/services/assistance/` tree is the source-of-truth for all *Assistance* app
 - Jarvis Backend (WebSocket):
   - `WS /ws/live`
 
+Troubleshooting:
+- If the UI disconnects immediately after clicking Initialize, check `jarvis-backend` logs for Gemini Live connection errors (and ensure Portainer actually pulled the latest image digest on redeploy).
+
 ## Agents
 - Agent definitions live under:
   - `jarvis-backend/agents/*.md`
@@ -89,6 +92,10 @@ Persistence:
 ## MCP image pipeline
 
 The stack runs `mcp-image-pipeline` (1MCP) as a separate HTTP MCP gateway.
+
+Troubleshooting:
+- If image generation returns `RESOURCE_EXHAUSTED` / `Quota exceeded` (429), it is usually a quota/billing issue for the configured Gemini image model.
+- If it returns auth errors (401/403), confirm `GEMINI_API_KEY` is set for the service.
 
 Healthcheck note:
 - Container healthchecks should not assume `curl` exists; use `wget` or a similar minimal tool.

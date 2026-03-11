@@ -37,6 +37,19 @@ Common failure mode:
 - Confirm backend is reachable from the reverse proxy and the WS URL is correct.
 - Check backend logs for errors around Gemini Live connect and tool calls.
 
+### WebSocket disconnects immediately after Initialize
+- Symptom: backend logs show `WebSocket /ws/live ... [accepted]` + `gemini_live_connect ...` then `connection closed`.
+- Confirm the running backend image contains the latest diagnostics (look for `ws_live_tasks_done` / `ws_live_task_failed` markers).
+- If using Portainer:
+  - Ensure redeploy is configured to pull the latest image digest ("always pull" / re-pull image).
+- Check backend logs for:
+  - `gemini_live_connect_build_failed` / `gemini_live_session_failed`
+  - `ws_live_exception`
+- Common root causes:
+  - Missing/invalid `GEMINI_API_KEY` / `API_KEY` (401/403)
+  - Quota / billing limits (429 RESOURCE_EXHAUSTED)
+  - Unsupported model name in `GEMINI_LIVE_MODEL`
+
 ### Agent trigger not firing
 - Confirm the agent is loaded:
   - `GET /agents`
@@ -61,6 +74,13 @@ Common failure mode:
 - If failures mention embedding:
   - Confirm `GEMINI_API_KEY`/`API_KEY` is set.
   - Confirm `GEMINI_EMBEDDING_MODEL` is valid.
+
+### MCP image pipeline returns errors
+- If you see errors like `RESOURCE_EXHAUSTED` or `Quota exceeded` from Gemini image models:
+  - This is typically a quota/billing issue (429).
+  - Check `mcp-image-pipeline` logs for the upstream error body.
+- If you see authentication errors:
+  - Confirm `GEMINI_API_KEY` is set for `mcp-image-pipeline`.
 
 ## Logs
 
