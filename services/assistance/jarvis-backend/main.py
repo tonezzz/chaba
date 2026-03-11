@@ -5015,6 +5015,15 @@ async def ws_live(ws: WebSocket) -> None:
                         last_error = None
                     except Exception as e2:
                         last_error = e2
+                    if last_error is not None:
+                        e2_classified = _classify_gemini_live_error(last_error, candidate)
+                        if e2_classified.get("kind") == "gemini_model_not_found":
+                            logger.warning(
+                                "gemini_live_session_model_not_found model=%s error=%s",
+                                candidate,
+                                e2_classified.get("detail"),
+                            )
+                            continue
                     break
                 if isinstance(e, _GeminiLiveModelNotFound):
                     classified = {
