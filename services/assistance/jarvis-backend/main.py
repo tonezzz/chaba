@@ -502,8 +502,8 @@ def _init_session_db() -> None:
                 conn.execute("ALTER TABLE reminders_new RENAME TO reminders")
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_reminders_user_notify ON reminders(user_id, notify_at)")
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_reminders_user_hide_until ON reminders(user_id, hide_until)")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("reminders_schema_migration_failed error=%s", str(e))
         # Prevent duplicates among pending reminders.
         # SQLite supports partial indexes (>= 3.8.0), which is the norm on modern distros.
         try:
@@ -2004,13 +2004,25 @@ def _set_reminder_hide_until(reminder_id: str, hide_until_ts: Optional[int]) -> 
     if not rid:
         return False
     now_ts = int(time.time())
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        cur = conn.execute(
-            "UPDATE reminders SET hide_until = ?, updated_at = ? WHERE reminder_id = ?",
-            (hide_until_ts, now_ts, rid),
-        )
-        conn.commit()
-        return bool(cur.rowcount and int(cur.rowcount) > 0)
+    try:
+        with sqlite3.connect(SESSION_DB_PATH) as conn:
+            cur = conn.execute(
+                "UPDATE reminders SET hide_until = ?, updated_at = ? WHERE reminder_id = ?",
+                (hide_until_ts, now_ts, rid),
+            )
+            conn.commit()
+            return bool(cur.rowcount and int(cur.rowcount) > 0)
+    except sqlite3.OperationalError as e:
+        if "no such column" in str(e).lower() and "hide_until" in str(e).lower():
+            _init_session_db()
+            with sqlite3.connect(SESSION_DB_PATH) as conn:
+                cur = conn.execute(
+                    "UPDATE reminders SET hide_until = ?, updated_at = ? WHERE reminder_id = ?",
+                    (hide_until_ts, now_ts, rid),
+                )
+                conn.commit()
+                return bool(cur.rowcount and int(cur.rowcount) > 0)
+        raise
 
 
 def _set_reminder_notify_at(reminder_id: str, notify_at_ts: Optional[int]) -> bool:
@@ -2019,13 +2031,25 @@ def _set_reminder_notify_at(reminder_id: str, notify_at_ts: Optional[int]) -> bo
     if not rid:
         return False
     now_ts = int(time.time())
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        cur = conn.execute(
-            "UPDATE reminders SET notify_at = ?, updated_at = ? WHERE reminder_id = ?",
-            (notify_at_ts, now_ts, rid),
-        )
-        conn.commit()
-        return bool(cur.rowcount and int(cur.rowcount) > 0)
+    try:
+        with sqlite3.connect(SESSION_DB_PATH) as conn:
+            cur = conn.execute(
+                "UPDATE reminders SET notify_at = ?, updated_at = ? WHERE reminder_id = ?",
+                (notify_at_ts, now_ts, rid),
+            )
+            conn.commit()
+            return bool(cur.rowcount and int(cur.rowcount) > 0)
+    except sqlite3.OperationalError as e:
+        if "no such column" in str(e).lower() and "notify_at" in str(e).lower():
+            _init_session_db()
+            with sqlite3.connect(SESSION_DB_PATH) as conn:
+                cur = conn.execute(
+                    "UPDATE reminders SET notify_at = ?, updated_at = ? WHERE reminder_id = ?",
+                    (notify_at_ts, now_ts, rid),
+                )
+                conn.commit()
+                return bool(cur.rowcount and int(cur.rowcount) > 0)
+        raise
 
 
 def _parse_time_from_text(text: str, now: datetime, tz: ZoneInfo) -> tuple[Optional[datetime], Optional[str]]:
@@ -2674,11 +2698,15 @@ async def reminder_later(reminder_id: str, days: int = 1) -> dict[str, Any]:
     hide_until_utc = hide_until_local.astimezone(timezone.utc)
     hide_until_ts = int(hide_until_utc.timestamp())
     changed = _set_reminder_hide_until(rid, hide_until_ts)
+    if not changed and not _weaviate_enabled():
+        raise HTTPException(status_code=404, detail="reminder_not_found")
 
     wv: Optional[dict[str, Any]] = None
     if _weaviate_enabled():
         try:
             local = _get_local_reminder_by_id(rid) or {}
+            if not local:
+                raise HTTPException(status_code=404, detail="reminder_not_found")
             external_key = str(local.get("aim_entity_name") or "").strip() or f"reminder::{rid}"
             wv = await _weaviate_upsert_memory_item(
                 external_key=external_key,
@@ -2738,12 +2766,16 @@ async def reminder_reschedule(reminder_id: str, notify_at: int) -> dict[str, Any
         raise HTTPException(status_code=400, detail="invalid_notify_at")
 
     changed = _set_reminder_notify_at(rid, notify_at_ts)
+    if not changed and not _weaviate_enabled():
+        raise HTTPException(status_code=404, detail="reminder_not_found")
     _set_reminder_hide_until(rid, None)
 
     wv: Optional[dict[str, Any]] = None
     if _weaviate_enabled():
         try:
             local = _get_local_reminder_by_id(rid) or {}
+            if not local:
+                raise HTTPException(status_code=404, detail="reminder_not_found")
             tz_name = str(local.get("timezone") or DEFAULT_TIMEZONE).strip() or DEFAULT_TIMEZONE
             external_key = str(local.get("aim_entity_name") or "").strip() or f"reminder::{rid}"
             wv = await _weaviate_upsert_memory_item(
