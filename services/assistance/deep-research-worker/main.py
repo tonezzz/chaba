@@ -21,7 +21,7 @@ app = FastAPI(title="deep-research-worker", version="0.1.0")
 
 PORT = int(os.getenv("PORT") or "8030")
 
-SESSION_DB_PATH = os.getenv("DEEP_RESEARCH_DB", "/app/deep_research.sqlite")
+SESSION_DB_PATH = os.getenv("DEEP_RESEARCH_DB", "/data/deep_research.sqlite")
 
 GEMINI_API_KEY = str(os.getenv("GEMINI_API_KEY") or os.getenv("API_KEY") or "").strip()
 
@@ -29,6 +29,27 @@ DEEP_RESEARCH_AGENT = str(os.getenv("DEEP_RESEARCH_AGENT") or "deep-research-pro
 
 # Polling defaults
 DEFAULT_POLL_SECONDS = max(2, int(os.getenv("DEEP_RESEARCH_POLL_SECONDS") or "10"))
+
+
+def _normalize_status(status: Any) -> str:
+    s = str(status or "").strip().lower()
+    if not s:
+        return "unknown"
+
+    # Gemini / SDK variants (observed across versions):
+    # - in_progress / running / pending
+    # - completed / succeeded / success
+    # - failed / error
+    # - cancelled / canceled
+    if s in ("completed", "succeeded", "success", "done", "finished"):
+        return "completed"
+    if s in ("failed", "error", "errored"):
+        return "failed"
+    if s in ("cancelled", "canceled"):
+        return "cancelled"
+    if s in ("running", "in_progress", "pending", "queued"):
+        return "in_progress"
+    return s
 
 
 def _require_api_key() -> str:
@@ -50,11 +71,20 @@ def _init_db() -> None:
               status TEXT NOT NULL,
               result_text TEXT,
               citations_json TEXT,
+              error_text TEXT,
               created_at INTEGER NOT NULL,
               updated_at INTEGER NOT NULL
             )
             """
         )
+        # Lightweight auto-migration for older DBs.
+        try:
+            cur = conn.execute("PRAGMA table_info(research_jobs)")
+            cols = {str(r[1] or "").strip() for r in cur.fetchall()}
+            if "error_text" not in cols:
+                conn.execute("ALTER TABLE research_jobs ADD COLUMN error_text TEXT")
+        except Exception:
+            pass
         conn.execute("CREATE INDEX IF NOT EXISTS idx_research_jobs_updated ON research_jobs(updated_at)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_research_jobs_status ON research_jobs(status)")
         conn.commit()
@@ -76,7 +106,7 @@ def _db_get_job(job_id: str) -> Optional[dict[str, Any]]:
     with sqlite3.connect(SESSION_DB_PATH) as conn:
         cur = conn.execute(
             """
-            SELECT job_id, interaction_id, agent, query, status, result_text, citations_json, created_at, updated_at
+            SELECT job_id, interaction_id, agent, query, status, result_text, citations_json, error_text, created_at, updated_at
             FROM research_jobs WHERE job_id = ? LIMIT 1
             """,
             (jid,),
@@ -92,6 +122,7 @@ def _db_get_job(job_id: str) -> Optional[dict[str, Any]]:
         status,
         result_text,
         citations_json,
+        error_text,
         created_at,
         updated_at,
     ) = row
@@ -109,6 +140,7 @@ def _db_get_job(job_id: str) -> Optional[dict[str, Any]]:
         "status": status,
         "result_text": result_text,
         "citations": citations,
+        "error_text": error_text,
         "created_at": created_at,
         "updated_at": updated_at,
     }
@@ -123,6 +155,7 @@ def _db_upsert_job(
     status: str,
     result_text: Optional[str] = None,
     citations: Any = None,
+    error_text: Optional[str] = None,
 ) -> None:
     _init_db()
     now = _now_ts()
@@ -137,8 +170,8 @@ def _db_upsert_job(
         conn.execute(
             """
             INSERT INTO research_jobs(
-              job_id, interaction_id, agent, query, status, result_text, citations_json, created_at, updated_at
-            ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
+              job_id, interaction_id, agent, query, status, result_text, citations_json, error_text, created_at, updated_at
+            ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(job_id) DO UPDATE SET
               interaction_id=excluded.interaction_id,
               agent=excluded.agent,
@@ -146,6 +179,7 @@ def _db_upsert_job(
               status=excluded.status,
               result_text=excluded.result_text,
               citations_json=excluded.citations_json,
+              error_text=excluded.error_text,
               updated_at=excluded.updated_at
             """,
             (
@@ -156,6 +190,7 @@ def _db_upsert_job(
                 status,
                 result_text,
                 citations_json,
+                error_text,
                 now,
                 now,
             ),
@@ -226,14 +261,14 @@ def deep_research_start(req: StartRequest = Body(...)) -> dict[str, Any]:
             store=True,
         )
     except Exception as e:
-        raise HTTPException(status_code=502, detail={"deep_research_start_failed": str(e)})
+        raise HTTPException(status_code=502, detail={"deep_research_start_failed": str(e), "agent": agent})
 
     interaction_id = str(getattr(interaction, "id", "") or "").strip()
     if not interaction_id:
         raise HTTPException(status_code=502, detail="missing_interaction_id")
 
     job_id = _job_id()
-    status = str(getattr(interaction, "status", "in_progress") or "in_progress")
+    status = _normalize_status(getattr(interaction, "status", "in_progress"))
     _db_upsert_job(job_id=job_id, interaction_id=interaction_id, agent=agent, query=query, status=status)
 
     return {"ok": True, "job_id": job_id, "interaction_id": interaction_id, "status": status, "agent": agent}
@@ -263,8 +298,15 @@ def deep_research_poll(job_id: str) -> dict[str, Any]:
     except Exception as e:
         raise HTTPException(status_code=502, detail={"deep_research_poll_failed": str(e)})
 
-    status = str(getattr(interaction, "status", "") or "").strip() or "unknown"
+    status = _normalize_status(getattr(interaction, "status", None))
     text_out, citations_out = _extract_text_and_citations(interaction)
+    error_text: Optional[str] = None
+    err = getattr(interaction, "error", None)
+    if err is not None:
+        try:
+            error_text = json.dumps(err, ensure_ascii=False, default=str)
+        except Exception:
+            error_text = str(err)
 
     if status in ("completed", "failed", "cancelled"):
         _db_upsert_job(
@@ -275,6 +317,7 @@ def deep_research_poll(job_id: str) -> dict[str, Any]:
             status=status,
             result_text=text_out,
             citations=citations_out,
+            error_text=error_text,
         )
     else:
         _db_upsert_job(
@@ -283,6 +326,7 @@ def deep_research_poll(job_id: str) -> dict[str, Any]:
             agent=agent,
             query=str(job.get("query") or ""),
             status=status,
+            error_text=error_text,
         )
 
     out_job = _db_get_job(job_id)
@@ -331,14 +375,14 @@ def deep_research_followup(req: FollowupRequest = Body(...)) -> dict[str, Any]:
             store=True,
         )
     except Exception as e:
-        raise HTTPException(status_code=502, detail={"deep_research_followup_failed": str(e)})
+        raise HTTPException(status_code=502, detail={"deep_research_followup_failed": str(e), "agent": agent})
 
     interaction_id = str(getattr(interaction, "id", "") or "").strip()
     if not interaction_id:
         raise HTTPException(status_code=502, detail="missing_interaction_id")
 
     job_id = _job_id()
-    status = str(getattr(interaction, "status", "in_progress") or "in_progress")
+    status = _normalize_status(getattr(interaction, "status", "in_progress"))
     _db_upsert_job(job_id=job_id, interaction_id=interaction_id, agent=agent, query=question, status=status)
 
     return {
