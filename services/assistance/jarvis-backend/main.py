@@ -2697,7 +2697,15 @@ async def reminder_later(reminder_id: str, days: int = 1) -> dict[str, Any]:
     hide_until_local = _default_hide_until(now, tz, days_ahead=int(days or 1))
     hide_until_utc = hide_until_local.astimezone(timezone.utc)
     hide_until_ts = int(hide_until_utc.timestamp())
-    changed = _set_reminder_hide_until(rid, hide_until_ts)
+    changed = False
+    local_error: Optional[str] = None
+    try:
+        changed = _set_reminder_hide_until(rid, hide_until_ts)
+    except Exception as e:
+        local_error = str(e)
+        if not _weaviate_enabled():
+            raise HTTPException(status_code=500, detail={"reminder_later_failed": local_error})
+
     if not changed and not _weaviate_enabled():
         raise HTTPException(status_code=404, detail="reminder_not_found")
 
@@ -2730,11 +2738,19 @@ async def reminder_later(reminder_id: str, days: int = 1) -> dict[str, Any]:
             "reminder_id": rid,
             "hide_until": hide_until_ts,
             "changed": changed,
+            "local_error": local_error,
             "weaviate": wv,
             "instance_id": INSTANCE_ID,
         },
     )
-    return {"ok": True, "reminder_id": rid, "hide_until": hide_until_ts, "changed": changed, "weaviate": wv}
+    return {
+        "ok": True,
+        "reminder_id": rid,
+        "hide_until": hide_until_ts,
+        "changed": changed,
+        "local_error": local_error,
+        "weaviate": wv,
+    }
 
 
 @app.get("/reminders/{reminder_id}/reschedule/suggest")
@@ -2765,10 +2781,18 @@ async def reminder_reschedule(reminder_id: str, notify_at: int) -> dict[str, Any
     except Exception:
         raise HTTPException(status_code=400, detail="invalid_notify_at")
 
-    changed = _set_reminder_notify_at(rid, notify_at_ts)
+    changed = False
+    local_error: Optional[str] = None
+    try:
+        changed = _set_reminder_notify_at(rid, notify_at_ts)
+        _set_reminder_hide_until(rid, None)
+    except Exception as e:
+        local_error = str(e)
+        if not _weaviate_enabled():
+            raise HTTPException(status_code=500, detail={"reminder_reschedule_failed": local_error})
+
     if not changed and not _weaviate_enabled():
         raise HTTPException(status_code=404, detail="reminder_not_found")
-    _set_reminder_hide_until(rid, None)
 
     wv: Optional[dict[str, Any]] = None
     if _weaviate_enabled():
@@ -2800,11 +2824,19 @@ async def reminder_reschedule(reminder_id: str, notify_at: int) -> dict[str, Any
             "reminder_id": rid,
             "notify_at": notify_at_ts,
             "changed": changed,
+            "local_error": local_error,
             "weaviate": wv,
             "instance_id": INSTANCE_ID,
         },
     )
-    return {"ok": True, "reminder_id": rid, "notify_at": notify_at_ts, "changed": changed, "weaviate": wv}
+    return {
+        "ok": True,
+        "reminder_id": rid,
+        "notify_at": notify_at_ts,
+        "changed": changed,
+        "local_error": local_error,
+        "weaviate": wv,
+    }
 
 
 @app.get("/debug/agents")
