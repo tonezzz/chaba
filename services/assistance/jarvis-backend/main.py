@@ -4811,6 +4811,16 @@ async def ws_live(ws: WebSocket) -> None:
             return
         client = genai.Client(api_key=api_key)
 
+        class _GeminiLiveModelNotFound(Exception):
+            def __init__(self, detail: str) -> None:
+                super().__init__(detail)
+                self.detail = detail
+
+        class _GeminiLiveSessionFailed(Exception):
+            def __init__(self, detail: str) -> None:
+                super().__init__(detail)
+                self.detail = detail
+
         def _classify_gemini_live_error(err: Exception, model: str) -> dict[str, Any]:
             msg = str(err)
             status_code = getattr(err, "status_code", None)
@@ -4946,7 +4956,10 @@ async def ws_live(ws: WebSocket) -> None:
                                 pass
 
                         detail = (gemini_failed_error or {}).get("detail") or "gemini_failed"
-                        raise RuntimeError(str(detail))
+                        kind = (gemini_failed_error or {}).get("kind")
+                        if kind == "gemini_model_not_found":
+                            raise _GeminiLiveModelNotFound(str(detail))
+                        raise _GeminiLiveSessionFailed(str(detail))
 
                     # Client disconnected or finished.
                     await to_gemini
@@ -4992,7 +5005,23 @@ async def ws_live(ws: WebSocket) -> None:
                     except Exception as e2:
                         last_error = e2
                     break
-                classified = _classify_gemini_live_error(e, candidate)
+                if isinstance(e, _GeminiLiveModelNotFound):
+                    classified = {
+                        "kind": "gemini_model_not_found",
+                        "message": "gemini_live_model_not_found",
+                        "model": candidate,
+                        "hint": "Set GEMINI_LIVE_MODEL to a model your API key can access.",
+                        "detail": str(getattr(e, "detail", msg) or msg),
+                    }
+                elif isinstance(e, _GeminiLiveSessionFailed):
+                    classified = {
+                        "kind": "gemini_session_failed",
+                        "message": "gemini_session_failed",
+                        "model": candidate,
+                        "detail": str(getattr(e, "detail", msg) or msg),
+                    }
+                else:
+                    classified = _classify_gemini_live_error(e, candidate)
                 if classified.get("kind") == "gemini_model_not_found":
                     logger.warning(
                         "gemini_live_session_model_not_found model=%s error=%s",

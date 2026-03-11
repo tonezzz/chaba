@@ -14,22 +14,22 @@ export default function App() {
   const liveService = useRef<LiveService | null>(null);
   const [activeMedia, setActiveMedia] = useState<MessageLog | null>(null);
   const [isTalking, setIsTalking] = useState(false);
-	const [activeRightPanel, setActiveRightPanel] = useState<"output" | "cars">("output");
-	const [activeTripId, setActiveTripId] = useState<string>("");
-	const [activeTripName, setActiveTripName] = useState<string>("");
-	const [tripIdInput, setTripIdInput] = useState<string>("");
-	const [tripNameInput, setTripNameInput] = useState<string>("");
-	const [composerText, setComposerText] = useState<string>("");
-	const [attachments, setAttachments] = useState<
-		Array<{
-			id: string;
-			name: string;
-			size: number;
-			kind: "image" | "pdf" | "text";
-			text?: string;
-		}>
-	>([]);
-	const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [activeRightPanel, setActiveRightPanel] = useState<"output" | "cars">("output");
+  const [activeTripId, setActiveTripId] = useState<string>("");
+  const [activeTripName, setActiveTripName] = useState<string>("");
+  const [tripIdInput, setTripIdInput] = useState<string>("");
+  const [tripNameInput, setTripNameInput] = useState<string>("");
+  const [composerText, setComposerText] = useState<string>("");
+  const [attachments, setAttachments] = useState<
+    Array<{
+      id: string;
+      name: string;
+      size: number;
+      kind: "image" | "pdf" | "text";
+      text?: string;
+    }>
+  >([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const checkKey = async () => {
@@ -46,12 +46,24 @@ export default function App() {
     liveService.current = new LiveService();
     liveService.current.onStateChange = setState;
     liveService.current.onVolume = setVolume;
-		liveService.current.onActiveTrip = (trip) => {
-			setActiveTripId(trip.active_trip_id || "");
-			setActiveTripName(trip.active_trip_name || "");
-		};
+    liveService.current.onActiveTrip = (trip) => {
+      setActiveTripId(trip.active_trip_id || "");
+      setActiveTripName(trip.active_trip_name || "");
+    };
+    liveService.current.onCarsIngestResult = (ev) => {
+      setMessages((prev) => [
+        {
+          id: `${Date.now()}_cars_ingest`,
+          role: "system",
+          text: `cars_ingest_result ok=${String((ev as any)?.ok)} items=${Array.isArray((ev as any)?.items) ? (ev as any).items.length : 0}`,
+          timestamp: new Date(),
+        },
+        ...prev,
+      ]);
+      setActiveRightPanel("cars");
+    };
     liveService.current.onMessage = (msg) => {
-      setMessages(prev => {
+      setMessages((prev) => {
         const isTranscript = msg.id.endsWith('_tr');
         if (!isTranscript || prev.length === 0) {
           return [msg, ...prev];
@@ -97,123 +109,129 @@ export default function App() {
     }
   };
 
-	const handleRefreshTrip = () => {
-		liveService.current?.requestActiveTrip();
-	};
+  const handleRefreshTrip = () => {
+    liveService.current?.requestActiveTrip();
+  };
 
-	const handleSetTrip = () => {
-		const id = tripIdInput.trim();
-		const name = tripNameInput.trim();
-		liveService.current?.setActiveTrip(id || null, name || null);
-	};
+  const handleSetTrip = () => {
+    const id = tripIdInput.trim();
+    const name = tripNameInput.trim();
+    liveService.current?.setActiveTrip(id || null, name || null);
+  };
 
-	const handlePickFiles = () => {
-		if (state !== ConnectionState.CONNECTED) return;
-		fileInputRef.current?.click();
-	};
+  const handlePickFiles = () => {
+    if (state !== ConnectionState.CONNECTED) return;
+    fileInputRef.current?.click();
+  };
 
-	const handleFilesSelected = async (files: FileList | null) => {
-		if (!files || files.length === 0) return;
-		const next: Array<{ id: string; name: string; size: number; kind: "image" | "pdf" | "text"; text?: string }> = [];
-		for (const f of Array.from(files)) {
-			const name = String(f.name || "file");
-			const size = Number(f.size || 0);
-			const type = String(f.type || "");
-			const isPdf = type === "application/pdf" || name.toLowerCase().endsWith(".pdf");
-			const isImage = type.startsWith("image/");
-			const isText = type.startsWith("text/") || name.toLowerCase().endsWith(".md") || name.toLowerCase().endsWith(".json");
-			if (!isPdf && !isImage && !isText) {
-				setMessages(prev => [
-					{
-						id: `${Date.now()}_attach_err_${Math.random().toString(16).slice(2)}`,
-						role: "system",
-						text: `unsupported_file_type: ${name}`,
-						timestamp: new Date(),
-					},
-					...prev,
-				]);
-				continue;
-			}
-			if (isImage && size > 5 * 1024 * 1024) {
-				setMessages(prev => [
-					{
-						id: `${Date.now()}_attach_err_${Math.random().toString(16).slice(2)}`,
-						role: "system",
-						text: `image_too_large(5MB): ${name}`,
-						timestamp: new Date(),
-					},
-					...prev,
-				]);
-				continue;
-			}
-			if (isPdf && size > 10 * 1024 * 1024) {
-				setMessages(prev => [
-					{
-						id: `${Date.now()}_attach_err_${Math.random().toString(16).slice(2)}`,
-						role: "system",
-						text: `pdf_too_large(10MB): ${name}`,
-						timestamp: new Date(),
-					},
-					...prev,
-				]);
-				continue;
-			}
-			let text: string | undefined = undefined;
-			let kind: "image" | "pdf" | "text" = isPdf ? "pdf" : isImage ? "image" : "text";
-			if (kind === "text") {
-				try {
-					text = await f.text();
-				} catch {
-					text = "";
-				}
-			}
-			next.push({
-				id: `${Date.now()}_${Math.random().toString(16).slice(2)}`,
-				name,
-				size,
-				kind,
-				text,
-			});
-		}
-		if (next.length) setAttachments(prev => [...next, ...prev]);
-	};
+  const handleFilesSelected = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const next: Array<{
+      id: string;
+      name: string;
+      size: number;
+      kind: "image" | "pdf" | "text";
+      text?: string;
+    }> = [];
+    for (const f of Array.from(files)) {
+      const name = String(f.name || "file");
+      const size = Number(f.size || 0);
+      const type = String(f.type || "");
+      const isPdf = type === "application/pdf" || name.toLowerCase().endsWith(".pdf");
+      const isImage = type.startsWith("image/");
+      const isText = type.startsWith("text/") || name.toLowerCase().endsWith(".md") || name.toLowerCase().endsWith(".json");
+      if (!isPdf && !isImage && !isText) {
+        setMessages((prev) => [
+          {
+            id: `${Date.now()}_attach_err_${Math.random().toString(16).slice(2)}`,
+            role: "system",
+            text: `unsupported_file_type: ${name}`,
+            timestamp: new Date(),
+          },
+          ...prev,
+        ]);
+        continue;
+      }
+      if (isImage && size > 5 * 1024 * 1024) {
+        setMessages((prev) => [
+          {
+            id: `${Date.now()}_attach_err_${Math.random().toString(16).slice(2)}`,
+            role: "system",
+            text: `image_too_large(5MB): ${name}`,
+            timestamp: new Date(),
+          },
+          ...prev,
+        ]);
+        continue;
+      }
+      if (isPdf && size > 10 * 1024 * 1024) {
+        setMessages((prev) => [
+          {
+            id: `${Date.now()}_attach_err_${Math.random().toString(16).slice(2)}`,
+            role: "system",
+            text: `pdf_too_large(10MB): ${name}`,
+            timestamp: new Date(),
+          },
+          ...prev,
+        ]);
+        continue;
+      }
+      let text: string | undefined = undefined;
+      let kind: "image" | "pdf" | "text" = isPdf ? "pdf" : isImage ? "image" : "text";
+      if (kind === "text") {
+        try {
+          text = await f.text();
+        } catch {
+          text = "";
+        }
+      }
+      next.push({
+        id: `${Date.now()}_${Math.random().toString(16).slice(2)}`,
+        name,
+        size,
+        kind,
+        text,
+      });
+    }
+    if (next.length) setAttachments((prev) => [...next, ...prev]);
+  };
 
-	const handleRemoveAttachment = (id: string) => {
-		setAttachments(prev => prev.filter(a => a.id !== id));
-	};
+  const handleRemoveAttachment = (id: string) => {
+    setAttachments((prev) => prev.filter((a) => a.id !== id));
+  };
 
-	const handleSendComposer = () => {
-		if (state !== ConnectionState.CONNECTED) return;
-		const base = composerText.trim();
-		const textAttachments = attachments.filter(a => a.kind === "text" && typeof a.text === "string");
-		const pendingAttachments = attachments.filter(a => a.kind !== "text");
-		const blocks: string[] = [];
-		if (base) blocks.push(base);
-		for (const a of textAttachments) {
-			const body = String(a.text || "");
-			blocks.push(`Attached file: ${a.name}\n\n\`\`\`\n${body}\n\`\`\``);
-		}
-		if (pendingAttachments.length) {
-			const summary = pendingAttachments
-				.map(a => `${a.name} (${a.kind}, ${Math.round(a.size / 1024)}KB)`)
-				.join(", ");
-			blocks.push(`Attachments pending (not extracted yet): ${summary}`);
-		}
-		const finalText = blocks.join("\n\n").trim();
-		if (!finalText) return;
-		liveService.current?.sendText(finalText);
-		setComposerText("");
-		setAttachments([]);
-		setMessages(prev => [
-			{
-				id: `${Date.now()}_user_text`,
-				role: "user",
-				text: base || "(sent attachments)",
-				timestamp: new Date(),
-			},
-			...prev,
-		]);
-	};
+  const handleSendComposer = () => {
+    if (state !== ConnectionState.CONNECTED) return;
+    const base = composerText.trim();
+    const textAttachments = attachments.filter((a) => a.kind === "text" && typeof a.text === "string");
+    const pendingAttachments = attachments.filter((a) => a.kind !== "text");
+    const blocks: string[] = [];
+    if (base) blocks.push(base);
+    for (const a of textAttachments) {
+      const body = String(a.text || "");
+      blocks.push(`Attached file: ${a.name}\n\n\`\`\`\n${body}\n\`\`\``);
+    }
+    if (pendingAttachments.length) {
+      const summary = pendingAttachments
+        .map((a) => `${a.name} (${a.kind}, ${Math.round(a.size / 1024)}KB)`)
+        .join(", ");
+      blocks.push(`Attachments pending (not extracted yet): ${summary}`);
+    }
+    const finalText = blocks.join("\n\n").trim();
+    if (!finalText) return;
+    liveService.current?.sendText(finalText);
+    setComposerText("");
+    setAttachments([]);
+    setMessages((prev) => [
+      {
+        id: `${Date.now()}_user_text`,
+        role: "user",
+        text: base || "(sent attachments)",
+        timestamp: new Date(),
+      },
+      ...prev,
+    ]);
+  };
 
   const handleToggleTalk = () => {
     if (state !== ConnectionState.CONNECTED) return;
@@ -226,7 +244,6 @@ export default function App() {
     }
   };
 
-  // Critical fix: stabilize the callback reference to prevent CameraFeed re-initialization
   const handleFrame = useCallback((base64: string) => {
     liveService.current?.updateCameraFrame(base64);
   }, []);
@@ -462,23 +479,35 @@ export default function App() {
          {/* Bottom Section: Media Output */}
          <div className="flex-1 rounded-2xl border border-slate-700 bg-slate-900/50 p-6 relative overflow-hidden min-h-[300px]">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
-            <div className="absolute top-4 left-6 text-[10px] text-cyan-500 font-hud tracking-widest uppercase flex items-center gap-2">
-              <span>Main Output Display</span>
-              {activeMedia && <span className="px-2 py-0.5 rounded bg-cyan-900/50 text-cyan-200 border border-cyan-700/50 text-[9px]">{activeMedia.metadata?.type}</span>}
-            </div>
-            <div className="absolute top-4 right-6 flex items-center gap-2">
-              <button
-                onClick={() => setActiveRightPanel("output")}
-                className={`px-3 py-1 rounded-lg border text-[11px] font-mono ${activeRightPanel === "output" ? "border-cyan-500/50 bg-cyan-950/20 text-cyan-200" : "border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/50"}`}
-              >
-                Output
-              </button>
-              <button
-                onClick={() => setActiveRightPanel("cars")}
-                className={`px-3 py-1 rounded-lg border text-[11px] font-mono ${activeRightPanel === "cars" ? "border-cyan-500/50 bg-cyan-950/20 text-cyan-200" : "border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/50"}`}
-              >
-                Cars
-              </button>
+            <div className="absolute top-4 left-6 right-6 flex items-center justify-between gap-3">
+              <div className="text-[10px] text-cyan-500 font-hud tracking-widest uppercase flex items-center gap-2">
+                <span>{activeRightPanel === "cars" ? "Cars" : "Main Output Display"}</span>
+                {activeRightPanel === "output" && activeMedia && (
+                  <span className="px-2 py-0.5 rounded bg-cyan-900/50 text-cyan-200 border border-cyan-700/50 text-[9px]">{activeMedia.metadata?.type}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setActiveRightPanel("output")}
+                  className={`text-[11px] font-mono px-3 py-1 rounded-lg border transition-colors ${
+                    activeRightPanel === "output"
+                      ? "border-cyan-500/40 bg-cyan-950/30 text-cyan-200"
+                      : "border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
+                  }`}
+                >
+                  Output
+                </button>
+                <button
+                  onClick={() => setActiveRightPanel("cars")}
+                  className={`text-[11px] font-mono px-3 py-1 rounded-lg border transition-colors ${
+                    activeRightPanel === "cars"
+                      ? "border-cyan-500/40 bg-cyan-950/30 text-cyan-200"
+                      : "border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
+                  }`}
+                >
+                  Cars
+                </button>
+              </div>
             </div>
             
             <div className="h-full w-full flex items-center justify-center overflow-auto mt-6">
