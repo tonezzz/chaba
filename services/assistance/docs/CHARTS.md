@@ -68,7 +68,7 @@ flowchart TB
 flowchart LR
   FE[Jarvis Frontend] -->|image upload| BE[Jarvis Backend]
   BE -->|stores assets/data| FS[(assistance_data bind mount)]
-  FS -->|cars dataset| CARS[/assistance_data/cars]
+  FS -->|cars dataset| CARS[assistance_data/cars]
   CARS -->|originals| ORIG[originals/]
   CARS -->|plates| PLATES[plates/]
   CARS -->|car crops| CROPS[cars/]
