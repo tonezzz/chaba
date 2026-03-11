@@ -3565,6 +3565,7 @@ def _fc_args(fc: Any) -> dict[str, Any]:
 
 async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
     audio_frames = 0
+    gemini_available = True
     while True:
         msg = await ws.receive_json()
         msg_type = msg.get("type")
@@ -3596,12 +3597,23 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             continue
 
         if msg_type == "audio":
+            if not gemini_available:
+                continue
             data_b64 = str(msg.get("data") or "")
             mime_type = str(msg.get("mimeType") or "audio/pcm;rate=16000")
             if not data_b64:
                 continue
-            audio_bytes = base64.b64decode(data_b64)
-            await session.send_realtime_input(audio=types.Blob(data=audio_bytes, mime_type=mime_type))
+            try:
+                audio_bytes = base64.b64decode(data_b64)
+                await session.send_realtime_input(audio=types.Blob(data=audio_bytes, mime_type=mime_type))
+            except Exception as e:
+                gemini_available = False
+                logger.warning("gemini_send_audio_failed error=%s", str(e))
+                try:
+                    await ws.send_json({"type": "error", "message": "gemini_unavailable", "detail": str(e)})
+                except Exception:
+                    pass
+                continue
             audio_frames += 1
             if audio_frames % 50 == 0:
                 logger.info("forwarded_audio_frames=%s", audio_frames)
@@ -3614,11 +3626,35 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             handled = await _dispatch_sub_agents(ws, text)
             if handled:
                 continue
-            await session.send_client_content(turns={"parts": [{"text": text}]}, turn_complete=True)
+            if not gemini_available:
+                try:
+                    await ws.send_json({"type": "error", "message": "gemini_unavailable"})
+                except Exception:
+                    pass
+                continue
+            try:
+                await session.send_client_content(turns={"parts": [{"text": text}]}, turn_complete=True)
+            except Exception as e:
+                gemini_available = False
+                logger.warning("gemini_send_text_failed error=%s", str(e))
+                try:
+                    await ws.send_json({"type": "error", "message": "gemini_unavailable", "detail": str(e)})
+                except Exception:
+                    pass
             continue
 
         if msg_type == "audio_stream_end":
-            await session.send_realtime_input(audio_stream_end=True)
+            if not gemini_available:
+                continue
+            try:
+                await session.send_realtime_input(audio_stream_end=True)
+            except Exception as e:
+                gemini_available = False
+                logger.warning("gemini_send_audio_end_failed error=%s", str(e))
+                try:
+                    await ws.send_json({"type": "error", "message": "gemini_unavailable", "detail": str(e)})
+                except Exception:
+                    pass
             continue
 
         if msg_type == "close":
@@ -3812,6 +3848,17 @@ async def ws_live(ws: WebSocket) -> None:
 
         logger.info("gemini_live_connect model=%s", MODEL)
 
+        # Resilient supervision: keep the client WS open even if Gemini fails.
+        async def _safe_gemini_to_ws_loop(ws2: WebSocket, session2: Any) -> None:
+            try:
+                await _gemini_to_ws_loop(ws2, session2)
+            except Exception as e:
+                logger.exception("gemini_to_ws_failed error=%s", str(e))
+                try:
+                    await ws2.send_json({"type": "error", "message": "gemini_session_failed", "detail": str(e)})
+                except Exception:
+                    pass
+
         async def _run_with_config(cfg: dict[str, Any]) -> None:
             session_cm = client.aio.live.connect(model=MODEL, config=cfg)
             async with session_cm as session:
@@ -3834,24 +3881,18 @@ async def ws_live(ws: WebSocket) -> None:
                     logger.info("time_context_inject_failed error=%s", str(e))
 
                 to_gemini = asyncio.create_task(_ws_to_gemini_loop(ws, session), name="ws_to_gemini")
-                to_ws = asyncio.create_task(_gemini_to_ws_loop(ws, session), name="gemini_to_ws")
+                to_ws = asyncio.create_task(_safe_gemini_to_ws_loop(ws, session), name="gemini_to_ws")
 
-                done, pending = await asyncio.wait(
-                    [to_gemini, to_ws],
-                    return_when=asyncio.FIRST_COMPLETED,
-                )
-                done_names = [getattr(t, "get_name", lambda: "task")() for t in done]
-                pending_names = [getattr(t, "get_name", lambda: "task")() for t in pending]
-                logger.info("ws_live_tasks_done done=%s pending=%s", done_names, pending_names)
-                for task in pending:
-                    task.cancel()
-                for task in done:
-                    try:
-                        _ = task.result()
-                    except asyncio.CancelledError:
-                        logger.info("ws_live_task_cancelled task=%s", getattr(task, "get_name", lambda: "task")())
-                    except Exception:
-                        logger.exception("ws_live_task_failed task=%s", getattr(task, "get_name", lambda: "task")())
+                try:
+                    await to_gemini
+                finally:
+                    if not to_ws.done():
+                        to_ws.cancel()
+                        try:
+                            await to_ws
+                        except Exception:
+                            pass
+
         try:
             await _run_with_config(base_config)
         except Exception as e:
