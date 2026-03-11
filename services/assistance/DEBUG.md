@@ -10,8 +10,12 @@ This is a practical runbook for debugging the `idc1-assistance` stack.
 - `GET /agents`
 - `GET /debug/agents`
 - `GET /daily-brief`
+- `GET /reminders?status=pending&include_hidden=false`
 - `GET /reminders/upcoming?window_hours=48&time_field=notify_at`
 - `POST /reminders/{reminder_id}/done`
+- `POST /reminders/{reminder_id}/later?days=1`
+- `GET /reminders/{reminder_id}/reschedule/suggest`
+- `POST /reminders/{reminder_id}/reschedule?notify_at=<unix_ts>`
 
 ### Jarvis Frontend
 - Confirm the SPA loads
@@ -64,8 +68,23 @@ Common failure mode:
   - `GET /reminders/upcoming?window_hours=72&time_field=notify_at`
 - If upcoming is empty but you expect reminders:
   - Confirm `notify_at` and timezone logic.
+  - Confirm the reminder isn't hidden via `hide_until`:
+    - `GET /reminders?status=pending&include_hidden=true`
   - Confirm the SQLite DB is persisted (volume/bind mount for `JARVIS_SESSION_DB`).
   - If `WEAVIATE_URL` is configured, reminder retrieval prefers Weaviate; confirm Weaviate contains the reminder objects.
+
+### Too many reminders in Today
+- Use `later` (hide until) to temporarily hide an item:
+  - `POST /reminders/{reminder_id}/later?days=1`
+- Hidden reminders are excluded by default from list/upcoming.
+  - To include hidden reminders:
+    - `GET /reminders?status=pending&include_hidden=true`
+
+### Reschedule an overdue reminder
+- Get a backend-suggested next time (uses user TZ, defaults to next morning 08:30 when it's late):
+  - `GET /reminders/{reminder_id}/reschedule/suggest`
+- Apply the new schedule:
+  - `POST /reminders/{reminder_id}/reschedule?notify_at=<unix_ts>`
 
 ### Weaviate is up but memory writes fail
 - Confirm `WEAVIATE_URL` points to `http://weaviate:8080` inside the Docker network.

@@ -17,6 +17,9 @@ The `/services/assistance/` tree is the source-of-truth for all *Assistance* app
   - `GET /reminders`
   - `GET /reminders/upcoming`
   - `POST /reminders/{reminder_id}/done`
+  - `POST /reminders/{reminder_id}/later`
+  - `GET /reminders/{reminder_id}/reschedule/suggest`
+  - `POST /reminders/{reminder_id}/reschedule`
 - Jarvis Backend (WebSocket):
   - `WS /ws/live`
 
@@ -72,6 +75,16 @@ Reminder semantics (current direction):
 - SQLite is a local scheduler cache that should be hydrated from Weaviate on startup/reconnect.
 - Reminders should support multiple distinct tasks at the same time (e.g. job1 9:00am + job2 9:00am).
 - Reminder lifecycle includes a completion state: `done` (completed reminders should disappear from "today" views).
+
+Reminder visibility:
+- Reminders can be temporarily hidden via `hide_until` ("Later") to keep Today views manageable.
+- Default lists exclude hidden reminders.
+- To include hidden reminders:
+  - `GET /reminders?include_hidden=true`
+
+Unscheduled reminders:
+- `notify_at` can be null for "no time set" reminders.
+- These reminders remain `pending` but will not appear in upcoming-notification lists until scheduled.
 
 Reminder tools (Gemini Live function calls):
 - `reminders_list`, `reminders_upcoming`, `reminders_done` are implemented in the Jarvis backend (not in 1MCP).

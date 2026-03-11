@@ -85,6 +85,10 @@ When a due time is detected, Jarvis should add the following observations:
 - Default schedule type: `morning_brief`
 - Optional: notify 1 hour earlier (user choice)
 
+Additional scheduling fields:
+- `notify_at` may be null for "unscheduled" reminders (no specific time set yet).
+- Reminders may include a `hide_until` timestamp ("Later") to temporarily hide items from Today views.
+
 ### Reminder lifecycle
 
 Jarvis should support a reminder lifecycle that allows reminders to disappear from "today" views when completed:
@@ -101,6 +105,9 @@ Completion mechanism:
 "Today" reminder views should typically include:
 - `pending` reminders due/notify today
 - `fired` reminders that are still not `done`
+
+"Later" behavior:
+- If a reminder is hidden via `hide_until`, it should not appear in Today/upcoming lists until `hide_until` has passed.
 
 "Done" reminders should not appear in the pending/today list, but may appear in history.
 
