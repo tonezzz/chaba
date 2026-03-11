@@ -3439,31 +3439,8 @@ async def ws_live(ws: WebSocket) -> None:
 
         logger.info("gemini_live_connect model=%s", MODEL)
 
-        async def _connect_with_fallback() -> Any:
-            try:
-                return client.aio.live.connect(model=MODEL, config=base_config)
-            except Exception as e:
-                msg = str(e)
-                if "invalid argument" not in msg.lower():
-                    raise
-                fallback_config = dict(base_config)
-                fallback_config["response_modalities"] = ["AUDIO"]
-                logger.warning(
-                    "gemini_live_connect_retry_invalid_argument model=%s before=%s after=%s error=%s",
-                    MODEL,
-                    base_config.get("response_modalities"),
-                    fallback_config.get("response_modalities"),
-                    msg,
-                )
-                return client.aio.live.connect(model=MODEL, config=fallback_config)
-
-        try:
-            session_cm = await _connect_with_fallback()
-        except Exception:
-            logger.exception("gemini_live_connect_failed model=%s", MODEL)
-            raise
-
-        try:
+        async def _run_with_config(cfg: dict[str, Any]) -> None:
+            session_cm = client.aio.live.connect(model=MODEL, config=cfg)
             async with session_cm as session:
                 logger.info("gemini_live_connected model=%s", MODEL)
                 await ws.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
@@ -3502,9 +3479,27 @@ async def ws_live(ws: WebSocket) -> None:
                         logger.info("ws_live_task_cancelled task=%s", getattr(task, "get_name", lambda: "task")())
                     except Exception:
                         logger.exception("ws_live_task_failed task=%s", getattr(task, "get_name", lambda: "task")())
-        except Exception:
-            logger.exception("gemini_live_session_failed model=%s", MODEL)
-            raise
+        try:
+            await _run_with_config(base_config)
+        except Exception as e:
+            msg = str(e)
+            if "invalid argument" not in msg.lower():
+                logger.exception("gemini_live_session_failed model=%s", MODEL)
+                raise
+            fallback_config = dict(base_config)
+            fallback_config["response_modalities"] = ["AUDIO"]
+            logger.warning(
+                "gemini_live_connect_retry_invalid_argument model=%s before=%s after=%s error=%s",
+                MODEL,
+                base_config.get("response_modalities"),
+                fallback_config.get("response_modalities"),
+                msg,
+            )
+            try:
+                await _run_with_config(fallback_config)
+            except Exception:
+                logger.exception("gemini_live_session_failed_after_fallback model=%s", MODEL)
+                raise
 
     except WebSocketDisconnect:
         return
