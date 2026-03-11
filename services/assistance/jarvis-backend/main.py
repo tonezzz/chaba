@@ -3438,47 +3438,59 @@ async def ws_live(ws: WebSocket) -> None:
         }
 
         logger.info("gemini_live_connect model=%s", MODEL)
-        async with client.aio.live.connect(model=MODEL, config=config) as session:
-            await ws.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
+        try:
+            session_cm = client.aio.live.connect(model=MODEL, config=config)
+        except Exception:
+            logger.exception("gemini_live_connect_build_failed")
+            raise
 
-            try:
-                tz = _get_user_timezone(DEFAULT_USER_ID)
-                now_utc = datetime.now(tz=timezone.utc)
-                now_local = now_utc.astimezone(tz)
-                time_ctx = (
-                    "TIME_CONTEXT (authoritative server time)\n"
-                    f"TIMEZONE: {tz.key}\n"
-                    f"NOW_UTC: {now_utc.replace(tzinfo=timezone.utc).isoformat()}\n"
-                    f"NOW_LOCAL: {now_local.isoformat()}\n"
-                    "Use this as the reference for all relative time calculations."
-                )
-                await session.send_client_content(turns={"parts": [{"text": time_ctx}]}, turn_complete=True)
-            except Exception as e:
-                logger.info("time_context_inject_failed error=%s", str(e))
+        try:
+            async with session_cm as session:
+                logger.info("gemini_live_connected model=%s", MODEL)
+                await ws.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
 
-            to_gemini = asyncio.create_task(_ws_to_gemini_loop(ws, session), name="ws_to_gemini")
-            to_ws = asyncio.create_task(_gemini_to_ws_loop(ws, session), name="gemini_to_ws")
-
-            done, pending = await asyncio.wait(
-                [to_gemini, to_ws],
-                return_when=asyncio.FIRST_COMPLETED,
-            )
-            done_names = [getattr(t, "get_name", lambda: "task")() for t in done]
-            pending_names = [getattr(t, "get_name", lambda: "task")() for t in pending]
-            logger.info("ws_live_tasks_done done=%s pending=%s", done_names, pending_names)
-            for task in pending:
-                task.cancel()
-            for task in done:
                 try:
-                    _ = task.result()
-                except asyncio.CancelledError:
-                    logger.info("ws_live_task_cancelled task=%s", getattr(task, "get_name", lambda: "task")())
-                except Exception:
-                    logger.exception("ws_live_task_failed task=%s", getattr(task, "get_name", lambda: "task")())
+                    tz = _get_user_timezone(DEFAULT_USER_ID)
+                    now_utc = datetime.now(tz=timezone.utc)
+                    now_local = now_utc.astimezone(tz)
+                    time_ctx = (
+                        "TIME_CONTEXT (authoritative server time)\n"
+                        f"TIMEZONE: {tz.key}\n"
+                        f"NOW_UTC: {now_utc.replace(tzinfo=timezone.utc).isoformat()}\n"
+                        f"NOW_LOCAL: {now_local.isoformat()}\n"
+                        "Use this as the reference for all relative time calculations."
+                    )
+                    await session.send_client_content(turns={"parts": [{"text": time_ctx}]}, turn_complete=True)
+                except Exception as e:
+                    logger.info("time_context_inject_failed error=%s", str(e))
+
+                to_gemini = asyncio.create_task(_ws_to_gemini_loop(ws, session), name="ws_to_gemini")
+                to_ws = asyncio.create_task(_gemini_to_ws_loop(ws, session), name="gemini_to_ws")
+
+                done, pending = await asyncio.wait(
+                    [to_gemini, to_ws],
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+                done_names = [getattr(t, "get_name", lambda: "task")() for t in done]
+                pending_names = [getattr(t, "get_name", lambda: "task")() for t in pending]
+                logger.info("ws_live_tasks_done done=%s pending=%s", done_names, pending_names)
+                for task in pending:
+                    task.cancel()
+                for task in done:
+                    try:
+                        _ = task.result()
+                    except asyncio.CancelledError:
+                        logger.info("ws_live_task_cancelled task=%s", getattr(task, "get_name", lambda: "task")())
+                    except Exception:
+                        logger.exception("ws_live_task_failed task=%s", getattr(task, "get_name", lambda: "task")())
+        except Exception:
+            logger.exception("gemini_live_session_failed model=%s", MODEL)
+            raise
 
     except WebSocketDisconnect:
         return
     except Exception as e:
+        logger.exception("ws_live_exception")
         try:
             await ws.send_json({"type": "error", "message": str(e)})
         except Exception:
