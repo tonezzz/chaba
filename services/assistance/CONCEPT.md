@@ -29,8 +29,9 @@ flowchart LR
   BE -->|tools/call| MCP[mcp-bundle :3050]
   BE -->|memory read/write| WV[weaviate :8080]
 
-  BE -->|writes| DB[(jarvis_sessions.sqlite)]
+  BE -->|writes| DB[(jarvis_sessions.sqlite /data)]
   DB -->|due reminders| BE
+  BE -->|stores assets/data| FS[(assistance_data bind mount)]
   BE -->|{type: reminder}| FE
 ```
 
@@ -41,11 +42,13 @@ sequenceDiagram
   participant BE as Backend
   participant WV as Weaviate
   participant DB as SQLite
+  participant FS as Shared data dir
 
   U->>FE: "Remember check out tomorrow 9am"
   FE->>BE: WS text
   BE->>DB: insert reminder (notify_at=morning brief)
   BE->>WV: upsert memory item (kind=reminder, vector)
+  BE->>FS: optional writes (e.g. assistance_data/cars)
   Note over BE: Scheduler loop checks DB
   BE->>FE: WS {type: "reminder", reminder: {...}}
 ```
