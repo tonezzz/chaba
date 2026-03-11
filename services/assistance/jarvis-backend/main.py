@@ -1330,6 +1330,230 @@ def _extract_reminder_setup_title(text: str) -> str:
     return tail[:120]
 
 
+def _parse_reminder_helper_command(text: str) -> dict[str, Any]:
+    raw = str(text or "").strip()
+    s = " ".join(raw.lower().split())
+    if not s:
+        return {"action": "", "args": {}}
+
+    def after(prefix: str) -> str:
+        if s.startswith(prefix + ":"):
+            return raw.split(":", 1)[1].strip()
+        if s.startswith(prefix + " "):
+            return raw[len(prefix) :].strip()
+        return ""
+
+    # English
+    if s.startswith("reminder add"):
+        return {"action": "add", "args": {"text": after("reminder add")}}
+    if s.startswith("reminder done"):
+        return {"action": "done", "args": {"reminder_id": after("reminder done")}}
+    if s.startswith("reminder later"):
+        tail = after("reminder later")
+        parts = tail.split()
+        rid = parts[0].strip() if parts else ""
+        days = None
+        if len(parts) >= 2:
+            try:
+                days = int(parts[1])
+            except Exception:
+                days = None
+        return {"action": "later", "args": {"reminder_id": rid, "days": days}}
+    if s.startswith("reminder reschedule"):
+        tail = after("reminder reschedule")
+        parts = tail.split(" ", 1)
+        rid = parts[0].strip() if parts else ""
+        when = parts[1].strip() if len(parts) > 1 else ""
+        return {"action": "reschedule", "args": {"reminder_id": rid, "when": when}}
+    if s.startswith("reminder delete"):
+        return {"action": "delete", "args": {"reminder_id": after("reminder delete")}}
+    if s.startswith("reminder list"):
+        tail = after("reminder list")
+        tail_s = " ".join(tail.lower().split())
+        status = "pending" if "pending" in tail_s else "all" if tail_s else "pending"
+        include_hidden = "include_hidden" in tail_s or "hidden" in tail_s
+        return {"action": "list", "args": {"status": status, "include_hidden": include_hidden}}
+
+    # Thai aliases
+    if s.startswith("เตือน เพิ่ม"):
+        return {"action": "add", "args": {"text": after("เตือน เพิ่ม")}}
+    if s.startswith("เตือน เสร็จ"):
+        return {"action": "done", "args": {"reminder_id": after("เตือน เสร็จ")}}
+    if s.startswith("เตือน ลบ"):
+        return {"action": "delete", "args": {"reminder_id": after("เตือน ลบ")}}
+    if s.startswith("เตือน เลื่อน"):
+        tail = after("เตือน เลื่อน")
+        parts = tail.split(" ", 1)
+        rid = parts[0].strip() if parts else ""
+        when = parts[1].strip() if len(parts) > 1 else ""
+        return {"action": "reschedule", "args": {"reminder_id": rid, "when": when}}
+    if s.startswith("เตือน รายการ"):
+        tail = after("เตือน รายการ")
+        tail_s = " ".join(tail.lower().split())
+        status = "pending" if "pending" in tail_s else "all" if tail_s else "pending"
+        include_hidden = "include_hidden" in tail_s or "hidden" in tail_s
+        return {"action": "list", "args": {"status": status, "include_hidden": include_hidden}}
+
+    return {"action": "", "args": {}}
+
+
+async def _handle_reminder_helper_trigger(ws: WebSocket, text: str) -> bool:
+    cmd = _parse_reminder_helper_command(text)
+    action = str(cmd.get("action") or "")
+    args = cmd.get("args") if isinstance(cmd.get("args"), dict) else {}
+    if not action:
+        return False
+
+    if action == "add":
+        payload = str(args.get("text") or "").strip()
+        if not payload:
+            await ws.send_json({"type": "reminder_helper_error", "message": "missing_text"})
+            return True
+        handled = await _handle_reminder_setup_trigger(ws, f"reminder setup: {payload}")
+        if not handled:
+            await ws.send_json({"type": "reminder_helper_error", "message": "add_failed"})
+        return True
+
+    if action == "list":
+        status = str(args.get("status") or "pending")
+        include_hidden = bool(args.get("include_hidden"))
+        items = _list_reminders(
+            user_id=DEFAULT_USER_ID,
+            status=status,
+            limit=50,
+            offset=0,
+            order="desc",
+            include_hidden=include_hidden,
+        )
+        await ws.send_json(
+            {
+                "type": "reminder_helper_list",
+                "status": status,
+                "include_hidden": include_hidden,
+                "reminders": items,
+                "instance_id": INSTANCE_ID,
+            }
+        )
+        return True
+
+    rid = str(args.get("reminder_id") or "").strip()
+    if not rid:
+        await ws.send_json({"type": "reminder_helper_error", "message": "missing_reminder_id"})
+        return True
+
+    if action == "done":
+        changed = _mark_reminder_done(rid)
+        wv: Optional[dict[str, Any]] = None
+        if _weaviate_enabled():
+            try:
+                wv = await _mark_reminder_done_weaviate(rid)
+            except Exception as e:
+                wv = {"ok": False, "error": str(e)}
+        await ws.send_json({"type": "reminder_helper_done", "reminder_id": rid, "changed": changed, "weaviate": wv})
+        return True
+
+    if action == "later":
+        days_v = args.get("days")
+        days = 1
+        if days_v is not None:
+            try:
+                days = max(1, int(days_v))
+            except Exception:
+                days = 1
+        tz = _get_user_timezone(DEFAULT_USER_ID)
+        now = datetime.now(tz=timezone.utc)
+        hide_until_local = _default_hide_until(now, tz, days_ahead=days)
+        hide_until_ts = int(hide_until_local.astimezone(timezone.utc).timestamp())
+        changed = _set_reminder_hide_until(rid, hide_until_ts)
+        wv: Optional[dict[str, Any]] = None
+        if _weaviate_enabled():
+            try:
+                local = _get_local_reminder_by_id(rid) or {}
+                if not local:
+                    raise HTTPException(status_code=404, detail="reminder_not_found")
+                external_key = str(local.get("aim_entity_name") or "").strip() or f"reminder::{rid}"
+                tz_name = str(local.get("timezone") or tz.key)
+                wv = await _weaviate_upsert_memory_item(
+                    external_key=external_key,
+                    kind="reminder",
+                    title=str(local.get("title") or "Reminder"),
+                    body=str(local.get("source_text") or ""),
+                    status=str(local.get("status") or "pending"),
+                    due_at=int(local.get("due_at")) if local.get("due_at") is not None else None,
+                    notify_at=int(local.get("notify_at")) if local.get("notify_at") is not None else None,
+                    hide_until=hide_until_ts,
+                    timezone_name=tz_name,
+                    source="jarvis",
+                )
+            except Exception as e:
+                wv = {"ok": False, "error": str(e)}
+        await ws.send_json({"type": "reminder_helper_later", "reminder_id": rid, "hide_until": hide_until_ts, "changed": changed, "weaviate": wv})
+        return True
+
+    if action == "reschedule":
+        when = str(args.get("when") or "").strip()
+        if not when:
+            await ws.send_json({"type": "reminder_helper_error", "message": "missing_time_text"})
+            return True
+        tz = _get_user_timezone(DEFAULT_USER_ID)
+        now = datetime.now(tz=timezone.utc)
+        due_at_utc, local_iso = _parse_time_from_text(when, now, tz)
+        if due_at_utc is None:
+            await ws.send_json({"type": "reminder_helper_error", "message": "time_parse_failed", "hint": "Try: today 17:00 | tomorrow 09:00"})
+            return True
+        notify_at_local = _next_morning_brief_at(now, tz, due_at_utc)
+        notify_at_ts = int(notify_at_local.astimezone(timezone.utc).timestamp())
+        changed = _set_reminder_notify_at(rid, notify_at_ts)
+        _set_reminder_hide_until(rid, None)
+        wv: Optional[dict[str, Any]] = None
+        if _weaviate_enabled():
+            try:
+                local = _get_local_reminder_by_id(rid) or {}
+                if not local:
+                    raise HTTPException(status_code=404, detail="reminder_not_found")
+                tz_name = str(local.get("timezone") or DEFAULT_TIMEZONE).strip() or DEFAULT_TIMEZONE
+                external_key = str(local.get("aim_entity_name") or "").strip() or f"reminder::{rid}"
+                wv = await _weaviate_upsert_memory_item(
+                    external_key=external_key,
+                    kind="reminder",
+                    title=str(local.get("title") or "Reminder"),
+                    body=str(local.get("source_text") or ""),
+                    status=str(local.get("status") or "pending"),
+                    due_at=int(local.get("due_at")) if local.get("due_at") is not None else None,
+                    notify_at=notify_at_ts,
+                    hide_until=None,
+                    timezone_name=tz_name,
+                    source="jarvis",
+                )
+            except Exception as e:
+                wv = {"ok": False, "error": str(e)}
+        await ws.send_json(
+            {
+                "type": "reminder_helper_reschedule",
+                "reminder_id": rid,
+                "notify_at": notify_at_ts,
+                "local_time": local_iso,
+                "changed": changed,
+                "weaviate": wv,
+            }
+        )
+        return True
+
+    if action == "delete":
+        changed = _delete_reminder_local(rid)
+        wv: Optional[dict[str, Any]] = None
+        if _weaviate_enabled():
+            try:
+                wv = await _mark_reminder_done_weaviate(rid)
+            except Exception as e:
+                wv = {"ok": False, "error": str(e)}
+        await ws.send_json({"type": "reminder_helper_delete", "reminder_id": rid, "changed": changed, "weaviate": wv})
+        return True
+
+    await ws.send_json({"type": "reminder_helper_error", "message": "unknown_action", "action": action})
+    return True
+
+
 async def _improve_reminder_title(*, raw_title: str, source_text: str) -> str:
     title = str(raw_title or "").strip() or "Reminder"
     src = str(source_text or "").strip()
@@ -1784,6 +2008,12 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
         agent_id_norm = str(agent_id or "").strip()
         if agent_id_norm == "reminder-setup":
             handled = await _handle_reminder_setup_trigger(ws, text)
+            if handled:
+                ws.state.active_agent_id = agent_id_norm
+                ws.state.active_agent_until_ts = int(time.time()) + AGENT_CONTINUE_WINDOW_SECONDS
+            return handled
+        if agent_id_norm == "reminder-helper":
+            handled = await _handle_reminder_helper_trigger(ws, text)
             if handled:
                 ws.state.active_agent_id = agent_id_norm
                 ws.state.active_agent_until_ts = int(time.time()) + AGENT_CONTINUE_WINDOW_SECONDS
@@ -2514,6 +2744,17 @@ def _mark_reminder_done(reminder_id: str) -> bool:
             "UPDATE reminders SET status = ?, updated_at = ? WHERE reminder_id = ? AND status != ?",
             ("done", now_ts, reminder_id, "done"),
         )
+        conn.commit()
+        return bool(cur.rowcount and int(cur.rowcount) > 0)
+
+
+def _delete_reminder_local(reminder_id: str) -> bool:
+    _init_session_db()
+    rid = str(reminder_id or "").strip()
+    if not rid:
+        return False
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        cur = conn.execute("DELETE FROM reminders WHERE reminder_id = ?", (rid,))
         conn.commit()
         return bool(cur.rowcount and int(cur.rowcount) > 0)
 

@@ -37,6 +37,7 @@ Troubleshooting:
 
 Notable sub-agents:
 - `reminder-setup`: deterministic reminder creation via chat messages like `reminder setup: ...`
+- `reminder-helper`: fast reminder CRUD helper (add/list/done/later/reschedule/delete)
 - `follow_news`: configurable news-follow workflow (focus list, refresh, stored summaries)
 
 Terminology:
