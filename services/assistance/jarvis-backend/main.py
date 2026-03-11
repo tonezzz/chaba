@@ -3456,17 +3456,25 @@ async def ws_live(ws: WebSocket) -> None:
             except Exception as e:
                 logger.info("time_context_inject_failed error=%s", str(e))
 
-            to_gemini = asyncio.create_task(_ws_to_gemini_loop(ws, session))
-            to_ws = asyncio.create_task(_gemini_to_ws_loop(ws, session))
+            to_gemini = asyncio.create_task(_ws_to_gemini_loop(ws, session), name="ws_to_gemini")
+            to_ws = asyncio.create_task(_gemini_to_ws_loop(ws, session), name="gemini_to_ws")
 
             done, pending = await asyncio.wait(
                 [to_gemini, to_ws],
                 return_when=asyncio.FIRST_COMPLETED,
             )
+            done_names = [getattr(t, "get_name", lambda: "task")() for t in done]
+            pending_names = [getattr(t, "get_name", lambda: "task")() for t in pending]
+            logger.info("ws_live_tasks_done done=%s pending=%s", done_names, pending_names)
             for task in pending:
                 task.cancel()
             for task in done:
-                _ = task.result()
+                try:
+                    _ = task.result()
+                except asyncio.CancelledError:
+                    logger.info("ws_live_task_cancelled task=%s", getattr(task, "get_name", lambda: "task")())
+                except Exception:
+                    logger.exception("ws_live_task_failed task=%s", getattr(task, "get_name", lambda: "task")())
 
     except WebSocketDisconnect:
         return

@@ -103,12 +103,17 @@ export class LiveService {
         });
         this.setupAudioInput(stream);
       };
-      this.ws.onclose = () => {
+      this.ws.onclose = (ev) => {
+        try {
+          console.warn("ws_close", { code: ev.code, reason: ev.reason, wasClean: ev.wasClean });
+        } catch {
+          // ignore
+        }
         this.onStateChange(ConnectionState.DISCONNECTED);
         this.onMessage({
           id: `${Date.now()}_ws_close`,
           role: "system",
-          text: "disconnected",
+          text: `disconnected (code=${ev.code}${ev.reason ? ` reason=${ev.reason}` : ""})`,
           timestamp: new Date(),
         });
       };
