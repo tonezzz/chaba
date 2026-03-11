@@ -8,6 +8,7 @@ The `/services/assistance/` tree is the source-of-truth for all *Assistance* app
 - `TOOLS_POLICY.md`
 - `MEMORY_POLICY.md`
 - Build / deploy (single source of truth): `docs/BUILD.md`
+- Reminders (overview + data flow): `docs/REMINDERS.md`
 
 ## Authoritative runtime surfaces (Jarvis)
 - Jarvis Backend (HTTP):

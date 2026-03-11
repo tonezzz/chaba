@@ -85,6 +85,8 @@ Quick smoke commands:
 - `report: <summary_id>`
 
 ### Reminders are missing (tomorrow/next day)
+- Reference overview:
+  - `services/assistance/docs/REMINDERS.md`
 - Check history vs upcoming:
   - `GET /reminders?status=all&limit=50`
   - `GET /reminders/upcoming?window_hours=72&time_field=notify_at`
