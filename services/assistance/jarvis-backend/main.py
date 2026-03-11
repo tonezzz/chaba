@@ -4850,6 +4850,9 @@ async def ws_live(ws: WebSocket) -> None:
         logger.info("gemini_live_connect model=%s", model_candidates[0] if model_candidates else MODEL)
 
         # Resilient supervision: keep the client WS open even if Gemini fails.
+        gemini_failed_event: asyncio.Event = asyncio.Event()
+        gemini_failed_error: dict[str, Any] | None = None
+
         async def _safe_gemini_to_ws_loop(ws2: WebSocket, session2: Any) -> None:
             try:
                 await _gemini_to_ws_loop(ws2, session2)
@@ -4864,12 +4867,31 @@ async def ws_live(ws: WebSocket) -> None:
                     )
                 else:
                     logger.exception("gemini_to_ws_failed error=%s", str(e))
+
+                logger.info(
+                    "gemini_to_ws_failed_meta model=%s exc_type=%s status_code=%s",
+                    model_used,
+                    type(e).__name__,
+                    getattr(e, "status_code", None),
+                )
                 try:
                     await ws2.send_json({"type": "error", **classified})
                 except Exception:
                     pass
 
+                # Signal the session runner so it can tear down and retry with the
+                # next candidate model.
+                nonlocal gemini_failed_error
+                gemini_failed_error = classified
+                gemini_failed_event.set()
+
         async def _run_with_config(model: str, cfg: dict[str, Any]) -> None:
+            nonlocal gemini_failed_error
+            gemini_failed_error = None
+            try:
+                gemini_failed_event.clear()
+            except Exception:
+                pass
             ws.state.gemini_live_model = model
             session_cm = client.aio.live.connect(model=model, config=cfg)
             async with session_cm as session:
@@ -4894,12 +4916,44 @@ async def ws_live(ws: WebSocket) -> None:
 
                 to_gemini = asyncio.create_task(_ws_to_gemini_loop(ws, session), name="ws_to_gemini")
                 to_ws = asyncio.create_task(_safe_gemini_to_ws_loop(ws, session), name="gemini_to_ws")
+                wait_failed: asyncio.Task[bool] | None = None
 
                 try:
+                    # Either the client disconnects (ws_to_gemini finishes) or Gemini fails.
+                    wait_failed = asyncio.create_task(gemini_failed_event.wait(), name="gemini_failed_wait")
+                    done, pending = await asyncio.wait(
+                        {to_gemini, wait_failed},
+                        return_when=asyncio.FIRST_COMPLETED,
+                    )
+
+                    if wait_failed in done and gemini_failed_event.is_set():
+                        # Gemini failed; tear down this session to allow outer retry.
+                        if not to_gemini.done():
+                            to_gemini.cancel()
+                            try:
+                                await to_gemini
+                            except Exception:
+                                pass
+                        if not to_ws.done():
+                            to_ws.cancel()
+                            try:
+                                await to_ws
+                            except Exception:
+                                pass
+
+                        detail = (gemini_failed_error or {}).get("detail") or "gemini_failed"
+                        raise RuntimeError(str(detail))
+
+                    # Client disconnected or finished.
                     await to_gemini
                 except WebSocketDisconnect:
                     return
                 finally:
+                    try:
+                        if wait_failed is not None and not wait_failed.done():
+                            wait_failed.cancel()
+                    except Exception:
+                        pass
                     if not to_ws.done():
                         to_ws.cancel()
                         try:
