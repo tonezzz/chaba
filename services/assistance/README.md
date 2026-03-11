@@ -7,6 +7,7 @@ The `/services/assistance/` tree is the source-of-truth for all *Assistance* app
 - `CONCEPT.md`
 - `TOOLS_POLICY.md`
 - `MEMORY_POLICY.md`
+- Build / deploy (single source of truth): `docs/BUILD.md`
 
 ## Authoritative runtime surfaces (Jarvis)
 - Jarvis Backend (HTTP):
@@ -26,6 +27,7 @@ The `/services/assistance/` tree is the source-of-truth for all *Assistance* app
 Troubleshooting:
 - If the UI disconnects immediately after clicking Initialize, check `jarvis-backend` logs for Gemini Live connection errors (and ensure Portainer actually pulled the latest image digest on redeploy).
 - If Gemini Live fails mid-session, the backend should keep the client WebSocket open and emit an error event (see `services/assistance/DEBUG.md`).
+  - If the error event is `gemini_live_model_not_found`, check `GEMINI_LIVE_MODEL` and ensure your API key has access to that model.
 
 ## Agents
 - Agent definitions live under:
@@ -103,6 +105,12 @@ Reminder visibility:
 Unscheduled reminders:
 - `notify_at` can be null for "no time set" reminders.
 - These reminders remain `pending` but will not appear in upcoming-notification lists until scheduled.
+
+Reminder title quality:
+- The backend can optionally rewrite reminder titles to be clearer before creating the reminder (best-effort; falls back safely).
+- Configure the text model via:
+  - `JARVIS_REMINDER_TITLE_MODEL` (preferred)
+  - `GEMINI_TEXT_MODEL` (fallback)
 
 SQLite schema migration note:
 - If `JARVIS_SESSION_DB` is persisted from older deployments, the backend may need to migrate the `reminders` table to add new columns (e.g. `hide_until`).

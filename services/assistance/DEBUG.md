@@ -5,6 +5,9 @@ This is a practical runbook for debugging the `idc1-assistance` stack.
 
 ## Start here (golden path)
 
+Build/deploy:
+- If you suspect you are running old images after a redeploy, follow `services/assistance/docs/BUILD.md` (single source of truth).
+
 ### Jarvis Backend
 - `GET /health`
 - `GET /agents`
@@ -62,6 +65,11 @@ Common failure mode:
   - The backend should emit a structured error event:
     - `{ "type": "error", "message": "gemini_session_failed", ... }`
   - Deterministic sub-agent handlers (e.g. `reminder setup: ...`) should still work.
+
+Common structured error:
+- `gemini_live_model_not_found`
+  - Means the configured `GEMINI_LIVE_MODEL` is not accessible for the current API key.
+  - Fix: set `GEMINI_LIVE_MODEL` to a model your key can access.
 
 ### Agent trigger not firing
 - Confirm the agent is loaded:
@@ -146,3 +154,9 @@ If you are debugging MCP image pipeline routing, also check:
 
 - `assistance/jarvis-backend/DEBUG.md`
 - `assistance/jarvis-frontend/DEBUG.md`
+
+## Reminder title improvement (optional)
+- The backend can rewrite reminder titles to be clearer (best-effort).
+- Configure via:
+  - `JARVIS_REMINDER_TITLE_MODEL` (preferred)
+  - `GEMINI_TEXT_MODEL` (fallback)
