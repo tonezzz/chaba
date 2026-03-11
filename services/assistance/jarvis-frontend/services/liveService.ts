@@ -292,7 +292,15 @@ export class LiveService {
         text: String(message.message),
         timestamp: new Date(),
       });
-      this.onStateChange(ConnectionState.ERROR);
+      // Backend can emit error events even while keeping the websocket open (e.g. Gemini Live session failed).
+      // Do not treat these as transport disconnects.
+      try {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          this.onStateChange(ConnectionState.CONNECTED);
+        }
+      } catch {
+        // ignore
+      }
       return;
     }
   }
