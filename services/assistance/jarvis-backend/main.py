@@ -3428,7 +3428,7 @@ async def ws_live(ws: WebSocket) -> None:
         if not api_key:
             raise RuntimeError("Missing required env var: API_KEY (or GEMINI_API_KEY)")
         client = genai.Client(api_key=api_key)
-        config = {
+        base_config = {
             "response_modalities": ["AUDIO", "TEXT"],
             "input_audio_transcription": {},
             "output_audio_transcription": {},
@@ -3438,10 +3438,29 @@ async def ws_live(ws: WebSocket) -> None:
         }
 
         logger.info("gemini_live_connect model=%s", MODEL)
+
+        async def _connect_with_fallback() -> Any:
+            try:
+                return client.aio.live.connect(model=MODEL, config=base_config)
+            except Exception as e:
+                msg = str(e)
+                if "invalid argument" not in msg.lower():
+                    raise
+                fallback_config = dict(base_config)
+                fallback_config["response_modalities"] = ["AUDIO"]
+                logger.warning(
+                    "gemini_live_connect_retry_invalid_argument model=%s before=%s after=%s error=%s",
+                    MODEL,
+                    base_config.get("response_modalities"),
+                    fallback_config.get("response_modalities"),
+                    msg,
+                )
+                return client.aio.live.connect(model=MODEL, config=fallback_config)
+
         try:
-            session_cm = client.aio.live.connect(model=MODEL, config=config)
+            session_cm = await _connect_with_fallback()
         except Exception:
-            logger.exception("gemini_live_connect_build_failed")
+            logger.exception("gemini_live_connect_failed model=%s", MODEL)
             raise
 
         try:
