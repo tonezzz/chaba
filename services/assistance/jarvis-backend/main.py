@@ -7,11 +7,14 @@ import sqlite3
 import time
 import uuid
 import re
+from io import BytesIO
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from typing import Any, Optional
 from pathlib import Path
 import xml.etree.ElementTree as ET
+
+from PIL import Image
 
 import httpx
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Body
@@ -87,6 +90,11 @@ IMAGE_ALLOWED_MODELS = [
 
 
 SESSION_DB_PATH = os.getenv("JARVIS_SESSION_DB", "/app/jarvis_sessions.sqlite")
+
+CARS_DATA_DIR = str(os.getenv("JARVIS_CARS_DATA_DIR") or "/app/assistance_data/cars").strip() or "/app/assistance_data/cars"
+CARS_ORIGINALS_DIR = os.path.join(CARS_DATA_DIR, "originals")
+CARS_PLATES_DIR = os.path.join(CARS_DATA_DIR, "plates")
+CARS_CROPS_DIR = os.path.join(CARS_DATA_DIR, "cars")
 
 AGENTS_DIR = str(os.getenv("JARVIS_AGENTS_DIR") or "/app/agents").strip() or "/app/agents"
 
@@ -235,6 +243,264 @@ def _extract_generated_image(res: Any) -> tuple[bytes, str]:
 
 def _ensure_imagen_assets_dir() -> None:
     os.makedirs(IMAGEN_ASSETS_DIR, exist_ok=True)
+
+
+def _ensure_cars_data_dirs() -> None:
+    os.makedirs(CARS_DATA_DIR, exist_ok=True)
+    os.makedirs(CARS_ORIGINALS_DIR, exist_ok=True)
+    os.makedirs(CARS_PLATES_DIR, exist_ok=True)
+    os.makedirs(CARS_CROPS_DIR, exist_ok=True)
+
+
+def _normalize_th_plate(raw: str) -> str:
+    s = str(raw or "").strip()
+    if not s:
+        return ""
+    s = s.replace(" ", "").replace("-", "").replace(".", "")
+    s = re.sub(r"[\\/]+", "_", s)
+    s = s.strip("_")
+    return s
+
+
+def _guess_image_ext(mime_type: str) -> str:
+    mt = str(mime_type or "").lower().strip()
+    if "png" in mt:
+        return ".png"
+    if "webp" in mt:
+        return ".webp"
+    return ".jpg"
+
+
+def _write_json_atomic(path: str, obj: Any) -> None:
+    tmp = f"{path}.tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(obj, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, path)
+
+
+def _load_json_if_exists(path: str) -> Optional[dict[str, Any]]:
+    try:
+        if not os.path.exists(path):
+            return None
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else None
+    except Exception:
+        return None
+
+
+def _clip_box(box: dict[str, Any], w: int, h: int) -> Optional[tuple[int, int, int, int]]:
+    try:
+        x1 = int(float(box.get("x1")))
+        y1 = int(float(box.get("y1")))
+        x2 = int(float(box.get("x2")))
+        y2 = int(float(box.get("y2")))
+    except Exception:
+        return None
+    x1 = max(0, min(w - 1, x1))
+    y1 = max(0, min(h - 1, y1))
+    x2 = max(0, min(w, x2))
+    y2 = max(0, min(h, y2))
+    if x2 <= x1 or y2 <= y1:
+        return None
+    return (x1, y1, x2, y2)
+
+
+def _expand_box(x1: int, y1: int, x2: int, y2: int, w: int, h: int, pad: float) -> tuple[int, int, int, int]:
+    dx = int((x2 - x1) * pad)
+    dy = int((y2 - y1) * pad)
+    nx1 = max(0, x1 - dx)
+    ny1 = max(0, y1 - dy)
+    nx2 = min(w, x2 + dx)
+    ny2 = min(h, y2 + dy)
+    return (nx1, ny1, nx2, ny2)
+
+
+async def _detect_th_plates_via_gemini(image_bytes: bytes, mime_type: str) -> dict[str, Any]:
+    api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
+    if not api_key:
+        return {"ok": False, "error": "missing_api_key"}
+
+    model = _image_allowed_model(os.getenv("JARVIS_IMAGE_MODEL") or IMAGE_MODEL_DEFAULT)
+    client = genai.Client(api_key=api_key)
+
+    prompt = (
+        "You are given a single exterior photo that may contain multiple cars. "
+        "Detect Thailand license plates that are clearly readable. Ignore cars without a visible plate. "
+        "Return ONLY valid JSON in this exact schema:\n"
+        "{\n"
+        "  \"plates\": [\n"
+        "    {\n"
+        "      \"plate\": \"<string>\",\n"
+        "      \"confidence\": <number 0..1>,\n"
+        "      \"bbox_plate\": {\"x1\":<int>,\"y1\":<int>,\"x2\":<int>,\"y2\":<int>}\n"
+        "    }\n"
+        "  ]\n"
+        "}\n"
+        "Coordinates must be pixel coordinates in the original image, with (0,0) at top-left."
+    )
+
+    try:
+        contents = [
+            {
+                "role": "user",
+                "parts": [
+                    {"text": prompt},
+                    {"inline_data": {"mime_type": str(mime_type or "image/jpeg"), "data": image_bytes}},
+                ],
+            }
+        ]
+        res = await client.aio.models.generate_content(model=model, contents=contents)
+        txt = getattr(res, "text", None)
+        if not txt:
+            try:
+                txt = str(res)
+            except Exception:
+                txt = ""
+        txt = str(txt or "").strip()
+        data = json.loads(txt)
+        if not isinstance(data, dict):
+            return {"ok": False, "error": "invalid_response"}
+        plates = data.get("plates")
+        if not isinstance(plates, list):
+            plates = []
+        return {"ok": True, "plates": plates}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+async def _handle_cars_ingest_image(ws: WebSocket, msg: dict[str, Any]) -> None:
+    _ensure_cars_data_dirs()
+
+    data_b64 = str(msg.get("data") or "")
+    mime_type = str(msg.get("mimeType") or msg.get("mime_type") or "image/jpeg")
+    request_id = str(msg.get("request_id") or uuid.uuid4().hex)
+    if not data_b64:
+        await ws.send_json({"type": "cars_ingest_result", "request_id": request_id, "ok": False, "error": "missing_data"})
+        return
+
+    try:
+        image_bytes = base64.b64decode(data_b64)
+    except Exception:
+        await ws.send_json({"type": "cars_ingest_result", "request_id": request_id, "ok": False, "error": "invalid_base64"})
+        return
+
+    ts = datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H-%M-%SZ")
+    ext = _guess_image_ext(mime_type)
+    upload_id = uuid.uuid4().hex[:8]
+    original_name = f"{ts}_upload_{upload_id}{ext}"
+    original_path = os.path.join(CARS_ORIGINALS_DIR, original_name)
+    with open(original_path, "wb") as f:
+        f.write(image_bytes)
+
+    detected = await _detect_th_plates_via_gemini(image_bytes=image_bytes, mime_type=mime_type)
+    plates_in: list[dict[str, Any]] = []
+    if bool(detected.get("ok")):
+        raw_plates = detected.get("plates")
+        if isinstance(raw_plates, list):
+            plates_in = [p for p in raw_plates if isinstance(p, dict)]
+
+    results: list[dict[str, Any]] = []
+    crops_written = 0
+    try:
+        img = Image.open(BytesIO(image_bytes))
+        img.load()
+    except Exception:
+        img = None
+
+    for idx, p in enumerate(plates_in, start=1):
+        raw_plate = str(p.get("plate") or "")
+        plate = _normalize_th_plate(raw_plate)
+        if not plate:
+            continue
+
+        conf = p.get("confidence")
+        try:
+            conf_f = float(conf) if conf is not None else None
+        except Exception:
+            conf_f = None
+
+        bbox = p.get("bbox_plate")
+        plate_crop_path: Optional[str] = None
+        car_crop_path: Optional[str] = None
+
+        if img is not None and isinstance(bbox, dict):
+            w, h = img.size
+            clipped = _clip_box(bbox, w=w, h=h)
+            if clipped is not None:
+                x1, y1, x2, y2 = clipped
+                plate_crop = img.crop((x1, y1, x2, y2))
+                plate_crop_name = f"{plate}_{ts}_{idx:02d}{ext}"
+                plate_crop_path = os.path.join(CARS_PLATES_DIR, plate_crop_name)
+                try:
+                    plate_crop.save(plate_crop_path)
+                    crops_written += 1
+                except Exception:
+                    plate_crop_path = None
+
+                cx1, cy1, cx2, cy2 = _expand_box(x1, y1, x2, y2, w=w, h=h, pad=2.5)
+                car_crop = img.crop((cx1, cy1, cx2, cy2))
+                car_crop_name = f"{plate}_{ts}_{idx:02d}{ext}"
+                car_crop_path = os.path.join(CARS_CROPS_DIR, car_crop_name)
+                try:
+                    car_crop.save(car_crop_path)
+                    crops_written += 1
+                except Exception:
+                    car_crop_path = None
+
+        json_path = os.path.join(CARS_DATA_DIR, f"{plate}.json")
+        now_iso = datetime.now(tz=timezone.utc).isoformat()
+        existing = _load_json_if_exists(json_path)
+        if existing is None:
+            record: dict[str, Any] = {
+                "plate": plate,
+                "plate_normalized": plate,
+                "country": "TH",
+                "created_at": now_iso,
+                "updated_at": now_iso,
+                "attributes": {"make": None, "model": None, "color": None, "body_type": None},
+                "observations": [],
+            }
+        else:
+            record = existing
+            record["updated_at"] = now_iso
+
+        obs: dict[str, Any] = {
+            "timestamp": now_iso,
+            "source_image": str(original_path),
+            "plate_crop": str(plate_crop_path) if plate_crop_path else None,
+            "car_crop": str(car_crop_path) if car_crop_path else None,
+            "confidence": {"plate": conf_f},
+        }
+        observations = record.get("observations")
+        if not isinstance(observations, list):
+            observations = []
+        observations.append(obs)
+        record["observations"] = observations
+
+        _write_json_atomic(json_path, record)
+        results.append(
+            {
+                "plate": plate,
+                "json_path": json_path,
+                "plate_crop": plate_crop_path,
+                "car_crop": car_crop_path,
+                "confidence": conf_f,
+            }
+        )
+
+    await ws.send_json(
+        {
+            "type": "cars_ingest_result",
+            "request_id": request_id,
+            "ok": True,
+            "original_path": original_path,
+            "detector": detected,
+            "items": results,
+            "crops_written": crops_written,
+            "instance_id": INSTANCE_ID,
+        }
+    )
 
 
 def _asset_paths(asset_id: str) -> tuple[str, str]:
@@ -2965,6 +3231,10 @@ async def _startup() -> None:
     except Exception as e:
         logger.warning("session_db_init_failed error=%s", e)
     try:
+        _ensure_cars_data_dirs()
+    except Exception as e:
+        logger.warning("cars_data_dir_init_failed error=%s", e)
+    try:
         await _startup_resync_from_weaviate()
     except Exception as e:
         logger.warning("startup_resync_failed error=%s", e)
@@ -4230,6 +4500,10 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             await ws.send_json({"type": "active_trip", **state})
             continue
 
+        if msg_type == "cars_ingest_image":
+            await _handle_cars_ingest_image(ws, msg if isinstance(msg, dict) else {})
+            continue
+
         if msg_type == "audio":
             if not gemini_available:
                 continue
@@ -4323,6 +4597,10 @@ async def _ws_local_only_loop(ws: WebSocket) -> None:
             )
             state = _get_session_state(str(session_id))
             await ws.send_json({"type": "active_trip", **state})
+            continue
+
+        if msg_type == "cars_ingest_image":
+            await _handle_cars_ingest_image(ws, msg if isinstance(msg, dict) else {})
             continue
 
         if msg_type == "audio":
@@ -4521,24 +4799,33 @@ async def ws_live(ws: WebSocket) -> None:
     try:
         api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
         if not api_key:
-            raise RuntimeError("Missing required env var: API_KEY (or GEMINI_API_KEY)")
+            await ws.send_json(
+                {
+                    "type": "error",
+                    "kind": "missing_api_key",
+                    "message": "missing_api_key",
+                    "detail": "Missing required env var: API_KEY (or GEMINI_API_KEY)",
+                }
+            )
+            await _ws_local_only_loop(ws)
+            return
         client = genai.Client(api_key=api_key)
 
-        def _classify_gemini_live_error(err: Exception) -> dict[str, Any]:
+        def _classify_gemini_live_error(err: Exception, model: str) -> dict[str, Any]:
             msg = str(err)
             status_code = getattr(err, "status_code", None)
             if status_code == 1008 or "requested entity was not found" in msg.lower():
                 return {
                     "kind": "gemini_model_not_found",
                     "message": "gemini_live_model_not_found",
-                    "model": MODEL,
+                    "model": model,
                     "hint": "Set GEMINI_LIVE_MODEL to a model your API key can access.",
                     "detail": msg,
                 }
             return {
                 "kind": "gemini_session_failed",
                 "message": "gemini_session_failed",
-                "model": MODEL,
+                "model": model,
                 "detail": msg,
             }
 
@@ -4551,16 +4838,30 @@ async def ws_live(ws: WebSocket) -> None:
             ],
         }
 
-        logger.info("gemini_live_connect model=%s", MODEL)
+        model_candidates = [
+            str(MODEL or "").strip(),
+            "gemini-2.5-flash-native-audio-latest",
+            "gemini-2.5-flash-native-audio-preview-12-2025",
+            "gemini-2.5-flash-native-audio-preview-09-2025",
+        ]
+        seen: set[str] = set()
+        model_candidates = [m for m in model_candidates if m and not (m in seen or seen.add(m))]
+
+        logger.info("gemini_live_connect model=%s", model_candidates[0] if model_candidates else MODEL)
 
         # Resilient supervision: keep the client WS open even if Gemini fails.
         async def _safe_gemini_to_ws_loop(ws2: WebSocket, session2: Any) -> None:
             try:
                 await _gemini_to_ws_loop(ws2, session2)
             except Exception as e:
-                classified = _classify_gemini_live_error(e)
+                model_used = getattr(ws2.state, "gemini_live_model", None) or str(MODEL)
+                classified = _classify_gemini_live_error(e, str(model_used))
                 if classified.get("kind") == "gemini_model_not_found":
-                    logger.warning("gemini_to_ws_failed_model_not_found model=%s error=%s", MODEL, classified.get("detail"))
+                    logger.warning(
+                        "gemini_to_ws_failed_model_not_found model=%s error=%s",
+                        model_used,
+                        classified.get("detail"),
+                    )
                 else:
                     logger.exception("gemini_to_ws_failed error=%s", str(e))
                 try:
@@ -4568,10 +4869,11 @@ async def ws_live(ws: WebSocket) -> None:
                 except Exception:
                     pass
 
-        async def _run_with_config(cfg: dict[str, Any]) -> None:
-            session_cm = client.aio.live.connect(model=MODEL, config=cfg)
+        async def _run_with_config(model: str, cfg: dict[str, Any]) -> None:
+            ws.state.gemini_live_model = model
+            session_cm = client.aio.live.connect(model=model, config=cfg)
             async with session_cm as session:
-                logger.info("gemini_live_connected model=%s", MODEL)
+                logger.info("gemini_live_connected model=%s", model)
                 await ws.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
                 connected_sent = True
 
@@ -4607,41 +4909,80 @@ async def ws_live(ws: WebSocket) -> None:
                         except Exception:
                             pass
 
-        try:
-            await _run_with_config(base_config)
-        except Exception as e:
-            msg = str(e)
-            if "invalid argument" not in msg.lower():
-                classified = _classify_gemini_live_error(e)
+        last_error: Exception | None = None
+        for candidate in model_candidates or [str(MODEL)]:
+            try:
+                await _run_with_config(candidate, base_config)
+                last_error = None
+                break
+            except Exception as e:
+                last_error = e
+                msg = str(e)
+                if "invalid argument" in msg.lower():
+                    cfg = dict(base_config)
+                    cfg["response_modalities"] = ["AUDIO"]
+                    logger.warning(
+                        "gemini_live_connect_retry_invalid_argument model=%s before=%s after=%s error=%s",
+                        candidate,
+                        base_config.get("response_modalities"),
+                        cfg.get("response_modalities"),
+                        msg,
+                    )
+                    try:
+                        await _run_with_config(candidate, cfg)
+                        last_error = None
+                    except Exception as e2:
+                        last_error = e2
+                    break
+                classified = _classify_gemini_live_error(e, candidate)
                 if classified.get("kind") == "gemini_model_not_found":
-                    logger.warning("gemini_live_session_model_not_found model=%s error=%s", MODEL, classified.get("detail"))
+                    logger.warning(
+                        "gemini_live_session_model_not_found model=%s error=%s",
+                        candidate,
+                        classified.get("detail"),
+                    )
+                    continue
+                break
+
+        if last_error is not None:
+            msg = str(last_error)
+            if "invalid argument" not in msg.lower():
+                model_used = getattr(ws.state, "gemini_live_model", None) or str(MODEL)
+                classified = _classify_gemini_live_error(last_error, str(model_used))
+                if classified.get("kind") == "gemini_model_not_found":
+                    logger.warning(
+                        "gemini_live_session_model_not_found model=%s error=%s",
+                        model_used,
+                        classified.get("detail"),
+                    )
                     try:
                         await ws.send_json({"type": "error", **classified})
                     except Exception:
                         pass
                     if not connected_sent:
-                        try:
-                            await ws.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
-                        except Exception:
-                            pass
-                    await _ws_local_only_loop(ws)
-                    return
-                logger.exception("gemini_live_session_failed model=%s", MODEL)
-                raise
-            fallback_config = dict(base_config)
-            fallback_config["response_modalities"] = ["AUDIO"]
-            logger.warning(
-                "gemini_live_connect_retry_invalid_argument model=%s before=%s after=%s error=%s",
-                MODEL,
-                base_config.get("response_modalities"),
-                fallback_config.get("response_modalities"),
-                msg,
-            )
-            try:
-                await _run_with_config(fallback_config)
-            except Exception:
-                logger.exception("gemini_live_session_failed_after_fallback model=%s", MODEL)
-                raise
+                        await _ws_local_only_loop(ws)
+                        return
+                else:
+                    logger.exception("gemini_live_session_failed model=%s error=%s", model_used, msg)
+                    try:
+                        await ws.send_json({"type": "error", **classified})
+                    except Exception:
+                        pass
+                    if not connected_sent:
+                        await _ws_local_only_loop(ws)
+                        return
+            else:
+                cfg = dict(base_config)
+                cfg["response_modalities"] = ["AUDIO"]
+                model_used = getattr(ws.state, "gemini_live_model", None) or str(MODEL)
+                logger.warning(
+                    "gemini_live_connect_retry_invalid_argument model=%s before=%s after=%s error=%s",
+                    model_used,
+                    base_config.get("response_modalities"),
+                    cfg.get("response_modalities"),
+                    msg,
+                )
+                await _run_with_config(str(model_used), cfg)
 
     except WebSocketDisconnect:
         return
@@ -4649,10 +4990,15 @@ async def ws_live(ws: WebSocket) -> None:
         classified: Optional[dict[str, Any]] = None
         try:
             if "_classify_gemini_live_error" in locals():
-                classified = _classify_gemini_live_error(e)
+                model_used = getattr(ws.state, "gemini_live_model", None) or str(MODEL)
+                classified = _classify_gemini_live_error(e, str(model_used))
         except Exception:
             classified = None
-
+        try:
+            if classified is not None:
+                await ws.send_json({"type": "error", **classified})
+        except Exception:
+            pass
         if classified and classified.get("kind") == "gemini_model_not_found":
             logger.warning("ws_live_model_not_found model=%s error=%s", MODEL, classified.get("detail"))
             try:

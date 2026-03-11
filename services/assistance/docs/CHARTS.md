@@ -150,3 +150,30 @@ flowchart LR
   BE --> WV
   BE --> DR
 ```
+
+## 8) Folder overview (where things live)
+
+```mermaid
+flowchart TB
+  ROOT[/repo root/]
+
+  ROOT --> SA[services/assistance/]
+  ROOT --> ST[stacks/idc1-assistance/]
+
+  SA --> JB[jarvis-backend/]
+  SA --> JF[jarvis-frontend/]
+  SA --> DRW[deep-research-worker/]
+  SA --> MCP[mcp-servers/]
+  SA --> TRIP[trip/]
+  SA --> DOCS[docs/]
+
+  JB --> JB_AGENTS[agents/*.md]
+  JB --> JB_MAIN[main.py]
+
+  DOCS --> DOCS_BUILD[BUILD.md]
+  DOCS --> DOCS_REM[REMINDERS.md]
+  DOCS --> DOCS_CHARTS[CHARTS.md]
+
+  ST --> ST_COMPOSE[docker-compose.yml]
+  ST --> ST_CFG[mcp-config/]
+```
