@@ -4993,6 +4993,7 @@ async def ws_live(ws: WebSocket) -> None:
         last_error: Exception | None = None
         for candidate in model_candidates or [str(MODEL)]:
             try:
+                logger.info("gemini_live_connect_attempt model=%s", candidate)
                 await _run_with_config(candidate, base_config)
                 last_error = None
                 break
@@ -5056,18 +5057,16 @@ async def ws_live(ws: WebSocket) -> None:
                         await ws.send_json({"type": "error", **classified})
                     except Exception:
                         pass
-                    if not connected_sent:
-                        await _ws_local_only_loop(ws)
-                        return
+                    await _ws_local_only_loop(ws)
+                    return
                 else:
                     logger.exception("gemini_live_session_failed model=%s error=%s", model_used, msg)
                     try:
                         await ws.send_json({"type": "error", **classified})
                     except Exception:
                         pass
-                    if not connected_sent:
-                        await _ws_local_only_loop(ws)
-                        return
+                    await _ws_local_only_loop(ws)
+                    return
             else:
                 cfg = dict(base_config)
                 cfg["response_modalities"] = ["AUDIO"]
