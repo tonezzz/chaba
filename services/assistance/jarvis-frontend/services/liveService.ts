@@ -29,6 +29,7 @@ export class LiveService {
   private currentCameraFrame: string | null = null;
   private isStreamingAudio: boolean = false;
   private sessionId: string | null = null;
+  private inputStream: MediaStream | null = null;
 
 	private getOrCreateSessionId(): string {
 		const storageKey = "jarvis_session_id";
@@ -107,10 +108,28 @@ export class LiveService {
     this.onStateChange(ConnectionState.CONNECTING);
 
     try {
-      this.inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-      this.outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Always try to establish the WebSocket connection even if audio init fails.
+      // This enables text-only mode (useful on servers/browsers where mic access is unavailable).
+      let stream: MediaStream | null = null;
+      try {
+        this.inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+        this.outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        this.inputStream = stream;
+      } catch (audioErr: any) {
+        this.inputStream = null;
+        this.isStreamingAudio = false;
+        try {
+          this.onMessage({
+            id: `${Date.now()}_audio_unavailable`,
+            role: "system",
+            text: `audio_unavailable: ${String(audioErr?.name || audioErr || "unknown")}`,
+            timestamp: new Date(),
+          });
+        } catch {
+          // ignore
+        }
+      }
 
       const backendUrl = (import.meta as any).env?.VITE_JARVIS_WS_URL as string | undefined;
       const proto = location.protocol === "https:" ? "wss" : "ws";
@@ -139,7 +158,16 @@ export class LiveService {
           text: "connected",
           timestamp: new Date(),
         });
-        this.setupAudioInput(stream);
+        if (this.inputStream) {
+          this.setupAudioInput(this.inputStream);
+        } else {
+          this.onMessage({
+            id: `${Date.now()}_text_only`,
+            role: "system",
+            text: "text_only_mode",
+            timestamp: new Date(),
+          });
+        }
       };
       this.ws.onclose = (ev) => {
         try {
@@ -189,6 +217,15 @@ export class LiveService {
       }
       this.ws.close();
     }
+
+    try {
+      if (this.inputStream) {
+        for (const t of this.inputStream.getTracks()) t.stop();
+      }
+    } catch {
+      // ignore
+    }
+    this.inputStream = null;
     
     if (this.inputSource) this.inputSource.disconnect();
     if (this.processor) {
