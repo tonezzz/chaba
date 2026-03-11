@@ -15,4 +15,4 @@ ENV ONE_MCP_HOST=0.0.0.0 \
 
 EXPOSE 3050
 
-CMD ["sh", "-c", "set -e\nmkdir -p /pipeline/mcp-config\ncat > /pipeline/mcp-config/mcp.json <<'EOF'\n{\"mcpServers\":{\"image-pipeline\":{\"command\":\"node\",\"args\":[\"/pipeline/server.js\"],\"tags\":[\"image\",\"pipeline\"],\"disabled\":false,\"env\":{\"GEMINI_API_KEY\":\"${GEMINI_API_KEY}\",\"API_KEY\":\"${GEMINI_API_KEY}\"}}}}\nEOF\nexec node /usr/src/app/index.js\n"]
+CMD ["sh", "-c", "set -e\nmkdir -p /pipeline/mcp-config\ncat > /pipeline/mcp-config/mcp.json <<'EOF'\n{\"mcpServers\":{\"image-pipeline\":{\"command\":\"node\",\"args\":[\"/pipeline/server.js\"],\"tags\":[\"image\",\"pipeline\"],\"disabled\":false,\"env\":{\"GEMINI_API_KEY\":\"${GEMINI_API_KEY}\",\"API_KEY\":\"${GEMINI_API_KEY}\",\"IMAGE_PIPELINE_ASSETS_DIR\":\"${IMAGE_PIPELINE_ASSETS_DIR}\",\"IMAGE_PIPELINE_MODEL\":\"${IMAGE_PIPELINE_MODEL}\",\"IMAGE_PIPELINE_ALLOWED_MODELS\":\"${IMAGE_PIPELINE_ALLOWED_MODELS}\"}}}}\nEOF\nexec node /usr/src/app/index.js\n"]
