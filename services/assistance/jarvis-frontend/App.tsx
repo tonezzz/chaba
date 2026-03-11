@@ -3,6 +3,7 @@ import { LiveService } from './services/liveService';
 import { ConnectionState, MessageLog } from './types';
 import Visualizer from './components/Visualizer';
 import CameraFeed from './components/CameraFeed';
+import CarsPanel from './components/CarsPanel';
 import { Play, Mic, MicOff, Search, Image as ImageIcon, Camera, Activity, Lock, ChevronRight, Paperclip, Send, X } from 'lucide-react';
 
 export default function App() {
@@ -13,6 +14,7 @@ export default function App() {
   const liveService = useRef<LiveService | null>(null);
   const [activeMedia, setActiveMedia] = useState<MessageLog | null>(null);
   const [isTalking, setIsTalking] = useState(false);
+	const [activeRightPanel, setActiveRightPanel] = useState<"output" | "cars">("output");
 	const [activeTripId, setActiveTripId] = useState<string>("");
 	const [activeTripName, setActiveTripName] = useState<string>("");
 	const [tripIdInput, setTripIdInput] = useState<string>("");
@@ -464,9 +466,27 @@ export default function App() {
               <span>Main Output Display</span>
               {activeMedia && <span className="px-2 py-0.5 rounded bg-cyan-900/50 text-cyan-200 border border-cyan-700/50 text-[9px]">{activeMedia.metadata?.type}</span>}
             </div>
+            <div className="absolute top-4 right-6 flex items-center gap-2">
+              <button
+                onClick={() => setActiveRightPanel("output")}
+                className={`px-3 py-1 rounded-lg border text-[11px] font-mono ${activeRightPanel === "output" ? "border-cyan-500/50 bg-cyan-950/20 text-cyan-200" : "border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/50"}`}
+              >
+                Output
+              </button>
+              <button
+                onClick={() => setActiveRightPanel("cars")}
+                className={`px-3 py-1 rounded-lg border text-[11px] font-mono ${activeRightPanel === "cars" ? "border-cyan-500/50 bg-cyan-950/20 text-cyan-200" : "border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/50"}`}
+              >
+                Cars
+              </button>
+            </div>
             
             <div className="h-full w-full flex items-center justify-center overflow-auto mt-6">
-               {!activeMedia ? (
+               {activeRightPanel === "cars" ? (
+                 <div className="w-full h-full">
+                   <CarsPanel liveService={liveService.current} connectionState={state} />
+                 </div>
+               ) : !activeMedia ? (
                  <div className="flex flex-col items-center justify-center text-slate-600 gap-4">
                     <Activity className="w-16 h-16 opacity-20" />
                     <p className="font-mono text-sm tracking-wide">Waiting for system output...</p>

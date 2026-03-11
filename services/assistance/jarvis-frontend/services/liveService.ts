@@ -1,6 +1,24 @@
 import { base64ToUint8Array, float32To16BitPCM, arrayBufferToBase64, pcm16ToAudioBuffer } from "./audioUtils";
 import { ConnectionState, MessageLog } from "../types";
 
+export type CarsIngestResult = {
+  type: "cars_ingest_result";
+  request_id: string;
+  ok: boolean;
+  original_path?: string;
+  detector?: any;
+  items?: Array<{
+    plate: string;
+    json_path: string;
+    plate_crop?: string | null;
+    car_crop?: string | null;
+    confidence?: number | null;
+  }>;
+  crops_written?: number;
+  instance_id?: string;
+  error?: string;
+};
+
 export class LiveService {
   private ws: WebSocket | null = null;
   private inputAudioContext: AudioContext | null = null;
@@ -33,10 +51,30 @@ export class LiveService {
     return this.sessionId;
   }
 
+  public async sendCarsIngestImage(file: File, requestId?: string) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      throw new Error("ws_not_connected");
+    }
+    const buf = await file.arrayBuffer();
+    const b64 = arrayBufferToBase64(buf);
+    const mimeType = String(file.type || "image/png") || "image/png";
+    const reqId = String(requestId || `${Date.now()}_${Math.random().toString(16).slice(2)}`);
+    this.ws.send(
+      JSON.stringify({
+        type: "cars_ingest_image",
+        request_id: reqId,
+        mimeType,
+        data: b64,
+      })
+    );
+    return reqId;
+  }
+
   public onStateChange: (state: ConnectionState) => void = () => {};
   public onMessage: (msg: MessageLog) => void = () => {};
   public onVolume: (vol: number) => void = () => {};
   public onActiveTrip: (trip: { active_trip_id: string | null; active_trip_name: string | null }) => void = () => {};
+  public onCarsIngestResult: (ev: CarsIngestResult) => void = () => {};
 
   constructor() {}
 
@@ -250,6 +288,15 @@ export class LiveService {
 			});
 			return;
 		}
+
+    if (message?.type === "cars_ingest_result" && message?.request_id) {
+      try {
+        this.onCarsIngestResult(message as CarsIngestResult);
+      } catch {
+        // ignore
+      }
+      return;
+    }
 
     if (message?.type === "audio" && message?.data && this.outputAudioContext) {
       this.nextStartTime = Math.max(this.nextStartTime, this.outputAudioContext.currentTime);
