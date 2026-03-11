@@ -22,6 +22,24 @@
    - fast listing
    - local due checks
    - recovery when Weaviate is temporarily unavailable
+
+ ## Weaviate reminder persistence
+
+ Reminders are written to **SQLite first** (reliability + local scheduler), then (when enabled) written-through to **Weaviate** for cross-device consistency.
+
+ - **Enable Weaviate**:
+   - Set `WEAVIATE_URL` (stack default is typically `http://weaviate:8080`).
+ - **Disable Weaviate (SQLite-only)**:
+   - Unset `WEAVIATE_URL` or set it to an empty string.
+
+ Behavior:
+ - **Write-through**: if `WEAVIATE_URL` is set, create/update/done operations attempt a Weaviate upsert/update.
+ - **Authoritative reads**: when `WEAVIATE_URL` is set, list endpoints prefer Weaviate reads (with SQLite fallback on error).
+ - **Scheduler**: the reminder scheduler loop uses SQLite as its local due-check cache.
+
+ Verification:
+ - Create a reminder, then `GET /reminders?status=pending` should report `"source": "weaviate"` when Weaviate reads succeed.
+ - If Weaviate is down, the same request should fall back to `"source": "sqlite_fallback"` and still return reminders.
  
  ```mermaid
  flowchart LR
