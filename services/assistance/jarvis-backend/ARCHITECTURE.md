@@ -9,6 +9,9 @@ This file is intentionally a thin index to reduce staleness.
   - `GET /reminders`
   - `GET /reminders/upcoming`
   - `POST /reminders/{reminder_id}/done`
+  - `POST /reminders/{reminder_id}/later`
+  - `GET /reminders/{reminder_id}/reschedule/suggest`
+  - `POST /reminders/{reminder_id}/reschedule`
   - `GET /debug/agents`
   - `WS /ws/live`
 - Agent definitions (the “what”): `agents/*.md`
@@ -17,6 +20,9 @@ This file is intentionally a thin index to reduce staleness.
 ## Runtime expectations
 - Exposes `GET /health`
 - Exposes `WS /ws/live`
+
+WebSocket resilience expectation:
+- If Gemini Live fails mid-session, the backend should emit an error event and keep the client WebSocket open so deterministic sub-agent handlers can continue.
 
 ## Agent system (high-level)
 - Agents are defined as Markdown under `agents/*.md`.
@@ -42,6 +48,10 @@ This file is intentionally a thin index to reduce staleness.
   - `kind: sub_agent|top_level_agent`
   - `trigger_phrases: ...` (optional; comma-separated)
 - Implement the handler routing in `main.py`.
+
+Examples:
+- `agents/current-news.md` -> handler in `main.py`
+- `agents/follow_news.md` -> handler in `main.py`
 
 ## Debugging wiring
 - Confirm the agent is discovered:
