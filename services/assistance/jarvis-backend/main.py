@@ -3885,11 +3885,15 @@ async def ws_live(ws: WebSocket) -> None:
 
                 try:
                     await to_gemini
+                except WebSocketDisconnect:
+                    return
                 finally:
                     if not to_ws.done():
                         to_ws.cancel()
                         try:
                             await to_ws
+                        except asyncio.CancelledError:
+                            pass
                         except Exception:
                             pass
 
