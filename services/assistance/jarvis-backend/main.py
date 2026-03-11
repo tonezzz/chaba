@@ -4041,6 +4041,57 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             return
 
 
+async def _ws_local_only_loop(ws: WebSocket) -> None:
+    while True:
+        msg = await ws.receive_json()
+        msg_type = msg.get("type")
+
+        if msg_type == "get_active_trip":
+            session_id = getattr(ws.state, "session_id", None)
+            if not session_id:
+                await ws.send_json({"type": "active_trip", "active_trip_id": None, "active_trip_name": None})
+                continue
+            state = _get_session_state(str(session_id))
+            await ws.send_json({"type": "active_trip", **state})
+            continue
+
+        if msg_type == "set_active_trip":
+            session_id = getattr(ws.state, "session_id", None)
+            active_trip_id = msg.get("active_trip_id")
+            active_trip_name = msg.get("active_trip_name")
+            if not session_id:
+                await ws.send_json({"type": "error", "message": "missing_session_id"})
+                continue
+            _set_session_state(
+                str(session_id),
+                str(active_trip_id) if active_trip_id is not None else None,
+                str(active_trip_name) if active_trip_name is not None else None,
+            )
+            state = _get_session_state(str(session_id))
+            await ws.send_json({"type": "active_trip", **state})
+            continue
+
+        if msg_type == "audio":
+            # Local-only mode: ignore audio frames (no Gemini Live session).
+            continue
+
+        if msg_type == "audio_stream_end":
+            continue
+
+        if msg_type == "text":
+            text = str(msg.get("text") or "")
+            if not text:
+                continue
+            handled = await _dispatch_sub_agents(ws, text)
+            if handled:
+                continue
+            await ws.send_json({"type": "error", "message": "gemini_unavailable"})
+            continue
+
+        if msg_type == "close":
+            return
+
+
 def _extract_audio_b64(server_msg: Any) -> Optional[str]:
     try:
         server_content = getattr(server_msg, "server_content", None)
@@ -4212,6 +4263,7 @@ async def ws_live(ws: WebSocket) -> None:
         except Exception as e:
             logger.warning("session_db_init_failed error=%s", e)
 
+    connected_sent = False
     try:
         api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
         if not api_key:
@@ -4267,6 +4319,7 @@ async def ws_live(ws: WebSocket) -> None:
             async with session_cm as session:
                 logger.info("gemini_live_connected model=%s", MODEL)
                 await ws.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
+                connected_sent = True
 
                 try:
                     tz = _get_user_timezone(DEFAULT_USER_ID)
@@ -4312,6 +4365,12 @@ async def ws_live(ws: WebSocket) -> None:
                         await ws.send_json({"type": "error", **classified})
                     except Exception:
                         pass
+                    if not connected_sent:
+                        try:
+                            await ws.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
+                        except Exception:
+                            pass
+                    await _ws_local_only_loop(ws)
                     return
                 logger.exception("gemini_live_session_failed model=%s", MODEL)
                 raise
@@ -4333,6 +4392,30 @@ async def ws_live(ws: WebSocket) -> None:
     except WebSocketDisconnect:
         return
     except Exception as e:
+        classified: Optional[dict[str, Any]] = None
+        try:
+            if "_classify_gemini_live_error" in locals():
+                classified = _classify_gemini_live_error(e)
+        except Exception:
+            classified = None
+
+        if classified and classified.get("kind") == "gemini_model_not_found":
+            logger.warning("ws_live_model_not_found model=%s error=%s", MODEL, classified.get("detail"))
+            try:
+                await ws.send_json({"type": "error", **classified})
+            except Exception:
+                pass
+            if not connected_sent:
+                try:
+                    await ws.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
+                except Exception:
+                    pass
+            try:
+                await _ws_local_only_loop(ws)
+            except WebSocketDisconnect:
+                return
+            return
+
         logger.exception("ws_live_exception")
         try:
             await ws.send_json({"type": "error", "message": str(e)})
