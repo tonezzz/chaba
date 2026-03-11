@@ -13,7 +13,6 @@ export default function App() {
   const liveService = useRef<LiveService | null>(null);
   const [activeMedia, setActiveMedia] = useState<MessageLog | null>(null);
   const [isTalking, setIsTalking] = useState(false);
-	const [sessionId, setSessionId] = useState<string>("");
 	const [activeTripId, setActiveTripId] = useState<string>("");
 	const [activeTripName, setActiveTripName] = useState<string>("");
 	const [tripIdInput, setTripIdInput] = useState<string>("");
@@ -43,7 +42,6 @@ export default function App() {
     if (!hasKey) return;
 
     liveService.current = new LiveService();
-    setSessionId(liveService.current.getSessionId());
     liveService.current.onStateChange = setState;
     liveService.current.onVolume = setVolume;
 		liveService.current.onActiveTrip = (trip) => {
@@ -261,9 +259,6 @@ export default function App() {
 				<div className="p-4 rounded-lg border border-slate-800 bg-slate-950/40">
 					<div className="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Debug / Trip</div>
 					<div className="space-y-2">
-						<div className="text-xs font-mono text-slate-400">
-							session_id: <span className="text-slate-200 break-all">{sessionId || "(none)"}</span>
-						</div>
 						<div className="text-xs font-mono text-slate-400">
 							active_trip_id: <span className="text-slate-200 break-all">{activeTripId || "(none)"}</span>
 						</div>
