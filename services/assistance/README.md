@@ -1,5 +1,23 @@
 # Assistance Services
 
+## System overview
+
+```mermaid
+flowchart LR
+  U[User] <-->|WebSocket audio/text| FE[Jarvis Frontend]
+  FE -->|WS /ws/live| BE[Jarvis Backend]
+
+  BE -->|tools/call| MCP[mcp-bundle :3050]
+  BE -->|memory read/write| WV[weaviate :8080]
+  BE -->|writes/reads| DB[(jarvis_sessions.sqlite)]
+
+  BE -->|jobs| DR[deep-research-worker :8030]
+  DR -->|persists| DRDB[(deep_research.sqlite)]
+
+  DB -->|due reminders| BE
+  BE -->|structured events| FE
+```
+
 ## What this folder is
 The `/services/assistance/` tree is the source-of-truth for all *Assistance* application code deployed via the `idc1-assistance` stack.
 
