@@ -4932,12 +4932,16 @@ async def ws_live(ws: WebSocket) -> None:
                             to_gemini.cancel()
                             try:
                                 await to_gemini
+                            except asyncio.CancelledError:
+                                pass
                             except Exception:
                                 pass
                         if not to_ws.done():
                             to_ws.cancel()
                             try:
                                 await to_ws
+                            except asyncio.CancelledError:
+                                pass
                             except Exception:
                                 pass
 
