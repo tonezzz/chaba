@@ -1,0 +1,134 @@
+ # BUILD / DEPLOY (Single Source of Truth)
+ 
+ This file is the single source of truth for how we:
+ - trigger **GHCR auto rebuilds** from this repo
+ - **redeploy** the `idc1-assistance` stack via **Portainer**
+ - verify we are actually running the **latest image digest** (not just the tag)
+ - debug the common "I redeployed but it’s still old" failure mode
+ 
+ ## TL;DR
+ 
+ - Push to branch `idc1-assistance`.
+ - Wait for GitHub Actions to publish new GHCR images.
+ - In Portainer, redeploy the stack with **pull latest images** enabled.
+ - Verify the running container uses a new **IMAGE ID**.
+ 
+ ## Copy/paste message template (improved)
+ 
+ Use this message when you want the “push -> auto rebuild -> redeploy” loop:
+ 
+ ```text
+ Please push the latest changes to branch `idc1-assistance` to trigger the GHCR auto rebuild.
+ 
+ After the GH Actions build completes, redeploy the stack in Portainer with “always pull latest image / re-pull image” enabled.
+ 
+ Finally verify the running containers are using the new image digest (IMAGE ID changed), not just the same tag.
+ ```
+ 
+ ## Repo + branch conventions
+ 
+ - Deployment branch: `idc1-assistance`
+ - Images are published to GHCR (examples):
+   - `ghcr.io/tonezzz/chaba/jarvis-backend:idc1-assistance`
+   - `ghcr.io/tonezzz/chaba/jarvis-frontend:idc1-assistance`
+ 
+ Operational rule:
+ - **A Portainer redeploy must pull the latest digest.** If it doesn’t, you’ll keep running old code.
+ 
+ ## Workflow: change -> rebuild -> redeploy
+ 
+ ### 1) Make code changes
+ 
+ Application code lives under:
+ - `services/assistance/jarvis-backend/`
+ - `services/assistance/jarvis-frontend/`
+ - `services/assistance/mcp-*`
+ 
+ Deployment configuration lives under:
+ - `stacks/idc1-assistance/`
+ 
+ ### 2) Commit + push to `idc1-assistance`
+ 
+ ```bash
+ git checkout idc1-assistance
+ git status --porcelain
+ git add <files>
+ git commit -m "<message>"
+ git push
+ ```
+ 
+ If you need to force a rebuild without code changes:
+ 
+ ```bash
+ git commit --allow-empty -m "ci: trigger rebuild"
+ git push
+ ```
+ 
+ ### 3) Wait for GitHub Actions
+ 
+ Expected:
+ - CI builds and pushes updated `:idc1-assistance` images to GHCR.
+ 
+ If the build fails:
+ - fix CI first; redeploying won’t change anything.
+ 
+ ### 4) Redeploy via Portainer
+ 
+ In Portainer:
+ - Open stack: `idc1-assistance`
+ - Click **Redeploy**
+ - Ensure **Pull latest image** / **Always pull** / **Re-pull image** is enabled
+ 
+ ## Verification (don’t skip)
+ 
+ ### A) Confirm IMAGE ID changed (digest-level)
+ 
+ On the host (or wherever Docker CLI is available):
+ 
+ ```bash
+ docker compose -f stacks/idc1-assistance/docker-compose.yml ps
+ docker compose -f stacks/idc1-assistance/docker-compose.yml images
+ ```
+ 
+ You want to see:
+ - `IMAGE ID` changed for the service you rebuilt (e.g. `jarvis-frontend`, `jarvis-backend`).
+ 
+ ### B) Confirm frontend bundle contains the fix you expect
+ 
+ When debugging “frontend still old”, it’s often easier to grep the served JS bundle than to guess.
+ 
+ ```bash
+ docker compose -f stacks/idc1-assistance/docker-compose.yml exec -T jarvis-frontend sh -lc 'ls -1 /usr/share/nginx/html/assets | head'
+ docker compose -f stacks/idc1-assistance/docker-compose.yml exec -T jarvis-frontend sh -lc 'grep -R "Do not treat these as transport disconnects" -n /usr/share/nginx/html 2>/dev/null | head'
+ ```
+ 
+ If grep returns nothing:
+ - Portainer likely didn’t pull the new digest, or CI didn’t publish a new image.
+ 
+ ### C) Backend health
+ 
+ ```bash
+ curl -sS http://127.0.0.1:18018/health
+ docker compose -f stacks/idc1-assistance/docker-compose.yml logs --tail=200 jarvis-backend
+ ```
+ 
+ ## Common failure modes
+ 
+ ### 1) "Redeployed" but still old
+ 
+ Symptoms:
+ - behavior unchanged
+ - `docker compose images` shows the same `IMAGE ID`
+ 
+ Fix:
+ - redeploy again with **pull latest image** enabled
+ - if needed, force rebuild with an empty commit
+ 
+ ### 2) Frontend shows disconnected when backend emits `{type:"error"}`
+ 
+ Interpretation:
+ - Backend can emit `{type: "error"}` while keeping the WebSocket open (e.g. Gemini Live died).
+ - The frontend must not treat these as transport disconnects.
+ 
+ How to verify:
+ - check the deployed bundle behavior (see “Confirm frontend bundle contains the fix”).

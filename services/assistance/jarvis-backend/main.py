@@ -36,6 +36,11 @@ load_dotenv()
 
 MODEL = os.getenv("GEMINI_LIVE_MODEL", "gemini-2.5-flash-native-audio-preview-12-2025")
 
+REMINDER_TITLE_MODEL = (
+    str(os.getenv("JARVIS_REMINDER_TITLE_MODEL") or os.getenv("GEMINI_TEXT_MODEL") or "gemini-2.0-flash").strip()
+    or "gemini-2.0-flash"
+)
+
 INSTANCE_ID = str(os.getenv("JARVIS_INSTANCE_ID") or "").strip() or f"jarvis_{uuid.uuid4().hex[:10]}"
 
 logger = logging.getLogger("jarvis-backend")
@@ -1325,8 +1330,51 @@ def _extract_reminder_setup_title(text: str) -> str:
     return tail[:120]
 
 
+async def _improve_reminder_title(*, raw_title: str, source_text: str) -> str:
+    title = str(raw_title or "").strip() or "Reminder"
+    src = str(source_text or "").strip()
+    if not src or not title:
+        return title[:120]
+
+    api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
+    if not api_key:
+        return title[:120]
+
+    prompt = (
+        "Rewrite the reminder title to be clear, concise, and actionable. "
+        "Preserve the user's language (Thai stays Thai). "
+        "Keep it under 80 characters. Output ONLY the title.\n\n"
+        f"User text: {src}\n"
+        f"Current title: {title}\n"
+    )
+
+    try:
+        client = genai.Client(api_key=api_key)
+
+        async def _run() -> str:
+            res = await client.aio.models.generate_content(model=REMINDER_TITLE_MODEL, contents=prompt)
+            txt = getattr(res, "text", None)
+            if txt is None:
+                try:
+                    txt = str(res)
+                except Exception:
+                    txt = ""
+            cleaned = " ".join(str(txt or "").strip().split())
+            if not cleaned:
+                return title
+            if len(cleaned) > 120:
+                cleaned = cleaned[:120].rstrip()
+            return cleaned
+
+        improved = await asyncio.wait_for(_run(), timeout=2.5)
+        return str(improved or title).strip()[:120] or "Reminder"
+    except Exception:
+        return title[:120]
+
+
 async def _handle_reminder_setup_trigger(ws: WebSocket, text: str) -> bool:
     title = _extract_reminder_setup_title(text)
+    title = await _improve_reminder_title(raw_title=title, source_text=text)
     tz = _get_user_timezone(DEFAULT_USER_ID)
     now = datetime.now(tz=timezone.utc)
     due_at_utc, local_iso = _parse_time_from_text(text, now, tz)
