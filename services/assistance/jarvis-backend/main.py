@@ -900,6 +900,51 @@ async def _gemini_embed_text(text: str) -> list[float]:
     raise RuntimeError("gemini_embedding_failed")
 
 
+_embed_cache: dict[str, list[float]] = {}
+_embed_cache_order: list[str] = []
+_embed_cache_lock: asyncio.Lock = asyncio.Lock()
+
+
+async def _gemini_embed_text_cached(text: str) -> list[float]:
+    t = str(text or "").strip()
+    if not t:
+        return []
+
+    max_items = int(JARVIS_EMBED_CACHE_MAX or 0)
+    if max_items <= 0:
+        return await _gemini_embed_text(t)
+
+    async with _embed_cache_lock:
+        cached = _embed_cache.get(t)
+        if isinstance(cached, list) and cached:
+            try:
+                _embed_cache_order.remove(t)
+            except Exception:
+                pass
+            _embed_cache_order.append(t)
+            return cached
+
+    vec = await _gemini_embed_text(t)
+
+    async with _embed_cache_lock:
+        _embed_cache[t] = vec
+        try:
+            _embed_cache_order.remove(t)
+        except Exception:
+            pass
+        _embed_cache_order.append(t)
+
+        # Simple LRU eviction.
+        while len(_embed_cache_order) > max_items:
+            oldest = _embed_cache_order.pop(0)
+            try:
+                _embed_cache.pop(oldest, None)
+            except Exception:
+                pass
+
+    return vec
+
+
 async def _weaviate_request(method: str, path: str, payload: Any = None) -> Any:
     if not _weaviate_enabled():
         raise HTTPException(status_code=500, detail="weaviate_not_configured")
