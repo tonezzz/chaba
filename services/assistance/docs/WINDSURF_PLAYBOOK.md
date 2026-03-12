@@ -106,6 +106,7 @@
 - **Rules**
   - Prefer the host-side script when you are on the Docker host.
   - Portainer stack env is authoritative; do not expect host `docker compose up` to apply Portainer-only env.
+  - Portainer CE HTTP API is commonly `http://127.0.0.1:9000` on the host (different from MCP bundle URL).
   - Redeploy only when image IDs changed (min downtime).
 - **Workflow**
   - Use: `.windsurf/workflows/run-deploy-idc1-assistance-script.md`

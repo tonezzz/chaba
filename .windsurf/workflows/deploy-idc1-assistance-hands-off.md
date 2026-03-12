@@ -7,7 +7,7 @@ Deploy changes to `idc1-assistance` with minimal manual steps:
 
 - push code
 - wait for GH Actions to publish images
-- redeploy the stack (preferred: host-side script; alternative: Portainer MCP)
+- redeploy the stack (preferred: host-side script)
 - verify digest + health
 
 # Preconditions
@@ -34,29 +34,18 @@ git commit --allow-empty -m "ci: trigger rebuild"
 git push
 ```
 
-# Step 2: Wait for GH Actions publish workflow (local)
-1. List latest runs for the publish workflow:
+# Step 2: Run the deploy script (preferred, on the Docker host)
 
-```bash
-gh run list --repo tonezzz/chaba --workflow "Publish (idc1-assistance)" --limit 10
-```
+Use:
 
-2. Watch the newest run until it finishes:
+- `.windsurf/workflows/run-deploy-idc1-assistance-script.md`
 
-```bash
-gh run watch <RUN_ID> --repo tonezzz/chaba --exit-status
-```
+This script already:
 
-If it fails:
-
-```bash
-gh run view <RUN_ID> --repo tonezzz/chaba --log-failed
-```
-
-# Step 3: Redeploy via Portainer MCP (Windsurf Tools)
-Preferred when you are on the Docker host:
-
-- Use: `.windsurf/workflows/run-deploy-idc1-assistance-script.md`
+- waits for the latest successful publish run
+- pulls images
+- redeploys via Portainer HTTP API when digests changed
+- verifies digests and health
 
 Alternative when you are not on the Docker host:
 
@@ -78,7 +67,7 @@ Preferred (applies compose/env changes + redeploys):
 Fallback (bounce only):
 - Tool: `portainer_1mcp_stopLocalStack` then `portainer_1mcp_startLocalStack`
 
-# Step 4: Verify digest + health (local)
+# Step 3: Verify digest + health (local)
 ## 4.1 Verify backend digest changed
 ```bash
 docker inspect -f 'started={{.State.StartedAt}} image={{.Config.Image}} digest={{.Image}}' idc1-assistance-jarvis-backend-1
