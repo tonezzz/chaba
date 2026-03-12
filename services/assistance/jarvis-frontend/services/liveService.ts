@@ -310,7 +310,7 @@ export class LiveService {
       const line = `reminder_setup: ${title}${rid ? ` [${rid}]` : ""} (${status})${hint ? ` — ${hint}` : ""}`;
       this.onMessage({
         id: `${Date.now()}_reminder_setup`,
-        role: "system",
+        role: "model",
         text: line,
         timestamp: new Date(),
       });
@@ -324,7 +324,7 @@ export class LiveService {
       const line = `${t}${rid ? ` [${rid}]` : ""}${summary ? ` — ${summary}` : ""}`;
       this.onMessage({
         id: `${Date.now()}_${t}`,
-        role: "system",
+        role: "model",
         text: line,
         timestamp: new Date(),
       });
@@ -338,7 +338,7 @@ export class LiveService {
       const text = schedule ? `reminder: ${title} (${schedule})` : `reminder: ${title}`;
       this.onMessage({
         id: `${Date.now()}_reminder`,
-        role: "system",
+        role: "model",
         text,
         timestamp: new Date(),
       });
