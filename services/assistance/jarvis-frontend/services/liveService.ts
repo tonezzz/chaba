@@ -299,6 +299,38 @@ export class LiveService {
       return;
     }
 
+    if (message?.type === "reminder_setup") {
+      const title = message?.title != null ? String(message.title) : "Reminder";
+      const rid = message?.reminder_id != null ? String(message.reminder_id) : "";
+      const res = message?.result;
+      const ok = res?.ok === true;
+      const needsTime = res?.needs_time === true;
+      const hint = res?.hint != null ? String(res.hint) : "";
+      const status = ok ? (needsTime ? "created (needs time)" : "created") : "failed";
+      const line = `reminder_setup: ${title}${rid ? ` [${rid}]` : ""} (${status})${hint ? ` — ${hint}` : ""}`;
+      this.onMessage({
+        id: `${Date.now()}_reminder_setup`,
+        role: "system",
+        text: line,
+        timestamp: new Date(),
+      });
+      return;
+    }
+
+    if (typeof message?.type === "string" && message.type.startsWith("reminder_helper_")) {
+      const t = String(message.type);
+      const rid = message?.reminder_id != null ? String(message.reminder_id) : "";
+      const summary = message?.message != null ? String(message.message) : "";
+      const line = `${t}${rid ? ` [${rid}]` : ""}${summary ? ` — ${summary}` : ""}`;
+      this.onMessage({
+        id: `${Date.now()}_${t}`,
+        role: "system",
+        text: line,
+        timestamp: new Date(),
+      });
+      return;
+    }
+
     if (message?.type === "reminder" && message?.reminder) {
       const r = message.reminder;
       const title = r?.title != null ? String(r.title) : "Reminder";
