@@ -83,3 +83,4 @@ docker compose -f stacks/idc1-portainer/docker-compose.yml up -d --force-recreat
 
 - `:9443` might not be reachable from the host even if Portainer is configured internally as `portainer:9443`.
 - MCP bundle endpoint (`:3052`) is not the same thing as the Portainer HTTP API endpoint (`:9000`).
+- Git-backed stack redeploy is not reliably available via the Portainer HTTP API on this host (`/api/stacks/{id}/git/redeploy` returned `405`/`400` in testing). Prefer Portainer UI redeploy for Git-backed stacks, or use Portainer MCP stack update tools when appropriate.
