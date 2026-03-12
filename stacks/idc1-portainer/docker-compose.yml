@@ -30,13 +30,13 @@ services:
         apk add --no-cache libc6-compat >/dev/null 2>&1 || true
 
         desired_version="v0.7.0"
-        if [ ! -x /usr/local/bin/portainer-mcp ] || [ ! -f /usr/local/bin/portainer-mcp.version ] || [ "$(cat /usr/local/bin/portainer-mcp.version 2>/dev/null || true)" != "$desired_version" ]; then
+        if [ ! -x /usr/local/bin/portainer-mcp ] || [ ! -f /usr/local/bin/portainer-mcp.version ] || [ "$(cat /usr/local/bin/portainer-mcp.version 2>/dev/null || true)" != "$${desired_version}" ]; then
           arch="$$(uname -m)"
           case "$$arch" in
             x86_64) arch="amd64" ;;
             aarch64|arm64) arch="arm64" ;;
           esac
-          version="$desired_version"
+          version="$${desired_version}"
           tmpdir="$$(mktemp -d)"
 
           url="https://github.com/portainer/portainer-mcp/releases/download/$$version/portainer-mcp-$$version-linux-$$arch.tar.gz"
@@ -52,7 +52,7 @@ services:
             bin_path="$$(find "$$tmpdir" -type f -name portainer-mcp | head -n 1)"
             if [ "$$bin_path" != "" ] && [ -f "$$bin_path" ]; then
               install -m 0755 "$$bin_path" /usr/local/bin/portainer-mcp
-              echo "$$desired_version" > /usr/local/bin/portainer-mcp.version
+              echo "$${desired_version}" > /usr/local/bin/portainer-mcp.version
             fi
           fi
 
