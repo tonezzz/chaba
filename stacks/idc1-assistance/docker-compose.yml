@@ -74,7 +74,7 @@ services:
         set -e
 
         cat > /app/mcp-config/mcp.json <<'EOF'
-        { "mcpServers": { "fetch": { "command": "/opt/venv/bin/python", "args": ["-m", "mcp_server_fetch"], "tags": ["fetch", "web"], "disabled": false }, "server-sequential-thinking": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"], "tags": ["thinking"], "disabled": false }, "playwright": { "command": "npx", "args": ["-y", "@playwright/mcp@latest"], "tags": ["playwright", "web", "browser"], "disabled": false }, "portainer": { "type": "streamableHttp", "url": "http://host.docker.internal:3052/mcp?app=windsurf", "tags": ["portainer", "containers"], "disabled": false }
+        { "mcpServers": { "fetch": { "command": "/opt/venv/bin/python", "args": ["-m", "mcp_server_fetch"], "tags": ["fetch", "web"], "disabled": false }, "server-sequential-thinking": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"], "tags": ["thinking"], "disabled": false }, "playwright": { "command": "npx", "args": ["-y", "@playwright/mcp@latest"], "tags": ["playwright", "web", "browser"], "disabled": false }
         EOF
 
         cat >> /app/mcp-config/mcp.json <<'EOF'
@@ -436,6 +436,321 @@ services:
       timeout: 5s
       retries: 3
 
+  mcp-ws-gateway-portainer:
+    <<: *default-service
+    image: node:20-alpine
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:18183:8182"
+    working_dir: /app
+    command:
+      - sh
+      - -lc
+      - |
+        set -e
+
+        cat > /app/index.js <<'EOF'
+        const express = require('express');
+        const http = require('http');
+        const crypto = require('crypto');
+        const WebSocket = require('ws');
+        
+        const APP_NAME = 'mcp-ws-gateway';
+        const APP_VERSION = '0.1.0';
+        
+        const PORT = Number(process.env.PORT || 8182);
+        const WS_PATH = process.env.WS_PATH || '/ws';
+        
+        const OPENAI_GATEWAY_URL = (process.env.OPENAI_GATEWAY_URL || 'http://mcp-openai-gateway:8181').replace(/\/$/, '');
+        const MCP_AGENT_URL = (process.env.MCP_AGENT_URL || 'http://1mcp-agent:3051/mcp?app=windsurf').trim();
+        
+        function newId(prefix = 'req') {
+          return String(prefix) + '-' + String(Date.now()) + '-' + String(crypto.randomUUID?.() || Math.random().toString(16).slice(2));
+        }
+        
+        function safeJsonParse(s) {
+          try {
+            return JSON.parse(s);
+          } catch {
+            return null;
+          }
+        }
+        
+        async function mcpInitialize() {
+          const initPayload = {
+            jsonrpc: '2.0',
+            id: '1',
+            method: 'initialize',
+            params: {
+              protocolVersion: '2024-11-05',
+              capabilities: { tools: {}, resources: {}, prompts: {} },
+              clientInfo: { name: APP_NAME, version: APP_VERSION }
+            }
+          };
+        
+          const r = await fetch(MCP_AGENT_URL, {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              accept: 'application/json, text/event-stream'
+            },
+            body: JSON.stringify(initPayload)
+          });
+        
+          const sessionId = r.headers.get('mcp-session-id');
+          const text = await r.text();
+          const obj = parseStreamableJsonResponse(text);
+          if (!r.ok) {
+            throw new Error('mcp initialize failed: ' + String(r.status) + ' ' + String(text));
+          }
+          if (obj?.error) {
+            throw new Error('mcp initialize error: ' + String(JSON.stringify(obj.error)));
+          }
+          if (!sessionId) {
+            throw new Error('mcp initialize: missing mcp-session-id header');
+          }
+          return sessionId;
+        }
+        
+        function parseStreamableJsonResponse(bodyText) {
+          const trimmed = (bodyText || '').trim();
+          if (!trimmed) return null;
+        
+          if (trimmed.startsWith('{')) {
+            return safeJsonParse(trimmed);
+          }
+        
+          const lines = trimmed.split(/\r?\n/);
+          for (const line of lines) {
+            if (line.startsWith('data:')) {
+              const payload = line.replace(/^data:\s*/, '').trim();
+              const obj = safeJsonParse(payload);
+              if (obj) return obj;
+            }
+          }
+          return null;
+        }
+        
+        async function mcpToolsCall(sessionId, toolName, argumentsObj) {
+          const payload = {
+            jsonrpc: '2.0',
+            id: newId('call'),
+            method: 'tools/call',
+            params: { name: toolName, arguments: argumentsObj || {} }
+          };
+        
+          const r = await fetch(MCP_AGENT_URL, {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              accept: 'application/json, text/event-stream',
+              'mcp-session-id': sessionId
+            },
+            body: JSON.stringify(payload)
+          });
+        
+          const text = await r.text();
+          const obj = parseStreamableJsonResponse(text);
+          if (!r.ok) {
+            throw new Error('mcp tools/call failed: ' + String(r.status) + ' ' + String(text));
+          }
+          return obj;
+        }
+        
+        async function openaiChatStream({ messages, model, temperature, max_tokens, apiKey }) {
+          const url = String(OPENAI_GATEWAY_URL) + '/v1/chat/completions';
+        
+          const headers = {
+            'content-type': 'application/json',
+            accept: 'text/event-stream'
+          };
+        
+          if (apiKey) {
+            headers.authorization = 'Bearer ' + String(apiKey);
+          }
+        
+          const payload = {
+            model: model || 'glama-default',
+            messages: Array.isArray(messages) ? messages : [],
+            temperature: temperature,
+            max_tokens: max_tokens,
+            stream: true
+          };
+        
+          const r = await fetch(url, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(payload)
+          });
+        
+          if (!r.ok) {
+            const text = await r.text();
+            throw new Error('openai gateway error: ' + String(r.status) + ' ' + String(text));
+          }
+        
+          if (!r.body) {
+            throw new Error('openai gateway: missing response body');
+          }
+        
+          return r.body;
+        }
+        
+        function send(ws, obj) {
+          if (ws.readyState !== WebSocket.OPEN) return;
+          ws.send(JSON.stringify(obj));
+        }
+        
+        const app = express();
+        app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '2mb' }));
+        
+        app.get('/health', (_req, res) => {
+          res.json({
+            ok: true,
+            service: APP_NAME,
+            version: APP_VERSION,
+            wsPath: WS_PATH,
+            openaiGatewayUrl: OPENAI_GATEWAY_URL,
+            mcpAgentUrl: MCP_AGENT_URL
+          });
+        });
+        
+        const server = http.createServer(app);
+        const wss = new WebSocket.Server({ server, path: WS_PATH });
+        
+        wss.on('connection', async (ws, req) => {
+          const connId = newId('conn');
+          ws._connId = connId;
+        
+          send(ws, { type: 'hello', connId, server: { name: APP_NAME, version: APP_VERSION } });
+        
+          const mcpSessionPromise = (async () => {
+            try {
+              const sessionId = await mcpInitialize();
+              send(ws, { type: 'mcp.ready' });
+              return sessionId;
+            } catch (e) {
+              send(ws, { type: 'mcp.error', error: { message: 'MCP init failed: ' + String(e && e.message ? e.message : e) } });
+              return null;
+            }
+          })();
+        
+          ws.on('message', async (data) => {
+            const raw = data.toString('utf-8');
+            const msg = safeJsonParse(raw);
+            if (!msg || typeof msg.type !== 'string') {
+              return send(ws, { type: 'error', error: { message: 'Invalid message (expected JSON with type)' } });
+            }
+        
+            const requestId = msg.requestId || newId('ws');
+        
+            if (msg.type === 'chat.start') {
+              send(ws, { type: 'chat.start.ack', requestId });
+              try {
+                const bodyStream = await openaiChatStream({
+                  messages: msg.messages,
+                  model: msg.model,
+                  temperature: msg.temperature,
+                  max_tokens: msg.max_tokens,
+                  apiKey: msg.apiKey
+                });
+        
+                const reader = bodyStream.getReader();
+                const decoder = new TextDecoder();
+                let buf = '';
+        
+                for (;;) {
+                  const { value, done } = await reader.read();
+                  if (done) break;
+        
+                  buf += decoder.decode(value, { stream: true });
+                  const parts = buf.split(/\r?\n/);
+                  buf = parts.pop() || '';
+        
+                  for (const line of parts) {
+                    if (!line.startsWith('data:')) continue;
+                    const payload = line.replace(/^data:\s*/, '').trim();
+                    if (!payload) continue;
+                    if (payload === '[DONE]') {
+                      send(ws, { type: 'chat.done', requestId });
+                      continue;
+                    }
+        
+                    const obj = safeJsonParse(payload);
+                    if (!obj) continue;
+        
+                    const delta = obj?.choices?.[0]?.delta?.content;
+                    if (typeof delta === 'string' && delta.length) {
+                      send(ws, { type: 'chat.token', requestId, delta });
+                    }
+        
+                    const toolCalls = obj?.choices?.[0]?.delta?.tool_calls;
+                    if (toolCalls) {
+                      send(ws, { type: 'chat.tool_calls.delta', requestId, toolCalls });
+                    }
+                  }
+                }
+              } catch (e) {
+                send(ws, { type: 'chat.error', requestId, error: { message: e.message } });
+              }
+              return;
+            }
+        
+            if (msg.type === 'tools.call') {
+              const mcpSessionId = await mcpSessionPromise;
+              if (!mcpSessionId) {
+                return send(ws, { type: 'tools.error', requestId, error: { message: 'MCP not initialized' } });
+              }
+              const toolName = msg.name;
+              if (!toolName) {
+                return send(ws, { type: 'tools.error', requestId, error: { message: 'Missing tool name' } });
+              }
+        
+              send(ws, { type: 'tool.start', requestId, name: toolName, arguments: msg.arguments || {} });
+              try {
+                const result = await mcpToolsCall(mcpSessionId, toolName, msg.arguments || {});
+                send(ws, { type: 'tool.done', requestId, name: toolName, result });
+              } catch (e) {
+                send(ws, { type: 'tool.error', requestId, name: toolName, error: { message: e.message } });
+              }
+              return;
+            }
+        
+            if (msg.type === 'task.poll') {
+              return send(ws, { type: 'task.poll.ack', requestId });
+            }
+        
+            return send(ws, { type: 'error', requestId, error: { message: 'Unknown message type: ' + String(msg.type) } });
+          });
+        
+          ws.on('close', () => {});
+        });
+        
+        server.listen(PORT, '0.0.0.0', () => {
+          console.log('[' + String(APP_NAME) + '] listening on 0.0.0.0:' + String(PORT) + ' (ws: ' + String(WS_PATH) + ')');
+        });
+        EOF
+
+        if [ ! -f /app/package.json ]; then
+          npm init -y >/dev/null 2>&1
+        fi
+        if [ ! -d /app/node_modules ]; then
+          npm install --silent express ws
+        fi
+        exec node /app/index.js
+    environment:
+      PORT: 8182
+      WS_PATH: /ws
+      MCP_AGENT_URL: http://host.docker.internal:3052/mcp?app=windsurf
+      OPENAI_GATEWAY_URL: ${OPENAI_GATEWAY_URL:-http://mcp-openai-gateway:8181}
+    volumes:
+      - mcp-ws-gateway-portainer-data:/app
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8182/health >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   web-fetcher:
     <<: *default-service
     image: ghcr.io/tonezzz/chaba/web-fetcher:idc1-assistance
@@ -493,6 +808,7 @@ volumes:
   mcp-bundle-data:
   mcp-bundle-cache:
   mcp-ws-gateway-data:
+  mcp-ws-gateway-portainer-data:
   weaviate-data:
   jarvis-imagen-assets:
   jarvis-session-db:
