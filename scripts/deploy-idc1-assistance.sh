@@ -144,6 +144,28 @@ PY
   curl -sS -k --max-time 30 -H "X-API-Key: ${portainer_api_key}" "${base}/api/stacks/${stack_id}/file" -o /tmp/portainer_stack_file.json
   curl -sS -k --max-time 30 -H "X-API-Key: ${portainer_api_key}" "${base}/api/stacks/${stack_id}" -o /tmp/portainer_stack_inspect.json
 
+  # IMPORTANT:
+  # Updating a Git-backed stack via PUT /api/stacks/{id} will convert it to a file-based stack.
+  # If you want to keep the stack Git-backed, redeploy via Portainer UI (or a Git redeploy endpoint if supported).
+  if python3 - <<'PY'
+import json
+with open('/tmp/portainer_stack_inspect.json','r',encoding='utf-8') as f:
+  obj=json.load(f)
+git_cfg=obj.get('GitConfig')
+is_git=bool(git_cfg) and isinstance(git_cfg, dict)
+print('1' if is_git else '0')
+PY
+  | grep -q '^1$'; then
+    if [[ "${ALLOW_FILE_BASED_REDEPLOY_FOR_GIT_STACKS:-}" != "true" ]]; then
+      echo "[deploy] ERROR: stack appears Git-backed (GitConfig present)." >&2
+      echo "[deploy] Refusing to redeploy via PUT /api/stacks/{id} because it converts Git-backed stacks to file-based." >&2
+      echo "[deploy] Action: redeploy the stack via Portainer UI (recommended), or rerun with:" >&2
+      echo "[deploy]   export ALLOW_FILE_BASED_REDEPLOY_FOR_GIT_STACKS=true" >&2
+      return 1
+    fi
+    echo "[deploy] WARN: Git-backed stack detected but override enabled; proceeding with file-based redeploy." >&2
+  fi
+
   # Prepare update payload:
   # - StackFileContent from /file
   # - Env from stack inspect
