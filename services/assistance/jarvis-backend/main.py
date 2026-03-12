@@ -2053,6 +2053,7 @@ async def _handle_reminder_setup_trigger(ws: WebSocket, text: str) -> bool:
             "timezone": tz.key,
             "created_at": int(time.time()),
         }
+        logger.info("reminder_setup_draft_emit title=%s", title)
         await ws.send_json(
             {
                 "type": "reminder_setup_draft",
