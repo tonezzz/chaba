@@ -192,7 +192,7 @@ services:
         const MCP_AGENT_URL = (process.env.MCP_AGENT_URL || 'http://1mcp-agent:3051/mcp?app=windsurf').trim();
         
         function newId(prefix = 'req') {
-          return `${prefix}-${Date.now()}-${crypto.randomUUID?.() || Math.random().toString(16).slice(2)}`;
+          return String(prefix) + '-' + String(Date.now()) + '-' + String(crypto.randomUUID?.() || Math.random().toString(16).slice(2));
         }
         
         function safeJsonParse(s) {
@@ -228,10 +228,10 @@ services:
           const text = await r.text();
           const obj = parseStreamableJsonResponse(text);
           if (!r.ok) {
-            throw new Error(`mcp initialize failed: ${r.status} ${text}`);
+            throw new Error('mcp initialize failed: ' + String(r.status) + ' ' + String(text));
           }
           if (obj?.error) {
-            throw new Error(`mcp initialize error: ${JSON.stringify(obj.error)}`);
+            throw new Error('mcp initialize error: ' + String(JSON.stringify(obj.error)));
           }
           if (!sessionId) {
             throw new Error('mcp initialize: missing mcp-session-id header');
@@ -279,13 +279,13 @@ services:
           const text = await r.text();
           const obj = parseStreamableJsonResponse(text);
           if (!r.ok) {
-            throw new Error(`mcp tools/call failed: ${r.status} ${text}`);
+            throw new Error('mcp tools/call failed: ' + String(r.status) + ' ' + String(text));
           }
           return obj;
         }
         
         async function openaiChatStream({ messages, model, temperature, max_tokens, apiKey }) {
-          const url = `${OPENAI_GATEWAY_URL}/v1/chat/completions`;
+          const url = String(OPENAI_GATEWAY_URL) + '/v1/chat/completions';
         
           const headers = {
             'content-type': 'application/json',
@@ -293,7 +293,7 @@ services:
           };
         
           if (apiKey) {
-            headers.authorization = `Bearer ${apiKey}`;
+            headers.authorization = 'Bearer ' + String(apiKey);
           }
         
           const payload = {
@@ -312,7 +312,7 @@ services:
         
           if (!r.ok) {
             const text = await r.text();
-            throw new Error(`openai gateway error: ${r.status} ${text}`);
+            throw new Error('openai gateway error: ' + String(r.status) + ' ' + String(text));
           }
         
           if (!r.body) {
@@ -356,7 +356,7 @@ services:
               send(ws, { type: 'mcp.ready' });
               return sessionId;
             } catch (e) {
-              send(ws, { type: 'mcp.error', error: { message: `MCP init failed: ${e.message}` } });
+              send(ws, { type: 'mcp.error', error: { message: 'MCP init failed: ' + String(e && e.message ? e.message : e) } });
               return null;
             }
           })();
@@ -446,14 +446,14 @@ services:
               return send(ws, { type: 'task.poll.ack', requestId });
             }
         
-            return send(ws, { type: 'error', requestId, error: { message: `Unknown message type: ${msg.type}` } });
+            return send(ws, { type: 'error', requestId, error: { message: 'Unknown message type: ' + String(msg.type) } });
           });
         
           ws.on('close', () => {});
         });
         
         server.listen(PORT, '0.0.0.0', () => {
-          console.log(`[${APP_NAME}] listening on 0.0.0.0:${PORT} (ws: ${WS_PATH})`);
+          console.log('[' + String(APP_NAME) + '] listening on 0.0.0.0:' + String(PORT) + ' (ws: ' + String(WS_PATH) + ')');
         });
         EOF
 
