@@ -6,12 +6,60 @@ repo="tonezzz/chaba"
 workflow_name="Publish (idc1-assistance)"
 branch="idc1-assistance"
 
+# Portainer-first deploy trigger (recommended)
+# Set this on the Docker host (do not commit secrets):
+#   export PORTAINER_STACK_WEBHOOK_URL='https://<portainer>/api/stacks/webhooks/<token>'
+portainer_stack_webhook_url="${PORTAINER_STACK_WEBHOOK_URL:-}"
+
 # Controls
 wait_timeout_seconds="${WAIT_TIMEOUT_SECONDS:-1800}"
 poll_seconds="${POLL_SECONDS:-10}"
 window_seconds="${HEALTH_WINDOW_SECONDS:-120}"
 
 echo "[deploy] repo=${repo} workflow=${workflow_name} branch=${branch} compose=${compose_file}"
+
+get_container_id() {
+  local service="$1"
+  local cid=""
+
+  # Prefer docker compose (when containers have compose labels)
+  cid="$(docker compose -f "${compose_file}" ps -q "${service}" 2>/dev/null || true)"
+  if [[ -n "${cid}" ]]; then
+    echo "${cid}"
+    return 0
+  fi
+
+  # Fallback: explicit container name convention used by this stack
+  cid="$(docker ps --filter "name=^/idc1-assistance-${service}-1$" --format '{{.ID}}' | head -n 1)"
+  if [[ -n "${cid}" ]]; then
+    echo "${cid}"
+    return 0
+  fi
+
+  return 1
+}
+
+trigger_portainer_redeploy() {
+  if [[ -z "${portainer_stack_webhook_url}" ]]; then
+    echo "[deploy] ERROR: PORTAINER_STACK_WEBHOOK_URL is not set; cannot do Portainer-authoritative redeploy" >&2
+    return 1
+  fi
+
+  if ! command -v curl >/dev/null 2>&1; then
+    echo "[deploy] ERROR: curl not found in PATH" >&2
+    return 1
+  fi
+
+  echo "[deploy] Triggering Portainer redeploy via stack webhook..."
+  # Webhook is a POST with empty body.
+  http_code="$(curl -sS -o /dev/null -w '%{http_code}' -X POST "${portainer_stack_webhook_url}")"
+  if [[ "${http_code}" != "200" && "${http_code}" != "204" ]]; then
+    echo "[deploy] ERROR: Portainer webhook returned http=${http_code}" >&2
+    return 1
+  fi
+  echo "[deploy] Portainer webhook OK (http=${http_code})"
+  return 0
+}
 
 if ! command -v gh >/dev/null 2>&1; then
   echo "[deploy] ERROR: gh not found in PATH" >&2
@@ -75,7 +123,7 @@ fi
 
 declare -A running_image_by_service
 for s in "${services[@]}"; do
-  cid="$(docker compose -f "${compose_file}" ps -q "${s}" 2>/dev/null || true)"
+  cid="$(get_container_id "${s}" || true)"
   if [[ -z "${cid}" ]]; then
     running_image_by_service["${s}"]=""
     continue
@@ -121,13 +169,12 @@ if (( ${#changed_services[@]} == 0 )); then
   exit 0
 fi
 
-echo "[deploy] Redeploying changed services only: ${changed_services[*]}"
-# Recreate only changed services, but keep dependencies as-is.
-docker compose -f "${compose_file}" up -d --no-deps --force-recreate "${changed_services[@]}"
+echo "[deploy] Changes detected. Triggering Portainer-authoritative redeploy."
+trigger_portainer_redeploy
 
 echo "[deploy] Verifying container digests..."
 for s in "${changed_services[@]}"; do
-  cid="$(docker compose -f "${compose_file}" ps -q "${s}" 2>/dev/null || true)"
+  cid="$(get_container_id "${s}" || true)"
   if [[ -z "${cid}" ]]; then
     echo "[deploy] WARN: service ${s} has no container after deploy" >&2
     continue

@@ -101,10 +101,11 @@
   - Deploy with one command:
     - wait for CI publish
     - pull images
-    - redeploy only services whose image digest changed
+    - redeploy via Portainer (authoritative env), only when image IDs changed
     - verify health
 - **Rules**
   - Prefer the host-side script when you are on the Docker host.
+  - Portainer stack env is authoritative; do not expect host `docker compose up` to apply Portainer-only env.
   - Redeploy only when image IDs changed (min downtime).
 - **Workflow**
   - Use: `.windsurf/workflows/run-deploy-idc1-assistance-script.md`

@@ -8,13 +8,14 @@ Run a single command on the Docker host that:
 - waits for the latest successful GH Actions publish run (`Publish (idc1-assistance)`)
 - pulls stack images
 - compares pulled image IDs vs running container image IDs
-- redeploys only services whose image changed (min downtime)
+- triggers a Portainer-authoritative stack redeploy (so Portainer stack env applies)
 - verifies digests + health
 
 # Preconditions
 - `gh` is installed and authenticated (`gh auth status`).
 - You are on the Docker host that runs the `idc1-assistance` stack.
 - Script exists: `scripts/deploy-idc1-assistance.sh`
+- Portainer stack webhook URL is available on the host as `PORTAINER_STACK_WEBHOOK_URL`.
 
 # One-time setup
 Make the script executable:
@@ -26,6 +27,13 @@ chmod +x scripts/deploy-idc1-assistance.sh
 # Run
 ```bash
 ./scripts/deploy-idc1-assistance.sh
+```
+
+# Portainer webhook configuration
+Set on the Docker host (do not commit):
+
+```bash
+export PORTAINER_STACK_WEBHOOK_URL='https://<portainer>/api/stacks/webhooks/<token>'
 ```
 
 # Optional tuning (env vars)
