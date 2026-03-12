@@ -2047,44 +2047,22 @@ async def _handle_reminder_setup_trigger(ws: WebSocket, text: str) -> bool:
     now = datetime.now(tz=timezone.utc)
     due_at_utc, local_iso = _parse_time_from_text(text, now, tz)
     if due_at_utc is None:
-        reminder_id = _create_reminder(
-            user_id=DEFAULT_USER_ID,
-            title=title,
-            due_at_utc=None,
-            tz=tz,
-            schedule_type="unscheduled",
-            notify_at_utc=None,
-            source_text=text,
-            aim_entity_name=None,
-        )
-        external_key = f"reminder::{reminder_id}"
-        if _weaviate_enabled():
-            try:
-                await _weaviate_upsert_memory_item(
-                    external_key=external_key,
-                    kind="reminder",
-                    title=title,
-                    body=text,
-                    status="pending",
-                    due_at=None,
-                    notify_at=None,
-                    hide_until=None,
-                    timezone_name=tz.key,
-                    source="jarvis",
-                )
-            except Exception:
-                pass
+        ws.state.pending_reminder_setup = {
+            "title": title,
+            "source_text": text,
+            "timezone": tz.key,
+            "created_at": int(time.time()),
+        }
         await ws.send_json(
             {
-                "type": "reminder_setup",
+                "type": "reminder_setup_draft",
                 "title": title,
-                "reminder_id": reminder_id,
                 "result": {
                     "ok": True,
-                    "reminder": {"reminder_id": reminder_id, "schedule_type": "unscheduled", "timezone": tz.key},
                     "needs_time": True,
-                    "hint": "Set a time (e.g. today 17:00 or tomorrow 09:00).",
+                    "hint": "Confirm before creating. Reply: reminder confirm: <when>  (or: reminder confirm  / reminder cancel)",
                 },
+                "instance_id": INSTANCE_ID,
             }
         )
         return True
@@ -2165,6 +2143,138 @@ async def _handle_reminder_setup_trigger(ws: WebSocket, text: str) -> bool:
             "title": title,
             "reminder_id": reminder_id,
             "result": result,
+        }
+    )
+    return True
+
+
+async def _handle_pending_reminder_confirm_or_cancel(ws: WebSocket, text: str) -> bool:
+    pending = getattr(ws.state, "pending_reminder_setup", None)
+    if not isinstance(pending, dict):
+        return False
+
+    s = " ".join(str(text or "").strip().split())
+    lower = s.lower()
+    if not (lower.startswith("reminder confirm") or lower.startswith("reminder cancel")):
+        return False
+
+    if lower.startswith("reminder cancel"):
+        ws.state.pending_reminder_setup = None
+        await ws.send_json({"type": "reminder_setup_cancelled", "instance_id": INSTANCE_ID})
+        return True
+
+    when = ""
+    m = re.search(r"^reminder\s+confirm\s*[:\-]?\s*(.*)$", s, flags=re.IGNORECASE)
+    if m:
+        when = str(m.group(1) or "").strip()
+
+    title = str(pending.get("title") or "Reminder").strip() or "Reminder"
+    source_text = str(pending.get("source_text") or "").strip()
+    tz_name = str(pending.get("timezone") or DEFAULT_TIMEZONE).strip() or DEFAULT_TIMEZONE
+    tz = ZoneInfo(tz_name)
+    now = datetime.now(tz=timezone.utc)
+
+    due_at_utc: Optional[datetime] = None
+    local_iso: Optional[str] = None
+    if when:
+        due_at_utc, local_iso = _parse_time_from_text(when, now, tz)
+
+    if due_at_utc is None:
+        reminder_id = _create_reminder(
+            user_id=DEFAULT_USER_ID,
+            title=title,
+            due_at_utc=None,
+            tz=tz,
+            schedule_type="unscheduled",
+            notify_at_utc=None,
+            source_text=source_text or s,
+            aim_entity_name=None,
+        )
+        external_key = f"reminder::{reminder_id}"
+        if _weaviate_enabled():
+            try:
+                await _weaviate_upsert_memory_item(
+                    external_key=external_key,
+                    kind="reminder",
+                    title=title,
+                    body=source_text or s,
+                    status="pending",
+                    due_at=None,
+                    notify_at=None,
+                    hide_until=None,
+                    timezone_name=tz.key,
+                    source="jarvis",
+                )
+            except Exception:
+                pass
+        ws.state.pending_reminder_setup = None
+        await ws.send_json(
+            {
+                "type": "reminder_setup",
+                "title": title,
+                "reminder_id": reminder_id,
+                "result": {
+                    "ok": True,
+                    "reminder": {"reminder_id": reminder_id, "schedule_type": "unscheduled", "timezone": tz.key},
+                    "needs_time": True,
+                    "hint": "Set a time (e.g. today 17:00 or tomorrow 09:00).",
+                },
+                "instance_id": INSTANCE_ID,
+            }
+        )
+        return True
+
+    schedule_type = "morning_brief"
+    notify_at_local = _next_morning_brief_at(now, tz, due_at_utc)
+    notify_at_utc = notify_at_local.astimezone(timezone.utc)
+    reminder_id = _create_reminder(
+        user_id=DEFAULT_USER_ID,
+        title=title,
+        due_at_utc=due_at_utc,
+        tz=tz,
+        schedule_type=schedule_type,
+        notify_at_utc=notify_at_utc,
+        source_text=source_text or s,
+        aim_entity_name=None,
+    )
+
+    external_key = f"reminder::{reminder_id}"
+    result: Any = {
+        "ok": True,
+        "reminder": {
+            "reminder_id": reminder_id,
+            "schedule_type": schedule_type,
+            "due_at_utc": due_at_utc.replace(tzinfo=timezone.utc).isoformat(),
+            "local_time": local_iso,
+            "timezone": tz.key,
+        },
+    }
+    if _weaviate_enabled():
+        try:
+            wv = await _weaviate_upsert_memory_item(
+                external_key=external_key,
+                kind="reminder",
+                title=title,
+                body=source_text or s,
+                status="pending",
+                due_at=int(due_at_utc.timestamp()),
+                notify_at=int(notify_at_utc.timestamp()),
+                hide_until=None,
+                timezone_name=tz.key,
+                source="jarvis",
+            )
+            result = {**result, "weaviate": wv}
+        except Exception as e:
+            result = {**result, "weaviate": {"ok": False, "error": str(e)}}
+
+    ws.state.pending_reminder_setup = None
+    await ws.send_json(
+        {
+            "type": "reminder_setup",
+            "title": title,
+            "reminder_id": reminder_id,
+            "result": result,
+            "instance_id": INSTANCE_ID,
         }
     )
     return True
@@ -2439,6 +2549,15 @@ async def _handle_news_follow_trigger(ws: WebSocket, text: str) -> bool:
 
 
 async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
+    # Draft confirmation has priority over all other routing.
+    # This allows follow-up messages like `reminder confirm: tomorrow 09:00` to finalize a pending draft.
+    try:
+        handled_confirm = await _handle_pending_reminder_confirm_or_cancel(ws, text)
+        if handled_confirm:
+            return True
+    except Exception:
+        pass
+
     # Continuation handling: if a sub-agent is active for this websocket, let it handle followups.
     now_ts = int(time.time())
     active_agent_id = str(getattr(ws.state, "active_agent_id", "") or "").strip() or None
@@ -2451,6 +2570,8 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
     async def _run_agent(agent_id: str) -> bool:
         agent_id_norm = str(agent_id or "").strip()
         if agent_id_norm == "reminder-setup":
+            # New reminder setup overrides any previous pending draft.
+            ws.state.pending_reminder_setup = None
             handled = await _handle_reminder_setup_trigger(ws, text)
             if handled:
                 ws.state.active_agent_id = agent_id_norm

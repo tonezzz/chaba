@@ -317,6 +317,30 @@ export class LiveService {
       return;
     }
 
+    if (message?.type === "reminder_setup_draft") {
+      const title = message?.title != null ? String(message.title) : "Reminder";
+      const res = message?.result;
+      const hint = res?.hint != null ? String(res.hint) : "";
+      const line = `reminder_draft: ${title}${hint ? ` — ${hint}` : ""}`;
+      this.onMessage({
+        id: `${Date.now()}_reminder_draft`,
+        role: "model",
+        text: line,
+        timestamp: new Date(),
+      });
+      return;
+    }
+
+    if (message?.type === "reminder_setup_cancelled") {
+      this.onMessage({
+        id: `${Date.now()}_reminder_cancelled`,
+        role: "model",
+        text: "reminder_draft_cancelled",
+        timestamp: new Date(),
+      });
+      return;
+    }
+
     if (typeof message?.type === "string" && message.type.startsWith("reminder_helper_")) {
       const t = String(message.type);
       const rid = message?.reminder_id != null ? String(message.reminder_id) : "";
