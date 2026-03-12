@@ -1208,7 +1208,7 @@ async def _weaviate_query_reminders(*, status: str, limit: int) -> list[dict[str
     if status_norm not in ("all", "pending", "fired", "done"):
         raise HTTPException(status_code=400, detail="invalid_status")
 
-    where_status = "" if status_norm == "all" else f"{{ path: [\\\"status\\\"], operator: Equal, valueText: \\\"{status_norm}\\\" }}"
+    where_status = "" if status_norm == "all" else f'{{ path: ["status"], operator: Equal, valueText: "{status_norm}" }}'
     operands = "\n".join(
         [
             '{ path: ["kind"], operator: Equal, valueText: "reminder" }',
