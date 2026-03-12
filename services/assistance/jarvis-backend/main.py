@@ -5327,12 +5327,22 @@ async def ws_live(ws: WebSocket) -> None:
                 "detail": msg,
             }
 
+        tz = _get_user_timezone(DEFAULT_USER_ID)
+        now_utc = datetime.now(tz=timezone.utc)
+        now_local = now_utc.astimezone(tz)
         system_instruction = (
             "You are Jarvis. Respond to the user with ONLY the final answer. "
             "Do NOT reveal internal reasoning, planning, debugging, tool selection, or step-by-step thoughts. "
             "Do NOT output work logs or messages like 'I am now', 'My next step', 'Filtering', 'Calculating'. "
             "Be concise. Match the user's language (Thai stays Thai). "
-            "If you are unsure, ask a short clarifying question."
+            "When answering questions about the current time/date, speak casually and do NOT mention the timezone unless the user asks. "
+            "If you are unsure, ask a short clarifying question. "
+            "\n\n"
+            "TIME_CONTEXT (internal; do NOT repeat verbatim to the user)\n"
+            f"TIMEZONE: {tz.key}\n"
+            f"NOW_UTC: {now_utc.replace(tzinfo=timezone.utc).isoformat()}\n"
+            f"NOW_LOCAL: {now_local.isoformat()}\n"
+            "Use this as the reference for all relative time calculations."
         )
 
         base_config = {
@@ -5427,21 +5437,6 @@ async def ws_live(ws: WebSocket) -> None:
                     ws.state.gemini_live_session = session
                     await ws.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
                     connected_sent = True
-
-                    try:
-                        tz = _get_user_timezone(DEFAULT_USER_ID)
-                        now_utc = datetime.now(tz=timezone.utc)
-                        now_local = now_utc.astimezone(tz)
-                        time_ctx = (
-                            "TIME_CONTEXT (authoritative server time)\n"
-                            f"TIMEZONE: {tz.key}\n"
-                            f"NOW_UTC: {now_utc.replace(tzinfo=timezone.utc).isoformat()}\n"
-                            f"NOW_LOCAL: {now_local.isoformat()}\n"
-                            "Use this as the reference for all relative time calculations."
-                        )
-                        await session.send_client_content(turns={"parts": [{"text": time_ctx}]}, turn_complete=True)
-                    except Exception as e:
-                        logger.info("time_context_inject_failed error=%s", str(e))
 
                     to_gemini = asyncio.create_task(_ws_to_gemini_loop(ws, session), name="ws_to_gemini")
                     to_ws = asyncio.create_task(_safe_gemini_to_ws_loop(ws, session), name="gemini_to_ws")
