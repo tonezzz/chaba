@@ -5,6 +5,9 @@
  - **redeploy** the `idc1-assistance` stack via **Portainer**
  - verify we are actually running the **latest image digest** (not just the tag)
  - debug the common "I redeployed but it’s still old" failure mode
+
+ See also:
+ - `WINDSURF_PLAYBOOK.md` (repo working conventions, diagnostics, workflows)
  
  ## TL;DR
  

@@ -1,5 +1,8 @@
 
  # Reminders (Overview)
+
+ See also:
+ - `WINDSURF_PLAYBOOK.md` (repo working conventions, diagnostics, workflows)
  
  This document explains how reminders work end-to-end in the `idc1-assistance` stack.
  

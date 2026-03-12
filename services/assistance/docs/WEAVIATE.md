@@ -1,5 +1,8 @@
 # Weaviate Memory Store (Ground Truth Spec)
 
+ See also:
+ - `WINDSURF_PLAYBOOK.md` (repo working conventions, diagnostics, workflows)
+
 ## Objective
 Run Weaviate as an internal-only service and use it as the **authoritative** long-lived memory store for Jarvis (reminders, todos, notes, future memory kinds), with embeddings generated externally (Gemini embeddings).
 

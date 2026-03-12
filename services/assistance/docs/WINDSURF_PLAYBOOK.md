@@ -95,6 +95,22 @@
   - `gh run list --repo tonezzz/chaba --workflow "Publish (idc1-assistance)" --limit 10`
   - `gh run view <RUN_ID> --repo tonezzz/chaba --log-failed`
 
+### 6) Hands-off deploy loop (whole stack, min downtime)
+
+- **Goal**
+  - Deploy with one command:
+    - wait for CI publish
+    - pull images
+    - redeploy only services whose image digest changed
+    - verify health
+- **Rules**
+  - Prefer the host-side script when you are on the Docker host.
+  - Redeploy only when image IDs changed (min downtime).
+- **Workflow**
+  - Use: `.windsurf/workflows/run-deploy-idc1-assistance-script.md`
+- **Script**
+  - `scripts/deploy-idc1-assistance.sh`
+
 ## Diagnostics standards (make failures cheap)
 
 - **Structured logging fields (recommended)**
@@ -119,6 +135,8 @@ Suggested workflows:
   - Fetch backend logs (last N lines).
 - **`/redeploy-idc1-assistance`**
   - Update stack or restart, then verify.
+- **`/run-deploy-idc1-assistance-script`**
+  - True hands-off deploy loop on the Docker host (CI wait + pull + redeploy-only-if-changed + verify).
 - **`/triage-reminders-weaviate`**
   - Collect backend + weaviate logs and run golden-path checks.
 - **`/validate-portainer-mcp`**
