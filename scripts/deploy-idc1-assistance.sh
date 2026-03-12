@@ -6,10 +6,34 @@ repo="tonezzz/chaba"
 workflow_name="Publish (idc1-assistance)"
 branch="idc1-assistance"
 
-# Portainer-first deploy trigger (recommended)
-# Set this on the Docker host (do not commit secrets):
-#   export PORTAINER_STACK_WEBHOOK_URL='https://<portainer>/api/stacks/webhooks/<token>'
-portainer_stack_webhook_url="${PORTAINER_STACK_WEBHOOK_URL:-}"
+# Portainer-first deploy trigger (Community Edition compatible)
+# Set these on the Docker host (do not commit secrets):
+#   export PORTAINER_URL='https://<portainer-host>'
+#   export PORTAINER_API_KEY='ptr_...'
+# Optional:
+#   export PORTAINER_ENDPOINT_ID='2'
+#   export PORTAINER_STACK_NAME='idc1-assistance'
+portainer_url="${PORTAINER_URL:-}"
+portainer_api_key="${PORTAINER_API_KEY:-}"
+portainer_endpoint_id="${PORTAINER_ENDPOINT_ID:-2}"
+portainer_stack_name="${PORTAINER_STACK_NAME:-idc1-assistance}"
+
+# Convenience: allow using the same token used by the local Portainer MCP stack.
+# - `PORTAINER_TOKEN` is treated as an alias of `PORTAINER_API_KEY`.
+# - If neither is set, we will attempt to source `stacks/idc1-portainer/.env` (local-only).
+if [[ -z "${portainer_api_key}" && -n "${PORTAINER_TOKEN:-}" ]]; then
+  portainer_api_key="${PORTAINER_TOKEN}"
+fi
+
+if [[ -z "${portainer_api_key}" && -f "stacks/idc1-portainer/.env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  . "stacks/idc1-portainer/.env"
+  set +a
+  if [[ -z "${portainer_api_key}" && -n "${PORTAINER_TOKEN:-}" ]]; then
+    portainer_api_key="${PORTAINER_TOKEN}"
+  fi
+fi
 
 # Controls
 wait_timeout_seconds="${WAIT_TIMEOUT_SECONDS:-1800}"
@@ -40,8 +64,8 @@ get_container_id() {
 }
 
 trigger_portainer_redeploy() {
-  if [[ -z "${portainer_stack_webhook_url}" ]]; then
-    echo "[deploy] ERROR: PORTAINER_STACK_WEBHOOK_URL is not set; cannot do Portainer-authoritative redeploy" >&2
+  if [[ -z "${portainer_api_key}" ]]; then
+    echo "[deploy] ERROR: PORTAINER_API_KEY is not set" >&2
     return 1
   fi
 
@@ -50,14 +74,123 @@ trigger_portainer_redeploy() {
     return 1
   fi
 
-  echo "[deploy] Triggering Portainer redeploy via stack webhook..."
-  # Webhook is a POST with empty body.
-  http_code="$(curl -sS -o /dev/null -w '%{http_code}' -X POST "${portainer_stack_webhook_url}")"
-  if [[ "${http_code}" != "200" && "${http_code}" != "204" ]]; then
-    echo "[deploy] ERROR: Portainer webhook returned http=${http_code}" >&2
+  # Portainer CE commonly exposes HTTP on :9000 (local) and HTTPS on :9443.
+  # Many setups only have :9000 listening locally.
+  if [[ -z "${portainer_url}" ]]; then
+    portainer_url="http://127.0.0.1:9000"
+  fi
+  base="${portainer_url%/}"
+
+  echo "[deploy] Checking Portainer API connectivity: ${base}/api/status"
+  http_code="$(curl -sS -k --max-time 5 -o /tmp/portainer_status.json -w '%{http_code}' "${base}/api/status" || true)"
+  if [[ "${http_code}" != "200" ]]; then
+    echo "[deploy] ERROR: cannot reach Portainer API at ${base} (http=${http_code})." >&2
+    echo "[deploy] Hint: On this host Portainer often listens on http://127.0.0.1:9000 (not :9443)." >&2
+    head -c 600 /tmp/portainer_status.json 2>/dev/null || true
+    echo >&2
     return 1
   fi
-  echo "[deploy] Portainer webhook OK (http=${http_code})"
+
+  echo "[deploy] Discovering stack id for name=${portainer_stack_name} endpointId=${portainer_endpoint_id}"
+  stacks_http="$(curl -sS -k --max-time 30 -o /tmp/portainer_stacks.json -w '%{http_code}' -H "X-API-Key: ${portainer_api_key}" "${base}/api/stacks" || true)"
+  if [[ "${stacks_http}" != "200" ]]; then
+    echo "[deploy] ERROR: Portainer /api/stacks returned http=${stacks_http}" >&2
+    head -c 800 /tmp/portainer_stacks.json 2>/dev/null || true
+    echo >&2
+    return 1
+  fi
+
+  stack_id="$(STACK_NAME="${portainer_stack_name}" ENDPOINT_ID="${portainer_endpoint_id}" python3 - <<'PY'
+import json,os,sys
+
+name=os.environ.get('STACK_NAME','')
+endpoint_id=os.environ.get('ENDPOINT_ID','')
+try:
+    endpoint_id_int=int(endpoint_id)
+except Exception:
+    endpoint_id_int=None
+
+try:
+    with open('/tmp/portainer_stacks.json','r',encoding='utf-8') as f:
+        obj=json.load(f)
+except Exception as e:
+    print(f"PARSE_ERROR {e}", file=sys.stderr)
+    raise
+
+sid=None
+if isinstance(obj, list):
+    for s in obj:
+        if not isinstance(s, dict):
+            continue
+        if str(s.get('Name') or '') != name:
+            continue
+        if endpoint_id_int is not None and int(s.get('EndpointId') or -1) != endpoint_id_int:
+            continue
+        sid=s.get('Id')
+        break
+
+print(sid or '')
+PY
+)"
+
+  if [[ -z "${stack_id}" ]]; then
+    echo "[deploy] ERROR: could not find stack id for name=${portainer_stack_name}" >&2
+    return 1
+  fi
+
+  echo "[deploy] stack_id=${stack_id}"
+
+  echo "[deploy] Fetching current stack file and env from Portainer"
+  curl -sS -k --max-time 30 -H "X-API-Key: ${portainer_api_key}" "${base}/api/stacks/${stack_id}/file" -o /tmp/portainer_stack_file.json
+  curl -sS -k --max-time 30 -H "X-API-Key: ${portainer_api_key}" "${base}/api/stacks/${stack_id}" -o /tmp/portainer_stack_inspect.json
+
+  # Prepare update payload:
+  # - StackFileContent from /file
+  # - Env from stack inspect
+  # - RepullImageAndRedeploy=true to force redeploy with fresh images
+  python3 - <<'PY'
+import json
+
+with open('/tmp/portainer_stack_file.json','r',encoding='utf-8') as f:
+  file_obj=json.load(f)
+with open('/tmp/portainer_stack_inspect.json','r',encoding='utf-8') as f:
+  inspect_obj=json.load(f)
+
+stack_file=file_obj.get('StackFileContent') or ''
+env_list=inspect_obj.get('Env') or []
+
+out={
+  'StackFileContent': stack_file,
+  'Env': env_list,
+  'Prune': True,
+  'RepullImageAndRedeploy': True,
+}
+
+with open('/tmp/portainer_stack_update_payload.json','w',encoding='utf-8') as f:
+  json.dump(out,f)
+PY
+
+  if [[ ! -s "/tmp/portainer_stack_update_payload.json" ]]; then
+    echo "[deploy] ERROR: failed to build update payload" >&2
+    return 1
+  fi
+
+  echo "[deploy] Redeploying stack via Portainer API (PUT /api/stacks/{id})"
+  http_code="$(curl -sS -k --max-time 120 -o /tmp/portainer_stack_update.json -w '%{http_code}' \
+    -X PUT \
+    -H "X-API-Key: ${portainer_api_key}" \
+    -H 'Content-Type: application/json' \
+    "${base}/api/stacks/${stack_id}?endpointId=${portainer_endpoint_id}" \
+    --data-binary @/tmp/portainer_stack_update_payload.json)"
+
+  if [[ "${http_code}" != "200" ]]; then
+    echo "[deploy] ERROR: Portainer stack update returned http=${http_code}" >&2
+    head -c 1500 /tmp/portainer_stack_update.json 2>/dev/null || true
+    echo
+    return 1
+  fi
+
+  echo "[deploy] Portainer stack update OK (http=${http_code})"
   return 0
 }
 
