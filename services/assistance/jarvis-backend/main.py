@@ -3465,6 +3465,88 @@ async def list_reminders(
     return {"ok": True, "source": "sqlite", "instance_id": INSTANCE_ID, "reminders": reminders}
 
 
+class ReminderCreateRequest(BaseModel):
+    title: str = Field(default="Reminder")
+    due_at_utc: Optional[str] = Field(default=None)
+    timezone: str = Field(default=DEFAULT_TIMEZONE)
+    schedule_type: str = Field(default="unscheduled")
+    source_text: str = Field(default="")
+
+
+@app.post("/reminders")
+async def create_reminder(req: ReminderCreateRequest) -> dict[str, Any]:
+    tz_name = str(req.timezone or DEFAULT_TIMEZONE).strip() or DEFAULT_TIMEZONE
+    try:
+        tz = ZoneInfo(tz_name)
+    except Exception:
+        raise HTTPException(status_code=400, detail="invalid_timezone")
+
+    title = str(req.title or "Reminder").strip() or "Reminder"
+    schedule_type = str(req.schedule_type or "unscheduled").strip() or "unscheduled"
+    source_text = str(req.source_text or "").strip()
+
+    due_at_utc: Optional[datetime] = None
+    if req.due_at_utc is not None:
+        try:
+            parsed = datetime.fromisoformat(str(req.due_at_utc).replace("Z", "+00:00"))
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+            due_at_utc = parsed.astimezone(timezone.utc)
+        except Exception:
+            raise HTTPException(status_code=400, detail="invalid_due_at_utc")
+
+    reminder_id = _create_reminder(
+        user_id=DEFAULT_USER_ID,
+        title=title,
+        due_at_utc=due_at_utc,
+        tz=tz,
+        schedule_type=schedule_type,
+        notify_at_utc=None,
+        source_text=source_text,
+        aim_entity_name=None,
+    )
+
+    # Attempt Weaviate write-through, but do not fail the create if Weaviate is unavailable.
+    wv: Optional[dict[str, Any]] = None
+    external_key = f"reminder::{reminder_id}"
+    if _weaviate_enabled():
+        try:
+            wv = await _weaviate_upsert_memory_item(
+                external_key=external_key,
+                kind="reminder",
+                title=title,
+                body=source_text,
+                status="pending",
+                due_at=int(due_at_utc.timestamp()) if due_at_utc is not None else None,
+                notify_at=None,
+                hide_until=None,
+                timezone_name=tz.key,
+                source="jarvis",
+            )
+            try:
+                _init_session_db()
+                with sqlite3.connect(SESSION_DB_PATH) as conn:
+                    conn.execute(
+                        "UPDATE reminders SET aim_entity_name = ?, updated_at = ? WHERE reminder_id = ?",
+                        (external_key, int(time.time()), reminder_id),
+                    )
+                    conn.commit()
+            except Exception:
+                pass
+        except Exception as e:
+            wv = {"ok": False, "error": str(e)}
+
+    local = _get_local_reminder_by_id(reminder_id)
+    return {
+        "ok": True,
+        "instance_id": INSTANCE_ID,
+        "reminder_id": reminder_id,
+        "external_key": external_key,
+        "reminder": local,
+        "weaviate": wv,
+    }
+
+
 @app.post("/reminders/{reminder_id}/done")
 async def reminders_done(reminder_id: str) -> dict[str, Any]:
     rid = str(reminder_id or "").strip()
