@@ -1764,14 +1764,45 @@ async def _handle_reminder_helper_trigger(ws: WebSocket, text: str) -> bool:
     if action == "list":
         status = str(args.get("status") or "pending")
         include_hidden = bool(args.get("include_hidden"))
-        items = _list_reminders(
-            user_id=DEFAULT_USER_ID,
-            status=status,
-            limit=50,
-            offset=0,
-            order="desc",
-            include_hidden=include_hidden,
-        )
+        items: list[dict[str, Any]] = []
+        if _weaviate_enabled():
+            try:
+                now_ts = int(time.time())
+                wv_items = await _weaviate_query_reminders(status=status, limit=50)
+                for it in wv_items:
+                    title = str(it.get("title") or "Reminder").strip() or "Reminder"
+                    tz_name = str(it.get("timezone") or DEFAULT_TIMEZONE).strip() or DEFAULT_TIMEZONE
+                    hide_until = int(float(it["hide_until"])) if it.get("hide_until") is not None else None
+                    if (not include_hidden) and hide_until is not None and hide_until > now_ts:
+                        continue
+                    items.append(
+                        {
+                            "reminder_id": _local_reminder_id_from_external_key(str(it.get("external_key") or "")),
+                            "title": title,
+                            "due_at": int(float(it["due_at"])) if it.get("due_at") is not None else None,
+                            "timezone": tz_name,
+                            "schedule_type": "memory",
+                            "notify_at": int(float(it["notify_at"])) if it.get("notify_at") is not None else None,
+                            "hide_until": hide_until,
+                            "status": str(it.get("status") or "").strip() or "pending",
+                            "source_text": str(it.get("body") or ""),
+                            "aim_entity_name": str(it.get("external_key") or ""),
+                            "created_at": int(float(it["created_at"])) if it.get("created_at") is not None else None,
+                            "updated_at": int(float(it["updated_at"])) if it.get("updated_at") is not None else None,
+                        }
+                    )
+            except Exception:
+                items = []
+
+        if not items:
+            items = _list_reminders(
+                user_id=DEFAULT_USER_ID,
+                status=status,
+                limit=50,
+                offset=0,
+                order="desc",
+                include_hidden=include_hidden,
+            )
         await ws.send_json(
             {
                 "type": "reminder_helper_list",
@@ -5010,7 +5041,6 @@ async def ws_live(ws: WebSocket) -> None:
 
         model_candidates = [
             str(MODEL or "").strip(),
-            "gemini-2.5-flash-native-audio-latest",
             "gemini-2.5-flash-native-audio-preview-12-2025",
             "gemini-2.5-flash-native-audio-preview-09-2025",
         ]
