@@ -62,7 +62,7 @@ services:
 
         if [ -x /usr/local/bin/portainer-mcp ]; then
           cat >> /app/mcp-config/mcp.json <<'EOF'
-          "portainer": { "command": "sh", "args": ["-lc", "extra=\"\"; if [ \"$${PORTAINER_READ_ONLY:-}\" != \"\" ] && [ \"$${PORTAINER_READ_ONLY}\" != \"0\" ]; then extra=\"$extra -read-only\"; fi; if [ \"$${PORTAINER_DISABLE_VERSION_CHECK:-}\" != \"\" ] && [ \"$${PORTAINER_DISABLE_VERSION_CHECK}\" != \"0\" ]; then extra=\"$extra -disable-version-check\"; fi; exec /usr/local/bin/portainer-mcp -server \"$PORTAINER_SERVER\" -token \"$PORTAINER_TOKEN\" $extra"], "tags": ["portainer", "containers"], "disabled": false }
+          "portainer": { "command": "sh", "args": ["-lc", "exec /usr/local/bin/portainer-mcp -server \"$PORTAINER_SERVER\" -token \"$PORTAINER_TOKEN\" -read-only -disable-version-check"], "tags": ["portainer", "containers"], "disabled": false }
         EOF
         fi
 
