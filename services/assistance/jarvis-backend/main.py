@@ -975,7 +975,8 @@ async def _weaviate_request(method: str, path: str, payload: Any = None) -> Any:
                 detail = res.json()
             except Exception:
                 detail = res.text
-            raise HTTPException(status_code=502, detail={"weaviate_error": detail})
+            # Preserve original status code so callers can handle 404 vs 500 etc.
+            raise HTTPException(status_code=int(res.status_code), detail={"weaviate_error": detail})
         if not res.text:
             return None
         try:
@@ -1091,7 +1092,7 @@ async def _weaviate_upsert_memory_item(
     exists = False
     existing_created_at: Optional[float] = None
     try:
-        existing = await _weaviate_request("GET", f"/v1/objects/{obj_id}")
+        existing = await _weaviate_request("GET", f"/v1/objects/JarvisMemoryItem/{obj_id}")
         if isinstance(existing, dict):
             exists = True
             props0 = existing.get("properties")
@@ -1141,7 +1142,7 @@ async def _weaviate_upsert_memory_item(
     }
 
     if exists:
-        await _weaviate_request("PUT", f"/v1/objects/{obj_id}", payload)
+        await _weaviate_request("PUT", f"/v1/objects/JarvisMemoryItem/{obj_id}", payload)
     else:
         # Weaviate creates objects via POST /v1/objects. PUT /v1/objects/{id} only updates.
         await _weaviate_request("POST", "/v1/objects", payload)
