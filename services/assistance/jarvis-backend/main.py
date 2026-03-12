@@ -5394,7 +5394,7 @@ async def ws_live(ws: WebSocket) -> None:
                 gemini_failed_event.set()
 
         async def _run_with_config(model: str, cfg: dict[str, Any]) -> None:
-            nonlocal gemini_failed_error
+            nonlocal gemini_failed_error, connected_sent
             gemini_failed_error = None
             try:
                 gemini_failed_event.clear()
@@ -5485,6 +5485,22 @@ async def ws_live(ws: WebSocket) -> None:
                     ws.state.gemini_live_session = None
                 except Exception:
                     pass
+
+        last_error: Exception | None = None
+        candidates = model_candidates or [GEMINI_LIVE_MODEL_OVERRIDE or GEMINI_LIVE_MODEL_DEFAULT]
+        for cand in candidates:
+            try:
+                await _run_with_config(str(cand), dict(base_config))
+                return
+            except _GeminiLiveModelNotFound as e:
+                last_error = e
+                continue
+            except _GeminiLiveSessionFailed as e:
+                last_error = e
+                break
+            except Exception as e:
+                last_error = e
+                break
 
         if last_error is not None:
             msg = str(last_error)
