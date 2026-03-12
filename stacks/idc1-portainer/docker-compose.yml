@@ -49,9 +49,10 @@ services:
 
           if [ -s "$$tmpdir/portainer-mcp.tgz" ]; then
             tar -xzf "$$tmpdir/portainer-mcp.tgz" -C "$$tmpdir" || true
-            if [ -f "$$tmpdir/portainer-mcp" ]; then
-              install -m 0755 "$$tmpdir/portainer-mcp" /usr/local/bin/portainer-mcp
-              echo "$desired_version" > /usr/local/bin/portainer-mcp.version
+            bin_path="$$(find "$$tmpdir" -type f -name portainer-mcp | head -n 1)"
+            if [ "$$bin_path" != "" ] && [ -f "$$bin_path" ]; then
+              install -m 0755 "$$bin_path" /usr/local/bin/portainer-mcp
+              echo "$$desired_version" > /usr/local/bin/portainer-mcp.version
             fi
           fi
 
