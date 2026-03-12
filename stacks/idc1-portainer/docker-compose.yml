@@ -17,6 +17,8 @@ services:
     restart: unless-stopped
     depends_on:
       - portainer
+    env_file:
+      - ../idc1-services/.env
     ports:
       - "${MCP_BUNDLE_PORT:-3052}:3050"
     command:
