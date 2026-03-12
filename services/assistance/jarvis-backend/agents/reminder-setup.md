@@ -3,7 +3,7 @@ id: reminder-setup
 name: Reminder Setup
 kind: sub_agent
 version: 1
-trigger_phrases: reminder setup, reminder:, remind me, set a reminder, create a reminder, add a reminder, ตั้งเตือน, ตั้ง เตือน, เตือนฉัน, เตือน ฉัน
+trigger_phrases: reminder setup, reminder:, remind me, set a reminder, create a reminder, add a reminder, ตั้งเตือน, ตั้ง เตือน, เตือนฉัน, เตือน ฉัน, แจ้งเตือน, สร้างแจ้งเตือน, สร้างแจ้งเตือนใหม่
 ---
 
 ## Purpose

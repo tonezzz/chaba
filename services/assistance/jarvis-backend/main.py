@@ -1702,11 +1702,31 @@ async def _render_daily_brief(user_id: str) -> dict[str, Any]:
 def _extract_reminder_setup_title(text: str) -> str:
     s = str(text or "").strip()
     m = re.search(r"\breminder\s+setup\b\s*[:\-]?\s*(.*)$", s, flags=re.IGNORECASE)
-    if not m:
-        return "Reminder"
-    tail = str(m.group(1) or "").strip()
+    tail = ""
+    if m:
+        tail = str(m.group(1) or "").strip()
+    else:
+        # Also support the shorter colon form.
+        m2 = re.search(r"\breminder\b\s*[:\-]\s*(.*)$", s, flags=re.IGNORECASE)
+        if m2:
+            tail = str(m2.group(1) or "").strip()
+
+    if not tail:
+        # Thai variants (keep loose spacing). Examples:
+        # - สร้างแจ้งเตือนใหม่ พรุ่งนี้ 9 โมง ...
+        # - แจ้งเตือน: พรุ่งนี้ ...
+        # - ตั้งเตือน: ...
+        m_th = re.search(r"^(?:สร้าง\s*)?แจ้งเตือน(?:\s*ใหม่)?\s*[:\-]?\s*(.*)$", s)
+        if m_th:
+            tail = str(m_th.group(1) or "").strip()
+        else:
+            m_th2 = re.search(r"^ตั้ง\s*เตือน\s*[:\-]?\s*(.*)$", s)
+            if m_th2:
+                tail = str(m_th2.group(1) or "").strip()
+
     if not tail:
         return "Reminder"
+
     # Keep titles short and stable.
     return tail[:120]
 
