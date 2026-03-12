@@ -4899,7 +4899,9 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             text = str(msg.get("text") or "")
             if not text:
                 continue
+            logger.info("ws_in_text len=%s head=%s", len(text), text[:120])
             handled = await _dispatch_sub_agents(ws, text)
+            logger.info("ws_in_text_dispatched handled=%s active_agent_id=%s", handled, getattr(ws.state, "active_agent_id", None))
             if handled:
                 continue
             if not gemini_available:
@@ -4982,7 +4984,13 @@ async def _ws_local_only_loop(ws: WebSocket) -> None:
             text = str(msg.get("text") or "")
             if not text:
                 continue
+            logger.info("ws_in_text_local_only len=%s head=%s", len(text), text[:120])
             handled = await _dispatch_sub_agents(ws, text)
+            logger.info(
+                "ws_in_text_local_only_dispatched handled=%s active_agent_id=%s",
+                handled,
+                getattr(ws.state, "active_agent_id", None),
+            )
             if handled:
                 continue
             await ws.send_json({"type": "error", "message": "gemini_unavailable"})
