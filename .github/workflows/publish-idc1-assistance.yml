@@ -57,33 +57,45 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx (CLI)
+        run: |
+          set -euo pipefail
+          docker version
+          docker buildx version
+          docker buildx create --name ci-builder --use || docker buildx use ci-builder
+          docker buildx inspect --bootstrap
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
+      - name: Log in to GHCR (CLI)
+        run: |
+          set -euo pipefail
+          echo "${{ github.token }}" | docker login "${{ env.REGISTRY }}" -u "${{ github.actor }}" --password-stdin
 
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE_PREFIX }}/${{ matrix.image }}
-          tags: |
-            type=ref,event=branch
-            type=sha,format=short,prefix=sha-
+      - name: Build and push (CLI)
+        env:
+          IMAGE: ${{ env.IMAGE_PREFIX }}/${{ matrix.image }}
+        run: |
+          set -euo pipefail
+          REF_NAME="${{ github.ref_name }}"
+          SHA_SHORT="${GITHUB_SHA::7}"
+          TAG1="${IMAGE}:${REF_NAME}"
+          TAG2="${IMAGE}:sha-${SHA_SHORT}"
 
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.file }}
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: ${{ matrix.build_args }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          BUILD_ARGS=()
+          while IFS= read -r line; do
+            l="${line//$'\r'/}"
+            if [ -n "${l}" ]; then
+              BUILD_ARGS+=("--build-arg" "${l}")
+            fi
+          done <<'EOF'
+          ${{ matrix.build_args }}
+          EOF
+
+          docker buildx build \
+            --file "${{ matrix.file }}" \
+            --tag "${TAG1}" \
+            --tag "${TAG2}" \
+            --push \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
+            "${BUILD_ARGS[@]}" \
+            "${{ matrix.context }}"
