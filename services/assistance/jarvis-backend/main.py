@@ -58,6 +58,13 @@ def _normalize_model_name(name: str) -> str:
     return s
 
 
+def _normalize_models_prefix(name: str) -> str:
+    s = str(name or "").strip()
+    if not s:
+        return ""
+    return s if s.startswith("models/") else f"models/{s}"
+
+
 REMINDER_TITLE_MODELS: list[str] = [
     _normalize_model_name(m) for m in _parse_model_list(str(os.getenv("JARVIS_REMINDER_TITLE_MODELS") or "").strip())
 ]
@@ -5097,14 +5104,26 @@ async def ws_live(ws: WebSocket) -> None:
             ],
         }
 
-        model_candidates = [
+        raw_candidates = [
             str(MODEL or "").strip(),
-            "gemini-2.0-flash-live-001",
+            "gemini-2.5-flash-native-audio-latest",
             "gemini-2.5-flash-native-audio-preview-12-2025",
             "gemini-2.5-flash-native-audio-preview-09-2025",
         ]
+
+        # Gemini Live model naming can vary by endpoint/version. Be permissive:
+        # - accept both with and without the `models/` prefix
+        # - try `models/<id>` first to match `models.list()` output
+        expanded: list[str] = []
+        for m in raw_candidates:
+            m = str(m or "").strip()
+            if not m:
+                continue
+            expanded.append(_normalize_models_prefix(m))
+            expanded.append(_normalize_model_name(m))
+
         seen: set[str] = set()
-        model_candidates = [m for m in model_candidates if m and not (m in seen or seen.add(m))]
+        model_candidates = [m for m in expanded if m and not (m in seen or seen.add(m))]
 
         logger.info("gemini_live_connect model=%s", model_candidates[0] if model_candidates else MODEL)
 
