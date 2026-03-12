@@ -18,7 +18,7 @@ services:
     depends_on:
       - portainer
     ports:
-      - "127.0.0.1:${MCP_BUNDLE_PORT:-3052}:3050"
+      - "${MCP_BUNDLE_PORT:-3052}:3050"
     command:
       - sh
       - -lc
