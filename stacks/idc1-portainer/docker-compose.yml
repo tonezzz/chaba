@@ -1,0 +1,94 @@
+version: "3.9"
+
+services:
+  portainer:
+    image: portainer/portainer-ce:2.33.6
+    container_name: idc1-portainer
+    restart: unless-stopped
+    command: ["-H", "unix:///var/run/docker.sock"]
+    ports:
+      - "127.0.0.1:${PORTAINER_HTTP_PORT:-9000}:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+
+  mcp-bundle:
+    image: ghcr.io/tonezzz/chaba/mcp-bundle:idc1-assistance
+    restart: unless-stopped
+    depends_on:
+      - portainer
+    ports:
+      - "127.0.0.1:${MCP_BUNDLE_PORT:-3052}:3050"
+    command:
+      - sh
+      - -lc
+      - |
+        set -e
+
+        if [ ! -x /usr/local/bin/portainer-mcp ]; then
+          arch="$(uname -m)"
+          case "$arch" in
+            x86_64) arch="amd64" ;;
+            aarch64|arm64) arch="arm64" ;;
+          esac
+          version="v0.2.0"
+          tmpdir="$(mktemp -d)"
+
+          url="https://github.com/portainer/portainer-mcp/releases/download/${version}/portainer-mcp-${version}-linux-${arch}.tar.gz"
+          if ! curl -fsSL -o "$tmpdir/portainer-mcp.tgz" "$url"; then
+            if [ "$arch" = "arm64" ]; then
+              url="https://github.com/portainer/portainer-mcp/releases/download/${version}/portainer-mcp-${version}-linux-amd64.tar.gz"
+              curl -fsSL -o "$tmpdir/portainer-mcp.tgz" "$url" || true
+            fi
+          fi
+
+          if [ -s "$tmpdir/portainer-mcp.tgz" ]; then
+            tar -xzf "$tmpdir/portainer-mcp.tgz" -C "$tmpdir" || true
+            if [ -f "$tmpdir/portainer-mcp" ]; then
+              install -m 0755 "$tmpdir/portainer-mcp" /usr/local/bin/portainer-mcp
+            fi
+          fi
+
+          rm -rf "$tmpdir"
+        fi
+
+        cat > /app/mcp-config/mcp.json <<'EOF'
+        { "mcpServers": {
+        EOF
+
+        if [ -x /usr/local/bin/portainer-mcp ]; then
+          cat >> /app/mcp-config/mcp.json <<'EOF'
+          "portainer": { "command": "sh", "args": ["-lc", "/usr/local/bin/portainer-mcp -server \"$PORTAINER_SERVER\" -token \"$PORTAINER_TOKEN\" ${PORTAINER_READ_ONLY:+-read-only} ${PORTAINER_DISABLE_VERSION_CHECK:+-disable-version-check}"], "tags": ["portainer", "containers"], "disabled": false }
+        EOF
+        fi
+
+        cat >> /app/mcp-config/mcp.json <<'EOF'
+        } }
+        EOF
+
+        exec node index.js
+    environment:
+      ONE_MCP_HOST: 0.0.0.0
+      ONE_MCP_PORT: 3050
+      ONE_MCP_EXTERNAL_URL: http://127.0.0.1:${MCP_BUNDLE_PORT:-3052}
+      ONE_MCP_LOG_LEVEL: info
+      ONE_MCP_CONFIG_DIR: /app/mcp-config
+      ONE_MCP_CONFIG: /app/mcp-config/mcp.json
+      PORTAINER_SERVER: ${PORTAINER_SERVER:-portainer:9000}
+      PORTAINER_TOKEN: ${PORTAINER_TOKEN:-}
+      PORTAINER_READ_ONLY: ${PORTAINER_READ_ONLY:-1}
+      PORTAINER_DISABLE_VERSION_CHECK: ${PORTAINER_DISABLE_VERSION_CHECK:-0}
+    volumes:
+      - ./mcp-config:/app/mcp-config
+      - mcp-bundle-data:/root/.config/1mcp
+      - mcp-bundle-cache:/root/.cache
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3050/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  portainer_data:
+  mcp-bundle-data:
+  mcp-bundle-cache:

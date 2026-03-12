@@ -65,37 +65,43 @@ services:
     image: ghcr.io/tonezzz/chaba/mcp-bundle:idc1-assistance
     ports:
       - "127.0.0.1:3051:3050"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command:
       - sh
       - -lc
       - |
         set -e
 
+        if command -v apk >/dev/null 2>&1; then
+          apk add --no-cache libc6-compat >/dev/null 2>&1 || true
+        fi
+
         if [ ! -x /usr/local/bin/portainer-mcp ]; then
-          arch="$(uname -m)"
-          case "$arch" in
+          arch="$$(uname -m)"
+          case "$$arch" in
             x86_64) arch="amd64" ;;
             aarch64|arm64) arch="arm64" ;;
           esac
           version="v0.2.0"
-          tmpdir="$(mktemp -d)"
+          tmpdir="$$(mktemp -d)"
 
-          url="https://github.com/portainer/portainer-mcp/releases/download/${version}/portainer-mcp-${version}-linux-${arch}.tar.gz"
-          if ! curl -fsSL -o "$tmpdir/portainer-mcp.tgz" "$url"; then
-            if [ "$arch" = "arm64" ]; then
-              url="https://github.com/portainer/portainer-mcp/releases/download/${version}/portainer-mcp-${version}-linux-amd64.tar.gz"
-              curl -fsSL -o "$tmpdir/portainer-mcp.tgz" "$url" || true
+          url="https://github.com/portainer/portainer-mcp/releases/download/$$version/portainer-mcp-$$version-linux-$$arch.tar.gz"
+          if ! curl -fsSL -o "$$tmpdir/portainer-mcp.tgz" "$$url"; then
+            if [ "$$arch" = "arm64" ]; then
+              url="https://github.com/portainer/portainer-mcp/releases/download/$$version/portainer-mcp-$$version-linux-amd64.tar.gz"
+              curl -fsSL -o "$$tmpdir/portainer-mcp.tgz" "$$url" || true
             fi
           fi
 
-          if [ -s "$tmpdir/portainer-mcp.tgz" ]; then
-            tar -xzf "$tmpdir/portainer-mcp.tgz" -C "$tmpdir" || true
-            if [ -f "$tmpdir/portainer-mcp" ]; then
-              install -m 0755 "$tmpdir/portainer-mcp" /usr/local/bin/portainer-mcp
+          if [ -s "$$tmpdir/portainer-mcp.tgz" ]; then
+            tar -xzf "$$tmpdir/portainer-mcp.tgz" -C "$$tmpdir" || true
+            if [ -f "$$tmpdir/portainer-mcp" ]; then
+              install -m 0755 "$$tmpdir/portainer-mcp" /usr/local/bin/portainer-mcp
             fi
           fi
 
-          rm -rf "$tmpdir"
+          rm -rf "$$tmpdir"
         fi
 
         cat > /app/mcp-config/mcp.json <<'EOF'
@@ -104,7 +110,7 @@ services:
 
         if [ -x /usr/local/bin/portainer-mcp ]; then
           cat >> /app/mcp-config/mcp.json <<'EOF'
-        , "portainer": { "command": "sh", "args": ["-lc", "/usr/local/bin/portainer-mcp -server \"$PORTAINER_SERVER\" -token \"$PORTAINER_TOKEN\" ${PORTAINER_READ_ONLY:+-read-only} ${PORTAINER_DISABLE_VERSION_CHECK:+-disable-version-check}"], "tags": ["portainer", "containers"], "disabled": false }
+        , "portainer": { "command": "sh", "args": ["-lc", "extra=\"\"; if [ \"$${PORTAINER_READ_ONLY:-}\" != \"\" ] && [ \"$${PORTAINER_READ_ONLY}\" != \"0\" ]; then extra=\"$$extra -read-only\"; fi; if [ \"$${PORTAINER_DISABLE_VERSION_CHECK:-}\" != \"\" ] && [ \"$${PORTAINER_DISABLE_VERSION_CHECK}\" != \"0\" ]; then extra=\"$$extra -disable-version-check\"; fi; exec /usr/local/bin/portainer-mcp -server \"$${PORTAINER_SERVER}\" -token \"$${PORTAINER_TOKEN}\" $$extra"], "tags": ["portainer", "containers"], "disabled": false }
         EOF
         fi
 
@@ -120,7 +126,7 @@ services:
       ONE_MCP_LOG_LEVEL: info
       ONE_MCP_CONFIG_DIR: /app/mcp-config
       ONE_MCP_CONFIG: /app/mcp-config/mcp.json
-      PORTAINER_SERVER: ${PORTAINER_SERVER:-host.docker.internal:9000}
+      PORTAINER_SERVER: ${PORTAINER_SERVER:-http://host.docker.internal:9000}
       PORTAINER_TOKEN: ${PORTAINER_TOKEN:-}
       PORTAINER_READ_ONLY: ${PORTAINER_READ_ONLY:-1}
       PORTAINER_DISABLE_VERSION_CHECK: ${PORTAINER_DISABLE_VERSION_CHECK:-0}
@@ -152,6 +158,41 @@ services:
       - image-pipeline-assets:${IMAGE_PIPELINE_ASSETS_DIR:-/data/assets}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3050/health >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-ws-gateway:
+    <<: *default-service
+    image: node:20-alpine
+    depends_on:
+      - mcp-bundle
+    ports:
+      - "127.0.0.1:18182:8182"
+    working_dir: /app
+    command:
+      - sh
+      - -lc
+      - |
+        set -e
+        cp /src/index.js /app/index.js
+        if [ ! -f /app/package.json ]; then
+          npm init -y >/dev/null 2>&1
+        fi
+        if [ ! -d /app/node_modules ]; then
+          npm install --silent express ws
+        fi
+        exec node /app/index.js
+    environment:
+      PORT: 8182
+      WS_PATH: /ws
+      MCP_AGENT_URL: http://mcp-bundle:3050/mcp?app=windsurf
+      OPENAI_GATEWAY_URL: ${OPENAI_GATEWAY_URL:-http://mcp-openai-gateway:8181}
+    volumes:
+      - ../../mcp/mcp-ws-gateway:/src:ro
+      - mcp-ws-gateway-data:/app
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8182/health >/dev/null 2>&1 || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -212,6 +253,7 @@ networks:
 volumes:
   mcp-bundle-data:
   mcp-bundle-cache:
+  mcp-ws-gateway-data:
   weaviate-data:
   jarvis-imagen-assets:
   jarvis-session-db:
