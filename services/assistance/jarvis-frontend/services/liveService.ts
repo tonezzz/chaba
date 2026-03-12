@@ -158,6 +158,13 @@ export class LiveService {
           text: "connected",
           timestamp: new Date(),
         });
+        try {
+          if (this.outputAudioContext && this.outputAudioContext.state === "suspended") {
+            void this.outputAudioContext.resume();
+          }
+        } catch {
+          // ignore
+        }
         if (this.inputStream) {
           this.setupAudioInput(this.inputStream);
         } else {
@@ -392,6 +399,13 @@ export class LiveService {
     }
 
     if (message?.type === "audio" && message?.data && this.outputAudioContext) {
+      try {
+        if (this.outputAudioContext.state === "suspended") {
+          await this.outputAudioContext.resume();
+        }
+      } catch {
+        // ignore
+      }
       this.nextStartTime = Math.max(this.nextStartTime, this.outputAudioContext.currentTime);
       const pcmBytes = base64ToUint8Array(message.data);
       const audioBuffer = await pcm16ToAudioBuffer(pcmBytes, this.outputAudioContext, message.sampleRate || 24000);
@@ -405,12 +419,13 @@ export class LiveService {
     }
 
     if (message?.type === "transcript" && message?.text) {
+      const src = message?.source === "output" ? "output" : "input";
       this.onMessage({
         id: `${Date.now()}_tr`,
-        role: "system",
+        role: src === "output" ? "model" : "system",
         text: String(message.text),
         timestamp: new Date(),
-        metadata: { type: "text", source: message?.source === "output" ? "output" : "input" },
+        metadata: { type: "text", source: src },
       });
       return;
     }
