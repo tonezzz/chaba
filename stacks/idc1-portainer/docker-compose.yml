@@ -25,6 +25,8 @@ services:
       - |
         set -e
 
+        apk add --no-cache libc6-compat >/dev/null 2>&1 || true
+
         if [ ! -x /usr/local/bin/portainer-mcp ]; then
           arch="$$(uname -m)"
           case "$$arch" in
