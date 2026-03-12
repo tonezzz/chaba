@@ -147,7 +147,7 @@ PY
   # IMPORTANT:
   # Updating a Git-backed stack via PUT /api/stacks/{id} will convert it to a file-based stack.
   # If you want to keep the stack Git-backed, redeploy via Portainer UI (or a Git redeploy endpoint if supported).
-  if python3 - <<'PY'
+  is_git_stack="$(python3 - <<'PY'
 import json
 with open('/tmp/portainer_stack_inspect.json','r',encoding='utf-8') as f:
   obj=json.load(f)
@@ -155,7 +155,8 @@ git_cfg=obj.get('GitConfig')
 is_git=bool(git_cfg) and isinstance(git_cfg, dict)
 print('1' if is_git else '0')
 PY
-  | grep -q '^1$'; then
+  )"
+  if [[ "${is_git_stack}" == "1" ]]; then
     if [[ "${ALLOW_FILE_BASED_REDEPLOY_FOR_GIT_STACKS:-}" != "true" ]]; then
       echo "[deploy] ERROR: stack appears Git-backed (GitConfig present)." >&2
       echo "[deploy] Refusing to redeploy via PUT /api/stacks/{id} because it converts Git-backed stacks to file-based." >&2
