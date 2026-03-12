@@ -2086,6 +2086,13 @@ async def _handle_reminder_setup_trigger(ws: WebSocket, text: str) -> bool:
                 "instance_id": INSTANCE_ID,
             }
         )
+        try:
+            await _live_say(
+                ws,
+                f"I drafted a reminder: {title}. Say 'reminder confirm' with a time, or say 'reminder cancel'.",
+            )
+        except Exception:
+            pass
         return True
 
     # Weaviate-authoritative: write local first for reliability, then write-through to Weaviate.
@@ -2182,6 +2189,10 @@ async def _handle_pending_reminder_confirm_or_cancel(ws: WebSocket, text: str) -
     if lower.startswith("reminder cancel"):
         ws.state.pending_reminder_setup = None
         await ws.send_json({"type": "reminder_setup_cancelled", "instance_id": INSTANCE_ID})
+        try:
+            await _live_say(ws, "Okay. I cancelled that reminder draft.")
+        except Exception:
+            pass
         return True
 
     when = ""
@@ -2243,6 +2254,10 @@ async def _handle_pending_reminder_confirm_or_cancel(ws: WebSocket, text: str) -
                 "instance_id": INSTANCE_ID,
             }
         )
+        try:
+            await _live_say(ws, f"Confirmed. I created the reminder: {title}. Please tell me what time.")
+        except Exception:
+            pass
         return True
 
     schedule_type = "morning_brief"
@@ -2298,6 +2313,10 @@ async def _handle_pending_reminder_confirm_or_cancel(ws: WebSocket, text: str) -
             "instance_id": INSTANCE_ID,
         }
     )
+    try:
+        await _live_say(ws, f"Confirmed. I created the reminder: {title}.")
+    except Exception:
+        pass
     return True
 
 
@@ -4960,6 +4979,19 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             return
 
 
+async def _live_say(ws: WebSocket, text: str) -> None:
+    s = str(text or "").strip()
+    if not s:
+        return
+    session = getattr(ws.state, "gemini_live_session", None)
+    if session is None:
+        return
+    try:
+        await session.send_client_content(turns={"parts": [{"text": s}]}, turn_complete=True)
+    except Exception:
+        return
+
+
 async def _ws_local_only_loop(ws: WebSocket) -> None:
     while True:
         msg = await ws.receive_json()
@@ -5330,48 +5362,76 @@ async def ws_live(ws: WebSocket) -> None:
                 pass
             ws.state.gemini_live_model = model
             session_cm = client.aio.live.connect(model=model, config=cfg)
-            async with session_cm as session:
-                logger.info("gemini_live_connected model=%s", model)
-                await ws.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
-                connected_sent = True
+            try:
+                async with session_cm as session:
+                    logger.info("gemini_live_connected model=%s", model)
+                    ws.state.gemini_live_session = session
+                    await ws.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
+                    connected_sent = True
 
-                try:
-                    tz = _get_user_timezone(DEFAULT_USER_ID)
-                    now_utc = datetime.now(tz=timezone.utc)
-                    now_local = now_utc.astimezone(tz)
-                    time_ctx = (
-                        "TIME_CONTEXT (authoritative server time)\n"
-                        f"TIMEZONE: {tz.key}\n"
-                        f"NOW_UTC: {now_utc.replace(tzinfo=timezone.utc).isoformat()}\n"
-                        f"NOW_LOCAL: {now_local.isoformat()}\n"
-                        "Use this as the reference for all relative time calculations."
-                    )
-                    await session.send_client_content(turns={"parts": [{"text": time_ctx}]}, turn_complete=True)
-                except Exception as e:
-                    logger.info("time_context_inject_failed error=%s", str(e))
+                    try:
+                        tz = _get_user_timezone(DEFAULT_USER_ID)
+                        now_utc = datetime.now(tz=timezone.utc)
+                        now_local = now_utc.astimezone(tz)
+                        time_ctx = (
+                            "TIME_CONTEXT (authoritative server time)\n"
+                            f"TIMEZONE: {tz.key}\n"
+                            f"NOW_UTC: {now_utc.replace(tzinfo=timezone.utc).isoformat()}\n"
+                            f"NOW_LOCAL: {now_local.isoformat()}\n"
+                            "Use this as the reference for all relative time calculations."
+                        )
+                        await session.send_client_content(turns={"parts": [{"text": time_ctx}]}, turn_complete=True)
+                    except Exception as e:
+                        logger.info("time_context_inject_failed error=%s", str(e))
 
-                to_gemini = asyncio.create_task(_ws_to_gemini_loop(ws, session), name="ws_to_gemini")
-                to_ws = asyncio.create_task(_safe_gemini_to_ws_loop(ws, session), name="gemini_to_ws")
-                wait_failed: asyncio.Task[bool] | None = None
+                    to_gemini = asyncio.create_task(_ws_to_gemini_loop(ws, session), name="ws_to_gemini")
+                    to_ws = asyncio.create_task(_safe_gemini_to_ws_loop(ws, session), name="gemini_to_ws")
+                    wait_failed: asyncio.Task[bool] | None = None
 
-                try:
-                    # Either the client disconnects (ws_to_gemini finishes) or Gemini fails.
-                    wait_failed = asyncio.create_task(gemini_failed_event.wait(), name="gemini_failed_wait")
-                    done, pending = await asyncio.wait(
-                        {to_gemini, wait_failed},
-                        return_when=asyncio.FIRST_COMPLETED,
-                    )
+                    try:
+                        # Either the client disconnects (ws_to_gemini finishes) or Gemini fails.
+                        wait_failed = asyncio.create_task(gemini_failed_event.wait(), name="gemini_failed_wait")
+                        done, pending = await asyncio.wait(
+                            {to_gemini, wait_failed},
+                            return_when=asyncio.FIRST_COMPLETED,
+                        )
 
-                    if wait_failed in done and gemini_failed_event.is_set():
-                        # Gemini failed; tear down this session to allow outer retry.
-                        if not to_gemini.done():
-                            to_gemini.cancel()
-                            try:
-                                await to_gemini
-                            except asyncio.CancelledError:
-                                pass
-                            except Exception:
-                                pass
+                        if wait_failed in done and gemini_failed_event.is_set():
+                            # Gemini failed; tear down this session to allow outer retry.
+                            if not to_gemini.done():
+                                to_gemini.cancel()
+                                try:
+                                    await to_gemini
+                                except asyncio.CancelledError:
+                                    pass
+                                except Exception:
+                                    pass
+                            if not to_ws.done():
+                                to_ws.cancel()
+                                try:
+                                    await to_ws
+                                except asyncio.CancelledError:
+                                    pass
+                                except Exception:
+                                    pass
+
+                            detail = (gemini_failed_error or {}).get("detail") or "gemini_failed"
+                            kind = (gemini_failed_error or {}).get("kind")
+                            if kind == "gemini_model_not_found":
+                                raise _GeminiLiveModelNotFound(str(detail))
+                            raise _GeminiLiveSessionFailed(str(detail))
+
+                        # Client disconnected or finished.
+                        await to_gemini
+                    except WebSocketDisconnect:
+                        return
+                    finally:
+                        try:
+                            if wait_failed is not None and not wait_failed.done():
+                                wait_failed.cancel()
+                        except Exception:
+                            pass
+
                         if not to_ws.done():
                             to_ws.cancel()
                             try:
@@ -5380,92 +5440,11 @@ async def ws_live(ws: WebSocket) -> None:
                                 pass
                             except Exception:
                                 pass
-
-                        detail = (gemini_failed_error or {}).get("detail") or "gemini_failed"
-                        kind = (gemini_failed_error or {}).get("kind")
-                        if kind == "gemini_model_not_found":
-                            raise _GeminiLiveModelNotFound(str(detail))
-                        raise _GeminiLiveSessionFailed(str(detail))
-
-                    # Client disconnected or finished.
-                    await to_gemini
-                except WebSocketDisconnect:
-                    return
-                finally:
-                    try:
-                        if wait_failed is not None and not wait_failed.done():
-                            wait_failed.cancel()
-                    except Exception:
-                        pass
-                    if not to_ws.done():
-                        to_ws.cancel()
-                        try:
-                            await to_ws
-                        except asyncio.CancelledError:
-                            pass
-                        except Exception:
-                            pass
-
-        last_error: Exception | None = None
-        for candidate in model_candidates or [GEMINI_LIVE_MODEL_OVERRIDE or GEMINI_LIVE_MODEL_DEFAULT]:
-            try:
-                logger.info("gemini_live_connect_attempt model=%s", candidate)
-                await _run_with_config(candidate, base_config)
-                last_error = None
-                break
-            except Exception as e:
-                last_error = e
-                msg = str(e)
-                if "invalid argument" in msg.lower():
-                    cfg = dict(base_config)
-                    cfg["response_modalities"] = ["AUDIO"]
-                    logger.warning(
-                        "gemini_live_connect_retry_invalid_argument model=%s before=%s after=%s error=%s",
-                        candidate,
-                        base_config.get("response_modalities"),
-                        cfg.get("response_modalities"),
-                        msg,
-                    )
-                    try:
-                        await _run_with_config(candidate, cfg)
-                        last_error = None
-                    except Exception as e2:
-                        last_error = e2
-                    if last_error is not None:
-                        e2_classified = _classify_gemini_live_error(last_error, candidate)
-                        if e2_classified.get("kind") == "gemini_model_not_found":
-                            logger.warning(
-                                "gemini_live_session_model_not_found model=%s error=%s",
-                                candidate,
-                                e2_classified.get("detail"),
-                            )
-                            continue
-                    break
-                if isinstance(e, _GeminiLiveModelNotFound):
-                    classified = {
-                        "kind": "gemini_model_not_found",
-                        "message": "gemini_live_model_not_found",
-                        "model": candidate,
-                        "hint": "Set GEMINI_LIVE_MODEL to a model your API key can access.",
-                        "detail": str(getattr(e, "detail", msg) or msg),
-                    }
-                elif isinstance(e, _GeminiLiveSessionFailed):
-                    classified = {
-                        "kind": "gemini_session_failed",
-                        "message": "gemini_session_failed",
-                        "model": candidate,
-                        "detail": str(getattr(e, "detail", msg) or msg),
-                    }
-                else:
-                    classified = _classify_gemini_live_error(e, candidate)
-                if classified.get("kind") == "gemini_model_not_found":
-                    logger.warning(
-                        "gemini_live_session_model_not_found model=%s error=%s",
-                        candidate,
-                        classified.get("detail"),
-                    )
-                    continue
-                break
+            finally:
+                try:
+                    ws.state.gemini_live_session = None
+                except Exception:
+                    pass
 
         if last_error is not None:
             msg = str(last_error)
