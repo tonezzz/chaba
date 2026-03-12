@@ -207,6 +207,375 @@ def _classify_image_generation_error(message: str) -> Optional[dict[str, Any]]:
     return None
 
 
+def _set_reminder_due_and_notify_at(*, reminder_id: str, due_at_ts: Optional[int], notify_at_ts: Optional[int]) -> bool:
+    _init_session_db()
+    rid = str(reminder_id or "").strip()
+    if not rid:
+        return False
+    now_ts = int(time.time())
+    local = _get_local_reminder_by_id(rid) or {}
+    title = str(local.get("title") or "Reminder").strip() or "Reminder"
+    schedule_type = str(local.get("schedule_type") or "morning_brief").strip() or "morning_brief"
+    dedupe_key = _reminder_dedupe_key(title, due_at_ts, schedule_type)
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        cur = conn.execute(
+            "UPDATE reminders SET due_at = ?, notify_at = ?, dedupe_key = ?, updated_at = ? WHERE reminder_id = ?",
+            (due_at_ts, notify_at_ts, dedupe_key, now_ts, rid),
+        )
+        conn.commit()
+        return bool(cur.rowcount and int(cur.rowcount) > 0)
+
+
+async def _handle_last_reminder_modify(ws: WebSocket, text: str) -> bool:
+    raw = str(text or "").strip()
+    if not raw:
+        return False
+    s = " ".join(raw.split())
+
+    is_thai = _text_is_thai(s)
+    if not is_thai:
+        return False
+
+    # Thai time-change follow-ups.
+    if not (s.startswith("เปลี่ยนเวลา") or s.startswith("เปลี่ยนเป็น") or s.startswith("เปลี่ยน เป็น")):
+        return False
+
+    rid = str(getattr(ws.state, "last_selected_reminder_id", "") or "").strip()
+    if not rid:
+        rid = str(getattr(ws.state, "last_reminder_id", "") or "").strip()
+    if not rid:
+        msg = "ยังไม่พบรายการแจ้งเตือนล่าสุดที่จะให้เปลี่ยนเวลา"
+        try:
+            await ws.send_json({"type": "text", "text": msg})
+        except Exception:
+            pass
+        try:
+            await _live_say(ws, msg)
+        except Exception:
+            pass
+        return True
+
+    when = ""
+    if s.startswith("เปลี่ยนเป็น") or s.startswith("เปลี่ยน เป็น"):
+        parts = s.split(" ", 1)
+        when = parts[1].strip() if len(parts) > 1 else ""
+    elif s.startswith("เปลี่ยนเวลา"):
+        tail = s[len("เปลี่ยนเวลา") :].strip()
+        if tail.startswith(":") or tail.startswith("-"):
+            tail = tail[1:].strip()
+        when = tail
+
+    if not when:
+        try:
+            ws.state.pending_reminder_modify = {"reminder_id": rid, "created_at": int(time.time())}
+        except Exception:
+            pass
+        msg = "ต้องการเปลี่ยนเป็นเวลาไหน? (เช่น เปลี่ยนเป็น 9 โมงเช้า)"
+        try:
+            await ws.send_json({"type": "text", "text": msg})
+        except Exception:
+            pass
+        try:
+            await _live_say(ws, msg)
+        except Exception:
+            pass
+        return True
+
+    tz = _get_user_timezone(DEFAULT_USER_ID)
+    now = datetime.now(tz=timezone.utc)
+    due_at_utc, local_iso = _parse_time_from_text(when, now, tz)
+    if due_at_utc is None:
+        msg = "ฉันอ่านเวลาไม่ออก ลองใหม่ เช่น วันนี้ 17:00 หรือ พรุ่งนี้ 09:00"
+        try:
+            await ws.send_json({"type": "text", "text": msg})
+        except Exception:
+            pass
+        try:
+            await _live_say(ws, msg)
+        except Exception:
+            pass
+        return True
+
+    notify_at_local = _next_morning_brief_at(now, tz, due_at_utc)
+    notify_at_ts = int(notify_at_local.astimezone(timezone.utc).timestamp())
+    due_at_ts = int(due_at_utc.replace(tzinfo=timezone.utc).timestamp())
+
+    changed = _set_reminder_due_and_notify_at(reminder_id=rid, due_at_ts=due_at_ts, notify_at_ts=notify_at_ts)
+    _set_reminder_hide_until(rid, None)
+
+    wv: Optional[dict[str, Any]] = None
+    if _weaviate_enabled():
+        try:
+            local = _get_local_reminder_by_id(rid) or {}
+            if not local:
+                raise HTTPException(status_code=404, detail="reminder_not_found")
+            tz_name = str(local.get("timezone") or tz.key)
+            external_key = str(local.get("aim_entity_name") or "").strip() or f"reminder::{rid}"
+            wv = await _weaviate_upsert_memory_item(
+                external_key=external_key,
+                kind="reminder",
+                title=str(local.get("title") or "Reminder"),
+                body=str(local.get("source_text") or ""),
+                status=str(local.get("status") or "pending"),
+                due_at=due_at_ts,
+                notify_at=notify_at_ts,
+                hide_until=None,
+                timezone_name=tz_name,
+                source="jarvis",
+            )
+        except Exception as e:
+            wv = {"ok": False, "error": str(e)}
+
+    try:
+        await ws.send_json(
+            {
+                "type": "reminder_modified",
+                "reminder_id": rid,
+                "due_at": due_at_ts,
+                "notify_at": notify_at_ts,
+                "local_time": local_iso,
+                "changed": changed,
+                "weaviate": wv,
+                "instance_id": INSTANCE_ID,
+            }
+        )
+    except Exception:
+        pass
+
+    title = str((_get_local_reminder_by_id(rid) or {}).get("title") or "Reminder").strip() or "Reminder"
+    msg = f"โอเค เปลี่ยนเวลาแล้ว: {title} เป็น {local_iso or when}"
+    try:
+        await ws.send_json({"type": "text", "text": msg})
+    except Exception:
+        pass
+    try:
+        await _live_say(ws, msg)
+    except Exception:
+        pass
+    return True
+
+
+def _looks_like_reminder_details_query(text: str) -> bool:
+    raw = str(text or "").strip()
+    if not raw:
+        return False
+    s = " ".join(raw.lower().split())
+    if s in ("รายละเอียดแจ้งเตือน", "รายละเอียดการแจ้งเตือน", "ดูรายละเอียดแจ้งเตือน"):
+        return True
+    if s.startswith("รายละเอียด") and ("แจ้งเตือน" in s or "เตือน" in s):
+        return True
+    if "รายละเอียด" in s and ("แจ้งเตือน" in s or "เตือน" in s):
+        return True
+    if s in ("reminder details", "show reminder details", "reminder detail"):
+        return True
+    if "reminder" in s and "detail" in s:
+        return True
+    return False
+
+
+async def _handle_reminder_details_query(ws: WebSocket, text: str) -> bool:
+    if not _looks_like_reminder_details_query(text):
+        return False
+
+    rid = str(getattr(ws.state, "last_selected_reminder_id", "") or "").strip()
+    if not rid:
+        rid = str(getattr(ws.state, "last_reminder_id", "") or "").strip()
+    if not rid:
+        msg = "ยังไม่พบรายการแจ้งเตือนล่าสุด" if _text_is_thai(text) else "I couldn't find a recent reminder."
+        try:
+            await ws.send_json({"type": "text", "text": msg})
+        except Exception:
+            pass
+        return True
+
+    local = _get_local_reminder_by_id(rid) or {}
+    if not local:
+        msg = "ไม่พบรายการแจ้งเตือนนี้แล้ว" if _text_is_thai(text) else "That reminder wasn't found."
+        try:
+            await ws.send_json({"type": "text", "text": msg})
+        except Exception:
+            pass
+        return True
+
+    try:
+        await ws.send_json({"type": "reminder_detail", "reminder": local, "instance_id": INSTANCE_ID})
+    except Exception:
+        pass
+
+    title = str(local.get("title") or "Reminder").strip() or "Reminder"
+    due_at = local.get("due_at")
+    notify_at = local.get("notify_at")
+    tz_name = str(local.get("timezone") or DEFAULT_TIMEZONE)
+    status = str(local.get("status") or "pending")
+
+    local_time_str: Optional[str] = None
+    if due_at is not None:
+        try:
+            tz = ZoneInfo(tz_name)
+            dt = datetime.fromtimestamp(int(due_at), tz=timezone.utc).astimezone(tz)
+            local_time_str = dt.strftime("%Y-%m-%d %H:%M")
+        except Exception:
+            local_time_str = None
+
+    if _text_is_thai(text):
+        when_line = f"เวลา: {local_time_str}" if local_time_str else "เวลา: ยังไม่ตั้งเวลา"
+        msg = "\n".join(
+            [
+                f"รายละเอียดแจ้งเตือน: {title}",
+                when_line,
+                f"สถานะ: {status}",
+            ]
+        )
+    else:
+        when_line = f"Time: {local_time_str}" if local_time_str else "Time: not set"
+        msg = "\n".join(
+            [
+                f"Reminder details: {title}",
+                when_line,
+                f"Status: {status}",
+            ]
+        )
+    try:
+        await ws.send_json({"type": "text", "text": msg})
+    except Exception:
+        pass
+    return True
+
+
+async def _handle_pending_reminder_modify(ws: WebSocket, text: str) -> bool:
+    pending = getattr(ws.state, "pending_reminder_modify", None)
+    if not isinstance(pending, dict):
+        return False
+    rid = str(pending.get("reminder_id") or "").strip()
+    if not rid:
+        try:
+            ws.state.pending_reminder_modify = None
+        except Exception:
+            pass
+        return False
+
+    raw = str(text or "").strip()
+    s = " ".join(raw.split())
+    if not s:
+        return False
+
+    # If user repeats the command, let the explicit handler take it.
+    if s.startswith("เปลี่ยนเวลา") or s.startswith("เปลี่ยนเป็น") or s.startswith("เปลี่ยน เป็น"):
+        return False
+
+    try:
+        ws.state.pending_reminder_modify = None
+    except Exception:
+        pass
+
+    try:
+        ws.state.last_reminder_id = rid
+    except Exception:
+        pass
+
+    # Treat the message as the new time.
+    return await _handle_last_reminder_modify(ws, f"เปลี่ยนเป็น {s}")
+
+
+async def _handle_pending_reminder_set_time(ws: WebSocket, text: str) -> bool:
+    pending = getattr(ws.state, "pending_reminder_set_time", None)
+    if not isinstance(pending, dict):
+        return False
+    rid = str(pending.get("reminder_id") or "").strip()
+    if not rid:
+        try:
+            ws.state.pending_reminder_set_time = None
+        except Exception:
+            pass
+        return False
+
+    raw = str(text or "").strip()
+    s = " ".join(raw.split())
+    if not s:
+        return False
+
+    # If user sends another command, do not consume it here.
+    if s.startswith("เปลี่ยนเวลา") or s.startswith("เปลี่ยนเป็น") or s.startswith("เปลี่ยน เป็น"):
+        return False
+
+    tz = _get_user_timezone(DEFAULT_USER_ID)
+    now = datetime.now(tz=timezone.utc)
+    due_at_utc, local_iso = _parse_time_from_text(s, now, tz)
+    if due_at_utc is None:
+        msg = "ฉันอ่านเวลาไม่ออก ลองใหม่ เช่น วันนี้ 17:00 หรือ พรุ่งนี้ 09:00"
+        try:
+            await ws.send_json({"type": "text", "text": msg})
+        except Exception:
+            pass
+        try:
+            await _live_say(ws, msg)
+        except Exception:
+            pass
+        return True
+
+    try:
+        ws.state.pending_reminder_set_time = None
+    except Exception:
+        pass
+
+    notify_at_local = _next_morning_brief_at(now, tz, due_at_utc)
+    notify_at_ts = int(notify_at_local.astimezone(timezone.utc).timestamp())
+    due_at_ts = int(due_at_utc.replace(tzinfo=timezone.utc).timestamp())
+    changed = _set_reminder_due_and_notify_at(reminder_id=rid, due_at_ts=due_at_ts, notify_at_ts=notify_at_ts)
+    _set_reminder_hide_until(rid, None)
+
+    wv: Optional[dict[str, Any]] = None
+    if _weaviate_enabled():
+        try:
+            local = _get_local_reminder_by_id(rid) or {}
+            if not local:
+                raise HTTPException(status_code=404, detail="reminder_not_found")
+            tz_name = str(local.get("timezone") or tz.key)
+            external_key = str(local.get("aim_entity_name") or "").strip() or f"reminder::{rid}"
+            wv = await _weaviate_upsert_memory_item(
+                external_key=external_key,
+                kind="reminder",
+                title=str(local.get("title") or "Reminder"),
+                body=str(local.get("source_text") or ""),
+                status=str(local.get("status") or "pending"),
+                due_at=due_at_ts,
+                notify_at=notify_at_ts,
+                hide_until=None,
+                timezone_name=tz_name,
+                source="jarvis",
+            )
+        except Exception as e:
+            wv = {"ok": False, "error": str(e)}
+
+    try:
+        await ws.send_json(
+            {
+                "type": "reminder_modified",
+                "reminder_id": rid,
+                "due_at": due_at_ts,
+                "notify_at": notify_at_ts,
+                "local_time": local_iso,
+                "changed": changed,
+                "weaviate": wv,
+                "instance_id": INSTANCE_ID,
+            }
+        )
+    except Exception:
+        pass
+
+    title = str((_get_local_reminder_by_id(rid) or {}).get("title") or "Reminder").strip() or "Reminder"
+    msg = f"โอเค ตั้งเวลาให้แล้ว: {title} เป็น {local_iso or s}"
+    try:
+        await ws.send_json({"type": "text", "text": msg})
+    except Exception:
+        pass
+    try:
+        await _live_say(ws, msg)
+    except Exception:
+        pass
+    return True
+
+
 def _imagen_allowed_model(model: Optional[str]) -> str:
     m = (str(model or "").strip() or IMAGEN_MODEL_DEFAULT).strip()
     if m not in IMAGEN_ALLOWED_MODELS:
@@ -1731,6 +2100,42 @@ def _extract_reminder_setup_title(text: str) -> str:
     return tail[:120]
 
 
+def _strip_time_phrases_from_title(title: str) -> str:
+    t = " ".join(str(title or "").strip().split())
+    if not t:
+        return "Reminder"
+
+    # Remove common time/date fragments that often leak into the title.
+    # Keep this conservative: only strip known patterns.
+    patterns = [
+        # Thai day words
+        r"\b(?:วันนี้|พรุ่งนี้|มะรืน|เมื่อวาน|คืนนี้|เช้านี้|พรุ่งนี้เช้า)\b",
+        # Thai time words
+        r"\b\d{1,2}\s*โมง(?:\s*(?:เช้า|เย็น|ค่ำ|กลางคืน))?\b",
+        r"\b\d{1,2}\s*ทุ่ม\b",
+        r"\bเที่ยง(?:คืน|วัน)?\b",
+        r"\bบ่าย\s*\d{1,2}\b",
+        # Numeric time
+        r"\b\d{1,2}:\d{2}\b",
+        r"\b\d{1,2}\s*(?:am|pm)\b",
+        # English day words
+        r"\b(?:today|tomorrow|tonight|this\s+morning|this\s+evening)\b",
+    ]
+    out = t
+    for p in patterns:
+        out = re.sub(p, " ", out, flags=re.IGNORECASE)
+
+    # Clean up separators that frequently surround the time.
+    out = re.sub(r"\s*[-–—|•]+\s*", " ", out)
+    out = re.sub(r"\(\s*\)", "", out)
+    out = " ".join(out.strip().split())
+    if not out:
+        return "Reminder"
+    if len(out) > 120:
+        out = out[:120].rstrip()
+    return out
+
+
 def _text_is_thai(text: str) -> bool:
     s = str(text or "")
     for ch in s:
@@ -1874,6 +2279,32 @@ async def _handle_reminder_helper_trigger(ws: WebSocket, text: str) -> bool:
                 order="desc",
                 include_hidden=include_hidden,
             )
+
+        # Option B: treat the most recently updated reminder in the list as the "selected" reminder
+        # for follow-ups like "เปลี่ยนเวลา" / "what are the details?".
+        try:
+            best: Optional[dict[str, Any]] = None
+            best_ts = -1
+            for it in items or []:
+                if not isinstance(it, dict):
+                    continue
+                rid = str(it.get("reminder_id") or "").strip()
+                if not rid:
+                    continue
+                ts = it.get("updated_at")
+                if ts is None:
+                    ts = it.get("created_at")
+                try:
+                    ts_i = int(ts) if ts is not None else -1
+                except Exception:
+                    ts_i = -1
+                if ts_i > best_ts:
+                    best_ts = ts_i
+                    best = it
+            if best is not None:
+                ws.state.last_selected_reminder_id = str(best.get("reminder_id") or "").strip()
+        except Exception:
+            pass
         await ws.send_json(
             {
                 "type": "reminder_helper_list",
@@ -1889,6 +2320,11 @@ async def _handle_reminder_helper_trigger(ws: WebSocket, text: str) -> bool:
     if not rid:
         await ws.send_json({"type": "reminder_helper_error", "message": "missing_reminder_id"})
         return True
+
+    try:
+        ws.state.last_selected_reminder_id = rid
+    except Exception:
+        pass
 
     if action == "done":
         changed = _mark_reminder_done(rid)
@@ -2080,6 +2516,7 @@ async def _improve_reminder_title(*, raw_title: str, source_text: str) -> str:
 async def _handle_reminder_setup_trigger(ws: WebSocket, text: str) -> bool:
     title = _extract_reminder_setup_title(text)
     title = await _improve_reminder_title(raw_title=title, source_text=text)
+    title = _strip_time_phrases_from_title(title)
     tz = _get_user_timezone(DEFAULT_USER_ID)
     now = datetime.now(tz=timezone.utc)
     due_at_utc, local_iso = _parse_time_from_text(text, now, tz)
@@ -2136,6 +2573,10 @@ async def _handle_reminder_setup_trigger(ws: WebSocket, text: str) -> bool:
         source_text=text,
         aim_entity_name=None,
     )
+    try:
+        ws.state.last_reminder_id = reminder_id
+    except Exception:
+        pass
 
     external_key = f"reminder::{reminder_id}"
 
@@ -2264,6 +2705,14 @@ async def _handle_pending_reminder_confirm_or_cancel(ws: WebSocket, text: str) -
             source_text=source_text or s,
             aim_entity_name=None,
         )
+        try:
+            ws.state.last_reminder_id = reminder_id
+        except Exception:
+            pass
+        try:
+            ws.state.pending_reminder_set_time = {"reminder_id": reminder_id, "created_at": int(time.time())}
+        except Exception:
+            pass
         external_key = f"reminder::{reminder_id}"
         if _weaviate_enabled():
             try:
@@ -2322,6 +2771,10 @@ async def _handle_pending_reminder_confirm_or_cancel(ws: WebSocket, text: str) -
         source_text=source_text or s,
         aim_entity_name=None,
     )
+    try:
+        ws.state.last_reminder_id = reminder_id
+    except Exception:
+        pass
 
     external_key = f"reminder::{reminder_id}"
     result: Any = {
@@ -2643,6 +3096,34 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
     try:
         handled_confirm = await _handle_pending_reminder_confirm_or_cancel(ws, text)
         if handled_confirm:
+            return True
+    except Exception:
+        pass
+
+    try:
+        handled_details = await _handle_reminder_details_query(ws, text)
+        if handled_details:
+            return True
+    except Exception:
+        pass
+
+    try:
+        handled_set_time = await _handle_pending_reminder_set_time(ws, text)
+        if handled_set_time:
+            return True
+    except Exception:
+        pass
+
+    try:
+        handled_pending_modify = await _handle_pending_reminder_modify(ws, text)
+        if handled_pending_modify:
+            return True
+    except Exception:
+        pass
+
+    try:
+        handled_modify = await _handle_last_reminder_modify(ws, text)
+        if handled_modify:
             return True
     except Exception:
         pass
