@@ -1731,6 +1731,14 @@ def _extract_reminder_setup_title(text: str) -> str:
     return tail[:120]
 
 
+def _text_is_thai(text: str) -> bool:
+    s = str(text or "")
+    for ch in s:
+        if "\u0e00" <= ch <= "\u0e7f":
+            return True
+    return False
+
+
 def _parse_reminder_helper_command(text: str) -> dict[str, Any]:
     raw = str(text or "").strip()
     s = " ".join(raw.lower().split())
@@ -2081,7 +2089,11 @@ async def _handle_reminder_setup_trigger(ws: WebSocket, text: str) -> bool:
                 "result": {
                     "ok": True,
                     "needs_time": True,
-                    "hint": "Confirm before creating. Reply: reminder confirm: <when>  (or: reminder confirm  / reminder cancel)",
+                    "hint": (
+                        "ยืนยันก่อนสร้าง พิมพ์: ยืนยัน: <เวลา>  (หรือ: ยืนยัน  / ยกเลิก)"
+                        if _text_is_thai(text)
+                        else "Confirm before creating. Reply: reminder confirm: <when>  (or: reminder confirm  / reminder cancel)"
+                    ),
                 },
                 "instance_id": INSTANCE_ID,
             }
@@ -2089,7 +2101,11 @@ async def _handle_reminder_setup_trigger(ws: WebSocket, text: str) -> bool:
         try:
             await _live_say(
                 ws,
-                f"I drafted a reminder: {title}. Say 'reminder confirm' with a time, or say 'reminder cancel'.",
+                (
+                    f"ฉันร่างการแจ้งเตือน: {title} แล้ว พูดว่า 'ยืนยัน' พร้อมเวลา หรือพูดว่า 'ยกเลิก'."
+                    if _text_is_thai(text)
+                    else f"I drafted a reminder: {title}. Say 'reminder confirm' with a time, or say 'reminder cancel'."
+                ),
             )
         except Exception:
             pass
@@ -2183,22 +2199,39 @@ async def _handle_pending_reminder_confirm_or_cancel(ws: WebSocket, text: str) -
 
     s = " ".join(str(text or "").strip().split())
     lower = s.lower()
-    if not (lower.startswith("reminder confirm") or lower.startswith("reminder cancel")):
+
+    is_thai = _text_is_thai(s) or _text_is_thai(str(pending.get("source_text") or ""))
+
+    thai_confirm = s.startswith("ยืนยัน") or s.startswith("ยืนยันเตือน") or s.startswith("เตือน ยืนยัน")
+    thai_cancel = s.startswith("ยกเลิก") or s.startswith("ยกเลิกเตือน") or s.startswith("เตือน ยกเลิก")
+    eng_confirm = lower.startswith("reminder confirm")
+    eng_cancel = lower.startswith("reminder cancel")
+
+    if not (eng_confirm or eng_cancel or thai_confirm or thai_cancel):
         return False
 
-    if lower.startswith("reminder cancel"):
+    if eng_cancel or thai_cancel:
         ws.state.pending_reminder_setup = None
         await ws.send_json({"type": "reminder_setup_cancelled", "instance_id": INSTANCE_ID})
         try:
-            await _live_say(ws, "Okay. I cancelled that reminder draft.")
+            await _live_say(ws, "โอเค ฉันยกเลิกแบบร่างการแจ้งเตือนแล้ว" if is_thai else "Okay. I cancelled that reminder draft.")
         except Exception:
             pass
         return True
 
     when = ""
-    m = re.search(r"^reminder\s+confirm\s*[:\-]?\s*(.*)$", s, flags=re.IGNORECASE)
-    if m:
-        when = str(m.group(1) or "").strip()
+    if eng_confirm:
+        m = re.search(r"^reminder\s+confirm\s*[:\-]?\s*(.*)$", s, flags=re.IGNORECASE)
+        if m:
+            when = str(m.group(1) or "").strip()
+    elif thai_confirm:
+        m = re.search(r"^ยืนยัน(?:เตือน)?\s*[:\-]?\s*(.*)$", s)
+        if m:
+            when = str(m.group(1) or "").strip()
+        else:
+            m2 = re.search(r"^เตือน\s+ยืนยัน\s*[:\-]?\s*(.*)$", s)
+            if m2:
+                when = str(m2.group(1) or "").strip()
 
     title = str(pending.get("title") or "Reminder").strip() or "Reminder"
     source_text = str(pending.get("source_text") or "").strip()
@@ -2249,13 +2282,20 @@ async def _handle_pending_reminder_confirm_or_cancel(ws: WebSocket, text: str) -
                     "ok": True,
                     "reminder": {"reminder_id": reminder_id, "schedule_type": "unscheduled", "timezone": tz.key},
                     "needs_time": True,
-                    "hint": "Set a time (e.g. today 17:00 or tomorrow 09:00).",
+                    "hint": "บอกเวลาได้เลย (เช่น วันนี้ 17:00 หรือ พรุ่งนี้ 09:00)" if is_thai else "Set a time (e.g. today 17:00 or tomorrow 09:00).",
                 },
                 "instance_id": INSTANCE_ID,
             }
         )
         try:
-            await _live_say(ws, f"Confirmed. I created the reminder: {title}. Please tell me what time.")
+            await _live_say(
+                ws,
+                (
+                    f"ยืนยันแล้ว ฉันสร้างการแจ้งเตือน: {title} แล้ว บอกเวลาได้เลย"
+                    if is_thai
+                    else f"Confirmed. I created the reminder: {title}. Please tell me what time."
+                ),
+            )
         except Exception:
             pass
         return True
@@ -2314,7 +2354,7 @@ async def _handle_pending_reminder_confirm_or_cancel(ws: WebSocket, text: str) -
         }
     )
     try:
-        await _live_say(ws, f"Confirmed. I created the reminder: {title}.")
+        await _live_say(ws, f"ยืนยันแล้ว ฉันสร้างการแจ้งเตือน: {title} แล้ว" if is_thai else f"Confirmed. I created the reminder: {title}.")
     except Exception:
         pass
     return True
