@@ -40,10 +40,36 @@ load_dotenv()
 
 MODEL = os.getenv("GEMINI_LIVE_MODEL", "gemini-2.5-flash-native-audio-preview-12-2025")
 
-REMINDER_TITLE_MODEL = (
+_REMINDER_TITLE_MODEL_SINGLE = (
     str(os.getenv("JARVIS_REMINDER_TITLE_MODEL") or os.getenv("GEMINI_TEXT_MODEL") or "gemini-2.0-flash").strip()
     or "gemini-2.0-flash"
 )
+
+
+def _parse_model_list(value: str) -> list[str]:
+    parts = [p.strip() for p in str(value or "").split(",")]
+    return [p for p in parts if p]
+
+
+def _normalize_model_name(name: str) -> str:
+    s = str(name or "").strip()
+    if s.startswith("models/"):
+        s = s[len("models/") :]
+    return s
+
+
+REMINDER_TITLE_MODELS: list[str] = [
+    _normalize_model_name(m) for m in _parse_model_list(str(os.getenv("JARVIS_REMINDER_TITLE_MODELS") or "").strip())
+]
+if not REMINDER_TITLE_MODELS:
+    REMINDER_TITLE_MODELS = [
+        "gemini-2.0-flash-lite",
+        "gemini-2.0-flash",
+        "gemini-flash-lite-latest",
+        "gemini-flash-latest",
+        "gemini-pro-latest",
+        _normalize_model_name(_REMINDER_TITLE_MODEL_SINGLE),
+    ]
 
 INSTANCE_ID = str(os.getenv("JARVIS_INSTANCE_ID") or "").strip() or f"jarvis_{uuid.uuid4().hex[:10]}"
 
@@ -1953,8 +1979,8 @@ async def _improve_reminder_title(*, raw_title: str, source_text: str) -> str:
     try:
         client = genai.Client(api_key=api_key)
 
-        async def _run() -> str:
-            res = await client.aio.models.generate_content(model=REMINDER_TITLE_MODEL, contents=prompt)
+        async def _run(model_name: str) -> str:
+            res = await client.aio.models.generate_content(model=model_name, contents=prompt)
             txt = getattr(res, "text", None)
             if txt is None:
                 try:
@@ -1968,8 +1994,40 @@ async def _improve_reminder_title(*, raw_title: str, source_text: str) -> str:
                 cleaned = cleaned[:120].rstrip()
             return cleaned
 
-        improved = await asyncio.wait_for(_run(), timeout=2.5)
-        return str(improved or title).strip()[:120] or "Reminder"
+        last_err: Exception | None = None
+        for model_name in REMINDER_TITLE_MODELS:
+            try:
+                improved = await asyncio.wait_for(_run(model_name), timeout=2.5)
+                return str(improved or title).strip()[:120] or "Reminder"
+            except Exception as e:
+                last_err = e
+                msg = str(e)
+                lower = msg.lower()
+                retryable = any(
+                    k in lower
+                    for k in [
+                        "resource_exhausted",
+                        "quota",
+                        "rate",
+                        "429",
+                        "not found",
+                        "model",
+                        "permission",
+                        "403",
+                        "404",
+                        "unavailable",
+                        "503",
+                        "500",
+                        "timeout",
+                    ]
+                )
+                if retryable:
+                    continue
+                raise
+
+        if last_err is not None:
+            logger.warning("reminder_title_rewrite_failed: %s", last_err)
+        return title[:120]
     except Exception:
         return title[:120]
 

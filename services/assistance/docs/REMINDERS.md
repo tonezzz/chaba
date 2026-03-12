@@ -75,6 +75,29 @@
      - `reminders_done`
  
  Creation should write to SQLite first (reliability) and then write-through to Weaviate.
+
+ ## Reminder title rewrite (optional)
+
+ The backend may optionally rewrite reminder titles to be clearer before creating the reminder.
+This is best-effort and safe: if the rewrite model is unavailable / rate-limited / quota-limited, the backend will keep the original title.
+
+ Configuration (text model):
+ - `JARVIS_REMINDER_TITLE_MODELS` (comma-separated list; tried in order)
+ - `JARVIS_REMINDER_TITLE_MODEL` (single model; fallback)
+ - `GEMINI_TEXT_MODEL` (single model; fallback)
+
+ Notes:
+ - Model names may be provided with or without the `models/` prefix.
+ - If `JARVIS_REMINDER_TITLE_MODELS` is unset, the backend uses a cheap-first default fallback list.
+
+ Confirmed available model IDs (via Gemini API `models.list()` from the running `jarvis-backend` container):
+ - `models/gemini-2.0-flash-lite`
+ - `models/gemini-2.0-flash-lite-001`
+ - `models/gemini-2.0-flash`
+ - `models/gemini-2.0-flash-001`
+ - `models/gemini-flash-lite-latest`
+ - `models/gemini-flash-latest`
+ - `models/gemini-pro-latest`
  
  ## Common operations
  

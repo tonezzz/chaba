@@ -116,8 +116,23 @@ Unscheduled reminders:
 Reminder title quality:
 - The backend can optionally rewrite reminder titles to be clearer before creating the reminder (best-effort; falls back safely).
 - Configure the text model via:
-  - `JARVIS_REMINDER_TITLE_MODEL` (preferred)
-  - `GEMINI_TEXT_MODEL` (fallback)
+  - `JARVIS_REMINDER_TITLE_MODELS` (comma-separated list; tried in order)
+  - `JARVIS_REMINDER_TITLE_MODEL` (single model; fallback)
+  - `GEMINI_TEXT_MODEL` (single model; fallback)
+
+Reminder title model notes:
+- Model names may be provided with or without the `models/` prefix.
+- If `JARVIS_REMINDER_TITLE_MODELS` is unset, the backend uses a cheap-first default fallback list.
+- If the configured model is unavailable / rate-limited / quota-limited, the backend will try the next model and otherwise keep the original title.
+
+Confirmed available model IDs (via Gemini API `models.list()` from the running `jarvis-backend` container):
+- `models/gemini-2.0-flash-lite`
+- `models/gemini-2.0-flash-lite-001`
+- `models/gemini-2.0-flash`
+- `models/gemini-2.0-flash-001`
+- `models/gemini-flash-lite-latest`
+- `models/gemini-flash-latest`
+- `models/gemini-pro-latest`
 
 SQLite schema migration note:
 - If `JARVIS_SESSION_DB` is persisted from older deployments, the backend may need to migrate the `reminders` table to add new columns (e.g. `hide_until`).
