@@ -39,7 +39,7 @@ def _require_env(name: str) -> str:
 load_dotenv()
 
 GEMINI_LIVE_MODEL_OVERRIDE = str(os.getenv("GEMINI_LIVE_MODEL") or "").strip()
-GEMINI_LIVE_MODEL_DEFAULT = "gemini-2.5-flash-native-audio-preview-12-2025"
+GEMINI_LIVE_MODEL_DEFAULT = "gemini-2.0-flash-live-001"
 
 _REMINDER_TITLE_MODEL_SINGLE = (
     str(os.getenv("JARVIS_REMINDER_TITLE_MODEL") or os.getenv("GEMINI_TEXT_MODEL") or "gemini-2.0-flash").strip()
@@ -5318,16 +5318,26 @@ async def ws_live(ws: WebSocket) -> None:
                 "detail": msg,
             }
 
+        system_instruction = (
+            "You are Jarvis. Respond to the user with ONLY the final answer. "
+            "Do NOT reveal internal reasoning, planning, debugging, tool selection, or step-by-step thoughts. "
+            "Do NOT output work logs or messages like 'I am now', 'My next step', 'Filtering', 'Calculating'. "
+            "Be concise. Match the user's language (Thai stays Thai). "
+            "If you are unsure, ask a short clarifying question."
+        )
+
         base_config = {
             "response_modalities": ["AUDIO", "TEXT"],
             "input_audio_transcription": {},
             "output_audio_transcription": {},
+            "system_instruction": system_instruction,
             "tools": [
                 {"function_declarations": _mcp_tool_declarations()},
             ],
         }
 
         base_candidates = [
+            "gemini-2.0-flash-live-001",
             "gemini-2.5-flash-native-audio-preview-12-2025",
             "gemini-2.5-flash-native-audio-preview-09-2025",
             "gemini-2.5-flash-native-audio-latest",
