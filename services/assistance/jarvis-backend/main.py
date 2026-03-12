@@ -7,6 +7,7 @@ import sqlite3
 import time
 import uuid
 import re
+import hashlib
 from io import BytesIO
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -880,24 +881,41 @@ async def _gemini_embed_text(text: str) -> list[float]:
     if not api_key:
         raise RuntimeError("Missing required env var: API_KEY (or GEMINI_API_KEY)")
     client = genai.Client(api_key=api_key)
-    # google-genai embedding API surface has changed across versions; try a couple patterns.
-    try:
-        res = await client.aio.models.embed_content(model=GEMINI_EMBEDDING_MODEL, contents=text)
-        emb = getattr(res, "embedding", None)
-        values = getattr(emb, "values", None)
-        if isinstance(values, list) and values:
-            return [float(x) for x in values]
-    except Exception:
-        pass
-    try:
-        res = await client.aio.models.embed_content(model=GEMINI_EMBEDDING_MODEL, content=text)
-        emb = getattr(res, "embedding", None)
-        values = getattr(emb, "values", None)
-        if isinstance(values, list) and values:
-            return [float(x) for x in values]
-    except Exception as e:
-        raise RuntimeError(f"gemini_embedding_failed: {e}")
-    raise RuntimeError("gemini_embedding_failed")
+    # Embedding API surface and model availability can vary by google-genai version and API key.
+    # Keep the calling convention stable (contents=...) and try a few model candidates.
+    model_candidates = [
+        str(GEMINI_EMBEDDING_MODEL or "").strip(),
+        "text-embedding-004",
+        "embedding-001",
+    ]
+    seen: set[str] = set()
+    model_candidates = [m for m in model_candidates if m and not (m in seen or seen.add(m))]
+
+    last_err: Exception | None = None
+    for m in model_candidates:
+        try:
+            res = await client.aio.models.embed_content(model=m, contents=text)
+            emb = getattr(res, "embedding", None)
+            values = getattr(emb, "values", None)
+            if isinstance(values, list) and values:
+                return [float(x) for x in values]
+        except Exception as e:
+            last_err = e
+            continue
+
+    raise RuntimeError(f"gemini_embedding_failed: {last_err}" if last_err is not None else "gemini_embedding_failed")
+
+
+def _pseudo_embed_vector(text: str, dim: int = 64) -> list[float]:
+    # Deterministic, local-only fallback to keep Weaviate writes working when embedding providers are unavailable.
+    # Not semantically meaningful like real embeddings, but stable for storage and basic similarity behavior.
+    d = max(8, int(dim or 64))
+    digest = hashlib.sha256(str(text or "").encode("utf-8")).digest()
+    out: list[float] = []
+    for i in range(d):
+        b = digest[i % len(digest)]
+        out.append((float(int(b)) / 255.0) * 2.0 - 1.0)
+    return out
 
 
 _embed_cache: dict[str, list[float]] = {}
@@ -1064,7 +1082,11 @@ async def _weaviate_upsert_memory_item(
     obj_id = _weaviate_object_uuid(external_key)
 
     vector_text = "\n".join([str(kind), str(title), str(body)]).strip()
-    vector = await _gemini_embed_text_cached(vector_text)
+    try:
+        vector = await _gemini_embed_text_cached(vector_text)
+    except Exception as e:
+        logger.warning("weaviate_embed_failed_fallback error=%s", str(e))
+        vector = _pseudo_embed_vector(vector_text)
 
     exists = False
     existing_created_at: Optional[float] = None
