@@ -383,7 +383,13 @@ export class LiveService {
       const header = `reminder_helper_list${day ? ` (${day})` : ""}${status ? ` status=${status}` : ""}${includeHidden ? " include_hidden" : ""}`;
       const lines: string[] = [header];
       if (!reminders.length) {
-        lines.push("(no results)");
+        if (day === "today") {
+          lines.push("No reminders today.");
+        } else if (day === "yesterday") {
+          lines.push("No reminders yesterday.");
+        } else {
+          lines.push("(no results)");
+        }
       } else {
         for (const r of reminders.slice(0, 50)) {
           const rid = r?.reminder_id != null ? String(r.reminder_id) : "";
