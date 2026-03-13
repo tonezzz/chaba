@@ -649,6 +649,17 @@ services:
             if (!msg) continue;
             await handleMessage(msg);
           }
+
+          // Fallback: single JSON object without trailing newline.
+          // (Some clients may write a single JSON-RPC object to stdin without framing.)
+          const trimmed = lineBuf.trim();
+          if (trimmed && (trimmed.startsWith("{") || trimmed.startsWith("["))) {
+            const msg = safeJsonParse(trimmed);
+            if (msg) {
+              lineBuf = "";
+              await handleMessage(msg);
+            }
+          }
         });
 
         process.stdin.on("end", () => {
