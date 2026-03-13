@@ -80,7 +80,7 @@ services:
         const APP_NAME = "mcp-google-tasks";
         const APP_VERSION = "0.0.1";
 
-        const GOOGLE_DEVICE_CODE_URL = "https://oauth2.googleapis.com/device/code";
+        const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
         const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
         const GOOGLE_TASKS_API_BASE = "https://tasks.googleapis.com/tasks/v1";
 
@@ -255,77 +255,84 @@ services:
           return obj;
         }
 
-        async function runAuthDeviceFlow() {
+        async function runAuthCodeFlowCopyPaste() {
           requireClientId();
           ensureTokenDir();
 
-          const device = await httpForm(GOOGLE_DEVICE_CODE_URL, {
+          // We use a localhost redirect URI even without a local server.
+          // After consent, your browser will attempt to redirect to localhost and may show an error.
+          // Copy the URL from the address bar (it will contain ?code=...) and paste it back here.
+          const redirect_uri = "http://127.0.0.1:53682/oauth2callback";
+
+          const qs = new URLSearchParams({
             client_id: CLIENT_ID,
+            redirect_uri,
+            response_type: "code",
             scope: SCOPES.join(" "),
+            access_type: "offline",
+            prompt: "consent",
           });
 
-          const verification_url = device.verification_url || device.verification_uri;
-          const user_code = device.user_code;
-          const device_code = device.device_code;
-          const interval = Number(device.interval || 5);
-          const expires_in = Number(device.expires_in || 600);
+          const authUrl = GOOGLE_AUTH_URL + "?" + qs.toString();
 
-          if (!verification_url || !user_code || !device_code) {
-            const e = new Error("invalid_device_code_response");
-            e.details = device;
+          process.stderr.write("\n== Google Tasks OAuth (Auth Code) ==\n");
+          process.stderr.write("1) Open this URL in your browser:\n" + authUrl + "\n\n");
+          process.stderr.write("2) After approving, your browser will redirect to localhost.\n");
+          process.stderr.write("   Copy the FULL redirected URL from the address bar (or just the code) and paste it here.\n\n");
+          process.stderr.write("Paste redirected URL or code and press Enter:\n");
+
+          const readline = require("node:readline");
+          const rl = readline.createInterface({ input: process.stdin, output: process.stderr, terminal: true });
+
+          const pasted = await new Promise((resolve) => rl.question("", (ans) => resolve(ans)));
+          rl.close();
+
+          const raw = String(pasted || "").trim();
+          if (!raw) throw new Error("missing_auth_code");
+
+          let code = raw;
+          try {
+            if (raw.startsWith("http://") || raw.startsWith("https://")) {
+              const u = new URL(raw);
+              code = u.searchParams.get("code") || "";
+            }
+          } catch {}
+
+          code = String(code || "").trim();
+          if (!code) throw new Error("missing_auth_code");
+
+          const tok = await httpForm(GOOGLE_TOKEN_URL, {
+            client_id: CLIENT_ID,
+            client_secret: CLIENT_SECRET || undefined,
+            code,
+            redirect_uri,
+            grant_type: "authorization_code",
+          });
+
+          const access_token = tok.access_token;
+          const refresh_token = tok.refresh_token;
+          const expires_in = Number(tok.expires_in || 0);
+          const scope = tok.scope;
+          const token_type = tok.token_type;
+
+          if (!access_token) {
+            const e = new Error("token_missing_access_token");
+            e.details = { tok };
             throw e;
           }
 
-          process.stderr.write("\nGOOGLE TASKS AUTH\n");
-          process.stderr.write("1) Open: " + String(verification_url) + "\n");
-          process.stderr.write("2) Enter code: " + String(user_code) + "\n\n");
+          const tokens = {
+            access_token,
+            refresh_token,
+            token_type,
+            scope,
+            expires_at: expires_in ? secondsNow() + expires_in : null,
+            updated_at: nowIso(),
+          };
 
-          const started = Date.now();
-          for (;;) {
-            if (Date.now() - started > expires_in * 1000) {
-              throw new Error("device_code_expired");
-            }
-
-            await new Promise((r) => setTimeout(r, Math.max(1, interval) * 1000));
-
-            let tok;
-            try {
-              tok = await httpForm(GOOGLE_TOKEN_URL, {
-                client_id: CLIENT_ID,
-                device_code,
-                grant_type: "urn:ietf:params:oauth:grant-type:device_code",
-                client_secret: CLIENT_SECRET || undefined,
-              });
-            } catch (e) {
-              const body = e && e.details ? e.details.body : null;
-              const err = body && typeof body.error === "string" ? body.error : "";
-              if (err === "authorization_pending") continue;
-              if (err === "slow_down") continue;
-              throw e;
-            }
-
-            const access_token = tok.access_token;
-            const refresh_token = tok.refresh_token;
-            const expiresIn = Number(tok.expires_in || 0);
-            if (!access_token || !expiresIn) {
-              const e = new Error("invalid_token_response");
-              e.details = tok;
-              throw e;
-            }
-
-            const saved = {
-              access_token,
-              refresh_token: refresh_token || null,
-              expires_at: secondsNow() + Math.max(30, expiresIn - 10),
-              scope: tok.scope || SCOPES.join(" "),
-              token_type: tok.token_type || "Bearer",
-              created_at: secondsNow(),
-            };
-            writeTokens(saved);
-
-            process.stderr.write("Saved tokens to: " + TOKEN_PATH + "\n");
-            return;
-          }
+          writeTokens(tokens);
+          process.stderr.write("Saved tokens to " + TOKEN_PATH + "\n");
+          return tokens;
         }
 
         const TOOLS = [
@@ -382,12 +389,13 @@ services:
           }
 
           if (method === "initialize") {
+            const requestedPv = params && params.protocolVersion;
             return {
               jsonrpc: "2.0",
               id,
               result: {
-                protocolVersion: "2024-11-05",
-                capabilities: { tools: {} },
+                protocolVersion: (typeof requestedPv === "string" && requestedPv) ? requestedPv : "2024-11-05",
+                capabilities: { tools: {}, resources: {}, prompts: {} },
                 serverInfo: { name: APP_NAME, version: APP_VERSION },
               },
             };
@@ -406,6 +414,26 @@ services:
               id,
               result: {
                 tools: TOOLS,
+              },
+            };
+          }
+
+          if (method === "resources/list") {
+            return {
+              jsonrpc: "2.0",
+              id,
+              result: {
+                resources: [],
+              },
+            };
+          }
+
+          if (method === "prompts/list") {
+            return {
+              jsonrpc: "2.0",
+              id,
+              result: {
+                prompts: [],
               },
             };
           }
@@ -514,32 +542,36 @@ services:
           };
         }
 
-        let buf = "";
-        process.stdin.setEncoding("utf8");
+        let buf = Buffer.alloc(0);
 
         async function main() {
           const args = process.argv.slice(2);
           if (args.includes("auth")) {
-            await runAuthDeviceFlow();
+            await runAuthCodeFlowCopyPaste();
             process.exit(0);
           }
         }
 
         main().catch((e) => {
+          try {
+            if (e && e.details) {
+              process.stderr.write("mcp-google-tasks error details: " + JSON.stringify(e.details) + "\n");
+            }
+          } catch {}
           process.stderr.write("mcp-google-tasks startup error: " + String(e && e.message ? e.message : e) + "\n");
           process.exit(1);
         });
 
         function parseNextFrame(buffer) {
-          let headerEnd = buffer.indexOf("\r\n\r\n");
+          let headerEnd = buffer.indexOf(Buffer.from("\r\n\r\n"));
           let headerSepLen = 4;
           if (headerEnd < 0) {
-            headerEnd = buffer.indexOf("\n\n");
+            headerEnd = buffer.indexOf(Buffer.from("\n\n"));
             headerSepLen = 2;
           }
           if (headerEnd < 0) return null;
 
-          const headerText = buffer.slice(0, headerEnd);
+          const headerText = buffer.slice(0, headerEnd).toString("utf8");
           const headers = headerText.split(/\r?\n/);
           let contentLength = null;
           for (const h of headers) {
@@ -556,19 +588,20 @@ services:
           const bodyStart = headerEnd + headerSepLen;
           if (buffer.length < bodyStart + contentLength) return null;
 
-          const body = buffer.slice(bodyStart, bodyStart + contentLength);
+          const bodyBuf = buffer.slice(bodyStart, bodyStart + contentLength);
           const rest = buffer.slice(bodyStart + contentLength);
-          return { body, rest };
+          return { body: bodyBuf.toString("utf8"), rest };
         }
 
         process.stdin.on("data", async (chunk) => {
-          buf += chunk;
+          const b = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk), "utf8");
+          buf = Buffer.concat([buf, b]);
           for (;;) {
             const frame = parseNextFrame(buf);
             if (!frame) return;
             if (frame.error) {
               process.stderr.write("mcp-google-tasks framing error: " + String(frame.error) + "\n");
-              buf = "";
+              buf = Buffer.alloc(0);
               return;
             }
 
