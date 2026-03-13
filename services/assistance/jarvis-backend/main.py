@@ -2373,6 +2373,104 @@ def _parse_reminder_helper_command(text: str) -> dict[str, Any]:
 
 
 async def _handle_reminder_helper_trigger(ws: WebSocket, text: str) -> bool:
+    s = " ".join(str(text or "").strip().lower().split())
+    try:
+        awaiting = bool(getattr(ws.state, "awaiting_reminder_upcoming_confirm", False))
+    except Exception:
+        awaiting = False
+    if awaiting:
+        yes_set = {
+            "yes",
+            "y",
+            "ok",
+            "okay",
+            "sure",
+            "next",
+            "show",
+            "show next",
+            "show next reminders",
+            "next reminders",
+            "ใช่",
+            "เอา",
+            "ตกลง",
+            "แสดง",
+            "แสดงเลย",
+            "ต่อ",
+            "ต่อเลย",
+        }
+        no_set = {"no", "n", "nope", "cancel", "ไม่", "ไม่เอา", "ยกเลิก"}
+        if s in yes_set:
+            try:
+                ws.state.awaiting_reminder_upcoming_confirm = False
+            except Exception:
+                pass
+            now_ts = int(time.time())
+            end_ts = now_ts + 7 * 24 * 3600
+            items: list[dict[str, Any]] = []
+            if _weaviate_enabled():
+                try:
+                    wv_items = await _weaviate_query_upcoming_reminders(start_ts=now_ts, end_ts=end_ts, limit=50)
+                    for it in wv_items:
+                        if not isinstance(it, dict):
+                            continue
+                        title = str(it.get("title") or "Reminder").strip() or "Reminder"
+                        tz_name = str(it.get("timezone") or DEFAULT_TIMEZONE).strip() or DEFAULT_TIMEZONE
+                        hide_until = int(float(it["hide_until"])) if it.get("hide_until") is not None else None
+                        if hide_until is not None and hide_until > now_ts:
+                            continue
+                        items.append(
+                            {
+                                "reminder_id": _local_reminder_id_from_external_key(str(it.get("external_key") or "")),
+                                "title": title,
+                                "due_at": int(float(it["due_at"])) if it.get("due_at") is not None else None,
+                                "timezone": tz_name,
+                                "schedule_type": "memory",
+                                "notify_at": int(float(it["notify_at"])) if it.get("notify_at") is not None else None,
+                                "hide_until": hide_until,
+                                "status": str(it.get("status") or "").strip() or "pending",
+                                "source_text": str(it.get("body") or ""),
+                                "aim_entity_name": str(it.get("external_key") or ""),
+                                "created_at": int(float(it["created_at"])) if it.get("created_at") is not None else None,
+                                "updated_at": int(float(it["updated_at"])) if it.get("updated_at") is not None else None,
+                            }
+                        )
+                except Exception:
+                    items = []
+            if not items:
+                items = _list_upcoming_pending_reminders(
+                    user_id=DEFAULT_USER_ID,
+                    start_ts=now_ts,
+                    end_ts=end_ts,
+                    time_field="notify_at",
+                    limit=50,
+                )
+            await _ws_send_json(
+                {
+                    "type": "reminder_helper_list",
+                    "status": "pending",
+                    "include_hidden": False,
+                    "day": "upcoming",
+                    "reminders": items,
+                    "instance_id": INSTANCE_ID,
+                }
+            )
+            if not items:
+                try:
+                    await _ws_send_json(ws, {"type": "text", "text": "No upcoming reminders."})
+                except Exception:
+                    pass
+            return True
+        if s in no_set:
+            try:
+                ws.state.awaiting_reminder_upcoming_confirm = False
+            except Exception:
+                pass
+            try:
+                await _ws_send_json(ws, {"type": "text", "text": "OK."})
+            except Exception:
+                pass
+            return True
+
     cmd = _parse_reminder_helper_command(text)
     action = str(cmd.get("action") or "")
     args = cmd.get("args") if isinstance(cmd.get("args"), dict) else {}
@@ -2507,6 +2605,10 @@ async def _handle_reminder_helper_trigger(ws: WebSocket, text: str) -> bool:
             msg = "No reminders today. Want to see the next upcoming reminders?"
             try:
                 await _ws_send_json(ws, {"type": "text", "text": msg})
+            except Exception:
+                pass
+            try:
+                ws.state.awaiting_reminder_upcoming_confirm = True
             except Exception:
                 pass
         return True
