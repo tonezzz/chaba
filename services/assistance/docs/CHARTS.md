@@ -123,7 +123,7 @@ flowchart TB
     OUT_TXT["text"]
     OUT_AUDIO["audio"]
     OUT_TRIP["active_trip"]
-    OUT_REM["reminder / reminder_* events"]
+    OUT_REM["reminder / reminder_* events (draft/setup/helper/modified/detail)"]
   end
 ```
 

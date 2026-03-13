@@ -42,6 +42,11 @@ These are set via compose defaults and/or Portainer stack env:
 - `GEMINI_LIVE_MODEL`
   - example: `gemini-2.5-flash-native-audio-preview-12-2025`
 
+Notes:
+
+- Gemini model IDs may appear with or without a `models/` prefix. For Gemini Live, prefer unprefixed model IDs (some endpoints reject `models/<id>`).
+- On successful `/ws/live` connection the backend emits a short day/date/time greeting as a normal `text` message (language matched).
+
 Secrets (must be provided via Portainer stack env or host env, never committed):
 
 - `GEMINI_API_KEY`

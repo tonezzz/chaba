@@ -84,54 +84,66 @@
  
  ## Verification (don’t skip)
  
- ### A) Confirm IMAGE ID changed (digest-level)
+### A) Confirm IMAGE ID changed (digest-level)
  
- On the host (or wherever Docker CLI is available):
+On the host (or wherever Docker CLI is available):
  
- ```bash
- docker compose -f stacks/idc1-assistance/docker-compose.yml ps
- docker compose -f stacks/idc1-assistance/docker-compose.yml images
- ```
+```bash
+docker compose -f stacks/idc1-assistance/docker-compose.yml ps
+docker compose -f stacks/idc1-assistance/docker-compose.yml images
+```
  
- You want to see:
- - `IMAGE ID` changed for the service you rebuilt (e.g. `jarvis-frontend`, `jarvis-backend`).
+You want to see:
+- `IMAGE ID` changed for the service you rebuilt (e.g. `jarvis-frontend`, `jarvis-backend`).
  
- ### B) Confirm frontend bundle contains the fix you expect
+### B) Confirm frontend bundle contains the fix you expect
  
- When debugging “frontend still old”, it’s often easier to grep the served JS bundle than to guess.
- 
- ```bash
- docker compose -f stacks/idc1-assistance/docker-compose.yml exec -T jarvis-frontend sh -lc 'ls -1 /usr/share/nginx/html/assets | head'
- docker compose -f stacks/idc1-assistance/docker-compose.yml exec -T jarvis-frontend sh -lc 'grep -R "Do not treat these as transport disconnects" -n /usr/share/nginx/html 2>/dev/null | head'
- ```
- 
- If grep returns nothing:
- - Portainer likely didn’t pull the new digest, or CI didn’t publish a new image.
- 
- ### C) Backend health
- 
- ```bash
- curl -sS http://127.0.0.1:18018/health
- docker compose -f stacks/idc1-assistance/docker-compose.yml logs --tail=200 jarvis-backend
- ```
- 
- ## Common failure modes
- 
- ### 1) "Redeployed" but still old
- 
- Symptoms:
- - behavior unchanged
- - `docker compose images` shows the same `IMAGE ID`
- 
- Fix:
- - redeploy again with **pull latest image** enabled
- - if needed, force rebuild with an empty commit
- 
- ### 2) Frontend shows disconnected when backend emits `{type:"error"}`
- 
- Interpretation:
- - Backend can emit `{type: "error"}` while keeping the WebSocket open (e.g. Gemini Live died).
- - The frontend must not treat these as transport disconnects.
- 
- How to verify:
- - check the deployed bundle behavior (see “Confirm frontend bundle contains the fix”).
+When debugging “frontend still old”, it’s often easier to grep the served JS bundle than to guess.
+
+```bash
+docker compose -f stacks/idc1-assistance/docker-compose.yml exec -T jarvis-frontend sh -lc 'ls -1 /usr/share/nginx/html/assets | head'
+docker compose -f stacks/idc1-assistance/docker-compose.yml exec -T jarvis-frontend sh -lc 'grep -R "Do not treat these as transport disconnects" -n /usr/share/nginx/html 2>/dev/null | head'
+```
+
+If grep returns nothing:
+- Portainer likely didn’t pull the new digest, or CI didn’t publish a new image.
+
+### C) Backend health
+
+```bash
+curl -sS http://127.0.0.1:18018/health
+docker compose -f stacks/idc1-assistance/docker-compose.yml logs --tail=200 jarvis-backend
+```
+
+## Common failure modes
+
+### 1) "Redeployed" but still old
+
+Symptoms:
+- behavior unchanged
+- `docker compose images` shows the same `IMAGE ID`
+
+Fix:
+- redeploy again with **pull latest image** enabled
+- if needed, force rebuild with an empty commit
+
+### 2) Frontend shows disconnected when backend emits `{type:"error"}`
+
+Interpretation:
+- Backend can emit `{type: "error"}` while keeping the WebSocket open (e.g. Gemini Live died).
+- The frontend must not treat these as transport disconnects.
+
+How to verify:
+- check the deployed bundle behavior (see “Confirm frontend bundle contains the fix”).
+
+### 3) Old Gemini Live errors stay pinned in Operation Log
+
+Interpretation:
+- The frontend Operation Log may show historical `{type:"error"}` messages.
+
+Current behavior:
+- On reconnect (state becomes `connected`) or on any subsequent normal message, the UI clears stale `gemini_live_model_not_found` error entries.
+
+How to verify:
+- Trigger a Live model failure once (expect an error entry).
+- Reconnect; confirm the stale error disappears when `connected` is logged.
