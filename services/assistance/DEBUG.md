@@ -26,6 +26,14 @@ Build/deploy:
 - Confirm the SPA loads
 - Confirm WebSocket connects to backend and receives `{type: "state", state: "connected"}`
 
+Operation Log debugging:
+
+- Expand any entry to see:
+  - `trace_id` (correlates a user action across frontend/backend logs)
+  - WS metadata (`type`, `instance_id`)
+  - raw WS JSON payload
+- Use the `show debug` toggle to reveal debug-only entries (e.g. transcript events).
+
 ### Weaviate
 - Readiness:
   - `GET http://weaviate:8080/v1/.well-known/ready`
@@ -45,6 +53,12 @@ Common failure mode:
 ### WebSocket connects but no responses
 - Confirm backend is reachable from the reverse proxy and the WS URL is correct.
 - Check backend logs for errors around Gemini Live connect and tool calls.
+
+If the UI shows a response you want to correlate with logs:
+
+- Copy the `trace_id` from the expanded Operation Log entry.
+- Filter logs with:
+  - `./scripts/collect-idc1-assistance-evidence.sh <trace_id>`
 
 ### WebSocket disconnects immediately after Initialize
 - Symptom: backend logs show `WebSocket /ws/live ... [accepted]` + `gemini_live_connect ...` then `connection closed`.
@@ -159,6 +173,25 @@ Look at logs for these containers first:
 
 If you are debugging MCP image pipeline routing, also check:
 - `mcp-image-pipeline`
+
+## WS record/replay (repro tooling)
+
+To capture a reproducible trace of WS traffic:
+
+- Set env:
+  - `JARVIS_WS_RECORD=1`
+  - optional `JARVIS_WS_RECORD_PATH=/tmp/jarvis-ws.jsonl`
+
+Replay captured inbound text messages through backend dispatch:
+
+- `python3 services/assistance/jarvis-backend/ws_replay.py /tmp/jarvis-ws.jsonl`
+
+## Frontend contract tests
+
+The frontend includes a small Vitest contract suite for WS event rendering:
+
+- `cd services/assistance/jarvis-frontend`
+- `npm test`
 
 ## Service-specific runbooks
 

@@ -16,3 +16,11 @@ Vite/React frontend built into an Nginx container.
 
 ## Debug UI
 - Includes a small panel that displays `session_id` and current `active_trip` state, and can request/set the active trip via WebSocket control messages.
+
+Operation Log:
+
+- Each inbound/outbound entry can be expanded to view:
+  - `trace_id`
+  - WS metadata (`type`, `instance_id`)
+  - raw WS JSON payload
+- A `show debug` toggle reveals additional debug-only entries (e.g. transcript events).
