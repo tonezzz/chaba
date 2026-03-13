@@ -151,6 +151,22 @@ Supported examples:
 - `reminder reschedule: <reminder_id> tomorrow 09:00`
 - `reminder delete: <reminder_id>`
 
+## Debugging reminders (WS)
+
+The frontend Operation Log attaches debugging metadata to most WS events:
+
+- `trace_id` (correlates a user action across frontend/backend logs)
+- WS event metadata (`type`, `instance_id`)
+- raw WS JSON payload (expand any Operation Log entry)
+
+If an issue is hard to reproduce, enable backend WS recording and replay:
+
+- Enable recording:
+  - `JARVIS_WS_RECORD=1`
+  - optional `JARVIS_WS_RECORD_PATH=/tmp/jarvis-ws.jsonl`
+- Replay captured inbound `text` messages:
+  - `python3 services/assistance/jarvis-backend/ws_replay.py /tmp/jarvis-ws.jsonl`
+
 Thai quick commands (aliases):
 
 - `แสดงการแจ้งเตือน` (list)

@@ -42,6 +42,14 @@ These are set via compose defaults and/or Portainer stack env:
 - `GEMINI_LIVE_MODEL`
   - example: `gemini-2.5-flash-native-audio-preview-12-2025`
 
+Debugging:
+
+- `JARVIS_WS_RECORD`
+  - when set to `1`, the backend records WS messages to JSONL (inbound + outbound)
+- `JARVIS_WS_RECORD_PATH`
+  - optional path for the JSONL file
+  - default: `/tmp/jarvis-ws.jsonl`
+
 Notes:
 
 - Gemini model IDs may appear with or without a `models/` prefix. For Gemini Live, prefer unprefixed model IDs (some endpoints reject `models/<id>`).
@@ -72,3 +80,13 @@ This script:
   - `curl -fsS 'http://127.0.0.1:18018/reminders?status=pending&limit=5'`
 - Backend logs (recent):
   - `docker logs --since 15m --tail 400 idc1-assistance-jarvis-backend-1`
+
+## Collect debug evidence (single command)
+
+After reproducing an issue, collect a snapshot of the current host state:
+
+- `./scripts/collect-idc1-assistance-evidence.sh`
+
+If you have a `trace_id` from the Operation Log, filter backend logs to just that trace:
+
+- `./scripts/collect-idc1-assistance-evidence.sh <trace_id>`

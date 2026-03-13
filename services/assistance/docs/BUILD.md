@@ -115,6 +115,20 @@ curl -sS http://127.0.0.1:18018/health
 docker compose -f stacks/idc1-assistance/docker-compose.yml logs --tail=200 jarvis-backend
 ```
 
+### D) Collect debug evidence (recommended)
+
+After reproducing a bug, collect a single snapshot (health, container IDs/digests, and logs):
+
+```bash
+./scripts/collect-idc1-assistance-evidence.sh
+```
+
+If you have a `trace_id` from the frontend Operation Log, filter backend logs down to that trace:
+
+```bash
+./scripts/collect-idc1-assistance-evidence.sh <trace_id>
+```
+
 ## Common failure modes
 
 ### 1) "Redeployed" but still old
