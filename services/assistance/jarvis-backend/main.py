@@ -2308,6 +2308,19 @@ def _parse_reminder_helper_command(text: str) -> dict[str, Any]:
             day = "yesterday"
         return {"action": "list", "args": {"status": status, "include_hidden": include_hidden, "day": day}}
 
+    if s == "all reminders" or s == "show all reminders":
+        return {"action": "list", "args": {"status": "all", "include_hidden": False}}
+    if s.startswith("list all reminders") or s.startswith("show all reminders"):
+        tail = raw.split(" ", 3)[3].strip() if len(raw.split()) >= 4 else ""
+        tail_s = " ".join(tail.lower().split())
+        include_hidden = "include_hidden" in tail_s or "hidden" in tail_s
+        day = ""
+        if "today" in tail_s:
+            day = "today"
+        elif "yesterday" in tail_s:
+            day = "yesterday"
+        return {"action": "list", "args": {"status": "all", "include_hidden": include_hidden, "day": day}}
+
     # Thai aliases
     if s.startswith("เตือน เพิ่ม"):
         return {"action": "add", "args": {"text": after("เตือน เพิ่ม")}}
