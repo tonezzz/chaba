@@ -366,9 +366,20 @@ services:
         ];
 
         async function handleRpc(msg) {
-          const id = msg && Object.prototype.hasOwnProperty.call(msg, "id") ? msg.id : null;
+          const hasId = msg && Object.prototype.hasOwnProperty.call(msg, "id");
+          const id = hasId ? msg.id : null;
           const method = msg && msg.method;
           const params = (msg && msg.params) || {};
+
+          // Notifications (no id) must not receive a response.
+          if (!hasId) {
+            try {
+              if (typeof method === "string" && method) {
+                process.stderr.write("[mcp-google-tasks] notification method=" + method + "\n");
+              }
+            } catch {}
+            return null;
+          }
 
           if (method === "initialize") {
             return {
@@ -380,6 +391,13 @@ services:
                 serverInfo: { name: APP_NAME, version: APP_VERSION },
               },
             };
+          }
+
+          if (method === "initialized") {
+            try {
+              process.stderr.write("[mcp-google-tasks] initialized\n");
+            } catch {}
+            return null;
           }
 
           if (method === "tools/list") {
@@ -563,7 +581,9 @@ services:
 
             try {
               const res = await handleRpc(msg);
-              write(res);
+              if (res) {
+                write(res);
+              }
             } catch (e) {
               write({
                 jsonrpc: "2.0",
