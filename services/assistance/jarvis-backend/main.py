@@ -2309,12 +2309,12 @@ def _parse_reminder_helper_command(text: str) -> dict[str, Any]:
         return {"action": "list", "args": {"status": status, "include_hidden": include_hidden, "day": day}}
 
     if s == "all reminders" or s == "show all reminders":
-        return {"action": "list", "args": {"status": "all", "include_hidden": False}}
+        return {"action": "list", "args": {"status": "all", "include_hidden": False, "day": "today"}}
     if s.startswith("list all reminders") or s.startswith("show all reminders"):
         tail = raw.split(" ", 3)[3].strip() if len(raw.split()) >= 4 else ""
         tail_s = " ".join(tail.lower().split())
         include_hidden = "include_hidden" in tail_s or "hidden" in tail_s
-        day = ""
+        day = "today"
         if "today" in tail_s:
             day = "today"
         elif "yesterday" in tail_s:
@@ -2502,6 +2502,13 @@ async def _handle_reminder_helper_trigger(ws: WebSocket, text: str) -> bool:
                 "instance_id": INSTANCE_ID,
             }
         )
+
+        if day == "today" and not items:
+            msg = "No reminders today. Want to see the next upcoming reminders?"
+            try:
+                await _ws_send_json(ws, {"type": "text", "text": msg})
+            except Exception:
+                pass
         return True
 
     rid = str(args.get("reminder_id") or "").strip()
