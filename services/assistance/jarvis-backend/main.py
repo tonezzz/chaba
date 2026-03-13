@@ -5200,6 +5200,63 @@ MCP_TOOL_MAP: dict[str, dict[str, Any]] = {
         "requires_confirmation": False,
     },
 
+    "google_tasks_auth_status": {
+        "mcp_name": "google-tasks_1mcp_google_tasks_auth_status",
+        "description": "Check OAuth token status for Google Tasks (via 1MCP google-tasks).",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "include_raw_tokens": {
+                    "type": "boolean",
+                    "description": "If true, include raw token JSON in the response (not recommended).",
+                }
+            },
+        },
+        "requires_confirmation": False,
+    },
+    "google_tasks_list_tasklists": {
+        "mcp_name": "google-tasks_1mcp_google_tasks_list_tasklists",
+        "description": "List Google Tasklists (via 1MCP google-tasks).",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "max_results": {"type": "integer", "description": "Max results (1-100)."},
+                "page_token": {"type": "string", "description": "Page token from a previous call."},
+            },
+        },
+        "requires_confirmation": False,
+    },
+    "google_tasks_list_tasks": {
+        "mcp_name": "google-tasks_1mcp_google_tasks_list_tasks",
+        "description": "List tasks within a tasklist (via 1MCP google-tasks).",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "tasklist_id": {"type": "string", "description": "Tasklist ID. If omitted, uses the first tasklist."},
+                "max_results": {"type": "integer", "description": "Max results (1-100)."},
+                "page_token": {"type": "string", "description": "Page token from a previous call."},
+                "show_completed": {"type": "boolean", "description": "Include completed tasks."},
+                "show_hidden": {"type": "boolean", "description": "Include hidden tasks."},
+            },
+        },
+        "requires_confirmation": False,
+    },
+    "google_tasks_create_task": {
+        "mcp_name": "google-tasks_1mcp_google_tasks_create_task",
+        "description": "Create a task in Google Tasks (via 1MCP google-tasks). Requires confirmation.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "tasklist_id": {"type": "string", "description": "Tasklist ID. If omitted, uses the first tasklist."},
+                "title": {"type": "string", "description": "Task title."},
+                "notes": {"type": "string", "description": "Optional notes."},
+                "due": {"type": "string", "description": "Optional RFC3339 due datetime."},
+            },
+            "required": ["title"],
+        },
+        "requires_confirmation": True,
+    },
+
     "aim_memory_store": {
         "mcp_name": "aim-kg_1mcp_aim_memory_store",
         "description": "Store entities/observations in the AIM knowledge graph memory store.",
