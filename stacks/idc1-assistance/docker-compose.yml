@@ -106,7 +106,7 @@ services:
         function write(obj) {
           const body = JSON.stringify(obj);
           const len = Buffer.byteLength(body, "utf8");
-          process.stdout.write(`Content-Length: ${len}\r\n\r\n${body}`);
+          process.stdout.write("Content-Length: " + String(len) + "\r\n\r\n" + body);
         }
 
         function nowIso() {
@@ -513,11 +513,16 @@ services:
         });
 
         function parseNextFrame(buffer) {
-          const headerEnd = buffer.indexOf("\r\n\r\n");
+          let headerEnd = buffer.indexOf("\r\n\r\n");
+          let headerSepLen = 4;
+          if (headerEnd < 0) {
+            headerEnd = buffer.indexOf("\n\n");
+            headerSepLen = 2;
+          }
           if (headerEnd < 0) return null;
 
           const headerText = buffer.slice(0, headerEnd);
-          const headers = headerText.split("\r\n");
+          const headers = headerText.split(/\r?\n/);
           let contentLength = null;
           for (const h of headers) {
             const m = /^content-length\s*:\s*(\d+)\s*$/i.exec(h);
@@ -530,7 +535,7 @@ services:
             return { error: "missing_or_invalid_content_length" };
           }
 
-          const bodyStart = headerEnd + 4;
+          const bodyStart = headerEnd + headerSepLen;
           if (buffer.length < bodyStart + contentLength) return null;
 
           const body = buffer.slice(bodyStart, bodyStart + contentLength);
