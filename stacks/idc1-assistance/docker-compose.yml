@@ -179,6 +179,34 @@ services:
           return obj;
         }
 
+        async function googleTasksPost(pathname, bodyObj, query) {
+          const token = await getValidAccessToken();
+          const url = new URL(GOOGLE_TASKS_API_BASE + pathname);
+          for (const [k, v] of Object.entries(query || {})) {
+            if (v === undefined || v === null) continue;
+            url.searchParams.set(k, String(v));
+          }
+
+          const r = await fetch(url.toString(), {
+            method: "POST",
+            headers: {
+              authorization: "Bearer " + String(token),
+              accept: "application/json",
+              "content-type": "application/json",
+            },
+            body: JSON.stringify(bodyObj || {}),
+          });
+
+          const text = await r.text();
+          const obj = safeJsonParse(text) || { raw: text };
+          if (!r.ok) {
+            const e = new Error("google_api_error");
+            e.details = { status: r.status, body: obj };
+            throw e;
+          }
+          return obj;
+        }
+
         async function refreshAccessToken(refreshToken) {
           requireClientId();
           const payload = {
@@ -378,6 +406,34 @@ services:
               },
             },
           },
+          {
+            name: "google_tasks_create_task",
+            description: "Create a Google Task item in a tasklist (requires OAuth tokens).",
+            inputSchema: {
+              type: "object",
+              properties: {
+                tasklist_id: { type: "string", description: "Tasklist ID. If omitted, uses the first tasklist." },
+                title: { type: "string", description: "Task title." },
+                notes: { type: "string", description: "Optional notes." },
+                due: { type: "string", description: "Optional RFC3339 due datetime (e.g. 2026-03-13T00:00:00Z)." },
+              },
+              required: ["title"],
+            },
+          },
+          {
+            name: "google_tasks_list_tasks",
+            description: "List tasks within a tasklist (requires OAuth tokens).",
+            inputSchema: {
+              type: "object",
+              properties: {
+                tasklist_id: { type: "string", description: "Tasklist ID. If omitted, uses the first tasklist." },
+                max_results: { type: "integer", description: "Max results (1-100)." },
+                page_token: { type: "string", description: "Page token from a previous call." },
+                show_completed: { type: "boolean", description: "Include completed tasks." },
+                show_hidden: { type: "boolean", description: "Include hidden tasks." },
+              },
+            },
+          },
         ];
 
         async function handleRpc(msg) {
@@ -532,6 +588,95 @@ services:
                 id,
                 result: {
                   content: [{ type: "text", text: JSON.stringify({ ok: true, data }) }],
+                },
+              };
+            }
+
+            if (name === "google_tasks_create_task") {
+              const tasklist_id_raw = args.tasklist_id;
+              const title_raw = args.title;
+              const notes_raw = args.notes;
+              const due_raw = args.due;
+
+              const title = typeof title_raw === "string" ? title_raw.trim() : "";
+              if (!title) {
+                return {
+                  jsonrpc: "2.0",
+                  id,
+                  error: {
+                    code: -32602,
+                    message: "Invalid params",
+                    data: { field: "title" },
+                  },
+                };
+              }
+
+              let tasklistId = typeof tasklist_id_raw === "string" && tasklist_id_raw.trim() ? tasklist_id_raw.trim() : "";
+              if (!tasklistId) {
+                const lists = await googleTasksGet("/users/@me/lists", { maxResults: 1 });
+                tasklistId = lists && lists.items && lists.items[0] && lists.items[0].id ? String(lists.items[0].id) : "";
+              }
+              if (!tasklistId) {
+                const e = new Error("no_tasklists_found");
+                e.details = { hint: "Create a tasklist in Google Tasks or pass tasklist_id" };
+                throw e;
+              }
+
+              const body = {
+                title,
+              };
+              if (typeof notes_raw === "string" && notes_raw.trim()) body.notes = notes_raw;
+              if (typeof due_raw === "string" && due_raw.trim()) body.due = due_raw;
+
+              const data = await googleTasksPost("/lists/" + encodeURIComponent(tasklistId) + "/tasks", body);
+
+              return {
+                jsonrpc: "2.0",
+                id,
+                result: {
+                  content: [{ type: "text", text: JSON.stringify({ ok: true, tasklist_id: tasklistId, data }) }],
+                },
+              };
+            }
+
+            if (name === "google_tasks_list_tasks") {
+              const tasklist_id_raw = args.tasklist_id;
+              const max_results_raw = args.max_results;
+              const page_token_raw = args.page_token;
+              const show_completed_raw = args.show_completed;
+              const show_hidden_raw = args.show_hidden;
+
+              const maxResults =
+                typeof max_results_raw === "number" && Number.isFinite(max_results_raw)
+                  ? Math.max(1, Math.min(100, Math.floor(max_results_raw)))
+                  : undefined;
+              const pageToken = typeof page_token_raw === "string" && page_token_raw.trim() ? page_token_raw.trim() : undefined;
+              const showCompleted = typeof show_completed_raw === "boolean" ? show_completed_raw : undefined;
+              const showHidden = typeof show_hidden_raw === "boolean" ? show_hidden_raw : undefined;
+
+              let tasklistId = typeof tasklist_id_raw === "string" && tasklist_id_raw.trim() ? tasklist_id_raw.trim() : "";
+              if (!tasklistId) {
+                const lists = await googleTasksGet("/users/@me/lists", { maxResults: 1 });
+                tasklistId = lists && lists.items && lists.items[0] && lists.items[0].id ? String(lists.items[0].id) : "";
+              }
+              if (!tasklistId) {
+                const e = new Error("no_tasklists_found");
+                e.details = { hint: "Create a tasklist in Google Tasks or pass tasklist_id" };
+                throw e;
+              }
+
+              const data = await googleTasksGet("/lists/" + encodeURIComponent(tasklistId) + "/tasks", {
+                maxResults,
+                pageToken,
+                showCompleted,
+                showHidden,
+              });
+
+              return {
+                jsonrpc: "2.0",
+                id,
+                result: {
+                  content: [{ type: "text", text: JSON.stringify({ ok: true, tasklist_id: tasklistId, data }) }],
                 },
               };
             }
