@@ -348,6 +348,33 @@ export class LiveService {
       return;
     }
 
+    if (message?.type === "reminder_helper_list") {
+      const status = message?.status != null ? String(message.status) : "";
+      const includeHidden = message?.include_hidden === true;
+      const day = message?.day != null ? String(message.day) : "";
+      const reminders = Array.isArray((message as any)?.reminders) ? ((message as any).reminders as any[]) : [];
+      const header = `reminder_helper_list${day ? ` (${day})` : ""}${status ? ` status=${status}` : ""}${includeHidden ? " include_hidden" : ""}`;
+      const lines: string[] = [header];
+      if (!reminders.length) {
+        lines.push("(no results)");
+      } else {
+        for (const r of reminders.slice(0, 50)) {
+          const rid = r?.reminder_id != null ? String(r.reminder_id) : "";
+          const title = r?.title != null ? String(r.title) : "Reminder";
+          const st = r?.status != null ? String(r.status) : "";
+          const t = r?.notify_at != null ? ` notify_at=${String(r.notify_at)}` : r?.due_at != null ? ` due_at=${String(r.due_at)}` : "";
+          lines.push(`- ${title}${rid ? ` [${rid}]` : ""}${st ? ` (${st})` : ""}${t}`);
+        }
+      }
+      this.onMessage({
+        id: `${Date.now()}_reminder_helper_list`,
+        role: "model",
+        text: lines.join("\n"),
+        timestamp: new Date(),
+      });
+      return;
+    }
+
     if (typeof message?.type === "string" && message.type.startsWith("reminder_helper_")) {
       const t = String(message.type);
       const rid = message?.reminder_id != null ? String(message.reminder_id) : "";
