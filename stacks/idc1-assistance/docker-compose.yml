@@ -74,11 +74,34 @@ services:
         set -e
 
         cat > /app/mcp-config/mcp.json <<'EOF'
-        { "mcpServers": { "fetch": { "command": "/opt/venv/bin/python", "args": ["-m", "mcp_server_fetch"], "tags": ["fetch", "web"], "disabled": false }, "server-sequential-thinking": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"], "tags": ["thinking"], "disabled": false }, "playwright": { "command": "npx", "args": ["-y", "@playwright/mcp@latest"], "tags": ["playwright", "web", "browser"], "disabled": false }
-        EOF
-
-        cat >> /app/mcp-config/mcp.json <<'EOF'
-         } }
+        {
+          "mcpServers": {
+            "fetch": {
+              "command": "/opt/venv/bin/python",
+              "args": ["-m", "mcp_server_fetch"],
+              "tags": ["fetch", "web"],
+              "disabled": false
+            },
+            "server-sequential-thinking": {
+              "command": "npx",
+              "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+              "tags": ["thinking"],
+              "disabled": false
+            },
+            "playwright": {
+              "command": "npx",
+              "args": ["-y", "@playwright/mcp@latest"],
+              "tags": ["playwright", "web", "browser"],
+              "disabled": false
+            },
+            "google-tasks": {
+              "command": "node",
+              "args": ["/app/mcp-servers/mcp-google-tasks/server.js"],
+              "tags": ["google", "tasks"],
+              "disabled": false
+            }
+          }
+        }
         EOF
 
         exec node index.js
@@ -89,8 +112,13 @@ services:
       ONE_MCP_LOG_LEVEL: info
       ONE_MCP_CONFIG_DIR: /app/mcp-config
       ONE_MCP_CONFIG: /app/mcp-config/mcp.json
+      GOOGLE_TASKS_CLIENT_ID: ${GOOGLE_TASKS_CLIENT_ID:-}
+      GOOGLE_TASKS_CLIENT_SECRET: ${GOOGLE_TASKS_CLIENT_SECRET:-}
+      GOOGLE_TASKS_SCOPES: ${GOOGLE_TASKS_SCOPES:-https://www.googleapis.com/auth/tasks}
+      GOOGLE_TASKS_TOKEN_PATH: ${GOOGLE_TASKS_TOKEN_PATH:-/root/.config/1mcp/google-tasks.tokens.json}
     volumes:
       - ./mcp-config:/app/mcp-config
+      - ../../services/assistance/mcp-servers:/app/mcp-servers:ro
       - mcp-bundle-data:/root/.config/1mcp
       - mcp-bundle-cache:/root/.cache
     healthcheck:

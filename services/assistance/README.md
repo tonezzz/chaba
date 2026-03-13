@@ -168,3 +168,10 @@ Healthcheck note:
 ## Deployment
 - Stack configuration lives under:
   - `/stacks/idc1-assistance/`
+
+Operational note:
+- `idc1-assistance` is typically deployed as a **Portainer git-backed stack**.
+- Treat Portainer as authoritative for:
+  - the stack file content it deploys
+  - stack environment variables (secrets like OAuth client IDs)
+- If you run `docker compose -f stacks/idc1-assistance/docker-compose.yml ...` locally, you can create containers that look correct but do not include Portainer stack env, leading to confusing auth failures (example: `missing_google_tasks_client_id`).

@@ -77,27 +77,43 @@
  
  ### 4) Redeploy via Portainer
  
- In Portainer:
- - Open stack: `idc1-assistance`
- - Click **Redeploy**
- - Ensure **Pull latest image** / **Always pull** / **Re-pull image** is enabled
- 
- ## Verification (don’t skip)
- 
 ### A) Confirm IMAGE ID changed (digest-level)
- 
+
 On the host (or wherever Docker CLI is available):
- 
+
 ```bash
 docker compose -f stacks/idc1-assistance/docker-compose.yml ps
 docker compose -f stacks/idc1-assistance/docker-compose.yml images
 ```
- 
+
 You want to see:
 - `IMAGE ID` changed for the service you rebuilt (e.g. `jarvis-frontend`, `jarvis-backend`).
- 
+
+### A.1) Git-backed Portainer stack vs local Docker Compose
+
+If `idc1-assistance` is deployed as a **Portainer git-backed stack**, treat Portainer as authoritative for:
+- Stack file content
+- Stack environment variables (secrets like OAuth client IDs)
+
+Common trap:
+- Running `docker compose -f stacks/idc1-assistance/docker-compose.yml up ...` locally can create containers that look identical but do **not** include the Portainer stack env.
+- You can end up with multiple `mcp-bundle` containers (example: `idc1-assistance-mcp-bundle-1` plus a separate `idc1-portainer-mcp-bundle-1`).
+
+When debugging "missing env" (example: `missing_google_tasks_client_id`):
+
+```bash
+docker ps --format '{{.Names}}' | grep -E 'mcp-bundle' || true
+docker exec -t idc1-assistance-mcp-bundle-1 sh -lc 'echo "GOOGLE_TASKS_CLIENT_ID.len=${#GOOGLE_TASKS_CLIENT_ID}"'
+```
+
+To run one-time OAuth bootstrap inside the running `mcp-bundle`:
+
+```bash
+docker exec -t idc1-assistance-mcp-bundle-1 node /app/mcp-servers/mcp-google-tasks/server.js auth
+```
+
 ### B) Confirm frontend bundle contains the fix you expect
- 
+
 When debugging “frontend still old”, it’s often easier to grep the served JS bundle than to guess.
 
 ```bash
