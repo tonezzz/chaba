@@ -84,6 +84,70 @@ INSTANCE_ID = str(os.getenv("JARVIS_INSTANCE_ID") or "").strip() or f"jarvis_{uu
 logger = logging.getLogger("jarvis-backend")
 logging.basicConfig(level=logging.INFO)
 
+_WS_RECORD_PATH = str(os.getenv("JARVIS_WS_RECORD_PATH") or "").strip() or None
+_WS_RECORD_ENABLED = bool(_WS_RECORD_PATH) or str(os.getenv("JARVIS_WS_RECORD") or "").strip().lower() in ("1", "true", "yes", "on")
+_WS_RECORD_LOCK: asyncio.Lock | None = None
+
+
+async def _ws_record(ws: WebSocket, direction: str, msg: Any) -> None:
+    global _WS_RECORD_LOCK
+    if not _WS_RECORD_ENABLED:
+        return
+    path = _WS_RECORD_PATH or "/tmp/jarvis-ws.jsonl"
+    try:
+        if _WS_RECORD_LOCK is None:
+            _WS_RECORD_LOCK = asyncio.Lock()
+        trace_id = None
+        try:
+            trace_id = getattr(ws.state, "trace_id", None)
+        except Exception:
+            trace_id = None
+        rec = {
+            "ts": int(time.time() * 1000),
+            "direction": str(direction),
+            "session_id": getattr(ws.state, "session_id", None),
+            "trace_id": trace_id,
+            "type": msg.get("type") if isinstance(msg, dict) else None,
+            "msg": msg,
+        }
+        async with _WS_RECORD_LOCK:
+            with open(path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception:
+        return
+
+
+def _ws_capture_trace_id(ws: WebSocket, msg: Any) -> str | None:
+    trace_id: str | None = None
+    try:
+        if isinstance(msg, dict) and msg.get("trace_id") is not None:
+            trace_id = str(msg.get("trace_id") or "").strip() or None
+    except Exception:
+        trace_id = None
+    try:
+        ws.state.trace_id = trace_id
+    except Exception:
+        pass
+    return trace_id
+
+
+async def _ws_send_json(ws: WebSocket, payload: dict[str, Any], trace_id: str | None = None) -> None:
+    if not isinstance(payload, dict):
+        return
+    tid = trace_id
+    if tid is None:
+        try:
+            tid = getattr(ws.state, "trace_id", None)
+        except Exception:
+            tid = None
+    if tid:
+        payload = {**payload, "trace_id": tid}
+    try:
+        await _ws_record(ws, "out", payload)
+    except Exception:
+        pass
+    await ws.send_json(payload)
+
 app = FastAPI(title="jarvis-backend", version="0.1.0")
 
 
@@ -246,7 +310,7 @@ async def _handle_last_reminder_modify(ws: WebSocket, text: str) -> bool:
     if not rid:
         msg = "ยังไม่พบรายการแจ้งเตือนล่าสุดที่จะให้เปลี่ยนเวลา"
         try:
-            await ws.send_json({"type": "text", "text": msg})
+            await _ws_send_json(ws, {"type": "text", "text": msg})
         except Exception:
             pass
         try:
@@ -272,7 +336,7 @@ async def _handle_last_reminder_modify(ws: WebSocket, text: str) -> bool:
             pass
         msg = "ต้องการเปลี่ยนเป็นเวลาไหน? (เช่น เปลี่ยนเป็น 9 โมงเช้า)"
         try:
-            await ws.send_json({"type": "text", "text": msg})
+            await _ws_send_json(ws, {"type": "text", "text": msg})
         except Exception:
             pass
         try:
@@ -287,7 +351,7 @@ async def _handle_last_reminder_modify(ws: WebSocket, text: str) -> bool:
     if due_at_utc is None:
         msg = "ฉันอ่านเวลาไม่ออก ลองใหม่ เช่น วันนี้ 17:00 หรือ พรุ่งนี้ 09:00"
         try:
-            await ws.send_json({"type": "text", "text": msg})
+            await _ws_send_json(ws, {"type": "text", "text": msg})
         except Exception:
             pass
         try:
@@ -327,7 +391,7 @@ async def _handle_last_reminder_modify(ws: WebSocket, text: str) -> bool:
             wv = {"ok": False, "error": str(e)}
 
     try:
-        await ws.send_json(
+        await _ws_send_json(
             {
                 "type": "reminder_modified",
                 "reminder_id": rid,
@@ -345,7 +409,7 @@ async def _handle_last_reminder_modify(ws: WebSocket, text: str) -> bool:
     title = str((_get_local_reminder_by_id(rid) or {}).get("title") or "Reminder").strip() or "Reminder"
     msg = f"โอเค เปลี่ยนเวลาแล้ว: {title} เป็น {local_iso or when}"
     try:
-        await ws.send_json({"type": "text", "text": msg})
+        await _ws_send_json(ws, {"type": "text", "text": msg})
     except Exception:
         pass
     try:
@@ -383,7 +447,7 @@ async def _handle_reminder_details_query(ws: WebSocket, text: str) -> bool:
     if not rid:
         msg = "ยังไม่พบรายการแจ้งเตือนล่าสุด" if _text_is_thai(text) else "I couldn't find a recent reminder."
         try:
-            await ws.send_json({"type": "text", "text": msg})
+            await _ws_send_json(ws, {"type": "text", "text": msg})
         except Exception:
             pass
         return True
@@ -392,13 +456,13 @@ async def _handle_reminder_details_query(ws: WebSocket, text: str) -> bool:
     if not local:
         msg = "ไม่พบรายการแจ้งเตือนนี้แล้ว" if _text_is_thai(text) else "That reminder wasn't found."
         try:
-            await ws.send_json({"type": "text", "text": msg})
+            await _ws_send_json(ws, {"type": "text", "text": msg})
         except Exception:
             pass
         return True
 
     try:
-        await ws.send_json({"type": "reminder_detail", "reminder": local, "instance_id": INSTANCE_ID})
+        await _ws_send_json(ws, {"type": "reminder_detail", "reminder": local, "instance_id": INSTANCE_ID})
     except Exception:
         pass
 
@@ -436,7 +500,7 @@ async def _handle_reminder_details_query(ws: WebSocket, text: str) -> bool:
             ]
         )
     try:
-        await ws.send_json({"type": "text", "text": msg})
+        await _ws_send_json(ws, {"type": "text", "text": msg})
     except Exception:
         pass
     return True
@@ -504,7 +568,7 @@ async def _handle_pending_reminder_set_time(ws: WebSocket, text: str) -> bool:
     if due_at_utc is None:
         msg = "ฉันอ่านเวลาไม่ออก ลองใหม่ เช่น วันนี้ 17:00 หรือ พรุ่งนี้ 09:00"
         try:
-            await ws.send_json({"type": "text", "text": msg})
+            await _ws_send_json(ws, {"type": "text", "text": msg})
         except Exception:
             pass
         try:
@@ -566,7 +630,7 @@ async def _handle_pending_reminder_set_time(ws: WebSocket, text: str) -> bool:
     title = str((_get_local_reminder_by_id(rid) or {}).get("title") or "Reminder").strip() or "Reminder"
     msg = f"โอเค ตั้งเวลาให้แล้ว: {title} เป็น {local_iso or s}"
     try:
-        await ws.send_json({"type": "text", "text": msg})
+        await _ws_send_json(ws, {"type": "text", "text": msg})
     except Exception:
         pass
     try:
@@ -2172,7 +2236,7 @@ async def _emit_live_connect_greeting(ws: WebSocket) -> None:
     lang = str(getattr(ws.state, "user_lang", "") or "").strip() or _lang_from_ws(ws)
     msg = _short_greeting_for_now(lang=lang, now_local=now_local)
     try:
-        await ws.send_json({"type": "text", "text": msg})
+        await _ws_send_json(ws, {"type": "text", "text": msg})
     except Exception:
         pass
     try:
@@ -2277,11 +2341,11 @@ async def _handle_reminder_helper_trigger(ws: WebSocket, text: str) -> bool:
     if action == "add":
         payload = str(args.get("text") or "").strip()
         if not payload:
-            await ws.send_json({"type": "reminder_helper_error", "message": "missing_text"})
+            await _ws_send_json(ws, {"type": "reminder_helper_error", "message": "missing_text"})
             return True
         handled = await _handle_reminder_setup_trigger(ws, f"reminder setup: {payload}")
         if not handled:
-            await ws.send_json({"type": "reminder_helper_error", "message": "add_failed"})
+            await _ws_send_json(ws, {"type": "reminder_helper_error", "message": "add_failed"})
         return True
 
     if action == "list":
@@ -2387,7 +2451,7 @@ async def _handle_reminder_helper_trigger(ws: WebSocket, text: str) -> bool:
         except Exception:
             pass
 
-        await ws.send_json(
+        await _ws_send_json(
             {
                 "type": "reminder_helper_list",
                 "status": status,
@@ -2401,7 +2465,7 @@ async def _handle_reminder_helper_trigger(ws: WebSocket, text: str) -> bool:
 
     rid = str(args.get("reminder_id") or "").strip()
     if not rid:
-        await ws.send_json({"type": "reminder_helper_error", "message": "missing_reminder_id"})
+        await _ws_send_json(ws, {"type": "reminder_helper_error", "message": "missing_reminder_id"})
         return True
 
     try:
@@ -2417,7 +2481,7 @@ async def _handle_reminder_helper_trigger(ws: WebSocket, text: str) -> bool:
                 wv = await _mark_reminder_done_weaviate(rid)
             except Exception as e:
                 wv = {"ok": False, "error": str(e)}
-        await ws.send_json({"type": "reminder_helper_done", "reminder_id": rid, "changed": changed, "weaviate": wv})
+        await _ws_send_json(ws, {"type": "reminder_helper_done", "reminder_id": rid, "changed": changed, "weaviate": wv})
         return True
 
     if action == "later":
@@ -2455,19 +2519,19 @@ async def _handle_reminder_helper_trigger(ws: WebSocket, text: str) -> bool:
                 )
             except Exception as e:
                 wv = {"ok": False, "error": str(e)}
-        await ws.send_json({"type": "reminder_helper_later", "reminder_id": rid, "hide_until": hide_until_ts, "changed": changed, "weaviate": wv})
+        await _ws_send_json(ws, {"type": "reminder_helper_later", "reminder_id": rid, "hide_until": hide_until_ts, "changed": changed, "weaviate": wv})
         return True
 
     if action == "reschedule":
         when = str(args.get("when") or "").strip()
         if not when:
-            await ws.send_json({"type": "reminder_helper_error", "message": "missing_time_text"})
+            await _ws_send_json(ws, {"type": "reminder_helper_error", "message": "missing_time_text"})
             return True
         tz = _get_user_timezone(DEFAULT_USER_ID)
         now = datetime.now(tz=timezone.utc)
         due_at_utc, local_iso = _parse_time_from_text(when, now, tz)
         if due_at_utc is None:
-            await ws.send_json({"type": "reminder_helper_error", "message": "time_parse_failed", "hint": "Try: today 17:00 | tomorrow 09:00"})
+            await _ws_send_json(ws, {"type": "reminder_helper_error", "message": "time_parse_failed", "hint": "Try: today 17:00 | tomorrow 09:00"})
             return True
         notify_at_local = _next_morning_brief_at(now, tz, due_at_utc)
         notify_at_ts = int(notify_at_local.astimezone(timezone.utc).timestamp())
@@ -2515,10 +2579,10 @@ async def _handle_reminder_helper_trigger(ws: WebSocket, text: str) -> bool:
                 wv = await _mark_reminder_done_weaviate(rid)
             except Exception as e:
                 wv = {"ok": False, "error": str(e)}
-        await ws.send_json({"type": "reminder_helper_delete", "reminder_id": rid, "changed": changed, "weaviate": wv})
+        await _ws_send_json(ws, {"type": "reminder_helper_delete", "reminder_id": rid, "changed": changed, "weaviate": wv})
         return True
 
-    await ws.send_json({"type": "reminder_helper_error", "message": "unknown_action", "action": action})
+    await _ws_send_json(ws, {"type": "reminder_helper_error", "message": "unknown_action", "action": action})
     return True
 
 
@@ -2611,7 +2675,7 @@ async def _handle_reminder_setup_trigger(ws: WebSocket, text: str) -> bool:
             "created_at": int(time.time()),
         }
         logger.info("reminder_setup_draft_emit title=%s", title)
-        await ws.send_json(
+        await _ws_send_json(
             {
                 "type": "reminder_setup_draft",
                 "title": title,
@@ -2714,7 +2778,7 @@ async def _handle_reminder_setup_trigger(ws: WebSocket, text: str) -> bool:
         },
     )
 
-    await ws.send_json(
+    await _ws_send_json(
         {
             "type": "reminder_setup",
             "title": title,
@@ -2745,7 +2809,7 @@ async def _handle_pending_reminder_confirm_or_cancel(ws: WebSocket, text: str) -
 
     if eng_cancel or thai_cancel:
         ws.state.pending_reminder_setup = None
-        await ws.send_json({"type": "reminder_setup_cancelled", "instance_id": INSTANCE_ID})
+        await _ws_send_json(ws, {"type": "reminder_setup_cancelled", "instance_id": INSTANCE_ID})
         try:
             await _live_say(ws, "โอเค ฉันยกเลิกแบบร่างการแจ้งเตือนแล้ว" if is_thai else "Okay. I cancelled that reminder draft.")
         except Exception:
@@ -2889,7 +2953,7 @@ async def _handle_pending_reminder_confirm_or_cancel(ws: WebSocket, text: str) -
             result = {**result, "weaviate": {"ok": False, "error": str(e)}}
 
     ws.state.pending_reminder_setup = None
-    await ws.send_json(
+    await _ws_send_json(
         {
             "type": "reminder_setup",
             "title": title,
@@ -5493,16 +5557,21 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
     gemini_available = True
     while True:
         msg = await ws.receive_json()
+        trace_id = _ws_capture_trace_id(ws, msg)
+        try:
+            await _ws_record(ws, "in", msg)
+        except Exception:
+            pass
         msg_type = msg.get("type")
 
         # Session control messages (handled locally, never forwarded to Gemini)
         if msg_type == "get_active_trip":
             session_id = getattr(ws.state, "session_id", None)
             if not session_id:
-                await ws.send_json({"type": "active_trip", "active_trip_id": None, "active_trip_name": None})
+                await _ws_send_json(ws, {"type": "active_trip", "active_trip_id": None, "active_trip_name": None}, trace_id=trace_id)
                 continue
             state = _get_session_state(str(session_id))
-            await ws.send_json({"type": "active_trip", **state})
+            await _ws_send_json(ws, {"type": "active_trip", **state}, trace_id=trace_id)
             continue
 
         if msg_type == "set_active_trip":
@@ -5510,7 +5579,7 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             active_trip_id = msg.get("active_trip_id")
             active_trip_name = msg.get("active_trip_name")
             if not session_id:
-                await ws.send_json({"type": "error", "message": "missing_session_id"})
+                await _ws_send_json(ws, {"type": "error", "message": "missing_session_id"}, trace_id=trace_id)
                 continue
             _set_session_state(
                 str(session_id),
@@ -5518,7 +5587,7 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
                 str(active_trip_name) if active_trip_name is not None else None,
             )
             state = _get_session_state(str(session_id))
-            await ws.send_json({"type": "active_trip", **state})
+            await _ws_send_json(ws, {"type": "active_trip", **state}, trace_id=trace_id)
             continue
 
         if msg_type == "cars_ingest_image":
@@ -5539,7 +5608,7 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
                 gemini_available = False
                 logger.warning("gemini_send_audio_failed error=%s", str(e))
                 try:
-                    await ws.send_json({"type": "error", "message": "gemini_unavailable", "detail": str(e)})
+                    await _ws_send_json(ws, {"type": "error", "message": "gemini_unavailable", "detail": str(e)}, trace_id=trace_id)
                 except Exception:
                     pass
                 continue
@@ -5552,14 +5621,14 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             text = str(msg.get("text") or "")
             if not text:
                 continue
-            logger.info("ws_in_text len=%s head=%s", len(text), text[:120])
+            logger.info("ws_in_text trace_id=%s len=%s head=%s", trace_id, len(text), text[:120])
             handled = await _dispatch_sub_agents(ws, text)
             logger.info("ws_in_text_dispatched handled=%s active_agent_id=%s", handled, getattr(ws.state, "active_agent_id", None))
             if handled:
                 continue
             if not gemini_available:
                 try:
-                    await ws.send_json({"type": "error", "message": "gemini_unavailable"})
+                    await _ws_send_json(ws, {"type": "error", "message": "gemini_unavailable"}, trace_id=trace_id)
                 except Exception:
                     pass
                 continue
@@ -5569,7 +5638,7 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
                 gemini_available = False
                 logger.warning("gemini_send_text_failed error=%s", str(e))
                 try:
-                    await ws.send_json({"type": "error", "message": "gemini_unavailable", "detail": str(e)})
+                    await _ws_send_json(ws, {"type": "error", "message": "gemini_unavailable", "detail": str(e)}, trace_id=trace_id)
                 except Exception:
                     pass
             continue
@@ -5583,7 +5652,7 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
                 gemini_available = False
                 logger.warning("gemini_send_audio_end_failed error=%s", str(e))
                 try:
-                    await ws.send_json({"type": "error", "message": "gemini_unavailable", "detail": str(e)})
+                    await _ws_send_json(ws, {"type": "error", "message": "gemini_unavailable", "detail": str(e)}, trace_id=trace_id)
                 except Exception:
                     pass
             continue
@@ -5608,15 +5677,20 @@ async def _live_say(ws: WebSocket, text: str) -> None:
 async def _ws_local_only_loop(ws: WebSocket) -> None:
     while True:
         msg = await ws.receive_json()
+        trace_id = _ws_capture_trace_id(ws, msg)
+        try:
+            await _ws_record(ws, "in", msg)
+        except Exception:
+            pass
         msg_type = msg.get("type")
 
         if msg_type == "get_active_trip":
             session_id = getattr(ws.state, "session_id", None)
             if not session_id:
-                await ws.send_json({"type": "active_trip", "active_trip_id": None, "active_trip_name": None})
+                await _ws_send_json(ws, {"type": "active_trip", "active_trip_id": None, "active_trip_name": None}, trace_id=trace_id)
                 continue
             state = _get_session_state(str(session_id))
-            await ws.send_json({"type": "active_trip", **state})
+            await _ws_send_json(ws, {"type": "active_trip", **state}, trace_id=trace_id)
             continue
 
         if msg_type == "set_active_trip":
@@ -5624,7 +5698,7 @@ async def _ws_local_only_loop(ws: WebSocket) -> None:
             active_trip_id = msg.get("active_trip_id")
             active_trip_name = msg.get("active_trip_name")
             if not session_id:
-                await ws.send_json({"type": "error", "message": "missing_session_id"})
+                await _ws_send_json(ws, {"type": "error", "message": "missing_session_id"}, trace_id=trace_id)
                 continue
             _set_session_state(
                 str(session_id),
@@ -5632,7 +5706,7 @@ async def _ws_local_only_loop(ws: WebSocket) -> None:
                 str(active_trip_name) if active_trip_name is not None else None,
             )
             state = _get_session_state(str(session_id))
-            await ws.send_json({"type": "active_trip", **state})
+            await _ws_send_json(ws, {"type": "active_trip", **state}, trace_id=trace_id)
             continue
 
         if msg_type == "cars_ingest_image":
@@ -5650,7 +5724,7 @@ async def _ws_local_only_loop(ws: WebSocket) -> None:
             text = str(msg.get("text") or "")
             if not text:
                 continue
-            logger.info("ws_in_text_local_only len=%s head=%s", len(text), text[:120])
+            logger.info("ws_in_text_local_only trace_id=%s len=%s head=%s", trace_id, len(text), text[:120])
             handled = await _dispatch_sub_agents(ws, text)
             logger.info(
                 "ws_in_text_local_only_dispatched handled=%s active_agent_id=%s",
@@ -5659,7 +5733,7 @@ async def _ws_local_only_loop(ws: WebSocket) -> None:
             )
             if handled:
                 continue
-            await ws.send_json({"type": "error", "message": "gemini_unavailable"})
+            await _ws_send_json(ws, {"type": "error", "message": "gemini_unavailable"}, trace_id=trace_id)
             continue
 
         if msg_type == "close":
@@ -5847,7 +5921,7 @@ async def ws_live(ws: WebSocket) -> None:
         try:
             _init_session_db()
             state = _get_session_state(session_id)
-            await ws.send_json({"type": "active_trip", **state})
+            await _ws_send_json(ws, {"type": "active_trip", **state})
         except Exception as e:
             logger.warning("session_db_init_failed error=%s", e)
 
@@ -5859,7 +5933,7 @@ async def ws_live(ws: WebSocket) -> None:
             pass
         api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
         if not api_key:
-            await ws.send_json(
+            await _ws_send_json(
                 {
                     "type": "error",
                     "kind": "missing_api_key",
@@ -5985,7 +6059,7 @@ async def ws_live(ws: WebSocket) -> None:
                     getattr(e, "status_code", None),
                 )
                 try:
-                    await ws2.send_json({"type": "error", **classified})
+                    await _ws_send_json(ws2, {"type": "error", **classified})
                 except Exception:
                     pass
 
@@ -6008,7 +6082,7 @@ async def ws_live(ws: WebSocket) -> None:
                 async with session_cm as session:
                     logger.info("gemini_live_connected model=%s", model)
                     ws.state.gemini_live_session = session
-                    await ws.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
+                    await _ws_send_json(ws, {"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
                     connected_sent = True
                     try:
                         await _emit_live_connect_greeting(ws)
@@ -6122,36 +6196,33 @@ async def ws_live(ws: WebSocket) -> None:
                 logger.exception("gemini_live_session_failed model=%s error=%s", model_used_norm, msg)
 
             try:
-                await ws.send_json({"type": "error", **classified})
+                await _ws_send_json(ws, {"type": "error", **classified})
             except Exception:
                 pass
 
             # Keep the client ws connected even if Gemini is unavailable.
             if not connected_sent:
                 try:
-                    await ws.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
+                    await _ws_send_json(ws, {"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
                 except Exception:
                     pass
             try:
                 await _ws_local_only_loop(ws)
-            except WebSocketDisconnect:
-                return
+            except Exception:
+                pass
             return
 
         # No candidates worked and no error captured: keep the client alive.
         try:
             if not connected_sent:
-                await ws.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
+                await _ws_send_json(ws, {"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
                 try:
                     await _emit_live_connect_greeting(ws)
                 except Exception:
                     pass
+            await _ws_local_only_loop(ws)
         except Exception:
             pass
-        try:
-            await _ws_local_only_loop(ws)
-        except WebSocketDisconnect:
-            return
         return
     finally:
         s = _ws_by_user.get(user_id)

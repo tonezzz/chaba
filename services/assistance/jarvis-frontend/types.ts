@@ -20,6 +20,14 @@ export interface MessageLog {
     sources?: GroundingSource[];
     type?: 'search' | 'image_gen' | 'reimagine' | 'text';
     source?: 'input' | 'output';
+    trace_id?: string;
+    severity?: 'debug' | 'info' | 'warn' | 'error';
+    category?: 'live' | 'reminder' | 'weaviate' | 'ws' | 'unknown';
+    ws?: {
+      type?: string;
+      instance_id?: string;
+    };
+    raw?: any;
   };
 }
 

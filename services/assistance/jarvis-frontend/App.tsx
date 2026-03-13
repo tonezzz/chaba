@@ -11,6 +11,8 @@ export default function App() {
   const [state, setState] = useState<ConnectionState>(ConnectionState.DISCONNECTED);
   const [volume, setVolume] = useState(0);
   const [messages, setMessages] = useState<MessageLog[]>([]);
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+  const [showDebugLogs, setShowDebugLogs] = useState(false);
   const liveService = useRef<LiveService | null>(null);
   const [activeMedia, setActiveMedia] = useState<MessageLog | null>(null);
   const [isTalking, setIsTalking] = useState(false);
@@ -237,7 +239,7 @@ export default function App() {
     }
     const finalText = blocks.join("\n\n").trim();
     if (!finalText) return;
-    liveService.current?.sendText(finalText);
+    const traceId = liveService.current?.sendText(finalText) || undefined;
     setComposerText("");
     setAttachments([]);
     setMessages((prev) => [
@@ -246,6 +248,11 @@ export default function App() {
         role: "user",
         text: base || "(sent attachments)",
         timestamp: new Date(),
+        metadata: {
+          trace_id: traceId,
+          ws: { type: "text" },
+          raw: { type: "text", text: finalText, trace_id: traceId },
+        },
       },
       ...prev,
     ]);
@@ -348,24 +355,68 @@ export default function App() {
 
           {/* Activity Log */}
           <div className="flex-1 overflow-y-auto pr-2 space-y-3 mask-image-b pb-40 md:pb-0">
-             <div className="text-xs font-mono text-slate-500 uppercase tracking-widest sticky top-0 bg-slate-900/90 py-1 mb-2">Operation Log</div>
+             <div className="text-xs font-mono text-slate-500 uppercase tracking-widest sticky top-0 bg-slate-900/90 py-1 mb-2 flex items-center justify-between">
+               <span>Operation Log</span>
+               <button
+                 className="text-[10px] font-mono text-slate-600 hover:text-slate-400 normal-case"
+                 onClick={(e) => {
+                   e.preventDefault();
+                   e.stopPropagation();
+                   setShowDebugLogs((v) => !v);
+                 }}
+               >
+                 {showDebugLogs ? "hide debug" : "show debug"}
+               </button>
+             </div>
              {messages.length === 0 && (
                <div className="text-sm text-slate-600 italic mt-10 text-center">Awaiting inputs...</div>
              )}
-             {messages.map((m) => (
-                <div key={m.id} className="text-sm group animate-in fade-in slide-in-from-left-2 duration-300">
-                  <div className="flex items-center gap-2 mb-1">
-                     {m.role === 'model' && <Activity className="w-3 h-3 text-cyan-400" />}
-                     {m.metadata?.type === 'search' && <Search className="w-3 h-3 text-yellow-400" />}
-                     {m.metadata?.type === 'image_gen' && <ImageIcon className="w-3 h-3 text-purple-400" />}
-                     {m.metadata?.type === 'reimagine' && <Camera className="w-3 h-3 text-pink-400" />}
-                     <span className="text-xs text-slate-500 font-mono">{m.timestamp.toLocaleTimeString()}</span>
-                  </div>
-                  <div className="text-slate-300 pl-5 border-l border-slate-700 py-1">
-                     {m.text}
-                  </div>
-                </div>
-             ))}
+             {(showDebugLogs ? messages : messages.filter((m) => (m.metadata?.severity || "info") !== "debug")).map((m) => {
+               const canExpand = Boolean(m.metadata?.raw || m.metadata?.trace_id || m.metadata?.ws?.type || m.metadata?.ws?.instance_id);
+               const expanded = expandedLogId === m.id;
+               let rawText = "";
+               if (expanded && m.metadata?.raw != null) {
+                 try {
+                   rawText = JSON.stringify(m.metadata.raw, null, 2);
+                 } catch {
+                   rawText = String(m.metadata.raw);
+                 }
+               }
+               const traceLine = m.metadata?.trace_id ? `trace_id=${String(m.metadata.trace_id)}` : "";
+               const typeLine = m.metadata?.ws?.type ? `type=${String(m.metadata.ws.type)}` : "";
+               const instLine = m.metadata?.ws?.instance_id ? `instance_id=${String(m.metadata.ws.instance_id)}` : "";
+               const metaLine = [typeLine, instLine, traceLine].filter(Boolean).join(" ");
+               return (
+                 <div
+                   key={m.id}
+                   className={`text-sm group animate-in fade-in slide-in-from-left-2 duration-300 ${canExpand ? "cursor-pointer" : ""}`}
+                   onClick={() => {
+                     if (!canExpand) return;
+                     setExpandedLogId((prev) => (prev === m.id ? null : m.id));
+                   }}
+                 >
+                   <div className="flex items-center gap-2 mb-1">
+                      {m.role === 'model' && <Activity className="w-3 h-3 text-cyan-400" />}
+                      {m.metadata?.type === 'search' && <Search className="w-3 h-3 text-yellow-400" />}
+                      {m.metadata?.type === 'image_gen' && <ImageIcon className="w-3 h-3 text-purple-400" />}
+                      {m.metadata?.type === 'reimagine' && <Camera className="w-3 h-3 text-pink-400" />}
+                      <span className="text-xs text-slate-500 font-mono">{m.timestamp.toLocaleTimeString()}</span>
+                      {canExpand && (
+                        <span className="text-[10px] text-slate-600 font-mono">{expanded ? "hide" : "details"}</span>
+                      )}
+                   </div>
+                   <div className="text-slate-300 pl-5 border-l border-slate-700 py-1 whitespace-pre-wrap">
+                      {m.text}
+                      {expanded && metaLine && (
+                        <div className="mt-2 text-[11px] font-mono text-slate-500 whitespace-pre-wrap">{metaLine}</div>
+                      )}
+                      {expanded && rawText && (
+                        <pre className="mt-2 text-[11px] font-mono text-slate-400 whitespace-pre-wrap">{rawText}</pre>
+                      )}
+                   </div>
+                 </div>
+               );
+             })}
           </div>
         </div>
 

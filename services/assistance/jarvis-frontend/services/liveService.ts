@@ -31,6 +31,18 @@ export class LiveService {
   private sessionId: string | null = null;
   private inputStream: MediaStream | null = null;
 
+	private createTraceId(prefix?: string): string {
+		const p = String(prefix || "tr").trim() || "tr";
+		const sid = this.getSessionId();
+		return `${p}_${sid}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+	}
+
+	private wsSend(payload: any) {
+		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			this.ws.send(JSON.stringify(payload));
+		}
+	}
+
 	private getOrCreateSessionId(): string {
 		const storageKey = "jarvis_session_id";
 		try {
@@ -60,14 +72,13 @@ export class LiveService {
     const b64 = arrayBufferToBase64(buf);
     const mimeType = String(file.type || "image/png") || "image/png";
     const reqId = String(requestId || `${Date.now()}_${Math.random().toString(16).slice(2)}`);
-    this.ws.send(
-      JSON.stringify({
-        type: "cars_ingest_image",
-        request_id: reqId,
-        mimeType,
-        data: b64,
-      })
-    );
+    this.wsSend({
+      type: "cars_ingest_image",
+      request_id: reqId,
+      trace_id: this.createTraceId("cars"),
+      mimeType,
+      data: b64,
+    });
     return reqId;
   }
 
@@ -86,16 +97,19 @@ export class LiveService {
   public stopStreaming() {
     this.isStreamingAudio = false;
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ type: "audio_stream_end" }));
+			this.wsSend({ type: "audio_stream_end", trace_id: this.createTraceId("audio_end") });
     }
   }
 
-  public sendText(text: string) {
+  public sendText(text: string): string | null {
     const trimmed = String(text || "").trim();
-    if (!trimmed) return;
+    if (!trimmed) return null;
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ type: "text", text: trimmed }));
+			const traceId = this.createTraceId("text");
+			this.wsSend({ type: "text", text: trimmed, trace_id: traceId });
+			return traceId;
     }
+		return null;
   }
 
   public updateCameraFrame(base64: string) {
@@ -250,19 +264,18 @@ export class LiveService {
 
 	public requestActiveTrip() {
 		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-			this.ws.send(JSON.stringify({ type: "get_active_trip" }));
+			this.wsSend({ type: "get_active_trip", trace_id: this.createTraceId("trip_get") });
 		}
 	}
 
 	public setActiveTrip(active_trip_id: string | null, active_trip_name: string | null) {
 		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-			this.ws.send(
-				JSON.stringify({
-					type: "set_active_trip",
-					active_trip_id,
-					active_trip_name,
-				})
-			);
+			this.wsSend({
+				type: "set_active_trip",
+				trace_id: this.createTraceId("trip_set"),
+				active_trip_id,
+				active_trip_name,
+			});
 		}
 	}
 
@@ -287,7 +300,12 @@ export class LiveService {
       const base64 = arrayBufferToBase64(pcm16);
 
       if (this.isStreamingAudio && this.ws && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({ type: "audio", mimeType: "audio/pcm;rate=16000", data: base64 }));
+        this.wsSend({
+          type: "audio",
+          trace_id: this.createTraceId("audio"),
+          mimeType: "audio/pcm;rate=16000",
+          data: base64,
+        });
       }
     };
 
@@ -296,12 +314,18 @@ export class LiveService {
   }
 
   private async handleBackendMessage(message: any) {
+    const traceId = message?.trace_id != null ? String(message.trace_id) : undefined;
+    const wsMeta = {
+      type: message?.type != null ? String(message.type) : undefined,
+      instance_id: message?.instance_id != null ? String(message.instance_id) : undefined,
+    };
     if (message?.type === "state" && message?.state) {
       this.onMessage({
         id: `${Date.now()}_state`,
         role: "system",
         text: String(message.state),
         timestamp: new Date(),
+        metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "info", category: "ws" },
       });
       return;
     }
@@ -320,6 +344,7 @@ export class LiveService {
         role: "model",
         text: line,
         timestamp: new Date(),
+        metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "info", category: "reminder" },
       });
       return;
     }
@@ -334,6 +359,7 @@ export class LiveService {
         role: "model",
         text: line,
         timestamp: new Date(),
+        metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "info", category: "reminder" },
       });
       return;
     }
@@ -344,6 +370,7 @@ export class LiveService {
         role: "model",
         text: "reminder_draft_cancelled",
         timestamp: new Date(),
+        metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "info", category: "reminder" },
       });
       return;
     }
@@ -371,6 +398,7 @@ export class LiveService {
         role: "model",
         text: lines.join("\n"),
         timestamp: new Date(),
+        metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "info", category: "reminder" },
       });
       return;
     }
@@ -385,6 +413,7 @@ export class LiveService {
         role: "model",
         text: line,
         timestamp: new Date(),
+        metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "info", category: "reminder" },
       });
       return;
     }
@@ -399,6 +428,7 @@ export class LiveService {
         role: "model",
         text,
         timestamp: new Date(),
+        metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "info", category: "reminder" },
       });
       return;
     }
@@ -412,6 +442,7 @@ export class LiveService {
 				role: "system",
 				text: `active_trip=${active_trip_id || "(none)"}${active_trip_name ? ` (${active_trip_name})` : ""}`,
 				timestamp: new Date(),
+				metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "info", category: "ws" },
 			});
 			return;
 		}
@@ -452,7 +483,7 @@ export class LiveService {
         role: src === "output" ? "model" : "system",
         text: String(message.text),
         timestamp: new Date(),
-        metadata: { type: "text", source: src },
+        metadata: { type: "text", source: src, trace_id: traceId, ws: wsMeta, raw: message, severity: "debug", category: "live" },
       });
       return;
     }
@@ -463,16 +494,20 @@ export class LiveService {
         role: "model",
         text: String(message.text),
         timestamp: new Date(),
+        metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "info", category: "live" },
       });
       return;
     }
 
     if (message?.type === "error" && message?.message) {
+      const kind = message?.kind != null ? String(message.kind) : "";
+      const category = kind.startsWith("gemini_") ? "live" : "ws";
       this.onMessage({
         id: `${Date.now()}_err`,
         role: "system",
         text: String(message.message),
         timestamp: new Date(),
+        metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "error", category },
       });
       // Backend can emit error events even while keeping the websocket open (e.g. Gemini Live session failed).
       // Do not treat these as transport disconnects.
