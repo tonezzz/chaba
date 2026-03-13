@@ -103,8 +103,14 @@ services:
           }
         }
 
+        let _ioMode = null; // "content-length" | "line"
+
         function write(obj) {
           const body = JSON.stringify(obj);
+          if (_ioMode === "line") {
+            process.stdout.write(body + "\n");
+            return;
+          }
           const len = Buffer.byteLength(body, "utf8");
           process.stdout.write("Content-Length: " + String(len) + "\r\n\r\n" + body);
         }
@@ -632,11 +638,7 @@ services:
           while (true) {
             const frame = parseNextFrame(buf);
             if (!frame) break;
-            if (frame.error) {
-              process.stderr.write("mcp-google-tasks framing error: " + String(frame.error) + "\n");
-              buf = Buffer.alloc(0);
-              break;
-            }
+            _ioMode = _ioMode || "content-length";
 
             buf = frame.rest;
             const msg = safeJsonParse(frame.body);
@@ -657,6 +659,7 @@ services:
             if (!line) continue;
             const msg = safeJsonParse(line);
             if (!msg) continue;
+            _ioMode = _ioMode || "line";
             await handleMessage(msg);
           }
 
@@ -667,6 +670,7 @@ services:
             const msg = safeJsonParse(trimmed);
             if (msg) {
               lineBuf = "";
+              _ioMode = _ioMode || "line";
               await handleMessage(msg);
             }
           }
