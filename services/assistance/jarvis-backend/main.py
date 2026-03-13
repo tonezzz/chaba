@@ -2223,7 +2223,12 @@ def _parse_reminder_helper_command(text: str) -> dict[str, Any]:
         tail_s = " ".join(tail.lower().split())
         status = "pending" if "pending" in tail_s else "all" if tail_s else "pending"
         include_hidden = "include_hidden" in tail_s or "hidden" in tail_s
-        return {"action": "list", "args": {"status": status, "include_hidden": include_hidden}}
+        day = ""
+        if "today" in tail_s:
+            day = "today"
+        elif "yesterday" in tail_s:
+            day = "yesterday"
+        return {"action": "list", "args": {"status": status, "include_hidden": include_hidden, "day": day}}
 
     # Thai aliases
     if s.startswith("เตือน เพิ่ม"):
@@ -2246,7 +2251,12 @@ def _parse_reminder_helper_command(text: str) -> dict[str, Any]:
         tail_s = " ".join(tail.lower().split())
         status = "all" if ("ทั้งหมด" in tail_s or "all" in tail_s) else "pending"
         include_hidden = "ซ่อน" in tail_s or "hidden" in tail_s
-        return {"action": "list", "args": {"status": status, "include_hidden": include_hidden}}
+        day = ""
+        if "วันนี้" in tail_s or "today" in tail_s:
+            day = "today"
+        elif "เมื่อวาน" in tail_s or "yesterday" in tail_s:
+            day = "yesterday"
+        return {"action": "list", "args": {"status": status, "include_hidden": include_hidden, "day": day}}
     if s.startswith("เตือน รายการ"):
         tail = after("เตือน รายการ")
         tail_s = " ".join(tail.lower().split())
@@ -2277,6 +2287,7 @@ async def _handle_reminder_helper_trigger(ws: WebSocket, text: str) -> bool:
     if action == "list":
         status = str(args.get("status") or "pending")
         include_hidden = bool(args.get("include_hidden"))
+        day = str(args.get("day") or "").strip().lower()
         items: list[dict[str, Any]] = []
         if _weaviate_enabled():
             try:
@@ -2317,10 +2328,39 @@ async def _handle_reminder_helper_trigger(ws: WebSocket, text: str) -> bool:
                 include_hidden=include_hidden,
             )
 
+        # Option 2: allow calendar-day filtering that includes overdue items within the day.
+        if day in ("today", "yesterday"):
+            tz = _get_user_timezone(DEFAULT_USER_ID)
+            now_local = datetime.now(tz=timezone.utc).astimezone(tz)
+            base_date = now_local.date()
+            if day == "yesterday":
+                base_date = (now_local - timedelta(days=1)).date()
+            start_local = datetime(base_date.year, base_date.month, base_date.day, 0, 0, 0, tzinfo=tz)
+            end_local = datetime(base_date.year, base_date.month, base_date.day, 23, 59, 59, tzinfo=tz)
+            start_ts = int(start_local.astimezone(timezone.utc).timestamp())
+            end_ts = int(end_local.astimezone(timezone.utc).timestamp())
+
+            filtered_items: list[dict[str, Any]] = []
+            for it in items or []:
+                if not isinstance(it, dict):
+                    continue
+                ts = it.get("notify_at")
+                if ts is None:
+                    ts = it.get("due_at")
+                try:
+                    ts_i = int(ts) if ts is not None else None
+                except Exception:
+                    ts_i = None
+                if ts_i is None:
+                    continue
+                if start_ts <= ts_i <= end_ts:
+                    filtered_items.append(it)
+            items = filtered_items
+
         # Option B: treat the most recently updated reminder in the list as the "selected" reminder
         # for follow-ups like "เปลี่ยนเวลา" / "what are the details?".
         try:
-            best: Optional[dict[str, Any]] = None
+            best_rid = ""
             best_ts = -1
             for it in items or []:
                 if not isinstance(it, dict):
@@ -2330,23 +2370,29 @@ async def _handle_reminder_helper_trigger(ws: WebSocket, text: str) -> bool:
                     continue
                 ts = it.get("updated_at")
                 if ts is None:
-                    ts = it.get("created_at")
+                    ts = it.get("notify_at")
+                if ts is None:
+                    ts = it.get("due_at")
                 try:
-                    ts_i = int(ts) if ts is not None else -1
+                    ts_i = int(ts) if ts is not None else None
                 except Exception:
-                    ts_i = -1
+                    ts_i = None
+                if ts_i is None:
+                    continue
                 if ts_i > best_ts:
                     best_ts = ts_i
-                    best = it
-            if best is not None:
-                ws.state.last_selected_reminder_id = str(best.get("reminder_id") or "").strip()
+                    best_rid = rid
+            if best_rid:
+                ws.state.last_selected_reminder_id = best_rid
         except Exception:
             pass
+
         await ws.send_json(
             {
                 "type": "reminder_helper_list",
                 "status": status,
                 "include_hidden": include_hidden,
+                "day": day,
                 "reminders": items,
                 "instance_id": INSTANCE_ID,
             }
