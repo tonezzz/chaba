@@ -392,6 +392,7 @@ async def _handle_last_reminder_modify(ws: WebSocket, text: str) -> bool:
 
     try:
         await _ws_send_json(
+            ws,
             {
                 "type": "reminder_modified",
                 "reminder_id": rid,
@@ -2445,6 +2446,7 @@ async def _handle_reminder_helper_trigger(ws: WebSocket, text: str) -> bool:
                     limit=50,
                 )
             await _ws_send_json(
+                ws,
                 {
                     "type": "reminder_helper_list",
                     "status": "pending",
@@ -2591,6 +2593,7 @@ async def _handle_reminder_helper_trigger(ws: WebSocket, text: str) -> bool:
             pass
 
         await _ws_send_json(
+            ws,
             {
                 "type": "reminder_helper_list",
                 "status": status,
@@ -2826,6 +2829,7 @@ async def _handle_reminder_setup_trigger(ws: WebSocket, text: str) -> bool:
         }
         logger.info("reminder_setup_draft_emit title=%s", title)
         await _ws_send_json(
+            ws,
             {
                 "type": "reminder_setup_draft",
                 "title": title,
@@ -2929,6 +2933,7 @@ async def _handle_reminder_setup_trigger(ws: WebSocket, text: str) -> bool:
     )
 
     await _ws_send_json(
+        ws,
         {
             "type": "reminder_setup",
             "title": title,
@@ -3104,6 +3109,7 @@ async def _handle_pending_reminder_confirm_or_cancel(ws: WebSocket, text: str) -
 
     ws.state.pending_reminder_setup = None
     await _ws_send_json(
+        ws,
         {
             "type": "reminder_setup",
             "title": title,
@@ -6084,6 +6090,7 @@ async def ws_live(ws: WebSocket) -> None:
         api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
         if not api_key:
             await _ws_send_json(
+                ws,
                 {
                     "type": "error",
                     "kind": "missing_api_key",
