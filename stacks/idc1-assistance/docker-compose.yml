@@ -543,6 +543,7 @@ services:
         }
 
         let buf = Buffer.alloc(0);
+        let lineBuf = "";
 
         async function main() {
           const args = process.argv.slice(2);
@@ -593,16 +594,38 @@ services:
           return { body: bodyBuf.toString("utf8"), rest };
         }
 
+        async function handleMessage(msg) {
+          try {
+            const res = await handleRpc(msg);
+            if (res) {
+              write(res);
+            }
+          } catch (e) {
+            write({
+              jsonrpc: "2.0",
+              id: msg && Object.prototype.hasOwnProperty.call(msg, "id") ? msg.id : null,
+              error: {
+                code: -32603,
+                message: "Internal error",
+                data: { error: String(e && e.message ? e.message : e) },
+              },
+            });
+          }
+        }
+
         process.stdin.on("data", async (chunk) => {
           const b = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk), "utf8");
           buf = Buffer.concat([buf, b]);
-          for (;;) {
+          lineBuf += b.toString("utf8");
+
+          // First try Content-Length framing.
+          while (true) {
             const frame = parseNextFrame(buf);
-            if (!frame) return;
+            if (!frame) break;
             if (frame.error) {
               process.stderr.write("mcp-google-tasks framing error: " + String(frame.error) + "\n");
               buf = Buffer.alloc(0);
-              return;
+              break;
             }
 
             buf = frame.rest;
@@ -612,22 +635,19 @@ services:
               continue;
             }
 
-            try {
-              const res = await handleRpc(msg);
-              if (res) {
-                write(res);
-              }
-            } catch (e) {
-              write({
-                jsonrpc: "2.0",
-                id: msg.id ?? null,
-                error: {
-                  code: -32603,
-                  message: "Internal error",
-                  data: { error: String(e && e.message ? e.message : e) },
-                },
-              });
-            }
+            await handleMessage(msg);
+          }
+
+          // Fallback: newline-delimited JSON.
+          while (true) {
+            const idx = lineBuf.indexOf("\n");
+            if (idx < 0) break;
+            const line = lineBuf.slice(0, idx).trim();
+            lineBuf = lineBuf.slice(idx + 1);
+            if (!line) continue;
+            const msg = safeJsonParse(line);
+            if (!msg) continue;
+            await handleMessage(msg);
           }
         });
 
