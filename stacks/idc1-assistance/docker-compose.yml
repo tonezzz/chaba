@@ -109,6 +109,8 @@ services:
           process.stdout.write("Content-Length: " + String(len) + "\r\n\r\n" + body);
         }
 
+        let _traceCount = 0;
+
         function nowIso() {
           return new Date().toISOString();
         }
@@ -373,12 +375,20 @@ services:
         ];
 
         async function handleRpc(msg) {
-          const hasId = msg && Object.prototype.hasOwnProperty.call(msg, "id");
-          const id = hasId ? msg.id : null;
+          const jsonrpc = msg && msg.jsonrpc;
+          const id = msg && msg.id;
           const method = msg && msg.method;
-          const params = (msg && msg.params) || {};
+          const params = msg && msg.params;
 
-          // Notifications (no id) must not receive a response.
+          if (_traceCount < 30) {
+            _traceCount++;
+            try {
+              const hasId = msg && Object.prototype.hasOwnProperty.call(msg, "id");
+              process.stderr.write("[mcp-google-tasks] inbound method=" + String(method) + " hasId=" + String(Boolean(hasId)) + "\n");
+            } catch {}
+          }
+
+          const hasId = msg && Object.prototype.hasOwnProperty.call(msg, "id");
           if (!hasId) {
             try {
               if (typeof method === "string" && method) {
