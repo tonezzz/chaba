@@ -118,7 +118,7 @@ services:
       GOOGLE_TASKS_TOKEN_PATH: ${GOOGLE_TASKS_TOKEN_PATH:-/root/.config/1mcp/google-tasks.tokens.json}
     volumes:
       - ./mcp-config:/app/mcp-config
-      - ../../services/assistance/mcp-servers:/app/mcp-servers:ro
+      - ./mcp-servers:/app/mcp-servers:ro
       - mcp-bundle-data:/root/.config/1mcp
       - mcp-bundle-cache:/root/.cache
     healthcheck:
