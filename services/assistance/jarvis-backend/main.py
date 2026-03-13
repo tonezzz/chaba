@@ -5257,6 +5257,50 @@ MCP_TOOL_MAP: dict[str, dict[str, Any]] = {
         "requires_confirmation": True,
     },
 
+    "google_tasks_update_task": {
+        "mcp_name": "google-tasks_1mcp_google_tasks_update_task",
+        "description": "Update a task in Google Tasks (via 1MCP google-tasks). Requires confirmation.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "tasklist_id": {"type": "string", "description": "Tasklist ID. If omitted, uses the first tasklist."},
+                "task_id": {"type": "string", "description": "Task ID to update."},
+                "title": {"type": "string", "description": "Optional new title."},
+                "notes": {"type": "string", "description": "Optional new notes."},
+                "due": {"type": "string", "description": "Optional RFC3339 due datetime."},
+                "status": {"type": "string", "description": "Optional status (e.g. needsAction|completed)."},
+            },
+            "required": ["task_id"],
+        },
+        "requires_confirmation": True,
+    },
+    "google_tasks_complete_task": {
+        "mcp_name": "google-tasks_1mcp_google_tasks_complete_task",
+        "description": "Mark a task completed in Google Tasks (via 1MCP google-tasks). Requires confirmation.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "tasklist_id": {"type": "string", "description": "Tasklist ID. If omitted, uses the first tasklist."},
+                "task_id": {"type": "string", "description": "Task ID to complete."},
+            },
+            "required": ["task_id"],
+        },
+        "requires_confirmation": True,
+    },
+    "google_tasks_delete_task": {
+        "mcp_name": "google-tasks_1mcp_google_tasks_delete_task",
+        "description": "Delete a task in Google Tasks (via 1MCP google-tasks). Requires confirmation.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "tasklist_id": {"type": "string", "description": "Tasklist ID. If omitted, uses the first tasklist."},
+                "task_id": {"type": "string", "description": "Task ID to delete."},
+            },
+            "required": ["task_id"],
+        },
+        "requires_confirmation": True,
+    },
+
     "aim_memory_store": {
         "mcp_name": "aim-kg_1mcp_aim_memory_store",
         "description": "Store entities/observations in the AIM knowledge graph memory store.",

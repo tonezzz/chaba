@@ -179,6 +179,60 @@ services:
           return obj;
         }
 
+        async function googleTasksPatch(pathname, bodyObj, query) {
+          const token = await getValidAccessToken();
+          const url = new URL(GOOGLE_TASKS_API_BASE + pathname);
+          for (const [k, v] of Object.entries(query || {})) {
+            if (v === undefined || v === null) continue;
+            url.searchParams.set(k, String(v));
+          }
+
+          const r = await fetch(url.toString(), {
+            method: "PATCH",
+            headers: {
+              authorization: "Bearer " + String(token),
+              accept: "application/json",
+              "content-type": "application/json",
+            },
+            body: JSON.stringify(bodyObj || {}),
+          });
+
+          const text = await r.text();
+          const obj = safeJsonParse(text) || { raw: text };
+          if (!r.ok) {
+            const e = new Error("google_api_error");
+            e.details = { status: r.status, body: obj };
+            throw e;
+          }
+          return obj;
+        }
+
+        async function googleTasksDelete(pathname, query) {
+          const token = await getValidAccessToken();
+          const url = new URL(GOOGLE_TASKS_API_BASE + pathname);
+          for (const [k, v] of Object.entries(query || {})) {
+            if (v === undefined || v === null) continue;
+            url.searchParams.set(k, String(v));
+          }
+
+          const r = await fetch(url.toString(), {
+            method: "DELETE",
+            headers: {
+              authorization: "Bearer " + String(token),
+              accept: "application/json",
+            },
+          });
+
+          const text = await r.text();
+          if (!r.ok) {
+            const obj = safeJsonParse(text) || { raw: text };
+            const e = new Error("google_api_error");
+            e.details = { status: r.status, body: obj };
+            throw e;
+          }
+          return { ok: true };
+        }
+
         async function googleTasksPost(pathname, bodyObj, query) {
           const token = await getValidAccessToken();
           const url = new URL(GOOGLE_TASKS_API_BASE + pathname);
@@ -434,6 +488,46 @@ services:
               },
             },
           },
+          {
+            name: "google_tasks_update_task",
+            description: "Update a task in a tasklist (requires OAuth tokens).",
+            inputSchema: {
+              type: "object",
+              properties: {
+                tasklist_id: { type: "string", description: "Tasklist ID. If omitted, uses the first tasklist." },
+                task_id: { type: "string", description: "Task ID to update." },
+                title: { type: "string", description: "Optional new title." },
+                notes: { type: "string", description: "Optional new notes." },
+                due: { type: "string", description: "Optional RFC3339 due datetime." },
+                status: { type: "string", description: "Optional status (e.g. needsAction|completed)." },
+              },
+              required: ["task_id"],
+            },
+          },
+          {
+            name: "google_tasks_complete_task",
+            description: "Mark a task as completed (requires OAuth tokens).",
+            inputSchema: {
+              type: "object",
+              properties: {
+                tasklist_id: { type: "string", description: "Tasklist ID. If omitted, uses the first tasklist." },
+                task_id: { type: "string", description: "Task ID to complete." },
+              },
+              required: ["task_id"],
+            },
+          },
+          {
+            name: "google_tasks_delete_task",
+            description: "Delete a task (requires OAuth tokens).",
+            inputSchema: {
+              type: "object",
+              properties: {
+                tasklist_id: { type: "string", description: "Tasklist ID. If omitted, uses the first tasklist." },
+                task_id: { type: "string", description: "Task ID to delete." },
+              },
+              required: ["task_id"],
+            },
+          },
         ];
 
         async function handleRpc(msg) {
@@ -677,6 +771,141 @@ services:
                 id,
                 result: {
                   content: [{ type: "text", text: JSON.stringify({ ok: true, tasklist_id: tasklistId, data }) }],
+                },
+              };
+            }
+
+            if (name === "google_tasks_update_task") {
+              const tasklist_id_raw = args.tasklist_id;
+              const task_id_raw = args.task_id;
+              const title_raw = args.title;
+              const notes_raw = args.notes;
+              const due_raw = args.due;
+              const status_raw = args.status;
+
+              const taskId = typeof task_id_raw === "string" ? task_id_raw.trim() : "";
+              if (!taskId) {
+                return {
+                  jsonrpc: "2.0",
+                  id,
+                  error: {
+                    code: -32602,
+                    message: "Invalid params",
+                    data: { field: "task_id" },
+                  },
+                };
+              }
+
+              let tasklistId = typeof tasklist_id_raw === "string" && tasklist_id_raw.trim() ? tasklist_id_raw.trim() : "";
+              if (!tasklistId) {
+                const lists = await googleTasksGet("/users/@me/lists", { maxResults: 1 });
+                tasklistId = lists && lists.items && lists.items[0] && lists.items[0].id ? String(lists.items[0].id) : "";
+              }
+              if (!tasklistId) {
+                const e = new Error("no_tasklists_found");
+                e.details = { hint: "Create a tasklist in Google Tasks or pass tasklist_id" };
+                throw e;
+              }
+
+              const body = {};
+              if (typeof title_raw === "string") body.title = title_raw;
+              if (typeof notes_raw === "string") body.notes = notes_raw;
+              if (typeof due_raw === "string") body.due = due_raw;
+              if (typeof status_raw === "string") body.status = status_raw;
+
+              const data = await googleTasksPatch(
+                "/lists/" + encodeURIComponent(tasklistId) + "/tasks/" + encodeURIComponent(taskId),
+                body
+              );
+
+              return {
+                jsonrpc: "2.0",
+                id,
+                result: {
+                  content: [{ type: "text", text: JSON.stringify({ ok: true, tasklist_id: tasklistId, task_id: taskId, data }) }],
+                },
+              };
+            }
+
+            if (name === "google_tasks_complete_task") {
+              const tasklist_id_raw = args.tasklist_id;
+              const task_id_raw = args.task_id;
+
+              const taskId = typeof task_id_raw === "string" ? task_id_raw.trim() : "";
+              if (!taskId) {
+                return {
+                  jsonrpc: "2.0",
+                  id,
+                  error: {
+                    code: -32602,
+                    message: "Invalid params",
+                    data: { field: "task_id" },
+                  },
+                };
+              }
+
+              let tasklistId = typeof tasklist_id_raw === "string" && tasklist_id_raw.trim() ? tasklist_id_raw.trim() : "";
+              if (!tasklistId) {
+                const lists = await googleTasksGet("/users/@me/lists", { maxResults: 1 });
+                tasklistId = lists && lists.items && lists.items[0] && lists.items[0].id ? String(lists.items[0].id) : "";
+              }
+              if (!tasklistId) {
+                const e = new Error("no_tasklists_found");
+                e.details = { hint: "Create a tasklist in Google Tasks or pass tasklist_id" };
+                throw e;
+              }
+
+              const data = await googleTasksPatch(
+                "/lists/" + encodeURIComponent(tasklistId) + "/tasks/" + encodeURIComponent(taskId),
+                { status: "completed" }
+              );
+
+              return {
+                jsonrpc: "2.0",
+                id,
+                result: {
+                  content: [{ type: "text", text: JSON.stringify({ ok: true, tasklist_id: tasklistId, task_id: taskId, data }) }],
+                },
+              };
+            }
+
+            if (name === "google_tasks_delete_task") {
+              const tasklist_id_raw = args.tasklist_id;
+              const task_id_raw = args.task_id;
+
+              const taskId = typeof task_id_raw === "string" ? task_id_raw.trim() : "";
+              if (!taskId) {
+                return {
+                  jsonrpc: "2.0",
+                  id,
+                  error: {
+                    code: -32602,
+                    message: "Invalid params",
+                    data: { field: "task_id" },
+                  },
+                };
+              }
+
+              let tasklistId = typeof tasklist_id_raw === "string" && tasklist_id_raw.trim() ? tasklist_id_raw.trim() : "";
+              if (!tasklistId) {
+                const lists = await googleTasksGet("/users/@me/lists", { maxResults: 1 });
+                tasklistId = lists && lists.items && lists.items[0] && lists.items[0].id ? String(lists.items[0].id) : "";
+              }
+              if (!tasklistId) {
+                const e = new Error("no_tasklists_found");
+                e.details = { hint: "Create a tasklist in Google Tasks or pass tasklist_id" };
+                throw e;
+              }
+
+              const data = await googleTasksDelete(
+                "/lists/" + encodeURIComponent(tasklistId) + "/tasks/" + encodeURIComponent(taskId)
+              );
+
+              return {
+                jsonrpc: "2.0",
+                id,
+                result: {
+                  content: [{ type: "text", text: JSON.stringify({ ok: true, tasklist_id: tasklistId, task_id: taskId, data }) }],
                 },
               };
             }
