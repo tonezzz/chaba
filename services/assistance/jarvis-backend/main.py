@@ -2308,9 +2308,23 @@ def _parse_reminder_helper_command(text: str) -> dict[str, Any]:
         when = parts[1].strip() if len(parts) > 1 else ""
         return {"action": "reschedule", "args": {"reminder_id": rid, "when": when}}
 
-    if s == "แสดงการแจ้งเตือน" or s == "รายการแจ้งเตือน" or s == "แสดงรายการแจ้งเตือน":
+    if (
+        s == "แสดงการแจ้งเตือน"
+        or s == "รายการแจ้งเตือน"
+        or s == "แสดงรายการแจ้งเตือน"
+        or s == "แสดงรายการนัดหมาย"
+        or s == "รายการนัดหมาย"
+        or s == "แสดงการนัดหมาย"
+    ):
         return {"action": "list", "args": {"status": "pending", "include_hidden": False}}
-    if s.startswith("แสดงการแจ้งเตือน ") or s.startswith("รายการแจ้งเตือน ") or s.startswith("แสดงรายการแจ้งเตือน "):
+    if (
+        s.startswith("แสดงการแจ้งเตือน ")
+        or s.startswith("รายการแจ้งเตือน ")
+        or s.startswith("แสดงรายการแจ้งเตือน ")
+        or s.startswith("แสดงรายการนัดหมาย ")
+        or s.startswith("รายการนัดหมาย ")
+        or s.startswith("แสดงการนัดหมาย ")
+    ):
         tail = raw.split(" ", 1)[1].strip() if " " in raw else ""
         tail_s = " ".join(tail.lower().split())
         status = "all" if ("ทั้งหมด" in tail_s or "all" in tail_s) else "pending"
