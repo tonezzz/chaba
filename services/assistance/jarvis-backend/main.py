@@ -39,7 +39,7 @@ def _require_env(name: str) -> str:
 load_dotenv()
 
 GEMINI_LIVE_MODEL_OVERRIDE = str(os.getenv("GEMINI_LIVE_MODEL") or "").strip()
-GEMINI_LIVE_MODEL_DEFAULT = "gemini-2.0-flash-live-001"
+GEMINI_LIVE_MODEL_DEFAULT = "gemini-2.5-flash-native-audio-preview-12-2025"
 
 _REMINDER_TITLE_MODEL_SINGLE = (
     str(os.getenv("JARVIS_REMINDER_TITLE_MODEL") or os.getenv("GEMINI_TEXT_MODEL") or "gemini-2.0-flash").strip()
@@ -2142,6 +2142,43 @@ def _text_is_thai(text: str) -> bool:
         if "\u0e00" <= ch <= "\u0e7f":
             return True
     return False
+
+
+def _lang_from_ws(ws: WebSocket) -> str:
+    try:
+        accept = str(getattr(ws, "headers", {}).get("accept-language") or "")
+    except Exception:
+        accept = ""
+    low = accept.lower()
+    if "th" in low:
+        return "th"
+    return "en"
+
+
+def _short_greeting_for_now(*, lang: str, now_local: datetime) -> str:
+    t = now_local.strftime("%H:%M")
+    if str(lang or "").lower().startswith("th"):
+        dnames = ["จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส.", "อา."]
+        mnames = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."]
+        dow = dnames[int(now_local.weekday())]
+        mon = mnames[int(now_local.month) - 1]
+        return f"{dow} {now_local.day} {mon} {t}"
+    return now_local.strftime("%a, %b %d %H:%M")
+
+
+async def _emit_live_connect_greeting(ws: WebSocket) -> None:
+    tz = _get_user_timezone(DEFAULT_USER_ID)
+    now_local = datetime.now(tz=timezone.utc).astimezone(tz)
+    lang = str(getattr(ws.state, "user_lang", "") or "").strip() or _lang_from_ws(ws)
+    msg = _short_greeting_for_now(lang=lang, now_local=now_local)
+    try:
+        await ws.send_json({"type": "text", "text": msg})
+    except Exception:
+        pass
+    try:
+        await _live_say(ws, msg)
+    except Exception:
+        pass
 
 
 def _parse_reminder_helper_command(text: str) -> dict[str, Any]:
@@ -5703,6 +5740,10 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                     text = getattr(input_tr, "text", None)
                     if text:
                         logger.info("live_input_transcript text=%s", str(text)[:300])
+                        try:
+                            ws.state.user_lang = "th" if _text_is_thai(str(text)) else "en"
+                        except Exception:
+                            pass
                         # Voice UX: allow local sub-agents (e.g., reminders) to trigger from
                         # input transcription even if Gemini doesn't emit a tool_call.
                         try:
@@ -5766,6 +5807,10 @@ async def ws_live(ws: WebSocket) -> None:
 
     connected_sent = False
     try:
+        try:
+            ws.state.user_lang = _lang_from_ws(ws)
+        except Exception:
+            pass
         api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
         if not api_key:
             await ws.send_json(
@@ -5856,8 +5901,9 @@ async def ws_live(ws: WebSocket) -> None:
             m = str(m or "").strip()
             if not m:
                 continue
-            expanded.append(_normalize_models_prefix(m))
+            # Prefer unprefixed names first. Some endpoints reject the `models/` prefix.
             expanded.append(_normalize_model_name(m))
+            expanded.append(_normalize_models_prefix(m))
 
         seen: set[str] = set()
         model_candidates = [m for m in expanded if m and not (m in seen or seen.add(m))]
@@ -5876,11 +5922,11 @@ async def ws_live(ws: WebSocket) -> None:
                 await _gemini_to_ws_loop(ws2, session2)
             except Exception as e:
                 model_used = getattr(ws2.state, "gemini_live_model", None) or (GEMINI_LIVE_MODEL_OVERRIDE or GEMINI_LIVE_MODEL_DEFAULT)
-                classified = _classify_gemini_live_error(e, str(model_used))
+                classified = _classify_gemini_live_error(e, _normalize_model_name(str(model_used)))
                 if classified.get("kind") == "gemini_model_not_found":
                     logger.warning(
                         "gemini_to_ws_failed_model_not_found model=%s error=%s",
-                        model_used,
+                        _normalize_model_name(str(model_used)),
                         classified.get("detail"),
                     )
                 else:
@@ -5918,6 +5964,10 @@ async def ws_live(ws: WebSocket) -> None:
                     ws.state.gemini_live_session = session
                     await ws.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
                     connected_sent = True
+                    try:
+                        await _emit_live_connect_greeting(ws)
+                    except Exception:
+                        pass
 
                     to_gemini = asyncio.create_task(_ws_to_gemini_loop(ws, session), name="ws_to_gemini")
                     to_ws = asyncio.create_task(_safe_gemini_to_ws_loop(ws, session), name="gemini_to_ws")
@@ -5999,64 +6049,38 @@ async def ws_live(ws: WebSocket) -> None:
 
         if last_error is not None:
             msg = str(last_error)
-            if "invalid argument" not in msg.lower():
-                model_used = getattr(ws.state, "gemini_live_model", None) or (GEMINI_LIVE_MODEL_OVERRIDE or GEMINI_LIVE_MODEL_DEFAULT)
-                classified = _classify_gemini_live_error(last_error, str(model_used))
-                if classified.get("kind") == "gemini_model_not_found":
-                    logger.warning(
-                        "gemini_live_session_model_not_found model=%s error=%s",
-                        model_used,
-                        classified.get("detail"),
-                    )
-                    try:
-                        await ws.send_json({"type": "error", **classified})
-                    except Exception:
-                        pass
-                    await _ws_local_only_loop(ws)
-                    return
-                else:
-                    logger.exception("gemini_live_session_failed model=%s error=%s", model_used, msg)
-                    try:
-                        await ws.send_json({"type": "error", **classified})
-                    except Exception:
-                        pass
-                    await _ws_local_only_loop(ws)
-                    return
-            else:
+            model_used = getattr(ws.state, "gemini_live_model", None) or (GEMINI_LIVE_MODEL_OVERRIDE or GEMINI_LIVE_MODEL_DEFAULT)
+            model_used_norm = _normalize_model_name(str(model_used))
+
+            if "invalid argument" in msg.lower():
                 cfg = dict(base_config)
                 cfg["response_modalities"] = ["AUDIO"]
-                model_used = getattr(ws.state, "gemini_live_model", None) or (GEMINI_LIVE_MODEL_OVERRIDE or GEMINI_LIVE_MODEL_DEFAULT)
                 logger.warning(
                     "gemini_live_connect_retry_invalid_argument model=%s before=%s after=%s error=%s",
-                    model_used,
+                    model_used_norm,
                     base_config.get("response_modalities"),
                     cfg.get("response_modalities"),
                     msg,
                 )
-                await _run_with_config(str(model_used), cfg)
+                await _run_with_config(str(model_used_norm), cfg)
+                return
 
-    except WebSocketDisconnect:
-        return
-    except Exception as e:
-        classified: Optional[dict[str, Any]] = None
-        try:
-            if "_classify_gemini_live_error" in locals():
-                model_used = getattr(ws.state, "gemini_live_model", None) or (GEMINI_LIVE_MODEL_OVERRIDE or GEMINI_LIVE_MODEL_DEFAULT)
-                classified = _classify_gemini_live_error(e, str(model_used))
-        except Exception:
-            classified = None
-        try:
-            if classified is not None:
-                await ws.send_json({"type": "error", **classified})
-        except Exception:
-            pass
-        if classified and classified.get("kind") == "gemini_model_not_found":
-            model_used = getattr(ws.state, "gemini_live_model", None) or (GEMINI_LIVE_MODEL_OVERRIDE or GEMINI_LIVE_MODEL_DEFAULT)
-            logger.warning("ws_live_model_not_found model=%s error=%s", model_used, classified.get("detail"))
+            classified = _classify_gemini_live_error(last_error, model_used_norm)
+            if classified.get("kind") == "gemini_model_not_found":
+                logger.warning(
+                    "gemini_live_connect_failed_model_not_found model=%s error=%s",
+                    model_used_norm,
+                    classified.get("detail"),
+                )
+            else:
+                logger.exception("gemini_live_session_failed model=%s error=%s", model_used_norm, msg)
+
             try:
                 await ws.send_json({"type": "error", **classified})
             except Exception:
                 pass
+
+            # Keep the client ws connected even if Gemini is unavailable.
             if not connected_sent:
                 try:
                     await ws.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
@@ -6068,11 +6092,20 @@ async def ws_live(ws: WebSocket) -> None:
                 return
             return
 
-        logger.exception("ws_live_exception")
+        # No candidates worked and no error captured: keep the client alive.
         try:
-            await ws.send_json({"type": "error", "message": str(e)})
+            if not connected_sent:
+                await ws.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
+                try:
+                    await _emit_live_connect_greeting(ws)
+                except Exception:
+                    pass
         except Exception:
             pass
+        try:
+            await _ws_local_only_loop(ws)
+        except WebSocketDisconnect:
+            return
         return
     finally:
         s = _ws_by_user.get(user_id)

@@ -64,12 +64,30 @@ export default function App() {
     };
     liveService.current.onMessage = (msg) => {
       setMessages((prev) => {
+        const isErr = msg.id.endsWith('_err') || msg.id.includes('_attach_err_');
+        const isConnectedState = msg.id.endsWith('_state') && String(msg.text || '').toLowerCase() === 'connected';
+        const shouldClearStickyErrors = isConnectedState || (!isErr && prev.length > 0);
+
+        const cleanedPrev = shouldClearStickyErrors
+          ? prev.filter((m) => {
+              const isPrevErr = m.id.endsWith('_err');
+              const txt = String(m.text || '').toLowerCase();
+              if (!isPrevErr) return true;
+              // Clear stale live-model errors once we've reconnected or received normal traffic.
+              if (txt.includes('gemini_live_model_not_found') || txt.includes('gemini_live_model_not_found'.replace(/_/g, ' '))) {
+                return false;
+              }
+              if (txt === 'gemini_live_model_not_found') return false;
+              return true;
+            })
+          : prev;
+
         const isTranscript = msg.id.endsWith('_tr');
-        if (!isTranscript || prev.length === 0) {
-          return [msg, ...prev];
+        if (!isTranscript || cleanedPrev.length === 0) {
+          return [msg, ...cleanedPrev];
         }
 
-        const head = prev[0];
+        const head = cleanedPrev[0];
         const headIsTranscript = head.id.endsWith('_tr');
         const sameSource = (head.metadata?.source || 'input') === (msg.metadata?.source || 'input');
         const closeInTime = Math.abs(msg.timestamp.getTime() - head.timestamp.getTime()) < 5000;
@@ -78,10 +96,10 @@ export default function App() {
           const prevText = String(head.text || '');
           const nextText = String(msg.text || '');
           const merged = prevText.endsWith(nextText) ? prevText : `${prevText} ${nextText}`.trim();
-          return [{ ...head, text: merged, timestamp: msg.timestamp }, ...prev.slice(1)];
+          return [{ ...head, text: merged, timestamp: msg.timestamp }, ...cleanedPrev.slice(1)];
         }
 
-        return [msg, ...prev];
+        return [msg, ...cleanedPrev];
       });
       if (msg.metadata) {
         setActiveMedia(msg);
