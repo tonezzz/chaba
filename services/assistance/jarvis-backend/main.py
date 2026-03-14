@@ -197,8 +197,16 @@ CARS_CROPS_DIR = os.path.join(CARS_DATA_DIR, "cars")
 
 AGENTS_DIR = str(os.getenv("JARVIS_AGENTS_DIR") or "/app/agents").strip() or "/app/agents"
 
-DEFAULT_USER_ID = str(os.getenv("JARVIS_DEFAULT_USER_ID") or "default").strip() or "default"
-DEFAULT_TIMEZONE = str(os.getenv("JARVIS_DEFAULT_TIMEZONE") or "Asia/Bangkok").strip() or "Asia/Bangkok"
+DEFAULT_USER_ID = os.getenv("DEFAULT_USER_ID", "default")
+DEFAULT_TIMEZONE = os.getenv("DEFAULT_TIMEZONE", "Asia/Bangkok")
+
+LEGACY_REMINDER_NOTIFICATIONS_ENABLED = str(os.getenv("JARVIS_LEGACY_REMINDER_NOTIFICATIONS_ENABLED", "0")).strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
+
 MORNING_BRIEF_HOUR = int(str(os.getenv("JARVIS_MORNING_BRIEF_HOUR") or "8").strip() or "8")
 MORNING_BRIEF_MINUTE = int(str(os.getenv("JARVIS_MORNING_BRIEF_MINUTE") or "0").strip() or "0")
 
@@ -547,12 +555,8 @@ async def _handle_pending_reminder_set_time(ws: WebSocket, text: str) -> bool:
     if not isinstance(pending, dict):
         return False
     rid = str(pending.get("reminder_id") or "").strip()
-    if not rid:
-        try:
-            ws.state.pending_reminder_set_time = None
-        except Exception:
-            pass
-        return False
+    pending_title = str(pending.get("title") or "").strip()
+    pending_source_text = str(pending.get("source_text") or "").strip()
 
     raw = str(text or "").strip()
     s = " ".join(raw.split())
@@ -582,6 +586,45 @@ async def _handle_pending_reminder_set_time(ws: WebSocket, text: str) -> bool:
         ws.state.pending_reminder_set_time = None
     except Exception:
         pass
+
+    # Calendar cutover: if this pending draft has no local reminder_id, create a Google Calendar event.
+    if not rid:
+        title = pending_title or "Reminder"
+        source_text = pending_source_text or s
+        try:
+            cal = await _google_calendar_create_reminder_event(title=title, due_at_utc=due_at_utc, tz=tz, source_text=source_text)
+        except Exception as e:
+            msg = f"สร้างการแจ้งเตือนไม่สำเร็จ: {e}"
+            try:
+                await _ws_send_json(ws, {"type": "text", "text": msg})
+            except Exception:
+                pass
+            try:
+                await _live_say(ws, msg)
+            except Exception:
+                pass
+            return True
+
+        await _ws_send_json(
+            ws,
+            {
+                "type": "reminder_setup",
+                "title": title,
+                "reminder_id": None,
+                "result": {"ok": True, "calendar": cal, "local_time": local_iso, "timezone": tz.key},
+                "instance_id": INSTANCE_ID,
+            },
+        )
+        msg = f"โอเค สร้างการแจ้งเตือนในปฏิทินแล้ว: {title} เป็น {local_iso or s}"
+        try:
+            await _ws_send_json(ws, {"type": "text", "text": msg})
+        except Exception:
+            pass
+        try:
+            await _live_say(ws, msg)
+        except Exception:
+            pass
+        return True
 
     notify_at_local = _next_morning_brief_at(now, tz, due_at_utc)
     notify_at_ts = int(notify_at_local.astimezone(timezone.utc).timestamp())
@@ -1533,90 +1576,6 @@ async def _weaviate_ensure_schema() -> None:
     _weaviate_schema_ready = True
 
 
-async def _weaviate_upsert_memory_item(
-    *,
-    external_key: str,
-    kind: str,
-    title: str,
-    body: str,
-    status: str,
-    due_at: Optional[int],
-    notify_at: Optional[int],
-    hide_until: Optional[int] = None,
-    timezone_name: str,
-    source: str,
-) -> dict[str, Any]:
-    await _weaviate_ensure_schema()
-    now_ts = int(time.time())
-    obj_id = _weaviate_object_uuid(external_key)
-
-    vector_text = "\n".join([str(kind), str(title), str(body)]).strip()
-    try:
-        vector = await _gemini_embed_text_cached(vector_text)
-    except Exception as e:
-        logger.warning("weaviate_embed_failed_fallback error=%s", str(e))
-        vector = _pseudo_embed_vector(vector_text)
-
-    exists = False
-    existing_created_at: Optional[float] = None
-    try:
-        existing = await _weaviate_request("GET", f"/v1/objects/JarvisMemoryItem/{obj_id}")
-        if isinstance(existing, dict):
-            exists = True
-            props0 = existing.get("properties")
-            if isinstance(props0, dict) and props0.get("created_at") is not None:
-                try:
-                    existing_created_at = float(props0.get("created_at"))
-                except Exception:
-                    existing_created_at = None
-    except HTTPException as e:
-        # 404 means this is a new object; we must create via POST /v1/objects.
-        if int(getattr(e, "status_code", 0) or 0) != 404:
-            raise
-        exists = False
-        existing_created_at = None
-    except Exception:
-        # Non-HTTP failures (e.g., network) should bubble up to the caller.
-        raise
-
-    props: dict[str, Any] = {
-        "external_key": external_key,
-        "kind": kind,
-        "title": title,
-        "body": body,
-        "status": status,
-        "timezone": timezone_name,
-        "source": source,
-        "updated_at": now_ts,
-    }
-    if due_at is not None:
-        props["due_at"] = float(due_at)
-    if notify_at is not None:
-        props["notify_at"] = float(notify_at)
-    if hide_until is not None:
-        props["hide_until"] = float(hide_until)
-
-    # First write uses created_at; subsequent writes keep the original created_at.
-    if existing_created_at is not None:
-        props["created_at"] = float(existing_created_at)
-    else:
-        props["created_at"] = float(now_ts)
-
-    payload = {
-        "class": "JarvisMemoryItem",
-        "id": obj_id,
-        "properties": props,
-        "vector": vector,
-    }
-
-    if exists:
-        await _weaviate_request("PUT", f"/v1/objects/JarvisMemoryItem/{obj_id}", payload)
-    else:
-        # Weaviate creates objects via POST /v1/objects. PUT /v1/objects/{id} only updates.
-        await _weaviate_request("POST", "/v1/objects", payload)
-    return {"id": obj_id, "external_key": external_key}
-
-
 async def _weaviate_query_upcoming_reminders(*, start_ts: int, end_ts: int, limit: int) -> list[dict[str, Any]]:
     await _weaviate_ensure_schema()
     lim = max(1, min(int(limit or 50), 500))
@@ -2308,7 +2267,6 @@ def _parse_reminder_helper_command(text: str) -> dict[str, Any]:
         elif "yesterday" in tail_s:
             day = "yesterday"
         return {"action": "list", "args": {"status": status, "include_hidden": include_hidden, "day": day}}
-
     if s == "all reminders" or s == "show all reminders":
         return {"action": "list", "args": {"status": "all", "include_hidden": False, "day": "today"}}
     if s.startswith("list all reminders") or s.startswith("show all reminders"):
@@ -2858,89 +2816,21 @@ async def _handle_reminder_setup_trigger(ws: WebSocket, text: str) -> bool:
             pass
         return True
 
-    # Weaviate-authoritative: write local first for reliability, then write-through to Weaviate.
-    schedule_type = "morning_brief"
-    notify_at_local = _next_morning_brief_at(now, tz, due_at_utc)
-    notify_at_utc = notify_at_local.astimezone(timezone.utc)
-    external_key: Optional[str] = None
-
-    reminder_id = _create_reminder(
-        user_id=DEFAULT_USER_ID,
-        title=title,
-        due_at_utc=due_at_utc,
-        tz=tz,
-        schedule_type=schedule_type,
-        notify_at_utc=notify_at_utc,
-        source_text=text,
-        aim_entity_name=None,
-    )
-    try:
-        ws.state.last_reminder_id = reminder_id
-    except Exception:
-        pass
-
-    external_key = f"reminder::{reminder_id}"
-
-    result: Any = {
-        "ok": True,
-        "reminder": {
-            "reminder_id": reminder_id,
-            "schedule_type": schedule_type,
-            "due_at_utc": due_at_utc.replace(tzinfo=timezone.utc).isoformat(),
-            "local_time": local_iso,
-            "timezone": tz.key,
-        },
-    }
-
-    if _weaviate_enabled():
-        try:
-            wv = await _weaviate_upsert_memory_item(
-                external_key=external_key,
-                kind="reminder",
-                title=title,
-                body=text,
-                status="pending",
-                due_at=int(due_at_utc.timestamp()),
-                notify_at=int(notify_at_utc.timestamp()),
-                hide_until=None,
-                timezone_name=tz.key,
-                source="jarvis",
-            )
-            # Store a stable mapping for later debug/sync.
-            try:
-                _init_session_db()
-                with sqlite3.connect(SESSION_DB_PATH) as conn:
-                    conn.execute(
-                        "UPDATE reminders SET aim_entity_name = ?, updated_at = ? WHERE reminder_id = ?",
-                        (external_key, int(time.time()), reminder_id),
-                    )
-                    conn.commit()
-            except Exception:
-                pass
-            result = {**result, "weaviate": wv}
-        except Exception as e:
-            result = {**result, "weaviate": {"ok": False, "error": str(e)}}
-
-    _upsert_agent_status(
-        DEFAULT_USER_ID,
-        "reminder-setup",
-        {
-            "summary": f"created reminder: {title}",
-            "reminder_id": reminder_id,
-            "result": result,
-            "updated_at": int(time.time()),
-        },
-    )
-
+    cal = await _google_calendar_create_reminder_event(title=title, due_at_utc=due_at_utc, tz=tz, source_text=text)
     await _ws_send_json(
         ws,
         {
             "type": "reminder_setup",
             "title": title,
-            "reminder_id": reminder_id,
-            "result": result,
-        }
+            "reminder_id": None,
+            "result": {"ok": True, "calendar": cal, "local_time": local_iso, "timezone": tz.key},
+            "instance_id": INSTANCE_ID,
+        },
     )
+    try:
+        await _live_say(ws, f"สร้างการแจ้งเตือนในปฏิทินแล้ว: {title}" if _text_is_thai(text) else f"Created a calendar reminder: {title}.")
+    except Exception:
+        pass
     return True
 
 
@@ -2997,50 +2887,20 @@ async def _handle_pending_reminder_confirm_or_cancel(ws: WebSocket, text: str) -
         due_at_utc, local_iso = _parse_time_from_text(when, now, tz)
 
     if due_at_utc is None:
-        reminder_id = _create_reminder(
-            user_id=DEFAULT_USER_ID,
-            title=title,
-            due_at_utc=None,
-            tz=tz,
-            schedule_type="unscheduled",
-            notify_at_utc=None,
-            source_text=source_text or s,
-            aim_entity_name=None,
-        )
-        try:
-            ws.state.last_reminder_id = reminder_id
-        except Exception:
-            pass
-        try:
-            ws.state.pending_reminder_set_time = {"reminder_id": reminder_id, "created_at": int(time.time())}
-        except Exception:
-            pass
-        external_key = f"reminder::{reminder_id}"
-        if _weaviate_enabled():
-            try:
-                await _weaviate_upsert_memory_item(
-                    external_key=external_key,
-                    kind="reminder",
-                    title=title,
-                    body=source_text or s,
-                    status="pending",
-                    due_at=None,
-                    notify_at=None,
-                    hide_until=None,
-                    timezone_name=tz.key,
-                    source="jarvis",
-                )
-            except Exception:
-                pass
         ws.state.pending_reminder_setup = None
+        ws.state.pending_reminder_set_time = {
+            "title": title,
+            "source_text": source_text or s,
+            "timezone": tz.key,
+            "created_at": int(time.time()),
+        }
         await ws.send_json(
             {
                 "type": "reminder_setup",
                 "title": title,
-                "reminder_id": reminder_id,
+                "reminder_id": None,
                 "result": {
                     "ok": True,
-                    "reminder": {"reminder_id": reminder_id, "schedule_type": "unscheduled", "timezone": tz.key},
                     "needs_time": True,
                     "hint": "บอกเวลาได้เลย (เช่น วันนี้ 17:00 หรือ พรุ่งนี้ 09:00)" if is_thai else "Set a time (e.g. today 17:00 or tomorrow 09:00).",
                 },
@@ -3060,63 +2920,17 @@ async def _handle_pending_reminder_confirm_or_cancel(ws: WebSocket, text: str) -
             pass
         return True
 
-    schedule_type = "morning_brief"
-    notify_at_local = _next_morning_brief_at(now, tz, due_at_utc)
-    notify_at_utc = notify_at_local.astimezone(timezone.utc)
-    reminder_id = _create_reminder(
-        user_id=DEFAULT_USER_ID,
-        title=title,
-        due_at_utc=due_at_utc,
-        tz=tz,
-        schedule_type=schedule_type,
-        notify_at_utc=notify_at_utc,
-        source_text=source_text or s,
-        aim_entity_name=None,
-    )
-    try:
-        ws.state.last_reminder_id = reminder_id
-    except Exception:
-        pass
-
-    external_key = f"reminder::{reminder_id}"
-    result: Any = {
-        "ok": True,
-        "reminder": {
-            "reminder_id": reminder_id,
-            "schedule_type": schedule_type,
-            "due_at_utc": due_at_utc.replace(tzinfo=timezone.utc).isoformat(),
-            "local_time": local_iso,
-            "timezone": tz.key,
-        },
-    }
-    if _weaviate_enabled():
-        try:
-            wv = await _weaviate_upsert_memory_item(
-                external_key=external_key,
-                kind="reminder",
-                title=title,
-                body=source_text or s,
-                status="pending",
-                due_at=int(due_at_utc.timestamp()),
-                notify_at=int(notify_at_utc.timestamp()),
-                hide_until=None,
-                timezone_name=tz.key,
-                source="jarvis",
-            )
-            result = {**result, "weaviate": wv}
-        except Exception as e:
-            result = {**result, "weaviate": {"ok": False, "error": str(e)}}
-
+    cal = await _google_calendar_create_reminder_event(title=title, due_at_utc=due_at_utc, tz=tz, source_text=source_text or s)
     ws.state.pending_reminder_setup = None
     await _ws_send_json(
         ws,
         {
             "type": "reminder_setup",
             "title": title,
-            "reminder_id": reminder_id,
-            "result": result,
+            "reminder_id": None,
+            "result": {"ok": True, "calendar": cal, "local_time": local_iso, "timezone": tz.key},
             "instance_id": INSTANCE_ID,
-        }
+        },
     )
     try:
         await _live_say(ws, f"ยืนยันแล้ว ฉันสร้างการแจ้งเตือน: {title} แล้ว" if is_thai else f"Confirmed. I created the reminder: {title}.")
@@ -4397,7 +4211,7 @@ async def _startup() -> None:
         await _startup_resync_from_weaviate()
     except Exception as e:
         logger.warning("startup_resync_failed error=%s", e)
-    if _reminder_task is None or _reminder_task.done():
+    if LEGACY_REMINDER_NOTIFICATIONS_ENABLED and (_reminder_task is None or _reminder_task.done()):
         _reminder_task = asyncio.create_task(_reminder_scheduler_loop())
 
 
@@ -4407,6 +4221,43 @@ async def _shutdown() -> None:
     if _reminder_task is not None:
         _reminder_task.cancel()
         _reminder_task = None
+
+
+def _mcp_text_json(result: Any) -> Any:
+    if not isinstance(result, dict):
+        return result
+    content = result.get("content")
+    if not isinstance(content, list) or not content:
+        return result
+    first = content[0] if isinstance(content[0], dict) else None
+    if not isinstance(first, dict):
+        return result
+    text = first.get("text")
+    if not isinstance(text, str) or not text.strip():
+        return result
+    try:
+        return json.loads(text)
+    except Exception:
+        return result
+
+
+async def _google_calendar_create_reminder_event(*, title: str, due_at_utc: datetime, tz: ZoneInfo, source_text: str) -> dict[str, Any]:
+    due_local = due_at_utc.astimezone(tz)
+    end_local = due_local + timedelta(minutes=5)
+    payload: dict[str, Any] = {
+        "summary": str(title or "Reminder").strip() or "Reminder",
+        "description": str(source_text or "").strip(),
+        "start": due_local.isoformat(),
+        "end": end_local.isoformat(),
+        "timezone": tz.key,
+        "reminders_minutes": [10],
+    }
+    await _mcp_tools_call("google-calendar_1mcp_google_calendar_ensure_jarvis_calendar", {})
+    res = await _mcp_tools_call("google-calendar_1mcp_google_calendar_create_event", payload)
+    parsed = _mcp_text_json(res)
+    if isinstance(parsed, dict):
+        return parsed
+    return {"ok": True, "raw": res}
 
 
 def _get_session_state(session_id: str) -> dict[str, Optional[str]]:
@@ -4654,55 +4505,16 @@ async def create_reminder(req: ReminderCreateRequest) -> dict[str, Any]:
         except Exception:
             raise HTTPException(status_code=400, detail="invalid_due_at_utc")
 
-    reminder_id = _create_reminder(
-        user_id=DEFAULT_USER_ID,
-        title=title,
-        due_at_utc=due_at_utc,
-        tz=tz,
-        schedule_type=schedule_type,
-        notify_at_utc=None,
-        source_text=source_text,
-        aim_entity_name=None,
-    )
+    if due_at_utc is None:
+        raise HTTPException(status_code=400, detail="missing_due_at_utc")
 
-    # Attempt Weaviate write-through, but do not fail the create if Weaviate is unavailable.
-    wv: Optional[dict[str, Any]] = None
-    external_key = f"reminder::{reminder_id}"
-    if _weaviate_enabled():
-        try:
-            wv = await _weaviate_upsert_memory_item(
-                external_key=external_key,
-                kind="reminder",
-                title=title,
-                body=source_text,
-                status="pending",
-                due_at=int(due_at_utc.timestamp()) if due_at_utc is not None else None,
-                notify_at=None,
-                hide_until=None,
-                timezone_name=tz.key,
-                source="jarvis",
-            )
-            try:
-                _init_session_db()
-                with sqlite3.connect(SESSION_DB_PATH) as conn:
-                    conn.execute(
-                        "UPDATE reminders SET aim_entity_name = ?, updated_at = ? WHERE reminder_id = ?",
-                        (external_key, int(time.time()), reminder_id),
-                    )
-                    conn.commit()
-            except Exception:
-                pass
-        except Exception as e:
-            wv = {"ok": False, "error": str(e)}
-
-    local = _get_local_reminder_by_id(reminder_id)
+    cal = await _google_calendar_create_reminder_event(title=title, due_at_utc=due_at_utc, tz=tz, source_text=source_text)
     return {
         "ok": True,
         "instance_id": INSTANCE_ID,
-        "reminder_id": reminder_id,
-        "external_key": external_key,
-        "reminder": local,
-        "weaviate": wv,
+        "calendar": cal,
+        "schedule_type": schedule_type,
+        "timezone": tz.key,
     }
 
 
@@ -5865,20 +5677,8 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
                     now = datetime.now(tz=timezone.utc)
                     due_at_utc, _ = _parse_time_from_text(source_text, now, tz)
                     if due_at_utc is not None:
-                        schedule_type = "morning_brief"
-                        notify_at_local = _next_morning_brief_at(now, tz, due_at_utc)
-                        notify_at_utc = notify_at_local.astimezone(timezone.utc)
-                        reminder_id = _create_reminder(
-                            user_id=DEFAULT_USER_ID,
-                            title=title,
-                            due_at_utc=due_at_utc,
-                            tz=tz,
-                            schedule_type=schedule_type,
-                            notify_at_utc=notify_at_utc,
-                            source_text=source_text,
-                            aim_entity_name=title,
-                        )
-                        return {"aim": result, "reminder": {"reminder_id": reminder_id, "schedule_type": schedule_type}}
+                        cal = await _google_calendar_create_reminder_event(title=title, due_at_utc=due_at_utc, tz=tz, source_text=source_text)
+                        return {"aim": result, "calendar": cal}
             except Exception as e:
                 logger.warning("reminder_create_failed error=%s", e)
         return result
