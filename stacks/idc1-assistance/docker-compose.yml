@@ -1925,6 +1925,18 @@ services:
               "tags": ["google", "tasks"],
               "disabled": false
             },
+            "google-sheets": {
+              "command": "node",
+              "args": ["/app/mcp-servers/mcp-google-sheets/server.js"],
+              "env": {
+                "GOOGLE_SHEETS_CLIENT_ID": "$${GOOGLE_SHEETS_CLIENT_ID}",
+                "GOOGLE_SHEETS_CLIENT_SECRET": "$${GOOGLE_SHEETS_CLIENT_SECRET}",
+                "GOOGLE_SHEETS_SCOPES": "$${GOOGLE_SHEETS_SCOPES}",
+                "GOOGLE_SHEETS_TOKEN_PATH": "$${GOOGLE_SHEETS_TOKEN_PATH}"
+              },
+              "tags": ["google", "sheets"],
+              "disabled": false
+            },
             "google-calendar": {
               "command": "node",
               "args": ["/app/mcp-servers/mcp-google-calendar/server.js"],
@@ -1957,6 +1969,10 @@ services:
       GOOGLE_TASKS_CLIENT_SECRET: ${GOOGLE_TASKS_CLIENT_SECRET:-}
       GOOGLE_TASKS_SCOPES: ${GOOGLE_TASKS_SCOPES:-https://www.googleapis.com/auth/tasks}
       GOOGLE_TASKS_TOKEN_PATH: ${GOOGLE_TASKS_TOKEN_PATH:-/root/.config/1mcp/google-tasks.tokens.json}
+      GOOGLE_SHEETS_CLIENT_ID: ${GOOGLE_SHEETS_CLIENT_ID:-${GOOGLE_CLIENT_ID:-}}
+      GOOGLE_SHEETS_CLIENT_SECRET: ${GOOGLE_SHEETS_CLIENT_SECRET:-${GOOGLE_CLIENT_SECRET:-}}
+      GOOGLE_SHEETS_SCOPES: ${GOOGLE_SHEETS_SCOPES:-https://www.googleapis.com/auth/spreadsheets.readonly}
+      GOOGLE_SHEETS_TOKEN_PATH: ${GOOGLE_SHEETS_TOKEN_PATH:-/root/.config/1mcp/google-sheets.tokens.json}
       GOOGLE_CALENDAR_CLIENT_ID: ${GOOGLE_CALENDAR_CLIENT_ID:-${GOOGLE_TASKS_CLIENT_ID:-}}
       GOOGLE_CALENDAR_CLIENT_SECRET: ${GOOGLE_CALENDAR_CLIENT_SECRET:-${GOOGLE_TASKS_CLIENT_SECRET:-}}
       GOOGLE_CALENDAR_SCOPES: ${GOOGLE_CALENDAR_SCOPES:-https://www.googleapis.com/auth/calendar}

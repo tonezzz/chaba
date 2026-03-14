@@ -5,4 +5,6 @@ RUN apk add --no-cache python3 py3-pip ca-certificates curl \
     && /opt/venv/bin/pip install --no-cache-dir --upgrade pip \
     && /opt/venv/bin/pip install --no-cache-dir mcp-server-fetch
 
+COPY ./mcp-servers/mcp-google-sheets/server.js /app/mcp-servers/mcp-google-sheets/server.js
+
 ENV PATH="/opt/venv/bin:${PATH}"
