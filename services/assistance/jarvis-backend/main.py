@@ -350,6 +350,31 @@ class GoogleTasksSequentialSummaryResponse(BaseModel):
     debug: Optional[dict[str, Any]] = None
 
 
+class GoogleTasksCreateTaskRequest(BaseModel):
+    tasklist_id: Optional[str] = None
+    tasklist_title: Optional[str] = None
+    title: str
+    notes: str = ""
+    due: Optional[str] = None
+    confirm: bool = False
+
+
+class GoogleTasksUpdateTaskRequest(BaseModel):
+    tasklist_id: Optional[str] = None
+    tasklist_title: Optional[str] = None
+    task_id: str
+    title: Optional[str] = None
+    notes: Optional[str] = None
+    due: Optional[str] = None
+    status: Optional[str] = None
+    confirm: bool = False
+
+
+class GoogleTasksWriteResponse(BaseModel):
+    ok: bool = True
+    result: dict[str, Any]
+
+
 def _classify_image_generation_error(message: str) -> Optional[dict[str, Any]]:
     msg = str(message or "").strip()
     low = msg.lower()
@@ -4792,6 +4817,122 @@ async def google_tasks_sequential_summary(
         template=template,
         debug=debug_meta if debug else None,
     )
+
+
+async def _resolve_google_tasks_tasklist(*, tasklist_id: Optional[str], tasklist_title: Optional[str]) -> tuple[Optional[str], str]:
+    chosen_tasklist_id = str(tasklist_id or "").strip() or None
+    desired_title = str(tasklist_title or "").strip()
+    if not desired_title:
+        return chosen_tasklist_id, ""
+
+    list_tasklists_meta = MCP_TOOL_MAP.get("google_tasks_list_tasklists") if isinstance(MCP_TOOL_MAP, dict) else None
+    if not isinstance(list_tasklists_meta, dict):
+        raise HTTPException(status_code=500, detail="google_tasks_tools_not_configured")
+    list_tasklists_tool = str(list_tasklists_meta.get("mcp_name") or "").strip()
+    if not list_tasklists_tool:
+        raise HTTPException(status_code=500, detail="google_tasks_tools_not_configured")
+
+    tl_res = await _mcp_tools_call(list_tasklists_tool, {})
+    tl_parsed = _mcp_text_json(tl_res)
+    if isinstance(tl_parsed, dict) and isinstance(tl_parsed.get("data"), dict):
+        tl_parsed = tl_parsed["data"]
+
+    tasklists = tl_parsed.get("items") if isinstance(tl_parsed, dict) else None
+    if not isinstance(tasklists, list) or not tasklists:
+        raise HTTPException(status_code=404, detail="google_tasks_no_tasklists")
+
+    wanted = desired_title.casefold()
+    for tl in tasklists:
+        if not isinstance(tl, dict):
+            continue
+        title = str(tl.get("title") or "").strip()
+        if title.casefold() == wanted:
+            tid = str(tl.get("id") or "").strip() or None
+            if not tid:
+                raise HTTPException(status_code=502, detail="google_tasks_tasklist_missing_id")
+            return tid, title
+
+    raise HTTPException(status_code=404, detail="google_tasks_tasklist_title_not_found")
+
+
+@app.post("/google-tasks/tasks/create", response_model=GoogleTasksWriteResponse)
+async def google_tasks_create_task(req: GoogleTasksCreateTaskRequest) -> GoogleTasksWriteResponse:
+    title = str(req.title or "").strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="missing_title")
+
+    action = "google_tasks_create_task"
+    preview_payload: dict[str, Any] = {
+        "tasklist_id": (str(req.tasklist_id or "").strip() or None),
+        "tasklist_title": (str(req.tasklist_title or "").strip() or None),
+        "title": title,
+        "notes": str(req.notes or ""),
+        "due": str(req.due).strip() if req.due else None,
+    }
+    preview_payload = {k: v for k, v in preview_payload.items() if v is not None}
+    _require_confirmation(bool(req.confirm), action, preview_payload)
+
+    tasklist_id_resolved, _ = await _resolve_google_tasks_tasklist(tasklist_id=req.tasklist_id, tasklist_title=req.tasklist_title)
+    payload: dict[str, Any] = {
+        "tasklist_id": tasklist_id_resolved,
+        "title": title,
+        "notes": str(req.notes or ""),
+        "due": str(req.due).strip() if req.due else None,
+    }
+    payload = {k: v for k, v in payload.items() if v is not None}
+
+    meta = MCP_TOOL_MAP.get(action) if isinstance(MCP_TOOL_MAP, dict) else None
+    if not isinstance(meta, dict):
+        raise HTTPException(status_code=500, detail="google_tasks_tools_not_configured")
+    mcp_name = str(meta.get("mcp_name") or "").strip()
+    if not mcp_name:
+        raise HTTPException(status_code=500, detail="google_tasks_tools_not_configured")
+
+    res = await _mcp_tools_call(mcp_name, payload)
+    parsed = _mcp_text_json(res)
+    return GoogleTasksWriteResponse(ok=True, result=parsed if isinstance(parsed, dict) else {"raw": parsed})
+
+
+@app.post("/google-tasks/tasks/update", response_model=GoogleTasksWriteResponse)
+async def google_tasks_update_task(req: GoogleTasksUpdateTaskRequest) -> GoogleTasksWriteResponse:
+    task_id = str(req.task_id or "").strip()
+    if not task_id:
+        raise HTTPException(status_code=400, detail="missing_task_id")
+
+    action = "google_tasks_update_task"
+    preview_payload: dict[str, Any] = {
+        "tasklist_id": (str(req.tasklist_id or "").strip() or None),
+        "tasklist_title": (str(req.tasklist_title or "").strip() or None),
+        "task_id": task_id,
+        "title": (str(req.title).strip() if req.title is not None else None),
+        "notes": (str(req.notes) if req.notes is not None else None),
+        "due": str(req.due).strip() if req.due else None,
+        "status": (str(req.status).strip() if req.status is not None else None),
+    }
+    preview_payload = {k: v for k, v in preview_payload.items() if v is not None}
+    _require_confirmation(bool(req.confirm), action, preview_payload)
+
+    tasklist_id_resolved, _ = await _resolve_google_tasks_tasklist(tasklist_id=req.tasklist_id, tasklist_title=req.tasklist_title)
+    payload: dict[str, Any] = {
+        "tasklist_id": tasklist_id_resolved,
+        "task_id": task_id,
+        "title": (str(req.title).strip() if req.title is not None else None),
+        "notes": (str(req.notes) if req.notes is not None else None),
+        "due": str(req.due).strip() if req.due else None,
+        "status": (str(req.status).strip() if req.status is not None else None),
+    }
+    payload = {k: v for k, v in payload.items() if v is not None}
+
+    meta = MCP_TOOL_MAP.get(action) if isinstance(MCP_TOOL_MAP, dict) else None
+    if not isinstance(meta, dict):
+        raise HTTPException(status_code=500, detail="google_tasks_tools_not_configured")
+    mcp_name = str(meta.get("mcp_name") or "").strip()
+    if not mcp_name:
+        raise HTTPException(status_code=500, detail="google_tasks_tools_not_configured")
+
+    res = await _mcp_tools_call(mcp_name, payload)
+    parsed = _mcp_text_json(res)
+    return GoogleTasksWriteResponse(ok=True, result=parsed if isinstance(parsed, dict) else {"raw": parsed})
 
 
 @app.get("/daily-brief")
