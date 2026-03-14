@@ -21,6 +21,11 @@ The `/services/assistance/` tree is the source-of-truth for all *Assistance* app
   - `GET /agents`
   - `GET /debug/agents`
   - `GET /daily-brief`
+  - Tasks (sequential checklists):
+    - `POST /tasks/sequential/suggest`
+    - `POST /tasks/sequential/apply_and_suggest`
+  - Google Tasks (read-only):
+    - `GET /google-tasks/sequential/summary`
   - `GET /reminders`
   - `GET /reminders/upcoming`
   - `POST /reminders/{reminder_id}/done`
