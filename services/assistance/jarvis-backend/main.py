@@ -13,6 +13,7 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import db_session
+import mcp_client
 from typing import Any, Optional, Literal
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -3513,21 +3514,7 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
 
 
 def _extract_mcp_text(result: Any) -> str:
-    if not isinstance(result, dict):
-        return ""
-    content = result.get("content")
-    if isinstance(content, list):
-        parts: list[str] = []
-        for c in content:
-            if isinstance(c, dict) and c.get("type") == "text":
-                t = c.get("text")
-                if isinstance(t, str) and t.strip():
-                    parts.append(t)
-        return "\n".join(parts).strip()
-    t2 = result.get("text")
-    if isinstance(t2, str):
-        return t2.strip()
-    return ""
+    return mcp_client.extract_mcp_text(result)
 
 
 async def _mcp_web_fetch_text(url: str, max_length: int = 200000) -> str:
@@ -4424,21 +4411,7 @@ async def _shutdown() -> None:
 
 
 def _mcp_text_json(result: Any) -> Any:
-    if not isinstance(result, dict):
-        return result
-    content = result.get("content")
-    if not isinstance(content, list) or not content:
-        return result
-    first = content[0] if isinstance(content[0], dict) else None
-    if not isinstance(first, dict):
-        return result
-    text = first.get("text")
-    if not isinstance(text, str) or not text.strip():
-        return result
-    try:
-        return json.loads(text)
-    except Exception:
-        return result
+    return mcp_client.mcp_text_json(result)
 
 
 async def _google_calendar_create_reminder_event(*, title: str, due_at_utc: datetime, tz: ZoneInfo, source_text: str) -> dict[str, Any]:
@@ -5694,91 +5667,31 @@ def debug_agents() -> dict[str, Any]:
 
 
 def _parse_sse_first_message_data(text: str) -> dict[str, Any]:
-    # 1MCP returns text/event-stream where each JSON-RPC response is on a `data: {...}` line.
-    for line in (text or "").splitlines():
-        if line.startswith("data: "):
-            try:
-                parsed = json.loads(line[len("data: ") :].strip())
-            except Exception:
-                continue
-            if isinstance(parsed, dict):
-                return parsed
-    return {}
+    return mcp_client.parse_sse_first_message_data(text)
 
 
 async def _mcp_rpc(method: str, params: dict[str, Any]) -> Any:
-    return await _mcp_rpc_base(MCP_BASE_URL, method, params)
+    return await mcp_client.mcp_rpc(MCP_BASE_URL, method, params)
 
 
 async def _aim_mcp_rpc(method: str, params: dict[str, Any]) -> Any:
-    if not AIM_MCP_BASE_URL:
-        raise HTTPException(status_code=500, detail="aim_mcp_base_url_not_configured")
-    return await _mcp_rpc_base(AIM_MCP_BASE_URL, method, params)
+    return await mcp_client.aim_mcp_rpc(AIM_MCP_BASE_URL, method, params)
 
 
 async def _mcp_rpc_base(base_url: str, method: str, params: dict[str, Any]) -> Any:
-    session_id = str(uuid.uuid4())
-    url = f"{base_url}/mcp?sessionId={session_id}"
-
-    async with httpx.AsyncClient(timeout=20.0) as client:
-        init_req = {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "initialize",
-            "params": {
-                "protocolVersion": "2024-11-05",
-                "capabilities": {},
-                "clientInfo": {"name": "jarvis-backend", "version": "0.1"},
-            },
-        }
-        init_res = await client.post(
-            url,
-            json=init_req,
-            headers={"Accept": "application/json, text/event-stream"},
-        )
-        if init_res.status_code >= 400:
-            raise HTTPException(status_code=502, detail={"mcp_initialize_failed": init_res.text})
-
-        mcp_session_id = init_res.headers.get("mcp-session-id") or ""
-        if not mcp_session_id:
-            raise HTTPException(status_code=502, detail="mcp_missing_session_header")
-
-        req = {"jsonrpc": "2.0", "id": 2, "method": method, "params": params}
-        res = await client.post(
-            url,
-            json=req,
-            headers={
-                "Accept": "application/json, text/event-stream",
-                "mcp-session-id": mcp_session_id,
-            },
-        )
-        if res.status_code >= 400:
-            raise HTTPException(status_code=502, detail={"mcp_rpc_failed": res.text})
-
-        msg = _parse_sse_first_message_data(res.text)
-        if msg.get("error") is not None:
-            raise HTTPException(status_code=502, detail={"mcp_error": msg.get("error")})
-        return msg.get("result")
+    return await mcp_client.mcp_rpc_base(base_url, method, params)
 
 
 async def _mcp_tools_list() -> list[dict[str, Any]]:
-    result = await _mcp_rpc("tools/list", {})
-    tools = result.get("tools") if isinstance(result, dict) else None
-    if not isinstance(tools, list):
-        return []
-    out: list[dict[str, Any]] = []
-    for t in tools:
-        if isinstance(t, dict) and isinstance(t.get("name"), str):
-            out.append(t)
-    return out
+    return await mcp_client.mcp_tools_list(MCP_BASE_URL)
 
 
 async def _mcp_tools_call(name: str, arguments: dict[str, Any]) -> Any:
-    return await _mcp_rpc("tools/call", {"name": name, "arguments": arguments})
+    return await mcp_client.mcp_tools_call(MCP_BASE_URL, name, arguments)
 
 
 async def _aim_mcp_tools_call(name: str, arguments: dict[str, Any]) -> Any:
-    return await _aim_mcp_rpc("tools/call", {"name": name, "arguments": arguments})
+    return await mcp_client.aim_mcp_tools_call(AIM_MCP_BASE_URL, name, arguments)
 
 
 async def _web_fetcher_post(path: str, payload: Any) -> Any:
