@@ -413,6 +413,29 @@ class GoogleTasksUndoResponse(BaseModel):
     results: list[dict[str, Any]]
 
 
+class GoogleCalendarUndoItem(BaseModel):
+    undo_id: str
+    created_at: int
+    action: str
+    event_id: Optional[str] = None
+
+
+class GoogleCalendarUndoListResponse(BaseModel):
+    ok: bool = True
+    items: list[GoogleCalendarUndoItem]
+
+
+class GoogleCalendarUndoLastRequest(BaseModel):
+    n: int = 1
+    confirm: bool = False
+
+
+class GoogleCalendarUndoResponse(BaseModel):
+    ok: bool = True
+    undone: int
+    results: list[dict[str, Any]]
+
+
 def _classify_image_generation_error(message: str) -> Optional[dict[str, Any]]:
     msg = str(message or "").strip()
     low = msg.lower()
@@ -1363,6 +1386,18 @@ def _init_session_db() -> None:
               action TEXT NOT NULL,
               tasklist_id TEXT,
               task_id TEXT,
+              before_json TEXT,
+              after_json TEXT
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS google_calendar_undo (
+              undo_id TEXT PRIMARY KEY,
+              created_at INTEGER NOT NULL,
+              action TEXT NOT NULL,
+              event_id TEXT,
               before_json TEXT,
               after_json TEXT
             )
@@ -4987,28 +5022,153 @@ def _google_tasks_undo_pop_last(n: int) -> list[dict[str, Any]]:
             (nn,),
         )
         rows = cur.fetchall() or []
-        for row in rows:
-            conn.execute("DELETE FROM google_tasks_undo WHERE undo_id = ?", (row[0],))
+        ids = [r[0] for r in rows if isinstance(r, (list, tuple)) and r and r[0]]
+        if ids:
+            conn.executemany("DELETE FROM google_tasks_undo WHERE undo_id = ?", [(i,) for i in ids])
         conn.commit()
+
     out: list[dict[str, Any]] = []
-    for undo_id, created_at, action, tasklist_id, task_id, before_json, after_json in rows:
-        before: Any = None
-        after: Any = None
+    for r in rows:
+        if not isinstance(r, (list, tuple)) or len(r) < 7:
+            continue
+        before = None
+        after = None
         try:
-            before = json.loads(before_json) if before_json else None
+            before = json.loads(r[5]) if r[5] else None
         except Exception:
-            before = before_json
+            before = None
         try:
-            after = json.loads(after_json) if after_json else None
+            after = json.loads(r[6]) if r[6] else None
         except Exception:
-            after = after_json
+            after = None
         out.append(
             {
-                "undo_id": undo_id,
-                "created_at": int(created_at or 0),
-                "action": str(action or ""),
-                "tasklist_id": (str(tasklist_id) if tasklist_id else None),
-                "task_id": (str(task_id) if task_id else None),
+                "undo_id": r[0],
+                "created_at": int(r[1] or 0),
+                "action": r[2],
+                "tasklist_id": r[3],
+                "task_id": r[4],
+                "before": before,
+                "after": after,
+            }
+        )
+    return out
+
+
+async def _google_calendar_fetch_event(*, event_id: str) -> Optional[dict[str, Any]]:
+    eid = str(event_id or "").strip()
+    if not eid:
+        return None
+
+    meta = MCP_TOOL_MAP.get("google_calendar_list_events") if isinstance(MCP_TOOL_MAP, dict) else None
+    if not isinstance(meta, dict):
+        return None
+    list_events_tool = str(meta.get("mcp_name") or "").strip()
+    if not list_events_tool:
+        return None
+
+    res = await _mcp_tools_call(list_events_tool, {"max_results": 250, "single_events": True, "order_by": "updated"})
+    parsed = _mcp_text_json(res)
+    if not isinstance(parsed, dict):
+        return None
+    data = parsed.get("data")
+    if not isinstance(data, dict):
+        return None
+    items = data.get("items")
+    if not isinstance(items, list):
+        return None
+    for it in items:
+        if isinstance(it, dict) and str(it.get("id") or "").strip() == eid:
+            return it
+    return None
+
+
+def _google_calendar_undo_log(action: str, event_id: Optional[str], before: Any, after: Any) -> str:
+    _init_session_db()
+    undo_id = f"gcu_{int(time.time())}_{os.urandom(6).hex()}"
+    created_at = int(time.time())
+    before_json = json.dumps(before, ensure_ascii=False) if before is not None else ""
+    after_json = json.dumps(after, ensure_ascii=False) if after is not None else ""
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        conn.execute(
+            "INSERT INTO google_calendar_undo(undo_id, created_at, action, event_id, before_json, after_json) VALUES(?, ?, ?, ?, ?, ?)",
+            (undo_id, created_at, action, event_id, before_json, after_json),
+        )
+        conn.commit()
+    return undo_id
+
+
+def _google_calendar_undo_list(limit: int) -> list[dict[str, Any]]:
+    _init_session_db()
+    lim = max(1, min(int(limit or 10), 100))
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        cur = conn.execute(
+            "SELECT undo_id, created_at, action, event_id, before_json, after_json FROM google_calendar_undo ORDER BY created_at DESC LIMIT ?",
+            (lim,),
+        )
+        rows = cur.fetchall() or []
+
+    out: list[dict[str, Any]] = []
+    for r in rows:
+        if not isinstance(r, (list, tuple)) or len(r) < 6:
+            continue
+        before = None
+        after = None
+        try:
+            before = json.loads(r[4]) if r[4] else None
+        except Exception:
+            before = None
+        try:
+            after = json.loads(r[5]) if r[5] else None
+        except Exception:
+            after = None
+        out.append(
+            {
+                "undo_id": r[0],
+                "created_at": int(r[1] or 0),
+                "action": r[2],
+                "event_id": r[3],
+                "before": before,
+                "after": after,
+            }
+        )
+    return out
+
+
+def _google_calendar_undo_pop_last(n: int) -> list[dict[str, Any]]:
+    _init_session_db()
+    nn = max(1, min(int(n or 1), 50))
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        cur = conn.execute(
+            "SELECT undo_id, created_at, action, event_id, before_json, after_json FROM google_calendar_undo ORDER BY created_at DESC LIMIT ?",
+            (nn,),
+        )
+        rows = cur.fetchall() or []
+        ids = [r[0] for r in rows if isinstance(r, (list, tuple)) and r and r[0]]
+        if ids:
+            conn.executemany("DELETE FROM google_calendar_undo WHERE undo_id = ?", [(i,) for i in ids])
+        conn.commit()
+
+    out: list[dict[str, Any]] = []
+    for r in rows:
+        if not isinstance(r, (list, tuple)) or len(r) < 6:
+            continue
+        before = None
+        after = None
+        try:
+            before = json.loads(r[4]) if r[4] else None
+        except Exception:
+            before = None
+        try:
+            after = json.loads(r[5]) if r[5] else None
+        except Exception:
+            after = None
+        out.append(
+            {
+                "undo_id": r[0],
+                "created_at": int(r[1] or 0),
+                "action": r[2],
+                "event_id": r[3],
                 "before": before,
                 "after": after,
             }
@@ -5271,6 +5431,102 @@ async def google_tasks_undo_last(req: GoogleTasksUndoLastRequest) -> GoogleTasks
         results.append({"undo_id": item.get("undo_id"), "skipped": True, "reason": "insufficient_undo_data", "action": orig_action})
 
     return GoogleTasksUndoResponse(ok=True, undone=len(results), results=results)
+
+
+@app.get("/google-calendar/undo/list", response_model=GoogleCalendarUndoListResponse)
+async def google_calendar_undo_list(limit: int = 10) -> GoogleCalendarUndoListResponse:
+    items = _google_calendar_undo_list(limit)
+    return GoogleCalendarUndoListResponse(ok=True, items=[GoogleCalendarUndoItem(**i) for i in items])
+
+
+@app.post("/google-calendar/undo/last", response_model=GoogleCalendarUndoResponse)
+async def google_calendar_undo_last(req: GoogleCalendarUndoLastRequest) -> GoogleCalendarUndoResponse:
+    n = max(1, min(int(req.n or 1), 50))
+    action = "google_calendar_undo_last"
+    _require_confirmation(bool(req.confirm), action, {"n": n})
+
+    popped = _google_calendar_undo_pop_last(n)
+    results: list[dict[str, Any]] = []
+
+    for item in popped:
+        orig_action = str(item.get("action") or "")
+        event_id = str(item.get("event_id") or "").strip() or None
+        before = item.get("before")
+
+        if orig_action == "google_calendar_create_event" and event_id:
+            meta = MCP_TOOL_MAP.get("google_calendar_delete_event") if isinstance(MCP_TOOL_MAP, dict) else None
+            mcp_name = str(meta.get("mcp_name") or "").strip() if isinstance(meta, dict) else ""
+            if not mcp_name:
+                raise HTTPException(status_code=500, detail="google_calendar_tools_not_configured")
+            res = await _mcp_tools_call(mcp_name, {"event_id": event_id})
+            results.append({"undo_id": item.get("undo_id"), "undone": "delete_created_event", "result": _mcp_text_json(res)})
+            continue
+
+        if orig_action == "google_calendar_update_event" and event_id and isinstance(before, dict):
+            meta = MCP_TOOL_MAP.get("google_calendar_update_event") if isinstance(MCP_TOOL_MAP, dict) else None
+            mcp_name = str(meta.get("mcp_name") or "").strip() if isinstance(meta, dict) else ""
+            if not mcp_name:
+                raise HTTPException(status_code=500, detail="google_calendar_tools_not_configured")
+            payload: dict[str, Any] = {"event_id": event_id}
+            for k_src, k_dst in (
+                ("summary", "summary"),
+                ("description", "description"),
+            ):
+                if k_src in before:
+                    payload[k_dst] = before.get(k_src)
+            if isinstance(before.get("start"), dict) and before["start"].get("dateTime"):
+                payload["start"] = before["start"].get("dateTime")
+            elif isinstance(before.get("start"), dict) and before["start"].get("date"):
+                payload["start"] = before["start"].get("date")
+            if isinstance(before.get("end"), dict) and before["end"].get("dateTime"):
+                payload["end"] = before["end"].get("dateTime")
+            elif isinstance(before.get("end"), dict) and before["end"].get("date"):
+                payload["end"] = before["end"].get("date")
+            tz = None
+            if isinstance(before.get("start"), dict):
+                tz = before["start"].get("timeZone")
+            if tz:
+                payload["timezone"] = tz
+            res = await _mcp_tools_call(mcp_name, {k: v for k, v in payload.items() if v is not None})
+            results.append({"undo_id": item.get("undo_id"), "undone": "revert_event", "result": _mcp_text_json(res)})
+            continue
+
+        if orig_action == "google_calendar_delete_event" and isinstance(before, dict):
+            meta = MCP_TOOL_MAP.get("google_calendar_create_event") if isinstance(MCP_TOOL_MAP, dict) else None
+            mcp_name = str(meta.get("mcp_name") or "").strip() if isinstance(meta, dict) else ""
+            if not mcp_name:
+                raise HTTPException(status_code=500, detail="google_calendar_tools_not_configured")
+            payload: dict[str, Any] = {
+                "summary": str(before.get("summary") or ""),
+                "description": str(before.get("description") or ""),
+            }
+            if isinstance(before.get("start"), dict) and before["start"].get("dateTime"):
+                payload["start"] = before["start"].get("dateTime")
+            elif isinstance(before.get("start"), dict) and before["start"].get("date"):
+                payload["start"] = before["start"].get("date")
+            if isinstance(before.get("end"), dict) and before["end"].get("dateTime"):
+                payload["end"] = before["end"].get("dateTime")
+            elif isinstance(before.get("end"), dict) and before["end"].get("date"):
+                payload["end"] = before["end"].get("date")
+            tz = None
+            if isinstance(before.get("start"), dict):
+                tz = before["start"].get("timeZone")
+            if tz:
+                payload["timezone"] = tz
+            res = await _mcp_tools_call(mcp_name, {k: v for k, v in payload.items() if v is not None and str(v) != ""})
+            results.append(
+                {
+                    "undo_id": item.get("undo_id"),
+                    "undone": "recreate_deleted_event",
+                    "result": _mcp_text_json(res),
+                    "note": "recreated_event_has_new_id",
+                }
+            )
+            continue
+
+        results.append({"undo_id": item.get("undo_id"), "skipped": True, "reason": "insufficient_undo_data", "action": orig_action})
+
+    return GoogleCalendarUndoResponse(ok=True, undone=len(results), results=results)
 
 
 @app.get("/daily-brief")
@@ -6444,7 +6700,29 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             if mcp_base == "aim":
                 adapted = _adapt_aim_tool_args(original_tool_name or "", dict(mcp_args))
                 return await _aim_mcp_tools_call(mcp_name, adapted)
-            return await _mcp_tools_call(mcp_name, mcp_args)
+            before_event: Optional[dict[str, Any]] = None
+            event_id = str(mcp_args.get("event_id") or "").strip() or None
+            if original_tool_name in ("google_calendar_update_event", "google_calendar_delete_event") and event_id:
+                before_event = await _google_calendar_fetch_event(event_id=event_id)
+
+            res = await _mcp_tools_call(mcp_name, mcp_args)
+            parsed = _mcp_text_json(res)
+
+            if original_tool_name == "google_calendar_create_event":
+                created_event_id: Optional[str] = None
+                if isinstance(parsed, dict):
+                    data_obj = parsed.get("data") if isinstance(parsed.get("data"), dict) else None
+                    if isinstance(data_obj, dict):
+                        created_event_id = str(data_obj.get("id") or "").strip() or None
+                after_event = await _google_calendar_fetch_event(event_id=created_event_id) if created_event_id else None
+                _google_calendar_undo_log("google_calendar_create_event", created_event_id, before=None, after=after_event)
+            elif original_tool_name == "google_calendar_update_event":
+                after_event = await _google_calendar_fetch_event(event_id=event_id) if event_id else None
+                _google_calendar_undo_log("google_calendar_update_event", event_id, before=before_event, after=after_event)
+            elif original_tool_name == "google_calendar_delete_event":
+                _google_calendar_undo_log("google_calendar_delete_event", event_id, before=before_event, after=None)
+
+            return res
         raise HTTPException(status_code=400, detail={"unknown_pending_action": action})
 
     if tool_name == "pending_cancel":

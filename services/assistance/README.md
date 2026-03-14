@@ -38,6 +38,10 @@ The `/services/assistance/` tree is the source-of-truth for all *Assistance* app
     - `GET /google-tasks/undo/list`
     - `POST /google-tasks/undo/last`
       - note: undoing delete recreates the task (new task ID)
+  - Google Calendar (undo, requires `confirm=true`):
+    - `GET /google-calendar/undo/list`
+    - `POST /google-calendar/undo/last`
+      - note: undoing delete recreates the event (new event ID)
   - `GET /reminders`
   - `GET /reminders/upcoming`
   - `POST /reminders/{reminder_id}/done`
