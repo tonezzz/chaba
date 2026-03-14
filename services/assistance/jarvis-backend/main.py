@@ -52,6 +52,32 @@ load_dotenv()
 GEMINI_LIVE_MODEL_OVERRIDE = str(os.getenv("GEMINI_LIVE_MODEL") or "").strip()
 GEMINI_LIVE_MODEL_DEFAULT = "gemini-2.5-flash-native-audio-preview-12-2025"
 
+JARVIS_GEM_DEFAULT = str(os.getenv("JARVIS_GEM_DEFAULT") or "").strip() or "default"
+
+_JARVIS_GEMS: dict[str, str] = {
+    "default": "",
+    "triage": (
+        "You are Jarvis in triage mode. Ask only the minimum clarifying questions. "
+        "Prefer short, actionable steps. If the user provides logs/errors, summarize the likely cause and the next diagnostic step."
+    ),
+    "writer": (
+        "You are Jarvis in writing mode. Produce polished text. "
+        "Use clear structure. Avoid filler. Maintain the user's language."
+    ),
+}
+
+
+def _resolve_gem_name(value: str | None) -> str:
+    name = str(value or "").strip().lower() or JARVIS_GEM_DEFAULT
+    if name in _JARVIS_GEMS:
+        return name
+    return "default"
+
+
+def _gem_instruction(name: str | None) -> str:
+    resolved = _resolve_gem_name(name)
+    return str(_JARVIS_GEMS.get(resolved) or "").strip()
+
 _REMINDER_TITLE_MODEL_SINGLE = (
     str(os.getenv("JARVIS_REMINDER_TITLE_MODEL") or os.getenv("GEMINI_TEXT_MODEL") or "gemini-2.0-flash").strip()
     or "gemini-2.0-flash"
@@ -265,6 +291,19 @@ class ImageGenerateResponse(BaseModel):
     mime_type: str
     sha256: str
     data_url: Optional[str] = None
+
+
+class GemDemoRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=8000)
+    gem: Optional[str] = None
+    model: Optional[str] = None
+
+
+class GemDemoResponse(BaseModel):
+    ok: bool = True
+    gem: str
+    model: str
+    text: str
 
 
 class SequentialSuggestRequest(BaseModel):
@@ -4487,6 +4526,28 @@ def health() -> dict[str, Any]:
     return {"ok": True, "service": "jarvis-backend", "instance_id": INSTANCE_ID, "weaviate_enabled": _weaviate_enabled()}
 
 
+@app.post("/gem/demo", response_model=GemDemoResponse)
+async def gem_demo(req: GemDemoRequest) -> GemDemoResponse:
+    api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
+    if not api_key:
+        raise HTTPException(status_code=500, detail="missing_api_key")
+
+    gem_name = _resolve_gem_name(req.gem)
+    extra = _gem_instruction(gem_name)
+    system_instruction = "You are Jarvis. Respond to the user with ONLY the final answer."
+    if extra:
+        system_instruction = system_instruction + "\n" + extra
+
+    model = _normalize_model_name(str(req.model or os.getenv("GEMINI_TEXT_MODEL") or "gemini-2.0-flash").strip() or "gemini-2.0-flash")
+    client = genai.Client(api_key=api_key)
+    cfg = {"system_instruction": system_instruction}
+    res = await client.aio.models.generate_content(model=model, contents=str(req.text), config=cfg)
+    txt = getattr(res, "text", None)
+    if txt is None:
+        txt = str(res)
+    return GemDemoResponse(gem=gem_name, model=model, text=str(txt or "").strip())
+
+
 @app.get("/agents")
 def list_agents() -> dict[str, Any]:
     agents = _agents_snapshot()
@@ -7089,6 +7150,8 @@ async def ws_live(ws: WebSocket) -> None:
         tz = _get_user_timezone(DEFAULT_USER_ID)
         now_utc = datetime.now(tz=timezone.utc)
         now_local = now_utc.astimezone(tz)
+        gem_name = _resolve_gem_name(str(ws.query_params.get("gem") or "").strip() or None)
+        gem_extra = _gem_instruction(gem_name)
         system_instruction = (
             "You are Jarvis. Respond to the user with ONLY the final answer. "
             "Do NOT reveal internal reasoning, planning, debugging, tool selection, or step-by-step thoughts. "
@@ -7103,6 +7166,9 @@ async def ws_live(ws: WebSocket) -> None:
             f"NOW_LOCAL: {now_local.isoformat()}\n"
             "Use this as the reference for all relative time calculations."
         )
+
+        if gem_extra:
+            system_instruction = system_instruction + "\n\n" + gem_extra
 
         base_config = {
             "response_modalities": ["AUDIO", "TEXT"],
