@@ -104,7 +104,29 @@ flowchart LR
   end
 ```
 
-## 6) WebSocket contract (high-level)
+## 6) Google Tasks (MCP proxy flow)
+
+```mermaid
+flowchart LR
+  FE[Jarvis Frontend]
+  BE[Jarvis Backend]
+  MCP[1MCP Gateway (mcp-bundle)]
+  GT[mcp-google-tasks (stdio subprocess)]
+  TOK[(Token store: /root/.config/1mcp/google-tasks.tokens.json)]
+  GAPI[Google Tasks API]
+
+  FE -->|WS text| BE
+  BE -->|tools/call via MCP_TOOL_MAP| MCP
+  MCP -->|spawn + stdio JSON-RPC| GT
+  GT -->|read/refresh| TOK
+  GT -->|HTTPS REST| GAPI
+  GAPI -->|JSON| GT
+  GT -->|tool result| MCP
+  MCP -->|tool result| BE
+  BE -->|WS text + pending_confirm UX| FE
+```
+
+## 7) WebSocket contract (high-level)
 
 ```mermaid
 flowchart TB
@@ -127,7 +149,7 @@ flowchart TB
   end
 ```
 
-## 7) Deploy / runtime boundaries
+## 8) Deploy / runtime boundaries
 
 ```mermaid
 flowchart LR
@@ -151,7 +173,7 @@ flowchart LR
   BE --> DR
 ```
 
-## 8) Folder overview (where things live)
+## 9) Folder overview (where things live)
 
 ```mermaid
 flowchart TB
