@@ -1,4 +1,6 @@
 import json
+import os
+import tempfile
 
 import pytest
 from fastapi.testclient import TestClient
@@ -10,7 +12,14 @@ def _mcp_text_payload(obj: object) -> dict:
     return {"content": [{"type": "text", "text": json.dumps(obj)}]}
 
 
+def _isolate_session_db(monkeypatch: pytest.MonkeyPatch) -> None:
+    tmpdir = tempfile.mkdtemp(prefix="jarvis_test_")
+    monkeypatch.setattr(main, "SESSION_DB_PATH", os.path.join(tmpdir, "session.sqlite"))
+
+
 def test_google_tasks_create_requires_confirmation(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_session_db(monkeypatch)
+
     async def fake_call(name: str, arguments: dict):
         raise AssertionError("should_not_call_mcp")
 
@@ -28,6 +37,8 @@ def test_google_tasks_create_requires_confirmation(monkeypatch: pytest.MonkeyPat
 
 
 def test_google_tasks_create_confirmed_calls_mcp(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_session_db(monkeypatch)
+
     calls: list[tuple[str, dict]] = []
 
     async def fake_call(name: str, arguments: dict):
@@ -60,6 +71,8 @@ def test_google_tasks_create_confirmed_calls_mcp(monkeypatch: pytest.MonkeyPatch
 
 
 def test_google_tasks_update_requires_confirmation(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_session_db(monkeypatch)
+
     async def fake_call(name: str, arguments: dict):
         raise AssertionError("should_not_call_mcp")
 
@@ -77,12 +90,16 @@ def test_google_tasks_update_requires_confirmation(monkeypatch: pytest.MonkeyPat
 
 
 def test_google_tasks_update_confirmed_calls_mcp(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_session_db(monkeypatch)
+
     calls: list[tuple[str, dict]] = []
 
     async def fake_call(name: str, arguments: dict):
         calls.append((name, dict(arguments)))
         if name.endswith("google_tasks_list_tasklists"):
             return _mcp_text_payload({"ok": True, "data": {"items": [{"id": "tl1", "title": "Chaba"}]}})
+        if name.endswith("google_tasks_list_tasks"):
+            return _mcp_text_payload({"ok": True, "data": {"items": [{"id": "t123", "title": "X", "notes": ""}]}})
         if name.endswith("google_tasks_update_task"):
             return _mcp_text_payload({"ok": True, "data": {"id": arguments.get("task_id")}})
         raise AssertionError(f"unexpected_tool_name {name}")
@@ -105,6 +122,8 @@ def test_google_tasks_update_confirmed_calls_mcp(monkeypatch: pytest.MonkeyPatch
 
 
 def test_google_tasks_complete_requires_confirmation(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_session_db(monkeypatch)
+
     async def fake_call(name: str, arguments: dict):
         raise AssertionError("should_not_call_mcp")
 
@@ -122,12 +141,16 @@ def test_google_tasks_complete_requires_confirmation(monkeypatch: pytest.MonkeyP
 
 
 def test_google_tasks_complete_confirmed_calls_mcp(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_session_db(monkeypatch)
+
     calls: list[tuple[str, dict]] = []
 
     async def fake_call(name: str, arguments: dict):
         calls.append((name, dict(arguments)))
         if name.endswith("google_tasks_list_tasklists"):
             return _mcp_text_payload({"ok": True, "data": {"items": [{"id": "tl1", "title": "Chirawat's list"}]}})
+        if name.endswith("google_tasks_list_tasks"):
+            return _mcp_text_payload({"ok": True, "data": {"items": [{"id": "t123", "title": "X", "notes": "", "status": "needsAction"}]}})
         if name.endswith("google_tasks_complete_task"):
             return _mcp_text_payload({"ok": True, "data": {"id": arguments.get("task_id")}})
         raise AssertionError(f"unexpected_tool_name {name}")
@@ -145,6 +168,8 @@ def test_google_tasks_complete_confirmed_calls_mcp(monkeypatch: pytest.MonkeyPat
 
 
 def test_google_tasks_delete_requires_confirmation(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_session_db(monkeypatch)
+
     async def fake_call(name: str, arguments: dict):
         raise AssertionError("should_not_call_mcp")
 
@@ -162,12 +187,16 @@ def test_google_tasks_delete_requires_confirmation(monkeypatch: pytest.MonkeyPat
 
 
 def test_google_tasks_delete_confirmed_calls_mcp(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_session_db(monkeypatch)
+
     calls: list[tuple[str, dict]] = []
 
     async def fake_call(name: str, arguments: dict):
         calls.append((name, dict(arguments)))
         if name.endswith("google_tasks_list_tasklists"):
             return _mcp_text_payload({"ok": True, "data": {"items": [{"id": "tl1", "title": "Chirawat's list"}]}})
+        if name.endswith("google_tasks_list_tasks"):
+            return _mcp_text_payload({"ok": True, "data": {"items": [{"id": "t123", "title": "X", "notes": ""}]}})
         if name.endswith("google_tasks_delete_task"):
             return _mcp_text_payload({"ok": True})
         raise AssertionError(f"unexpected_tool_name {name}")

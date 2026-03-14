@@ -389,6 +389,30 @@ class GoogleTasksWriteResponse(BaseModel):
     result: dict[str, Any]
 
 
+class GoogleTasksUndoItem(BaseModel):
+    undo_id: str
+    created_at: int
+    action: str
+    tasklist_id: Optional[str] = None
+    task_id: Optional[str] = None
+
+
+class GoogleTasksUndoListResponse(BaseModel):
+    ok: bool = True
+    items: list[GoogleTasksUndoItem]
+
+
+class GoogleTasksUndoLastRequest(BaseModel):
+    n: int = 1
+    confirm: bool = False
+
+
+class GoogleTasksUndoResponse(BaseModel):
+    ok: bool = True
+    undone: int
+    results: list[dict[str, Any]]
+
+
 def _classify_image_generation_error(message: str) -> Optional[dict[str, Any]]:
     msg = str(message or "").strip()
     low = msg.lower()
@@ -1331,7 +1355,19 @@ def _init_session_db() -> None:
             )
             """
         )
-
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS google_tasks_undo (
+              undo_id TEXT PRIMARY KEY,
+              created_at INTEGER NOT NULL,
+              action TEXT NOT NULL,
+              tasklist_id TEXT,
+              task_id TEXT,
+              before_json TEXT,
+              after_json TEXT
+            )
+            """
+        )
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS reminders (
@@ -4869,6 +4905,117 @@ async def _resolve_google_tasks_tasklist(*, tasklist_id: Optional[str], tasklist
     raise HTTPException(status_code=404, detail="google_tasks_tasklist_title_not_found")
 
 
+async def _google_tasks_fetch_task(*, tasklist_id: str, task_id: str) -> Optional[dict[str, Any]]:
+    list_tasks_meta = MCP_TOOL_MAP.get("google_tasks_list_tasks") if isinstance(MCP_TOOL_MAP, dict) else None
+    if not isinstance(list_tasks_meta, dict):
+        return None
+    list_tasks_tool = str(list_tasks_meta.get("mcp_name") or "").strip()
+    if not list_tasks_tool:
+        return None
+
+    page_token: Optional[str] = None
+    for _ in range(0, 5):
+        args: dict[str, Any] = {
+            "tasklist_id": tasklist_id,
+            "max_results": 100,
+            "show_completed": True,
+            "show_hidden": True,
+        }
+        if page_token:
+            args["page_token"] = page_token
+        res = await _mcp_tools_call(list_tasks_tool, args)
+        parsed = _mcp_text_json(res)
+        if isinstance(parsed, dict) and isinstance(parsed.get("data"), dict):
+            parsed = parsed["data"]
+        items = parsed.get("items") if isinstance(parsed, dict) else None
+        if isinstance(items, list):
+            for t in items:
+                if not isinstance(t, dict):
+                    continue
+                if str(t.get("id") or "").strip() == task_id:
+                    return t
+        page_token = str(parsed.get("nextPageToken") or "").strip() if isinstance(parsed, dict) else ""
+        if not page_token:
+            break
+    return None
+
+
+def _google_tasks_undo_log(action: str, tasklist_id: Optional[str], task_id: Optional[str], before: Any, after: Any) -> str:
+    _init_session_db()
+    undo_id = f"gtu_{int(time.time())}_{os.urandom(6).hex()}"
+    created_at = int(time.time())
+    before_json = json.dumps(before, ensure_ascii=False) if before is not None else ""
+    after_json = json.dumps(after, ensure_ascii=False) if after is not None else ""
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        conn.execute(
+            "INSERT INTO google_tasks_undo(undo_id, created_at, action, tasklist_id, task_id, before_json, after_json) VALUES(?, ?, ?, ?, ?, ?, ?)",
+            (undo_id, created_at, action, tasklist_id, task_id, before_json, after_json),
+        )
+        conn.commit()
+    return undo_id
+
+
+def _google_tasks_undo_list(limit: int) -> list[dict[str, Any]]:
+    _init_session_db()
+    lim = max(1, min(int(limit or 10), 100))
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        cur = conn.execute(
+            "SELECT undo_id, created_at, action, tasklist_id, task_id FROM google_tasks_undo ORDER BY created_at DESC LIMIT ?",
+            (lim,),
+        )
+        rows = cur.fetchall() or []
+    out: list[dict[str, Any]] = []
+    for undo_id, created_at, action, tasklist_id, task_id in rows:
+        out.append(
+            {
+                "undo_id": undo_id,
+                "created_at": int(created_at or 0),
+                "action": str(action or ""),
+                "tasklist_id": (str(tasklist_id) if tasklist_id else None),
+                "task_id": (str(task_id) if task_id else None),
+            }
+        )
+    return out
+
+
+def _google_tasks_undo_pop_last(n: int) -> list[dict[str, Any]]:
+    _init_session_db()
+    nn = max(1, min(int(n or 1), 50))
+    with sqlite3.connect(SESSION_DB_PATH) as conn:
+        cur = conn.execute(
+            "SELECT undo_id, created_at, action, tasklist_id, task_id, before_json, after_json FROM google_tasks_undo ORDER BY created_at DESC LIMIT ?",
+            (nn,),
+        )
+        rows = cur.fetchall() or []
+        for row in rows:
+            conn.execute("DELETE FROM google_tasks_undo WHERE undo_id = ?", (row[0],))
+        conn.commit()
+    out: list[dict[str, Any]] = []
+    for undo_id, created_at, action, tasklist_id, task_id, before_json, after_json in rows:
+        before: Any = None
+        after: Any = None
+        try:
+            before = json.loads(before_json) if before_json else None
+        except Exception:
+            before = before_json
+        try:
+            after = json.loads(after_json) if after_json else None
+        except Exception:
+            after = after_json
+        out.append(
+            {
+                "undo_id": undo_id,
+                "created_at": int(created_at or 0),
+                "action": str(action or ""),
+                "tasklist_id": (str(tasklist_id) if tasklist_id else None),
+                "task_id": (str(task_id) if task_id else None),
+                "before": before,
+                "after": after,
+            }
+        )
+    return out
+
+
 @app.post("/google-tasks/tasks/create", response_model=GoogleTasksWriteResponse)
 async def google_tasks_create_task(req: GoogleTasksCreateTaskRequest) -> GoogleTasksWriteResponse:
     title = str(req.title or "").strip()
@@ -4904,6 +5051,21 @@ async def google_tasks_create_task(req: GoogleTasksCreateTaskRequest) -> GoogleT
 
     res = await _mcp_tools_call(mcp_name, payload)
     parsed = _mcp_text_json(res)
+    created_task_id = ""
+    after: Any = None
+    if isinstance(parsed, dict):
+        data_obj = parsed.get("data")
+        if isinstance(data_obj, dict):
+            after = data_obj
+            created_task_id = str(data_obj.get("id") or "").strip()
+
+    _google_tasks_undo_log(
+        "google_tasks_create_task",
+        tasklist_id_resolved,
+        created_task_id or None,
+        before=None,
+        after=after,
+    )
     return GoogleTasksWriteResponse(ok=True, result=parsed if isinstance(parsed, dict) else {"raw": parsed})
 
 
@@ -4923,6 +5085,11 @@ async def google_tasks_complete_task(req: GoogleTasksCompleteTaskRequest) -> Goo
     _require_confirmation(bool(req.confirm), action, preview_payload)
 
     tasklist_id_resolved, _ = await _resolve_google_tasks_tasklist(tasklist_id=req.tasklist_id, tasklist_title=req.tasklist_title)
+    before = (
+        await _google_tasks_fetch_task(tasklist_id=str(tasklist_id_resolved or ""), task_id=task_id)
+        if tasklist_id_resolved
+        else None
+    )
     payload: dict[str, Any] = {"tasklist_id": tasklist_id_resolved, "task_id": task_id}
     payload = {k: v for k, v in payload.items() if v is not None}
 
@@ -4935,6 +5102,12 @@ async def google_tasks_complete_task(req: GoogleTasksCompleteTaskRequest) -> Goo
 
     res = await _mcp_tools_call(mcp_name, payload)
     parsed = _mcp_text_json(res)
+    after = (
+        await _google_tasks_fetch_task(tasklist_id=str(tasklist_id_resolved or ""), task_id=task_id)
+        if tasklist_id_resolved
+        else None
+    )
+    _google_tasks_undo_log("google_tasks_complete_task", tasklist_id_resolved, task_id, before=before, after=after)
     return GoogleTasksWriteResponse(ok=True, result=parsed if isinstance(parsed, dict) else {"raw": parsed})
 
 
@@ -4954,6 +5127,11 @@ async def google_tasks_delete_task(req: GoogleTasksDeleteTaskRequest) -> GoogleT
     _require_confirmation(bool(req.confirm), action, preview_payload)
 
     tasklist_id_resolved, _ = await _resolve_google_tasks_tasklist(tasklist_id=req.tasklist_id, tasklist_title=req.tasklist_title)
+    before = (
+        await _google_tasks_fetch_task(tasklist_id=str(tasklist_id_resolved or ""), task_id=task_id)
+        if tasklist_id_resolved
+        else None
+    )
     payload: dict[str, Any] = {"tasklist_id": tasklist_id_resolved, "task_id": task_id}
     payload = {k: v for k, v in payload.items() if v is not None}
 
@@ -4966,6 +5144,7 @@ async def google_tasks_delete_task(req: GoogleTasksDeleteTaskRequest) -> GoogleT
 
     res = await _mcp_tools_call(mcp_name, payload)
     parsed = _mcp_text_json(res)
+    _google_tasks_undo_log("google_tasks_delete_task", tasklist_id_resolved, task_id, before=before, after=None)
     return GoogleTasksWriteResponse(ok=True, result=parsed if isinstance(parsed, dict) else {"raw": parsed})
 
 
@@ -4989,6 +5168,11 @@ async def google_tasks_update_task(req: GoogleTasksUpdateTaskRequest) -> GoogleT
     _require_confirmation(bool(req.confirm), action, preview_payload)
 
     tasklist_id_resolved, _ = await _resolve_google_tasks_tasklist(tasklist_id=req.tasklist_id, tasklist_title=req.tasklist_title)
+    before = (
+        await _google_tasks_fetch_task(tasklist_id=str(tasklist_id_resolved or ""), task_id=task_id)
+        if tasklist_id_resolved
+        else None
+    )
     payload: dict[str, Any] = {
         "tasklist_id": tasklist_id_resolved,
         "task_id": task_id,
@@ -5008,7 +5192,85 @@ async def google_tasks_update_task(req: GoogleTasksUpdateTaskRequest) -> GoogleT
 
     res = await _mcp_tools_call(mcp_name, payload)
     parsed = _mcp_text_json(res)
+    after = (
+        await _google_tasks_fetch_task(tasklist_id=str(tasklist_id_resolved or ""), task_id=task_id)
+        if tasklist_id_resolved
+        else None
+    )
+    _google_tasks_undo_log("google_tasks_update_task", tasklist_id_resolved, task_id, before=before, after=after)
     return GoogleTasksWriteResponse(ok=True, result=parsed if isinstance(parsed, dict) else {"raw": parsed})
+
+
+@app.get("/google-tasks/undo/list", response_model=GoogleTasksUndoListResponse)
+async def google_tasks_undo_list(limit: int = 10) -> GoogleTasksUndoListResponse:
+    items = _google_tasks_undo_list(limit)
+    return GoogleTasksUndoListResponse(ok=True, items=[GoogleTasksUndoItem(**i) for i in items])
+
+
+@app.post("/google-tasks/undo/last", response_model=GoogleTasksUndoResponse)
+async def google_tasks_undo_last(req: GoogleTasksUndoLastRequest) -> GoogleTasksUndoResponse:
+    n = max(1, min(int(req.n or 1), 50))
+    action = "google_tasks_undo_last"
+    _require_confirmation(bool(req.confirm), action, {"n": n})
+
+    popped = _google_tasks_undo_pop_last(n)
+    results: list[dict[str, Any]] = []
+
+    for item in popped:
+        orig_action = str(item.get("action") or "")
+        tasklist_id = str(item.get("tasklist_id") or "").strip() or None
+        task_id = str(item.get("task_id") or "").strip() or None
+        before = item.get("before")
+
+        if orig_action == "google_tasks_create_task" and tasklist_id and task_id:
+            meta = MCP_TOOL_MAP.get("google_tasks_delete_task") if isinstance(MCP_TOOL_MAP, dict) else None
+            mcp_name = str(meta.get("mcp_name") or "").strip() if isinstance(meta, dict) else ""
+            if not mcp_name:
+                raise HTTPException(status_code=500, detail="google_tasks_tools_not_configured")
+            res = await _mcp_tools_call(mcp_name, {"tasklist_id": tasklist_id, "task_id": task_id})
+            results.append({"undo_id": item.get("undo_id"), "undone": "delete_created_task", "result": _mcp_text_json(res)})
+            continue
+
+        if orig_action in ("google_tasks_update_task", "google_tasks_complete_task") and tasklist_id and task_id and isinstance(before, dict):
+            meta = MCP_TOOL_MAP.get("google_tasks_update_task") if isinstance(MCP_TOOL_MAP, dict) else None
+            mcp_name = str(meta.get("mcp_name") or "").strip() if isinstance(meta, dict) else ""
+            if not mcp_name:
+                raise HTTPException(status_code=500, detail="google_tasks_tools_not_configured")
+            payload: dict[str, Any] = {"tasklist_id": tasklist_id, "task_id": task_id}
+            for k in ("title", "notes", "due", "status"):
+                if k in before:
+                    payload[k] = before.get(k)
+            payload = {k: v for k, v in payload.items() if v is not None}
+            res = await _mcp_tools_call(mcp_name, payload)
+            results.append({"undo_id": item.get("undo_id"), "undone": "revert_task", "result": _mcp_text_json(res)})
+            continue
+
+        if orig_action == "google_tasks_delete_task" and tasklist_id and isinstance(before, dict):
+            meta = MCP_TOOL_MAP.get("google_tasks_create_task") if isinstance(MCP_TOOL_MAP, dict) else None
+            mcp_name = str(meta.get("mcp_name") or "").strip() if isinstance(meta, dict) else ""
+            if not mcp_name:
+                raise HTTPException(status_code=500, detail="google_tasks_tools_not_configured")
+            payload = {
+                "tasklist_id": tasklist_id,
+                "title": str(before.get("title") or ""),
+                "notes": str(before.get("notes") or ""),
+                "due": before.get("due"),
+            }
+            payload = {k: v for k, v in payload.items() if v is not None and str(v) != ""}
+            res = await _mcp_tools_call(mcp_name, payload)
+            results.append(
+                {
+                    "undo_id": item.get("undo_id"),
+                    "undone": "recreate_deleted_task",
+                    "result": _mcp_text_json(res),
+                    "note": "recreated_task_has_new_id",
+                }
+            )
+            continue
+
+        results.append({"undo_id": item.get("undo_id"), "skipped": True, "reason": "insufficient_undo_data", "action": orig_action})
+
+    return GoogleTasksUndoResponse(ok=True, undone=len(results), results=results)
 
 
 @app.get("/daily-brief")

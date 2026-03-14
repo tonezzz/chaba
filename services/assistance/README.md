@@ -34,6 +34,10 @@ The `/services/assistance/` tree is the source-of-truth for all *Assistance* app
     - `POST /google-tasks/tasks/update`
     - `POST /google-tasks/tasks/complete`
     - `POST /google-tasks/tasks/delete`
+  - Google Tasks (undo, requires `confirm=true`):
+    - `GET /google-tasks/undo/list`
+    - `POST /google-tasks/undo/last`
+      - note: undoing delete recreates the task (new task ID)
   - `GET /reminders`
   - `GET /reminders/upcoming`
   - `POST /reminders/{reminder_id}/done`
