@@ -15,16 +15,19 @@ def test_google_tasks_sequential_summary_happy_path(monkeypatch: pytest.MonkeyPa
         if name.endswith("google_tasks_auth_status"):
             return _mcp_text_payload({"ok": True})
         if name.endswith("google_tasks_list_tasklists"):
-            return _mcp_text_payload({"tasklists": [{"id": "tl1", "title": "Inbox"}]})
+            return _mcp_text_payload({"ok": True, "data": {"items": [{"id": "tl1", "title": "Inbox"}]}})
         if name.endswith("google_tasks_list_tasks"):
             return _mcp_text_payload(
                 {
-                    "tasks": [
-                        {"id": "t1", "title": "One", "status": "needsAction", "notes": "- [ ] a\n- [ ] b\n"},
-                        {"id": "t2", "title": "Two", "status": "completed", "notes": "- [x] s1\n- [x] s2\n"},
-                        {"id": "t3", "title": "Three", "status": "completed", "notes": "[x] s1\n[x] s2\n"},
-                        {"id": "t4", "title": "Four", "status": "completed", "notes": "- [X] s1\n- [x] s2\n"},
-                    ]
+                    "ok": True,
+                    "data": {
+                        "items": [
+                            {"id": "t1", "title": "One", "status": "needsAction", "notes": "- [ ] a\n- [ ] b\n"},
+                            {"id": "t2", "title": "Two", "status": "completed", "notes": "- [x] s1\n- [x] s2\n"},
+                            {"id": "t3", "title": "Three", "status": "completed", "notes": "[x] s1\n[x] s2\n"},
+                            {"id": "t4", "title": "Four", "status": "completed", "notes": "- [X] s1\n- [x] s2\n"},
+                        ]
+                    },
                 }
             )
         raise AssertionError(f"unexpected_tool_name {name}")

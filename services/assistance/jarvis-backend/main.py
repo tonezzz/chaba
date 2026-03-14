@@ -4629,6 +4629,11 @@ async def google_tasks_sequential_summary(
             raise HTTPException(status_code=502, detail={"google_tasks_list_tasklists_failed": str(e)})
 
         tl_parsed = _mcp_text_json(tl_res)
+        if isinstance(tl_parsed, dict):
+            data_obj = tl_parsed.get("data")
+            if isinstance(data_obj, dict):
+                # Some MCP servers wrap Google API payload under {ok, data:{items:[...]}}
+                tl_parsed = data_obj
         tasklists = None
         if isinstance(tl_parsed, dict):
             tasklists = tl_parsed.get("tasklists")
@@ -4664,6 +4669,10 @@ async def google_tasks_sequential_summary(
         raise HTTPException(status_code=502, detail={"google_tasks_list_tasks_failed": str(e)})
 
     tasks_parsed = _mcp_text_json(tasks_res)
+    if isinstance(tasks_parsed, dict):
+        data_obj = tasks_parsed.get("data")
+        if isinstance(data_obj, dict):
+            tasks_parsed = data_obj
     tasks_raw = None
     if isinstance(tasks_parsed, dict):
         tasks_raw = tasks_parsed.get("tasks")
