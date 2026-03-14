@@ -5301,6 +5301,100 @@ MCP_TOOL_MAP: dict[str, dict[str, Any]] = {
         "requires_confirmation": True,
     },
 
+    "google_calendar_auth_status": {
+        "mcp_name": "google-calendar_1mcp_google_calendar_auth_status",
+        "description": "Check OAuth token status for Google Calendar (via 1MCP google-calendar).",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "include_raw_tokens": {
+                    "type": "boolean",
+                    "description": "If true, include raw token JSON in the response (not recommended).",
+                }
+            },
+        },
+        "requires_confirmation": False,
+    },
+    "google_calendar_ensure_jarvis_calendar": {
+        "mcp_name": "google-calendar_1mcp_google_calendar_ensure_jarvis_calendar",
+        "description": "Find or create the dedicated Jarvis Reminders calendar (via 1MCP google-calendar).",
+        "parameters": {"type": "object", "properties": {}},
+        "requires_confirmation": False,
+    },
+    "google_calendar_list_events": {
+        "mcp_name": "google-calendar_1mcp_google_calendar_list_events",
+        "description": "List events in the Jarvis Reminders calendar (via 1MCP google-calendar).",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "time_min": {"type": "string", "description": "RFC3339 inclusive lower bound (optional)."},
+                "time_max": {"type": "string", "description": "RFC3339 exclusive upper bound (optional)."},
+                "q": {"type": "string", "description": "Free text search (optional)."},
+                "max_results": {"type": "integer", "description": "Max results (1-250)."},
+                "single_events": {"type": "boolean", "description": "Expand recurring events into instances."},
+                "order_by": {"type": "string", "description": "Order by (startTime|updated)."},
+            },
+        },
+        "requires_confirmation": False,
+    },
+    "google_calendar_create_event": {
+        "mcp_name": "google-calendar_1mcp_google_calendar_create_event",
+        "description": "Create an event in the Jarvis Reminders calendar (via 1MCP google-calendar). Requires confirmation.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "summary": {"type": "string", "description": "Event summary/title."},
+                "description": {"type": "string", "description": "Optional description."},
+                "start": {"type": "string", "description": "RFC3339 start datetime (or YYYY-MM-DD for all-day)."},
+                "end": {"type": "string", "description": "RFC3339 end datetime (or YYYY-MM-DD for all-day)."},
+                "timezone": {"type": "string", "description": "IANA timezone (e.g. Asia/Bangkok)."},
+                "reminders_minutes": {
+                    "type": "array",
+                    "items": {"type": "integer"},
+                    "description": "Popup reminder offsets in minutes.",
+                },
+                "rrule": {"type": "string", "description": "Optional RRULE string (without 'RRULE:')."},
+            },
+            "required": ["summary", "start", "end"],
+        },
+        "requires_confirmation": True,
+    },
+    "google_calendar_update_event": {
+        "mcp_name": "google-calendar_1mcp_google_calendar_update_event",
+        "description": "Update an event in the Jarvis Reminders calendar (via 1MCP google-calendar). Requires confirmation.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "event_id": {"type": "string", "description": "Event ID."},
+                "summary": {"type": "string", "description": "Optional new summary/title."},
+                "description": {"type": "string", "description": "Optional new description."},
+                "start": {"type": "string", "description": "Optional new start (RFC3339 or YYYY-MM-DD)."},
+                "end": {"type": "string", "description": "Optional new end (RFC3339 or YYYY-MM-DD)."},
+                "timezone": {"type": "string", "description": "IANA timezone (optional)."},
+                "reminders_minutes": {
+                    "type": "array",
+                    "items": {"type": "integer"},
+                    "description": "Optional new popup reminder offsets in minutes.",
+                },
+                "rrule": {"type": "string", "description": "Optional RRULE string (without 'RRULE:')."},
+            },
+            "required": ["event_id"],
+        },
+        "requires_confirmation": True,
+    },
+    "google_calendar_delete_event": {
+        "mcp_name": "google-calendar_1mcp_google_calendar_delete_event",
+        "description": "Delete an event in the Jarvis Reminders calendar (via 1MCP google-calendar). Requires confirmation.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "event_id": {"type": "string", "description": "Event ID."},
+            },
+            "required": ["event_id"],
+        },
+        "requires_confirmation": True,
+    },
+
     "aim_memory_store": {
         "mcp_name": "aim-kg_1mcp_aim_memory_store",
         "description": "Store entities/observations in the AIM knowledge graph memory store.",
