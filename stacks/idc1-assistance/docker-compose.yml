@@ -1916,12 +1916,26 @@ services:
             "google-tasks": {
               "command": "node",
               "args": ["/app/mcp-servers/mcp-google-tasks/server.js"],
+              "env": {
+                "GOOGLE_TASKS_CLIENT_ID": "${GOOGLE_TASKS_CLIENT_ID}",
+                "GOOGLE_TASKS_CLIENT_SECRET": "${GOOGLE_TASKS_CLIENT_SECRET}",
+                "GOOGLE_TASKS_SCOPES": "${GOOGLE_TASKS_SCOPES}",
+                "GOOGLE_TASKS_TOKEN_PATH": "${GOOGLE_TASKS_TOKEN_PATH}"
+              },
               "tags": ["google", "tasks"],
               "disabled": false
             },
             "google-calendar": {
               "command": "node",
               "args": ["/app/mcp-servers/mcp-google-calendar/server.js"],
+              "env": {
+                "GOOGLE_CALENDAR_CLIENT_ID": "${GOOGLE_CALENDAR_CLIENT_ID}",
+                "GOOGLE_CALENDAR_CLIENT_SECRET": "${GOOGLE_CALENDAR_CLIENT_SECRET}",
+                "GOOGLE_CALENDAR_SCOPES": "${GOOGLE_CALENDAR_SCOPES}",
+                "GOOGLE_CALENDAR_TOKEN_PATH": "${GOOGLE_CALENDAR_TOKEN_PATH}",
+                "GOOGLE_CALENDAR_REDIRECT_URI": "${GOOGLE_CALENDAR_REDIRECT_URI}",
+                "GOOGLE_CALENDAR_JARVIS_CALENDAR_NAME": "${GOOGLE_CALENDAR_JARVIS_CALENDAR_NAME}"
+              },
               "tags": ["google", "calendar"],
               "disabled": false
             }
