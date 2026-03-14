@@ -42,6 +42,12 @@ These are set via compose defaults and/or Portainer stack env:
 - `GEMINI_LIVE_MODEL`
   - example: `gemini-2.5-flash-native-audio-preview-12-2025`
 
+Reminders:
+
+- `JARVIS_LEGACY_REMINDER_NOTIFICATIONS_ENABLED`
+  - when set to `1`/`true`, enables the legacy local reminder scheduler loop (SQLite due-check + WS broadcast)
+  - default is disabled (`0`) to avoid double notifications after the Google Calendar cutover
+
 Debugging:
 
 - `JARVIS_WS_RECORD`
@@ -58,6 +64,19 @@ Notes:
 Secrets (must be provided via Portainer stack env or host env, never committed):
 
 - `GEMINI_API_KEY`
+
+## MCP (1MCP) environment propagation (important)
+
+When using `mcp-bundle` (1MCP) with stdio MCP servers:
+
+- Child MCP servers do **not** automatically inherit all container env.
+- If a server needs environment variables (e.g. `GOOGLE_CALENDAR_CLIENT_ID`), you must provide a per-server `env` block in the 1MCP config (`mcp.json`).
+
+Portainer / compose interpolation gotcha:
+
+- If you generate `mcp.json` via a heredoc inside `docker-compose.yml`, do not write `${VAR}` directly inside the JSON.
+- Portainer/docker-compose may expand `${VAR}` at deploy time (often to an empty string), resulting in broken runtime config.
+- Use escaped placeholders like `$${VAR}` so the literal `${VAR}` is written into the file and then substituted at runtime.
 
 ## Deploy (hands-off)
 

@@ -35,8 +35,9 @@ WebSocket resilience expectation:
   - `_init_session_db()`
 - If Weaviate is enabled, re-syncs reminders from Weaviate into the local scheduler cache:
   - `_startup_resync_from_weaviate()`
-- Starts the reminder scheduler background loop:
+- Starts the legacy reminder scheduler background loop (optional):
   - `asyncio.create_task(_reminder_scheduler_loop())`
+  - Controlled by `JARVIS_LEGACY_REMINDER_NOTIFICATIONS_ENABLED` (disabled by default)
 
 3) Reminder scheduler loop (`_reminder_scheduler_loop`)
 - Every ~15 seconds:
@@ -44,6 +45,9 @@ WebSocket resilience expectation:
   - Marks them fired (`_mark_reminder_fired(...)`).
   - Broadcasts to connected clients:
     - `{ "type": "reminder", "reminder": {...} }`
+
+Note:
+- After the Calendar cutover, new reminders are created as Google Calendar events (dedicated calendar: `Jarvis Reminders`) and do not rely on the legacy scheduler loop.
 
 4) WebSocket session (`WS /ws/live` -> `ws_live`)
 - Accepts the client WebSocket.

@@ -5,6 +5,13 @@
  - `WINDSURF_PLAYBOOK.md` (repo working conventions, diagnostics, workflows)
  
  This document explains how reminders work end-to-end in the `idc1-assistance` stack.
+
+## Current direction (Calendar cutover)
+
+- **New reminders** are created as **Google Calendar events** in a dedicated calendar (default name: `Jarvis Reminders`) via the `mcp-google-calendar` MCP server.
+- **Legacy reminders** (SQLite/Weaviate) remain **readable** and can still be marked `done`.
+- The legacy local reminder scheduler loop is **disabled by default** to avoid double notifications.
+  - Enable it only if needed via `JARVIS_LEGACY_REMINDER_NOTIFICATIONS_ENABLED=1`.
  
 ## What a reminder is
 
@@ -26,9 +33,12 @@ A reminder is a memory item with:
   - local due checks
   - recovery when Weaviate is temporarily unavailable
 
+Note:
+- After the Calendar cutover, the legacy scheduler path is typically not used for new reminders; it remains for legacy reminders only.
+
 ## Weaviate reminder persistence
 
-Reminders are written to **SQLite first** (reliability + local scheduler), then (when enabled) written-through to **Weaviate** for cross-device consistency.
+Legacy reminders are written to **SQLite first** (reliability + local scheduler), then (when enabled) written-through to **Weaviate** for cross-device consistency.
 
 - **Enable Weaviate**:
   - Set `WEAVIATE_URL` (stack default is typically `http://weaviate:8080`).
