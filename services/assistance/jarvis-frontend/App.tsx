@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { LiveService } from './services/liveService';
+import { sequentialApplyAndSuggest } from './services/sequentialService';
 import { ConnectionState, MessageLog } from './types';
 import Visualizer from './components/Visualizer';
 import CameraFeed from './components/CameraFeed';
@@ -22,6 +23,13 @@ export default function App() {
   const [tripIdInput, setTripIdInput] = useState<string>("");
   const [tripNameInput, setTripNameInput] = useState<string>("");
   const [composerText, setComposerText] = useState<string>("");
+  const [seqNotes, setSeqNotes] = useState<string>("");
+  const [seqCompletedNotes, setSeqCompletedNotes] = useState<string>("");
+  const [seqNextText, setSeqNextText] = useState<string | null>(null);
+  const [seqNextIndex, setSeqNextIndex] = useState<number | null>(null);
+  const [seqTemplate, setSeqTemplate] = useState<string[] | null>(null);
+  const [seqError, setSeqError] = useState<string>("");
+  const [seqBusy, setSeqBusy] = useState<boolean>(false);
   const [attachments, setAttachments] = useState<
     Array<{
       id: string;
@@ -284,6 +292,95 @@ export default function App() {
     setHasKey(true);
   };
 
+  const getSeqCompletedTasks = () => {
+    const completedBlocks = String(seqCompletedNotes || "")
+      .split(/\n\s*---\s*\n/g)
+      .map((b) => b.trim())
+      .filter(Boolean);
+    return completedBlocks.length ? completedBlocks.map((notes) => ({ notes })) : undefined;
+  };
+
+  const applySeqResponse = (res: any) => {
+    setSeqNotes(res.notes);
+    setSeqNextText(res.next_step_text);
+    setSeqNextIndex(res.next_step_index);
+    setSeqTemplate(res.template);
+  };
+
+  const handleSeqSuggest = async () => {
+    setSeqBusy(true);
+    setSeqError("");
+    try {
+      const completed_tasks = getSeqCompletedTasks();
+      const res = await sequentialApplyAndSuggest({ mode: "suggest", notes: seqNotes, completed_tasks });
+      applySeqResponse(res);
+    } catch (e: any) {
+      setSeqError(String(e?.message || e || "suggest_failed"));
+      setSeqNextText(null);
+      setSeqNextIndex(null);
+      setSeqTemplate(null);
+    } finally {
+      setSeqBusy(false);
+    }
+  };
+
+  const handleSeqApply = async () => {
+    if (seqNextIndex == null) return;
+    setSeqBusy(true);
+    setSeqError("");
+    try {
+      const completed_tasks = getSeqCompletedTasks();
+
+      const res = await sequentialApplyAndSuggest({
+        mode: "index",
+        notes: seqNotes,
+        step_index: seqNextIndex,
+        completed_tasks,
+      });
+      applySeqResponse(res);
+    } catch (e: any) {
+      setSeqError(String(e?.message || e || "apply_failed"));
+    } finally {
+      setSeqBusy(false);
+    }
+  };
+
+  const handleSeqApplyByText = async () => {
+    const stepText = String(seqNextText || "").trim();
+    if (!stepText) return;
+    setSeqBusy(true);
+    setSeqError("");
+    try {
+      const completed_tasks = getSeqCompletedTasks();
+
+      const res = await sequentialApplyAndSuggest({
+        mode: "text",
+        notes: seqNotes,
+        step_text: stepText,
+        completed_tasks,
+      });
+      applySeqResponse(res);
+    } catch (e: any) {
+      setSeqError(String(e?.message || e || "apply_by_text_failed"));
+    } finally {
+      setSeqBusy(false);
+    }
+  };
+
+  const handleSeqApplyAll = async () => {
+    setSeqBusy(true);
+    setSeqError("");
+    try {
+      const completed_tasks = getSeqCompletedTasks();
+      const res = await sequentialApplyAndSuggest({ mode: "all", notes: seqNotes, completed_tasks });
+      applySeqResponse(res);
+    } catch (e: any) {
+      setSeqError(String(e?.message || e || "apply_all_failed"));
+    } finally {
+      setSeqBusy(false);
+    }
+  };
+
   if (!hasKey) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center relative overflow-hidden">
@@ -543,6 +640,57 @@ export default function App() {
                  {!state && <div className="absolute inset-0 flex items-center justify-center text-slate-600 font-mono text-sm">System Offline</div>}
                </div>
             </div>
+         </div>
+
+         <div className="rounded-2xl border border-slate-700 bg-slate-900/50 p-4">
+           <div className="text-[10px] text-cyan-500 font-hud tracking-widest uppercase mb-3">Sequential Checklist</div>
+           <textarea
+             value={seqNotes}
+             onChange={(e) => setSeqNotes(e.target.value)}
+             placeholder="Paste task notes with checklist here (e.g. - [ ] step)"
+             className="w-full h-28 px-3 py-2 rounded-xl text-sm font-mono bg-slate-950 border border-slate-800 text-slate-200 placeholder:text-slate-600"
+           />
+           <textarea
+             value={seqCompletedNotes}
+             onChange={(e) => setSeqCompletedNotes(e.target.value)}
+             placeholder="Optional: paste completed task notes blocks for template inference (separate blocks with a line containing ---)"
+             className="w-full h-24 mt-3 px-3 py-2 rounded-xl text-sm font-mono bg-slate-950 border border-slate-800 text-slate-200 placeholder:text-slate-600"
+           />
+           <div className="mt-3 flex items-center gap-2">
+             <button
+               onClick={() => void handleSeqSuggest()}
+               disabled={seqBusy}
+               className="px-3 py-2 rounded-xl border border-cyan-500/40 bg-cyan-950/20 text-cyan-200 hover:bg-cyan-950/40 disabled:opacity-50 text-xs font-mono"
+             >
+               Suggest
+             </button>
+             <button
+               onClick={() => void handleSeqApply()}
+               disabled={seqBusy || seqNextIndex == null}
+               className="px-3 py-2 rounded-xl border border-slate-700 bg-slate-950/30 text-slate-200 hover:bg-slate-800/40 disabled:opacity-50 text-xs font-mono"
+             >
+               Apply
+             </button>
+             <button
+               onClick={() => void handleSeqApplyByText()}
+               disabled={seqBusy || !seqNextText}
+               className="px-3 py-2 rounded-xl border border-slate-700 bg-slate-950/30 text-slate-200 hover:bg-slate-800/40 disabled:opacity-50 text-xs font-mono"
+             >
+               Apply by text
+             </button>
+             <button
+               onClick={() => void handleSeqApplyAll()}
+               disabled={seqBusy}
+               className="px-3 py-2 rounded-xl border border-slate-700 bg-slate-950/30 text-slate-200 hover:bg-slate-800/40 disabled:opacity-50 text-xs font-mono"
+             >
+               Apply all
+             </button>
+             {seqError && <div className="text-xs font-mono text-red-400 truncate">{seqError}</div>}
+           </div>
+           <div className="mt-3 text-xs font-mono text-slate-300">
+             <div>next_step: {seqNextText ?? "(none)"}{seqNextIndex != null ? ` (index=${seqNextIndex})` : ""}</div>
+             <div>template: {seqTemplate ? seqTemplate.join(" | ") : "(none)"}</div>
+           </div>
          </div>
 
          {/* Bottom Section: Media Output */}

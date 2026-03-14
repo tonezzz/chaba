@@ -11,7 +11,7 @@ import hashlib
 from io import BytesIO
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
-from typing import Any, Optional
+from typing import Any, Optional, Literal
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
@@ -23,6 +23,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 
 from dotenv import load_dotenv
+
+from tasks_sequential_v0 import suggest_next_step_from_task, suggest_template_from_completed_tasks
+from checklist_mutation_v0 import (
+    find_checklist_step_indices_by_text,
+    mark_all_checklist_steps_done,
+    mark_checklist_step_done,
+    mark_checklist_step_done_by_text,
+)
 
 from google import genai
 from google.genai import types
@@ -254,6 +262,90 @@ class ImageGenerateResponse(BaseModel):
     mime_type: str
     sha256: str
     data_url: Optional[str] = None
+
+
+class SequentialSuggestRequest(BaseModel):
+    task: dict[str, Any] = Field(default_factory=dict)
+    completed_tasks: Optional[list[dict[str, Any]]] = None
+
+
+class SequentialSuggestResponse(BaseModel):
+    ok: bool = True
+    next_step_text: Optional[str] = None
+    next_step_index: Optional[int] = None
+    template: Optional[list[str]] = None
+
+
+class SequentialApplyRequest(BaseModel):
+    notes: str = Field(default="")
+    step_index: int = Field(ge=0)
+
+
+class SequentialApplyResponse(BaseModel):
+    ok: bool = True
+    changed: bool
+    notes: str
+
+
+class SequentialApplyByTextRequest(BaseModel):
+    notes: str = Field(default="")
+    step_text: str = Field(default="")
+
+
+class SequentialApplyByTextResponse(BaseModel):
+    ok: bool = True
+    changed: bool
+    notes: str
+    matched_step_index: Optional[int] = None
+
+
+class SequentialApplyAllRequest(BaseModel):
+    notes: str = Field(default="")
+
+
+class SequentialApplyAllResponse(BaseModel):
+    ok: bool = True
+    changed: bool
+    changed_count: int
+    notes: str
+
+
+class SequentialApplyAndSuggestRequest(BaseModel):
+    mode: Literal["suggest", "index", "text", "all"] = Field(default="suggest")
+    notes: str = Field(default="")
+    step_index: Optional[int] = Field(default=None, ge=0)
+    step_text: str = Field(default="")
+    step_index_hint: Optional[int] = Field(default=None, ge=0)
+    completed_tasks: Optional[list[dict[str, Any]]] = None
+
+
+class SequentialApplyAndSuggestResponse(BaseModel):
+    ok: bool = True
+    mode: str
+    notes: str
+    changed: bool
+    changed_count: Optional[int] = None
+    matched_step_index: Optional[int] = None
+    next_step_text: Optional[str] = None
+    next_step_index: Optional[int] = None
+    template: Optional[list[str]] = None
+
+
+class GoogleTasksSequentialItem(BaseModel):
+    task_id: str
+    title: str
+    status: str
+    notes: str = ""
+    next_step_text: Optional[str] = None
+    next_step_index: Optional[int] = None
+
+
+class GoogleTasksSequentialSummaryResponse(BaseModel):
+    ok: bool = True
+    tasklist_id: str
+    tasklist_title: str
+    tasks: list[GoogleTasksSequentialItem]
+    template: Optional[list[str]] = None
 
 
 def _classify_image_generation_error(message: str) -> Optional[dict[str, Any]]:
@@ -4392,6 +4484,102 @@ def list_agents() -> dict[str, Any]:
     return {"ok": True, "agents": out}
 
 
+@app.post("/tasks/sequential/suggest", response_model=SequentialSuggestResponse)
+def tasks_sequential_suggest(req: SequentialSuggestRequest) -> SequentialSuggestResponse:
+    task = req.task if isinstance(req.task, dict) else {}
+    suggestion = suggest_next_step_from_task(task)
+
+    template: Optional[list[str]] = None
+    if req.completed_tasks is not None:
+        template = suggest_template_from_completed_tasks(req.completed_tasks)
+
+    return SequentialSuggestResponse(
+        ok=True,
+        next_step_text=suggestion.next_step_text,
+        next_step_index=suggestion.next_step_index,
+        template=template,
+    )
+
+
+@app.post("/tasks/sequential/apply", response_model=SequentialApplyResponse)
+def tasks_sequential_apply(req: SequentialApplyRequest) -> SequentialApplyResponse:
+    updated, changed = mark_checklist_step_done(req.notes, req.step_index)
+    return SequentialApplyResponse(ok=True, changed=changed, notes=updated)
+
+
+@app.post("/tasks/sequential/apply_by_text", response_model=SequentialApplyByTextResponse)
+def tasks_sequential_apply_by_text(req: SequentialApplyByTextRequest) -> SequentialApplyByTextResponse:
+    updated, changed, matched_idx = mark_checklist_step_done_by_text(req.notes, req.step_text)
+    return SequentialApplyByTextResponse(ok=True, changed=changed, notes=updated, matched_step_index=matched_idx)
+
+
+@app.post("/tasks/sequential/apply_all", response_model=SequentialApplyAllResponse)
+def tasks_sequential_apply_all(req: SequentialApplyAllRequest) -> SequentialApplyAllResponse:
+    updated, changed, changed_count = mark_all_checklist_steps_done(req.notes)
+    return SequentialApplyAllResponse(ok=True, changed=changed, changed_count=changed_count, notes=updated)
+
+
+@app.post("/tasks/sequential/apply_and_suggest", response_model=SequentialApplyAndSuggestResponse)
+def tasks_sequential_apply_and_suggest(req: SequentialApplyAndSuggestRequest) -> SequentialApplyAndSuggestResponse:
+    mode = str(req.mode or "suggest")
+    notes_in = str(req.notes or "")
+
+    updated_notes = notes_in
+    changed = False
+    changed_count: Optional[int] = None
+    matched_step_index: Optional[int] = None
+
+    if mode == "suggest":
+        pass
+    elif mode == "index":
+        if req.step_index is None:
+            raise HTTPException(status_code=400, detail="missing_step_index")
+        updated_notes, changed = mark_checklist_step_done(updated_notes, int(req.step_index))
+    elif mode == "text":
+        step_text = str(req.step_text or "").strip()
+        if not step_text:
+            raise HTTPException(status_code=400, detail="missing_step_text")
+        matches = find_checklist_step_indices_by_text(updated_notes, step_text)
+        if len(matches) >= 2:
+            hint = req.step_index_hint
+            if hint is not None and int(hint) in matches:
+                matched_step_index = int(hint)
+                updated_notes, changed = mark_checklist_step_done(updated_notes, matched_step_index)
+            else:
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "ambiguous_step_text": True,
+                        "step_text": step_text,
+                        "match_indices": matches,
+                    },
+                )
+        else:
+            updated_notes, changed, matched_step_index = mark_checklist_step_done_by_text(updated_notes, step_text)
+    elif mode == "all":
+        updated_notes, changed, cnt = mark_all_checklist_steps_done(updated_notes)
+        changed_count = cnt
+    else:
+        raise HTTPException(status_code=400, detail="invalid_mode")
+
+    suggestion = suggest_next_step_from_task({"notes": updated_notes})
+    template: Optional[list[str]] = None
+    if req.completed_tasks is not None:
+        template = suggest_template_from_completed_tasks(req.completed_tasks)
+
+    return SequentialApplyAndSuggestResponse(
+        ok=True,
+        mode=mode,
+        notes=updated_notes,
+        changed=changed,
+        changed_count=changed_count,
+        matched_step_index=matched_step_index,
+        next_step_text=suggestion.next_step_text,
+        next_step_index=suggestion.next_step_index,
+        template=template,
+    )
+
+
 @app.post("/agents/{agent_id}/status")
 def post_agent_status(agent_id: str, payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
     agents = _agents_snapshot()
@@ -4400,6 +4588,106 @@ def post_agent_status(agent_id: str, payload: dict[str, Any] = Body(...)) -> dic
         raise HTTPException(status_code=404, detail="agent_not_found")
     _upsert_agent_status(DEFAULT_USER_ID, agent_id, payload)
     return {"ok": True}
+
+
+@app.get("/google-tasks/sequential/summary", response_model=GoogleTasksSequentialSummaryResponse)
+async def google_tasks_sequential_summary(
+    tasklist_id: Optional[str] = None,
+    max_results: int = 50,
+    show_completed: bool = True,
+) -> GoogleTasksSequentialSummaryResponse:
+    auth_meta = MCP_TOOL_MAP.get("google_tasks_auth_status") if isinstance(MCP_TOOL_MAP, dict) else None
+    list_tasklists_meta = MCP_TOOL_MAP.get("google_tasks_list_tasklists") if isinstance(MCP_TOOL_MAP, dict) else None
+    list_tasks_meta = MCP_TOOL_MAP.get("google_tasks_list_tasks") if isinstance(MCP_TOOL_MAP, dict) else None
+
+    if not isinstance(auth_meta, dict) or not isinstance(list_tasklists_meta, dict) or not isinstance(list_tasks_meta, dict):
+        raise HTTPException(status_code=500, detail="google_tasks_tools_not_configured")
+
+    auth_tool = str(auth_meta.get("mcp_name") or "").strip()
+    list_tasklists_tool = str(list_tasklists_meta.get("mcp_name") or "").strip()
+    list_tasks_tool = str(list_tasks_meta.get("mcp_name") or "").strip()
+    if not auth_tool or not list_tasklists_tool or not list_tasks_tool:
+        raise HTTPException(status_code=500, detail="google_tasks_tools_not_configured")
+
+    try:
+        auth_res = await _mcp_tools_call(auth_tool, {})
+    except Exception as e:
+        raise HTTPException(status_code=502, detail={"google_tasks_auth_status_failed": str(e)})
+
+    auth_parsed = _mcp_text_json(auth_res)
+    if isinstance(auth_parsed, dict):
+        if not bool(auth_parsed.get("ok", True)):
+            raise HTTPException(status_code=401, detail="google_tasks_not_authenticated")
+
+    chosen_tasklist_id = str(tasklist_id or "").strip()
+    chosen_tasklist_title = ""
+
+    if not chosen_tasklist_id:
+        try:
+            tl_res = await _mcp_tools_call(list_tasklists_tool, {})
+        except Exception as e:
+            raise HTTPException(status_code=502, detail={"google_tasks_list_tasklists_failed": str(e)})
+
+        tl_parsed = _mcp_text_json(tl_res)
+        tasklists = tl_parsed.get("tasklists") if isinstance(tl_parsed, dict) else None
+        if not isinstance(tasklists, list) or not tasklists:
+            raise HTTPException(status_code=404, detail="google_tasks_no_tasklists")
+
+        tl0 = tasklists[0] if isinstance(tasklists[0], dict) else {}
+        chosen_tasklist_id = str(tl0.get("id") or "").strip()
+        chosen_tasklist_title = str(tl0.get("title") or "").strip()
+        if not chosen_tasklist_id:
+            raise HTTPException(status_code=502, detail="google_tasks_tasklist_missing_id")
+
+    args: dict[str, Any] = {
+        "tasklist_id": chosen_tasklist_id,
+        "max_results": int(max(1, min(100, int(max_results or 50)))),
+        "show_completed": bool(show_completed),
+    }
+
+    try:
+        tasks_res = await _mcp_tools_call(list_tasks_tool, args)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail={"google_tasks_list_tasks_failed": str(e)})
+
+    tasks_parsed = _mcp_text_json(tasks_res)
+    tasks_raw = tasks_parsed.get("tasks") if isinstance(tasks_parsed, dict) else None
+    if not isinstance(tasks_raw, list):
+        tasks_raw = []
+
+    items: list[GoogleTasksSequentialItem] = []
+    completed_for_template: list[dict[str, Any]] = []
+    for t in tasks_raw:
+        if not isinstance(t, dict):
+            continue
+        tid = str(t.get("id") or t.get("task_id") or "").strip()
+        title = str(t.get("title") or "").strip()
+        status = str(t.get("status") or "").strip() or "needsAction"
+        notes = str(t.get("notes") or "")
+
+        sug = suggest_next_step_from_task({"notes": notes})
+        items.append(
+            GoogleTasksSequentialItem(
+                task_id=tid,
+                title=title,
+                status=status,
+                notes=notes,
+                next_step_text=sug.next_step_text,
+                next_step_index=sug.next_step_index,
+            )
+        )
+        if status == "completed":
+            completed_for_template.append({"notes": notes})
+
+    template = suggest_template_from_completed_tasks(completed_for_template) if completed_for_template else None
+
+    return GoogleTasksSequentialSummaryResponse(
+        ok=True,
+        tasklist_id=chosen_tasklist_id,
+        tasklist_title=chosen_tasklist_title,
+        tasks=items,
+        template=template,
+    )
 
 
 @app.get("/daily-brief")
