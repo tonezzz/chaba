@@ -25,6 +25,7 @@ from fastapi.responses import Response
 from dotenv import load_dotenv
 
 from tasks_sequential_v0 import suggest_next_step_from_task, suggest_template_from_completed_tasks
+from checklist_v0 import next_actionable_step, parse_checklist_steps
 from checklist_mutation_v0 import (
     find_checklist_step_indices_by_text,
     mark_all_checklist_steps_done,
@@ -346,6 +347,7 @@ class GoogleTasksSequentialSummaryResponse(BaseModel):
     tasklist_title: str
     tasks: list[GoogleTasksSequentialItem]
     template: Optional[list[str]] = None
+    debug: Optional[dict[str, Any]] = None
 
 
 def _classify_image_generation_error(message: str) -> Optional[dict[str, Any]]:
@@ -4593,8 +4595,14 @@ def post_agent_status(agent_id: str, payload: dict[str, Any] = Body(...)) -> dic
 @app.get("/google-tasks/sequential/summary", response_model=GoogleTasksSequentialSummaryResponse)
 async def google_tasks_sequential_summary(
     tasklist_id: Optional[str] = None,
+    tasklist_title: Optional[str] = None,
     max_results: int = 50,
     show_completed: bool = True,
+    only_incomplete: bool = False,
+    only_with_notes: bool = False,
+    only_with_checklists: bool = False,
+    include_notes: bool = True,
+    debug: bool = False,
 ) -> GoogleTasksSequentialSummaryResponse:
     auth_meta = MCP_TOOL_MAP.get("google_tasks_auth_status") if isinstance(MCP_TOOL_MAP, dict) else None
     list_tasklists_meta = MCP_TOOL_MAP.get("google_tasks_list_tasklists") if isinstance(MCP_TOOL_MAP, dict) else None
@@ -4620,9 +4628,11 @@ async def google_tasks_sequential_summary(
             raise HTTPException(status_code=401, detail="google_tasks_not_authenticated")
 
     chosen_tasklist_id = str(tasklist_id or "").strip()
+    desired_tasklist_title = str(tasklist_title or "").strip()
     chosen_tasklist_title = ""
+    debug_meta: dict[str, Any] = {}
 
-    if not chosen_tasklist_id:
+    if not chosen_tasklist_id or desired_tasklist_title:
         try:
             tl_res = await _mcp_tools_call(list_tasklists_tool, {})
         except Exception as e:
@@ -4651,11 +4661,45 @@ async def google_tasks_sequential_summary(
                 logger.warning("google_tasks_no_tasklists parsed_type=%s", type(tl_parsed).__name__)
             raise HTTPException(status_code=404, detail="google_tasks_no_tasklists")
 
-        tl0 = tasklists[0] if isinstance(tasklists[0], dict) else {}
-        chosen_tasklist_id = str(tl0.get("id") or "").strip()
-        chosen_tasklist_title = str(tl0.get("title") or "").strip()
-        if not chosen_tasklist_id:
-            raise HTTPException(status_code=502, detail="google_tasks_tasklist_missing_id")
+        debug_meta["tasklists_count"] = len(tasklists)
+
+        if desired_tasklist_title:
+            wanted = desired_tasklist_title.casefold()
+            match = None
+            for tl in tasklists:
+                if not isinstance(tl, dict):
+                    continue
+                title = str(tl.get("title") or "").strip()
+                if title.casefold() == wanted:
+                    match = tl
+                    break
+            if match is None:
+                raise HTTPException(status_code=404, detail="google_tasks_tasklist_title_not_found")
+            chosen_tasklist_id = str(match.get("id") or "").strip()
+            chosen_tasklist_title = str(match.get("title") or "").strip()
+            if not chosen_tasklist_id:
+                raise HTTPException(status_code=502, detail="google_tasks_tasklist_missing_id")
+            debug_meta["tasklist_selected_by"] = "title"
+        else:
+            if not chosen_tasklist_id:
+                tl0 = tasklists[0] if isinstance(tasklists[0], dict) else {}
+                chosen_tasklist_id = str(tl0.get("id") or "").strip()
+                chosen_tasklist_title = str(tl0.get("title") or "").strip()
+                if not chosen_tasklist_id:
+                    raise HTTPException(status_code=502, detail="google_tasks_tasklist_missing_id")
+                debug_meta["tasklist_selected_by"] = "first"
+            else:
+                # Tasklist ID was provided by caller; try to populate the title if we can.
+                for tl in tasklists:
+                    if not isinstance(tl, dict):
+                        continue
+                    if str(tl.get("id") or "").strip() == chosen_tasklist_id:
+                        chosen_tasklist_title = str(tl.get("title") or "").strip()
+                        break
+                debug_meta["tasklist_selected_by"] = "id"
+
+    if not chosen_tasklist_id:
+        raise HTTPException(status_code=400, detail="missing_tasklist_id")
 
     args: dict[str, Any] = {
         "tasklist_id": chosen_tasklist_id,
@@ -4683,6 +4727,19 @@ async def google_tasks_sequential_summary(
 
     items: list[GoogleTasksSequentialItem] = []
     completed_for_template: list[dict[str, Any]] = []
+    filters: list[str] = []
+    if only_incomplete:
+        filters.append("only_incomplete")
+    if only_with_notes:
+        filters.append("only_with_notes")
+    if only_with_checklists:
+        filters.append("only_with_checklists")
+    if not include_notes:
+        filters.append("include_notes=false")
+
+    debug_meta["tasks_raw_count"] = len(tasks_raw)
+    debug_meta["filters"] = filters
+
     for t in tasks_raw:
         if not isinstance(t, dict):
             continue
@@ -4691,15 +4748,35 @@ async def google_tasks_sequential_summary(
         status = str(t.get("status") or "").strip() or "needsAction"
         notes = str(t.get("notes") or "")
 
-        sug = suggest_next_step_from_task({"notes": notes})
+        if only_incomplete and status == "completed":
+            continue
+        if only_with_notes and not str(notes).strip():
+            continue
+
+        has_checklist = False
+        next_step_text: Optional[str] = None
+        next_step_index: Optional[int] = None
+        if notes:
+            steps = parse_checklist_steps(notes)
+            has_checklist = bool(steps)
+            next_step = next_actionable_step(steps)
+            if next_step is not None:
+                next_step_text = next_step.text
+                for i, s in enumerate(steps):
+                    if s == next_step:
+                        next_step_index = i
+                        break
+        if only_with_checklists and not has_checklist:
+            continue
+
         items.append(
             GoogleTasksSequentialItem(
                 task_id=tid,
                 title=title,
                 status=status,
-                notes=notes,
-                next_step_text=sug.next_step_text,
-                next_step_index=sug.next_step_index,
+                notes=notes if include_notes else "",
+                next_step_text=next_step_text,
+                next_step_index=next_step_index,
             )
         )
         if status == "completed":
@@ -4713,6 +4790,7 @@ async def google_tasks_sequential_summary(
         tasklist_title=chosen_tasklist_title,
         tasks=items,
         template=template,
+        debug=debug_meta if debug else None,
     )
 
 

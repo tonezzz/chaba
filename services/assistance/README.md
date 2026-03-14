@@ -2,14 +2,12 @@
 
 ## System overview
 
-See:
-- `docs/CHARTS.md`
-
 ## What this folder is
 The `/services/assistance/` tree is the source-of-truth for all *Assistance* application code deployed via the `idc1-assistance` stack.
 
 ## Start here
 - `CONCEPT.md`
+- `CHARTS.md`
 - `TOOLS_POLICY.md`
 - `MEMORY_POLICY.md`
 - Build / deploy (single source of truth): `docs/BUILD.md`
@@ -26,6 +24,11 @@ The `/services/assistance/` tree is the source-of-truth for all *Assistance* app
     - `POST /tasks/sequential/apply_and_suggest`
   - Google Tasks (read-only):
     - `GET /google-tasks/sequential/summary`
+      - optional query params:
+        - `tasklist_id` or `tasklist_title`
+        - `only_incomplete`, `only_with_notes`, `only_with_checklists`
+        - `include_notes`
+        - `debug`
   - `GET /reminders`
   - `GET /reminders/upcoming`
   - `POST /reminders/{reminder_id}/done`

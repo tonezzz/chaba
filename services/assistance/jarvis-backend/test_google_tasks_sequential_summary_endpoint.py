@@ -51,6 +51,75 @@ def test_google_tasks_sequential_summary_happy_path(monkeypatch: pytest.MonkeyPa
     assert data["template"] == ["s1", "s2"]
 
 
+def test_google_tasks_sequential_summary_tasklist_title_selection(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def fake_call(name: str, arguments: dict):
+        if name.endswith("google_tasks_auth_status"):
+            return _mcp_text_payload({"ok": True})
+        if name.endswith("google_tasks_list_tasklists"):
+            return _mcp_text_payload(
+                {
+                    "ok": True,
+                    "data": {
+                        "items": [
+                            {"id": "tl1", "title": "Inbox"},
+                            {"id": "tl2", "title": "Chaba"},
+                        ]
+                    },
+                }
+            )
+        if name.endswith("google_tasks_list_tasks"):
+            assert arguments.get("tasklist_id") == "tl2"
+            return _mcp_text_payload({"ok": True, "data": {"items": []}})
+        raise AssertionError(f"unexpected_tool_name {name}")
+
+    monkeypatch.setattr(main, "_mcp_tools_call", fake_call)
+
+    client = TestClient(main.app)
+    res = client.get("/google-tasks/sequential/summary?tasklist_title=Chaba")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["tasklist_id"] == "tl2"
+    assert data["tasklist_title"] == "Chaba"
+
+
+def test_google_tasks_sequential_summary_filters_and_debug(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def fake_call(name: str, arguments: dict):
+        if name.endswith("google_tasks_auth_status"):
+            return _mcp_text_payload({"ok": True})
+        if name.endswith("google_tasks_list_tasklists"):
+            return _mcp_text_payload({"ok": True, "data": {"items": [{"id": "tl1", "title": "Inbox"}]}})
+        if name.endswith("google_tasks_list_tasks"):
+            return _mcp_text_payload(
+                {
+                    "ok": True,
+                    "data": {
+                        "items": [
+                            {"id": "t1", "title": "No notes", "status": "needsAction", "notes": ""},
+                            {"id": "t2", "title": "Has notes", "status": "needsAction", "notes": "hello"},
+                            {"id": "t3", "title": "Checklist", "status": "needsAction", "notes": "- [ ] a\n"},
+                            {"id": "t4", "title": "Done", "status": "completed", "notes": "- [ ] a\n"},
+                        ]
+                    },
+                }
+            )
+        raise AssertionError(f"unexpected_tool_name {name}")
+
+    monkeypatch.setattr(main, "_mcp_tools_call", fake_call)
+
+    client = TestClient(main.app)
+    res = client.get(
+        "/google-tasks/sequential/summary?only_incomplete=true&only_with_notes=true&only_with_checklists=true&include_notes=false&debug=true"
+    )
+    assert res.status_code == 200
+    data = res.json()
+    # Only task t3 should survive all filters.
+    assert [t["task_id"] for t in data["tasks"]] == ["t3"]
+    assert data["tasks"][0]["notes"] == ""
+    assert data["tasks"][0]["next_step_text"] == "a"
+    assert isinstance(data.get("debug"), dict)
+    assert data["debug"].get("tasks_raw_count") == 4
+
+
 def test_google_tasks_sequential_summary_not_authenticated(monkeypatch: pytest.MonkeyPatch) -> None:
     async def fake_call(name: str, arguments: dict):
         if name.endswith("google_tasks_auth_status"):
