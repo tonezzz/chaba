@@ -29,6 +29,11 @@ The `/services/assistance/` tree is the source-of-truth for all *Assistance* app
         - `only_incomplete`, `only_with_notes`, `only_with_checklists`
         - `include_notes`
         - `debug`
+  - Google Tasks (write, requires `confirm=true`):
+    - `POST /google-tasks/tasks/create`
+    - `POST /google-tasks/tasks/update`
+    - `POST /google-tasks/tasks/complete`
+    - `POST /google-tasks/tasks/delete`
   - `GET /reminders`
   - `GET /reminders/upcoming`
   - `POST /reminders/{reminder_id}/done`

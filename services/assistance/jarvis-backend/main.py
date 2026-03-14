@@ -370,6 +370,20 @@ class GoogleTasksUpdateTaskRequest(BaseModel):
     confirm: bool = False
 
 
+class GoogleTasksCompleteTaskRequest(BaseModel):
+    tasklist_id: Optional[str] = None
+    tasklist_title: Optional[str] = None
+    task_id: str
+    confirm: bool = False
+
+
+class GoogleTasksDeleteTaskRequest(BaseModel):
+    tasklist_id: Optional[str] = None
+    tasklist_title: Optional[str] = None
+    task_id: str
+    confirm: bool = False
+
+
 class GoogleTasksWriteResponse(BaseModel):
     ok: bool = True
     result: dict[str, Any]
@@ -4879,6 +4893,68 @@ async def google_tasks_create_task(req: GoogleTasksCreateTaskRequest) -> GoogleT
         "notes": str(req.notes or ""),
         "due": str(req.due).strip() if req.due else None,
     }
+    payload = {k: v for k, v in payload.items() if v is not None}
+
+    meta = MCP_TOOL_MAP.get(action) if isinstance(MCP_TOOL_MAP, dict) else None
+    if not isinstance(meta, dict):
+        raise HTTPException(status_code=500, detail="google_tasks_tools_not_configured")
+    mcp_name = str(meta.get("mcp_name") or "").strip()
+    if not mcp_name:
+        raise HTTPException(status_code=500, detail="google_tasks_tools_not_configured")
+
+    res = await _mcp_tools_call(mcp_name, payload)
+    parsed = _mcp_text_json(res)
+    return GoogleTasksWriteResponse(ok=True, result=parsed if isinstance(parsed, dict) else {"raw": parsed})
+
+
+@app.post("/google-tasks/tasks/complete", response_model=GoogleTasksWriteResponse)
+async def google_tasks_complete_task(req: GoogleTasksCompleteTaskRequest) -> GoogleTasksWriteResponse:
+    task_id = str(req.task_id or "").strip()
+    if not task_id:
+        raise HTTPException(status_code=400, detail="missing_task_id")
+
+    action = "google_tasks_complete_task"
+    preview_payload: dict[str, Any] = {
+        "tasklist_id": (str(req.tasklist_id or "").strip() or None),
+        "tasklist_title": (str(req.tasklist_title or "").strip() or None),
+        "task_id": task_id,
+    }
+    preview_payload = {k: v for k, v in preview_payload.items() if v is not None}
+    _require_confirmation(bool(req.confirm), action, preview_payload)
+
+    tasklist_id_resolved, _ = await _resolve_google_tasks_tasklist(tasklist_id=req.tasklist_id, tasklist_title=req.tasklist_title)
+    payload: dict[str, Any] = {"tasklist_id": tasklist_id_resolved, "task_id": task_id}
+    payload = {k: v for k, v in payload.items() if v is not None}
+
+    meta = MCP_TOOL_MAP.get(action) if isinstance(MCP_TOOL_MAP, dict) else None
+    if not isinstance(meta, dict):
+        raise HTTPException(status_code=500, detail="google_tasks_tools_not_configured")
+    mcp_name = str(meta.get("mcp_name") or "").strip()
+    if not mcp_name:
+        raise HTTPException(status_code=500, detail="google_tasks_tools_not_configured")
+
+    res = await _mcp_tools_call(mcp_name, payload)
+    parsed = _mcp_text_json(res)
+    return GoogleTasksWriteResponse(ok=True, result=parsed if isinstance(parsed, dict) else {"raw": parsed})
+
+
+@app.post("/google-tasks/tasks/delete", response_model=GoogleTasksWriteResponse)
+async def google_tasks_delete_task(req: GoogleTasksDeleteTaskRequest) -> GoogleTasksWriteResponse:
+    task_id = str(req.task_id or "").strip()
+    if not task_id:
+        raise HTTPException(status_code=400, detail="missing_task_id")
+
+    action = "google_tasks_delete_task"
+    preview_payload: dict[str, Any] = {
+        "tasklist_id": (str(req.tasklist_id or "").strip() or None),
+        "tasklist_title": (str(req.tasklist_title or "").strip() or None),
+        "task_id": task_id,
+    }
+    preview_payload = {k: v for k, v in preview_payload.items() if v is not None}
+    _require_confirmation(bool(req.confirm), action, preview_payload)
+
+    tasklist_id_resolved, _ = await _resolve_google_tasks_tasklist(tasklist_id=req.tasklist_id, tasklist_title=req.tasklist_title)
+    payload: dict[str, Any] = {"tasklist_id": tasklist_id_resolved, "task_id": task_id}
     payload = {k: v for k, v in payload.items() if v is not None}
 
     meta = MCP_TOOL_MAP.get(action) if isinstance(MCP_TOOL_MAP, dict) else None
