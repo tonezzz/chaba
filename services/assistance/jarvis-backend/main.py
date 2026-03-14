@@ -4629,8 +4629,21 @@ async def google_tasks_sequential_summary(
             raise HTTPException(status_code=502, detail={"google_tasks_list_tasklists_failed": str(e)})
 
         tl_parsed = _mcp_text_json(tl_res)
-        tasklists = tl_parsed.get("tasklists") if isinstance(tl_parsed, dict) else None
+        tasklists = None
+        if isinstance(tl_parsed, dict):
+            tasklists = tl_parsed.get("tasklists")
+            if not isinstance(tasklists, list):
+                tasklists = tl_parsed.get("items")
+            if not isinstance(tasklists, list):
+                tasklists = tl_parsed.get("lists")
         if not isinstance(tasklists, list) or not tasklists:
+            if isinstance(tl_parsed, dict):
+                logger.warning(
+                    "google_tasks_no_tasklists parsed_keys=%s",
+                    sorted([str(k) for k in tl_parsed.keys()]),
+                )
+            else:
+                logger.warning("google_tasks_no_tasklists parsed_type=%s", type(tl_parsed).__name__)
             raise HTTPException(status_code=404, detail="google_tasks_no_tasklists")
 
         tl0 = tasklists[0] if isinstance(tasklists[0], dict) else {}
@@ -4651,7 +4664,11 @@ async def google_tasks_sequential_summary(
         raise HTTPException(status_code=502, detail={"google_tasks_list_tasks_failed": str(e)})
 
     tasks_parsed = _mcp_text_json(tasks_res)
-    tasks_raw = tasks_parsed.get("tasks") if isinstance(tasks_parsed, dict) else None
+    tasks_raw = None
+    if isinstance(tasks_parsed, dict):
+        tasks_raw = tasks_parsed.get("tasks")
+        if not isinstance(tasks_raw, list):
+            tasks_raw = tasks_parsed.get("items")
     if not isinstance(tasks_raw, list):
         tasks_raw = []
 
