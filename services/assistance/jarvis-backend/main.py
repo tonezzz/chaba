@@ -42,6 +42,7 @@ from checklist_mutation_v0 import (
 
 from google import genai
 from google.genai import types
+from google.genai import errors as genai_errors
 from pydantic import BaseModel, Field
 
 
@@ -526,8 +527,6 @@ def _set_reminder_due_and_notify_at(*, reminder_id: str, due_at_ts: Optional[int
 
 async def _handle_last_reminder_modify(ws: WebSocket, text: str) -> bool:
     raw = str(text or "").strip()
-    if not raw:
-        return False
     s = " ".join(raw.split())
 
     is_thai = _text_is_thai(s)
@@ -2311,7 +2310,7 @@ def _extract_reminder_setup_title(text: str) -> str:
 
     if not tail:
         # Thai variants (keep loose spacing). Examples:
-        # - สร้างแจ้งเตือนใหม่ พรุ่งนี้ 9 โมง ...
+        # - สร้างแจ้งเตือนใหม่ พรุ่งนี้ 9 โมงเช้า ...
         # - แจ้งเตือน: พรุ่งนี้ ...
         # - ตั้งเตือน: ...
         m_th = re.search(r"^(?:สร้าง\s*)?แจ้งเตือน(?:\s*ใหม่)?\s*[:\-]?\s*(.*)$", s)
@@ -3720,7 +3719,11 @@ async def _handle_current_news_trigger(ws: WebSocket, text: str) -> bool:
 
     if wants_sources:
         await ws.send_json(
-            {"type": "current_news_sources", "sources": ctx.get("sources") or [], "updated_at": ctx.get("updated_at")}
+            {
+                "type": "current_news_sources",
+                "sources": ctx.get("sources") or [],
+                "updated_at": ctx.get("updated_at"),
+            }
         )
         return True
 
@@ -4518,11 +4521,25 @@ async def gem_demo(req: GemDemoRequest) -> GemDemoResponse:
     model = _normalize_model_name(str(req.model or os.getenv("GEMINI_TEXT_MODEL") or "gemini-2.0-flash").strip() or "gemini-2.0-flash")
     client = genai.Client(api_key=api_key)
     cfg = {"system_instruction": system_instruction}
-    res = await client.aio.models.generate_content(model=model, contents=str(req.text), config=cfg)
-    txt = getattr(res, "text", None)
-    if txt is None:
-        txt = str(res)
-    return GemDemoResponse(gem=gem_name, model=model, text=str(txt or "").strip())
+    try:
+        res = await client.aio.models.generate_content(model=model, contents=str(req.text), config=cfg)
+        txt = getattr(res, "text", None)
+        if txt is None:
+            txt = str(res)
+        return GemDemoResponse(gem=gem_name, model=model, text=str(txt or "").strip())
+    except genai_errors.ClientError as e:
+        # Most common failure mode in local dev: quota/rate-limit exhaustion (RESOURCE_EXHAUSTED / 429).
+        msg = str(e)
+        status_code = int(getattr(e, "status_code", 502) or 502)
+        detail: dict[str, Any] = {"gemini_error": msg}
+
+        if status_code == 429 or "resource_exhausted" in msg.lower() or "quota" in msg.lower():
+            status_code = 503
+            detail["reason"] = "resource_exhausted"
+
+        raise HTTPException(status_code=status_code, detail=detail)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail={"gem_demo_failed": str(e)})
 
 
 @app.get("/agents")
