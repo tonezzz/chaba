@@ -11,6 +11,8 @@ import hashlib
 from io import BytesIO
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
+
+import db_session
 from typing import Any, Optional, Literal
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -1355,54 +1357,9 @@ async def image_asset_meta(asset_id: str) -> dict[str, Any]:
 
 
 def _init_session_db() -> None:
+    db_session.init_session_db(SESSION_DB_PATH)
     os.makedirs(os.path.dirname(SESSION_DB_PATH) or ".", exist_ok=True)
     with sqlite3.connect(SESSION_DB_PATH) as conn:
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS sessions (
-              session_id TEXT PRIMARY KEY,
-              active_trip_id TEXT,
-              active_trip_name TEXT,
-              updated_at INTEGER
-            )
-            """
-        )
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pending_writes (
-              confirmation_id TEXT PRIMARY KEY,
-              session_id TEXT NOT NULL,
-              action TEXT NOT NULL,
-              payload_json TEXT NOT NULL,
-              created_at INTEGER NOT NULL
-            )
-            """
-        )
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS google_tasks_undo (
-              undo_id TEXT PRIMARY KEY,
-              created_at INTEGER NOT NULL,
-              action TEXT NOT NULL,
-              tasklist_id TEXT,
-              task_id TEXT,
-              before_json TEXT,
-              after_json TEXT
-            )
-            """
-        )
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS google_calendar_undo (
-              undo_id TEXT PRIMARY KEY,
-              created_at INTEGER NOT NULL,
-              action TEXT NOT NULL,
-              event_id TEXT,
-              before_json TEXT,
-              after_json TEXT
-            )
-            """
-        )
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS reminders (
@@ -4493,77 +4450,28 @@ def _set_session_state(session_id: str, active_trip_id: Optional[str], active_tr
         conn.commit()
 
 
+def _set_session_last_item(session_id: str, slot: str, kind: str, payload: dict[str, Any]) -> None:
+    db_session.set_session_last_item(SESSION_DB_PATH, session_id, slot, kind, payload)
+
+
+def _get_session_last_item(session_id: str, slot: str) -> Optional[dict[str, Any]]:
+    return db_session.get_session_last_item(SESSION_DB_PATH, session_id, slot)
+
+
 def _create_pending_write(session_id: str, action: str, payload: Any) -> str:
-    _init_session_db()
-    confirmation_id = f"pw_{int(time.time())}_{os.urandom(6).hex()}"
-    created_at = int(time.time())
-    payload_json = json.dumps(payload, ensure_ascii=False)
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        conn.execute(
-            "INSERT INTO pending_writes(confirmation_id, session_id, action, payload_json, created_at) VALUES(?, ?, ?, ?, ?)",
-            (confirmation_id, session_id, action, payload_json, created_at),
-        )
-        conn.commit()
-    return confirmation_id
+    return db_session.create_pending_write(SESSION_DB_PATH, session_id, action, payload)
 
 
 def _list_pending_writes(session_id: str) -> list[dict[str, Any]]:
-    _init_session_db()
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        cur = conn.execute(
-            "SELECT confirmation_id, action, payload_json, created_at FROM pending_writes WHERE session_id = ? ORDER BY created_at DESC",
-            (session_id,),
-        )
-        rows = cur.fetchall() or []
-    out: list[dict[str, Any]] = []
-    for confirmation_id, action, payload_json, created_at in rows:
-        try:
-            payload = json.loads(payload_json)
-        except Exception:
-            payload = payload_json
-        out.append(
-            {
-                "confirmation_id": confirmation_id,
-                "action": action,
-                "payload": payload,
-                "created_at": created_at,
-            }
-        )
-    return out
+    return db_session.list_pending_writes(SESSION_DB_PATH, session_id)
 
 
 def _pop_pending_write(session_id: str, confirmation_id: str) -> Optional[dict[str, Any]]:
-    _init_session_db()
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        cur = conn.execute(
-            "SELECT action, payload_json, created_at FROM pending_writes WHERE session_id = ? AND confirmation_id = ?",
-            (session_id, confirmation_id),
-        )
-        row = cur.fetchone()
-        if not row:
-            return None
-        action, payload_json, created_at = row
-        conn.execute(
-            "DELETE FROM pending_writes WHERE session_id = ? AND confirmation_id = ?",
-            (session_id, confirmation_id),
-        )
-        conn.commit()
-    try:
-        payload = json.loads(payload_json)
-    except Exception:
-        payload = payload_json
-    return {"action": action, "payload": payload, "created_at": created_at}
+    return db_session.pop_pending_write(SESSION_DB_PATH, session_id, confirmation_id)
 
 
 def _cancel_pending_write(session_id: str, confirmation_id: str) -> bool:
-    _init_session_db()
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        cur = conn.execute(
-            "DELETE FROM pending_writes WHERE session_id = ? AND confirmation_id = ?",
-            (session_id, confirmation_id),
-        )
-        conn.commit()
-        return (cur.rowcount or 0) > 0
+    return db_session.cancel_pending_write(SESSION_DB_PATH, session_id, confirmation_id)
 
 app.add_middleware(
     CORSMiddleware,
@@ -4976,83 +4884,15 @@ async def _google_tasks_fetch_task(*, tasklist_id: str, task_id: str) -> Optiona
 
 
 def _google_tasks_undo_log(action: str, tasklist_id: Optional[str], task_id: Optional[str], before: Any, after: Any) -> str:
-    _init_session_db()
-    undo_id = f"gtu_{int(time.time())}_{os.urandom(6).hex()}"
-    created_at = int(time.time())
-    before_json = json.dumps(before, ensure_ascii=False) if before is not None else ""
-    after_json = json.dumps(after, ensure_ascii=False) if after is not None else ""
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        conn.execute(
-            "INSERT INTO google_tasks_undo(undo_id, created_at, action, tasklist_id, task_id, before_json, after_json) VALUES(?, ?, ?, ?, ?, ?, ?)",
-            (undo_id, created_at, action, tasklist_id, task_id, before_json, after_json),
-        )
-        conn.commit()
-    return undo_id
+    return db_session.google_tasks_undo_log(SESSION_DB_PATH, action, tasklist_id, task_id, before, after)
 
 
 def _google_tasks_undo_list(limit: int) -> list[dict[str, Any]]:
-    _init_session_db()
-    lim = max(1, min(int(limit or 10), 100))
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        cur = conn.execute(
-            "SELECT undo_id, created_at, action, tasklist_id, task_id FROM google_tasks_undo ORDER BY created_at DESC LIMIT ?",
-            (lim,),
-        )
-        rows = cur.fetchall() or []
-    out: list[dict[str, Any]] = []
-    for undo_id, created_at, action, tasklist_id, task_id in rows:
-        out.append(
-            {
-                "undo_id": undo_id,
-                "created_at": int(created_at or 0),
-                "action": str(action or ""),
-                "tasklist_id": (str(tasklist_id) if tasklist_id else None),
-                "task_id": (str(task_id) if task_id else None),
-            }
-        )
-    return out
+    return db_session.google_tasks_undo_list(SESSION_DB_PATH, limit)
 
 
 def _google_tasks_undo_pop_last(n: int) -> list[dict[str, Any]]:
-    _init_session_db()
-    nn = max(1, min(int(n or 1), 50))
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        cur = conn.execute(
-            "SELECT undo_id, created_at, action, tasklist_id, task_id, before_json, after_json FROM google_tasks_undo ORDER BY created_at DESC LIMIT ?",
-            (nn,),
-        )
-        rows = cur.fetchall() or []
-        ids = [r[0] for r in rows if isinstance(r, (list, tuple)) and r and r[0]]
-        if ids:
-            conn.executemany("DELETE FROM google_tasks_undo WHERE undo_id = ?", [(i,) for i in ids])
-        conn.commit()
-
-    out: list[dict[str, Any]] = []
-    for r in rows:
-        if not isinstance(r, (list, tuple)) or len(r) < 7:
-            continue
-        before = None
-        after = None
-        try:
-            before = json.loads(r[5]) if r[5] else None
-        except Exception:
-            before = None
-        try:
-            after = json.loads(r[6]) if r[6] else None
-        except Exception:
-            after = None
-        out.append(
-            {
-                "undo_id": r[0],
-                "created_at": int(r[1] or 0),
-                "action": r[2],
-                "tasklist_id": r[3],
-                "task_id": r[4],
-                "before": before,
-                "after": after,
-            }
-        )
-    return out
+    return db_session.google_tasks_undo_pop_last(SESSION_DB_PATH, n)
 
 
 async def _google_calendar_fetch_event(*, event_id: str) -> Optional[dict[str, Any]]:
@@ -5084,96 +4924,15 @@ async def _google_calendar_fetch_event(*, event_id: str) -> Optional[dict[str, A
 
 
 def _google_calendar_undo_log(action: str, event_id: Optional[str], before: Any, after: Any) -> str:
-    _init_session_db()
-    undo_id = f"gcu_{int(time.time())}_{os.urandom(6).hex()}"
-    created_at = int(time.time())
-    before_json = json.dumps(before, ensure_ascii=False) if before is not None else ""
-    after_json = json.dumps(after, ensure_ascii=False) if after is not None else ""
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        conn.execute(
-            "INSERT INTO google_calendar_undo(undo_id, created_at, action, event_id, before_json, after_json) VALUES(?, ?, ?, ?, ?, ?)",
-            (undo_id, created_at, action, event_id, before_json, after_json),
-        )
-        conn.commit()
-    return undo_id
+    return db_session.google_calendar_undo_log(SESSION_DB_PATH, action, event_id, before, after)
 
 
 def _google_calendar_undo_list(limit: int) -> list[dict[str, Any]]:
-    _init_session_db()
-    lim = max(1, min(int(limit or 10), 100))
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        cur = conn.execute(
-            "SELECT undo_id, created_at, action, event_id, before_json, after_json FROM google_calendar_undo ORDER BY created_at DESC LIMIT ?",
-            (lim,),
-        )
-        rows = cur.fetchall() or []
-
-    out: list[dict[str, Any]] = []
-    for r in rows:
-        if not isinstance(r, (list, tuple)) or len(r) < 6:
-            continue
-        before = None
-        after = None
-        try:
-            before = json.loads(r[4]) if r[4] else None
-        except Exception:
-            before = None
-        try:
-            after = json.loads(r[5]) if r[5] else None
-        except Exception:
-            after = None
-        out.append(
-            {
-                "undo_id": r[0],
-                "created_at": int(r[1] or 0),
-                "action": r[2],
-                "event_id": r[3],
-                "before": before,
-                "after": after,
-            }
-        )
-    return out
+    return db_session.google_calendar_undo_list(SESSION_DB_PATH, limit)
 
 
 def _google_calendar_undo_pop_last(n: int) -> list[dict[str, Any]]:
-    _init_session_db()
-    nn = max(1, min(int(n or 1), 50))
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        cur = conn.execute(
-            "SELECT undo_id, created_at, action, event_id, before_json, after_json FROM google_calendar_undo ORDER BY created_at DESC LIMIT ?",
-            (nn,),
-        )
-        rows = cur.fetchall() or []
-        ids = [r[0] for r in rows if isinstance(r, (list, tuple)) and r and r[0]]
-        if ids:
-            conn.executemany("DELETE FROM google_calendar_undo WHERE undo_id = ?", [(i,) for i in ids])
-        conn.commit()
-
-    out: list[dict[str, Any]] = []
-    for r in rows:
-        if not isinstance(r, (list, tuple)) or len(r) < 6:
-            continue
-        before = None
-        after = None
-        try:
-            before = json.loads(r[4]) if r[4] else None
-        except Exception:
-            before = None
-        try:
-            after = json.loads(r[5]) if r[5] else None
-        except Exception:
-            after = None
-        out.append(
-            {
-                "undo_id": r[0],
-                "created_at": int(r[1] or 0),
-                "action": r[2],
-                "event_id": r[3],
-                "before": before,
-                "after": after,
-            }
-        )
-    return out
+    return db_session.google_calendar_undo_pop_last(SESSION_DB_PATH, n)
 
 
 @app.post("/google-tasks/tasks/create", response_model=GoogleTasksWriteResponse)
@@ -6581,6 +6340,20 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
         }
     )
 
+    decls.append(
+        {
+            "name": "session_last_get",
+            "description": "Get the last created/modified item for this voice session (task or calendar_event).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "slot": {"type": "string", "enum": ["last_created", "last_modified"]},
+                },
+                "required": ["slot"],
+            },
+        }
+    )
+
     decls.append({"name": "pending_list", "description": "List queued pending actions waiting for confirmation."})
     decls.append(
         {
@@ -6672,6 +6445,13 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             "timezone": tz.key,
         }
 
+    if tool_name == "session_last_get":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        slot = str(args.get("slot") or "").strip().lower()
+        out = _get_session_last_item(str(session_id), slot)
+        return out or {"ok": True, "slot": slot, "empty": True}
+
     if tool_name == "pending_list":
         if not session_id:
             raise HTTPException(status_code=400, detail="missing_session_id")
@@ -6716,11 +6496,42 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
                         created_event_id = str(data_obj.get("id") or "").strip() or None
                 after_event = await _google_calendar_fetch_event(event_id=created_event_id) if created_event_id else None
                 _google_calendar_undo_log("google_calendar_create_event", created_event_id, before=None, after=after_event)
+                if session_id and created_event_id:
+                    _set_session_last_item(str(session_id), "last_created", "calendar_event", {"event_id": created_event_id})
             elif original_tool_name == "google_calendar_update_event":
                 after_event = await _google_calendar_fetch_event(event_id=event_id) if event_id else None
                 _google_calendar_undo_log("google_calendar_update_event", event_id, before=before_event, after=after_event)
+                if session_id and event_id:
+                    _set_session_last_item(str(session_id), "last_modified", "calendar_event", {"event_id": event_id})
             elif original_tool_name == "google_calendar_delete_event":
                 _google_calendar_undo_log("google_calendar_delete_event", event_id, before=before_event, after=None)
+                if session_id and event_id:
+                    _set_session_last_item(str(session_id), "last_modified", "calendar_event", {"event_id": event_id})
+
+            if original_tool_name == "google_tasks_create_task":
+                created_task_id: Optional[str] = None
+                if isinstance(parsed, dict):
+                    data_obj = parsed.get("data") if isinstance(parsed.get("data"), dict) else None
+                    if isinstance(data_obj, dict):
+                        created_task_id = str(data_obj.get("id") or "").strip() or None
+                tasklist_id = str(mcp_args.get("tasklist_id") or "").strip() or None
+                if session_id and created_task_id:
+                    _set_session_last_item(
+                        str(session_id),
+                        "last_created",
+                        "task",
+                        {"task_id": created_task_id, "tasklist_id": tasklist_id},
+                    )
+            elif original_tool_name in ("google_tasks_update_task", "google_tasks_complete_task", "google_tasks_delete_task"):
+                task_id = str(mcp_args.get("task_id") or "").strip() or None
+                tasklist_id = str(mcp_args.get("tasklist_id") or "").strip() or None
+                if session_id and task_id:
+                    _set_session_last_item(
+                        str(session_id),
+                        "last_modified",
+                        "task",
+                        {"task_id": task_id, "tasklist_id": tasklist_id},
+                    )
 
             return res
         raise HTTPException(status_code=400, detail={"unknown_pending_action": action})
@@ -7090,6 +6901,7 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                         session_id = getattr(ws.state, "session_id", None)
                         if fc_name in MCP_TOOL_MAP or fc_name in (
                             "time_now",
+                            "session_last_get",
                             "pending_list",
                             "pending_confirm",
                             "pending_cancel",
