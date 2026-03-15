@@ -74,6 +74,14 @@ export default function App() {
     };
     liveService.current.onMessage = (msg) => {
       setMessages((prev) => {
+        if (msg.id === "sticky_progress") {
+          const without = prev.filter((m) => m.id !== "sticky_progress");
+          const txt = String(msg.text || "").trim();
+          if (!txt) {
+            return without;
+          }
+          return [msg, ...without];
+        }
         const isErr = msg.id.endsWith('_err') || msg.id.includes('_attach_err_');
         const isConnectedState = msg.id.endsWith('_state') && String(msg.text || '').toLowerCase() === 'connected';
         const shouldClearStickyErrors = isConnectedState || (!isErr && prev.length > 0);

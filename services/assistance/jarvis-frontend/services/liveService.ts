@@ -319,6 +319,49 @@ export class LiveService {
       type: message?.type != null ? String(message.type) : undefined,
       instance_id: message?.instance_id != null ? String(message.instance_id) : undefined,
     };
+
+    if (message?.type === "progress") {
+      const phase = message?.phase != null ? String(message.phase) : "";
+      const tool = message?.tool != null ? String(message.tool) : "";
+      const step = message?.step != null ? Number(message.step) : null;
+      const total = message?.total != null ? Number(message.total) : null;
+      const baseMsg = message?.message != null ? String(message.message) : "";
+      const prefix = tool ? `[${tool}] ` : "";
+      const stepText = step != null && total != null ? ` (${step}/${total})` : "";
+      const text = `${prefix}${baseMsg}${stepText}`.trim();
+
+      if (phase === "done" || phase === "error") {
+        // Clear sticky progress line.
+        this.onMessage({
+          id: "sticky_progress",
+          role: "system",
+          text: "",
+          timestamp: new Date(),
+          metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "debug", category: "ws" },
+        });
+        // Emit a short final line.
+        if (text) {
+          this.onMessage({
+            id: `${Date.now()}_progress_${phase}`,
+            role: "system",
+            text,
+            timestamp: new Date(),
+            metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: phase === "error" ? "warn" : "info", category: "ws" },
+          });
+        }
+        return;
+      }
+
+      // Sticky progress line that updates in-place.
+      this.onMessage({
+        id: "sticky_progress",
+        role: "system",
+        text: text || "working…",
+        timestamp: new Date(),
+        metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "info", category: "ws" },
+      });
+      return;
+    }
     if (message?.type === "state" && message?.state) {
       this.onMessage({
         id: `${Date.now()}_state`,

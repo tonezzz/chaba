@@ -191,6 +191,30 @@ async def _ws_send_json(ws: WebSocket, payload: dict[str, Any], trace_id: str | 
         pass
     await ws.send_json(payload)
 
+
+async def _ws_progress(
+    ws: WebSocket,
+    message: str,
+    *,
+    phase: str,
+    tool_name: str | None = None,
+    step: int | None = None,
+    total: int | None = None,
+    trace_id: str | None = None,
+) -> None:
+    payload: dict[str, Any] = {
+        "type": "progress",
+        "phase": str(phase or ""),
+        "message": str(message or ""),
+    }
+    if tool_name:
+        payload["tool"] = str(tool_name)
+    if step is not None:
+        payload["step"] = int(step)
+    if total is not None:
+        payload["total"] = int(total)
+    await _ws_send_json(ws, payload, trace_id=trace_id)
+
 app = FastAPI(title="jarvis-backend", version="0.1.0")
 
 
@@ -6073,6 +6097,17 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                     logger.info("gemini_tool_call_item name=%s args_keys=%s", fc_name, list(fc_args.keys()))
                     try:
                         session_id = getattr(ws.state, "session_id", None)
+                        try:
+                            await _ws_progress(
+                                ws,
+                                f"Running {fc_name} ({len(function_responses) + 1}/{len(function_calls)})",
+                                phase="start",
+                                tool_name=fc_name,
+                                step=len(function_responses) + 1,
+                                total=len(function_calls),
+                            )
+                        except Exception:
+                            pass
                         if fc_name in MCP_TOOL_MAP or fc_name in (
                             "time_now",
                             "session_last_get",
@@ -6090,6 +6125,17 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                                 response={"ok": True, "result": result},
                             )
                         )
+                        try:
+                            await _ws_progress(
+                                ws,
+                                f"Done {fc_name}",
+                                phase="done",
+                                tool_name=fc_name,
+                                step=len(function_responses),
+                                total=len(function_calls),
+                            )
+                        except Exception:
+                            pass
                     except HTTPException as e:
                         logger.info("gemini_tool_call_error name=%s status_code=%s", fc_name, e.status_code)
                         function_responses.append(
@@ -6099,6 +6145,17 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                                 response={"ok": False, "error": e.detail, "status_code": e.status_code},
                             )
                         )
+                        try:
+                            await _ws_progress(
+                                ws,
+                                f"Failed {fc_name}",
+                                phase="error",
+                                tool_name=fc_name,
+                                step=len(function_responses) + 1,
+                                total=len(function_calls),
+                            )
+                        except Exception:
+                            pass
                     except Exception as e:
                         logger.info("gemini_tool_call_exception name=%s error=%s", fc_name, str(e))
                         function_responses.append(
@@ -6108,6 +6165,18 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                                 response={"ok": False, "error": str(e)},
                             )
                         )
+
+                        try:
+                            await _ws_progress(
+                                ws,
+                                f"Failed {fc_name}",
+                                phase="error",
+                                tool_name=fc_name,
+                                step=len(function_responses) + 1,
+                                total=len(function_calls),
+                            )
+                        except Exception:
+                            pass
 
                 if function_responses:
                     await session.send_tool_response(function_responses=function_responses)
