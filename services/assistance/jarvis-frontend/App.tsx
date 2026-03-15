@@ -68,6 +68,16 @@ export default function App() {
     }
   }, []);
 
+  const clientLabelForMsg = useCallback((m: MessageLog): string => {
+    const tag = String((m.metadata as any)?.ws?.client_tag || "").trim();
+    const id = String((m.metadata as any)?.ws?.client_id || "").trim();
+    const suffix = id ? id.slice(-6) : "";
+    if (tag && suffix) return `${tag}:${suffix}`;
+    if (tag) return tag;
+    if (suffix) return suffix;
+    return "";
+  }, []);
+
   useEffect(() => {
     const checkKey = async () => {
       if ((window as any).aistudio && await (window as any).aistudio.hasSelectedApiKey()) {
@@ -577,8 +587,8 @@ export default function App() {
                       .reverse()
                       .map((m) => {
                         const ts = m.timestamp.toLocaleTimeString();
-                        const tag = String((m.metadata as any)?.ws?.client_tag || "");
-                        const tagText = tag ? `[${tag}] ` : "";
+                        const label = clientLabelForMsg(m);
+                        const tagText = label ? `[${label}] ` : "";
                         const role = String(m.role || "");
                         const txt = String(m.text || "");
                         return `[${ts}] ${tagText}${role}: ${txt}`;
@@ -657,8 +667,8 @@ export default function App() {
                       {m.metadata?.type === 'image_gen' && <ImageIcon className="w-3 h-3 text-purple-400" />}
                       {m.metadata?.type === 'reimagine' && <Camera className="w-3 h-3 text-pink-400" />}
                       <span className="text-xs text-slate-500 font-mono">{m.timestamp.toLocaleTimeString()}</span>
-                      {m.metadata?.ws?.client_tag && (
-                        <span className="text-[10px] text-slate-600 font-mono">[{String(m.metadata.ws.client_tag)}]</span>
+                      {clientLabelForMsg(m) && (
+                        <span className="text-[10px] text-slate-600 font-mono">[{clientLabelForMsg(m)}]</span>
                       )}
                       <button
                         className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-600 hover:text-slate-300"
@@ -666,8 +676,8 @@ export default function App() {
                           e.preventDefault();
                           e.stopPropagation();
                           const ts = m.timestamp.toLocaleTimeString();
-                          const tag = String((m.metadata as any)?.ws?.client_tag || "");
-                          const tagText = tag ? `[${tag}] ` : "";
+                          const label = clientLabelForMsg(m);
+                          const tagText = label ? `[${label}] ` : "";
                           const role = String(m.role || "");
                           const txt = String(m.text || "");
                           void copyText(`[${ts}] ${tagText}${role}: ${txt}`);
