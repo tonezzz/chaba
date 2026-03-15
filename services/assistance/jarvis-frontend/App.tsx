@@ -5,7 +5,7 @@ import { ConnectionState, MessageLog } from './types';
 import Visualizer from './components/Visualizer';
 import CameraFeed from './components/CameraFeed';
 import CarsPanel from './components/CarsPanel';
-import { Play, Mic, MicOff, Search, Image as ImageIcon, Camera, Activity, Lock, ChevronRight, Paperclip, Send, X } from 'lucide-react';
+import { Play, Mic, MicOff, Search, Image as ImageIcon, Camera, Activity, Lock, ChevronRight, Paperclip, Send, X, Link2Off } from 'lucide-react';
 
 export default function App() {
   const [hasKey, setHasKey] = useState(false);
@@ -447,22 +447,56 @@ export default function App() {
           <div className={`p-4 rounded-lg border ${state === ConnectionState.CONNECTED ? 'border-cyan-500/30 bg-cyan-950/20' : 'border-red-500/30 bg-red-950/20'} transition-colors duration-500`}>
              <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-mono text-slate-400 uppercase">System Status</span>
-                <span className={`text-xs font-bold uppercase ${state === ConnectionState.CONNECTED ? 'text-cyan-400' : 'text-red-400'}`}>
-                  {state}
+                <span
+                  className={`inline-flex items-center gap-2 px-2 py-1 rounded-full border text-[11px] font-mono uppercase tracking-wide ${
+                    state === ConnectionState.CONNECTED
+                      ? 'border-cyan-500/40 bg-cyan-950/20 text-cyan-200'
+                      : state === ConnectionState.CONNECTING
+                        ? 'border-yellow-500/40 bg-yellow-950/10 text-yellow-200'
+                        : state === ConnectionState.ERROR
+                          ? 'border-red-500/40 bg-red-950/20 text-red-200'
+                          : 'border-slate-700 bg-slate-950/20 text-slate-300'
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      state === ConnectionState.CONNECTED
+                        ? 'bg-cyan-400'
+                        : state === ConnectionState.CONNECTING
+                          ? 'bg-yellow-400 animate-pulse'
+                          : state === ConnectionState.ERROR
+                            ? 'bg-red-400'
+                            : 'bg-slate-400'
+                    }`}
+                  />
+                  {state === ConnectionState.CONNECTED
+                    ? 'Live'
+                    : state === ConnectionState.CONNECTING
+                      ? 'Connecting'
+                      : state === ConnectionState.ERROR
+                        ? 'Error'
+                        : 'Offline'}
                 </span>
              </div>
              <div className="flex items-center justify-end">
-               <button
-                 onClick={handleConnect}
-                 disabled={state === ConnectionState.CONNECTING}
-                 className={
-                   state === ConnectionState.CONNECTED
-                     ? "px-3 py-1.5 rounded-lg border border-red-500/50 bg-red-500/10 text-red-300 hover:bg-red-500/20 text-xs font-mono disabled:opacity-50"
-                     : "px-3 py-1.5 rounded-lg border border-cyan-500/40 bg-cyan-950/20 text-cyan-200 hover:bg-cyan-950/40 text-xs font-mono disabled:opacity-50"
-                 }
-               >
-                 {state === ConnectionState.CONNECTED ? "Disconnect" : state === ConnectionState.CONNECTING ? "Connecting..." : "Connect"}
-               </button>
+               {state === ConnectionState.CONNECTED ? (
+                 <button
+                  onClick={handleConnect}
+                  title="Disconnect"
+                  className="px-2 py-1.5 rounded-lg border border-slate-700 bg-slate-950/30 text-slate-200 hover:bg-slate-800/40 text-xs font-mono"
+                  aria-label="Disconnect"
+                >
+                  <Link2Off className="w-4 h-4" />
+                </button>
+              ) : (
+                 <button
+                   onClick={handleConnect}
+                   disabled={state === ConnectionState.CONNECTING}
+                   className="px-3 py-1.5 rounded-lg border border-cyan-500/40 bg-cyan-950/20 text-cyan-200 hover:bg-cyan-950/40 text-xs font-mono disabled:opacity-50"
+                 >
+                   {state === ConnectionState.CONNECTING ? "Connecting..." : "Connect"}
+                 </button>
+               )}
              </div>
              {state === ConnectionState.CONNECTED && (
                <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
