@@ -1,0 +1,38 @@
+name: idc1-assistance-mcp-playwright-debug
+
+version: "3.9"
+
+services:
+  mcp-playwright-debug:
+    image: mcr.microsoft.com/playwright:v1.58.2-jammy
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:4054:3050"
+    environment:
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+    command:
+      - bash
+      - -lc
+      - |
+        set -e
+        node -v
+        if ! node -e 'require("playwright")' >/dev/null 2>&1; then
+          npm -g i playwright@1.58.2
+        fi
+        if ! node -e 'require("@playwright/mcp")' >/dev/null 2>&1; then
+          npm -g i @playwright/mcp@0.0.68
+        fi
+        CHROMIUM_BIN="$(find /ms-playwright -maxdepth 6 -type f -name chrome -print -quit 2>/dev/null)"
+        if [ -z "$$CHROMIUM_BIN" ]; then
+          echo "missing_chromium_bin"
+          ls -la /ms-playwright 2>/dev/null || true
+          find /ms-playwright -maxdepth 4 -type f -name chrome 2>/dev/null | head -n 20 || true
+          exit 1
+        fi
+        npx @playwright/mcp@0.0.68 --host 0.0.0.0 --port 3050 --no-sandbox --allowed-hosts '*' --allowed-origins '*' --browser chromium --executable-path "$$CHROMIUM_BIN"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sS http://127.0.0.1:3050/ | grep -q 'Invalid request' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

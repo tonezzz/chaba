@@ -1981,13 +1981,13 @@ services:
           npm -g i @playwright/mcp@0.0.68
         fi
         CHROMIUM_BIN="$(find /ms-playwright -maxdepth 6 -type f -name chrome -print -quit 2>/dev/null)"
-        if [ -z "$CHROMIUM_BIN" ]; then
+        if [ -z "$$CHROMIUM_BIN" ]; then
           echo "missing_chromium_bin"
           ls -la /ms-playwright 2>/dev/null || true
           find /ms-playwright -maxdepth 4 -type f -name chrome 2>/dev/null | head -n 20 || true
           exit 1
         fi
-        npx @playwright/mcp@0.0.68 --host 0.0.0.0 --port 3050 --no-sandbox --allowed-hosts '*' --allowed-origins '*' --browser chromium --executable-path "$CHROMIUM_BIN"
+        npx @playwright/mcp@0.0.68 --host 0.0.0.0 --port 3050 --no-sandbox --allowed-hosts '*' --allowed-origins '*' --browser chromium --executable-path "$$CHROMIUM_BIN"
     healthcheck:
       test: ["CMD-SHELL", "nc -z 127.0.0.1 3050 >/dev/null 2>&1 || exit 1"]
       interval: 30s
