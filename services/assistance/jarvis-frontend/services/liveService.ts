@@ -60,17 +60,24 @@ export class LiveService {
 		if (
 			compact.includes("reload system") ||
 			compact.includes("reload sheets") ||
+			compact.includes("reset system") ||
+			compact.includes("restart system") ||
+			compact.includes("reboot system") ||
 			compact === "reload" ||
 			compact === "reload sys" ||
+			compact === "reset" ||
+			compact === "restart" ||
 			compact.startsWith("reload system") ||
-			compact.startsWith("reload sheets")
+			compact.startsWith("reload sheets") ||
+			compact.startsWith("reset system") ||
+			compact.startsWith("restart system")
 		) {
 			return true;
 		}
 		// Thai common variants.
 		if (/[\u0E00-\u0E7F]/.test(compact)) {
 			const th = compact;
-			const hasReloadWord = th.includes("รีโหลด") || th.includes("รีเฟรช") || th.includes("โหลด");
+			const hasReloadWord = th.includes("รีโหลด") || th.includes("รีเฟรช") || th.includes("โหลด") || th.includes("รีเซ็ต") || th.includes("รีสตาร์ท") || th.includes("เริ่ม") || th.includes("restart") || th.includes("reset");
 			const hasTargetWord = th.includes("ระบบ") || th.includes("ชีต") || th.includes("ชีท") || th.includes("ซิส") || th.includes("ซิสเต็ม") || th.includes("system") || th.includes("sheets");
 			if (hasReloadWord && hasTargetWord) return true;
 		}

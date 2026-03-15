@@ -82,6 +82,17 @@ export default function App() {
           }
           return [msg, ...without];
         }
+
+        const dedupeKeyForSystemText = (t: string): string | null => {
+          const s = String(t || "").trim().toLowerCase();
+          if (!s) return null;
+          if (s.includes("sheets are not auto-loaded")) return "sheets_not_auto_loaded";
+          if (s.startsWith("reload system: ok") || s.startsWith("reload system สำเร็จ")) return "reload_system_ok";
+          if (s.includes("โหลด memory") && s.includes("knowledge")) return "loaded_memory_th";
+          if (s.includes("loaded memory") && s.includes("knowledge")) return "loaded_memory_en";
+          return null;
+        };
+
         const isErr = msg.id.endsWith('_err') || msg.id.includes('_attach_err_');
         const isConnectedState = msg.id.endsWith('_state') && String(msg.text || '').toLowerCase() === 'connected';
         const shouldClearStickyErrors = isConnectedState || (!isErr && prev.length > 0);
@@ -102,11 +113,17 @@ export default function App() {
 
         const msgTextNorm = String(msg.text || "").trim().replace(/\s+/g, " ");
         const shouldDedupeSystem = !isErr && msg.role === "system" && msgTextNorm.length > 0;
+        const msgKey = shouldDedupeSystem ? dedupeKeyForSystemText(msgTextNorm) : null;
         const dedupedPrev = shouldDedupeSystem
           ? cleanedPrev.filter((m) => {
               if (m.role !== "system") return true;
               const t = String(m.text || "").trim().replace(/\s+/g, " ");
-              return t !== msgTextNorm;
+              if (t === msgTextNorm) return false;
+              if (msgKey) {
+                const k2 = dedupeKeyForSystemText(t);
+                if (k2 && k2 === msgKey) return false;
+              }
+              return true;
             })
           : cleanedPrev;
 
