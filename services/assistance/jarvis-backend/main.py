@@ -46,6 +46,57 @@ from google.genai import errors as genai_errors
 from pydantic import BaseModel, Field
 
 
+_SHEET_MEMORY_CACHE: dict[str, Any] = {
+    "loaded_at": 0,
+    "sys_kv": None,
+    "memory_items": None,
+    "memory_sheet_name": None,
+    "memory_context_text": "",
+}
+
+_SHEET_MEMORY_REFRESHING: bool = False
+_SHEET_MEMORY_LAST_REFRESH_AT: int = 0
+
+
+def _memory_cache_ttl_seconds() -> int:
+    try:
+        v = int(str(os.getenv("JARVIS_MEMORY_CACHE_TTL_SECONDS") or "60").strip())
+        return v if v > 0 else 60
+    except Exception:
+        return 60
+
+
+def _get_cached_sheet_memory() -> Optional[dict[str, Any]]:
+    now = int(time.time())
+    loaded_at = int(_SHEET_MEMORY_CACHE.get("loaded_at") or 0)
+    if loaded_at <= 0:
+        return None
+    if now - loaded_at > _memory_cache_ttl_seconds():
+        return None
+    items = _SHEET_MEMORY_CACHE.get("memory_items")
+    if not isinstance(items, list) or not items:
+        return None
+    return dict(_SHEET_MEMORY_CACHE)
+
+
+def _set_cached_sheet_memory(payload: dict[str, Any]) -> None:
+    _SHEET_MEMORY_CACHE["loaded_at"] = int(time.time())
+    _SHEET_MEMORY_CACHE["sys_kv"] = payload.get("sys_kv")
+    _SHEET_MEMORY_CACHE["memory_items"] = payload.get("memory_items")
+    _SHEET_MEMORY_CACHE["memory_sheet_name"] = payload.get("memory_sheet_name")
+    _SHEET_MEMORY_CACHE["memory_context_text"] = str(payload.get("memory_context_text") or "")
+
+
+def _apply_cached_sheet_memory_to_ws(ws: WebSocket, cached: dict[str, Any]) -> None:
+    try:
+        ws.state.sys_kv = cached.get("sys_kv")
+        ws.state.memory_items = cached.get("memory_items")
+        ws.state.memory_sheet_name = cached.get("memory_sheet_name")
+        ws.state.memory_context_text = str(cached.get("memory_context_text") or "")
+    except Exception:
+        pass
+
+
 def _require_env(name: str) -> str:
     value = str(os.getenv(name, "") or "").strip()
     if not value:
@@ -2427,10 +2478,27 @@ async def _emit_live_connect_greeting(ws: WebSocket) -> None:
         await _ws_send_json(ws, {"type": "text", "text": msg})
     except Exception:
         pass
-    try:
-        await _live_say(ws, msg)
-    except Exception:
-        pass
+
+
+def _short_datetime_line(lang: str, now_local: datetime) -> str:
+    if str(lang or "").strip().lower().startswith("th"):
+        return now_local.strftime("%d/%m/%Y %H:%M")
+    return now_local.strftime("%Y-%m-%d %H:%M")
+
+
+def _memory_load_status_line(ws: WebSocket, lang: str) -> str:
+    sheet = str(getattr(ws.state, "memory_sheet_name", "") or "").strip() or "memory"
+    items = getattr(ws.state, "memory_items", None)
+    n = len(items) if isinstance(items, list) else 0
+    sys_kv = getattr(ws.state, "sys_kv", None)
+    sys_ok = isinstance(sys_kv, dict) and bool(sys_kv)
+    if str(lang or "").strip().lower().startswith("th"):
+        if sys_ok:
+            return f"โหลด sys+memory แล้ว: {sheet} ({n} รายการ)"
+        return f"โหลด memory แล้ว: {sheet} ({n} รายการ)"
+    if sys_ok:
+        return f"Loaded sys+memory: {sheet} ({n} items)"
+    return f"Loaded memory: {sheet} ({n} items)"
 
 
 def _parse_reminder_helper_command(text: str) -> dict[str, Any]:
@@ -3769,6 +3837,50 @@ async def _load_ws_sheet_memory(ws: WebSocket) -> None:
         ws.state.memory_context_text = ctx
     except Exception:
         pass
+
+    try:
+        _set_cached_sheet_memory(
+            {
+                "sys_kv": sys_kv,
+                "memory_items": enabled_items,
+                "memory_sheet_name": memory_sheet,
+                "memory_context_text": ctx,
+            }
+        )
+    except Exception:
+        pass
+
+
+async def _refresh_sheet_memory_background(ws: WebSocket, lang: str) -> None:
+    global _SHEET_MEMORY_REFRESHING, _SHEET_MEMORY_LAST_REFRESH_AT
+    now = int(time.time())
+    if _SHEET_MEMORY_REFRESHING:
+        return
+    if _SHEET_MEMORY_LAST_REFRESH_AT and now - int(_SHEET_MEMORY_LAST_REFRESH_AT) < 10:
+        return
+    _SHEET_MEMORY_REFRESHING = True
+    _SHEET_MEMORY_LAST_REFRESH_AT = now
+    try:
+        try:
+            await _ws_progress(ws, "Loading sys/memory", phase="start")
+        except Exception:
+            pass
+        await _load_ws_sheet_memory(ws)
+        try:
+            await _ws_progress(ws, "Loaded sys/memory", phase="done")
+        except Exception:
+            pass
+        try:
+            await _ws_send_json(ws, {"type": "text", "text": _memory_load_status_line(ws, lang), "instance_id": INSTANCE_ID})
+        except Exception:
+            pass
+    except Exception:
+        try:
+            await _ws_progress(ws, "Failed loading sys/memory", phase="error")
+        except Exception:
+            pass
+    finally:
+        _SHEET_MEMORY_REFRESHING = False
 
 
 async def _handle_memory_trigger(ws: WebSocket, text: str) -> bool:
@@ -6579,12 +6691,33 @@ async def ws_live(ws: WebSocket) -> None:
         except Exception:
             pass
 
-        # Load sys->memory sheet context (best-effort). This is used for both local commands
-        # and for injecting a compact memory context into Gemini.
+        tz = _get_user_timezone(DEFAULT_USER_ID)
+        now_local = datetime.now(tz=timezone.utc).astimezone(tz)
+        lang = str(getattr(ws.state, "user_lang", "") or "").strip() or _lang_from_ws(ws)
         try:
-            await _load_ws_sheet_memory(ws)
+            await _ws_send_json(ws, {"type": "text", "text": _short_datetime_line(lang, now_local), "instance_id": INSTANCE_ID})
         except Exception:
             pass
+
+        cached = _get_cached_sheet_memory()
+        if isinstance(cached, dict):
+            _apply_cached_sheet_memory_to_ws(ws, cached)
+            try:
+                await _ws_send_json(ws, {"type": "text", "text": _memory_load_status_line(ws, lang), "instance_id": INSTANCE_ID})
+            except Exception:
+                pass
+
+        try:
+            loaded_at = int((cached or {}).get("loaded_at") or 0) if isinstance(cached, dict) else 0
+        except Exception:
+            loaded_at = 0
+        ttl = _memory_cache_ttl_seconds()
+        should_refresh = not isinstance(cached, dict) or (loaded_at and (int(time.time()) - loaded_at) > max(5, ttl // 2))
+        if should_refresh:
+            try:
+                asyncio.create_task(_refresh_sheet_memory_background(ws, lang), name="refresh_sheet_memory")
+            except Exception:
+                pass
         api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
         if not api_key:
             await _ws_send_json(
