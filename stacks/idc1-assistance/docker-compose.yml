@@ -1971,9 +1971,9 @@ services:
       - |
         set -e
         node -v
-        npx -y @playwright/mcp@latest --host 0.0.0.0 --port 3050 --no-sandbox --allowed-hosts '*' --allowed-origins '*'
+        npx -y @playwright/mcp@latest --host 0.0.0.0 --port 3050 --no-sandbox --allowed-hosts '*' --allowed-origins '*' --browser chromium
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS -H 'Host: localhost:3050' http://127.0.0.1:3050/ >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 3050 >/dev/null 2>&1 || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
