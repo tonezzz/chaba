@@ -1,4 +1,4 @@
-from main import _extract_note_text
+from main import _extract_note_text, _is_note_trigger
 
 
 def test_extract_note_text_english_prefix() -> None:
@@ -29,3 +29,10 @@ def test_extract_note_text_thai_note_variants() -> None:
 def test_extract_note_text_missing_payload() -> None:
     assert _extract_note_text("make a note") is None
     assert _extract_note_text("จดบันทึก") is None
+
+
+def test_is_note_trigger_thai_without_payload() -> None:
+    assert _is_note_trigger("จดบันทึก") is True
+    assert _is_note_trigger("สร้างบันทึก") is True
+    assert _is_note_trigger("จด บันทึก") is True
+    assert _is_note_trigger("ช่วย จด บันทึก") is True

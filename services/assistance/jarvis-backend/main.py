@@ -3290,9 +3290,47 @@ def _extract_note_text(text: str) -> Optional[str]:
     return None
 
 
+def _is_note_trigger(text: str) -> bool:
+    raw = str(text or "").strip()
+    if not raw:
+        return False
+    s = " ".join(raw.split())
+    lower = s.lower()
+
+    if lower.startswith("make a note") or "make a note" in lower:
+        return True
+
+    # Keep in sync with _extract_note_text.
+    thai_note_patterns = (
+        r"^(?:ช่วย\s*)?(?:จด\s*บันทึก|สร้าง\s*บันทึก)\s*(?:[:\-]\s*)?(.*)$",
+        r"^(?:ช่วย\s*)?(?:จด\s*โน้ต|สร้าง\s*โน้ต)\s*(?:[:\-]\s*)?(.*)$",
+        r"^(?:ช่วย\s*)?สร้าง\s*เป็น\s*โน้ต\s*(?:[:\-]\s*)?(.*)$",
+    )
+    for pat in thai_note_patterns:
+        if re.search(pat, s):
+            return True
+
+    thai_triggers = ("สร้างบันทึก", "จดบันทึก")
+    for trig in thai_triggers:
+        if trig in s:
+            return True
+    return False
+
+
 async def _handle_note_trigger(ws: WebSocket, text: str) -> bool:
     note_text = _extract_note_text(text)
     if not note_text:
+        if _is_note_trigger(text):
+            # User said "make a note" but didn't provide content. Ask for follow-up and
+            # keep a short continuation window so the next message becomes the note.
+            ws.state.active_agent_id = "note"
+            ws.state.active_agent_until_ts = int(time.time()) + AGENT_CONTINUE_WINDOW_SECONDS
+            await _ws_send_json(ws, {"type": "note_prompt", "message": "note_missing_text", "instance_id": INSTANCE_ID})
+            try:
+                await _live_say(ws, "จะให้จดอะไร?" if _text_is_thai(text) else "What should I write in the note?")
+            except Exception:
+                pass
+            return True
         return False
 
     spreadsheet_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
@@ -3343,6 +3381,17 @@ async def _handle_note_trigger(ws: WebSocket, text: str) -> bool:
     except Exception:
         pass
     return True
+
+
+async def _handle_note_followup(ws: WebSocket, text: str) -> bool:
+    # After a note trigger with missing text, treat the next message as the note body.
+    note_text = str(text or "").strip()
+    if not note_text:
+        return True
+    # Avoid accepting another trigger phrase as the note itself.
+    if _is_note_trigger(note_text):
+        return True
+    return await _handle_note_trigger(ws, f"จดบันทึก: {note_text}" if _text_is_thai(note_text) else f"make a note: {note_text}")
 
 
 def _get_news_follow_focus(user_id: str) -> list[str]:
@@ -3549,6 +3598,12 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
 
     async def _run_agent(agent_id: str) -> bool:
         agent_id_norm = str(agent_id or "").strip()
+        if agent_id_norm == "note":
+            handled = await _handle_note_followup(ws, text)
+            if handled:
+                ws.state.active_agent_id = None
+                ws.state.active_agent_until_ts = None
+            return handled
         if agent_id_norm == "reminder-setup":
             handled = await _handle_reminder_setup_trigger(ws, text)
             if handled:
