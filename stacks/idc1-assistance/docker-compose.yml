@@ -1967,13 +1967,20 @@ services:
     # Internal-only: no host ports.
     environment:
       PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
     command:
       - bash
       - -lc
       - |
         set -e
         node -v
-        npx -y @playwright/mcp@0.0.68 --host 0.0.0.0 --port 3050 --no-sandbox --allowed-hosts '*' --allowed-origins '*' --browser chromium
+        if ! node -e 'require("playwright")' >/dev/null 2>&1; then
+          npm -g i playwright@1.58.2
+        fi
+        if ! node -e 'require("@playwright/mcp")' >/dev/null 2>&1; then
+          npm -g i @playwright/mcp@0.0.68
+        fi
+        npx @playwright/mcp@0.0.68 --host 0.0.0.0 --port 3050 --no-sandbox --allowed-hosts '*' --allowed-origins '*' --browser chromium
     healthcheck:
       test: ["CMD-SHELL", "nc -z 127.0.0.1 3050 >/dev/null 2>&1 || exit 1"]
       interval: 30s
