@@ -3,6 +3,7 @@ import os
 import subprocess
 import time
 from pathlib import Path
+from datetime import datetime, timezone
 
 import pytest
 
@@ -35,12 +36,12 @@ def _rpc(node_proc: subprocess.Popen[str], msg: dict) -> dict:
 
 
 def test_google_sheets_append_note_and_readback() -> None:
-    spreadsheet_id = os.getenv("GOOGLE_SHEETS_NOTES_SPREADSHEET_ID", "").strip()
-    append_range = os.getenv("GOOGLE_SHEETS_NOTES_APPEND_RANGE", "").strip()
+    spreadsheet_id = os.getenv("CHABA_SS_SYS", "").strip()
+    sheet_name = os.getenv("CHABA_SS_SYS_SH", "").strip()
     token_path = os.getenv("GOOGLE_SHEETS_TOKEN_PATH", "/root/.config/1mcp/google-sheets.tokens.json").strip()
 
-    if not spreadsheet_id or not append_range:
-        pytest.skip("Missing GOOGLE_SHEETS_NOTES_SPREADSHEET_ID or GOOGLE_SHEETS_NOTES_APPEND_RANGE")
+    if not spreadsheet_id or not sheet_name:
+        pytest.skip("Missing CHABA_SS_SYS or CHABA_SS_SYS_SH")
 
     if not Path(token_path).exists():
         pytest.skip(f"Missing Google Sheets token file at {token_path}")
@@ -49,7 +50,16 @@ def test_google_sheets_append_note_and_readback() -> None:
     if not server_js.exists():
         pytest.skip("mcp-google-sheets server.js not found")
 
-    note_text = f"บันทึกข้อมูล test {int(time.time())}"
+    now_iso = datetime.now(tz=timezone.utc).isoformat()
+    notes_text = f"บันทึกข้อมูล test {int(time.time())}"
+    row = [
+        now_iso,
+        "note",
+        "input",
+        "",
+        notes_text,
+    ]
+    append_range = f"{sheet_name}!A:E"
 
     env = os.environ.copy()
 
@@ -85,7 +95,7 @@ def test_google_sheets_append_note_and_readback() -> None:
                     "arguments": {
                         "spreadsheet_id": spreadsheet_id,
                         "range": append_range,
-                        "values": [[note_text]],
+                        "values": [row],
                         "value_input_option": "USER_ENTERED",
                         "insert_data_option": "INSERT_ROWS",
                     },
@@ -136,7 +146,8 @@ def test_google_sheets_append_note_and_readback() -> None:
         values = ((got_payload.get("data") or {}).get("values") or [])
         assert values
         assert values[0]
-        assert note_text in [str(x) for x in values[0]]
+        got_row = [str(x) for x in values[0]]
+        assert notes_text in got_row
     finally:
         try:
             proc.terminate()
