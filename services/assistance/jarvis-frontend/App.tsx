@@ -100,12 +100,22 @@ export default function App() {
             })
           : prev;
 
+        const msgTextNorm = String(msg.text || "").trim().replace(/\s+/g, " ");
+        const shouldDedupeSystem = !isErr && msg.role === "system" && msgTextNorm.length > 0;
+        const dedupedPrev = shouldDedupeSystem
+          ? cleanedPrev.filter((m) => {
+              if (m.role !== "system") return true;
+              const t = String(m.text || "").trim().replace(/\s+/g, " ");
+              return t !== msgTextNorm;
+            })
+          : cleanedPrev;
+
         const isTranscript = msg.id.endsWith('_tr');
-        if (!isTranscript || cleanedPrev.length === 0) {
-          return [msg, ...cleanedPrev];
+        if (!isTranscript || dedupedPrev.length === 0) {
+          return [msg, ...dedupedPrev];
         }
 
-        const head = cleanedPrev[0];
+        const head = dedupedPrev[0];
         const headIsTranscript = head.id.endsWith('_tr');
         const sameSource = (head.metadata?.source || 'input') === (msg.metadata?.source || 'input');
         const closeInTime = Math.abs(msg.timestamp.getTime() - head.timestamp.getTime()) < 5000;
@@ -114,10 +124,10 @@ export default function App() {
           const prevText = String(head.text || '');
           const nextText = String(msg.text || '');
           const merged = prevText.endsWith(nextText) ? prevText : `${prevText} ${nextText}`.trim();
-          return [{ ...head, text: merged, timestamp: msg.timestamp }, ...cleanedPrev.slice(1)];
+          return [{ ...head, text: merged, timestamp: msg.timestamp }, ...dedupedPrev.slice(1)];
         }
 
-        return [msg, ...cleanedPrev];
+        return [msg, ...dedupedPrev];
       });
       if (msg.metadata) {
         setActiveMedia(msg);
