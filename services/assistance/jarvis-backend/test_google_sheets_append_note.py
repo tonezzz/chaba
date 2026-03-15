@@ -55,9 +55,9 @@ def test_google_sheets_append_note_and_readback() -> None:
     row = [
         now_iso,
         "note",
-        "input",
-        "",
         notes_text,
+        "new",
+        "",
     ]
     append_range = f"{sheet_name}!A:E"
 

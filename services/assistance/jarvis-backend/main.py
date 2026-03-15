@@ -3696,12 +3696,14 @@ async def _handle_note_trigger(ws: WebSocket, text: str) -> bool:
         return True
 
     now_iso = datetime.now(tz=timezone.utc).isoformat().replace("+00:00", "Z")
+    status = "new"
+    processed_time = ""
     row = [
         now_iso,
         "note",
-        str(text or "").strip(),
-        "",
         str(note_text or "").strip(),
+        status,
+        processed_time,
     ]
     append_range = f"{sheet_name}!A:E"
 
@@ -3725,9 +3727,12 @@ async def _handle_note_trigger(ws: WebSocket, text: str) -> bool:
             "note": {
                 "date_time": now_iso,
                 "subject": "note",
+                "notes": str(note_text or "").strip(),
+                "status": status,
+                "time": processed_time,
+                # Backwards compatible fields (UI may still expect them).
                 "input": str(text or "").strip(),
                 "input_improve": "",
-                "notes": str(note_text or "").strip(),
             },
             "result": parsed if isinstance(parsed, dict) else {"raw": parsed},
             "instance_id": INSTANCE_ID,
