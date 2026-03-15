@@ -639,15 +639,23 @@ export default function App() {
                });
                return filtered.map((m) => {
                const canExpand = Boolean(m.metadata?.raw || m.metadata?.trace_id || m.metadata?.ws?.type || m.metadata?.ws?.instance_id);
-               const expanded = expandedLogId === m.id;
-               let rawText = "";
-               if (expanded && m.metadata?.raw != null) {
-                 try {
-                   rawText = JSON.stringify(m.metadata.raw, null, 2);
-                 } catch {
-                   rawText = String(m.metadata.raw);
-                 }
-               }
+              const expanded = expandedLogId === m.id;
+              let rawText = "";
+              if (expanded && m.metadata?.raw != null) {
+                try {
+                  const rawAny: any = m.metadata.raw;
+                  if (rawAny && typeof rawAny === "object" && !Array.isArray(rawAny)) {
+                    const copy: any = { ...rawAny };
+                    delete copy.client_id;
+                    delete copy.client_tag;
+                    rawText = JSON.stringify(copy, null, 2);
+                  } else {
+                    rawText = JSON.stringify(rawAny, null, 2);
+                  }
+                } catch {
+                  rawText = String(m.metadata.raw);
+                }
+              }
                const traceLine = m.metadata?.trace_id ? `trace_id=${String(m.metadata.trace_id)}` : "";
                const typeLine = m.metadata?.ws?.type ? `type=${String(m.metadata.ws.type)}` : "";
                const instLine = m.metadata?.ws?.instance_id ? `instance_id=${String(m.metadata.ws.instance_id)}` : "";
