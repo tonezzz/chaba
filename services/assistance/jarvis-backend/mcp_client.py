@@ -43,16 +43,27 @@ def mcp_text_json(result: Any) -> Any:
 
 
 def parse_sse_first_message_data(text: str) -> dict[str, Any]:
-    # 1MCP returns text/event-stream where each JSON-RPC response is on a `data: {...}` line.
+    # MCP servers can return multiple SSE events in a single HTTP response.
+    # The final JSON-RPC message with the tool call result might not be the first `data:` line.
+    last_msg: dict[str, Any] = {}
     for line in (text or "").splitlines():
-        if line.startswith("data: "):
-            try:
-                parsed = json.loads(line[len("data: ") :].strip())
-            except Exception:
-                continue
-            if isinstance(parsed, dict):
-                return parsed
-    return {}
+        if not line.startswith("data: "):
+            continue
+        raw = line[len("data: ") :].strip()
+        if not raw:
+            continue
+        try:
+            parsed = json.loads(raw)
+        except Exception:
+            continue
+        if not isinstance(parsed, dict):
+            continue
+        # Prefer messages that look like real JSON-RPC responses.
+        if "result" in parsed or "error" in parsed:
+            last_msg = parsed
+        elif not last_msg:
+            last_msg = parsed
+    return last_msg
 
 
 async def mcp_rpc_base(base_url: str, method: str, params: dict[str, Any]) -> Any:
