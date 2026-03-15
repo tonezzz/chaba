@@ -7497,7 +7497,25 @@ async def ws_live(ws: WebSocket) -> None:
         if isinstance(cached_k, dict):
             _apply_cached_sheet_knowledge_to_ws(ws, cached_k)
 
-        # Option B: emit load status only once per connect (avoid repeated lines from cache + refresh).
+        # Eager load once on connect so the initial status line is accurate.
+        try:
+            await _load_ws_sheet_memory(ws)
+        except Exception as e:
+            try:
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "sheet_load_failed",
+                        "message": "sheet_load_failed",
+                        "detail": str(e),
+                        "instance_id": INSTANCE_ID,
+                    },
+                )
+            except Exception:
+                pass
+
+        # Emit load status only once per connect.
         try:
             await _ws_send_json(ws, {"type": "text", "text": _memory_load_status_line(ws, lang), "instance_id": INSTANCE_ID})
         except Exception:
