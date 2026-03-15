@@ -179,34 +179,6 @@ def _normalize_gem_id(v: Any) -> str:
     return str(v or "").strip().lower()
 
 
-def _should_auto_progress_gem(text: str) -> bool:
-    s = " ".join(str(text or "").strip().lower().split())
-    if not s:
-        return False
-    # Heuristic: long-running ops usually involve sheets + create/update semantics.
-    keywords = [
-        "google sheet",
-        "google sheets",
-        "spreadsheet",
-        "ssot",
-        "gems sheet",
-        "tab gems",
-        "create gem",
-        "create/update gem",
-        "create/update gems",
-        "update gem",
-        "update gems",
-        "append",
-        "values_append",
-        "values_update",
-        "custom search",
-        "cse",
-        "morning brief pipeline",
-        "authoritative",
-    ]
-    return any(k in s for k in keywords)
-
-
 def _get_sheets_tool_name(alias: str) -> str:
     meta = MCP_TOOL_MAP.get(alias) if isinstance(MCP_TOOL_MAP, dict) else None
     name = str(meta.get("mcp_name") or "").strip() if isinstance(meta, dict) else ""
@@ -5452,12 +5424,7 @@ async def gem_demo(req: GemDemoRequest) -> GemDemoResponse:
     if not api_key:
         raise HTTPException(status_code=500, detail="missing_api_key")
 
-    # Auto-switch to progress gem for delay-prone sheet ops unless caller explicitly selected a gem.
-    effective_gem = req.gem
-    if (effective_gem is None or not str(effective_gem).strip()) and _should_auto_progress_gem(str(req.text)):
-        effective_gem = "sheet_ops_progress"
-
-    gem_name = _resolve_gem_name(effective_gem)
+    gem_name = _resolve_gem_name(req.gem)
     extra = _gem_instruction(gem_name)
     system_instruction = "You are Jarvis. Respond to the user with ONLY the final answer."
     if extra:
@@ -7307,23 +7274,6 @@ async def ws_live(ws: WebSocket) -> None:
         now_utc = datetime.now(tz=timezone.utc)
         now_local = now_utc.astimezone(tz)
         gem_q = str(ws.query_params.get("gem") or "").strip() or None
-
-        # If no explicit gem is selected, try to peek the first client message.
-        # For delay-prone ops (e.g. sheet modifications), auto-switch to sheet_ops_progress.
-        if gem_q is None:
-            try:
-                first = await asyncio.wait_for(ws.receive_json(), timeout=0.25)
-            except Exception:
-                first = None
-            if isinstance(first, dict):
-                try:
-                    ws.state.prefetched_client_msgs = [first]
-                except Exception:
-                    pass
-                if str(first.get("type") or "") == "text":
-                    first_text = str(first.get("text") or "")
-                    if _should_auto_progress_gem(first_text):
-                        gem_q = "sheet_ops_progress"
 
         sys_kv = getattr(ws.state, "sys_kv", None)
         gem_extra, _gem_model = await _resolve_gem_instruction_and_model(gem_name=gem_q, sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
