@@ -313,17 +313,30 @@ async function runAuthCodeFlowCopyPaste() {
 const TOOLS = [
   {
     name: "google_sheets_ping",
-    description: "Minimal connectivity test for the Google Sheets MCP server.",
+    description: "Ping the server.",
     inputSchema: {
       type: "object",
       properties: {
-        message: { type: "string", description: "Optional message to echo." },
+        message: { type: "string" },
       },
     },
   },
   {
+    name: "google_sheets_add_sheet",
+    description: "Create a new sheet tab in a spreadsheet (requires write OAuth scope).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        spreadsheet_id: { type: "string", description: "Spreadsheet ID" },
+        title: { type: "string", description: "New sheet title (tab name)" },
+        index: { type: "integer", description: "Optional sheet index (0-based)" },
+      },
+      required: ["spreadsheet_id", "title"],
+    },
+  },
+  {
     name: "google_sheets_auth_status",
-    description: "Check OAuth token status for Google Sheets (single-account).",
+    description: "Report whether OAuth tokens exist and whether access token is valid.",
     inputSchema: {
       type: "object",
       properties: {
@@ -471,6 +484,39 @@ async function handleRpc(msg) {
               text: JSON.stringify({ ok: true, message, server: APP_NAME, version: APP_VERSION, now: nowIso() }),
             },
           ],
+        },
+      };
+    }
+
+    if (name === "google_sheets_add_sheet") {
+      const spreadsheetId = typeof args.spreadsheet_id === "string" ? args.spreadsheet_id.trim() : "";
+      const title = typeof args.title === "string" ? args.title.trim() : "";
+      if (!spreadsheetId) throw new Error("missing_spreadsheet_id");
+      if (!title) throw new Error("missing_title");
+
+      const index = Number.isFinite(args.index) ? Number(args.index) : null;
+      const addSheet = {
+        properties: {
+          title,
+        },
+      };
+      if (index !== null) {
+        addSheet.properties.index = index;
+      }
+
+      const data = await sheetsPostJson(
+        "/spreadsheets/" + encodeURIComponent(spreadsheetId) + ":batchUpdate",
+        {},
+        {
+          requests: [{ addSheet }],
+        }
+      );
+
+      return {
+        jsonrpc: "2.0",
+        id,
+        result: {
+          content: [{ type: "text", text: JSON.stringify({ ok: true, data }) }],
         },
       };
     }
