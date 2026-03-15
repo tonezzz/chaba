@@ -4364,13 +4364,28 @@ async def _notes_board_poll_once(ws: WebSocket) -> None:
 
 async def _notes_board_runner(ws: WebSocket) -> None:
     # WS-scoped polling loop. Runs only while the websocket is alive.
+    backoff_s = 0.0
     try:
         while True:
             try:
                 await _notes_board_poll_once(ws)
+                backoff_s = 0.0
             except Exception:
-                pass
-            await asyncio.sleep(4.0)
+                # Backoff on rate limiting / transient failures.
+                msg = ""
+                try:
+                    msg = str(sys.exc_info()[1] or "")
+                except Exception:
+                    msg = ""
+                if "429" in msg or "resource_exhausted" in msg.lower() or "rate" in msg.lower():
+                    backoff_s = max(backoff_s, 10.0)
+                    backoff_s = min(120.0, backoff_s * 2.0 if backoff_s else 10.0)
+                else:
+                    backoff_s = max(backoff_s, 2.0)
+                    backoff_s = min(30.0, backoff_s * 1.5 if backoff_s else 2.0)
+            # Default poll interval (keep low pressure on Sheets).
+            base = 15.0
+            await asyncio.sleep(base + (backoff_s or 0.0))
     except asyncio.CancelledError:
         return
 
@@ -7520,6 +7535,10 @@ async def ws_live(ws: WebSocket) -> None:
             await _ws_send_json(ws, {"type": "text", "text": _memory_load_status_line(ws, lang), "instance_id": INSTANCE_ID})
         except Exception:
             pass
+
+        # After eager load, recompute cache metadata before scheduling any background refresh.
+        cached = _get_cached_sheet_memory()
+        cached_k = _get_cached_sheet_knowledge()
 
         try:
             loaded_at = int((cached or {}).get("loaded_at") or 0) if isinstance(cached, dict) else 0
