@@ -601,9 +601,9 @@ export default function App() {
             {state === ConnectionState.CONNECTED ? (
                <><MicOff className="w-5 h-5" /> Disconnect</>
             ) : state === ConnectionState.CONNECTING ? (
-               <span className="animate-pulse">Initializing...</span>
+               <span className="animate-pulse">Connecting...</span>
             ) : (
-               <><Mic className="w-5 h-5" /> Initialize</>
+               <><Mic className="w-5 h-5" /> Connect</>
             )}
           </button>
 
