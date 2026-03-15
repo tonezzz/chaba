@@ -93,6 +93,34 @@ async function httpForm(url, formObj) {
   return obj;
 }
 
+async function sheetsPutJson(pathname, query, bodyObj) {
+  const token = await getValidAccessToken();
+  const url = new URL(GOOGLE_SHEETS_API_BASE + pathname);
+  for (const [k, v] of Object.entries(query || {})) {
+    if (v === undefined || v === null) continue;
+    url.searchParams.set(k, String(v));
+  }
+
+  const r = await fetch(url.toString(), {
+    method: "PUT",
+    headers: {
+      authorization: "Bearer " + String(token),
+      accept: "application/json",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(bodyObj || {}),
+  });
+
+  const text = await r.text();
+  const obj = safeJsonParse(text) || { raw: text };
+  if (!r.ok) {
+    const e = new Error("google_api_error");
+    e.details = { status: r.status, body: obj };
+    throw e;
+  }
+  return obj;
+}
+
 async function sheetsPostJson(pathname, query, bodyObj) {
   const token = await getValidAccessToken();
   const url = new URL(GOOGLE_SHEETS_API_BASE + pathname);
@@ -351,6 +379,25 @@ const TOOLS = [
       required: ["spreadsheet_id", "range", "values"],
     },
   },
+  {
+    name: "google_sheets_values_update",
+    description: "Update values in a spreadsheet range (in-place) (requires write OAuth scope).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        spreadsheet_id: { type: "string", description: "Spreadsheet ID" },
+        range: { type: "string", description: "A1 range like Sheet1!A1:C10" },
+        values: {
+          type: "array",
+          description: "2D array of values to write (array of arrays).",
+          items: { type: "array", items: {} },
+        },
+        value_input_option: { type: "string", description: "RAW or USER_ENTERED" },
+        major_dimension: { type: "string", description: "ROWS or COLUMNS" },
+      },
+      required: ["spreadsheet_id", "range", "values"],
+    },
+  },
 ];
 
 async function handleRpc(msg) {
@@ -450,6 +497,40 @@ async function handleRpc(msg) {
           majorDimension: "ROWS",
           values,
         }
+      );
+
+      return {
+        jsonrpc: "2.0",
+        id,
+        result: {
+          content: [{ type: "text", text: JSON.stringify({ ok: true, data }) }],
+        },
+      };
+    }
+
+    if (name === "google_sheets_values_update") {
+      const spreadsheetId = typeof args.spreadsheet_id === "string" ? args.spreadsheet_id.trim() : "";
+      const range = typeof args.range === "string" ? args.range.trim() : "";
+      if (!spreadsheetId) throw new Error("missing_spreadsheet_id");
+      if (!range) throw new Error("missing_range");
+
+      const values = Array.isArray(args.values) ? args.values : null;
+      if (!values) throw new Error("missing_values");
+
+      const valueInputOption = typeof args.value_input_option === "string" ? args.value_input_option.trim() : "";
+      const majorDimension = typeof args.major_dimension === "string" ? args.major_dimension.trim() : "";
+
+      const body = {
+        values,
+      };
+      if (majorDimension) body.majorDimension = majorDimension;
+
+      const data = await sheetsPutJson(
+        "/spreadsheets/" + encodeURIComponent(spreadsheetId) + "/values/" + encodeURIComponent(range),
+        {
+          valueInputOption: valueInputOption || "USER_ENTERED",
+        },
+        body
       );
 
       return {
