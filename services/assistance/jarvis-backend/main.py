@@ -347,7 +347,13 @@ async def _resolve_sheet_gem(gem_name: str, sys_kv: Optional[dict[str, Any]] = N
 
 
 async def _resolve_gem_instruction_and_model(*, gem_name: str | None, sys_kv: Optional[dict[str, Any]] = None) -> tuple[str, Optional[str]]:
-    name = _resolve_gem_name(gem_name)
+    effective_name: str | None = gem_name
+    if (effective_name is None or not str(effective_name).strip()) and isinstance(sys_kv, dict) and sys_kv:
+        sys_default = str(sys_kv.get("jarvis.gem_default") or "").strip()
+        if sys_default:
+            effective_name = sys_default
+
+    name = _resolve_gem_name(effective_name)
     sheet_gem = None
     try:
         sheet_gem = await _resolve_sheet_gem(name, sys_kv=sys_kv)
