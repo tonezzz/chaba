@@ -3697,7 +3697,7 @@ async def _handle_note_trigger(ws: WebSocket, text: str) -> bool:
         else ""
     )
     if not sheet_name:
-        sheet_name = str(os.getenv("CHABA_SS_SYS_NOTES_SHEET") or "notes").strip() or "notes"
+        sheet_name = str(os.getenv("CHABA_SS_SYS_NOTES_SHEET") or "notes.0").strip() or "notes.0"
 
     if not spreadsheet_id:
         await _ws_send_json(
@@ -4248,10 +4248,6 @@ async def _refresh_sheet_memory_background(ws: WebSocket, lang: str) -> None:
             await _ws_progress(ws, "Loaded sys/memory", phase="done")
         except Exception:
             pass
-        try:
-            await _ws_send_json(ws, {"type": "text", "text": _memory_load_status_line(ws, lang), "instance_id": INSTANCE_ID})
-        except Exception:
-            pass
     except Exception:
         try:
             await _ws_progress(ws, "Failed loading sys/memory", phase="error")
@@ -4279,10 +4275,6 @@ async def _refresh_sheet_knowledge_background(ws: WebSocket, lang: str) -> None:
         await _load_ws_sheet_memory(ws)
         try:
             await _ws_progress(ws, "Loaded knowledge", phase="done")
-        except Exception:
-            pass
-        try:
-            await _ws_send_json(ws, {"type": "text", "text": _memory_load_status_line(ws, lang), "instance_id": INSTANCE_ID})
         except Exception:
             pass
     except Exception:
@@ -7179,18 +7171,16 @@ async def ws_live(ws: WebSocket) -> None:
         cached = _get_cached_sheet_memory()
         if isinstance(cached, dict):
             _apply_cached_sheet_memory_to_ws(ws, cached)
-            try:
-                await _ws_send_json(ws, {"type": "text", "text": _memory_load_status_line(ws, lang), "instance_id": INSTANCE_ID})
-            except Exception:
-                pass
 
         cached_k = _get_cached_sheet_knowledge()
         if isinstance(cached_k, dict):
             _apply_cached_sheet_knowledge_to_ws(ws, cached_k)
-            try:
-                await _ws_send_json(ws, {"type": "text", "text": _memory_load_status_line(ws, lang), "instance_id": INSTANCE_ID})
-            except Exception:
-                pass
+
+        # Option B: emit load status only once per connect (avoid repeated lines from cache + refresh).
+        try:
+            await _ws_send_json(ws, {"type": "text", "text": _memory_load_status_line(ws, lang), "instance_id": INSTANCE_ID})
+        except Exception:
+            pass
 
         try:
             loaded_at = int((cached or {}).get("loaded_at") or 0) if isinstance(cached, dict) else 0
