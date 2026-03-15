@@ -26,10 +26,12 @@ export class LiveService {
   private inputSource: MediaStreamAudioSourceNode | null = null;
   private processor: ScriptProcessorNode | null = null;
   private nextStartTime: number = 0;
-  private currentCameraFrame: string | null = null;
   private isStreamingAudio: boolean = false;
   private sessionId: string | null = null;
   private inputStream: MediaStream | null = null;
+  private connectInFlight: boolean = false;
+  private wsSeq: number = 0;
+  private currentCameraFrame: string | null = null;
   private lastVoiceCommandTs: Record<string, number> = {};
 
 	private createTraceId(prefix?: string): string {
@@ -176,9 +178,29 @@ export class LiveService {
   }
 
   public async connect() {
+    // Idempotent connect: prevent double WebSockets (common on iPad due to tap/reload/reconnect races).
+    if (this.connectInFlight) return;
+    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
+    this.connectInFlight = true;
     this.onStateChange(ConnectionState.CONNECTING);
 
     try {
+      // Ensure any stale socket is fully closed before we create a new one.
+      if (this.ws) {
+        try {
+          this.ws.onopen = null;
+          this.ws.onclose = null;
+          this.ws.onerror = null;
+          this.ws.onmessage = null;
+          this.ws.close();
+        } catch {
+        }
+        this.ws = null;
+      }
+
+      const mySeq = ++this.wsSeq;
       // Always try to establish the WebSocket connection even if audio init fails.
       // This enables text-only mode (useful on servers/browsers where mic access is unavailable).
       let stream: MediaStream | null = null;
@@ -222,6 +244,8 @@ export class LiveService {
 
       this.ws = new WebSocket(wsUrl);
       this.ws.onopen = () => {
+        if (mySeq !== this.wsSeq) return;
+        this.connectInFlight = false;
         this.onStateChange(ConnectionState.CONNECTED);
         this.onMessage({
           id: `${Date.now()}_ws_open`,
@@ -248,6 +272,8 @@ export class LiveService {
         }
       };
       this.ws.onclose = (ev) => {
+        if (mySeq !== this.wsSeq) return;
+        this.connectInFlight = false;
         try {
           console.warn("ws_close", { code: ev.code, reason: ev.reason, wasClean: ev.wasClean });
         } catch {
@@ -262,6 +288,8 @@ export class LiveService {
         });
       };
       this.ws.onerror = (err) => {
+        if (mySeq !== this.wsSeq) return;
+        this.connectInFlight = false;
         console.error(err);
         this.onStateChange(ConnectionState.ERROR);
         this.onMessage({
@@ -272,6 +300,7 @@ export class LiveService {
         });
       };
       this.ws.onmessage = (event) => {
+        if (mySeq !== this.wsSeq) return;
         try {
           const msg = JSON.parse(event.data);
           this.handleBackendMessage(msg);
@@ -283,10 +312,18 @@ export class LiveService {
     } catch (error) {
       console.error("Connection failed", error);
       this.onStateChange(ConnectionState.ERROR);
+    } finally {
+      // If connect failed before WS callbacks ran, allow retry.
+      if (!this.ws || this.ws.readyState === WebSocket.CLOSED) {
+        this.connectInFlight = false;
+      }
     }
   }
 
   public async disconnect() {
+    // Invalidate any pending callbacks from the current socket.
+    this.wsSeq += 1;
+    this.connectInFlight = false;
     if (this.ws) {
       try {
         this.ws.send(JSON.stringify({ type: "close" }));
