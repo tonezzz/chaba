@@ -1980,7 +1980,7 @@ services:
         if ! node -e 'require("@playwright/mcp")' >/dev/null 2>&1; then
           npm -g i @playwright/mcp@0.0.68
         fi
-        CHROMIUM_BIN="$(find /ms-playwright -maxdepth 5 -type f -path '*/chrome-linux*/chrome' 2>/dev/null | head -n 1)"
+        CHROMIUM_BIN="$(find /ms-playwright -maxdepth 6 -type f -name chrome 2>/dev/null | grep -E '/chrome-linux[^/]*/chrome$' | head -n 1)"
         if [ -z "$CHROMIUM_BIN" ]; then
           echo "missing_chromium_bin"
           ls -la /ms-playwright 2>/dev/null || true
