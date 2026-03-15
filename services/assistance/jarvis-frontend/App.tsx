@@ -17,7 +17,7 @@ export default function App() {
   const liveService = useRef<LiveService | null>(null);
   const [activeMedia, setActiveMedia] = useState<MessageLog | null>(null);
   const [isTalking, setIsTalking] = useState(false);
-  const [activeRightPanel, setActiveRightPanel] = useState<"output" | "cars">("output");
+  const [activeRightPanel, setActiveRightPanel] = useState<"output" | "cars" | "checklist">("output");
   const [activeTripId, setActiveTripId] = useState<string>("");
   const [activeTripName, setActiveTripName] = useState<string>("");
   const [tripIdInput, setTripIdInput] = useState<string>("");
@@ -451,6 +451,19 @@ export default function App() {
                   {state}
                 </span>
              </div>
+             <div className="flex items-center justify-end">
+               <button
+                 onClick={handleConnect}
+                 disabled={state === ConnectionState.CONNECTING}
+                 className={
+                   state === ConnectionState.CONNECTED
+                     ? "px-3 py-1.5 rounded-lg border border-red-500/50 bg-red-500/10 text-red-300 hover:bg-red-500/20 text-xs font-mono disabled:opacity-50"
+                     : "px-3 py-1.5 rounded-lg border border-cyan-500/40 bg-cyan-950/20 text-cyan-200 hover:bg-cyan-950/40 text-xs font-mono disabled:opacity-50"
+                 }
+               >
+                 {state === ConnectionState.CONNECTED ? "Disconnect" : state === ConnectionState.CONNECTING ? "Connecting..." : "Connect"}
+               </button>
+             </div>
              {state === ConnectionState.CONNECTED && (
                <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
                   <div className="h-full bg-cyan-500 animate-pulse w-full"></div>
@@ -588,26 +601,6 @@ export default function App() {
           </div>
 
           <button
-            onClick={handleConnect}
-            disabled={state === ConnectionState.CONNECTING}
-            className={`
-              w-full py-4 rounded-xl font-hud text-lg tracking-widest uppercase transition-all duration-300 shadow-lg
-              flex items-center justify-center gap-3
-              ${state === ConnectionState.CONNECTED 
-                ? 'bg-red-500/10 text-red-400 border border-red-500/50 hover:bg-red-500/20 shadow-red-500/20' 
-                : 'bg-cyan-500 text-slate-950 font-bold hover:bg-cyan-400 shadow-cyan-500/20 hover:shadow-cyan-400/40'}
-            `}
-          >
-            {state === ConnectionState.CONNECTED ? (
-               <><MicOff className="w-5 h-5" /> Disconnect</>
-            ) : state === ConnectionState.CONNECTING ? (
-               <span className="animate-pulse">Connecting...</span>
-            ) : (
-               <><Mic className="w-5 h-5" /> Connect</>
-            )}
-          </button>
-
-          <button
             onClick={handleToggleTalk}
             disabled={state !== ConnectionState.CONNECTED}
             className={`
@@ -650,57 +643,6 @@ export default function App() {
             </div>
          </div>
 
-         <div className="rounded-2xl border border-slate-700 bg-slate-900/50 p-4">
-           <div className="text-[10px] text-cyan-500 font-hud tracking-widest uppercase mb-3">Sequential Checklist</div>
-           <textarea
-             value={seqNotes}
-             onChange={(e) => setSeqNotes(e.target.value)}
-             placeholder="Paste task notes with checklist here (e.g. - [ ] step)"
-             className="w-full h-28 px-3 py-2 rounded-xl text-sm font-mono bg-slate-950 border border-slate-800 text-slate-200 placeholder:text-slate-600"
-           />
-           <textarea
-             value={seqCompletedNotes}
-             onChange={(e) => setSeqCompletedNotes(e.target.value)}
-             placeholder="Optional: paste completed task notes blocks for template inference (separate blocks with a line containing ---)"
-             className="w-full h-24 mt-3 px-3 py-2 rounded-xl text-sm font-mono bg-slate-950 border border-slate-800 text-slate-200 placeholder:text-slate-600"
-           />
-           <div className="mt-3 flex items-center gap-2">
-             <button
-               onClick={() => void handleSeqSuggest()}
-               disabled={seqBusy}
-               className="px-3 py-2 rounded-xl border border-cyan-500/40 bg-cyan-950/20 text-cyan-200 hover:bg-cyan-950/40 disabled:opacity-50 text-xs font-mono"
-             >
-               Suggest
-             </button>
-             <button
-               onClick={() => void handleSeqApply()}
-               disabled={seqBusy || seqNextIndex == null}
-               className="px-3 py-2 rounded-xl border border-slate-700 bg-slate-950/30 text-slate-200 hover:bg-slate-800/40 disabled:opacity-50 text-xs font-mono"
-             >
-               Apply
-             </button>
-             <button
-               onClick={() => void handleSeqApplyByText()}
-               disabled={seqBusy || !seqNextText}
-               className="px-3 py-2 rounded-xl border border-slate-700 bg-slate-950/30 text-slate-200 hover:bg-slate-800/40 disabled:opacity-50 text-xs font-mono"
-             >
-               Apply by text
-             </button>
-             <button
-               onClick={() => void handleSeqApplyAll()}
-               disabled={seqBusy}
-               className="px-3 py-2 rounded-xl border border-slate-700 bg-slate-950/30 text-slate-200 hover:bg-slate-800/40 disabled:opacity-50 text-xs font-mono"
-             >
-               Apply all
-             </button>
-             {seqError && <div className="text-xs font-mono text-red-400 truncate">{seqError}</div>}
-           </div>
-           <div className="mt-3 text-xs font-mono text-slate-300">
-             <div>next_step: {seqNextText ?? "(none)"}{seqNextIndex != null ? ` (index=${seqNextIndex})` : ""}</div>
-             <div>template: {seqTemplate ? seqTemplate.join(" | ") : "(none)"}</div>
-           </div>
-         </div>
-
          {/* Bottom Section: Media Output */}
          <div className="flex-1 rounded-2xl border border-slate-700 bg-slate-900/50 p-6 relative overflow-hidden min-h-[300px]">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
@@ -732,6 +674,16 @@ export default function App() {
                 >
                   Cars
                 </button>
+                <button
+                  onClick={() => setActiveRightPanel("checklist")}
+                  className={`text-[11px] font-mono px-3 py-1 rounded-lg border transition-colors ${
+                    activeRightPanel === "checklist"
+                      ? "border-cyan-500/40 bg-cyan-950/30 text-cyan-200"
+                      : "border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
+                  }`}
+                >
+                  Checklist
+                </button>
               </div>
             </div>
             
@@ -739,6 +691,57 @@ export default function App() {
                {activeRightPanel === "cars" ? (
                  <div className="w-full h-full">
                    <CarsPanel liveService={liveService.current} connectionState={state} />
+                 </div>
+               ) : activeRightPanel === "checklist" ? (
+                 <div className="w-full h-full">
+                   <div className="text-[10px] text-cyan-500 font-hud tracking-widest uppercase mb-3">Sequential Checklist</div>
+                   <textarea
+                     value={seqNotes}
+                     onChange={(e) => setSeqNotes(e.target.value)}
+                     placeholder="Paste task notes with checklist here (e.g. - [ ] step)"
+                     className="w-full h-40 px-3 py-2 rounded-xl text-sm font-mono bg-slate-950 border border-slate-800 text-slate-200 placeholder:text-slate-600"
+                   />
+                   <textarea
+                     value={seqCompletedNotes}
+                     onChange={(e) => setSeqCompletedNotes(e.target.value)}
+                     placeholder="Optional: paste completed task notes blocks for template inference (separate blocks with a line containing ---)"
+                     className="w-full h-28 mt-3 px-3 py-2 rounded-xl text-sm font-mono bg-slate-950 border border-slate-800 text-slate-200 placeholder:text-slate-600"
+                   />
+                   <div className="mt-3 flex items-center flex-wrap gap-2">
+                     <button
+                       onClick={() => void handleSeqSuggest()}
+                       disabled={seqBusy}
+                       className="px-3 py-2 rounded-xl border border-cyan-500/40 bg-cyan-950/20 text-cyan-200 hover:bg-cyan-950/40 disabled:opacity-50 text-xs font-mono"
+                     >
+                       Suggest
+                     </button>
+                     <button
+                       onClick={() => void handleSeqApply()}
+                       disabled={seqBusy || seqNextIndex == null}
+                       className="px-3 py-2 rounded-xl border border-slate-700 bg-slate-950/30 text-slate-200 hover:bg-slate-800/40 disabled:opacity-50 text-xs font-mono"
+                     >
+                       Apply
+                     </button>
+                     <button
+                       onClick={() => void handleSeqApplyByText()}
+                       disabled={seqBusy || !seqNextText}
+                       className="px-3 py-2 rounded-xl border border-slate-700 bg-slate-950/30 text-slate-200 hover:bg-slate-800/40 disabled:opacity-50 text-xs font-mono"
+                     >
+                       Apply by text
+                     </button>
+                     <button
+                       onClick={() => void handleSeqApplyAll()}
+                       disabled={seqBusy}
+                       className="px-3 py-2 rounded-xl border border-slate-700 bg-slate-950/30 text-slate-200 hover:bg-slate-800/40 disabled:opacity-50 text-xs font-mono"
+                     >
+                       Apply all
+                     </button>
+                     {seqError && <div className="text-xs font-mono text-red-400 truncate">{seqError}</div>}
+                   </div>
+                   <div className="mt-3 text-xs font-mono text-slate-300">
+                     <div>next_step: {seqNextText ?? "(none)"}{seqNextIndex != null ? ` (index=${seqNextIndex})` : ""}</div>
+                     <div>template: {seqTemplate ? seqTemplate.join(" | ") : "(none)"}</div>
+                   </div>
                  </div>
                ) : !activeMedia ? (
                  <div className="flex flex-col items-center justify-center text-slate-600 gap-4">
