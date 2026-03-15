@@ -59,7 +59,8 @@ def test_google_sheets_append_note_and_readback() -> None:
         "new",
         "",
     ]
-    append_range = f"{sheet_name}!A:E"
+    # Notes sheet schema reserves A for id (computed in-sheet). We append into B:F.
+    append_range = f"{sheet_name}!B:F"
 
     env = os.environ.copy()
 

@@ -200,6 +200,22 @@ async def _load_sheet_table(*, spreadsheet_id: str, sheet_name: str, max_rows: i
         },
     )
     parsed = _mcp_text_json(res)
+
+    # Best-effort: extract the row number from the append response so we can report a stable id.
+    # Google usually returns e.g. `notes!B12:F12`. We map sheet row -> note id by subtracting 1 (header row).
+    note_id: Optional[int] = None
+    try:
+        updated_range = ""
+        if isinstance(parsed, dict):
+            updated_range = str((((parsed.get("data") or {}).get("updates") or {}).get("updatedRange") or "")).strip()
+        m = re.search(r"!(?:[A-Z]+)(\d+):", updated_range)
+        if not m:
+            m = re.search(r"!(?:[A-Z]+)(\d+)$", updated_range)
+        if m:
+            row_num = int(m.group(1))
+            note_id = max(1, row_num - 1)
+    except Exception:
+        note_id = None
     if not isinstance(parsed, dict):
         return []
     values = parsed.get("values")
@@ -3705,7 +3721,14 @@ async def _handle_note_trigger(ws: WebSocket, text: str) -> bool:
         status,
         processed_time,
     ]
-    append_range = f"{sheet_name}!A:E"
+    # Notes sheet schema:
+    # A: id (computed in-sheet)
+    # B: date_time
+    # C: subject
+    # D: notes
+    # E: status
+    # F: time
+    append_range = f"{sheet_name}!B:F"
 
     tool = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
     res = await _mcp_tools_call(
@@ -3720,11 +3743,28 @@ async def _handle_note_trigger(ws: WebSocket, text: str) -> bool:
     )
     parsed = _mcp_text_json(res)
 
+    # Best-effort: extract the row number from the append response so we can report a stable id.
+    # Google usually returns e.g. `notes!B12:F12`. We map sheet row -> note id by subtracting 1 (header row).
+    note_id: Optional[int] = None
+    try:
+        updated_range = ""
+        if isinstance(parsed, dict):
+            updated_range = str((((parsed.get("data") or {}).get("updates") or {}).get("updatedRange") or "")).strip()
+        m = re.search(r"!(?:[A-Z]+)(\d+):", updated_range)
+        if not m:
+            m = re.search(r"!(?:[A-Z]+)(\d+)$", updated_range)
+        if m:
+            row_num = int(m.group(1))
+            note_id = max(1, row_num - 1)
+    except Exception:
+        note_id = None
+
     await _ws_send_json(
         ws,
         {
             "type": "note_created",
             "note": {
+                "id": note_id,
                 "date_time": now_iso,
                 "subject": "note",
                 "notes": str(note_text or "").strip(),
