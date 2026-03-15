@@ -604,7 +604,28 @@ export default function App() {
              {messages.length === 0 && (
                <div className="text-sm text-slate-600 italic mt-10 text-center">Awaiting inputs...</div>
              )}
-             {(showDebugLogs ? messages : messages.filter((m) => (m.metadata?.severity || "info") !== "debug")).map((m) => {
+             {(() => {
+               const visible = (showDebugLogs ? messages : messages.filter((m) => (m.metadata?.severity || "info") !== "debug"));
+               const seenKeys = new Set<string>();
+               const dedupeKeyForRender = (t: string): string | null => {
+                 const s = String(t || "").trim().toLowerCase().replace(/\s+/g, " ");
+                 if (!s) return null;
+                 if (s.includes("sheets are not auto-loaded")) return "sheets_not_auto_loaded";
+                 if (s.startsWith("reload system: start") || s.startsWith("reload system: ok") || s.startsWith("reload system สำเร็จ")) return "reload_system";
+                 if (s.includes("โหลด memory") && s.includes("knowledge")) return "loaded_memory_th";
+                 if (s.includes("loaded memory") && s.includes("knowledge")) return "loaded_memory_en";
+                 // Time injection lines (Thai and ISO-ish).
+                 if (s.startsWith("อา.") || /^\d{4}-\d{2}-\d{2}\b/.test(s)) return "time_injection";
+                 return null;
+               };
+               const filtered = visible.filter((m) => {
+                 const k = dedupeKeyForRender(String(m.text || ""));
+                 if (!k) return true;
+                 if (seenKeys.has(k)) return false;
+                 seenKeys.add(k);
+                 return true;
+               });
+               return filtered.map((m) => {
                const canExpand = Boolean(m.metadata?.raw || m.metadata?.trace_id || m.metadata?.ws?.type || m.metadata?.ws?.instance_id);
                const expanded = expandedLogId === m.id;
                let rawText = "";
@@ -664,7 +685,8 @@ export default function App() {
                    </div>
                  </div>
                );
-             })}
+              });
+             })()}
           </div>
         </div>
 
