@@ -3635,6 +3635,10 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
         if handled:
             return True
 
+    handled = await _handle_memory_trigger(ws, text)
+    if handled:
+        return True
+
     handled = await _handle_note_trigger(ws, text)
     if handled:
         return True
@@ -3654,6 +3658,242 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
         ws.state.active_agent_id = None
         ws.state.active_agent_until_ts = None
     return False
+
+
+def _parse_bool_cell(v: Any) -> bool:
+    s = str(v or "").strip().lower()
+    return s in {"1", "true", "t", "yes", "y", "on", "enabled"}
+
+
+def _safe_int(v: Any, default: int = 0) -> int:
+    try:
+        return int(str(v).strip())
+    except Exception:
+        return default
+
+
+async def _load_sheet_kv5(*, spreadsheet_id: str, sheet_name: str) -> list[dict[str, Any]]:
+    # Expects a table with columns: key, value, enabled, scope, priority.
+    res = await _mcp_tools_call(
+        "google_sheets_values_get",
+        {
+            "spreadsheet_id": spreadsheet_id,
+            "range": f"{sheet_name}!A:E",
+        },
+    )
+    parsed = _mcp_text_json(res)
+    if not isinstance(parsed, dict):
+        return []
+    values = parsed.get("values")
+    if not isinstance(values, list) or not values:
+        return []
+
+    # Header normalization.
+    header = [str(c or "").strip().lower() for c in (values[0] if isinstance(values[0], list) else [])]
+    idx: dict[str, int] = {}
+    for i, col in enumerate(header):
+        if col:
+            idx[col] = i
+
+    def get_cell(row: list[Any], name: str) -> Any:
+        j = idx.get(name)
+        if j is None or j < 0 or j >= len(row):
+            return ""
+        return row[j]
+
+    out: list[dict[str, Any]] = []
+    for raw in values[1:]:
+        if not isinstance(raw, list) or not raw:
+            continue
+        key = str(get_cell(raw, "key") or raw[0] or "").strip()
+        if not key:
+            continue
+        val = str(get_cell(raw, "value") or (raw[1] if len(raw) > 1 else "")).strip()
+        enabled = _parse_bool_cell(get_cell(raw, "enabled") or (raw[2] if len(raw) > 2 else "true"))
+        scope = str(get_cell(raw, "scope") or (raw[3] if len(raw) > 3 else "global")).strip() or "global"
+        priority = _safe_int(get_cell(raw, "priority") or (raw[4] if len(raw) > 4 else 0), default=0)
+        out.append({"key": key, "value": val, "enabled": enabled, "scope": scope, "priority": priority})
+    return out
+
+
+async def _load_ws_sheet_memory(ws: WebSocket) -> None:
+    spreadsheet_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
+    if not spreadsheet_id:
+        return
+
+    sys_sheet = str(os.getenv("CHABA_SS_SYS_SYS_SHEET") or "sys").strip() or "sys"
+    sys_rows = await _load_sheet_kv5(spreadsheet_id=spreadsheet_id, sheet_name=sys_sheet)
+    sys_kv = {str(it.get("key") or "").strip(): str(it.get("value") or "").strip() for it in sys_rows if isinstance(it, dict)}
+
+    memory_sheet = str(sys_kv.get("memory.sheet_name") or os.getenv("CHABA_SS_SYS_MEMORY_SHEET") or "memory").strip() or "memory"
+    scope_precedence_raw = str(sys_kv.get("memory.scopes_precedence") or "session,user,global").strip()
+    scopes = [s.strip() for s in scope_precedence_raw.split(",") if s.strip()]
+    if not scopes:
+        scopes = ["session", "user", "global"]
+    scope_rank = {s: i for i, s in enumerate(scopes)}
+
+    items = await _load_sheet_kv5(spreadsheet_id=spreadsheet_id, sheet_name=memory_sheet)
+    enabled_items = [it for it in items if isinstance(it, dict) and bool(it.get("enabled")) and str(it.get("key") or "").strip()]
+
+    enabled_items.sort(
+        key=lambda it: (
+            scope_rank.get(str(it.get("scope") or "global"), 999),
+            -_safe_int(it.get("priority"), default=0),
+        )
+    )
+
+    try:
+        ws.state.sys_kv = sys_kv
+        ws.state.memory_items = enabled_items
+        ws.state.memory_sheet_name = memory_sheet
+    except Exception:
+        pass
+
+    # Build a compact text blob for Gemini context injection.
+    max_items = _safe_int(sys_kv.get("memory.max_items"), default=120)
+    if max_items <= 0:
+        max_items = 120
+
+    lines: list[str] = []
+    for it in enabled_items[:max_items]:
+        k = str(it.get("key") or "").strip()
+        v = str(it.get("value") or "").strip()
+        sc = str(it.get("scope") or "").strip()
+        pr = _safe_int(it.get("priority"), default=0)
+        if not k or not v:
+            continue
+        lines.append(f"- [{sc}:{pr}] {k}: {v}")
+
+    ctx = "\n".join(lines).strip()
+    try:
+        ws.state.memory_context_text = ctx
+    except Exception:
+        pass
+
+
+async def _handle_memory_trigger(ws: WebSocket, text: str) -> bool:
+    s_raw = str(text or "")
+    s = " ".join(s_raw.strip().lower().split())
+    if not s:
+        return False
+
+    # Quick Thai triggers.
+    is_summary = ("สรุป" in s and "memory" in s) or ("สรุป" in s and "เมม" in s) or (s.startswith("memory ") and "summary" in s)
+    is_list = ("list" in s and "memory" in s) or (s.startswith("memory list"))
+    is_get = ("memory key" in s) or s.startswith("memory_get") or ("คีย์" in s and "memory" in s)
+    is_search = s.startswith("memory_search") or ("ค้น" in s and "memory" in s) or ("search" in s and "memory" in s)
+
+    if not (is_summary or is_list or is_get or is_search):
+        return False
+
+    items = getattr(ws.state, "memory_items", None)
+    if not isinstance(items, list) or not items:
+        # Try lazy-load once.
+        try:
+            await _load_ws_sheet_memory(ws)
+        except Exception:
+            pass
+        items = getattr(ws.state, "memory_items", None)
+
+    if not isinstance(items, list) or not items:
+        msg = "ยังไม่ได้โหลด memory จากชีต (หรืออ่านไม่สำเร็จ)" if _text_is_thai(s_raw) else "Memory is not loaded (or failed to load)."
+        await _ws_send_json(ws, {"type": "text", "text": msg, "instance_id": INSTANCE_ID})
+        return True
+
+    # Helper index.
+    by_key: dict[str, dict[str, Any]] = {}
+    for it in items:
+        if isinstance(it, dict):
+            k = str(it.get("key") or "").strip()
+            if k and k not in by_key:
+                by_key[k] = it
+
+    if is_get:
+        # Extract key after ':' or after 'memory key'.
+        key = None
+        if ":" in s_raw:
+            key = s_raw.split(":", 1)[1].strip()
+        if not key:
+            parts = s.split()
+            if "key" in parts:
+                try:
+                    key = s_raw.split("key", 1)[1].strip()
+                except Exception:
+                    key = None
+        key = str(key or "").strip().strip("`\"'")
+        if not key:
+            msg = "ระบุคีย์ที่ต้องการดูด้วย เช่น: memory key sys.sheet_purpose" if _text_is_thai(s_raw) else "Specify a key, e.g. memory key sys.sheet_purpose"
+            await _ws_send_json(ws, {"type": "text", "text": msg, "instance_id": INSTANCE_ID})
+            return True
+        hit = by_key.get(key)
+        if not isinstance(hit, dict):
+            msg = f"ไม่พบคีย์: {key}" if _text_is_thai(s_raw) else f"Key not found: {key}"
+            await _ws_send_json(ws, {"type": "text", "text": msg, "instance_id": INSTANCE_ID})
+            return True
+        sc = str(hit.get("scope") or "global")
+        pr = _safe_int(hit.get("priority"), default=0)
+        val = str(hit.get("value") or "").strip()
+        out = f"[{sc}:{pr}] {key}: {val}".strip()
+        await _ws_send_json(ws, {"type": "text", "text": out, "instance_id": INSTANCE_ID})
+        return True
+
+    if is_search:
+        q = None
+        if ":" in s_raw:
+            q = s_raw.split(":", 1)[1].strip()
+        if not q and s.startswith("memory_search"):
+            q = s_raw[len("memory_search") :].strip()
+        q = str(q or "").strip()
+        if not q:
+            msg = "ระบุคำค้นด้วย เช่น: ค้น memory: โน้ต" if _text_is_thai(s_raw) else "Provide a query, e.g. memory_search notes"
+            await _ws_send_json(ws, {"type": "text", "text": msg, "instance_id": INSTANCE_ID})
+            return True
+
+        ql = q.lower()
+        hits: list[dict[str, Any]] = []
+        for it in items:
+            if not isinstance(it, dict):
+                continue
+            k = str(it.get("key") or "")
+            v = str(it.get("value") or "")
+            if ql in k.lower() or ql in v.lower():
+                hits.append(it)
+            if len(hits) >= 20:
+                break
+        if not hits:
+            msg = f"ไม่พบรายการที่ตรงกับ: {q}" if _text_is_thai(s_raw) else f"No matches for: {q}"
+            await _ws_send_json(ws, {"type": "text", "text": msg, "instance_id": INSTANCE_ID})
+            return True
+        lines = []
+        for it in hits:
+            k = str(it.get("key") or "").strip()
+            sc = str(it.get("scope") or "global")
+            pr = _safe_int(it.get("priority"), default=0)
+            lines.append(f"- [{sc}:{pr}] {k}")
+        await _ws_send_json(ws, {"type": "text", "text": "\n".join(lines), "instance_id": INSTANCE_ID})
+        return True
+
+    # Summary/list.
+    top = items[:20]
+    lines = []
+    for it in top:
+        if not isinstance(it, dict):
+            continue
+        k = str(it.get("key") or "").strip()
+        v = str(it.get("value") or "").strip()
+        sc = str(it.get("scope") or "global")
+        pr = _safe_int(it.get("priority"), default=0)
+        if not k:
+            continue
+        # Keep summary short.
+        v_short = v
+        if len(v_short) > 140:
+            v_short = v_short[:140].rstrip() + "…"
+        lines.append(f"- [{sc}:{pr}] {k}: {v_short}")
+
+    title = "สรุป memory ที่โหลดอยู่ (top 20)" if _text_is_thai(s_raw) else "Loaded memory summary (top 20)"
+    await _ws_send_json(ws, {"type": "text", "text": title + "\n" + "\n".join(lines), "instance_id": INSTANCE_ID})
+    return True
 
 
 def _extract_mcp_text(result: Any) -> str:
@@ -6338,6 +6578,13 @@ async def ws_live(ws: WebSocket) -> None:
             ws.state.user_lang = _lang_from_ws(ws)
         except Exception:
             pass
+
+        # Load sys->memory sheet context (best-effort). This is used for both local commands
+        # and for injecting a compact memory context into Gemini.
+        try:
+            await _load_ws_sheet_memory(ws)
+        except Exception:
+            pass
         api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
         if not api_key:
             await _ws_send_json(
@@ -6400,6 +6647,16 @@ async def ws_live(ws: WebSocket) -> None:
             f"NOW_LOCAL: {now_local.isoformat()}\n"
             "Use this as the reference for all relative time calculations."
         )
+
+        # Inject memory sheet context (best-effort). Keep compact to avoid token blowups.
+        mem_ctx = str(getattr(ws.state, "memory_context_text", "") or "").strip()
+        if mem_ctx:
+            system_instruction = (
+                system_instruction
+                + "\n\n"
+                + "SHEET_MEMORY_CONTEXT (internal; do NOT repeat verbatim to the user)\n"
+                + mem_ctx
+            )
 
         if gem_extra:
             system_instruction = system_instruction + "\n\n" + gem_extra
