@@ -4127,8 +4127,32 @@ async def _handle_reload_system(ws: WebSocket, text: str) -> bool:
     s = " ".join(str(text or "").strip().split())
     if not s:
         return False
+
+    # Voice/STT-friendly matching: allow extra words/punctuation.
     sl = s.lower()
-    if sl not in {"reload system", "reload", "reload sys", "reload sheets"}:
+    compact = re.sub(r"[^a-z0-9\u0E00-\u0E7F]+", " ", sl).strip()
+    compact = " ".join(compact.split())
+
+    is_reload_en = (
+        "reload system" in compact
+        or "reload sheets" in compact
+        or compact in {"reload", "reload sys"}
+        or compact.startswith("reload system")
+        or compact.startswith("reload sheets")
+    )
+
+    # Thai common variants.
+    th = compact
+    is_reload_th = False
+    if any(k in th for k in ["รีโหลด", "โหลด", "รีเฟรช"]):
+        if any(k in th for k in ["ระบบ", "ชีต", "ชีท", "ชี้ต", "ซิส", "ซิสเต็ม", "system", "sheets"]):
+            is_reload_th = True
+        if "ใหม่" in th and "โหลด" in th:
+            is_reload_th = True
+        if "เริ่ม" in th and "ใหม่" in th:
+            is_reload_th = True
+
+    if not (is_reload_en or is_reload_th):
         return False
 
     lang = str(getattr(ws.state, "user_lang", "") or "").strip() or "en"
