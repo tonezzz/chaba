@@ -600,10 +600,8 @@ app = FastAPI(title="jarvis-backend", version="0.1.0")
 
 WEB_FETCHER_BASE_URL = str(os.getenv("WEB_FETCHER_BASE_URL") or "http://web-fetcher:8028").strip().rstrip("/")
 
-MCP_BASE_URL = str(os.getenv("MCP_BASE_URL") or "http://mcp-bundle:3050").strip().rstrip("/")
-
-DEEP_RESEARCH_WORKER_BASE_URL = str(os.getenv("DEEP_RESEARCH_WORKER_BASE_URL") or "").strip().rstrip("/")
-
+MCP_BASE_URL = str(os.getenv("MCP_BASE_URL") or "http://mcp-bundle:3050").strip() or "http://mcp-bundle:3050"
+MCP_PLAYWRIGHT_BASE_URL = str(os.getenv("MCP_PLAYWRIGHT_BASE_URL") or "").strip()
 AIM_MCP_BASE_URL = str(os.getenv("AIM_MCP_BASE_URL") or "").strip().rstrip("/")
 
 WEAVIATE_URL = str(os.getenv("WEAVIATE_URL") or "").strip().rstrip("/")
@@ -6062,11 +6060,38 @@ async def _mcp_rpc_base(base_url: str, method: str, params: dict[str, Any]) -> A
 
 
 async def _mcp_tools_list() -> list[dict[str, Any]]:
-    return await mcp_client.mcp_tools_list(MCP_BASE_URL)
+    base = MCP_BASE_URL
+    if MCP_PLAYWRIGHT_BASE_URL:
+        # Merge Playwright tools into the main list.
+        try:
+            main_tools = await mcp_client.mcp_tools_list(MCP_BASE_URL)
+        except Exception:
+            main_tools = []
+        try:
+            pw_tools = await mcp_client.mcp_tools_list(MCP_PLAYWRIGHT_BASE_URL)
+        except Exception:
+            pw_tools = []
+        # De-dupe by name.
+        seen: set[str] = set()
+        out: list[dict[str, Any]] = []
+        for t in (main_tools or []) + (pw_tools or []):
+            try:
+                n = str((t or {}).get("name") or "").strip()
+            except Exception:
+                n = ""
+            if not n or n in seen:
+                continue
+            seen.add(n)
+            out.append(t)
+        return out
+    return await mcp_client.mcp_tools_list(base)
 
 
 async def _mcp_tools_call(name: str, arguments: dict[str, Any]) -> Any:
-    return await mcp_client.mcp_tools_call(MCP_BASE_URL, name, arguments)
+    base = MCP_BASE_URL
+    if MCP_PLAYWRIGHT_BASE_URL and str(name or "").startswith("playwright_"):
+        base = MCP_PLAYWRIGHT_BASE_URL
+    return await mcp_client.mcp_tools_call(base, name, arguments)
 
 
 async def _aim_mcp_tools_call(name: str, arguments: dict[str, Any]) -> Any:

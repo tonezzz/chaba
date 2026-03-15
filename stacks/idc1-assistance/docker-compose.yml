@@ -34,6 +34,7 @@ services:
       JARVIS_IMAGE_ALLOWED_MODELS: ${JARVIS_IMAGE_ALLOWED_MODELS:-gemini-3.1-flash-image-preview}
       WEB_FETCHER_BASE_URL: ${WEB_FETCHER_BASE_URL:-http://web-fetcher:8028}
       MCP_BASE_URL: ${MCP_BASE_URL:-http://mcp-bundle:3050}
+      MCP_PLAYWRIGHT_BASE_URL: ${MCP_PLAYWRIGHT_BASE_URL:-http://mcp-playwright:3050}
       DEEP_RESEARCH_WORKER_BASE_URL: ${DEEP_RESEARCH_WORKER_BASE_URL:-http://deep-research-worker:8030}
       WEAVIATE_URL: ${WEAVIATE_URL:-http://weaviate:8080}
     volumes:
@@ -1912,12 +1913,6 @@ services:
               "tags": ["thinking"],
               "disabled": false
             },
-            "playwright": {
-              "command": "npx",
-              "args": ["-y", "@playwright/mcp@latest", "--no-sandbox", "--executable-path", "/opt/google/chrome/chrome"],
-              "tags": ["playwright", "web", "browser"],
-              "disabled": false
-            },
             "google-tasks": {
               "command": "node",
               "args": ["/app/mcp-servers/mcp-google-tasks/server.js"],
@@ -1963,33 +1958,20 @@ services:
         EOF
 
         exec node index.js
-    environment:
-      ONE_MCP_HOST: 0.0.0.0
-      ONE_MCP_PORT: 3050
-      ONE_MCP_EXTERNAL_URL: http://127.0.0.1:3051
-      ONE_MCP_LOG_LEVEL: info
-      ONE_MCP_CONFIG_DIR: /app/mcp-config
-      ONE_MCP_CONFIG: /app/mcp-config/mcp.json
-      GOOGLE_TASKS_CLIENT_ID: ${GOOGLE_TASKS_CLIENT_ID:-}
-      GOOGLE_TASKS_CLIENT_SECRET: ${GOOGLE_TASKS_CLIENT_SECRET:-}
-      GOOGLE_TASKS_SCOPES: ${GOOGLE_TASKS_SCOPES:-https://www.googleapis.com/auth/tasks}
-      GOOGLE_TASKS_TOKEN_PATH: ${GOOGLE_TASKS_TOKEN_PATH:-/root/.config/1mcp/google-tasks.tokens.json}
-      GOOGLE_SHEETS_CLIENT_ID: ${GOOGLE_SHEETS_CLIENT_ID:-${GOOGLE_CLIENT_ID:-}}
-      GOOGLE_SHEETS_CLIENT_SECRET: ${GOOGLE_SHEETS_CLIENT_SECRET:-${GOOGLE_CLIENT_SECRET:-}}
-      GOOGLE_SHEETS_SCOPES: ${GOOGLE_SHEETS_SCOPES:-https://www.googleapis.com/auth/spreadsheets.readonly}
-      GOOGLE_SHEETS_TOKEN_PATH: ${GOOGLE_SHEETS_TOKEN_PATH:-/root/.config/1mcp/google-sheets.tokens.json}
-      GOOGLE_CALENDAR_CLIENT_ID: ${GOOGLE_CALENDAR_CLIENT_ID:-${GOOGLE_TASKS_CLIENT_ID:-}}
-      GOOGLE_CALENDAR_CLIENT_SECRET: ${GOOGLE_CALENDAR_CLIENT_SECRET:-${GOOGLE_TASKS_CLIENT_SECRET:-}}
-      GOOGLE_CALENDAR_SCOPES: ${GOOGLE_CALENDAR_SCOPES:-https://www.googleapis.com/auth/calendar}
-      GOOGLE_CALENDAR_TOKEN_PATH: ${GOOGLE_CALENDAR_TOKEN_PATH:-/root/.config/1mcp/google-calendar.tokens.json}
-      GOOGLE_CALENDAR_REDIRECT_URI: ${GOOGLE_CALENDAR_REDIRECT_URI:-http://127.0.0.1:53682/oauth2callback}
-      GOOGLE_CALENDAR_JARVIS_CALENDAR_NAME: ${GOOGLE_CALENDAR_JARVIS_CALENDAR_NAME:-Jarvis Reminders}
-    volumes:
-      - ./mcp-config:/app/mcp-config
-      - mcp-bundle-data:/root/.config/1mcp
-      - mcp-bundle-cache:/root/.cache
+
+  mcp-playwright:
+    <<: *default-service
+    image: mcr.microsoft.com/playwright:v1.58.2-jammy
+    # Internal-only: no host ports.
+    command:
+      - bash
+      - -lc
+      - |
+        set -e
+        node -v
+        npx -y @playwright/mcp@latest --host 0.0.0.0 --port 3050 --no-sandbox
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3050/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3050/health >/dev/null 2>&1 || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
