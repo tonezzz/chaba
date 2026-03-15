@@ -57,6 +57,22 @@ export class LiveService {
 		if (!s) return false;
 		const compact = s.replace(/[^a-z0-9\u0E00-\u0E7F]+/g, " ").trim().replace(/\s+/g, " ");
 		if (!compact) return false;
+		const parts = compact.split(" ").filter(Boolean);
+		const words = new Set(parts);
+		const hasAction =
+			words.has("reload") ||
+			words.has("reset") ||
+			words.has("restart") ||
+			words.has("reboot") ||
+			compact.includes("reload");
+		const hasTarget =
+			words.has("system") ||
+			words.has("sys") ||
+			words.has("sheets") ||
+			words.has("sheet") ||
+			compact.includes("system") ||
+			compact.includes("sheets");
+		if (hasAction && hasTarget) return true;
 		if (
 			compact.includes("reload system") ||
 			compact.includes("reload sheets") ||

@@ -4196,19 +4196,25 @@ async def _handle_reload_system(ws: WebSocket, text: str) -> bool:
     compact = re.sub(r"[^a-z0-9\u0E00-\u0E7F]+", " ", sl).strip()
     compact = " ".join(compact.split())
 
+    words = set(compact.split())
+    has_action = any(k in words for k in {"reload", "reset", "restart", "reboot"}) or ("reload" in compact)
+    has_target = any(k in words for k in {"system", "sys", "sheets", "sheet"}) or ("system" in compact) or ("sheets" in compact)
+
     is_reload_en = (
-        "reload system" in compact
+        (has_action and has_target)
+        or "reload system" in compact
         or "reload sheets" in compact
         or "reload sheet" in compact
-        or compact in {"reload", "reload sys"}
-        or compact.startswith("reload system")
-        or compact.startswith("reload sheets")
+        or compact in {"reload", "reload sys", "reset", "restart"}
+        or compact.startswith("reload")
+        or compact.startswith("reset")
+        or compact.startswith("restart")
     )
 
     # Thai common variants.
     th = compact
     is_reload_th = False
-    if any(k in th for k in ["รีโหลด", "โหลด", "รีเฟรช"]):
+    if any(k in th for k in ["รีโหลด", "โหลด", "รีเฟรช", "รีเซ็ต", "รีสตาร์ท", "restart", "reset"]):
         if any(k in th for k in ["ระบบ", "ชีต", "ชีท", "ชี้ต", "ซิส", "ซิสเต็ม", "system", "sheets"]):
             is_reload_th = True
         if "ใหม่" in th and "โหลด" in th:
