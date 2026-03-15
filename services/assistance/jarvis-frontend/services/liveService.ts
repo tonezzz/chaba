@@ -30,6 +30,7 @@ export class LiveService {
   private isStreamingAudio: boolean = false;
   private sessionId: string | null = null;
   private inputStream: MediaStream | null = null;
+  private lastVoiceCommandTs: Record<string, number> = {};
 
 	private createTraceId(prefix?: string): string {
 		const p = String(prefix || "tr").trim() || "tr";
@@ -41,6 +42,39 @@ export class LiveService {
 		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
 			this.ws.send(JSON.stringify(payload));
 		}
+	}
+
+	private shouldAutoTriggerVoiceCommand(key: string, debounceMs: number): boolean {
+		const now = Date.now();
+		const prev = this.lastVoiceCommandTs[key] || 0;
+		if (now - prev < debounceMs) return false;
+		this.lastVoiceCommandTs[key] = now;
+		return true;
+	}
+
+	private isReloadSystemPhrase(text: string): boolean {
+		const s = String(text || "").trim().toLowerCase();
+		if (!s) return false;
+		const compact = s.replace(/[^a-z0-9\u0E00-\u0E7F]+/g, " ").trim().replace(/\s+/g, " ");
+		if (!compact) return false;
+		if (
+			compact.includes("reload system") ||
+			compact.includes("reload sheets") ||
+			compact === "reload" ||
+			compact === "reload sys" ||
+			compact.startsWith("reload system") ||
+			compact.startsWith("reload sheets")
+		) {
+			return true;
+		}
+		// Thai common variants.
+		if (/[\u0E00-\u0E7F]/.test(compact)) {
+			const th = compact;
+			const hasReloadWord = th.includes("รีโหลด") || th.includes("รีเฟรช") || th.includes("โหลด");
+			const hasTargetWord = th.includes("ระบบ") || th.includes("ชีต") || th.includes("ชีท") || th.includes("ซิส") || th.includes("ซิสเต็ม") || th.includes("system") || th.includes("sheets");
+			if (hasReloadWord && hasTargetWord) return true;
+		}
+		return false;
 	}
 
 	private getOrCreateSessionId(): string {
@@ -527,6 +561,14 @@ export class LiveService {
 
     if (message?.type === "transcript" && message?.text) {
       const src = message?.source === "output" ? "output" : "input";
+      // Voice UX fallback: auto-trigger local commands from input transcripts.
+      // This helps when Gemini doesn't emit a tool call for simple control commands.
+      if (src === "input") {
+			const trText = String(message.text);
+			if (this.isReloadSystemPhrase(trText) && this.shouldAutoTriggerVoiceCommand("reload_system", 10_000)) {
+				this.wsSend({ type: "text", text: "Reload System", trace_id: this.createTraceId("voice_reload") });
+			}
+      }
       this.onMessage({
         id: `${Date.now()}_tr`,
         role: src === "output" ? "model" : "system",
