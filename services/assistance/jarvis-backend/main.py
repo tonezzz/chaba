@@ -3219,12 +3219,25 @@ def _extract_note_text(text: str) -> Optional[str]:
 
     eng_triggers = ("make a note",)
     thai_triggers = ("สร้างบันทึก", "จดบันทึก")
+    # Speech-to-text frequently inserts spaces between Thai words, e.g. "จด บันทึก".
+    # Also accept common Thai "note" variants.
+    thai_note_patterns = (
+        r"^(?:ช่วย\s*)?(?:จด\s*บันทึก|สร้าง\s*บันทึก)\s*[:\-]?\s*(.*)$",
+        r"^(?:ช่วย\s*)?(?:จด\s*โน้ต|สร้าง\s*โน้ต)\s*[:\-]?\s*(.*)$",
+        r"^(?:ช่วย\s*)?สร้าง\s*เป็น\s*โน้ต\s*[:\-]?\s*(.*)$",
+    )
 
     for trig in eng_triggers:
         if lower.startswith(trig):
             rest = s[len(trig) :].strip()
             if rest.startswith(":") or rest.startswith("-"):
                 rest = rest[1:].strip()
+            return rest or None
+
+    for pat in thai_note_patterns:
+        m = re.search(pat, s)
+        if m:
+            rest = str(m.group(1) or "").strip()
             return rest or None
 
     for trig in thai_triggers:
@@ -4733,6 +4746,52 @@ async def _google_tasks_fetch_task(*, tasklist_id: str, task_id: str) -> Optiona
     )
 
 
+async def _undo_sheet_append(entry: dict[str, Any]) -> None:
+    spreadsheet_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
+    if not spreadsheet_id:
+        return
+    sheet_name = "undo"
+
+    now_iso = datetime.now(tz=timezone.utc).isoformat().replace("+00:00", "Z")
+
+    def _dump(obj: Any) -> str:
+        try:
+            return json.dumps(obj, ensure_ascii=False)
+        except Exception:
+            return str(obj)
+
+    row = [
+        now_iso,
+        str(entry.get("event") or ""),
+        str(entry.get("scope") or ""),
+        str(entry.get("action") or ""),
+        str(entry.get("undo_id") or ""),
+        str(entry.get("confirmation_id") or ""),
+        str(entry.get("tasklist_id") or ""),
+        str(entry.get("task_id") or ""),
+        str(entry.get("event_id") or ""),
+        str(entry.get("status") or ""),
+        _dump(entry.get("before")),
+        _dump(entry.get("after")),
+        _dump(entry.get("result")),
+        INSTANCE_ID,
+    ]
+
+    try:
+        await _mcp_tools_call(
+            "google_sheets_values_append",
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": f"{sheet_name}!A:N",
+                "values": [row],
+                "value_input_option": "USER_ENTERED",
+                "insert_data_option": "INSERT_ROWS",
+            },
+        )
+    except Exception:
+        return
+
+
 def _google_tasks_undo_log(action: str, tasklist_id: Optional[str], task_id: Optional[str], before: Any, after: Any) -> str:
     return db_session.google_tasks_undo_log(SESSION_DB_PATH, action, tasklist_id, task_id, before, after)
 
@@ -5418,6 +5477,7 @@ app.include_router(
         ),
         fetch_task=lambda tasklist_id, task_id: _google_tasks_fetch_task(tasklist_id=tasklist_id, task_id=task_id),
         undo_log=_google_tasks_undo_log,
+        undo_sheet_append=lambda entry: _undo_sheet_append(entry),
         undo_list=_google_tasks_undo_list,
         undo_pop_last=_google_tasks_undo_pop_last,
         parse_checklist_steps=parse_checklist_steps,
@@ -5433,6 +5493,7 @@ app.include_router(
         mcp_tools_call=lambda name, arguments: _mcp_tools_call(name, arguments),
         mcp_text_json=lambda result: _mcp_text_json(result),
         require_confirmation=_require_confirmation,
+        undo_sheet_append=lambda entry: _undo_sheet_append(entry),
         undo_list=_google_calendar_undo_list,
         undo_pop_last=_google_calendar_undo_pop_last,
     )
@@ -5568,6 +5629,12 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             if original_tool_name in ("google_calendar_update_event", "google_calendar_delete_event") and event_id:
                 before_event = await _google_calendar_fetch_event(event_id=event_id)
 
+            before_task: Optional[dict[str, Any]] = None
+            task_id = str(mcp_args.get("task_id") or "").strip() or None
+            tasklist_id = str(mcp_args.get("tasklist_id") or "").strip() or None
+            if original_tool_name in ("google_tasks_update_task", "google_tasks_complete_task", "google_tasks_delete_task") and task_id and tasklist_id:
+                before_task = await _google_tasks_fetch_task(tasklist_id=tasklist_id, task_id=task_id)
+
             res = await _mcp_tools_call(mcp_name, mcp_args)
             parsed = _mcp_text_json(res)
 
@@ -5578,36 +5645,106 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
                     if isinstance(data_obj, dict):
                         created_event_id = str(data_obj.get("id") or "").strip() or None
                 after_event = await _google_calendar_fetch_event(event_id=created_event_id) if created_event_id else None
-                _google_calendar_undo_log("google_calendar_create_event", created_event_id, before=None, after=after_event)
+                undo_id = _google_calendar_undo_log("google_calendar_create_event", created_event_id, before=None, after=after_event)
+                await _undo_sheet_append(
+                    {
+                        "event": "recorded",
+                        "confirmation_id": confirmation_id,
+                        "undo_id": undo_id,
+                        "scope": "google_calendar",
+                        "action": "google_calendar_create_event",
+                        "event_id": created_event_id,
+                        "before": None,
+                        "after": after_event,
+                    }
+                )
                 if session_id and created_event_id:
                     _set_session_last_item(str(session_id), "last_created", "calendar_event", {"event_id": created_event_id})
             elif original_tool_name == "google_calendar_update_event":
                 after_event = await _google_calendar_fetch_event(event_id=event_id) if event_id else None
-                _google_calendar_undo_log("google_calendar_update_event", event_id, before=before_event, after=after_event)
+                undo_id = _google_calendar_undo_log("google_calendar_update_event", event_id, before=before_event, after=after_event)
+                await _undo_sheet_append(
+                    {
+                        "event": "recorded",
+                        "confirmation_id": confirmation_id,
+                        "undo_id": undo_id,
+                        "scope": "google_calendar",
+                        "action": "google_calendar_update_event",
+                        "event_id": event_id,
+                        "before": before_event,
+                        "after": after_event,
+                    }
+                )
                 if session_id and event_id:
                     _set_session_last_item(str(session_id), "last_modified", "calendar_event", {"event_id": event_id})
             elif original_tool_name == "google_calendar_delete_event":
-                _google_calendar_undo_log("google_calendar_delete_event", event_id, before=before_event, after=None)
+                undo_id = _google_calendar_undo_log("google_calendar_delete_event", event_id, before=before_event, after=None)
+                await _undo_sheet_append(
+                    {
+                        "event": "recorded",
+                        "confirmation_id": confirmation_id,
+                        "undo_id": undo_id,
+                        "scope": "google_calendar",
+                        "action": "google_calendar_delete_event",
+                        "event_id": event_id,
+                        "before": before_event,
+                        "after": None,
+                    }
+                )
                 if session_id and event_id:
                     _set_session_last_item(str(session_id), "last_modified", "calendar_event", {"event_id": event_id})
 
             if original_tool_name == "google_tasks_create_task":
                 created_task_id: Optional[str] = None
+                after_task: Optional[dict[str, Any]] = None
                 if isinstance(parsed, dict):
                     data_obj = parsed.get("data") if isinstance(parsed.get("data"), dict) else None
                     if isinstance(data_obj, dict):
                         created_task_id = str(data_obj.get("id") or "").strip() or None
-                tasklist_id = str(mcp_args.get("tasklist_id") or "").strip() or None
+                        if isinstance(data_obj, dict):
+                            after_task = data_obj
+                tasklist_id2 = str(mcp_args.get("tasklist_id") or "").strip() or None
+                if tasklist_id2 and created_task_id and after_task is None:
+                    after_task = await _google_tasks_fetch_task(tasklist_id=tasklist_id2, task_id=created_task_id)
+                undo_id = _google_tasks_undo_log("google_tasks_create_task", tasklist_id2, created_task_id, None, after_task)
+                await _undo_sheet_append(
+                    {
+                        "event": "recorded",
+                        "confirmation_id": confirmation_id,
+                        "undo_id": undo_id,
+                        "scope": "google_tasks",
+                        "action": "google_tasks_create_task",
+                        "tasklist_id": tasklist_id2,
+                        "task_id": created_task_id,
+                        "before": None,
+                        "after": after_task,
+                    }
+                )
                 if session_id and created_task_id:
                     _set_session_last_item(
                         str(session_id),
                         "last_created",
                         "task",
-                        {"task_id": created_task_id, "tasklist_id": tasklist_id},
+                        {"task_id": created_task_id, "tasklist_id": tasklist_id2},
                     )
             elif original_tool_name in ("google_tasks_update_task", "google_tasks_complete_task", "google_tasks_delete_task"):
-                task_id = str(mcp_args.get("task_id") or "").strip() or None
-                tasklist_id = str(mcp_args.get("tasklist_id") or "").strip() or None
+                after_task2: Optional[dict[str, Any]] = None
+                if original_tool_name != "google_tasks_delete_task" and task_id and tasklist_id:
+                    after_task2 = await _google_tasks_fetch_task(tasklist_id=tasklist_id, task_id=task_id)
+                undo_id = _google_tasks_undo_log(original_tool_name, tasklist_id, task_id, before_task, after_task2)
+                await _undo_sheet_append(
+                    {
+                        "event": "recorded",
+                        "confirmation_id": confirmation_id,
+                        "undo_id": undo_id,
+                        "scope": "google_tasks",
+                        "action": original_tool_name,
+                        "tasklist_id": tasklist_id,
+                        "task_id": task_id,
+                        "before": before_task,
+                        "after": after_task2,
+                    }
+                )
                 if session_id and task_id:
                     _set_session_last_item(
                         str(session_id),

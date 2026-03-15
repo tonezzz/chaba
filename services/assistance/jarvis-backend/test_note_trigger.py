@@ -17,6 +17,15 @@ def test_extract_note_text_thai_contains() -> None:
     assert _extract_note_text("ช่วย สร้างบันทึก - ต่ออายุพาสปอร์ต") == "ต่ออายุพาสปอร์ต"
 
 
+def test_extract_note_text_thai_spaced_words() -> None:
+    assert _extract_note_text("จด บันทึก: ไปธนาคาร") == "ไปธนาคาร"
+
+
+def test_extract_note_text_thai_note_variants() -> None:
+    assert _extract_note_text("สร้าง เป็น โน้ต - อย่าลืม ต่อพาสปอร์ต") == "อย่าลืม ต่อพาสปอร์ต"
+    assert _extract_note_text("จด โน้ต: โทรหาแม่") == "โทรหาแม่"
+
+
 def test_extract_note_text_missing_payload() -> None:
     assert _extract_note_text("make a note") is None
     assert _extract_note_text("จดบันทึก") is None

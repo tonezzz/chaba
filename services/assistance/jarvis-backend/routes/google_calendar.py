@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Awaitable
+from typing import Any, Callable, Awaitable, Optional
 
 from fastapi import APIRouter, HTTPException
 
@@ -18,6 +18,7 @@ def create_router(
     mcp_tools_call: Callable[[str, dict[str, Any]], Awaitable[Any]],
     mcp_text_json: Callable[[Any], Any],
     require_confirmation: Callable[[bool, str, Any], None],
+    undo_sheet_append: Optional[Callable[[dict[str, Any]], Awaitable[None]]] = None,
     undo_list: Callable[[int], list[dict[str, Any]]],
     undo_pop_last: Callable[[int], list[dict[str, Any]]],
 ) -> APIRouter:
@@ -41,6 +42,7 @@ def create_router(
             orig_action = str(item.get("action") or "")
             event_id = str(item.get("event_id") or "").strip() or None
             before = item.get("before")
+            undo_id = item.get("undo_id")
 
             if orig_action == "google_calendar_create_event" and event_id:
                 meta = mcp_tool_map.get("google_calendar_delete_event") if isinstance(mcp_tool_map, dict) else None
@@ -48,7 +50,23 @@ def create_router(
                 if not mcp_name:
                     raise HTTPException(status_code=500, detail="google_calendar_tools_not_configured")
                 res = await mcp_tools_call(mcp_name, {"event_id": event_id})
-                results.append({"undo_id": item.get("undo_id"), "undone": "delete_created_event", "result": mcp_text_json(res)})
+                result_obj = {"undo_id": undo_id, "undone": "delete_created_event", "result": mcp_text_json(res)}
+                results.append(result_obj)
+                if undo_sheet_append is not None:
+                    try:
+                        await undo_sheet_append(
+                            {
+                                "event": "executed",
+                                "undo_id": undo_id,
+                                "scope": "google_calendar",
+                                "action": orig_action,
+                                "event_id": event_id,
+                                "status": "ok",
+                                "result": result_obj,
+                            }
+                        )
+                    except Exception:
+                        pass
                 continue
 
             if orig_action == "google_calendar_update_event" and event_id and isinstance(before, dict):
@@ -74,7 +92,23 @@ def create_router(
                 if tz:
                     payload["timezone"] = tz
                 res = await mcp_tools_call(mcp_name, {k: v for k, v in payload.items() if v is not None})
-                results.append({"undo_id": item.get("undo_id"), "undone": "revert_event", "result": mcp_text_json(res)})
+                result_obj = {"undo_id": undo_id, "undone": "revert_event", "result": mcp_text_json(res)}
+                results.append(result_obj)
+                if undo_sheet_append is not None:
+                    try:
+                        await undo_sheet_append(
+                            {
+                                "event": "executed",
+                                "undo_id": undo_id,
+                                "scope": "google_calendar",
+                                "action": orig_action,
+                                "event_id": event_id,
+                                "status": "ok",
+                                "result": result_obj,
+                            }
+                        )
+                    except Exception:
+                        pass
                 continue
 
             if orig_action == "google_calendar_delete_event" and isinstance(before, dict):
@@ -103,17 +137,47 @@ def create_router(
                     mcp_name,
                     {k: v for k, v in payload2.items() if v is not None and str(v) != ""},
                 )
-                results.append(
-                    {
-                        "undo_id": item.get("undo_id"),
-                        "undone": "recreate_deleted_event",
-                        "result": mcp_text_json(res),
-                        "note": "recreated_event_has_new_id",
-                    }
-                )
+                result_obj = {
+                    "undo_id": undo_id,
+                    "undone": "recreate_deleted_event",
+                    "result": mcp_text_json(res),
+                    "note": "recreated_event_has_new_id",
+                }
+                results.append(result_obj)
+                if undo_sheet_append is not None:
+                    try:
+                        await undo_sheet_append(
+                            {
+                                "event": "executed",
+                                "undo_id": undo_id,
+                                "scope": "google_calendar",
+                                "action": orig_action,
+                                "event_id": event_id,
+                                "status": "ok",
+                                "result": result_obj,
+                            }
+                        )
+                    except Exception:
+                        pass
                 continue
 
-            results.append({"undo_id": item.get("undo_id"), "skipped": True, "reason": "insufficient_undo_data", "action": orig_action})
+            result_obj = {"undo_id": undo_id, "skipped": True, "reason": "insufficient_undo_data", "action": orig_action}
+            results.append(result_obj)
+            if undo_sheet_append is not None:
+                try:
+                    await undo_sheet_append(
+                        {
+                            "event": "executed",
+                            "undo_id": undo_id,
+                            "scope": "google_calendar",
+                            "action": orig_action,
+                            "event_id": event_id,
+                            "status": "skipped",
+                            "result": result_obj,
+                        }
+                    )
+                except Exception:
+                    pass
 
         return GoogleCalendarUndoResponse(ok=True, undone=len(results), results=results)
 

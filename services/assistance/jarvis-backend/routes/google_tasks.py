@@ -28,6 +28,7 @@ def create_router(
     resolve_tasklist: Callable[[Optional[str], Optional[str]], Awaitable[tuple[Optional[str], str]]],
     fetch_task: Callable[[str, str], Awaitable[Optional[dict[str, Any]]]],
     undo_log: Callable[[str, Optional[str], Optional[str], Any, Any], str],
+    undo_sheet_append: Optional[Callable[[dict[str, Any]], Awaitable[None]]] = None,
     undo_list: Callable[[int], list[dict[str, Any]]],
     undo_pop_last: Callable[[int], list[dict[str, Any]]],
     parse_checklist_steps: Callable[[str], list[Any]],
@@ -274,7 +275,23 @@ def create_router(
                 after = data_obj
                 created_task_id = str(data_obj.get("id") or "").strip()
 
-        undo_log("google_tasks_create_task", tasklist_id_resolved, created_task_id or None, None, after)
+        undo_id = undo_log("google_tasks_create_task", tasklist_id_resolved, created_task_id or None, None, after)
+        if undo_sheet_append is not None:
+            try:
+                await undo_sheet_append(
+                    {
+                        "event": "recorded",
+                        "undo_id": undo_id,
+                        "scope": "google_tasks",
+                        "action": "google_tasks_create_task",
+                        "tasklist_id": tasklist_id_resolved,
+                        "task_id": created_task_id or None,
+                        "before": None,
+                        "after": after,
+                    }
+                )
+            except Exception:
+                pass
         return GoogleTasksWriteResponse(ok=True, result=parsed if isinstance(parsed, dict) else {"raw": parsed})
 
     @router.post("/google-tasks/tasks/complete", response_model=GoogleTasksWriteResponse)
@@ -307,7 +324,23 @@ def create_router(
         res = await mcp_tools_call(mcp_name, payload)
         parsed = mcp_text_json(res)
         after = await fetch_task(str(tasklist_id_resolved or ""), task_id) if tasklist_id_resolved else None
-        undo_log("google_tasks_complete_task", tasklist_id_resolved, task_id, before, after)
+        undo_id = undo_log("google_tasks_complete_task", tasklist_id_resolved, task_id, before, after)
+        if undo_sheet_append is not None:
+            try:
+                await undo_sheet_append(
+                    {
+                        "event": "recorded",
+                        "undo_id": undo_id,
+                        "scope": "google_tasks",
+                        "action": "google_tasks_complete_task",
+                        "tasklist_id": tasklist_id_resolved,
+                        "task_id": task_id,
+                        "before": before,
+                        "after": after,
+                    }
+                )
+            except Exception:
+                pass
         return GoogleTasksWriteResponse(ok=True, result=parsed if isinstance(parsed, dict) else {"raw": parsed})
 
     @router.post("/google-tasks/tasks/delete", response_model=GoogleTasksWriteResponse)
@@ -339,7 +372,23 @@ def create_router(
 
         res = await mcp_tools_call(mcp_name, payload)
         parsed = mcp_text_json(res)
-        undo_log("google_tasks_delete_task", tasklist_id_resolved, task_id, before, None)
+        undo_id = undo_log("google_tasks_delete_task", tasklist_id_resolved, task_id, before, None)
+        if undo_sheet_append is not None:
+            try:
+                await undo_sheet_append(
+                    {
+                        "event": "recorded",
+                        "undo_id": undo_id,
+                        "scope": "google_tasks",
+                        "action": "google_tasks_delete_task",
+                        "tasklist_id": tasklist_id_resolved,
+                        "task_id": task_id,
+                        "before": before,
+                        "after": None,
+                    }
+                )
+            except Exception:
+                pass
         return GoogleTasksWriteResponse(ok=True, result=parsed if isinstance(parsed, dict) else {"raw": parsed})
 
     @router.post("/google-tasks/tasks/update", response_model=GoogleTasksWriteResponse)
@@ -383,7 +432,23 @@ def create_router(
         res = await mcp_tools_call(mcp_name, payload)
         parsed = mcp_text_json(res)
         after = await fetch_task(str(tasklist_id_resolved or ""), task_id) if tasklist_id_resolved else None
-        undo_log("google_tasks_update_task", tasklist_id_resolved, task_id, before, after)
+        undo_id = undo_log("google_tasks_update_task", tasklist_id_resolved, task_id, before, after)
+        if undo_sheet_append is not None:
+            try:
+                await undo_sheet_append(
+                    {
+                        "event": "recorded",
+                        "undo_id": undo_id,
+                        "scope": "google_tasks",
+                        "action": "google_tasks_update_task",
+                        "tasklist_id": tasklist_id_resolved,
+                        "task_id": task_id,
+                        "before": before,
+                        "after": after,
+                    }
+                )
+            except Exception:
+                pass
         return GoogleTasksWriteResponse(ok=True, result=parsed if isinstance(parsed, dict) else {"raw": parsed})
 
     @router.get("/google-tasks/undo/list", response_model=GoogleTasksUndoListResponse)
@@ -402,57 +467,119 @@ def create_router(
 
         for item in popped:
             orig_action = str(item.get("action") or "")
-            tasklist_id2 = str(item.get("tasklist_id") or "").strip() or None
-            task_id2 = str(item.get("task_id") or "").strip() or None
+            tasklist_id = str(item.get("tasklist_id") or "").strip() or None
+            task_id = str(item.get("task_id") or "").strip() or None
             before = item.get("before")
+            undo_id = item.get("undo_id")
 
-            if orig_action == "google_tasks_create_task" and tasklist_id2 and task_id2:
+            if orig_action == "google_tasks_create_task" and tasklist_id and task_id:
                 meta = mcp_tool_map.get("google_tasks_delete_task") if isinstance(mcp_tool_map, dict) else None
                 mcp_name = str(meta.get("mcp_name") or "").strip() if isinstance(meta, dict) else ""
                 if not mcp_name:
                     raise HTTPException(status_code=500, detail="google_tasks_tools_not_configured")
-                res = await mcp_tools_call(mcp_name, {"tasklist_id": tasklist_id2, "task_id": task_id2})
-                results.append({"undo_id": item.get("undo_id"), "undone": "delete_created_task", "result": mcp_text_json(res)})
+                res = await mcp_tools_call(mcp_name, {"tasklist_id": tasklist_id, "task_id": task_id})
+                result_obj = {"undo_id": undo_id, "undone": "delete_created_task", "result": mcp_text_json(res)}
+                results.append(result_obj)
+                if undo_sheet_append is not None:
+                    try:
+                        await undo_sheet_append(
+                            {
+                                "event": "executed",
+                                "undo_id": undo_id,
+                                "scope": "google_tasks",
+                                "action": orig_action,
+                                "tasklist_id": tasklist_id,
+                                "task_id": task_id,
+                                "status": "ok",
+                                "result": result_obj,
+                            }
+                        )
+                    except Exception:
+                        pass
                 continue
 
-            if orig_action in ("google_tasks_update_task", "google_tasks_complete_task") and tasklist_id2 and task_id2 and isinstance(before, dict):
+            if orig_action in ("google_tasks_update_task", "google_tasks_complete_task") and tasklist_id and task_id and isinstance(before, dict):
                 meta = mcp_tool_map.get("google_tasks_update_task") if isinstance(mcp_tool_map, dict) else None
                 mcp_name = str(meta.get("mcp_name") or "").strip() if isinstance(meta, dict) else ""
                 if not mcp_name:
                     raise HTTPException(status_code=500, detail="google_tasks_tools_not_configured")
-                payload: dict[str, Any] = {"tasklist_id": tasklist_id2, "task_id": task_id2}
+                payload: dict[str, Any] = {"tasklist_id": tasklist_id, "task_id": task_id}
                 for k in ("title", "notes", "due", "status"):
                     if k in before:
                         payload[k] = before.get(k)
                 payload = {k: v for k, v in payload.items() if v is not None}
                 res = await mcp_tools_call(mcp_name, payload)
-                results.append({"undo_id": item.get("undo_id"), "undone": "revert_task", "result": mcp_text_json(res)})
+                result_obj = {"undo_id": undo_id, "undone": "revert_task", "result": mcp_text_json(res)}
+                results.append(result_obj)
+                if undo_sheet_append is not None:
+                    try:
+                        await undo_sheet_append(
+                            {
+                                "event": "executed",
+                                "undo_id": undo_id,
+                                "scope": "google_tasks",
+                                "action": orig_action,
+                                "tasklist_id": tasklist_id,
+                                "task_id": task_id,
+                                "status": "ok",
+                                "result": result_obj,
+                            }
+                        )
+                    except Exception:
+                        pass
                 continue
 
-            if orig_action == "google_tasks_delete_task" and tasklist_id2 and isinstance(before, dict):
+            if orig_action == "google_tasks_delete_task" and tasklist_id and isinstance(before, dict):
                 meta = mcp_tool_map.get("google_tasks_create_task") if isinstance(mcp_tool_map, dict) else None
                 mcp_name = str(meta.get("mcp_name") or "").strip() if isinstance(meta, dict) else ""
                 if not mcp_name:
                     raise HTTPException(status_code=500, detail="google_tasks_tools_not_configured")
                 payload = {
-                    "tasklist_id": tasklist_id2,
+                    "tasklist_id": tasklist_id,
                     "title": str(before.get("title") or ""),
                     "notes": str(before.get("notes") or ""),
                     "due": before.get("due"),
                 }
                 payload = {k: v for k, v in payload.items() if v is not None and str(v) != ""}
                 res = await mcp_tools_call(mcp_name, payload)
-                results.append(
-                    {
-                        "undo_id": item.get("undo_id"),
-                        "undone": "recreate_deleted_task",
-                        "result": mcp_text_json(res),
-                        "note": "recreated_task_has_new_id",
-                    }
-                )
+                result_obj = {"undo_id": undo_id, "undone": "recreate_deleted_task", "result": mcp_text_json(res)}
+                results.append(result_obj)
+                if undo_sheet_append is not None:
+                    try:
+                        await undo_sheet_append(
+                            {
+                                "event": "executed",
+                                "undo_id": undo_id,
+                                "scope": "google_tasks",
+                                "action": orig_action,
+                                "tasklist_id": tasklist_id,
+                                "task_id": task_id,
+                                "status": "ok",
+                                "result": result_obj,
+                            }
+                        )
+                    except Exception:
+                        pass
                 continue
 
-            results.append({"undo_id": item.get("undo_id"), "skipped": True, "reason": "insufficient_undo_data", "action": orig_action})
+            result_obj = {"undo_id": undo_id, "skipped": True, "reason": "insufficient_undo_data", "action": orig_action}
+            results.append(result_obj)
+            if undo_sheet_append is not None:
+                try:
+                    await undo_sheet_append(
+                        {
+                            "event": "executed",
+                            "undo_id": undo_id,
+                            "scope": "google_tasks",
+                            "action": orig_action,
+                            "tasklist_id": tasklist_id,
+                            "task_id": task_id,
+                            "status": "skipped",
+                            "result": result_obj,
+                        }
+                    )
+                except Exception:
+                    pass
 
         return GoogleTasksUndoResponse(ok=True, undone=len(results), results=results)
 
