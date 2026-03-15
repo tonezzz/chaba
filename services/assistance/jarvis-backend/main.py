@@ -54,16 +54,32 @@ _SHEET_MEMORY_CACHE: dict[str, Any] = {
     "memory_context_text": "",
 }
 
+_SHEET_KNOWLEDGE_CACHE: dict[str, Any] = {
+    "loaded_at": 0,
+    "knowledge_items": None,
+    "knowledge_sheet_name": None,
+    "knowledge_context_text": "",
+}
+
 _SHEET_MEMORY_REFRESHING: bool = False
 _SHEET_MEMORY_LAST_REFRESH_AT: int = 0
+
+_SHEET_KNOWLEDGE_REFRESHING: bool = False
+_SHEET_KNOWLEDGE_LAST_REFRESH_AT: int = 0
 
 
 def _memory_cache_ttl_seconds() -> int:
     try:
-        v = int(str(os.getenv("JARVIS_MEMORY_CACHE_TTL_SECONDS") or "60").strip())
-        return v if v > 0 else 60
+        return max(5, int(os.getenv("JARVIS_MEMORY_CACHE_TTL_SECONDS") or "60"))
     except Exception:
         return 60
+
+
+def _knowledge_cache_ttl_seconds() -> int:
+    try:
+        return max(5, int(os.getenv("JARVIS_KNOWLEDGE_CACHE_TTL_SECONDS") or "120"))
+    except Exception:
+        return 120
 
 
 def _get_cached_sheet_memory() -> Optional[dict[str, Any]]:
@@ -72,9 +88,6 @@ def _get_cached_sheet_memory() -> Optional[dict[str, Any]]:
     if loaded_at <= 0:
         return None
     if now - loaded_at > _memory_cache_ttl_seconds():
-        return None
-    items = _SHEET_MEMORY_CACHE.get("memory_items")
-    if not isinstance(items, list) or not items:
         return None
     return dict(_SHEET_MEMORY_CACHE)
 
@@ -92,7 +105,33 @@ def _apply_cached_sheet_memory_to_ws(ws: WebSocket, cached: dict[str, Any]) -> N
         ws.state.sys_kv = cached.get("sys_kv")
         ws.state.memory_items = cached.get("memory_items")
         ws.state.memory_sheet_name = cached.get("memory_sheet_name")
-        ws.state.memory_context_text = str(cached.get("memory_context_text") or "")
+        ws.state.memory_context_text = cached.get("memory_context_text")
+    except Exception:
+        pass
+
+
+def _get_cached_sheet_knowledge() -> Optional[dict[str, Any]]:
+    now = int(time.time())
+    loaded_at = int(_SHEET_KNOWLEDGE_CACHE.get("loaded_at") or 0)
+    if loaded_at <= 0:
+        return None
+    if now - loaded_at > _knowledge_cache_ttl_seconds():
+        return None
+    return dict(_SHEET_KNOWLEDGE_CACHE)
+
+
+def _set_cached_sheet_knowledge(payload: dict[str, Any]) -> None:
+    _SHEET_KNOWLEDGE_CACHE["loaded_at"] = int(time.time())
+    _SHEET_KNOWLEDGE_CACHE["knowledge_items"] = payload.get("knowledge_items")
+    _SHEET_KNOWLEDGE_CACHE["knowledge_sheet_name"] = payload.get("knowledge_sheet_name")
+    _SHEET_KNOWLEDGE_CACHE["knowledge_context_text"] = str(payload.get("knowledge_context_text") or "")
+
+
+def _apply_cached_sheet_knowledge_to_ws(ws: WebSocket, cached: dict[str, Any]) -> None:
+    try:
+        ws.state.knowledge_items = cached.get("knowledge_items")
+        ws.state.knowledge_sheet_name = cached.get("knowledge_sheet_name")
+        ws.state.knowledge_context_text = cached.get("knowledge_context_text")
     except Exception:
         pass
 
@@ -2711,7 +2750,7 @@ async def _emit_live_connect_greeting(ws: WebSocket) -> None:
 
 def _short_datetime_line(lang: str, now_local: datetime) -> str:
     if str(lang or "").strip().lower().startswith("th"):
-        return now_local.strftime("%d/%m/%Y %H:%M")
+        return now_local.strftime("%Y-%m-%d %H:%M")
     return now_local.strftime("%Y-%m-%d %H:%M")
 
 
@@ -2719,15 +2758,12 @@ def _memory_load_status_line(ws: WebSocket, lang: str) -> str:
     sheet = str(getattr(ws.state, "memory_sheet_name", "") or "").strip() or "memory"
     items = getattr(ws.state, "memory_items", None)
     n = len(items) if isinstance(items, list) else 0
-    sys_kv = getattr(ws.state, "sys_kv", None)
-    sys_ok = isinstance(sys_kv, dict) and bool(sys_kv)
-    if str(lang or "").strip().lower().startswith("th"):
-        if sys_ok:
-            return f"โหลด sys+memory แล้ว: {sheet} ({n} รายการ)"
-        return f"โหลด memory แล้ว: {sheet} ({n} รายการ)"
-    if sys_ok:
-        return f"Loaded sys+memory: {sheet} ({n} items)"
-    return f"Loaded memory: {sheet} ({n} items)"
+    ksheet = str(getattr(ws.state, "knowledge_sheet_name", "") or "").strip() or "knowledge"
+    kitems = getattr(ws.state, "knowledge_items", None)
+    kn = len(kitems) if isinstance(kitems, list) else 0
+    if str(lang or "").lower().startswith("th"):
+        return f"โหลด memory '{sheet}' {n} รายการ | knowledge '{ksheet}' {kn} รายการ"
+    return f"Loaded memory '{sheet}' ({n} items) | knowledge '{ksheet}' ({kn} items)"
 
 
 def _parse_reminder_helper_command(text: str) -> dict[str, Any]:
@@ -4041,6 +4077,15 @@ async def _load_ws_sheet_memory(ws: WebSocket) -> None:
     sys_rows = await _load_sheet_kv5(spreadsheet_id=spreadsheet_id, sheet_name=sys_sheet)
     sys_kv = {str(it.get("key") or "").strip(): str(it.get("value") or "").strip() for it in sys_rows if isinstance(it, dict)}
 
+    knowledge_sheet = str(sys_kv.get("knowledge.sheet_name") or os.getenv("CHABA_SS_SYS_KNOWLEDGE_SHEET") or "knowledge").strip() or "knowledge"
+    knowledge_items_raw = await _load_sheet_kv5(spreadsheet_id=spreadsheet_id, sheet_name=knowledge_sheet)
+    knowledge_items = [
+        it
+        for it in knowledge_items_raw
+        if isinstance(it, dict) and bool(it.get("enabled")) and str(it.get("key") or "").strip() and str(it.get("value") or "").strip()
+    ]
+    knowledge_by_key: set[str] = {str(it.get("key") or "").strip() for it in knowledge_items if isinstance(it, dict)}
+
     memory_sheet = str(sys_kv.get("memory.sheet_name") or os.getenv("CHABA_SS_SYS_MEMORY_SHEET") or "memory").strip() or "memory"
     scope_precedence_raw = str(sys_kv.get("memory.scopes_precedence") or "session,user,global").strip()
     scopes = [s.strip() for s in scope_precedence_raw.split(",") if s.strip()]
@@ -4049,7 +4094,15 @@ async def _load_ws_sheet_memory(ws: WebSocket) -> None:
     scope_rank = {s: i for i, s in enumerate(scopes)}
 
     items = await _load_sheet_kv5(spreadsheet_id=spreadsheet_id, sheet_name=memory_sheet)
-    enabled_items = [it for it in items if isinstance(it, dict) and bool(it.get("enabled")) and str(it.get("key") or "").strip()]
+    enabled_items = [
+        it
+        for it in items
+        if isinstance(it, dict)
+        and bool(it.get("enabled"))
+        and str(it.get("key") or "").strip()
+        and str(it.get("value") or "").strip()
+        and str(it.get("key") or "").strip() not in knowledge_by_key
+    ]
 
     enabled_items.sort(
         key=lambda it: (
@@ -4062,6 +4115,8 @@ async def _load_ws_sheet_memory(ws: WebSocket) -> None:
         ws.state.sys_kv = sys_kv
         ws.state.memory_items = enabled_items
         ws.state.memory_sheet_name = memory_sheet
+        ws.state.knowledge_items = knowledge_items
+        ws.state.knowledge_sheet_name = knowledge_sheet
     except Exception:
         pass
 
@@ -4086,6 +4141,25 @@ async def _load_ws_sheet_memory(ws: WebSocket) -> None:
     except Exception:
         pass
 
+    k_lines: list[str] = []
+    max_k = _safe_int(sys_kv.get("knowledge.max_items"), default=180)
+    if max_k <= 0:
+        max_k = 180
+    for it in knowledge_items[:max_k]:
+        k = str(it.get("key") or "").strip()
+        v = str(it.get("value") or "").strip()
+        sc = str(it.get("scope") or "").strip()
+        pr = _safe_int(it.get("priority"), default=0)
+        if not k or not v:
+            continue
+        k_lines.append(f"- [{sc}:{pr}] {k}: {v}")
+
+    k_ctx = "\n".join(k_lines).strip()
+    try:
+        ws.state.knowledge_context_text = k_ctx
+    except Exception:
+        pass
+
     try:
         _set_cached_sheet_memory(
             {
@@ -4093,6 +4167,17 @@ async def _load_ws_sheet_memory(ws: WebSocket) -> None:
                 "memory_items": enabled_items,
                 "memory_sheet_name": memory_sheet,
                 "memory_context_text": ctx,
+            }
+        )
+    except Exception:
+        pass
+
+    try:
+        _set_cached_sheet_knowledge(
+            {
+                "knowledge_items": knowledge_items,
+                "knowledge_sheet_name": knowledge_sheet,
+                "knowledge_context_text": k_ctx,
             }
         )
     except Exception:
@@ -4129,6 +4214,39 @@ async def _refresh_sheet_memory_background(ws: WebSocket, lang: str) -> None:
             pass
     finally:
         _SHEET_MEMORY_REFRESHING = False
+
+
+async def _refresh_sheet_knowledge_background(ws: WebSocket, lang: str) -> None:
+    global _SHEET_KNOWLEDGE_REFRESHING, _SHEET_KNOWLEDGE_LAST_REFRESH_AT
+    now = int(time.time())
+    if _SHEET_KNOWLEDGE_REFRESHING:
+        return
+    if _SHEET_KNOWLEDGE_LAST_REFRESH_AT and now - int(_SHEET_KNOWLEDGE_LAST_REFRESH_AT) < 10:
+        return
+    _SHEET_KNOWLEDGE_REFRESHING = True
+    _SHEET_KNOWLEDGE_LAST_REFRESH_AT = now
+    try:
+        try:
+            await _ws_progress(ws, "Loading knowledge", phase="start")
+        except Exception:
+            pass
+        # knowledge is loaded as part of _load_ws_sheet_memory to share sys_kv and allow de-dup.
+        await _load_ws_sheet_memory(ws)
+        try:
+            await _ws_progress(ws, "Loaded knowledge", phase="done")
+        except Exception:
+            pass
+        try:
+            await _ws_send_json(ws, {"type": "text", "text": _memory_load_status_line(ws, lang), "instance_id": INSTANCE_ID})
+        except Exception:
+            pass
+    except Exception:
+        try:
+            await _ws_progress(ws, "Failed loading knowledge", phase="error")
+        except Exception:
+            pass
+    finally:
+        _SHEET_KNOWLEDGE_REFRESHING = False
 
 
 async def _handle_memory_trigger(ws: WebSocket, text: str) -> bool:
@@ -7021,6 +7139,14 @@ async def ws_live(ws: WebSocket) -> None:
             except Exception:
                 pass
 
+        cached_k = _get_cached_sheet_knowledge()
+        if isinstance(cached_k, dict):
+            _apply_cached_sheet_knowledge_to_ws(ws, cached_k)
+            try:
+                await _ws_send_json(ws, {"type": "text", "text": _memory_load_status_line(ws, lang), "instance_id": INSTANCE_ID})
+            except Exception:
+                pass
+
         try:
             loaded_at = int((cached or {}).get("loaded_at") or 0) if isinstance(cached, dict) else 0
         except Exception:
@@ -7030,6 +7156,18 @@ async def ws_live(ws: WebSocket) -> None:
         if should_refresh:
             try:
                 asyncio.create_task(_refresh_sheet_memory_background(ws, lang), name="refresh_sheet_memory")
+            except Exception:
+                pass
+
+        try:
+            loaded_at_k = int((cached_k or {}).get("loaded_at") or 0) if isinstance(cached_k, dict) else 0
+        except Exception:
+            loaded_at_k = 0
+        ttl_k = _knowledge_cache_ttl_seconds()
+        should_refresh_k = not isinstance(cached_k, dict) or (loaded_at_k and (int(time.time()) - loaded_at_k) > max(10, ttl_k // 2))
+        if should_refresh_k:
+            try:
+                asyncio.create_task(_refresh_sheet_knowledge_background(ws, lang), name="refresh_sheet_knowledge")
             except Exception:
                 pass
         api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
@@ -7104,6 +7242,15 @@ async def ws_live(ws: WebSocket) -> None:
                 + "\n\n"
                 + "SHEET_MEMORY_CONTEXT (internal; do NOT repeat verbatim to the user)\n"
                 + mem_ctx
+            )
+
+        know_ctx = str(getattr(ws.state, "knowledge_context_text", "") or "").strip()
+        if know_ctx:
+            system_instruction = (
+                system_instruction
+                + "\n\n"
+                + "SHEET_KNOWLEDGE_CONTEXT (internal; do NOT repeat verbatim to the user)\n"
+                + know_ctx
             )
 
         if gem_extra:
