@@ -4134,6 +4134,7 @@ async def _handle_reload_system(ws: WebSocket, text: str) -> bool:
     is_reload_en = (
         "reload system" in compact
         or "reload sheets" in compact
+        or "reload sheet" in compact
         or compact in {"reload", "reload sys"}
         or compact.startswith("reload system")
         or compact.startswith("reload sheets")
@@ -4152,6 +4153,11 @@ async def _handle_reload_system(ws: WebSocket, text: str) -> bool:
 
     if not (is_reload_en or is_reload_th):
         return False
+
+    try:
+        logger.info("reload_system_triggered compact=%s", compact)
+    except Exception:
+        pass
 
     lang = str(getattr(ws.state, "user_lang", "") or "").strip() or "en"
     try:
@@ -5767,11 +5773,26 @@ async def gem_demo(req: GemDemoRequest) -> GemDemoResponse:
     if not api_key:
         raise HTTPException(status_code=500, detail="missing_api_key")
 
-    gem_name = _resolve_gem_name(req.gem)
+    # Auto-switch to progress gem for delay-prone sheet ops unless caller explicitly selected a gem.
+    effective_gem = req.gem
+    if (effective_gem is None or not str(effective_gem).strip()) and _should_auto_progress_gem(str(req.text)):
+        effective_gem = "sheet_ops_progress"
+
+    gem_name = _resolve_gem_name(effective_gem)
     extra = _gem_instruction(gem_name)
     system_instruction = "You are Jarvis. Respond to the user with ONLY the final answer."
     if extra:
         system_instruction = system_instruction + "\n" + extra
+
+    try:
+        cached = _get_cached_sheet_memory()
+        sys_kv = cached.get("sys_kv") if isinstance(cached, dict) else None
+        _, gem_model = await _resolve_gem_instruction_and_model(
+            gem_name=gem_name,
+            sys_kv=sys_kv if isinstance(sys_kv, dict) else None,
+        )
+    except Exception:
+        gem_model = None
 
     model = _normalize_model_name(
         str(req.model or (gem_model or "") or os.getenv("GEMINI_TEXT_MODEL") or "gemini-2.0-flash").strip() or "gemini-2.0-flash"
