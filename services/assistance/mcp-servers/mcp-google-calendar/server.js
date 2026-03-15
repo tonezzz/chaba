@@ -10,7 +10,8 @@ const GOOGLE_CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3";
 const DEFAULT_REDIRECT_URI = "http://127.0.0.1:53682/oauth2callback";
 const JARVIS_CALENDAR_NAME = String(process.env.GOOGLE_CALENDAR_JARVIS_CALENDAR_NAME || "Jarvis Reminders").trim();
 
-const TOKEN_PATH = (process.env.GOOGLE_CALENDAR_TOKEN_PATH || "/root/.config/1mcp/google-calendar.tokens.json").trim();
+const DEFAULT_SHARED_TOKEN_PATH = "/root/.config/1mcp/google.tokens.json";
+const TOKEN_PATH = (process.env.GOOGLE_CALENDAR_TOKEN_PATH || DEFAULT_SHARED_TOKEN_PATH).trim();
 const CLIENT_ID = String(
   process.env.GOOGLE_CALENDAR_CLIENT_ID || process.env.GOOGLE_TASKS_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || ""
 ).trim();
@@ -18,7 +19,15 @@ const CLIENT_SECRET = String(
   process.env.GOOGLE_CALENDAR_CLIENT_SECRET || process.env.GOOGLE_TASKS_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || ""
 ).trim();
 const REDIRECT_URI = String(process.env.GOOGLE_CALENDAR_REDIRECT_URI || DEFAULT_REDIRECT_URI).trim();
-const SCOPES = String(process.env.GOOGLE_CALENDAR_SCOPES || "https://www.googleapis.com/auth/calendar")
+const DEFAULT_SCOPES_SHARED = [
+  "https://www.googleapis.com/auth/spreadsheets.readonly",
+  "https://www.googleapis.com/auth/calendar",
+  "https://www.googleapis.com/auth/tasks",
+].join(" ");
+const DEFAULT_SCOPES = TOKEN_PATH === DEFAULT_SHARED_TOKEN_PATH
+  ? DEFAULT_SCOPES_SHARED
+  : "https://www.googleapis.com/auth/calendar";
+const SCOPES = String(process.env.GOOGLE_CALENDAR_SCOPES || DEFAULT_SCOPES)
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);

@@ -7,10 +7,19 @@ const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_SHEETS_API_BASE = "https://sheets.googleapis.com/v4";
 
-const TOKEN_PATH = (process.env.GOOGLE_SHEETS_TOKEN_PATH || "/root/.config/1mcp/google-sheets.tokens.json").trim();
+const DEFAULT_SHARED_TOKEN_PATH = "/root/.config/1mcp/google.tokens.json";
+const TOKEN_PATH = (process.env.GOOGLE_SHEETS_TOKEN_PATH || DEFAULT_SHARED_TOKEN_PATH).trim();
 const CLIENT_ID = String(process.env.GOOGLE_SHEETS_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || "").trim();
 const CLIENT_SECRET = String(process.env.GOOGLE_SHEETS_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || "").trim();
-const SCOPES = String(process.env.GOOGLE_SHEETS_SCOPES || "https://www.googleapis.com/auth/spreadsheets.readonly")
+const DEFAULT_SCOPES_SHARED = [
+  "https://www.googleapis.com/auth/spreadsheets.readonly",
+  "https://www.googleapis.com/auth/calendar",
+  "https://www.googleapis.com/auth/tasks",
+].join(" ");
+const DEFAULT_SCOPES = TOKEN_PATH === DEFAULT_SHARED_TOKEN_PATH
+  ? DEFAULT_SCOPES_SHARED
+  : "https://www.googleapis.com/auth/spreadsheets.readonly";
+const SCOPES = String(process.env.GOOGLE_SHEETS_SCOPES || DEFAULT_SCOPES)
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
