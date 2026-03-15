@@ -6089,7 +6089,9 @@ async def _mcp_tools_list() -> list[dict[str, Any]]:
 
 async def _mcp_tools_call(name: str, arguments: dict[str, Any]) -> Any:
     base = MCP_BASE_URL
-    if MCP_PLAYWRIGHT_BASE_URL and str(name or "").startswith("playwright_"):
+    if MCP_PLAYWRIGHT_BASE_URL and (
+        str(name or "").startswith("playwright_") or str(name or "").startswith("browser_")
+    ):
         base = MCP_PLAYWRIGHT_BASE_URL
     return await mcp_client.mcp_tools_call(base, name, arguments)
 
@@ -6276,7 +6278,7 @@ MCP_TOOL_MAP: dict[str, dict[str, Any]] = {
         "requires_confirmation": False,
     },
     "browser_navigate": {
-        "mcp_name": "playwright_1mcp_browser_navigate",
+        "mcp_name": "browser_navigate",
         "description": "Navigate the browser to a URL (via 1MCP Playwright). Requires confirmation.",
         "parameters": {
             "type": "object",
@@ -6288,7 +6290,7 @@ MCP_TOOL_MAP: dict[str, dict[str, Any]] = {
         "requires_confirmation": True,
     },
     "browser_snapshot": {
-        "mcp_name": "playwright_1mcp_browser_snapshot",
+        "mcp_name": "browser_snapshot",
         "description": "Capture an accessibility snapshot of the page (via 1MCP Playwright).",
         "parameters": {
             "type": "object",
@@ -6299,7 +6301,7 @@ MCP_TOOL_MAP: dict[str, dict[str, Any]] = {
         "requires_confirmation": False,
     },
     "browser_click": {
-        "mcp_name": "playwright_1mcp_browser_click",
+        "mcp_name": "browser_click",
         "description": "Click an element (via 1MCP Playwright). Requires confirmation.",
         "parameters": {
             "type": "object",
@@ -6312,7 +6314,7 @@ MCP_TOOL_MAP: dict[str, dict[str, Any]] = {
         "requires_confirmation": True,
     },
     "browser_type": {
-        "mcp_name": "playwright_1mcp_browser_type",
+        "mcp_name": "browser_type",
         "description": "Type into an element (via 1MCP Playwright). Requires confirmation.",
         "parameters": {
             "type": "object",
@@ -6326,7 +6328,7 @@ MCP_TOOL_MAP: dict[str, dict[str, Any]] = {
         "requires_confirmation": True,
     },
     "browser_wait_for": {
-        "mcp_name": "playwright_1mcp_browser_wait_for",
+        "mcp_name": "browser_wait_for",
         "description": "Wait for text or time (via 1MCP Playwright).",
         "parameters": {
             "type": "object",
