@@ -1980,7 +1980,12 @@ services:
         if ! node -e 'require("@playwright/mcp")' >/dev/null 2>&1; then
           npm -g i @playwright/mcp@0.0.68
         fi
-        npx @playwright/mcp@0.0.68 --host 0.0.0.0 --port 3050 --no-sandbox --allowed-hosts '*' --allowed-origins '*' --browser chromium
+        CHROMIUM_BIN="$(ls -1 /ms-playwright/chromium-*/chrome-linux*/chrome 2>/dev/null | head -n 1)"
+        if [ -z "$CHROMIUM_BIN" ]; then
+          echo "missing_chromium_bin"
+          exit 1
+        fi
+        npx @playwright/mcp@0.0.68 --host 0.0.0.0 --port 3050 --no-sandbox --allowed-hosts '*' --allowed-origins '*' --browser chromium --executable-path "$CHROMIUM_BIN"
     healthcheck:
       test: ["CMD-SHELL", "nc -z 127.0.0.1 3050 >/dev/null 2>&1 || exit 1"]
       interval: 30s
