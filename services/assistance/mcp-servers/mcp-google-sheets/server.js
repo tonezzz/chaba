@@ -93,6 +93,34 @@ async function httpForm(url, formObj) {
   return obj;
 }
 
+async function sheetsPostJson(pathname, query, bodyObj) {
+  const token = await getValidAccessToken();
+  const url = new URL(GOOGLE_SHEETS_API_BASE + pathname);
+  for (const [k, v] of Object.entries(query || {})) {
+    if (v === undefined || v === null) continue;
+    url.searchParams.set(k, String(v));
+  }
+
+  const r = await fetch(url.toString(), {
+    method: "POST",
+    headers: {
+      authorization: "Bearer " + String(token),
+      accept: "application/json",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(bodyObj || {}),
+  });
+
+  const text = await r.text();
+  const obj = safeJsonParse(text) || { raw: text };
+  if (!r.ok) {
+    const e = new Error("google_api_error");
+    e.details = { status: r.status, body: obj };
+    throw e;
+  }
+  return obj;
+}
+
 async function refreshAccessToken(refreshToken) {
   requireClientId();
   const payload = {
@@ -304,6 +332,25 @@ const TOOLS = [
       required: ["spreadsheet_id"],
     },
   },
+  {
+    name: "google_sheets_values_append",
+    description: "Append rows to a spreadsheet range (requires write OAuth scope).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        spreadsheet_id: { type: "string", description: "Spreadsheet ID" },
+        range: { type: "string", description: "A1 range like Sheet1!A1:C" },
+        values: {
+          type: "array",
+          description: "Rows to append (array of arrays).",
+          items: { type: "array", items: {} },
+        },
+        value_input_option: { type: "string", description: "RAW or USER_ENTERED" },
+        insert_data_option: { type: "string", description: "INSERT_ROWS or OVERWRITE" },
+      },
+      required: ["spreadsheet_id", "range", "values"],
+    },
+  },
 ];
 
 async function handleRpc(msg) {
@@ -377,6 +424,39 @@ async function handleRpc(msg) {
               text: JSON.stringify({ ok: true, message, server: APP_NAME, version: APP_VERSION, now: nowIso() }),
             },
           ],
+        },
+      };
+    }
+
+    if (name === "google_sheets_values_append") {
+      const spreadsheetId = typeof args.spreadsheet_id === "string" ? args.spreadsheet_id.trim() : "";
+      const range = typeof args.range === "string" ? args.range.trim() : "";
+      if (!spreadsheetId) throw new Error("missing_spreadsheet_id");
+      if (!range) throw new Error("missing_range");
+
+      const values = Array.isArray(args.values) ? args.values : null;
+      if (!values || !values.length) throw new Error("missing_values");
+
+      const valueInputOption = typeof args.value_input_option === "string" ? args.value_input_option.trim() : "";
+      const insertDataOption = typeof args.insert_data_option === "string" ? args.insert_data_option.trim() : "";
+
+      const data = await sheetsPostJson(
+        "/spreadsheets/" + encodeURIComponent(spreadsheetId) + "/values/" + encodeURIComponent(range) + ":append",
+        {
+          valueInputOption: valueInputOption || "USER_ENTERED",
+          insertDataOption: insertDataOption || "INSERT_ROWS",
+        },
+        {
+          majorDimension: "ROWS",
+          values,
+        }
+      );
+
+      return {
+        jsonrpc: "2.0",
+        id,
+        result: {
+          content: [{ type: "text", text: JSON.stringify({ ok: true, data }) }],
         },
       };
     }
