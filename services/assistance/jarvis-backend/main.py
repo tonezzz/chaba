@@ -572,6 +572,22 @@ async def _ws_send_json(ws: WebSocket, payload: dict[str, Any], trace_id: str | 
     await ws.send_json(payload)
 
 
+async def tools_api_call(tool_name: str, args: dict[str, Any], session_id: str | None = None) -> Any:
+    if tool_name.startswith("mcp_"):
+        mcp_name = tool_name[len("mcp_") :].strip()
+        if not mcp_name:
+            raise HTTPException(status_code=400, detail="missing_mcp_tool_name")
+
+        url = MCP_BASE_URL
+        forwarded_args = dict(args or {})
+        if mcp_name.startswith("browser_") and MCP_PLAYWRIGHT_BASE_URL:
+            url = MCP_PLAYWRIGHT_BASE_URL
+            forwarded_args = _adapt_playwright_tool_args(mcp_name, forwarded_args)
+        return await mcp_client.mcp_tools_call(url, mcp_name, forwarded_args)
+
+    raise HTTPException(status_code=400, detail={"unknown_tool": tool_name})
+
+
 async def _ws_progress(
     ws: WebSocket,
     message: str,
@@ -2100,6 +2116,55 @@ async def _weaviate_request(method: str, path: str, payload: Any = None) -> Any:
             return res.json()
         except Exception:
             return res.text
+
+
+def _adapt_playwright_tool_args(tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+    tool = str(tool_name or "").strip()
+    out = dict(args or {})
+
+    if tool == "browser_take_screenshot":
+        if "full_page" in out and "fullPage" not in out:
+            out["fullPage"] = out.pop("full_page")
+        if "fullpage" in out and "fullPage" not in out:
+            out["fullPage"] = out.pop("fullpage")
+
+    if tool == "browser_wait_for":
+        if "text_gone" in out and "textGone" not in out:
+            out["textGone"] = out.pop("text_gone")
+
+        state = out.pop("state", None)
+        timeout_ms = out.pop("timeout_ms", None)
+        timeout_ms2 = out.pop("timeoutMs", None)
+        time_ms = out.pop("time_ms", None)
+        time_s = out.get("time")
+
+        if time_s is None and time_ms is not None:
+            try:
+                out["time"] = float(time_ms) / 1000.0
+            except Exception:
+                pass
+
+        if out.get("time") is None and (timeout_ms is not None or timeout_ms2 is not None):
+            try:
+                ms = timeout_ms if timeout_ms is not None else timeout_ms2
+                out["time"] = float(ms) / 1000.0
+            except Exception:
+                pass
+
+        if out.get("time") is None and out.get("text") is None and out.get("textGone") is None and state is not None:
+            s = str(state).strip().lower()
+            if s in {"networkidle", "network_idle", "idle"}:
+                out["time"] = 1
+
+    if tool == "browser_click":
+        if "double_click" in out and "doubleClick" not in out:
+            out["doubleClick"] = out.pop("double_click")
+
+    if tool == "browser_snapshot":
+        if "selector" in out:
+            out.pop("selector", None)
+
+    return out
 
 
 async def _deep_research_worker_post(path: str, payload: Any) -> Any:
@@ -6944,7 +7009,10 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             if original_tool_name in ("google_tasks_update_task", "google_tasks_complete_task", "google_tasks_delete_task") and task_id and tasklist_id:
                 before_task = await _google_tasks_fetch_task(tasklist_id=tasklist_id, task_id=task_id)
 
-            res = await _mcp_tools_call(mcp_name, mcp_args)
+            forwarded_args = dict(mcp_args)
+            if str(mcp_name or "").startswith("browser_"):
+                forwarded_args = _adapt_playwright_tool_args(original_tool_name, forwarded_args)
+            res = await _mcp_tools_call(mcp_name, forwarded_args)
             parsed = _mcp_text_json(res)
 
             if original_tool_name == "google_calendar_create_event":
@@ -7125,7 +7193,11 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             except Exception as e:
                 logger.warning("reminder_create_failed error=%s", e)
         return result
-    return await _mcp_tools_call(mcp_name, dict(args))
+
+    forwarded_args = dict(args)
+    if str(mcp_name or "").startswith("browser_"):
+        forwarded_args = _adapt_playwright_tool_args(tool_name, forwarded_args)
+    return await _mcp_tools_call(mcp_name, forwarded_args)
 
 
 def _fc_args(fc: Any) -> dict[str, Any]:
