@@ -75,6 +75,10 @@ services:
       - "127.0.0.1:3051:3050"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    environment:
+      ONE_MCP_HOST: 0.0.0.0
+      ONE_MCP_PORT: 3050
+      ONE_MCP_EXTERNAL_URL: http://127.0.0.1:3051
     command:
       - sh
       - -lc
