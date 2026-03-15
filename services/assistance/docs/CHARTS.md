@@ -3,6 +3,53 @@
 
 These diagrams are the architecture blueprint for the `services/assistance` stack. Keep them accurate and update them whenever service boundaries, ports, endpoints, or persistence rules change.
 
+## 0) Google Sheets SSoT (sys/memory/knowledge/notes/gems)
+
+```mermaid
+flowchart LR
+  U[User]
+  FE[Jarvis Frontend]
+  BE[Jarvis Backend]
+  MCP[mcp-bundle :3050]
+
+  subgraph GSS[Google Sheets (Authoritative SSoT)]
+    SYS[sys\n(key/value/enabled/scope/priority)]
+    MEM[memory\n(key/value/enabled/scope/priority)]
+    KNOW[knowledge\n(key/value/enabled/scope/priority)]
+    NOTES[notes.0\n(id/date_time/subject/notes/status/time)]
+    GEMS[gems\n(id/name/purpose/persona/model/...) ]
+  end
+
+  subgraph BEState[Backend state (derived + cached)]
+    SYSKV[ws.state.sys_kv]
+    MEMITEMS[ws.state.memory_items]
+    KNOWITEMS[ws.state.knowledge_items]
+    MEMCTX[memory_context_text\n(injected to Gemini)]
+    KNOWCTX[knowledge_context_text\n(injected to Gemini)]
+    GEMCACHE[gems cache\n(sheet-driven gem selection)]
+  end
+
+  U <-->|WebSocket audio/text| FE
+  FE -->|/ws/live| BE
+
+  BE -->|tools/call| MCP
+  MCP -->|values_get| SYS
+  MCP -->|values_get| MEM
+  MCP -->|values_get| KNOW
+  MCP -->|values_append / values_update| NOTES
+  MCP -->|values_get| GEMS
+
+  SYS -->|pointers: notes_ss/notes_sh, memory.sheet_name, knowledge.sheet_name, gems_*| BE
+  BE --> SYSKV
+  BE --> MEMITEMS
+  BE --> KNOWITEMS
+  MEMITEMS --> MEMCTX
+  KNOWITEMS --> KNOWCTX
+  GEMS --> GEMCACHE
+
+  KNOWITEMS -.->|dedupe by key| MEMITEMS
+```
+
 ## 1) System overview
 
 ```mermaid
