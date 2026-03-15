@@ -28,6 +28,8 @@ export class LiveService {
   private nextStartTime: number = 0;
   private isStreamingAudio: boolean = false;
   private sessionId: string | null = null;
+  private clientId: string | null = null;
+  private clientTag: string | null = null;
   private inputStream: MediaStream | null = null;
   private connectInFlight: boolean = false;
   private wsSeq: number = 0;
@@ -38,6 +40,35 @@ export class LiveService {
 		const p = String(prefix || "tr").trim() || "tr";
 		const sid = this.getSessionId();
 		return `${p}_${sid}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+	}
+
+	private inferClientTag(): string {
+		try {
+			const ua = String(navigator.userAgent || "").toLowerCase();
+			const isIpad = ua.includes("ipad") || (ua.includes("macintosh") && typeof (navigator as any).maxTouchPoints === "number" && (navigator as any).maxTouchPoints > 1);
+			if (isIpad) return "ipad";
+			if (ua.includes("iphone")) return "iphone";
+			if (ua.includes("android") && ua.includes("mobile")) return "android";
+		} catch {
+			// ignore
+		}
+		return "pc";
+	}
+
+	private getOrCreateClientId(): string {
+		const storageKey = "jarvis_client_id";
+		try {
+			const existing = String(window.localStorage.getItem(storageKey) || "").trim();
+			if (existing) return existing;
+			const newId =
+				(typeof crypto !== "undefined" && typeof (crypto as any).randomUUID === "function"
+					? (crypto as any).randomUUID()
+					: `${Date.now()}_${Math.random().toString(16).slice(2)}`);
+			window.localStorage.setItem(storageKey, newId);
+			return newId;
+		} catch {
+			return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+		}
 	}
 
 	private wsSend(payload: any) {
@@ -232,14 +263,21 @@ export class LiveService {
         : `${proto}://${location.hostname}:8018/ws/live`;
       const baseWsUrl = (backendUrl || defaultWsUrl).trim();
 		const sessionId = this.getSessionId();
+		const clientId = this.clientId || this.getOrCreateClientId();
+		const clientTag = this.clientTag || this.inferClientTag();
+		this.clientId = clientId;
+		this.clientTag = clientTag;
 		let wsUrl = baseWsUrl;
 		try {
 			const u = new URL(baseWsUrl);
 			u.searchParams.set("session_id", sessionId);
+			u.searchParams.set("client_id", clientId);
+			u.searchParams.set("client_tag", clientTag);
 			wsUrl = u.toString();
 		} catch {
 			// If URL parsing fails, fall back to appending query param.
-			wsUrl = baseWsUrl.includes("?") ? `${baseWsUrl}&session_id=${encodeURIComponent(sessionId)}` : `${baseWsUrl}?session_id=${encodeURIComponent(sessionId)}`;
+			const q = `session_id=${encodeURIComponent(sessionId)}&client_id=${encodeURIComponent(clientId)}&client_tag=${encodeURIComponent(clientTag)}`;
+			wsUrl = baseWsUrl.includes("?") ? `${baseWsUrl}&${q}` : `${baseWsUrl}?${q}`;
 		}
 
       this.ws = new WebSocket(wsUrl);
@@ -412,6 +450,8 @@ export class LiveService {
     const wsMeta = {
       type: message?.type != null ? String(message.type) : undefined,
       instance_id: message?.instance_id != null ? String(message.instance_id) : undefined,
+      client_tag: message?.client_tag != null ? String(message.client_tag) : undefined,
+      client_id: message?.client_id != null ? String(message.client_id) : undefined,
     };
 
     if (message?.type === "progress") {
@@ -630,7 +670,7 @@ export class LiveService {
 			}
       }
       this.onMessage({
-        id: `${Date.now()}_tr`,
+        id: `${traceId || Date.now()}_${src}_tr`,
         role: src === "output" ? "model" : "system",
         text: String(message.text),
         timestamp: new Date(),

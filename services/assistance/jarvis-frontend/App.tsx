@@ -577,9 +577,11 @@ export default function App() {
                       .reverse()
                       .map((m) => {
                         const ts = m.timestamp.toLocaleTimeString();
+                        const tag = String((m.metadata as any)?.ws?.client_tag || "");
+                        const tagText = tag ? `[${tag}] ` : "";
                         const role = String(m.role || "");
                         const txt = String(m.text || "");
-                        return `[${ts}] ${role}: ${txt}`;
+                        return `[${ts}] ${tagText}${role}: ${txt}`;
                       })
                       .join("\n");
                     void copyText(lines);
@@ -655,15 +657,20 @@ export default function App() {
                       {m.metadata?.type === 'image_gen' && <ImageIcon className="w-3 h-3 text-purple-400" />}
                       {m.metadata?.type === 'reimagine' && <Camera className="w-3 h-3 text-pink-400" />}
                       <span className="text-xs text-slate-500 font-mono">{m.timestamp.toLocaleTimeString()}</span>
+                      {m.metadata?.ws?.client_tag && (
+                        <span className="text-[10px] text-slate-600 font-mono">[{String(m.metadata.ws.client_tag)}]</span>
+                      )}
                       <button
                         className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-600 hover:text-slate-300"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
                           const ts = m.timestamp.toLocaleTimeString();
+                          const tag = String((m.metadata as any)?.ws?.client_tag || "");
+                          const tagText = tag ? `[${tag}] ` : "";
                           const role = String(m.role || "");
                           const txt = String(m.text || "");
-                          void copyText(`[${ts}] ${role}: ${txt}`);
+                          void copyText(`[${ts}] ${tagText}${role}: ${txt}`);
                         }}
                         title="Copy"
                         aria-label="Copy"

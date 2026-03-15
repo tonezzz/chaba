@@ -565,6 +565,17 @@ async def _ws_send_json(ws: WebSocket, payload: dict[str, Any], trace_id: str | 
             tid = None
     if tid:
         payload = {**payload, "trace_id": tid}
+
+    # Client tagging: attach stable client metadata (if provided by the frontend)
+    try:
+        client_tag = getattr(ws.state, "client_tag", None)
+        client_id = getattr(ws.state, "client_id", None)
+        if client_tag:
+            payload = {**payload, "client_tag": str(client_tag)}
+        if client_id:
+            payload = {**payload, "client_id": str(client_id)}
+    except Exception:
+        pass
     try:
         await _ws_record(ws, "out", payload)
     except Exception:
@@ -7615,7 +7626,7 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
 
             audio_b64 = _extract_audio_b64(server_msg)
             if audio_b64:
-                await ws.send_json({"type": "audio", "data": audio_b64, "sampleRate": 24000})
+                await _ws_send_json(ws, {"type": "audio", "data": audio_b64, "sampleRate": 24000})
                 audio_out_frames += 1
                 if audio_out_frames % 10 == 0:
                     logger.info("sent_audio_frames=%s", audio_out_frames)
@@ -7624,7 +7635,7 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
             # Send text if present (useful for debugging / future UI)
             text = getattr(server_msg, "text", None)
             if text:
-                await ws.send_json({"type": "text", "text": str(text)})
+                await _ws_send_json(ws, {"type": "text", "text": str(text)})
 
 
 @app.websocket("/ws/live")
@@ -7638,6 +7649,13 @@ async def ws_live(ws: WebSocket) -> None:
     # per-session state (e.g., active trip) across reconnects.
     session_id = str(ws.query_params.get("session_id") or "").strip() or None
     ws.state.session_id = session_id
+
+    # Optional client tagging for multi-device debugging.
+    try:
+        ws.state.client_id = str(ws.query_params.get("client_id") or "").strip() or None
+        ws.state.client_tag = str(ws.query_params.get("client_tag") or "").strip() or None
+    except Exception:
+        pass
     if session_id:
         try:
             _init_session_db()
