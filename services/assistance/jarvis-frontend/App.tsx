@@ -5,7 +5,7 @@ import { ConnectionState, MessageLog } from './types';
 import Visualizer from './components/Visualizer';
 import CameraFeed from './components/CameraFeed';
 import CarsPanel from './components/CarsPanel';
-import { Play, Mic, MicOff, Search, Image as ImageIcon, Camera, Activity, Lock, ChevronRight, Paperclip, Send, X, Link2Off } from 'lucide-react';
+import { Play, Mic, MicOff, Search, Image as ImageIcon, Camera, Activity, Lock, ChevronRight, Paperclip, Send, X, Link2Off, Copy } from 'lucide-react';
 
 export default function App() {
   const [hasKey, setHasKey] = useState(false);
@@ -40,6 +40,33 @@ export default function App() {
     }>
   >([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const copyText = useCallback(async (text: string) => {
+    const t = String(text || "");
+    if (!t) return;
+    try {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+        await navigator.clipboard.writeText(t);
+        return;
+      }
+    } catch {
+    }
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = t;
+      ta.setAttribute("readonly", "true");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      ta.style.left = "-9999px";
+      ta.style.top = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    } catch {
+    }
+  }, []);
 
   useEffect(() => {
     const checkKey = async () => {
@@ -538,16 +565,41 @@ export default function App() {
           <div className="flex-1 overflow-y-auto pr-2 space-y-3 mask-image-b pb-40 md:pb-0">
              <div className="text-xs font-mono text-slate-500 uppercase tracking-widest sticky top-0 bg-slate-900/90 py-1 mb-2 flex items-center justify-between">
                <span>Operation Log</span>
-               <button
-                 className="text-[10px] font-mono text-slate-600 hover:text-slate-400 normal-case"
-                 onClick={(e) => {
-                   e.preventDefault();
-                   e.stopPropagation();
-                   setShowDebugLogs((v) => !v);
-                 }}
-               >
-                 {showDebugLogs ? "hide debug" : "show debug"}
-               </button>
+              <div className="flex items-center gap-2">
+                <button
+                  className="text-[10px] font-mono text-slate-600 hover:text-slate-400 normal-case"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const visible = (showDebugLogs ? messages : messages.filter((m) => (m.metadata?.severity || "info") !== "debug"));
+                    const lines = visible
+                      .slice()
+                      .reverse()
+                      .map((m) => {
+                        const ts = m.timestamp.toLocaleTimeString();
+                        const role = String(m.role || "");
+                        const txt = String(m.text || "");
+                        return `[${ts}] ${role}: ${txt}`;
+                      })
+                      .join("\n");
+                    void copyText(lines);
+                  }}
+                  title="Copy all visible logs"
+                  aria-label="Copy all visible logs"
+                >
+                  copy all
+                </button>
+                <button
+                  className="text-[10px] font-mono text-slate-600 hover:text-slate-400 normal-case"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowDebugLogs((v) => !v);
+                  }}
+                >
+                  {showDebugLogs ? "hide debug" : "show debug"}
+                </button>
+              </div>
              </div>
              {messages.length === 0 && (
                <div className="text-sm text-slate-600 italic mt-10 text-center">Awaiting inputs...</div>
@@ -582,10 +634,25 @@ export default function App() {
                       {m.metadata?.type === 'image_gen' && <ImageIcon className="w-3 h-3 text-purple-400" />}
                       {m.metadata?.type === 'reimagine' && <Camera className="w-3 h-3 text-pink-400" />}
                       <span className="text-xs text-slate-500 font-mono">{m.timestamp.toLocaleTimeString()}</span>
-                      {canExpand && (
-                        <span className="text-[10px] text-slate-600 font-mono">{expanded ? "hide" : "details"}</span>
-                      )}
-                   </div>
+                      <button
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-600 hover:text-slate-300"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const ts = m.timestamp.toLocaleTimeString();
+                          const role = String(m.role || "");
+                          const txt = String(m.text || "");
+                          void copyText(`[${ts}] ${role}: ${txt}`);
+                        }}
+                        title="Copy"
+                        aria-label="Copy"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </button>
+                     {canExpand && (
+                       <span className="text-[10px] text-slate-600 font-mono">{expanded ? "hide" : "details"}</span>
+                     )}
+                  </div>
                    <div className="text-slate-300 pl-5 border-l border-slate-700 py-1 whitespace-pre-wrap">
                       {m.text}
                       {expanded && metaLine && (
