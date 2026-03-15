@@ -217,10 +217,16 @@ async def _load_sheet_table(*, spreadsheet_id: str, sheet_name: str, max_rows: i
     except Exception:
         note_id = None
     if not isinstance(parsed, dict):
-        return []
+        raise RuntimeError("google_sheets_values_get_invalid_response")
     values = parsed.get("values")
     if not isinstance(values, list) or not values:
-        return []
+        data = parsed.get("data") if isinstance(parsed, dict) else None
+        if isinstance(data, dict):
+            values = data.get("values")
+    if not isinstance(values, list) or not values:
+        raise RuntimeError(
+            f"google_sheets_values_get_missing_values spreadsheet_id={spreadsheet_id} sheet={sheet_name}"
+        )
     out: list[list[Any]] = []
     for row in values:
         if isinstance(row, list):
@@ -3728,24 +3734,33 @@ async def _handle_note_trigger(ws: WebSocket, text: str) -> bool:
     now_iso = datetime.now(tz=timezone.utc).isoformat().replace("+00:00", "Z")
     status = "new"
     processed_time = ""
-    row = [
-        now_iso,
-        "note",
-        str(note_text or "").strip(),
-        status,
-        processed_time,
-    ]
-    # Notes sheet schema:
+    # Notes board schema (v2):
     # A: id (computed in-sheet)
-    # B: date_time
-    # C: subject
-    # D: notes
-    # E: status
-    # F: time
-    sheet_name_a1 = str(sheet_name or "").strip() or "notes"
-    if not re.match(r"^[A-Za-z0-9_]+$", sheet_name_a1):
-        sheet_name_a1 = "'" + sheet_name_a1.replace("'", "''") + "'"
-    append_range = f"{sheet_name_a1}!B:F"
+    # B..S: date_time..parent_id
+    # We append into B:S (19 columns).
+    row = [
+        now_iso,  # date_time
+        "note",  # subject
+        str(note_text or "").strip(),  # notes
+        status,  # status
+        processed_time,  # time_processed
+        "note",  # type
+        "user",  # owner
+        "",  # assignee
+        "",  # job_gem
+        "",  # job_payload
+        "",  # claimed_at
+        "",  # started_at
+        "",  # done_at
+        "",  # result
+        "",  # result_sources
+        "",  # error
+        "",  # run_id
+        "",  # parent_id
+    ]
+
+    sheet_name_a1 = _sheet_name_to_a1(sheet_name or "notes.0", default="notes.0")
+    append_range = f"{sheet_name_a1}!B:S"
 
     tool = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
     res = await _mcp_tools_call(
@@ -4091,16 +4106,203 @@ def _safe_int(v: Any, default: int = 0) -> int:
         return default
 
 
+def _sheet_name_to_a1(sheet_name: str, default: str = "Sheet1") -> str:
+    s = str(sheet_name or "").strip() or default
+    if re.match(r"^[A-Za-z0-9_]+$", s):
+        return s
+    return "'" + s.replace("'", "''") + "'"
+
+
+async def _run_notes_board_job(*, ws: WebSocket, job_text: str, gem_name: str | None) -> tuple[str, str]:
+    """Return (result_text, error_text)."""
+    api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
+    if not api_key:
+        return "", "missing_api_key"
+
+    sys_kv = getattr(ws.state, "sys_kv", None)
+    instruction, model_override = await _resolve_gem_instruction_and_model(gem_name=gem_name, sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+    system_instruction = "You are Jarvis. Complete the user's job and return only the final result.".strip()
+
+    mem_ctx = str(getattr(ws.state, "memory_context_text", "") or "").strip()
+    know_ctx = str(getattr(ws.state, "knowledge_context_text", "") or "").strip()
+    if mem_ctx:
+        system_instruction += "\n\nMEMORY (from Google Sheets):\n" + mem_ctx
+    if know_ctx:
+        system_instruction += "\n\nKNOWLEDGE (from Google Sheets):\n" + know_ctx
+    if instruction:
+        system_instruction += "\n\n" + str(instruction)
+
+    model = _normalize_model_name(
+        str(model_override or os.getenv("GEMINI_TEXT_MODEL") or "gemini-2.0-flash").strip() or "gemini-2.0-flash"
+    )
+
+    try:
+        client = genai.Client(api_key=api_key)
+        cfg = {"system_instruction": system_instruction}
+        res = await client.aio.models.generate_content(model=model, contents=str(job_text), config=cfg)
+        txt = getattr(res, "text", None)
+        if txt is None:
+            txt = str(res)
+        out = str(txt or "").strip()
+        if not out:
+            return "", "empty_result"
+        return out, ""
+    except Exception as e:
+        return "", str(e)
+
+
+async def _notes_board_poll_once(ws: WebSocket) -> None:
+    sys_kv = getattr(ws.state, "sys_kv", None)
+    spreadsheet_id = ""
+    if isinstance(sys_kv, dict):
+        spreadsheet_id = str(sys_kv.get("notes_ss") or "").strip()
+    if not spreadsheet_id:
+        spreadsheet_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
+    if not spreadsheet_id:
+        return
+
+    enabled_raw = ""
+    if isinstance(sys_kv, dict):
+        enabled_raw = str(sys_kv.get("notes.board.enabled") or "").strip()
+    if enabled_raw and not _parse_bool_cell(enabled_raw):
+        return
+
+    sheet_name = ""
+    if isinstance(sys_kv, dict):
+        sheet_name = str(sys_kv.get("notes.sheet_name") or sys_kv.get("notes_sh") or "").strip()
+    if not sheet_name:
+        sheet_name = str(os.getenv("CHABA_SS_SYS_NOTES_SHEET") or "notes.0").strip() or "notes.0"
+
+    rows = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_name, max_rows=400, max_cols="S")
+    if not rows:
+        return
+
+    header = rows[0] if isinstance(rows[0], list) else []
+    idx = _idx_from_header(header)
+    # Required columns.
+    col_status = idx.get("status")
+    col_notes = idx.get("notes")
+    col_assignee = idx.get("assignee")
+    col_job_gem = idx.get("job_gem")
+    if col_status is None or col_notes is None or col_assignee is None:
+        return
+
+    # Find first unclaimed job: status=new and assignee=jarvis
+    target_row_num: int | None = None
+    job_text = ""
+    job_gem = ""
+    for i, raw in enumerate(rows[1:], start=2):
+        if not isinstance(raw, list) or not raw:
+            continue
+        status = str(raw[col_status] if col_status < len(raw) else "").strip().lower()
+        assignee = str(raw[col_assignee] if col_assignee < len(raw) else "").strip().lower()
+        if status != "new" or assignee != "jarvis":
+            continue
+        job_text = str(raw[col_notes] if col_notes < len(raw) else "").strip()
+        if not job_text:
+            continue
+        if col_job_gem is not None and col_job_gem < len(raw):
+            job_gem = str(raw[col_job_gem] or "").strip()
+        target_row_num = i
+        break
+
+    if target_row_num is None:
+        return
+
+    run_id = uuid.uuid4().hex[:16]
+    now_iso = datetime.now(tz=timezone.utc).isoformat().replace("+00:00", "Z")
+
+    sheet_a1 = _sheet_name_to_a1(sheet_name, default="notes.0")
+    # Update E:R (status..run_id) to claim/start
+    claim_range = f"{sheet_a1}!E{target_row_num}:R{target_row_num}"
+    claim_values = [[
+        "doing",  # status
+        "",  # time_processed
+        "job",  # type
+        "",  # owner
+        "jarvis",  # assignee
+        str(job_gem or "").strip(),  # job_gem
+        "",  # job_payload
+        now_iso,  # claimed_at
+        now_iso,  # started_at
+        "",  # done_at
+        "",  # result
+        "",  # result_sources
+        "",  # error
+        run_id,  # run_id
+    ]]
+    tool_upd = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+    await _mcp_tools_call(
+        tool_upd,
+        {
+            "spreadsheet_id": spreadsheet_id,
+            "range": claim_range,
+            "values": claim_values,
+            "value_input_option": "USER_ENTERED",
+        },
+    )
+
+    result_text, err_text = await _run_notes_board_job(ws=ws, job_text=job_text, gem_name=job_gem or None)
+
+    done_iso = datetime.now(tz=timezone.utc).isoformat().replace("+00:00", "Z")
+    final_status = "done" if result_text and not err_text else "failed"
+    final_range = f"{sheet_a1}!E{target_row_num}:R{target_row_num}"
+    final_values = [[
+        final_status,
+        done_iso,
+        "job",
+        "",
+        "jarvis",
+        str(job_gem or "").strip(),
+        "",
+        now_iso,
+        now_iso,
+        done_iso,
+        str(result_text or "").strip(),
+        "",
+        str(err_text or "").strip(),
+        run_id,
+    ]]
+    await _mcp_tools_call(
+        tool_upd,
+        {
+            "spreadsheet_id": spreadsheet_id,
+            "range": final_range,
+            "values": final_values,
+            "value_input_option": "USER_ENTERED",
+        },
+    )
+
+
+async def _notes_board_runner(ws: WebSocket) -> None:
+    # WS-scoped polling loop. Runs only while the websocket is alive.
+    try:
+        while True:
+            try:
+                await _notes_board_poll_once(ws)
+            except Exception:
+                pass
+            await asyncio.sleep(4.0)
+    except asyncio.CancelledError:
+        return
+
+
 async def _load_sheet_kv5(*, spreadsheet_id: str, sheet_name: str) -> list[dict[str, Any]]:
     # Expects a table with columns: key, value, enabled, scope, priority.
     tool = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
     res = await _mcp_tools_call(tool, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name}!A:E"})
     parsed = _mcp_text_json(res)
     if not isinstance(parsed, dict):
-        return []
+        raise RuntimeError("google_sheets_values_get_invalid_response")
     values = parsed.get("values")
     if not isinstance(values, list) or not values:
-        return []
+        data = parsed.get("data") if isinstance(parsed, dict) else None
+        if isinstance(data, dict):
+            values = data.get("values")
+    if not isinstance(values, list) or not values:
+        raise RuntimeError(
+            f"google_sheets_values_get_missing_values spreadsheet_id={spreadsheet_id} sheet={sheet_name}"
+        )
 
     # Header normalization.
     header = [str(c or "").strip().lower() for c in (values[0] if isinstance(values[0], list) else [])]
@@ -4265,7 +4467,11 @@ async def _refresh_sheet_memory_background(ws: WebSocket, lang: str) -> None:
             await _ws_progress(ws, "Loaded sys/memory", phase="done")
         except Exception:
             pass
-    except Exception:
+    except Exception as e:
+        try:
+            logger.warning("sheet_memory_load_failed error=%s", str(e))
+        except Exception:
+            pass
         try:
             await _ws_progress(ws, "Failed loading sys/memory", phase="error")
         except Exception:
@@ -4294,7 +4500,11 @@ async def _refresh_sheet_knowledge_background(ws: WebSocket, lang: str) -> None:
             await _ws_progress(ws, "Loaded knowledge", phase="done")
         except Exception:
             pass
-    except Exception:
+    except Exception as e:
+        try:
+            logger.warning("sheet_knowledge_load_failed error=%s", str(e))
+        except Exception:
+            pass
         try:
             await _ws_progress(ws, "Failed loading knowledge", phase="error")
         except Exception:
@@ -7176,6 +7386,7 @@ async def ws_live(ws: WebSocket) -> None:
             logger.warning("session_db_init_failed error=%s", e)
 
     connected_sent = False
+    notes_board_task: asyncio.Task[None] | None = None
     try:
         try:
             ws.state.user_lang = _lang_from_ws(ws)
@@ -7227,6 +7438,12 @@ async def ws_live(ws: WebSocket) -> None:
                 asyncio.create_task(_refresh_sheet_knowledge_background(ws, lang), name="refresh_sheet_knowledge")
             except Exception:
                 pass
+
+        # Notes board runner: process rows where status=new and assignee=jarvis.
+        try:
+            notes_board_task = asyncio.create_task(_notes_board_runner(ws), name="notes_board_runner")
+        except Exception:
+            notes_board_task = None
         api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
         if not api_key:
             await _ws_send_json(
@@ -7561,6 +7778,17 @@ async def ws_live(ws: WebSocket) -> None:
             pass
         return
     finally:
+        if notes_board_task is not None and not notes_board_task.done():
+            try:
+                notes_board_task.cancel()
+                try:
+                    await notes_board_task
+                except asyncio.CancelledError:
+                    pass
+                except Exception:
+                    pass
+            except Exception:
+                pass
         s = _ws_by_user.get(user_id)
         if s is not None:
             s.discard(ws)
