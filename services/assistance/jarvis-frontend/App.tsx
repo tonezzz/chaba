@@ -83,7 +83,7 @@ export default function App() {
           return [msg, ...without];
         }
 
-        const dedupeKeyForSystemText = (t: string): string | null => {
+        const dedupeKeyForStatusText = (t: string): string | null => {
           const s = String(t || "").trim().toLowerCase();
           if (!s) return null;
           if (s.includes("sheets are not auto-loaded")) return "sheets_not_auto_loaded";
@@ -112,15 +112,17 @@ export default function App() {
           : prev;
 
         const msgTextNorm = String(msg.text || "").trim().replace(/\s+/g, " ");
-        const shouldDedupeSystem = !isErr && msg.role === "system" && msgTextNorm.length > 0;
-        const msgKey = shouldDedupeSystem ? dedupeKeyForSystemText(msgTextNorm) : null;
-        const dedupedPrev = shouldDedupeSystem
+        const shouldDedupeSystemExact = !isErr && msg.role === "system" && msgTextNorm.length > 0;
+        const msgKey = !isErr && msgTextNorm.length > 0 ? dedupeKeyForStatusText(msgTextNorm) : null;
+        const dedupedPrev = (shouldDedupeSystemExact || !!msgKey)
           ? cleanedPrev.filter((m) => {
-              if (m.role !== "system") return true;
               const t = String(m.text || "").trim().replace(/\s+/g, " ");
-              if (t === msgTextNorm) return false;
+              if (!t) return true;
+              if (shouldDedupeSystemExact) {
+                if (m.role === "system" && t === msgTextNorm) return false;
+              }
               if (msgKey) {
-                const k2 = dedupeKeyForSystemText(t);
+                const k2 = dedupeKeyForStatusText(t);
                 if (k2 && k2 === msgKey) return false;
               }
               return true;
