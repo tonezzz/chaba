@@ -4179,6 +4179,14 @@ async def _handle_reload_system(ws: WebSocket, text: str) -> bool:
         await _ws_send_json(ws, {"type": "text", "text": out, "instance_id": INSTANCE_ID})
     except Exception:
         pass
+
+    # Start notes board runner only after system reload succeeded.
+    try:
+        existing = getattr(ws.state, "notes_board_task", None)
+        if existing is None or not hasattr(existing, "done") or existing.done():
+            ws.state.notes_board_task = asyncio.create_task(_notes_board_runner(ws), name="notes_board_runner")
+    except Exception:
+        pass
     return True
 
 
@@ -7489,7 +7497,7 @@ async def ws_live(ws: WebSocket) -> None:
             logger.warning("session_db_init_failed error=%s", e)
 
     connected_sent = False
-    notes_board_task: asyncio.Task[None] | None = None
+    ws.state.notes_board_task = None
     try:
         try:
             ws.state.user_lang = _lang_from_ws(ws)
@@ -7512,63 +7520,24 @@ async def ws_live(ws: WebSocket) -> None:
         if isinstance(cached_k, dict):
             _apply_cached_sheet_knowledge_to_ws(ws, cached_k)
 
-        # Eager load once on connect so the initial status line is accurate.
-        try:
-            await _load_ws_sheet_memory(ws)
-        except Exception as e:
-            try:
-                await _ws_send_json(
-                    ws,
-                    {
-                        "type": "error",
-                        "kind": "sheet_load_failed",
-                        "message": "sheet_load_failed",
-                        "detail": str(e),
-                        "instance_id": INSTANCE_ID,
-                    },
-                )
-            except Exception:
-                pass
-
-        # Emit load status only once per connect.
+        # Cache-first mode: do not auto-load sheets here. Use `Reload System`.
+        # Emit status based on cache only.
         try:
             await _ws_send_json(ws, {"type": "text", "text": _memory_load_status_line(ws, lang), "instance_id": INSTANCE_ID})
         except Exception:
             pass
 
-        # After eager load, recompute cache metadata before scheduling any background refresh.
-        cached = _get_cached_sheet_memory()
-        cached_k = _get_cached_sheet_knowledge()
-
         try:
-            loaded_at = int((cached or {}).get("loaded_at") or 0) if isinstance(cached, dict) else 0
+            await _ws_send_json(
+                ws,
+                {
+                    "type": "text",
+                    "text": "Sheets are not auto-loaded. Type: Reload System",
+                    "instance_id": INSTANCE_ID,
+                },
+            )
         except Exception:
-            loaded_at = 0
-        ttl = _memory_cache_ttl_seconds()
-        should_refresh = not isinstance(cached, dict) or (loaded_at and (int(time.time()) - loaded_at) > max(5, ttl // 2))
-        if should_refresh:
-            try:
-                asyncio.create_task(_refresh_sheet_memory_background(ws, lang), name="refresh_sheet_memory")
-            except Exception:
-                pass
-
-        try:
-            loaded_at_k = int((cached_k or {}).get("loaded_at") or 0) if isinstance(cached_k, dict) else 0
-        except Exception:
-            loaded_at_k = 0
-        ttl_k = _knowledge_cache_ttl_seconds()
-        should_refresh_k = not isinstance(cached_k, dict) or (loaded_at_k and (int(time.time()) - loaded_at_k) > max(10, ttl_k // 2))
-        if should_refresh_k:
-            try:
-                asyncio.create_task(_refresh_sheet_knowledge_background(ws, lang), name="refresh_sheet_knowledge")
-            except Exception:
-                pass
-
-        # Notes board runner: process rows where status=new and assignee=jarvis.
-        try:
-            notes_board_task = asyncio.create_task(_notes_board_runner(ws), name="notes_board_runner")
-        except Exception:
-            notes_board_task = None
+            pass
         api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
         if not api_key:
             await _ws_send_json(
@@ -7903,7 +7872,8 @@ async def ws_live(ws: WebSocket) -> None:
             pass
         return
     finally:
-        if notes_board_task is not None and not notes_board_task.done():
+        notes_board_task = getattr(ws.state, "notes_board_task", None)
+        if notes_board_task is not None and hasattr(notes_board_task, "done") and not notes_board_task.done():
             try:
                 notes_board_task.cancel()
                 try:
