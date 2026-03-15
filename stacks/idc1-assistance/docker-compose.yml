@@ -87,6 +87,8 @@ services:
       GOOGLE_TASKS_SCOPES: ${GOOGLE_SHARED_SCOPES:-https://www.googleapis.com/auth/tasks,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/spreadsheets}
       GOOGLE_SHEETS_SCOPES: ${GOOGLE_SHARED_SCOPES:-https://www.googleapis.com/auth/tasks,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/spreadsheets}
       GOOGLE_CALENDAR_SCOPES: ${GOOGLE_SHARED_SCOPES:-https://www.googleapis.com/auth/tasks,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/spreadsheets}
+    volumes:
+      - mcp-bundle-config:/root/.config/1mcp
     command:
       - sh
       - -lc
@@ -2720,6 +2722,7 @@ networks:
 volumes:
   mcp-bundle-data:
   mcp-bundle-cache:
+  mcp-bundle-config:
   mcp-ws-gateway-data:
   mcp-ws-gateway-portainer-data:
   weaviate-data:
