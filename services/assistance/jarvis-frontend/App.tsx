@@ -111,6 +111,20 @@ export default function App() {
     };
     liveService.current.onMessage = (msg) => {
       setMessages((prev) => {
+        const isWsClose = msg.id.includes('_ws_close') || String(msg.text || '').toLowerCase().startsWith('disconnected');
+        const isWsConnErr = msg.id.includes('_ws_error') || String(msg.text || '').toLowerCase() === 'connection_error';
+
+        if (isWsClose || isWsConnErr) {
+          const withoutSticky = prev.filter((m) => m.id !== "sticky_progress");
+          // Keep only the newest connection error/close indicator.
+          const cleaned = withoutSticky.filter((m) => {
+            if (isWsClose && (m.id.includes('_ws_close') || String(m.text || '').toLowerCase().startsWith('disconnected'))) return false;
+            if (isWsConnErr && (m.id.includes('_ws_error') || String(m.text || '').toLowerCase() === 'connection_error')) return false;
+            return true;
+          });
+          return [msg, ...cleaned];
+        }
+
         if (msg.id === "sticky_progress") {
           const without = prev.filter((m) => m.id !== "sticky_progress");
           const txt = String(msg.text || "").trim();
