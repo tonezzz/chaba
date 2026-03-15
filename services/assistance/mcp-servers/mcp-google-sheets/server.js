@@ -455,7 +455,7 @@ async function handleRpc(msg) {
       const data = await sheetsGet(
         "/spreadsheets/" + encodeURIComponent(spreadsheetId),
         {
-          fields: "spreadsheetId,properties.title,sheets.properties(sheetId,title,index)"
+          fields: "spreadsheetId,properties.title,sheets.properties(sheetId,title,index)",
         }
       );
 
@@ -493,23 +493,14 @@ async function handleRpc(msg) {
 let buf = Buffer.alloc(0);
 let lineBuf = "";
 
-async function main() {
-  const args = process.argv.slice(2);
-  if (args.includes("auth")) {
-    await runAuthCodeFlowCopyPaste();
-    process.exit(0);
-  }
+let _pending = Promise.resolve();
+function _enqueueHandle(msg) {
+  _pending = _pending
+    .then(() => handleMessage(msg))
+    .catch(() => {
+      // keep draining
+    });
 }
-
-main().catch((e) => {
-  try {
-    if (e && e.details) {
-      process.stderr.write("mcp-google-sheets error details: " + JSON.stringify(e.details) + "\n");
-    }
-  } catch {}
-  process.stderr.write("mcp-google-sheets startup error: " + String(e && e.message ? e.message : e) + "\n");
-  process.exit(1);
-});
 
 function parseNextFrame(buffer) {
   let headerEnd = buffer.indexOf(Buffer.from("\r\n\r\n"));
@@ -566,47 +557,6 @@ async function handleMessage(msg) {
   }
 }
 
-process.stdin.on("data", async (chunk) => {
-  const b = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk), "utf8");
-  buf = Buffer.concat([buf, b]);
-  lineBuf += b.toString("utf8");
-
-  while (true) {
-    const parsed = parseNextFrame(buf);
-    if (!parsed) break;
-    const { body, rest } = parsed;
-    buf = rest;
-    const msg = safeJsonParse(body);
-    if (!msg) {
-      process.stderr.write("mcp-google-sheets parse error\n");
-      continue;
-    }
-    await handleMessage(msg);
-  }
-
-  while (true) {
-    const idx = lineBuf.indexOf("\n");
-    if (idx < 0) break;
-    const line = lineBuf.slice(0, idx).trim();
-    lineBuf = lineBuf.slice(idx + 1);
-    if (!line) continue;
-    const msg = safeJsonParse(line);
-    if (!msg) continue;
-    await handleMessage(msg);
-  }
-});
-
-let _pending = Promise.resolve();
-
-function _enqueueHandle(msg) {
-  _pending = _pending
-    .then(() => handleMessage(msg))
-    .catch(() => {
-      // handleMessage already returns an error response; keep draining.
-    });
-}
-
-process.stdin.removeAllListeners("data");
 process.stdin.on("data", (chunk) => {
   const b = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk), "utf8");
   buf = Buffer.concat([buf, b]);
@@ -639,4 +589,22 @@ process.stdin.on("data", (chunk) => {
 
 process.stdin.on("end", () => {
   _pending.finally(() => process.exit(0));
+});
+
+async function main() {
+  const args = process.argv.slice(2);
+  if (args.includes("auth")) {
+    await runAuthCodeFlowCopyPaste();
+    process.exit(0);
+  }
+}
+
+main().catch((e) => {
+  try {
+    if (e && e.details) {
+      process.stderr.write("mcp-google-sheets error details: " + JSON.stringify(e.details) + "\n");
+    }
+  } catch {}
+  process.stderr.write("mcp-google-sheets startup error: " + String(e && e.message ? e.message : e) + "\n");
+  process.exit(1);
 });
