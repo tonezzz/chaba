@@ -2982,57 +2982,48 @@ async def _handle_reminder_setup_trigger(ws: WebSocket, text: str) -> bool:
     tz = _get_user_timezone(DEFAULT_USER_ID)
     now = datetime.now(tz=timezone.utc)
     due_at_utc, local_iso = _parse_time_from_text(text, now, tz)
-    if due_at_utc is None:
-        ws.state.pending_reminder_setup = {
-            "title": title,
-            "source_text": text,
-            "timezone": tz.key,
-            "created_at": int(time.time()),
-        }
-        logger.info("reminder_setup_draft_emit title=%s", title)
+    if due_at_utc is not None:
+        cal = await _google_calendar_create_reminder_event(title=title, due_at_utc=due_at_utc, tz=tz, source_text=text)
         await _ws_send_json(
             ws,
             {
-                "type": "reminder_setup_draft",
+                "type": "planning_item_created",
+                "kind": "calendar_event",
                 "title": title,
-                "result": {
-                    "ok": True,
-                    "needs_time": True,
-                    "hint": (
-                        "ยืนยันก่อนสร้าง พิมพ์: ยืนยัน: <เวลา>  (หรือ: ยืนยัน  / ยกเลิก)"
-                        if _text_is_thai(text)
-                        else "Confirm before creating. Reply: reminder confirm: <when>  (or: reminder confirm  / reminder cancel)"
-                    ),
-                },
+                "result": {"ok": True, "calendar": cal, "local_time": local_iso, "timezone": tz.key},
                 "instance_id": INSTANCE_ID,
-            }
+            },
         )
         try:
-            await _live_say(
-                ws,
-                (
-                    f"ฉันร่างการแจ้งเตือน: {title} แล้ว พูดว่า 'ยืนยัน' พร้อมเวลา หรือพูดว่า 'ยกเลิก'."
-                    if _text_is_thai(text)
-                    else f"I drafted a reminder: {title}. Say 'reminder confirm' with a time, or say 'reminder cancel'."
-                ),
-            )
+            await _live_say(ws, f"สร้างอีเวนต์ในปฏิทินแล้ว: {title}" if _text_is_thai(text) else f"Created a calendar event: {title}.")
         except Exception:
             pass
         return True
 
-    cal = await _google_calendar_create_reminder_event(title=title, due_at_utc=due_at_utc, tz=tz, source_text=text)
+    # No explicit time: create a Google Task instead.
+    meta = MCP_TOOL_MAP.get("google_tasks_create_task") if isinstance(MCP_TOOL_MAP, dict) else None
+    mcp_name = str(meta.get("mcp_name") or "").strip() if isinstance(meta, dict) else ""
+    if not mcp_name:
+        raise HTTPException(status_code=500, detail="google_tasks_tools_not_configured")
+
+    payload: dict[str, Any] = {
+        "title": title,
+        "notes": str(text or "").strip(),
+    }
+    res = await _mcp_tools_call(mcp_name, payload)
+    parsed = _mcp_text_json(res)
     await _ws_send_json(
         ws,
         {
-            "type": "reminder_setup",
+            "type": "planning_item_created",
+            "kind": "task",
             "title": title,
-            "reminder_id": None,
-            "result": {"ok": True, "calendar": cal, "local_time": local_iso, "timezone": tz.key},
+            "result": parsed if isinstance(parsed, dict) else {"raw": parsed},
             "instance_id": INSTANCE_ID,
         },
     )
     try:
-        await _live_say(ws, f"สร้างการแจ้งเตือนในปฏิทินแล้ว: {title}" if _text_is_thai(text) else f"Created a calendar reminder: {title}.")
+        await _live_say(ws, f"สร้างงานแล้ว: {title}" if _text_is_thai(text) else f"Created a task: {title}.")
     except Exception:
         pass
     return True
@@ -3412,43 +3403,6 @@ async def _handle_news_follow_trigger(ws: WebSocket, text: str) -> bool:
 
 
 async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
-    # Draft confirmation has priority over all other routing.
-    # This allows follow-up messages like `reminder confirm: tomorrow 09:00` to finalize a pending draft.
-    try:
-        handled_confirm = await _handle_pending_reminder_confirm_or_cancel(ws, text)
-        if handled_confirm:
-            return True
-    except Exception:
-        pass
-
-    try:
-        handled_details = await _handle_reminder_details_query(ws, text)
-        if handled_details:
-            return True
-    except Exception:
-        pass
-
-    try:
-        handled_set_time = await _handle_pending_reminder_set_time(ws, text)
-        if handled_set_time:
-            return True
-    except Exception:
-        pass
-
-    try:
-        handled_pending_modify = await _handle_pending_reminder_modify(ws, text)
-        if handled_pending_modify:
-            return True
-    except Exception:
-        pass
-
-    try:
-        handled_modify = await _handle_last_reminder_modify(ws, text)
-        if handled_modify:
-            return True
-    except Exception:
-        pass
-
     # Continuation handling: if a sub-agent is active for this websocket, let it handle followups.
     now_ts = int(time.time())
     active_agent_id = str(getattr(ws.state, "active_agent_id", "") or "").strip() or None
@@ -3461,15 +3415,7 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
     async def _run_agent(agent_id: str) -> bool:
         agent_id_norm = str(agent_id or "").strip()
         if agent_id_norm == "reminder-setup":
-            # New reminder setup overrides any previous pending draft.
-            ws.state.pending_reminder_setup = None
             handled = await _handle_reminder_setup_trigger(ws, text)
-            if handled:
-                ws.state.active_agent_id = agent_id_norm
-                ws.state.active_agent_until_ts = int(time.time()) + AGENT_CONTINUE_WINDOW_SECONDS
-            return handled
-        if agent_id_norm == "reminder-helper":
-            handled = await _handle_reminder_helper_trigger(ws, text)
             if handled:
                 ws.state.active_agent_id = agent_id_norm
                 ws.state.active_agent_until_ts = int(time.time()) + AGENT_CONTINUE_WINDOW_SECONDS
@@ -4726,328 +4672,6 @@ async def daily_brief() -> dict[str, Any]:
     return {"ok": True, "brief": await _render_daily_brief(DEFAULT_USER_ID)}
 
 
-@app.get("/reminders")
-async def list_reminders(
-    status: str = "all",
-    limit: int = 50,
-    offset: int = 0,
-    order: str = "desc",
-    include_hidden: bool = False,
-) -> dict[str, Any]:
-    # Cross-device consistency: when Weaviate is enabled, prefer it as the authoritative read path.
-    if _weaviate_enabled():
-        try:
-            now_ts = int(time.time())
-            items = await _weaviate_query_reminders(status=status, limit=limit)
-            # Map Weaviate items into the same shape as SQLite reminders.
-            out: list[dict[str, Any]] = []
-            for it in items:
-                title = str(it.get("title") or "Reminder").strip() or "Reminder"
-                tz_name = str(it.get("timezone") or DEFAULT_TIMEZONE).strip() or DEFAULT_TIMEZONE
-                hide_until = int(float(it["hide_until"])) if it.get("hide_until") is not None else None
-                if (not include_hidden) and hide_until is not None and hide_until > now_ts:
-                    continue
-                out.append(
-                    {
-                        "reminder_id": _local_reminder_id_from_external_key(str(it.get("external_key") or "")),
-                        "title": title,
-                        "due_at": int(float(it["due_at"])) if it.get("due_at") is not None else None,
-                        "timezone": tz_name,
-                        "schedule_type": "memory",
-                        "notify_at": int(float(it["notify_at"])) if it.get("notify_at") is not None else None,
-                        "hide_until": hide_until,
-                        "status": str(it.get("status") or "").strip() or "pending",
-                        "source_text": str(it.get("body") or ""),
-                        "aim_entity_name": str(it.get("external_key") or ""),
-                        "created_at": int(float(it["created_at"])) if it.get("created_at") is not None else None,
-                        "updated_at": int(float(it["updated_at"])) if it.get("updated_at") is not None else None,
-                    }
-                )
-            return {"ok": True, "source": "weaviate", "instance_id": INSTANCE_ID, "reminders": out}
-        except Exception as e:
-            return {
-                "ok": True,
-                "source": "sqlite_fallback",
-                "instance_id": INSTANCE_ID,
-                "error": str(e),
-                "reminders": _list_reminders(
-                    user_id=DEFAULT_USER_ID,
-                    status=status,
-                    limit=limit,
-                    offset=offset,
-                    order=order,
-                    include_hidden=include_hidden,
-                ),
-            }
-
-    reminders = _list_reminders(
-        user_id=DEFAULT_USER_ID,
-        status=status,
-        limit=limit,
-        offset=offset,
-        order=order,
-        include_hidden=include_hidden,
-    )
-    return {"ok": True, "source": "sqlite", "instance_id": INSTANCE_ID, "reminders": reminders}
-
-
-class ReminderCreateRequest(BaseModel):
-    title: str = Field(default="Reminder")
-    due_at_utc: Optional[str] = Field(default=None)
-    timezone: str = Field(default=DEFAULT_TIMEZONE)
-    schedule_type: str = Field(default="unscheduled")
-    source_text: str = Field(default="")
-
-
-@app.post("/reminders")
-async def create_reminder(req: ReminderCreateRequest) -> dict[str, Any]:
-    tz_name = str(req.timezone or DEFAULT_TIMEZONE).strip() or DEFAULT_TIMEZONE
-    try:
-        tz = ZoneInfo(tz_name)
-    except Exception:
-        raise HTTPException(status_code=400, detail="invalid_timezone")
-
-    title = str(req.title or "Reminder").strip() or "Reminder"
-    schedule_type = str(req.schedule_type or "unscheduled").strip() or "unscheduled"
-    source_text = str(req.source_text or "").strip()
-
-    due_at_utc: Optional[datetime] = None
-    if req.due_at_utc is not None:
-        try:
-            parsed = datetime.fromisoformat(str(req.due_at_utc).replace("Z", "+00:00"))
-            if parsed.tzinfo is None:
-                parsed = parsed.replace(tzinfo=timezone.utc)
-            due_at_utc = parsed.astimezone(timezone.utc)
-        except Exception:
-            raise HTTPException(status_code=400, detail="invalid_due_at_utc")
-
-    if due_at_utc is None:
-        raise HTTPException(status_code=400, detail="missing_due_at_utc")
-
-    cal = await _google_calendar_create_reminder_event(title=title, due_at_utc=due_at_utc, tz=tz, source_text=source_text)
-    return {
-        "ok": True,
-        "instance_id": INSTANCE_ID,
-        "calendar": cal,
-        "schedule_type": schedule_type,
-        "timezone": tz.key,
-    }
-
-
-@app.post("/reminders/{reminder_id}/done")
-async def reminders_done(reminder_id: str) -> dict[str, Any]:
-    rid = str(reminder_id or "").strip()
-    if not rid:
-        raise HTTPException(status_code=400, detail="missing_reminder_id")
-
-    changed = _mark_reminder_done(rid)
-    wv: Optional[dict[str, Any]] = None
-    if _weaviate_enabled():
-        try:
-            wv = await _mark_reminder_done_weaviate(rid)
-        except Exception as e:
-            wv = {"ok": False, "error": str(e)}
-
-    await _broadcast_to_user(
-        DEFAULT_USER_ID,
-        {"type": "reminder_done", "reminder_id": rid, "changed": changed, "weaviate": wv, "instance_id": INSTANCE_ID},
-    )
-    return {"ok": True, "reminder_id": rid, "changed": changed, "weaviate": wv, "instance_id": INSTANCE_ID}
-
-
-@app.get("/reminders/upcoming")
-async def upcoming_reminders(window_hours: int = 48, time_field: str = "notify_at", limit: int = 50) -> dict[str, Any]:
-    now_ts = int(time.time())
-    end_ts = now_ts + max(1, int(window_hours or 48)) * 3600
-    if _weaviate_enabled() and str(time_field or "").strip().lower() == "notify_at":
-        try:
-            items = await _weaviate_query_upcoming_reminders(start_ts=now_ts, end_ts=end_ts, limit=limit)
-            out: list[dict[str, Any]] = []
-            for it in items:
-                title = str(it.get("title") or "Reminder").strip() or "Reminder"
-                tz_name = str(it.get("timezone") or DEFAULT_TIMEZONE).strip() or DEFAULT_TIMEZONE
-                hide_until = int(float(it["hide_until"])) if it.get("hide_until") is not None else None
-                if hide_until is not None and hide_until > now_ts:
-                    continue
-                out.append(
-                    {
-                        "reminder_id": _local_reminder_id_from_external_key(str(it.get("external_key") or "")),
-                        "title": title,
-                        "due_at": int(float(it["due_at"])) if it.get("due_at") is not None else None,
-                        "timezone": tz_name,
-                        "schedule_type": "memory",
-                        "notify_at": int(float(it["notify_at"])) if it.get("notify_at") is not None else None,
-                        "hide_until": hide_until,
-                        "source_text": str(it.get("body") or ""),
-                        "aim_entity_name": str(it.get("external_key") or ""),
-                    }
-                )
-            return {"ok": True, "source": "weaviate", "instance_id": INSTANCE_ID, "now": now_ts, "end": end_ts, "time_field": time_field, "reminders": out}
-        except Exception as e:
-            pass
-
-    reminders = _list_upcoming_pending_reminders(
-        user_id=DEFAULT_USER_ID,
-        start_ts=now_ts,
-        end_ts=end_ts,
-        time_field=time_field,
-        limit=limit,
-    )
-    return {"ok": True, "source": "sqlite", "instance_id": INSTANCE_ID, "now": now_ts, "end": end_ts, "time_field": time_field, "reminders": reminders}
-
-
-@app.post("/reminders/{reminder_id}/later")
-async def reminder_later(reminder_id: str, days: int = 1) -> dict[str, Any]:
-    rid = str(reminder_id or "").strip()
-    if not rid:
-        raise HTTPException(status_code=400, detail="missing_reminder_id")
-    tz = _get_user_timezone(DEFAULT_USER_ID)
-    now = datetime.now(tz=timezone.utc)
-    hide_until_local = _default_hide_until(now, tz, days_ahead=int(days or 1))
-    hide_until_utc = hide_until_local.astimezone(timezone.utc)
-    hide_until_ts = int(hide_until_utc.timestamp())
-    changed = False
-    local_error: Optional[str] = None
-    try:
-        changed = _set_reminder_hide_until(rid, hide_until_ts)
-    except Exception as e:
-        local_error = str(e)
-        if not _weaviate_enabled():
-            raise HTTPException(status_code=500, detail={"reminder_later_failed": local_error})
-
-    if not changed and not _weaviate_enabled():
-        raise HTTPException(status_code=404, detail="reminder_not_found")
-
-    wv: Optional[dict[str, Any]] = None
-    if _weaviate_enabled():
-        try:
-            local = _get_local_reminder_by_id(rid) or {}
-            if not local:
-                raise HTTPException(status_code=404, detail="reminder_not_found")
-            external_key = str(local.get("aim_entity_name") or "").strip() or f"reminder::{rid}"
-            wv = await _weaviate_upsert_memory_item(
-                external_key=external_key,
-                kind="reminder",
-                title=str(local.get("title") or "Reminder"),
-                body=str(local.get("source_text") or ""),
-                status=str(local.get("status") or "pending"),
-                due_at=int(local.get("due_at")) if local.get("due_at") is not None else None,
-                notify_at=int(local.get("notify_at")) if local.get("notify_at") is not None else None,
-                hide_until=hide_until_ts,
-                timezone_name=str(local.get("timezone") or tz.key),
-                source="jarvis",
-            )
-        except Exception as e:
-            wv = {"ok": False, "error": str(e)}
-
-    await _broadcast_to_user(
-        DEFAULT_USER_ID,
-        {
-            "type": "reminder_later",
-            "reminder_id": rid,
-            "hide_until": hide_until_ts,
-            "changed": changed,
-            "local_error": local_error,
-            "weaviate": wv,
-            "instance_id": INSTANCE_ID,
-        },
-    )
-    return {
-        "ok": True,
-        "reminder_id": rid,
-        "hide_until": hide_until_ts,
-        "changed": changed,
-        "local_error": local_error,
-        "weaviate": wv,
-    }
-
-
-@app.get("/reminders/{reminder_id}/reschedule/suggest")
-async def reminder_reschedule_suggest(reminder_id: str) -> dict[str, Any]:
-    rid = str(reminder_id or "").strip()
-    if not rid:
-        raise HTTPException(status_code=400, detail="missing_reminder_id")
-    tz = _get_user_timezone(DEFAULT_USER_ID)
-    now = datetime.now(tz=timezone.utc)
-    suggested_local = _suggest_reschedule_notify_at(now, tz)
-    suggested_utc = suggested_local.astimezone(timezone.utc)
-    return {
-        "ok": True,
-        "reminder_id": rid,
-        "timezone": tz.key,
-        "suggested_notify_at": int(suggested_utc.timestamp()),
-        "suggested_local_iso": suggested_local.isoformat(),
-    }
-
-
-@app.post("/reminders/{reminder_id}/reschedule")
-async def reminder_reschedule(reminder_id: str, notify_at: int) -> dict[str, Any]:
-    rid = str(reminder_id or "").strip()
-    if not rid:
-        raise HTTPException(status_code=400, detail="missing_reminder_id")
-    try:
-        notify_at_ts = int(notify_at)
-    except Exception:
-        raise HTTPException(status_code=400, detail="invalid_notify_at")
-
-    changed = False
-    local_error: Optional[str] = None
-    try:
-        changed = _set_reminder_notify_at(rid, notify_at_ts)
-        _set_reminder_hide_until(rid, None)
-    except Exception as e:
-        local_error = str(e)
-        if not _weaviate_enabled():
-            raise HTTPException(status_code=500, detail={"reminder_reschedule_failed": local_error})
-
-    if not changed and not _weaviate_enabled():
-        raise HTTPException(status_code=404, detail="reminder_not_found")
-
-    wv: Optional[dict[str, Any]] = None
-    if _weaviate_enabled():
-        try:
-            local = _get_local_reminder_by_id(rid) or {}
-            if not local:
-                raise HTTPException(status_code=404, detail="reminder_not_found")
-            tz_name = str(local.get("timezone") or DEFAULT_TIMEZONE).strip() or DEFAULT_TIMEZONE
-            external_key = str(local.get("aim_entity_name") or "").strip() or f"reminder::{rid}"
-            wv = await _weaviate_upsert_memory_item(
-                external_key=external_key,
-                kind="reminder",
-                title=str(local.get("title") or "Reminder"),
-                body=str(local.get("source_text") or ""),
-                status=str(local.get("status") or "pending"),
-                due_at=int(local.get("due_at")) if local.get("due_at") is not None else None,
-                notify_at=notify_at_ts,
-                hide_until=None,
-                timezone_name=tz_name,
-                source="jarvis",
-            )
-        except Exception as e:
-            wv = {"ok": False, "error": str(e)}
-
-    await _broadcast_to_user(
-        DEFAULT_USER_ID,
-        {
-            "type": "reminder_reschedule",
-            "reminder_id": rid,
-            "notify_at": notify_at_ts,
-            "changed": changed,
-            "local_error": local_error,
-            "weaviate": wv,
-            "instance_id": INSTANCE_ID,
-        },
-    )
-    return {
-        "ok": True,
-        "reminder_id": rid,
-        "notify_at": notify_at_ts,
-        "changed": changed,
-        "local_error": local_error,
-        "weaviate": wv,
-    }
-
-
 @app.get("/debug/agents")
 def debug_agents() -> dict[str, Any]:
     agents = _agents_snapshot()
@@ -5780,51 +5404,6 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
         }
     )
 
-    decls.append(
-        {
-            "name": "reminders_list",
-            "description": "List reminders from the local Jarvis session DB (including fired/old reminders).",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "status": {"type": "string", "description": "Filter by status: all|pending|fired|done"},
-                    "limit": {"type": "integer", "description": "Max rows (default 50, max 500)"},
-                    "offset": {"type": "integer", "description": "Offset for pagination"},
-                    "order": {"type": "string", "description": "Sort by updated_at: asc|desc"},
-                },
-            },
-        }
-    )
-
-    decls.append(
-        {
-            "name": "reminders_upcoming",
-            "description": "List upcoming pending reminders in the next N hours (defaults to 48).",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "window_hours": {"type": "integer", "description": "How far ahead to look (hours)."},
-                    "time_field": {
-                        "type": "string",
-                        "description": "Which timestamp to use: notify_at|due_at (default notify_at).",
-                    },
-                    "limit": {"type": "integer", "description": "Max rows (default 50, max 500)."},
-                },
-            },
-        }
-    )
-
-    decls.append(
-        {
-            "name": "reminders_done",
-            "description": "Mark a reminder as done/completed so it disappears from upcoming/today views.",
-            "parameters": {
-                "type": "object",
-                "properties": {"reminder_id": {"type": "string"}},
-                "required": ["reminder_id"],
-            },
-        }
-    )
     return decls
 
 
@@ -5948,52 +5527,6 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         if not ok:
             raise HTTPException(status_code=404, detail="pending_write_not_found")
         return {"ok": True}
-
-    if tool_name == "reminders_list":
-        status = str(args.get("status") or "all")
-        limit = int(args.get("limit") or 50)
-        offset = int(args.get("offset") or 0)
-        order = str(args.get("order") or "desc")
-        include_hidden = bool(args.get("include_hidden") or False)
-        return _list_reminders(
-            user_id=DEFAULT_USER_ID,
-            status=status,
-            limit=limit,
-            offset=offset,
-            order=order,
-            include_hidden=include_hidden,
-        )
-
-    if tool_name == "reminders_upcoming":
-        window_hours = int(args.get("window_hours") or 48)
-        time_field = str(args.get("time_field") or "notify_at")
-        limit = int(args.get("limit") or 50)
-        now_ts = int(time.time())
-        end_ts = now_ts + max(1, window_hours) * 3600
-        return _list_upcoming_pending_reminders(
-            user_id=DEFAULT_USER_ID,
-            start_ts=now_ts,
-            end_ts=end_ts,
-            time_field=time_field,
-            limit=limit,
-        )
-
-    if tool_name == "reminders_done":
-        reminder_id = str(args.get("reminder_id") or "").strip()
-        if not reminder_id:
-            raise HTTPException(status_code=400, detail="missing_reminder_id")
-        changed = _mark_reminder_done(reminder_id)
-        wv: Optional[dict[str, Any]] = None
-        if _weaviate_enabled():
-            try:
-                wv = await _mark_reminder_done_weaviate(reminder_id)
-            except Exception as e:
-                wv = {"ok": False, "error": str(e)}
-        await _broadcast_to_user(
-            DEFAULT_USER_ID,
-            {"type": "reminder_done", "reminder_id": reminder_id, "changed": changed, "weaviate": wv, "instance_id": INSTANCE_ID},
-        )
-        return {"ok": True, "reminder_id": reminder_id, "changed": changed, "weaviate": wv}
 
     meta = MCP_TOOL_MAP.get(tool_name)
     if not meta:
@@ -6307,9 +5840,6 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                             "pending_list",
                             "pending_confirm",
                             "pending_cancel",
-                            "reminders_list",
-                            "reminders_upcoming",
-                            "reminders_done",
                         ):
                             result = await _handle_mcp_tool_call(session_id, fc_name, fc_args)
                         else:
