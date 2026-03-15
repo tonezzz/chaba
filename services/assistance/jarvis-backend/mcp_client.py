@@ -105,7 +105,30 @@ async def mcp_rpc_base(base_url: str, method: str, params: dict[str, Any]) -> An
         if res.status_code >= 400:
             raise HTTPException(status_code=502, detail={"mcp_rpc_failed": res.text})
 
-        msg = parse_sse_first_message_data(res.text)
+        # Servers may respond with either:
+        # - text/event-stream (SSE): lines like `data: {...}`
+        # - application/json: a single JSON-RPC message
+        content_type = (res.headers.get("content-type") or "").lower()
+        msg: dict[str, Any] = {}
+        if "application/json" in content_type:
+            try:
+                parsed = res.json()
+                if isinstance(parsed, dict):
+                    msg = parsed
+            except Exception:
+                msg = {}
+        if not msg:
+            text = res.text or ""
+            # Some servers return JSON even when content-type is not set correctly.
+            if text.lstrip().startswith("{"):
+                try:
+                    parsed2 = json.loads(text)
+                    if isinstance(parsed2, dict):
+                        msg = parsed2
+                except Exception:
+                    msg = {}
+        if not msg:
+            msg = parse_sse_first_message_data(res.text)
         if msg.get("error") is not None:
             raise HTTPException(status_code=502, detail={"mcp_error": msg.get("error")})
         return msg.get("result")
