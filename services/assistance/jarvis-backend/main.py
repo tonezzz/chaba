@@ -97,6 +97,235 @@ def _apply_cached_sheet_memory_to_ws(ws: WebSocket, cached: dict[str, Any]) -> N
         pass
 
 
+_SHEET_GEMS_CACHE: dict[str, Any] = {
+    "loaded_at": 0,
+    "gems": None,
+    "gem_ids": None,
+    "source": None,
+}
+
+_SHEET_GEMS_REFRESHING: bool = False
+_SHEET_GEMS_LAST_REFRESH_AT: int = 0
+
+
+def _gems_cache_ttl_seconds() -> int:
+    try:
+        v = int(str(os.getenv("JARVIS_GEMS_CACHE_TTL_SECONDS") or "120").strip())
+        return v if v > 0 else 120
+    except Exception:
+        return 120
+
+
+def _get_cached_sheet_gems() -> Optional[dict[str, Any]]:
+    now = int(time.time())
+    loaded_at = int(_SHEET_GEMS_CACHE.get("loaded_at") or 0)
+    if loaded_at <= 0:
+        return None
+    if now - loaded_at > _gems_cache_ttl_seconds():
+        return None
+    gems = _SHEET_GEMS_CACHE.get("gems")
+    if not isinstance(gems, dict) or not gems:
+        return None
+    return dict(_SHEET_GEMS_CACHE)
+
+
+def _set_cached_sheet_gems(payload: dict[str, Any]) -> None:
+    _SHEET_GEMS_CACHE["loaded_at"] = int(time.time())
+    _SHEET_GEMS_CACHE["gems"] = payload.get("gems")
+    _SHEET_GEMS_CACHE["gem_ids"] = payload.get("gem_ids")
+    _SHEET_GEMS_CACHE["source"] = payload.get("source")
+
+
+def _normalize_gem_id(v: Any) -> str:
+    return str(v or "").strip().lower()
+
+
+def _get_sheets_tool_name(alias: str) -> str:
+    meta = MCP_TOOL_MAP.get(alias) if isinstance(MCP_TOOL_MAP, dict) else None
+    name = str(meta.get("mcp_name") or "").strip() if isinstance(meta, dict) else ""
+    return name
+
+
+def _pick_sheets_tool_name(alias: str, fallback: str) -> str:
+    name = _get_sheets_tool_name(alias)
+    return name or fallback
+
+
+async def _load_sheet_table(*, spreadsheet_id: str, sheet_name: str, max_rows: int = 250, max_cols: str = "Q") -> list[list[Any]]:
+    tool = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    res = await _mcp_tools_call(
+        tool,
+        {
+            "spreadsheet_id": spreadsheet_id,
+            "range": f"{sheet_name}!A1:{max_cols}{max_rows}",
+        },
+    )
+    parsed = _mcp_text_json(res)
+    if not isinstance(parsed, dict):
+        return []
+    values = parsed.get("values")
+    if not isinstance(values, list) or not values:
+        return []
+    out: list[list[Any]] = []
+    for row in values:
+        if isinstance(row, list):
+            out.append(row)
+    return out
+
+
+def _idx_from_header(header: list[Any]) -> dict[str, int]:
+    idx: dict[str, int] = {}
+    for i, c in enumerate(header):
+        name = str(c or "").strip().lower()
+        if name and name not in idx:
+            idx[name] = i
+    return idx
+
+
+def _get_cell(row: list[Any], idx: dict[str, int], col: str, default: Any = "") -> Any:
+    j = idx.get(col)
+    if j is None or j < 0 or j >= len(row):
+        return default
+    return row[j]
+
+
+def _compose_gem_instruction(purpose: str, persona: str) -> str:
+    p = str(purpose or "").strip()
+    s = str(persona or "").strip()
+    if p and s:
+        return f"PURPOSE: {p}\n\n{s}".strip()
+    return (s or p).strip()
+
+
+async def _load_sheet_gems(*, sys_kv: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+    spreadsheet_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
+    sheet_name = "gems"
+    if isinstance(sys_kv, dict) and sys_kv:
+        spreadsheet_id = str(sys_kv.get("gems_ss") or spreadsheet_id).strip()
+        sheet_name = str(sys_kv.get("gems_sh") or sheet_name).strip() or "gems"
+    if not spreadsheet_id:
+        return {"gems": {}, "gem_ids": []}
+
+    rows = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_name, max_rows=300, max_cols="Q")
+    if not rows:
+        return {"gems": {}, "gem_ids": []}
+    header = rows[0] if isinstance(rows[0], list) else []
+    idx = _idx_from_header(header)
+
+    gems: dict[str, dict[str, Any]] = {}
+    for raw in rows[1:]:
+        if not isinstance(raw, list) or not raw:
+            continue
+        gem_id = _normalize_gem_id(_get_cell(raw, idx, "id", default=(raw[0] if raw else "")))
+        if not gem_id:
+            continue
+        enabled_raw = _get_cell(raw, idx, "enabled", default="TRUE")
+        enabled = _parse_bool_cell(enabled_raw)
+        if not enabled:
+            continue
+
+        name = str(_get_cell(raw, idx, "name", default="")).strip()
+        purpose = str(_get_cell(raw, idx, "purpose", default="")).strip()
+        persona = str(_get_cell(raw, idx, "persona", default="")).strip()
+        model = str(_get_cell(raw, idx, "model", default="")).strip()
+        language = str(_get_cell(raw, idx, "language", default="")).strip()
+        output_format = str(_get_cell(raw, idx, "output_format", default="")).strip()
+        tools_policy = str(_get_cell(raw, idx, "tools_policy", default="")).strip()
+
+        gems[gem_id] = {
+            "id": gem_id,
+            "name": name,
+            "purpose": purpose,
+            "persona": persona,
+            "instruction": _compose_gem_instruction(purpose, persona),
+            "model": model,
+            "language": language,
+            "output_format": output_format,
+            "tools_policy": tools_policy,
+        }
+
+    gem_ids = sorted(list(gems.keys()))
+    return {
+        "gems": gems,
+        "gem_ids": gem_ids,
+        "source": {"spreadsheet_id": spreadsheet_id, "sheet": sheet_name},
+    }
+
+
+async def _refresh_sheet_gems_background(ws: WebSocket, lang: str) -> None:
+    global _SHEET_GEMS_REFRESHING, _SHEET_GEMS_LAST_REFRESH_AT
+    now = int(time.time())
+    if _SHEET_GEMS_REFRESHING:
+        return
+    if _SHEET_GEMS_LAST_REFRESH_AT and now - int(_SHEET_GEMS_LAST_REFRESH_AT) < 10:
+        return
+    _SHEET_GEMS_REFRESHING = True
+    _SHEET_GEMS_LAST_REFRESH_AT = now
+    try:
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        payload = await _load_sheet_gems(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+        _set_cached_sheet_gems(payload)
+    except Exception:
+        pass
+    finally:
+        _SHEET_GEMS_REFRESHING = False
+
+
+async def _resolve_sheet_gem(gem_name: str, sys_kv: Optional[dict[str, Any]] = None) -> Optional[dict[str, Any]]:
+    gem_id = _normalize_gem_id(gem_name)
+    if not gem_id:
+        return None
+    cached = _get_cached_sheet_gems()
+    if isinstance(cached, dict):
+        gems = cached.get("gems")
+        if isinstance(gems, dict) and isinstance(gems.get(gem_id), dict):
+            return gems.get(gem_id)
+    payload = await _load_sheet_gems(sys_kv=sys_kv)
+    try:
+        _set_cached_sheet_gems(payload)
+    except Exception:
+        pass
+    gems = payload.get("gems") if isinstance(payload, dict) else None
+    if isinstance(gems, dict) and isinstance(gems.get(gem_id), dict):
+        return gems.get(gem_id)
+    return None
+
+
+async def _resolve_gem_instruction_and_model(*, gem_name: str | None, sys_kv: Optional[dict[str, Any]] = None) -> tuple[str, Optional[str]]:
+    name = _resolve_gem_name(gem_name)
+    sheet_gem = None
+    try:
+        sheet_gem = await _resolve_sheet_gem(name, sys_kv=sys_kv)
+    except Exception:
+        sheet_gem = None
+    if isinstance(sheet_gem, dict):
+        instruction = str(sheet_gem.get("instruction") or "").strip()
+        model = str(sheet_gem.get("model") or "").strip() or None
+        if instruction:
+            return instruction, model
+    return _gem_instruction(name), None
+
+
+async def _load_sys_kv_from_sheet() -> dict[str, str]:
+    spreadsheet_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
+    if not spreadsheet_id:
+        return {}
+    sys_sheet = str(os.getenv("CHABA_SS_SYS_SYS_SHEET") or "sys").strip() or "sys"
+    try:
+        rows = await _load_sheet_kv5(spreadsheet_id=spreadsheet_id, sheet_name=sys_sheet)
+    except Exception:
+        rows = []
+    out: dict[str, str] = {}
+    for it in rows:
+        if not isinstance(it, dict):
+            continue
+        k = str(it.get("key") or "").strip()
+        v = str(it.get("value") or "").strip()
+        if k:
+            out[k] = v
+    return out
+
+
 def _require_env(name: str) -> str:
     value = str(os.getenv(name, "") or "").strip()
     if not value:
@@ -3401,10 +3630,33 @@ async def _handle_note_trigger(ws: WebSocket, text: str) -> bool:
             return True
         return False
 
-    spreadsheet_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
-    sheet_name = str(os.getenv("CHABA_SS_SYS_SH") or "notes").strip() or "notes"
+    sys_kv = getattr(ws.state, "sys_kv", None)
+    spreadsheet_id = (
+        str(sys_kv.get("notes_ss") or "").strip()
+        if isinstance(sys_kv, dict)
+        else ""
+    )
     if not spreadsheet_id:
-        await _ws_send_json(ws, {"type": "note_error", "message": "missing_CHABA_SS_SYS", "instance_id": INSTANCE_ID})
+        spreadsheet_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
+
+    sheet_name = (
+        str(sys_kv.get("notes_sh") or "").strip()
+        if isinstance(sys_kv, dict)
+        else ""
+    )
+    if not sheet_name:
+        sheet_name = str(os.getenv("CHABA_SS_SYS_NOTES_SHEET") or "notes").strip() or "notes"
+
+    if not spreadsheet_id:
+        await _ws_send_json(
+            ws,
+            {
+                "type": "note_error",
+                "message": "missing_notes_ss",
+                "detail": "Missing notes_ss in sys sheet and CHABA_SS_SYS env is not set.",
+                "instance_id": INSTANCE_ID,
+            },
+        )
         return True
 
     now_iso = datetime.now(tz=timezone.utc).isoformat().replace("+00:00", "Z")
@@ -3417,8 +3669,9 @@ async def _handle_note_trigger(ws: WebSocket, text: str) -> bool:
     ]
     append_range = f"{sheet_name}!A:E"
 
+    tool = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
     res = await _mcp_tools_call(
-        "google_sheets_values_append",
+        tool,
         {
             "spreadsheet_id": spreadsheet_id,
             "range": append_range,
@@ -3742,13 +3995,8 @@ def _safe_int(v: Any, default: int = 0) -> int:
 
 async def _load_sheet_kv5(*, spreadsheet_id: str, sheet_name: str) -> list[dict[str, Any]]:
     # Expects a table with columns: key, value, enabled, scope, priority.
-    res = await _mcp_tools_call(
-        "google_sheets_values_get",
-        {
-            "spreadsheet_id": spreadsheet_id,
-            "range": f"{sheet_name}!A:E",
-        },
-    )
+    tool = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    res = await _mcp_tools_call(tool, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name}!A:E"})
     parsed = _mcp_text_json(res)
     if not isinstance(parsed, dict):
         return []
@@ -5004,13 +5252,16 @@ async def gem_demo(req: GemDemoRequest) -> GemDemoResponse:
     if not api_key:
         raise HTTPException(status_code=500, detail="missing_api_key")
 
+    sys_kv = await _load_sys_kv_from_sheet()
+    extra, gem_model = await _resolve_gem_instruction_and_model(gem_name=req.gem, sys_kv=sys_kv)
     gem_name = _resolve_gem_name(req.gem)
-    extra = _gem_instruction(gem_name)
     system_instruction = "You are Jarvis. Respond to the user with ONLY the final answer."
     if extra:
         system_instruction = system_instruction + "\n" + extra
 
-    model = _normalize_model_name(str(req.model or os.getenv("GEMINI_TEXT_MODEL") or "gemini-2.0-flash").strip() or "gemini-2.0-flash")
+    model = _normalize_model_name(
+        str(req.model or (gem_model or "") or os.getenv("GEMINI_TEXT_MODEL") or "gemini-2.0-flash").strip() or "gemini-2.0-flash"
+    )
     client = genai.Client(api_key=api_key)
     cfg = {"system_instruction": system_instruction}
     try:
@@ -5399,6 +5650,69 @@ MCP_TOOL_MAP: dict[str, dict[str, Any]] = {
             "required": ["url"],
         },
         "requires_confirmation": False,
+    },
+    "google_sheets_ping": {
+        "mcp_name": "google-sheets_1mcp_google_sheets_ping",
+        "description": "Minimal connectivity test for the Google Sheets MCP server.",
+        "parameters": {"type": "object", "properties": {"message": {"type": "string"}}},
+        "requires_confirmation": False,
+    },
+    "google_sheets_auth_status": {
+        "mcp_name": "google-sheets_1mcp_google_sheets_auth_status",
+        "description": "Check OAuth token status for Google Sheets (single-account).",
+        "parameters": {"type": "object", "properties": {"include_raw_tokens": {"type": "boolean"}}},
+        "requires_confirmation": False,
+    },
+    "google_sheets_get_spreadsheet": {
+        "mcp_name": "google-sheets_1mcp_google_sheets_get_spreadsheet",
+        "description": "Fetch spreadsheet metadata (sheet titles, ids) to help build valid ranges.",
+        "parameters": {
+            "type": "object",
+            "properties": {"spreadsheet_id": {"type": "string"}},
+            "required": ["spreadsheet_id"],
+        },
+        "requires_confirmation": False,
+    },
+    "google_sheets_values_get": {
+        "mcp_name": "google-sheets_1mcp_google_sheets_values_get",
+        "description": "Read values from a spreadsheet range (requires OAuth tokens).",
+        "parameters": {
+            "type": "object",
+            "properties": {"spreadsheet_id": {"type": "string"}, "range": {"type": "string"}},
+            "required": ["spreadsheet_id", "range"],
+        },
+        "requires_confirmation": False,
+    },
+    "google_sheets_values_append": {
+        "mcp_name": "google-sheets_1mcp_google_sheets_values_append",
+        "description": "Append rows to a spreadsheet range (requires write OAuth scope).",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "spreadsheet_id": {"type": "string"},
+                "range": {"type": "string"},
+                "values": {"type": "array", "items": {"type": "array", "items": {}}},
+                "value_input_option": {"type": "string"},
+                "insert_data_option": {"type": "string"},
+            },
+            "required": ["spreadsheet_id", "range", "values"],
+        },
+        "requires_confirmation": True,
+    },
+    "google_sheets_values_update": {
+        "mcp_name": "google-sheets_1mcp_google_sheets_values_update",
+        "description": "Update values in a spreadsheet range in-place (requires write OAuth scope).",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "spreadsheet_id": {"type": "string"},
+                "range": {"type": "string"},
+                "values": {"type": "array", "items": {"type": "array", "items": {}}},
+                "value_input_option": {"type": "string"},
+            },
+            "required": ["spreadsheet_id", "range", "values"],
+        },
+        "requires_confirmation": True,
     },
     "sequential_thinking": {
         "mcp_name": "server-sequential-thinking_1mcp_sequentialthinking",
@@ -6764,8 +7078,9 @@ async def ws_live(ws: WebSocket) -> None:
         tz = _get_user_timezone(DEFAULT_USER_ID)
         now_utc = datetime.now(tz=timezone.utc)
         now_local = now_utc.astimezone(tz)
-        gem_name = _resolve_gem_name(str(ws.query_params.get("gem") or "").strip() or None)
-        gem_extra = _gem_instruction(gem_name)
+        gem_q = str(ws.query_params.get("gem") or "").strip() or None
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        gem_extra, _gem_model = await _resolve_gem_instruction_and_model(gem_name=gem_q, sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
         system_instruction = (
             "You are Jarvis. Respond to the user with ONLY the final answer. "
             "Do NOT reveal internal reasoning, planning, debugging, tool selection, or step-by-step thoughts. "
@@ -6793,6 +7108,19 @@ async def ws_live(ws: WebSocket) -> None:
 
         if gem_extra:
             system_instruction = system_instruction + "\n\n" + gem_extra
+
+        try:
+            cached_gems = _get_cached_sheet_gems()
+            loaded_at = int((cached_gems or {}).get("loaded_at") or 0) if isinstance(cached_gems, dict) else 0
+        except Exception:
+            loaded_at = 0
+        ttl_g = _gems_cache_ttl_seconds()
+        should_refresh_gems = not isinstance(_get_cached_sheet_gems(), dict) or (loaded_at and (int(time.time()) - loaded_at) > max(10, ttl_g // 2))
+        if should_refresh_gems:
+            try:
+                asyncio.create_task(_refresh_sheet_gems_background(ws, str(getattr(ws.state, "user_lang", "") or "")), name="refresh_sheet_gems")
+            except Exception:
+                pass
 
         base_config = {
             "response_modalities": ["AUDIO", "TEXT"],
