@@ -3728,7 +3728,10 @@ async def _handle_note_trigger(ws: WebSocket, text: str) -> bool:
     # D: notes
     # E: status
     # F: time
-    append_range = f"{sheet_name}!B:F"
+    sheet_name_a1 = str(sheet_name or "").strip() or "notes"
+    if not re.match(r"^[A-Za-z0-9_]+$", sheet_name_a1):
+        sheet_name_a1 = "'" + sheet_name_a1.replace("'", "''") + "'"
+    append_range = f"{sheet_name_a1}!B:F"
 
     tool = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
     res = await _mcp_tools_call(
