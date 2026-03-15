@@ -3210,6 +3210,104 @@ def _news_follow_cache_key_summaries(user_id: str) -> str:
     return f"news-follow::{user_id}::summaries"
 
 
+def _extract_note_text(text: str) -> Optional[str]:
+    raw = str(text or "").strip()
+    if not raw:
+        return None
+    s = " ".join(raw.split())
+    lower = s.lower()
+
+    eng_triggers = ("make a note",)
+    thai_triggers = ("สร้างบันทึก", "จดบันทึก")
+
+    for trig in eng_triggers:
+        if lower.startswith(trig):
+            rest = s[len(trig) :].strip()
+            if rest.startswith(":") or rest.startswith("-"):
+                rest = rest[1:].strip()
+            return rest or None
+
+    for trig in thai_triggers:
+        if s.startswith(trig):
+            rest = s[len(trig) :].strip()
+            if rest.startswith(":") or rest.startswith("-"):
+                rest = rest[1:].strip()
+            return rest or None
+
+    for trig in eng_triggers:
+        idx = lower.find(trig)
+        if idx >= 0:
+            rest = s[idx + len(trig) :].strip()
+            if rest.startswith(":") or rest.startswith("-"):
+                rest = rest[1:].strip()
+            return rest or None
+
+    for trig in thai_triggers:
+        idx = s.find(trig)
+        if idx >= 0:
+            rest = s[idx + len(trig) :].strip()
+            if rest.startswith(":") or rest.startswith("-"):
+                rest = rest[1:].strip()
+            return rest or None
+
+    return None
+
+
+async def _handle_note_trigger(ws: WebSocket, text: str) -> bool:
+    note_text = _extract_note_text(text)
+    if not note_text:
+        return False
+
+    spreadsheet_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
+    sheet_name = str(os.getenv("CHABA_SS_SYS_SH") or "notes").strip() or "notes"
+    if not spreadsheet_id:
+        await _ws_send_json(ws, {"type": "note_error", "message": "missing_CHABA_SS_SYS", "instance_id": INSTANCE_ID})
+        return True
+
+    now_iso = datetime.now(tz=timezone.utc).isoformat().replace("+00:00", "Z")
+    row = [
+        now_iso,
+        "note",
+        str(text or "").strip(),
+        "",
+        str(note_text or "").strip(),
+    ]
+    append_range = f"{sheet_name}!A:E"
+
+    res = await _mcp_tools_call(
+        "google_sheets_values_append",
+        {
+            "spreadsheet_id": spreadsheet_id,
+            "range": append_range,
+            "values": [row],
+            "value_input_option": "USER_ENTERED",
+            "insert_data_option": "INSERT_ROWS",
+        },
+    )
+    parsed = _mcp_text_json(res)
+
+    await _ws_send_json(
+        ws,
+        {
+            "type": "note_created",
+            "note": {
+                "date_time": now_iso,
+                "subject": "note",
+                "input": str(text or "").strip(),
+                "input_improve": "",
+                "notes": str(note_text or "").strip(),
+            },
+            "result": parsed if isinstance(parsed, dict) else {"raw": parsed},
+            "instance_id": INSTANCE_ID,
+        },
+    )
+    try:
+        await _live_say(ws, "บันทึกแล้ว" if _text_is_thai(text) else "Saved a note.")
+    except Exception:
+        pass
+    return True
+
+
 def _get_news_follow_focus(user_id: str) -> list[str]:
     cached = _get_news_cache(_news_follow_cache_key_focus(user_id))
     payload = cached.get("payload") if isinstance(cached, dict) else None
@@ -3444,6 +3542,10 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
         handled = await _run_agent(active_agent_id)
         if handled:
             return True
+
+    handled = await _handle_note_trigger(ws, text)
+    if handled:
+        return True
 
     # Trigger matching.
     triggers = _agent_triggers_snapshot()
