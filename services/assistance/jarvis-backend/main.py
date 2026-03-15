@@ -100,6 +100,31 @@ def _set_cached_sheet_memory(payload: dict[str, Any]) -> None:
     _SHEET_MEMORY_CACHE["memory_context_text"] = str(payload.get("memory_context_text") or "")
 
 
+def _clear_sheet_caches() -> None:
+    try:
+        _SHEET_MEMORY_CACHE["loaded_at"] = 0
+        _SHEET_MEMORY_CACHE["sys_kv"] = None
+        _SHEET_MEMORY_CACHE["memory_items"] = None
+        _SHEET_MEMORY_CACHE["memory_sheet_name"] = None
+        _SHEET_MEMORY_CACHE["memory_context_text"] = ""
+    except Exception:
+        pass
+    try:
+        _SHEET_KNOWLEDGE_CACHE["loaded_at"] = 0
+        _SHEET_KNOWLEDGE_CACHE["knowledge_items"] = None
+        _SHEET_KNOWLEDGE_CACHE["knowledge_sheet_name"] = None
+        _SHEET_KNOWLEDGE_CACHE["knowledge_context_text"] = ""
+    except Exception:
+        pass
+    try:
+        _SHEET_GEMS_CACHE["loaded_at"] = 0
+        _SHEET_GEMS_CACHE["gems"] = None
+        _SHEET_GEMS_CACHE["gem_ids"] = None
+        _SHEET_GEMS_CACHE["source"] = None
+    except Exception:
+        pass
+
+
 def _apply_cached_sheet_memory_to_ws(ws: WebSocket, cached: dict[str, Any]) -> None:
     try:
         ws.state.sys_kv = cached.get("sys_kv")
@@ -4069,6 +4094,10 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
         if handled:
             return True
 
+    handled = await _handle_reload_system(ws, text)
+    if handled:
+        return True
+
     handled = await _handle_memory_trigger(ws, text)
     if handled:
         return True
@@ -4092,6 +4121,65 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
         ws.state.active_agent_id = None
         ws.state.active_agent_until_ts = None
     return False
+
+
+async def _handle_reload_system(ws: WebSocket, text: str) -> bool:
+    s = " ".join(str(text or "").strip().split())
+    if not s:
+        return False
+    sl = s.lower()
+    if sl not in {"reload system", "reload", "reload sys", "reload sheets"}:
+        return False
+
+    lang = str(getattr(ws.state, "user_lang", "") or "").strip() or "en"
+    try:
+        await _ws_send_json(ws, {"type": "text", "text": "Reload System: start", "instance_id": INSTANCE_ID})
+    except Exception:
+        pass
+
+    try:
+        _clear_sheet_caches()
+    except Exception:
+        pass
+
+    try:
+        await _load_ws_sheet_memory(ws)
+        # Force gems reload too.
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        payload = await _load_sheet_gems(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+        try:
+            _set_cached_sheet_gems(payload)
+        except Exception:
+            pass
+    except Exception as e:
+        msg = f"Reload System failed: {str(e)}" if lang != "th" else f"Reload System ล้มเหลว: {str(e)}"
+        try:
+            await _ws_send_json(
+                ws,
+                {
+                    "type": "error",
+                    "kind": "reload_system_failed",
+                    "message": msg,
+                    "detail": str(e),
+                    "instance_id": INSTANCE_ID,
+                },
+            )
+        except Exception:
+            pass
+        return True
+
+    try:
+        mem_items = getattr(ws.state, "memory_items", None)
+        know_items = getattr(ws.state, "knowledge_items", None)
+        mem_n = len(mem_items) if isinstance(mem_items, list) else 0
+        know_n = len(know_items) if isinstance(know_items, list) else 0
+        out = f"Reload System: ok | memory={mem_n} knowledge={know_n}"
+        if lang == "th":
+            out = f"Reload System สำเร็จ | memory={mem_n} knowledge={know_n}"
+        await _ws_send_json(ws, {"type": "text", "text": out, "instance_id": INSTANCE_ID})
+    except Exception:
+        pass
+    return True
 
 
 def _parse_bool_cell(v: Any) -> bool:
