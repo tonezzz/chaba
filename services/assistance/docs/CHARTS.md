@@ -12,12 +12,12 @@ flowchart LR
   BE[Jarvis Backend]
   MCP[mcp-bundle :3050]
 
-  subgraph GSS[Google Sheets (Authoritative SSoT)]
-    SYS[sys\n(key/value/enabled/scope/priority)]
-    MEM[memory\n(key/value/enabled/scope/priority)]
-    KNOW[knowledge\n(key/value/enabled/scope/priority)]
-    NOTES[notes.0\n(id/date_time/subject/notes/status/time)]
-    GEMS[gems\n(id/name/purpose/persona/model/...) ]
+  subgraph GSS["Google Sheets (Authoritative SSoT)"]
+    SYS["sys\n(key/value/enabled/scope/priority)"]
+    MEM["memory\n(key/value/enabled/scope/priority)"]
+    KNOW["knowledge\n(key/value/enabled/scope/priority)"]
+    NOTES["notes.0\n(id/date_time/subject/notes/status/time)"]
+    GEMS["gems\n(id/name/purpose/persona/model/...)"]
   end
 
   subgraph BEState[Backend state (derived + cached)]
@@ -157,9 +157,9 @@ flowchart LR
 flowchart LR
   FE[Jarvis Frontend]
   BE[Jarvis Backend]
-  MCP[1MCP Gateway (mcp-bundle)]
+  MCP["1MCP Gateway (mcp-bundle)"]
   GT[mcp-google-tasks (stdio subprocess)]
-  TOK[(Token store: /root/.config/1mcp/google-tasks.tokens.json)]
+  TOK["(Token store: /root/.config/1mcp/google-tasks.tokens.json)"]
   GAPI[Google Tasks API]
 
   FE -->|WS text| BE
@@ -177,14 +177,14 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-  subgraph Inbound[Client -> Backend (/ws/live)]
+  subgraph Inbound["Client -> Backend (/ws/live)"]
     IN_TEXT["text: {text}"]
     IN_AUDIO["audio: {data,sampleRate}"]
     IN_CLOSE["close"]
     IN_SET_TRIP["set_active_trip"]
   end
 
-  subgraph Outbound[Backend -> Client (/ws/live)]
+  subgraph Outbound["Backend -> Client (/ws/live)"]
     OUT_STATE["state: connected"]
     OUT_ERR["error: gemini_* or other"]
     OUT_TR_IN["transcript (input)"]
@@ -202,7 +202,7 @@ flowchart TB
 flowchart LR
   U[User Browser]
   PUB[Public HTTPS Ingress]
-  FE[Jarvis Frontend (/jarvis/)]
+  FE["Jarvis Frontend (/jarvis/)"]
   BE[Jarvis Backend (:8018)]
 
   subgraph DockerNet[Docker network: idc1-stack-net]
