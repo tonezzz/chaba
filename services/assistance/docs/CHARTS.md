@@ -177,14 +177,14 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-  subgraph Inbound[Client -> Backend (/ws/live)]
+  subgraph Inbound[Client to Backend (/ws/live)]
     IN_TEXT["text: {text}"]
     IN_AUDIO["audio: {data,sampleRate}"]
     IN_CLOSE["close"]
     IN_SET_TRIP["set_active_trip"]
   end
 
-  subgraph Outbound[Backend -> Client (/ws/live)]
+  subgraph Outbound[Backend to Client (/ws/live)]
     OUT_STATE["state: connected"]
     OUT_ERR["error: gemini_* or other"]
     OUT_TR_IN["transcript (input)"]
