@@ -79,6 +79,12 @@ services:
       ONE_MCP_HOST: 0.0.0.0
       ONE_MCP_PORT: 3050
       ONE_MCP_EXTERNAL_URL: http://127.0.0.1:3051
+      GOOGLE_TASKS_TOKEN_PATH: ${GOOGLE_SHARED_TOKEN_PATH:-/root/.config/1mcp/google.tokens.json}
+      GOOGLE_SHEETS_TOKEN_PATH: ${GOOGLE_SHARED_TOKEN_PATH:-/root/.config/1mcp/google.tokens.json}
+      GOOGLE_CALENDAR_TOKEN_PATH: ${GOOGLE_SHARED_TOKEN_PATH:-/root/.config/1mcp/google.tokens.json}
+      GOOGLE_TASKS_SCOPES: ${GOOGLE_SHARED_SCOPES:-https://www.googleapis.com/auth/tasks,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/spreadsheets}
+      GOOGLE_SHEETS_SCOPES: ${GOOGLE_SHARED_SCOPES:-https://www.googleapis.com/auth/tasks,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/spreadsheets}
+      GOOGLE_CALENDAR_SCOPES: ${GOOGLE_SHARED_SCOPES:-https://www.googleapis.com/auth/tasks,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/spreadsheets}
     command:
       - sh
       - -lc
@@ -1908,6 +1914,7 @@ services:
 
         cat > /app/mcp-config/mcp.json <<'EOF'
         {
+          "$schema": "https://docs.1mcp.app/schemas/v1.0.0/mcp-config.json",
           "mcpServers": {
             "fetch": {
               "command": "/opt/venv/bin/python",
@@ -1964,6 +1971,9 @@ services:
           }
         }
         EOF
+
+        mkdir -p /root/.config/1mcp
+        ln -sf /app/mcp-config/mcp.json /root/.config/1mcp/mcp.json
 
         exec node index.js
 
