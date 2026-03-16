@@ -338,6 +338,79 @@ async def _load_sheet_gems(*, sys_kv: Optional[dict[str, Any]] = None) -> dict[s
     }
 
 
+async def _sheet_gems_find_row(*, spreadsheet_id: str, sheet_name: str, gem_id: str) -> tuple[list[Any], int, dict[str, int]]:
+    rows = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_name, max_rows=600, max_cols="Q")
+    if not rows or not isinstance(rows[0], list):
+        raise RuntimeError("gems_sheet_missing_header")
+    header = rows[0]
+    idx = _idx_from_header(header)
+    gid_key = "id" if "id" in idx else ("gem_id" if "gem_id" in idx else "")
+    if not gid_key:
+        raise RuntimeError("gems_sheet_missing_id_column")
+    for i, raw in enumerate(rows[1:], start=2):
+        if not isinstance(raw, list):
+            continue
+        rid = _normalize_gem_id(_get_cell(raw, idx, gid_key, default=""))
+        if rid and rid == gem_id:
+            return header, i, idx
+    return header, 0, idx
+
+
+def _sheet_gems_build_row(*, header: list[Any], idx: dict[str, int], gem: dict[str, Any]) -> list[Any]:
+    # Build a row aligned to header length.
+    n = len(header)
+    out: list[Any] = [""] * n
+
+    def set_col(key: str, value: Any) -> None:
+        if key not in idx:
+            return
+        j = int(idx[key])
+        if 0 <= j < n:
+            out[j] = "" if value is None else value
+
+    gid = _normalize_gem_id(gem.get("id") or gem.get("gem_id"))
+    set_col("id", gid)
+    set_col("gem_id", gid)
+    set_col("name", str(gem.get("name") or "").strip())
+    set_col("purpose", str(gem.get("purpose") or "").strip())
+    set_col("system_instruction", str(gem.get("system_instruction") or "").strip())
+    set_col("user_instruction", str(gem.get("user_instruction") or "").strip())
+    set_col("output_format", str(gem.get("output_format") or "").strip())
+    set_col("tools_policy", str(gem.get("tools_policy") or "").strip())
+    return out
+
+
+async def _sheet_gems_append(*, spreadsheet_id: str, sheet_name: str, row: list[Any]) -> dict[str, Any]:
+    tool = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+    res = await _mcp_tools_call(
+        tool,
+        {
+            "spreadsheet_id": spreadsheet_id,
+            "range": f"{sheet_name}!A:Q",
+            "values": [row],
+            "value_input_option": "RAW",
+        },
+    )
+    parsed = _mcp_text_json(res)
+    return parsed if isinstance(parsed, dict) else {"raw": parsed}
+
+
+async def _sheet_gems_update_row(*, spreadsheet_id: str, sheet_name: str, row_number: int, row: list[Any]) -> dict[str, Any]:
+    tool = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+    rng = f"{sheet_name}!A{int(row_number)}:Q{int(row_number)}"
+    res = await _mcp_tools_call(
+        tool,
+        {
+            "spreadsheet_id": spreadsheet_id,
+            "range": rng,
+            "values": [row],
+            "value_input_option": "RAW",
+        },
+    )
+    parsed = _mcp_text_json(res)
+    return parsed if isinstance(parsed, dict) else {"raw": parsed}
+
+
 async def _refresh_sheet_gems_background(ws: WebSocket, lang: str) -> None:
     global _SHEET_GEMS_REFRESHING, _SHEET_GEMS_LAST_REFRESH_AT
     now = int(time.time())
@@ -4450,6 +4523,85 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             return True
 
         await _ws_send_json(ws, {"type": "error", "kind": "invalid_reminders_action", "message": f"invalid_reminders_action: {action}", "instance_id": INSTANCE_ID}, trace_id=tid)
+        return True
+
+    if msg_type == "gems":
+        action = str(msg.get("action") or "").strip().lower()
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        ss_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
+        sh_name = "gems"
+        if isinstance(sys_kv, dict) and sys_kv:
+            ss_id = str(sys_kv.get("gems_ss") or ss_id).strip()
+            sh_name = str(sys_kv.get("gems_sh") or sh_name).strip() or "gems"
+        if not ss_id:
+            await _ws_send_json(ws, {"type": "error", "kind": "gems_missing_spreadsheet", "message": "gems_missing_spreadsheet", "instance_id": INSTANCE_ID}, trace_id=tid)
+            return True
+
+        if action in {"list", "ls"}:
+            payload = await _load_sheet_gems(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+            try:
+                _set_cached_sheet_gems(payload)
+            except Exception:
+                pass
+            gems = payload.get("gems") if isinstance(payload, dict) else None
+            out = []
+            if isinstance(gems, dict):
+                for gid in sorted(gems.keys()):
+                    g = gems.get(gid)
+                    if isinstance(g, dict):
+                        out.append({"id": g.get("id"), "name": g.get("name"), "purpose": g.get("purpose")})
+            await _ws_send_json(ws, {"type": "gems_list", "items": out, "source": payload.get("source") if isinstance(payload, dict) else None, "instance_id": INSTANCE_ID}, trace_id=tid)
+            await _ws_voice_job_done(ws, tid)
+            return True
+
+        if action in {"add", "create", "update", "upsert"}:
+            gem = msg.get("gem") if isinstance(msg.get("gem"), dict) else None
+            if not isinstance(gem, dict):
+                await _ws_send_json(ws, {"type": "error", "kind": "gems_missing_gem", "message": "gems_missing_gem", "instance_id": INSTANCE_ID}, trace_id=tid)
+                return True
+            gem_id = _normalize_gem_id(gem.get("id") or gem.get("gem_id"))
+            if not gem_id:
+                await _ws_send_json(ws, {"type": "error", "kind": "gems_missing_id", "message": "gems_missing_id", "instance_id": INSTANCE_ID}, trace_id=tid)
+                return True
+
+            header, row_num, idx = await _sheet_gems_find_row(spreadsheet_id=ss_id, sheet_name=sh_name, gem_id=gem_id)
+            row = _sheet_gems_build_row(header=header, idx=idx, gem={**gem, "id": gem_id})
+            if row_num <= 0:
+                res = await _sheet_gems_append(spreadsheet_id=ss_id, sheet_name=sh_name, row=row)
+                op = "added"
+            else:
+                res = await _sheet_gems_update_row(spreadsheet_id=ss_id, sheet_name=sh_name, row_number=row_num, row=row)
+                op = "updated"
+            payload = await _load_sheet_gems(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+            try:
+                _set_cached_sheet_gems(payload)
+            except Exception:
+                pass
+            await _ws_send_json(ws, {"type": "gems_upserted", "op": op, "gem_id": gem_id, "result": res, "instance_id": INSTANCE_ID}, trace_id=tid)
+            await _ws_voice_job_done(ws, tid)
+            return True
+
+        if action in {"remove", "delete"}:
+            gem_id = _normalize_gem_id(msg.get("id") or msg.get("gem_id"))
+            if not gem_id:
+                await _ws_send_json(ws, {"type": "error", "kind": "gems_missing_id", "message": "gems_missing_id", "instance_id": INSTANCE_ID}, trace_id=tid)
+                return True
+            header, row_num, idx = await _sheet_gems_find_row(spreadsheet_id=ss_id, sheet_name=sh_name, gem_id=gem_id)
+            if row_num <= 0:
+                await _ws_send_json(ws, {"type": "error", "kind": "gem_not_found", "message": "gem_not_found", "gem_id": gem_id, "instance_id": INSTANCE_ID}, trace_id=tid)
+                return True
+            empty = [""] * len(header)
+            res = await _sheet_gems_update_row(spreadsheet_id=ss_id, sheet_name=sh_name, row_number=row_num, row=empty)
+            payload = await _load_sheet_gems(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+            try:
+                _set_cached_sheet_gems(payload)
+            except Exception:
+                pass
+            await _ws_send_json(ws, {"type": "gems_removed", "gem_id": gem_id, "result": res, "instance_id": INSTANCE_ID}, trace_id=tid)
+            await _ws_voice_job_done(ws, tid)
+            return True
+
+        await _ws_send_json(ws, {"type": "error", "kind": "invalid_gems_action", "message": f"invalid_gems_action: {action}", "instance_id": INSTANCE_ID}, trace_id=tid)
         return True
 
     return False

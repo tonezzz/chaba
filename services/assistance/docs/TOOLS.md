@@ -126,6 +126,24 @@ Notes:
 - Voice mapping is debounced to avoid repeated triggers from STT.
 - If the frontend does not match a phrase, it sends a normal `type=text` message to Gemini Live.
 
+### Mapping: gems.*
+
+The frontend supports a lightweight smart mapping for **listing** gems/models. For add/update/remove it supports a JSON-based command form.
+
+Examples (typed/voice phrases):
+
+| User phrase | WS message |
+|---|---|
+| `gems` / `gems list` / `list gems` | `{"type":"gems","action":"list"}` |
+| `models list` | `{"type":"gems","action":"list"}` |
+
+Examples (typed JSON commands):
+
+| User phrase | WS message |
+|---|---|
+| `gems upsert: {"id":"triage","name":"Triage","purpose":"fast"}` | `{"type":"gems","action":"upsert","gem":{...}}` |
+| `gems remove: triage` | `{"type":"gems","action":"remove","gem_id":"triage"}` |
+
 ### System tool: reload
 
 Request schema:
@@ -181,6 +199,20 @@ Request schema (selected):
 Notes:
 
 - Frontend can do **smart mapping** (typed/voice) for phrases like `remind me ...`, `set a reminder ...`, `เตือน...`, `อย่าลืม...` -> `reminders.add`.
+
+### Gems tools
+
+Request schema (selected):
+
+| Action | Request | Result |
+|---|---|---|
+| list | `{"type":"gems","action":"list"}` | `gems_list` with `items` |
+| upsert | `{"type":"gems","action":"upsert","gem":{...}}` | `gems_upserted` (`op=added|updated`) |
+| remove | `{"type":"gems","action":"remove","gem_id":"..."}` | `gems_removed` |
+
+Notes:
+
+- Backed by the `gems` sheet (`SYS.gems_ss` / `SYS.gems_sh`), and refreshes the in-memory gems cache after mutations.
 
 ## Chart: Speech-to-text (STT)
 

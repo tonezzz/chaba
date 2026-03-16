@@ -91,6 +91,27 @@ export class LiveService {
 		}
 	}
 
+	public sendGemsList() {
+		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			this.wsSend({ type: "gems", action: "list", trace_id: this.createTraceId("gems_ls") });
+		}
+	}
+
+	public sendGemsUpsert(gem: any) {
+		if (!gem || typeof gem !== "object") return;
+		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			this.wsSend({ type: "gems", action: "upsert", gem, trace_id: this.createTraceId("gems_upsert") });
+		}
+	}
+
+	public sendGemsRemove(id: string) {
+		const gem_id = String(id || "").trim();
+		if (!gem_id) return;
+		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			this.wsSend({ type: "gems", action: "remove", gem_id, id: gem_id, trace_id: this.createTraceId("gems_rm") });
+		}
+	}
+
 	private shouldAutoTriggerVoiceCommand(key: string, debounceMs: number): boolean {
 		const now = Date.now();
 		const prev = this.lastVoiceCommandTs[key] || 0;
@@ -123,6 +144,29 @@ export class LiveService {
 			if (hasReloadWord && hasTargetWord) return true;
 		}
 		return false;
+	}
+
+	private extractGemsRemoveId(text: string): string | null {
+		const raw = String(text || "").trim();
+		if (!raw) return null;
+		const m = raw.match(/^gems\s+(?:remove|delete)\s*[:\-]?\s*(.+)$/i);
+		if (m && String(m[1] || "").trim()) return String(m[1]).trim();
+		const m2 = raw.match(/^ลบ\s*(?:เจม|โมเดล)\s*[:\-]?\s*(.+)$/);
+		if (m2 && String(m2[1] || "").trim()) return String(m2[1]).trim();
+		return null;
+	}
+
+	private extractGemsUpsertJson(text: string): any | null {
+		const raw = String(text || "").trim();
+		if (!raw) return null;
+		const m = raw.match(/^gems\s+(?:add|create|update|upsert)\s*[:\-]?\s*(\{[\s\S]+\})\s*$/i);
+		if (!m) return null;
+		try {
+			const obj = JSON.parse(String(m[1] || ""));
+			return obj && typeof obj === "object" ? obj : null;
+		} catch {
+			return null;
+		}
 	}
 
 	private extractSystemReloadMode(text: string): "full" | "memory" | "knowledge" | "sys" | "gems" | null {
@@ -182,6 +226,22 @@ export class LiveService {
 		}
 
 		return null;
+	}
+
+	private isGemsListPhrase(text: string): boolean {
+		const s = String(text || "").trim().toLowerCase();
+		if (!s) return false;
+		const compact = s.replace(/[^a-z0-9\u0E00-\u0E7F]+/g, " ").trim().replace(/\s+/g, " ");
+		if (!compact) return false;
+		if (compact === "gems" || compact === "list gems" || compact === "gems list") return true;
+		if (compact === "models" || compact === "list models" || compact === "models list") return true;
+		if (compact.includes("list gems") || compact.includes("gems list")) return true;
+		if (compact.includes("list models") || compact.includes("models list")) return true;
+		// Thai
+		if (compact.includes("ลิส") || compact.includes("รายการ") || compact.includes("ดู")) {
+			if (compact.includes("เจม") || compact.includes("โมเดล") || compact.includes("รุ่น")) return true;
+		}
+		return false;
 	}
 
 	private getOrCreateSessionId(): string {
@@ -662,6 +722,44 @@ export class LiveService {
       return;
     }
 
+    if (message?.type === "gems_list") {
+      const items = Array.isArray((message as any)?.items) ? ((message as any).items as any[]) : [];
+      const lines: string[] = ["gems_list"];
+      if (!items.length) {
+        lines.push("(no results)");
+      } else {
+        for (const g of items.slice(0, 50)) {
+          const id = g?.id != null ? String(g.id) : "";
+          const name = g?.name != null ? String(g.name) : "";
+          const purpose = g?.purpose != null ? String(g.purpose) : "";
+          lines.push(`- ${id}${name ? ` — ${name}` : ""}${purpose ? ` (${purpose})` : ""}`);
+        }
+      }
+      this.onMessage({
+        id: `${Date.now()}_gems_list`,
+        role: "model",
+        text: lines.join("\n"),
+        timestamp: new Date(),
+        metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "info", category: "ws" },
+      });
+      return;
+    }
+
+    if (typeof message?.type === "string" && message.type.startsWith("gems_")) {
+      const t = String(message.type);
+      const gemId = (message as any)?.gem_id != null ? String((message as any).gem_id) : "";
+      const op = (message as any)?.op != null ? String((message as any).op) : "";
+      const line = `${t}${gemId ? ` [${gemId}]` : ""}${op ? ` op=${op}` : ""}`;
+      this.onMessage({
+        id: `${Date.now()}_${t}`,
+        role: "model",
+        text: line,
+        timestamp: new Date(),
+        metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "info", category: "ws" },
+      });
+      return;
+    }
+
     if (message?.type === "reminder_helper_list") {
       const status = message?.status != null ? String(message.status) : "";
       const includeHidden = message?.include_hidden === true;
@@ -782,6 +880,17 @@ export class LiveService {
 			const remText = this.extractReminderAddText(trText);
 			if (remText && this.shouldAutoTriggerVoiceCommand("reminders_add", 10_000)) {
 				this.wsSend({ type: "reminders", action: "add", text: remText, trace_id: this.createTraceId("voice_rem_add") });
+			}
+			if (this.isGemsListPhrase(trText) && this.shouldAutoTriggerVoiceCommand("gems_list", 10_000)) {
+				this.wsSend({ type: "gems", action: "list", trace_id: this.createTraceId("voice_gems_ls") });
+			}
+			const gemRemoveId = this.extractGemsRemoveId(trText);
+			if (gemRemoveId && this.shouldAutoTriggerVoiceCommand("gems_remove", 10_000)) {
+				this.wsSend({ type: "gems", action: "remove", gem_id: gemRemoveId, id: gemRemoveId, trace_id: this.createTraceId("voice_gems_rm") });
+			}
+			const gemUpsert = this.extractGemsUpsertJson(trText);
+			if (gemUpsert && this.shouldAutoTriggerVoiceCommand("gems_upsert", 10_000)) {
+				this.wsSend({ type: "gems", action: "upsert", gem: gemUpsert, trace_id: this.createTraceId("voice_gems_upsert") });
 			}
       }
       this.onMessage({
