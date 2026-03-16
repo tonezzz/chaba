@@ -390,6 +390,38 @@ export default function App() {
     if (state !== ConnectionState.CONNECTED) return;
     const base = composerText.trim();
 
+    const extractReminderAddText = (text: string): string | null => {
+      const raw = String(text || "").trim();
+      if (!raw) return null;
+
+      const eng = [
+        /^remind\s+me\s+to\s+(.+)$/i,
+        /^remind\s+me\s+(.+)$/i,
+        /^set\s+(?:a\s+)?reminder\s*[:\-]?\s*(.+)$/i,
+        /^create\s+(?:a\s+)?reminder\s*[:\-]?\s*(.+)$/i,
+        /^reminder\s+add\s*[:\-]?\s*(.+)$/i,
+      ];
+      for (const re of eng) {
+        const m = raw.match(re);
+        if (m && String(m[1] || "").trim()) return String(m[1]).trim();
+      }
+
+      const thai = [
+        /^เตือนฉัน\s*(?:ว่า|ให้)?\s*(.+)$/,
+        /^ช่วยเตือน(?:ฉัน)?\s*(?:ว่า|ให้)?\s*(.+)$/,
+        /^ตั้ง(?:การ)?แจ้งเตือน\s*[:\-]?\s*(.+)$/,
+        /^ตั้งเตือน\s*[:\-]?\s*(.+)$/,
+        /^อย่าลืม\s*(.+)$/,
+        /^เตือน\s*[:\-]?\s*(.+)$/,
+      ];
+      for (const re of thai) {
+        const m = raw.match(re);
+        if (m && String(m[1] || "").trim()) return String(m[1]).trim();
+      }
+
+      return null;
+    };
+
     const isReloadSystemPhrase = (text: string): boolean => {
       const s = String(text || "").trim().toLowerCase();
       if (!s) return false;
@@ -410,6 +442,14 @@ export default function App() {
 
     if (base && isReloadSystemPhrase(base)) {
       liveService.current?.sendSystemReload("full");
+      setComposerText("");
+      setAttachments([]);
+      return;
+    }
+
+    const reminderText = base ? extractReminderAddText(base) : null;
+    if (reminderText) {
+      liveService.current?.sendRemindersAdd(reminderText);
       setComposerText("");
       setAttachments([]);
       return;

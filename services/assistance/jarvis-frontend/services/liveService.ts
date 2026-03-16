@@ -83,6 +83,14 @@ export class LiveService {
 		}
 	}
 
+	public sendRemindersAdd(text: string) {
+		const body = String(text || "").trim();
+		if (!body) return;
+		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			this.wsSend({ type: "reminders", action: "add", text: body, trace_id: this.createTraceId("rem_add") });
+		}
+	}
+
 	private shouldAutoTriggerVoiceCommand(key: string, debounceMs: number): boolean {
 		const now = Date.now();
 		const prev = this.lastVoiceCommandTs[key] || 0;
@@ -96,32 +104,10 @@ export class LiveService {
 		if (!s) return false;
 		const compact = s.replace(/[^a-z0-9\u0E00-\u0E7F]+/g, " ").trim().replace(/\s+/g, " ");
 		if (!compact) return false;
-		const parts = compact.split(" ").filter(Boolean);
-		const words = new Set(parts);
-		const hasAction =
-			words.has("reload") ||
-			words.has("reset") ||
-			words.has("restart") ||
-			words.has("reboot") ||
-			compact.includes("reload");
-		const hasTarget =
-			words.has("system") ||
-			words.has("sys") ||
-			words.has("sheets") ||
-			words.has("sheet") ||
-			compact.includes("system") ||
-			compact.includes("sheets");
-		if (hasAction && hasTarget) return true;
+		if (compact.includes("reload system") || compact.includes("reload sheets")) return true;
 		if (
-			compact.includes("reload system") ||
-			compact.includes("reload sheets") ||
-			compact.includes("reset system") ||
-			compact.includes("restart system") ||
-			compact.includes("reboot system") ||
-			compact === "reload" ||
-			compact === "reload sys" ||
-			compact === "reset" ||
-			compact === "restart" ||
+			((compact.includes("reload") || compact.includes("reset") || compact.includes("restart") || compact.includes("reboot")) &&
+				(compact.includes("system") || compact.includes("sheets") || compact.includes("sheet") || compact.includes("sys"))) ||
 			compact.startsWith("reload system") ||
 			compact.startsWith("reload sheets") ||
 			compact.startsWith("reset system") ||
@@ -137,6 +123,49 @@ export class LiveService {
 			if (hasReloadWord && hasTargetWord) return true;
 		}
 		return false;
+	}
+
+	private extractReminderAddText(text: string): string | null {
+		const raw = String(text || "").trim();
+		if (!raw) return null;
+		const low = raw.toLowerCase();
+
+		// English patterns
+		const eng = [
+			/^remind\s+me\s+to\s+(.+)$/i,
+			/^remind\s+me\s+(.+)$/i,
+			/^set\s+(?:a\s+)?reminder\s*[:\-]?\s*(.+)$/i,
+			/^create\s+(?:a\s+)?reminder\s*[:\-]?\s*(.+)$/i,
+			/^reminder\s+add\s*[:\-]?\s*(.+)$/i,
+		];
+		for (const re of eng) {
+			const m = raw.match(re);
+			if (m && String(m[1] || "").trim()) return String(m[1]).trim();
+		}
+
+		// Thai patterns (keep permissive)
+		const thai = [
+			/^เตือนฉัน\s*(?:ว่า|ให้)?\s*(.+)$/,
+			/^ช่วยเตือน(?:ฉัน)?\s*(?:ว่า|ให้)?\s*(.+)$/,
+			/^ตั้ง(?:การ)?แจ้งเตือน\s*[:\-]?\s*(.+)$/,
+			/^ตั้งเตือน\s*[:\-]?\s*(.+)$/,
+			/^อย่าลืม\s*(.+)$/,
+			/^เตือน\s*[:\-]?\s*(.+)$/,
+		];
+		for (const re of thai) {
+			const m = raw.match(re);
+			if (m && String(m[1] || "").trim()) return String(m[1]).trim();
+		}
+
+		// Extra: if the user explicitly says "reminder" and has content after it.
+		if (low.startsWith("reminder ")) {
+			const tail = raw.slice("reminder".length).trim();
+			if (tail && !tail.toLowerCase().startsWith("list") && !tail.toLowerCase().startsWith("done") && !tail.toLowerCase().startsWith("delete")) {
+				return tail;
+			}
+		}
+
+		return null;
 	}
 
 	private getOrCreateSessionId(): string {
@@ -732,6 +761,10 @@ export class LiveService {
 			const trText = String(message.text);
 			if (this.isReloadSystemPhrase(trText) && this.shouldAutoTriggerVoiceCommand("reload_system", 10_000)) {
 				this.wsSend({ type: "system", action: "reload", mode: "full", trace_id: this.createTraceId("voice_reload") });
+			}
+			const remText = this.extractReminderAddText(trText);
+			if (remText && this.shouldAutoTriggerVoiceCommand("reminders_add", 10_000)) {
+				this.wsSend({ type: "reminders", action: "add", text: remText, trace_id: this.createTraceId("voice_rem_add") });
 			}
       }
       this.onMessage({
