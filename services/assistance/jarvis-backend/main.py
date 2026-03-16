@@ -4169,7 +4169,7 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             if not body:
                 await _ws_send_json(ws, {"type": "error", "kind": "notes_missing_text", "message": "notes_missing_text", "instance_id": INSTANCE_ID}, trace_id=trace_id)
                 return True
-            await _handle_note_trigger(ws, f"make a note: {body}")
+            await _handle_note_trigger(ws, f"make a note: {body}", speak=False)
             return True
         await _ws_send_json(ws, {"type": "error", "kind": "invalid_notes_action", "message": f"invalid_notes_action: {action}", "instance_id": INSTANCE_ID}, trace_id=trace_id)
         return True
@@ -4177,7 +4177,7 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
     return False
 
 
-async def _handle_note_trigger(ws: WebSocket, text: str) -> bool:
+async def _handle_note_trigger(ws: WebSocket, text: str, *, speak: bool = True) -> bool:
     note_text = _extract_note_text(text)
     if not note_text:
         if _is_note_trigger(text):
@@ -4186,10 +4186,11 @@ async def _handle_note_trigger(ws: WebSocket, text: str) -> bool:
             ws.state.active_agent_id = "note"
             ws.state.active_agent_until_ts = int(time.time()) + AGENT_CONTINUE_WINDOW_SECONDS
             await _ws_send_json(ws, {"type": "note_prompt", "message": "note_missing_text", "instance_id": INSTANCE_ID})
-            try:
-                await _live_say(ws, "จะให้จดอะไร?" if _text_is_thai(text) else "What should I write in the note?")
-            except Exception:
-                pass
+            if speak:
+                try:
+                    await _live_say(ws, "จะให้จดอะไร?" if _text_is_thai(text) else "What should I write in the note?")
+                except Exception:
+                    pass
             return True
         return False
 
@@ -4301,10 +4302,11 @@ async def _handle_note_trigger(ws: WebSocket, text: str) -> bool:
             "instance_id": INSTANCE_ID,
         },
     )
-    try:
-        await _live_say(ws, "บันทึกแล้ว" if _text_is_thai(text) else "Saved a note.")
-    except Exception:
-        pass
+    if speak:
+        try:
+            await _live_say(ws, "บันทึกแล้ว" if _text_is_thai(text) else "Saved a note.")
+        except Exception:
+            pass
     return True
 
 
