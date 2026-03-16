@@ -49,6 +49,8 @@ export default function App() {
     }>
   >([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const logScrollRef = useRef<HTMLDivElement | null>(null);
+  const logStickToBottomRef = useRef<boolean>(true);
 
   const systemCounts = useMemo(() => {
     const out = { memory: 0, knowledge: 0, ok: false };
@@ -278,6 +280,17 @@ export default function App() {
       liveService.current?.disconnect();
     };
   }, [hasKey]);
+
+  useEffect(() => {
+    const el = logScrollRef.current;
+    if (!el) return;
+    if (!logStickToBottomRef.current) return;
+    try {
+      el.scrollTop = el.scrollHeight;
+    } catch {
+      // ignore
+    }
+  }, [messages, showDebugLogs]);
 
   useEffect(() => {
     if (state !== ConnectionState.CONNECTED && isTalking) {
@@ -879,7 +892,15 @@ export default function App() {
           </div>
 
           {/* Activity Log */}
-          <div className="flex-1 overflow-y-auto pr-2 space-y-3 mask-image-b pb-40 md:pb-0">
+          <div
+            ref={logScrollRef}
+            className="flex-1 overflow-y-auto pr-2 space-y-3 mask-image-b pb-40 md:pb-0"
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              const remaining = el.scrollHeight - el.scrollTop - el.clientHeight;
+              logStickToBottomRef.current = remaining < 40;
+            }}
+          >
              <div className="text-xs font-mono text-slate-500 uppercase tracking-widest sticky top-0 bg-slate-900/90 py-1 mb-2 flex items-center justify-between">
                <span>Operation Log</span>
               <div className="flex items-center gap-2">
@@ -1276,6 +1297,13 @@ export default function App() {
                          </ul>
                       </div>
                     )}
+
+						{!activeMedia.metadata?.image && !activeMedia.metadata?.sources && (
+							<div className="w-full max-w-3xl bg-slate-950/40 rounded-lg border border-slate-700 p-4 overflow-auto">
+								<div className="text-[10px] text-slate-500 font-mono uppercase tracking-widest mb-2">Text</div>
+								<div className="text-slate-100 font-mono text-sm whitespace-pre-wrap leading-relaxed">{String(activeMedia.text || "")}</div>
+							</div>
+						)}
                  </div>
                )}
             </div>

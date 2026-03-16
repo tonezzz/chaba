@@ -141,10 +141,21 @@ export class LiveService {
 		const now = Date.now();
 		if (!force && this.voiceCmdCfg && now - this.voiceCmdCfgLoadedAt < 60_000) return;
 		const isJarvisSubpath = location.pathname.startsWith("/jarvis");
-		const url = isJarvisSubpath ? "/jarvis/config/voice_commands" : "/config/voice_commands";
 		try {
-			const res = await fetch(url, { method: "GET" });
-			const j = await res.json();
+			const candidates = isJarvisSubpath
+				? ["/jarvis/api/config/voice_commands", "/jarvis/config/voice_commands", "/config/voice_commands"]
+				: ["/config/voice_commands", "/jarvis/api/config/voice_commands", "/jarvis/config/voice_commands"];
+			let j: any = null;
+			for (const u of candidates) {
+				try {
+					const res = await fetch(u, { method: "GET" });
+					if (!res.ok) continue;
+					j = await res.json();
+					break;
+				} catch {
+					// try next
+				}
+			}
 			this.voiceCmdCfg = this.mergeVoiceCmdCfg(j && j.config);
 			this.voiceCmdCfgLoadedAt = now;
 		} catch {
