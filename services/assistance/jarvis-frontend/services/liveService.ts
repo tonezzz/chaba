@@ -558,6 +558,65 @@ export class LiveService {
       return;
     }
 
+    if (message?.type === "planning_item_created") {
+      const kind = message?.kind != null ? String(message.kind) : "";
+      const title = message?.title != null ? String(message.title) : "";
+      const ok = (message as any)?.result?.ok === true;
+      const localTime = (message as any)?.result?.local_time != null ? String((message as any).result.local_time) : "";
+      const line = `planning_item_created: ${kind || "item"}${title ? ` — ${title}` : ""}${ok ? " (ok)" : ""}${localTime ? ` @ ${localTime}` : ""}`;
+      this.onMessage({
+        id: `${Date.now()}_planning_item_created`,
+        role: "model",
+        text: line,
+        timestamp: new Date(),
+        metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: ok ? "info" : "warn", category: "reminder" },
+      });
+      return;
+    }
+
+    if (message?.type === "reminders_list") {
+      const status = message?.status != null ? String(message.status) : "";
+      const day = message?.day != null ? String(message.day) : "";
+      const items = Array.isArray((message as any)?.items) ? ((message as any).items as any[]) : [];
+      const header = `reminders_list${day ? ` (${day})` : ""}${status ? ` status=${status}` : ""}`;
+      const lines: string[] = [header];
+      if (!items.length) {
+        lines.push("(no results)");
+      } else {
+        for (const r of items.slice(0, 50)) {
+          const rid = r?.reminder_id != null ? String(r.reminder_id) : "";
+          const title = r?.title != null ? String(r.title) : "Reminder";
+          const st = r?.status != null ? String(r.status) : "";
+          const t = r?.notify_at != null ? ` notify_at=${String(r.notify_at)}` : r?.due_at != null ? ` due_at=${String(r.due_at)}` : "";
+          lines.push(`- ${title}${rid ? ` [${rid}]` : ""}${st ? ` (${st})` : ""}${t}`);
+        }
+      }
+      this.onMessage({
+        id: `${Date.now()}_reminders_list`,
+        role: "model",
+        text: lines.join("\n"),
+        timestamp: new Date(),
+        metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "info", category: "reminder" },
+      });
+      return;
+    }
+
+    if (typeof message?.type === "string" && message.type.startsWith("reminders_")) {
+      const t = String(message.type);
+      const rid = (message as any)?.reminder_id != null ? String((message as any).reminder_id) : "";
+      const changed = (message as any)?.changed;
+      const extra = typeof changed === "boolean" ? ` changed=${changed}` : "";
+      const line = `${t}${rid ? ` [${rid}]` : ""}${extra}`;
+      this.onMessage({
+        id: `${Date.now()}_${t}`,
+        role: "model",
+        text: line,
+        timestamp: new Date(),
+        metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "info", category: "reminder" },
+      });
+      return;
+    }
+
     if (message?.type === "reminder_helper_list") {
       const status = message?.status != null ? String(message.status) : "";
       const includeHidden = message?.include_hidden === true;
