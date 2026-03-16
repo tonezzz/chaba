@@ -4728,9 +4728,38 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             await _ws_send_json(ws, {"type": "progress", "phase": "start", "text": f"gems.analyze: {gem_id}", "instance_id": INSTANCE_ID}, trace_id=tid)
             suggestion, err = await _gems_analyze_suggest_update(ws=ws, gem=src, criteria=criteria)
             if not isinstance(suggestion, dict) or err:
+                err_s = str(err or "unknown")
+                if ("RESOURCE_EXHAUSTED" in err_s) or ("429" in err_s and "quota" in err_s.lower()):
+                    retry_after_seconds = None
+                    try:
+                        # Typical error string contains: "Please retry in 46.910851409s."
+                        m = re.search(r"retry in\s+([0-9.]+)s", err_s, flags=re.IGNORECASE)
+                        if m:
+                            retry_after_seconds = float(m.group(1))
+                        else:
+                            # Some SDKs include retryDelay: '46s'
+                            m2 = re.search(r"retryDelay'\s*:\s*'([0-9.]+)s'", err_s, flags=re.IGNORECASE)
+                            if m2:
+                                retry_after_seconds = float(m2.group(1))
+                    except Exception:
+                        retry_after_seconds = None
+                    await _ws_send_json(
+                        ws,
+                        {
+                            "type": "error",
+                            "kind": "gems_rate_limited",
+                            "message": "gems_rate_limited",
+                            "detail": err_s,
+                            "retry_after_seconds": retry_after_seconds,
+                            "gem_id": gem_id,
+                            "instance_id": INSTANCE_ID,
+                        },
+                        trace_id=tid,
+                    )
+                    return True
                 await _ws_send_json(
                     ws,
-                    {"type": "error", "kind": "gems_analyze_failed", "message": "gems_analyze_failed", "detail": err or "unknown", "gem_id": gem_id, "instance_id": INSTANCE_ID},
+                    {"type": "error", "kind": "gems_analyze_failed", "message": "gems_analyze_failed", "detail": err_s, "gem_id": gem_id, "instance_id": INSTANCE_ID},
                     trace_id=tid,
                 )
                 return True
