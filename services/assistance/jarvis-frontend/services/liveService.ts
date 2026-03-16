@@ -71,6 +71,35 @@ export class LiveService {
 		}
 	}
 
+	private extractGemsAnalyze(text: string): { gem_id: string; criteria: string } | null {
+		const raw = String(text || "").trim();
+		if (!raw) return null;
+		const m = raw.match(/^gems\s+analy[sz]e\s+([^:]+?)(?:\s*[:\-]\s*(.+))?$/i);
+		if (m && String(m[1] || "").trim()) {
+			return { gem_id: String(m[1]).trim(), criteria: String(m[2] || "").trim() };
+		}
+		const m2 = raw.match(/^วิเคราะห์\s*(?:เจม|โมเดล)\s+([^:]+?)(?:\s*[:\-]\s*(.+))?$/);
+		if (m2 && String(m2[1] || "").trim()) {
+			return { gem_id: String(m2[1]).trim(), criteria: String(m2[2] || "").trim() };
+		}
+		return null;
+	}
+
+	private extractGemsDraftAction(text: string): { action: "apply" | "discard"; draft_id: string } | null {
+		const raw = String(text || "").trim();
+		if (!raw) return null;
+		const m = raw.match(/^gems\s+draft\s+(apply|discard)\s*[:\-]?\s*(\w+)$/i);
+		if (m && String(m[2] || "").trim()) {
+			const a = String(m[1]).toLowerCase() === "apply" ? "apply" : "discard";
+			return { action: a as any, draft_id: String(m[2]).trim() };
+		}
+		const m2 = raw.match(/^ยืนยัน\s*ดราฟท์\s*[:\-]?\s*(\w+)$/);
+		if (m2 && String(m2[1] || "").trim()) return { action: "apply", draft_id: String(m2[1]).trim() };
+		const m3 = raw.match(/^ยกเลิก\s*ดราฟท์\s*[:\-]?\s*(\w+)$/);
+		if (m3 && String(m3[1] || "").trim()) return { action: "discard", draft_id: String(m3[1]).trim() };
+		return null;
+	}
+
 	private wsSend(payload: any) {
 		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
 			this.ws.send(JSON.stringify(payload));
@@ -109,6 +138,31 @@ export class LiveService {
 		if (!gem_id) return;
 		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
 			this.wsSend({ type: "gems", action: "remove", gem_id, id: gem_id, trace_id: this.createTraceId("gems_rm") });
+		}
+	}
+
+	public sendGemsAnalyze(gemId: string, criteria?: string) {
+		const gem_id = String(gemId || "").trim();
+		const crit = String(criteria || "").trim();
+		if (!gem_id) return;
+		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			this.wsSend({ type: "gems", action: "analyze", gem_id, id: gem_id, criteria: crit, trace_id: this.createTraceId("gems_analyze") });
+		}
+	}
+
+	public sendGemsDraftApply(draftId: string) {
+		const draft_id = String(draftId || "").trim();
+		if (!draft_id) return;
+		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			this.wsSend({ type: "gems", action: "draft_apply", draft_id, trace_id: this.createTraceId("gems_apply") });
+		}
+	}
+
+	public sendGemsDraftDiscard(draftId: string) {
+		const draft_id = String(draftId || "").trim();
+		if (!draft_id) return;
+		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			this.wsSend({ type: "gems", action: "draft_discard", draft_id, trace_id: this.createTraceId("gems_discard") });
 		}
 	}
 
@@ -749,9 +803,25 @@ export class LiveService {
       const t = String(message.type);
       const gemId = (message as any)?.gem_id != null ? String((message as any).gem_id) : "";
       const op = (message as any)?.op != null ? String((message as any).op) : "";
+      const draftId = (message as any)?.draft_id != null ? String((message as any).draft_id) : "";
       const line = `${t}${gemId ? ` [${gemId}]` : ""}${op ? ` op=${op}` : ""}`;
       this.onMessage({
         id: `${Date.now()}_${t}`,
+        role: "model",
+        text: line,
+        timestamp: new Date(),
+        metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "info", category: "ws" },
+      });
+      return;
+    }
+
+    if (message?.type === "gems_draft_created") {
+      const gemId = (message as any)?.gem_id != null ? String((message as any).gem_id) : "";
+      const draftId = (message as any)?.draft_id != null ? String((message as any).draft_id) : "";
+      const changed = Array.isArray((message as any)?.changed) ? ((message as any).changed as any[]).map(String) : [];
+      const line = `gems_draft_created${gemId ? ` [${gemId}]` : ""}${draftId ? ` draft=${draftId}` : ""}${changed.length ? ` changed=${changed.join(",")}` : ""}`;
+      this.onMessage({
+        id: `${Date.now()}_gems_draft_created`,
         role: "model",
         text: line,
         timestamp: new Date(),
@@ -891,6 +961,18 @@ export class LiveService {
 			const gemUpsert = this.extractGemsUpsertJson(trText);
 			if (gemUpsert && this.shouldAutoTriggerVoiceCommand("gems_upsert", 10_000)) {
 				this.wsSend({ type: "gems", action: "upsert", gem: gemUpsert, trace_id: this.createTraceId("voice_gems_upsert") });
+			}
+			const analyze = this.extractGemsAnalyze(trText);
+			if (analyze && this.shouldAutoTriggerVoiceCommand("gems_analyze", 10_000)) {
+				this.wsSend({ type: "gems", action: "analyze", gem_id: analyze.gem_id, id: analyze.gem_id, criteria: analyze.criteria, trace_id: this.createTraceId("voice_gems_analyze") });
+			}
+			const draftAct = this.extractGemsDraftAction(trText);
+			if (draftAct && this.shouldAutoTriggerVoiceCommand("gems_draft_action", 10_000)) {
+				if (draftAct.action === "apply") {
+					this.wsSend({ type: "gems", action: "draft_apply", draft_id: draftAct.draft_id, trace_id: this.createTraceId("voice_gems_apply") });
+				} else {
+					this.wsSend({ type: "gems", action: "draft_discard", draft_id: draftAct.draft_id, trace_id: this.createTraceId("voice_gems_discard") });
+				}
 			}
       }
       this.onMessage({

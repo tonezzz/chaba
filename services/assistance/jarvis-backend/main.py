@@ -172,6 +172,38 @@ _SHEET_GEMS_REFRESHING: bool = False
 _SHEET_GEMS_LAST_REFRESH_AT: int = 0
 
 
+_GEMS_DRAFTS: dict[str, dict[str, Any]] = {}
+
+
+def _gems_draft_ttl_seconds() -> int:
+    try:
+        v = int(str(os.getenv("JARVIS_GEMS_DRAFT_TTL_SECONDS") or "3600").strip())
+        return v if v > 60 else 3600
+    except Exception:
+        return 3600
+
+
+def _gems_drafts_prune() -> None:
+    try:
+        ttl = _gems_draft_ttl_seconds()
+        now = int(time.time())
+        dead: list[str] = []
+        for did, d in list(_GEMS_DRAFTS.items()):
+            try:
+                created = int(d.get("created_at") or 0)
+            except Exception:
+                created = 0
+            if created <= 0 or (now - created) > ttl:
+                dead.append(did)
+        for did in dead:
+            try:
+                _GEMS_DRAFTS.pop(did, None)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
 def _gems_cache_ttl_seconds() -> int:
     try:
         v = int(str(os.getenv("JARVIS_GEMS_CACHE_TTL_SECONDS") or "120").strip())
@@ -393,6 +425,92 @@ async def _sheet_gems_append(*, spreadsheet_id: str, sheet_name: str, row: list[
     )
     parsed = _mcp_text_json(res)
     return parsed if isinstance(parsed, dict) else {"raw": parsed}
+
+
+def _extract_json_object(text: str) -> Optional[dict[str, Any]]:
+    s = str(text or "").strip()
+    if not s:
+        return None
+    # Best-effort: grab first {...} block.
+    try:
+        i = s.find("{")
+        j = s.rfind("}")
+        if i >= 0 and j > i:
+            s = s[i : j + 1]
+        parsed = json.loads(s)
+        return parsed if isinstance(parsed, dict) else None
+    except Exception:
+        return None
+
+
+async def _gems_analyze_suggest_update(*, ws: WebSocket, gem: dict[str, Any], criteria: str) -> tuple[Optional[dict[str, Any]], str]:
+    api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
+    if not api_key:
+        return None, "missing_api_key"
+
+    gid = _normalize_gem_id(gem.get("id"))
+    if not gid:
+        return None, "missing_gem_id"
+
+    sys_kv = getattr(ws.state, "sys_kv", None)
+    model = _normalize_model_name(
+        str(os.getenv("GEMINI_TEXT_MODEL") or "gemini-2.0-flash").strip() or "gemini-2.0-flash"
+    )
+    if isinstance(sys_kv, dict):
+        # Optional override via sys kv.
+        try:
+            override = str(sys_kv.get("gems.analyze.model") or "").strip()
+            if override:
+                model = _normalize_model_name(override)
+        except Exception:
+            pass
+
+    current = {
+        "id": gid,
+        "name": str(gem.get("name") or "").strip(),
+        "purpose": str(gem.get("purpose") or "").strip(),
+        "system_instruction": str(gem.get("system_instruction") or "").strip(),
+        "user_instruction": str(gem.get("user_instruction") or "").strip(),
+        "output_format": str(gem.get("output_format") or "").strip(),
+        "tools_policy": str(gem.get("tools_policy") or "").strip(),
+    }
+
+    criteria_text = str(criteria or "").strip()
+    if not criteria_text:
+        criteria_text = "Improve clarity, safety, and determinism. Keep it concise and actionable."
+
+    system_instruction = (
+        "You are an expert prompt engineer. You will propose an improved gem configuration. "
+        "Return ONLY valid JSON for the updated gem object. "
+        "Do not include markdown, code fences, or commentary. "
+        "Do not rename the gem id."
+    ).strip()
+
+    prompt = (
+        "Update this gem according to the user's criteria. "
+        "Only include these keys: id,name,purpose,system_instruction,user_instruction,output_format,tools_policy. "
+        "Keep fields short and practical. Preserve user's language (Thai stays Thai).\n\n"
+        f"User criteria:\n{criteria_text}\n\n"
+        f"Current gem JSON:\n{json.dumps(current, ensure_ascii=False)}\n"
+    )
+
+    try:
+        client = genai.Client(api_key=api_key)
+        cfg = {"system_instruction": system_instruction}
+        res = await client.aio.models.generate_content(model=model, contents=prompt, config=cfg)
+        txt = getattr(res, "text", None)
+        if txt is None:
+            txt = str(res)
+        parsed = _extract_json_object(str(txt or ""))
+        if not isinstance(parsed, dict):
+            return None, "invalid_json"
+        out_id = _normalize_gem_id(parsed.get("id"))
+        if out_id and out_id != gid:
+            return None, "gem_id_mismatch"
+        parsed["id"] = gid
+        return parsed, ""
+    except Exception as e:
+        return None, str(e)
 
 
 async def _sheet_gems_update_row(*, spreadsheet_id: str, sheet_name: str, row_number: int, row: list[Any]) -> dict[str, Any]:
@@ -4528,6 +4646,10 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
     if msg_type == "gems":
         action = str(msg.get("action") or "").strip().lower()
         sys_kv = getattr(ws.state, "sys_kv", None)
+        try:
+            _gems_drafts_prune()
+        except Exception:
+            pass
         ss_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
         sh_name = "gems"
         if isinstance(sys_kv, dict) and sys_kv:
@@ -4578,6 +4700,141 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             except Exception:
                 pass
             await _ws_send_json(ws, {"type": "gems_upserted", "op": op, "gem_id": gem_id, "result": res, "instance_id": INSTANCE_ID}, trace_id=tid)
+            await _ws_voice_job_done(ws, tid)
+            return True
+
+        if action in {"analyze"}:
+            gem_id = _normalize_gem_id(msg.get("id") or msg.get("gem_id"))
+            criteria = str(msg.get("criteria") or msg.get("text") or "").strip()
+            if not gem_id:
+                await _ws_send_json(ws, {"type": "error", "kind": "gems_missing_id", "message": "gems_missing_id", "instance_id": INSTANCE_ID}, trace_id=tid)
+                return True
+            src = await _resolve_sheet_gem(gem_id, sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+            if not isinstance(src, dict) or not src:
+                await _ws_send_json(ws, {"type": "error", "kind": "gem_not_found", "message": "gem_not_found", "gem_id": gem_id, "instance_id": INSTANCE_ID}, trace_id=tid)
+                return True
+
+            await _ws_send_json(ws, {"type": "progress", "phase": "start", "text": f"gems.analyze: {gem_id}", "instance_id": INSTANCE_ID}, trace_id=tid)
+            suggestion, err = await _gems_analyze_suggest_update(ws=ws, gem=src, criteria=criteria)
+            if not isinstance(suggestion, dict) or err:
+                await _ws_send_json(
+                    ws,
+                    {"type": "error", "kind": "gems_analyze_failed", "message": "gems_analyze_failed", "detail": err or "unknown", "gem_id": gem_id, "instance_id": INSTANCE_ID},
+                    trace_id=tid,
+                )
+                return True
+
+            before = {
+                "id": _normalize_gem_id(src.get("id")),
+                "name": src.get("name"),
+                "purpose": src.get("purpose"),
+                "system_instruction": src.get("system_instruction"),
+                "user_instruction": src.get("user_instruction"),
+                "output_format": src.get("output_format"),
+                "tools_policy": src.get("tools_policy"),
+            }
+            after = {
+                "id": _normalize_gem_id(suggestion.get("id")),
+                "name": suggestion.get("name"),
+                "purpose": suggestion.get("purpose"),
+                "system_instruction": suggestion.get("system_instruction"),
+                "user_instruction": suggestion.get("user_instruction"),
+                "output_format": suggestion.get("output_format"),
+                "tools_policy": suggestion.get("tools_policy"),
+            }
+            changed: list[str] = []
+            for k in ["name", "purpose", "system_instruction", "user_instruction", "output_format", "tools_policy"]:
+                try:
+                    if str(before.get(k) or "").strip() != str(after.get(k) or "").strip():
+                        changed.append(k)
+                except Exception:
+                    pass
+
+            draft_id = uuid.uuid4().hex[:12]
+            session_id = str(getattr(ws.state, "session_id", "") or "").strip() or "(no_session)"
+            _GEMS_DRAFTS[draft_id] = {
+                "draft_id": draft_id,
+                "session_id": session_id,
+                "gem_id": gem_id,
+                "criteria": criteria,
+                "created_at": int(time.time()),
+                "before": before,
+                "after": after,
+                "changed": changed,
+            }
+
+            await _ws_send_json(
+                ws,
+                {
+                    "type": "gems_draft_created",
+                    "draft_id": draft_id,
+                    "gem_id": gem_id,
+                    "changed": changed,
+                    "before": before,
+                    "after": after,
+                    "instance_id": INSTANCE_ID,
+                },
+                trace_id=tid,
+            )
+            await _ws_voice_job_done(ws, tid)
+            return True
+
+        if action in {"draft_get"}:
+            draft_id = str(msg.get("draft_id") or "").strip()
+            if not draft_id:
+                await _ws_send_json(ws, {"type": "error", "kind": "gems_missing_draft_id", "message": "gems_missing_draft_id", "instance_id": INSTANCE_ID}, trace_id=tid)
+                return True
+            draft = _GEMS_DRAFTS.get(draft_id)
+            if not isinstance(draft, dict):
+                await _ws_send_json(ws, {"type": "error", "kind": "gems_draft_not_found", "message": "gems_draft_not_found", "draft_id": draft_id, "instance_id": INSTANCE_ID}, trace_id=tid)
+                return True
+            await _ws_send_json(ws, {"type": "gems_draft", **draft, "instance_id": INSTANCE_ID}, trace_id=tid)
+            await _ws_voice_job_done(ws, tid)
+            return True
+
+        if action in {"draft_discard"}:
+            draft_id = str(msg.get("draft_id") or "").strip()
+            if not draft_id:
+                await _ws_send_json(ws, {"type": "error", "kind": "gems_missing_draft_id", "message": "gems_missing_draft_id", "instance_id": INSTANCE_ID}, trace_id=tid)
+                return True
+            existed = _GEMS_DRAFTS.pop(draft_id, None) is not None
+            await _ws_send_json(ws, {"type": "gems_draft_discarded", "draft_id": draft_id, "existed": existed, "instance_id": INSTANCE_ID}, trace_id=tid)
+            await _ws_voice_job_done(ws, tid)
+            return True
+
+        if action in {"draft_apply"}:
+            draft_id = str(msg.get("draft_id") or "").strip()
+            if not draft_id:
+                await _ws_send_json(ws, {"type": "error", "kind": "gems_missing_draft_id", "message": "gems_missing_draft_id", "instance_id": INSTANCE_ID}, trace_id=tid)
+                return True
+            draft = _GEMS_DRAFTS.get(draft_id)
+            if not isinstance(draft, dict):
+                await _ws_send_json(ws, {"type": "error", "kind": "gems_draft_not_found", "message": "gems_draft_not_found", "draft_id": draft_id, "instance_id": INSTANCE_ID}, trace_id=tid)
+                return True
+            gem_id = _normalize_gem_id(draft.get("gem_id"))
+            after = draft.get("after") if isinstance(draft.get("after"), dict) else None
+            if not gem_id or not isinstance(after, dict):
+                await _ws_send_json(ws, {"type": "error", "kind": "gems_draft_invalid", "message": "gems_draft_invalid", "draft_id": draft_id, "instance_id": INSTANCE_ID}, trace_id=tid)
+                return True
+
+            header, row_num, idx = await _sheet_gems_find_row(spreadsheet_id=ss_id, sheet_name=sh_name, gem_id=gem_id)
+            row = _sheet_gems_build_row(header=header, idx=idx, gem={**after, "id": gem_id})
+            if row_num <= 0:
+                res = await _sheet_gems_append(spreadsheet_id=ss_id, sheet_name=sh_name, row=row)
+                op = "added"
+            else:
+                res = await _sheet_gems_update_row(spreadsheet_id=ss_id, sheet_name=sh_name, row_number=row_num, row=row)
+                op = "updated"
+            payload = await _load_sheet_gems(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+            try:
+                _set_cached_sheet_gems(payload)
+            except Exception:
+                pass
+            try:
+                _GEMS_DRAFTS.pop(draft_id, None)
+            except Exception:
+                pass
+            await _ws_send_json(ws, {"type": "gems_draft_applied", "draft_id": draft_id, "op": op, "gem_id": gem_id, "result": res, "instance_id": INSTANCE_ID}, trace_id=tid)
             await _ws_voice_job_done(ws, tid)
             return True
 

@@ -502,6 +502,28 @@ export default function App() {
       }
     };
 
+    const extractGemsAnalyze = (text: string): { gem_id: string; criteria: string } | null => {
+      const raw = String(text || "").trim();
+      if (!raw) return null;
+      const m = raw.match(/^gems\s+analy[sz]e\s+([^:]+?)(?:\s*[:\-]\s*(.+))?$/i);
+      if (m && String(m[1] || "").trim()) return { gem_id: String(m[1]).trim(), criteria: String(m[2] || "").trim() };
+      const m2 = raw.match(/^วิเคราะห์\s*(?:เจม|โมเดล)\s+([^:]+?)(?:\s*[:\-]\s*(.+))?$/);
+      if (m2 && String(m2[1] || "").trim()) return { gem_id: String(m2[1]).trim(), criteria: String(m2[2] || "").trim() };
+      return null;
+    };
+
+    const extractGemsDraftAction = (text: string): { action: "apply" | "discard"; draft_id: string } | null => {
+      const raw = String(text || "").trim();
+      if (!raw) return null;
+      const m = raw.match(/^gems\s+draft\s+(apply|discard)\s*[:\-]?\s*(\w+)$/i);
+      if (m && String(m[2] || "").trim()) return { action: String(m[1]).toLowerCase() === "apply" ? "apply" : "discard", draft_id: String(m[2]).trim() };
+      const m2 = raw.match(/^ยืนยัน\s*ดราฟท์\s*[:\-]?\s*(\w+)$/);
+      if (m2 && String(m2[1] || "").trim()) return { action: "apply", draft_id: String(m2[1]).trim() };
+      const m3 = raw.match(/^ยกเลิก\s*ดราฟท์\s*[:\-]?\s*(\w+)$/);
+      if (m3 && String(m3[1] || "").trim()) return { action: "discard", draft_id: String(m3[1]).trim() };
+      return null;
+    };
+
     if (base && isGemsListPhrase(base)) {
       liveService.current?.sendGemsList();
       setComposerText("");
@@ -520,6 +542,23 @@ export default function App() {
     const gemUpsert = base ? extractGemsUpsertJson(base) : null;
     if (gemUpsert) {
       liveService.current?.sendGemsUpsert(gemUpsert);
+      setComposerText("");
+      setAttachments([]);
+      return;
+    }
+
+    const gemAnalyze = base ? extractGemsAnalyze(base) : null;
+    if (gemAnalyze) {
+      liveService.current?.sendGemsAnalyze(gemAnalyze.gem_id, gemAnalyze.criteria);
+      setComposerText("");
+      setAttachments([]);
+      return;
+    }
+
+    const gemDraft = base ? extractGemsDraftAction(base) : null;
+    if (gemDraft) {
+      if (gemDraft.action === "apply") liveService.current?.sendGemsDraftApply(gemDraft.draft_id);
+      else liveService.current?.sendGemsDraftDiscard(gemDraft.draft_id);
       setComposerText("");
       setAttachments([]);
       return;
