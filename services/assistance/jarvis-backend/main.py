@@ -4453,6 +4453,19 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
     if not k:
         return {"ok": False, "error": "missing_key"}
 
+    def _norm_k(s: Any) -> str:
+        try:
+            ss = str(s or "").strip()
+            # Normalize common copy/paste oddities.
+            ss = re.sub(r"[\u00A0\u200B-\u200D\uFEFF]+", "", ss)
+            ss = " ".join(ss.split())
+            return ss
+        except Exception:
+            try:
+                return str(s or "").strip()
+            except Exception:
+                return ""
+
     spreadsheet_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
     if not spreadsheet_id:
         return {"ok": False, "error": "missing_spreadsheet"}
@@ -4468,13 +4481,25 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
         # If sheet is empty, just append.
         values = []
 
+    # Sys sheet may or may not include a header row. We only skip row 1 if it looks like a header.
+    start_row = 1
+    try:
+        if values and isinstance(values[0], list) and values[0]:
+            h0 = _norm_k(values[0][0]).lower()
+            h1 = _norm_k(values[0][1]).lower() if len(values[0]) > 1 else ""
+            if h0 in {"key", "k"} and (not h1 or h1 in {"value", "v"}):
+                start_row = 2
+    except Exception:
+        start_row = 1
+
     row_idx: Optional[int] = None
+    nk = _norm_k(k)
     for i, r in enumerate(values, start=1):
-        if i == 1:
+        if i < start_row:
             continue
         if not isinstance(r, list) or not r:
             continue
-        if str(r[0] or "").strip() == k:
+        if _norm_k(r[0]) == nk:
             row_idx = i
             break
 
