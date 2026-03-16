@@ -8764,6 +8764,67 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             if not text:
                 continue
             logger.info("ws_in_text trace_id=%s len=%s head=%s", trace_id, len(text), text[:120])
+
+            # Intercept local slash commands (typed) so they never go to Gemini.
+            # This avoids confusing model replies like "task not found" for /sys commands.
+            try:
+                s0 = str(text or "").strip()
+                # Normalize common copy/paste oddities.
+                s = re.sub(r"[\u00A0\u200B-\u200D\uFEFF]+", "", s0)
+                s = " ".join(s.split())
+            except Exception:
+                s = str(text or "").strip()
+
+            if s.startswith("/"):
+                m = re.match(r"^/(?:sys|system)\s+(set|dry)\s+(.+)$", s, flags=re.IGNORECASE)
+                if m:
+                    dry_run = str(m.group(1) or "").strip().lower() == "dry"
+                    rest = str(m.group(2) or "").strip()
+                    eq = rest.find("=")
+                    if eq > 0:
+                        key = rest[:eq].strip()
+                        value = rest[eq + 1 :].strip()
+                        # Route via deterministic local tools.
+                        await _handle_local_tools_message(
+                            ws,
+                            {
+                                "type": "system",
+                                "action": "sys_kv_set",
+                                "key": key,
+                                "value": value,
+                                "dry_run": dry_run,
+                                "trace_id": trace_id2,
+                            },
+                            trace_id=trace_id2,
+                        )
+                        continue
+                    await _ws_send_json(
+                        ws,
+                        {
+                            "type": "error",
+                            "kind": "invalid_sys_command",
+                            "message": "invalid_sys_command",
+                            "detail": "Expected /sys set <key>=<value>",
+                            "instance_id": INSTANCE_ID,
+                        },
+                        trace_id=trace_id2,
+                    )
+                    continue
+
+                # Unknown slash command: handle locally (do not forward to Gemini).
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "unknown_command",
+                        "message": "unknown_command",
+                        "detail": s,
+                        "instance_id": INSTANCE_ID,
+                    },
+                    trace_id=trace_id2,
+                )
+                continue
+
             handled = await _dispatch_sub_agents(ws, text)
             logger.info("ws_in_text_dispatched handled=%s active_agent_id=%s", handled, getattr(ws.state, "active_agent_id", None))
             if handled:
