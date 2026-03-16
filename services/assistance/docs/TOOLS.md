@@ -60,6 +60,72 @@ Outbound (backend -> client) message types (selected):
 
 These messages are handled **purely by the backend** and are never forwarded to Gemini.
 
+## Chart: Frontend smart mapping (typed + voice)
+
+The frontend tries to keep control-plane actions deterministic by converting certain user inputs into WS tool messages.
+
+```mermaid
+flowchart LR
+  U[User] -->|typed composer| C[Composer parser]
+  U -->|voice| STT[Gemini Live STT transcript
+  type=transcript source=input]
+
+  C -->|match| TOOL[WS tool message]
+  STT -->|match + debounce| TOOL
+  TOOL -->|/jarvis/ws/live| BE[Backend deterministic tools]
+  C -->|no match| TXT[WS type=text]
+  TXT -->|/jarvis/ws/live| GL[Gemini Live]
+```
+
+### Mapping: system.reload
+
+When the typed composer text or voice transcript matches a reload phrase, the frontend sends:
+
+```json
+{"type":"system","action":"reload","mode":"full|memory|knowledge|gems"}
+```
+
+Mode selection (keyword-based, first match wins):
+
+| Mode | Example keywords |
+|---|---|
+| `gems` | `gems`, `gem`, `models`, `model`, `เจม`, `โมเดล` |
+| `knowledge` | `knowledge`, `kb`, `ความรู้` |
+| `memory` | `memory`, `mem`, `เมม` |
+| `full` | default |
+
+Examples (typed/voice phrases):
+
+| User phrase | WS message |
+|---|---|
+| `reload system` | `{"type":"system","action":"reload","mode":"full"}` |
+| `reload memory` | `{"type":"system","action":"reload","mode":"memory"}` |
+| `reload knowledge` | `{"type":"system","action":"reload","mode":"knowledge"}` |
+| `reload gems` | `{"type":"system","action":"reload","mode":"gems"}` |
+
+### Mapping: reminders.add
+
+When the typed composer text or voice transcript matches a reminder-create phrase, the frontend sends:
+
+```json
+{"type":"reminders","action":"add","text":"<user intent>"}
+```
+
+Examples (typed/voice phrases):
+
+| User phrase | Extracted `text` |
+|---|---|
+| `remind me to pay rent tomorrow 9am` | `pay rent tomorrow 9am` |
+| `set a reminder: call mom` | `call mom` |
+| `reminder add: submit report` | `submit report` |
+| `เตือนฉันจ่ายค่าไฟพรุ่งนี้ 9 โมง` | `จ่ายค่าไฟพรุ่งนี้ 9 โมง` |
+| `อย่าลืมส่งเอกสาร` | `ส่งเอกสาร` |
+
+Notes:
+
+- Voice mapping is debounced to avoid repeated triggers from STT.
+- If the frontend does not match a phrase, it sends a normal `type=text` message to Gemini Live.
+
 ### System tool: reload
 
 Request schema:
