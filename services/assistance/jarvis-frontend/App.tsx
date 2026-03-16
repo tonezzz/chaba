@@ -440,8 +440,19 @@ export default function App() {
       return false;
     };
 
+    const extractSystemReloadMode = (text: string): "full" | "memory" | "knowledge" | "sys" | "gems" => {
+      const s = String(text || "").trim().toLowerCase();
+      const compact = s.replace(/[^a-z0-9\u0E00-\u0E7F]+/g, " ").trim().replace(/\s+/g, " ");
+      const has = (w: string) => compact.includes(w);
+      if (has("gems") || has("gem") || has("models") || has("model") || has("เจม") || has("โมเดล")) return "gems";
+      if (has("knowledge") || has("kb") || has("know") || has("ความรู้")) return "knowledge";
+      if (has("memory") || has("mem") || has("เมม") || has("เมมโม")) return "memory";
+      return "full";
+    };
+
     if (base && isReloadSystemPhrase(base)) {
-      liveService.current?.sendSystemReload("full");
+      const mode = extractSystemReloadMode(base);
+      liveService.current?.sendSystemReload(mode);
       setComposerText("");
       setAttachments([]);
       return;

@@ -1,5 +1,24 @@
 # Tools charts
 
+```mermaid
+flowchart TB
+  UI[Jarvis Frontend] -- WS /jarvis/ws/live --> BE[Jarvis Backend]
+
+  subgraph Deterministic Tools (Mode B)
+    BE --> SYS[system.*]
+    BE --> NOTES[notes.*]
+    BE --> REM[reminders.*]
+  end
+
+  BE -- audio/text --> GL[Gemini Live]
+  GL -- tool_call --> BE
+  BE -- MCP JSON-RPC --> MCP[mcp-bundle / 1MCP servers]
+  MCP -- results --> BE
+  BE -- FunctionResponse --> GL
+
+  BE -- WS events --> UI
+```
+
 This file documents the main **tool surfaces** available in the Assistance stack.
 
 Rules:
@@ -23,6 +42,7 @@ Inbound (client -> backend) message types:
 | `cars_ingest_image` | Send an image for car/plate ingest | `data` (base64), `mimeType`, `request_id` | Backend only |
 | `system` | Deterministic backend system tools | `action`, `mode` | Backend only (never forwarded to Gemini) |
 | `notes` | Deterministic backend notes tools | `action`, `text` | Backend only (never forwarded to Gemini) |
+| `reminders` | Deterministic backend reminders tools | `action`, `text`, `reminder_id`, `when` | Backend only (never forwarded to Gemini) |
 
 Outbound (backend -> client) message types (selected):
 
@@ -66,6 +86,7 @@ Expected responses (examples):
 Notes:
 
 - `memory` and `knowledge` are currently loaded together by the shared sheet loader.
+- Frontend can do **smart mapping** (typed/voice) to select `mode` based on keywords like `memory`, `knowledge`, `gems`.
 
 ### Notes tools
 
@@ -76,6 +97,24 @@ Request schema:
 | check | `{"type":"notes","action":"check"}` | `text` summary + `Next:` line |
 | next | `{"type":"notes","action":"next"}` | `text` single next-step line |
 | add | `{"type":"notes","action":"add","text":"..."}` | `note_created` + confirmation |
+
+### Reminders tools
+
+Request schema (selected):
+
+| Action | Request | Result |
+|---|---|---|
+| add | `{"type":"reminders","action":"add","text":"..."}` | `planning_item_created` (calendar event or task) |
+| list | `{"type":"reminders","action":"list","status":"pending"}` | `reminders_list` with `items` |
+| done | `{"type":"reminders","action":"done","reminder_id":"..."}` | `reminders_done` |
+| delete | `{"type":"reminders","action":"delete","reminder_id":"..."}` | `reminders_deleted` |
+| later | `{"type":"reminders","action":"later","reminder_id":"...","days":2}` | `reminders_later` |
+| reschedule | `{"type":"reminders","action":"reschedule","reminder_id":"...","when":"tomorrow 09:00"}` | `reminders_rescheduled` |
+| details | `{"type":"reminders","action":"details","reminder_id":"..."}` | `reminder_detail` |
+
+Notes:
+
+- Frontend can do **smart mapping** (typed/voice) for phrases like `remind me ...`, `set a reminder ...`, `เตือน...`, `อย่าลืม...` -> `reminders.add`.
 
 ## Chart: Speech-to-text (STT)
 

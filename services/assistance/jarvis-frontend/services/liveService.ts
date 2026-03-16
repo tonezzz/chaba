@@ -125,6 +125,22 @@ export class LiveService {
 		return false;
 	}
 
+	private extractSystemReloadMode(text: string): "full" | "memory" | "knowledge" | "sys" | "gems" | null {
+		const s = String(text || "").trim().toLowerCase();
+		if (!s) return null;
+		const compact = s.replace(/[^a-z0-9\u0E00-\u0E7F]+/g, " ").trim().replace(/\s+/g, " ");
+		if (!compact) return null;
+		if (!this.isReloadSystemPhrase(compact)) return null;
+
+		const has = (w: string) => compact.includes(w);
+		// Prefer more specific targets first.
+		if (has("gems") || has("gem") || has("models") || has("model") || has("เจม") || has("โมเดล")) return "gems";
+		if (has("knowledge") || has("kb") || has("know") || has("ความรู้")) return "knowledge";
+		if (has("memory") || has("mem") || has("เมม") || has("เมมโม")) return "memory";
+		if (has("sys") || has("system") || has("sheets") || has("sheet") || has("ระบบ") || has("ชีต") || has("ชีท")) return "full";
+		return "full";
+	}
+
 	private extractReminderAddText(text: string): string | null {
 		const raw = String(text || "").trim();
 		if (!raw) return null;
@@ -759,8 +775,9 @@ export class LiveService {
       // This helps when Gemini doesn't emit a tool call for simple control commands.
       if (src === "input") {
 			const trText = String(message.text);
-			if (this.isReloadSystemPhrase(trText) && this.shouldAutoTriggerVoiceCommand("reload_system", 10_000)) {
-				this.wsSend({ type: "system", action: "reload", mode: "full", trace_id: this.createTraceId("voice_reload") });
+			const reloadMode = this.extractSystemReloadMode(trText);
+			if (reloadMode && this.shouldAutoTriggerVoiceCommand("reload_system", 10_000)) {
+				this.wsSend({ type: "system", action: "reload", mode: reloadMode, trace_id: this.createTraceId("voice_reload") });
 			}
 			const remText = this.extractReminderAddText(trText);
 			if (remText && this.shouldAutoTriggerVoiceCommand("reminders_add", 10_000)) {
