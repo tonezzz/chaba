@@ -7,10 +7,17 @@ const GOOGLE_DEVICE_CODE_URL = "https://oauth2.googleapis.com/device/code";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_TASKS_API_BASE = "https://tasks.googleapis.com/tasks/v1";
 
+function _envOrEmpty(v) {
+  const s = String(v || "").trim();
+  // 1mcp config substitution can leave literal placeholders like "${GOOGLE_CLIENT_ID}".
+  if (/^\$\{[^}]+\}$/.test(s)) return "";
+  return s;
+}
+
 const DEFAULT_SHARED_TOKEN_PATH = "/root/.config/1mcp/google.tokens.json";
 const TOKEN_PATH = (process.env.GOOGLE_TASKS_TOKEN_PATH || DEFAULT_SHARED_TOKEN_PATH).trim();
-const CLIENT_ID = String(process.env.GOOGLE_TASKS_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || "").trim();
-const CLIENT_SECRET = String(process.env.GOOGLE_TASKS_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || "").trim();
+const CLIENT_ID = _envOrEmpty(process.env.GOOGLE_TASKS_CLIENT_ID) || _envOrEmpty(process.env.GOOGLE_CLIENT_ID);
+const CLIENT_SECRET = _envOrEmpty(process.env.GOOGLE_TASKS_CLIENT_SECRET) || _envOrEmpty(process.env.GOOGLE_CLIENT_SECRET);
 const DEFAULT_SCOPES_SHARED = [
   "https://www.googleapis.com/auth/spreadsheets.readonly",
   "https://www.googleapis.com/auth/calendar",

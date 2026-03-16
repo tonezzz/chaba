@@ -7,17 +7,26 @@ const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3";
 
+function _envOrEmpty(v) {
+  const s = String(v || "").trim();
+  // 1mcp config substitution can leave literal placeholders like "${GOOGLE_CLIENT_ID}".
+  if (/^\$\{[^}]+\}$/.test(s)) return "";
+  return s;
+}
+
 const DEFAULT_REDIRECT_URI = "http://127.0.0.1:53682/oauth2callback";
 const JARVIS_CALENDAR_NAME = String(process.env.GOOGLE_CALENDAR_JARVIS_CALENDAR_NAME || "Jarvis Reminders").trim();
 
 const DEFAULT_SHARED_TOKEN_PATH = "/root/.config/1mcp/google.tokens.json";
 const TOKEN_PATH = (process.env.GOOGLE_CALENDAR_TOKEN_PATH || DEFAULT_SHARED_TOKEN_PATH).trim();
-const CLIENT_ID = String(
-  process.env.GOOGLE_CALENDAR_CLIENT_ID || process.env.GOOGLE_TASKS_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || ""
-).trim();
-const CLIENT_SECRET = String(
-  process.env.GOOGLE_CALENDAR_CLIENT_SECRET || process.env.GOOGLE_TASKS_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || ""
-).trim();
+const CLIENT_ID =
+  _envOrEmpty(process.env.GOOGLE_CALENDAR_CLIENT_ID) ||
+  _envOrEmpty(process.env.GOOGLE_TASKS_CLIENT_ID) ||
+  _envOrEmpty(process.env.GOOGLE_CLIENT_ID);
+const CLIENT_SECRET =
+  _envOrEmpty(process.env.GOOGLE_CALENDAR_CLIENT_SECRET) ||
+  _envOrEmpty(process.env.GOOGLE_TASKS_CLIENT_SECRET) ||
+  _envOrEmpty(process.env.GOOGLE_CLIENT_SECRET);
 const REDIRECT_URI = String(process.env.GOOGLE_CALENDAR_REDIRECT_URI || DEFAULT_REDIRECT_URI).trim();
 const DEFAULT_SCOPES_SHARED = [
   "https://www.googleapis.com/auth/spreadsheets.readonly",
