@@ -687,6 +687,11 @@ AGENT_CONTINUE_WINDOW_SECONDS = int(str(os.getenv("JARVIS_AGENT_CONTINUE_WINDOW_
 _ws_by_user: dict[str, set[WebSocket]] = {}
 _reminder_task: Optional[asyncio.Task[None]] = None
 
+# Reload System can be triggered by voice/STT and sometimes repeats quickly.
+# Guard against overlapping runs (global) and repeated triggers (per-WS).
+_reload_system_lock: asyncio.Lock = asyncio.Lock()
+RELOAD_SYSTEM_DEBOUNCE_SECONDS = float(str(os.getenv("JARVIS_RELOAD_SYSTEM_DEBOUNCE_SECONDS") or "5").strip() or "5")
+
 _agent_defs: dict[str, dict[str, Any]] = {}
 
 _agent_triggers: dict[str, list[str]] = {}
@@ -4236,41 +4241,24 @@ async def _handle_reload_system(ws: WebSocket, text: str) -> bool:
     if not (is_reload_en or is_reload_th):
         return False
 
+    # Debounce repeated triggers from STT/voice (per websocket).
     try:
-        logger.info("reload_system_triggered compact=%s", compact)
+        now_ts = time.time()
+        last_ts = float(getattr(ws.state, "reload_system_last_ts", 0.0) or 0.0)
+        if last_ts and (now_ts - last_ts) < RELOAD_SYSTEM_DEBOUNCE_SECONDS:
+            return True
+        ws.state.reload_system_last_ts = now_ts
     except Exception:
         pass
 
-    lang = str(getattr(ws.state, "user_lang", "") or "").strip() or "en"
-    try:
-        await _ws_send_json(ws, {"type": "text", "text": "Reload System: start", "instance_id": INSTANCE_ID})
-    except Exception:
-        pass
-
-    try:
-        _clear_sheet_caches()
-    except Exception:
-        pass
-
-    try:
-        await _load_ws_sheet_memory(ws)
-        # Force gems reload too.
-        sys_kv = getattr(ws.state, "sys_kv", None)
-        payload = await _load_sheet_gems(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
-        try:
-            _set_cached_sheet_gems(payload)
-        except Exception:
-            pass
-    except Exception as e:
-        msg = f"Reload System failed: {str(e)}" if lang != "th" else f"Reload System ล้มเหลว: {str(e)}"
+    # Only allow one reload at a time (global) to avoid overlapping MCP/Sheets calls.
+    if _reload_system_lock.locked():
         try:
             await _ws_send_json(
                 ws,
                 {
-                    "type": "error",
-                    "kind": "reload_system_failed",
-                    "message": msg,
-                    "detail": str(e),
+                    "type": "text",
+                    "text": "Reload System: already running",
                     "instance_id": INSTANCE_ID,
                 },
             )
@@ -4279,24 +4267,67 @@ async def _handle_reload_system(ws: WebSocket, text: str) -> bool:
         return True
 
     try:
-        mem_items = getattr(ws.state, "memory_items", None)
-        know_items = getattr(ws.state, "knowledge_items", None)
-        mem_n = len(mem_items) if isinstance(mem_items, list) else 0
-        know_n = len(know_items) if isinstance(know_items, list) else 0
-        out = f"Reload System: ok | memory={mem_n} knowledge={know_n}"
-        if lang == "th":
-            out = f"Reload System สำเร็จ | memory={mem_n} knowledge={know_n}"
-        await _ws_send_json(ws, {"type": "text", "text": out, "instance_id": INSTANCE_ID})
+        logger.info("reload_system_triggered compact=%s", compact)
     except Exception:
         pass
 
-    # Start notes board runner only after system reload succeeded.
-    try:
-        existing = getattr(ws.state, "notes_board_task", None)
-        if existing is None or not hasattr(existing, "done") or existing.done():
-            ws.state.notes_board_task = asyncio.create_task(_notes_board_runner(ws), name="notes_board_runner")
-    except Exception:
-        pass
+    async with _reload_system_lock:
+        lang = str(getattr(ws.state, "user_lang", "") or "").strip() or "en"
+        try:
+            await _ws_send_json(ws, {"type": "text", "text": "Reload System: start", "instance_id": INSTANCE_ID})
+        except Exception:
+            pass
+
+        try:
+            _clear_sheet_caches()
+        except Exception:
+            pass
+
+        try:
+            await _load_ws_sheet_memory(ws)
+            # Force gems reload too.
+            sys_kv = getattr(ws.state, "sys_kv", None)
+            payload = await _load_sheet_gems(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+            try:
+                _set_cached_sheet_gems(payload)
+            except Exception:
+                pass
+        except Exception as e:
+            msg = f"Reload System failed: {str(e)}" if lang != "th" else f"Reload System ล้มเหลว: {str(e)}"
+            try:
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "reload_system_failed",
+                        "message": msg,
+                        "detail": str(e),
+                        "instance_id": INSTANCE_ID,
+                    },
+                )
+            except Exception:
+                pass
+            return True
+
+        try:
+            mem_items = getattr(ws.state, "memory_items", None)
+            know_items = getattr(ws.state, "knowledge_items", None)
+            mem_n = len(mem_items) if isinstance(mem_items, list) else 0
+            know_n = len(know_items) if isinstance(know_items, list) else 0
+            out = f"Reload System: ok | memory={mem_n} knowledge={know_n}"
+            if lang == "th":
+                out = f"Reload System สำเร็จ | memory={mem_n} knowledge={know_n}"
+            await _ws_send_json(ws, {"type": "text", "text": out, "instance_id": INSTANCE_ID})
+        except Exception:
+            pass
+
+        # Start notes board runner only after system reload succeeded.
+        try:
+            existing = getattr(ws.state, "notes_board_task", None)
+            if existing is None or not hasattr(existing, "done") or existing.done():
+                ws.state.notes_board_task = asyncio.create_task(_notes_board_runner(ws), name="notes_board_runner")
+        except Exception:
+            pass
     return True
 
 
