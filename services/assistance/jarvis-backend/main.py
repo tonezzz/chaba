@@ -443,7 +443,13 @@ def _extract_json_object(text: str) -> Optional[dict[str, Any]]:
         return None
 
 
-async def _gems_analyze_suggest_update(*, ws: WebSocket, gem: dict[str, Any], criteria: str) -> tuple[Optional[dict[str, Any]], str]:
+async def _gems_analyze_suggest_update(
+    *,
+    ws: WebSocket,
+    gem: dict[str, Any],
+    criteria: str,
+    model_override: str | None = None,
+) -> tuple[Optional[dict[str, Any]], str]:
     api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
     if not api_key:
         return None, "missing_api_key"
@@ -453,9 +459,12 @@ async def _gems_analyze_suggest_update(*, ws: WebSocket, gem: dict[str, Any], cr
         return None, "missing_gem_id"
 
     sys_kv = getattr(ws.state, "sys_kv", None)
-    model = _normalize_model_name(
-        str(os.getenv("GEMINI_TEXT_MODEL") or "gemini-2.0-flash").strip() or "gemini-2.0-flash"
-    )
+    model = _normalize_model_name(str(os.getenv("GEMINI_TEXT_MODEL") or "gemini-2.0-flash").strip() or "gemini-2.0-flash")
+    if model_override:
+        try:
+            model = _normalize_model_name(str(model_override or "").strip())
+        except Exception:
+            pass
     if isinstance(sys_kv, dict):
         # Optional override via sys kv.
         try:
@@ -4881,6 +4890,7 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
         if action in {"analyze"}:
             gem_id = _normalize_gem_id(msg.get("id") or msg.get("gem_id"))
             criteria = str(msg.get("criteria") or msg.get("text") or "").strip()
+            model_override = str(msg.get("model") or "").strip() or None
             if not gem_id:
                 await _ws_send_json(ws, {"type": "error", "kind": "gems_missing_id", "message": "gems_missing_id", "instance_id": INSTANCE_ID}, trace_id=tid)
                 return True
@@ -4901,7 +4911,7 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
                 return True
 
             await _ws_send_json(ws, {"type": "progress", "phase": "start", "text": f"gems.analyze: {gem_id}", "instance_id": INSTANCE_ID}, trace_id=tid)
-            suggestion, err = await _gems_analyze_suggest_update(ws=ws, gem=src, criteria=criteria)
+            suggestion, err = await _gems_analyze_suggest_update(ws=ws, gem=src, criteria=criteria, model_override=model_override)
             if not isinstance(suggestion, dict) or err:
                 err_s = str(err or "unknown")
                 if ("RESOURCE_EXHAUSTED" in err_s) or ("429" in err_s and "quota" in err_s.lower()):
