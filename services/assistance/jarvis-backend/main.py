@@ -3983,6 +3983,200 @@ async def _handle_notes_check(ws: WebSocket, text: str) -> bool:
     return True
 
 
+async def _handle_notes_next(ws: WebSocket, text: str) -> bool:
+    # Compact variant of notes check: emit only the single next step line.
+    sys_kv = getattr(ws.state, "sys_kv", None)
+    spreadsheet_id = ""
+    if isinstance(sys_kv, dict):
+        spreadsheet_id = str(sys_kv.get("notes_ss") or "").strip()
+    if not spreadsheet_id:
+        spreadsheet_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
+    if not spreadsheet_id:
+        await _ws_send_json(
+            ws,
+            {
+                "type": "text",
+                "text": "missing_notes_ss" if not _text_is_thai(text) else "ไม่พบสเปรดชีตบันทึก (missing_notes_ss)",
+                "instance_id": INSTANCE_ID,
+            },
+        )
+        return True
+
+    sheet_name = ""
+    if isinstance(sys_kv, dict):
+        sheet_name = str(sys_kv.get("notes.sheet_name") or sys_kv.get("notes_sh") or "").strip()
+    if not sheet_name:
+        sheet_name = str(os.getenv("CHABA_SS_SYS_NOTES_SHEET") or "notes.0").strip() or "notes.0"
+
+    try:
+        rows = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_name, max_rows=250, max_cols="S")
+    except Exception as e:
+        await _ws_send_json(
+            ws,
+            {
+                "type": "text",
+                "text": ("notes_read_failed" if not _text_is_thai(text) else "อ่านบันทึกไม่สำเร็จ") + f": {str(e)[:160]}",
+                "instance_id": INSTANCE_ID,
+            },
+        )
+        return True
+
+    if not rows or not isinstance(rows[0], list):
+        await _ws_send_json(
+            ws,
+            {
+                "type": "text",
+                "text": "notes_empty" if not _text_is_thai(text) else "ยังไม่มีบันทึก",
+                "instance_id": INSTANCE_ID,
+            },
+        )
+        return True
+
+    header = rows[0]
+    idx = _idx_from_header(header)
+    col_subject = idx.get("subject")
+    col_notes = idx.get("notes")
+    col_status = idx.get("status")
+    col_result = idx.get("result")
+
+    items: list[dict[str, Any]] = []
+    for i, r in enumerate(rows[1:], start=2):
+        if not isinstance(r, list) or not r:
+            continue
+        subject = str(r[col_subject] if col_subject is not None and col_subject < len(r) else "").strip()
+        notes = str(r[col_notes] if col_notes is not None and col_notes < len(r) else "").strip()
+        status = str(r[col_status] if col_status is not None and col_status < len(r) else "").strip().lower()
+        result = str(r[col_result] if col_result is not None and col_result < len(r) else "").strip()
+        if not (subject or notes or status or result):
+            continue
+        items.append({"row": i, "subject": subject, "notes": notes, "status": status, "result": result})
+
+    open_jobs = [it for it in items if str(it.get("status") or "").lower() in {"new", "doing"}]
+    open_jobs = sorted(open_jobs, key=lambda it: int(it.get("row") or 0))[:10]
+    latest = sorted(items, key=lambda it: int(it.get("row") or 0), reverse=True)[:10]
+
+    next_line = ""
+    if open_jobs:
+        top = open_jobs[0]
+        body = str(top.get("notes") or "").strip() or str(top.get("subject") or "").strip()
+        if body:
+            next_line = ("Next: " if not _text_is_thai(text) else "ถัดไป: ") + body
+    elif latest:
+        top = latest[0]
+        body = str(top.get("notes") or "").strip() or str(top.get("result") or "").strip()
+        if body:
+            next_line = ("Next: " if not _text_is_thai(text) else "ถัดไป: ") + body
+
+    await _ws_send_json(
+        ws,
+        {
+            "type": "text",
+            "text": next_line or ("Next: (none)" if not _text_is_thai(text) else "ถัดไป: (ไม่มี)"),
+            "instance_id": INSTANCE_ID,
+        },
+    )
+    return True
+
+
+async def _handle_system_reload_mode(ws: WebSocket, mode: str, trace_id: str | None = None) -> None:
+    m = str(mode or "").strip().lower() or "full"
+    if m in {"full", "all"}:
+        await _handle_reload_system(ws, "Reload System")
+        return
+
+    # Note: today memory+knowledge are loaded together by _load_ws_sheet_memory.
+    if m in {"memory", "knowledge", "sys"}:
+        if _reload_system_lock.locked():
+            await _ws_send_json(ws, {"type": "text", "text": "Reload: already running", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            return
+        async with _reload_system_lock:
+            try:
+                await _ws_send_json(ws, {"type": "text", "text": f"Reload {m}: start", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            except Exception:
+                pass
+            try:
+                _clear_sheet_caches()
+            except Exception:
+                pass
+            try:
+                await _load_ws_sheet_memory(ws)
+                lang = str(getattr(ws.state, "user_lang", "") or "").strip() or "en"
+                await _ws_send_json(ws, {"type": "text", "text": _memory_load_status_line(ws, lang), "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                await _ws_send_json(ws, {"type": "text", "text": f"Reload {m}: ok", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            except Exception as e:
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "reload_failed",
+                        "message": f"Reload {m} failed",
+                        "detail": str(e),
+                        "instance_id": INSTANCE_ID,
+                    },
+                    trace_id=trace_id,
+                )
+            return
+
+    if m in {"gems", "gem"}:
+        try:
+            await _ws_send_json(ws, {"type": "text", "text": "Reload gems: start", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+        except Exception:
+            pass
+        try:
+            sys_kv = getattr(ws.state, "sys_kv", None)
+            payload = await _load_sheet_gems(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+            try:
+                _set_cached_sheet_gems(payload)
+            except Exception:
+                pass
+            await _ws_send_json(ws, {"type": "text", "text": "Reload gems: ok", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+        except Exception as e:
+            await _ws_send_json(
+                ws,
+                {"type": "error", "kind": "reload_gems_failed", "message": "Reload gems failed", "detail": str(e), "instance_id": INSTANCE_ID},
+                trace_id=trace_id,
+            )
+        return
+
+    await _ws_send_json(
+        ws,
+        {"type": "error", "kind": "invalid_reload_mode", "message": f"invalid_reload_mode: {m}", "instance_id": INSTANCE_ID},
+        trace_id=trace_id,
+    )
+
+
+async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_id: str | None = None) -> bool:
+    msg_type = str(msg.get("type") or "").strip().lower()
+    if msg_type == "system":
+        action = str(msg.get("action") or "").strip().lower()
+        if action == "reload":
+            mode = str(msg.get("mode") or "full")
+            await _handle_system_reload_mode(ws, mode, trace_id=trace_id)
+            return True
+        await _ws_send_json(ws, {"type": "error", "kind": "invalid_system_action", "message": f"invalid_system_action: {action}", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+        return True
+
+    if msg_type == "notes":
+        action = str(msg.get("action") or "").strip().lower()
+        if action in {"check", "latest", "list"}:
+            await _handle_notes_check(ws, "notes")
+            return True
+        if action in {"next"}:
+            await _handle_notes_next(ws, "notes")
+            return True
+        if action in {"add", "create"}:
+            body = str(msg.get("text") or msg.get("note") or "").strip()
+            if not body:
+                await _ws_send_json(ws, {"type": "error", "kind": "notes_missing_text", "message": "notes_missing_text", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                return True
+            await _handle_note_trigger(ws, f"make a note: {body}")
+            return True
+        await _ws_send_json(ws, {"type": "error", "kind": "invalid_notes_action", "message": f"invalid_notes_action: {action}", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+        return True
+
+    return False
+
+
 async def _handle_note_trigger(ws: WebSocket, text: str) -> bool:
     note_text = _extract_note_text(text)
     if not note_text:
@@ -7516,6 +7710,12 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             pass
         msg_type = msg.get("type")
 
+        # Deterministic backend tools (never forwarded to Gemini)
+        if isinstance(msg, dict):
+            handled_local = await _handle_local_tools_message(ws, msg, trace_id=trace_id)
+            if handled_local:
+                continue
+
         # Session control messages (handled locally, never forwarded to Gemini)
         if msg_type == "get_active_trip":
             session_id = getattr(ws.state, "session_id", None)
@@ -7635,6 +7835,12 @@ async def _ws_local_only_loop(ws: WebSocket) -> None:
         except Exception:
             pass
         msg_type = msg.get("type")
+
+        # Deterministic backend tools (works even in local-only mode)
+        if isinstance(msg, dict):
+            handled_local = await _handle_local_tools_message(ws, msg, trace_id=trace_id)
+            if handled_local:
+                continue
 
         if msg_type == "get_active_trip":
             session_id = getattr(ws.state, "session_id", None)
