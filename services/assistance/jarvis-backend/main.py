@@ -4711,36 +4711,19 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
                 return True
             src = await _resolve_sheet_gem(gem_id, sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
             if not isinstance(src, dict) or not src:
-                # Allow analyzing built-in gems that are not present in the sheet.
-                builtin = None
-                try:
-                    builtin = _JARVIS_GEMS.get(gem_id)
-                except Exception:
-                    builtin = None
-                if isinstance(builtin, str) and builtin.strip():
-                    src = {
-                        "id": gem_id,
-                        "name": gem_id,
-                        "purpose": "",
-                        "system_instruction": builtin.strip(),
-                        "user_instruction": "",
-                        "output_format": "",
-                        "tools_policy": "",
-                    }
-                else:
-                    await _ws_send_json(
-                        ws,
-                        {
-                            "type": "error",
-                            "kind": "gem_not_found",
-                            "message": "gem_not_found",
-                            "detail": "Try: gems list",
-                            "gem_id": gem_id,
-                            "instance_id": INSTANCE_ID,
-                        },
-                        trace_id=tid,
-                    )
-                    return True
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "gem_not_found",
+                        "message": "gem_not_found",
+                        "detail": f"gem_id={gem_id} sheet={sh_name} spreadsheet_id={ss_id} | Try: gems list | Try: reload gems",
+                        "gem_id": gem_id,
+                        "instance_id": INSTANCE_ID,
+                    },
+                    trace_id=tid,
+                )
+                return True
 
             await _ws_send_json(ws, {"type": "progress", "phase": "start", "text": f"gems.analyze: {gem_id}", "instance_id": INSTANCE_ID}, trace_id=tid)
             suggestion, err = await _gems_analyze_suggest_update(ws=ws, gem=src, criteria=criteria)
