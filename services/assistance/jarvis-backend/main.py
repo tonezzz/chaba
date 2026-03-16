@@ -4293,7 +4293,38 @@ async def _handle_reload_system(ws: WebSocket, text: str) -> bool:
             except Exception:
                 pass
         except Exception as e:
-            msg = f"Reload System failed: {str(e)}" if lang != "th" else f"Reload System ล้มเหลว: {str(e)}"
+            def _short_reload_err(err: Exception) -> str:
+                s = str(err or "").strip()
+                # Heuristic: extract the root cause from nested MCP error dicts.
+                try:
+                    if "mcp_error" in s:
+                        m = re.search(r"'error':\s*'([^']+)'", s)
+                        if m:
+                            return m.group(1)
+                        m2 = re.search(r"\"error\"\s*:\s*\"([^\"]+)\"", s)
+                        if m2:
+                            return m2.group(1)
+                except Exception:
+                    pass
+                # Common fast-path: our MCP servers throw specific sentinel errors.
+                for tok in (
+                    "missing_google_sheets_client_id",
+                    "missing_google_tasks_client_id",
+                    "missing_google_calendar_client_id",
+                    "auth_required",
+                    "invalid_client",
+                ):
+                    if tok in s:
+                        return tok
+                # Fallback: trim huge nested blobs.
+                if len(s) > 180:
+                    return s[:180] + "..."
+                return s
+
+            short = _short_reload_err(e)
+            msg = (
+                f"Reload System failed: {short}" if lang != "th" else f"Reload System ล้มเหลว: {short}"
+            )
             try:
                 await _ws_send_json(
                     ws,
