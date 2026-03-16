@@ -4541,6 +4541,17 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             enabled_raw = ""
             if isinstance(sys_kv, dict):
                 enabled_raw = str(sys_kv.get("sys_kv.write.enabled") or "").strip()
+            # If key is missing, attempt a one-time refresh from the sheet. This helps when
+            # the user has just added sys_kv.write.enabled in the sheet but the websocket
+            # session still has a stale sys_kv snapshot.
+            if not enabled_raw:
+                try:
+                    fresh = await _load_sys_kv_from_sheet()
+                    if isinstance(fresh, dict) and fresh:
+                        ws.state.sys_kv = fresh
+                        enabled_raw = str(fresh.get("sys_kv.write.enabled") or "").strip()
+                except Exception:
+                    pass
             if enabled_raw and not _parse_bool_cell(enabled_raw):
                 await _ws_send_json(
                     ws,
