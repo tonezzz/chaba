@@ -3797,6 +3797,192 @@ def _is_note_trigger(text: str) -> bool:
     return False
 
 
+def _notes_policy_text_from_sys_kv(sys_kv: Any) -> str:
+    if not isinstance(sys_kv, dict):
+        return ""
+    enabled_raw = str(sys_kv.get("policy.notes_ssot") or "").strip()
+    if enabled_raw and not _parse_bool_cell(enabled_raw):
+        return ""
+    # If key is missing, keep disabled by default.
+    if not enabled_raw:
+        return ""
+    txt = str(sys_kv.get("policy.notes_ssot_text") or "").strip()
+    return txt
+
+
+def _is_notes_check_trigger(text: str) -> bool:
+    raw = str(text or "").strip()
+    if not raw:
+        return False
+    s = " ".join(raw.split()).strip()
+    sl = s.lower()
+    # English.
+    if sl in {"notes", "notes latest", "notes list", "check notes", "check note"}:
+        return True
+    if sl.startswith("notes ") or sl.startswith("check notes"):
+        return True
+    # Thai.
+    if s in {"บันทึก", "โน้ต", "เช็คบันทึก", "ดูบันทึก", "บันทึกล่าสุด", "โน้ตล่าสุด"}:
+        return True
+    if s.startswith("บันทึก ") or s.startswith("โน้ต ") or s.startswith("ดูบันทึก"):
+        return True
+    return False
+
+
+async def _handle_notes_check(ws: WebSocket, text: str) -> bool:
+    if not _is_notes_check_trigger(text):
+        return False
+
+    sys_kv = getattr(ws.state, "sys_kv", None)
+    spreadsheet_id = ""
+    if isinstance(sys_kv, dict):
+        spreadsheet_id = str(sys_kv.get("notes_ss") or "").strip()
+    if not spreadsheet_id:
+        spreadsheet_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
+
+    if not spreadsheet_id:
+        await _ws_send_json(
+            ws,
+            {
+                "type": "text",
+                "text": "missing_notes_ss" if not _text_is_thai(text) else "ไม่พบสเปรดชีตบันทึก (missing_notes_ss)",
+                "instance_id": INSTANCE_ID,
+            },
+        )
+        return True
+
+    sheet_name = ""
+    if isinstance(sys_kv, dict):
+        sheet_name = str(sys_kv.get("notes.sheet_name") or sys_kv.get("notes_sh") or "").strip()
+    if not sheet_name:
+        sheet_name = str(os.getenv("CHABA_SS_SYS_NOTES_SHEET") or "notes.0").strip() or "notes.0"
+
+    try:
+        rows = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_name, max_rows=250, max_cols="S")
+    except Exception as e:
+        await _ws_send_json(
+            ws,
+            {
+                "type": "text",
+                "text": ("notes_read_failed" if not _text_is_thai(text) else "อ่านบันทึกไม่สำเร็จ") + f": {str(e)[:160]}",
+                "instance_id": INSTANCE_ID,
+            },
+        )
+        return True
+
+    if not rows or not isinstance(rows[0], list):
+        await _ws_send_json(
+            ws,
+            {
+                "type": "text",
+                "text": "notes_empty" if not _text_is_thai(text) else "ยังไม่มีบันทึก",
+                "instance_id": INSTANCE_ID,
+            },
+        )
+        return True
+
+    header = rows[0]
+    idx = _idx_from_header(header)
+    col_dt = idx.get("date_time")
+    col_subject = idx.get("subject")
+    col_notes = idx.get("notes")
+    col_status = idx.get("status")
+    col_assignee = idx.get("assignee")
+    col_result = idx.get("result")
+
+    items: list[dict[str, Any]] = []
+    for i, r in enumerate(rows[1:], start=2):
+        if not isinstance(r, list) or not r:
+            continue
+        dt = str(r[col_dt] if col_dt is not None and col_dt < len(r) else "").strip()
+        subject = str(r[col_subject] if col_subject is not None and col_subject < len(r) else "").strip()
+        notes = str(r[col_notes] if col_notes is not None and col_notes < len(r) else "").strip()
+        status = str(r[col_status] if col_status is not None and col_status < len(r) else "").strip().lower()
+        assignee = str(r[col_assignee] if col_assignee is not None and col_assignee < len(r) else "").strip().lower()
+        result = str(r[col_result] if col_result is not None and col_result < len(r) else "").strip()
+        if not (dt or subject or notes or status or result):
+            continue
+        items.append(
+            {
+                "row": i,
+                "date_time": dt,
+                "subject": subject,
+                "notes": notes,
+                "status": status,
+                "assignee": assignee,
+                "result": result,
+            }
+        )
+
+    def _sort_key(it: dict[str, Any]) -> tuple[int, int]:
+        # Prefer sortable ISO dt, but fall back to row order.
+        dt = str(it.get("date_time") or "").strip()
+        # Descending.
+        return (0 if dt else 1, -int(it.get("row") or 0))
+
+    # Latest notes (best-effort): keep last 10 by sheet order.
+    latest = sorted(items, key=lambda it: int(it.get("row") or 0), reverse=True)[:10]
+    open_jobs = [
+        it
+        for it in items
+        if str(it.get("status") or "").lower() in {"new", "doing"}
+    ]
+    open_jobs = sorted(open_jobs, key=lambda it: int(it.get("row") or 0))[:10]
+
+    next_line = ""
+    if open_jobs:
+        top = open_jobs[0]
+        body = str(top.get("notes") or "").strip() or str(top.get("subject") or "").strip()
+        if body:
+            next_line = ("Next: " if not _text_is_thai(text) else "ถัดไป: ") + body
+    elif latest:
+        top = latest[0]
+        body = str(top.get("notes") or "").strip() or str(top.get("result") or "").strip()
+        if body:
+            next_line = ("Next: " if not _text_is_thai(text) else "ถัดไป: ") + body
+
+    lines: list[str] = []
+    if not _text_is_thai(text):
+        lines.append(f"Notes SSOT: {sheet_name}")
+        if open_jobs:
+            lines.append("Open:")
+            for it in open_jobs[:5]:
+                body = str(it.get("notes") or "").strip() or str(it.get("subject") or "").strip()
+                if not body:
+                    continue
+                lines.append(f"- ({it.get('status')}) {body}")
+        if latest:
+            lines.append("Latest:")
+            for it in latest[:5]:
+                body = str(it.get("notes") or "").strip() or str(it.get("result") or "").strip()
+                if not body:
+                    continue
+                lines.append(f"- {body}")
+    else:
+        lines.append(f"บันทึก (SSoT): {sheet_name}")
+        if open_jobs:
+            lines.append("งานค้าง:")
+            for it in open_jobs[:5]:
+                body = str(it.get("notes") or "").strip() or str(it.get("subject") or "").strip()
+                if not body:
+                    continue
+                lines.append(f"- ({it.get('status')}) {body}")
+        if latest:
+            lines.append("ล่าสุด:")
+            for it in latest[:5]:
+                body = str(it.get("notes") or "").strip() or str(it.get("result") or "").strip()
+                if not body:
+                    continue
+                lines.append(f"- {body}")
+
+    if next_line:
+        lines.append("")
+        lines.append(next_line)
+
+    await _ws_send_json(ws, {"type": "text", "text": "\n".join(lines).strip(), "instance_id": INSTANCE_ID})
+    return True
+
+
 async def _handle_note_trigger(ws: WebSocket, text: str) -> bool:
     note_text = _extract_note_text(text)
     if not note_text:
@@ -4184,6 +4370,10 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
     if handled:
         return True
 
+    handled = await _handle_notes_check(ws, text)
+    if handled:
+        return True
+
     handled = await _handle_memory_trigger(ws, text)
     if handled:
         return True
@@ -4397,6 +4587,10 @@ async def _run_notes_board_job(*, ws: WebSocket, job_text: str, gem_name: str | 
     sys_kv = getattr(ws.state, "sys_kv", None)
     instruction, model_override = await _resolve_gem_instruction_and_model(gem_name=gem_name, sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
     system_instruction = "You are Jarvis. Complete the user's job and return only the final result.".strip()
+
+    notes_policy = _notes_policy_text_from_sys_kv(sys_kv)
+    if notes_policy:
+        system_instruction += "\n\nNOTES_POLICY (internal)\n" + notes_policy
 
     mem_ctx = str(getattr(ws.state, "memory_context_text", "") or "").strip()
     know_ctx = str(getattr(ws.state, "knowledge_context_text", "") or "").strip()
@@ -7868,6 +8062,10 @@ async def ws_live(ws: WebSocket) -> None:
             f"NOW_LOCAL: {now_local.isoformat()}\n"
             "Use this as the reference for all relative time calculations."
         )
+
+        notes_policy = _notes_policy_text_from_sys_kv(sys_kv)
+        if notes_policy:
+            system_instruction = system_instruction + "\n\nNOTES_POLICY (internal)\n" + notes_policy
 
         # Inject memory sheet context (best-effort). Keep compact to avoid token blowups.
         mem_ctx = str(getattr(ws.state, "memory_context_text", "") or "").strip()
