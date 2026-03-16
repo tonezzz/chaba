@@ -521,8 +521,22 @@ export default function App() {
 			return;
 		}
 
+		if (normalized.toLowerCase() === "system clear job" || normalized.toLowerCase() === "sys clear job") {
+			liveService.current?.sendSystemClearJob();
+			setComposerText("");
+			setAttachments([]);
+			return;
+		}
+
 		// Never send slash-commands to Gemini; handle locally to avoid confusing "task not found" replies.
 		if (normalized.startsWith("/")) {
+			const s2 = normalized.toLowerCase();
+			if (s2 === "/system clear job" || s2 === "/sys clear job" || s2 === "/system clear" || s2 === "/sys clear") {
+				liveService.current?.sendSystemClearJob();
+				setComposerText("");
+				setAttachments([]);
+				return;
+			}
 			setComposerText("");
 			setAttachments([]);
 			setMessages((prev) => [

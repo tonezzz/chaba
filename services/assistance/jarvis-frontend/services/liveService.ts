@@ -189,6 +189,12 @@ export class LiveService {
 		}
 	}
 
+	public sendSystemClearJob() {
+		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			this.wsSend({ type: "system", action: "clear_job", trace_id: this.createTraceId("sys_clear_job") });
+		}
+	}
+
 	public sendSysKvSet(key: string, value: string, opts?: { dry_run?: boolean }) {
 		const k = String(key || "").trim();
 		const v = String(value ?? "");
@@ -744,6 +750,29 @@ export class LiveService {
       client_tag: message?.client_tag != null ? String(message.client_tag) : undefined,
       client_id: message?.client_id != null ? String(message.client_id) : undefined,
     };
+
+		if (message?.type === "reconnect") {
+			const reason = message?.reason != null ? String(message.reason) : "";
+			this.onMessage({
+				id: `${Date.now()}_reconnect`,
+				role: "system",
+				text: `reconnect_requested${reason ? `: ${reason}` : ""}`,
+				timestamp: new Date(),
+				metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "info", category: "ws" },
+			});
+			try {
+				await this.disconnect();
+			} catch {
+				// ignore
+			}
+			try {
+				await new Promise((r) => setTimeout(r, 300));
+				await this.connect();
+			} catch {
+				// ignore
+			}
+			return;
+		}
 
 		// After a deterministic /sys set, ignore tool/progress chatter and late model turns.
 		// This prevents confusing follow-up actions like google_tasks_list_tasks showing up right after sys_kv_set.

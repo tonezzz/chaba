@@ -78,6 +78,26 @@ flowchart LR
   BE -->|error(kind=invalid_reload_mode/reload_failed)| FE
 ```
 
+### Tool: system.clear_job (clear in-flight Gemini job)
+
+Purpose: stop any in-flight Gemini Live actions (e.g. unwanted MCP tool calls) by forcing a clean reconnect.
+
+Inbound (client -> backend):
+
+```json
+{"type":"system","action":"clear_job"}
+```
+
+Typed shortcuts (frontend smart mapping):
+
+- `system clear job`
+- `/system clear job`
+
+Outbound (backend -> client):
+
+- `type=text`: `system.clear_job: reconnecting`
+- `type=reconnect` with `reason=system_clear_job` (frontend disconnects and reconnects)
+
 ### Tool: system.sys_kv_set (write sys sheet KV)
 
 Writes a single key/value into the authoritative `sys` sheet (KV table) using MCP Google Sheets write tools.

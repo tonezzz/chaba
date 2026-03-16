@@ -4570,6 +4570,28 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             await _handle_system_reload_mode(ws, mode, trace_id=tid)
             await _ws_voice_job_done(ws, tid)
             return True
+        if action in {"clear_job", "clear", "cancel_job", "cancel"}:
+            await _ws_send_json(
+                ws,
+                {
+                    "type": "text",
+                    "text": "system.clear_job: reconnecting",
+                    "instance_id": INSTANCE_ID,
+                },
+                trace_id=tid,
+            )
+            # Ask the frontend to reconnect, which effectively clears any in-flight Gemini Live job.
+            await _ws_send_json(
+                ws,
+                {
+                    "type": "reconnect",
+                    "reason": "system_clear_job",
+                    "instance_id": INSTANCE_ID,
+                },
+                trace_id=tid,
+            )
+            await _ws_voice_job_done(ws, tid)
+            return True
         if action in {"sys_kv_set", "syskv_set", "sys_set"}:
             sys_kv = getattr(ws.state, "sys_kv", None)
             enabled_raw = ""
