@@ -78,6 +78,67 @@ flowchart LR
   BE -->|error(kind=invalid_reload_mode/reload_failed)| FE
 ```
 
+### Tool: system.sys_kv_set (write sys sheet KV)
+
+Writes a single key/value into the authoritative `sys` sheet (KV table) using MCP Google Sheets write tools.
+
+Inbound (client -> backend):
+
+```json
+{"type":"system","action":"sys_kv_set","key":"voice.job_done","value":"true"}
+```
+
+Optional:
+
+```json
+{"type":"system","action":"sys_kv_set","key":"voice.job_done","value":"true","dry_run":true}
+```
+
+Safety gate (default **disabled**):
+
+- Enable sheet writes by setting sys kv key `sys_kv.write.enabled=true`.
+
+Outbound (backend -> client) on success:
+
+- `type=text` status line, and a `sys_kv_set` object containing append/update details.
+
+On failure:
+
+- `type=error` with `kind=sys_kv_write_disabled|sys_kv_set_failed`.
+
+## Sheet-driven config: Voice command routing (frontend)
+
+The frontend has a voice UX fallback that can auto-trigger deterministic WS tool messages from **input transcripts** (when Gemini doesn't emit a tool call for simple commands).
+
+This routing is now configurable via sys sheet keys and exposed via HTTP:
+
+- `GET /jarvis/config/voice_commands` (when reverse-proxied under `/jarvis`)
+- `GET /config/voice_commands` (direct backend)
+
+Response:
+
+```json
+{"ok":true,"config":{...}}
+```
+
+Supported sys kv keys (defaults shown):
+
+- `voice_cmd.enabled=true`
+- `voice_cmd.debounce_ms=10000`
+- `voice_cmd.reload.enabled=true`
+- `voice_cmd.reload.phrases=` (optional; if empty, frontend uses built-in heuristics)
+- `voice_cmd.reload.keywords.gems=gems,gem,models,model,เจม,โมเดล`
+- `voice_cmd.reload.keywords.knowledge=knowledge,kb,know,ความรู้`
+- `voice_cmd.reload.keywords.memory=memory,mem,เมม,เมมโม`
+- `voice_cmd.reminders_add.enabled=true`
+- `voice_cmd.reminders_add.phrases=` (optional)
+- `voice_cmd.gems_list.enabled=true`
+- `voice_cmd.gems_list.phrases=` (optional)
+
+To apply sys sheet changes:
+
+- Use `system.reload` (or wait for the backend to reload sheet caches).
+
 ### Tool chart: notes.*
 
 ```mermaid

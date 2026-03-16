@@ -4438,6 +4438,94 @@ async def _handle_system_reload_mode(ws: WebSocket, mode: str, trace_id: str | N
     )
 
 
+async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -> dict[str, Any]:
+    k = str(key or "").strip()
+    v = str(value or "").strip()
+    if not k:
+        return {"ok": False, "error": "missing_key"}
+
+    spreadsheet_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
+    if not spreadsheet_id:
+        return {"ok": False, "error": "missing_spreadsheet"}
+    sys_sheet = str(os.getenv("CHABA_SS_SYS_SYS_SHEET") or "sys").strip() or "sys"
+
+    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sys_sheet}!A:B"})
+    parsed = _mcp_text_json(res)
+    if not isinstance(parsed, dict):
+        return {"ok": False, "error": "values_get_invalid_response"}
+    values = parsed.get("values")
+    if not isinstance(values, list) or not values:
+        # If sheet is empty, just append.
+        values = []
+
+    row_idx: Optional[int] = None
+    for i, r in enumerate(values, start=1):
+        if i == 1:
+            continue
+        if not isinstance(r, list) or not r:
+            continue
+        if str(r[0] or "").strip() == k:
+            row_idx = i
+            break
+
+    if dry_run:
+        return {
+            "ok": True,
+            "dry_run": True,
+            "spreadsheet_id": spreadsheet_id,
+            "sheet": sys_sheet,
+            "action": "update" if row_idx else "append",
+            "row": row_idx,
+            "key": k,
+            "value": v,
+        }
+
+    if row_idx:
+        tool_upd = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+        rng = f"{sys_sheet}!A{row_idx}:B{row_idx}"
+        res2 = await _mcp_tools_call(
+            tool_upd,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": rng,
+                "values": [[k, v]],
+                "value_input_option": "RAW",
+            },
+        )
+        parsed2 = _mcp_text_json(res2)
+        return {
+            "ok": True,
+            "spreadsheet_id": spreadsheet_id,
+            "sheet": sys_sheet,
+            "action": "update",
+            "row": row_idx,
+            "range": rng,
+            "response": parsed2 if isinstance(parsed2, dict) else {"raw": parsed2},
+        }
+
+    tool_app = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+    res3 = await _mcp_tools_call(
+        tool_app,
+        {
+            "spreadsheet_id": spreadsheet_id,
+            "range": f"{sys_sheet}!A:B",
+            "values": [[k, v]],
+            "value_input_option": "RAW",
+        },
+    )
+    parsed3 = _mcp_text_json(res3)
+    return {
+        "ok": True,
+        "spreadsheet_id": spreadsheet_id,
+        "sheet": sys_sheet,
+        "action": "append",
+        "key": k,
+        "value": v,
+        "response": parsed3 if isinstance(parsed3, dict) else {"raw": parsed3},
+    }
+
+
 async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_id: str | None = None) -> bool:
     tid = _ws_ensure_trace_id(ws, trace_id)
     msg_type = str(msg.get("type") or "").strip().lower()
@@ -4446,6 +4534,82 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
         if action == "reload":
             mode = str(msg.get("mode") or "full")
             await _handle_system_reload_mode(ws, mode, trace_id=tid)
+            await _ws_voice_job_done(ws, tid)
+            return True
+        if action in {"sys_kv_set", "syskv_set", "sys_set"}:
+            sys_kv = getattr(ws.state, "sys_kv", None)
+            enabled_raw = ""
+            if isinstance(sys_kv, dict):
+                enabled_raw = str(sys_kv.get("sys_kv.write.enabled") or "").strip()
+            if enabled_raw and not _parse_bool_cell(enabled_raw):
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "sys_kv_write_disabled",
+                        "message": "sys_kv_write_disabled",
+                        "detail": "Enable via sys sheet key sys_kv.write.enabled=true",
+                        "instance_id": INSTANCE_ID,
+                    },
+                    trace_id=tid,
+                )
+                return True
+            # If key is missing, keep disabled by default.
+            if not enabled_raw:
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "sys_kv_write_disabled",
+                        "message": "sys_kv_write_disabled",
+                        "detail": "Missing sys sheet key sys_kv.write.enabled (default disabled)",
+                        "instance_id": INSTANCE_ID,
+                    },
+                    trace_id=tid,
+                )
+                return True
+
+            k = str(msg.get("key") or "").strip()
+            v = str(msg.get("value") or "").strip()
+            dry_run = bool(msg.get("dry_run") is True)
+            try:
+                result = await _sys_kv_upsert_sheet(key=k, value=v, dry_run=dry_run)
+            except Exception as e:
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "sys_kv_set_failed",
+                        "message": "sys_kv_set_failed",
+                        "detail": str(e),
+                        "instance_id": INSTANCE_ID,
+                    },
+                    trace_id=tid,
+                )
+                return True
+            if not isinstance(result, dict) or not result.get("ok"):
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "sys_kv_set_failed",
+                        "message": "sys_kv_set_failed",
+                        "detail": str((result or {}).get("error") or "unknown"),
+                        "instance_id": INSTANCE_ID,
+                    },
+                    trace_id=tid,
+                )
+                return True
+            await _ws_send_json(
+                ws,
+                {
+                    "type": "text",
+                    "text": f"sys_kv_set ok: {k}={v}" + (" (dry_run)" if dry_run else ""),
+                    "instance_id": INSTANCE_ID,
+                    "sys_kv_set": result,
+                },
+                trace_id=tid,
+            )
             await _ws_voice_job_done(ws, tid)
             return True
         await _ws_send_json(
@@ -7026,6 +7190,92 @@ app.add_middleware(
     allow_methods=["*"] ,
     allow_headers=["*"] ,
 )
+
+
+def _split_phrases(value: Any) -> list[str]:
+    raw = str(value or "").strip()
+    if not raw:
+        return []
+    parts: list[str] = []
+    for line in raw.replace("\r", "\n").split("\n"):
+        for p in line.split(","):
+            s = str(p or "").strip()
+            if s:
+                parts.append(s)
+    seen: set[str] = set()
+    out: list[str] = []
+    for p in parts:
+        k = p.lower()
+        if k in seen:
+            continue
+        seen.add(k)
+        out.append(p)
+    return out
+
+
+def _sys_kv_snapshot() -> dict[str, str]:
+    cached = _get_cached_sheet_memory()
+    if isinstance(cached, dict):
+        skv = cached.get("sys_kv")
+        if isinstance(skv, dict):
+            out: dict[str, str] = {}
+            for k, v in skv.items():
+                ks = str(k or "").strip()
+                if not ks:
+                    continue
+                out[ks] = str(v or "").strip()
+            return out
+    return {}
+
+
+def _voice_command_config_from_sys_kv(sys_kv: dict[str, str]) -> dict[str, Any]:
+    def _get(k: str, default: str = "") -> str:
+        v = str(sys_kv.get(k) or "").strip()
+        return v if v else default
+
+    enabled = True
+    raw_enabled = _get("voice_cmd.enabled", "")
+    if raw_enabled:
+        try:
+            enabled = _parse_bool_cell(raw_enabled)
+        except Exception:
+            enabled = True
+
+    try:
+        debounce_ms = int(float(_get("voice_cmd.debounce_ms", "10000")))
+        debounce_ms = max(0, min(debounce_ms, 120_000))
+    except Exception:
+        debounce_ms = 10_000
+
+    return {
+        "enabled": enabled,
+        "debounce_ms": debounce_ms,
+        "reload": {
+            "enabled": _parse_bool_cell(_get("voice_cmd.reload.enabled", "true")),
+            "phrases": _split_phrases(_get("voice_cmd.reload.phrases", "")),
+            "mode_keywords": {
+                "gems": _split_phrases(_get("voice_cmd.reload.keywords.gems", "gems,gem,models,model,เจม,โมเดล")),
+                "knowledge": _split_phrases(_get("voice_cmd.reload.keywords.knowledge", "knowledge,kb,know,ความรู้")),
+                "memory": _split_phrases(_get("voice_cmd.reload.keywords.memory", "memory,mem,เมม,เมมโม")),
+            },
+        },
+        "reminders_add": {
+            "enabled": _parse_bool_cell(_get("voice_cmd.reminders_add.enabled", "true")),
+            "phrases": _split_phrases(_get("voice_cmd.reminders_add.phrases", "")),
+        },
+        "gems_list": {
+            "enabled": _parse_bool_cell(_get("voice_cmd.gems_list.enabled", "true")),
+            "phrases": _split_phrases(_get("voice_cmd.gems_list.phrases", "")),
+        },
+    }
+
+
+@app.get("/config/voice_commands")
+@app.get("/jarvis/config/voice_commands")
+def config_voice_commands() -> dict[str, Any]:
+    sys_kv = _sys_kv_snapshot()
+    cfg = _voice_command_config_from_sys_kv(sys_kv)
+    return {"ok": True, "config": cfg}
 
 
 @app.get("/health")

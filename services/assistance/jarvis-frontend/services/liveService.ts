@@ -35,6 +35,8 @@ export class LiveService {
   private wsSeq: number = 0;
   private currentCameraFrame: string | null = null;
   private lastVoiceCommandTs: Record<string, number> = {};
+  private voiceCmdCfg: any | null = null;
+  private voiceCmdCfgLoadedAt: number = 0;
 
 	private createTraceId(prefix?: string): string {
 		const p = String(prefix || "tr").trim() || "tr";
@@ -104,6 +106,67 @@ export class LiveService {
 		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
 			this.ws.send(JSON.stringify(payload));
 		}
+	}
+
+	private buildDefaultVoiceCmdCfg(): any {
+		return {
+			enabled: true,
+			debounce_ms: 10_000,
+			reload: {
+				enabled: true,
+				phrases: [],
+				mode_keywords: {
+					gems: ["gems", "gem", "models", "model", "เจม", "โมเดล"],
+					knowledge: ["knowledge", "kb", "know", "ความรู้"],
+					memory: ["memory", "mem", "เมม", "เมมโม"],
+				},
+			},
+			reminders_add: { enabled: true, phrases: [] },
+			gems_list: { enabled: true, phrases: [] },
+		};
+	}
+
+	private mergeVoiceCmdCfg(cfg: any | null): any {
+		const d = this.buildDefaultVoiceCmdCfg();
+		if (!cfg || typeof cfg !== "object") return d;
+		const out: any = { ...d, ...cfg };
+		out.reload = { ...d.reload, ...(cfg.reload || {}) };
+		out.reload.mode_keywords = { ...d.reload.mode_keywords, ...((cfg.reload || {}).mode_keywords || {}) };
+		out.reminders_add = { ...d.reminders_add, ...(cfg.reminders_add || {}) };
+		out.gems_list = { ...d.gems_list, ...(cfg.gems_list || {}) };
+		return out;
+	}
+
+	private async ensureVoiceCmdCfgLoaded(force?: boolean) {
+		const now = Date.now();
+		if (!force && this.voiceCmdCfg && now - this.voiceCmdCfgLoadedAt < 60_000) return;
+		const isJarvisSubpath = location.pathname.startsWith("/jarvis");
+		const url = isJarvisSubpath ? "/jarvis/config/voice_commands" : "/config/voice_commands";
+		try {
+			const res = await fetch(url, { method: "GET" });
+			const j = await res.json();
+			this.voiceCmdCfg = this.mergeVoiceCmdCfg(j && j.config);
+			this.voiceCmdCfgLoadedAt = now;
+		} catch {
+			this.voiceCmdCfg = this.buildDefaultVoiceCmdCfg();
+			this.voiceCmdCfgLoadedAt = now;
+		}
+	}
+
+	private compactVoiceText(text: string): string {
+		const s = String(text || "").trim().toLowerCase();
+		if (!s) return "";
+		return s.replace(/[^a-z0-9\u0E00-\u0E7F]+/g, " ").trim().replace(/\s+/g, " ");
+	}
+
+	private includesAny(compact: string, phrases: any): boolean {
+		if (!compact) return false;
+		if (!Array.isArray(phrases) || !phrases.length) return false;
+		for (const p of phrases) {
+			const ps = this.compactVoiceText(String(p || ""));
+			if (ps && compact.includes(ps)) return true;
+		}
+		return false;
 	}
 
 	public sendSystemReload(mode: "full" | "memory" | "knowledge" | "sys" | "gems" = "full") {
@@ -234,17 +297,35 @@ export class LiveService {
 	}
 
 	private extractSystemReloadMode(text: string): "full" | "memory" | "knowledge" | "sys" | "gems" | null {
-		const s = String(text || "").trim().toLowerCase();
-		if (!s) return null;
-		const compact = s.replace(/[^a-z0-9\u0E00-\u0E7F]+/g, " ").trim().replace(/\s+/g, " ");
+		const compact = this.compactVoiceText(text);
 		if (!compact) return null;
+		const cfg = this.voiceCmdCfg || this.buildDefaultVoiceCmdCfg();
+		if (!(cfg?.enabled ?? true)) return null;
+		if (!(cfg?.reload?.enabled ?? true)) return null;
+		if (Array.isArray(cfg?.reload?.phrases) && cfg.reload.phrases.length) {
+			if (!this.includesAny(compact, cfg.reload.phrases)) return null;
+		} else {
 		if (!this.isReloadSystemPhrase(compact)) return null;
+		}
 
 		const has = (w: string) => compact.includes(w);
 		// Prefer more specific targets first.
-		if (has("gems") || has("gem") || has("models") || has("model") || has("เจม") || has("โมเดล")) return "gems";
-		if (has("knowledge") || has("kb") || has("know") || has("ความรู้")) return "knowledge";
-		if (has("memory") || has("mem") || has("เมม") || has("เมมโม")) return "memory";
+		const kws: any = cfg?.reload?.mode_keywords || {};
+		const gemsK = Array.isArray(kws?.gems) ? kws.gems : ["gems", "gem", "models", "model", "เจม", "โมเดล"];
+		const knowK = Array.isArray(kws?.knowledge) ? kws.knowledge : ["knowledge", "kb", "know", "ความรู้"];
+		const memK = Array.isArray(kws?.memory) ? kws.memory : ["memory", "mem", "เมม", "เมมโม"];
+		for (const w of gemsK) {
+			const ww = this.compactVoiceText(String(w || ""));
+			if (ww && has(ww)) return "gems";
+		}
+		for (const w of knowK) {
+			const ww = this.compactVoiceText(String(w || ""));
+			if (ww && has(ww)) return "knowledge";
+		}
+		for (const w of memK) {
+			const ww = this.compactVoiceText(String(w || ""));
+			if (ww && has(ww)) return "memory";
+		}
 		if (has("sys") || has("system") || has("sheets") || has("sheet") || has("ระบบ") || has("ชีต") || has("ชีท")) return "full";
 		return "full";
 	}
@@ -459,6 +540,7 @@ export class LiveService {
       this.ws.onopen = () => {
         if (mySeq !== this.wsSeq) return;
         this.connectInFlight = false;
+			void this.ensureVoiceCmdCfgLoaded();
         this.onStateChange(ConnectionState.CONNECTED);
         this.onMessage({
           id: `${Date.now()}_ws_open`,
@@ -952,49 +1034,65 @@ export class LiveService {
       // Voice UX fallback: auto-trigger local commands from input transcripts.
       // This helps when Gemini doesn't emit a tool call for simple control commands.
       if (src === "input") {
-			const trText = String(message.text);
-			const reloadMode = this.extractSystemReloadMode(trText);
-			if (reloadMode && this.shouldAutoTriggerVoiceCommand("reload_system", 10_000)) {
-				this.wsSend({ type: "system", action: "reload", mode: reloadMode, trace_id: this.createTraceId("voice_reload") });
-			}
-			const remText = this.extractReminderAddText(trText);
-			if (remText && this.shouldAutoTriggerVoiceCommand("reminders_add", 10_000)) {
-				this.wsSend({ type: "reminders", action: "add", text: remText, trace_id: this.createTraceId("voice_rem_add") });
-			}
-			if (this.isGemsListPhrase(trText) && this.shouldAutoTriggerVoiceCommand("gems_list", 10_000)) {
-				this.wsSend({ type: "gems", action: "list", trace_id: this.createTraceId("voice_gems_ls") });
-			}
-			const gemRemoveId = this.extractGemsRemoveId(trText);
-			if (gemRemoveId && this.shouldAutoTriggerVoiceCommand("gems_remove", 10_000)) {
-				this.wsSend({ type: "gems", action: "remove", gem_id: gemRemoveId, id: gemRemoveId, trace_id: this.createTraceId("voice_gems_rm") });
-			}
-			const gemUpsert = this.extractGemsUpsertJson(trText);
-			if (gemUpsert && this.shouldAutoTriggerVoiceCommand("gems_upsert", 10_000)) {
-				this.wsSend({ type: "gems", action: "upsert", gem: gemUpsert, trace_id: this.createTraceId("voice_gems_upsert") });
-			}
-			const gemCreateId = this.extractGemsCreateId(trText);
-			if (gemCreateId && this.shouldAutoTriggerVoiceCommand("gems_create", 10_000)) {
-				this.wsSend({ type: "gems", action: "upsert", gem: { id: gemCreateId, name: gemCreateId }, trace_id: this.createTraceId("voice_gems_create") });
-			}
-			const analyze = this.extractGemsAnalyze(trText);
-			if (analyze && this.shouldAutoTriggerVoiceCommand("gems_analyze", 10_000)) {
-				this.wsSend({ type: "gems", action: "analyze", gem_id: analyze.gem_id, id: analyze.gem_id, criteria: analyze.criteria, trace_id: this.createTraceId("voice_gems_analyze") });
-			}
-			const draftAct = this.extractGemsDraftAction(trText);
-			if (draftAct && this.shouldAutoTriggerVoiceCommand("gems_draft_action", 10_000)) {
-				if (draftAct.action === "apply") {
-					this.wsSend({ type: "gems", action: "draft_apply", draft_id: draftAct.draft_id, trace_id: this.createTraceId("voice_gems_apply") });
-				} else {
-					this.wsSend({ type: "gems", action: "draft_discard", draft_id: draftAct.draft_id, trace_id: this.createTraceId("voice_gems_discard") });
+				const trText = String(message.text);
+				const cfg = this.voiceCmdCfg || this.buildDefaultVoiceCmdCfg();
+				const debounce = typeof cfg?.debounce_ms === "number" ? cfg.debounce_ms : 10_000;
+				if (cfg?.enabled ?? true) {
+					const reloadMode = this.extractSystemReloadMode(trText);
+					if (reloadMode && this.shouldAutoTriggerVoiceCommand("reload_system", debounce)) {
+						this.wsSend({ type: "system", action: "reload", mode: reloadMode, trace_id: this.createTraceId("voice_reload") });
+					}
+					if (cfg?.reminders_add?.enabled ?? true) {
+						const remText = this.extractReminderAddText(trText);
+						if (remText && this.shouldAutoTriggerVoiceCommand("reminders_add", debounce)) {
+							this.wsSend({ type: "reminders", action: "add", text: remText, trace_id: this.createTraceId("voice_rem_add") });
+						}
+					}
+					if (cfg?.gems_list?.enabled ?? true) {
+						if (this.isGemsListPhrase(trText) && this.shouldAutoTriggerVoiceCommand("gems_list", debounce)) {
+							this.wsSend({ type: "gems", action: "list", trace_id: this.createTraceId("voice_gems_ls") });
+						}
+					}
 				}
-			}
+				const gemRemoveId = this.extractGemsRemoveId(trText);
+				if (gemRemoveId && this.shouldAutoTriggerVoiceCommand("gems_remove", debounce)) {
+					this.wsSend({ type: "gems", action: "remove", gem_id: gemRemoveId, id: gemRemoveId, trace_id: this.createTraceId("voice_gems_rm") });
+				}
+				const gemUpsert = this.extractGemsUpsertJson(trText);
+				if (gemUpsert && this.shouldAutoTriggerVoiceCommand("gems_upsert", debounce)) {
+					this.wsSend({ type: "gems", action: "upsert", gem: gemUpsert, trace_id: this.createTraceId("voice_gems_upsert") });
+				}
+				const gemCreateId = this.extractGemsCreateId(trText);
+				if (gemCreateId && this.shouldAutoTriggerVoiceCommand("gems_create", debounce)) {
+					this.wsSend({ type: "gems", action: "upsert", gem: { id: gemCreateId, name: gemCreateId }, trace_id: this.createTraceId("voice_gems_create") });
+				}
+				const analyze = this.extractGemsAnalyze(trText);
+				if (analyze && this.shouldAutoTriggerVoiceCommand("gems_analyze", debounce)) {
+					this.wsSend({ type: "gems", action: "analyze", gem_id: analyze.gem_id, id: analyze.gem_id, criteria: analyze.criteria, trace_id: this.createTraceId("voice_gems_analyze") });
+				}
+				const draftAct = this.extractGemsDraftAction(trText);
+				if (draftAct && this.shouldAutoTriggerVoiceCommand("gems_draft_action", debounce)) {
+					if (draftAct.action === "apply") {
+						this.wsSend({ type: "gems", action: "draft_apply", draft_id: draftAct.draft_id, trace_id: this.createTraceId("voice_gems_apply") });
+					} else {
+						this.wsSend({ type: "gems", action: "draft_discard", draft_id: draftAct.draft_id, trace_id: this.createTraceId("voice_gems_discard") });
+					}
+				}
       }
       this.onMessage({
         id: `${traceId || Date.now()}_${src}_tr`,
         role: src === "output" ? "model" : "system",
         text: String(message.text),
         timestamp: new Date(),
-        metadata: { type: "text", source: src, trace_id: traceId, ws: wsMeta, raw: message, severity: "debug", category: "live" },
+        metadata: {
+          type: "text",
+          source: src,
+          trace_id: traceId,
+          ws: wsMeta,
+          raw: message,
+          severity: src === "output" ? "info" : "debug",
+          category: "live",
+        },
       });
       return;
     }
