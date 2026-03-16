@@ -998,11 +998,14 @@ export class LiveService {
 
     if (message?.type === "error" && message?.message) {
       const kind = message?.kind != null ? String(message.kind) : "";
+      const detail = (message as any)?.detail != null ? String((message as any).detail) : "";
+      const gemId = (message as any)?.gem_id != null ? String((message as any).gem_id) : "";
       const category = kind.startsWith("gemini_") ? "live" : "ws";
+      const text = `${String(message.message)}${kind ? ` (kind=${kind})` : ""}${gemId ? ` [${gemId}]` : ""}${detail ? `\n${detail}` : ""}`;
       this.onMessage({
         id: `${Date.now()}_err`,
         role: "system",
-        text: String(message.message),
+        text,
         timestamp: new Date(),
         metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "error", category },
       });
