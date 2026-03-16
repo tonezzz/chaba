@@ -51,6 +51,8 @@ export default function App() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const logScrollRef = useRef<HTMLDivElement | null>(null);
   const logStickToBottomRef = useRef<boolean>(true);
+  const outputScrollRef = useRef<HTMLDivElement | null>(null);
+  const outputStickToBottomRef = useRef<boolean>(true);
 
   const systemCounts = useMemo(() => {
     const out = { memory: 0, knowledge: 0, ok: false };
@@ -90,6 +92,65 @@ export default function App() {
     const ok = state === ConnectionState.CONNECTED && (!lastAudioUnavailable || lastAudioUnavailable < lastConn);
     return { ok, lastConn, lastAudioUnavailable };
   }, [messages, state]);
+
+  const outputDialog = useMemo(() => {
+    const ordered = messages
+      .filter((m) => {
+        if (m.role !== "model") return false;
+        const src = String(m.metadata?.source || "");
+        const sev = String(m.metadata?.severity || "info");
+        const cat = String(m.metadata?.category || "");
+        // Include explicit output transcripts and normal assistant text. Exclude debug.
+        if (sev === "debug") return false;
+        if (src === "output") return true;
+        if (cat === "live") return true;
+        return false;
+      })
+      .slice()
+      .sort((a, b) => {
+        const ta = a.timestamp?.getTime?.() ? a.timestamp.getTime() : 0;
+        const tb = b.timestamp?.getTime?.() ? b.timestamp.getTime() : 0;
+        if (ta !== tb) return ta - tb;
+        return String(a.id || "").localeCompare(String(b.id || ""));
+      });
+
+    const splitSentences = (text: string): Array<{ t: string; complete: boolean }> => {
+      const raw = String(text || "").replace(/\r\n/g, "\n");
+      const parts = raw.split(/\n+/g);
+      const out: Array<{ t: string; complete: boolean }> = [];
+      for (const p of parts) {
+        const s = String(p || "").trim();
+        if (!s) continue;
+        // Basic multilingual sentence splitter.
+        const chunks = s.split(/(?<=[.!?。！？])\s+/g);
+        for (const c of chunks) {
+          const cc = String(c || "").trim();
+          if (!cc) continue;
+          const complete = /[.!?。！？]$/.test(cc);
+          out.push({ t: cc, complete });
+        }
+      }
+      if (!out.length && raw.trim()) out.push({ t: raw.trim(), complete: /[.!?。！？]$/.test(raw.trim()) });
+      return out;
+    };
+
+    const dialog: Array<{ id: string; text: string }> = [];
+    for (const m of ordered) {
+      const sents = splitSentences(String(m.text || ""));
+      for (let i = 0; i < sents.length; i++) {
+        const sent = sents[i];
+        const isLast = i === sents.length - 1;
+        const id = `${m.id}_s${i}`;
+        if (isLast && !sent.complete && dialog.length) {
+          // Update the last line (merge partials) so live streaming doesn't spam.
+          dialog[dialog.length - 1] = { ...dialog[dialog.length - 1], text: sent.t };
+        } else {
+          dialog.push({ id, text: sent.t });
+        }
+      }
+    }
+    return dialog.slice(-200);
+  }, [messages]);
 
   useEffect(() => {
     try {
@@ -291,6 +352,17 @@ export default function App() {
       // ignore
     }
   }, [messages, showDebugLogs]);
+
+  useEffect(() => {
+    const el = outputScrollRef.current;
+    if (!el) return;
+    if (!outputStickToBottomRef.current) return;
+    try {
+      el.scrollTop = el.scrollHeight;
+    } catch {
+      // ignore
+    }
+  }, [outputDialog]);
 
   useEffect(() => {
     if (state !== ConnectionState.CONNECTED && isTalking) {
@@ -1262,55 +1334,69 @@ export default function App() {
                      <div>template: {seqTemplate ? seqTemplate.join(" | ") : "(none)"}</div>
                    </div>
                  </div>
-               ) : !activeMedia ? (
+               ) : !activeMedia && outputDialog.length === 0 ? (
                  <div className="flex flex-col items-center justify-center text-slate-600 gap-4">
-                    <Activity className="w-16 h-16 opacity-20" />
-                    <p className="font-mono text-sm tracking-wide">Waiting for system output...</p>
+                   <Activity className="w-16 h-16 opacity-20" />
+                   <p className="font-mono text-sm tracking-wide">Waiting for system output...</p>
                  </div>
                ) : (
                  <div className="w-full h-full flex flex-col items-center animate-in zoom-in-95 duration-500">
-                    {activeMedia.metadata?.image && (
-                      <div className="relative group max-w-full max-h-full">
-                         <img 
-                           src={activeMedia.metadata.image} 
-                           alt="Generated content" 
-                           className="max-h-[400px] w-auto rounded-lg shadow-2xl border border-slate-600"
-                         />
-                         <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded backdrop-blur font-mono">
-                            Generated by Gemini
-                         </div>
-                      </div>
-                    )}
-
-                    {activeMedia.metadata?.sources && (
-                      <div className="w-full max-w-2xl bg-slate-800/50 rounded-lg border border-slate-700 p-4">
-                         <h3 className="text-cyan-400 font-hud text-sm mb-3 uppercase tracking-wider">Grounding Sources</h3>
-                         <ul className="space-y-2">
-                           {activeMedia.metadata.sources.map((src, i) => (
-                             <li key={i} className="flex items-start gap-3 p-2 rounded hover:bg-slate-700/50 transition-colors">
-                                <span className="bg-slate-700 text-slate-300 text-xs w-5 h-5 flex items-center justify-center rounded-full flex-shrink-0 font-mono">{i + 1}</span>
-                                <a href={src.uri} target="_blank" rel="noopener noreferrer" className="text-sm text-cyan-300 hover:text-cyan-200 hover:underline truncate">
-                                  {src.title}
-                                </a>
-                             </li>
-                           ))}
-                         </ul>
-                      </div>
-                    )}
-
-						{!activeMedia.metadata?.image && !activeMedia.metadata?.sources && (
-							<div className="w-full max-w-3xl bg-slate-950/40 rounded-lg border border-slate-700 p-4 overflow-auto">
-								<div className="text-[10px] text-slate-500 font-mono uppercase tracking-widest mb-2">Text</div>
-								<div className="text-slate-100 font-mono text-sm whitespace-pre-wrap leading-relaxed">{String(activeMedia.text || "")}</div>
-							</div>
-						)}
+                   {activeMedia?.metadata?.image && (
+                     <div className="relative group max-w-full max-h-full">
+                        <img 
+                          src={activeMedia.metadata.image} 
+                          alt="Generated content" 
+                          className="max-h-[400px] w-auto rounded-lg shadow-2xl border border-slate-600"
+                        />
+                        <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded backdrop-blur font-mono">
+                           Generated by Gemini
+                        </div>
+                     </div>
+                   )}
+                   {activeMedia?.metadata?.sources && (
+                     <div className="w-full max-w-2xl bg-slate-800/50 rounded-lg border border-slate-700 p-4">
+                        <h3 className="text-cyan-400 font-hud text-sm mb-3 uppercase tracking-wider">Grounding Sources</h3>
+                        <ul className="space-y-2">
+                          {activeMedia.metadata.sources.map((src, i) => (
+                            <li key={i} className="flex items-start gap-3 p-2 rounded hover:bg-slate-700/50 transition-colors">
+                               <span className="bg-slate-700 text-slate-300 text-xs w-5 h-5 flex items-center justify-center rounded-full flex-shrink-0 font-mono">{i + 1}</span>
+                               <a href={src.uri} target="_blank" rel="noopener noreferrer" className="text-sm text-cyan-300 hover:text-cyan-200 hover:underline truncate">
+                                 {src.title}
+                               </a>
+                            </li>
+                          ))}
+                        </ul>
+                     </div>
+                   )}
+                   {!activeMedia?.metadata?.image && !activeMedia?.metadata?.sources && (
+                     <div
+                       ref={outputScrollRef}
+                       className="w-full max-w-3xl bg-slate-950/40 rounded-lg border border-slate-700 p-4 overflow-auto h-full"
+                       onScroll={(e) => {
+                         const el = e.currentTarget;
+                         const remaining = el.scrollHeight - el.scrollTop - el.clientHeight;
+                         outputStickToBottomRef.current = remaining < 40;
+                       }}
+                     >
+                       <div className="text-[10px] text-slate-500 font-mono uppercase tracking-widest mb-2">Dialog</div>
+                       <div className="flex flex-col gap-2">
+                         {outputDialog.length === 0 ? (
+                           <div className="text-slate-600 font-mono text-sm">(no text yet)</div>
+                         ) : (
+                           outputDialog.map((d) => (
+                             <div key={d.id} className="text-slate-100 font-mono text-sm whitespace-pre-wrap leading-relaxed">
+                               {d.text}
+                             </div>
+                           ))
+                         )}
+                       </div>
+                     </div>
+                   )}
                  </div>
                )}
             </div>
          </div>
-         
-      </div>
-
-    </div>
-  );
-}
+       </div>
+     </div>
+   );
+ }
