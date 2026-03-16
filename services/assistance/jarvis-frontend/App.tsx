@@ -502,6 +502,17 @@ export default function App() {
       }
     };
 
+    const extractGemsCreateId = (text: string): string | null => {
+      const raw = String(text || "").trim();
+      if (!raw) return null;
+      // Support: "gems create noble-a-unit" (without JSON payload)
+      const m = raw.match(/^gems\s+create\s+([a-z0-9_-]+)\s*$/i);
+      if (m && String(m[1] || "").trim()) return String(m[1]).trim();
+      const m2 = raw.match(/^สร้าง\s*(?:เจม|โมเดล)\s+([a-z0-9_-]+)\s*$/i);
+      if (m2 && String(m2[1] || "").trim()) return String(m2[1]).trim();
+      return null;
+    };
+
     const extractGemsAnalyze = (text: string): { gem_id: string; criteria: string } | null => {
       const raw = String(text || "").trim();
       if (!raw) return null;
@@ -542,6 +553,14 @@ export default function App() {
     const gemUpsert = base ? extractGemsUpsertJson(base) : null;
     if (gemUpsert) {
       liveService.current?.sendGemsUpsert(gemUpsert);
+      setComposerText("");
+      setAttachments([]);
+      return;
+    }
+
+    const gemCreateId = base ? extractGemsCreateId(base) : null;
+    if (gemCreateId) {
+      liveService.current?.sendGemsUpsert({ id: gemCreateId, name: gemCreateId });
       setComposerText("");
       setAttachments([]);
       return;

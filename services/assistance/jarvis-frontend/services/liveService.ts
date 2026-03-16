@@ -223,6 +223,16 @@ export class LiveService {
 		}
 	}
 
+	private extractGemsCreateId(text: string): string | null {
+		const raw = String(text || "").trim();
+		if (!raw) return null;
+		const m = raw.match(/^gems\s+create\s+([a-z0-9_-]+)\s*$/i);
+		if (m && String(m[1] || "").trim()) return String(m[1]).trim();
+		const m2 = raw.match(/^สร้าง\s*(?:เจม|โมเดล)\s+([a-z0-9_-]+)\s*$/i);
+		if (m2 && String(m2[1] || "").trim()) return String(m2[1]).trim();
+		return null;
+	}
+
 	private extractSystemReloadMode(text: string): "full" | "memory" | "knowledge" | "sys" | "gems" | null {
 		const s = String(text || "").trim().toLowerCase();
 		if (!s) return null;
@@ -961,6 +971,10 @@ export class LiveService {
 			const gemUpsert = this.extractGemsUpsertJson(trText);
 			if (gemUpsert && this.shouldAutoTriggerVoiceCommand("gems_upsert", 10_000)) {
 				this.wsSend({ type: "gems", action: "upsert", gem: gemUpsert, trace_id: this.createTraceId("voice_gems_upsert") });
+			}
+			const gemCreateId = this.extractGemsCreateId(trText);
+			if (gemCreateId && this.shouldAutoTriggerVoiceCommand("gems_create", 10_000)) {
+				this.wsSend({ type: "gems", action: "upsert", gem: { id: gemCreateId, name: gemCreateId }, trace_id: this.createTraceId("voice_gems_create") });
 			}
 			const analyze = this.extractGemsAnalyze(trText);
 			if (analyze && this.shouldAutoTriggerVoiceCommand("gems_analyze", 10_000)) {
