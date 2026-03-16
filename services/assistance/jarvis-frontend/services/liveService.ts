@@ -188,6 +188,22 @@ export class LiveService {
 		}
 	}
 
+	public sendSysKvSet(key: string, value: string, opts?: { dry_run?: boolean }) {
+		const k = String(key || "").trim();
+		const v = String(value ?? "");
+		if (!k) return;
+		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			this.wsSend({
+				type: "system",
+				action: "sys_kv_set",
+				key: k,
+				value: v,
+				dry_run: Boolean(opts?.dry_run),
+				trace_id: this.createTraceId("sys_kv_set"),
+			});
+		}
+	}
+
 	public sendRemindersAdd(text: string) {
 		const body = String(text || "").trim();
 		if (!body) return;

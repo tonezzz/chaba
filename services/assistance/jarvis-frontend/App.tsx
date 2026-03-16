@@ -475,6 +475,45 @@ export default function App() {
     if (state !== ConnectionState.CONNECTED) return;
     const base = composerText.trim();
 
+		const parseSysSet = (raw: string): { key: string; value: string; dryRun: boolean } | null => {
+			const s = String(raw || "").trim();
+			const m = s.match(/^\/(?:sys|system)\s+(set|dry)\s+(.+)$/i);
+			if (!m) return null;
+			const dryRun = String(m[1] || "").toLowerCase() === "dry";
+			const rest = String(m[2] || "").trim();
+			const eq = rest.indexOf("=");
+			if (eq < 1) return null;
+			const key = rest.slice(0, eq).trim();
+			const value = rest.slice(eq + 1).trim();
+			if (!key) return null;
+			return { key, value, dryRun };
+		};
+
+		const sysSet = parseSysSet(base);
+		if (sysSet) {
+			liveService.current?.sendSysKvSet(sysSet.key, sysSet.value, { dry_run: sysSet.dryRun });
+			setComposerText("");
+			setAttachments([]);
+			setMessages((prev) => [
+				...prev,
+				{
+					id: `${Date.now()}_sys_set_ui`,
+					role: "system",
+					text: `${sysSet.dryRun ? "sys_kv_set (dry_run)" : "sys_kv_set"}: ${sysSet.key}=${sysSet.value}`,
+					timestamp: new Date(),
+					metadata: { severity: "info", category: "ws" },
+				},
+				{
+					id: `${Date.now()}_sys_set_hint`,
+					role: "system",
+					text: "Hint: run 'reload system' to apply sys changes.",
+					timestamp: new Date(),
+					metadata: { severity: "debug", category: "ws" },
+				},
+			]);
+			return;
+		}
+
     const extractReminderAddText = (text: string): string | null => {
       const raw = String(text || "").trim();
       if (!raw) return null;
