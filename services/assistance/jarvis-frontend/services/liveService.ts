@@ -74,11 +74,11 @@ export class LiveService {
 	private extractGemsAnalyze(text: string): { gem_id: string; criteria: string } | null {
 		const raw = String(text || "").trim();
 		if (!raw) return null;
-		const m = raw.match(/^gems\s+analy[sz]e\s+([^:]+?)(?:\s*[:\-]\s*(.+))?$/i);
+		const m = raw.match(/^gems\s+analy[sz]e\s+([a-z0-9_-]+)(?:\s*(?::|\s-\s)\s*(.+))?$/i);
 		if (m && String(m[1] || "").trim()) {
 			return { gem_id: String(m[1]).trim(), criteria: String(m[2] || "").trim() };
 		}
-		const m2 = raw.match(/^วิเคราะห์\s*(?:เจม|โมเดล)\s+([^:]+?)(?:\s*[:\-]\s*(.+))?$/);
+		const m2 = raw.match(/^วิเคราะห์\s*(?:เจม|โมเดล)\s+([a-z0-9_-]+)(?:\s*(?::|\s-\s)\s*(.+))?$/i);
 		if (m2 && String(m2[1] || "").trim()) {
 			return { gem_id: String(m2[1]).trim(), criteria: String(m2[2] || "").trim() };
 		}
