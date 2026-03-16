@@ -35,6 +35,8 @@ export class LiveService {
   private wsSeq: number = 0;
   private currentCameraFrame: string | null = null;
   private lastVoiceCommandTs: Record<string, number> = {};
+  private lastVoiceCommandName: string | null = null;
+  private lastVoiceCommandAt: number = 0;
   private voiceCmdCfg: any | null = null;
   private voiceCmdCfgLoadedAt: number = 0;
 
@@ -245,6 +247,8 @@ export class LiveService {
 		const prev = this.lastVoiceCommandTs[key] || 0;
 		if (now - prev < debounceMs) return false;
 		this.lastVoiceCommandTs[key] = now;
+		this.lastVoiceCommandName = key;
+		this.lastVoiceCommandAt = now;
 		return true;
 	}
 
@@ -1042,6 +1046,10 @@ export class LiveService {
 
     if (message?.type === "transcript" && message?.text) {
       const src = message?.source === "output" ? "output" : "input";
+			if (src === "output" && this.lastVoiceCommandName === "reload_system" && Date.now() - this.lastVoiceCommandAt < 8_000) {
+				const t = String(message.text || "").trim().toLowerCase();
+				if ((t.includes("reload") || t.includes("reload system")) && t.includes("ambig")) return;
+			}
       // Voice UX fallback: auto-trigger local commands from input transcripts.
       // This helps when Gemini doesn't emit a tool call for simple control commands.
       if (src === "input") {
@@ -1109,6 +1117,10 @@ export class LiveService {
     }
 
     if (message?.type === "text" && message?.text) {
+			if (this.lastVoiceCommandName === "reload_system" && Date.now() - this.lastVoiceCommandAt < 8_000) {
+				const t = String(message.text || "").trim().toLowerCase();
+				if ((t.includes("reload") || t.includes("reload system")) && t.includes("ambig")) return;
+			}
       this.onMessage({
         id: `${Date.now()}`,
         role: "model",
