@@ -596,9 +596,15 @@ export default function App() {
                     e.preventDefault();
                     e.stopPropagation();
                     const visible = (showDebugLogs ? messages : messages.filter((m) => (m.metadata?.severity || "info") !== "debug"));
-                    const lines = visible
+                    const ordered = visible
                       .slice()
-                      .reverse()
+                      .sort((a, b) => {
+                        const ta = a.timestamp?.getTime?.() ? a.timestamp.getTime() : 0;
+                        const tb = b.timestamp?.getTime?.() ? b.timestamp.getTime() : 0;
+                        if (ta !== tb) return ta - tb;
+                        return String(a.id || "").localeCompare(String(b.id || ""));
+                      });
+                    const lines = ordered
                       .map((m) => {
                         const ts = m.timestamp.toLocaleTimeString();
                         const label = clientLabelForMsg(m);
@@ -632,6 +638,14 @@ export default function App() {
              )}
              {(() => {
                const visible = (showDebugLogs ? messages : messages.filter((m) => (m.metadata?.severity || "info") !== "debug"));
+               const ordered = visible
+                 .slice()
+                 .sort((a, b) => {
+                   const ta = a.timestamp?.getTime?.() ? a.timestamp.getTime() : 0;
+                   const tb = b.timestamp?.getTime?.() ? b.timestamp.getTime() : 0;
+                   if (ta !== tb) return ta - tb;
+                   return String(a.id || "").localeCompare(String(b.id || ""));
+                 });
                const seenKeys = new Set<string>();
                const dedupeKeyForRender = (t: string): string | null => {
                  const s = String(t || "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -644,7 +658,7 @@ export default function App() {
                  if (s.startsWith("อา.") || /^\d{4}-\d{2}-\d{2}\b/.test(s)) return "time_injection";
                  return null;
                };
-               const filtered = visible.filter((m) => {
+               const filtered = ordered.filter((m) => {
                  const k = dedupeKeyForRender(String(m.text || ""));
                  if (!k) return true;
                  if (seenKeys.has(k)) return false;
