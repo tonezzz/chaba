@@ -5796,6 +5796,12 @@ async def _run_notes_board_job(*, ws: WebSocket, job_text: str, gem_name: str | 
         system_instruction += "\n\nMEMORY (from Google Sheets):\n" + mem_ctx
     if know_ctx:
         system_instruction += "\n\nKNOWLEDGE (from Google Sheets):\n" + know_ctx
+    mem_inst = str(getattr(ws.state, "memory_instruction", "") or "").strip()
+    know_inst = str(getattr(ws.state, "knowledge_instruction", "") or "").strip()
+    if mem_inst:
+        system_instruction += "\n\nMEMORY_INSTRUCTION (from system sheet):\n" + mem_inst
+    if know_inst:
+        system_instruction += "\n\nKNOWLEDGE_INSTRUCTION (from system sheet):\n" + know_inst
     extra_sys = str(getattr(ws.state, "system_instruction_extra", "") or "").strip()
     if extra_sys:
         system_instruction += "\n\nSYSTEM_INSTRUCTION (from system sheet):\n" + extra_sys
@@ -6082,6 +6088,12 @@ async def _load_ws_sheet_memory(ws: WebSocket) -> None:
     if not knowledge_sheet:
         raise RuntimeError("missing_system_sheets: knowledge not configured in system.sheets")
 
+    # Per-sheet metadata (from system KV): <sheet>.info and <sheet>.instruction.
+    memory_info = str(sys_kv.get("memory.info") or "").strip()
+    knowledge_info = str(sys_kv.get("knowledge.info") or "").strip()
+    memory_instruction = str(sys_kv.get("memory.instruction") or "").strip()
+    knowledge_instruction = str(sys_kv.get("knowledge.instruction") or "").strip()
+
     knowledge_items_raw = await _load_sheet_kv5(spreadsheet_id=spreadsheet_id, sheet_name=knowledge_sheet)
     knowledge_items = [
         it
@@ -6123,6 +6135,10 @@ async def _load_ws_sheet_memory(ws: WebSocket) -> None:
         ws.state.memory_sheet_name = memory_sheet
         ws.state.knowledge_items = knowledge_items
         ws.state.knowledge_sheet_name = knowledge_sheet
+        ws.state.memory_info = memory_info
+        ws.state.knowledge_info = knowledge_info
+        ws.state.memory_instruction = memory_instruction
+        ws.state.knowledge_instruction = knowledge_instruction
     except Exception:
         pass
 
@@ -6132,6 +6148,8 @@ async def _load_ws_sheet_memory(ws: WebSocket) -> None:
         max_items = 120
 
     lines: list[str] = []
+    if memory_info:
+        lines.append(f"INFO: {memory_info}")
     for it in enabled_items[:max_items]:
         k = str(it.get("key") or "").strip()
         v = str(it.get("value") or "").strip()
@@ -6148,6 +6166,8 @@ async def _load_ws_sheet_memory(ws: WebSocket) -> None:
         pass
 
     k_lines: list[str] = []
+    if knowledge_info:
+        k_lines.append(f"INFO: {knowledge_info}")
     max_k = _safe_int(sys_kv.get("knowledge.max_items"), default=180)
     if max_k <= 0:
         max_k = 180
@@ -9626,6 +9646,19 @@ async def ws_live(ws: WebSocket) -> None:
                 + "SHEET_KNOWLEDGE_CONTEXT (internal; do NOT repeat verbatim to the user)\n"
                 + know_ctx
             )
+
+        mem_info = str(getattr(ws.state, "memory_info", "") or "").strip()
+        know_info = str(getattr(ws.state, "knowledge_info", "") or "").strip()
+        mem_inst = str(getattr(ws.state, "memory_instruction", "") or "").strip()
+        know_inst = str(getattr(ws.state, "knowledge_instruction", "") or "").strip()
+        if mem_info:
+            system_instruction = system_instruction + "\n\n" + "MEMORY_INFO (from system sheet; internal)\n" + mem_info
+        if know_info:
+            system_instruction = system_instruction + "\n\n" + "KNOWLEDGE_INFO (from system sheet; internal)\n" + know_info
+        if mem_inst:
+            system_instruction = system_instruction + "\n\n" + "MEMORY_INSTRUCTION (from system sheet; internal)\n" + mem_inst
+        if know_inst:
+            system_instruction = system_instruction + "\n\n" + "KNOWLEDGE_INSTRUCTION (from system sheet; internal)\n" + know_inst
 
         extra_sys = str(getattr(ws.state, "system_instruction_extra", "") or "").strip()
         if extra_sys:

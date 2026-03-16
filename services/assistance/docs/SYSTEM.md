@@ -9,6 +9,36 @@ Jarvis requires these environment variables:
 - `CHABA_SYSTEM_SPREADSHEET_ID`
 - `CHABA_SYSTEM_SHEET_NAME`
 
+## System KV keys
+
+### `system.sheets` (required)
+
+`system.sheets` is a comma-separated list of sheet spec tokens.
+
+Supported forms:
+
+- `memory,knowledge`
+- `memory:<TAB_NAME>,knowledge:<TAB_NAME>`
+
+Notes:
+
+- Tokens are **not** `key=value` pairs. `=` is invalid.
+- The loader expects to find both `memory` and `knowledge` entries.
+
+### Per-sheet metadata (optional)
+
+For each sheet role (`memory`, `knowledge`) you can provide:
+
+- `<sheet>.info`
+- `<sheet>.instruction`
+
+Examples:
+
+- `memory.info=System memory for internal usage.`
+- `memory.instruction=Prefer memory items when answering user-specific questions.`
+- `knowledge.info=Internal knowledge base.`
+- `knowledge.instruction=Use knowledge items as canonical definitions and policies.`
+
 ## Backend reload flow (diagram)
 
 ```mermaid
@@ -29,6 +59,8 @@ sequenceDiagram
   BE->>BE: parse sys_kv
   BE->>BE: read system.instruction (optional)
   BE->>BE: read system.sheets (required)
+  BE->>BE: read memory.info / memory.instruction (optional)
+  BE->>BE: read knowledge.info / knowledge.instruction (optional)
 
   BE->>MCP: google_sheets_values_get(range="<knowledge_sheet>!A:E")
   MCP-->>BE: rows (knowledge KV)
@@ -69,6 +101,7 @@ flowchart TD
 ### Explanation
 
 - `system.instruction` is optional and is injected into Gemini system prompts (Live and non-Live) as extra guidance.
+- `<sheet>.info` is optional and is included near the top of the corresponding context block.
+- `<sheet>.instruction` is optional and is injected into Gemini system prompts as extra guidance about how to use that sheet.
 - `system.sheets` is required and must include entries for both `memory` and `knowledge`.
 - Each sheet loaded via `_load_sheet_kv5` expects columns: `key,value,enabled,scope,priority`.
-# This file contains information how Jarvis load the system sheet.
