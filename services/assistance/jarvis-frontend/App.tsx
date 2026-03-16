@@ -1278,13 +1278,13 @@ export default function App() {
               </div>
             </div>
             
-            <div className="h-full w-full flex items-center justify-center overflow-auto mt-6">
+            <div className="h-full w-full flex flex-col mt-6 min-h-0">
                {activeRightPanel === "cars" ? (
-                 <div className="w-full h-full">
+                 <div className="w-full h-full min-h-0 overflow-auto">
                    <CarsPanel liveService={liveService.current} connectionState={state} />
                  </div>
                ) : activeRightPanel === "checklist" ? (
-                 <div className="w-full h-full">
+                 <div className="w-full h-full min-h-0 overflow-auto">
                    <div className="text-[10px] text-cyan-500 font-hud tracking-widest uppercase mb-3">Sequential Checklist</div>
                    <textarea
                      value={seqNotes}
@@ -1335,12 +1335,12 @@ export default function App() {
                    </div>
                  </div>
                ) : !activeMedia && outputDialog.length === 0 ? (
-                 <div className="flex flex-col items-center justify-center text-slate-600 gap-4">
+                 <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-slate-600 gap-4">
                    <Activity className="w-16 h-16 opacity-20" />
                    <p className="font-mono text-sm tracking-wide">Waiting for system output...</p>
                  </div>
                ) : (
-                 <div className="w-full h-full flex flex-col items-center animate-in zoom-in-95 duration-500">
+                 <div className="w-full flex-1 min-h-0 flex flex-col items-center animate-in zoom-in-95 duration-500">
                    {activeMedia?.metadata?.image && (
                      <div className="relative group max-w-full max-h-full">
                         <img 
@@ -1354,7 +1354,7 @@ export default function App() {
                      </div>
                    )}
                    {activeMedia?.metadata?.sources && (
-                     <div className="w-full max-w-2xl bg-slate-800/50 rounded-lg border border-slate-700 p-4">
+                     <div className="w-full max-w-2xl bg-slate-800/50 rounded-lg border border-slate-700 p-4 overflow-auto">
                         <h3 className="text-cyan-400 font-hud text-sm mb-3 uppercase tracking-wider">Grounding Sources</h3>
                         <ul className="space-y-2">
                           {activeMedia.metadata.sources.map((src, i) => (
@@ -1371,7 +1371,7 @@ export default function App() {
                    {!activeMedia?.metadata?.image && !activeMedia?.metadata?.sources && (
                      <div
                        ref={outputScrollRef}
-                       className="w-full max-w-3xl bg-slate-950/40 rounded-lg border border-slate-700 p-4 overflow-auto h-full"
+                       className="w-full max-w-3xl bg-slate-950/40 rounded-lg border border-slate-700 p-4 overflow-auto flex-1 min-h-0"
                        onScroll={(e) => {
                          const el = e.currentTarget;
                          const remaining = el.scrollHeight - el.scrollTop - el.clientHeight;
