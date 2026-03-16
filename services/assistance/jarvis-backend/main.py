@@ -7628,7 +7628,20 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
             if transcription is not None:
                 text = getattr(transcription, "text", None)
                 if text:
-                    await ws.send_json({"type": "transcript", "text": str(text)})
+                    # Some Gemini Live server messages only provide a generic transcription object.
+                    # Treat it as an input transcript for voice UX fallback triggers.
+                    try:
+                        ws.state.user_lang = "th" if _text_is_thai(str(text)) else "en"
+                    except Exception:
+                        pass
+                    try:
+                        handled = await _dispatch_sub_agents(ws, str(text))
+                        if handled:
+                            logger.info("live_transcription_dispatched handled=true")
+                            continue
+                    except Exception as e:
+                        logger.info("live_transcription_dispatch_failed error=%s", str(e))
+                    await ws.send_json({"type": "transcript", "text": str(text), "source": "input"})
                     continue
             elif not logged_shape:
                 # One-time debug to understand server message fields.

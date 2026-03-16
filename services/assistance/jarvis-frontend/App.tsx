@@ -12,6 +12,15 @@ export default function App() {
   const [state, setState] = useState<ConnectionState>(ConnectionState.DISCONNECTED);
   const [volume, setVolume] = useState(0);
   const [messages, setMessages] = useState<MessageLog[]>([]);
+  const [statusDetailsOpen, setStatusDetailsOpen] = useState<boolean>(() => {
+    try {
+      const raw = String(window.localStorage.getItem("jarvis_status_details_open") || "").trim();
+      if (!raw) return false;
+      return raw === "1" || raw.toLowerCase() === "true";
+    } catch {
+      return false;
+    }
+  });
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
   const [showDebugLogs, setShowDebugLogs] = useState(false);
   const liveService = useRef<LiveService | null>(null);
@@ -79,6 +88,28 @@ export default function App() {
     const ok = state === ConnectionState.CONNECTED && (!lastAudioUnavailable || lastAudioUnavailable < lastConn);
     return { ok, lastConn, lastAudioUnavailable };
   }, [messages, state]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("jarvis_status_details_open", statusDetailsOpen ? "1" : "0");
+    } catch {
+    }
+  }, [statusDetailsOpen]);
+
+  useEffect(() => {
+    // Auto-open the details once per session when we connect (helps with quick visibility),
+    // but keep respecting user preference after that.
+    if (state === ConnectionState.CONNECTED) {
+      try {
+        const seen = String(window.sessionStorage.getItem("jarvis_status_details_autoshown") || "").trim();
+        if (!seen) {
+          window.sessionStorage.setItem("jarvis_status_details_autoshown", "1");
+          setStatusDetailsOpen(true);
+        }
+      } catch {
+      }
+    }
+  }, [state]);
 
   const copyText = useCallback(async (text: string) => {
     const t = String(text || "");
@@ -599,6 +630,15 @@ export default function App() {
                   </span>
                 </div>
 
+                <button
+                  onClick={() => setStatusDetailsOpen((v) => !v)}
+                  className="shrink-0 ml-2 w-8 h-8 rounded-lg border border-slate-700 bg-slate-950/30 text-slate-200 hover:bg-slate-800/40 flex items-center justify-center"
+                  title={statusDetailsOpen ? "Hide status details" : "Show status details"}
+                  aria-label={statusDetailsOpen ? "Hide status details" : "Show status details"}
+                >
+                  <ChevronRight className={`w-4 h-4 transition-transform ${statusDetailsOpen ? "rotate-90" : ""}`} />
+                </button>
+
                {state === ConnectionState.CONNECTED ? (
                  <button
                   onClick={handleConnect}
@@ -619,27 +659,29 @@ export default function App() {
                )}
              </div>
 
-             <div className="flex items-center justify-between mt-2 gap-2">
-               <div className="flex items-center gap-2">
-                 <span className="text-[11px] font-mono px-2 py-1 rounded-full border border-slate-700 bg-slate-950/20 text-slate-300">
-                   mem:{systemCounts.memory}
-                 </span>
-                 <span className="text-[11px] font-mono px-2 py-1 rounded-full border border-slate-700 bg-slate-950/20 text-slate-300">
-                   know:{systemCounts.knowledge}
+             {statusDetailsOpen && (
+               <div className="flex items-center justify-between mt-2 gap-2">
+                 <div className="flex items-center gap-2">
+                   <span className="text-[11px] font-mono px-2 py-1 rounded-full border border-slate-700 bg-slate-950/20 text-slate-300">
+                     mem:{systemCounts.memory}
+                   </span>
+                   <span className="text-[11px] font-mono px-2 py-1 rounded-full border border-slate-700 bg-slate-950/20 text-slate-300">
+                     know:{systemCounts.knowledge}
+                   </span>
+                 </div>
+                 <span
+                   className={`inline-flex items-center gap-1 text-[11px] font-mono px-2 py-1 rounded-full border ${
+                     audioStatus.ok
+                       ? 'border-cyan-500/30 bg-cyan-950/10 text-cyan-200'
+                       : 'border-slate-700 bg-slate-950/20 text-slate-300'
+                   }`}
+                   title={audioStatus.ok ? 'audio_ok' : 'audio_unavailable'}
+                 >
+                   {audioStatus.ok ? <Mic className="w-3 h-3" /> : <MicOff className="w-3 h-3" />}
+                   audio
                  </span>
                </div>
-               <span
-                 className={`inline-flex items-center gap-1 text-[11px] font-mono px-2 py-1 rounded-full border ${
-                   audioStatus.ok
-                     ? 'border-cyan-500/30 bg-cyan-950/10 text-cyan-200'
-                     : 'border-slate-700 bg-slate-950/20 text-slate-300'
-                 }`}
-                 title={audioStatus.ok ? 'audio_ok' : 'audio_unavailable'}
-               >
-                 {audioStatus.ok ? <Mic className="w-3 h-3" /> : <MicOff className="w-3 h-3" />}
-                 audio
-               </span>
-             </div>
+             )}
           </div>
 
           {/* Activity Log */}
