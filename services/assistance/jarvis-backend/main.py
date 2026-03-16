@@ -4562,10 +4562,6 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
         if handled:
             return True
 
-    handled = await _handle_reload_system(ws, text)
-    if handled:
-        return True
-
     handled = await _handle_notes_check(ws, text)
     if handled:
         return True

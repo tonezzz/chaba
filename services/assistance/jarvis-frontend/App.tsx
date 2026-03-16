@@ -389,6 +389,32 @@ export default function App() {
   const handleSendComposer = () => {
     if (state !== ConnectionState.CONNECTED) return;
     const base = composerText.trim();
+
+    const isReloadSystemPhrase = (text: string): boolean => {
+      const s = String(text || "").trim().toLowerCase();
+      if (!s) return false;
+      const compact = s.replace(/[^a-z0-9\u0E00-\u0E7F]+/g, " ").trim().replace(/\s+/g, " ");
+      if (!compact) return false;
+      // Keep permissive matching (voice + typed).
+      if (compact === "reload" || compact === "reset" || compact === "restart" || compact === "reboot") return true;
+      if (compact.includes("reload system") || compact.includes("reload sheets")) return true;
+      if ((compact.includes("reload") || compact.includes("reset") || compact.includes("restart") || compact.includes("reboot")) && (compact.includes("system") || compact.includes("sheets") || compact.includes("sheet") || compact.includes("sys"))) {
+        return true;
+      }
+      // Thai triggers.
+      if (compact.includes("รีโหลด") || compact.includes("โหลดใหม่") || compact.includes("รีเซ็ต") || compact.includes("เริ่มใหม่")) {
+        if (compact.includes("ระบบ") || compact.includes("ชีต") || compact.includes("ชีท") || compact.includes("sheet") || compact.includes("sheets")) return true;
+      }
+      return false;
+    };
+
+    if (base && isReloadSystemPhrase(base)) {
+      liveService.current?.sendSystemReload("full");
+      setComposerText("");
+      setAttachments([]);
+      return;
+    }
+
     const textAttachments = attachments.filter((a) => a.kind === "text" && typeof a.text === "string");
     const pendingAttachments = attachments.filter((a) => a.kind !== "text");
     const blocks: string[] = [];

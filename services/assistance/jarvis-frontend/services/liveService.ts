@@ -77,6 +77,12 @@ export class LiveService {
 		}
 	}
 
+	public sendSystemReload(mode: "full" | "memory" | "knowledge" | "sys" | "gems" = "full") {
+		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			this.wsSend({ type: "system", action: "reload", mode, trace_id: this.createTraceId("sys_reload") });
+		}
+	}
+
 	private shouldAutoTriggerVoiceCommand(key: string, debounceMs: number): boolean {
 		const now = Date.now();
 		const prev = this.lastVoiceCommandTs[key] || 0;
@@ -666,7 +672,7 @@ export class LiveService {
       if (src === "input") {
 			const trText = String(message.text);
 			if (this.isReloadSystemPhrase(trText) && this.shouldAutoTriggerVoiceCommand("reload_system", 10_000)) {
-				this.wsSend({ type: "text", text: "Reload System", trace_id: this.createTraceId("voice_reload") });
+				this.wsSend({ type: "system", action: "reload", mode: "full", trace_id: this.createTraceId("voice_reload") });
 			}
       }
       this.onMessage({
