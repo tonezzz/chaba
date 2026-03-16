@@ -61,6 +61,24 @@ Notes:
 - Gemini model IDs may appear with or without a `models/` prefix. For Gemini Live, prefer unprefixed model IDs (some endpoints reject `models/<id>`).
 - On successful `/ws/live` connection the backend emits a short day/date/time greeting as a normal `text` message (language matched).
 
+## Speech-to-text (STT) + transcripts
+
+Jarvis does **not** run a separate STT engine in the backend.
+
+- **Where STT happens**
+  - STT is performed by **Gemini Live** based on the microphone audio stream sent from the frontend.
+
+- **How transcripts flow**
+  - The frontend streams audio frames to the backend over WebSocket (`/jarvis/ws/live`).
+  - The backend forwards audio into the Gemini Live session.
+  - Gemini Live returns transcript events; the backend forwards them to the UI as WS messages:
+    - `{"type":"transcript","text":"...","source":"input"}` (what the user said)
+    - `{"type":"transcript","text":"...","source":"output"}` (what Jarvis said)
+
+- **Voice commands (e.g. Reload System)**
+  - The backend listens for **input transcripts** and dispatches local command handlers (sub-agents) before the text is treated as normal chat.
+  - This is how voice phrases like `Reload System` can trigger backend actions even if the model would otherwise reply conversationally.
+
 Secrets (must be provided via Portainer stack env or host env, never committed):
 
 - `GEMINI_API_KEY`
