@@ -50,6 +50,25 @@ flowchart LR
   KNOWITEMS -.->|dedupe by key| MEMITEMS
 ```
 
+## 6.5) Frontend smart mapping (typed + voice)
+
+```mermaid
+flowchart LR
+  U[User]
+  FE[Jarvis Frontend]
+  BE[Jarvis Backend]
+  GL[Gemini Live]
+
+  U -->|typed composer| FE
+  U -->|voice| GL
+  GL -->|transcript source=input| FE
+
+  FE -->|match => WS tools
+  system.* / notes.* / reminders.* / gems.*| BE
+  FE -->|no match => WS text| BE
+  BE -->|forward text/audio| GL
+```
+
 ## 1) System overview
 
 ```mermaid
@@ -130,7 +149,7 @@ flowchart LR
   DB[(SQLite: jarvis_sessions.sqlite)]
   WV[(Weaviate: JarvisMemoryItem)]
 
-  FE -->|WS text: reminder setup/add| BE
+  FE -->|WS tools: reminders.*| BE
   BE -->|create/update| DB
   BE -->|write-through (if enabled)| WV
 
@@ -182,6 +201,10 @@ flowchart TB
     IN_AUDIO["audio: {data,sampleRate}"]
     IN_CLOSE["close"]
     IN_SET_TRIP["set_active_trip"]
+    IN_SYSTEM["system: {action,mode}"]
+    IN_NOTES["notes: {action,text}"]
+    IN_REM["reminders: {action,...}"]
+    IN_GEMS["gems: {action,...}"]
   end
 
   subgraph Outbound[Backend -> Client (/ws/live)]
@@ -193,6 +216,9 @@ flowchart TB
     OUT_AUDIO["audio"]
     OUT_TRIP["active_trip"]
     OUT_REM["reminder / reminder_* events (draft/setup/helper/modified/detail)"]
+    OUT_PLAN["planning_item_created (calendar_event/task)"]
+    OUT_GEMS["gems_list / gems_upserted / gems_removed"]
+    OUT_NOTES["note_created / note_prompt"]
   end
 ```
 
