@@ -709,21 +709,19 @@ logging.basicConfig(level=logging.INFO)
 
 
 def _system_spreadsheet_id() -> str:
-    # New env name (preferred) with legacy fallback.
-    return str(os.getenv("CHABA_SYSTEM_SPREADSHEET_ID") or os.getenv("CHABA_SS_SYS") or "").strip()
+    # Required.
+    v = str(os.getenv("CHABA_SYSTEM_SPREADSHEET_ID") or "").strip()
+    if not v:
+        raise RuntimeError("missing_env: CHABA_SYSTEM_SPREADSHEET_ID")
+    return v
 
 
 def _system_sheet_name() -> str:
-    # New default sheet name is 'system'. Legacy default was 'sys'.
-    return (
-        str(
-            os.getenv("CHABA_SYSTEM_SHEET_NAME")
-            or os.getenv("CHABA_SS_SYS_SYS_SHEET")
-            or os.getenv("CHABA_SS_SYS_SH")
-            or "system"
-        ).strip()
-        or "system"
-    )
+    # Required.
+    v = str(os.getenv("CHABA_SYSTEM_SHEET_NAME") or "").strip()
+    if not v:
+        raise RuntimeError("missing_env: CHABA_SYSTEM_SHEET_NAME")
+    return v
 
 _WS_RECORD_PATH = str(os.getenv("JARVIS_WS_RECORD_PATH") or "").strip() or None
 _WS_RECORD_ENABLED = bool(_WS_RECORD_PATH) or str(os.getenv("JARVIS_WS_RECORD") or "").strip().lower() in ("1", "true", "yes", "on")
@@ -4175,7 +4173,15 @@ async def _handle_notes_check(ws: WebSocket, text: str) -> bool:
     if isinstance(sys_kv, dict):
         sheet_name = str(sys_kv.get("notes.sheet_name") or sys_kv.get("notes_sh") or "").strip()
     if not sheet_name:
-        sheet_name = str(os.getenv("CHABA_SS_SYS_NOTES_SHEET") or "notes.0").strip() or "notes.0"
+        await _ws_send_json(
+            ws,
+            {
+                "type": "text",
+                "text": "missing_notes_sheet_name" if not _text_is_thai(text) else "ไม่พบชื่อชีตบันทึก (missing_notes_sheet_name)",
+                "instance_id": INSTANCE_ID,
+            },
+        )
+        return True
 
     try:
         rows = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_name, max_rows=250, max_cols="S")
@@ -4326,7 +4332,15 @@ async def _handle_notes_next(ws: WebSocket, text: str) -> bool:
     if isinstance(sys_kv, dict):
         sheet_name = str(sys_kv.get("notes.sheet_name") or sys_kv.get("notes_sh") or "").strip()
     if not sheet_name:
-        sheet_name = str(os.getenv("CHABA_SS_SYS_NOTES_SHEET") or "notes.0").strip() or "notes.0"
+        await _ws_send_json(
+            ws,
+            {
+                "type": "text",
+                "text": "missing_notes_sheet_name" if not _text_is_thai(text) else "ไม่พบชื่อชีตบันทึก (missing_notes_sheet_name)",
+                "instance_id": INSTANCE_ID,
+            },
+        )
+        return True
 
     try:
         rows = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_name, max_rows=250, max_cols="S")
@@ -5186,7 +5200,16 @@ async def _handle_note_trigger(ws: WebSocket, text: str, *, speak: bool = True) 
         else ""
     )
     if not sheet_name:
-        sheet_name = str(os.getenv("CHABA_SS_SYS_NOTES_SHEET") or "notes.0").strip() or "notes.0"
+        await _ws_send_json(
+            ws,
+            {
+                "type": "note_error",
+                "message": "missing_notes_sheet_name",
+                "detail": "Missing notes_sh/notes.sheet_name in system sheet (no env fallback).",
+                "instance_id": INSTANCE_ID,
+            },
+        )
+        return True
 
     if not spreadsheet_id:
         await _ws_send_json(
@@ -5773,6 +5796,9 @@ async def _run_notes_board_job(*, ws: WebSocket, job_text: str, gem_name: str | 
         system_instruction += "\n\nMEMORY (from Google Sheets):\n" + mem_ctx
     if know_ctx:
         system_instruction += "\n\nKNOWLEDGE (from Google Sheets):\n" + know_ctx
+    extra_sys = str(getattr(ws.state, "system_instruction_extra", "") or "").strip()
+    if extra_sys:
+        system_instruction += "\n\nSYSTEM_INSTRUCTION (from system sheet):\n" + extra_sys
     if instruction:
         system_instruction += "\n\n" + str(instruction)
 
@@ -5815,7 +5841,7 @@ async def _notes_board_poll_once(ws: WebSocket) -> None:
     if isinstance(sys_kv, dict):
         sheet_name = str(sys_kv.get("notes.sheet_name") or sys_kv.get("notes_sh") or "").strip()
     if not sheet_name:
-        sheet_name = str(os.getenv("CHABA_SS_SYS_NOTES_SHEET") or "notes.0").strip() or "notes.0"
+        return
 
     rows = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_name, max_rows=400, max_cols="S")
     if not rows:
@@ -5999,6 +6025,12 @@ async def _load_ws_sheet_memory(ws: WebSocket) -> None:
     sys_sheet = _system_sheet_name()
     sys_rows = await _load_sheet_kv5(spreadsheet_id=spreadsheet_id, sheet_name=sys_sheet)
     sys_kv = {str(it.get("key") or "").strip(): str(it.get("value") or "").strip() for it in sys_rows if isinstance(it, dict)}
+
+    # Optional: extra system instruction to inject into Gemini system prompt.
+    try:
+        ws.state.system_instruction_extra = str(sys_kv.get("system.instruction") or "").strip()
+    except Exception:
+        pass
 
     # Explicit sheet load plan driven by system KV.
     # No silent fallbacks: if system.sheets is missing or invalid, raise for debugging.
@@ -9593,6 +9625,15 @@ async def ws_live(ws: WebSocket) -> None:
                 + "\n\n"
                 + "SHEET_KNOWLEDGE_CONTEXT (internal; do NOT repeat verbatim to the user)\n"
                 + know_ctx
+            )
+
+        extra_sys = str(getattr(ws.state, "system_instruction_extra", "") or "").strip()
+        if extra_sys:
+            system_instruction = (
+                system_instruction
+                + "\n\n"
+                + "SYSTEM_INSTRUCTION (from system sheet; internal)\n"
+                + extra_sys
             )
 
         if gem_extra:
