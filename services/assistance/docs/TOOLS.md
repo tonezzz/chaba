@@ -8,6 +8,7 @@ flowchart TB
     BE --> SYS[system.*]
     BE --> NOTES[notes.*]
     BE --> REM[reminders.*]
+    BE --> GEMS[gems.*]
   end
 
   BE -- audio/text --> GL[Gemini Live]
@@ -59,6 +60,60 @@ Outbound (backend -> client) message types (selected):
 ## Chart: Deterministic backend tools (WS messages)
 
 These messages are handled **purely by the backend** and are never forwarded to Gemini.
+
+```mermaid
+flowchart LR
+  FE[Jarvis Frontend]
+  BE[Jarvis Backend]
+  FE -->|WS tool messages| BE
+  BE -->|WS events| FE
+```
+
+### Tool chart: system.reload
+
+```mermaid
+flowchart LR
+  FE[Frontend] -->|{"type":"system","action":"reload","mode":...}| BE[Backend]
+  BE -->|text/progress| FE
+  BE -->|error(kind=invalid_reload_mode/reload_failed)| FE
+```
+
+### Tool chart: notes.*
+
+```mermaid
+flowchart LR
+  FE[Frontend] -->|notes.check / notes.next| BE[Backend]
+  BE -->|text summary| FE
+  FE -->|{"type":"notes","action":"add","text":"..."}| BE
+  BE -->|note_created| FE
+  BE -->|note_prompt (needs followup)| FE
+```
+
+### Tool chart: reminders.*
+
+```mermaid
+flowchart LR
+  FE[Frontend] -->|{"type":"reminders","action":"add","text":"..."}| BE[Backend]
+  BE -->|planning_item_created| FE
+  FE -->|reminders.list/done/delete/later/reschedule/details| BE
+  BE -->|reminders_* events / reminder_detail| FE
+  BE -->|error(kind=invalid_reminders_action/...)| FE
+```
+
+### Tool chart: gems.*
+
+```mermaid
+flowchart LR
+  FE[Frontend] -->|gems.list/upsert/remove| BE[Backend]
+  BE -->|gems_list / gems_upserted / gems_removed| FE
+
+  FE -->|{"type":"gems","action":"analyze","gem_id":"...","criteria":"..."}| BE
+  BE -->|gems_draft_created (before/after, changed, draft_id)| FE
+  FE -->|{"type":"gems","action":"draft_apply","draft_id":"..."}| BE
+  BE -->|gems_draft_applied| FE
+  FE -->|{"type":"gems","action":"draft_discard","draft_id":"..."}| BE
+  BE -->|gems_draft_discarded| FE
+```
 
 ## Chart: Frontend smart mapping (typed + voice)
 
