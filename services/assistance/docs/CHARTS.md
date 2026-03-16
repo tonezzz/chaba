@@ -50,6 +50,61 @@ flowchart LR
   KNOWITEMS -.->|dedupe by key| MEMITEMS
 ```
 
+## 6.6) Deterministic WS tools (per-tool charts)
+
+These are the Mode B control-plane tools that are handled purely by the backend and never forwarded to Gemini.
+
+### 6.6.1) system.reload
+
+```mermaid
+flowchart LR
+  FE[Jarvis Frontend] -->|{"type":"system","action":"reload","mode":...}| BE[Jarvis Backend]
+  BE -->|text/progress| FE
+  BE -->|error(kind=invalid_reload_mode/reload_failed)| FE
+```
+
+### 6.6.2) notes.*
+
+```mermaid
+flowchart LR
+  FE[Jarvis Frontend] -->|{"type":"notes","action":"check"}| BE[Jarvis Backend]
+  BE -->|text summary + Next:| FE
+  FE -->|{"type":"notes","action":"next"}| BE
+  BE -->|text next-step line| FE
+  FE -->|{"type":"notes","action":"add","text":"..."}| BE
+  BE -->|note_created / note_prompt| FE
+```
+
+### 6.6.3) reminders.*
+
+```mermaid
+flowchart LR
+  FE[Jarvis Frontend] -->|{"type":"reminders","action":"add","text":"..."}| BE[Jarvis Backend]
+  BE -->|planning_item_created| FE
+  FE -->|reminders.list/done/delete/later/reschedule/details| BE
+  BE -->|reminders_* events / reminder_detail| FE
+  BE -->|error(kind=invalid_reminders_action/...)| FE
+```
+
+### 6.6.4) gems.*
+
+```mermaid
+flowchart LR
+  FE[Jarvis Frontend] -->|{"type":"gems","action":"list"}| BE[Jarvis Backend]
+  BE -->|gems_list| FE
+  FE -->|{"type":"gems","action":"upsert","gem":{...}}| BE
+  BE -->|gems_upserted| FE
+  FE -->|{"type":"gems","action":"remove","gem_id":"..."}| BE
+  BE -->|gems_removed| FE
+
+  FE -->|{"type":"gems","action":"analyze","gem_id":"...","criteria":"..."}| BE
+  BE -->|gems_draft_created (draft_id, before/after, changed)| FE
+  FE -->|{"type":"gems","action":"draft_apply","draft_id":"..."}| BE
+  BE -->|gems_draft_applied| FE
+  FE -->|{"type":"gems","action":"draft_discard","draft_id":"..."}| BE
+  BE -->|gems_draft_discarded| FE
+```
+
 ## 6.5) Frontend smart mapping (typed + voice)
 
 ```mermaid
