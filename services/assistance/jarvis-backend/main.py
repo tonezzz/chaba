@@ -5549,6 +5549,10 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
     if handled:
         return True
 
+    handled = await _handle_knowledge_trigger(ws, text)
+    if handled:
+        return True
+
     handled = await _handle_note_trigger(ws, text)
     if handled:
         return True
@@ -5996,16 +6000,67 @@ async def _load_ws_sheet_memory(ws: WebSocket) -> None:
     sys_rows = await _load_sheet_kv5(spreadsheet_id=spreadsheet_id, sheet_name=sys_sheet)
     sys_kv = {str(it.get("key") or "").strip(): str(it.get("value") or "").strip() for it in sys_rows if isinstance(it, dict)}
 
-    knowledge_sheet = str(sys_kv.get("knowledge.sheet_name") or os.getenv("CHABA_SS_SYS_KNOWLEDGE_SHEET") or "knowledge").strip() or "knowledge"
+    # Explicit sheet load plan driven by system KV.
+    # No silent fallbacks: if system.sheets is missing or invalid, raise for debugging.
+    sheets_plan_raw = str(sys_kv.get("system.sheets") or "").strip()
+    if not sheets_plan_raw:
+        raise RuntimeError("missing_system_sheets: expected sys_kv key system.sheets")
+    plan = _split_phrases(sheets_plan_raw)
+    if not plan:
+        raise RuntimeError("invalid_system_sheets: system.sheets is empty")
+
+    memory_sheet: str | None = None
+    knowledge_sheet: str | None = None
+    for entry in plan:
+        e = str(entry or "").strip()
+        if not e:
+            continue
+        role = None
+        name = e
+        if ":" in e:
+            left, right = e.split(":", 1)
+            left = left.strip().lower()
+            right = right.strip()
+            if left in {"memory", "knowledge"}:
+                role = left
+                name = right
+        if role is None:
+            low = e.strip().lower()
+            if low in {"memory", "knowledge"}:
+                role = low
+                name = e
+
+        if role == "memory":
+            override = str(sys_kv.get("memory.sheet_name") or "").strip()
+            memory_sheet = override or str(name or "").strip()
+            if not memory_sheet:
+                raise RuntimeError("invalid_system_sheets: memory sheet name is empty")
+            continue
+        if role == "knowledge":
+            override = str(sys_kv.get("knowledge.sheet_name") or "").strip()
+            knowledge_sheet = override or str(name or "").strip()
+            if not knowledge_sheet:
+                raise RuntimeError("invalid_system_sheets: knowledge sheet name is empty")
+            continue
+
+        raise RuntimeError(f"unknown_system_sheet_entry: {e}")
+
+    if not memory_sheet:
+        raise RuntimeError("missing_system_sheets: memory not configured in system.sheets")
+    if not knowledge_sheet:
+        raise RuntimeError("missing_system_sheets: knowledge not configured in system.sheets")
+
     knowledge_items_raw = await _load_sheet_kv5(spreadsheet_id=spreadsheet_id, sheet_name=knowledge_sheet)
     knowledge_items = [
         it
         for it in knowledge_items_raw
-        if isinstance(it, dict) and bool(it.get("enabled")) and str(it.get("key") or "").strip() and str(it.get("value") or "").strip()
+        if isinstance(it, dict)
+        and bool(it.get("enabled"))
+        and str(it.get("key") or "").strip()
+        and str(it.get("value") or "").strip()
     ]
     knowledge_by_key: set[str] = {str(it.get("key") or "").strip() for it in knowledge_items if isinstance(it, dict)}
 
-    memory_sheet = str(sys_kv.get("memory.sheet_name") or os.getenv("CHABA_SS_SYS_MEMORY_SHEET") or "memory").strip() or "memory"
     scope_precedence_raw = str(sys_kv.get("memory.scopes_precedence") or "session,user,global").strip()
     scopes = [s.strip() for s in scope_precedence_raw.split(",") if s.strip()]
     if not scopes:
@@ -6289,6 +6344,127 @@ async def _handle_memory_trigger(ws: WebSocket, text: str) -> bool:
         lines.append(f"- [{sc}:{pr}] {k}: {v_short}")
 
     title = "สรุป memory ที่โหลดอยู่ (top 20)" if _text_is_thai(s_raw) else "Loaded memory summary (top 20)"
+    await _ws_send_json(ws, {"type": "text", "text": title + "\n" + "\n".join(lines), "instance_id": INSTANCE_ID})
+    return True
+
+
+async def _handle_knowledge_trigger(ws: WebSocket, text: str) -> bool:
+    s_raw = str(text or "")
+    s = " ".join(s_raw.strip().lower().split())
+    if not s:
+        return False
+
+    # Quick triggers.
+    is_summary = ("สรุป" in s and "knowledge" in s) or (s.startswith("knowledge ") and "summary" in s)
+    is_list = ("list" in s and "knowledge" in s) or (s.startswith("knowledge list"))
+    is_get = ("knowledge key" in s) or s.startswith("knowledge_get")
+    is_search = s.startswith("knowledge_search") or ("search" in s and "knowledge" in s)
+
+    if not (is_summary or is_list or is_get or is_search):
+        return False
+
+    items = getattr(ws.state, "knowledge_items", None)
+    if not isinstance(items, list) or not items:
+        # Try lazy-load once.
+        try:
+            await _load_ws_sheet_memory(ws)
+        except Exception:
+            pass
+        items = getattr(ws.state, "knowledge_items", None)
+
+    if not isinstance(items, list) or not items:
+        msg = "ยังไม่ได้โหลด knowledge จากชีต (หรืออ่านไม่สำเร็จ)" if _text_is_thai(s_raw) else "Knowledge is not loaded (or failed to load)."
+        await _ws_send_json(ws, {"type": "text", "text": msg, "instance_id": INSTANCE_ID})
+        return True
+
+    by_key: dict[str, dict[str, Any]] = {}
+    for it in items:
+        if isinstance(it, dict):
+            k = str(it.get("key") or "").strip()
+            if k and k not in by_key:
+                by_key[k] = it
+
+    if is_get:
+        key = None
+        if ":" in s_raw:
+            key = s_raw.split(":", 1)[1].strip()
+        if not key:
+            parts = s.split()
+            if "key" in parts:
+                try:
+                    key = s_raw.split("key", 1)[1].strip()
+                except Exception:
+                    key = None
+        key = str(key or "").strip().strip("`\"'")
+        if not key:
+            msg = "ระบุคีย์ที่ต้องการดูด้วย เช่น: knowledge key pricing.rules" if _text_is_thai(s_raw) else "Specify a key, e.g. knowledge key pricing.rules"
+            await _ws_send_json(ws, {"type": "text", "text": msg, "instance_id": INSTANCE_ID})
+            return True
+        hit = by_key.get(key)
+        if not isinstance(hit, dict):
+            msg = f"ไม่พบคีย์: {key}" if _text_is_thai(s_raw) else f"Key not found: {key}"
+            await _ws_send_json(ws, {"type": "text", "text": msg, "instance_id": INSTANCE_ID})
+            return True
+        sc = str(hit.get("scope") or "global")
+        pr = _safe_int(hit.get("priority"), default=0)
+        val = str(hit.get("value") or "").strip()
+        out = f"[{sc}:{pr}] {key}: {val}".strip()
+        await _ws_send_json(ws, {"type": "text", "text": out, "instance_id": INSTANCE_ID})
+        return True
+
+    if is_search:
+        q = None
+        if ":" in s_raw:
+            q = s_raw.split(":", 1)[1].strip()
+        if not q and s.startswith("knowledge_search"):
+            q = s_raw[len("knowledge_search") :].strip()
+        q = str(q or "").strip()
+        if not q:
+            msg = "ระบุคำค้นด้วย เช่น: knowledge_search: policy" if _text_is_thai(s_raw) else "Provide a query, e.g. knowledge_search policy"
+            await _ws_send_json(ws, {"type": "text", "text": msg, "instance_id": INSTANCE_ID})
+            return True
+
+        ql = q.lower()
+        hits: list[dict[str, Any]] = []
+        for it in items:
+            if not isinstance(it, dict):
+                continue
+            k = str(it.get("key") or "")
+            v = str(it.get("value") or "")
+            if ql in k.lower() or ql in v.lower():
+                hits.append(it)
+            if len(hits) >= 20:
+                break
+        if not hits:
+            msg = f"ไม่พบรายการที่ตรงกับ: {q}" if _text_is_thai(s_raw) else f"No matches for: {q}"
+            await _ws_send_json(ws, {"type": "text", "text": msg, "instance_id": INSTANCE_ID})
+            return True
+        lines = []
+        for it in hits:
+            k = str(it.get("key") or "").strip()
+            sc = str(it.get("scope") or "global")
+            pr = _safe_int(it.get("priority"), default=0)
+            lines.append(f"- [{sc}:{pr}] {k}")
+        await _ws_send_json(ws, {"type": "text", "text": "\n".join(lines), "instance_id": INSTANCE_ID})
+        return True
+
+    top = items[:20]
+    lines = []
+    for it in top:
+        if not isinstance(it, dict):
+            continue
+        k = str(it.get("key") or "").strip()
+        v = str(it.get("value") or "").strip()
+        sc = str(it.get("scope") or "global")
+        pr = _safe_int(it.get("priority"), default=0)
+        if not k:
+            continue
+        v_short = v
+        if len(v_short) > 140:
+            v_short = v_short[:140].rstrip() + "…"
+        lines.append(f"- [{sc}:{pr}] {k}: {v_short}")
+
+    title = "สรุป knowledge ที่โหลดอยู่ (top 20)" if _text_is_thai(s_raw) else "Loaded knowledge summary (top 20)"
     await _ws_send_json(ws, {"type": "text", "text": title + "\n" + "\n".join(lines), "instance_id": INSTANCE_ID})
     return True
 
