@@ -676,7 +676,12 @@ LEGACY_REMINDER_NOTIFICATIONS_ENABLED = str(os.getenv("JARVIS_LEGACY_REMINDER_NO
     "1",
     "true",
     "yes",
-    "on",
+)
+
+DISABLE_LEGACY_REMINDER_TEXT_COMMANDS = str(os.getenv("JARVIS_DISABLE_LEGACY_REMINDER_TEXT_COMMANDS", "1")).strip().lower() in (
+    "1",
+    "true",
+    "yes",
 )
 
 MORNING_BRIEF_HOUR = int(str(os.getenv("JARVIS_MORNING_BRIEF_HOUR") or "8").strip() or "8")
@@ -3479,7 +3484,7 @@ async def _improve_reminder_title(*, raw_title: str, source_text: str) -> str:
         return title[:120]
 
 
-async def _handle_reminder_setup_trigger(ws: WebSocket, text: str) -> bool:
+async def _handle_reminder_setup_trigger(ws: WebSocket, text: str, *, speak: bool = True) -> bool:
     title = _extract_reminder_setup_title(text)
     title = await _improve_reminder_title(raw_title=title, source_text=text)
     title = _strip_time_phrases_from_title(title)
@@ -3498,10 +3503,11 @@ async def _handle_reminder_setup_trigger(ws: WebSocket, text: str) -> bool:
                 "instance_id": INSTANCE_ID,
             },
         )
-        try:
-            await _live_say(ws, f"สร้างอีเวนต์ในปฏิทินแล้ว: {title}" if _text_is_thai(text) else f"Created a calendar event: {title}.")
-        except Exception:
-            pass
+        if speak:
+            try:
+                await _live_say(ws, f"สร้างอีเวนต์ในปฏิทินแล้ว: {title}" if _text_is_thai(text) else f"Created a calendar event: {title}.")
+            except Exception:
+                pass
         return True
 
     # No explicit time: create a Google Task instead.
@@ -3526,14 +3532,15 @@ async def _handle_reminder_setup_trigger(ws: WebSocket, text: str) -> bool:
             "instance_id": INSTANCE_ID,
         },
     )
-    try:
-        await _live_say(ws, f"สร้างงานแล้ว: {title}" if _text_is_thai(text) else f"Created a task: {title}.")
-    except Exception:
-        pass
+    if speak:
+        try:
+            await _live_say(ws, f"สร้างงานแล้ว: {title}" if _text_is_thai(text) else f"Created a task: {title}.")
+        except Exception:
+            pass
     return True
 
 
-async def _handle_pending_reminder_confirm_or_cancel(ws: WebSocket, text: str) -> bool:
+async def _handle_pending_reminder_confirm_or_cancel(ws: WebSocket, text: str, *, speak: bool = True) -> bool:
     pending = getattr(ws.state, "pending_reminder_setup", None)
     if not isinstance(pending, dict):
         return False
@@ -3554,10 +3561,11 @@ async def _handle_pending_reminder_confirm_or_cancel(ws: WebSocket, text: str) -
     if eng_cancel or thai_cancel:
         ws.state.pending_reminder_setup = None
         await _ws_send_json(ws, {"type": "reminder_setup_cancelled", "instance_id": INSTANCE_ID})
-        try:
-            await _live_say(ws, "โอเค ฉันยกเลิกแบบร่างการแจ้งเตือนแล้ว" if is_thai else "Okay. I cancelled that reminder draft.")
-        except Exception:
-            pass
+        if speak:
+            try:
+                await _live_say(ws, "โอเค ฉันยกเลิกแบบร่างการแจ้งเตือนแล้ว" if is_thai else "Okay. I cancelled that reminder draft.")
+            except Exception:
+                pass
         return True
 
     when = ""
@@ -3606,17 +3614,18 @@ async def _handle_pending_reminder_confirm_or_cancel(ws: WebSocket, text: str) -
                 "instance_id": INSTANCE_ID,
             }
         )
-        try:
-            await _live_say(
-                ws,
-                (
-                    f"ยืนยันแล้ว ฉันสร้างการแจ้งเตือน: {title} แล้ว บอกเวลาได้เลย"
-                    if is_thai
-                    else f"Confirmed. I created the reminder: {title}. Please tell me what time."
-                ),
-            )
-        except Exception:
-            pass
+        if speak:
+            try:
+                await _live_say(
+                    ws,
+                    (
+                        f"ยืนยันแล้ว ฉันสร้างการแจ้งเตือน: {title} แล้ว บอกเวลาได้เลย"
+                        if is_thai
+                        else f"Confirmed. I created the reminder: {title}. Please tell me what time."
+                    ),
+                )
+            except Exception:
+                pass
         return True
 
     cal = await _google_calendar_create_reminder_event(title=title, due_at_utc=due_at_utc, tz=tz, source_text=source_text or s)
@@ -3631,10 +3640,11 @@ async def _handle_pending_reminder_confirm_or_cancel(ws: WebSocket, text: str) -
             "instance_id": INSTANCE_ID,
         },
     )
-    try:
-        await _live_say(ws, f"ยืนยันแล้ว ฉันสร้างการแจ้งเตือน: {title} แล้ว" if is_thai else f"Confirmed. I created the reminder: {title}.")
-    except Exception:
-        pass
+    if speak:
+        try:
+            await _live_say(ws, f"ยืนยันแล้ว ฉันสร้างการแจ้งเตือน: {title} แล้ว" if is_thai else f"Confirmed. I created the reminder: {title}.")
+        except Exception:
+            pass
     return True
 
 
@@ -4174,6 +4184,150 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
         await _ws_send_json(ws, {"type": "error", "kind": "invalid_notes_action", "message": f"invalid_notes_action: {action}", "instance_id": INSTANCE_ID}, trace_id=trace_id)
         return True
 
+    if msg_type == "reminders":
+        action = str(msg.get("action") or "").strip().lower()
+
+        def _pick_rid() -> str:
+            rid0 = str(msg.get("reminder_id") or "").strip()
+            if rid0:
+                return rid0
+            rid1 = str(getattr(ws.state, "last_selected_reminder_id", "") or "").strip()
+            if rid1:
+                return rid1
+            rid2 = str(getattr(ws.state, "last_reminder_id", "") or "").strip()
+            return rid2
+
+        if action in {"add", "create"}:
+            payload = str(msg.get("text") or "").strip()
+            if not payload:
+                await _ws_send_json(ws, {"type": "error", "kind": "reminders_missing_text", "message": "reminders_missing_text", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                return True
+            # Reuse existing reminder setup pipeline (calendar event if time present, else task) but suppress speech.
+            await _handle_reminder_setup_trigger(ws, f"reminder setup: {payload}", speak=False)
+            return True
+
+        if action in {"list"}:
+            status = str(msg.get("status") or "pending").strip().lower() or "pending"
+            include_hidden = bool(msg.get("include_hidden") or False)
+            day = str(msg.get("day") or "").strip().lower()
+            limit = int(msg.get("limit") or 50)
+            limit = max(1, min(200, limit))
+            now_ts = int(time.time())
+            items: list[dict[str, Any]] = []
+            if day == "upcoming":
+                items = _list_upcoming_pending_reminders(user_id=DEFAULT_USER_ID, start_ts=now_ts, end_ts=now_ts + 7 * 24 * 3600, limit=limit)
+            else:
+                items = _list_reminders(user_id=DEFAULT_USER_ID, status=status, include_hidden=include_hidden, day=day, limit=limit)
+            await _ws_send_json(ws, {"type": "reminders_list", "status": status, "day": day, "include_hidden": include_hidden, "items": items, "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            return True
+
+        if action in {"details", "detail"}:
+            rid = _pick_rid()
+            if not rid:
+                await _ws_send_json(ws, {"type": "error", "kind": "missing_reminder_id", "message": "missing_reminder_id", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                return True
+            local = _get_local_reminder_by_id(rid) or {}
+            if not local:
+                await _ws_send_json(ws, {"type": "error", "kind": "reminder_not_found", "message": "reminder_not_found", "reminder_id": rid, "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                return True
+            try:
+                ws.state.last_selected_reminder_id = rid
+                ws.state.last_reminder_id = rid
+            except Exception:
+                pass
+            await _ws_send_json(ws, {"type": "reminder_detail", "reminder": local, "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            return True
+
+        if action in {"done", "complete"}:
+            rid = _pick_rid()
+            if not rid:
+                await _ws_send_json(ws, {"type": "error", "kind": "missing_reminder_id", "message": "missing_reminder_id", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                return True
+            changed = _mark_reminder_done(rid)
+            wv: Optional[dict[str, Any]] = None
+            if _weaviate_enabled():
+                try:
+                    wv = await _mark_reminder_done_weaviate(rid)
+                except Exception as e:
+                    wv = {"ok": False, "error": str(e)}
+            await _ws_send_json(ws, {"type": "reminders_done", "reminder_id": rid, "changed": changed, "weaviate": wv, "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            return True
+
+        if action in {"delete", "remove"}:
+            rid = _pick_rid()
+            if not rid:
+                await _ws_send_json(ws, {"type": "error", "kind": "missing_reminder_id", "message": "missing_reminder_id", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                return True
+            changed = _delete_reminder_local(rid)
+            wv: Optional[dict[str, Any]] = None
+            if _weaviate_enabled():
+                try:
+                    wv = await _mark_reminder_done_weaviate(rid)
+                except Exception as e:
+                    wv = {"ok": False, "error": str(e)}
+            await _ws_send_json(ws, {"type": "reminders_deleted", "reminder_id": rid, "changed": changed, "weaviate": wv, "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            return True
+
+        if action in {"later", "snooze"}:
+            rid = _pick_rid()
+            if not rid:
+                await _ws_send_json(ws, {"type": "error", "kind": "missing_reminder_id", "message": "missing_reminder_id", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                return True
+            days = int(msg.get("days") or 1)
+            days = max(1, min(30, days))
+            tz = _get_user_timezone(DEFAULT_USER_ID)
+            now = datetime.now(tz=timezone.utc)
+            hide_until_local = _default_hide_until(now, tz, days_ahead=days)
+            hide_until_ts = int(hide_until_local.astimezone(timezone.utc).timestamp())
+            changed = _set_reminder_hide_until(rid, hide_until_ts)
+            wv: Optional[dict[str, Any]] = None
+            if _weaviate_enabled():
+                try:
+                    local = _get_local_reminder_by_id(rid) or {}
+                    external_key = str(local.get("aim_entity_name") or "").strip() or f"reminder::{rid}"
+                    tz_name = str(local.get("timezone") or tz.key)
+                    wv = await _weaviate_upsert_memory_item(
+                        external_key=external_key,
+                        kind="reminder",
+                        title=str(local.get("title") or "Reminder"),
+                        body=str(local.get("source_text") or ""),
+                        status=str(local.get("status") or "pending"),
+                        due_at=int(local.get("due_at")) if local.get("due_at") is not None else None,
+                        notify_at=int(local.get("notify_at")) if local.get("notify_at") is not None else None,
+                        hide_until=hide_until_ts,
+                        timezone_name=tz_name,
+                        source="jarvis",
+                    )
+                except Exception as e:
+                    wv = {"ok": False, "error": str(e)}
+            await _ws_send_json(ws, {"type": "reminders_later", "reminder_id": rid, "hide_until": hide_until_ts, "changed": changed, "weaviate": wv, "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            return True
+
+        if action in {"reschedule", "set_time", "modify_last", "modify"}:
+            rid = _pick_rid()
+            when = str(msg.get("when") or msg.get("time") or "").strip()
+            if not rid:
+                await _ws_send_json(ws, {"type": "error", "kind": "missing_reminder_id", "message": "missing_reminder_id", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                return True
+            if not when:
+                await _ws_send_json(ws, {"type": "error", "kind": "missing_time_text", "message": "missing_time_text", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                return True
+            tz = _get_user_timezone(DEFAULT_USER_ID)
+            now = datetime.now(tz=timezone.utc)
+            due_at_utc, local_iso = _parse_time_from_text(when, now, tz)
+            if due_at_utc is None:
+                await _ws_send_json(ws, {"type": "error", "kind": "time_parse_failed", "message": "time_parse_failed", "hint": "Try: today 17:00 | tomorrow 09:00", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                return True
+            notify_at_local = _next_morning_brief_at(now, tz, due_at_utc)
+            notify_at_ts = int(notify_at_local.astimezone(timezone.utc).timestamp())
+            changed = _set_reminder_notify_at(rid, notify_at_ts)
+            _set_reminder_hide_until(rid, None)
+            await _ws_send_json(ws, {"type": "reminders_rescheduled", "reminder_id": rid, "notify_at": notify_at_ts, "local_time": local_iso, "changed": changed, "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            return True
+
+        await _ws_send_json(ws, {"type": "error", "kind": "invalid_reminders_action", "message": f"invalid_reminders_action: {action}", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+        return True
+
     return False
 
 
@@ -4532,6 +4686,8 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
                 ws.state.active_agent_until_ts = None
             return handled
         if agent_id_norm == "reminder-setup":
+            if DISABLE_LEGACY_REMINDER_TEXT_COMMANDS:
+                return False
             handled = await _handle_reminder_setup_trigger(ws, text)
             if handled:
                 ws.state.active_agent_id = agent_id_norm
