@@ -37,6 +37,7 @@ export class LiveService {
   private lastVoiceCommandTs: Record<string, number> = {};
   private lastVoiceCommandName: string | null = null;
   private lastVoiceCommandAt: number = 0;
+  private lastSysKvSetAt: number = 0;
   private voiceCmdCfg: any | null = null;
   private voiceCmdCfgLoadedAt: number = 0;
 
@@ -193,6 +194,7 @@ export class LiveService {
 		const v = String(value ?? "");
 		if (!k) return;
 		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			this.lastSysKvSetAt = Date.now();
 			this.wsSend({
 				type: "system",
 				action: "sys_kv_set",
@@ -1062,6 +1064,10 @@ export class LiveService {
 
     if (message?.type === "transcript" && message?.text) {
       const src = message?.source === "output" ? "output" : "input";
+			if (src === "output" && this.lastSysKvSetAt && Date.now() - this.lastSysKvSetAt < 8_000) {
+				const t = String(message.text || "").trim().toLowerCase();
+				if (t.includes("syskvs")) return;
+			}
 			if (src === "output" && this.lastVoiceCommandName === "reload_system" && Date.now() - this.lastVoiceCommandAt < 8_000) {
 				const t = String(message.text || "").trim().toLowerCase();
 				if ((t.includes("reload") || t.includes("reload system")) && t.includes("ambig")) return;
@@ -1133,6 +1139,10 @@ export class LiveService {
     }
 
     if (message?.type === "text" && message?.text) {
+			if (this.lastSysKvSetAt && Date.now() - this.lastSysKvSetAt < 8_000) {
+				const t = String(message.text || "").trim().toLowerCase();
+				if (t.includes("syskvs")) return;
+			}
 			if (this.lastVoiceCommandName === "reload_system" && Date.now() - this.lastVoiceCommandAt < 8_000) {
 				const t = String(message.text || "").trim().toLowerCase();
 				if ((t.includes("reload") || t.includes("reload system")) && t.includes("ambig")) return;
