@@ -554,6 +554,92 @@ def _ws_capture_trace_id(ws: WebSocket, msg: Any) -> str | None:
     return trace_id
 
 
+def _ws_ensure_trace_id(ws: WebSocket, trace_id: str | None) -> str:
+    tid = str(trace_id or "").strip()
+    if not tid:
+        tid = uuid.uuid4().hex
+    try:
+        ws.state.trace_id = tid
+    except Exception:
+        pass
+    return tid
+
+
+def _voice_job_done_enabled(ws: WebSocket) -> bool:
+    sys_kv = getattr(ws.state, "sys_kv", None)
+    if isinstance(sys_kv, dict):
+        raw = str(sys_kv.get("voice.job_done") or "").strip()
+        if raw:
+            return _parse_bool_cell(raw)
+    raw2 = str(os.getenv("JARVIS_VOICE_JOB_DONE") or "").strip()
+    if raw2:
+        return _parse_bool_cell(raw2)
+    return False
+
+
+def _job_short_id(trace_id: str | None) -> str:
+    s = str(trace_id or "").strip()
+    if not s:
+        return uuid.uuid4().hex[:6]
+    s = re.sub(r"[^a-zA-Z0-9]+", "", s)
+    if len(s) >= 6:
+        return s[:6].lower()
+    if s:
+        return s.lower()
+    return uuid.uuid4().hex[:6]
+
+
+def _ws_mark_job_error(ws: WebSocket, trace_id: str) -> None:
+    if not trace_id:
+        return
+    try:
+        st = getattr(ws.state, "job_error_trace_ids", None)
+        if not isinstance(st, set):
+            st = set()
+            ws.state.job_error_trace_ids = st
+        st.add(str(trace_id))
+    except Exception:
+        return
+
+
+def _ws_job_had_error(ws: WebSocket, trace_id: str) -> bool:
+    if not trace_id:
+        return False
+    try:
+        st = getattr(ws.state, "job_error_trace_ids", None)
+        if isinstance(st, set):
+            return str(trace_id) in st
+    except Exception:
+        return False
+    return False
+
+
+async def _ws_voice_job_done(ws: WebSocket, trace_id: str) -> None:
+    if not trace_id:
+        return
+    if not _voice_job_done_enabled(ws):
+        return
+    if _ws_job_had_error(ws, trace_id):
+        return
+    try:
+        last = getattr(ws.state, "job_done_voice_last_trace_id", None)
+        if last and str(last) == str(trace_id):
+            return
+        ws.state.job_done_voice_last_trace_id = str(trace_id)
+    except Exception:
+        pass
+
+    sid = _job_short_id(trace_id)
+    lang = str(getattr(ws.state, "user_lang", "") or "").strip().lower()
+    msg = f"Job {sid} Done"
+    if lang == "th":
+        msg = f"งาน {sid} เสร็จแล้ว"
+    try:
+        await _live_say(ws, msg)
+    except Exception:
+        return
+
+
 async def _ws_send_json(ws: WebSocket, payload: dict[str, Any], trace_id: str | None = None) -> None:
     if not isinstance(payload, dict):
         return
@@ -565,6 +651,12 @@ async def _ws_send_json(ws: WebSocket, payload: dict[str, Any], trace_id: str | 
             tid = None
     if tid:
         payload = {**payload, "trace_id": tid}
+
+    try:
+        if tid and str(payload.get("type") or "").strip().lower() == "error":
+            _ws_mark_job_error(ws, str(tid))
+    except Exception:
+        pass
 
     # Client tagging: attach stable client metadata (if provided by the frontend)
     try:
@@ -4156,32 +4248,49 @@ async def _handle_system_reload_mode(ws: WebSocket, mode: str, trace_id: str | N
 
 
 async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_id: str | None = None) -> bool:
+    tid = _ws_ensure_trace_id(ws, trace_id)
     msg_type = str(msg.get("type") or "").strip().lower()
     if msg_type == "system":
         action = str(msg.get("action") or "").strip().lower()
         if action == "reload":
             mode = str(msg.get("mode") or "full")
-            await _handle_system_reload_mode(ws, mode, trace_id=trace_id)
+            await _handle_system_reload_mode(ws, mode, trace_id=tid)
+            await _ws_voice_job_done(ws, tid)
             return True
-        await _ws_send_json(ws, {"type": "error", "kind": "invalid_system_action", "message": f"invalid_system_action: {action}", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+        await _ws_send_json(
+            ws,
+            {"type": "error", "kind": "invalid_system_action", "message": f"invalid_system_action: {action}", "instance_id": INSTANCE_ID},
+            trace_id=tid,
+        )
         return True
 
     if msg_type == "notes":
         action = str(msg.get("action") or "").strip().lower()
         if action in {"check", "latest", "list"}:
             await _handle_notes_check(ws, "notes")
+            await _ws_voice_job_done(ws, tid)
             return True
         if action in {"next"}:
             await _handle_notes_next(ws, "notes")
+            await _ws_voice_job_done(ws, tid)
             return True
         if action in {"add", "create"}:
             body = str(msg.get("text") or msg.get("note") or "").strip()
             if not body:
-                await _ws_send_json(ws, {"type": "error", "kind": "notes_missing_text", "message": "notes_missing_text", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                await _ws_send_json(
+                    ws,
+                    {"type": "error", "kind": "notes_missing_text", "message": "notes_missing_text", "instance_id": INSTANCE_ID},
+                    trace_id=tid,
+                )
                 return True
             await _handle_note_trigger(ws, f"make a note: {body}", speak=False)
+            await _ws_voice_job_done(ws, tid)
             return True
-        await _ws_send_json(ws, {"type": "error", "kind": "invalid_notes_action", "message": f"invalid_notes_action: {action}", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+        await _ws_send_json(
+            ws,
+            {"type": "error", "kind": "invalid_notes_action", "message": f"invalid_notes_action: {action}", "instance_id": INSTANCE_ID},
+            trace_id=tid,
+        )
         return True
 
     if msg_type == "reminders":
@@ -4200,10 +4309,15 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
         if action in {"add", "create"}:
             payload = str(msg.get("text") or "").strip()
             if not payload:
-                await _ws_send_json(ws, {"type": "error", "kind": "reminders_missing_text", "message": "reminders_missing_text", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                await _ws_send_json(
+                    ws,
+                    {"type": "error", "kind": "reminders_missing_text", "message": "reminders_missing_text", "instance_id": INSTANCE_ID},
+                    trace_id=tid,
+                )
                 return True
             # Reuse existing reminder setup pipeline (calendar event if time present, else task) but suppress speech.
             await _handle_reminder_setup_trigger(ws, f"reminder setup: {payload}", speak=False)
+            await _ws_voice_job_done(ws, tid)
             return True
 
         if action in {"list"}:
@@ -4218,30 +4332,36 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
                 items = _list_upcoming_pending_reminders(user_id=DEFAULT_USER_ID, start_ts=now_ts, end_ts=now_ts + 7 * 24 * 3600, limit=limit)
             else:
                 items = _list_reminders(user_id=DEFAULT_USER_ID, status=status, include_hidden=include_hidden, day=day, limit=limit)
-            await _ws_send_json(ws, {"type": "reminders_list", "status": status, "day": day, "include_hidden": include_hidden, "items": items, "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            await _ws_send_json(
+                ws,
+                {"type": "reminders_list", "status": status, "day": day, "include_hidden": include_hidden, "items": items, "instance_id": INSTANCE_ID},
+                trace_id=tid,
+            )
+            await _ws_voice_job_done(ws, tid)
             return True
 
         if action in {"details", "detail"}:
             rid = _pick_rid()
             if not rid:
-                await _ws_send_json(ws, {"type": "error", "kind": "missing_reminder_id", "message": "missing_reminder_id", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                await _ws_send_json(ws, {"type": "error", "kind": "missing_reminder_id", "message": "missing_reminder_id", "instance_id": INSTANCE_ID}, trace_id=tid)
                 return True
             local = _get_local_reminder_by_id(rid) or {}
             if not local:
-                await _ws_send_json(ws, {"type": "error", "kind": "reminder_not_found", "message": "reminder_not_found", "reminder_id": rid, "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                await _ws_send_json(ws, {"type": "error", "kind": "reminder_not_found", "message": "reminder_not_found", "reminder_id": rid, "instance_id": INSTANCE_ID}, trace_id=tid)
                 return True
             try:
                 ws.state.last_selected_reminder_id = rid
                 ws.state.last_reminder_id = rid
             except Exception:
                 pass
-            await _ws_send_json(ws, {"type": "reminder_detail", "reminder": local, "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            await _ws_send_json(ws, {"type": "reminder_detail", "reminder": local, "instance_id": INSTANCE_ID}, trace_id=tid)
+            await _ws_voice_job_done(ws, tid)
             return True
 
         if action in {"done", "complete"}:
             rid = _pick_rid()
             if not rid:
-                await _ws_send_json(ws, {"type": "error", "kind": "missing_reminder_id", "message": "missing_reminder_id", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                await _ws_send_json(ws, {"type": "error", "kind": "missing_reminder_id", "message": "missing_reminder_id", "instance_id": INSTANCE_ID}, trace_id=tid)
                 return True
             changed = _mark_reminder_done(rid)
             wv: Optional[dict[str, Any]] = None
@@ -4250,13 +4370,14 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
                     wv = await _mark_reminder_done_weaviate(rid)
                 except Exception as e:
                     wv = {"ok": False, "error": str(e)}
-            await _ws_send_json(ws, {"type": "reminders_done", "reminder_id": rid, "changed": changed, "weaviate": wv, "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            await _ws_send_json(ws, {"type": "reminders_done", "reminder_id": rid, "changed": changed, "weaviate": wv, "instance_id": INSTANCE_ID}, trace_id=tid)
+            await _ws_voice_job_done(ws, tid)
             return True
 
         if action in {"delete", "remove"}:
             rid = _pick_rid()
             if not rid:
-                await _ws_send_json(ws, {"type": "error", "kind": "missing_reminder_id", "message": "missing_reminder_id", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                await _ws_send_json(ws, {"type": "error", "kind": "missing_reminder_id", "message": "missing_reminder_id", "instance_id": INSTANCE_ID}, trace_id=tid)
                 return True
             changed = _delete_reminder_local(rid)
             wv: Optional[dict[str, Any]] = None
@@ -4265,13 +4386,14 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
                     wv = await _mark_reminder_done_weaviate(rid)
                 except Exception as e:
                     wv = {"ok": False, "error": str(e)}
-            await _ws_send_json(ws, {"type": "reminders_deleted", "reminder_id": rid, "changed": changed, "weaviate": wv, "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            await _ws_send_json(ws, {"type": "reminders_deleted", "reminder_id": rid, "changed": changed, "weaviate": wv, "instance_id": INSTANCE_ID}, trace_id=tid)
+            await _ws_voice_job_done(ws, tid)
             return True
 
         if action in {"later", "snooze"}:
             rid = _pick_rid()
             if not rid:
-                await _ws_send_json(ws, {"type": "error", "kind": "missing_reminder_id", "message": "missing_reminder_id", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                await _ws_send_json(ws, {"type": "error", "kind": "missing_reminder_id", "message": "missing_reminder_id", "instance_id": INSTANCE_ID}, trace_id=tid)
                 return True
             days = int(msg.get("days") or 1)
             days = max(1, min(30, days))
@@ -4300,32 +4422,34 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
                     )
                 except Exception as e:
                     wv = {"ok": False, "error": str(e)}
-            await _ws_send_json(ws, {"type": "reminders_later", "reminder_id": rid, "hide_until": hide_until_ts, "changed": changed, "weaviate": wv, "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            await _ws_send_json(ws, {"type": "reminders_later", "reminder_id": rid, "hide_until": hide_until_ts, "changed": changed, "weaviate": wv, "instance_id": INSTANCE_ID}, trace_id=tid)
+            await _ws_voice_job_done(ws, tid)
             return True
 
         if action in {"reschedule", "set_time", "modify_last", "modify"}:
             rid = _pick_rid()
             when = str(msg.get("when") or msg.get("time") or "").strip()
             if not rid:
-                await _ws_send_json(ws, {"type": "error", "kind": "missing_reminder_id", "message": "missing_reminder_id", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                await _ws_send_json(ws, {"type": "error", "kind": "missing_reminder_id", "message": "missing_reminder_id", "instance_id": INSTANCE_ID}, trace_id=tid)
                 return True
             if not when:
-                await _ws_send_json(ws, {"type": "error", "kind": "missing_time_text", "message": "missing_time_text", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                await _ws_send_json(ws, {"type": "error", "kind": "missing_time_text", "message": "missing_time_text", "instance_id": INSTANCE_ID}, trace_id=tid)
                 return True
             tz = _get_user_timezone(DEFAULT_USER_ID)
             now = datetime.now(tz=timezone.utc)
             due_at_utc, local_iso = _parse_time_from_text(when, now, tz)
             if due_at_utc is None:
-                await _ws_send_json(ws, {"type": "error", "kind": "time_parse_failed", "message": "time_parse_failed", "hint": "Try: today 17:00 | tomorrow 09:00", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                await _ws_send_json(ws, {"type": "error", "kind": "time_parse_failed", "message": "time_parse_failed", "hint": "Try: today 17:00 | tomorrow 09:00", "instance_id": INSTANCE_ID}, trace_id=tid)
                 return True
             notify_at_local = _next_morning_brief_at(now, tz, due_at_utc)
             notify_at_ts = int(notify_at_local.astimezone(timezone.utc).timestamp())
             changed = _set_reminder_notify_at(rid, notify_at_ts)
             _set_reminder_hide_until(rid, None)
-            await _ws_send_json(ws, {"type": "reminders_rescheduled", "reminder_id": rid, "notify_at": notify_at_ts, "local_time": local_iso, "changed": changed, "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            await _ws_send_json(ws, {"type": "reminders_rescheduled", "reminder_id": rid, "notify_at": notify_at_ts, "local_time": local_iso, "changed": changed, "instance_id": INSTANCE_ID}, trace_id=tid)
+            await _ws_voice_job_done(ws, tid)
             return True
 
-        await _ws_send_json(ws, {"type": "error", "kind": "invalid_reminders_action", "message": f"invalid_reminders_action: {action}", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+        await _ws_send_json(ws, {"type": "error", "kind": "invalid_reminders_action", "message": f"invalid_reminders_action: {action}", "instance_id": INSTANCE_ID}, trace_id=tid)
         return True
 
     return False
@@ -7885,7 +8009,7 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             active_trip_id = msg.get("active_trip_id")
             active_trip_name = msg.get("active_trip_name")
             if not session_id:
-                await _ws_send_json(ws, {"type": "error", "message": "missing_session_id"}, trace_id=trace_id)
+                await _ws_send_json(ws, {"type": "error", "message": "missing_session_id"}, trace_id=trace_id2)
                 continue
             _set_session_state(
                 str(session_id),
@@ -7893,11 +8017,13 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
                 str(active_trip_name) if active_trip_name is not None else None,
             )
             state = _get_session_state(str(session_id))
-            await _ws_send_json(ws, {"type": "active_trip", **state}, trace_id=trace_id)
+            await _ws_send_json(ws, {"type": "active_trip", **state}, trace_id=trace_id2)
+            await _ws_voice_job_done(ws, trace_id2)
             continue
 
         if msg_type == "cars_ingest_image":
             await _handle_cars_ingest_image(ws, msg if isinstance(msg, dict) else {})
+            await _ws_voice_job_done(ws, trace_id2)
             continue
 
         if msg_type == "audio":
@@ -7984,6 +8110,7 @@ async def _ws_local_only_loop(ws: WebSocket) -> None:
     while True:
         msg = await ws.receive_json()
         trace_id = _ws_capture_trace_id(ws, msg)
+        trace_id2 = _ws_ensure_trace_id(ws, trace_id)
         try:
             await _ws_record(ws, "in", msg)
         except Exception:
@@ -7992,7 +8119,7 @@ async def _ws_local_only_loop(ws: WebSocket) -> None:
 
         # Deterministic backend tools (works even in local-only mode)
         if isinstance(msg, dict):
-            handled_local = await _handle_local_tools_message(ws, msg, trace_id=trace_id)
+            handled_local = await _handle_local_tools_message(ws, msg, trace_id=trace_id2)
             if handled_local:
                 continue
 
