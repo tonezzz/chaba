@@ -737,12 +737,20 @@ export class LiveService {
 
   private async handleBackendMessage(message: any) {
     const traceId = message?.trace_id != null ? String(message.trace_id) : undefined;
+    const quietAfterSysKvSet = this.lastSysKvSetAt && Date.now() - this.lastSysKvSetAt < 6_000;
     const wsMeta = {
       type: message?.type != null ? String(message.type) : undefined,
       instance_id: message?.instance_id != null ? String(message.instance_id) : undefined,
       client_tag: message?.client_tag != null ? String(message.client_tag) : undefined,
       client_id: message?.client_id != null ? String(message.client_id) : undefined,
     };
+
+		// After a deterministic /sys set, ignore tool/progress chatter and late model turns.
+		// This prevents confusing follow-up actions like google_tasks_list_tasks showing up right after sys_kv_set.
+		// Keep the real sys_kv_set ok response (a text message) visible.
+		if (quietAfterSysKvSet && message?.type === "progress") {
+			return;
+		}
 
     if (message?.type === "progress") {
       const phase = message?.phase != null ? String(message.phase) : "";
@@ -1064,6 +1072,9 @@ export class LiveService {
 
     if (message?.type === "transcript" && message?.text) {
       const src = message?.source === "output" ? "output" : "input";
+			if (quietAfterSysKvSet && src === "output") {
+				return;
+			}
 			if (src === "output" && this.lastSysKvSetAt && Date.now() - this.lastSysKvSetAt < 8_000) {
 				const t = String(message.text || "").trim().toLowerCase();
 				if (t.includes("syskvs")) return;
@@ -1139,6 +1150,13 @@ export class LiveService {
     }
 
     if (message?.type === "text" && message?.text) {
+			if (quietAfterSysKvSet) {
+				const t0 = String(message.text || "");
+				const t = t0.trim().toLowerCase();
+				if (!t.startsWith("sys_kv_set ok")) {
+					return;
+				}
+			}
 			if (this.lastSysKvSetAt && Date.now() - this.lastSysKvSetAt < 8_000) {
 				const t = String(message.text || "").trim().toLowerCase();
 				if (t.includes("syskvs")) return;

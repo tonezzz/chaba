@@ -1403,7 +1403,7 @@ export default function App() {
                    <p className="font-mono text-sm tracking-wide">Waiting for system output...</p>
                  </div>
                ) : (
-                 <div className="w-full flex-1 min-h-0 flex flex-col items-center animate-in zoom-in-95 duration-500">
+                 <div className="w-full flex-1 min-h-0 flex flex-col animate-in zoom-in-95 duration-500">
                    {activeMedia?.metadata?.image && (
                      <div className="relative group max-w-full max-h-full">
                         <img 
@@ -1417,7 +1417,7 @@ export default function App() {
                      </div>
                    )}
                    {activeMedia?.metadata?.sources && (
-                     <div className="w-full max-w-2xl bg-slate-800/50 rounded-lg border border-slate-700 p-4 overflow-auto">
+                     <div className="w-full bg-slate-800/50 rounded-lg border border-slate-700 p-4 overflow-auto">
                         <h3 className="text-cyan-400 font-hud text-sm mb-3 uppercase tracking-wider">Grounding Sources</h3>
                         <ul className="space-y-2">
                           {activeMedia.metadata.sources.map((src, i) => (
@@ -1434,7 +1434,7 @@ export default function App() {
                    {!activeMedia?.metadata?.image && !activeMedia?.metadata?.sources && (
                      <div
                        ref={outputScrollRef}
-                       className="w-full max-w-3xl bg-slate-950/40 rounded-lg border border-slate-700 p-4 overflow-auto flex-1 min-h-0"
+                       className="w-full bg-slate-950/40 rounded-lg border border-slate-700 p-4 overflow-auto flex-1 min-h-0"
                        onScroll={(e) => {
                          const el = e.currentTarget;
                          const remaining = el.scrollHeight - el.scrollTop - el.clientHeight;
