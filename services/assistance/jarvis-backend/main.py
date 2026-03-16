@@ -692,6 +692,13 @@ _reminder_task: Optional[asyncio.Task[None]] = None
 _reload_system_lock: asyncio.Lock = asyncio.Lock()
 RELOAD_SYSTEM_DEBOUNCE_SECONDS = float(str(os.getenv("JARVIS_RELOAD_SYSTEM_DEBOUNCE_SECONDS") or "5").strip() or "5")
 
+# Suppress duplicate initial status lines on rapid reconnect/double-connect.
+_initial_sheet_status_last_sent: dict[str, float] = {}
+_initial_sheet_status_lock: asyncio.Lock = asyncio.Lock()
+INITIAL_SHEET_STATUS_DEDUPE_SECONDS = float(
+    str(os.getenv("JARVIS_INITIAL_SHEET_STATUS_DEDUPE_SECONDS") or "5").strip() or "5"
+)
+
 _agent_defs: dict[str, dict[str, Any]] = {}
 
 _agent_triggers: dict[str, list[str]] = {}
@@ -7764,23 +7771,39 @@ async def ws_live(ws: WebSocket) -> None:
             _apply_cached_sheet_knowledge_to_ws(ws, cached_k)
 
         # Cache-first mode: do not auto-load sheets here. Use `Reload System`.
-        # Emit status based on cache only.
+        # Emit status based on cache only, but suppress duplicates on rapid reconnects.
+        should_emit_sheet_status = True
         try:
-            await _ws_send_json(ws, {"type": "text", "text": _memory_load_status_line(ws, lang), "instance_id": INSTANCE_ID})
+            sid = str(getattr(ws.state, "session_id", None) or "").strip()
+            cid = str(getattr(ws.state, "client_id", None) or "").strip()
+            key = sid or cid or str(id(ws))
+            now_ts = time.time()
+            async with _initial_sheet_status_lock:
+                last = float(_initial_sheet_status_last_sent.get(key) or 0.0)
+                if last and (now_ts - last) < INITIAL_SHEET_STATUS_DEDUPE_SECONDS:
+                    should_emit_sheet_status = False
+                else:
+                    _initial_sheet_status_last_sent[key] = now_ts
         except Exception:
-            pass
+            should_emit_sheet_status = True
 
-        try:
-            await _ws_send_json(
-                ws,
-                {
-                    "type": "text",
-                    "text": "Sheets are not auto-loaded. Type: Reload System",
-                    "instance_id": INSTANCE_ID,
-                },
-            )
-        except Exception:
-            pass
+        if should_emit_sheet_status:
+            try:
+                await _ws_send_json(ws, {"type": "text", "text": _memory_load_status_line(ws, lang), "instance_id": INSTANCE_ID})
+            except Exception:
+                pass
+
+            try:
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "text",
+                        "text": "Sheets are not auto-loaded. Type: Reload System",
+                        "instance_id": INSTANCE_ID,
+                    },
+                )
+            except Exception:
+                pass
         api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
         if not api_key:
             await _ws_send_json(
