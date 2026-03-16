@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { LiveService } from './services/liveService';
 import { sequentialApplyAndSuggest } from './services/sequentialService';
 import { ConnectionState, MessageLog } from './types';
@@ -40,6 +40,45 @@ export default function App() {
     }>
   >([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const systemCounts = useMemo(() => {
+    const out = { memory: 0, knowledge: 0, ok: false };
+    const rxOk = /\bmemory\s*=\s*(\d+)\b[^\d]+\bknowledge\s*=\s*(\d+)\b/i;
+    const rxLoadedEn = /\bloaded\s+memory\b[\s\S]*?\b(\d+)\b[\s\S]*?\bknowledge\b[\s\S]*?\b(\d+)\b/i;
+    const rxLoadedTh = /โหลด\s*memory[\s\S]*?(\d+)[\s\S]*?knowledge[\s\S]*?(\d+)/i;
+    for (const m of messages) {
+      const t = String(m.text || "");
+      let mm: RegExpMatchArray | null = null;
+      mm = t.match(rxOk);
+      if (!mm) mm = t.match(rxLoadedEn);
+      if (!mm) mm = t.match(rxLoadedTh);
+      if (!mm) continue;
+      const mem = Number(mm[1] || 0);
+      const know = Number(mm[2] || 0);
+      if (!Number.isFinite(mem) || !Number.isFinite(know)) continue;
+      out.memory = mem;
+      out.knowledge = know;
+      out.ok = true;
+      break;
+    }
+    return out;
+  }, [messages]);
+
+  const audioStatus = useMemo(() => {
+    let lastConn = 0;
+    let lastAudioUnavailable = 0;
+    for (const m of messages) {
+      const id = String(m.id || "");
+      const txt = String(m.text || "").toLowerCase();
+      const ts = m.timestamp?.getTime?.() ? m.timestamp.getTime() : 0;
+      if (id.endsWith("_state") && txt === "connected") lastConn = Math.max(lastConn, ts);
+      if (id.includes("_audio_unavailable") || txt.startsWith("audio_unavailable")) {
+        lastAudioUnavailable = Math.max(lastAudioUnavailable, ts);
+      }
+    }
+    const ok = state === ConnectionState.CONNECTED && (!lastAudioUnavailable || lastAudioUnavailable < lastConn);
+    return { ok, lastConn, lastAudioUnavailable };
+  }, [messages, state]);
 
   const copyText = useCallback(async (text: string) => {
     const t = String(text || "");
@@ -524,41 +563,42 @@ export default function App() {
         
         <div className="flex-1 flex flex-col gap-4 min-h-0">
           {/* Connection Status */}
-          <div className={`p-4 rounded-lg border ${state === ConnectionState.CONNECTED ? 'border-cyan-500/30 bg-cyan-950/20' : 'border-red-500/30 bg-red-950/20'} transition-colors duration-500`}>
-             <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-mono text-slate-400 uppercase">System Status</span>
-                <span
-                  className={`inline-flex items-center gap-2 px-2 py-1 rounded-full border text-[11px] font-mono uppercase tracking-wide ${
-                    state === ConnectionState.CONNECTED
-                      ? 'border-cyan-500/40 bg-cyan-950/20 text-cyan-200'
-                      : state === ConnectionState.CONNECTING
-                        ? 'border-yellow-500/40 bg-yellow-950/10 text-yellow-200'
-                        : state === ConnectionState.ERROR
-                          ? 'border-red-500/40 bg-red-950/20 text-red-200'
-                          : 'border-slate-700 bg-slate-950/20 text-slate-300'
-                  }`}
-                >
+          <div className={`p-3 rounded-lg border ${state === ConnectionState.CONNECTED ? 'border-cyan-500/30 bg-cyan-950/20' : 'border-red-500/30 bg-red-950/20'} transition-colors duration-500`}>
+             <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-xs font-mono text-slate-400 uppercase whitespace-nowrap">System</span>
                   <span
-                    className={`w-1.5 h-1.5 rounded-full ${
+                    className={`inline-flex items-center gap-2 px-2 py-1 rounded-full border text-[11px] font-mono uppercase tracking-wide ${
                       state === ConnectionState.CONNECTED
-                        ? 'bg-cyan-400'
+                        ? 'border-cyan-500/40 bg-cyan-950/20 text-cyan-200'
                         : state === ConnectionState.CONNECTING
-                          ? 'bg-yellow-400 animate-pulse'
+                          ? 'border-yellow-500/40 bg-yellow-950/10 text-yellow-200'
                           : state === ConnectionState.ERROR
-                            ? 'bg-red-400'
-                            : 'bg-slate-400'
+                            ? 'border-red-500/40 bg-red-950/20 text-red-200'
+                            : 'border-slate-700 bg-slate-950/20 text-slate-300'
                     }`}
-                  />
-                  {state === ConnectionState.CONNECTED
-                    ? 'Live'
-                    : state === ConnectionState.CONNECTING
-                      ? 'Connecting'
-                      : state === ConnectionState.ERROR
-                        ? 'Error'
-                        : 'Offline'}
-                </span>
-             </div>
-             <div className="flex items-center justify-end">
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        state === ConnectionState.CONNECTED
+                          ? 'bg-cyan-400 animate-pulse'
+                          : state === ConnectionState.CONNECTING
+                            ? 'bg-yellow-400 animate-pulse'
+                            : state === ConnectionState.ERROR
+                              ? 'bg-red-400'
+                              : 'bg-slate-400'
+                      }`}
+                    />
+                    {state === ConnectionState.CONNECTED
+                      ? 'Live'
+                      : state === ConnectionState.CONNECTING
+                        ? 'Connecting'
+                        : state === ConnectionState.ERROR
+                          ? 'Error'
+                          : 'Offline'}
+                  </span>
+                </div>
+
                {state === ConnectionState.CONNECTED ? (
                  <button
                   onClick={handleConnect}
@@ -578,11 +618,28 @@ export default function App() {
                  </button>
                )}
              </div>
-             {state === ConnectionState.CONNECTED && (
-               <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-cyan-500 animate-pulse w-full"></div>
+
+             <div className="flex items-center justify-between mt-2 gap-2">
+               <div className="flex items-center gap-2">
+                 <span className="text-[11px] font-mono px-2 py-1 rounded-full border border-slate-700 bg-slate-950/20 text-slate-300">
+                   mem:{systemCounts.memory}
+                 </span>
+                 <span className="text-[11px] font-mono px-2 py-1 rounded-full border border-slate-700 bg-slate-950/20 text-slate-300">
+                   know:{systemCounts.knowledge}
+                 </span>
                </div>
-             )}
+               <span
+                 className={`inline-flex items-center gap-1 text-[11px] font-mono px-2 py-1 rounded-full border ${
+                   audioStatus.ok
+                     ? 'border-cyan-500/30 bg-cyan-950/10 text-cyan-200'
+                     : 'border-slate-700 bg-slate-950/20 text-slate-300'
+                 }`}
+                 title={audioStatus.ok ? 'audio_ok' : 'audio_unavailable'}
+               >
+                 {audioStatus.ok ? <Mic className="w-3 h-3" /> : <MicOff className="w-3 h-3" />}
+                 audio
+               </span>
+             </div>
           </div>
 
           {/* Activity Log */}
