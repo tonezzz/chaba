@@ -316,7 +316,7 @@ def _compose_gem_instruction(purpose: str, persona: str) -> str:
 
 
 async def _load_sheet_gems(*, sys_kv: Optional[dict[str, Any]] = None) -> dict[str, Any]:
-    spreadsheet_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
+    spreadsheet_id = _system_spreadsheet_id()
     sheet_name = "gems"
     if isinstance(sys_kv, dict) and sys_kv:
         spreadsheet_id = str(sys_kv.get("gems_ss") or spreadsheet_id).strip()
@@ -599,10 +599,10 @@ async def _resolve_gem_instruction_and_model(*, gem_name: str | None, sys_kv: Op
 
 
 async def _load_sys_kv_from_sheet() -> dict[str, str]:
-    spreadsheet_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
+    spreadsheet_id = _system_spreadsheet_id()
     if not spreadsheet_id:
         return {}
-    sys_sheet = str(os.getenv("CHABA_SS_SYS_SYS_SHEET") or "sys").strip() or "sys"
+    sys_sheet = _system_sheet_name()
     try:
         rows = await _load_sheet_kv5(spreadsheet_id=spreadsheet_id, sheet_name=sys_sheet)
     except Exception:
@@ -706,6 +706,24 @@ INSTANCE_ID = str(os.getenv("JARVIS_INSTANCE_ID") or "").strip() or f"jarvis_{uu
 
 logger = logging.getLogger("jarvis-backend")
 logging.basicConfig(level=logging.INFO)
+
+
+def _system_spreadsheet_id() -> str:
+    # New env name (preferred) with legacy fallback.
+    return str(os.getenv("CHABA_SYSTEM_SPREADSHEET_ID") or os.getenv("CHABA_SS_SYS") or "").strip()
+
+
+def _system_sheet_name() -> str:
+    # New default sheet name is 'system'. Legacy default was 'sys'.
+    return (
+        str(
+            os.getenv("CHABA_SYSTEM_SHEET_NAME")
+            or os.getenv("CHABA_SS_SYS_SYS_SHEET")
+            or os.getenv("CHABA_SS_SYS_SH")
+            or "system"
+        ).strip()
+        or "system"
+    )
 
 _WS_RECORD_PATH = str(os.getenv("JARVIS_WS_RECORD_PATH") or "").strip() or None
 _WS_RECORD_ENABLED = bool(_WS_RECORD_PATH) or str(os.getenv("JARVIS_WS_RECORD") or "").strip().lower() in ("1", "true", "yes", "on")
@@ -4140,7 +4158,7 @@ async def _handle_notes_check(ws: WebSocket, text: str) -> bool:
     if isinstance(sys_kv, dict):
         spreadsheet_id = str(sys_kv.get("notes_ss") or "").strip()
     if not spreadsheet_id:
-        spreadsheet_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
+        spreadsheet_id = _system_spreadsheet_id()
 
     if not spreadsheet_id:
         await _ws_send_json(
@@ -4292,7 +4310,7 @@ async def _handle_notes_next(ws: WebSocket, text: str) -> bool:
     if isinstance(sys_kv, dict):
         spreadsheet_id = str(sys_kv.get("notes_ss") or "").strip()
     if not spreadsheet_id:
-        spreadsheet_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
+        spreadsheet_id = _system_spreadsheet_id()
     if not spreadsheet_id:
         await _ws_send_json(
             ws,
@@ -4466,10 +4484,10 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             except Exception:
                 return ""
 
-    spreadsheet_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
+    spreadsheet_id = _system_spreadsheet_id()
     if not spreadsheet_id:
         return {"ok": False, "error": "missing_spreadsheet"}
-    sys_sheet = str(os.getenv("CHABA_SS_SYS_SYS_SHEET") or "sys").strip() or "sys"
+    sys_sheet = _system_sheet_name()
 
     tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
     res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sys_sheet}!A:B"})
@@ -4881,7 +4899,7 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             _gems_drafts_prune()
         except Exception:
             pass
-        ss_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
+        ss_id = _system_spreadsheet_id()
         sh_name = "gems"
         if isinstance(sys_kv, dict) and sys_kv:
             ss_id = str(sys_kv.get("gems_ss") or ss_id).strip()
@@ -5160,7 +5178,7 @@ async def _handle_note_trigger(ws: WebSocket, text: str, *, speak: bool = True) 
         else ""
     )
     if not spreadsheet_id:
-        spreadsheet_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
+        spreadsheet_id = _system_spreadsheet_id()
 
     sheet_name = (
         str(sys_kv.get("notes_sh") or "").strip()
@@ -5176,7 +5194,7 @@ async def _handle_note_trigger(ws: WebSocket, text: str, *, speak: bool = True) 
             {
                 "type": "note_error",
                 "message": "missing_notes_ss",
-                "detail": "Missing notes_ss in sys sheet and CHABA_SS_SYS env is not set.",
+                "detail": "Missing notes_ss in system sheet and CHABA_SYSTEM_SPREADSHEET_ID env is not set.",
                 "instance_id": INSTANCE_ID,
             },
         )
@@ -5608,7 +5626,7 @@ async def _handle_reload_system(ws: WebSocket, text: str) -> bool:
                 ws,
                 {
                     "type": "text",
-                    "text": "Reload System: already running",
+                    "text": "reloading system: already running",
                     "instance_id": INSTANCE_ID,
                 },
             )
@@ -5624,7 +5642,7 @@ async def _handle_reload_system(ws: WebSocket, text: str) -> bool:
     async with _reload_system_lock:
         lang = str(getattr(ws.state, "user_lang", "") or "").strip() or "en"
         try:
-            await _ws_send_json(ws, {"type": "text", "text": "Reload System: start", "instance_id": INSTANCE_ID})
+            await _ws_send_json(ws, {"type": "text", "text": "reloading system", "instance_id": INSTANCE_ID})
         except Exception:
             pass
 
@@ -5695,9 +5713,9 @@ async def _handle_reload_system(ws: WebSocket, text: str) -> bool:
             know_items = getattr(ws.state, "knowledge_items", None)
             mem_n = len(mem_items) if isinstance(mem_items, list) else 0
             know_n = len(know_items) if isinstance(know_items, list) else 0
-            out = f"Reload System: ok | memory={mem_n} knowledge={know_n}"
+            out = f"system reloaded | memory={mem_n} knowledge={know_n}"
             if lang == "th":
-                out = f"Reload System สำเร็จ | memory={mem_n} knowledge={know_n}"
+                out = f"รีโหลดระบบสำเร็จ | memory={mem_n} knowledge={know_n}"
             await _ws_send_json(ws, {"type": "text", "text": out, "instance_id": INSTANCE_ID})
         except Exception:
             pass
@@ -5779,7 +5797,7 @@ async def _notes_board_poll_once(ws: WebSocket) -> None:
     if isinstance(sys_kv, dict):
         spreadsheet_id = str(sys_kv.get("notes_ss") or "").strip()
     if not spreadsheet_id:
-        spreadsheet_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
+        spreadsheet_id = _system_spreadsheet_id()
     if not spreadsheet_id:
         return
 
@@ -5970,11 +5988,11 @@ async def _load_sheet_kv5(*, spreadsheet_id: str, sheet_name: str) -> list[dict[
 
 
 async def _load_ws_sheet_memory(ws: WebSocket) -> None:
-    spreadsheet_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
+    spreadsheet_id = _system_spreadsheet_id()
     if not spreadsheet_id:
         return
 
-    sys_sheet = str(os.getenv("CHABA_SS_SYS_SYS_SHEET") or "sys").strip() or "sys"
+    sys_sheet = _system_sheet_name()
     sys_rows = await _load_sheet_kv5(spreadsheet_id=spreadsheet_id, sheet_name=sys_sheet)
     sys_kv = {str(it.get("key") or "").strip(): str(it.get("value") or "").strip() for it in sys_rows if isinstance(it, dict)}
 
@@ -7548,7 +7566,7 @@ async def _google_tasks_fetch_task(*, tasklist_id: str, task_id: str) -> Optiona
 
 
 async def _undo_sheet_append(entry: dict[str, Any]) -> None:
-    spreadsheet_id = str(os.getenv("CHABA_SS_SYS") or "").strip()
+    spreadsheet_id = _system_spreadsheet_id()
     if not spreadsheet_id:
         return
     sheet_name = "undo"
