@@ -8659,6 +8659,62 @@ async def _startup() -> None:
         asyncio.create_task(_startup_prewarm_sheets(), name="startup_prewarm_sheets")
     except Exception as e:
         logger.warning("startup_prewarm_task_failed error=%s", e)
+
+    # Optional: auto-watch GitHub Actions and broadcast completion to UI.
+    try:
+        sys_kv = _sys_kv_snapshot()
+    except Exception:
+        sys_kv = {}
+
+    def _sys_str(k: str) -> str:
+        if not isinstance(sys_kv, dict):
+            return ""
+        return str(sys_kv.get(k) or "").strip()
+
+    raw_enabled = _sys_str("github.actions.watch.enabled")
+    try:
+        enabled = _parse_bool_cell(raw_enabled) if raw_enabled else False
+    except Exception:
+        enabled = False
+
+    if enabled:
+        try:
+            owner = (
+                _sys_str("github.actions.watch.owner")
+                or "tonezzz"
+            ).strip() or "tonezzz"
+            repo = (
+                _sys_str("github.actions.watch.repo")
+                or "chaba"
+            ).strip() or "chaba"
+            branch_raw = _sys_str("github.actions.watch.branch")
+            branch = branch_raw.strip() or None
+            event_raw = _sys_str("github.actions.watch.event")
+            event = event_raw.strip() or None
+
+            poll_raw = _sys_str("github.actions.watch.poll_seconds")
+            try:
+                poll_seconds = float(poll_raw) if poll_raw else 15.0
+            except Exception:
+                poll_seconds = 15.0
+            poll_seconds = max(2.0, min(300.0, poll_seconds))
+
+            key = _github_watch_key(owner, repo, branch, event)
+            existing = _GITHUB_WATCH_TASKS.get(key)
+            if not (existing and not existing.done()):
+                _GITHUB_WATCH_TASKS[key] = asyncio.create_task(
+                    _github_watch_loop(
+                        key=key,
+                        owner=owner,
+                        repo=repo,
+                        branch=branch,
+                        event=event,
+                        poll_seconds=poll_seconds,
+                    ),
+                    name=f"github_watch:{key}",
+                )
+        except Exception as e:
+            logger.warning("github_watch_autostart_failed error=%s", e)
     if LEGACY_REMINDER_NOTIFICATIONS_ENABLED and (_reminder_task is None or _reminder_task.done()):
         _reminder_task = asyncio.create_task(_reminder_scheduler_loop())
 
@@ -9006,6 +9062,15 @@ async def _github_watch_loop(
                             "run": run,
                         },
                     )
+                    try:
+                        name = str(run.get("name") or "").strip() or "workflow"
+                        url = str(run.get("html_url") or "").strip()
+                        msg = f"GitHub Actions detected: {name} ({status or 'unknown'})"
+                        if url:
+                            msg = msg + f" {url}"
+                        await _broadcast_to_user(DEFAULT_USER_ID, {"type": "text", "text": msg, "instance_id": INSTANCE_ID})
+                    except Exception:
+                        pass
 
                 if status and status != last_status:
                     last_status = status
@@ -9025,6 +9090,16 @@ async def _github_watch_loop(
                             "run": run,
                         },
                     )
+                    try:
+                        name = str(run.get("name") or "").strip() or "workflow"
+                        url = str(run.get("html_url") or "").strip()
+                        conc = str(conclusion or "completed").strip()
+                        msg = f"GitHub Actions completed: {name} ({conc})"
+                        if url:
+                            msg = msg + f" {url}"
+                        await _broadcast_to_user(DEFAULT_USER_ID, {"type": "text", "text": msg, "instance_id": INSTANCE_ID})
+                    except Exception:
+                        pass
         except asyncio.CancelledError:
             raise
         except Exception as e:
@@ -9037,7 +9112,21 @@ async def _github_watch_loop(
                 "ts": int(time.time()),
                 "error": str(e),
             }
-
+            try:
+                detail = str(e)
+                hint = ""
+                if "missing_github_personal_token_ro" in detail:
+                    hint = " (missing GITHUB_PERSONAL_TOKEN_RO)"
+                await _broadcast_to_user(
+                    DEFAULT_USER_ID,
+                    {
+                        "type": "text",
+                        "text": f"GitHub Actions watch error for {owner}/{repo} branch={branch or '*'} event={event or '*'}: {type(e).__name__}: {detail}{hint}",
+                        "instance_id": INSTANCE_ID,
+                    },
+                )
+            except Exception:
+                pass
         await asyncio.sleep(poll_seconds)
 
 
