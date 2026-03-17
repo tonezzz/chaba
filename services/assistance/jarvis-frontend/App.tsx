@@ -1453,9 +1453,9 @@ export default function App() {
          </div>
 
          {/* Bottom Section: Media Output */}
-         <div className="flex-1 rounded-2xl border border-slate-700 bg-slate-900/50 p-6 relative overflow-hidden min-h-0">
+         <div className="flex-1 rounded-2xl border border-slate-700 bg-slate-900/50 p-6 relative overflow-hidden min-h-0 flex flex-col">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
-            <div className="absolute top-4 left-6 right-6 flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-3">
               <div className="text-[10px] text-cyan-500 font-hud tracking-widest uppercase flex items-center gap-2">
                 <span>{activeRightPanel === "cars" ? "Cars" : "Main Output Display"}</span>
                 {activeRightPanel === "output" && activeMedia && (
@@ -1496,7 +1496,7 @@ export default function App() {
               </div>
             </div>
             
-            <div className="h-full w-full flex flex-col mt-6 min-h-0">
+            <div className="flex-1 w-full flex flex-col mt-4 min-h-0">
                {activeRightPanel === "cars" ? (
                  <div className="w-full h-full min-h-0 overflow-auto">
                    <CarsPanel liveService={liveService.current} connectionState={state} />

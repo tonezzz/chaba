@@ -6222,7 +6222,11 @@ async def _load_ws_sheet_memory(ws: WebSocket) -> None:
 
     sys_sheet = _system_sheet_name()
     sys_rows = await _load_sheet_kv5(spreadsheet_id=spreadsheet_id, sheet_name=sys_sheet)
-    sys_kv = {str(it.get("key") or "").strip(): str(it.get("value") or "").strip() for it in sys_rows if isinstance(it, dict)}
+    sys_kv = {
+        str(it.get("key") or "").strip(): str(it.get("value") or "").strip()
+        for it in sys_rows
+        if isinstance(it, dict) and bool(it.get("enabled")) and str(it.get("key") or "").strip()
+    }
 
     # Optional: extra system instruction to inject into Gemini system prompt.
     try:
@@ -6273,7 +6277,9 @@ async def _load_ws_sheet_memory(ws: WebSocket) -> None:
                 raise RuntimeError("invalid_system_sheets: knowledge sheet name is empty")
             continue
 
-        raise RuntimeError(f"unknown_system_sheet_entry: {e}")
+        raise RuntimeError(
+            f"unknown_system_sheet_entry: {e} (system.sheets supports only memory/knowledge; configure notes via notes_ss + notes.sheet_name/notes_sh)"
+        )
 
     if not memory_sheet:
         raise RuntimeError("missing_system_sheets: memory not configured in system.sheets")
@@ -6406,7 +6412,11 @@ async def _load_ws_system_kv(ws: WebSocket) -> dict[str, str]:
     spreadsheet_id = _system_spreadsheet_id()
     sys_sheet = _system_sheet_name()
     sys_rows = await _load_sheet_kv5(spreadsheet_id=spreadsheet_id, sheet_name=sys_sheet)
-    sys_kv = {str(it.get("key") or "").strip(): str(it.get("value") or "").strip() for it in sys_rows if isinstance(it, dict)}
+    sys_kv = {
+        str(it.get("key") or "").strip(): str(it.get("value") or "").strip()
+        for it in sys_rows
+        if isinstance(it, dict) and bool(it.get("enabled")) and str(it.get("key") or "").strip()
+    }
     try:
         ws.state.sys_kv = sys_kv
     except Exception:
@@ -6432,6 +6442,51 @@ async def _load_ws_system_kv(ws: WebSocket) -> dict[str, str]:
     except Exception:
         pass
     return sys_kv
+
+
+def _validate_system_sheets_plan(sys_kv: Any) -> Optional[str]:
+    if not isinstance(sys_kv, dict):
+        return "invalid_sys_kv"
+    sheets_plan_raw = str(sys_kv.get("system.sheets") or "").strip()
+    if not sheets_plan_raw:
+        return "missing_system_sheets"
+    plan = _split_phrases(sheets_plan_raw)
+    if not plan:
+        return "invalid_system_sheets"
+    saw_memory = False
+    saw_knowledge = False
+    for entry in plan:
+        e = str(entry or "").strip()
+        if not e:
+            continue
+        role = None
+        name = e
+        if ":" in e:
+            left, right = e.split(":", 1)
+            left = left.strip().lower()
+            right = right.strip()
+            if left in {"memory", "knowledge"}:
+                role = left
+                name = right
+        if role is None:
+            low = e.strip().lower()
+            if low in {"memory", "knowledge"}:
+                role = low
+                name = e
+        if role == "memory":
+            if str(name or "").strip():
+                saw_memory = True
+            continue
+        if role == "knowledge":
+            if str(name or "").strip():
+                saw_knowledge = True
+            continue
+        return f"unknown_system_sheet_entry: {e}"
+    if not saw_memory:
+        return "missing_system_sheets: memory"
+    if not saw_knowledge:
+        return "missing_system_sheets: knowledge"
+    return None
 
 
 async def _refresh_sheet_memory_background(ws: WebSocket, lang: str) -> None:
@@ -9654,7 +9709,7 @@ async def ws_live(ws: WebSocket) -> None:
         # Fail-closed: system sheet is authoritative configuration.
         # If it cannot be loaded, do not proceed with a live session.
         try:
-            await _load_ws_system_kv(ws)
+            sys_kv = await _load_ws_system_kv(ws)
         except Exception as e:
             detail = {
                 "error": str(e),
@@ -9669,6 +9724,35 @@ async def ws_live(ws: WebSocket) -> None:
                         "type": "error",
                         "kind": "system_sheet_unavailable",
                         "message": "system_sheet_unavailable",
+                        "detail": detail,
+                        "instance_id": INSTANCE_ID,
+                    },
+                )
+            except Exception:
+                pass
+            try:
+                await ws.close(code=1011)
+            except Exception:
+                pass
+            return
+
+        try:
+            err = _validate_system_sheets_plan(sys_kv)
+        except Exception as e:
+            err = f"system_sheets_validation_failed: {str(e)}"
+        if err:
+            detail = {
+                "error": str(err),
+                "hint": "system.sheets supports only memory/knowledge. Configure notes separately via notes_ss + notes.sheet_name/notes_sh.",
+                "system_sheets": str((sys_kv or {}).get("system.sheets") or "").strip(),
+            }
+            try:
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "system_sheet_invalid",
+                        "message": "system_sheet_invalid",
                         "detail": detail,
                         "instance_id": INSTANCE_ID,
                     },

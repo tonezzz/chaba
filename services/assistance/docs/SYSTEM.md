@@ -24,6 +24,9 @@ Notes:
 
 - Tokens are **not** `key=value` pairs. `=` is invalid.
 - The loader expects to find both `memory` and `knowledge` entries.
+- `notes:*` entries are not supported in `system.sheets`. Notes are configured separately via `notes_ss` + `notes.sheet_name` (or `notes_sh`).
+
+System KV table rows honor the `enabled` column. Disabled rows are ignored.
 
 ### Per-sheet metadata (optional)
 
