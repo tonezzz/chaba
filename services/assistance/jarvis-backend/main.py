@@ -819,43 +819,6 @@ async def _ws_record(ws: WebSocket, direction: str, msg: Any) -> None:
         return
 
 
-class _UILogAppendRequest(BaseModel):
-    entries: list[dict[str, Any]] = Field(default_factory=list)
-
-
-@app.post("/logs/ui/append")
-@app.post("/jarvis/logs/ui/append")
-async def logs_ui_append(req: _UILogAppendRequest) -> dict[str, Any]:
-    path = _ui_log_daily_path()
-    items = req.entries if isinstance(req.entries, list) else []
-    if not items:
-        return {"ok": True, "appended": 0}
-    try:
-        _ensure_logs_dir()
-        with open(path, "a", encoding="utf-8") as f:
-            for it in items[:500]:
-                if not isinstance(it, dict):
-                    continue
-                f.write(json.dumps(it, ensure_ascii=False) + "\n")
-        return {"ok": True, "appended": min(len(items), 500)}
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=str(e))
-
-
-@app.get("/logs/ui/today")
-@app.get("/jarvis/logs/ui/today")
-def logs_ui_today(max_bytes: int = 200000) -> dict[str, Any]:
-    path = _ui_log_daily_path()
-    return {"ok": True, "date": _today_ymd(), "path": path, "text": _read_text_file_tail(path, max_bytes=max(1000, int(max_bytes)))}
-
-
-@app.get("/logs/ws/today")
-@app.get("/jarvis/logs/ws/today")
-def logs_ws_today(max_bytes: int = 200000) -> dict[str, Any]:
-    path = _ws_record_daily_path()
-    return {"ok": True, "date": _today_ymd(), "path": path, "text": _read_text_file_tail(path, max_bytes=max(1000, int(max_bytes)))}
-
-
 def _ws_capture_trace_id(ws: WebSocket, msg: Any) -> str | None:
     trace_id: str | None = None
     try:
@@ -1031,6 +994,43 @@ async def _ws_progress(
     await _ws_send_json(ws, payload, trace_id=trace_id)
 
 app = FastAPI(title="jarvis-backend", version="0.1.0")
+
+
+class _UILogAppendRequest(BaseModel):
+    entries: list[dict[str, Any]] = Field(default_factory=list)
+
+
+@app.post("/logs/ui/append")
+@app.post("/jarvis/logs/ui/append")
+async def logs_ui_append(req: _UILogAppendRequest) -> dict[str, Any]:
+    path = _ui_log_daily_path()
+    items = req.entries if isinstance(req.entries, list) else []
+    if not items:
+        return {"ok": True, "appended": 0}
+    try:
+        _ensure_logs_dir()
+        with open(path, "a", encoding="utf-8") as f:
+            for it in items[:500]:
+                if not isinstance(it, dict):
+                    continue
+                f.write(json.dumps(it, ensure_ascii=False) + "\n")
+        return {"ok": True, "appended": min(len(items), 500)}
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@app.get("/logs/ui/today")
+@app.get("/jarvis/logs/ui/today")
+def logs_ui_today(max_bytes: int = 200000) -> dict[str, Any]:
+    path = _ui_log_daily_path()
+    return {"ok": True, "date": _today_ymd(), "path": path, "text": _read_text_file_tail(path, max_bytes=max(1000, int(max_bytes)))}
+
+
+@app.get("/logs/ws/today")
+@app.get("/jarvis/logs/ws/today")
+def logs_ws_today(max_bytes: int = 200000) -> dict[str, Any]:
+    path = _ws_record_daily_path()
+    return {"ok": True, "date": _today_ymd(), "path": path, "text": _read_text_file_tail(path, max_bytes=max(1000, int(max_bytes)))}
 
 
 WEB_FETCHER_BASE_URL = str(os.getenv("WEB_FETCHER_BASE_URL") or "http://web-fetcher:8028").strip().rstrip("/")
