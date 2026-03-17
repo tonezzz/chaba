@@ -7427,7 +7427,9 @@ async def _memory_sheet_upsert(
         # 0-based to A1 notation (supports A..Z only, which is enough here).
         return chr(ord("A") + int(i0))
 
-    now_iso = datetime.now(tz=timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    # Use a Sheets-friendly datetime string so the cell is typed as Date/Time
+    # (ISO-8601 with trailing 'Z' is often treated as plain text in Sheets).
+    now_iso = datetime.now(tz=timezone.utc).replace(microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
 
     # Ensure schema has _created/_updated columns, and backfill blanks.
     tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
@@ -9048,7 +9050,6 @@ async def _github_watch_loop(
                 if run_id and run_id != last_run_id:
                     last_run_id = run_id
                     last_status = status
-                    last_conclusion = conclusion
                     await _broadcast_to_user(
                         DEFAULT_USER_ID,
                         {
@@ -9064,11 +9065,10 @@ async def _github_watch_loop(
                     )
                     try:
                         name = str(run.get("name") or "").strip() or "workflow"
-                        url = str(run.get("html_url") or "").strip()
-                        msg = f"GitHub Actions detected: {name} ({status or 'unknown'})"
-                        if url:
-                            msg = msg + f" {url}"
-                        await _broadcast_to_user(DEFAULT_USER_ID, {"type": "text", "text": msg, "instance_id": INSTANCE_ID})
+                        st = (status or "").strip().lower()
+                        if st and st != "completed":
+                            msg = f"CI started: {name}"
+                            await _broadcast_to_user(DEFAULT_USER_ID, {"type": "text", "text": msg, "instance_id": INSTANCE_ID})
                     except Exception:
                         pass
 
@@ -9092,11 +9092,8 @@ async def _github_watch_loop(
                     )
                     try:
                         name = str(run.get("name") or "").strip() or "workflow"
-                        url = str(run.get("html_url") or "").strip()
                         conc = str(conclusion or "completed").strip()
-                        msg = f"GitHub Actions completed: {name} ({conc})"
-                        if url:
-                            msg = msg + f" {url}"
+                        msg = f"CI completed: {name} ({conc})"
                         await _broadcast_to_user(DEFAULT_USER_ID, {"type": "text", "text": msg, "instance_id": INSTANCE_ID})
                     except Exception:
                         pass
