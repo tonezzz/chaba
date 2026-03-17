@@ -1552,11 +1552,6 @@ export default function App() {
                      <div>template: {seqTemplate ? seqTemplate.join(" | ") : "(none)"}</div>
                    </div>
                  </div>
-               ) : !activeMedia && outputDialog.length === 0 ? (
-                 <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-slate-600 gap-4">
-                   <Activity className="w-16 h-16 opacity-20" />
-                   <p className="font-mono text-sm tracking-wide">Waiting for system output...</p>
-                 </div>
                ) : (
                  <div className="w-full flex-1 min-h-0 flex flex-col animate-in zoom-in-95 duration-500">
                    {activeMedia?.metadata?.image && (
