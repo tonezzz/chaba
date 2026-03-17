@@ -1552,74 +1552,6 @@ export default function App() {
                      <div>template: {seqTemplate ? seqTemplate.join(" | ") : "(none)"}</div>
                    </div>
                  </div>
-               ) : activeRightPanel === "output" && activeOutputTab !== "dialog" ? (
-                 <div className="w-full flex-1 min-h-0 flex flex-col">
-                   <div className="flex items-center justify-between mb-3">
-                     <div className="flex items-center gap-2">
-                       <button
-                         onClick={() => setActiveOutputTab("dialog")}
-                         className="text-[11px] font-mono px-3 py-1 rounded-lg border border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
-                       >
-                         Dialog
-                       </button>
-                       <button
-                         onClick={() => setActiveOutputTab("ui_log")}
-                         className={`text-[11px] font-mono px-3 py-1 rounded-lg border transition-colors ${
-                           activeOutputTab === "ui_log"
-                             ? "border-cyan-500/40 bg-cyan-950/30 text-cyan-200"
-                             : "border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
-                         }`}
-                       >
-                         UI Log
-                       </button>
-                       <button
-                         onClick={() => {
-                           setActiveOutputTab("ws_log");
-                           void refreshWsLog();
-                         }}
-                         className={`text-[11px] font-mono px-3 py-1 rounded-lg border transition-colors ${
-                           activeOutputTab === "ws_log"
-                             ? "border-cyan-500/40 bg-cyan-950/30 text-cyan-200"
-                             : "border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
-                         }`}
-                       >
-                         Backend WS Log
-                       </button>
-                     </div>
-                     <div className="flex items-center gap-2">
-                       {activeOutputTab === "ui_log" && (
-                         <button
-                           onClick={() => {
-                             const txt = loadUiLogFromLocalStorage();
-                             setUiLogText(txt);
-                           }}
-                           className="text-[11px] font-mono px-3 py-1 rounded-lg border border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
-                         >
-                           refresh
-                         </button>
-                       )}
-                       {activeOutputTab === "ws_log" && (
-                         <button
-                           onClick={() => void refreshWsLog()}
-                           className="text-[11px] font-mono px-3 py-1 rounded-lg border border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
-                         >
-                           refresh
-                         </button>
-                       )}
-                     </div>
-                   </div>
-
-                   <div className="w-full bg-slate-950/40 rounded-lg border border-slate-700 p-4 overflow-auto flex-1 min-h-0">
-                     {activeOutputTab === "ui_log" ? (
-                       <pre className="text-[12px] font-mono text-slate-200 whitespace-pre-wrap">{uiLogText || "(empty)"}</pre>
-                     ) : (
-                       <>
-                         {wsLogErr && <div className="text-[12px] font-mono text-red-300 mb-2">{wsLogErr}</div>}
-                         <pre className="text-[12px] font-mono text-slate-200 whitespace-pre-wrap">{wsLogText || "(empty)"}</pre>
-                       </>
-                     )}
-                   </div>
-                 </div>
                ) : !activeMedia && outputDialog.length === 0 ? (
                  <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-slate-600 gap-4">
                    <Activity className="w-16 h-16 opacity-20" />
@@ -1664,18 +1596,85 @@ export default function App() {
                          outputStickToBottomRef.current = remaining < 40;
                        }}
                      >
-                       <div className="text-[10px] text-slate-500 font-mono uppercase tracking-widest mb-2">Dialog</div>
-                       <div className="flex flex-col gap-2">
-                         {outputDialog.length === 0 ? (
-                           <div className="text-slate-600 font-mono text-sm">(no text yet)</div>
-                         ) : (
-                           outputDialog.map((d) => (
-                             <div key={d.id} className="text-slate-100 font-mono text-sm whitespace-pre-wrap leading-relaxed">
-                               {d.text}
-                             </div>
-                           ))
-                         )}
+                       <div className="flex items-center justify-between mb-2">
+                         <div className="flex items-center gap-2">
+                           <button
+                             onClick={() => setActiveOutputTab("dialog")}
+                             className={`text-[11px] font-mono px-3 py-1 rounded-lg border transition-colors ${
+                               activeOutputTab === "dialog"
+                                 ? "border-cyan-500/40 bg-cyan-950/30 text-cyan-200"
+                                 : "border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
+                             }`}
+                           >
+                             Dialog
+                           </button>
+                           <button
+                             onClick={() => setActiveOutputTab("ui_log")}
+                             className={`text-[11px] font-mono px-3 py-1 rounded-lg border transition-colors ${
+                               activeOutputTab === "ui_log"
+                                 ? "border-cyan-500/40 bg-cyan-950/30 text-cyan-200"
+                                 : "border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
+                             }`}
+                           >
+                             UI Log
+                           </button>
+                           <button
+                             onClick={() => {
+                               setActiveOutputTab("ws_log");
+                               void refreshWsLog();
+                             }}
+                             className={`text-[11px] font-mono px-3 py-1 rounded-lg border transition-colors ${
+                               activeOutputTab === "ws_log"
+                                 ? "border-cyan-500/40 bg-cyan-950/30 text-cyan-200"
+                                 : "border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
+                             }`}
+                           >
+                             Backend WS Log
+                           </button>
+                         </div>
+                         <div className="flex items-center gap-2">
+                           {activeOutputTab === "ui_log" && (
+                             <button
+                               onClick={() => {
+                                 const txt = loadUiLogFromLocalStorage();
+                                 setUiLogText(txt);
+                               }}
+                               className="text-[11px] font-mono px-3 py-1 rounded-lg border border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
+                             >
+                               refresh
+                             </button>
+                           )}
+                           {activeOutputTab === "ws_log" && (
+                             <button
+                               onClick={() => void refreshWsLog()}
+                               className="text-[11px] font-mono px-3 py-1 rounded-lg border border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
+                             >
+                               refresh
+                             </button>
+                           )}
+                         </div>
                        </div>
+
+                       {activeOutputTab === "dialog" ? (
+                         <div className="flex flex-col gap-2">
+                           {outputDialog.length === 0 ? (
+                             <div className="text-slate-600 font-mono text-sm">(no text yet)</div>
+                           ) : (
+                             outputDialog.map((d) => (
+                               <div key={d.id} className="text-slate-100 font-mono text-sm whitespace-pre-wrap leading-relaxed">
+                                 {d.text}
+                               </div>
+                             ))
+                           )}
+                         </div>
+                       ) : activeOutputTab === "ui_log" ? (
+                         <pre className="text-[12px] font-mono text-slate-200 whitespace-pre-wrap">{uiLogText || "(empty)"}</pre>
+                       ) : (
+                         <>
+                           {wsLogErr && <div className="text-[12px] font-mono text-red-300 mb-2">{wsLogErr}</div>}
+                           <pre className="text-[12px] font-mono text-slate-200 whitespace-pre-wrap">{wsLogText || "(empty)"}</pre>
+                         </>
+                       )}
                      </div>
                    )}
                  </div>
