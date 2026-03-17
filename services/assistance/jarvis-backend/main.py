@@ -736,12 +736,66 @@ _WS_RECORD_PATH = str(os.getenv("JARVIS_WS_RECORD_PATH") or "").strip() or None
 _WS_RECORD_ENABLED = bool(_WS_RECORD_PATH) or str(os.getenv("JARVIS_WS_RECORD") or "").strip().lower() in ("1", "true", "yes", "on")
 _WS_RECORD_LOCK: asyncio.Lock | None = None
 
+_LOGS_DIR = str(os.getenv("JARVIS_LOGS_DIR") or "/data/jarvis_logs").strip() or "/data/jarvis_logs"
+
+
+def _today_ymd() -> str:
+    return datetime.now(tz=timezone.utc).strftime("%Y-%m-%d")
+
+
+def _ensure_logs_dir() -> str:
+    d = _LOGS_DIR
+    try:
+        Path(d).mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+    return d
+
+
+def _ws_record_daily_path() -> str:
+    base = _WS_RECORD_PATH
+    if base:
+        return base
+    d = _ensure_logs_dir()
+    return str(Path(d) / f"jarvis-ws-{_today_ymd()}.jsonl")
+
+
+def _ui_log_daily_path() -> str:
+    d = _ensure_logs_dir()
+    return str(Path(d) / f"jarvis-ui-{_today_ymd()}.jsonl")
+
+
+def _read_text_file_tail(path: str, max_bytes: int = 200000) -> str:
+    p = str(path or "").strip()
+    if not p:
+        return ""
+    try:
+        if not os.path.exists(p):
+            return ""
+    except Exception:
+        return ""
+    try:
+        size = os.path.getsize(p)
+        start = max(0, int(size) - int(max_bytes))
+        with open(p, "rb") as f:
+            if start > 0:
+                f.seek(start)
+            b = f.read(int(max_bytes) + 1)
+        txt = b.decode("utf-8", errors="replace")
+        if start > 0:
+            nl = txt.find("\n")
+            if nl >= 0:
+                txt = txt[nl + 1 :]
+        return txt
+    except Exception:
+        return ""
+
 
 async def _ws_record(ws: WebSocket, direction: str, msg: Any) -> None:
     global _WS_RECORD_LOCK
     if not _WS_RECORD_ENABLED:
         return
-    path = _WS_RECORD_PATH or "/tmp/jarvis-ws.jsonl"
+    path = _ws_record_daily_path()
     try:
         if _WS_RECORD_LOCK is None:
             _WS_RECORD_LOCK = asyncio.Lock()
@@ -763,6 +817,43 @@ async def _ws_record(ws: WebSocket, direction: str, msg: Any) -> None:
                 f.write(json.dumps(rec, ensure_ascii=False) + "\n")
     except Exception:
         return
+
+
+class _UILogAppendRequest(BaseModel):
+    entries: list[dict[str, Any]] = Field(default_factory=list)
+
+
+@app.post("/logs/ui/append")
+@app.post("/jarvis/logs/ui/append")
+async def logs_ui_append(req: _UILogAppendRequest) -> dict[str, Any]:
+    path = _ui_log_daily_path()
+    items = req.entries if isinstance(req.entries, list) else []
+    if not items:
+        return {"ok": True, "appended": 0}
+    try:
+        _ensure_logs_dir()
+        with open(path, "a", encoding="utf-8") as f:
+            for it in items[:500]:
+                if not isinstance(it, dict):
+                    continue
+                f.write(json.dumps(it, ensure_ascii=False) + "\n")
+        return {"ok": True, "appended": min(len(items), 500)}
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@app.get("/logs/ui/today")
+@app.get("/jarvis/logs/ui/today")
+def logs_ui_today(max_bytes: int = 200000) -> dict[str, Any]:
+    path = _ui_log_daily_path()
+    return {"ok": True, "date": _today_ymd(), "path": path, "text": _read_text_file_tail(path, max_bytes=max(1000, int(max_bytes)))}
+
+
+@app.get("/logs/ws/today")
+@app.get("/jarvis/logs/ws/today")
+def logs_ws_today(max_bytes: int = 200000) -> dict[str, Any]:
+    path = _ws_record_daily_path()
+    return {"ok": True, "date": _today_ymd(), "path": path, "text": _read_text_file_tail(path, max_bytes=max(1000, int(max_bytes)))}
 
 
 def _ws_capture_trace_id(ws: WebSocket, msg: Any) -> str | None:

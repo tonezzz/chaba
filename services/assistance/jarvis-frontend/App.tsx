@@ -27,6 +27,12 @@ export default function App() {
   const [activeMedia, setActiveMedia] = useState<MessageLog | null>(null);
   const [isTalking, setIsTalking] = useState(false);
   const [activeRightPanel, setActiveRightPanel] = useState<"output" | "cars" | "checklist">("output");
+  const [activeOutputTab, setActiveOutputTab] = useState<"dialog" | "ui_log" | "ws_log">("dialog");
+  const [uiLogText, setUiLogText] = useState<string>("");
+  const [wsLogText, setWsLogText] = useState<string>("");
+  const [wsLogErr, setWsLogErr] = useState<string>("");
+  const uiLogPendingRef = useRef<Array<{ ts: number; entry: any }>>([]);
+  const uiLogFlushTimerRef = useRef<number | null>(null);
   const [activeTripId, setActiveTripId] = useState<string>("");
   const [activeTripName, setActiveTripName] = useState<string>("");
   const [tripIdInput, setTripIdInput] = useState<string>("");
@@ -76,6 +82,136 @@ export default function App() {
     }
     return out;
   }, [messages]);
+
+  const todayLocalYmd = useCallback((): string => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${dd}`;
+  }, []);
+
+  const uiLogStorageKey = useCallback((): string => {
+    return `jarvis_ui_log_${todayLocalYmd()}`;
+  }, [todayLocalYmd]);
+
+  const loadUiLogFromLocalStorage = useCallback((): string => {
+    try {
+      return String(window.localStorage.getItem(uiLogStorageKey()) || "");
+    } catch {
+      return "";
+    }
+  }, [uiLogStorageKey]);
+
+  const persistUiLogLine = useCallback((line: string) => {
+    const s = String(line || "");
+    if (!s) return;
+    try {
+      const k = uiLogStorageKey();
+      const prev = String(window.localStorage.getItem(k) || "");
+      const next = prev ? `${prev}\n${s}` : s;
+      window.localStorage.setItem(k, next);
+      setUiLogText(next);
+    } catch {
+      // ignore
+    }
+  }, [uiLogStorageKey]);
+
+  const appendUiLogEntry = useCallback((msg: MessageLog) => {
+    try {
+      const ts = msg.timestamp?.getTime?.() ? msg.timestamp.getTime() : Date.now();
+      const safeRaw = msg.metadata?.raw != null ? msg.metadata.raw : undefined;
+      const entry = {
+        ts,
+        id: String(msg.id || ""),
+        role: msg.role,
+        text: String(msg.text || ""),
+        metadata: {
+          severity: msg.metadata?.severity,
+          category: msg.metadata?.category,
+          source: msg.metadata?.source,
+          trace_id: msg.metadata?.trace_id,
+          ws: msg.metadata?.ws,
+          raw: safeRaw,
+        },
+      };
+      persistUiLogLine(JSON.stringify(entry));
+      uiLogPendingRef.current.push({ ts, entry });
+    } catch {
+      // ignore
+    }
+  }, [persistUiLogLine]);
+
+  const backendCandidates = useCallback((): string[] => {
+    const isJarvisSubpath = location.pathname.startsWith("/jarvis");
+    return isJarvisSubpath
+      ? ["/jarvis/logs"]
+      : ["/logs", "/jarvis/logs"];
+  }, []);
+
+  const flushUiLogToBackend = useCallback(async () => {
+    const pending = uiLogPendingRef.current;
+    if (!pending.length) return;
+    const batch = pending.splice(0, 100);
+    const entries = batch.map((b) => b.entry);
+    for (const base of backendCandidates()) {
+      try {
+        const res = await fetch(`${base}/ui/append`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ entries }),
+        });
+        if (res.ok) return;
+      } catch {
+        // try next
+      }
+    }
+    // Failed to send; put back (best-effort)
+    uiLogPendingRef.current = [...entries.map((entry) => ({ ts: Date.now(), entry })), ...uiLogPendingRef.current];
+  }, [backendCandidates]);
+
+  const scheduleUiLogFlush = useCallback(() => {
+    if (uiLogFlushTimerRef.current != null) return;
+    uiLogFlushTimerRef.current = window.setTimeout(() => {
+      uiLogFlushTimerRef.current = null;
+      void flushUiLogToBackend();
+    }, 1500);
+  }, [flushUiLogToBackend]);
+
+  const refreshWsLog = useCallback(async () => {
+    setWsLogErr("");
+    for (const base of backendCandidates()) {
+      try {
+        const res = await fetch(`${base}/ws/today?max_bytes=200000`, { method: "GET" });
+        if (!res.ok) continue;
+        const j = await res.json();
+        const txt = j?.text != null ? String(j.text) : "";
+        setWsLogText(txt);
+        return;
+      } catch {
+        // try next
+      }
+    }
+    setWsLogErr("failed_to_fetch_ws_log");
+  }, [backendCandidates]);
+
+  useEffect(() => {
+    // Load today's persisted UI log into the UI (without polluting the WS message list).
+    const txt = loadUiLogFromLocalStorage();
+    if (txt) setUiLogText(txt);
+  }, [loadUiLogFromLocalStorage]);
+
+  useEffect(() => {
+    return () => {
+      try {
+        if (uiLogFlushTimerRef.current != null) {
+          window.clearTimeout(uiLogFlushTimerRef.current);
+          uiLogFlushTimerRef.current = null;
+        }
+      } catch {
+      }
+    };
+  }, []);
 
   const audioStatus = useMemo(() => {
     let lastConn = 0;
@@ -243,6 +379,11 @@ export default function App() {
       setActiveRightPanel("cars");
     };
     liveService.current.onMessage = (msg) => {
+      try {
+        appendUiLogEntry(msg);
+        scheduleUiLogFlush();
+      } catch {
+      }
       setMessages((prev) => {
         const isWsClose = msg.id.includes('_ws_close') || String(msg.text || '').toLowerCase().startsWith('disconnected');
         const isWsConnErr = msg.id.includes('_ws_error') || String(msg.text || '').toLowerCase() === 'connection_error';
@@ -1409,6 +1550,74 @@ export default function App() {
                    <div className="mt-3 text-xs font-mono text-slate-300">
                      <div>next_step: {seqNextText ?? "(none)"}{seqNextIndex != null ? ` (index=${seqNextIndex})` : ""}</div>
                      <div>template: {seqTemplate ? seqTemplate.join(" | ") : "(none)"}</div>
+                   </div>
+                 </div>
+               ) : activeRightPanel === "output" && activeOutputTab !== "dialog" ? (
+                 <div className="w-full flex-1 min-h-0 flex flex-col">
+                   <div className="flex items-center justify-between mb-3">
+                     <div className="flex items-center gap-2">
+                       <button
+                         onClick={() => setActiveOutputTab("dialog")}
+                         className="text-[11px] font-mono px-3 py-1 rounded-lg border border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
+                       >
+                         Dialog
+                       </button>
+                       <button
+                         onClick={() => setActiveOutputTab("ui_log")}
+                         className={`text-[11px] font-mono px-3 py-1 rounded-lg border transition-colors ${
+                           activeOutputTab === "ui_log"
+                             ? "border-cyan-500/40 bg-cyan-950/30 text-cyan-200"
+                             : "border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
+                         }`}
+                       >
+                         UI Log (Today)
+                       </button>
+                       <button
+                         onClick={() => {
+                           setActiveOutputTab("ws_log");
+                           void refreshWsLog();
+                         }}
+                         className={`text-[11px] font-mono px-3 py-1 rounded-lg border transition-colors ${
+                           activeOutputTab === "ws_log"
+                             ? "border-cyan-500/40 bg-cyan-950/30 text-cyan-200"
+                             : "border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
+                         }`}
+                       >
+                         Backend WS Log (Today)
+                       </button>
+                     </div>
+                     <div className="flex items-center gap-2">
+                       {activeOutputTab === "ui_log" && (
+                         <button
+                           onClick={() => {
+                             const txt = loadUiLogFromLocalStorage();
+                             setUiLogText(txt);
+                           }}
+                           className="text-[11px] font-mono px-3 py-1 rounded-lg border border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
+                         >
+                           refresh
+                         </button>
+                       )}
+                       {activeOutputTab === "ws_log" && (
+                         <button
+                           onClick={() => void refreshWsLog()}
+                           className="text-[11px] font-mono px-3 py-1 rounded-lg border border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
+                         >
+                           refresh
+                         </button>
+                       )}
+                     </div>
+                   </div>
+
+                   <div className="w-full bg-slate-950/40 rounded-lg border border-slate-700 p-4 overflow-auto flex-1 min-h-0">
+                     {activeOutputTab === "ui_log" ? (
+                       <pre className="text-[12px] font-mono text-slate-200 whitespace-pre-wrap">{uiLogText || "(empty)"}</pre>
+                     ) : (
+                       <>
+                         {wsLogErr && <div className="text-[12px] font-mono text-red-300 mb-2">{wsLogErr}</div>}
+                         <pre className="text-[12px] font-mono text-slate-200 whitespace-pre-wrap">{wsLogText || "(empty)"}</pre>
+                       </>
+                     )}
                    </div>
                  </div>
                ) : !activeMedia && outputDialog.length === 0 ? (
