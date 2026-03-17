@@ -67,6 +67,15 @@ _SHEET_MEMORY_LAST_REFRESH_AT: int = 0
 _SHEET_KNOWLEDGE_REFRESHING: bool = False
 _SHEET_KNOWLEDGE_LAST_REFRESH_AT: int = 0
 
+_STARTUP_PREWARM_LOCK: asyncio.Lock = asyncio.Lock()
+_STARTUP_PREWARM_STATUS: dict[str, Any] = {
+    "ts": 0,
+    "ok": False,
+    "error": "",
+    "memory_n": 0,
+    "knowledge_n": 0,
+}
+
 
 def _memory_cache_ttl_seconds() -> int:
     try:
@@ -3224,6 +3233,58 @@ def _memory_load_status_line(ws: WebSocket, lang: str) -> str:
     if str(lang or "").lower().startswith("th"):
         return f"โหลด memory '{sheet}' {n} รายการ | knowledge '{ksheet}' {kn} รายการ"
     return f"Loaded memory '{sheet}' ({n} items) | knowledge '{ksheet}' ({kn} items)"
+
+
+def _startup_prewarm_status_line(lang: str) -> str:
+    st = _STARTUP_PREWARM_STATUS if isinstance(_STARTUP_PREWARM_STATUS, dict) else {}
+    ok = bool(st.get("ok"))
+    mem_n = int(st.get("memory_n") or 0)
+    know_n = int(st.get("knowledge_n") or 0)
+    err = str(st.get("error") or "").strip()
+    if str(lang or "").lower().startswith("th"):
+        if ok:
+            return f"พรีวอร์มตอนเริ่มระบบ: ok | memory={mem_n} knowledge={know_n}"
+        if err:
+            return f"พรีวอร์มตอนเริ่มระบบ: error | {err}"
+        return "พรีวอร์มตอนเริ่มระบบ: (ไม่มีข้อมูล)"
+    if ok:
+        return f"Startup prewarm: ok | memory={mem_n} knowledge={know_n}"
+    if err:
+        return f"Startup prewarm: error | {err}"
+    return "Startup prewarm: (no status)"
+
+
+async def _startup_prewarm_sheets() -> None:
+    # Prewarm caches (system KV + system.sheets) even when no UI is connected.
+    async with _STARTUP_PREWARM_LOCK:
+        _STARTUP_PREWARM_STATUS["ts"] = int(time.time())
+        _STARTUP_PREWARM_STATUS["ok"] = False
+        _STARTUP_PREWARM_STATUS["error"] = ""
+        _STARTUP_PREWARM_STATUS["memory_n"] = 0
+        _STARTUP_PREWARM_STATUS["knowledge_n"] = 0
+
+        class _DummyWS:
+            def __init__(self) -> None:
+                from types import SimpleNamespace
+
+                self.state = SimpleNamespace()
+
+        ws = _DummyWS()
+        try:
+            await _load_ws_sheet_memory(ws)  # also populates caches
+            mem_items = getattr(ws.state, "memory_items", None)
+            know_items = getattr(ws.state, "knowledge_items", None)
+            _STARTUP_PREWARM_STATUS["memory_n"] = len(mem_items) if isinstance(mem_items, list) else 0
+            _STARTUP_PREWARM_STATUS["knowledge_n"] = len(know_items) if isinstance(know_items, list) else 0
+            _STARTUP_PREWARM_STATUS["ok"] = True
+            logger.info(
+                "startup_prewarm_ok memory=%s knowledge=%s",
+                _STARTUP_PREWARM_STATUS["memory_n"],
+                _STARTUP_PREWARM_STATUS["knowledge_n"],
+            )
+        except Exception as e:
+            _STARTUP_PREWARM_STATUS["error"] = str(e)
+            logger.warning("startup_prewarm_failed error=%s", str(e))
 
 
 def _parse_reminder_helper_command(text: str) -> dict[str, Any]:
@@ -7410,6 +7471,12 @@ async def _startup() -> None:
         await _startup_resync_from_weaviate()
     except Exception as e:
         logger.warning("startup_resync_failed error=%s", e)
+
+    # Prewarm system sheets into cache (does not require a UI connection).
+    try:
+        asyncio.create_task(_startup_prewarm_sheets(), name="startup_prewarm_sheets")
+    except Exception as e:
+        logger.warning("startup_prewarm_task_failed error=%s", e)
     if LEGACY_REMINDER_NOTIFICATIONS_ENABLED and (_reminder_task is None or _reminder_task.done()):
         _reminder_task = asyncio.create_task(_reminder_scheduler_loop())
 
@@ -9545,6 +9612,11 @@ async def ws_live(ws: WebSocket) -> None:
         if should_emit_sheet_status:
             try:
                 await _ws_send_json(ws, {"type": "text", "text": _memory_load_status_line(ws, lang), "instance_id": INSTANCE_ID})
+            except Exception:
+                pass
+
+            try:
+                await _ws_send_json(ws, {"type": "text", "text": _startup_prewarm_status_line(lang), "instance_id": INSTANCE_ID})
             except Exception:
                 pass
 
