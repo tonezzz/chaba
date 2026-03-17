@@ -94,6 +94,8 @@ When `jarvis-backend` starts (even if no UI is connected), it runs a background 
 - system KV sheet
 - (best-effort) memory/knowledge via `system.sheets`
 
+The prewarm loader performs a short retry loop with backoff. If a dependency is not ready yet (most commonly the MCP bundle or network/DNS during early container startup), the backend will retry a few times before reporting a failure.
+
 If no UI is connected, no WebSocket messages are emitted. The result is only visible in backend logs.
 
 ### Client connect status

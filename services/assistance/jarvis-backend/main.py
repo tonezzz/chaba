@@ -3361,21 +3361,46 @@ async def _startup_prewarm_sheets() -> None:
                 self.state = SimpleNamespace()
 
         ws = _DummyWS()
-        try:
-            await _load_ws_sheet_memory(ws)  # also populates caches
-            mem_items = getattr(ws.state, "memory_items", None)
-            know_items = getattr(ws.state, "knowledge_items", None)
-            _STARTUP_PREWARM_STATUS["memory_n"] = len(mem_items) if isinstance(mem_items, list) else 0
-            _STARTUP_PREWARM_STATUS["knowledge_n"] = len(know_items) if isinstance(know_items, list) else 0
-            _STARTUP_PREWARM_STATUS["ok"] = True
-            logger.info(
-                "startup_prewarm_ok memory=%s knowledge=%s",
-                _STARTUP_PREWARM_STATUS["memory_n"],
-                _STARTUP_PREWARM_STATUS["knowledge_n"],
-            )
-        except Exception as e:
-            _STARTUP_PREWARM_STATUS["error"] = str(e)
-            logger.warning("startup_prewarm_failed error=%s", str(e))
+        last_err: Exception | None = None
+        backoff_s = [0.0, 0.5, 1.0, 2.0, 4.0]
+        for i, delay in enumerate(backoff_s):
+            if delay > 0:
+                try:
+                    await asyncio.sleep(delay)
+                except Exception:
+                    pass
+            try:
+                ws = _DummyWS()
+                await _load_ws_sheet_memory(ws)
+                mem_items = getattr(ws.state, "memory_items", None)
+                know_items = getattr(ws.state, "knowledge_items", None)
+                _STARTUP_PREWARM_STATUS["memory_n"] = len(mem_items) if isinstance(mem_items, list) else 0
+                _STARTUP_PREWARM_STATUS["knowledge_n"] = len(know_items) if isinstance(know_items, list) else 0
+                _STARTUP_PREWARM_STATUS["ok"] = True
+                _STARTUP_PREWARM_STATUS["error"] = ""
+                logger.info(
+                    "startup_prewarm_ok_retry attempt=%s/%s memory=%s knowledge=%s",
+                    i + 1,
+                    len(backoff_s),
+                    _STARTUP_PREWARM_STATUS["memory_n"],
+                    _STARTUP_PREWARM_STATUS["knowledge_n"],
+                )
+                return
+            except Exception as e2:
+                last_err = e2
+                try:
+                    logger.warning(
+                        "startup_prewarm_retry_failed attempt=%s/%s delay_s=%s error=%s",
+                        i + 1,
+                        len(backoff_s),
+                        delay,
+                        str(e2),
+                    )
+                except Exception:
+                    pass
+
+        _STARTUP_PREWARM_STATUS["error"] = str(last_err)
+        logger.warning("startup_prewarm_failed error=%s", str(last_err))
 
 
 def _parse_reminder_helper_command(text: str) -> dict[str, Any]:
