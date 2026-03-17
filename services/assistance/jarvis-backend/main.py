@@ -74,6 +74,7 @@ _STARTUP_PREWARM_STATUS: dict[str, Any] = {
     "error": "",
     "memory_n": 0,
     "knowledge_n": 0,
+    "running": False,
 }
 
 
@@ -3336,23 +3337,34 @@ def _startup_prewarm_status_line(lang: str) -> str:
     mem_n = int(st.get("memory_n") or 0)
     know_n = int(st.get("knowledge_n") or 0)
     err = str(st.get("error") or "").strip()
+    ts = int(st.get("ts") or 0)
+    running = bool(st.get("running"))
     if str(lang or "").lower().startswith("th"):
+        if running:
+            return "พรีวอร์มตอนเริ่มระบบ: running"
+        if ts <= 0 and (not ok) and (not err):
+            return "พรีวอร์มตอนเริ่มระบบ: pending"
         if ok:
             return f"พรีวอร์มตอนเริ่มระบบ: ok | memory={mem_n} knowledge={know_n}"
         if err:
             return f"พรีวอร์มตอนเริ่มระบบ: error | {err}"
-        return "พรีวอร์มตอนเริ่มระบบ: (ไม่มีข้อมูล)"
+        return "พรีวอร์มตอนเริ่มระบบ: pending"
+    if running:
+        return "Startup prewarm: running"
+    if ts <= 0 and (not ok) and (not err):
+        return "Startup prewarm: pending"
     if ok:
         return f"Startup prewarm: ok | memory={mem_n} knowledge={know_n}"
     if err:
         return f"Startup prewarm: error | {err}"
-    return "Startup prewarm: (no status)"
+    return "Startup prewarm: pending"
 
 
 async def _startup_prewarm_sheets() -> None:
     # Prewarm caches (system KV + system.sheets) even when no UI is connected.
     async with _STARTUP_PREWARM_LOCK:
         _STARTUP_PREWARM_STATUS["ts"] = int(time.time())
+        _STARTUP_PREWARM_STATUS["running"] = True
         _STARTUP_PREWARM_STATUS["ok"] = False
         _STARTUP_PREWARM_STATUS["error"] = ""
         _STARTUP_PREWARM_STATUS["memory_n"] = 0
@@ -3382,6 +3394,7 @@ async def _startup_prewarm_sheets() -> None:
                 _STARTUP_PREWARM_STATUS["knowledge_n"] = len(know_items) if isinstance(know_items, list) else 0
                 _STARTUP_PREWARM_STATUS["ok"] = True
                 _STARTUP_PREWARM_STATUS["error"] = ""
+                _STARTUP_PREWARM_STATUS["running"] = False
                 logger.info(
                     "startup_prewarm_ok_retry attempt=%s/%s memory=%s knowledge=%s",
                     i + 1,
@@ -3404,6 +3417,7 @@ async def _startup_prewarm_sheets() -> None:
                     pass
 
         _STARTUP_PREWARM_STATUS["error"] = str(last_err)
+        _STARTUP_PREWARM_STATUS["running"] = False
         logger.warning("startup_prewarm_failed error=%s", str(last_err))
 
 
@@ -9806,18 +9820,6 @@ async def ws_live(ws: WebSocket) -> None:
 
             try:
                 await _ws_send_json(ws, {"type": "text", "text": _startup_prewarm_status_line(lang), "instance_id": INSTANCE_ID})
-            except Exception:
-                pass
-
-            try:
-                await _ws_send_json(
-                    ws,
-                    {
-                        "type": "text",
-                        "text": "Sheets are not auto-loaded. Type: Reload System",
-                        "instance_id": INSTANCE_ID,
-                    },
-                )
             except Exception:
                 pass
         api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
