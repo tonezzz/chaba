@@ -875,6 +875,24 @@ def _ui_log_daily_path() -> str:
     return str(Path(d) / f"jarvis-ui-{_today_ymd()}.jsonl")
 
 
+def _append_ui_log_entries(entries: list[dict[str, Any]]) -> int:
+    if not entries:
+        return 0
+    path = _ui_log_daily_path()
+    try:
+        _ensure_logs_dir()
+        appended = 0
+        with open(path, "a", encoding="utf-8") as f:
+            for it in entries[:500]:
+                if not isinstance(it, dict):
+                    continue
+                f.write(json.dumps(it, ensure_ascii=False) + "\n")
+                appended += 1
+        return appended
+    except Exception:
+        return 0
+
+
 def _read_text_file_tail(path: str, max_bytes: int = 200000) -> str:
     p = str(path or "").strip()
     if not p:
@@ -4437,6 +4455,7 @@ async def _handle_github_watch_voice(ws: WebSocket, text: str) -> bool:
 
             run = res.get("run") if isinstance(res, dict) else None
             completed = bool(res.get("completed")) if isinstance(res, dict) else False
+            run_id = str((run or {}).get("id") or "").strip() if isinstance(run, dict) else ""
             conclusion = str((run or {}).get("conclusion") or "").strip().lower() if isinstance(run, dict) else ""
             url = str((run or {}).get("html_url") or "").strip() if isinstance(run, dict) else ""
 
@@ -4450,7 +4469,61 @@ async def _handle_github_watch_voice(ws: WebSocket, text: str) -> bool:
             if conclusion == "success":
                 msg = "บิลด์สำเร็จ" if lang == "th" else "Build succeeded."
             elif conclusion:
+                failed_job = ""
+                failed_step = ""
+                try:
+                    if run_id:
+                        jobs = await _github_api_get(f"/repos/{owner}/{repo}/actions/runs/{run_id}/jobs")
+                        items = jobs.get("jobs") if isinstance(jobs, dict) else None
+                        if isinstance(items, list):
+                            for job in items:
+                                if not isinstance(job, dict):
+                                    continue
+                                if str(job.get("conclusion") or "").strip().lower() != "failure":
+                                    continue
+                                failed_job = str(job.get("name") or job.get("id") or "").strip()
+                                steps = job.get("steps") if isinstance(job.get("steps"), list) else []
+                                for st in steps:
+                                    if not isinstance(st, dict):
+                                        continue
+                                    if str(st.get("conclusion") or "").strip().lower() != "failure":
+                                        continue
+                                    failed_step = str(st.get("name") or "").strip()
+                                    break
+                                break
+                except Exception:
+                    failed_job = ""
+                    failed_step = ""
+
+                if run_id and failed_job:
+                    try:
+                        _append_ui_log_entries(
+                            [
+                                {
+                                    "type": "github_actions",
+                                    "kind": "run_failed_debug",
+                                    "ts": int(time.time()),
+                                    "owner": owner,
+                                    "repo": repo,
+                                    "branch": branch,
+                                    "event": event,
+                                    "run_id": run_id,
+                                    "conclusion": conclusion,
+                                    "job": failed_job,
+                                    "step": failed_step,
+                                    "url": url,
+                                }
+                            ]
+                        )
+                    except Exception:
+                        pass
+
                 msg = (f"บิลด์จบแล้ว: {conclusion}" if lang == "th" else f"Build finished: {conclusion}.")
+                if failed_job:
+                    if lang == "th":
+                        msg = msg + f" (job: {failed_job}" + (f", step: {failed_step}" if failed_step else "") + ")"
+                    else:
+                        msg = msg + f" (job: {failed_job}" + (f", step: {failed_step}" if failed_step else "") + ")"
             else:
                 msg = "บิลด์จบแล้ว" if lang == "th" else "Build finished."
 
