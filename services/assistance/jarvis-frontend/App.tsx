@@ -1068,7 +1068,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-slate-950 text-slate-100 flex flex-col md:flex-row relative selection:bg-cyan-500/30">
+    <div className="h-[100dvh] bg-slate-950 text-slate-100 flex flex-col md:flex-row relative selection:bg-cyan-500/30 overflow-hidden">
       
       {/* Background Grid Animation */}
       <div className="absolute inset-0 z-0 pointer-events-none opacity-20" 
@@ -1428,10 +1428,10 @@ export default function App() {
       </div>
 
       {/* RIGHT COLUMN: Visualizer & Output */}
-      <div className="flex-1 p-4 md:p-6 flex flex-col gap-6 relative z-10 min-h-0">
+      <div className="flex-1 p-4 md:p-6 flex flex-col gap-4 relative z-10 min-h-0 overflow-hidden">
          
          {/* Top Section: Visualizer & Camera */}
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-none h-[10vh] min-h-[96px] max-h-[160px]">
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-none h-[64px] min-h-[64px] max-h-[64px]">
             {/* Audio Visualizer */}
             <div className="relative rounded-2xl border border-slate-700 bg-slate-900/50 flex items-center justify-center overflow-hidden">
                <div className="absolute top-3 left-4 text-[10px] text-cyan-500 font-hud tracking-widest uppercase">Audio Input Matrix</div>
@@ -1441,8 +1441,8 @@ export default function App() {
             </div>
 
             {/* Camera Feed */}
-            <div className="relative rounded-2xl border border-slate-700 bg-slate-900/50 flex items-center justify-center p-2">
-               <div className="absolute top-3 left-4 text-[10px] text-cyan-500 font-hud tracking-widest uppercase z-10">&nbsp;</div>
+            <div className="relative rounded-2xl border border-slate-700 bg-slate-900/50 flex items-center justify-center p-1 overflow-hidden">
+               <div className="absolute top-2 left-3 text-[10px] text-cyan-500 font-hud tracking-widest uppercase z-10">&nbsp;</div>
                <div className="w-full h-full flex items-center justify-center overflow-hidden">
                  <div className="h-full aspect-video max-w-full">
                    <CameraFeed active={state === ConnectionState.CONNECTED} onFrame={handleFrame} />

@@ -82,7 +82,7 @@ const Visualizer: React.FC<VisualizerProps> = ({ volume, active }) => {
       ref={canvasRef} 
       width={300} 
       height={300} 
-      className="w-full h-full max-w-[300px] max-h-[300px]"
+      className="w-full h-full"
     />
   );
 };
