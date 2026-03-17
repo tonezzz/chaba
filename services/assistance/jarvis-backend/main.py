@@ -298,6 +298,7 @@ def _memory_capture_enabled(sys_kv: Any) -> bool:
             enabled = _parse_bool_cell(raw)
         except Exception:
             return False
+
     else:
         enabled = _sys_kv_bool(sys_kv, "memory.capture.enabled", default=False)
 
@@ -4359,6 +4360,125 @@ async def _handle_reminder_setup_trigger(ws: WebSocket, text: str, *, speak: boo
     return True
 
 
+async def _handle_github_watch_voice(ws: WebSocket, text: str) -> bool:
+    s = " ".join(str(text or "").strip().split())
+    if not s:
+        return False
+
+    sys_kv = _sys_kv_snapshot()
+    cfg = _voice_command_config_from_sys_kv(sys_kv if isinstance(sys_kv, dict) else {})
+    if not isinstance(cfg, dict) or not cfg.get("enabled"):
+        return False
+
+    gh_cfg = cfg.get("github_watch") if isinstance(cfg.get("github_watch"), dict) else {}
+    if not isinstance(gh_cfg, dict) or not gh_cfg.get("enabled"):
+        return False
+
+    phrases = gh_cfg.get("phrases") if isinstance(gh_cfg.get("phrases"), list) else []
+    if not phrases:
+        return False
+
+    s_lower = s.lower()
+    matched = False
+    for p in phrases:
+        pl = str(p or "").strip().lower()
+        if pl and pl in s_lower:
+            matched = True
+            break
+    if not matched:
+        return False
+
+    # Debounce repeated STT triggers (per websocket).
+    try:
+        now_ts = time.time()
+        debounce_ms = _safe_int(gh_cfg.get("debounce_ms"), default=_safe_int(cfg.get("debounce_ms"), default=10000))
+        debounce_s = max(0.0, float(debounce_ms) / 1000.0)
+        last_ts = float(getattr(ws.state, "github_watch_last_ts", 0.0) or 0.0)
+        if last_ts and debounce_s > 0 and (now_ts - last_ts) < debounce_s:
+            return True
+        ws.state.github_watch_last_ts = now_ts
+    except Exception:
+        pass
+
+    owner = str(gh_cfg.get("owner") or "tonezzz").strip() or "tonezzz"
+    repo = str(gh_cfg.get("repo") or "chaba").strip() or "chaba"
+    branch = str(gh_cfg.get("branch") or "").strip() or None
+    event = str(gh_cfg.get("event") or "").strip() or None
+
+    try:
+        poll_seconds = float(gh_cfg.get("poll_seconds") or 15.0)
+    except Exception:
+        poll_seconds = 15.0
+    poll_seconds = max(2.0, min(120.0, poll_seconds))
+
+    try:
+        timeout_seconds = float(gh_cfg.get("timeout_seconds") or 3600.0)
+    except Exception:
+        timeout_seconds = 3600.0
+    timeout_seconds = max(30.0, min(7200.0, timeout_seconds))
+
+    lang = str(getattr(ws.state, "user_lang", "") or "").strip() or "en"
+
+    async def _run_once() -> None:
+        try:
+            if lang == "th":
+                await _live_say(ws, "กำลังดู GitHub Actions อยู่ครับ")
+            else:
+                await _live_say(ws, "Watching GitHub Actions.")
+
+            res = await github_actions_watch(
+                owner=owner,
+                repo=repo,
+                branch=branch,
+                event=event,
+                poll_seconds=poll_seconds,
+                timeout_seconds=timeout_seconds,
+            )
+
+            run = res.get("run") if isinstance(res, dict) else None
+            completed = bool(res.get("completed")) if isinstance(res, dict) else False
+            conclusion = str((run or {}).get("conclusion") or "").strip().lower() if isinstance(run, dict) else ""
+            url = str((run or {}).get("html_url") or "").strip() if isinstance(run, dict) else ""
+
+            if not completed:
+                if lang == "th":
+                    await _live_say(ws, "ยังไม่จบภายในเวลาที่กำหนด")
+                else:
+                    await _live_say(ws, "The workflow did not finish before the timeout.")
+                return
+
+            if conclusion == "success":
+                msg = "บิลด์สำเร็จ" if lang == "th" else "Build succeeded."
+            elif conclusion:
+                msg = (f"บิลด์จบแล้ว: {conclusion}" if lang == "th" else f"Build finished: {conclusion}.")
+            else:
+                msg = "บิลด์จบแล้ว" if lang == "th" else "Build finished."
+
+            if url:
+                msg = msg + " " + url
+            await _live_say(ws, msg)
+        except Exception as e:
+            short = str(e).strip()
+            if lang == "th":
+                await _live_say(ws, f"ดู GitHub Actions ไม่ได้: {short}")
+            else:
+                await _live_say(ws, f"GitHub Actions watch failed: {short}")
+
+    # Cancel any in-flight watch task for this websocket.
+    try:
+        prev = getattr(ws.state, "github_watch_task", None)
+        if isinstance(prev, asyncio.Task) and not prev.done():
+            prev.cancel()
+    except Exception:
+        pass
+
+    try:
+        ws.state.github_watch_task = asyncio.create_task(_run_once())
+    except Exception:
+        await _run_once()
+    return True
+
+
 async def _handle_pending_reminder_confirm_or_cancel(ws: WebSocket, text: str, *, speak: bool = True) -> bool:
     pending = getattr(ws.state, "pending_reminder_setup", None)
     if not isinstance(pending, dict):
@@ -6238,6 +6358,10 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
         return True
 
     handled = await _handle_note_trigger(ws, text)
+    if handled:
+        return True
+
+    handled = await _handle_github_watch_voice(ws, text)
     if handled:
         return True
 
@@ -8411,6 +8535,22 @@ def _voice_command_config_from_sys_kv(sys_kv: dict[str, str]) -> dict[str, Any]:
         "gems_list": {
             "enabled": _parse_bool_cell(_get("voice_cmd.gems_list.enabled", "true")),
             "phrases": _split_phrases(_get("voice_cmd.gems_list.phrases", "")),
+        },
+        "github_watch": {
+            "enabled": _parse_bool_cell(_get("voice_cmd.github_watch.enabled", "false")),
+            "phrases": _split_phrases(
+                _get(
+                    "voice_cmd.github_watch.phrases",
+                    "watch build,watch action,watch github action,github action status,ดู build,ดู action,ดู github action,เช็ค build",
+                )
+            ),
+            "owner": _get("voice_cmd.github_watch.owner", "tonezzz"),
+            "repo": _get("voice_cmd.github_watch.repo", "chaba"),
+            "branch": _get("voice_cmd.github_watch.branch", ""),
+            "event": _get("voice_cmd.github_watch.event", ""),
+            "poll_seconds": float(_safe_int(_get("voice_cmd.github_watch.poll_seconds", "15"), default=15)),
+            "timeout_seconds": float(_safe_int(_get("voice_cmd.github_watch.timeout_seconds", "3600"), default=3600)),
+            "debounce_ms": _safe_int(_get("voice_cmd.github_watch.debounce_ms", str(debounce_ms)), default=debounce_ms),
         },
     }
 
