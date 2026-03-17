@@ -77,4 +77,4 @@ Update this after each Back-to-MVT run.
 
 | Date/Time | MVT | SNA | Outcome | What improved (1 sentence) |
 |---|---|---|---|---|
-|  |  |  |  |  |
+| 2026-03-17 17:17 | Make auth screen container status UX foldable, include overall health, and prevent layout overflow | Implement collapsible container status section + overall icon + scrollable auth card; verify build | success | Reduced visual clutter while keeping diagnostics accessible without pushing primary CTA off-screen. |
