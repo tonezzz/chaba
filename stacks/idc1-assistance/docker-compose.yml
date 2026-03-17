@@ -36,7 +36,7 @@ services:
       JARVIS_IMAGE_MODEL: ${JARVIS_IMAGE_MODEL:-gemini-3.1-flash-image-preview}
       JARVIS_IMAGE_ALLOWED_MODELS: ${JARVIS_IMAGE_ALLOWED_MODELS:-gemini-3.1-flash-image-preview}
       WEB_FETCHER_BASE_URL: ${WEB_FETCHER_BASE_URL:-http://web-fetcher:8028}
-      MCP_BASE_URL: ${MCP_BASE_URL:-http://mcp-bundle:3050}
+      MCP_BASE_URL: ${MCP_BASE_URL:-http://mcp-bundle-assistance:3050}
       MCP_PLAYWRIGHT_BASE_URL: ${MCP_PLAYWRIGHT_BASE_URL:-http://mcp-playwright:3050}
       DEEP_RESEARCH_WORKER_BASE_URL: ${DEEP_RESEARCH_WORKER_BASE_URL:-http://deep-research-worker:8030}
       WEAVIATE_URL: ${WEAVIATE_URL:-http://weaviate:8080}
@@ -94,6 +94,10 @@ services:
       GOOGLE_CALENDAR_SCOPES: ${GOOGLE_SHARED_SCOPES:-https://www.googleapis.com/auth/tasks,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/spreadsheets}
     volumes:
       - mcp-bundle-config:/root/.config/1mcp
+    networks:
+      idc1-stack-net:
+        aliases:
+          - mcp-bundle-assistance
     command:
       - sh
       - -lc
