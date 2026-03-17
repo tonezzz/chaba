@@ -8336,6 +8336,323 @@ def status() -> dict[str, Any]:
     return out
 
 
+def _github_ro_token() -> str:
+    return str(os.getenv("GITHUB_PERSONAL_TOKEN_RO") or "").strip()
+
+
+async def _github_api_get(path: str, *, params: dict[str, Any] | None = None) -> Any:
+    token = _github_ro_token()
+    if not token:
+        raise HTTPException(status_code=500, detail="missing_github_personal_token_ro")
+
+    url = f"https://api.github.com{path}"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "jarvis-backend",
+    }
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        res = await client.get(url, headers=headers, params=params)
+        if res.status_code >= 400:
+            detail: Any
+            try:
+                detail = res.json()
+            except Exception:
+                detail = res.text
+            raise HTTPException(status_code=int(res.status_code), detail={"github_error": detail})
+        try:
+            return res.json()
+        except Exception:
+            return res.text
+
+
+def _normalize_run_summary(run: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(run, dict):
+        return {}
+    return {
+        "id": run.get("id"),
+        "name": run.get("name") or run.get("display_title"),
+        "event": run.get("event"),
+        "status": run.get("status"),
+        "conclusion": run.get("conclusion"),
+        "created_at": run.get("created_at"),
+        "updated_at": run.get("updated_at"),
+        "run_started_at": run.get("run_started_at"),
+        "head_branch": run.get("head_branch"),
+        "head_sha": run.get("head_sha"),
+        "html_url": run.get("html_url"),
+    }
+
+
+_GITHUB_WATCH_TASKS: dict[str, asyncio.Task[None]] = {}
+_GITHUB_WATCH_STATE: dict[str, dict[str, Any]] = {}
+
+
+def _github_watch_key(owner: str, repo: str, branch: str | None, event: str | None) -> str:
+    o = str(owner or "").strip().lower()
+    r = str(repo or "").strip().lower()
+    b = str(branch or "").strip().lower()
+    e = str(event or "").strip().lower()
+    return f"{o}/{r}?branch={b}&event={e}"
+
+
+async def _github_watch_loop(
+    *,
+    key: str,
+    owner: str,
+    repo: str,
+    branch: str | None,
+    event: str | None,
+    poll_seconds: float,
+) -> None:
+    last_run_id: str | None = None
+    last_status: str | None = None
+    last_conclusion: str | None = None
+
+    while True:
+        try:
+            payload = await github_actions_latest(owner=owner, repo=repo, branch=branch, event=event)
+            run = payload.get("run") if isinstance(payload, dict) else None
+            if not isinstance(run, dict) or not run:
+                _GITHUB_WATCH_STATE[key] = {
+                    "owner": owner,
+                    "repo": repo,
+                    "branch": branch,
+                    "event": event,
+                    "run": None,
+                    "ts": int(time.time()),
+                }
+            else:
+                run_id = str(run.get("id") or "").strip() or None
+                status = str(run.get("status") or "").strip() or None
+                conclusion = str(run.get("conclusion") or "").strip() or None
+
+                _GITHUB_WATCH_STATE[key] = {
+                    "owner": owner,
+                    "repo": repo,
+                    "branch": branch,
+                    "event": event,
+                    "run": run,
+                    "ts": int(time.time()),
+                }
+
+                if run_id and run_id != last_run_id:
+                    last_run_id = run_id
+                    last_status = status
+                    last_conclusion = conclusion
+                    await _broadcast_to_user(
+                        DEFAULT_USER_ID,
+                        {
+                            "type": "github_actions",
+                            "kind": "run_detected",
+                            "key": key,
+                            "owner": owner,
+                            "repo": repo,
+                            "branch": branch,
+                            "event": event,
+                            "run": run,
+                        },
+                    )
+
+                if status and status != last_status:
+                    last_status = status
+
+                if status == "completed" and (conclusion != last_conclusion or last_conclusion is None):
+                    last_conclusion = conclusion
+                    await _broadcast_to_user(
+                        DEFAULT_USER_ID,
+                        {
+                            "type": "github_actions",
+                            "kind": "run_completed",
+                            "key": key,
+                            "owner": owner,
+                            "repo": repo,
+                            "branch": branch,
+                            "event": event,
+                            "run": run,
+                        },
+                    )
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            _GITHUB_WATCH_STATE[key] = {
+                "owner": owner,
+                "repo": repo,
+                "branch": branch,
+                "event": event,
+                "run": None,
+                "ts": int(time.time()),
+                "error": str(e),
+            }
+
+        await asyncio.sleep(poll_seconds)
+
+
+class GitHubActionsWatchStartRequest(BaseModel):
+    owner: str = "tonezzz"
+    repo: str = "chaba"
+    branch: str | None = None
+    event: str | None = None
+    poll_seconds: float = 15.0
+
+
+@app.post("/github/actions/watch/start")
+@app.post("/jarvis/github/actions/watch/start")
+async def github_actions_watch_start(req: GitHubActionsWatchStartRequest) -> dict[str, Any]:
+    owner = str(req.owner or "").strip() or "tonezzz"
+    repo = str(req.repo or "").strip() or "chaba"
+    branch = str(req.branch).strip() if req.branch is not None else None
+    event = str(req.event).strip() if req.event is not None else None
+
+    try:
+        poll_seconds = float(req.poll_seconds)
+    except Exception:
+        poll_seconds = 15.0
+    poll_seconds = max(2.0, min(300.0, poll_seconds))
+
+    key = _github_watch_key(owner, repo, branch, event)
+    existing = _GITHUB_WATCH_TASKS.get(key)
+    if existing and not existing.done():
+        return {"ok": True, "started": False, "key": key, "already_running": True, "state": _GITHUB_WATCH_STATE.get(key)}
+
+    task = asyncio.create_task(
+        _github_watch_loop(
+            key=key,
+            owner=owner,
+            repo=repo,
+            branch=branch,
+            event=event,
+            poll_seconds=poll_seconds,
+        )
+    )
+    _GITHUB_WATCH_TASKS[key] = task
+    _GITHUB_WATCH_STATE[key] = {
+        "owner": owner,
+        "repo": repo,
+        "branch": branch,
+        "event": event,
+        "poll_seconds": poll_seconds,
+        "ts": int(time.time()),
+        "running": True,
+    }
+    return {"ok": True, "started": True, "key": key}
+
+
+@app.post("/github/actions/watch/stop")
+@app.post("/jarvis/github/actions/watch/stop")
+async def github_actions_watch_stop(
+    owner: str = "tonezzz",
+    repo: str = "chaba",
+    branch: str | None = None,
+    event: str | None = None,
+) -> dict[str, Any]:
+    key = _github_watch_key(owner, repo, branch, event)
+    task = _GITHUB_WATCH_TASKS.get(key)
+    if not task:
+        return {"ok": True, "stopped": False, "key": key, "missing": True}
+    try:
+        task.cancel()
+    except Exception:
+        pass
+    return {"ok": True, "stopped": True, "key": key}
+
+
+@app.get("/github/actions/watch/list")
+@app.get("/jarvis/github/actions/watch/list")
+def github_actions_watch_list() -> dict[str, Any]:
+    items: list[dict[str, Any]] = []
+    for key, task in list(_GITHUB_WATCH_TASKS.items()):
+        running = not task.done()
+        st = dict(_GITHUB_WATCH_STATE.get(key) or {})
+        st["key"] = key
+        st["running"] = running
+        items.append(st)
+    return {"ok": True, "watches": items}
+
+
+@app.get("/github/actions/latest")
+@app.get("/jarvis/github/actions/latest")
+async def github_actions_latest(
+    owner: str = "tonezzz",
+    repo: str = "chaba",
+    branch: str | None = None,
+    event: str | None = None,
+) -> dict[str, Any]:
+    params: dict[str, Any] = {"per_page": 1}
+    if branch:
+        params["branch"] = str(branch)
+    if event:
+        params["event"] = str(event)
+
+    data = await _github_api_get(f"/repos/{owner}/{repo}/actions/runs", params=params)
+    runs = data.get("workflow_runs") if isinstance(data, dict) else None
+    latest = runs[0] if isinstance(runs, list) and runs else None
+    return {
+        "ok": True,
+        "owner": owner,
+        "repo": repo,
+        "branch": branch,
+        "event": event,
+        "run": _normalize_run_summary(latest) if isinstance(latest, dict) else None,
+    }
+
+
+@app.get("/github/actions/watch")
+@app.get("/jarvis/github/actions/watch")
+async def github_actions_watch(
+    owner: str = "tonezzz",
+    repo: str = "chaba",
+    branch: str | None = None,
+    event: str | None = None,
+    poll_seconds: float = 10.0,
+    timeout_seconds: float = 600.0,
+) -> dict[str, Any]:
+    try:
+        poll_seconds = float(poll_seconds)
+    except Exception:
+        poll_seconds = 10.0
+    poll_seconds = max(2.0, min(120.0, poll_seconds))
+
+    try:
+        timeout_seconds = float(timeout_seconds)
+    except Exception:
+        timeout_seconds = 600.0
+    timeout_seconds = max(5.0, min(7200.0, timeout_seconds))
+
+    started = time.time()
+    last_run: dict[str, Any] | None = None
+    while True:
+        payload = await github_actions_latest(owner=owner, repo=repo, branch=branch, event=event)
+        run = payload.get("run") if isinstance(payload, dict) else None
+        last_run = run if isinstance(run, dict) else last_run
+
+        if isinstance(run, dict) and str(run.get("status") or "") == "completed":
+            return {
+                "ok": True,
+                "owner": owner,
+                "repo": repo,
+                "branch": branch,
+                "event": event,
+                "completed": True,
+                "run": run,
+            }
+
+        if time.time() - started >= timeout_seconds:
+            return {
+                "ok": True,
+                "owner": owner,
+                "repo": repo,
+                "branch": branch,
+                "event": event,
+                "completed": False,
+                "run": last_run,
+                "timeout_seconds": timeout_seconds,
+            }
+
+        await asyncio.sleep(poll_seconds)
+
+
 @app.post("/gem/demo", response_model=GemDemoResponse)
 async def gem_demo(req: GemDemoRequest) -> GemDemoResponse:
     api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
