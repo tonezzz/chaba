@@ -5301,7 +5301,9 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
     sys_sheet = _system_sheet_name()
 
     tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
-    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sys_sheet}!A:B"})
+    # System sheet typically uses KV5 (A:E): key, value, enabled, scope, priority.
+    # We fetch A:E so that a sys_kv_set can reliably enable the key.
+    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sys_sheet}!A:E"})
     parsed = _mcp_text_json(res)
     if not isinstance(parsed, dict):
         return {"ok": False, "error": "values_get_invalid_response"}
@@ -5316,7 +5318,8 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
         if values and isinstance(values[0], list) and values[0]:
             h0 = _norm_k(values[0][0]).lower()
             h1 = _norm_k(values[0][1]).lower() if len(values[0]) > 1 else ""
-            if h0 in {"key", "k"} and (not h1 or h1 in {"value", "v"}):
+            h2 = _norm_k(values[0][2]).lower() if len(values[0]) > 2 else ""
+            if h0 in {"key", "k"} and (not h1 or h1 in {"value", "v"}) and (not h2 or h2 in {"enabled", "enable"}):
                 start_row = 2
     except Exception:
         start_row = 1
@@ -5346,13 +5349,23 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
 
     if row_idx:
         tool_upd = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
-        rng = f"{sys_sheet}!A{row_idx}:B{row_idx}"
+        rng = f"{sys_sheet}!A{row_idx}:E{row_idx}"
+
+        existing: list[Any] = []
+        try:
+            existing = values[row_idx - 1] if isinstance(values, list) and row_idx - 1 < len(values) else []
+        except Exception:
+            existing = []
+        # Preserve scope/priority if present.
+        scope = str(existing[3]).strip() if len(existing) > 3 and str(existing[3]).strip() else "global"
+        priority = str(existing[4]).strip() if len(existing) > 4 and str(existing[4]).strip() else "0"
+
         res2 = await _mcp_tools_call(
             tool_upd,
             {
                 "spreadsheet_id": spreadsheet_id,
                 "range": rng,
-                "values": [[k, v]],
+                "values": [[k, v, "true", scope, priority]],
                 "value_input_option": "RAW",
             },
         )
@@ -5372,8 +5385,8 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
         tool_app,
         {
             "spreadsheet_id": spreadsheet_id,
-            "range": f"{sys_sheet}!A:B",
-            "values": [[k, v]],
+            "range": f"{sys_sheet}!A:E",
+            "values": [[k, v, "true", "global", "0"]],
             "value_input_option": "RAW",
         },
     )
