@@ -291,6 +291,78 @@ def _sys_kv_bool(sys_kv: Any, key: str, default: bool) -> bool:
         return default
 
 
+def _memory_capture_enabled(sys_kv: Any) -> bool:
+    raw = str(os.getenv("JARVIS_MEMORY_CAPTURE_ENABLED") or "").strip()
+    if raw:
+        try:
+            enabled = _parse_bool_cell(raw)
+        except Exception:
+            return False
+    else:
+        enabled = _sys_kv_bool(sys_kv, "memory.capture.enabled", default=False)
+
+    if not enabled:
+        return False
+
+    ignore_write = str(os.getenv("JARVIS_MEMORY_CAPTURE_IGNORE_WRITE_ENABLED") or "").strip()
+    if ignore_write:
+        try:
+            if _parse_bool_cell(ignore_write):
+                return True
+        except Exception:
+            pass
+
+    return _sys_kv_bool(sys_kv, "memory.write.enabled", default=False)
+
+
+def _redact_capture_text(text: str) -> str:
+    s = str(text or "")
+    if not s:
+        return ""
+    try:
+        s = re.sub(r"(?i)(PORTAINER_TOKEN\s*[:=]\s*)([^\s]+)", r"\1[REDACTED]", s)
+    except Exception:
+        pass
+    try:
+        s = re.sub(r"\bptr_[A-Za-z0-9+/=]+\b", "ptr_[REDACTED]", s)
+    except Exception:
+        pass
+    try:
+        s = re.sub(r"(?i)(bearer\s+)([A-Za-z0-9\-\._~\+/]+=*)", r"\1[REDACTED]", s)
+    except Exception:
+        pass
+    return s
+
+
+def _truncate_capture_text(text: str, limit: int = 1800) -> str:
+    s = str(text or "")
+    if len(s) <= limit:
+        return s
+    return s[:limit].rstrip() + "…"
+
+
+async def _maybe_capture_to_memory(ws: WebSocket, *, key: str, value: str, source: str) -> None:
+    sys_kv = getattr(ws.state, "sys_kv", None)
+    if not _memory_capture_enabled(sys_kv):
+        return
+    k = str(key or "").strip()
+    v = _truncate_capture_text(_redact_capture_text(str(value or "").strip()))
+    if not (k and v):
+        return
+    try:
+        await _memory_sheet_upsert(
+            ws,
+            key=k,
+            value=v,
+            scope="global",
+            priority=10,
+            enabled=True,
+            source=str(source or "capture").strip() or "capture",
+        )
+    except Exception:
+        return
+
+
 async def _load_sheet_table(*, spreadsheet_id: str, sheet_name: str, max_rows: int = 250, max_cols: str = "Q") -> list[list[Any]]:
     tool = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
     res = await _mcp_tools_call(
@@ -4860,15 +4932,27 @@ async def _handle_system_reload_mode(ws: WebSocket, mode: str, trace_id: str | N
     if m in {"sys", "system"}:
         if _reload_system_lock.locked():
             await _ws_send_json(ws, {"type": "text", "text": "Reload: already running", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            try:
+                await _maybe_capture_to_memory(ws, key="runtime.system.reload.latest", value="Reload: already running", source="system.reload")
+            except Exception:
+                pass
             return
         async with _reload_system_lock:
             try:
                 await _ws_send_json(ws, {"type": "text", "text": "Reload sys: start", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                try:
+                    await _maybe_capture_to_memory(ws, key="runtime.system.reload.latest", value="Reload sys: start", source="system.reload")
+                except Exception:
+                    pass
             except Exception:
                 pass
             try:
                 await _load_ws_system_kv(ws)
                 await _ws_send_json(ws, {"type": "text", "text": "Reload sys: ok", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                try:
+                    await _maybe_capture_to_memory(ws, key="runtime.system.reload.latest", value="Reload sys: ok", source="system.reload")
+                except Exception:
+                    pass
             except Exception as e:
                 await _ws_send_json(
                     ws,
@@ -4881,16 +4965,28 @@ async def _handle_system_reload_mode(ws: WebSocket, mode: str, trace_id: str | N
                     },
                     trace_id=trace_id,
                 )
+                try:
+                    await _maybe_capture_to_memory(ws, key="runtime.system.reload.latest", value=f"Reload sys failed: {str(e)}", source="system.reload")
+                except Exception:
+                    pass
             return
 
     # Note: today memory+knowledge are loaded together by _load_ws_sheet_memory.
     if m in {"memory", "knowledge"}:
         if _reload_system_lock.locked():
             await _ws_send_json(ws, {"type": "text", "text": "Reload: already running", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            try:
+                await _maybe_capture_to_memory(ws, key="runtime.system.reload.latest", value="Reload: already running", source="system.reload")
+            except Exception:
+                pass
             return
         async with _reload_system_lock:
             try:
                 await _ws_send_json(ws, {"type": "text", "text": f"Reload {m}: start", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                try:
+                    await _maybe_capture_to_memory(ws, key="runtime.system.reload.latest", value=f"Reload {m}: start", source="system.reload")
+                except Exception:
+                    pass
             except Exception:
                 pass
             try:
@@ -4902,6 +4998,10 @@ async def _handle_system_reload_mode(ws: WebSocket, mode: str, trace_id: str | N
                 lang = str(getattr(ws.state, "user_lang", "") or "").strip() or "en"
                 await _ws_send_json(ws, {"type": "text", "text": _memory_load_status_line(ws, lang), "instance_id": INSTANCE_ID}, trace_id=trace_id)
                 await _ws_send_json(ws, {"type": "text", "text": f"Reload {m}: ok", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+                try:
+                    await _maybe_capture_to_memory(ws, key="runtime.system.reload.latest", value=f"Reload {m}: ok", source="system.reload")
+                except Exception:
+                    pass
             except Exception as e:
                 await _ws_send_json(
                     ws,
@@ -4914,11 +5014,19 @@ async def _handle_system_reload_mode(ws: WebSocket, mode: str, trace_id: str | N
                     },
                     trace_id=trace_id,
                 )
+                try:
+                    await _maybe_capture_to_memory(ws, key="runtime.system.reload.latest", value=f"Reload {m} failed: {str(e)}", source="system.reload")
+                except Exception:
+                    pass
             return
 
     if m in {"gems", "gem"}:
         try:
             await _ws_send_json(ws, {"type": "text", "text": "Reload gems: start", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            try:
+                await _maybe_capture_to_memory(ws, key="runtime.system.reload.latest", value="Reload gems: start", source="system.reload")
+            except Exception:
+                pass
         except Exception:
             pass
         try:
@@ -4929,12 +5037,20 @@ async def _handle_system_reload_mode(ws: WebSocket, mode: str, trace_id: str | N
             except Exception:
                 pass
             await _ws_send_json(ws, {"type": "text", "text": "Reload gems: ok", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            try:
+                await _maybe_capture_to_memory(ws, key="runtime.system.reload.latest", value="Reload gems: ok", source="system.reload")
+            except Exception:
+                pass
         except Exception as e:
             await _ws_send_json(
                 ws,
                 {"type": "error", "kind": "reload_gems_failed", "message": "Reload gems failed", "detail": str(e), "instance_id": INSTANCE_ID},
                 trace_id=trace_id,
             )
+            try:
+                await _maybe_capture_to_memory(ws, key="runtime.system.reload.latest", value=f"Reload gems failed: {str(e)}", source="system.reload")
+            except Exception:
+                pass
         return
 
     await _ws_send_json(
@@ -5118,6 +5234,10 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             title = "System module status report"
             report = title + "\n" + "\n".join(lines) if lines else title + "\n(no containers found)"
             await _ws_send_json(ws, {"type": "text", "text": report, "instance_id": INSTANCE_ID}, trace_id=tid)
+            try:
+                await _maybe_capture_to_memory(ws, key="runtime.module_status_report.latest", value=report, source="system.module_status_report")
+            except Exception:
+                pass
 
             voice = f"Module status report. {ok_n} ok. {bad_n} issues.".strip()
             try:
@@ -5136,6 +5256,10 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
                 },
                 trace_id=tid,
             )
+            try:
+                await _maybe_capture_to_memory(ws, key="runtime.system.clear_job.latest", value="system.clear_job: reconnecting", source="system.clear_job")
+            except Exception:
+                pass
             # Ask the frontend to reconnect, which effectively clears any in-flight Gemini Live job.
             await _ws_send_json(
                 ws,
@@ -5233,6 +5357,15 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
                 },
                 trace_id=tid,
             )
+            try:
+                await _maybe_capture_to_memory(
+                    ws,
+                    key="runtime.system.sys_kv_set.latest",
+                    value=f"sys_kv_set ok: {k}={v}" + (" (dry_run)" if dry_run else ""),
+                    source="system.sys_kv_set",
+                )
+            except Exception:
+                pass
             await _ws_voice_job_done(ws, tid)
             return True
         await _ws_send_json(
@@ -5240,6 +5373,10 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             {"type": "error", "kind": "invalid_system_action", "message": f"invalid_system_action: {action}", "instance_id": INSTANCE_ID},
             trace_id=tid,
         )
+        try:
+            await _maybe_capture_to_memory(ws, key="runtime.system.invalid_action.latest", value=f"invalid_system_action: {action}", source="system.invalid_action")
+        except Exception:
+            pass
         return True
 
     if msg_type == "notes":
@@ -10769,12 +10906,22 @@ async def ws_live(ws: WebSocket) -> None:
 
         if should_emit_sheet_status:
             try:
-                await _ws_send_json(ws, {"type": "text", "text": _memory_load_status_line(ws, lang), "instance_id": INSTANCE_ID})
+                mem_line = _memory_load_status_line(ws, lang)
+                await _ws_send_json(ws, {"type": "text", "text": mem_line, "instance_id": INSTANCE_ID})
+                try:
+                    await _maybe_capture_to_memory(ws, key="runtime.connect.memory_load_status", value=mem_line, source="connect")
+                except Exception:
+                    pass
             except Exception:
                 pass
 
             try:
-                await _ws_send_json(ws, {"type": "text", "text": _startup_prewarm_status_line(lang), "instance_id": INSTANCE_ID})
+                prewarm_line = _startup_prewarm_status_line(lang)
+                await _ws_send_json(ws, {"type": "text", "text": prewarm_line, "instance_id": INSTANCE_ID})
+                try:
+                    await _maybe_capture_to_memory(ws, key="runtime.connect.startup_prewarm_status", value=prewarm_line, source="connect")
+                except Exception:
+                    pass
             except Exception:
                 pass
         api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
