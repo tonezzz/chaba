@@ -81,6 +81,30 @@ sequenceDiagram
 - `system.sheets` controls which sheet tabs are loaded after the system KV is loaded.
 - Jarvis does **not** silently fall back to defaults; missing config is reported as an error to make debugging easier.
 
+## Startup prewarm + client connect status
+
+### Startup prewarm
+
+When `jarvis-backend` starts (even if no UI is connected), it runs a background prewarm job:
+
+- Loads system KV from the system sheet
+- Reads `system.sheets`
+- Loads memory + knowledge sheets
+- Populates in-process caches
+
+If no UI is connected, no WebSocket messages are emitted. The result is only visible in backend logs.
+
+### Client connect status
+
+When a client connects to `/ws/live`, the backend sends short status lines:
+
+- A cache-based sheet summary (memory/knowledge sheet names + counts)
+- A startup prewarm summary:
+  - `Startup prewarm: ok | memory=X knowledge=Y`
+  - or `Startup prewarm: error | <reason>`
+
+Note: sheets are still not auto-loaded into the current chat session beyond cache application; use `system reload` to force a full reload and to see explicit reload errors.
+
 ## System sheet reload (diagram)
 
 ```mermaid
