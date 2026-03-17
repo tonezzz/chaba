@@ -201,8 +201,7 @@ The frontend tries to keep control-plane actions deterministic by converting cer
 ```mermaid
 flowchart LR
   U[User] -->|typed composer| C[Composer parser]
-  U -->|voice| STT[Gemini Live STT transcript
-  type=transcript source=input]
+  U -->|voice| STT["Gemini Live STT transcript<br/>type=transcript source=input"]
 
   C -->|match| TOOL[WS tool message]
   STT -->|match + debounce| TOOL

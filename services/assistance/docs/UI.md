@@ -10,18 +10,12 @@ flowchart TB
   App[App.tsx]
 
   subgraph FE[Jarvis Frontend]
-    Live[LiveService
-    (WS + audio + message dispatch)]
-    Composer[Composer
-    (text + attachments)]
-    Log[Conversation Log
-    (MessageLog list)]
-    Status[Connection + status
-    (connected/talking/debug)]
-    Tabs[Output Tabs
-    dialog | ui_log | ws_log]
-    Right[Right Panel
-    output | cars | checklist]
+    Live["LiveService<br/>(WS + audio + message dispatch)"]
+    Composer["Composer<br/>(text + attachments)"]
+    Log["Conversation Log<br/>(MessageLog list)"]
+    Status["Connection + status<br/>(connected/talking/debug)"]
+    Tabs["Output Tabs<br/>dialog | ui_log | ws_log"]
+    Right["Right Panel<br/>output | cars | checklist"]
     Cam[CameraFeed]
     Viz[Visualizer]
     Cars[CarsPanel]
@@ -29,8 +23,7 @@ flowchart TB
 
   subgraph BE[Jarvis Backend]
     WS[/WebSocket: /ws/live/]
-    Logs[/HTTP logs:
-    /logs/ui/*, /logs/ws/*/]
+    Logs["HTTP logs:<br/>/logs/ui/*, /logs/ws/*/"]
   end
 
   U --> App
