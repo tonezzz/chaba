@@ -6243,6 +6243,28 @@ async def _load_ws_sheet_memory(ws: WebSocket) -> None:
     if not plan:
         raise RuntimeError("invalid_system_sheets: system.sheets is empty")
 
+    def _role_enabled(role: str) -> bool:
+        r = str(role or "").strip().lower()
+        if not r:
+            return False
+        # Memory/knowledge are always treated as enabled if present in system.sheets.
+        if r in {"memory", "knowledge"}:
+            return True
+        # For any other role (e.g. notes), only treat it as enabled if there are enabled sys_kv keys
+        # indicating it is configured.
+        for k in (sys_kv or {}).keys():
+            ks = str(k or "").strip().lower()
+            if not ks:
+                continue
+            if ks.startswith(f"{r}."):
+                return True
+        # Common non-dot keys for notes.
+        if r == "notes":
+            for k in ("notes_ss", "notes_sh", "notes.sheet_name"):
+                if str(sys_kv.get(k) or "").strip():
+                    return True
+        return False
+
     memory_sheet: str | None = None
     knowledge_sheet: str | None = None
     for entry in plan:
@@ -6258,11 +6280,17 @@ async def _load_ws_sheet_memory(ws: WebSocket) -> None:
             if left in {"memory", "knowledge"}:
                 role = left
                 name = right
+            elif left and not _role_enabled(left):
+                # Unknown role but not enabled/configured via sys_kv -> ignore.
+                continue
         if role is None:
             low = e.strip().lower()
             if low in {"memory", "knowledge"}:
                 role = low
                 name = e
+            elif low and not _role_enabled(low):
+                # Unknown role but not enabled/configured via sys_kv -> ignore.
+                continue
 
         if role == "memory":
             override = str(sys_kv.get("memory.sheet_name") or "").strip()
@@ -6455,6 +6483,24 @@ def _validate_system_sheets_plan(sys_kv: Any) -> Optional[str]:
         return "invalid_system_sheets"
     saw_memory = False
     saw_knowledge = False
+
+    def _role_enabled(role: str) -> bool:
+        r = str(role or "").strip().lower()
+        if not r:
+            return False
+        if r in {"memory", "knowledge"}:
+            return True
+        for k in (sys_kv or {}).keys():
+            ks = str(k or "").strip().lower()
+            if not ks:
+                continue
+            if ks.startswith(f"{r}."):
+                return True
+        if r == "notes":
+            for k in ("notes_ss", "notes_sh", "notes.sheet_name"):
+                if str(sys_kv.get(k) or "").strip():
+                    return True
+        return False
     for entry in plan:
         e = str(entry or "").strip()
         if not e:
@@ -6468,11 +6514,15 @@ def _validate_system_sheets_plan(sys_kv: Any) -> Optional[str]:
             if left in {"memory", "knowledge"}:
                 role = left
                 name = right
+            elif left and not _role_enabled(left):
+                continue
         if role is None:
             low = e.strip().lower()
             if low in {"memory", "knowledge"}:
                 role = low
                 name = e
+            elif low and not _role_enabled(low):
+                continue
         if role == "memory":
             if str(name or "").strip():
                 saw_memory = True
