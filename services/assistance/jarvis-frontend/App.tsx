@@ -1219,6 +1219,45 @@ export default function App() {
 
     const rows = deriveRows();
 
+    const overall = (() => {
+      let hasBad = false;
+      let hasWarn = false;
+      let ok = 0;
+      let warn = 0;
+      let bad = 0;
+      for (const r of rows) {
+        const s = String(r.status || "").trim().toLowerCase();
+        const h = String(r.health || "").trim().toLowerCase();
+        const badish = s === "exited" || s === "dead" || h === "unhealthy";
+        const okish = s === "running" || s === "up" || s === "online" || h === "healthy" || h === "ok";
+        const warnish = !badish && !okish;
+        if (badish) {
+          hasBad = true;
+          bad += 1;
+          continue;
+        }
+        if (warnish) {
+          hasWarn = true;
+          warn += 1;
+          continue;
+        }
+        ok += 1;
+      }
+      return {
+        kind: hasBad ? "bad" : hasWarn ? "warn" : "ok",
+        ok,
+        warn,
+        bad,
+        total: rows.length,
+      };
+    })();
+
+    const renderOverallIcon = () => {
+      if (overall.kind === "bad") return <XCircle className="w-4 h-4 text-red-400" />;
+      if (overall.kind === "warn") return <AlertTriangle className="w-4 h-4 text-yellow-400" />;
+      return <CheckCircle2 className="w-4 h-4 text-emerald-400" />;
+    };
+
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center relative overflow-hidden">
         <div
@@ -1230,7 +1269,7 @@ export default function App() {
           }}
         />
 
-        <div className="z-10 bg-slate-900/80 p-8 rounded-2xl border border-slate-700 shadow-2xl max-w-md w-full text-center backdrop-blur-md">
+        <div className="z-10 bg-slate-900/80 p-8 rounded-2xl border border-slate-700 shadow-2xl max-w-md w-full text-center backdrop-blur-md max-h-[90dvh] overflow-y-auto">
           <div className="w-16 h-16 bg-cyan-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-cyan-500/30">
             <Lock className="w-8 h-8 text-cyan-400" />
           </div>
@@ -1259,41 +1298,68 @@ export default function App() {
           </div>
 
           <div className="mt-6 text-left text-xs font-mono text-slate-400 border-t border-slate-700/60 pt-4">
-            <div className="text-[10px] text-cyan-500 font-hud tracking-widest uppercase mb-2">Container Status</div>
+            <button
+              type="button"
+              onClick={() => {
+                const next = !statusDetailsOpen;
+                setStatusDetailsOpen(next);
+                try {
+                  window.localStorage.setItem("jarvis_status_details_open", next ? "1" : "0");
+                } catch {
+                  // ignore
+                }
+              }}
+              className="w-full flex items-center justify-between gap-2"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-[10px] text-cyan-500 font-hud tracking-widest uppercase">Container Status</span>
+                <span className="inline-flex items-center gap-1 text-[11px] text-slate-400">
+                  {renderOverallIcon()}
+                  <span>
+                    {overall.total ? `${overall.ok} ok` : "n/a"}
+                    {overall.warn ? `, ${overall.warn} warn` : ""}
+                    {overall.bad ? `, ${overall.bad} bad` : ""}
+                  </span>
+                </span>
+              </div>
+              <ChevronRight className={`w-4 h-4 text-slate-500 transition-transform ${statusDetailsOpen ? "rotate-90" : ""}`} />
+            </button>
             {containerStatusError ? (
               <div className="text-red-400">status_error: {containerStatusError}</div>
             ) : containerStatus ? (
-              <div className="space-y-1">
-                {String(containerStatus.instance_id || "").trim() ? (
-                  <div className="text-slate-500">instance_id: {String(containerStatus.instance_id || "")}</div>
-                ) : null}
-                {String(containerStatus.hostname || "").trim() ? (
-                  <div className="text-slate-500">hostname: {String(containerStatus.hostname || "")}</div>
-                ) : null}
+              statusDetailsOpen ? (
+                <div className="space-y-1 mt-2">
+                  {String(containerStatus.instance_id || "").trim() ? (
+                    <div className="text-slate-500">instance_id: {String(containerStatus.instance_id || "")}</div>
+                  ) : null}
+                  {String(containerStatus.hostname || "").trim() ? (
+                    <div className="text-slate-500">hostname: {String(containerStatus.hostname || "")}</div>
+                  ) : null}
 
-                <div className="mt-2 space-y-1">
-                  {rows.length ? (
-                    rows.map((r) => (
-                      <div key={r.name} className="flex items-start gap-2">
-                        <div className="mt-[1px] flex items-center gap-1">
-                          {renderStatusIcon(r.status)}
-                          {renderHealthIcon(r.health)}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-slate-300 truncate">
-                            {r.name}
-                            <span className="text-slate-500"> — {r.status || "unknown"}</span>
-                            {r.health ? <span className="text-slate-500"> / {r.health}</span> : null}
+                  <div className="mt-2 space-y-1">
+                    {rows.length ? (
+                      rows.map((r) => (
+                        <div key={r.name} className="flex items-start gap-2">
+                          <div className="mt-[1px] flex items-center gap-1">
+                            {renderStatusIcon(r.status)}
+                            {renderHealthIcon(r.health)}
                           </div>
-                          {r.detail ? <div className="text-slate-500 break-words">{r.detail}</div> : null}
+                          <div className="min-w-0">
+                            <div className="text-slate-300 truncate">
+                              {r.name}
+                              <span className="text-slate-500"> — {r.status || "unknown"}</span>
+                              {r.health ? <span className="text-slate-500"> / {r.health}</span> : null}
+                            </div>
+                            {r.detail ? <div className="text-slate-500 break-words">{r.detail}</div> : null}
+                          </div>
                         </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-slate-500">no status rows</div>
-                  )}
+                      ))
+                    ) : (
+                      <div className="text-slate-500">no status rows</div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              ) : null
             ) : (
               <div className="text-slate-500">loading…</div>
             )}
