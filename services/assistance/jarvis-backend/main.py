@@ -10887,6 +10887,21 @@ async def ws_live(ws: WebSocket) -> None:
                 + extra_sys
             )
 
+        try:
+            mem_items = getattr(ws.state, "memory_items", None)
+            know_items = getattr(ws.state, "knowledge_items", None)
+            mem_n = len(mem_items) if isinstance(mem_items, list) else 0
+            know_n = len(know_items) if isinstance(know_items, list) else 0
+        except Exception:
+            mem_n = 0
+            know_n = 0
+        system_instruction = (
+            system_instruction
+            + "\n\n"
+            + "RUNTIME_COUNTS (internal)\n"
+            + f"memory_count={mem_n} knowledge_count={know_n}"
+        )
+
         if gem_extra:
             system_instruction = system_instruction + "\n\n" + gem_extra
 
