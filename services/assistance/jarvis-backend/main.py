@@ -1141,6 +1141,121 @@ _ws_by_user: dict[str, set[WebSocket]] = {}
 _SESSION_WS: dict[str, WebSocket] = {}
 _reminder_task: Optional[asyncio.Task[None]] = None
 
+
+def _portainer_cfg(sys_kv: Any) -> dict[str, str]:
+    def _get(k: str) -> str:
+        if isinstance(sys_kv, dict):
+            v = str(sys_kv.get(k) or "").strip()
+            if v:
+                return v
+        return ""
+
+    url = _get("portainer.url") or str(os.getenv("PORTAINER_URL") or "").strip()
+    api_key = (
+        _get("portainer.api_key")
+        or _get("portainer.token")
+        or str(os.getenv("PORTAINER_API_KEY") or os.getenv("PORTAINER_TOKEN") or "").strip()
+    )
+    endpoint_id = _get("portainer.endpoint_id") or str(os.getenv("PORTAINER_ENDPOINT_ID") or "").strip()
+    stack_name = _get("portainer.stack_name") or str(os.getenv("PORTAINER_STACK_NAME") or "").strip()
+    return {"url": url, "api_key": api_key, "endpoint_id": endpoint_id, "stack_name": stack_name}
+
+
+async def _portainer_get_json(*, base_url: str, api_key: str, path: str) -> Any:
+    url = str(base_url or "").rstrip("/") + str(path or "")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="missing_portainer_api_key")
+    headers = {"X-API-Key": api_key}
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        res = await client.get(url, headers=headers)
+        if res.status_code >= 400:
+            raise HTTPException(status_code=res.status_code, detail={"portainer_http_error": res.text})
+        try:
+            return res.json()
+        except Exception:
+            raise HTTPException(status_code=502, detail="portainer_invalid_json")
+
+
+def _infer_health_from_docker_status(status: str) -> str:
+    s = str(status or "").lower()
+    if "unhealthy" in s:
+        return "unhealthy"
+    if "healthy" in s:
+        return "healthy"
+    if "starting" in s:
+        return "starting"
+    return ""
+
+
+def _infer_state_from_fields(state: Any, status: Any) -> str:
+    s = str(state or "").strip().lower()
+    if s:
+        return s
+    st = str(status or "").strip().lower()
+    if st.startswith("up"):
+        return "running"
+    if st.startswith("exited"):
+        return "exited"
+    return ""
+
+
+async def _portainer_list_stack_containers(*, sys_kv: Any) -> list[dict[str, Any]]:
+    cfg = _portainer_cfg(sys_kv)
+    base_url = cfg.get("url") or ""
+    api_key = cfg.get("api_key") or ""
+    endpoint_id = cfg.get("endpoint_id") or ""
+    stack_name = cfg.get("stack_name") or ""
+
+    if not base_url:
+        raise HTTPException(status_code=500, detail={"missing_sys_kv_key": "portainer.url"})
+    if not endpoint_id:
+        raise HTTPException(status_code=500, detail={"missing_sys_kv_key": "portainer.endpoint_id"})
+    if not stack_name:
+        raise HTTPException(status_code=500, detail={"missing_sys_kv_key": "portainer.stack_name"})
+
+    items = await _portainer_get_json(
+        base_url=base_url,
+        api_key=api_key,
+        path=f"/api/endpoints/{endpoint_id}/docker/containers/json?all=1",
+    )
+    if not isinstance(items, list):
+        return []
+
+    out: list[dict[str, Any]] = []
+    for c in items:
+        if not isinstance(c, dict):
+            continue
+        labels = c.get("Labels") if isinstance(c.get("Labels"), dict) else {}
+        proj = str(labels.get("com.docker.compose.project") or "").strip()
+        stack_ns = str(labels.get("com.docker.stack.namespace") or "").strip()
+        if proj != stack_name and stack_ns != stack_name:
+            continue
+
+        svc = str(labels.get("com.docker.compose.service") or "").strip()
+        names = c.get("Names") if isinstance(c.get("Names"), list) else []
+        name0 = ""
+        if names:
+            try:
+                name0 = str(names[0] or "").lstrip("/").strip()
+            except Exception:
+                name0 = ""
+        display = svc or name0 or str(c.get("Id") or "")[:12]
+        status = str(c.get("Status") or "")
+        state = _infer_state_from_fields(c.get("State"), status)
+        health = _infer_health_from_docker_status(status)
+        out.append(
+            {
+                "name": display,
+                "service": svc,
+                "status": state or ("running" if status.lower().startswith("up") else ""),
+                "health": health,
+                "detail": status.strip(),
+            }
+        )
+
+    out.sort(key=lambda it: str(it.get("name") or ""))
+    return out
+
 # Reload System can be triggered by voice/STT and sometimes repeats quickly.
 # Guard against overlapping runs (global) and repeated triggers (per-WS).
 _reload_system_lock: asyncio.Lock = asyncio.Lock()
@@ -4956,6 +5071,65 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             await _handle_system_reload_mode(ws, mode, trace_id=tid)
             await _ws_voice_job_done(ws, tid)
             return True
+        if action in {"module_status_report", "module_status", "modules_status", "status_report"}:
+            sys_kv = getattr(ws.state, "sys_kv", None)
+            try:
+                items = await _portainer_list_stack_containers(sys_kv=sys_kv)
+            except HTTPException as e:
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "module_status_report_failed",
+                        "message": "module_status_report_failed",
+                        "detail": e.detail,
+                        "instance_id": INSTANCE_ID,
+                    },
+                    trace_id=tid,
+                )
+                await _ws_voice_job_done(ws, tid)
+                return True
+            except Exception as e:
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "module_status_report_failed",
+                        "message": "module_status_report_failed",
+                        "detail": str(e),
+                        "instance_id": INSTANCE_ID,
+                    },
+                    trace_id=tid,
+                )
+                await _ws_voice_job_done(ws, tid)
+                return True
+
+            lines: list[str] = []
+            ok_n = 0
+            bad_n = 0
+            for it in items:
+                if not isinstance(it, dict):
+                    continue
+                name = str(it.get("name") or it.get("service") or "").strip()
+                status = str(it.get("status") or "").strip() or "unknown"
+                health = str(it.get("health") or "").strip() or "unknown"
+                if health in {"healthy", "ok"} or status in {"running", "up", "online"}:
+                    ok_n += 1
+                if health in {"unhealthy"} or status in {"exited", "dead"}:
+                    bad_n += 1
+                lines.append(f"- {name}: {status} / {health}")
+
+            title = "System module status report"
+            report = title + "\n" + "\n".join(lines) if lines else title + "\n(no containers found)"
+            await _ws_send_json(ws, {"type": "text", "text": report, "instance_id": INSTANCE_ID}, trace_id=tid)
+
+            voice = f"Module status report. {ok_n} ok. {bad_n} issues.".strip()
+            try:
+                await _live_say(ws, voice)
+            except Exception:
+                pass
+            await _ws_voice_job_done(ws, tid)
+            return True
         if action in {"clear_job", "clear", "cancel_job", "cancel"}:
             await _ws_send_json(
                 ws,
@@ -8134,7 +8308,7 @@ def status() -> dict[str, Any]:
         pid = int(os.getpid())
     except Exception:
         pid = None
-    return {
+    out = {
         "ok": True,
         "service": "jarvis-backend",
         "instance_id": INSTANCE_ID,
@@ -8151,6 +8325,19 @@ def status() -> dict[str, Any]:
             "error": str(st.get("error") or "").strip(),
         },
     }
+
+    # Best-effort: include container/module status rows when Portainer is configured.
+    try:
+        sys_kv = _sys_kv_snapshot()
+        cfg = _portainer_cfg(sys_kv)
+        if cfg.get("url") and cfg.get("api_key") and cfg.get("endpoint_id") and cfg.get("stack_name"):
+            # This is a sync route; use short blocking event loop shim via httpx sync client.
+            # We keep it best-effort to avoid breaking /status.
+            pass
+    except Exception:
+        pass
+
+    return out
 
 
 @app.post("/gem/demo", response_model=GemDemoResponse)

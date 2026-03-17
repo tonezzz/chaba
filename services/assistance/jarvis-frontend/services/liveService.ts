@@ -369,6 +369,20 @@ export class LiveService {
 		return "full";
 	}
 
+	private isModuleStatusReportPhrase(text: string): boolean {
+		const raw = String(text || "").trim();
+		if (!raw) return false;
+		const compact = this.compactVoiceText(raw);
+		if (!compact) return false;
+		// English
+		if (compact === "system module status report") return true;
+		if (compact.includes("module status") && compact.includes("report")) return true;
+		if (compact.includes("system") && compact.includes("module") && compact.includes("status")) return true;
+		// Thai (permissive)
+		if ((compact.includes("รายงาน") || compact.includes("สรุป")) && compact.includes("สถานะ") && (compact.includes("ระบบ") || compact.includes("โมดูล"))) return true;
+		return false;
+	}
+
 	private extractReminderAddText(text: string): string | null {
 		const raw = String(text || "").trim();
 		if (!raw) return null;
@@ -1090,6 +1104,9 @@ export class LiveService {
 					const reloadMode = this.extractSystemReloadMode(trText);
 					if (reloadMode && this.shouldAutoTriggerVoiceCommand("reload_system", debounce)) {
 						this.wsSend({ type: "system", action: "reload", mode: reloadMode, trace_id: this.createTraceId("voice_reload") });
+					}
+					if (this.isModuleStatusReportPhrase(trText) && this.shouldAutoTriggerVoiceCommand("module_status_report", debounce)) {
+						this.wsSend({ type: "system", action: "module_status_report", trace_id: this.createTraceId("voice_mod_status") });
 					}
 					if (cfg?.reminders_add?.enabled ?? true) {
 						const remText = this.extractReminderAddText(trText);

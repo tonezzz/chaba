@@ -5,7 +5,7 @@ import { ConnectionState, MessageLog } from './types';
 import Visualizer from './components/Visualizer';
 import CameraFeed from './components/CameraFeed';
 import CarsPanel from './components/CarsPanel';
-import { Play, Mic, MicOff, Search, Image as ImageIcon, Camera, Activity, Lock, ChevronRight, Paperclip, Send, X, Link2Off, Copy } from 'lucide-react';
+import { Play, Mic, MicOff, Search, Image as ImageIcon, Camera, Activity, Lock, ChevronRight, Paperclip, Send, X, Link2Off, Copy, CheckCircle2, AlertTriangle, XCircle, HeartPulse } from 'lucide-react';
 
 export default function App() {
   const [hasKey, setHasKey] = useState(false);
@@ -1039,7 +1039,20 @@ export default function App() {
         if (!res || !res.ok) {
           res = await fetch("/status", { cache: "no-store" });
         }
-        const js = await res.json();
+        if (!res) throw new Error("status_fetch_failed");
+
+        const bodyText = await res.text();
+        const trimmed = String(bodyText || "").trim();
+        if (!trimmed) {
+          throw new Error(`status_error: empty response (http ${res.status})`);
+        }
+        let js: any = null;
+        try {
+          js = JSON.parse(trimmed);
+        } catch (e: any) {
+          const preview = trimmed.length > 220 ? trimmed.slice(0, 220) + "…" : trimmed;
+          throw new Error(`status_error: invalid json (http ${res.status}) preview=${preview}`);
+        }
         if (!cancelled) setContainerStatus(js);
       } catch (e: any) {
         if (!cancelled) {
@@ -1146,63 +1159,145 @@ export default function App() {
   };
 
   if (!hasKey) {
+    const renderHealthIcon = (healthRaw: any) => {
+      const h = String(healthRaw || "").trim().toLowerCase();
+      if (!h) return <HeartPulse className="w-3.5 h-3.5 text-slate-500" />;
+      if (h === "healthy" || h === "ok") return <HeartPulse className="w-3.5 h-3.5 text-emerald-400" />;
+      if (h === "starting" || h === "pending" || h === "unknown") return <HeartPulse className="w-3.5 h-3.5 text-yellow-400" />;
+      return <HeartPulse className="w-3.5 h-3.5 text-red-400" />;
+    };
+
+    const renderStatusIcon = (statusRaw: any) => {
+      const s = String(statusRaw || "").trim().toLowerCase();
+      if (!s) return <AlertTriangle className="w-3.5 h-3.5 text-slate-500" />;
+      if (s === "running" || s === "up" || s === "online") return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />;
+      if (s === "starting" || s === "restarting" || s === "pending") return <AlertTriangle className="w-3.5 h-3.5 text-yellow-400" />;
+      return <XCircle className="w-3.5 h-3.5 text-red-400" />;
+    };
+
+    const deriveRows = (): Array<{ name: string; status: string; health: string; detail?: string }> => {
+      const out: Array<{ name: string; status: string; health: string; detail?: string }> = [];
+
+      const js = containerStatus;
+      const arr = js && Array.isArray(js.containers) ? js.containers : null;
+      if (arr) {
+        for (const c of arr) {
+          if (!c || typeof c !== "object") continue;
+          const name = String((c as any).name || (c as any).service || (c as any).id || "").trim();
+          if (!name) continue;
+          const status = String((c as any).status || (c as any).state || "").trim();
+          const health = String((c as any).health || "").trim();
+          const detail = String((c as any).detail || "").trim();
+          out.push({ name, status, health, detail: detail || undefined });
+        }
+        return out;
+      }
+
+      // Fallback: current backend /status only reports jarvis-backend process status.
+      if (js && typeof js === "object") {
+        const name = String(js.service || "jarvis-backend").trim() || "jarvis-backend";
+        const status = js.ok ? "running" : "error";
+        const health = js.ok ? "healthy" : "unhealthy";
+        let detail = "";
+        if (js.startup_prewarm && typeof js.startup_prewarm === "object") {
+          const p = js.startup_prewarm;
+          const prewarm = p.running ? "prewarm=running" : p.ok ? `prewarm=ok (memory=${p.memory_n} knowledge=${p.knowledge_n})` : p.error ? `prewarm=error (${p.error})` : "prewarm=pending";
+          detail = [prewarm, `weaviate=${js.weaviate_enabled ? "enabled" : "disabled"}`].join(" ");
+        }
+        out.push({ name, status, health, detail: detail || undefined });
+      }
+
+      return out;
+    };
+
+    const rows = deriveRows();
+
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center relative overflow-hidden">
-        <div className="absolute inset-0 z-0 opacity-20" 
-             style={{ 
-               backgroundImage: 'linear-gradient(rgba(14, 165, 233, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(14, 165, 233, 0.1) 1px, transparent 1px)', 
-               backgroundSize: '40px 40px' 
-             }}>
-        </div>
-        
-        <div className="z-10 bg-slate-900/80 p-8 rounded-2xl border border-slate-700 shadow-2xl max-w-md w-full text-center backdrop-blur-md">
-           <div className="w-16 h-16 bg-cyan-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-cyan-500/30">
-              <Lock className="w-8 h-8 text-cyan-400" />
-           </div>
-           
-           <h1 className="text-3xl font-bold font-hud text-white mb-2 tracking-wide">JARVIS SYSTEM</h1>
-           <p className="text-slate-400 mb-8 font-mono text-sm">Authentication Required for Neural Link</p>
-           
-           <button 
-             onClick={handleSelectKey}
-             className="w-full py-4 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl font-bold tracking-widest uppercase transition-all shadow-lg hover:shadow-cyan-500/25 flex items-center justify-center gap-2 group"
-           >
-             <span>Authenticate</span>
-             <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-           </button>
-           
-           <div className="mt-6 text-xs text-slate-500">
-             <p>Access requires a valid Google Cloud API Key with billing enabled for Gemini 2.5 and Imagen 3 models.</p>
-             <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="text-cyan-600 hover:text-cyan-400 underline mt-2 inline-block">View Billing Documentation</a>
-           </div>
+        <div
+          className="absolute inset-0 z-0 opacity-20"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(14, 165, 233, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(14, 165, 233, 0.1) 1px, transparent 1px)',
+            backgroundSize: '40px 40px',
+          }}
+        />
 
-           <div className="mt-6 text-left text-xs font-mono text-slate-400 border-t border-slate-700/60 pt-4">
-             <div className="text-[10px] text-cyan-500 font-hud tracking-widest uppercase mb-2">Container Status</div>
-             {containerStatusError ? (
-               <div className="text-red-400">status_error: {containerStatusError}</div>
-             ) : containerStatus ? (
-               <div className="space-y-1">
-                 <div>instance_id: {String(containerStatus.instance_id || "")}</div>
-                 <div>hostname: {String(containerStatus.hostname || "")}</div>
-                 <div>uptime_s: {typeof containerStatus.uptime_s === "number" ? containerStatus.uptime_s.toFixed(0) : String(containerStatus.uptime_s || "")}</div>
-                 {containerStatus.startup_prewarm && (
-                   <div>
-                     prewarm: {containerStatus.startup_prewarm.running ? "running" : containerStatus.startup_prewarm.ok ? "ok" : containerStatus.startup_prewarm.error ? "error" : "pending"}
-                     {containerStatus.startup_prewarm.ok ? ` (memory=${containerStatus.startup_prewarm.memory_n} knowledge=${containerStatus.startup_prewarm.knowledge_n})` : ""}
-                   </div>
-                 )}
-               </div>
-             ) : (
-               <div className="text-slate-500">loading…</div>
-             )}
-           </div>
+        <div className="z-10 bg-slate-900/80 p-8 rounded-2xl border border-slate-700 shadow-2xl max-w-md w-full text-center backdrop-blur-md">
+          <div className="w-16 h-16 bg-cyan-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-cyan-500/30">
+            <Lock className="w-8 h-8 text-cyan-400" />
+          </div>
+
+          <h1 className="text-3xl font-bold font-hud text-white mb-2 tracking-wide">JARVIS SYSTEM</h1>
+          <p className="text-slate-400 mb-8 font-mono text-sm">Authentication Required for Neural Link</p>
+
+          <button
+            onClick={handleSelectKey}
+            className="w-full py-4 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl font-bold tracking-widest uppercase transition-all shadow-lg hover:shadow-cyan-500/25 flex items-center justify-center gap-2 group"
+          >
+            <span>Authenticate</span>
+            <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </button>
+
+          <div className="mt-6 text-xs text-slate-500">
+            <p>Access requires a valid Google Cloud API Key with billing enabled for Gemini 2.5 and Imagen 3 models.</p>
+            <a
+              href="https://ai.google.dev/gemini-api/docs/billing"
+              target="_blank"
+              rel="noreferrer"
+              className="text-cyan-600 hover:text-cyan-400 underline mt-2 inline-block"
+            >
+              View Billing Documentation
+            </a>
+          </div>
+
+          <div className="mt-6 text-left text-xs font-mono text-slate-400 border-t border-slate-700/60 pt-4">
+            <div className="text-[10px] text-cyan-500 font-hud tracking-widest uppercase mb-2">Container Status</div>
+            {containerStatusError ? (
+              <div className="text-red-400">status_error: {containerStatusError}</div>
+            ) : containerStatus ? (
+              <div className="space-y-1">
+                {String(containerStatus.instance_id || "").trim() ? (
+                  <div className="text-slate-500">instance_id: {String(containerStatus.instance_id || "")}</div>
+                ) : null}
+                {String(containerStatus.hostname || "").trim() ? (
+                  <div className="text-slate-500">hostname: {String(containerStatus.hostname || "")}</div>
+                ) : null}
+
+                <div className="mt-2 space-y-1">
+                  {rows.length ? (
+                    rows.map((r) => (
+                      <div key={r.name} className="flex items-start gap-2">
+                        <div className="mt-[1px] flex items-center gap-1">
+                          {renderStatusIcon(r.status)}
+                          {renderHealthIcon(r.health)}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-slate-300 truncate">
+                            {r.name}
+                            <span className="text-slate-500"> — {r.status || "unknown"}</span>
+                            {r.health ? <span className="text-slate-500"> / {r.health}</span> : null}
+                          </div>
+                          {r.detail ? <div className="text-slate-500 break-words">{r.detail}</div> : null}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-slate-500">no status rows</div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="text-slate-500">loading…</div>
+            )}
+          </div>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="h-[100dvh] bg-slate-950 text-slate-100 flex flex-col md:flex-row relative selection:bg-cyan-500/30 overflow-hidden">
+return (
+  <div className="h-[100dvh] bg-slate-950 text-slate-100 flex flex-col md:flex-row relative selection:bg-cyan-500/30 overflow-hidden">
       
       {/* Background Grid Animation */}
       <div className="absolute inset-0 z-0 pointer-events-none opacity-20" 
