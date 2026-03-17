@@ -160,6 +160,18 @@ def _apply_cached_sheet_memory_to_ws(ws: WebSocket, cached: dict[str, Any]) -> N
         pass
 
 
+def _set_cached_sys_kv_only(sys_kv: dict[str, str]) -> None:
+    try:
+        now = int(time.time())
+        if _SHEET_MEMORY_CACHE.get("created_at", 0) <= 0:
+            _SHEET_MEMORY_CACHE["created_at"] = now
+        _SHEET_MEMORY_CACHE["updated_at"] = now
+        _SHEET_MEMORY_CACHE["loaded_at"] = now
+        _SHEET_MEMORY_CACHE["sys_kv"] = dict(sys_kv)
+    except Exception:
+        pass
+
+
 def _get_cached_sheet_knowledge() -> Optional[dict[str, Any]]:
     now = int(time.time())
     loaded_at = int(_SHEET_KNOWLEDGE_CACHE.get("loaded_at") or 0)
@@ -5561,6 +5573,19 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
                 },
                 trace_id=tid,
             )
+            # Refresh sys_kv state + global cache so HTTP endpoints (e.g., /config/voice_commands)
+            # reflect the new values immediately.
+            if not dry_run:
+                try:
+                    fresh = await _load_sys_kv_from_sheet()
+                    if isinstance(fresh, dict) and fresh:
+                        try:
+                            ws.state.sys_kv = fresh
+                        except Exception:
+                            pass
+                        _set_cached_sys_kv_only(fresh)
+                except Exception:
+                    pass
             try:
                 await _maybe_capture_to_memory(
                     ws,
@@ -7083,6 +7108,7 @@ async def _load_ws_system_kv(ws: WebSocket) -> dict[str, str]:
         ws.state.sys_kv = sys_kv
     except Exception:
         pass
+    _set_cached_sys_kv_only(sys_kv)
     try:
         ws.state.system_instruction_extra = str(sys_kv.get("system.instruction") or "").strip()
     except Exception:
