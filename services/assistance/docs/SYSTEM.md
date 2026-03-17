@@ -60,7 +60,7 @@ sequenceDiagram
   autonumber
   participant FE as Frontend (Jarvis UI)
   participant BE as jarvis-backend
-  participant MCP as mcp-google-sheets
+  participant MCP as mcp-bundle (Sheets tools)
 
   FE->>BE: WS {"type":"system","action":"reload","mode":"full"}
   BE-->>FE: text: reloading system
@@ -75,8 +75,12 @@ sequenceDiagram
 
   Note over FE,BE: Memory/Knowledge are loaded explicitly via "system reload memory" / "system reload knowledge"
 
-  Note over BE: If the system sheet load fails (env missing, Google API error, etc)
+  Note over BE: If the system sheet load fails (env missing, MCP unreachable, Google API error, etc)
   BE-->>FE: error(kind=reload_system_failed, detail=...)
+
+  Note over BE: On WS connect, the backend fails-closed if system KV cannot be loaded
+  BE-->>FE: error(kind=system_sheet_unavailable, detail=...)
+  BE-->>FE: close WS
 ```
 
 ### Explanation
