@@ -27,6 +27,25 @@ Use this workflow whenever you notice you context-switched and the current task 
    - Do only the SNA. No refactors, no docs, no extras.
    - Capture the output (copy/paste the key lines).
 
+4.1. GitHub Actions watcher (start/stop; default stop)
+   - If the SNA involves deploy/CI verification, use the GitHub Actions watcher:
+     - Start watching (manual): `/jarvis/github/actions/watch/start`
+     - Verify it is running: `/jarvis/github/actions/watch/list`
+     - Stop watching (default state after SNA): `/jarvis/github/actions/watch/stop`
+   - Always stop the watcher at the end of the SNA unless you explicitly decide to keep it running.
+
+4.2. Persist result into memory (optional but preferred)
+   - If the SNA produced a clear result (e.g., run conclusion + URL), store it as a memory item:
+     - Key example: `runtime.github_actions.watch.latest`
+     - Value example: `branch=<branch> conclusion=<conclusion> url=<url> sha=<sha>`
+   - This requires `memory.write.enabled=true` in the system sheet.
+
+4.5. Commit-only checkpoint (NO PUSH)
+   - If you changed code or docs while executing the SNA:
+     - Commit locally (e.g., `git add -A` then `git commit -m "..."`).
+     - Do NOT push in this workflow.
+   - To deploy / trigger CI, you must push manually after the workflow by running `git push` yourself.
+
 5. Update the queue (WIP limit = 1)
    - Put exactly 1 item as "in progress".
    - Convert everything else into:
