@@ -70,20 +70,20 @@ Configuration is read from the **system sheet KV** (preferred) with environment 
 Required keys (system sheet KV):
 
 - `portainer.url`
-- `portainer.api_key` (or `portainer.token`)
+- `portainer.token`
 - `portainer.endpoint_id`
 - `portainer.stack_name`
 
 Environment fallbacks:
 
 - `PORTAINER_URL`
-- `PORTAINER_API_KEY` (or `PORTAINER_TOKEN`)
+- `PORTAINER_TOKEN`
 - `PORTAINER_ENDPOINT_ID`
 - `PORTAINER_STACK_NAME`
 
 Notes:
 
-- `portainer.api_key` is sent as `X-API-Key` and should be treated as a secret.
+- `portainer.token` is sent as `X-API-Key` and should be treated as a secret.
 - `portainer.stack_name` should match the compose project / stack namespace label on containers (commonly `idc1-assistance`).
 
 ## Backend reload flow (diagram)

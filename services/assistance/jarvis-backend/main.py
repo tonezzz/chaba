@@ -1151,11 +1151,7 @@ def _portainer_cfg(sys_kv: Any) -> dict[str, str]:
         return ""
 
     url = _get("portainer.url") or str(os.getenv("PORTAINER_URL") or "").strip()
-    api_key = (
-        _get("portainer.api_key")
-        or _get("portainer.token")
-        or str(os.getenv("PORTAINER_API_KEY") or os.getenv("PORTAINER_TOKEN") or "").strip()
-    )
+    api_key = _get("portainer.token") or str(os.getenv("PORTAINER_TOKEN") or "").strip()
     endpoint_id = _get("portainer.endpoint_id") or str(os.getenv("PORTAINER_ENDPOINT_ID") or "").strip()
     stack_name = _get("portainer.stack_name") or str(os.getenv("PORTAINER_STACK_NAME") or "").strip()
     return {"url": url, "api_key": api_key, "endpoint_id": endpoint_id, "stack_name": stack_name}
@@ -1164,7 +1160,7 @@ def _portainer_cfg(sys_kv: Any) -> dict[str, str]:
 async def _portainer_get_json(*, base_url: str, api_key: str, path: str) -> Any:
     url = str(base_url or "").rstrip("/") + str(path or "")
     if not api_key:
-        raise HTTPException(status_code=500, detail="missing_portainer_api_key")
+        raise HTTPException(status_code=500, detail="missing_portainer_token")
     headers = {"X-API-Key": api_key}
     async with httpx.AsyncClient(timeout=15.0) as client:
         res = await client.get(url, headers=headers)
