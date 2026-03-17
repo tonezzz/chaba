@@ -9651,6 +9651,36 @@ async def ws_live(ws: WebSocket) -> None:
         except Exception:
             pass
 
+        # Fail-closed: system sheet is authoritative configuration.
+        # If it cannot be loaded, do not proceed with a live session.
+        try:
+            await _load_ws_system_kv(ws)
+        except Exception as e:
+            detail = {
+                "error": str(e),
+                "spreadsheet_id_env": "CHABA_SYSTEM_SPREADSHEET_ID",
+                "sheet_name_env": "CHABA_SYSTEM_SHEET_NAME",
+                "mcp_base_url": str(os.getenv("MCP_BASE_URL") or "http://mcp-bundle:3050").strip() or "http://mcp-bundle:3050",
+            }
+            try:
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "system_sheet_unavailable",
+                        "message": "system_sheet_unavailable",
+                        "detail": detail,
+                        "instance_id": INSTANCE_ID,
+                    },
+                )
+            except Exception:
+                pass
+            try:
+                await ws.close(code=1011)
+            except Exception:
+                pass
+            return
+
         tz = _get_user_timezone(DEFAULT_USER_ID)
         now_local = datetime.now(tz=timezone.utc).astimezone(tz)
         lang = str(getattr(ws.state, "user_lang", "") or "").strip() or _lang_from_ws(ws)

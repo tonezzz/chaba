@@ -87,6 +87,21 @@ sequenceDiagram
 
 ## Startup prewarm + client connect status
 
+## Fail-closed on system sheet
+
+Jarvis treats the **system sheet** as authoritative configuration.
+
+If the backend cannot load the system KV sheet on WebSocket connect, it fails closed:
+
+- emits a WS `error` with `kind=system_sheet_unavailable`
+- includes a debug `detail` payload
+- closes the WebSocket (so the issue must be fixed before continuing)
+
+Required env vars:
+
+- `CHABA_SYSTEM_SPREADSHEET_ID`
+- `CHABA_SYSTEM_SHEET_NAME`
+
 ### Startup prewarm
 
 When `jarvis-backend` starts (even if no UI is connected), it runs a background prewarm job that tries to load:
