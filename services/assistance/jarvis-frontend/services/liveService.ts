@@ -470,7 +470,6 @@ export class LiveService {
   public onStateChange: (state: ConnectionState) => void = () => {};
   public onMessage: (msg: MessageLog) => void = () => {};
   public onVolume: (vol: number) => void = () => {};
-  public onActiveTrip: (trip: { active_trip_id: string | null; active_trip_name: string | null }) => void = () => {};
   public onCarsIngestResult: (ev: CarsIngestResult) => void = () => {};
 
   constructor() {}
@@ -689,23 +688,6 @@ export class LiveService {
     this.ws = null;
     this.onStateChange(ConnectionState.DISCONNECTED);
   }
-
-	public requestActiveTrip() {
-		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-			this.wsSend({ type: "get_active_trip", trace_id: this.createTraceId("trip_get") });
-		}
-	}
-
-	public setActiveTrip(active_trip_id: string | null, active_trip_name: string | null) {
-		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-			this.wsSend({
-				type: "set_active_trip",
-				trace_id: this.createTraceId("trip_set"),
-				active_trip_id,
-				active_trip_name,
-			});
-		}
-	}
 
   private setupAudioInput(stream: MediaStream) {
     if (!this.inputAudioContext) return;
@@ -1055,20 +1037,6 @@ export class LiveService {
       });
       return;
     }
-
-		if (message?.type === "active_trip") {
-			const active_trip_id = message?.active_trip_id != null ? String(message.active_trip_id) : null;
-			const active_trip_name = message?.active_trip_name != null ? String(message.active_trip_name) : null;
-			this.onActiveTrip({ active_trip_id, active_trip_name });
-			this.onMessage({
-				id: `${Date.now()}_trip_state`,
-				role: "system",
-				text: `active_trip=${active_trip_id || "(none)"}${active_trip_name ? ` (${active_trip_name})` : ""}`,
-				timestamp: new Date(),
-				metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "info", category: "ws" },
-			});
-			return;
-		}
 
     if (message?.type === "cars_ingest_result" && message?.request_id) {
       try {

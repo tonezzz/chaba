@@ -7646,35 +7646,6 @@ async def _google_calendar_create_reminder_event(*, title: str, due_at_utc: date
     return {"ok": True, "raw": res}
 
 
-def _get_session_state(session_id: str) -> dict[str, Optional[str]]:
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        cur = conn.execute(
-            "SELECT active_trip_id, active_trip_name FROM sessions WHERE session_id = ?",
-            (session_id,),
-        )
-        row = cur.fetchone()
-        if not row:
-            return {"active_trip_id": None, "active_trip_name": None}
-        return {"active_trip_id": row[0], "active_trip_name": row[1]}
-
-
-def _set_session_state(session_id: str, active_trip_id: Optional[str], active_trip_name: Optional[str]) -> None:
-    now = int(time.time())
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        conn.execute(
-            """
-            INSERT INTO sessions(session_id, active_trip_id, active_trip_name, updated_at)
-            VALUES(?, ?, ?, ?)
-            ON CONFLICT(session_id) DO UPDATE SET
-              active_trip_id=excluded.active_trip_id,
-              active_trip_name=excluded.active_trip_name,
-              updated_at=excluded.updated_at
-            """,
-            (session_id, active_trip_id, active_trip_name, now),
-        )
-        conn.commit()
-
-
 def _set_session_last_item(session_id: str, slot: str, kind: str, payload: dict[str, Any]) -> None:
     db_session.set_session_last_item(SESSION_DB_PATH, session_id, slot, kind, payload)
 
@@ -9208,33 +9179,6 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             if handled_local:
                 continue
 
-        # Session control messages (handled locally, never forwarded to Gemini)
-        if msg_type == "get_active_trip":
-            session_id = getattr(ws.state, "session_id", None)
-            if not session_id:
-                await _ws_send_json(ws, {"type": "active_trip", "active_trip_id": None, "active_trip_name": None}, trace_id=trace_id)
-                continue
-            state = _get_session_state(str(session_id))
-            await _ws_send_json(ws, {"type": "active_trip", **state}, trace_id=trace_id)
-            continue
-
-        if msg_type == "set_active_trip":
-            session_id = getattr(ws.state, "session_id", None)
-            active_trip_id = msg.get("active_trip_id")
-            active_trip_name = msg.get("active_trip_name")
-            if not session_id:
-                await _ws_send_json(ws, {"type": "error", "message": "missing_session_id"}, trace_id=trace_id2)
-                continue
-            _set_session_state(
-                str(session_id),
-                str(active_trip_id) if active_trip_id is not None else None,
-                str(active_trip_name) if active_trip_name is not None else None,
-            )
-            state = _get_session_state(str(session_id))
-            await _ws_send_json(ws, {"type": "active_trip", **state}, trace_id=trace_id2)
-            await _ws_voice_job_done(ws, trace_id2)
-            continue
-
         if msg_type == "cars_ingest_image":
             await _handle_cars_ingest_image(ws, msg if isinstance(msg, dict) else {})
             await _ws_voice_job_done(ws, trace_id2)
@@ -9397,31 +9341,6 @@ async def _ws_local_only_loop(ws: WebSocket) -> None:
             handled_local = await _handle_local_tools_message(ws, msg, trace_id=trace_id2)
             if handled_local:
                 continue
-
-        if msg_type == "get_active_trip":
-            session_id = getattr(ws.state, "session_id", None)
-            if not session_id:
-                await _ws_send_json(ws, {"type": "active_trip", "active_trip_id": None, "active_trip_name": None}, trace_id=trace_id)
-                continue
-            state = _get_session_state(str(session_id))
-            await _ws_send_json(ws, {"type": "active_trip", **state}, trace_id=trace_id)
-            continue
-
-        if msg_type == "set_active_trip":
-            session_id = getattr(ws.state, "session_id", None)
-            active_trip_id = msg.get("active_trip_id")
-            active_trip_name = msg.get("active_trip_name")
-            if not session_id:
-                await _ws_send_json(ws, {"type": "error", "message": "missing_session_id"}, trace_id=trace_id)
-                continue
-            _set_session_state(
-                str(session_id),
-                str(active_trip_id) if active_trip_id is not None else None,
-                str(active_trip_name) if active_trip_name is not None else None,
-            )
-            state = _get_session_state(str(session_id))
-            await _ws_send_json(ws, {"type": "active_trip", **state}, trace_id=trace_id)
-            continue
 
         if msg_type == "cars_ingest_image":
             await _handle_cars_ingest_image(ws, msg if isinstance(msg, dict) else {})
@@ -9684,7 +9603,7 @@ async def ws_live(ws: WebSocket) -> None:
     _ws_by_user.setdefault(user_id, set()).add(ws)
 
     # Sticky session support: the frontend provides ?session_id=... so we can persist
-    # per-session state (e.g., active trip) across reconnects.
+    # per-session state across reconnects.
     session_id = str(ws.query_params.get("session_id") or "").strip() or None
     ws.state.session_id = session_id
 
@@ -9694,13 +9613,6 @@ async def ws_live(ws: WebSocket) -> None:
         ws.state.client_tag = str(ws.query_params.get("client_tag") or "").strip() or None
     except Exception:
         pass
-    if session_id:
-        try:
-            _init_session_db()
-            state = _get_session_state(session_id)
-            await _ws_send_json(ws, {"type": "active_trip", **state})
-        except Exception as e:
-            logger.warning("session_db_init_failed error=%s", e)
 
     connected_sent = False
     ws.state.notes_board_task = None

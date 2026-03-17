@@ -10,16 +10,6 @@ def init_session_db(db_path: str) -> None:
     with sqlite3.connect(db_path) as conn:
         conn.execute(
             """
-            CREATE TABLE IF NOT EXISTS sessions (
-              session_id TEXT PRIMARY KEY,
-              active_trip_id TEXT,
-              active_trip_name TEXT,
-              updated_at INTEGER
-            )
-            """
-        )
-        conn.execute(
-            """
             CREATE TABLE IF NOT EXISTS session_last_items (
               session_id TEXT NOT NULL,
               slot TEXT NOT NULL,

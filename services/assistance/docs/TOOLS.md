@@ -38,8 +38,6 @@ Inbound (client -> backend) message types:
 | `text` | Normal chat input | `text` | Gemini Live (unless intercepted by backend sub-agents) |
 | `audio` | Microphone audio frame | `data` (base64), optional `mimeType` | Gemini Live realtime input |
 | `audio_stream_end` | End of current audio stream | none | Gemini Live realtime input |
-| `get_active_trip` | Read sticky session state | none | Backend only |
-| `set_active_trip` | Update sticky session state | `active_trip_id`, `active_trip_name` | Backend only |
 | `cars_ingest_image` | Send an image for car/plate ingest | `data` (base64), `mimeType`, `request_id` | Backend only |
 | `system` | Deterministic backend system tools | `action`, `mode` | Backend only (never forwarded to Gemini) |
 | `notes` | Deterministic backend notes tools | `action`, `text` | Backend only (never forwarded to Gemini) |

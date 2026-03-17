@@ -15,7 +15,7 @@ Vite/React frontend built into an Nginx container.
 - Typed fallback confirmation (e.g. `confirm <id>`) is supported.
 
 ## Debug UI
-- Includes a small panel that displays `session_id` and current `active_trip` state, and can request/set the active trip via WebSocket control messages.
+- Includes a small panel that displays `session_id`.
 
 Operation Log:
 

@@ -33,10 +33,6 @@ export default function App() {
   const [wsLogErr, setWsLogErr] = useState<string>("");
   const uiLogPendingRef = useRef<Array<{ ts: number; entry: any }>>([]);
   const uiLogFlushTimerRef = useRef<number | null>(null);
-  const [activeTripId, setActiveTripId] = useState<string>("");
-  const [activeTripName, setActiveTripName] = useState<string>("");
-  const [tripIdInput, setTripIdInput] = useState<string>("");
-  const [tripNameInput, setTripNameInput] = useState<string>("");
   const [composerText, setComposerText] = useState<string>("");
   const [seqNotes, setSeqNotes] = useState<string>("");
   const [seqCompletedNotes, setSeqCompletedNotes] = useState<string>("");
@@ -362,14 +358,10 @@ export default function App() {
     liveService.current = new LiveService();
     liveService.current.onStateChange = setState;
     liveService.current.onVolume = setVolume;
-    liveService.current.onActiveTrip = (trip) => {
-      setActiveTripId(trip.active_trip_id || "");
-      setActiveTripName(trip.active_trip_name || "");
-    };
     liveService.current.onCarsIngestResult = (ev) => {
       setMessages((prev) => [
         {
-          id: `${Date.now()}_cars_ingest`,
+          id: `${Date.now()}_cars_ingest_${Math.random().toString(16).slice(2)}`,
           role: "system",
           text: `cars_ingest_result ok=${String((ev as any)?.ok)} items=${Array.isArray((ev as any)?.items) ? (ev as any).items.length : 0}`,
           timestamp: new Date(),
@@ -519,16 +511,6 @@ export default function App() {
       setIsTalking(false);
       liveService.current?.disconnect();
     }
-  };
-
-  const handleRefreshTrip = () => {
-    liveService.current?.requestActiveTrip();
-  };
-
-  const handleSetTrip = () => {
-    const id = tripIdInput.trim();
-    const name = tripNameInput.trim();
-    liveService.current?.setActiveTrip(id || null, name || null);
   };
 
   const handlePickFiles = () => {
