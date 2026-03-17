@@ -5489,6 +5489,8 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
     if not k:
         return {"ok": False, "error": "missing_key"}
 
+    now_iso = datetime.now(tz=timezone.utc).isoformat().replace("+00:00", "Z")
+
     def _norm_k(s: Any) -> str:
         try:
             ss = str(s or "").strip()
@@ -5508,9 +5510,9 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
     sys_sheet = _system_sheet_name()
 
     tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
-    # System sheet typically uses KV5 (A:E): key, value, enabled, scope, priority.
-    # We fetch A:E so that a sys_kv_set can reliably enable the key.
-    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sys_sheet}!A:E"})
+    # Try to be header-aware to avoid overwriting unrelated columns (e.g. created_at/updated_at).
+    # If we can't detect headers, we fall back to KV5 A:E behavior.
+    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sys_sheet}!A:Z"})
     parsed = _mcp_text_json(res)
     if not isinstance(parsed, dict):
         return {"ok": False, "error": "values_get_invalid_response"}
@@ -5519,10 +5521,53 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
         # If sheet is empty, just append.
         values = []
 
+    def _col_letter(n: int) -> str:
+        s = ""
+        x = int(n)
+        while x > 0:
+            x, r = divmod(x - 1, 26)
+            s = chr(ord("A") + r) + s
+        return s
+
+    def _ensure_len(row_in: list[Any], n: int) -> list[Any]:
+        out = list(row_in)
+        while len(out) < n:
+            out.append("")
+        return out
+
+    header: list[str] = []
+    idx: dict[str, int] = {}
+    if values and isinstance(values[0], list):
+        header = [str(c or "").strip().lower() for c in values[0]]
+        for i, col in enumerate(header):
+            if col:
+                idx[col] = i
+
+    def _get_col(name: str) -> Optional[int]:
+        j = idx.get(name)
+        if j is None:
+            return None
+        try:
+            return int(j)
+        except Exception:
+            return None
+
+    key_col = _get_col("key")
+    val_col = _get_col("value")
+    enabled_col = _get_col("enabled")
+    scope_col = _get_col("scope")
+    priority_col = _get_col("priority")
+    created_at_col = _get_col("created_at")
+    updated_at_col = _get_col("updated_at")
+
+    header_mode = key_col is not None and val_col is not None
+
     # Sys sheet may or may not include a header row. We only skip row 1 if it looks like a header.
     start_row = 1
     try:
-        if values and isinstance(values[0], list) and values[0]:
+        if header_mode:
+            start_row = 2
+        elif values and isinstance(values[0], list) and values[0]:
             h0 = _norm_k(values[0][0]).lower()
             h1 = _norm_k(values[0][1]).lower() if len(values[0]) > 1 else ""
             h2 = _norm_k(values[0][2]).lower() if len(values[0]) > 2 else ""
@@ -5538,7 +5583,12 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             continue
         if not isinstance(r, list) or not r:
             continue
-        if _norm_k(r[0]) == nk:
+        if header_mode:
+            rr = _ensure_len(r, max(1, len(header)))
+            if _norm_k(rr[key_col]) == nk:
+                row_idx = i
+                break
+        elif _norm_k(r[0]) == nk:
             row_idx = i
             break
 
@@ -5554,6 +5604,76 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             "value": v,
         }
 
+    if header_mode:
+        col_count = max(1, len(header))
+        base_row: list[Any] = []
+        if row_idx and isinstance(values, list) and row_idx - 1 < len(values) and isinstance(values[row_idx - 1], list):
+            base_row = _ensure_len(values[row_idx - 1], col_count)
+        out_row = _ensure_len(base_row, col_count)
+
+        out_row[key_col] = k
+        out_row[val_col] = v
+        if enabled_col is not None:
+            out_row[enabled_col] = "true"
+        if scope_col is not None:
+            prev_scope = str(out_row[scope_col] or "").strip()
+            out_row[scope_col] = prev_scope if prev_scope else "global"
+        if priority_col is not None:
+            prev_pr = str(out_row[priority_col] or "").strip()
+            out_row[priority_col] = prev_pr if prev_pr else "0"
+
+        if created_at_col is not None:
+            prev = str(out_row[created_at_col] or "").strip()
+            if not prev:
+                out_row[created_at_col] = now_iso
+        if updated_at_col is not None:
+            out_row[updated_at_col] = now_iso
+
+        last_col = _col_letter(col_count)
+        if row_idx:
+            tool_upd2 = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+            rng2 = f"{sys_sheet}!A{row_idx}:{last_col}{row_idx}"
+            res_hu = await _mcp_tools_call(
+                tool_upd2,
+                {
+                    "spreadsheet_id": spreadsheet_id,
+                    "range": rng2,
+                    "values": [out_row],
+                    "value_input_option": "RAW",
+                },
+            )
+            parsed_hu = _mcp_text_json(res_hu)
+            return {
+                "ok": True,
+                "spreadsheet_id": spreadsheet_id,
+                "sheet": sys_sheet,
+                "action": "update",
+                "row": row_idx,
+                "range": rng2,
+                "response": parsed_hu if isinstance(parsed_hu, dict) else {"raw": parsed_hu},
+            }
+
+        tool_app2 = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+        res_ha = await _mcp_tools_call(
+            tool_app2,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": f"{sys_sheet}!A:{last_col}",
+                "values": [out_row],
+                "value_input_option": "RAW",
+            },
+        )
+        parsed_ha = _mcp_text_json(res_ha)
+        return {
+            "ok": True,
+            "spreadsheet_id": spreadsheet_id,
+            "sheet": sys_sheet,
+            "action": "append",
+            "key": k,
+            "value": v,
+            "response": parsed_ha if isinstance(parsed_ha, dict) else {"raw": parsed_ha},
+        }
+
     if row_idx:
         tool_upd = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
         rng = f"{sys_sheet}!A{row_idx}:E{row_idx}"
@@ -5563,6 +5683,7 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             existing = values[row_idx - 1] if isinstance(values, list) and row_idx - 1 < len(values) else []
         except Exception:
             existing = []
+
         # Preserve scope/priority if present.
         scope = str(existing[3]).strip() if len(existing) > 3 and str(existing[3]).strip() else "global"
         priority = str(existing[4]).strip() if len(existing) > 4 and str(existing[4]).strip() else "0"
@@ -7621,226 +7742,214 @@ async def _memory_sheet_upsert(
     k = str(key or "").strip()
     if not k:
         k = f"auto.{int(time.time())}.{os.urandom(3).hex()}"
+    now_iso = datetime.now(tz=timezone.utc).isoformat().replace("+00:00", "Z")
 
-    def _col_letter(i0: int) -> str:
-        # 0-based to A1 notation (supports A..Z only, which is enough here).
-        return chr(ord("A") + int(i0))
+    def _col_letter(n: int) -> str:
+        s = ""
+        x = int(n)
+        while x > 0:
+            x, r = divmod(x - 1, 26)
+            s = chr(ord("A") + r) + s
+        return s
 
-    # Use a Sheets-friendly datetime string so the cell is typed as Date/Time
-    # (ISO-8601 with trailing 'Z' is often treated as plain text in Sheets).
-    now_iso = datetime.now(tz=timezone.utc).replace(microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
-
-    # Ensure schema has _created/_updated columns, and backfill blanks.
     tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
-    tool_update = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
-    tool_append = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name}!A:Z"})
+    parsed = _mcp_text_json(res)
+    values = None
+    if isinstance(parsed, dict):
+        values = parsed.get("values")
+        if not isinstance(values, list):
+            data = parsed.get("data")
+            if isinstance(data, dict):
+                values = data.get("values")
 
-    values: Optional[list[Any]] = None
-    try:
-        res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name}!A:G"})
-        parsed = _mcp_text_json(res)
-        if isinstance(parsed, dict):
-            values = parsed.get("values")
-            if not isinstance(values, list):
-                data = parsed.get("data")
-                if isinstance(data, dict):
-                    values = data.get("values")
-    except Exception:
-        values = None
-
-    header = []
+    header: list[str] = []
+    idx: dict[str, int] = {}
     if isinstance(values, list) and values and isinstance(values[0], list):
         header = [str(c or "").strip().lower() for c in values[0]]
-    idx: dict[str, int] = {}
-    for i, col in enumerate(header):
-        if col:
-            idx[col] = i
+        for i, col in enumerate(header):
+            if col:
+                idx[col] = i
 
-    expected = ["key", "value", "enabled", "scope", "priority", "_created", "_updated"]
-    if not header:
+    def _get_col(name: str) -> Optional[int]:
+        j = idx.get(name)
+        if j is None:
+            return None
         try:
-            header_out = expected
-            await _mcp_tools_call(
-                tool_update,
-                {
-                    "spreadsheet_id": spreadsheet_id,
-                    "range": f"{sheet_name}!A1:G1",
-                    "values": [header_out],
-                    "value_input_option": "USER_ENTERED",
-                },
-            )
-            header = header_out
-            idx = {name: i for i, name in enumerate(header)}
+            return int(j)
         except Exception:
-            header = []
-            idx = {}
-    else:
-        changed = False
-        for name in expected:
-            if name not in idx:
-                header.append(name)
-                idx[name] = len(header) - 1
-                changed = True
-        if changed:
-            # Normalize header row to expected schema order.
-            header_out = expected
-            await _mcp_tools_call(
-                tool_update,
-                {
-                    "spreadsheet_id": spreadsheet_id,
-                    "range": f"{sheet_name}!A1:G1",
-                    "values": [header_out],
-                    "value_input_option": "USER_ENTERED",
-                },
-            )
-            header = header_out
-            idx = {name: i for i, name in enumerate(header)}
+            return None
 
-    created_i = idx.get("_created", 5)
-    updated_i = idx.get("_updated", 6)
-    created_col = _col_letter(created_i)
-    updated_col = _col_letter(updated_i)
+    def _ensure_len(row_in: list[Any], n: int) -> list[Any]:
+        out = list(row_in)
+        while len(out) < n:
+            out.append("")
+        return out
 
-    # Backfill missing timestamps in bulk (best-effort; skip if header missing).
-    if header and isinstance(values, list) and len(values) > 1:
-        backfill: list[list[str]] = []
-        any_missing = False
-        for r in values[1:]:
-            row = r if isinstance(r, list) else []
-            c = str(row[created_i] if created_i < len(row) else "").strip()
-            u = str(row[updated_i] if updated_i < len(row) else "").strip()
-            if not c:
-                c = now_iso
-                any_missing = True
-            if not u:
-                u = now_iso
-                any_missing = True
-            backfill.append([c, u])
-        if any_missing:
-            await _mcp_tools_call(
-                tool_update,
-                {
-                    "spreadsheet_id": spreadsheet_id,
-                    "range": f"{sheet_name}!{created_col}2:{updated_col}{len(values)}",
-                    "values": backfill,
-                    "value_input_option": "USER_ENTERED",
-                },
-            )
+    key_col = _get_col("key")
+    val_col = _get_col("value")
+    enabled_col = _get_col("enabled")
+    scope_col = _get_col("scope")
+    priority_col = _get_col("priority")
+    created_at_col = _get_col("created_at")
+    updated_at_col = _get_col("updated_at")
+    source_col = _get_col("source")
 
-    # Find existing rows by key and update in-place (keep last occurrence), else append.
-    existing_row_nums: list[int] = []
-    if isinstance(values, list) and len(values) > 1:
+    header_mode = key_col is not None and val_col is not None
+    existing_row_num: Optional[int] = None
+    existing_row: list[Any] = []
+    if header_mode and isinstance(values, list):
         for i, r in enumerate(values[1:], start=2):
             if not isinstance(r, list) or not r:
                 continue
-            if str(r[0] or "").strip() == k:
-                existing_row_nums.append(i)
+            rr = _ensure_len(r, max(1, len(header)))
+            if str(rr[key_col] or "").strip() == k:
+                existing_row_num = i
+                existing_row = rr
+                break
 
-    # Disable/rename earlier duplicates.
-    if len(existing_row_nums) > 1:
-        for rn in existing_row_nums[:-1]:
-            try:
-                raw_row: list[Any] = []
-                if isinstance(values, list) and 0 <= (rn - 1) < len(values):
-                    r = values[rn - 1]
-                    raw_row = r if isinstance(r, list) else []
-                row7 = list(raw_row[:7])
-                while len(row7) < 7:
-                    row7.append("")
-                row7[0] = f"{k}.__disabled_dup__{rn}"
-                row7[2] = "false"
-                if created_i < len(row7) and not str(row7[created_i] or "").strip():
-                    row7[created_i] = now_iso
-                if updated_i < len(row7):
-                    row7[updated_i] = now_iso
-                await _mcp_tools_call(
-                    tool_update,
-                    {
-                        "spreadsheet_id": spreadsheet_id,
-                        "range": f"{sheet_name}!A{rn}:G{rn}",
-                        "values": [row7[:7]],
-                        "value_input_option": "USER_ENTERED",
-                    },
-                )
-            except Exception:
-                pass
-
-    existing_row_num = existing_row_nums[-1] if existing_row_nums else None
-
-    if existing_row_num is not None:
-        # Preserve _created if present; always refresh _updated.
-        raw_row: list[Any] = []
-        if isinstance(values, list) and 0 <= (existing_row_num - 1) < len(values):
-            r = values[existing_row_num - 1]
-            raw_row = r if isinstance(r, list) else []
-        existing_created = str(raw_row[created_i] if created_i < len(raw_row) else "").strip()
-        if not existing_created:
-            existing_created = now_iso
-
-        row7 = [
+    if not header_mode:
+        row = [
             k,
             str(value or "").strip(),
             "true" if enabled else "false",
             str(scope or "global").strip() or "global",
             int(priority),
-            existing_created,
-            now_iso,
         ]
 
-        res = await _mcp_tools_call(
-            tool_update,
+        existing_row_num = None
+        try:
+            if isinstance(values, list) and values:
+                for i, r in enumerate(values[1:], start=2):
+                    if not isinstance(r, list) or not r:
+                        continue
+                    if str(r[0] or "").strip() == k:
+                        existing_row_num = i
+                        break
+        except Exception:
+            existing_row_num = None
+
+        if existing_row_num is not None:
+            tool_upd = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+            rng = f"{sheet_name}!A{existing_row_num}:E{existing_row_num}"
+            res2 = await _mcp_tools_call(
+                tool_upd,
+                {
+                    "spreadsheet_id": spreadsheet_id,
+                    "range": rng,
+                    "values": [row],
+                    "value_input_option": "USER_ENTERED",
+                },
+            )
+            parsed2 = _mcp_text_json(res2)
+            return {
+                "ok": True,
+                "mode": "update",
+                "key": k,
+                "value": row[1],
+                "enabled": enabled,
+                "scope": row[3],
+                "priority": row[4],
+                "source": source,
+                "row_number": existing_row_num,
+                "result": parsed2 if isinstance(parsed2, dict) else {"raw": parsed2},
+            }
+
+        tool_app = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+        res3 = await _mcp_tools_call(
+            tool_app,
             {
                 "spreadsheet_id": spreadsheet_id,
-                "range": f"{sheet_name}!A{existing_row_num}:G{existing_row_num}",
-                "values": [row7],
+                "range": f"{sheet_name}!A:E",
+                "values": [row],
+                "value_input_option": "USER_ENTERED",
+                "insert_data_option": "INSERT_ROWS",
+            },
+        )
+        parsed3 = _mcp_text_json(res3)
+        return {
+            "ok": True,
+            "mode": "append",
+            "key": k,
+            "value": row[1],
+            "enabled": enabled,
+            "scope": row[3],
+            "priority": row[4],
+            "source": source,
+            "result": parsed3 if isinstance(parsed3, dict) else {"raw": parsed3},
+        }
+
+    col_count = max(1, len(header))
+    base_row = _ensure_len(existing_row if existing_row else [], col_count)
+    out_row = list(base_row)
+
+    out_row[key_col] = k
+    out_row[val_col] = str(value or "").strip()
+    if enabled_col is not None:
+        out_row[enabled_col] = "true" if enabled else "false"
+    if scope_col is not None:
+        out_row[scope_col] = str(scope or "global").strip() or "global"
+    if priority_col is not None:
+        out_row[priority_col] = int(priority)
+
+    if created_at_col is not None:
+        prev = str(out_row[created_at_col] or "").strip()
+        if not prev:
+            out_row[created_at_col] = now_iso
+    if updated_at_col is not None:
+        out_row[updated_at_col] = now_iso
+    if source_col is not None:
+        out_row[source_col] = str(source or "").strip()
+
+    last_col = _col_letter(col_count)
+    if existing_row_num is not None:
+        tool_upd2 = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+        rng2 = f"{sheet_name}!A{existing_row_num}:{last_col}{existing_row_num}"
+        res4 = await _mcp_tools_call(
+            tool_upd2,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": rng2,
+                "values": [out_row],
                 "value_input_option": "USER_ENTERED",
             },
         )
-        parsed = _mcp_text_json(res)
+        parsed4 = _mcp_text_json(res4)
         return {
             "ok": True,
             "mode": "update",
             "key": k,
-            "value": row7[1],
+            "value": str(out_row[val_col] or "").strip(),
             "enabled": enabled,
-            "scope": row7[3],
-            "priority": row7[4],
+            "scope": str(out_row[scope_col] if scope_col is not None else (scope or "global")),
+            "priority": int(out_row[priority_col]) if priority_col is not None else int(priority),
             "source": source,
             "row_number": existing_row_num,
-            "result": parsed if isinstance(parsed, dict) else {"raw": parsed},
+            "result": parsed4 if isinstance(parsed4, dict) else {"raw": parsed4},
         }
 
-    row7 = [
-        k,
-        str(value or "").strip(),
-        "true" if enabled else "false",
-        str(scope or "global").strip() or "global",
-        int(priority),
-        now_iso,
-        now_iso,
-    ]
-
-    res = await _mcp_tools_call(
-        tool_append,
+    tool_app2 = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+    res5 = await _mcp_tools_call(
+        tool_app2,
         {
             "spreadsheet_id": spreadsheet_id,
-            "range": f"{sheet_name}!A:G",
-            "values": [row7],
+            "range": f"{sheet_name}!A:{last_col}",
+            "values": [out_row],
             "value_input_option": "USER_ENTERED",
             "insert_data_option": "INSERT_ROWS",
         },
     )
-    parsed = _mcp_text_json(res)
+    parsed5 = _mcp_text_json(res5)
     return {
         "ok": True,
         "mode": "append",
         "key": k,
-        "value": row7[1],
+        "value": str(out_row[val_col] or "").strip(),
         "enabled": enabled,
-        "scope": row7[3],
-        "priority": row7[4],
+        "scope": str(out_row[scope_col] if scope_col is not None else (scope or "global")),
+        "priority": int(out_row[priority_col]) if priority_col is not None else int(priority),
         "source": source,
-        "result": parsed if isinstance(parsed, dict) else {"raw": parsed},
+        "result": parsed5 if isinstance(parsed5, dict) else {"raw": parsed5},
     }
 
 
