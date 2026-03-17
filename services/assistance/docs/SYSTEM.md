@@ -107,6 +107,44 @@ When a client connects to `/ws/live`, the backend sends short status lines:
 
 Note: `system reload` now only reloads the system KV sheet. Use `system reload memory` / `system reload knowledge` to load the sheet contexts into the current chat session.
 
+## Logs (persistent)
+
+Jarvis has two daily logs:
+
+- **UI Operation Log (Today)**
+  - Persisted in the browser via `localStorage` (key: `jarvis_ui_log_YYYY-MM-DD`)
+  - Also batched and appended to the backend daily log file via HTTP
+- **Backend WS Log (Today)**
+  - A daily-rotated JSONL file of WebSocket frames recorded by the backend (when enabled)
+
+### Backend endpoints
+
+- `POST /jarvis/logs/ui/append`
+  - Body: `{ "entries": [ ... ] }` (each entry is a JSON object)
+- `GET /jarvis/logs/ui/today?max_bytes=200000`
+- `GET /jarvis/logs/ws/today?max_bytes=200000`
+
+Non-`/jarvis` aliases also exist:
+
+- `/logs/ui/append`
+- `/logs/ui/today`
+- `/logs/ws/today`
+
+### Backend storage
+
+- **Env:** `JARVIS_LOGS_DIR` (default: `/data/jarvis_logs`)
+  - UI daily file: `jarvis-ui-YYYY-MM-DD.jsonl`
+  - WS daily file: `jarvis-ws-YYYY-MM-DD.jsonl`
+
+### Enabling WS recording
+
+WS log recording is enabled when either is set:
+
+- `JARVIS_WS_RECORD=1`
+- or `JARVIS_WS_RECORD_PATH=/some/path.jsonl`
+
+If `JARVIS_WS_RECORD_PATH` is not set, the backend writes to the daily path under `JARVIS_LOGS_DIR`.
+
 ## System sheet reload (diagram)
 
 ```mermaid
