@@ -62,13 +62,30 @@ Backend:
 - `MCP_BASE_URL` (default `http://mcp-bundle:3050`)
 - `MCP_PLAYWRIGHT_BASE_URL`
 
-Google Sheets SSoT for gems/memory/knowledge/notes:
+Google Sheets SSoT (system sheet + per-feature routing):
 
 - `CHABA_SS_SYS`
 - `CHABA_SS_SYS_SH` / `CHABA_SS_SYS_SYS_SHEET`
 - `CHABA_SS_SYS_MEMORY_SHEET`
 - `CHABA_SS_SYS_KNOWLEDGE_SHEET`
 - `CHABA_SS_SYS_NOTES_SHEET`
+
+Notes:
+
+- The backend loads a **sys_kv map** from the system sheet and uses it as the primary routing/config mechanism.
+- For Notes, the backend uses sys_kv keys:
+  - `notes_ss` (spreadsheet id; if missing, it falls back to the system spreadsheet id)
+  - `notes.sheet_name` or `notes_sh` (sheet/tab name; required)
+  - `notes.board.enabled` (enables notes-board job runner)
+- `CHABA_SS_SYS_NOTES_SHEET` may not be used depending on backend wiring; treat it as a legacy/env-template hint unless verified in the running container.
+
+Runtime sys_kv keys (common):
+
+- `sys_kv.write.enabled`:
+  - Must be truthy to allow `system.sys_kv_set` writes.
+  - If missing/false, `/sys set ...` will be rejected.
+- `voice_cmd.enabled` and `voice_cmd.debounce_ms`:
+  - Controls frontend voice-command auto-triggering behavior.
 
 Frontend:
 
