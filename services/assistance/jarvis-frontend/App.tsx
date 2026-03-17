@@ -1032,9 +1032,16 @@ export default function App() {
         setContainerStatusError("");
         let res: Response | null = null;
         try {
-          res = await fetch("/jarvis/status", { cache: "no-store" });
+          res = await fetch("/jarvis/api/status", { cache: "no-store" });
         } catch {
           res = null;
+        }
+        if (!res || !res.ok) {
+          try {
+            res = await fetch("/jarvis/status", { cache: "no-store" });
+          } catch {
+            res = null;
+          }
         }
         if (!res || !res.ok) {
           res = await fetch("/status", { cache: "no-store" });
