@@ -8293,7 +8293,9 @@ def health() -> dict[str, Any]:
 
 @app.get("/status")
 @app.get("/jarvis/status")
-def status() -> dict[str, Any]:
+@app.get("/api/status")
+@app.get("/jarvis/api/status")
+async def status() -> dict[str, Any]:
     st = _STARTUP_PREWARM_STATUS if isinstance(_STARTUP_PREWARM_STATUS, dict) else {}
     try:
         uptime_s = max(0.0, float(time.time() - float(_PROCESS_START_TS)))
@@ -8327,11 +8329,11 @@ def status() -> dict[str, Any]:
         sys_kv = _sys_kv_snapshot()
         cfg = _portainer_cfg(sys_kv)
         if cfg.get("url") and cfg.get("api_key") and cfg.get("endpoint_id") and cfg.get("stack_name"):
-            # This is a sync route; use short blocking event loop shim via httpx sync client.
-            # We keep it best-effort to avoid breaking /status.
-            pass
-    except Exception:
-        pass
+            out["containers"] = await _portainer_list_stack_containers(sys_kv=sys_kv)
+    except HTTPException as e:
+        out["containers_error"] = e.detail
+    except Exception as e:
+        out["containers_error"] = str(e)
 
     return out
 
