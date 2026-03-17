@@ -435,6 +435,201 @@ def _idx_from_header(header: list[Any]) -> dict[str, int]:
     return idx
 
 
+def _is_memo_trigger(text: str) -> bool:
+    raw = str(text or "").strip()
+    if not raw:
+        return False
+    s = raw.lower()
+    if s.startswith("memo:") or s.startswith("memo "):
+        return True
+    if raw.startswith("เมโม:") or raw.startswith("เมโม "):
+        return True
+    if raw.startswith("เมมโม:") or raw.startswith("เมมโม "):
+        return True
+    return False
+
+
+def _extract_memo_text(text: str) -> Optional[str]:
+    raw = str(text or "").strip()
+    if not raw:
+        return None
+    low = raw.lower()
+    if low.startswith("memo:"):
+        return str(raw[len("memo:") :]).strip() or None
+    if low.startswith("memo "):
+        return str(raw[len("memo ") :]).strip() or None
+    if raw.startswith("เมโม:"):
+        return str(raw[len("เมโม:") :]).strip() or None
+    if raw.startswith("เมโม "):
+        return str(raw[len("เมโม ") :]).strip() or None
+    if raw.startswith("เมมโม:"):
+        return str(raw[len("เมมโม:") :]).strip() or None
+    if raw.startswith("เมมโม "):
+        return str(raw[len("เมมโม ") :]).strip() or None
+    return None
+
+
+def _parse_memo_merge(text: str) -> tuple[Optional[int], Optional[int]]:
+    s = " ".join(str(text or "").strip().split())
+    if not s:
+        return (None, None)
+    low = s.lower()
+    if not low.startswith("memo merge"):
+        return (None, None)
+    tail = s[len("memo merge") :].strip(" :")
+    parts = [p for p in tail.split(" ") if p]
+    if len(parts) < 2:
+        return (None, None)
+    try:
+        src = int(parts[0])
+        dst = int(parts[1])
+        if src <= 1 or dst <= 1:
+            return (None, None)
+        return (src, dst)
+    except Exception:
+        return (None, None)
+
+
+async def _handle_memo_trigger(ws: WebSocket, text: str) -> bool:
+    s = str(text or "").strip()
+    if not s:
+        return False
+
+    src_row, dst_row = _parse_memo_merge(s)
+    is_merge = src_row is not None and dst_row is not None
+    if not is_merge and not _is_memo_trigger(s):
+        return False
+
+    sys_kv = getattr(ws.state, "sys_kv", None)
+    if not _sys_kv_bool(sys_kv, "memo.enabled", default=False):
+        return False
+
+    spreadsheet_id = ""
+    if isinstance(sys_kv, dict):
+        spreadsheet_id = str(
+            sys_kv.get("memo.spreadsheet_name")
+            or sys_kv.get("memo.spreadsheet_id")
+            or sys_kv.get("memo_ss")
+            or ""
+        ).strip()
+    if not spreadsheet_id:
+        spreadsheet_id = _system_spreadsheet_id()
+    if not spreadsheet_id:
+        await _ws_send_json(ws, {"type": "text", "text": "missing_memo_ss", "instance_id": INSTANCE_ID})
+        return True
+
+    sheet_name = ""
+    if isinstance(sys_kv, dict):
+        sheet_name = str(sys_kv.get("memo.sheet_name") or sys_kv.get("memo_sh") or "").strip()
+    if not sheet_name:
+        await _ws_send_json(ws, {"type": "text", "text": "missing_memo_sheet_name", "instance_id": INSTANCE_ID})
+        return True
+
+    sheet_name_a1 = _sheet_name_to_a1(sheet_name, default="memo")
+    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    tool_update = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+    tool_append = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+
+    now_dt = datetime.now(tz=timezone.utc).replace(microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
+
+    # Ensure header exists (best-effort).
+    try:
+        res_h = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name_a1}!A1:F1"})
+        parsed_h = _mcp_text_json(res_h)
+        vals_h = parsed_h.get("values") if isinstance(parsed_h, dict) else None
+        got_header = vals_h[0] if isinstance(vals_h, list) and vals_h and isinstance(vals_h[0], list) else None
+        if not got_header or not any(str(x or "").strip() for x in got_header):
+            await _mcp_tools_call(
+                tool_update,
+                {
+                    "spreadsheet_id": spreadsheet_id,
+                    "range": f"{sheet_name_a1}!A1:F1",
+                    "values": [["date_time", "memo", "status", "merged_into", "merged_at", "result"]],
+                    "value_input_option": "USER_ENTERED",
+                },
+            )
+    except Exception:
+        pass
+
+    if is_merge:
+        lo = min(int(src_row or 0), int(dst_row or 0))
+        hi = max(int(src_row or 0), int(dst_row or 0))
+        res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name_a1}!A{lo}:F{hi}"})
+        parsed = _mcp_text_json(res)
+        vals = parsed.get("values") if isinstance(parsed, dict) else None
+        if not isinstance(vals, list):
+            await _ws_send_json(ws, {"type": "text", "text": "memo_merge_read_failed", "instance_id": INSTANCE_ID})
+            return True
+
+        def _row_at(rn: int) -> list[Any]:
+            i = rn - lo
+            if 0 <= i < len(vals) and isinstance(vals[i], list):
+                return list(vals[i])
+            return []
+
+        src_vals = _row_at(int(src_row or 0))
+        dst_vals = _row_at(int(dst_row or 0))
+        while len(src_vals) < 6:
+            src_vals.append("")
+        while len(dst_vals) < 6:
+            dst_vals.append("")
+
+        src_memo = str(src_vals[1] or "").strip()
+        dst_memo = str(dst_vals[1] or "").strip()
+        if not src_memo or not dst_memo:
+            await _ws_send_json(ws, {"type": "text", "text": "memo_merge_missing_memo", "instance_id": INSTANCE_ID})
+            return True
+
+        merged = dst_memo.rstrip() + "\n\n---\n" + src_memo
+
+        dst_vals[1] = merged
+        dst_vals[2] = str(dst_vals[2] or "").strip() or "new"
+
+        src_vals[2] = "merged"
+        src_vals[3] = str(int(dst_row or 0))
+        src_vals[4] = now_dt
+
+        await _mcp_tools_call(
+            tool_update,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": f"{sheet_name_a1}!A{int(dst_row or 0)}:F{int(dst_row or 0)}",
+                "values": [dst_vals[:6]],
+                "value_input_option": "USER_ENTERED",
+            },
+        )
+        await _mcp_tools_call(
+            tool_update,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": f"{sheet_name_a1}!A{int(src_row or 0)}:F{int(src_row or 0)}",
+                "values": [src_vals[:6]],
+                "value_input_option": "USER_ENTERED",
+            },
+        )
+        await _ws_send_json(ws, {"type": "text", "text": f"Memo merged: {src_row} -> {dst_row}", "instance_id": INSTANCE_ID})
+        return True
+
+    memo_text = _extract_memo_text(s)
+    if not memo_text:
+        await _ws_send_json(ws, {"type": "text", "text": "memo_missing_text", "instance_id": INSTANCE_ID})
+        return True
+
+    row = [now_dt, memo_text, "new", "", "", ""]
+    await _mcp_tools_call(
+        tool_append,
+        {
+            "spreadsheet_id": spreadsheet_id,
+            "range": f"{sheet_name_a1}!A:F",
+            "values": [row],
+            "value_input_option": "USER_ENTERED",
+            "insert_data_option": "INSERT_ROWS",
+        },
+    )
+    await _ws_send_json(ws, {"type": "text", "text": "Memo saved.", "instance_id": INSTANCE_ID})
+    return True
+
+
 def _get_cell(row: list[Any], idx: dict[str, int], col: str, default: Any = "") -> Any:
     j = idx.get(col)
     if j is None or j < 0 or j >= len(row):
@@ -6478,6 +6673,10 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
         handled = await _run_agent(active_agent_id)
         if handled:
             return True
+
+    handled = await _handle_memo_trigger(ws, text)
+    if handled:
+        return True
 
     handled = await _handle_notes_check(ws, text)
     if handled:
