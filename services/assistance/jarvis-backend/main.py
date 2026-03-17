@@ -4479,8 +4479,34 @@ async def _handle_system_reload_mode(ws: WebSocket, mode: str, trace_id: str | N
         await _handle_reload_system(ws, "Reload System")
         return
 
+    if m in {"sys", "system"}:
+        if _reload_system_lock.locked():
+            await _ws_send_json(ws, {"type": "text", "text": "Reload: already running", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            return
+        async with _reload_system_lock:
+            try:
+                await _ws_send_json(ws, {"type": "text", "text": "Reload sys: start", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            except Exception:
+                pass
+            try:
+                await _load_ws_system_kv(ws)
+                await _ws_send_json(ws, {"type": "text", "text": "Reload sys: ok", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            except Exception as e:
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "reload_failed",
+                        "message": "Reload sys failed",
+                        "detail": str(e),
+                        "instance_id": INSTANCE_ID,
+                    },
+                    trace_id=trace_id,
+                )
+            return
+
     # Note: today memory+knowledge are loaded together by _load_ws_sheet_memory.
-    if m in {"memory", "knowledge", "sys"}:
+    if m in {"memory", "knowledge"}:
         if _reload_system_lock.locked():
             await _ws_send_json(ws, {"type": "text", "text": "Reload: already running", "instance_id": INSTANCE_ID}, trace_id=trace_id)
             return
@@ -5735,19 +5761,8 @@ async def _handle_reload_system(ws: WebSocket, text: str) -> bool:
             pass
 
         try:
-            _clear_sheet_caches()
-        except Exception:
-            pass
-
-        try:
-            await _load_ws_sheet_memory(ws)
-            # Force gems reload too.
-            sys_kv = getattr(ws.state, "sys_kv", None)
-            payload = await _load_sheet_gems(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
-            try:
-                _set_cached_sheet_gems(payload)
-            except Exception:
-                pass
+            # System reload now only refreshes the system KV sheet and system.instruction.
+            await _load_ws_system_kv(ws)
         except Exception as e:
             def _short_reload_err(err: Exception) -> str:
                 s = str(err or "").strip()
@@ -5797,13 +5812,9 @@ async def _handle_reload_system(ws: WebSocket, text: str) -> bool:
             return True
 
         try:
-            mem_items = getattr(ws.state, "memory_items", None)
-            know_items = getattr(ws.state, "knowledge_items", None)
-            mem_n = len(mem_items) if isinstance(mem_items, list) else 0
-            know_n = len(know_items) if isinstance(know_items, list) else 0
-            out = f"system reloaded | memory={mem_n} knowledge={know_n}"
+            out = "system reloaded"
             if lang == "th":
-                out = f"รีโหลดระบบสำเร็จ | memory={mem_n} knowledge={know_n}"
+                out = "รีโหลดระบบสำเร็จ"
             await _ws_send_json(ws, {"type": "text", "text": out, "instance_id": INSTANCE_ID})
         except Exception:
             pass
@@ -6269,6 +6280,38 @@ async def _load_ws_sheet_memory(ws: WebSocket) -> None:
         )
     except Exception:
         pass
+
+
+async def _load_ws_system_kv(ws: WebSocket) -> dict[str, str]:
+    spreadsheet_id = _system_spreadsheet_id()
+    sys_sheet = _system_sheet_name()
+    sys_rows = await _load_sheet_kv5(spreadsheet_id=spreadsheet_id, sheet_name=sys_sheet)
+    sys_kv = {str(it.get("key") or "").strip(): str(it.get("value") or "").strip() for it in sys_rows if isinstance(it, dict)}
+    try:
+        ws.state.sys_kv = sys_kv
+    except Exception:
+        pass
+    try:
+        ws.state.system_instruction_extra = str(sys_kv.get("system.instruction") or "").strip()
+    except Exception:
+        pass
+
+    # Sys-only reload: clear any previously loaded sheet context so Gemini doesn't
+    # keep using stale memory/knowledge content.
+    try:
+        ws.state.memory_items = None
+        ws.state.memory_sheet_name = None
+        ws.state.memory_context_text = ""
+        ws.state.knowledge_items = None
+        ws.state.knowledge_sheet_name = None
+        ws.state.knowledge_context_text = ""
+        ws.state.memory_info = ""
+        ws.state.knowledge_info = ""
+        ws.state.memory_instruction = ""
+        ws.state.knowledge_instruction = ""
+    except Exception:
+        pass
+    return sys_kv
 
 
 async def _refresh_sheet_memory_background(ws: WebSocket, lang: str) -> None:
