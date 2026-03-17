@@ -1435,11 +1435,13 @@ export default function App() {
       <div className="flex-1 p-4 md:p-6 flex flex-col gap-6 relative z-10 min-h-0">
          
          {/* Top Section: Visualizer & Camera */}
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-none h-[25vh] min-h-[160px] max-h-[260px]">
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-none h-[10vh] min-h-[96px] max-h-[160px]">
             {/* Audio Visualizer */}
             <div className="relative rounded-2xl border border-slate-700 bg-slate-900/50 flex items-center justify-center overflow-hidden">
                <div className="absolute top-3 left-4 text-[10px] text-cyan-500 font-hud tracking-widest uppercase">Audio Input Matrix</div>
-               <Visualizer volume={volume} active={state === ConnectionState.CONNECTED} />
+               <div className="h-full aspect-square max-w-full">
+                 <Visualizer volume={volume} active={state === ConnectionState.CONNECTED} />
+               </div>
             </div>
 
             {/* Camera Feed */}
