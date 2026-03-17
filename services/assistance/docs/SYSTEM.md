@@ -57,6 +57,35 @@ If Memory/Knowledge is needed, ask the user to run:
 Then continue using the loaded context.
 ```
 
+### Portainer integration (module/container status report)
+
+Jarvis supports a deterministic WS action:
+
+- `{"type":"system","action":"module_status_report"}`
+
+This queries the Portainer HTTP API (Docker proxy) to list containers for a given stack and emits a one-line-per-container status report.
+
+Configuration is read from the **system sheet KV** (preferred) with environment variable fallbacks.
+
+Required keys (system sheet KV):
+
+- `portainer.url`
+- `portainer.api_key` (or `portainer.token`)
+- `portainer.endpoint_id`
+- `portainer.stack_name`
+
+Environment fallbacks:
+
+- `PORTAINER_URL`
+- `PORTAINER_API_KEY` (or `PORTAINER_TOKEN`)
+- `PORTAINER_ENDPOINT_ID`
+- `PORTAINER_STACK_NAME`
+
+Notes:
+
+- `portainer.api_key` is sent as `X-API-Key` and should be treated as a secret.
+- `portainer.stack_name` should match the compose project / stack namespace label on containers (commonly `idc1-assistance`).
+
 ## Backend reload flow (diagram)
 
 ```mermaid
