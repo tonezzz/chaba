@@ -24,7 +24,7 @@ services:
       GEMINI_LIVE_MODEL: ${GEMINI_LIVE_MODEL:-gemini-2.5-flash-native-audio-preview-12-2025}
       CHABA_SYSTEM_SPREADSHEET_ID: ${CHABA_SYSTEM_SPREADSHEET_ID:-}
       CHABA_SYSTEM_SHEET_NAME: ${CHABA_SYSTEM_SHEET_NAME:-}
-      PORTAINER_URL: ${PORTAINER_URL:-http://127.0.0.1:9000}
+      PORTAINER_URL: ${PORTAINER_URL:-http://portainer:9000}
       PORTAINER_TOKEN: ${PORTAINER_TOKEN:-}
       PORTAINER_ENDPOINT_ID: ${PORTAINER_ENDPOINT_ID:-2}
       PORTAINER_STACK_NAME: ${PORTAINER_STACK_NAME:-idc1-assistance}
@@ -49,6 +49,10 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+
+    networks:
+      - idc1-stack-net
+      - idc1-portainer_default
 
   deep-research-worker:
     <<: *default-service
@@ -2725,6 +2729,11 @@ networks:
     driver: bridge
     external: true
     name: idc1-stack-net
+
+  idc1-portainer_default:
+    driver: bridge
+    external: true
+    name: idc1-portainer_default
 
 volumes:
   mcp-bundle-data:
