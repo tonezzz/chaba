@@ -305,15 +305,9 @@ def _memory_capture_enabled(sys_kv: Any) -> bool:
     if not enabled:
         return False
 
-    ignore_write = str(os.getenv("JARVIS_MEMORY_CAPTURE_IGNORE_WRITE_ENABLED") or "").strip()
-    if ignore_write:
-        try:
-            if _parse_bool_cell(ignore_write):
-                return True
-        except Exception:
-            pass
-
-    return _sys_kv_bool(sys_kv, "memory.write.enabled", default=False)
+    # Back-compat: keep env var but capture no longer depends on memory.write.enabled.
+    # (memory.write.enabled still gates user-initiated memory writes via the memory tool.)
+    return True
 
 
 def _redact_capture_text(text: str) -> str:
@@ -1077,6 +1071,23 @@ async def _ws_send_json(ws: WebSocket, payload: dict[str, Any], trace_id: str | 
         pass
     try:
         await _ws_record(ws, "out", payload)
+    except Exception:
+        pass
+
+    try:
+        if str(payload.get("type") or "").strip().lower() == "text":
+            text0 = str(payload.get("text") or "")
+            low = text0.strip().lower()
+            if low.startswith("system module status report"):
+                asyncio.create_task(
+                    _maybe_capture_to_memory(
+                        ws,
+                        key="runtime.module_status_report.latest",
+                        value=text0,
+                        source="ws.text.module_status_report",
+                    ),
+                    name="capture_module_status_report",
+                )
     except Exception:
         pass
     await ws.send_json(payload)
