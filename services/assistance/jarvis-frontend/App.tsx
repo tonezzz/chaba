@@ -943,6 +943,41 @@ export default function App() {
     setHasKey(true);
   };
 
+  const [containerStatus, setContainerStatus] = useState<any>(null);
+  const [containerStatusError, setContainerStatusError] = useState<string>("");
+
+  useEffect(() => {
+    if (hasKey) return;
+    let cancelled = false;
+    const fetchOnce = async () => {
+      try {
+        setContainerStatusError("");
+        let res: Response | null = null;
+        try {
+          res = await fetch("/jarvis/status", { cache: "no-store" });
+        } catch {
+          res = null;
+        }
+        if (!res || !res.ok) {
+          res = await fetch("/status", { cache: "no-store" });
+        }
+        const js = await res.json();
+        if (!cancelled) setContainerStatus(js);
+      } catch (e: any) {
+        if (!cancelled) {
+          setContainerStatus(null);
+          setContainerStatusError(String(e?.message || e || "status_fetch_failed"));
+        }
+      }
+    };
+    void fetchOnce();
+    const t = window.setInterval(fetchOnce, 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(t);
+    };
+  }, [hasKey]);
+
   const getSeqCompletedTasks = () => {
     const completedBlocks = String(seqCompletedNotes || "")
       .split(/\n\s*---\s*\n/g)
@@ -1061,6 +1096,27 @@ export default function App() {
            <div className="mt-6 text-xs text-slate-500">
              <p>Access requires a valid Google Cloud API Key with billing enabled for Gemini 2.5 and Imagen 3 models.</p>
              <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="text-cyan-600 hover:text-cyan-400 underline mt-2 inline-block">View Billing Documentation</a>
+           </div>
+
+           <div className="mt-6 text-left text-xs font-mono text-slate-400 border-t border-slate-700/60 pt-4">
+             <div className="text-[10px] text-cyan-500 font-hud tracking-widest uppercase mb-2">Container Status</div>
+             {containerStatusError ? (
+               <div className="text-red-400">status_error: {containerStatusError}</div>
+             ) : containerStatus ? (
+               <div className="space-y-1">
+                 <div>instance_id: {String(containerStatus.instance_id || "")}</div>
+                 <div>hostname: {String(containerStatus.hostname || "")}</div>
+                 <div>uptime_s: {typeof containerStatus.uptime_s === "number" ? containerStatus.uptime_s.toFixed(0) : String(containerStatus.uptime_s || "")}</div>
+                 {containerStatus.startup_prewarm && (
+                   <div>
+                     prewarm: {containerStatus.startup_prewarm.running ? "running" : containerStatus.startup_prewarm.ok ? "ok" : containerStatus.startup_prewarm.error ? "error" : "pending"}
+                     {containerStatus.startup_prewarm.ok ? ` (memory=${containerStatus.startup_prewarm.memory_n} knowledge=${containerStatus.startup_prewarm.knowledge_n})` : ""}
+                   </div>
+                 )}
+               </div>
+             ) : (
+               <div className="text-slate-500">loading…</div>
+             )}
            </div>
         </div>
       </div>

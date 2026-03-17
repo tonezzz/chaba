@@ -637,6 +637,8 @@ def _require_env(name: str) -> str:
 
 load_dotenv()
 
+_PROCESS_START_TS = time.time()
+
 GEMINI_LIVE_MODEL_OVERRIDE = str(os.getenv("GEMINI_LIVE_MODEL") or "").strip()
 GEMINI_LIVE_MODEL_DEFAULT = "gemini-2.5-flash-native-audio-preview-12-2025"
 
@@ -7865,6 +7867,38 @@ def config_voice_commands() -> dict[str, Any]:
 @app.get("/health")
 def health() -> dict[str, Any]:
     return {"ok": True, "service": "jarvis-backend", "instance_id": INSTANCE_ID, "weaviate_enabled": _weaviate_enabled()}
+
+
+@app.get("/status")
+@app.get("/jarvis/status")
+def status() -> dict[str, Any]:
+    st = _STARTUP_PREWARM_STATUS if isinstance(_STARTUP_PREWARM_STATUS, dict) else {}
+    try:
+        uptime_s = max(0.0, float(time.time() - float(_PROCESS_START_TS)))
+    except Exception:
+        uptime_s = 0.0
+    hostname = str(os.getenv("HOSTNAME") or "").strip() or None
+    try:
+        pid = int(os.getpid())
+    except Exception:
+        pid = None
+    return {
+        "ok": True,
+        "service": "jarvis-backend",
+        "instance_id": INSTANCE_ID,
+        "hostname": hostname,
+        "pid": pid,
+        "uptime_s": uptime_s,
+        "weaviate_enabled": _weaviate_enabled(),
+        "startup_prewarm": {
+            "ts": int(st.get("ts") or 0),
+            "running": bool(st.get("running")),
+            "ok": bool(st.get("ok")),
+            "memory_n": int(st.get("memory_n") or 0),
+            "knowledge_n": int(st.get("knowledge_n") or 0),
+            "error": str(st.get("error") or "").strip(),
+        },
+    }
 
 
 @app.post("/gem/demo", response_model=GemDemoResponse)
