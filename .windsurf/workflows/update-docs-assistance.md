@@ -16,6 +16,8 @@ When the user says "update docs" for Assistance, follow this workflow.
      - `services/assistance/docs/REMINDERS.md`
      - `services/assistance/docs/CHARTS.md`
      - `services/assistance/docs/CONFIG.md`
+     - `services/assistance/docs/MEMORY.md`
+     - `services/assistance/docs/TOOLS.md`
      - `services/assistance/docs/WEAVIATE.md`
      - `services/assistance/DEBUG.md`
      - Service architecture docs:

@@ -9,13 +9,15 @@
 This document defines how Jarvis stores, retrieves, and operates on user information.
 
 Ground truth spec:
+- `docs/MEMORY.md`
 - `docs/WEAVIATE.md`
 
-## Storage model (Weaviate + local scheduler)
+## Storage model (Hybrid)
 
 ### Authoritative memory
 
-Jarvis stores long-lived information in Weaviate as memory items (e.g. reminders, todos, notes). Items should be written idempotently and be queryable by both structured filters and (optionally) semantic search.
+Jarvis stores long-lived user memory/knowledge as sheet-backed KV entries (see `docs/MEMORY.md`).
+Weaviate may be used as an optional index for search/ranking and for structured “memory item” kinds (e.g. reminders) depending on the flow.
 
 ### Operational scheduler cache
 

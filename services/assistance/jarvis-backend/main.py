@@ -279,6 +279,18 @@ def _pick_sheets_tool_name(alias: str, fallback: str) -> str:
     return name or fallback
 
 
+def _sys_kv_bool(sys_kv: Any, key: str, default: bool) -> bool:
+    if not isinstance(sys_kv, dict):
+        return default
+    raw = sys_kv.get(key)
+    if raw is None:
+        return default
+    try:
+        return _parse_bool_cell(raw)
+    except Exception:
+        return default
+
+
 async def _load_sheet_table(*, spreadsheet_id: str, sheet_name: str, max_rows: int = 250, max_cols: str = "Q") -> list[list[Any]]:
     tool = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
     res = await _mcp_tools_call(
@@ -1123,6 +1135,10 @@ MORNING_BRIEF_MINUTE = int(str(os.getenv("JARVIS_MORNING_BRIEF_MINUTE") or "0").
 AGENT_CONTINUE_WINDOW_SECONDS = int(str(os.getenv("JARVIS_AGENT_CONTINUE_WINDOW_SECONDS") or "120").strip() or "120")
 
 _ws_by_user: dict[str, set[WebSocket]] = {}
+
+# Map sticky session_id -> last active websocket for that session.
+# This is used so Gemini tool calls can reach back into the correct session state.
+_SESSION_WS: dict[str, WebSocket] = {}
 _reminder_task: Optional[asyncio.Task[None]] = None
 
 # Reload System can be triggered by voice/STT and sometimes repeats quickly.
@@ -1429,6 +1445,84 @@ async def _handle_last_reminder_modify(ws: WebSocket, text: str) -> bool:
             await _live_say(ws, msg)
         except Exception:
             pass
+        return True
+
+    if msg_type == "memory":
+        action = str(msg.get("action") or "").strip().lower()
+        if action in {"summary", "list", "latest", "check"}:
+            await _handle_memory_trigger(ws, "memory summary")
+            await _ws_voice_job_done(ws, tid)
+            return True
+
+        if action in {"get", "key"}:
+            key = str(msg.get("key") or "").strip()
+            await _handle_memory_trigger(ws, f"memory key {key}" if key else "memory key")
+            await _ws_voice_job_done(ws, tid)
+            return True
+
+        if action in {"search", "find"}:
+            q = str(msg.get("query") or msg.get("text") or "").strip()
+            await _handle_memory_trigger(ws, f"memory_search {q}" if q else "memory_search")
+            await _ws_voice_job_done(ws, tid)
+            return True
+
+        if action in {"add", "create", "upsert"}:
+            sys_kv = getattr(ws.state, "sys_kv", None)
+            if not isinstance(sys_kv, dict) or "memory.write.enabled" not in sys_kv:
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "missing_sys_kv_key",
+                        "message": "missing_sys_kv_key",
+                        "detail": {"key": "memory.write.enabled", "hint": "Add this key to the system sheet KV."},
+                        "instance_id": INSTANCE_ID,
+                    },
+                    trace_id=tid,
+                )
+                return True
+            if not _sys_kv_bool(sys_kv, "memory.write.enabled", default=False):
+                await _ws_send_json(
+                    ws,
+                    {"type": "error", "kind": "memory_write_disabled", "message": "memory_write_disabled", "instance_id": INSTANCE_ID},
+                    trace_id=tid,
+                )
+                return True
+
+            key = str(msg.get("key") or "").strip()
+            value = str(msg.get("value") or msg.get("text") or "").strip()
+            scope = str(msg.get("scope") or "global").strip() or "global"
+            priority = _safe_int(msg.get("priority"), default=0)
+            enabled = bool(msg.get("enabled") if msg.get("enabled") is not None else True)
+            source = str(msg.get("source") or "ui").strip() or "ui"
+
+            if not value:
+                await _ws_send_json(
+                    ws,
+                    {"type": "error", "kind": "memory_missing_value", "message": "memory_missing_value", "instance_id": INSTANCE_ID},
+                    trace_id=tid,
+                )
+                return True
+
+            res = await _memory_sheet_upsert(
+                ws,
+                key=key or None,
+                value=value,
+                scope=scope,
+                priority=priority,
+                enabled=enabled,
+                source=source,
+                trace_id=tid,
+            )
+            await _ws_send_json(ws, {"type": "memory_created", "memory": res, "instance_id": INSTANCE_ID}, trace_id=tid)
+            await _ws_voice_job_done(ws, tid)
+            return True
+
+        await _ws_send_json(
+            ws,
+            {"type": "error", "kind": "invalid_memory_action", "message": f"invalid_memory_action: {action}", "instance_id": INSTANCE_ID},
+            trace_id=tid,
+        )
         return True
 
     when = ""
@@ -6732,6 +6826,119 @@ async def _handle_memory_trigger(ws: WebSocket, text: str) -> bool:
     return True
 
 
+async def _memory_sheet_upsert(
+    ws: WebSocket,
+    *,
+    key: Optional[str],
+    value: str,
+    scope: str,
+    priority: int,
+    enabled: bool,
+    source: str,
+    trace_id: Optional[str] = None,
+) -> dict[str, Any]:
+    # Authoritative write: update or append to the memory KV5 sheet.
+    spreadsheet_id = _system_spreadsheet_id()
+    if not spreadsheet_id:
+        raise HTTPException(status_code=500, detail="missing_system_spreadsheet_id")
+
+    sheet_name = str(getattr(ws.state, "memory_sheet_name", "") or "").strip()
+    if not sheet_name:
+        # Ensure we load sheets plan to discover memory sheet.
+        try:
+            await _load_ws_sheet_memory(ws)
+        except Exception:
+            pass
+        sheet_name = str(getattr(ws.state, "memory_sheet_name", "") or "").strip()
+    if not sheet_name:
+        raise HTTPException(status_code=500, detail="missing_memory_sheet_name")
+
+    k = str(key or "").strip()
+    if not k:
+        k = f"auto.{int(time.time())}.{os.urandom(3).hex()}"
+
+    row = [
+        k,
+        str(value or "").strip(),
+        "true" if enabled else "false",
+        str(scope or "global").strip() or "global",
+        int(priority),
+    ]
+
+    # Find existing row by key in col A and update in-place; else append.
+    existing_row_num: Optional[int] = None
+    try:
+        tool = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+        res = await _mcp_tools_call(tool, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name}!A:E"})
+        parsed = _mcp_text_json(res)
+        values = None
+        if isinstance(parsed, dict):
+            values = parsed.get("values")
+            if not isinstance(values, list):
+                data = parsed.get("data")
+                if isinstance(data, dict):
+                    values = data.get("values")
+        if isinstance(values, list) and values:
+            for i, r in enumerate(values[1:], start=2):
+                if not isinstance(r, list) or not r:
+                    continue
+                if str(r[0] or "").strip() == k:
+                    existing_row_num = i
+                    break
+    except Exception:
+        existing_row_num = None
+
+    if existing_row_num is not None:
+        tool = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+        rng = f"{sheet_name}!A{existing_row_num}:E{existing_row_num}"
+        res = await _mcp_tools_call(
+            tool,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": rng,
+                "values": [row],
+                "value_input_option": "USER_ENTERED",
+            },
+        )
+        parsed = _mcp_text_json(res)
+        return {
+            "ok": True,
+            "mode": "update",
+            "key": k,
+            "value": row[1],
+            "enabled": enabled,
+            "scope": row[3],
+            "priority": row[4],
+            "source": source,
+            "row_number": existing_row_num,
+            "result": parsed if isinstance(parsed, dict) else {"raw": parsed},
+        }
+
+    tool = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+    res = await _mcp_tools_call(
+        tool,
+        {
+            "spreadsheet_id": spreadsheet_id,
+            "range": f"{sheet_name}!A:E",
+            "values": [row],
+            "value_input_option": "USER_ENTERED",
+            "insert_data_option": "INSERT_ROWS",
+        },
+    )
+    parsed = _mcp_text_json(res)
+    return {
+        "ok": True,
+        "mode": "append",
+        "key": k,
+        "value": row[1],
+        "enabled": enabled,
+        "scope": row[3],
+        "priority": row[4],
+        "source": source,
+        "result": parsed if isinstance(parsed, dict) else {"raw": parsed},
+    }
+
+
 async def _handle_knowledge_trigger(ws: WebSocket, text: str) -> bool:
     s_raw = str(text or "")
     s = " ".join(s_raw.strip().lower().split())
@@ -7821,7 +8028,15 @@ def _split_phrases(value: Any) -> list[str]:
         return []
     parts: list[str] = []
     for line in raw.replace("\r", "\n").split("\n"):
-        for p in line.split(","):
+        # Allow inline comments in system sheet config cells.
+        # Example: "memory:memory  # authoritative".
+        try:
+            line = str(line or "")
+            if "#" in line:
+                line = line.split("#", 1)[0]
+        except Exception:
+            pass
+        for p in str(line or "").split(","):
             s = str(p or "").strip()
             if s:
                 parts.append(s)
@@ -9023,6 +9238,51 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
         }
     )
 
+    decls.append(
+        {
+            "name": "memory_add",
+            "description": "Create or update an authoritative memory item in the memory sheet (hybrid mode).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "key": {"type": "string", "description": "Stable memory key (optional; autogenerated if omitted)."},
+                    "value": {"type": "string", "description": "Memory value/body."},
+                    "scope": {"type": "string", "description": "session|user|global (default global)."},
+                    "priority": {"type": "integer", "description": "Higher wins when multiple scopes overlap (default 0)."},
+                },
+                "required": ["value"],
+            },
+        }
+    )
+
+    decls.append(
+        {
+            "name": "memory_search",
+            "description": "Search authoritative memory items (sheet-backed).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string"},
+                    "limit": {"type": "integer"},
+                },
+                "required": ["query"],
+            },
+        }
+    )
+
+    decls.append(
+        {
+            "name": "memory_list",
+            "description": "List loaded memory keys (sheet-backed).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "limit": {"type": "integer"},
+                },
+            },
+        }
+    )
+
     decls.append({"name": "pending_list", "description": "List queued pending actions waiting for confirmation."})
     decls.append(
         {
@@ -9075,6 +9335,91 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         slot = str(args.get("slot") or "").strip().lower()
         out = _get_session_last_item(str(session_id), slot)
         return out or {"ok": True, "slot": slot, "empty": True}
+
+    if tool_name == "memory_add":
+        ws = _SESSION_WS.get(str(session_id)) if session_id else None
+        if ws is None:
+            raise HTTPException(status_code=400, detail="missing_session_ws")
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        if not isinstance(sys_kv, dict) or "memory.write.enabled" not in sys_kv:
+            raise HTTPException(status_code=500, detail={"missing_sys_kv_key": "memory.write.enabled"})
+        if not isinstance(sys_kv, dict) or "memory.autowrite.enabled" not in sys_kv:
+            raise HTTPException(status_code=500, detail={"missing_sys_kv_key": "memory.autowrite.enabled"})
+        if not _sys_kv_bool(sys_kv, "memory.write.enabled", default=False):
+            raise HTTPException(status_code=403, detail="memory_write_disabled")
+        if not _sys_kv_bool(sys_kv, "memory.autowrite.enabled", default=False):
+            raise HTTPException(status_code=403, detail="memory_autowrite_disabled")
+
+        key = str(args.get("key") or "").strip() or None
+        value = str(args.get("value") or "").strip()
+        if not value:
+            raise HTTPException(status_code=400, detail="memory_missing_value")
+        scope = str(args.get("scope") or "global").strip() or "global"
+        priority = _safe_int(args.get("priority"), default=0)
+        res = await _memory_sheet_upsert(ws, key=key, value=value, scope=scope, priority=priority, enabled=True, source="gemini")
+        # Best-effort: refresh sheet cache so subsequent turns include the new memory.
+        try:
+            await _load_ws_sheet_memory(ws)
+        except Exception:
+            pass
+        return res
+
+    if tool_name == "memory_search":
+        ws = _SESSION_WS.get(str(session_id)) if session_id else None
+        if ws is None:
+            raise HTTPException(status_code=400, detail="missing_session_ws")
+        q = str(args.get("query") or "").strip()
+        if not q:
+            raise HTTPException(status_code=400, detail="missing_query")
+        items = getattr(ws.state, "memory_items", None)
+        if not isinstance(items, list) or not items:
+            try:
+                await _load_ws_sheet_memory(ws)
+            except Exception:
+                pass
+            items = getattr(ws.state, "memory_items", None)
+        if not isinstance(items, list):
+            items = []
+        ql = q.lower()
+        hits: list[dict[str, Any]] = []
+        limit = _safe_int(args.get("limit"), default=20)
+        limit = max(1, min(50, limit))
+        for it in items:
+            if not isinstance(it, dict):
+                continue
+            k = str(it.get("key") or "")
+            v = str(it.get("value") or "")
+            if ql in k.lower() or ql in v.lower():
+                hits.append({"key": k, "value": v, "scope": it.get("scope"), "priority": it.get("priority")})
+            if len(hits) >= limit:
+                break
+        return {"ok": True, "query": q, "items": hits}
+
+    if tool_name == "memory_list":
+        ws = _SESSION_WS.get(str(session_id)) if session_id else None
+        if ws is None:
+            raise HTTPException(status_code=400, detail="missing_session_ws")
+        items = getattr(ws.state, "memory_items", None)
+        if not isinstance(items, list) or not items:
+            try:
+                await _load_ws_sheet_memory(ws)
+            except Exception:
+                pass
+            items = getattr(ws.state, "memory_items", None)
+        if not isinstance(items, list):
+            items = []
+        limit = _safe_int(args.get("limit"), default=50)
+        limit = max(1, min(200, limit))
+        out: list[str] = []
+        for it in items:
+            if not isinstance(it, dict):
+                continue
+            k = str(it.get("key") or "").strip()
+            if k:
+                out.append(k)
+            if len(out) >= limit:
+                break
+        return {"ok": True, "keys": out}
 
     if tool_name == "pending_list":
         if not session_id:
@@ -9382,6 +9727,22 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
                 continue
             logger.info("ws_in_text trace_id=%s len=%s head=%s", trace_id, len(text), text[:120])
 
+            # Frontend reconnect-resume support: the UI may send a synthetic RESUME_CONTEXT
+            # message after reconnect to rehydrate conversational context.
+            # Do NOT forward this to Gemini as a normal user message (it can trigger a fresh greeting).
+            # Instead, store it and prepend it once to the next real user message.
+            try:
+                head = str(text).lstrip()
+                if head.startswith("RESUME_CONTEXT (recent dialog"):
+                    try:
+                        ws.state.resume_context_text = str(text)
+                        ws.state.resume_context_pending = True
+                    except Exception:
+                        pass
+                    continue
+            except Exception:
+                pass
+
             # Intercept local slash commands (typed) so they never go to Gemini.
             # This avoids confusing model replies like "task not found" for /sys commands.
             try:
@@ -9453,7 +9814,24 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
                     pass
                 continue
             try:
-                await session.send_client_content(turns={"parts": [{"text": text}]}, turn_complete=True)
+                resume_pending = False
+                resume_text = ""
+                try:
+                    resume_pending = bool(getattr(ws.state, "resume_context_pending", False))
+                    resume_text = str(getattr(ws.state, "resume_context_text", "") or "").strip()
+                except Exception:
+                    resume_pending = False
+                    resume_text = ""
+
+                if resume_pending and resume_text:
+                    combined = (resume_text + "\n\n" + "USER_MESSAGE:\n" + str(text)).strip()
+                    try:
+                        ws.state.resume_context_pending = False
+                    except Exception:
+                        pass
+                    await session.send_client_content(turns={"parts": [{"text": combined}]}, turn_complete=True)
+                else:
+                    await session.send_client_content(turns={"parts": [{"text": text}]}, turn_complete=True)
             except Exception as e:
                 gemini_available = False
                 logger.warning("gemini_send_text_failed error=%s", str(e))
@@ -9775,6 +10153,12 @@ async def ws_live(ws: WebSocket) -> None:
     # per-session state across reconnects.
     session_id = str(ws.query_params.get("session_id") or "").strip() or None
     ws.state.session_id = session_id
+
+    if session_id:
+        try:
+            _SESSION_WS[str(session_id)] = ws
+        except Exception:
+            pass
 
     # Optional client tagging for multi-device debugging.
     try:
@@ -10263,6 +10647,18 @@ async def ws_live(ws: WebSocket) -> None:
                     pass
                 except Exception:
                     pass
+            except Exception:
+                pass
+
+        try:
+            sid = str(getattr(ws.state, "session_id", None) or "").strip()
+        except Exception:
+            sid = ""
+        if sid:
+            try:
+                cur = _SESSION_WS.get(sid)
+                if cur is ws:
+                    _SESSION_WS.pop(sid, None)
             except Exception:
                 pass
         s = _ws_by_user.get(user_id)

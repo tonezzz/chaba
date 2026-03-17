@@ -42,6 +42,7 @@ Inbound (client -> backend) message types:
 | `system` | Deterministic backend system tools | `action`, `mode` | Backend only (never forwarded to Gemini) |
 | `notes` | Deterministic backend notes tools | `action`, `text` | Backend only (never forwarded to Gemini) |
 | `reminders` | Deterministic backend reminders tools | `action`, `text`, `reminder_id`, `when` | Backend only (never forwarded to Gemini) |
+| `memory` | Deterministic backend memory tools (authoritative sheet write/read) | `action`, `key`, `value`, `scope`, `priority`, `query` | Backend only (never forwarded to Gemini) |
 
 Outbound (backend -> client) message types (selected):
 
@@ -66,6 +67,36 @@ flowchart LR
   FE -->|WS tool messages| BE
   BE -->|WS events| FE
 ```
+
+### Tool chart: memory.*
+
+Purpose: read/write authoritative memory items in the Memory Sheet (KV5 schema: key,value,enabled,scope,priority).
+
+```mermaid
+flowchart LR
+  FE[Frontend] -->|{"type":"memory","action":"add","key":"...","value":"..."}| BE[Backend]
+  BE -->|memory_created / error| FE
+  FE -->|{"type":"memory","action":"search","query":"..."}| BE
+  BE -->|text (list of matching keys)| FE
+```
+
+Supported actions:
+
+- **`add`**: upsert by `key` (update if exists, else append)
+- **`get`**: fetch by `key`
+- **`search`**: keyword search over loaded memory
+- **`summary` / `list`**: show top loaded items
+
+Write safety switches (system sheet KV):
+
+- `memory.write.enabled` (default `true`)
+- `memory.autowrite.enabled` (default `true`) — used by Gemini tool calls
+
+Gemini Live tools (function calls) exposed by backend:
+
+- `memory_add({key?, value, scope?, priority?})`
+- `memory_search({query, limit?})`
+- `memory_list({limit?})`
 
 ### Tool chart: system.reload
 

@@ -112,11 +112,17 @@ How this is more advanced than a plain backend "skill":
 - Ground truth specs:
   - `docs/IMAGEN.md`
   - `docs/WEAVIATE.md`
+  - `docs/MEMORY.md`
+  - `docs/TOOLS.md`
   - `TOKEN_OPTIMIZE.md`
 
 ## Memory (current direction)
-- Authoritative store: Weaviate (internal-only container in the `idc1-assistance` stack)
-- Operational cache/scheduler: Jarvis backend SQLite (`JARVIS_SESSION_DB`)
+
+Hybrid memory model:
+
+- Authoritative store for user-configured memory/knowledge: Google Sheets (see `docs/MEMORY.md`)
+- Optional index/cache for search/ranking: Weaviate (internal-only; see `docs/WEAVIATE.md`)
+- Operational cache/scheduler: Jarvis backend SQLite (`JARVIS_SESSION_DB`) for reliable reminders
 
 Reminder semantics (current direction):
 - Weaviate is the authoritative source for reminder retrieval (cross-device consistency).
