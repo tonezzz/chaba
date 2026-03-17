@@ -48,6 +48,8 @@ from pydantic import BaseModel, Field
 
 _SHEET_MEMORY_CACHE: dict[str, Any] = {
     "loaded_at": 0,
+    "created_at": 0,
+    "updated_at": 0,
     "sys_kv": None,
     "memory_items": None,
     "memory_sheet_name": None,
@@ -56,6 +58,8 @@ _SHEET_MEMORY_CACHE: dict[str, Any] = {
 
 _SHEET_KNOWLEDGE_CACHE: dict[str, Any] = {
     "loaded_at": 0,
+    "created_at": 0,
+    "updated_at": 0,
     "knowledge_items": None,
     "knowledge_sheet_name": None,
     "knowledge_context_text": "",
@@ -103,7 +107,14 @@ def _get_cached_sheet_memory() -> Optional[dict[str, Any]]:
 
 
 def _set_cached_sheet_memory(payload: dict[str, Any]) -> None:
-    _SHEET_MEMORY_CACHE["loaded_at"] = int(time.time())
+    now = int(time.time())
+    try:
+        if int(_SHEET_MEMORY_CACHE.get("created_at") or 0) <= 0:
+            _SHEET_MEMORY_CACHE["created_at"] = now
+    except Exception:
+        _SHEET_MEMORY_CACHE["created_at"] = now
+    _SHEET_MEMORY_CACHE["updated_at"] = now
+    _SHEET_MEMORY_CACHE["loaded_at"] = now
     _SHEET_MEMORY_CACHE["sys_kv"] = payload.get("sys_kv")
     _SHEET_MEMORY_CACHE["memory_items"] = payload.get("memory_items")
     _SHEET_MEMORY_CACHE["memory_sheet_name"] = payload.get("memory_sheet_name")
@@ -113,6 +124,8 @@ def _set_cached_sheet_memory(payload: dict[str, Any]) -> None:
 def _clear_sheet_caches() -> None:
     try:
         _SHEET_MEMORY_CACHE["loaded_at"] = 0
+        _SHEET_MEMORY_CACHE["created_at"] = 0
+        _SHEET_MEMORY_CACHE["updated_at"] = 0
         _SHEET_MEMORY_CACHE["sys_kv"] = None
         _SHEET_MEMORY_CACHE["memory_items"] = None
         _SHEET_MEMORY_CACHE["memory_sheet_name"] = None
@@ -121,6 +134,8 @@ def _clear_sheet_caches() -> None:
         pass
     try:
         _SHEET_KNOWLEDGE_CACHE["loaded_at"] = 0
+        _SHEET_KNOWLEDGE_CACHE["created_at"] = 0
+        _SHEET_KNOWLEDGE_CACHE["updated_at"] = 0
         _SHEET_KNOWLEDGE_CACHE["knowledge_items"] = None
         _SHEET_KNOWLEDGE_CACHE["knowledge_sheet_name"] = None
         _SHEET_KNOWLEDGE_CACHE["knowledge_context_text"] = ""
@@ -156,7 +171,14 @@ def _get_cached_sheet_knowledge() -> Optional[dict[str, Any]]:
 
 
 def _set_cached_sheet_knowledge(payload: dict[str, Any]) -> None:
-    _SHEET_KNOWLEDGE_CACHE["loaded_at"] = int(time.time())
+    now = int(time.time())
+    try:
+        if int(_SHEET_KNOWLEDGE_CACHE.get("created_at") or 0) <= 0:
+            _SHEET_KNOWLEDGE_CACHE["created_at"] = now
+    except Exception:
+        _SHEET_KNOWLEDGE_CACHE["created_at"] = now
+    _SHEET_KNOWLEDGE_CACHE["updated_at"] = now
+    _SHEET_KNOWLEDGE_CACHE["loaded_at"] = now
     _SHEET_KNOWLEDGE_CACHE["knowledge_items"] = payload.get("knowledge_items")
     _SHEET_KNOWLEDGE_CACHE["knowledge_sheet_name"] = payload.get("knowledge_sheet_name")
     _SHEET_KNOWLEDGE_CACHE["knowledge_context_text"] = str(payload.get("knowledge_context_text") or "")
@@ -3323,14 +3345,29 @@ def _memory_load_status_line(ws: WebSocket, lang: str) -> str:
     n = len(items) if isinstance(items, list) else 0
     cached_items = _SHEET_MEMORY_CACHE.get("memory_items") if isinstance(_SHEET_MEMORY_CACHE, dict) else None
     cached_n = len(cached_items) if isinstance(cached_items, list) else 0
+    mem_created = int(_SHEET_MEMORY_CACHE.get("created_at") or 0) if isinstance(_SHEET_MEMORY_CACHE, dict) else 0
+    mem_updated = int(_SHEET_MEMORY_CACHE.get("updated_at") or 0) if isinstance(_SHEET_MEMORY_CACHE, dict) else 0
     ksheet = str(getattr(ws.state, "knowledge_sheet_name", "") or "").strip() or "knowledge"
     kitems = getattr(ws.state, "knowledge_items", None)
     kn = len(kitems) if isinstance(kitems, list) else 0
     cached_kitems = _SHEET_KNOWLEDGE_CACHE.get("knowledge_items") if isinstance(_SHEET_KNOWLEDGE_CACHE, dict) else None
     cached_kn = len(cached_kitems) if isinstance(cached_kitems, list) else 0
+    know_created = int(_SHEET_KNOWLEDGE_CACHE.get("created_at") or 0) if isinstance(_SHEET_KNOWLEDGE_CACHE, dict) else 0
+    know_updated = int(_SHEET_KNOWLEDGE_CACHE.get("updated_at") or 0) if isinstance(_SHEET_KNOWLEDGE_CACHE, dict) else 0
+
+    def _fmt_ts(ts: int) -> str:
+        if ts <= 0:
+            return "0"
+        try:
+            return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat().replace("+00:00", "Z")
+        except Exception:
+            return str(ts)
+
+    mem_meta = f" memory_created={_fmt_ts(mem_created)} memory_updated={_fmt_ts(mem_updated)}"
+    know_meta = f" knowledge_created={_fmt_ts(know_created)} knowledge_updated={_fmt_ts(know_updated)}"
     if str(lang or "").lower().startswith("th"):
-        return f"โหลด memory '{sheet}' memory({cached_n}:{n}) | knowledge '{ksheet}' knowledge({cached_kn}:{kn})"
-    return f"Loaded memory '{sheet}' memory({cached_n}:{n}) | knowledge '{ksheet}' knowledge({cached_kn}:{kn})"
+        return f"โหลด memory '{sheet}' memory({cached_n}:{n}){mem_meta} | knowledge '{ksheet}' knowledge({cached_kn}:{kn}){know_meta}"
+    return f"Loaded memory '{sheet}' memory({cached_n}:{n}){mem_meta} | knowledge '{ksheet}' knowledge({cached_kn}:{kn}){know_meta}"
 
 
 def _startup_prewarm_status_line(lang: str) -> str:

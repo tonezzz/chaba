@@ -1707,18 +1707,18 @@ export default function App() {
                        </div>
 
                        {activeOutputTab === "dialog" ? (
-                         <div className="flex flex-col gap-2">
-                           {outputDialog.length === 0 ? (
-                             <div className="text-slate-600 font-mono text-sm">(no text yet)</div>
-                           ) : (
-                             outputDialog.map((d) => (
-                               <div key={d.id} className="text-slate-100 font-mono text-sm whitespace-pre-wrap leading-relaxed">
-                                 {d.text}
-                               </div>
-                             ))
-                           )}
-                         </div>
-                       ) : activeOutputTab === "ui_log" ? (
+                        <div className="flex flex-col gap-4">
+                          {outputDialog.length === 0 ? (
+                            <div className="text-slate-600 font-mono text-sm">(no text yet)</div>
+                          ) : (
+                            outputDialog.map((d) => (
+                              <div key={d.id} className="text-slate-100 font-mono text-sm whitespace-pre-wrap break-words leading-relaxed py-1">
+                                {d.text}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      ) : activeOutputTab === "ui_log" ? (
                          <pre className="text-[12px] font-mono text-slate-200 whitespace-pre-wrap">{uiLogText || "(empty)"}</pre>
                        ) : (
                          <>
