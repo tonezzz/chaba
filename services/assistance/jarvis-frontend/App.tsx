@@ -1435,7 +1435,7 @@ export default function App() {
       <div className="flex-1 p-4 md:p-6 flex flex-col gap-6 relative z-10 min-h-0">
          
          {/* Top Section: Visualizer & Camera */}
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 basis-1/4 min-h-0">
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-none h-[25vh] min-h-[160px] max-h-[260px]">
             {/* Audio Visualizer */}
             <div className="relative rounded-2xl border border-slate-700 bg-slate-900/50 flex items-center justify-center overflow-hidden">
                <div className="absolute top-3 left-4 text-[10px] text-cyan-500 font-hud tracking-widest uppercase">Audio Input Matrix</div>
@@ -1445,8 +1445,8 @@ export default function App() {
             {/* Camera Feed */}
             <div className="relative rounded-2xl border border-slate-700 bg-slate-900/50 flex items-center justify-center p-2">
                <div className="absolute top-3 left-4 text-[10px] text-cyan-500 font-hud tracking-widest uppercase z-10">&nbsp;</div>
-               <div className="w-full h-full flex items-center justify-center min-h-0">
-                 <div className="w-full max-h-full aspect-video">
+               <div className="w-full h-full flex items-center justify-center overflow-hidden">
+                 <div className="h-full aspect-video max-w-full">
                    <CameraFeed active={state === ConnectionState.CONNECTED} onFrame={handleFrame} />
                  </div>
                  {!state && <div className="absolute inset-0 flex items-center justify-center text-slate-600 font-mono text-sm">System Offline</div>}

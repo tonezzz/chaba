@@ -85,7 +85,7 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ onFrame, active }) => {
         ref={videoRef} 
         muted 
         playsInline 
-        className="w-full h-full object-contain opacity-80"
+        className="w-full h-full object-contain object-center opacity-80"
       />
       <canvas ref={canvasRef} className="hidden" />
       <div className="absolute top-2 left-2 flex items-center gap-2">
