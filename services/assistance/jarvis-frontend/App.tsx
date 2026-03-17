@@ -1432,10 +1432,10 @@ export default function App() {
       </div>
 
       {/* RIGHT COLUMN: Visualizer & Output */}
-      <div className="flex-1 p-4 md:p-6 flex flex-col gap-6 relative z-10">
+      <div className="flex-1 p-4 md:p-6 flex flex-col gap-6 relative z-10 min-h-0">
          
          {/* Top Section: Visualizer & Camera */}
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-[320px]">
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 basis-1/4 min-h-0">
             {/* Audio Visualizer */}
             <div className="relative rounded-2xl border border-slate-700 bg-slate-900/50 flex items-center justify-center overflow-hidden">
                <div className="absolute top-3 left-4 text-[10px] text-cyan-500 font-hud tracking-widest uppercase">Audio Input Matrix</div>
@@ -1445,15 +1445,17 @@ export default function App() {
             {/* Camera Feed */}
             <div className="relative rounded-2xl border border-slate-700 bg-slate-900/50 flex items-center justify-center p-2">
                <div className="absolute top-3 left-4 text-[10px] text-cyan-500 font-hud tracking-widest uppercase z-10">&nbsp;</div>
-               <div className="w-full h-full relative rounded-lg overflow-hidden">
-                 <CameraFeed active={state === ConnectionState.CONNECTED} onFrame={handleFrame} />
+               <div className="w-full h-full flex items-center justify-center min-h-0">
+                 <div className="w-full max-h-full aspect-video">
+                   <CameraFeed active={state === ConnectionState.CONNECTED} onFrame={handleFrame} />
+                 </div>
                  {!state && <div className="absolute inset-0 flex items-center justify-center text-slate-600 font-mono text-sm">System Offline</div>}
                </div>
             </div>
          </div>
 
          {/* Bottom Section: Media Output */}
-         <div className="flex-1 rounded-2xl border border-slate-700 bg-slate-900/50 p-6 relative overflow-hidden min-h-[300px]">
+         <div className="flex-1 rounded-2xl border border-slate-700 bg-slate-900/50 p-6 relative overflow-hidden min-h-0">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
             <div className="absolute top-4 left-6 right-6 flex items-center justify-between gap-3">
               <div className="text-[10px] text-cyan-500 font-hud tracking-widest uppercase flex items-center gap-2">

@@ -80,12 +80,12 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ onFrame, active }) => {
   }, [active, onFrame]);
 
   return (
-    <div className="relative overflow-hidden rounded-lg border border-slate-700 bg-black shadow-[0_0_15px_rgba(14,165,233,0.3)]">
+    <div className="relative w-full h-full overflow-hidden rounded-lg border border-slate-700 bg-black shadow-[0_0_15px_rgba(14,165,233,0.3)]">
       <video 
         ref={videoRef} 
         muted 
         playsInline 
-        className="w-full h-auto object-cover opacity-80"
+        className="w-full h-full object-contain opacity-80"
       />
       <canvas ref={canvasRef} className="hidden" />
       <div className="absolute top-2 left-2 flex items-center gap-2">
