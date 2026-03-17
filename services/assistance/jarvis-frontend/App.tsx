@@ -1570,7 +1570,7 @@ export default function App() {
                              : "border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
                          }`}
                        >
-                         UI Log (Today)
+                         UI Log
                        </button>
                        <button
                          onClick={() => {
@@ -1583,7 +1583,7 @@ export default function App() {
                              : "border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
                          }`}
                        >
-                         Backend WS Log (Today)
+                         Backend WS Log
                        </button>
                      </div>
                      <div className="flex items-center gap-2">

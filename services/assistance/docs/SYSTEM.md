@@ -111,10 +111,10 @@ Note: `system reload` now only reloads the system KV sheet. Use `system reload m
 
 Jarvis has two daily logs:
 
-- **UI Operation Log (Today)**
+- **UI Operation Log**
   - Persisted in the browser via `localStorage` (key: `jarvis_ui_log_YYYY-MM-DD`)
   - Also batched and appended to the backend daily log file via HTTP
-- **Backend WS Log (Today)**
+- **Backend WS Log**
   - A daily-rotated JSONL file of WebSocket frames recorded by the backend (when enabled)
 
 ### Backend endpoints
