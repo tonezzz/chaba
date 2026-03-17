@@ -107,6 +107,16 @@ When a client connects to `/ws/live`, the backend sends short status lines:
   - `Startup prewarm: ok | memory=X knowledge=Y`
   - or `Startup prewarm: error | <reason>`
 
+The cache-based sheet summary uses the format:
+
+- `memory(<cache_count>:<loaded_in_session>)`
+- `knowledge(<cache_count>:<loaded_in_session>)`
+
+Where:
+
+- `<cache_count>` is the number of items currently stored in the backend cache.
+- `<loaded_in_session>` is the number of items loaded into the current WebSocket session state.
+
 Note: `system reload` now only reloads the system KV sheet. Use `system reload memory` / `system reload knowledge` to load the sheet contexts into the current chat session.
 
 ## Logs (persistent)

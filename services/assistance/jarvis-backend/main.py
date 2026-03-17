@@ -3318,12 +3318,16 @@ def _memory_load_status_line(ws: WebSocket, lang: str) -> str:
     sheet = str(getattr(ws.state, "memory_sheet_name", "") or "").strip() or "memory"
     items = getattr(ws.state, "memory_items", None)
     n = len(items) if isinstance(items, list) else 0
+    cached_items = _SHEET_MEMORY_CACHE.get("memory_items") if isinstance(_SHEET_MEMORY_CACHE, dict) else None
+    cached_n = len(cached_items) if isinstance(cached_items, list) else 0
     ksheet = str(getattr(ws.state, "knowledge_sheet_name", "") or "").strip() or "knowledge"
     kitems = getattr(ws.state, "knowledge_items", None)
     kn = len(kitems) if isinstance(kitems, list) else 0
+    cached_kitems = _SHEET_KNOWLEDGE_CACHE.get("knowledge_items") if isinstance(_SHEET_KNOWLEDGE_CACHE, dict) else None
+    cached_kn = len(cached_kitems) if isinstance(cached_kitems, list) else 0
     if str(lang or "").lower().startswith("th"):
-        return f"โหลด memory '{sheet}' {n} รายการ | knowledge '{ksheet}' {kn} รายการ"
-    return f"Loaded memory '{sheet}' ({n} items) | knowledge '{ksheet}' ({kn} items)"
+        return f"โหลด memory '{sheet}' memory({cached_n}:{n}) | knowledge '{ksheet}' knowledge({cached_kn}:{kn})"
+    return f"Loaded memory '{sheet}' memory({cached_n}:{n}) | knowledge '{ksheet}' knowledge({cached_kn}:{kn})"
 
 
 def _startup_prewarm_status_line(lang: str) -> str:
@@ -3362,7 +3366,7 @@ async def _startup_prewarm_sheets() -> None:
 
         ws = _DummyWS()
         last_err: Exception | None = None
-        backoff_s = [0.0, 0.5, 1.0, 2.0, 4.0]
+        backoff_s = [0.0, 0.5, 1.0, 2.0, 4.0, 8.0, 15.0]
         for i, delay in enumerate(backoff_s):
             if delay > 0:
                 try:

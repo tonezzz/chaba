@@ -59,12 +59,26 @@ export default function App() {
   const systemCounts = useMemo(() => {
     const out = { memory: 0, knowledge: 0, ok: false };
     const rxOk = /\bmemory\s*=\s*(\d+)\b[^\d]+\bknowledge\s*=\s*(\d+)\b/i;
+    const rxMemKnowParen = /\bmemory\s*\(\s*(\d+)\s*:\s*(\d+)\s*\)[\s\S]*?\bknowledge\s*\(\s*(\d+)\s*:\s*(\d+)\s*\)/i;
     const rxLoadedEn = /\bloaded\s+memory\b[\s\S]*?\b(\d+)\b[\s\S]*?\bknowledge\b[\s\S]*?\b(\d+)\b/i;
     const rxLoadedTh = /โหลด\s*memory[\s\S]*?(\d+)[\s\S]*?knowledge[\s\S]*?(\d+)/i;
     for (const m of messages) {
       const t = String(m.text || "");
       let mm: RegExpMatchArray | null = null;
       mm = t.match(rxOk);
+      if (!mm) {
+        const mm2 = t.match(rxMemKnowParen);
+        if (mm2) {
+          const memLoaded = Number(mm2[2] || 0);
+          const knowLoaded = Number(mm2[4] || 0);
+          if (Number.isFinite(memLoaded) && Number.isFinite(knowLoaded)) {
+            out.memory = memLoaded;
+            out.knowledge = knowLoaded;
+            out.ok = true;
+            break;
+          }
+        }
+      }
       if (!mm) mm = t.match(rxLoadedEn);
       if (!mm) mm = t.match(rxLoadedTh);
       if (!mm) continue;
