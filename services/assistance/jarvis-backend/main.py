@@ -1874,7 +1874,6 @@ class MemoAddRequest(BaseModel):
     subject: Optional[str] = None
     group: Optional[str] = None
     status: Optional[str] = None
-    v: Optional[str] = None
     result: Optional[str] = None
 
 
@@ -2010,7 +2009,7 @@ async def _memo_ensure_header(*, spreadsheet_id: str, sheet_a1: str, force: bool
         if got_header and any(str(x or "").strip() for x in got_header) and not force:
             lowered = [str(x or "").strip().lower() for x in got_header if str(x or "").strip()]
             has_dupes = len(set(lowered)) != len(lowered)
-            required = {"date_time", "memo", "status", "group", "subject", "v", "result", "merged_into", "merged_at", "_merged", "_created", "_updated"}
+            required = {"date_time", "memo", "status", "group", "subject", "result", "merged_into", "merged_at", "_merged", "_created", "_updated"}
             missing_required = any(k not in set(lowered) for k in required)
             if not has_dupes and not missing_required:
                 return
@@ -2022,7 +2021,6 @@ async def _memo_ensure_header(*, spreadsheet_id: str, sheet_a1: str, force: bool
         "status",
         "group",
         "subject",
-        "v",
         "result",
         "merged_into",
         "merged_at",
@@ -2188,7 +2186,6 @@ async def memo_add(req: MemoAddRequest, x_api_token: Optional[str] = Header(defa
     _set(row, "status", status)
     _set(row, "group", str(req.group or "").strip())
     _set(row, "subject", str(req.subject or "").strip())
-    _set(row, "v", str(req.v or "").strip())
     _set(row, "result", str(req.result or "").strip())
     _set(row, "_created", now_dt)
     _set(row, "_updated", now_dt)
@@ -11901,7 +11898,6 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             status = str(args.get("status") or "").strip() or "new"
             group = str(args.get("group") or "").strip()
             subject = str(args.get("subject") or "").strip()
-            v = str(args.get("v") or "").strip()
             result = str(args.get("result") or "").strip()
 
             def _set(row: list[Any], col: str, value: Any) -> None:
@@ -11918,7 +11914,6 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             _set(row, "status", status)
             _set(row, "group", group)
             _set(row, "subject", subject)
-            _set(row, "v", v)
             _set(row, "result", result)
             _set(row, "_created", now_dt)
             _set(row, "_updated", now_dt)
