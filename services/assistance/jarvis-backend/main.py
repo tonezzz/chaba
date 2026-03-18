@@ -1835,14 +1835,37 @@ async def _memo_ensure_header(*, spreadsheet_id: str, sheet_a1: str) -> None:
         "_created",
         "_updated",
     ]
-    await _mcp_tools_call(
+    res_u = await _mcp_tools_call(
         tool_update,
         {
             "spreadsheet_id": spreadsheet_id,
-            "range": f"{sheet_a1}!A1:M1",
+            "range": f"{sheet_a1}!A1:Z1",
             "values": [header],
             "value_input_option": "RAW",
         },
+    )
+
+    try:
+        res_h2 = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A1:Z1"})
+        parsed_h2 = _mcp_text_json(res_h2)
+        vals_h2 = parsed_h2.get("values") if isinstance(parsed_h2, dict) else None
+        got_header2 = vals_h2[0] if isinstance(vals_h2, list) and vals_h2 and isinstance(vals_h2[0], list) else None
+        if got_header2 and any(str(x or "").strip() for x in got_header2):
+            return
+    except Exception:
+        pass
+
+    try:
+        parsed_u = _mcp_text_json(res_u)
+    except Exception:
+        parsed_u = None
+    raise RuntimeError(
+        {
+            "memo_header_write_no_effect": True,
+            "spreadsheet_id": spreadsheet_id,
+            "sheet_a1": sheet_a1,
+            "update_result": parsed_u,
+        }
     )
 
 
