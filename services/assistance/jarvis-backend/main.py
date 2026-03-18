@@ -21,6 +21,7 @@ import xml.etree.ElementTree as ET
 
 from jarvis.feature_flags import feature_enabled
 from jarvis import memo_sheet
+from jarvis import memo_enrich
 from jarvis import sheets_utils
 
 from routes.google_tasks import create_router as _create_google_tasks_router
@@ -517,56 +518,20 @@ def _parse_memo_merge(text: str) -> tuple[Optional[int], Optional[int]]:
 
 
 def _memo_prompt_cfg(sys_kv: Any) -> dict[str, Any]:
-    enabled = _sys_kv_bool(sys_kv, "memo.prompt.enabled", default=True)
-    require_subject = _sys_kv_bool(sys_kv, "memo.prompt.require_subject", default=True)
-    require_group = _sys_kv_bool(sys_kv, "memo.prompt.require_group", default=True)
-    require_details = _sys_kv_bool(sys_kv, "memo.prompt.require_details", default=True)
-    min_chars = _safe_int(sys_kv.get("memo.prompt.min_chars") if isinstance(sys_kv, dict) else None, default=30)
-    min_chars = max(0, min(500, int(min_chars)))
-    return {
-        "enabled": bool(enabled),
-        "require_subject": bool(require_subject),
-        "require_group": bool(require_group),
-        "require_details": bool(require_details),
-        "min_chars": min_chars,
-    }
+    return memo_enrich.prompt_cfg(sys_kv, sys_kv_bool=_sys_kv_bool, safe_int=_safe_int)
 
 
 def _memo_needs_enrich(*, memo: str, subject: str, group: str, cfg: dict[str, Any]) -> dict[str, bool]:
-    m = str(memo or "").strip()
-    s = str(subject or "").strip()
-    g = str(group or "").strip()
-    need_subject = bool(cfg.get("require_subject")) and not s
-    need_group = bool(cfg.get("require_group")) and not g
-    need_details = bool(cfg.get("require_details")) and (len(m) < int(cfg.get("min_chars") or 0))
-    return {"subject": need_subject, "group": need_group, "details": need_details}
+    return memo_enrich.needs_enrich(memo=memo, subject=subject, group=group, cfg=cfg)
 
 
 async def _memo_enrich_prompt(ws: WebSocket) -> None:
-    pending = getattr(ws.state, "pending_memo_enrich", None)
-    if not isinstance(pending, dict):
-        return
-    need = pending.get("need") if isinstance(pending.get("need"), dict) else {}
-    lang = str(getattr(ws.state, "user_lang", "") or "").strip().lower()
-
-    prompt = ""
-    if need.get("subject"):
-        prompt = "หัวข้อเมโมคืออะไร?" if lang.startswith("th") else "What is the memo subject/title?"
-    elif need.get("group"):
-        prompt = "เมโมนี้อยู่กลุ่มไหน? (เช่น ops/work/personal)" if lang.startswith("th") else "Which group/category is this memo? (e.g. ops/work/personal)"
-    elif need.get("details"):
-        prompt = "เพิ่มรายละเอียดอีกนิดได้ไหม?" if lang.startswith("th") else "Can you add a bit more detail?"
-    if not prompt:
-        return
-
-    try:
-        await _ws_send_json(ws, {"type": "text", "text": prompt, "instance_id": INSTANCE_ID})
-    except Exception:
-        pass
-    try:
-        await _live_say(ws, prompt)
-    except Exception:
-        pass
+    await memo_enrich.enrich_prompt(
+        ws,
+        ws_send_json=_ws_send_json,
+        live_say=_live_say,
+        instance_id=INSTANCE_ID,
+    )
 
 
 async def _handle_memo_enrich_followup(ws: WebSocket, text: str) -> bool:
