@@ -442,9 +442,15 @@ def _is_memo_trigger(text: str) -> bool:
     s = raw.lower()
     if s.startswith("memo:") or s.startswith("memo "):
         return True
+    if s.startswith("add memo") or s.startswith("save memo") or s.startswith("create memo"):
+        return True
     if raw.startswith("เมโม:") or raw.startswith("เมโม "):
         return True
+    if raw.startswith("เพิ่มเมโม") or raw.startswith("บันทึกเมโม"):
+        return True
     if raw.startswith("เมมโม:") or raw.startswith("เมมโม "):
+        return True
+    if raw.startswith("เพิ่มเมมโม") or raw.startswith("บันทึกเมมโม"):
         return True
     return False
 
@@ -458,14 +464,28 @@ def _extract_memo_text(text: str) -> Optional[str]:
         return str(raw[len("memo:") :]).strip() or None
     if low.startswith("memo "):
         return str(raw[len("memo ") :]).strip() or None
+    if low.startswith("add memo"):
+        return str(raw[len("add memo") :]).strip(" :") or None
+    if low.startswith("save memo"):
+        return str(raw[len("save memo") :]).strip(" :") or None
+    if low.startswith("create memo"):
+        return str(raw[len("create memo") :]).strip(" :") or None
     if raw.startswith("เมโม:"):
         return str(raw[len("เมโม:") :]).strip() or None
     if raw.startswith("เมโม "):
         return str(raw[len("เมโม ") :]).strip() or None
+    if raw.startswith("เพิ่มเมโม"):
+        return str(raw[len("เพิ่มเมโม") :]).strip(" :") or None
+    if raw.startswith("บันทึกเมโม"):
+        return str(raw[len("บันทึกเมโม") :]).strip(" :") or None
     if raw.startswith("เมมโม:"):
         return str(raw[len("เมมโม:") :]).strip() or None
     if raw.startswith("เมมโม "):
         return str(raw[len("เมมโม ") :]).strip() or None
+    if raw.startswith("เพิ่มเมมโม"):
+        return str(raw[len("เพิ่มเมมโม") :]).strip(" :") or None
+    if raw.startswith("บันทึกเมมโม"):
+        return str(raw[len("บันทึกเมมโม") :]).strip(" :") or None
     return None
 
 
