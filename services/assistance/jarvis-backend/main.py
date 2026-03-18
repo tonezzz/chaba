@@ -2002,13 +2002,18 @@ async def _sheet_get_header_row(*, spreadsheet_id: str, sheet_a1: str, max_cols:
     return list(header) if isinstance(header, list) else []
 
 
-async def _memo_ensure_header(*, spreadsheet_id: str, sheet_a1: str) -> None:
+async def _memo_ensure_header(*, spreadsheet_id: str, sheet_a1: str, force: bool = False) -> None:
     tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
     tool_update = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
     try:
         got_header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="Z")
-        if got_header and any(str(x or "").strip() for x in got_header):
-            return
+        if got_header and any(str(x or "").strip() for x in got_header) and not force:
+            lowered = [str(x or "").strip().lower() for x in got_header if str(x or "").strip()]
+            has_dupes = len(set(lowered)) != len(lowered)
+            required = {"date_time", "memo", "status", "group", "subject", "v", "result", "merged_into", "merged_at", "_merged", "_created", "_updated"}
+            missing_required = any(k not in set(lowered) for k in required)
+            if not has_dupes and not missing_required:
+                return
     except Exception:
         pass
     header = [
@@ -2054,6 +2059,23 @@ async def _memo_ensure_header(*, spreadsheet_id: str, sheet_a1: str) -> None:
             "update_result": parsed_u,
         }
     )
+
+
+@app.post("/memo/header/normalize")
+@app.post("/jarvis/memo/header/normalize")
+async def memo_header_normalize(x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token")) -> dict[str, Any]:
+    _require_api_token_if_configured(x_api_token)
+    sys_kv = _sys_kv_snapshot()
+    spreadsheet_id, sheet_name = _memo_sheet_cfg_from_sys_kv(sys_kv)
+    if not spreadsheet_id:
+        raise HTTPException(status_code=400, detail="missing_memo_ss")
+    if not sheet_name:
+        raise HTTPException(status_code=400, detail="missing_memo_sheet_name")
+    sheet_a1 = _sheet_name_to_a1(sheet_name, default="memo")
+    before = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+    await _memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, force=True)
+    after = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+    return {"ok": True, "spreadsheet_id": spreadsheet_id, "sheet": sheet_name, "before": before, "after": after}
 
 
 @app.post("/memo/add")
