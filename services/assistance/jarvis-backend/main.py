@@ -9952,6 +9952,45 @@ def debug_tools() -> dict[str, Any]:
     return {"ok": True, "enabled": enabled, "env": env, "tools": names}
 
 
+@app.get("/debug/memo")
+@app.get("/jarvis/debug/memo")
+async def debug_memo() -> dict[str, Any]:
+    sys_kv = _sys_kv_snapshot()
+    feat = feature_enabled("memo", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True)
+    memo_enabled = _sys_kv_bool(sys_kv, "memo.enabled", default=False)
+    spreadsheet_id, sheet_name = _memo_sheet_cfg_from_sys_kv(sys_kv if isinstance(sys_kv, dict) else None)
+    sheet_a1 = _sheet_name_to_a1(sheet_name, default="memo") if sheet_name else ""
+
+    auth_status: Any = None
+    auth_err: str | None = None
+    try:
+        tool_auth = _pick_sheets_tool_name("google_sheets_auth_status", "google_sheets_auth_status")
+        auth_status = _mcp_text_json(await _mcp_tools_call(tool_auth, {}))
+    except Exception as e:
+        auth_err = f"{type(e).__name__}: {e}"
+
+    header: Any = None
+    header_err: str | None = None
+    try:
+        if spreadsheet_id and sheet_a1:
+            header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+    except Exception as e:
+        header_err = f"{type(e).__name__}: {e}"
+
+    return {
+        "ok": True,
+        "feature_enabled": feat,
+        "memo_enabled": memo_enabled,
+        "spreadsheet_id": spreadsheet_id,
+        "sheet_name": sheet_name,
+        "sheet_a1": sheet_a1,
+        "sheets_auth_status": auth_status,
+        "sheets_auth_error": auth_err,
+        "header": header,
+        "header_error": header_err,
+    }
+
+
 @app.get("/status")
 @app.get("/jarvis/status")
 @app.get("/api/status")
