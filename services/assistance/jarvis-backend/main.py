@@ -439,18 +439,36 @@ def _is_memo_trigger(text: str) -> bool:
     raw = str(text or "").strip()
     if not raw:
         return False
+    s0 = raw
     s = raw.lower()
+    try:
+        # Trim common leading filler/polite words so voice commands like
+        # "please create memo ..." still route to memo.
+        s = re.sub(
+            r"^(hey|hi|ok|okay|please|pls|jarvis|assistant|ช่วย|ขอ|กรุณา|นะ|ครับ|ค่ะ|ขอให้)\b[\s,:-]*",
+            "",
+            s,
+            flags=re.IGNORECASE,
+        ).strip()
+        s0 = re.sub(
+            r"^(ช่วย|ขอ|กรุณา|นะ|ครับ|ค่ะ|ขอให้)[\s,:-]*",
+            "",
+            s0,
+        ).strip()
+    except Exception:
+        s0 = raw
+        s = raw.lower()
     if s.startswith("memo:") or s.startswith("memo "):
         return True
     if s.startswith("add memo") or s.startswith("save memo") or s.startswith("create memo"):
         return True
-    if raw.startswith("เมโม:") or raw.startswith("เมโม "):
+    if s0.startswith("เมโม:") or s0.startswith("เมโม "):
         return True
-    if raw.startswith("เพิ่มเมโม") or raw.startswith("บันทึกเมโม"):
+    if s0.startswith("เพิ่มเมโม") or s0.startswith("บันทึกเมโม") or s0.startswith("สร้างเมโม"):
         return True
-    if raw.startswith("เมมโม:") or raw.startswith("เมมโม "):
+    if s0.startswith("เมมโม:") or s0.startswith("เมมโม "):
         return True
-    if raw.startswith("เพิ่มเมมโม") or raw.startswith("บันทึกเมมโม"):
+    if s0.startswith("เพิ่มเมมโม") or s0.startswith("บันทึกเมมโม") or s0.startswith("สร้างเมมโม"):
         return True
     return False
 
@@ -459,33 +477,53 @@ def _extract_memo_text(text: str) -> Optional[str]:
     raw = str(text or "").strip()
     if not raw:
         return None
+    s0 = raw
     low = raw.lower()
+    try:
+        low = re.sub(
+            r"^(hey|hi|ok|okay|please|pls|jarvis|assistant|ช่วย|ขอ|กรุณา|นะ|ครับ|ค่ะ|ขอให้)\b[\s,:-]*",
+            "",
+            low,
+            flags=re.IGNORECASE,
+        ).strip()
+        s0 = re.sub(
+            r"^(ช่วย|ขอ|กรุณา|นะ|ครับ|ค่ะ|ขอให้)[\s,:-]*",
+            "",
+            s0,
+        ).strip()
+    except Exception:
+        s0 = raw
+        low = raw.lower()
     if low.startswith("memo:"):
-        return str(raw[len("memo:") :]).strip() or None
+        return str(s0[len("memo:") :]).strip() or None
     if low.startswith("memo "):
-        return str(raw[len("memo ") :]).strip() or None
+        return str(s0[len("memo ") :]).strip() or None
     if low.startswith("add memo"):
-        return str(raw[len("add memo") :]).strip(" :") or None
+        return str(s0[len("add memo") :]).strip(" :") or None
     if low.startswith("save memo"):
-        return str(raw[len("save memo") :]).strip(" :") or None
+        return str(s0[len("save memo") :]).strip(" :") or None
     if low.startswith("create memo"):
-        return str(raw[len("create memo") :]).strip(" :") or None
-    if raw.startswith("เมโม:"):
-        return str(raw[len("เมโม:") :]).strip() or None
-    if raw.startswith("เมโม "):
-        return str(raw[len("เมโม ") :]).strip() or None
-    if raw.startswith("เพิ่มเมโม"):
-        return str(raw[len("เพิ่มเมโม") :]).strip(" :") or None
-    if raw.startswith("บันทึกเมโม"):
-        return str(raw[len("บันทึกเมโม") :]).strip(" :") or None
-    if raw.startswith("เมมโม:"):
-        return str(raw[len("เมมโม:") :]).strip() or None
-    if raw.startswith("เมมโม "):
-        return str(raw[len("เมมโม ") :]).strip() or None
-    if raw.startswith("เพิ่มเมมโม"):
-        return str(raw[len("เพิ่มเมมโม") :]).strip(" :") or None
-    if raw.startswith("บันทึกเมมโม"):
-        return str(raw[len("บันทึกเมมโม") :]).strip(" :") or None
+        return str(s0[len("create memo") :]).strip(" :") or None
+    if s0.startswith("เมโม:"):
+        return str(s0[len("เมโม:") :]).strip() or None
+    if s0.startswith("เมโม "):
+        return str(s0[len("เมโม ") :]).strip() or None
+    if s0.startswith("เพิ่มเมโม"):
+        return str(s0[len("เพิ่มเมโม") :]).strip(" :") or None
+    if s0.startswith("บันทึกเมโม"):
+        return str(s0[len("บันทึกเมโม") :]).strip(" :") or None
+    if s0.startswith("สร้างเมโม"):
+        return str(s0[len("สร้างเมโม") :]).strip(" :") or None
+    if s0.startswith("เมมโม:"):
+        return str(s0[len("เมมโม:") :]).strip() or None
+    if s0.startswith("เมมโม "):
+        return str(s0[len("เมมโม ") :]).strip() or None
+    if s0.startswith("เพิ่มเมมโม"):
+        return str(s0[len("เพิ่มเมมโม") :]).strip(" :") or None
+    if s0.startswith("บันทึกเมมโม"):
+        return str(s0[len("บันทึกเมมโม") :]).strip(" :") or None
+    if s0.startswith("สร้างเมมโม"):
+        return str(s0[len("สร้างเมมโม") :]).strip(" :") or None
     return None
 
 
