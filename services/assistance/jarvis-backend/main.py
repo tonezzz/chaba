@@ -4479,7 +4479,7 @@ def _startup_prewarm_status_line(lang: str) -> str:
 
 
 async def _startup_prewarm_sheets() -> None:
-    # Prewarm caches (system KV + system.sheets) even when no UI is connected.
+    # Prewarm caches (system KV only) even when no UI is connected.
     async with _STARTUP_PREWARM_LOCK:
         _STARTUP_PREWARM_STATUS["ts"] = int(time.time())
         _STARTUP_PREWARM_STATUS["running"] = True
@@ -4505,11 +4505,9 @@ async def _startup_prewarm_sheets() -> None:
                     pass
             try:
                 ws = _DummyWS()
-                await _load_ws_sheet_memory(ws)
-                mem_items = getattr(ws.state, "memory_items", None)
-                know_items = getattr(ws.state, "knowledge_items", None)
-                _STARTUP_PREWARM_STATUS["memory_n"] = len(mem_items) if isinstance(mem_items, list) else 0
-                _STARTUP_PREWARM_STATUS["knowledge_n"] = len(know_items) if isinstance(know_items, list) else 0
+                await _load_ws_system_kv(ws)
+                _STARTUP_PREWARM_STATUS["memory_n"] = 0
+                _STARTUP_PREWARM_STATUS["knowledge_n"] = 0
                 _STARTUP_PREWARM_STATUS["ok"] = True
                 _STARTUP_PREWARM_STATUS["error"] = ""
                 _STARTUP_PREWARM_STATUS["running"] = False
