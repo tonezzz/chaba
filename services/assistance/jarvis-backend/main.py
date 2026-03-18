@@ -9900,7 +9900,41 @@ def config_voice_commands() -> dict[str, Any]:
 
 @app.get("/health")
 def health() -> dict[str, Any]:
-    return {"ok": True, "service": "jarvis-backend", "instance_id": INSTANCE_ID, "weaviate_enabled": _weaviate_enabled()}
+    return {
+        "ok": True,
+        "service": "jarvis-backend",
+        "instance_id": INSTANCE_ID,
+        "weaviate_enabled": _weaviate_enabled(),
+        "build": {
+            "git_sha": str(os.getenv("JARVIS_GIT_SHA") or os.getenv("GIT_SHA") or "").strip() or None,
+            "image_tag": str(os.getenv("JARVIS_IMAGE_TAG") or os.getenv("IMAGE_TAG") or "").strip() or None,
+        },
+    }
+
+
+@app.get("/debug/tools")
+@app.get("/jarvis/debug/tools")
+def debug_tools() -> dict[str, Any]:
+    sys_kv = _sys_kv_snapshot()
+    tools = _mcp_tool_declarations()
+    names: list[str] = []
+    for t in tools:
+        if isinstance(t, dict):
+            n = str(t.get("name") or "").strip()
+            if n:
+                names.append(n)
+    names = sorted(set(names))
+    enabled = {
+        "memo": feature_enabled("memo", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True),
+        "memory": feature_enabled("memory", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True),
+        "knowledge": feature_enabled("knowledge", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True),
+    }
+    env = {
+        "JARVIS_FEATURE_MEMO_ENABLED": os.getenv("JARVIS_FEATURE_MEMO_ENABLED"),
+        "JARVIS_FEATURE_MEMORY_ENABLED": os.getenv("JARVIS_FEATURE_MEMORY_ENABLED"),
+        "JARVIS_FEATURE_KNOWLEDGE_ENABLED": os.getenv("JARVIS_FEATURE_KNOWLEDGE_ENABLED"),
+    }
+    return {"ok": True, "enabled": enabled, "env": env, "tools": names}
 
 
 @app.get("/status")
