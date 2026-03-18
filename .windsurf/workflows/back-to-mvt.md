@@ -6,10 +6,10 @@ Use this workflow whenever you notice you context-switched and the current task 
 
 0. Priority
   high:
-  - When Jarvis is asked to create an items, assess the fields and fill them up with information from the user's request, if cannot find the information use memo, context, memory, knowledges.  Make sure to ask use of need clarification.
-  - When Jarvis need confirmation, asked the user clearly.
-  - Make the true/false fields in system sheets compatible with gsheet checkbox.
-  - Add serial number to logs items so I can mentioned each one.
+  - When asked to create an item, infer and fill fields from the request; if unknown, ask a single clarifying question.
+  - When you need confirmation, ask explicitly and block progress until answered.
+  - Keep Google Sheets boolean fields compatible with checkbox semantics.
+  - When writing to logs/memo sheets, include a short serial/trace identifier so we can reference entries.
 
 1. Restate the current objective (one sentence)
    - Write: "MVT: <single sentence outcome>".
@@ -52,6 +52,11 @@ Use this workflow whenever you notice you context-switched and the current task 
      - Stop watching (default state after SNA): `/jarvis/github/actions/watch/stop`
    - Always stop the watcher at the end of the SNA unless you explicitly decide to keep it running.
 
+4.1.1. Auto-disable after build finished
+   - When you observe the terminal/UI message `CI completed: ...`, stop the watcher immediately:
+     - `/jarvis/github/actions/watch/stop`
+   - If the build fails and you need to retry, you can start it again with `/jarvis/github/actions/watch/start`.
+
 4.2. Persist result into memory (optional but preferred)
    - If the SNA produced a clear result (e.g., run conclusion + URL), store it as a memory item:
      - Key example: `runtime.github_actions.watch.latest`
@@ -80,6 +85,12 @@ Use this workflow whenever you notice you context-switched and the current task 
      - SNA (one action)
      - Outcome (success/fail)
      - What improved (one sentence)
+
+6.1. Persist result into memo items (optional)
+   - If the run outcome should be remembered operationally, append a memo item (no UI required):
+     - `POST /jarvis/memo/add` (requires `memo.enabled=true`)
+     - Template (adjust host/token):
+       - `curl -sS -X POST http://<host>/jarvis/memo/add -H 'content-type: application/json' -H 'X-Api-Token: <token>' -d '{"memo":"MVT=<...> SNA=<...> outcome=<success|fail> next=<...>","group":"ops","subject":"back-to-mvt"}'`
 
 7. Self-assess (workflow improvement loop)
    - Score 0-2 for each:
