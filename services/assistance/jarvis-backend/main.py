@@ -1891,18 +1891,34 @@ async def memo_add(req: MemoAddRequest, x_api_token: Optional[str] = Header(defa
             await _memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
         except Exception as e:
             ensure_err = e
-        header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
-        idx = _idx_from_header(header)
+        header_after = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+        idx = _idx_from_header(header_after)
     if not idx:
-        detail: Any = "memo_sheet_missing_header"
+        def _trim_list(x: Any, max_n: int = 30) -> list[Any]:
+            if not isinstance(x, list):
+                return []
+            out = x[:max_n]
+            return out
+
+        ensure_txt = ""
         try:
             if ensure_err is not None:
                 s = str(ensure_err).strip()
                 if len(s) > 240:
                     s = s[:240] + "..."
-                detail = {"error": "memo_sheet_missing_header", "ensure_header_failed": f"{type(ensure_err).__name__}: {s}"}
+                ensure_txt = f"{type(ensure_err).__name__}: {s}"
         except Exception:
-            detail = "memo_sheet_missing_header"
+            ensure_txt = ""
+
+        detail: Any = {
+            "error": "memo_sheet_missing_header",
+            "spreadsheet_id": spreadsheet_id,
+            "sheet_name": sheet_name,
+            "sheet_a1": sheet_a1,
+            "header_before": _trim_list(header),
+            "header_after": _trim_list(locals().get("header_after")),
+            "ensure_header_failed": ensure_txt,
+        }
         raise HTTPException(status_code=400, detail=detail)
 
     now_dt = datetime.now(tz=timezone.utc).replace(microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
