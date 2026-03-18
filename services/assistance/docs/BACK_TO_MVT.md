@@ -5,7 +5,10 @@ Reduce context-switching and unfinished work by enforcing:
 - A single clear objective (MVT)
 - A smallest-next-action loop (<= 10 minutes, binary outcome)
 - A strict queue (WIP limit = 1)
+- A clear priority system
 - A self-improvement checkpoint
+
+## Priority
 
 ## When to run
 Run this anytime you notice any of these:

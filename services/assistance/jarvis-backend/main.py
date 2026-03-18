@@ -10067,6 +10067,24 @@ async def _github_watch_loop(
                 if run_id and run_id != last_run_id:
                     last_run_id = run_id
                     last_status = status
+                    try:
+                        _append_ui_log_entries(
+                            [
+                                {
+                                    "type": "github_actions",
+                                    "kind": "run_detected",
+                                    "ts": int(time.time()),
+                                    "key": key,
+                                    "owner": owner,
+                                    "repo": repo,
+                                    "branch": branch,
+                                    "event": event,
+                                    "run": run,
+                                }
+                            ]
+                        )
+                    except Exception:
+                        pass
                     await _broadcast_to_user(
                         DEFAULT_USER_ID,
                         {
@@ -10094,6 +10112,24 @@ async def _github_watch_loop(
 
                 if status == "completed" and (conclusion != last_conclusion or last_conclusion is None):
                     last_conclusion = conclusion
+                    try:
+                        _append_ui_log_entries(
+                            [
+                                {
+                                    "type": "github_actions",
+                                    "kind": "run_completed",
+                                    "ts": int(time.time()),
+                                    "key": key,
+                                    "owner": owner,
+                                    "repo": repo,
+                                    "branch": branch,
+                                    "event": event,
+                                    "run": run,
+                                }
+                            ]
+                        )
+                    except Exception:
+                        pass
                     await _broadcast_to_user(
                         DEFAULT_USER_ID,
                         {
@@ -10126,6 +10162,24 @@ async def _github_watch_loop(
                 "ts": int(time.time()),
                 "error": str(e),
             }
+            try:
+                _append_ui_log_entries(
+                    [
+                        {
+                            "type": "github_actions",
+                            "kind": "watch_error",
+                            "ts": int(time.time()),
+                            "key": key,
+                            "owner": owner,
+                            "repo": repo,
+                            "branch": branch,
+                            "event": event,
+                            "error": f"{type(e).__name__}: {str(e)}",
+                        }
+                    ]
+                )
+            except Exception:
+                pass
             try:
                 detail = str(e)
                 hint = ""
