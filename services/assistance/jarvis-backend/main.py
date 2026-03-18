@@ -2028,12 +2028,18 @@ async def _memo_ensure_header(*, spreadsheet_id: str, sheet_a1: str, force: bool
         "_created",
         "_updated",
     ]
+    # Important: clear any leftover header cells from older schemas by writing
+    # blanks through Z. Google Sheets won't necessarily delete trailing cells
+    # if we write a shorter header, so removed columns can linger.
+    header_padded = list(header)
+    while len(header_padded) < 26:
+        header_padded.append("")
     res_u = await _mcp_tools_call(
         tool_update,
         {
             "spreadsheet_id": spreadsheet_id,
             "range": f"{sheet_a1}!A1:Z1",
-            "values": [header],
+            "values": [header_padded],
             "value_input_option": "RAW",
         },
     )
