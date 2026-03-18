@@ -1172,26 +1172,63 @@ async def _ws_record(ws: WebSocket, direction: str, msg: Any) -> None:
 
 def _sheets_logs_cfg() -> dict[str, Any]:
     sys_kv = _sys_kv_snapshot()
-    def _get(k: str) -> str:
+
+    def _get_sys(k: str) -> str:
         return str(sys_kv.get(k) or "").strip() if isinstance(sys_kv, dict) else ""
-    raw_enabled = _get("logs.enabled") or _get("logs.sheet.enabled")
+
+    def _get_env(k: str) -> str:
+        return str(os.getenv(k) or "").strip()
+
+    # Env defaults (can be overridden/disabled by sys_kv).
+    raw_enabled_env = _get_env("JARVIS_SHEETS_LOGS_ENABLED")
     enabled = False
-    if raw_enabled:
+    if raw_enabled_env:
         try:
-            enabled = _parse_bool_cell(raw_enabled)
+            enabled = _parse_bool_cell(raw_enabled_env)
         except Exception:
             enabled = False
-    sheet_name = _get("logs.sheet_name") or _get("logs_sh") or ""
-    spreadsheet_id = _get("logs.spreadsheet_id") or _get("logs_ss") or ""
-    raw_server = _get("logs.server.enabled") or _get("logs.server_events.enabled")
+
+    sheet_name = _get_env("JARVIS_SHEETS_LOGS_SHEET_NAME")
+    spreadsheet_id = _get_env("JARVIS_SHEETS_LOGS_SPREADSHEET_ID")
+
+    raw_server_env = _get_env("JARVIS_SHEETS_LOGS_SERVER_ENABLED")
     server_enabled = False
-    if raw_server:
+    if raw_server_env:
         try:
-            server_enabled = _parse_bool_cell(raw_server)
+            server_enabled = _parse_bool_cell(raw_server_env)
         except Exception:
             server_enabled = False
-    hb_raw = _get("logs.server.heartbeat_seconds") or _get("logs.server_events.heartbeat_seconds")
-    hb_s = _safe_int(hb_raw, default=30) if hb_raw else 30
+
+    hb_raw_env = _get_env("JARVIS_SHEETS_LOGS_SERVER_HEARTBEAT_SECONDS")
+    hb_s = _safe_int(hb_raw_env, default=30) if hb_raw_env else 30
+
+    # sys_kv overrides (explicit sys_kv disable should win).
+    raw_enabled_sys = _get_sys("logs.enabled") or _get_sys("logs.sheet.enabled")
+    if raw_enabled_sys:
+        try:
+            enabled = _parse_bool_cell(raw_enabled_sys)
+        except Exception:
+            enabled = False
+
+    sheet_name_sys = _get_sys("logs.sheet_name") or _get_sys("logs_sh")
+    if sheet_name_sys:
+        sheet_name = sheet_name_sys
+
+    spreadsheet_id_sys = _get_sys("logs.spreadsheet_id") or _get_sys("logs_ss")
+    if spreadsheet_id_sys:
+        spreadsheet_id = spreadsheet_id_sys
+
+    raw_server_sys = _get_sys("logs.server.enabled") or _get_sys("logs.server_events.enabled")
+    if raw_server_sys:
+        try:
+            server_enabled = _parse_bool_cell(raw_server_sys)
+        except Exception:
+            server_enabled = False
+
+    hb_raw_sys = _get_sys("logs.server.heartbeat_seconds") or _get_sys("logs.server_events.heartbeat_seconds")
+    if hb_raw_sys:
+        hb_s = _safe_int(hb_raw_sys, default=30)
+
     hb_s = max(5, min(int(hb_s), 3600))
     if not spreadsheet_id:
         try:
