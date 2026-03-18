@@ -12393,24 +12393,52 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                             result = await _handle_mcp_tool_call(session_id, fc_name, fc_args)
                         else:
                             raise HTTPException(status_code=400, detail={"unknown_tool": fc_name})
-                        function_responses.append(
-                            types.FunctionResponse(
-                                id=fc_id,
-                                name=fc_name,
-                                response={"ok": True, "result": result},
+                        # Tool handlers may return structured failures like {"ok": False, ...}.
+                        # Preserve those failures (don't wrap them as ok:true) so Gemini and the UI
+                        # can surface the real error detail.
+                        if isinstance(result, dict) and result.get("ok") is False:
+                            err_payload = {
+                                "ok": False,
+                                "error": result.get("error") or "tool_failed",
+                                "detail": result,
+                            }
+                            function_responses.append(
+                                types.FunctionResponse(
+                                    id=fc_id,
+                                    name=fc_name,
+                                    response=err_payload,
+                                )
                             )
-                        )
-                        try:
-                            await _ws_progress(
-                                ws,
-                                f"Done {fc_name}",
-                                phase="done",
-                                tool_name=fc_name,
-                                step=len(function_responses),
-                                total=len(function_calls),
+                            try:
+                                await _ws_progress(
+                                    ws,
+                                    f"Failed {fc_name}: {result.get('detail') or result.get('error') or 'tool_failed'}",
+                                    phase="error",
+                                    tool_name=fc_name,
+                                    step=len(function_responses),
+                                    total=len(function_calls),
+                                )
+                            except Exception:
+                                pass
+                        else:
+                            function_responses.append(
+                                types.FunctionResponse(
+                                    id=fc_id,
+                                    name=fc_name,
+                                    response={"ok": True, "result": result},
+                                )
                             )
-                        except Exception:
-                            pass
+                            try:
+                                await _ws_progress(
+                                    ws,
+                                    f"Done {fc_name}",
+                                    phase="done",
+                                    tool_name=fc_name,
+                                    step=len(function_responses),
+                                    total=len(function_calls),
+                                )
+                            except Exception:
+                                pass
                     except HTTPException as e:
                         logger.info("gemini_tool_call_error name=%s status_code=%s", fc_name, e.status_code)
                         function_responses.append(
