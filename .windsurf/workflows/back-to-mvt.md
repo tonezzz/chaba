@@ -4,6 +4,13 @@ description: Back To Most Valuable Task (MVT)
 
 Use this workflow whenever you notice you context-switched and the current task is left half-done.
 
+0. Priority
+  high:
+  - When Jarvis is asked to create an items, assess the fields and fill them up with information from the user's request, if cannot find the information use memo, context, memory, knowledges.  Make sure to ask use of need clarification.
+  - When Jarvis need confirmation, asked the user clearly.
+  - Make the true/false fields in system sheets compatible with gsheet checkbox.
+  - Add serial number to logs items so I can mentioned each one.
+
 1. Restate the current objective (one sentence)
    - Write: "MVT: <single sentence outcome>".
    - If you can't say it in one sentence, split it into 2-3 outcomes and pick the most urgent one.
@@ -25,9 +32,13 @@ Use this workflow whenever you notice you context-switched and the current task 
 
    If the SNA involves pushing code:
    - If push fails with non-fast-forward:
+     - If you have local uncommitted changes:
+       - `git stash push -m "wip: pre-rebase"`
      - `git fetch origin`
      - `git rebase origin/<branch>`
      - resolve conflicts (if any)
+     - If you stashed:
+       - `git stash pop` (resolve conflicts if any)
      - push again
 
 4. Execute SNA
