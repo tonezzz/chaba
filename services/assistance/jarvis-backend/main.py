@@ -19,6 +19,8 @@ from typing import Any, Optional, Literal
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
+from jarvis.feature_flags import feature_enabled
+
 from routes.google_tasks import create_router as _create_google_tasks_router
 from routes.google_calendar import create_router as _create_google_calendar_router
 
@@ -7462,21 +7464,26 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
         if handled:
             return True
 
-    handled = await _handle_memo_trigger(ws, text)
-    if handled:
-        return True
+    sys_kv = getattr(ws.state, "sys_kv", None)
+
+    if feature_enabled("memo", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+        handled = await _handle_memo_trigger(ws, text)
+        if handled:
+            return True
 
     handled = await _handle_notes_check(ws, text)
     if handled:
         return True
 
-    handled = await _handle_memory_trigger(ws, text)
-    if handled:
-        return True
+    if feature_enabled("memory", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+        handled = await _handle_memory_trigger(ws, text)
+        if handled:
+            return True
 
-    handled = await _handle_knowledge_trigger(ws, text)
-    if handled:
-        return True
+    if feature_enabled("knowledge", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+        handled = await _handle_knowledge_trigger(ws, text)
+        if handled:
+            return True
 
     handled = await _handle_note_trigger(ws, text)
     if handled:
@@ -11385,6 +11392,7 @@ app.include_router(
 
 
 def _mcp_tool_declarations() -> list[dict[str, Any]]:
+    sys_kv = _sys_kv_snapshot()
     decls: list[dict[str, Any]] = []
     for name, meta in MCP_TOOL_MAP.items():
         if str(meta.get("mcp_base") or "").strip().lower() == "aim" and not AIM_MCP_BASE_URL:
@@ -11440,52 +11448,54 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
         }
     )
 
-    decls.append(
-        {
-            "name": "memo_add",
-            "description": "Append a memo entry to the memo sheet (Google Sheets).",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "memo": {"type": "string", "description": "Memo text/body."},
-                    "group": {"type": "string", "description": "Optional group label."},
-                    "subject": {"type": "string", "description": "Optional subject label."},
-                    "status": {"type": "string", "description": "Optional status (default new)."},
-                    "v": {"type": "string", "description": "Optional version tag."},
-                    "result": {"type": "string", "description": "Optional result/notes."},
+    if feature_enabled("memo", sys_kv=sys_kv, default=True):
+        decls.append(
+            {
+                "name": "memo_add",
+                "description": "Append a memo entry to the memo sheet (Google Sheets).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "memo": {"type": "string", "description": "Memo text/body."},
+                        "group": {"type": "string", "description": "Optional group label."},
+                        "subject": {"type": "string", "description": "Optional subject label."},
+                        "status": {"type": "string", "description": "Optional status (default new)."},
+                        "v": {"type": "string", "description": "Optional version tag."},
+                        "result": {"type": "string", "description": "Optional result/notes."},
+                    },
+                    "required": ["memo"],
                 },
-                "required": ["memo"],
-            },
-        }
-    )
+            }
+        )
 
-    decls.append(
-        {
-            "name": "memory_search",
-            "description": "Search authoritative memory items (sheet-backed).",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "query": {"type": "string"},
-                    "limit": {"type": "integer"},
+    if feature_enabled("memory", sys_kv=sys_kv, default=True):
+        decls.append(
+            {
+                "name": "memory_search",
+                "description": "Search authoritative memory items (sheet-backed).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string"},
+                        "limit": {"type": "integer"},
+                    },
+                    "required": ["query"],
                 },
-                "required": ["query"],
-            },
-        }
-    )
+            }
+        )
 
-    decls.append(
-        {
-            "name": "memory_list",
-            "description": "List loaded memory keys (sheet-backed).",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "limit": {"type": "integer"},
+        decls.append(
+            {
+                "name": "memory_list",
+                "description": "List loaded memory keys (sheet-backed).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "limit": {"type": "integer"},
+                    },
                 },
-            },
-        }
-    )
+            }
+        )
 
     decls.append({"name": "pending_list", "description": "List queued pending actions waiting for confirmation."})
     decls.append(
@@ -11545,6 +11555,8 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         if ws is None:
             raise HTTPException(status_code=400, detail="missing_session_ws")
         sys_kv = getattr(ws.state, "sys_kv", None)
+        if not feature_enabled("memory", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+            raise HTTPException(status_code=403, detail="feature_disabled:memory")
         if not isinstance(sys_kv, dict) or "memory.write.enabled" not in sys_kv:
             raise HTTPException(status_code=500, detail={"missing_sys_kv_key": "memory.write.enabled"})
         if not isinstance(sys_kv, dict) or "memory.autowrite.enabled" not in sys_kv:
@@ -11574,6 +11586,8 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             raise HTTPException(status_code=400, detail="missing_session_ws")
 
         sys_kv = getattr(ws.state, "sys_kv", None)
+        if not feature_enabled("memo", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+            raise HTTPException(status_code=403, detail="feature_disabled:memo")
         if not _sys_kv_bool(sys_kv, "memo.enabled", default=False):
             raise HTTPException(status_code=403, detail="memo_disabled")
 
