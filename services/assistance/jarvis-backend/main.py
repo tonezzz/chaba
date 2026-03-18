@@ -12389,6 +12389,10 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                             "pending_list",
                             "pending_confirm",
                             "pending_cancel",
+                            "memo_add",
+                            "memory_add",
+                            "memory_search",
+                            "memory_list",
                         ):
                             result = await _handle_mcp_tool_call(session_id, fc_name, fc_args)
                         else:
