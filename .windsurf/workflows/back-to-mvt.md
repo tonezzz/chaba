@@ -10,6 +10,10 @@ Use this workflow whenever you notice you context-switched and the current task 
   - When you need confirmation, ask explicitly and block progress until answered.
   - Keep Google Sheets boolean fields compatible with checkbox semantics.
   - When writing to logs/memo sheets, include a short serial/trace identifier so we can reference entries.
+  - If Sheets logs are involved, stabilize them FIRST:
+    - Ensure `JARVIS_SHEETS_LOGS_ENABLED=true` and `JARVIS_SHEETS_LOGS_SHEET_NAME=<tab>` are present in the running container (redeploy if needed).
+    - Verify `/jarvis/logs/sheets/status` shows `enabled=true`, non-empty `sheet_name`, and `queue_len` decreases after a test append.
+    - Do not proceed to other tasks while `sheet_name` is empty or `queue_len` monotonically increases.
 
 1. Restate the current objective (one sentence)
    - Write: "MVT: <single sentence outcome>".
@@ -23,12 +27,16 @@ Use this workflow whenever you notice you context-switched and the current task 
      - "What is the next verification step?"
 
 3. Define the smallest next action (SNA)
-   - Must be doable in <= 10 minutes.
-   - Must produce a binary result (pass/fail, present/missing, connected/disconnected).
-   - Format:
-     - "SNA: <action>"
-     - "Success looks like: <observable>"
-     - "If fail, I will inspect: <1 place>"
+  - Must be doable in <= 10 minutes.
+  - Must produce a binary result (pass/fail, present/missing, connected/disconnected).
+  - Format:
+    - "SNA: <action>"
+    - "Success looks like: <observable>"
+    - "If fail, I will inspect: <1 place>"
+
+   If the current issue is Sheets logs:
+   - Prefer an SNA that checks *effective config* first:
+     - `GET /jarvis/logs/sheets/status` then fix env/redeploy until `sheet_name` is non-empty.
 
    If the SNA involves pushing code:
    - If push fails with non-fast-forward:

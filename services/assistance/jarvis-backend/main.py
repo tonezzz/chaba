@@ -1210,10 +1210,6 @@ def _sheets_logs_cfg() -> dict[str, Any]:
         except Exception:
             enabled = False
 
-    sheet_name_sys = _get_sys("logs.sheet_name") or _get_sys("logs_sh")
-    if sheet_name_sys:
-        sheet_name = sheet_name_sys
-
     spreadsheet_id_sys = _get_sys("logs.spreadsheet_id") or _get_sys("logs_ss")
     if spreadsheet_id_sys:
         spreadsheet_id = spreadsheet_id_sys
@@ -1242,6 +1238,18 @@ def _sheets_logs_cfg() -> dict[str, Any]:
         "server_enabled": server_enabled,
         "server_heartbeat_seconds": hb_s,
     }
+
+
+def _sheets_logs_ready(cfg: dict[str, Any] | None = None) -> bool:
+    if cfg is None:
+        cfg = _sheets_logs_cfg()
+    if not isinstance(cfg, dict):
+        return False
+    if not cfg.get("enabled"):
+        return False
+    spreadsheet_id = str(cfg.get("spreadsheet_id") or "").strip()
+    sheet_name = str(cfg.get("sheet_name") or "").strip()
+    return bool(spreadsheet_id and sheet_name)
 
 
 async def _sheets_logs_ensure_header(*, spreadsheet_id: str, sheet_name: str) -> None:
@@ -1342,7 +1350,7 @@ async def _sheets_logs_flush_loop() -> None:
 async def _sheets_logs_enqueue_ws(ws: WebSocket, direction: str, msg: Any) -> None:
     global _SHEETS_LOGS_QUEUE, _SHEETS_LOGS_LOCK
     cfg = _sheets_logs_cfg()
-    if not cfg.get("enabled"):
+    if not _sheets_logs_ready(cfg):
         return
     if _SHEETS_LOGS_LOCK is None:
         _SHEETS_LOGS_LOCK = asyncio.Lock()
@@ -1384,7 +1392,7 @@ async def _sheets_logs_enqueue_ws(ws: WebSocket, direction: str, msg: Any) -> No
 async def _sheets_logs_enqueue_http(*, typ: str, text: str, msg: Any | None = None) -> None:
     global _SHEETS_LOGS_QUEUE, _SHEETS_LOGS_LOCK
     cfg = _sheets_logs_cfg()
-    if not cfg.get("enabled"):
+    if not _sheets_logs_ready(cfg):
         return
     if _SHEETS_LOGS_LOCK is None:
         _SHEETS_LOGS_LOCK = asyncio.Lock()
@@ -1416,7 +1424,7 @@ async def _sheets_logs_enqueue_http(*, typ: str, text: str, msg: Any | None = No
 async def _sheets_logs_enqueue_server(*, typ: str, text: str, msg: Any | None = None) -> None:
     global _SHEETS_LOGS_QUEUE, _SHEETS_LOGS_LOCK
     cfg = _sheets_logs_cfg()
-    if not cfg.get("enabled") or not cfg.get("server_enabled"):
+    if not _sheets_logs_ready(cfg) or not cfg.get("server_enabled"):
         return
     if _SHEETS_LOGS_LOCK is None:
         _SHEETS_LOGS_LOCK = asyncio.Lock()
