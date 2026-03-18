@@ -51,6 +51,11 @@ Required paths:
   - proxy behavior:
     - match `handle_path /jarvis/api/*`
     - reverse proxy to `127.0.0.1:18018`
+  - used for:
+    - `GET /jarvis/api/logs/ws/today?max_bytes=...`
+    - `GET /jarvis/api/logs/ui/today?max_bytes=...`
+    - `POST /jarvis/api/logs/ui/append`
+    - `POST /jarvis/api/jarvis/memo/add`
 
 - Frontend:
   - public: `https://assistance.idc1.surf-thailand.com/jarvis/`

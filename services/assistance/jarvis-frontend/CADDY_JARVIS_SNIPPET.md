@@ -13,6 +13,11 @@ assistance.idc1.surf-thailand.com {
     reverse_proxy 127.0.0.1:18018
   }
 
+  # Backend HTTP API (strip /jarvis/api prefix)
+  handle_path /jarvis/api/* {
+    reverse_proxy 127.0.0.1:18018
+  }
+
   # All other /jarvis paths go to the SPA frontend
   handle_path /jarvis/* {
     reverse_proxy 127.0.0.1:18080

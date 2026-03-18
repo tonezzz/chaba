@@ -43,7 +43,20 @@ curl -sS -X POST http://127.0.0.1:18018/jarvis/memo/add \
 
 Notes:
 
-- Public UI endpoint `https://assistance.idc1.surf-thailand.com/jarvis/` may not expose backend HTTP routes like `/health` or `/jarvis/memo/add` unless edge proxy routing is configured.
+- Public UI endpoint `https://assistance.idc1.surf-thailand.com/jarvis/` is served via edge proxy.
+- Backend HTTP routes (logs + memo + health) should be exposed via edge proxy prefix:
+  - public: `https://assistance.idc1.surf-thailand.com/jarvis/api/...`
+  - proxy behavior: `handle_path /jarvis/api/*` -> `http://127.0.0.1:18018` (strip `/jarvis/api`)
+
+Public examples (when edge proxy is configured):
+
+```bash
+curl -fsS https://assistance.idc1.surf-thailand.com/jarvis/api/health
+
+curl -sS -X POST https://assistance.idc1.surf-thailand.com/jarvis/api/jarvis/memo/add \
+  -H 'content-type: application/json' \
+  -d '{"memo":"hello from public curl","group":"ops","subject":"test","status":"new"}'
+```
 
 ## Ports (host binds)
 
