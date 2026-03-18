@@ -31,11 +31,10 @@ The backend ensures the memo sheet has a header row and will create it if missin
 Columns (current backend header):
 
 - `date_time`
-- `memo`
-- `status`
 - `group`
+- `status`
 - `subject`
-- `v`
+- `memo`
 - `result`
 - `merged_into`
 - `merged_at`
@@ -84,6 +83,19 @@ Notes:
 - If memo is enabled and the trigger matches, the system appends to the memo sheet.
 - If memo is disabled, the system returns `memo_disabled` and does **not** fall back to memory/tasks.
 
+### Follow-up prompts (soft enrichment)
+By default, memo will be saved immediately, but the backend can ask follow-up questions to make the memo more complete.
+
+This is controlled via sys_kv keys:
+
+- `memo.prompt.enabled` (default `TRUE`)
+- `memo.prompt.require_subject` (default `TRUE`)
+- `memo.prompt.require_group` (default `TRUE`)
+- `memo.prompt.require_details` (default `TRUE`)
+- `memo.prompt.min_chars` (default `30`)
+
+If a memo is missing `subject`/`group` or is too short, Jarvis asks follow-ups and then appends an enriched memo entry.
+
 ## HTTP API
 
 Endpoint:
@@ -96,7 +108,6 @@ Request JSON:
 - `subject` (string)
 - `memo` (string)
 - `status` (optional)
-- `v` (optional)
 - `result` (optional)
 
 The endpoint validates:
@@ -106,6 +117,15 @@ The endpoint validates:
 - Memo sheet config.
 
 Then ensures header and appends the row.
+
+## Admin / maintenance
+
+### Normalize header columns
+If the sheet header was edited manually or has duplicate/missing columns, normalize it to the canonical schema:
+
+- `POST /jarvis/memo/header/normalize` (alias: `POST /memo/header/normalize`)
+
+This rewrites row 1 (header) only. It does not migrate historical row data between columns.
 
 ## Troubleshooting
 

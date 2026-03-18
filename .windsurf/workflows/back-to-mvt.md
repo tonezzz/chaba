@@ -44,6 +44,11 @@ Use this workflow whenever you notice you context-switched and the current task 
    - Prefer an SNA that checks *effective config* first:
      - `GET /jarvis/logs/sheets/status` then fix env/redeploy until `sheet_name` is non-empty.
 
+   If the current issue is memo:
+   - Prefer an SNA that checks *effective memo config* first:
+     - `GET /jarvis/debug/memo`
+     - If header looks wrong/duplicated, run `POST /jarvis/memo/header/normalize` then re-check `/jarvis/debug/memo`.
+
    If the SNA involves pushing code:
    - If push fails with non-fast-forward:
      - If you have local uncommitted changes:
