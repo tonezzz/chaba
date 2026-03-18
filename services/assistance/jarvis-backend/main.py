@@ -442,49 +442,12 @@ def _normalize_thai_compact(s: str) -> str:
         return str(s or "")
 
 
-def _is_memo_trigger(text: str) -> bool:
+def _memo_match_anywhere(text: str) -> tuple[bool, str | None]:
+    # Returns (matched, extracted_memo_text_or_none).
     raw = str(text or "").strip()
     if not raw:
-        return False
-    s0 = raw
-    s = raw.lower()
-    try:
-        # Trim common leading filler/polite words so voice commands like
-        # "please create memo ..." still route to memo.
-        s = re.sub(
-            r"^(hey|hi|ok|okay|please|pls|jarvis|assistant|ช่วย|ขอ|กรุณา|นะ|ครับ|ค่ะ|ขอให้)\b[\s,:-]*",
-            "",
-            s,
-            flags=re.IGNORECASE,
-        ).strip()
-        s0 = re.sub(
-            r"^(ช่วย|ขอ|กรุณา|นะ|ครับ|ค่ะ|ขอให้)[\s,:-]*",
-            "",
-            s0,
-        ).strip()
-    except Exception:
-        s0 = raw
-        s = raw.lower()
-    if s.startswith("memo:") or s.startswith("memo "):
-        return True
-    if s.startswith("add memo") or s.startswith("save memo") or s.startswith("create memo"):
-        return True
-    s0n = _normalize_thai_compact(s0)
-    if s0n.startswith("เมโม:") or s0n.startswith("เมโม "):
-        return True
-    if s0n.startswith("เพิ่มเมโม") or s0n.startswith("บันทึกเมโม") or s0n.startswith("สร้างเมโม"):
-        return True
-    if s0n.startswith("เมมโม:") or s0n.startswith("เมมโม "):
-        return True
-    if s0n.startswith("เพิ่มเมมโม") or s0n.startswith("บันทึกเมมโม") or s0n.startswith("สร้างเมมโม"):
-        return True
-    return False
+        return (False, None)
 
-
-def _extract_memo_text(text: str) -> Optional[str]:
-    raw = str(text or "").strip()
-    if not raw:
-        return None
     s0 = raw
     low = raw.lower()
     try:
@@ -500,40 +463,37 @@ def _extract_memo_text(text: str) -> Optional[str]:
             s0,
         ).strip()
     except Exception:
-        s0 = raw
-        low = raw.lower()
-    if low.startswith("memo:"):
-        return str(s0[len("memo:") :]).strip() or None
-    if low.startswith("memo "):
-        return str(s0[len("memo ") :]).strip() or None
-    if low.startswith("add memo"):
-        return str(s0[len("add memo") :]).strip(" :") or None
-    if low.startswith("save memo"):
-        return str(s0[len("save memo") :]).strip(" :") or None
-    if low.startswith("create memo"):
-        return str(s0[len("create memo") :]).strip(" :") or None
+        pass
+
+    # EN patterns (allow keyword anywhere).
+    m_en = re.search(r"\b(?:add|save|create)?\s*memo\b\s*[:\-]?\s*(.*)$", low, flags=re.IGNORECASE)
+    if m_en:
+        tail = str(m_en.group(1) or "").strip()
+        return (True, tail or None)
+
+    # Thai patterns (normalize tone/marks: เมโม่ -> เมโม).
     s0n = _normalize_thai_compact(s0)
-    if s0n.startswith("เมโม:"):
-        return str(s0[len("เมโม:") :]).strip() or None
-    if s0n.startswith("เมโม "):
-        return str(s0[len("เมโม ") :]).strip() or None
-    if s0n.startswith("เพิ่มเมโม"):
-        return str(s0[len("เพิ่มเมโม") :]).strip(" :") or None
-    if s0n.startswith("บันทึกเมโม"):
-        return str(s0[len("บันทึกเมโม") :]).strip(" :") or None
-    if s0n.startswith("สร้างเมโม"):
-        return str(s0[len("สร้างเมโม") :]).strip(" :") or None
-    if s0n.startswith("เมมโม:"):
-        return str(s0[len("เมมโม:") :]).strip() or None
-    if s0n.startswith("เมมโม "):
-        return str(s0[len("เมมโม ") :]).strip() or None
-    if s0n.startswith("เพิ่มเมมโม"):
-        return str(s0[len("เพิ่มเมมโม") :]).strip(" :") or None
-    if s0n.startswith("บันทึกเมมโม"):
-        return str(s0[len("บันทึกเมมโม") :]).strip(" :") or None
-    if s0n.startswith("สร้างเมมโม"):
-        return str(s0[len("สร้างเมมโม") :]).strip(" :") or None
-    return None
+    m_th = re.search(r"(?:เพิ่ม|บันทึก|สร้าง)?\s*(เมโม|เมมโม)\s*[:\-]?\s*(.*)$", s0n)
+    if m_th:
+        # Use original string slicing only for the tail segment (keep original marks).
+        tail_norm = str(m_th.group(2) or "").strip()
+        if tail_norm:
+            return (True, tail_norm)
+        return (True, None)
+
+    return (False, None)
+
+
+def _is_memo_trigger(text: str) -> bool:
+    ok, _tail = _memo_match_anywhere(str(text or ""))
+    return ok
+
+
+def _extract_memo_text(text: str) -> Optional[str]:
+    ok, tail = _memo_match_anywhere(str(text or ""))
+    if not ok:
+        return None
+    return str(tail or "").strip() or None
 
 
 def _parse_memo_merge(text: str) -> tuple[Optional[int], Optional[int]]:
