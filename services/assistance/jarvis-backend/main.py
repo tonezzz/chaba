@@ -1805,6 +1805,10 @@ async def _sheet_get_header_row(*, spreadsheet_id: str, sheet_a1: str, max_cols:
     res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A1:{max_cols}1"})
     parsed = _mcp_text_json(res)
     vals = parsed.get("values") if isinstance(parsed, dict) else None
+    if not isinstance(vals, list) or not vals:
+        data = parsed.get("data") if isinstance(parsed, dict) else None
+        if isinstance(data, dict):
+            vals = data.get("values")
     header = vals[0] if isinstance(vals, list) and vals and isinstance(vals[0], list) else []
     return list(header) if isinstance(header, list) else []
 
