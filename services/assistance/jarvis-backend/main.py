@@ -20,6 +20,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 
 from jarvis.feature_flags import feature_enabled
+from jarvis import memo_sheet
 
 from routes.google_tasks import create_router as _create_google_tasks_router
 from routes.google_calendar import create_router as _create_google_calendar_router
@@ -2022,75 +2023,13 @@ async def _sheet_get_header_row(*, spreadsheet_id: str, sheet_a1: str, max_cols:
 
 
 async def _memo_ensure_header(*, spreadsheet_id: str, sheet_a1: str, force: bool = False) -> None:
-    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
-    tool_update = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
-    try:
-        got_header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
-        if got_header and any(str(x or "").strip() for x in got_header) and not force:
-            lowered = [str(x or "").strip().lower() for x in got_header if str(x or "").strip()]
-            has_dupes = len(set(lowered)) != len(lowered)
-            required = {"date_time", "memo", "status", "group", "subject", "result", "merged_into", "merged_at", "_merged", "_created", "_updated"}
-            missing_required = any(k not in set(lowered) for k in required)
-            if not has_dupes and not missing_required:
-                return
-    except Exception:
-        pass
-    header = [
-        "date_time",
-        "group",
-        "status",
-        "subject",
-        "memo",
-        "result",
-        "merged_into",
-        "merged_at",
-        "_merged",
-        "_created",
-        "_updated",
-    ]
-    res_u = await _mcp_tools_call(
-        tool_update,
-        {
-            "spreadsheet_id": spreadsheet_id,
-            "range": f"{sheet_a1}!A1:K1",
-            "values": [header],
-            "value_input_option": "RAW",
-        },
-    )
-
-    # Explicitly clear any old trailing header cells so we don't end up with
-    # stale values like "Column 12" .. "Column 26".
-    try:
-        await _mcp_tools_call(
-            tool_update,
-            {
-                "spreadsheet_id": spreadsheet_id,
-                "range": f"{sheet_a1}!L1:Z1",
-                "values": [[""] * 15],
-                "value_input_option": "RAW",
-            },
-        )
-    except Exception:
-        pass
-
-    try:
-        got_header2 = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
-        if got_header2 and any(str(x or "").strip() for x in got_header2):
-            return
-    except Exception:
-        pass
-
-    try:
-        parsed_u = _mcp_text_json(res_u)
-    except Exception:
-        parsed_u = None
-    raise RuntimeError(
-        {
-            "memo_header_write_no_effect": True,
-            "spreadsheet_id": spreadsheet_id,
-            "sheet_a1": sheet_a1,
-            "update_result": parsed_u,
-        }
+    await memo_sheet.ensure_header(
+        spreadsheet_id=spreadsheet_id,
+        sheet_a1=sheet_a1,
+        force=force,
+        sheet_get_header_row=_sheet_get_header_row,
+        mcp_tools_call=_mcp_tools_call,
+        pick_sheets_tool_name=_pick_sheets_tool_name,
     )
 
 
