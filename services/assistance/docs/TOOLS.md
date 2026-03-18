@@ -68,6 +68,94 @@ flowchart LR
   BE -->|WS events| FE
 ```
 
+## Chart: Deterministic Gemini function tools (backend-implemented)
+
+These tools are exposed to Gemini Live as **function calls**, but are still **deterministic** because the backend implements them directly (they are not free-form model output).
+
+Key properties:
+
+- The model chooses *when* to call them, but the backend enforces:
+  - Sys-sheet gates (e.g. `memo.enabled`, `memory.write.enabled`)
+  - Validation (required fields)
+  - Consistent side effects (Sheets write / DB read)
+- If these tools are available, Gemini should prefer them over “guessing” a calendar/task workflow.
+
+```mermaid
+flowchart TB
+  GL[Gemini Live] -->|tool_call: name+args| BE[Jarvis Backend]
+  subgraph Backend deterministic function tools
+    BE --> TN[time_now]
+    BE --> SL[session_last_get]
+    BE --> MEMADD[memory_add]
+    BE --> MEMS[memory_search]
+    BE --> MEML[memory_list]
+    BE --> MADD[memo_add]
+    BE --> PL[pending_list]
+    BE --> PC[pending_confirm]
+    BE --> PX[pending_cancel]
+  end
+  BE -->|FunctionResponse| GL
+  BE -->|MCP JSON-RPC (Sheets/Calendar/Tasks/etc.)| MCP[MCP servers]
+```
+
+### Tool: `memo_add`
+
+Purpose: append a memo row to the memo Google Sheet (same data model as `POST /jarvis/memo/add`).
+
+Gates (sys sheet KV):
+
+- `memo.enabled=true`
+- `memo.sheet_name` (and optionally `memo.spreadsheet_id`)
+
+Function signature:
+
+- `memo_add({ memo, group?, subject?, status?, v?, result? })`
+
+Behavior:
+
+- Ensures memo sheet header exists (best-effort create if missing).
+- Appends a row via Sheets `values.append`.
+
+### Tool: `memory_add`
+
+Purpose: upsert an authoritative memory item into the Memory sheet (hybrid mode).
+
+Gates (sys sheet KV):
+
+- `memory.write.enabled=true`
+- `memory.autowrite.enabled=true`
+
+Function signature:
+
+- `memory_add({ key?, value, scope?, priority? })`
+
+### Tool: `memory_search` / `memory_list`
+
+Purpose: search or list loaded memory items.
+
+- `memory_search({ query, limit? })`
+- `memory_list({ limit? })`
+
+### Tool: `time_now`
+
+Purpose: authoritative current time.
+
+- `time_now({ timezone? })`
+
+### Tool: `session_last_get`
+
+Purpose: fetch “last created/modified” object for the current voice session.
+
+- `session_last_get({ slot: "last_created"|"last_modified" })`
+
+### Tools: `pending_list` / `pending_confirm` / `pending_cancel`
+
+Purpose: manage queued “pending” actions (confirmation-based writes).
+
+- `pending_list({})`
+- `pending_confirm({ confirmation_id })`
+- `pending_cancel({ confirmation_id })`
+
 ### Tool chart: memory.*
 
 Purpose: read/write authoritative memory items in the Memory Sheet (KV5 schema: key,value,enabled,scope,priority).
