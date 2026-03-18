@@ -23,6 +23,13 @@ Use this workflow whenever you notice you context-switched and the current task 
      - "Success looks like: <observable>"
      - "If fail, I will inspect: <1 place>"
 
+   If the SNA involves pushing code:
+   - If push fails with non-fast-forward:
+     - `git fetch origin`
+     - `git rebase origin/<branch>`
+     - resolve conflicts (if any)
+     - push again
+
 4. Execute SNA
    - Do only the SNA. No refactors, no docs, no extras.
    - Capture the output (copy/paste the key lines).
