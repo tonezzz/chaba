@@ -19,6 +19,32 @@ Rules:
 - Weaviate (internal to stack network):
   - `http://weaviate:8080`
 
+## Memo (Google Sheets) append endpoint
+
+Jarvis backend supports appending memo items via HTTP:
+
+- Endpoint:
+  - `POST http://127.0.0.1:18018/jarvis/memo/add`
+- Requirements:
+  - system KV: `memo.enabled = TRUE`
+  - system KV: `memo.sheet_name` (and optionally `memo.spreadsheet_name`)
+- Optional auth:
+  - If `jarvis.api_token` (sys_kv) or `JARVIS_API_TOKEN` (env) is set, requests must include header `X-Api-Token: <token>`.
+
+Example:
+
+```bash
+curl -fsS http://127.0.0.1:18018/health
+
+curl -sS -X POST http://127.0.0.1:18018/jarvis/memo/add \
+  -H 'content-type: application/json' \
+  -d '{"memo":"hello from curl","group":"ops","subject":"test","status":"new"}'
+```
+
+Notes:
+
+- Public UI endpoint `https://assistance.idc1.surf-thailand.com/jarvis/` may not expose backend HTTP routes like `/health` or `/jarvis/memo/add` unless edge proxy routing is configured.
+
 ## Ports (host binds)
 
 - `127.0.0.1:18080` -> Jarvis frontend
