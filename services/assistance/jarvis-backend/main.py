@@ -520,7 +520,7 @@ async def _handle_memo_trigger(ws: WebSocket, text: str) -> bool:
 
     sheet_name = ""
     if isinstance(sys_kv, dict):
-        sheet_name = str(sys_kv.get("memo.sheet_name") or sys_kv.get("memo_sh") or "").strip()
+        sheet_name = str(sys_kv.get("memo.sheet_name") or sys_kv.get("memo_sheet_name") or sys_kv.get("memo_sh") or "").strip()
     if not sheet_name:
         await _ws_send_json(ws, {"type": "text", "text": "missing_memo_sheet_name", "instance_id": INSTANCE_ID})
         return True
@@ -1652,7 +1652,7 @@ def _memo_sheet_cfg_from_sys_kv(sys_kv: dict[str, Any] | None) -> tuple[str, str
             or sys_kv.get("memo_ss")
             or ""
         ).strip()
-        sheet_name = str(sys_kv.get("memo.sheet_name") or sys_kv.get("memo_sh") or "").strip()
+        sheet_name = str(sys_kv.get("memo.sheet_name") or sys_kv.get("memo_sheet_name") or sys_kv.get("memo_sh") or "").strip()
     if not spreadsheet_id:
         spreadsheet_id = _system_spreadsheet_id()
     return (spreadsheet_id, sheet_name)
