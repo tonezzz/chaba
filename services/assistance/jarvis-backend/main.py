@@ -1703,14 +1703,24 @@ async def logs_ui_append(req: _UILogAppendRequest) -> dict[str, Any]:
 @app.get("/jarvis/logs/sheets/status")
 def logs_sheets_status() -> dict[str, Any]:
     cfg = _sheets_logs_cfg()
+    q_len = 0
     try:
-        qn = len(_SHEETS_LOGS_QUEUE) if isinstance(_SHEETS_LOGS_QUEUE, list) else 0
+        q_len = len(_SHEETS_LOGS_QUEUE)
     except Exception:
-        qn = 0
-    out = dict(cfg)
-    out["queue_len"] = qn
-    out["ok"] = True
-    return out
+        q_len = 0
+    env_enabled = str(os.getenv("JARVIS_SHEETS_LOGS_ENABLED") or "")
+    env_sheet_name = str(os.getenv("JARVIS_SHEETS_LOGS_SHEET_NAME") or "")
+    env_spreadsheet_id = str(os.getenv("JARVIS_SHEETS_LOGS_SPREADSHEET_ID") or "")
+    return {
+        **cfg,
+        "queue_len": q_len,
+        "ok": True,
+        "env": {
+            "JARVIS_SHEETS_LOGS_ENABLED": env_enabled,
+            "JARVIS_SHEETS_LOGS_SHEET_NAME": env_sheet_name,
+            "JARVIS_SHEETS_LOGS_SPREADSHEET_ID": env_spreadsheet_id,
+        },
+    }
 
 
 def _api_token_required_value() -> str:
