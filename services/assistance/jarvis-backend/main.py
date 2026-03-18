@@ -1835,18 +1835,15 @@ async def _memo_ensure_header(*, spreadsheet_id: str, sheet_a1: str) -> None:
         "_created",
         "_updated",
     ]
-    try:
-        await _mcp_tools_call(
-            tool_update,
-            {
-                "spreadsheet_id": spreadsheet_id,
-                "range": f"{sheet_a1}!A1:M1",
-                "values": [header],
-                "value_input_option": "RAW",
-            },
-        )
-    except Exception:
-        return
+    await _mcp_tools_call(
+        tool_update,
+        {
+            "spreadsheet_id": spreadsheet_id,
+            "range": f"{sheet_a1}!A1:M1",
+            "values": [header],
+            "value_input_option": "RAW",
+        },
+    )
 
 
 @app.post("/memo/add")
@@ -1889,14 +1886,24 @@ async def memo_add(req: MemoAddRequest, x_api_token: Optional[str] = Header(defa
     header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
     idx = _idx_from_header(header)
     if not idx:
+        ensure_err: Exception | None = None
         try:
             await _memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
-        except Exception:
-            pass
+        except Exception as e:
+            ensure_err = e
         header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
         idx = _idx_from_header(header)
     if not idx:
-        raise HTTPException(status_code=400, detail="memo_sheet_missing_header")
+        detail: Any = "memo_sheet_missing_header"
+        try:
+            if ensure_err is not None:
+                s = str(ensure_err).strip()
+                if len(s) > 240:
+                    s = s[:240] + "..."
+                detail = {"error": "memo_sheet_missing_header", "ensure_header_failed": f"{type(ensure_err).__name__}: {s}"}
+        except Exception:
+            detail = "memo_sheet_missing_header"
+        raise HTTPException(status_code=400, detail=detail)
 
     now_dt = datetime.now(tz=timezone.utc).replace(microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
     status = str(req.status or "").strip() or "new"
