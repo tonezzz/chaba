@@ -560,7 +560,18 @@ async def _handle_memo_trigger(ws: WebSocket, text: str) -> bool:
 
     sys_kv = getattr(ws.state, "sys_kv", None)
     if not _sys_kv_bool(sys_kv, "memo.enabled", default=False):
-        return False
+        try:
+            lang = str(getattr(ws.state, "user_lang", "") or "").strip().lower()
+        except Exception:
+            lang = ""
+        msg = "memo_disabled"
+        if lang.startswith("th"):
+            msg = "ปิดการใช้งานเมโม (memo_disabled)"
+        try:
+            await _ws_send_json(ws, {"type": "text", "text": msg, "instance_id": INSTANCE_ID})
+        except Exception:
+            pass
+        return True
 
     spreadsheet_id = ""
     if isinstance(sys_kv, dict):
