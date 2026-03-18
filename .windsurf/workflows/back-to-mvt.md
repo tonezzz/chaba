@@ -8,6 +8,11 @@ Use this workflow whenever you notice you context-switched and the current task 
   high:
   - When asked to create an item, infer and fill fields from the request; if unknown, ask a single clarifying question.
   - When you need confirmation, ask explicitly and block progress until answered.
+  - If you are stuck repeating the same debugging loop (e.g., env/config drift, tool-call opacity), treat **module separation + feature-flagging** as the next MVT:
+    - Extract the affected feature(s) into their own module(s) (e.g., `memo`, `memory`, `knowledge`, `tools`),
+    - Add explicit enable/disable switches,
+    - Add a single debug endpoint per module,
+    - Then verify one module at a time.
   - Keep Google Sheets boolean fields compatible with checkbox semantics.
   - When writing to logs/memo sheets, include a short serial/trace identifier so we can reference entries.
   - If Sheets logs are involved, stabilize them FIRST:
