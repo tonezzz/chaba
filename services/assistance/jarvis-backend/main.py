@@ -21,6 +21,7 @@ import xml.etree.ElementTree as ET
 
 from jarvis.feature_flags import feature_enabled
 from jarvis import memo_sheet
+from jarvis import sheets_utils
 
 from routes.google_tasks import create_router as _create_google_tasks_router
 from routes.google_calendar import create_router as _create_google_calendar_router
@@ -430,12 +431,7 @@ async def _load_sheet_table(*, spreadsheet_id: str, sheet_name: str, max_rows: i
 
 
 def _idx_from_header(header: list[Any]) -> dict[str, int]:
-    idx: dict[str, int] = {}
-    for i, c in enumerate(header):
-        name = str(c or "").strip().lower()
-        if name and name not in idx:
-            idx[name] = i
-    return idx
+    return sheets_utils.idx_from_header(header)
 
 
 def _normalize_thai_compact(s: str) -> str:
@@ -2010,16 +2006,14 @@ def _memo_sheet_cfg_from_sys_kv(sys_kv: dict[str, Any] | None) -> tuple[str, str
 
 
 async def _sheet_get_header_row(*, spreadsheet_id: str, sheet_a1: str, max_cols: str = "Z") -> list[Any]:
-    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
-    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A1:{max_cols}1"})
-    parsed = _mcp_text_json(res)
-    vals = parsed.get("values") if isinstance(parsed, dict) else None
-    if not isinstance(vals, list) or not vals:
-        data = parsed.get("data") if isinstance(parsed, dict) else None
-        if isinstance(data, dict):
-            vals = data.get("values")
-    header = vals[0] if isinstance(vals, list) and vals and isinstance(vals[0], list) else []
-    return list(header) if isinstance(header, list) else []
+    return await sheets_utils.sheet_get_header_row(
+        spreadsheet_id=spreadsheet_id,
+        sheet_a1=sheet_a1,
+        max_cols=max_cols,
+        mcp_tools_call=_mcp_tools_call,
+        pick_sheets_tool_name=_pick_sheets_tool_name,
+        mcp_text_json=_mcp_text_json,
+    )
 
 
 async def _memo_ensure_header(*, spreadsheet_id: str, sheet_a1: str, force: bool = False) -> None:
@@ -7849,10 +7843,7 @@ def _safe_int(v: Any, default: int = 0) -> int:
 
 
 def _sheet_name_to_a1(sheet_name: str, default: str = "Sheet1") -> str:
-    s = str(sheet_name or "").strip() or default
-    if re.match(r"^[A-Za-z0-9_]+$", s):
-        return s
-    return "'" + s.replace("'", "''") + "'"
+    return sheets_utils.sheet_name_to_a1(sheet_name, default=default)
 
 
 async def _run_notes_board_job(*, ws: WebSocket, job_text: str, gem_name: str | None) -> tuple[str, str]:
