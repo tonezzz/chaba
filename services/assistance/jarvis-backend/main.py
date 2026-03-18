@@ -1695,6 +1695,18 @@ async def logs_ui_append(req: _UILogAppendRequest) -> dict[str, Any]:
     path = _ui_log_daily_path()
     items = req.entries if isinstance(req.entries, list) else []
     appended = _append_ui_log_entries(items)
+    if appended and items:
+        for it in items:
+            try:
+                if not isinstance(it, dict):
+                    continue
+                await _sheets_logs_enqueue_http(
+                    typ=str(it.get("type") or "ui"),
+                    text=str(it.get("text") or ""),
+                    msg=it,
+                )
+            except Exception:
+                pass
     return {"ok": True, "path": path, "appended": appended}
 
 
