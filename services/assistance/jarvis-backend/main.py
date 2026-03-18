@@ -1817,10 +1817,7 @@ async def _memo_ensure_header(*, spreadsheet_id: str, sheet_a1: str) -> None:
     tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
     tool_update = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
     try:
-        res_h = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A1:Z1"})
-        parsed_h = _mcp_text_json(res_h)
-        vals_h = parsed_h.get("values") if isinstance(parsed_h, dict) else None
-        got_header = vals_h[0] if isinstance(vals_h, list) and vals_h and isinstance(vals_h[0], list) else None
+        got_header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="Z")
         if got_header and any(str(x or "").strip() for x in got_header):
             return
     except Exception:
@@ -1850,10 +1847,7 @@ async def _memo_ensure_header(*, spreadsheet_id: str, sheet_a1: str) -> None:
     )
 
     try:
-        res_h2 = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A1:Z1"})
-        parsed_h2 = _mcp_text_json(res_h2)
-        vals_h2 = parsed_h2.get("values") if isinstance(parsed_h2, dict) else None
-        got_header2 = vals_h2[0] if isinstance(vals_h2, list) and vals_h2 and isinstance(vals_h2[0], list) else None
+        got_header2 = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="Z")
         if got_header2 and any(str(x or "").strip() for x in got_header2):
             return
     except Exception:
