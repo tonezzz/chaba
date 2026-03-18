@@ -25,7 +25,7 @@ from routes.google_calendar import create_router as _create_google_calendar_rout
 from PIL import Image
 
 import httpx
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Body
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Body, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 
@@ -1603,23 +1603,137 @@ class _UILogAppendRequest(BaseModel):
     entries: list[dict[str, Any]] = Field(default_factory=list)
 
 
+class MemoAddRequest(BaseModel):
+    memo: str = Field(min_length=1, max_length=20000)
+    subject: Optional[str] = None
+    group: Optional[str] = None
+    status: Optional[str] = None
+    v: Optional[str] = None
+    result: Optional[str] = None
+
+
 @app.post("/logs/ui/append")
 @app.post("/jarvis/logs/ui/append")
 async def logs_ui_append(req: _UILogAppendRequest) -> dict[str, Any]:
     path = _ui_log_daily_path()
     items = req.entries if isinstance(req.entries, list) else []
-    if not items:
-        return {"ok": True, "appended": 0}
+    appended = _append_ui_log_entries(items)
+    return {"ok": True, "path": path, "appended": appended}
+
+
+def _api_token_required_value() -> str:
     try:
-        _ensure_logs_dir()
-        with open(path, "a", encoding="utf-8") as f:
-            for it in items[:500]:
-                if not isinstance(it, dict):
-                    continue
-                f.write(json.dumps(it, ensure_ascii=False) + "\n")
-        return {"ok": True, "appended": min(len(items), 500)}
+        sys_kv = _sys_kv_snapshot()
+        if isinstance(sys_kv, dict):
+            v = str(sys_kv.get("jarvis.api_token") or "").strip()
+            if v:
+                return v
+    except Exception:
+        pass
+    return str(os.getenv("JARVIS_API_TOKEN") or "").strip()
+
+
+def _require_api_token_if_configured(token: str | None) -> None:
+    required = _api_token_required_value()
+    if not required:
+        return
+    got = str(token or "").strip()
+    if not got or got != required:
+        raise HTTPException(status_code=401, detail="unauthorized")
+
+
+def _memo_sheet_cfg_from_sys_kv(sys_kv: dict[str, Any] | None) -> tuple[str, str]:
+    spreadsheet_id = ""
+    sheet_name = ""
+    if isinstance(sys_kv, dict):
+        spreadsheet_id = str(
+            sys_kv.get("memo.spreadsheet_name")
+            or sys_kv.get("memo.spreadsheet_id")
+            or sys_kv.get("memo_ss")
+            or ""
+        ).strip()
+        sheet_name = str(sys_kv.get("memo.sheet_name") or sys_kv.get("memo_sh") or "").strip()
+    if not spreadsheet_id:
+        spreadsheet_id = _system_spreadsheet_id()
+    return (spreadsheet_id, sheet_name)
+
+
+async def _sheet_get_header_row(*, spreadsheet_id: str, sheet_a1: str, max_cols: str = "Z") -> list[Any]:
+    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A1:{max_cols}1"})
+    parsed = _mcp_text_json(res)
+    vals = parsed.get("values") if isinstance(parsed, dict) else None
+    header = vals[0] if isinstance(vals, list) and vals and isinstance(vals[0], list) else []
+    return list(header) if isinstance(header, list) else []
+
+
+@app.post("/memo/add")
+@app.post("/jarvis/memo/add")
+async def memo_add(req: MemoAddRequest, x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token")) -> dict[str, Any]:
+    _require_api_token_if_configured(x_api_token)
+    sys_kv = _sys_kv_snapshot()
+    try:
+        raw_enabled = str(sys_kv.get("memo.enabled") or "").strip() if isinstance(sys_kv, dict) else ""
+        enabled = _parse_bool_cell(raw_enabled) if raw_enabled else False
+    except Exception:
+        enabled = False
+    if not enabled:
+        raise HTTPException(status_code=400, detail="memo_disabled")
+
+    spreadsheet_id, sheet_name = _memo_sheet_cfg_from_sys_kv(sys_kv)
+    if not spreadsheet_id:
+        raise HTTPException(status_code=400, detail="missing_memo_ss")
+    if not sheet_name:
+        raise HTTPException(status_code=400, detail="missing_memo_sheet_name")
+
+    sheet_a1 = _sheet_name_to_a1(sheet_name, default="memo")
+    header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+    idx = _idx_from_header(header)
+    if not idx:
+        raise HTTPException(status_code=400, detail="memo_sheet_missing_header")
+
+    now_dt = datetime.now(tz=timezone.utc).replace(microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
+    status = str(req.status or "").strip() or "new"
+
+    def _set(row: list[Any], col: str, value: Any) -> None:
+        j = idx.get(str(col or "").strip().lower())
+        if j is None:
+            return
+        while len(row) <= j:
+            row.append("")
+        row[j] = value
+
+    row: list[Any] = []
+    _set(row, "date_time", now_dt)
+    _set(row, "memo", str(req.memo or "").strip())
+    _set(row, "status", status)
+    _set(row, "group", str(req.group or "").strip())
+    _set(row, "subject", str(req.subject or "").strip())
+    _set(row, "v", str(req.v or "").strip())
+    _set(row, "result", str(req.result or "").strip())
+    _set(row, "_created", now_dt)
+    _set(row, "_updated", now_dt)
+    _set(row, "_merged", False)
+    _set(row, "merged_into", "")
+    _set(row, "merged_at", "")
+
+    tool_append = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+    try:
+        res = await _mcp_tools_call(
+            tool_append,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": f"{sheet_a1}!A:Z",
+                "values": [row],
+                "value_input_option": "USER_ENTERED",
+                "insert_data_option": "INSERT_ROWS",
+            },
+        )
     except Exception as e:
-        raise HTTPException(status_code=502, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"memo_append_failed: {type(e).__name__}: {e}")
+
+    parsed = _mcp_text_json(res)
+    return {"ok": True, "appended": 1, "sheet": sheet_name, "spreadsheet_id": spreadsheet_id, "raw": parsed}
 
 
 @app.get("/logs/ui/today")
