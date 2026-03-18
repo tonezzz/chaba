@@ -244,7 +244,7 @@ export default function App() {
     const entries = batch.map((b) => b.entry);
     for (const base of backendCandidates()) {
       try {
-        const res = await fetch(`${base}/ui/append`, {
+        const res = await fetch(`${base}/logs/ui/append`, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ entries }),
@@ -270,7 +270,7 @@ export default function App() {
     setWsLogErr("");
     for (const base of backendCandidates()) {
       try {
-        const res = await fetch(`${base}/ws/today?max_bytes=200000`, { method: "GET" });
+        const res = await fetch(`${base}/logs/ws/today?max_bytes=200000`, { method: "GET" });
         if (!res.ok) continue;
         const j = await res.json();
         const txt = j?.text != null ? String(j.text) : "";
