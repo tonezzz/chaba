@@ -1062,6 +1062,7 @@ _WS_RECORD_LOCK: asyncio.Lock | None = None
 _SHEETS_LOGS_QUEUE: list[dict[str, Any]] = []
 _SHEETS_LOGS_LOCK: asyncio.Lock | None = None
 _SHEETS_LOGS_TASK: asyncio.Task[None] | None = None
+_SHEETS_LOGS_SERVER_TASK: asyncio.Task[None] | None = None
 _SHEETS_LOGS_LAST_HDR: float = 0.0
 
 _LOGS_DIR = str(os.getenv("JARVIS_LOGS_DIR") or "/data/jarvis_logs").strip() or "/data/jarvis_logs"
@@ -1182,12 +1183,28 @@ def _sheets_logs_cfg() -> dict[str, Any]:
             enabled = False
     sheet_name = _get("logs.sheet_name") or _get("logs_sh") or ""
     spreadsheet_id = _get("logs.spreadsheet_id") or _get("logs_ss") or ""
+    raw_server = _get("logs.server.enabled") or _get("logs.server_events.enabled")
+    server_enabled = False
+    if raw_server:
+        try:
+            server_enabled = _parse_bool_cell(raw_server)
+        except Exception:
+            server_enabled = False
+    hb_raw = _get("logs.server.heartbeat_seconds") or _get("logs.server_events.heartbeat_seconds")
+    hb_s = _safe_int(hb_raw, default=30) if hb_raw else 30
+    hb_s = max(5, min(int(hb_s), 3600))
     if not spreadsheet_id:
         try:
             spreadsheet_id = _system_spreadsheet_id()
         except Exception:
             spreadsheet_id = ""
-    return {"enabled": enabled, "spreadsheet_id": spreadsheet_id, "sheet_name": sheet_name}
+    return {
+        "enabled": enabled,
+        "spreadsheet_id": spreadsheet_id,
+        "sheet_name": sheet_name,
+        "server_enabled": server_enabled,
+        "server_heartbeat_seconds": hb_s,
+    }
 
 
 async def _sheets_logs_ensure_header(*, spreadsheet_id: str, sheet_name: str) -> None:
@@ -1325,6 +1342,67 @@ async def _sheets_logs_enqueue_ws(ws: WebSocket, direction: str, msg: Any) -> No
         _SHEETS_LOGS_QUEUE.append(rec)
         if len(_SHEETS_LOGS_QUEUE) > 5000:
             _SHEETS_LOGS_QUEUE = _SHEETS_LOGS_QUEUE[-5000:]
+
+
+async def _sheets_logs_enqueue_server(*, typ: str, text: str, msg: Any | None = None) -> None:
+    global _SHEETS_LOGS_QUEUE, _SHEETS_LOGS_LOCK
+    cfg = _sheets_logs_cfg()
+    if not cfg.get("enabled") or not cfg.get("server_enabled"):
+        return
+    if _SHEETS_LOGS_LOCK is None:
+        _SHEETS_LOGS_LOCK = asyncio.Lock()
+    ts_ms = int(time.time() * 1000)
+    ts = datetime.now(tz=timezone.utc).replace(microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
+    msg_json = ""
+    try:
+        if msg is not None:
+            msg_json = json.dumps(msg, ensure_ascii=False)
+    except Exception:
+        msg_json = str(msg)
+    rec = {
+        "ts_ms": ts_ms,
+        "ts": ts,
+        "direction": "server",
+        "session_id": "",
+        "trace_id": "",
+        "type": str(typ or "server"),
+        "text": str(text or ""),
+        "msg_json": msg_json,
+        "instance_id": INSTANCE_ID,
+    }
+    async with _SHEETS_LOGS_LOCK:
+        _SHEETS_LOGS_QUEUE.append(rec)
+        if len(_SHEETS_LOGS_QUEUE) > 5000:
+            _SHEETS_LOGS_QUEUE = _SHEETS_LOGS_QUEUE[-5000:]
+
+
+async def _sheets_logs_server_loop() -> None:
+    last_enabled = False
+    while True:
+        try:
+            cfg = _sheets_logs_cfg()
+            enabled = bool(cfg.get("enabled")) and bool(cfg.get("server_enabled"))
+            hb_s = int(cfg.get("server_heartbeat_seconds") or 30)
+            if enabled and not last_enabled:
+                try:
+                    await _sheets_logs_enqueue_server(typ="server.start", text="started")
+                except Exception:
+                    pass
+            last_enabled = enabled
+            if enabled:
+                try:
+                    uptime_s = max(0.0, float(time.time() - float(_PROCESS_START_TS)))
+                except Exception:
+                    uptime_s = 0.0
+                await _sheets_logs_enqueue_server(
+                    typ="server.heartbeat",
+                    text=f"uptime_s={int(uptime_s)}",
+                )
+            await asyncio.sleep(float(hb_s) if enabled else 5.0)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            await asyncio.sleep(5.0)
 
 
 def _ws_capture_trace_id(ws: WebSocket, msg: Any) -> str | None:
@@ -9119,6 +9197,7 @@ async def _reminder_scheduler_loop() -> None:
 async def _startup() -> None:
     global _reminder_task
     global _SHEETS_LOGS_TASK
+    global _SHEETS_LOGS_SERVER_TASK
     try:
         _init_session_db()
     except Exception as e:
@@ -9141,6 +9220,12 @@ async def _startup() -> None:
     try:
         if _SHEETS_LOGS_TASK is None or _SHEETS_LOGS_TASK.done():
             _SHEETS_LOGS_TASK = asyncio.create_task(_sheets_logs_flush_loop(), name="sheets_logs_flush")
+    except Exception:
+        pass
+
+    try:
+        if _SHEETS_LOGS_SERVER_TASK is None or _SHEETS_LOGS_SERVER_TASK.done():
+            _SHEETS_LOGS_SERVER_TASK = asyncio.create_task(_sheets_logs_server_loop(), name="sheets_logs_server")
     except Exception:
         pass
 
@@ -9207,12 +9292,16 @@ async def _startup() -> None:
 async def _shutdown() -> None:
     global _reminder_task
     global _SHEETS_LOGS_TASK
+    global _SHEETS_LOGS_SERVER_TASK
     if _reminder_task is not None:
         _reminder_task.cancel()
         _reminder_task = None
     if _SHEETS_LOGS_TASK is not None:
         _SHEETS_LOGS_TASK.cancel()
         _SHEETS_LOGS_TASK = None
+    if _SHEETS_LOGS_SERVER_TASK is not None:
+        _SHEETS_LOGS_SERVER_TASK.cancel()
+        _SHEETS_LOGS_SERVER_TASK = None
 
 
 def _mcp_text_json(result: Any) -> Any:
