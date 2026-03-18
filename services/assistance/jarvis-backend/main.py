@@ -9914,6 +9914,7 @@ def config_voice_commands() -> dict[str, Any]:
 
 
 @app.get("/health")
+@app.get("/jarvis/health")
 def health() -> dict[str, Any]:
     return {
         "ok": True,
