@@ -1059,6 +1059,11 @@ _WS_RECORD_PATH = str(os.getenv("JARVIS_WS_RECORD_PATH") or "").strip() or None
 _WS_RECORD_ENABLED = bool(_WS_RECORD_PATH) or str(os.getenv("JARVIS_WS_RECORD") or "").strip().lower() in ("1", "true", "yes", "on")
 _WS_RECORD_LOCK: asyncio.Lock | None = None
 
+_SHEETS_LOGS_QUEUE: list[dict[str, Any]] = []
+_SHEETS_LOGS_LOCK: asyncio.Lock | None = None
+_SHEETS_LOGS_TASK: asyncio.Task[None] | None = None
+_SHEETS_LOGS_LAST_HDR: float = 0.0
+
 _LOGS_DIR = str(os.getenv("JARVIS_LOGS_DIR") or "/data/jarvis_logs").strip() or "/data/jarvis_logs"
 
 
@@ -1134,6 +1139,10 @@ def _read_text_file_tail(path: str, max_bytes: int = 200000) -> str:
 
 async def _ws_record(ws: WebSocket, direction: str, msg: Any) -> None:
     global _WS_RECORD_LOCK
+    try:
+        await _sheets_logs_enqueue_ws(ws, direction, msg)
+    except Exception:
+        pass
     if not _WS_RECORD_ENABLED:
         return
     path = _ws_record_daily_path()
@@ -1158,6 +1167,164 @@ async def _ws_record(ws: WebSocket, direction: str, msg: Any) -> None:
                 f.write(json.dumps(rec, ensure_ascii=False) + "\n")
     except Exception:
         return
+
+
+def _sheets_logs_cfg() -> dict[str, Any]:
+    sys_kv = _sys_kv_snapshot()
+    def _get(k: str) -> str:
+        return str(sys_kv.get(k) or "").strip() if isinstance(sys_kv, dict) else ""
+    raw_enabled = _get("logs.enabled") or _get("logs.sheet.enabled")
+    enabled = False
+    if raw_enabled:
+        try:
+            enabled = _parse_bool_cell(raw_enabled)
+        except Exception:
+            enabled = False
+    sheet_name = _get("logs.sheet_name") or _get("logs_sh") or ""
+    spreadsheet_id = _get("logs.spreadsheet_id") or _get("logs_ss") or ""
+    if not spreadsheet_id:
+        try:
+            spreadsheet_id = _system_spreadsheet_id()
+        except Exception:
+            spreadsheet_id = ""
+    return {"enabled": enabled, "spreadsheet_id": spreadsheet_id, "sheet_name": sheet_name}
+
+
+async def _sheets_logs_ensure_header(*, spreadsheet_id: str, sheet_name: str) -> None:
+    global _SHEETS_LOGS_LAST_HDR
+    now = time.time()
+    if _SHEETS_LOGS_LAST_HDR and (now - _SHEETS_LOGS_LAST_HDR) < 60.0:
+        return
+    _SHEETS_LOGS_LAST_HDR = now
+    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    tool_update = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+    sheet_a1 = _sheet_name_to_a1(sheet_name, default="logs")
+    try:
+        res_h = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A1:H1"})
+        parsed_h = _mcp_text_json(res_h)
+        vals_h = parsed_h.get("values") if isinstance(parsed_h, dict) else None
+        got_header = vals_h[0] if isinstance(vals_h, list) and vals_h and isinstance(vals_h[0], list) else None
+        if got_header and any(str(x or "").strip() for x in got_header):
+            return
+    except Exception:
+        pass
+    try:
+        await _mcp_tools_call(
+            tool_update,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": f"{sheet_a1}!A1:H1",
+                "values": [["type", "text", "ts", "ts_ms", "direction", "session_id", "trace_id", "msg_json"]],
+                "value_input_option": "RAW",
+            },
+        )
+    except Exception:
+        return
+
+
+async def _sheets_logs_flush_once() -> int:
+    global _SHEETS_LOGS_QUEUE, _SHEETS_LOGS_LOCK
+    cfg = _sheets_logs_cfg()
+    if not cfg.get("enabled"):
+        return 0
+    spreadsheet_id = str(cfg.get("spreadsheet_id") or "").strip()
+    sheet_name = str(cfg.get("sheet_name") or "").strip()
+    if not spreadsheet_id or not sheet_name:
+        return 0
+    if _SHEETS_LOGS_LOCK is None:
+        _SHEETS_LOGS_LOCK = asyncio.Lock()
+    async with _SHEETS_LOGS_LOCK:
+        batch = _SHEETS_LOGS_QUEUE[:200]
+        _SHEETS_LOGS_QUEUE = _SHEETS_LOGS_QUEUE[200:]
+    if not batch:
+        return 0
+    await _sheets_logs_ensure_header(spreadsheet_id=spreadsheet_id, sheet_name=sheet_name)
+    rows: list[list[Any]] = []
+    for it in batch:
+        if not isinstance(it, dict):
+            continue
+        ts_ms = int(it.get("ts_ms") or 0)
+        ts = str(it.get("ts") or "").strip()
+        direction = str(it.get("direction") or "").strip()
+        session_id = str(it.get("session_id") or "").strip()
+        trace_id = str(it.get("trace_id") or "").strip()
+        typ = str(it.get("type") or "").strip()
+        text = str(it.get("text") or "").strip()
+        msg_json = str(it.get("msg_json") or "").strip()
+        rows.append([typ, text, ts, ts_ms, direction, session_id, trace_id, msg_json])
+    if not rows:
+        return 0
+    tool_append = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+    sheet_a1 = _sheet_name_to_a1(sheet_name, default="logs")
+    try:
+        await _mcp_tools_call(
+            tool_append,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": f"{sheet_a1}!A:H",
+                "values": rows,
+                "value_input_option": "RAW",
+                "insert_data_option": "INSERT_ROWS",
+            },
+        )
+        return len(rows)
+    except Exception:
+        async with _SHEETS_LOGS_LOCK:
+            _SHEETS_LOGS_QUEUE = batch + _SHEETS_LOGS_QUEUE
+        return 0
+
+
+async def _sheets_logs_flush_loop() -> None:
+    while True:
+        try:
+            await _sheets_logs_flush_once()
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            pass
+        await asyncio.sleep(2.0)
+
+
+async def _sheets_logs_enqueue_ws(ws: WebSocket, direction: str, msg: Any) -> None:
+    global _SHEETS_LOGS_QUEUE, _SHEETS_LOGS_LOCK
+    cfg = _sheets_logs_cfg()
+    if not cfg.get("enabled"):
+        return
+    if _SHEETS_LOGS_LOCK is None:
+        _SHEETS_LOGS_LOCK = asyncio.Lock()
+    ts_ms = int(time.time() * 1000)
+    ts = datetime.now(tz=timezone.utc).replace(microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
+    trace_id = None
+    try:
+        trace_id = getattr(ws.state, "trace_id", None)
+    except Exception:
+        trace_id = None
+    msg_type = msg.get("type") if isinstance(msg, dict) else None
+    text = ""
+    try:
+        if isinstance(msg, dict) and msg.get("text") is not None:
+            text = str(msg.get("text") or "")
+    except Exception:
+        text = ""
+    try:
+        msg_json = json.dumps(msg, ensure_ascii=False)
+    except Exception:
+        msg_json = str(msg)
+    rec = {
+        "ts_ms": ts_ms,
+        "ts": ts,
+        "direction": str(direction),
+        "session_id": getattr(ws.state, "session_id", None),
+        "trace_id": trace_id,
+        "type": msg_type,
+        "text": text,
+        "msg_json": msg_json,
+        "instance_id": INSTANCE_ID,
+    }
+    async with _SHEETS_LOGS_LOCK:
+        _SHEETS_LOGS_QUEUE.append(rec)
+        if len(_SHEETS_LOGS_QUEUE) > 5000:
+            _SHEETS_LOGS_QUEUE = _SHEETS_LOGS_QUEUE[-5000:]
 
 
 def _ws_capture_trace_id(ws: WebSocket, msg: Any) -> str | None:
@@ -8951,6 +9118,7 @@ async def _reminder_scheduler_loop() -> None:
 @app.on_event("startup")
 async def _startup() -> None:
     global _reminder_task
+    global _SHEETS_LOGS_TASK
     try:
         _init_session_db()
     except Exception as e:
@@ -8969,6 +9137,12 @@ async def _startup() -> None:
         asyncio.create_task(_startup_prewarm_sheets(), name="startup_prewarm_sheets")
     except Exception as e:
         logger.warning("startup_prewarm_task_failed error=%s", e)
+
+    try:
+        if _SHEETS_LOGS_TASK is None or _SHEETS_LOGS_TASK.done():
+            _SHEETS_LOGS_TASK = asyncio.create_task(_sheets_logs_flush_loop(), name="sheets_logs_flush")
+    except Exception:
+        pass
 
     # Optional: auto-watch GitHub Actions and broadcast completion to UI.
     try:
@@ -9032,9 +9206,13 @@ async def _startup() -> None:
 @app.on_event("shutdown")
 async def _shutdown() -> None:
     global _reminder_task
+    global _SHEETS_LOGS_TASK
     if _reminder_task is not None:
         _reminder_task.cancel()
         _reminder_task = None
+    if _SHEETS_LOGS_TASK is not None:
+        _SHEETS_LOGS_TASK.cancel()
+        _SHEETS_LOGS_TASK = None
 
 
 def _mcp_text_json(result: Any) -> Any:
