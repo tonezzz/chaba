@@ -14,6 +14,7 @@ Use this workflow whenever you notice you context-switched and the current task 
     - Ensure `JARVIS_SHEETS_LOGS_ENABLED=true` and `JARVIS_SHEETS_LOGS_SHEET_NAME=<tab>` are present in the running container (redeploy if needed).
     - Verify `/jarvis/logs/sheets/status` shows `enabled=true`, non-empty `sheet_name`, and `queue_len` decreases after a test append.
     - Do not proceed to other tasks while `sheet_name` is empty or `queue_len` monotonically increases.
+  - Deploy loop tip (Portainer): prefer recreating/restarting the individual service/container you changed (e.g. `jarvis-backend`) instead of redeploying the whole stack; this usually removes the need to split Jarvis into a separate stack.
 
 1. Restate the current objective (one sentence)
    - Write: "MVT: <single sentence outcome>".
