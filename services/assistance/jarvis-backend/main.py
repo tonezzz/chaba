@@ -1699,16 +1699,73 @@ async def _sheet_get_header_row(*, spreadsheet_id: str, sheet_a1: str, max_cols:
     return list(header) if isinstance(header, list) else []
 
 
+async def _memo_ensure_header(*, spreadsheet_id: str, sheet_a1: str) -> None:
+    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    tool_update = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+    try:
+        res_h = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A1:Z1"})
+        parsed_h = _mcp_text_json(res_h)
+        vals_h = parsed_h.get("values") if isinstance(parsed_h, dict) else None
+        got_header = vals_h[0] if isinstance(vals_h, list) and vals_h and isinstance(vals_h[0], list) else None
+        if got_header and any(str(x or "").strip() for x in got_header):
+            return
+    except Exception:
+        pass
+    header = [
+        "date_time",
+        "memo",
+        "status",
+        "group",
+        "subject",
+        "v",
+        "result",
+        "merged_into",
+        "merged_at",
+        "_merged",
+        "_created",
+        "_updated",
+    ]
+    try:
+        await _mcp_tools_call(
+            tool_update,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": f"{sheet_a1}!A1:L1",
+                "values": [header],
+                "value_input_option": "RAW",
+            },
+        )
+    except Exception:
+        return
+
+
 @app.post("/memo/add")
 @app.post("/jarvis/memo/add")
 async def memo_add(req: MemoAddRequest, x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token")) -> dict[str, Any]:
     _require_api_token_if_configured(x_api_token)
     sys_kv = _sys_kv_snapshot()
-    try:
-        raw_enabled = str(sys_kv.get("memo.enabled") or "").strip() if isinstance(sys_kv, dict) else ""
-        enabled = _parse_bool_cell(raw_enabled) if raw_enabled else False
-    except Exception:
-        enabled = False
+
+    def _is_enabled(kv: Any) -> bool:
+        try:
+            raw_enabled = str(kv.get("memo.enabled") or "").strip() if isinstance(kv, dict) else ""
+            return _parse_bool_cell(raw_enabled) if raw_enabled else False
+        except Exception:
+            return False
+
+    enabled = _is_enabled(sys_kv)
+    if not enabled:
+        try:
+            class _DummyWS:
+                def __init__(self) -> None:
+                    from types import SimpleNamespace
+
+                    self.state = SimpleNamespace()
+
+            await _load_ws_system_kv(_DummyWS())
+        except Exception:
+            pass
+        sys_kv = _sys_kv_snapshot()
+        enabled = _is_enabled(sys_kv)
     if not enabled:
         raise HTTPException(status_code=400, detail="memo_disabled")
 
@@ -1721,6 +1778,13 @@ async def memo_add(req: MemoAddRequest, x_api_token: Optional[str] = Header(defa
     sheet_a1 = _sheet_name_to_a1(sheet_name, default="memo")
     header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
     idx = _idx_from_header(header)
+    if not idx:
+        try:
+            await _memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+        except Exception:
+            pass
+        header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+        idx = _idx_from_header(header)
     if not idx:
         raise HTTPException(status_code=400, detail="memo_sheet_missing_header")
 
