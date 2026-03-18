@@ -2066,7 +2066,25 @@ async def _memo_ensure_header(*, spreadsheet_id: str, sheet_a1: str, force: bool
 async def memo_header_normalize(x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token")) -> dict[str, Any]:
     _require_api_token_if_configured(x_api_token)
     sys_kv = _sys_kv_snapshot()
-    spreadsheet_id, sheet_name = _memo_sheet_cfg_from_sys_kv(sys_kv)
+
+    def _resolve(kv: Any) -> tuple[str, str]:
+        return _memo_sheet_cfg_from_sys_kv(kv if isinstance(kv, dict) else None)
+
+    spreadsheet_id, sheet_name = _resolve(sys_kv)
+    if not spreadsheet_id or not sheet_name:
+        try:
+            class _DummyWS:
+                def __init__(self) -> None:
+                    from types import SimpleNamespace
+
+                    self.state = SimpleNamespace()
+
+            await _load_ws_system_kv(_DummyWS())
+        except Exception:
+            pass
+        sys_kv = _sys_kv_snapshot()
+        spreadsheet_id, sheet_name = _resolve(sys_kv)
+
     if not spreadsheet_id:
         raise HTTPException(status_code=400, detail="missing_memo_ss")
     if not sheet_name:
