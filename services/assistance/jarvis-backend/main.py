@@ -11631,78 +11631,96 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         return res
 
     if tool_name == "memo_add":
-        ws = _SESSION_WS.get(str(session_id)) if session_id else None
-        if ws is None:
-            raise HTTPException(status_code=400, detail="missing_session_ws")
+        try:
+            ws = _SESSION_WS.get(str(session_id)) if session_id else None
+            if ws is None:
+                raise HTTPException(status_code=400, detail="missing_session_ws")
 
-        sys_kv = getattr(ws.state, "sys_kv", None)
-        if not feature_enabled("memo", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
-            raise HTTPException(status_code=403, detail="feature_disabled:memo")
-        if not _sys_kv_bool(sys_kv, "memo.enabled", default=False):
-            raise HTTPException(status_code=403, detail="memo_disabled")
+            sys_kv = getattr(ws.state, "sys_kv", None)
+            if not feature_enabled("memo", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+                raise HTTPException(status_code=403, detail="feature_disabled:memo")
+            if not _sys_kv_bool(sys_kv, "memo.enabled", default=False):
+                raise HTTPException(status_code=403, detail="memo_disabled")
 
-        memo_txt = str(args.get("memo") or "").strip()
-        if not memo_txt:
-            raise HTTPException(status_code=400, detail="memo_missing_text")
+            memo_txt = str(args.get("memo") or "").strip()
+            if not memo_txt:
+                raise HTTPException(status_code=400, detail="memo_missing_text")
 
-        spreadsheet_id, sheet_name = _memo_sheet_cfg_from_sys_kv(sys_kv if isinstance(sys_kv, dict) else None)
-        if not spreadsheet_id:
-            raise HTTPException(status_code=400, detail="missing_memo_ss")
-        if not sheet_name:
-            raise HTTPException(status_code=400, detail="missing_memo_sheet_name")
+            spreadsheet_id, sheet_name = _memo_sheet_cfg_from_sys_kv(sys_kv if isinstance(sys_kv, dict) else None)
+            if not spreadsheet_id:
+                raise HTTPException(status_code=400, detail="missing_memo_ss")
+            if not sheet_name:
+                raise HTTPException(status_code=400, detail="missing_memo_sheet_name")
 
-        sheet_a1 = _sheet_name_to_a1(sheet_name, default="memo")
-        header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
-        idx = _idx_from_header(header)
-        if not idx:
-            await _memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+            sheet_a1 = _sheet_name_to_a1(sheet_name, default="memo")
             header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
             idx = _idx_from_header(header)
-        if not idx:
-            raise HTTPException(status_code=400, detail="memo_sheet_missing_header")
+            if not idx:
+                await _memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+                header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+                idx = _idx_from_header(header)
+            if not idx:
+                raise HTTPException(status_code=400, detail="memo_sheet_missing_header")
 
-        now_dt = datetime.now(tz=timezone.utc).replace(microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
-        status = str(args.get("status") or "").strip() or "new"
-        group = str(args.get("group") or "").strip()
-        subject = str(args.get("subject") or "").strip()
-        v = str(args.get("v") or "").strip()
-        result = str(args.get("result") or "").strip()
+            now_dt = datetime.now(tz=timezone.utc).replace(microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
+            status = str(args.get("status") or "").strip() or "new"
+            group = str(args.get("group") or "").strip()
+            subject = str(args.get("subject") or "").strip()
+            v = str(args.get("v") or "").strip()
+            result = str(args.get("result") or "").strip()
 
-        def _set(row: list[Any], col: str, value: Any) -> None:
-            j = idx.get(str(col or "").strip().lower())
-            if j is None:
-                return
-            while len(row) <= j:
-                row.append("")
-            row[j] = value
+            def _set(row: list[Any], col: str, value: Any) -> None:
+                j = idx.get(str(col or "").strip().lower())
+                if j is None:
+                    return
+                while len(row) <= j:
+                    row.append("")
+                row[j] = value
 
-        row: list[Any] = []
-        _set(row, "date_time", now_dt)
-        _set(row, "memo", memo_txt)
-        _set(row, "status", status)
-        _set(row, "group", group)
-        _set(row, "subject", subject)
-        _set(row, "v", v)
-        _set(row, "result", result)
-        _set(row, "_created", now_dt)
-        _set(row, "_updated", now_dt)
-        _set(row, "_merged", False)
-        _set(row, "merged_into", "")
-        _set(row, "merged_at", "")
+            row: list[Any] = []
+            _set(row, "date_time", now_dt)
+            _set(row, "memo", memo_txt)
+            _set(row, "status", status)
+            _set(row, "group", group)
+            _set(row, "subject", subject)
+            _set(row, "v", v)
+            _set(row, "result", result)
+            _set(row, "_created", now_dt)
+            _set(row, "_updated", now_dt)
+            _set(row, "_merged", False)
+            _set(row, "merged_into", "")
+            _set(row, "merged_at", "")
 
-        tool_append = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
-        res = await _mcp_tools_call(
-            tool_append,
-            {
-                "spreadsheet_id": spreadsheet_id,
-                "range": f"{sheet_a1}!A:Z",
-                "values": [row],
-                "value_input_option": "USER_ENTERED",
-                "insert_data_option": "INSERT_ROWS",
-            },
-        )
-        parsed = _mcp_text_json(res)
-        return {"ok": True, "sheet": sheet_name, "spreadsheet_id": spreadsheet_id, "raw": parsed}
+            tool_append = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+            res = await _mcp_tools_call(
+                tool_append,
+                {
+                    "spreadsheet_id": spreadsheet_id,
+                    "range": f"{sheet_a1}!A:Z",
+                    "values": [row],
+                    "value_input_option": "USER_ENTERED",
+                    "insert_data_option": "INSERT_ROWS",
+                },
+            )
+            parsed = _mcp_text_json(res)
+            return {"ok": True, "sheet": sheet_name, "spreadsheet_id": spreadsheet_id, "raw": parsed}
+        except HTTPException as e:
+            try:
+                logger.info("memo_add_tool_failed status=%s detail=%s", getattr(e, "status_code", None), getattr(e, "detail", None))
+            except Exception:
+                pass
+            return {
+                "ok": False,
+                "error": "memo_add_failed",
+                "status_code": getattr(e, "status_code", None),
+                "detail": getattr(e, "detail", None),
+            }
+        except Exception as e:
+            try:
+                logger.exception("memo_add_tool_failed_unhandled")
+            except Exception:
+                pass
+            return {"ok": False, "error": "memo_add_failed", "detail": f"{type(e).__name__}: {e}"}
 
     if tool_name == "memory_search":
         ws = _SESSION_WS.get(str(session_id)) if session_id else None
