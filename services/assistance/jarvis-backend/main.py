@@ -1756,6 +1756,34 @@ def _require_api_token_if_configured(token: str | None) -> None:
         raise HTTPException(status_code=401, detail="unauthorized")
 
 
+def _system_instruction_from_sys_kv(sys_kv: Any) -> str:
+    if not isinstance(sys_kv, dict):
+        return ""
+    base = str(sys_kv.get("system.instruction") or "").strip()
+    extras: list[tuple[int, str, str]] = []
+    for k, v in sys_kv.items():
+        key = str(k or "").strip()
+        if not key.startswith("system.instructions."):
+            continue
+        suffix = key[len("system.instructions.") :].strip()
+        pr = 10**9
+        if suffix:
+            try:
+                pr = int(suffix)
+            except Exception:
+                pr = 10**9
+        txt = str(v or "").strip()
+        if txt:
+            extras.append((pr, key, txt))
+    extras.sort(key=lambda t: (t[0], t[1]))
+    parts: list[str] = []
+    if base:
+        parts.append(base)
+    for _, _, txt in extras:
+        parts.append(txt)
+    return "\n\n".join([p for p in parts if str(p).strip()]).strip()
+
+
 def _memo_sheet_cfg_from_sys_kv(sys_kv: dict[str, Any] | None) -> tuple[str, str]:
     spreadsheet_id = ""
     sheet_name = ""
@@ -1812,7 +1840,7 @@ async def _memo_ensure_header(*, spreadsheet_id: str, sheet_a1: str) -> None:
             tool_update,
             {
                 "spreadsheet_id": spreadsheet_id,
-                "range": f"{sheet_a1}!A1:L1",
+                "range": f"{sheet_a1}!A1:M1",
                 "values": [header],
                 "value_input_option": "RAW",
             },
@@ -7813,7 +7841,7 @@ async def _load_ws_sheet_memory(ws: WebSocket) -> None:
 
     # Optional: extra system instruction to inject into Gemini system prompt.
     try:
-        ws.state.system_instruction_extra = str(sys_kv.get("system.instruction") or "").strip()
+        ws.state.system_instruction_extra = _system_instruction_from_sys_kv(sys_kv)
     except Exception:
         pass
 
@@ -8006,7 +8034,7 @@ async def _load_ws_system_kv(ws: WebSocket) -> dict[str, str]:
         pass
     _set_cached_sys_kv_only(sys_kv)
     try:
-        ws.state.system_instruction_extra = str(sys_kv.get("system.instruction") or "").strip()
+        ws.state.system_instruction_extra = _system_instruction_from_sys_kv(sys_kv)
     except Exception:
         pass
 
