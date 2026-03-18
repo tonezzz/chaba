@@ -2545,6 +2545,21 @@ async def _handle_last_reminder_modify(ws: WebSocket, text: str) -> bool:
         return True
 
     if msg_type == "memory":
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        if not feature_enabled("memory", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+            await _ws_send_json(
+                ws,
+                {
+                    "type": "error",
+                    "kind": "feature_disabled",
+                    "message": "feature_disabled:memory",
+                    "detail": {"feature": "memory"},
+                    "instance_id": INSTANCE_ID,
+                },
+                trace_id=tid,
+            )
+            await _ws_voice_job_done(ws, tid)
+            return True
         action = str(msg.get("action") or "").strip().lower()
         if action in {"summary", "list", "latest", "check"}:
             await _handle_memory_trigger(ws, "memory summary")
@@ -11693,6 +11708,9 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         ws = _SESSION_WS.get(str(session_id)) if session_id else None
         if ws is None:
             raise HTTPException(status_code=400, detail="missing_session_ws")
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        if not feature_enabled("memory", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+            raise HTTPException(status_code=403, detail="feature_disabled:memory")
         q = str(args.get("query") or "").strip()
         if not q:
             raise HTTPException(status_code=400, detail="missing_query")
@@ -11724,6 +11742,9 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         ws = _SESSION_WS.get(str(session_id)) if session_id else None
         if ws is None:
             raise HTTPException(status_code=400, detail="missing_session_ws")
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        if not feature_enabled("memory", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+            raise HTTPException(status_code=403, detail="feature_disabled:memory")
         items = getattr(ws.state, "memory_items", None)
         if not isinstance(items, list) or not items:
             try:
