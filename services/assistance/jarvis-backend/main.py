@@ -622,13 +622,13 @@ async def _handle_memo_enrich_followup(ws: WebSocket, text: str) -> bool:
     tool_append = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
     sheet_a1 = _sheet_name_to_a1(sheet_name, default="memo")
     now_dt = datetime.now(tz=timezone.utc).replace(microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
-    row = [now_dt, memo_final, "new", group, subject, ""]
+    row = [now_dt, group, "new", subject, memo_final, "", "", "", False, now_dt, now_dt]
     try:
         await _mcp_tools_call(
             tool_append,
             {
                 "spreadsheet_id": spreadsheet_id,
-                "range": f"{sheet_a1}!A:F",
+                "range": f"{sheet_a1}!A:K",
                 "values": [row],
                 "value_input_option": "USER_ENTERED",
                 "insert_data_option": "INSERT_ROWS",
@@ -706,7 +706,7 @@ async def _handle_memo_trigger(ws: WebSocket, text: str) -> bool:
 
     # Ensure header exists (best-effort).
     try:
-        res_h = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name_a1}!A1:F1"})
+        res_h = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name_a1}!A1:K1"})
         parsed_h = _mcp_text_json(res_h)
         vals_h = parsed_h.get("values") if isinstance(parsed_h, dict) else None
         got_header = vals_h[0] if isinstance(vals_h, list) and vals_h and isinstance(vals_h[0], list) else None
@@ -715,8 +715,8 @@ async def _handle_memo_trigger(ws: WebSocket, text: str) -> bool:
                 tool_update,
                 {
                     "spreadsheet_id": spreadsheet_id,
-                    "range": f"{sheet_name_a1}!A1:F1",
-                    "values": [["date_time", "memo", "status", "merged_into", "merged_at", "result"]],
+                    "range": f"{sheet_name_a1}!A1:K1",
+                    "values": [["date_time", "group", "status", "subject", "memo", "result", "merged_into", "merged_at", "_merged", "_created", "_updated"]],
                     "value_input_option": "USER_ENTERED",
                 },
             )
@@ -726,12 +726,19 @@ async def _handle_memo_trigger(ws: WebSocket, text: str) -> bool:
     if is_merge:
         lo = min(int(src_row or 0), int(dst_row or 0))
         hi = max(int(src_row or 0), int(dst_row or 0))
-        res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name_a1}!A{lo}:F{hi}"})
+        res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name_a1}!A{lo}:K{hi}"})
         parsed = _mcp_text_json(res)
         vals = parsed.get("values") if isinstance(parsed, dict) else None
         if not isinstance(vals, list):
             await _ws_send_json(ws, {"type": "text", "text": "memo_merge_read_failed", "instance_id": INSTANCE_ID})
             return True
+
+        header = []
+        try:
+            header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_name_a1, max_cols="K")
+        except Exception:
+            header = []
+        idx = _idx_from_header(header)
 
         def _row_at(rn: int) -> list[Any]:
             i = rn - lo
@@ -739,34 +746,47 @@ async def _handle_memo_trigger(ws: WebSocket, text: str) -> bool:
                 return list(vals[i])
             return []
 
+        def _get(row: list[Any], col: str, default: Any = "") -> Any:
+            j = idx.get(col)
+            if j is None or j < 0 or j >= len(row):
+                return default
+            return row[j]
+
+        def _set(row: list[Any], col: str, value: Any) -> None:
+            j = idx.get(col)
+            if j is None:
+                return
+            while len(row) <= j:
+                row.append("")
+            row[j] = value
+
         src_vals = _row_at(int(src_row or 0))
         dst_vals = _row_at(int(dst_row or 0))
-        while len(src_vals) < 6:
-            src_vals.append("")
-        while len(dst_vals) < 6:
-            dst_vals.append("")
 
-        src_memo = str(src_vals[1] or "").strip()
-        dst_memo = str(dst_vals[1] or "").strip()
+        src_memo = str(_get(src_vals, "memo") or "").strip()
+        dst_memo = str(_get(dst_vals, "memo") or "").strip()
         if not src_memo or not dst_memo:
             await _ws_send_json(ws, {"type": "text", "text": "memo_merge_missing_memo", "instance_id": INSTANCE_ID})
             return True
 
         merged = dst_memo.rstrip() + "\n\n---\n" + src_memo
 
-        dst_vals[1] = merged
-        dst_vals[2] = str(dst_vals[2] or "").strip() or "new"
+        _set(dst_vals, "memo", merged)
+        _set(dst_vals, "status", str(_get(dst_vals, "status") or "").strip() or "new")
 
-        src_vals[2] = "merged"
-        src_vals[3] = str(int(dst_row or 0))
-        src_vals[4] = now_dt
+        _set(src_vals, "status", "merged")
+        _set(src_vals, "merged_into", str(int(dst_row or 0)))
+        _set(src_vals, "merged_at", now_dt)
+        _set(src_vals, "_merged", True)
+        _set(src_vals, "_updated", now_dt)
+        _set(dst_vals, "_updated", now_dt)
 
         await _mcp_tools_call(
             tool_update,
             {
                 "spreadsheet_id": spreadsheet_id,
-                "range": f"{sheet_name_a1}!A{int(dst_row or 0)}:F{int(dst_row or 0)}",
-                "values": [dst_vals[:6]],
+                "range": f"{sheet_name_a1}!A{int(dst_row or 0)}:K{int(dst_row or 0)}",
+                "values": [dst_vals[:11]],
                 "value_input_option": "USER_ENTERED",
             },
         )
@@ -774,8 +794,8 @@ async def _handle_memo_trigger(ws: WebSocket, text: str) -> bool:
             tool_update,
             {
                 "spreadsheet_id": spreadsheet_id,
-                "range": f"{sheet_name_a1}!A{int(src_row or 0)}:F{int(src_row or 0)}",
-                "values": [src_vals[:6]],
+                "range": f"{sheet_name_a1}!A{int(src_row or 0)}:K{int(src_row or 0)}",
+                "values": [src_vals[:11]],
                 "value_input_option": "USER_ENTERED",
             },
         )
@@ -787,13 +807,13 @@ async def _handle_memo_trigger(ws: WebSocket, text: str) -> bool:
         await _ws_send_json(ws, {"type": "text", "text": "memo_missing_text", "instance_id": INSTANCE_ID})
         return True
 
-    row = [now_dt, memo_text, "new", "", "", ""]
+    row = [now_dt, "", "new", "", memo_text, "", "", "", False, now_dt, now_dt]
     try:
         await _mcp_tools_call(
             tool_append,
             {
                 "spreadsheet_id": spreadsheet_id,
-                "range": f"{sheet_name_a1}!A:F",
+                "range": f"{sheet_name_a1}!A:K",
                 "values": [row],
                 "value_input_option": "USER_ENTERED",
                 "insert_data_option": "INSERT_ROWS",
@@ -2017,10 +2037,10 @@ async def _memo_ensure_header(*, spreadsheet_id: str, sheet_a1: str, force: bool
         pass
     header = [
         "date_time",
-        "memo",
-        "status",
         "group",
+        "status",
         "subject",
+        "memo",
         "result",
         "merged_into",
         "merged_at",
