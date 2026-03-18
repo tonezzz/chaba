@@ -2025,7 +2025,7 @@ async def _memo_ensure_header(*, spreadsheet_id: str, sheet_a1: str, force: bool
     tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
     tool_update = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
     try:
-        got_header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="Z")
+        got_header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
         if got_header and any(str(x or "").strip() for x in got_header) and not force:
             lowered = [str(x or "").strip().lower() for x in got_header if str(x or "").strip()]
             has_dupes = len(set(lowered)) != len(lowered)
@@ -2048,24 +2048,33 @@ async def _memo_ensure_header(*, spreadsheet_id: str, sheet_a1: str, force: bool
         "_created",
         "_updated",
     ]
-    # Important: clear any leftover header cells from older schemas by writing
-    # blanks through Z. Google Sheets won't necessarily delete trailing cells
-    # if we write a shorter header, so removed columns can linger.
-    header_padded = list(header)
-    while len(header_padded) < 26:
-        header_padded.append("")
     res_u = await _mcp_tools_call(
         tool_update,
         {
             "spreadsheet_id": spreadsheet_id,
-            "range": f"{sheet_a1}!A1:Z1",
-            "values": [header_padded],
+            "range": f"{sheet_a1}!A1:K1",
+            "values": [header],
             "value_input_option": "RAW",
         },
     )
 
+    # Explicitly clear any old trailing header cells so we don't end up with
+    # stale values like "Column 12" .. "Column 26".
     try:
-        got_header2 = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="Z")
+        await _mcp_tools_call(
+            tool_update,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": f"{sheet_a1}!L1:Z1",
+                "values": [[""] * 15],
+                "value_input_option": "RAW",
+            },
+        )
+    except Exception:
+        pass
+
+    try:
+        got_header2 = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
         if got_header2 and any(str(x or "").strip() for x in got_header2):
             return
     except Exception:
@@ -2114,9 +2123,9 @@ async def memo_header_normalize(x_api_token: Optional[str] = Header(default=None
     if not sheet_name:
         raise HTTPException(status_code=400, detail="missing_memo_sheet_name")
     sheet_a1 = _sheet_name_to_a1(sheet_name, default="memo")
-    before = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+    before = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
     await _memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, force=True)
-    after = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+    after = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
     return {"ok": True, "spreadsheet_id": spreadsheet_id, "sheet": sheet_name, "before": before, "after": after}
 
 
@@ -2157,7 +2166,7 @@ async def memo_add(req: MemoAddRequest, x_api_token: Optional[str] = Header(defa
         raise HTTPException(status_code=400, detail="missing_memo_sheet_name")
 
     sheet_a1 = _sheet_name_to_a1(sheet_name, default="memo")
-    header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+    header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
     idx = _idx_from_header(header)
     if not idx:
         ensure_err: Exception | None = None
@@ -2165,7 +2174,7 @@ async def memo_add(req: MemoAddRequest, x_api_token: Optional[str] = Header(defa
             await _memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
         except Exception as e:
             ensure_err = e
-        header_after = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+        header_after = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
         idx = _idx_from_header(header_after)
     if not idx:
         def _trim_list(x: Any, max_n: int = 30) -> list[Any]:
@@ -10192,7 +10201,7 @@ async def debug_memo() -> dict[str, Any]:
     header_err: str | None = None
     try:
         if spreadsheet_id and sheet_a1:
-            header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+            header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
     except Exception as e:
         header_err = f"{type(e).__name__}: {e}"
 
@@ -11911,11 +11920,11 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
                 raise HTTPException(status_code=400, detail="missing_memo_sheet_name")
 
             sheet_a1 = _sheet_name_to_a1(sheet_name, default="memo")
-            header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+            header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
             idx = _idx_from_header(header)
             if not idx:
                 await _memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
-                header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+                header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
                 idx = _idx_from_header(header)
             if not idx:
                 raise HTTPException(status_code=400, detail="memo_sheet_missing_header")
