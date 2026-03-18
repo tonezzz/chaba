@@ -376,6 +376,25 @@ export default function App() {
     return dialog.slice(-200);
   }, [messages]);
 
+  const outputChat = useMemo(() => {
+    const ordered = messages
+      .filter((m) => {
+        const t = String(m.text || "").trim();
+        if (!t) return false;
+        if (m.role === "user" || m.role === "model") return true;
+        if (m.role === "system") return true;
+        return false;
+      })
+      .slice()
+      .sort((a, b) => {
+        const ta = a.timestamp?.getTime?.() ? a.timestamp.getTime() : 0;
+        const tb = b.timestamp?.getTime?.() ? b.timestamp.getTime() : 0;
+        if (ta !== tb) return ta - tb;
+        return String(a.id || "").localeCompare(String(b.id || ""));
+      });
+    return ordered.slice(-200);
+  }, [messages]);
+
   useEffect(() => {
     try {
       window.localStorage.setItem("jarvis_status_details_open", statusDetailsOpen ? "1" : "0");
@@ -1893,7 +1912,7 @@ return (
                          outputStickToBottomRef.current = remaining < 40;
                        }}
                      >
-                       <div className="flex items-center justify-between mb-2">
+                       <div className="sticky top-0 z-10 -mx-4 px-4 pt-1 pb-2 bg-slate-950/70 backdrop-blur border-b border-slate-800/60 flex items-center justify-between">
                          <div className="flex items-center gap-2">
                            <button
                              onClick={() => setActiveOutputTab("dialog")}
@@ -1953,15 +1972,33 @@ return (
                        </div>
 
                        {activeOutputTab === "dialog" ? (
-                        <div className="flex flex-col gap-4">
-                          {outputDialog.length === 0 ? (
+                        <div className="flex flex-col gap-2">
+                          {outputChat.length === 0 ? (
                             <div className="text-slate-600 font-mono text-sm">(no text yet)</div>
                           ) : (
-                            outputDialog.map((d) => (
-                              <div key={d.id} className="text-slate-100 font-mono text-sm whitespace-pre-wrap break-words leading-relaxed py-1">
-                                {d.text}
-                              </div>
-                            ))
+                            outputChat.map((m) => {
+                              const role = String(m.role || "");
+                              const isUser = role === "user";
+                              const isSystem = role === "system";
+                              const align = isSystem ? "items-center" : isUser ? "items-end" : "items-start";
+                              const bubble = isSystem
+                                ? "bg-slate-900/40 border border-slate-700/60 text-slate-200"
+                                : isUser
+                                  ? "bg-cyan-950/30 border border-cyan-600/30 text-cyan-50"
+                                  : "bg-slate-900/60 border border-slate-700/60 text-slate-100";
+                              return (
+                                <div
+                                  key={String(m.id || "") + "_" + String(m.timestamp?.getTime?.() || 0)}
+                                  className={`flex flex-col ${align}`}
+                                >
+                                  <div
+                                    className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm font-mono whitespace-pre-wrap break-words leading-relaxed ${bubble}`}
+                                  >
+                                    {String(m.text || "").trim()}
+                                  </div>
+                                </div>
+                              );
+                            })
                           )}
                         </div>
                       ) : activeOutputTab === "ui_log" ? (
