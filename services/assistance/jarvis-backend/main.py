@@ -11384,6 +11384,7 @@ app.include_router(
 )
 
 
+def _mcp_tool_declarations() -> list[dict[str, Any]]:
     decls: list[dict[str, Any]] = []
     for name, meta in MCP_TOOL_MAP.items():
         if str(meta.get("mcp_base") or "").strip().lower() == "aim" and not AIM_MCP_BASE_URL:
