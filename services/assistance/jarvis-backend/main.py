@@ -11384,22 +11384,17 @@ app.include_router(
 )
 
 
-def _mcp_tool_declarations() -> list[dict[str, Any]]:
     decls: list[dict[str, Any]] = []
     for name, meta in MCP_TOOL_MAP.items():
         if str(meta.get("mcp_base") or "").strip().lower() == "aim" and not AIM_MCP_BASE_URL:
             continue
-        if JARVIS_TOOL_ALLOWLIST and name not in JARVIS_TOOL_ALLOWLIST:
-            continue
-        decl: dict[str, Any] = {
-            "name": name,
-            "description": str(meta.get("description") or ""),
-        }
-        params = meta.get("parameters")
-        if isinstance(params, dict):
-            decl["parameters"] = params
-        decls.append(decl)
-
+        decls.append(
+            {
+                "name": name,
+                "description": str(meta.get("description") or ""),
+                "parameters": meta.get("parameters") or {"type": "object", "properties": {}},
+            }
+        )
     decls.append(
         {
             "name": "time_now",
@@ -11440,6 +11435,25 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
                     "priority": {"type": "integer", "description": "Higher wins when multiple scopes overlap (default 0)."},
                 },
                 "required": ["value"],
+            },
+        }
+    )
+
+    decls.append(
+        {
+            "name": "memo_add",
+            "description": "Append a memo entry to the memo sheet (Google Sheets).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "memo": {"type": "string", "description": "Memo text/body."},
+                    "group": {"type": "string", "description": "Optional group label."},
+                    "subject": {"type": "string", "description": "Optional subject label."},
+                    "status": {"type": "string", "description": "Optional status (default new)."},
+                    "v": {"type": "string", "description": "Optional version tag."},
+                    "result": {"type": "string", "description": "Optional result/notes."},
+                },
+                "required": ["memo"],
             },
         }
     )
@@ -11552,6 +11566,78 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         except Exception:
             pass
         return res
+
+    if tool_name == "memo_add":
+        ws = _SESSION_WS.get(str(session_id)) if session_id else None
+        if ws is None:
+            raise HTTPException(status_code=400, detail="missing_session_ws")
+
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        if not _sys_kv_bool(sys_kv, "memo.enabled", default=False):
+            raise HTTPException(status_code=403, detail="memo_disabled")
+
+        memo_txt = str(args.get("memo") or "").strip()
+        if not memo_txt:
+            raise HTTPException(status_code=400, detail="memo_missing_text")
+
+        spreadsheet_id, sheet_name = _memo_sheet_cfg_from_sys_kv(sys_kv if isinstance(sys_kv, dict) else None)
+        if not spreadsheet_id:
+            raise HTTPException(status_code=400, detail="missing_memo_ss")
+        if not sheet_name:
+            raise HTTPException(status_code=400, detail="missing_memo_sheet_name")
+
+        sheet_a1 = _sheet_name_to_a1(sheet_name, default="memo")
+        header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+        idx = _idx_from_header(header)
+        if not idx:
+            await _memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+            header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+            idx = _idx_from_header(header)
+        if not idx:
+            raise HTTPException(status_code=400, detail="memo_sheet_missing_header")
+
+        now_dt = datetime.now(tz=timezone.utc).replace(microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
+        status = str(args.get("status") or "").strip() or "new"
+        group = str(args.get("group") or "").strip()
+        subject = str(args.get("subject") or "").strip()
+        v = str(args.get("v") or "").strip()
+        result = str(args.get("result") or "").strip()
+
+        def _set(row: list[Any], col: str, value: Any) -> None:
+            j = idx.get(str(col or "").strip().lower())
+            if j is None:
+                return
+            while len(row) <= j:
+                row.append("")
+            row[j] = value
+
+        row: list[Any] = []
+        _set(row, "date_time", now_dt)
+        _set(row, "memo", memo_txt)
+        _set(row, "status", status)
+        _set(row, "group", group)
+        _set(row, "subject", subject)
+        _set(row, "v", v)
+        _set(row, "result", result)
+        _set(row, "_created", now_dt)
+        _set(row, "_updated", now_dt)
+        _set(row, "_merged", False)
+        _set(row, "merged_into", "")
+        _set(row, "merged_at", "")
+
+        tool_append = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+        res = await _mcp_tools_call(
+            tool_append,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": f"{sheet_a1}!A:Z",
+                "values": [row],
+                "value_input_option": "USER_ENTERED",
+                "insert_data_option": "INSERT_ROWS",
+            },
+        )
+        parsed = _mcp_text_json(res)
+        return {"ok": True, "sheet": sheet_name, "spreadsheet_id": spreadsheet_id, "raw": parsed}
 
     if tool_name == "memory_search":
         ws = _SESSION_WS.get(str(session_id)) if session_id else None
