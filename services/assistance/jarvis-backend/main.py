@@ -1690,6 +1690,20 @@ async def logs_ui_append(req: _UILogAppendRequest) -> dict[str, Any]:
     return {"ok": True, "path": path, "appended": appended}
 
 
+@app.get("/logs/sheets/status")
+@app.get("/jarvis/logs/sheets/status")
+def logs_sheets_status() -> dict[str, Any]:
+    cfg = _sheets_logs_cfg()
+    try:
+        qn = len(_SHEETS_LOGS_QUEUE) if isinstance(_SHEETS_LOGS_QUEUE, list) else 0
+    except Exception:
+        qn = 0
+    out = dict(cfg)
+    out["queue_len"] = qn
+    out["ok"] = True
+    return out
+
+
 def _api_token_required_value() -> str:
     try:
         sys_kv = _sys_kv_snapshot()
