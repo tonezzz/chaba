@@ -1699,6 +1699,7 @@ async def logs_ui_append(req: _UILogAppendRequest) -> dict[str, Any]:
 
 
 @app.get("/logs/sheets/status")
+@app.get("/jarvis/api/logs/sheets/status")
 @app.get("/jarvis/logs/sheets/status")
 def logs_sheets_status() -> dict[str, Any]:
     cfg = _sheets_logs_cfg()
