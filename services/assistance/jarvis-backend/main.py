@@ -1344,6 +1344,38 @@ async def _sheets_logs_enqueue_ws(ws: WebSocket, direction: str, msg: Any) -> No
             _SHEETS_LOGS_QUEUE = _SHEETS_LOGS_QUEUE[-5000:]
 
 
+async def _sheets_logs_enqueue_http(*, typ: str, text: str, msg: Any | None = None) -> None:
+    global _SHEETS_LOGS_QUEUE, _SHEETS_LOGS_LOCK
+    cfg = _sheets_logs_cfg()
+    if not cfg.get("enabled"):
+        return
+    if _SHEETS_LOGS_LOCK is None:
+        _SHEETS_LOGS_LOCK = asyncio.Lock()
+    ts_ms = int(time.time() * 1000)
+    ts = datetime.now(tz=timezone.utc).replace(microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
+    msg_json = ""
+    try:
+        if msg is not None:
+            msg_json = json.dumps(msg, ensure_ascii=False)
+    except Exception:
+        msg_json = str(msg)
+    rec = {
+        "ts_ms": ts_ms,
+        "ts": ts,
+        "direction": "http",
+        "session_id": "",
+        "trace_id": "",
+        "type": str(typ or "http"),
+        "text": str(text or ""),
+        "msg_json": msg_json,
+        "instance_id": INSTANCE_ID,
+    }
+    async with _SHEETS_LOGS_LOCK:
+        _SHEETS_LOGS_QUEUE.append(rec)
+        if len(_SHEETS_LOGS_QUEUE) > 5000:
+            _SHEETS_LOGS_QUEUE = _SHEETS_LOGS_QUEUE[-5000:]
+
+
 async def _sheets_logs_enqueue_server(*, typ: str, text: str, msg: Any | None = None) -> None:
     global _SHEETS_LOGS_QUEUE, _SHEETS_LOGS_LOCK
     cfg = _sheets_logs_cfg()
@@ -1733,6 +1765,22 @@ async def memo_add(req: MemoAddRequest, x_api_token: Optional[str] = Header(defa
         raise HTTPException(status_code=500, detail=f"memo_append_failed: {type(e).__name__}: {e}")
 
     parsed = _mcp_text_json(res)
+    try:
+        memo_preview = str(req.memo or "").strip()
+        if len(memo_preview) > 120:
+            memo_preview = memo_preview[:120] + "..."
+        await _sheets_logs_enqueue_http(
+            typ="memo.add",
+            text=memo_preview,
+            msg={
+                "group": str(req.group or "").strip(),
+                "subject": str(req.subject or "").strip(),
+                "status": str(req.status or "").strip(),
+                "sheet": sheet_name,
+            },
+        )
+    except Exception:
+        pass
     return {"ok": True, "appended": 1, "sheet": sheet_name, "spreadsheet_id": spreadsheet_id, "raw": parsed}
 
 
