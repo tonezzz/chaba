@@ -4537,8 +4537,14 @@ def _memory_load_status_line(ws: WebSocket, lang: str) -> str:
     mem_meta = f" memory_created={_fmt_ts(mem_created)} memory_updated={_fmt_ts(mem_updated)}"
     know_meta = f" knowledge_created={_fmt_ts(know_created)} knowledge_updated={_fmt_ts(know_updated)}"
     if str(lang or "").lower().startswith("th"):
-        return f"โหลด memory '{sheet}' memory({cached_n}:{n}){mem_meta} | knowledge '{ksheet}' knowledge({cached_kn}:{kn}){know_meta}"
-    return f"Loaded memory '{sheet}' memory({cached_n}:{n}){mem_meta} | knowledge '{ksheet}' knowledge({cached_kn}:{kn}){know_meta}"
+        return (
+            f"โหลด memory '{sheet}' in-cache={cached_n} in-ws={n}{mem_meta} | "
+            f"knowledge '{ksheet}' in-cache={cached_kn} in-ws={kn}{know_meta}"
+        )
+    return (
+        f"Loaded memory '{sheet}' in-cache={cached_n} in-ws={n}{mem_meta} | "
+        f"knowledge '{ksheet}' in-cache={cached_kn} in-ws={kn}{know_meta}"
+    )
 
 
 def _startup_prewarm_status_line(lang: str) -> str:
