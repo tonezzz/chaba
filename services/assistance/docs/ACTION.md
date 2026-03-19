@@ -1,11 +1,11 @@
 # Action (Operator Playbook)
 
 ## Now (what to do next)
-- **Most valuable next action (10 minutes):** Record a deploy/build snapshot (health + status + CI) and append it to memo, so you can compare after the next push/redeploy.
-- **Then:** If you push a new change, rerun the snapshot and confirm:
-  - `git_sha` / `image_tag` changed (if configured)
-  - CI run SHA matches what you expect
-  - Containers remain healthy
+- **Most valuable next action (10 minutes):** Validate the deployed GitHub Actions watcher end-to-end.
+- **Then:** Confirm it auto-stops and persists state:
+  - Start: `POST /github/actions/watch/start` (use `stop_on_completed=true`, `max_runtime_seconds=900`)
+  - Verify running: `GET /github/actions/watch/list`
+  - Verify completion: watcher transitions to `running=false` with `stopped_reason=completed` (or `timeout`)
 
 ### Rule: keep `Now` updated (mandatory)
 After every `action` run, update this `Now` section so it reflects reality.
