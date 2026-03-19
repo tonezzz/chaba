@@ -10472,54 +10472,64 @@ class GitHubActionsWatchStartRequest(BaseModel):
 @app.post("/github/actions/watch/start")
 @app.post("/jarvis/github/actions/watch/start")
 async def github_actions_watch_start(req: GitHubActionsWatchStartRequest) -> dict[str, Any]:
-    owner = str(req.owner or "").strip() or "tonezzz"
-    repo = str(req.repo or "").strip() or "chaba"
-    branch = str(req.branch).strip() if req.branch is not None else None
-    event = str(req.event).strip() if req.event is not None else None
-
     try:
-        poll_seconds = float(req.poll_seconds)
-    except Exception:
-        poll_seconds = 15.0
-    poll_seconds = max(2.0, min(300.0, poll_seconds))
+        token = _github_ro_token()
+        if not token:
+            raise HTTPException(status_code=500, detail="missing_github_personal_token_ro")
 
-    stop_on_completed = bool(req.stop_on_completed is True)
-    try:
-        max_runtime_seconds = float(req.max_runtime_seconds)
-    except Exception:
-        max_runtime_seconds = 900.0
-    max_runtime_seconds = max(5.0, min(7200.0, max_runtime_seconds))
+        owner = str(req.owner or "").strip() or "tonezzz"
+        repo = str(req.repo or "").strip() or "chaba"
+        branch = str(req.branch).strip() if req.branch is not None else None
+        event = str(req.event).strip() if req.event is not None else None
 
-    key = _github_watch_key(owner, repo, branch, event)
-    existing = _GITHUB_WATCH_TASKS.get(key)
-    if existing and not existing.done():
-        return {"ok": True, "started": False, "key": key, "already_running": True, "state": _GITHUB_WATCH_STATE.get(key)}
+        try:
+            poll_seconds = float(req.poll_seconds)
+        except Exception:
+            poll_seconds = 15.0
+        poll_seconds = max(2.0, min(300.0, poll_seconds))
 
-    task = asyncio.create_task(
-        _github_watch_loop(
-            key=key,
-            owner=owner,
-            repo=repo,
-            branch=branch,
-            event=event,
-            poll_seconds=poll_seconds,
-            stop_on_completed=stop_on_completed,
-            max_runtime_seconds=max_runtime_seconds,
+        stop_on_completed = bool(req.stop_on_completed is True)
+        try:
+            max_runtime_seconds = float(req.max_runtime_seconds)
+        except Exception:
+            max_runtime_seconds = 900.0
+        max_runtime_seconds = max(5.0, min(7200.0, max_runtime_seconds))
+
+        key = _github_watch_key(owner, repo, branch, event)
+        existing = _GITHUB_WATCH_TASKS.get(key)
+        if existing and not existing.done():
+            return {"ok": True, "started": False, "key": key, "already_running": True, "state": _GITHUB_WATCH_STATE.get(key)}
+
+        task = asyncio.create_task(
+            _github_watch_loop(
+                key=key,
+                owner=owner,
+                repo=repo,
+                branch=branch,
+                event=event,
+                poll_seconds=poll_seconds,
+                stop_on_completed=stop_on_completed,
+                max_runtime_seconds=max_runtime_seconds,
+            )
         )
-    )
-    _GITHUB_WATCH_TASKS[key] = task
-    _GITHUB_WATCH_STATE[key] = {
-        "owner": owner,
-        "repo": repo,
-        "branch": branch,
-        "event": event,
-        "poll_seconds": poll_seconds,
-        "stop_on_completed": stop_on_completed,
-        "max_runtime_seconds": max_runtime_seconds,
-        "ts": int(time.time()),
-        "running": True,
-    }
-    return {"ok": True, "started": True, "key": key}
+        _GITHUB_WATCH_TASKS[key] = task
+        _GITHUB_WATCH_STATE[key] = {
+            "owner": owner,
+            "repo": repo,
+            "branch": branch,
+            "event": event,
+            "poll_seconds": poll_seconds,
+            "stop_on_completed": stop_on_completed,
+            "max_runtime_seconds": max_runtime_seconds,
+            "ts": int(time.time()),
+            "running": True,
+        }
+        return {"ok": True, "started": True, "key": key}
+    except HTTPException:
+        raise
+    except Exception as e:
+        detail = f"{type(e).__name__}: {str(e)}"
+        raise HTTPException(status_code=500, detail={"error": "github_actions_watch_start_failed", "detail": detail})
 
 
 @app.post("/github/actions/watch/stop")

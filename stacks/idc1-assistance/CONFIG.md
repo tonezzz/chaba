@@ -61,6 +61,9 @@ Backend:
 - `WEAVIATE_URL` (default `http://weaviate:8080`)
 - `MCP_BASE_URL` (default `http://mcp-bundle:3050`)
 - `MCP_PLAYWRIGHT_BASE_URL`
+- `GITHUB_PERSONAL_TOKEN_RO`
+  - Required for GitHub Actions read/watch endpoints.
+  - If missing, GitHub endpoints can fail with `missing_github_personal_token_ro`.
 
 Google Sheets SSoT (system sheet + per-feature routing):
 
