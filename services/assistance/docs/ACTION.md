@@ -320,7 +320,8 @@ Goal: a single, stable way to answer “how many items are in sheet X?” withou
 - **SNA:** Start the watcher on the deployed backend for the target repo/branch, then verify it transitions to stopped when CI completes (or times out), and confirm `latest` + UI log updated.
 - **Success looks like:**
   - `/jarvis/github/actions/watch/start` returns 200
-  - `/jarvis/github/actions/watch/list` shows `running=true`
+  - Preferred: `/jarvis/github/actions/watch/list` includes the key you started (may be `running=true` briefly)
+  - Fallback (bounded wait): `/jarvis/github/actions/watch?owner=...&repo=...&branch=...&timeout_seconds=...` returns `completed=true`
   - After CI completes: watcher stops automatically (`running=false`, `stopped_reason=completed`) OR times out with `stopped_reason=timeout`
   - `/jarvis/github/actions/watch` reflects newest run and status
   - UI log contains `run_detected` and `run_completed` (and possibly `watch_timeout` if timeout)
