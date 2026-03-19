@@ -4,7 +4,7 @@
 
 - [x] TODO-NOW-001: Validate deployed GitHub Actions watcher end-to-end
 - [x] TODO-NOW-002: Record deploy snapshot into Memory (`runtime.deploy.snapshot.latest`)
-- [ ] TODO-NEXT-001: Add a small smoke checklist for operators (calendar reminder + legacy scheduler disabled)
+- [x] TODO-NEXT-001: Add a small smoke checklist for operators (calendar reminder + legacy scheduler disabled)
 
 ## Next
 

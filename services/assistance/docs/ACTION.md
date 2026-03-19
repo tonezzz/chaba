@@ -21,23 +21,23 @@
 ### Always-updated status chart (fill this every time you run “Now”)
 | Item | Value |
 | --- | --- |
-| Need rebuild? | |
-| Need redeploy? | |
-| Health ok | |
-| Status ok | |
-| uptime_s | |
-| Snapshot ts | |
+| Need rebuild? | No |
+| Need redeploy? | No |
+| Health ok | Yes |
+| Status ok | Yes |
+| uptime_s | 1535 |
+| Snapshot ts | 2026-03-19T12:??:??Z |
 | Deployed base URL | `https://assistance.idc1.surf-thailand.com/jarvis/api` |
-| instance_id | |
-| CI status | |
-| CI conclusion | |
-| CI head_sha | |
-| CI updated_at | |
-| CI url | |
-| jarvis-backend image (tag) | |
-| jarvis-backend image digest | |
-| jarvis-backend image created | |
-| Backend image published in latest CI? | |
+| instance_id | jarvis_01c4931e5c |
+| CI status | completed |
+| CI conclusion | success |
+| CI head_sha | d525231311b98caf312aeddf0db533ac97166d5d |
+| CI updated_at | 2026-03-19T12:11:10Z |
+| CI url | https://github.com/tonezzz/chaba/actions/runs/23294198774 |
+| jarvis-backend image (tag) | ghcr.io/tonezzz/chaba/jarvis-backend:idc1-assistance |
+| jarvis-backend image digest | sha256:e710d9a9093e20207440f29b40471f2077362546f442917e10212ccbe1b1bbe6 |
+| jarvis-backend image created | 2026-03-19T12:11:12Z |
+| Backend image published in latest CI? | Yes |
 
 Need redeploy? rule (binary):
 - **Yes** if CI is `completed/success` AND either:
@@ -57,7 +57,7 @@ Need rebuild? rule (binary, selective CI):
 - WIP limit = 1: if you start a new thing, merge it into the existing checklist/backlog section (see **Intake/merge policy** below).
 
 ### Current pick
-- `<pick 1>` — `<why now>` — `<next command/section to run>`
+- `Watcher SNA (15 minutes)` — prove watcher end-to-end post-deploy — run: **SNA for GitHub Actions watcher (deployed)**
 
 Update rule:
 - After you run any ACTION.md procedure, always come back here and set **Current pick** to the *single* next move.
@@ -540,6 +540,28 @@ Example (preferred upsert):
     - `run_completed`
     - `watch_error` (only if error)
     - `watch_timeout` (only if max-runtime hit)
+
+## Operator smoke checklist (Calendar + legacy scheduler)
+Run this after a deploy (or when debugging reminders).
+
+### A) Calendar reminder smoke (create + confirm)
+1. Create a reminder as a Google Calendar event via the `mcp-google-calendar` tool path (preferred).
+2. Confirm the reminder is visible:
+   - In Google Calendar (calendar like `Jarvis Reminders`), OR
+   - Via the backend (if you have an endpoint/tool for listing calendar reminders).
+3. Optional safety: confirm undo history exists:
+   - `GET /google-calendar/undo/list`
+   - If you just created something, it should appear near the top.
+
+### B) Legacy reminder scheduler disabled (no double notifications)
+The legacy scheduler loop should be disabled by default.
+
+1. Inspect the running backend container env (Portainer/host):
+   - Container: `idc1-assistance-jarvis-backend-1`
+   - Confirm `JARVIS_LEGACY_REMINDER_NOTIFICATIONS_ENABLED` is unset or `0`.
+2. If you observe legacy reminder popups/WS events unexpectedly:
+   - Check backend logs for legacy scheduler warnings (`reminder_scheduler_error`).
+   - Treat as config drift and redeploy after fixing env.
 
 ## Unified context (what matters)
 ### GitHub Actions watcher integration
