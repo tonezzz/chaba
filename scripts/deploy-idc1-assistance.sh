@@ -164,7 +164,19 @@ PY
     git_http_code="$(curl -sS -k --max-time 120 -o /tmp/portainer_git_redeploy.json -w '%{http_code}' \
       -X POST \
       -H "X-API-Key: ${portainer_api_key}" \
+      -H 'Content-Type: application/json' \
+      --data-binary '{}' \
       "${base}/api/stacks/${stack_id}/git/redeploy?endpointId=${portainer_endpoint_id}" || true)"
+
+    # Portainer versions differ in the expected method. Some return 405 for POST but accept PUT.
+    if [[ "${git_http_code}" == "405" ]]; then
+      git_http_code="$(curl -sS -k --max-time 120 -o /tmp/portainer_git_redeploy.json -w '%{http_code}' \
+        -X PUT \
+        -H "X-API-Key: ${portainer_api_key}" \
+        -H 'Content-Type: application/json' \
+        --data-binary '{}' \
+        "${base}/api/stacks/${stack_id}/git/redeploy?endpointId=${portainer_endpoint_id}" || true)"
+    fi
 
     if [[ "${git_http_code}" == "200" || "${git_http_code}" == "204" ]]; then
       echo "[deploy] Portainer Git redeploy OK (http=${git_http_code})" >&2
