@@ -3,6 +3,9 @@ FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
+ARG GIT_SHA=""
+ARG IMAGE_TAG=""
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
@@ -13,6 +16,9 @@ COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY . /app
+
+ENV JARVIS_GIT_SHA=${GIT_SHA} \
+    JARVIS_IMAGE_TAG=${IMAGE_TAG}
 
 ENV PORT=8018
 EXPOSE 8018

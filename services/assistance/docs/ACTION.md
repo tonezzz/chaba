@@ -14,7 +14,7 @@
 ## Now (what to do next)
 
 - **Say:** `action`
-- **I will run:** `TODO-NOW-005` (from `services/assistance/docs/TODO.md#now`)
+- **I will run:** `TODO-NOW-006` (from `services/assistance/docs/TODO.md#now`)
 
 ### 4 most valuable next actions (update this every time you run "Now")
 1. **Deploy/build snapshot (10 minutes)**

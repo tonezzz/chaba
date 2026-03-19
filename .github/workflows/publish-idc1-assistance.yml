@@ -26,7 +26,9 @@ jobs:
             image: jarvis-backend
             context: ./services/assistance/jarvis-backend
             file: ./services/assistance/jarvis-backend/Dockerfile
-            build_args: ""
+            build_args: |
+              GIT_SHA=${{ github.sha }}
+              IMAGE_TAG=ghcr.io/tonezzz/chaba/jarvis-backend:${{ github.ref_name }}
             extra_paths: ""
           - name: frontend
             image: jarvis-frontend
