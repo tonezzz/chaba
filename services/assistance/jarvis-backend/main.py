@@ -1251,6 +1251,21 @@ def _read_text_file_tail(path: str, max_bytes: int = 200000) -> str:
         return ""
 
 
+def _read_text_file_tail_lines(path: str, max_lines: int = 100, max_bytes: int = 200000) -> str:
+    p = str(path or "").strip()
+    if not p:
+        return ""
+    n = int(max_lines) if isinstance(max_lines, int) or str(max_lines).strip().isdigit() else 100
+    n = max(1, min(int(n), 5000))
+    txt = _read_text_file_tail(p, max_bytes=max(1000, int(max_bytes)))
+    if not txt:
+        return ""
+    lines = txt.splitlines()
+    if len(lines) <= n:
+        return txt
+    return "\n".join(lines[-n:])
+
+
 async def _ws_record(ws: WebSocket, direction: str, msg: Any) -> None:
     global _WS_RECORD_LOCK
     try:
@@ -1794,11 +1809,18 @@ class _UILogAppendRequest(BaseModel):
 
 
 class MemoAddRequest(BaseModel):
-    memo: str = Field(min_length=1, max_length=20000)
-    subject: Optional[str] = None
+    memo: str
     group: Optional[str] = None
     status: Optional[str] = None
+    subject: Optional[str] = None
+    v: Optional[str] = None
     result: Optional[str] = None
+
+
+class SysKvSetRequest(BaseModel):
+    key: str
+    value: str
+    dry_run: Optional[bool] = False
 
 
 @app.post("/logs/ui/append")
@@ -2103,18 +2125,87 @@ async def memo_add(req: MemoAddRequest, x_api_token: Optional[str] = Header(defa
     return {"ok": True, "appended": 1, "sheet": sheet_name, "spreadsheet_id": spreadsheet_id, "raw": parsed}
 
 
+@app.post("/sys_kv/set")
+@app.post("/jarvis/sys_kv/set")
+async def sys_kv_set(req: SysKvSetRequest, x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token")) -> dict[str, Any]:
+    _require_api_token_if_configured(x_api_token)
+    sys_kv = _sys_kv_snapshot()
+    enabled_raw = str(sys_kv.get("sys_kv.write.enabled") or "").strip() if isinstance(sys_kv, dict) else ""
+    if not enabled_raw:
+        raise HTTPException(
+            status_code=400,
+            detail={"error": "sys_kv_write_disabled", "detail": "Missing sys sheet key sys_kv.write.enabled (default disabled)"},
+        )
+    try:
+        if not _parse_bool_cell(enabled_raw):
+            raise HTTPException(
+                status_code=400,
+                detail={"error": "sys_kv_write_disabled", "detail": "Enable via sys sheet key sys_kv.write.enabled=true"},
+            )
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=400, detail={"error": "sys_kv_write_disabled", "detail": "Invalid sys_kv.write.enabled"})
+
+    k = str(req.key or "").strip()
+    v = str(req.value or "").strip()
+    if not k:
+        raise HTTPException(status_code=400, detail={"error": "missing_key"})
+    dry_run = bool(req.dry_run is True)
+    result = await _sys_kv_upsert_sheet(key=k, value=v, dry_run=dry_run)
+    if not isinstance(result, dict) or not result.get("ok"):
+        raise HTTPException(status_code=500, detail={"error": "sys_kv_set_failed", "detail": result})
+    try:
+        fresh = dict(sys_kv) if isinstance(sys_kv, dict) else {}
+        fresh[k] = v
+        _set_cached_sys_kv_only(fresh)
+    except Exception:
+        pass
+    return {"ok": True, "key": k, "value": v, "dry_run": dry_run, "sys_kv_set": result}
+
+
 @app.get("/logs/ui/today")
 @app.get("/jarvis/logs/ui/today")
-def logs_ui_today(max_bytes: int = 200000) -> dict[str, Any]:
+def logs_ui_today(max_bytes: int = 200000, max_lines: Optional[int] = None) -> dict[str, Any]:
     path = _ui_log_daily_path()
-    return {"ok": True, "date": _today_ymd(), "path": path, "text": _read_text_file_tail(path, max_bytes=max(1000, int(max_bytes)))}
+    sys_kv = _sys_kv_snapshot()
+    if max_lines is None:
+        try:
+            raw = str(sys_kv.get("logs.ui.max_lines") or "").strip() if isinstance(sys_kv, dict) else ""
+            if raw:
+                max_lines = _safe_int(raw, default=100)
+        except Exception:
+            max_lines = None
+    if max_lines is None:
+        max_lines = 100
+    return {
+        "ok": True,
+        "date": _today_ymd(),
+        "path": path,
+        "text": _read_text_file_tail_lines(path, max_lines=int(max_lines), max_bytes=max(1000, int(max_bytes))),
+    }
 
 
 @app.get("/logs/ws/today")
 @app.get("/jarvis/logs/ws/today")
-def logs_ws_today(max_bytes: int = 200000) -> dict[str, Any]:
+def logs_ws_today(max_bytes: int = 200000, max_lines: Optional[int] = None) -> dict[str, Any]:
     path = _ws_record_daily_path()
-    return {"ok": True, "date": _today_ymd(), "path": path, "text": _read_text_file_tail(path, max_bytes=max(1000, int(max_bytes)))}
+    sys_kv = _sys_kv_snapshot()
+    if max_lines is None:
+        try:
+            raw = str(sys_kv.get("logs.ws.max_lines") or "").strip() if isinstance(sys_kv, dict) else ""
+            if raw:
+                max_lines = _safe_int(raw, default=100)
+        except Exception:
+            max_lines = None
+    if max_lines is None:
+        max_lines = 100
+    return {
+        "ok": True,
+        "date": _today_ymd(),
+        "path": path,
+        "text": _read_text_file_tail_lines(path, max_lines=int(max_lines), max_bytes=max(1000, int(max_bytes))),
+    }
 
 
 WEB_FETCHER_BASE_URL = str(os.getenv("WEB_FETCHER_BASE_URL") or "http://web-fetcher:8028").strip().rstrip("/")
