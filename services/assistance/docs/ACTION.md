@@ -25,6 +25,36 @@ Run this before taking actions if you had multiple chats open or you suspect dri
   - `GET /github/actions/latest?owner=tonezzz&repo=chaba&branch=idc1-assistance`
 - If you just pushed, confirm `head_sha` equals your latest commit SHA.
 
+## Post-push status (do I need to redeploy?)
+Run this after you `git push`.
+
+### Inputs
+- **Expected SHA (local):** `git rev-parse HEAD`
+
+### Checks
+1. **CI finished for the expected SHA**
+   - `GET /github/actions/latest?owner=tonezzz&repo=chaba&branch=idc1-assistance`
+   - Success looks like:
+     - `run.status=completed`
+     - `run.conclusion=success`
+     - `run.head_sha == expected_sha`
+2. **Deploy picked up the change (heuristics)**
+   - `GET /status`
+   - Signals of redeploy:
+     - `instance_id` changed vs last snapshot
+     - `uptime_s` is small (e.g. < 10 minutes)
+3. **API surface sanity (detect deploy drift)**
+   - `GET /openapi.json`
+   - Confirm expected new endpoints exist (example):
+     - `/debug/counts` or any newly-added route you care about
+
+### Decision rule (notify me)
+- **Redeploy required** if ANY are true:
+  - CI is not green for `expected_sha`
+  - `/openapi.json` does not contain the endpoints you expect from your latest push
+  - `/status` shows long uptime and you expected a restart (likely didn’t redeploy)
+- Otherwise, proceed to the next SNA.
+
 ## Overview (quick context)
 - **What this is:** The single file you and I use to stay aligned, pick the next Most Valuable Task, and run verification steps without losing context.
 - **Current objective:** GitHub Actions watcher integration for Jarvis (manual trigger only), plus reliable observability + persistence (UI log + memo/memory where appropriate).
@@ -47,6 +77,23 @@ Run this before taking actions if you had multiple chats open or you suspect dri
 - **When you notice duplication:**
   - Move the *canonical* procedure/checklist into `ACTION.md`.
   - Replace the duplicated content elsewhere with a short pointer to the relevant `ACTION.md` section.
+
+## Policy: memo vs memory vs knowledge (what goes where)
+- **Memo** (append-only inbox)
+  - Use for breadcrumbs, handoffs, and human notes.
+  - Expect it to grow; do not rely on it for “current status”.
+- **Memory** (upsertable current-state KV)
+  - Use for a single authoritative “latest status” value that should be kept updated.
+  - Examples:
+    - `runtime.deploy.snapshot.latest`
+    - `runtime.github_actions.watch.latest`
+- **Knowledge** (stable reference)
+  - Use for durable concepts/procedures/architecture that should not churn.
+
+## Policy: status memo should be updated, not appended
+- Prefer an **upsert** key for status snapshots.
+- **Preferred store:** Memory key `runtime.deploy.snapshot.latest`.
+- **Fallback store (if memory upsert path is unavailable):** sys_kv key `runtime.deploy.snapshot.latest` via `POST /jarvis/sys_kv/set`.
 
 ## How to use this file
 - **Command format**
@@ -277,11 +324,12 @@ Goal: a single, stable way to answer “how many items are in sheet X?” withou
   - Stop: `POST /github/actions/watch/stop`
 
 ### Persist the snapshot (optional but preferred)
-- If you want “what was deployed” recorded for later comparison, append a memo:
-  - Subject: `deploy-snapshot`
-  - Group: `ops`
-  - Memo template:
-    - `deploy_snapshot ts=<iso> env=idc1-assistance git_sha=<sha> image_tag=<tag> instance_id=<id> uptime_s=<n> ci_status=<status> ci_conclusion=<conclusion> ci_url=<url>`
+- If you want “what was deployed” recorded for later comparison, persist it as a **single upserted status**:
+  - **Preferred:** memory key `runtime.deploy.snapshot.latest`
+  - **Fallback:** sys_kv key `runtime.deploy.snapshot.latest`
+
+Memo text template (value to store):
+- `deploy_snapshot ts=<iso> env=idc1-assistance git_sha=<sha> image_tag=<tag> instance_id=<id> uptime_s=<n> ci_status=<status> ci_conclusion=<conclusion> ci_url=<url> ci_head_sha=<sha>`
 
 ### Ask Jarvis to do it (snapshot + memo + summary)
 - You can ask Jarvis (the deployed assistant) to:
