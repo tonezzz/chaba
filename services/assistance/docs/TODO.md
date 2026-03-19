@@ -1,5 +1,18 @@
 # Assistance TODO (ideas, next steps, suggestions)
 
+## Now
+
+- [ ] TODO-NOW-001: Validate deployed GitHub Actions watcher end-to-end
+- [ ] TODO-NOW-002: Record deploy snapshot into Memory (`runtime.deploy.snapshot.latest`)
+
+## Next
+
+- [ ] TODO-NEXT-001: Add a small smoke checklist for operators (calendar reminder + legacy scheduler disabled)
+
+## Later
+
+- [ ] TODO-LATER-001: Remove legacy reminders system completely (once Calendar cutover is stable)
+
 ## General
 
 - assess README.md before proceeding with any new features

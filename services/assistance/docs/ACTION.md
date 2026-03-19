@@ -1,10 +1,10 @@
 # Action (Operator Playbook)
 
 ## Now (what to do next)
-- **Most valuable next action (10 minutes):** Record a deploy/build snapshot and upsert it into Memory.
+- **Most valuable next action (10 minutes):** `TODO-NOW-001` (see `services/assistance/docs/TODO.md#now`)
 - **Success looks like:**
-  - `POST /jarvis/memory/set` updates `runtime.deploy.snapshot.latest` with a `deploy_snapshot ...` value
-  - `GET /jarvis/debug/counts` shows non-zero `memory.count` and no errors
+  - Start returns 200: `POST /github/actions/watch/start`
+  - Auto-stop observed: `GET /github/actions/watch/list` shows `running=false` and `stopped_reason=completed` (or `timeout`)
 
 ### Rule: keep `Now` updated (mandatory)
 After every `action` run, update this `Now` section so it reflects reality.
