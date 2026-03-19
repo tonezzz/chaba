@@ -16,7 +16,19 @@
 ## Now (what to do next)
 
 - **Say:** `action`
-- **I will run:** `TODO-NOW-007` (from `services/assistance/docs/TODO.md#now`)
+- **I will run:** `TODO-NOW-008` (from `services/assistance/docs/TODO.md#now`)
+
+### Snapshot procedure (copy/paste; update the status chart)
+1. **Backend snapshot**
+   - `GET /status`
+     - Paste: `instance_id`, `uptime_s`, and container health (if present)
+   - `GET /health`
+     - Paste: `build.git_sha`, `build.image_tag` (must be non-null)
+2. **CI snapshot (this branch)**
+   - `GET /github/actions/latest?owner=tonezzz&repo=chaba&branch=idc1-assistance`
+     - Paste: `run.status`, `run.conclusion`, `run.head_sha`, `run.updated_at`, `run.html_url`
+3. **Decision**
+   - If CI is green but `/health.build.*` doesn’t match `run.head_sha`, redeploy.
 
 ### 4 most valuable next actions (update this every time you run "Now")
 1. **Deploy/build snapshot (10 minutes)**
@@ -67,7 +79,7 @@ Need rebuild? rule (binary, selective CI):
 - WIP limit = 1: if you start a new thing, merge it into the existing checklist/backlog section (see **Intake/merge policy** below).
 
 ### Current pick
-- `Docs cleanup pass (TODO-NOW-007)` — align ACTION.md/TODO.md and remove drift/duplication
+- `Status loop polish (TODO-NOW-008)` — make the Now snapshot loop mechanical and reduce ambiguity
 
 Update rule:
 - After you run any ACTION.md procedure, always come back here and set **Current pick** to the *single* next move.
