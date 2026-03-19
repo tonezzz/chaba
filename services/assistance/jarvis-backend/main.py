@@ -2983,18 +2983,6 @@ AGENTS_DIR = str(os.getenv("JARVIS_AGENTS_DIR") or "/app/agents").strip() or "/a
 DEFAULT_USER_ID = os.getenv("DEFAULT_USER_ID", "default")
 DEFAULT_TIMEZONE = os.getenv("DEFAULT_TIMEZONE", "Asia/Bangkok")
 
-LEGACY_REMINDER_NOTIFICATIONS_ENABLED = str(os.getenv("JARVIS_LEGACY_REMINDER_NOTIFICATIONS_ENABLED", "0")).strip().lower() in (
-    "1",
-    "true",
-    "yes",
-)
-
-DISABLE_LEGACY_REMINDER_TEXT_COMMANDS = str(os.getenv("JARVIS_DISABLE_LEGACY_REMINDER_TEXT_COMMANDS", "1")).strip().lower() in (
-    "1",
-    "true",
-    "yes",
-)
-
 MORNING_BRIEF_HOUR = int(str(os.getenv("JARVIS_MORNING_BRIEF_HOUR") or "8").strip() or "8")
 MORNING_BRIEF_MINUTE = int(str(os.getenv("JARVIS_MORNING_BRIEF_MINUTE") or "0").strip() or "0")
 
@@ -3005,7 +2993,7 @@ _ws_by_user: dict[str, set[WebSocket]] = {}
 # Map sticky session_id -> last active websocket for that session.
 # This is used so Gemini tool calls can reach back into the correct session state.
 _SESSION_WS: dict[str, WebSocket] = {}
-_reminder_task: Optional[asyncio.Task[None]] = None
+
 
 
 def _portainer_cfg(sys_kv: Any) -> dict[str, str]:
@@ -3378,246 +3366,6 @@ def _classify_image_generation_error(message: str) -> Optional[dict[str, Any]]:
     return None
 
 
-def _set_reminder_due_and_notify_at(*, reminder_id: str, due_at_ts: Optional[int], notify_at_ts: Optional[int]) -> bool:
-    _init_session_db()
-    rid = str(reminder_id or "").strip()
-    if not rid:
-        return False
-    now_ts = int(time.time())
-    local = _get_local_reminder_by_id(rid) or {}
-    title = str(local.get("title") or "Reminder").strip() or "Reminder"
-    schedule_type = str(local.get("schedule_type") or "morning_brief").strip() or "morning_brief"
-    dedupe_key = _reminder_dedupe_key(title, due_at_ts, schedule_type)
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        cur = conn.execute(
-            "UPDATE reminders SET due_at = ?, notify_at = ?, dedupe_key = ?, updated_at = ? WHERE reminder_id = ?",
-            (due_at_ts, notify_at_ts, dedupe_key, now_ts, rid),
-        )
-        conn.commit()
-        return bool(cur.rowcount and int(cur.rowcount) > 0)
-
-
-async def _handle_last_reminder_modify(ws: WebSocket, text: str) -> bool:
-    raw = str(text or "").strip()
-    s = " ".join(raw.split())
-
-    is_thai = _text_is_thai(s)
-    if not is_thai:
-        return False
-
-    # Thai time-change follow-ups.
-    if not (s.startswith("เปลี่ยนเวลา") or s.startswith("เปลี่ยนเป็น") or s.startswith("เปลี่ยน เป็น")):
-        return False
-
-    rid = str(getattr(ws.state, "last_selected_reminder_id", "") or "").strip()
-    if not rid:
-        rid = str(getattr(ws.state, "last_reminder_id", "") or "").strip()
-    if not rid:
-        msg = "ยังไม่พบรายการแจ้งเตือนล่าสุดที่จะให้เปลี่ยนเวลา"
-        try:
-            await _ws_send_json(ws, {"type": "text", "text": msg})
-        except Exception:
-            pass
-        try:
-            await _live_say(ws, msg)
-        except Exception:
-            pass
-        return True
-
-    if msg_type == "memory":
-        sys_kv = getattr(ws.state, "sys_kv", None)
-        if not feature_enabled("memory", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
-            await _ws_send_json(
-                ws,
-                {
-                    "type": "error",
-                    "kind": "feature_disabled",
-                    "message": "feature_disabled:memory",
-                    "detail": {"feature": "memory"},
-                    "instance_id": INSTANCE_ID,
-                },
-                trace_id=tid,
-            )
-            await _ws_voice_job_done(ws, tid)
-            return True
-        action = str(msg.get("action") or "").strip().lower()
-        if action in {"summary", "list", "latest", "check"}:
-            await _handle_memory_trigger(ws, "memory summary")
-            await _ws_voice_job_done(ws, tid)
-            return True
-
-        if action in {"get", "key"}:
-            key = str(msg.get("key") or "").strip()
-            await _handle_memory_trigger(ws, f"memory key {key}" if key else "memory key")
-            await _ws_voice_job_done(ws, tid)
-            return True
-
-        if action in {"search", "find"}:
-            q = str(msg.get("query") or msg.get("text") or "").strip()
-            await _handle_memory_trigger(ws, f"memory_search {q}" if q else "memory_search")
-            await _ws_voice_job_done(ws, tid)
-            return True
-
-        if action in {"add", "create", "upsert"}:
-            sys_kv = getattr(ws.state, "sys_kv", None)
-            if not isinstance(sys_kv, dict) or "memory.write.enabled" not in sys_kv:
-                await _ws_send_json(
-                    ws,
-                    {
-                        "type": "error",
-                        "kind": "missing_sys_kv_key",
-                        "message": "missing_sys_kv_key",
-                        "detail": {"key": "memory.write.enabled", "hint": "Add this key to the system sheet KV."},
-                        "instance_id": INSTANCE_ID,
-                    },
-                    trace_id=tid,
-                )
-                return True
-            if not _sys_kv_bool(sys_kv, "memory.write.enabled", default=False):
-                await _ws_send_json(
-                    ws,
-                    {"type": "error", "kind": "memory_write_disabled", "message": "memory_write_disabled", "instance_id": INSTANCE_ID},
-                    trace_id=tid,
-                )
-                return True
-
-            key = str(msg.get("key") or "").strip()
-            value = str(msg.get("value") or msg.get("text") or "").strip()
-            scope = str(msg.get("scope") or "global").strip() or "global"
-            priority = _safe_int(msg.get("priority"), default=0)
-            enabled = bool(msg.get("enabled") if msg.get("enabled") is not None else True)
-            source = str(msg.get("source") or "ui").strip() or "ui"
-
-            if not value:
-                await _ws_send_json(
-                    ws,
-                    {"type": "error", "kind": "memory_missing_value", "message": "memory_missing_value", "instance_id": INSTANCE_ID},
-                    trace_id=tid,
-                )
-                return True
-
-            res = await _memory_sheet_upsert(
-                ws,
-                key=key or None,
-                value=value,
-                scope=scope,
-                priority=priority,
-                enabled=enabled,
-                source=source,
-                trace_id=tid,
-            )
-            await _ws_send_json(ws, {"type": "memory_created", "memory": res, "instance_id": INSTANCE_ID}, trace_id=tid)
-            await _ws_voice_job_done(ws, tid)
-            return True
-
-        await _ws_send_json(
-            ws,
-            {"type": "error", "kind": "invalid_memory_action", "message": f"invalid_memory_action: {action}", "instance_id": INSTANCE_ID},
-            trace_id=tid,
-        )
-        return True
-
-    when = ""
-    if s.startswith("เปลี่ยนเป็น") or s.startswith("เปลี่ยน เป็น"):
-        parts = s.split(" ", 1)
-        when = parts[1].strip() if len(parts) > 1 else ""
-    elif s.startswith("เปลี่ยนเวลา"):
-        tail = s[len("เปลี่ยนเวลา") :].strip()
-        if tail.startswith(":") or tail.startswith("-"):
-            tail = tail[1:].strip()
-        when = tail
-
-    if not when:
-        try:
-            ws.state.pending_reminder_modify = {"reminder_id": rid, "created_at": int(time.time())}
-        except Exception:
-            pass
-        msg = "ต้องการเปลี่ยนเป็นเวลาไหน? (เช่น เปลี่ยนเป็น 9 โมงเช้า)"
-        try:
-            await _ws_send_json(ws, {"type": "text", "text": msg})
-        except Exception:
-            pass
-        try:
-            await _live_say(ws, msg)
-        except Exception:
-            pass
-        return True
-
-    tz = _get_user_timezone(DEFAULT_USER_ID)
-    now = datetime.now(tz=timezone.utc)
-    due_at_utc, local_iso = _parse_time_from_text(when, now, tz)
-    if due_at_utc is None:
-        msg = "ฉันอ่านเวลาไม่ออก ลองใหม่ เช่น วันนี้ 17:00 หรือ พรุ่งนี้ 09:00"
-        try:
-            await _ws_send_json(ws, {"type": "text", "text": msg})
-        except Exception:
-            pass
-        try:
-            await _live_say(ws, msg)
-        except Exception:
-            pass
-        return True
-
-    notify_at_local = _next_morning_brief_at(now, tz, due_at_utc)
-    notify_at_ts = int(notify_at_local.astimezone(timezone.utc).timestamp())
-    due_at_ts = int(due_at_utc.replace(tzinfo=timezone.utc).timestamp())
-
-    changed = _set_reminder_due_and_notify_at(reminder_id=rid, due_at_ts=due_at_ts, notify_at_ts=notify_at_ts)
-    _set_reminder_hide_until(rid, None)
-
-    wv: Optional[dict[str, Any]] = None
-    if _weaviate_enabled():
-        try:
-            local = _get_local_reminder_by_id(rid) or {}
-            if not local:
-                raise HTTPException(status_code=404, detail="reminder_not_found")
-            tz_name = str(local.get("timezone") or tz.key)
-            external_key = str(local.get("aim_entity_name") or "").strip() or f"reminder::{rid}"
-            wv = await _weaviate_upsert_memory_item(
-                external_key=external_key,
-                kind="reminder",
-                title=str(local.get("title") or "Reminder"),
-                body=str(local.get("source_text") or ""),
-                status=str(local.get("status") or "pending"),
-                due_at=due_at_ts,
-                notify_at=notify_at_ts,
-                hide_until=None,
-                timezone_name=tz_name,
-                source="jarvis",
-            )
-        except Exception as e:
-            wv = {"ok": False, "error": str(e)}
-
-    try:
-        await _ws_send_json(
-            ws,
-            {
-                "type": "reminder_modified",
-                "reminder_id": rid,
-                "due_at": due_at_ts,
-                "notify_at": notify_at_ts,
-                "local_time": local_iso,
-                "changed": changed,
-                "weaviate": wv,
-                "instance_id": INSTANCE_ID,
-            }
-        )
-    except Exception:
-        pass
-
-    title = str((_get_local_reminder_by_id(rid) or {}).get("title") or "Reminder").strip() or "Reminder"
-    msg = f"โอเค เปลี่ยนเวลาแล้ว: {title} เป็น {local_iso or when}"
-    try:
-        await _ws_send_json(ws, {"type": "text", "text": msg})
-    except Exception:
-        pass
-    try:
-        await _live_say(ws, msg)
-    except Exception:
-        pass
-    return True
-
-
 def _looks_like_reminder_details_query(text: str) -> bool:
     raw = str(text or "").strip()
     if not raw:
@@ -3744,7 +3492,6 @@ async def _handle_pending_reminder_set_time(ws: WebSocket, text: str) -> bool:
     pending = getattr(ws.state, "pending_reminder_set_time", None)
     if not isinstance(pending, dict):
         return False
-    rid = str(pending.get("reminder_id") or "").strip()
     pending_title = str(pending.get("title") or "").strip()
     pending_source_text = str(pending.get("source_text") or "").strip()
 
@@ -3777,35 +3524,12 @@ async def _handle_pending_reminder_set_time(ws: WebSocket, text: str) -> bool:
     except Exception:
         pass
 
-    # Calendar cutover: if this pending draft has no local reminder_id, create a Google Calendar event.
-    if not rid:
-        title = pending_title or "Reminder"
-        source_text = pending_source_text or s
-        try:
-            cal = await _google_calendar_create_reminder_event(title=title, due_at_utc=due_at_utc, tz=tz, source_text=source_text)
-        except Exception as e:
-            msg = f"สร้างการแจ้งเตือนไม่สำเร็จ: {e}"
-            try:
-                await _ws_send_json(ws, {"type": "text", "text": msg})
-            except Exception:
-                pass
-            try:
-                await _live_say(ws, msg)
-            except Exception:
-                pass
-            return True
-
-        await _ws_send_json(
-            ws,
-            {
-                "type": "reminder_setup",
-                "title": title,
-                "reminder_id": None,
-                "result": {"ok": True, "calendar": cal, "local_time": local_iso, "timezone": tz.key},
-                "instance_id": INSTANCE_ID,
-            },
-        )
-        msg = f"โอเค สร้างการแจ้งเตือนในปฏิทินแล้ว: {title} เป็น {local_iso or s}"
+    title = pending_title or "Reminder"
+    source_text = pending_source_text or s
+    try:
+        cal = await _google_calendar_create_reminder_event(title=title, due_at_utc=due_at_utc, tz=tz, source_text=source_text)
+    except Exception as e:
+        msg = f"สร้างการแจ้งเตือนไม่สำเร็จ: {e}"
         try:
             await _ws_send_json(ws, {"type": "text", "text": msg})
         except Exception:
@@ -3816,53 +3540,17 @@ async def _handle_pending_reminder_set_time(ws: WebSocket, text: str) -> bool:
             pass
         return True
 
-    notify_at_local = _next_morning_brief_at(now, tz, due_at_utc)
-    notify_at_ts = int(notify_at_local.astimezone(timezone.utc).timestamp())
-    due_at_ts = int(due_at_utc.replace(tzinfo=timezone.utc).timestamp())
-    changed = _set_reminder_due_and_notify_at(reminder_id=rid, due_at_ts=due_at_ts, notify_at_ts=notify_at_ts)
-    _set_reminder_hide_until(rid, None)
-
-    wv: Optional[dict[str, Any]] = None
-    if _weaviate_enabled():
-        try:
-            local = _get_local_reminder_by_id(rid) or {}
-            if not local:
-                raise HTTPException(status_code=404, detail="reminder_not_found")
-            tz_name = str(local.get("timezone") or tz.key)
-            external_key = str(local.get("aim_entity_name") or "").strip() or f"reminder::{rid}"
-            wv = await _weaviate_upsert_memory_item(
-                external_key=external_key,
-                kind="reminder",
-                title=str(local.get("title") or "Reminder"),
-                body=str(local.get("source_text") or ""),
-                status=str(local.get("status") or "pending"),
-                due_at=due_at_ts,
-                notify_at=notify_at_ts,
-                hide_until=None,
-                timezone_name=tz_name,
-                source="jarvis",
-            )
-        except Exception as e:
-            wv = {"ok": False, "error": str(e)}
-
-    try:
-        await ws.send_json(
-            {
-                "type": "reminder_modified",
-                "reminder_id": rid,
-                "due_at": due_at_ts,
-                "notify_at": notify_at_ts,
-                "local_time": local_iso,
-                "changed": changed,
-                "weaviate": wv,
-                "instance_id": INSTANCE_ID,
-            }
-        )
-    except Exception:
-        pass
-
-    title = str((_get_local_reminder_by_id(rid) or {}).get("title") or "Reminder").strip() or "Reminder"
-    msg = f"โอเค ตั้งเวลาให้แล้ว: {title} เป็น {local_iso or s}"
+    await _ws_send_json(
+        ws,
+        {
+            "type": "reminder_setup",
+            "title": title,
+            "reminder_id": None,
+            "result": {"ok": True, "calendar": cal, "local_time": local_iso, "timezone": tz.key},
+            "instance_id": INSTANCE_ID,
+        },
+    )
+    msg = f"โอเค สร้างการแจ้งเตือนในปฏิทินแล้ว: {title} เป็น {local_iso or s}"
     try:
         await _ws_send_json(ws, {"type": "text", "text": msg})
     except Exception:
@@ -4368,114 +4056,6 @@ def _init_session_db() -> None:
     db_session.init_session_db(SESSION_DB_PATH)
     os.makedirs(os.path.dirname(SESSION_DB_PATH) or ".", exist_ok=True)
     with sqlite3.connect(SESSION_DB_PATH) as conn:
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS reminders (
-              reminder_id TEXT PRIMARY KEY,
-              user_id TEXT NOT NULL,
-              title TEXT NOT NULL,
-              dedupe_key TEXT,
-              due_at INTEGER,
-              timezone TEXT NOT NULL,
-              schedule_type TEXT NOT NULL,
-              notify_at INTEGER,
-              hide_until INTEGER,
-              status TEXT NOT NULL,
-              source_text TEXT,
-              aim_entity_name TEXT,
-              created_at INTEGER NOT NULL,
-              updated_at INTEGER NOT NULL
-            )
-            """
-        )
-        # Index creation must tolerate older DBs missing newly added columns.
-        try:
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_reminders_user_notify ON reminders(user_id, notify_at)")
-        except Exception:
-            pass
-        # Backwards-compatible migration: ensure dedupe_key exists for older DBs.
-        try:
-            cols = [r[1] for r in conn.execute("PRAGMA table_info(reminders)").fetchall()]
-            if "dedupe_key" not in cols:
-                conn.execute("ALTER TABLE reminders ADD COLUMN dedupe_key TEXT")
-        except Exception:
-            pass
-
-        # Backwards-compatible migration: allow notify_at to be nullable and add hide_until.
-        # SQLite can't drop NOT NULL constraints, so we rebuild the table if needed.
-        try:
-            info = conn.execute("PRAGMA table_info(reminders)").fetchall() or []
-            by_name = {str(r[1]): r for r in info if isinstance(r, (list, tuple)) and len(r) >= 4}
-            notify_at_notnull = False
-            if "notify_at" in by_name:
-                try:
-                    notify_at_notnull = bool(int(by_name["notify_at"][3]))
-                except Exception:
-                    notify_at_notnull = False
-
-            if "hide_until" not in by_name or notify_at_notnull:
-                conn.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS reminders_new (
-                      reminder_id TEXT PRIMARY KEY,
-                      user_id TEXT NOT NULL,
-                      title TEXT NOT NULL,
-                      dedupe_key TEXT,
-                      due_at INTEGER,
-                      timezone TEXT NOT NULL,
-                      schedule_type TEXT NOT NULL,
-                      notify_at INTEGER,
-                      hide_until INTEGER,
-                      status TEXT NOT NULL,
-                      source_text TEXT,
-                      aim_entity_name TEXT,
-                      created_at INTEGER NOT NULL,
-                      updated_at INTEGER NOT NULL
-                    )
-                    """
-                )
-
-                # Copy best-effort from old reminders table.
-                cols_existing = [r[1] for r in info]
-                has_hide_until = "hide_until" in cols_existing
-                notify_at_expr = "notify_at"
-                hide_until_expr = "hide_until" if has_hide_until else "NULL"
-
-                conn.execute(
-                    f"""
-                    INSERT OR REPLACE INTO reminders_new(
-                      reminder_id, user_id, title, dedupe_key, due_at, timezone, schedule_type, notify_at, hide_until,
-                      status, source_text, aim_entity_name, created_at, updated_at
-                    )
-                    SELECT reminder_id, user_id, title, dedupe_key, due_at, timezone, schedule_type, {notify_at_expr}, {hide_until_expr},
-                           status, source_text, aim_entity_name, created_at, updated_at
-                    FROM reminders
-                    """
-                )
-
-                conn.execute("DROP TABLE reminders")
-                conn.execute("ALTER TABLE reminders_new RENAME TO reminders")
-                conn.execute("CREATE INDEX IF NOT EXISTS idx_reminders_user_notify ON reminders(user_id, notify_at)")
-                conn.execute("CREATE INDEX IF NOT EXISTS idx_reminders_user_hide_until ON reminders(user_id, hide_until)")
-        except Exception as e:
-            logger.warning("reminders_schema_migration_failed error=%s", str(e))
-
-        # Ensure hide_until index exists (after migration) when the column is present.
-        try:
-            cols2 = [r[1] for r in conn.execute("PRAGMA table_info(reminders)").fetchall()]
-            if "hide_until" in cols2:
-                conn.execute("CREATE INDEX IF NOT EXISTS idx_reminders_user_hide_until ON reminders(user_id, hide_until)")
-        except Exception:
-            pass
-        # Prevent duplicates among pending reminders.
-        # SQLite supports partial indexes (>= 3.8.0), which is the norm on modern distros.
-        try:
-            conn.execute(
-                "CREATE UNIQUE INDEX IF NOT EXISTS idx_reminders_pending_dedupe ON reminders(user_id, dedupe_key) WHERE status = 'pending'"
-            )
-        except Exception:
-            pass
-
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS agent_status (
@@ -5306,141 +4886,6 @@ def _get_agent_statuses(user_id: str) -> list[dict[str, Any]]:
     return out
 
 
-def _list_upcoming_pending_reminders(
-    *,
-    user_id: str,
-    start_ts: int,
-    end_ts: int,
-    time_field: str,
-    limit: int,
-) -> list[dict[str, Any]]:
-    _init_session_db()
-    field = str(time_field or "notify_at").strip().lower() or "notify_at"
-    if field not in ("notify_at", "due_at"):
-        raise HTTPException(status_code=400, detail="invalid_time_field")
-
-    start_v = int(start_ts)
-    end_v = int(end_ts)
-    if end_v < start_v:
-        raise HTTPException(status_code=400, detail="invalid_time_window")
-
-    lim = max(1, min(int(limit or 50), 500))
-
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        now_ts = int(time.time())
-        cur = conn.execute(
-            f"""
-            SELECT reminder_id, title, due_at, timezone, schedule_type, notify_at, source_text, aim_entity_name
-            FROM reminders
-            WHERE user_id = ?
-              AND status = 'pending'
-              AND {field} IS NOT NULL
-              AND (hide_until IS NULL OR hide_until <= ?)
-              AND {field} >= ?
-              AND {field} <= ?
-            ORDER BY {field} ASC
-            LIMIT ?
-            """,
-            (user_id, now_ts, start_v, end_v, lim),
-        )
-        rows = cur.fetchall() or []
-
-    out: list[dict[str, Any]] = []
-    for reminder_id, title, due_at, tz_name, schedule_type, notify_at, source_text, aim_entity_name in rows:
-        out.append(
-            {
-                "reminder_id": reminder_id,
-                "title": title,
-                "due_at": due_at,
-                "timezone": tz_name,
-                "schedule_type": schedule_type,
-                "notify_at": notify_at,
-                "source_text": source_text,
-                "aim_entity_name": aim_entity_name,
-            }
-        )
-    return out
-
-
-def _list_reminders(
-    *,
-    user_id: str,
-    status: str,
-    limit: int,
-    offset: int,
-    order: str,
-    include_hidden: bool,
-) -> list[dict[str, Any]]:
-    _init_session_db()
-    status_norm = str(status or "all").strip().lower() or "all"
-    order_norm = str(order or "desc").strip().lower() or "desc"
-    lim = max(1, min(int(limit or 50), 500))
-    off = max(0, int(offset or 0))
-
-    if status_norm not in ("all", "pending", "fired", "done"):
-        raise HTTPException(status_code=400, detail="invalid_status")
-    if order_norm not in ("asc", "desc"):
-        raise HTTPException(status_code=400, detail="invalid_order")
-
-    status_clause = ""
-    params: list[Any] = [user_id]
-    if status_norm != "all":
-        status_clause = " AND status = ?"
-        params.append(status_norm)
-
-    hidden_clause = ""
-    if not bool(include_hidden):
-        now_ts = int(time.time())
-        hidden_clause = " AND (hide_until IS NULL OR hide_until <= ?)"
-        params.append(now_ts)
-
-    sql = (
-        "SELECT reminder_id, title, due_at, timezone, schedule_type, notify_at, hide_until, status, source_text, aim_entity_name, created_at, updated_at "
-        "FROM reminders "
-        "WHERE user_id = ?" + status_clause + hidden_clause + " "
-        f"ORDER BY updated_at {order_norm.upper()} "
-        "LIMIT ? OFFSET ?"
-    )
-    params.extend([lim, off])
-
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        cur = conn.execute(sql, tuple(params))
-        rows = cur.fetchall() or []
-
-    out: list[dict[str, Any]] = []
-    for (
-        reminder_id,
-        title,
-        due_at,
-        tz_name,
-        schedule_type,
-        notify_at,
-        hide_until,
-        status_value,
-        source_text,
-        aim_entity_name,
-        created_at,
-        updated_at,
-    ) in rows:
-        out.append(
-            {
-                "reminder_id": reminder_id,
-                "title": title,
-                "due_at": due_at,
-                "timezone": tz_name,
-                "schedule_type": schedule_type,
-                "notify_at": notify_at,
-                "hide_until": hide_until,
-                "status": status_value,
-                "source_text": source_text,
-                "aim_entity_name": aim_entity_name,
-                "created_at": created_at,
-                "updated_at": updated_at,
-            }
-        )
-    return out
-
-
 async def _render_daily_brief(user_id: str) -> dict[str, Any]:
     def _now_ts() -> int:
         return int(time.time())
@@ -5457,7 +4902,7 @@ async def _render_daily_brief(user_id: str) -> dict[str, Any]:
         get_agent_statuses=_get_agent_statuses,
         weaviate_enabled=_weaviate_enabled,
         weaviate_query_upcoming_reminders=_weaviate_query_upcoming_reminders,
-        list_upcoming_pending_reminders=_list_upcoming_pending_reminders,
+        list_upcoming_pending_reminders=lambda **_: [],
         get_user_timezone=_get_user_timezone,
         now_ts=_now_ts,
         datetime_now_iso=_datetime_now_iso,
@@ -5829,372 +5274,6 @@ def _parse_reminder_helper_command(text: str) -> dict[str, Any]:
         return {"action": "list", "args": {"status": status, "include_hidden": include_hidden}}
 
     return {"action": "", "args": {}}
-
-
-async def _handle_reminder_helper_trigger(ws: WebSocket, text: str) -> bool:
-    s = " ".join(str(text or "").strip().lower().split())
-    try:
-        awaiting = bool(getattr(ws.state, "awaiting_reminder_upcoming_confirm", False))
-    except Exception:
-        awaiting = False
-    if awaiting:
-        yes_set = {
-            "yes",
-            "y",
-            "ok",
-            "okay",
-            "sure",
-            "next",
-            "show",
-            "show next",
-            "show next reminders",
-            "next reminders",
-            "ใช่",
-            "เอา",
-            "ตกลง",
-            "แสดง",
-            "แสดงเลย",
-            "ต่อ",
-            "ต่อเลย",
-        }
-        no_set = {"no", "n", "nope", "cancel", "ไม่", "ไม่เอา", "ยกเลิก"}
-        if s in yes_set:
-            try:
-                ws.state.awaiting_reminder_upcoming_confirm = False
-            except Exception:
-                pass
-            now_ts = int(time.time())
-            end_ts = now_ts + 7 * 24 * 3600
-            items: list[dict[str, Any]] = []
-            if _weaviate_enabled():
-                try:
-                    wv_items = await _weaviate_query_upcoming_reminders(start_ts=now_ts, end_ts=end_ts, limit=50)
-                    for it in wv_items:
-                        if not isinstance(it, dict):
-                            continue
-                        title = str(it.get("title") or "Reminder").strip() or "Reminder"
-                        tz_name = str(it.get("timezone") or DEFAULT_TIMEZONE).strip() or DEFAULT_TIMEZONE
-                        hide_until = int(float(it["hide_until"])) if it.get("hide_until") is not None else None
-                        if hide_until is not None and hide_until > now_ts:
-                            continue
-                        items.append(
-                            {
-                                "reminder_id": _local_reminder_id_from_external_key(str(it.get("external_key") or "")),
-                                "title": title,
-                                "due_at": int(float(it["due_at"])) if it.get("due_at") is not None else None,
-                                "timezone": tz_name,
-                                "schedule_type": "memory",
-                                "notify_at": int(float(it["notify_at"])) if it.get("notify_at") is not None else None,
-                                "hide_until": hide_until,
-                                "status": str(it.get("status") or "").strip() or "pending",
-                                "source_text": str(it.get("body") or ""),
-                                "aim_entity_name": str(it.get("external_key") or ""),
-                                "created_at": int(float(it["created_at"])) if it.get("created_at") is not None else None,
-                                "updated_at": int(float(it["updated_at"])) if it.get("updated_at") is not None else None,
-                            }
-                        )
-                except Exception:
-                    items = []
-            if not items:
-                items = _list_upcoming_pending_reminders(
-                    user_id=DEFAULT_USER_ID,
-                    start_ts=now_ts,
-                    end_ts=end_ts,
-                    time_field="notify_at",
-                    limit=50,
-                )
-            await _ws_send_json(
-                ws,
-                {
-                    "type": "reminder_helper_list",
-                    "status": "pending",
-                    "include_hidden": False,
-                    "day": "upcoming",
-                    "reminders": items,
-                    "instance_id": INSTANCE_ID,
-                }
-            )
-            if not items:
-                try:
-                    await _ws_send_json(ws, {"type": "text", "text": "No upcoming reminders."})
-                except Exception:
-                    pass
-            return True
-        if s in no_set:
-            try:
-                ws.state.awaiting_reminder_upcoming_confirm = False
-            except Exception:
-                pass
-            try:
-                await _ws_send_json(ws, {"type": "text", "text": "OK."})
-            except Exception:
-                pass
-            return True
-
-    cmd = _parse_reminder_helper_command(text)
-    action = str(cmd.get("action") or "")
-    args = cmd.get("args") if isinstance(cmd.get("args"), dict) else {}
-    if not action:
-        return False
-
-    if action == "add":
-        payload = str(args.get("text") or "").strip()
-        if not payload:
-            await _ws_send_json(ws, {"type": "reminder_helper_error", "message": "missing_text"})
-            return True
-        handled = await _handle_reminder_setup_trigger(ws, f"reminder setup: {payload}")
-        if not handled:
-            await _ws_send_json(ws, {"type": "reminder_helper_error", "message": "add_failed"})
-        return True
-
-    if action == "list":
-        status = str(args.get("status") or "pending")
-        include_hidden = bool(args.get("include_hidden"))
-        day = str(args.get("day") or "").strip().lower()
-        items: list[dict[str, Any]] = []
-        if _weaviate_enabled():
-            try:
-                now_ts = int(time.time())
-                wv_items = await _weaviate_query_reminders(status=status, limit=50)
-                for it in wv_items:
-                    title = str(it.get("title") or "Reminder").strip() or "Reminder"
-                    tz_name = str(it.get("timezone") or DEFAULT_TIMEZONE).strip() or DEFAULT_TIMEZONE
-                    hide_until = int(float(it["hide_until"])) if it.get("hide_until") is not None else None
-                    if (not include_hidden) and hide_until is not None and hide_until > now_ts:
-                        continue
-                    items.append(
-                        {
-                            "reminder_id": _local_reminder_id_from_external_key(str(it.get("external_key") or "")),
-                            "title": title,
-                            "due_at": int(float(it["due_at"])) if it.get("due_at") is not None else None,
-                            "timezone": tz_name,
-                            "schedule_type": "memory",
-                            "notify_at": int(float(it["notify_at"])) if it.get("notify_at") is not None else None,
-                            "hide_until": hide_until,
-                            "status": str(it.get("status") or "").strip() or "pending",
-                            "source_text": str(it.get("body") or ""),
-                            "aim_entity_name": str(it.get("external_key") or ""),
-                            "created_at": int(float(it["created_at"])) if it.get("created_at") is not None else None,
-                            "updated_at": int(float(it["updated_at"])) if it.get("updated_at") is not None else None,
-                        }
-                    )
-            except Exception:
-                items = []
-
-        if not items:
-            items = _list_reminders(
-                user_id=DEFAULT_USER_ID,
-                status=status,
-                limit=50,
-                offset=0,
-                order="desc",
-                include_hidden=include_hidden,
-            )
-
-        # Option 2: allow calendar-day filtering that includes overdue items within the day.
-        if day in ("today", "yesterday"):
-            tz = _get_user_timezone(DEFAULT_USER_ID)
-            now_local = datetime.now(tz=timezone.utc).astimezone(tz)
-            base_date = now_local.date()
-            if day == "yesterday":
-                base_date = (now_local - timedelta(days=1)).date()
-            start_local = datetime(base_date.year, base_date.month, base_date.day, 0, 0, 0, tzinfo=tz)
-            end_local = datetime(base_date.year, base_date.month, base_date.day, 23, 59, 59, tzinfo=tz)
-            start_ts = int(start_local.astimezone(timezone.utc).timestamp())
-            end_ts = int(end_local.astimezone(timezone.utc).timestamp())
-
-            filtered_items: list[dict[str, Any]] = []
-            for it in items or []:
-                if not isinstance(it, dict):
-                    continue
-                ts = it.get("notify_at")
-                if ts is None:
-                    ts = it.get("due_at")
-                try:
-                    ts_i = int(ts) if ts is not None else None
-                except Exception:
-                    ts_i = None
-                if ts_i is None:
-                    continue
-                if start_ts <= ts_i <= end_ts:
-                    filtered_items.append(it)
-            items = filtered_items
-
-        # Option B: treat the most recently updated reminder in the list as the "selected" reminder
-        # for follow-ups like "เปลี่ยนเวลา" / "what are the details?".
-        try:
-            best_rid = ""
-            best_ts = -1
-            for it in items or []:
-                if not isinstance(it, dict):
-                    continue
-                rid = str(it.get("reminder_id") or "").strip()
-                if not rid:
-                    continue
-                ts = it.get("updated_at")
-                if ts is None:
-                    ts = it.get("notify_at")
-                if ts is None:
-                    ts = it.get("due_at")
-                try:
-                    ts_i = int(ts) if ts is not None else None
-                except Exception:
-                    ts_i = None
-                if ts_i is None:
-                    continue
-                if ts_i > best_ts:
-                    best_ts = ts_i
-                    best_rid = rid
-            if best_rid:
-                ws.state.last_selected_reminder_id = best_rid
-        except Exception:
-            pass
-
-        await _ws_send_json(
-            ws,
-            {
-                "type": "reminder_helper_list",
-                "status": status,
-                "include_hidden": include_hidden,
-                "day": day,
-                "reminders": items,
-                "instance_id": INSTANCE_ID,
-            }
-        )
-
-        if day == "today" and not items:
-            msg = "No reminders today. Want to see the next upcoming reminders?"
-            try:
-                await _ws_send_json(ws, {"type": "text", "text": msg})
-            except Exception:
-                pass
-            try:
-                ws.state.awaiting_reminder_upcoming_confirm = True
-            except Exception:
-                pass
-        return True
-
-    rid = str(args.get("reminder_id") or "").strip()
-    if not rid:
-        await _ws_send_json(ws, {"type": "reminder_helper_error", "message": "missing_reminder_id"})
-        return True
-
-    try:
-        ws.state.last_selected_reminder_id = rid
-    except Exception:
-        pass
-
-    if action == "done":
-        changed = _mark_reminder_done(rid)
-        wv: Optional[dict[str, Any]] = None
-        if _weaviate_enabled():
-            try:
-                wv = await _mark_reminder_done_weaviate(rid)
-            except Exception as e:
-                wv = {"ok": False, "error": str(e)}
-        await _ws_send_json(ws, {"type": "reminder_helper_done", "reminder_id": rid, "changed": changed, "weaviate": wv})
-        return True
-
-    if action == "later":
-        days_v = args.get("days")
-        days = 1
-        if days_v is not None:
-            try:
-                days = max(1, int(days_v))
-            except Exception:
-                days = 1
-        tz = _get_user_timezone(DEFAULT_USER_ID)
-        now = datetime.now(tz=timezone.utc)
-        hide_until_local = _default_hide_until(now, tz, days_ahead=days)
-        hide_until_ts = int(hide_until_local.astimezone(timezone.utc).timestamp())
-        changed = _set_reminder_hide_until(rid, hide_until_ts)
-        wv: Optional[dict[str, Any]] = None
-        if _weaviate_enabled():
-            try:
-                local = _get_local_reminder_by_id(rid) or {}
-                if not local:
-                    raise HTTPException(status_code=404, detail="reminder_not_found")
-                external_key = str(local.get("aim_entity_name") or "").strip() or f"reminder::{rid}"
-                tz_name = str(local.get("timezone") or tz.key)
-                wv = await _weaviate_upsert_memory_item(
-                    external_key=external_key,
-                    kind="reminder",
-                    title=str(local.get("title") or "Reminder"),
-                    body=str(local.get("source_text") or ""),
-                    status=str(local.get("status") or "pending"),
-                    due_at=int(local.get("due_at")) if local.get("due_at") is not None else None,
-                    notify_at=int(local.get("notify_at")) if local.get("notify_at") is not None else None,
-                    hide_until=hide_until_ts,
-                    timezone_name=tz_name,
-                    source="jarvis",
-                )
-            except Exception as e:
-                wv = {"ok": False, "error": str(e)}
-        await _ws_send_json(ws, {"type": "reminder_helper_later", "reminder_id": rid, "hide_until": hide_until_ts, "changed": changed, "weaviate": wv})
-        return True
-
-    if action == "reschedule":
-        when = str(args.get("when") or "").strip()
-        if not when:
-            await _ws_send_json(ws, {"type": "reminder_helper_error", "message": "missing_time_text"})
-            return True
-        tz = _get_user_timezone(DEFAULT_USER_ID)
-        now = datetime.now(tz=timezone.utc)
-        due_at_utc, local_iso = _parse_time_from_text(when, now, tz)
-        if due_at_utc is None:
-            await _ws_send_json(ws, {"type": "reminder_helper_error", "message": "time_parse_failed", "hint": "Try: today 17:00 | tomorrow 09:00"})
-            return True
-        notify_at_local = _next_morning_brief_at(now, tz, due_at_utc)
-        notify_at_ts = int(notify_at_local.astimezone(timezone.utc).timestamp())
-        changed = _set_reminder_notify_at(rid, notify_at_ts)
-        _set_reminder_hide_until(rid, None)
-        wv: Optional[dict[str, Any]] = None
-        if _weaviate_enabled():
-            try:
-                local = _get_local_reminder_by_id(rid) or {}
-                if not local:
-                    raise HTTPException(status_code=404, detail="reminder_not_found")
-                tz_name = str(local.get("timezone") or DEFAULT_TIMEZONE).strip() or DEFAULT_TIMEZONE
-                external_key = str(local.get("aim_entity_name") or "").strip() or f"reminder::{rid}"
-                wv = await _weaviate_upsert_memory_item(
-                    external_key=external_key,
-                    kind="reminder",
-                    title=str(local.get("title") or "Reminder"),
-                    body=str(local.get("source_text") or ""),
-                    status=str(local.get("status") or "pending"),
-                    due_at=int(local.get("due_at")) if local.get("due_at") is not None else None,
-                    notify_at=notify_at_ts,
-                    hide_until=None,
-                    timezone_name=tz_name,
-                    source="jarvis",
-                )
-            except Exception as e:
-                wv = {"ok": False, "error": str(e)}
-        await ws.send_json(
-            {
-                "type": "reminder_helper_reschedule",
-                "reminder_id": rid,
-                "notify_at": notify_at_ts,
-                "local_time": local_iso,
-                "changed": changed,
-                "weaviate": wv,
-            }
-        )
-        return True
-
-    if action == "delete":
-        changed = _delete_reminder_local(rid)
-        wv: Optional[dict[str, Any]] = None
-        if _weaviate_enabled():
-            try:
-                wv = await _mark_reminder_done_weaviate(rid)
-            except Exception as e:
-                wv = {"ok": False, "error": str(e)}
-        await _ws_send_json(ws, {"type": "reminder_helper_delete", "reminder_id": rid, "changed": changed, "weaviate": wv})
-        return True
-
-    await _ws_send_json(ws, {"type": "reminder_helper_error", "message": "unknown_action", "action": action})
-    return True
 
 
 async def _improve_reminder_title(*, raw_title: str, source_text: str) -> str:
@@ -7724,136 +6803,16 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             await _ws_voice_job_done(ws, tid)
             return True
 
-        if action in {"list"}:
-            status = str(msg.get("status") or "pending").strip().lower() or "pending"
-            include_hidden = bool(msg.get("include_hidden") or False)
-            day = str(msg.get("day") or "").strip().lower()
-            limit = int(msg.get("limit") or 50)
-            limit = max(1, min(200, limit))
-            now_ts = int(time.time())
-            items: list[dict[str, Any]] = []
-            if day == "upcoming":
-                items = _list_upcoming_pending_reminders(user_id=DEFAULT_USER_ID, start_ts=now_ts, end_ts=now_ts + 7 * 24 * 3600, limit=limit)
-            else:
-                items = _list_reminders(user_id=DEFAULT_USER_ID, status=status, include_hidden=include_hidden, day=day, limit=limit)
-            await _ws_send_json(
-                ws,
-                {"type": "reminders_list", "status": status, "day": day, "include_hidden": include_hidden, "items": items, "instance_id": INSTANCE_ID},
-                trace_id=tid,
-            )
-            await _ws_voice_job_done(ws, tid)
-            return True
-
-        if action in {"details", "detail"}:
-            rid = _pick_rid()
-            if not rid:
-                await _ws_send_json(ws, {"type": "error", "kind": "missing_reminder_id", "message": "missing_reminder_id", "instance_id": INSTANCE_ID}, trace_id=tid)
-                return True
-            local = _get_local_reminder_by_id(rid) or {}
-            if not local:
-                await _ws_send_json(ws, {"type": "error", "kind": "reminder_not_found", "message": "reminder_not_found", "reminder_id": rid, "instance_id": INSTANCE_ID}, trace_id=tid)
-                return True
-            try:
-                ws.state.last_selected_reminder_id = rid
-                ws.state.last_reminder_id = rid
-            except Exception:
-                pass
-            await _ws_send_json(ws, {"type": "reminder_detail", "reminder": local, "instance_id": INSTANCE_ID}, trace_id=tid)
-            await _ws_voice_job_done(ws, tid)
-            return True
-
-        if action in {"done", "complete"}:
-            rid = _pick_rid()
-            if not rid:
-                await _ws_send_json(ws, {"type": "error", "kind": "missing_reminder_id", "message": "missing_reminder_id", "instance_id": INSTANCE_ID}, trace_id=tid)
-                return True
-            changed = _mark_reminder_done(rid)
-            wv: Optional[dict[str, Any]] = None
-            if _weaviate_enabled():
-                try:
-                    wv = await _mark_reminder_done_weaviate(rid)
-                except Exception as e:
-                    wv = {"ok": False, "error": str(e)}
-            await _ws_send_json(ws, {"type": "reminders_done", "reminder_id": rid, "changed": changed, "weaviate": wv, "instance_id": INSTANCE_ID}, trace_id=tid)
-            await _ws_voice_job_done(ws, tid)
-            return True
-
-        if action in {"delete", "remove"}:
-            rid = _pick_rid()
-            if not rid:
-                await _ws_send_json(ws, {"type": "error", "kind": "missing_reminder_id", "message": "missing_reminder_id", "instance_id": INSTANCE_ID}, trace_id=tid)
-                return True
-            changed = _delete_reminder_local(rid)
-            wv: Optional[dict[str, Any]] = None
-            if _weaviate_enabled():
-                try:
-                    wv = await _mark_reminder_done_weaviate(rid)
-                except Exception as e:
-                    wv = {"ok": False, "error": str(e)}
-            await _ws_send_json(ws, {"type": "reminders_deleted", "reminder_id": rid, "changed": changed, "weaviate": wv, "instance_id": INSTANCE_ID}, trace_id=tid)
-            await _ws_voice_job_done(ws, tid)
-            return True
-
-        if action in {"later", "snooze"}:
-            rid = _pick_rid()
-            if not rid:
-                await _ws_send_json(ws, {"type": "error", "kind": "missing_reminder_id", "message": "missing_reminder_id", "instance_id": INSTANCE_ID}, trace_id=tid)
-                return True
-            days = int(msg.get("days") or 1)
-            days = max(1, min(30, days))
-            tz = _get_user_timezone(DEFAULT_USER_ID)
-            now = datetime.now(tz=timezone.utc)
-            hide_until_local = _default_hide_until(now, tz, days_ahead=days)
-            hide_until_ts = int(hide_until_local.astimezone(timezone.utc).timestamp())
-            changed = _set_reminder_hide_until(rid, hide_until_ts)
-            wv: Optional[dict[str, Any]] = None
-            if _weaviate_enabled():
-                try:
-                    local = _get_local_reminder_by_id(rid) or {}
-                    external_key = str(local.get("aim_entity_name") or "").strip() or f"reminder::{rid}"
-                    tz_name = str(local.get("timezone") or tz.key)
-                    wv = await _weaviate_upsert_memory_item(
-                        external_key=external_key,
-                        kind="reminder",
-                        title=str(local.get("title") or "Reminder"),
-                        body=str(local.get("source_text") or ""),
-                        status=str(local.get("status") or "pending"),
-                        due_at=int(local.get("due_at")) if local.get("due_at") is not None else None,
-                        notify_at=int(local.get("notify_at")) if local.get("notify_at") is not None else None,
-                        hide_until=hide_until_ts,
-                        timezone_name=tz_name,
-                        source="jarvis",
-                    )
-                except Exception as e:
-                    wv = {"ok": False, "error": str(e)}
-            await _ws_send_json(ws, {"type": "reminders_later", "reminder_id": rid, "hide_until": hide_until_ts, "changed": changed, "weaviate": wv, "instance_id": INSTANCE_ID}, trace_id=tid)
-            await _ws_voice_job_done(ws, tid)
-            return True
-
-        if action in {"reschedule", "set_time", "modify_last", "modify"}:
-            rid = _pick_rid()
-            when = str(msg.get("when") or msg.get("time") or "").strip()
-            if not rid:
-                await _ws_send_json(ws, {"type": "error", "kind": "missing_reminder_id", "message": "missing_reminder_id", "instance_id": INSTANCE_ID}, trace_id=tid)
-                return True
-            if not when:
-                await _ws_send_json(ws, {"type": "error", "kind": "missing_time_text", "message": "missing_time_text", "instance_id": INSTANCE_ID}, trace_id=tid)
-                return True
-            tz = _get_user_timezone(DEFAULT_USER_ID)
-            now = datetime.now(tz=timezone.utc)
-            due_at_utc, local_iso = _parse_time_from_text(when, now, tz)
-            if due_at_utc is None:
-                await _ws_send_json(ws, {"type": "error", "kind": "time_parse_failed", "message": "time_parse_failed", "hint": "Try: today 17:00 | tomorrow 09:00", "instance_id": INSTANCE_ID}, trace_id=tid)
-                return True
-            notify_at_local = _next_morning_brief_at(now, tz, due_at_utc)
-            notify_at_ts = int(notify_at_local.astimezone(timezone.utc).timestamp())
-            changed = _set_reminder_notify_at(rid, notify_at_ts)
-            _set_reminder_hide_until(rid, None)
-            await _ws_send_json(ws, {"type": "reminders_rescheduled", "reminder_id": rid, "notify_at": notify_at_ts, "local_time": local_iso, "changed": changed, "instance_id": INSTANCE_ID}, trace_id=tid)
-            await _ws_voice_job_done(ws, tid)
-            return True
-
-        await _ws_send_json(ws, {"type": "error", "kind": "invalid_reminders_action", "message": f"invalid_reminders_action: {action}", "instance_id": INSTANCE_ID}, trace_id=tid)
+        await _ws_send_json(
+            ws,
+            {
+                "type": "error",
+                "kind": "reminders_legacy_removed",
+                "message": "reminders_legacy_removed",
+                "instance_id": INSTANCE_ID,
+            },
+            trace_id=tid,
+        )
         return True
 
     if msg_type == "gems":
@@ -8488,8 +7447,6 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
                 ws.state.active_agent_until_ts = None
             return handled
         if agent_id_norm == "reminder-setup":
-            if DISABLE_LEGACY_REMINDER_TEXT_COMMANDS:
-                return False
             handled = await _handle_reminder_setup_trigger(ws, text)
             if handled:
                 ws.state.active_agent_id = agent_id_norm
@@ -10275,60 +9232,6 @@ def _suggest_reschedule_notify_at(now: datetime, tz: ZoneInfo) -> datetime:
     return _default_hide_until(now, tz, days_ahead=1)
 
 
-def _set_reminder_hide_until(reminder_id: str, hide_until_ts: Optional[int]) -> bool:
-    _init_session_db()
-    rid = str(reminder_id or "").strip()
-    if not rid:
-        return False
-    now_ts = int(time.time())
-    try:
-        with sqlite3.connect(SESSION_DB_PATH) as conn:
-            cur = conn.execute(
-                "UPDATE reminders SET hide_until = ?, updated_at = ? WHERE reminder_id = ?",
-                (hide_until_ts, now_ts, rid),
-            )
-            conn.commit()
-            return bool(cur.rowcount and int(cur.rowcount) > 0)
-    except sqlite3.OperationalError as e:
-        if "no such column" in str(e).lower() and "hide_until" in str(e).lower():
-            _init_session_db()
-            with sqlite3.connect(SESSION_DB_PATH) as conn:
-                cur = conn.execute(
-                    "UPDATE reminders SET hide_until = ?, updated_at = ? WHERE reminder_id = ?",
-                    (hide_until_ts, now_ts, rid),
-                )
-                conn.commit()
-                return bool(cur.rowcount and int(cur.rowcount) > 0)
-        raise
-
-
-def _set_reminder_notify_at(reminder_id: str, notify_at_ts: Optional[int]) -> bool:
-    _init_session_db()
-    rid = str(reminder_id or "").strip()
-    if not rid:
-        return False
-    now_ts = int(time.time())
-    try:
-        with sqlite3.connect(SESSION_DB_PATH) as conn:
-            cur = conn.execute(
-                "UPDATE reminders SET notify_at = ?, updated_at = ? WHERE reminder_id = ?",
-                (notify_at_ts, now_ts, rid),
-            )
-            conn.commit()
-            return bool(cur.rowcount and int(cur.rowcount) > 0)
-    except sqlite3.OperationalError as e:
-        if "no such column" in str(e).lower() and "notify_at" in str(e).lower():
-            _init_session_db()
-            with sqlite3.connect(SESSION_DB_PATH) as conn:
-                cur = conn.execute(
-                    "UPDATE reminders SET notify_at = ?, updated_at = ? WHERE reminder_id = ?",
-                    (notify_at_ts, now_ts, rid),
-                )
-                conn.commit()
-                return bool(cur.rowcount and int(cur.rowcount) > 0)
-        raise
-
-
 def _parse_time_from_text(text: str, now: datetime, tz: ZoneInfo) -> tuple[Optional[datetime], Optional[str]]:
     s = str(text or "").strip().lower()
     if not s:
@@ -10378,162 +9281,6 @@ def _reminder_dedupe_key(title: str, due_at_ts: Optional[int], schedule_type: st
     return f"{t}|{d}|{s}"[:512]
 
 
-def _create_reminder(
-    *,
-    user_id: str,
-    title: str,
-    due_at_utc: Optional[datetime],
-    tz: ZoneInfo,
-    schedule_type: str,
-    notify_at_utc: Optional[datetime],
-    source_text: str,
-    aim_entity_name: Optional[str],
-) -> str:
-    _init_session_db()
-    now_ts = int(time.time())
-    due_at_ts = int(due_at_utc.timestamp()) if due_at_utc is not None else None
-    notify_at_ts = int(notify_at_utc.timestamp()) if notify_at_utc is not None else None
-    dedupe_key = _reminder_dedupe_key(title, due_at_ts, schedule_type)
-
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        # If an equivalent pending reminder already exists, reuse it and update notify_at to the earliest.
-        cur = conn.execute(
-            """
-            SELECT reminder_id, notify_at
-            FROM reminders
-            WHERE user_id = ? AND dedupe_key = ? AND status = 'pending'
-            LIMIT 1
-            """,
-            (user_id, dedupe_key),
-        )
-        row = cur.fetchone()
-        if row:
-            existing_id, existing_notify_at = row
-            try:
-                existing_notify_at_int = int(existing_notify_at)
-            except Exception:
-                existing_notify_at_int = notify_at_ts
-            if notify_at_ts is not None:
-                new_notify_at = min(existing_notify_at_int, notify_at_ts)
-                conn.execute(
-                    "UPDATE reminders SET notify_at = ?, updated_at = ? WHERE reminder_id = ?",
-                    (new_notify_at, now_ts, existing_id),
-                )
-            else:
-                conn.execute(
-                    "UPDATE reminders SET updated_at = ? WHERE reminder_id = ?",
-                    (now_ts, existing_id),
-                )
-            conn.commit()
-            return str(existing_id)
-
-        reminder_id = f"r_{int(time.time())}_{os.urandom(6).hex()}"
-        conn.execute(
-            """
-            INSERT INTO reminders(
-              reminder_id, user_id, title, dedupe_key, due_at, timezone, schedule_type, notify_at, status,
-              hide_until, source_text, aim_entity_name, created_at, updated_at
-            ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """ ,
-            (
-                reminder_id,
-                user_id,
-                title,
-                dedupe_key,
-                due_at_ts,
-                str(tz.key),
-                schedule_type,
-                notify_at_ts,
-                "pending",
-                None,
-                source_text,
-                aim_entity_name,
-                now_ts,
-                now_ts,
-            ),
-        )
-        conn.commit()
-    return reminder_id
-
-
-def _mark_reminder_fired(reminder_id: str) -> None:
-    _init_session_db()
-    now_ts = int(time.time())
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        conn.execute(
-            "UPDATE reminders SET status = ?, updated_at = ? WHERE reminder_id = ?",
-            ("fired", now_ts, reminder_id),
-        )
-        conn.commit()
-
-
-def _mark_reminder_done(reminder_id: str) -> bool:
-    _init_session_db()
-    now_ts = int(time.time())
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        cur = conn.execute(
-            "UPDATE reminders SET status = ?, updated_at = ? WHERE reminder_id = ? AND status != ?",
-            ("done", now_ts, reminder_id, "done"),
-        )
-        conn.commit()
-        return bool(cur.rowcount and int(cur.rowcount) > 0)
-
-
-def _delete_reminder_local(reminder_id: str) -> bool:
-    _init_session_db()
-    rid = str(reminder_id or "").strip()
-    if not rid:
-        return False
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        cur = conn.execute("DELETE FROM reminders WHERE reminder_id = ?", (rid,))
-        conn.commit()
-        return bool(cur.rowcount and int(cur.rowcount) > 0)
-
-
-def _get_local_reminder_by_id(reminder_id: str) -> Optional[dict[str, Any]]:
-    _init_session_db()
-    rid = str(reminder_id or "").strip()
-    if not rid:
-        return None
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        cur = conn.execute(
-            "SELECT reminder_id, title, due_at, timezone, schedule_type, notify_at, hide_until, status, source_text, aim_entity_name, created_at, updated_at "
-            "FROM reminders WHERE reminder_id = ? LIMIT 1",
-            (rid,),
-        )
-        row = cur.fetchone()
-    if not row:
-        return None
-    (
-        reminder_id_v,
-        title,
-        due_at,
-        tz_name,
-        schedule_type,
-        notify_at,
-        hide_until,
-        status_value,
-        source_text,
-        aim_entity_name,
-        created_at,
-        updated_at,
-    ) = row
-    return {
-        "reminder_id": reminder_id_v,
-        "title": title,
-        "due_at": due_at,
-        "timezone": tz_name,
-        "schedule_type": schedule_type,
-        "notify_at": notify_at,
-        "hide_until": hide_until,
-        "status": status_value,
-        "source_text": source_text,
-        "aim_entity_name": aim_entity_name,
-        "created_at": created_at,
-        "updated_at": updated_at,
-    }
-
-
 async def _weaviate_get_memory_item_by_external_key(external_key: str) -> Optional[dict[str, Any]]:
     await _weaviate_ensure_schema()
     ek = str(external_key or "").strip()
@@ -10552,89 +9299,7 @@ async def _weaviate_get_memory_item_by_external_key(external_key: str) -> Option
     return props
 
 
-async def _mark_reminder_done_weaviate(reminder_id: str) -> dict[str, Any]:
-    if not _weaviate_enabled():
-        return {"ok": False, "skipped": True}
 
-    rid = str(reminder_id or "").strip()
-    if not rid:
-        raise HTTPException(status_code=400, detail="missing_reminder_id")
-
-    local = _get_local_reminder_by_id(rid)
-    external_key = None
-    if isinstance(local, dict):
-        external_key = str(local.get("aim_entity_name") or "").strip()
-    if not external_key:
-        external_key = f"reminder::{rid}"
-
-    props = await _weaviate_get_memory_item_by_external_key(external_key)
-    title = str((props or {}).get("title") or (local or {}).get("title") or "Reminder").strip() or "Reminder"
-    body = str((props or {}).get("body") or (local or {}).get("source_text") or "").strip()
-    tz_name = str((props or {}).get("timezone") or (local or {}).get("timezone") or DEFAULT_TIMEZONE).strip() or DEFAULT_TIMEZONE
-
-    def _num(v: Any) -> Optional[int]:
-        if v is None:
-            return None
-        try:
-            return int(float(v))
-        except Exception:
-            return None
-
-    due_at = _num((props or {}).get("due_at"))
-    notify_at = _num((props or {}).get("notify_at"))
-    if due_at is None and isinstance(local, dict):
-        due_at = _num(local.get("due_at"))
-    if notify_at is None and isinstance(local, dict):
-        notify_at = _num(local.get("notify_at"))
-
-    wv = await _weaviate_upsert_memory_item(
-        external_key=external_key,
-        kind="reminder",
-        title=title,
-        body=body,
-        status="done",
-        due_at=due_at,
-        notify_at=notify_at,
-        hide_until=None,
-        timezone_name=tz_name,
-        source="jarvis",
-    )
-    return {"ok": True, "weaviate": wv, "external_key": external_key}
-
-
-def _list_due_reminders(user_id: str, now_ts: int) -> list[dict[str, Any]]:
-    _init_session_db()
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        cur = conn.execute(
-            """
-            SELECT reminder_id, title, due_at, timezone, schedule_type, notify_at, source_text, aim_entity_name
-            FROM reminders
-            WHERE user_id = ?
-              AND status = 'pending'
-              AND notify_at IS NOT NULL
-              AND notify_at <= ?
-              AND (hide_until IS NULL OR hide_until <= ?)
-            ORDER BY notify_at ASC
-            """,
-            (user_id, now_ts, now_ts),
-        )
-        rows = cur.fetchall() or []
-
-    out: list[dict[str, Any]] = []
-    for reminder_id, title, due_at, tz_name, schedule_type, notify_at, source_text, aim_entity_name in rows:
-        out.append(
-            {
-                "reminder_id": reminder_id,
-                "title": title,
-                "due_at": due_at,
-                "timezone": tz_name,
-                "schedule_type": schedule_type,
-                "notify_at": notify_at,
-                "source_text": source_text,
-                "aim_entity_name": aim_entity_name,
-            }
-        )
-    return out
 
 
 async def _broadcast_to_user(user_id: str, payload: dict[str, Any]) -> None:
@@ -10654,30 +9319,8 @@ async def _broadcast_to_user(user_id: str, payload: dict[str, Any]) -> None:
                 s.discard(ws)
 
 
-async def _reminder_scheduler_loop() -> None:
-    while True:
-        try:
-            now_ts = int(time.time())
-            reminders = _list_due_reminders(DEFAULT_USER_ID, now_ts)
-            for r in reminders:
-                reminder_id = str(r.get("reminder_id") or "")
-                if reminder_id:
-                    _mark_reminder_fired(reminder_id)
-                await _broadcast_to_user(
-                    DEFAULT_USER_ID,
-                    {
-                        "type": "reminder",
-                        "reminder": r,
-                    },
-                )
-        except Exception as e:
-            logger.warning("reminder_scheduler_error error=%s", e)
-        await asyncio.sleep(15)
-
-
 @app.on_event("startup")
 async def _startup() -> None:
-    global _reminder_task
     global _SHEETS_LOGS_TASK
     global _SHEETS_LOGS_SERVER_TASK
     try:
@@ -10781,18 +9424,12 @@ async def _startup() -> None:
                 )
         except Exception as e:
             logger.warning("github_watch_autostart_failed error=%s", e)
-    if LEGACY_REMINDER_NOTIFICATIONS_ENABLED and (_reminder_task is None or _reminder_task.done()):
-        _reminder_task = asyncio.create_task(_reminder_scheduler_loop())
 
 
 @app.on_event("shutdown")
 async def _shutdown() -> None:
-    global _reminder_task
     global _SHEETS_LOGS_TASK
     global _SHEETS_LOGS_SERVER_TASK
-    if _reminder_task is not None:
-        _reminder_task.cancel()
-        _reminder_task = None
     if _SHEETS_LOGS_TASK is not None:
         _SHEETS_LOGS_TASK.cancel()
         _SHEETS_LOGS_TASK = None

@@ -2,6 +2,15 @@
 
 **Chat protocol:** `services/assistance/docs/CHAT_PROTOCOL.md`
 
+## Jump
+- [Now (what to do next)](#now-what-to-do-next)
+- [Preflight: confirm you’re using the latest ACTION.md](#preflight-confirm-youre-using-the-latest-actionmd)
+- [Post-push status (do I need to redeploy?)](#post-push-status-do-i-need-to-redeploy)
+- [Runbooks](#runbooks)
+- [Important warnings](#important-warnings)
+- [Decision log (keep to 3 lines max)](#decision-log-keep-to-3-lines-max)
+- [Improvements (pair-working backlog)](#improvements-pair-working-backlog)
+
 ## Now (what to do next)
 
 - **Say:** `action`
@@ -11,7 +20,6 @@
 1. **Deploy/build snapshot (10 minutes)**
    - Run: **Deploy/Build status awareness (save current state)**
    - Paste the results into the status chart below.
-   - Append a memo (optional but preferred).
 2. **Prove redeploy updated (10 minutes)**
    - If `/health` doesn’t include build identity, run: **Assess a pending job (might already be done)** then prove the running image digest via Portainer/host inspection.
 3. **Watcher SNA (15 minutes)**
@@ -61,6 +69,74 @@ Need rebuild? rule (binary, selective CI):
 
 Update rule:
 - After you run any ACTION.md procedure, always come back here and set **Current pick** to the *single* next move.
+
+## Runbooks
+
+### SNA for GitHub Actions watcher (deployed)
+#### Inputs you must decide (fill before running)
+- **Base URL:** `https://assistance.idc1.surf-thailand.com/jarvis/api`
+- **Repo:** `tonezzz/chaba`
+- **Branch:** `idc1-assistance`
+- **Event:** optional (e.g. `push`, `pull_request`)
+- **Poll seconds:** default is fine unless debugging
+- **Stop on completed:** `true`
+- **Max runtime seconds:** e.g. `900` (15m)
+
+#### Goal
+- Start the watcher on the deployed backend for the target repo/branch, then verify it transitions to stopped when CI completes (or times out), and confirm `latest` + UI log updated.
+
+### Deploy/Build status awareness (save current state)
+#### Goal
+- Be able to answer:
+  - “What version is deployed right now?”
+  - “Is the backend healthy?”
+  - “What’s the current CI run status for this branch?”
+  - “Did the deploy actually update?”
+
+Notes (from `stacks/idc1-assistance/CONFIG.md`):
+- Public WS URL is `wss://assistance.idc1.surf-thailand.com/jarvis/ws/live`.
+- Backend serves WS internally at `/ws/live` (edge proxy must strip `/jarvis`).
+- Hitting a WS URL as plain HTTP GET may return `404`; use a WS client.
+
+### Operator smoke checklist (Calendar cutover)
+#### Preconditions
+- You can reach the deployed backend base URL.
+- You have valid Google credentials configured for the backend.
+
+#### Checklist
+1. **Create a Calendar reminder**
+   - Use `POST /reminders` with a short test reminder (include a distinct prefix like `smoke-<date>`).
+2. **Confirm the event exists**
+   - Confirm the event appears in the `Jarvis Reminders` calendar.
+3. **Confirm legacy reminders are removed**
+   - Confirm the backend no longer supports legacy reminders actions (SQLite scheduler / list / done / later / delete).
+
+### Legacy reminders removal (breaking)
+#### What changed
+- Legacy SQLite reminders are no longer part of the backend runtime:
+  - No SQLite `reminders` table creation/migrations.
+  - No reminder scheduler loop/task.
+  - No legacy reminder text helper commands.
+- Reminder creation remains supported via the Calendar cutover path:
+  - Reminders with an explicit time => Google Calendar event (Jarvis Reminders calendar).
+  - Reminders without an explicit time => Google Task.
+
+#### Behavioral notes
+- WebSocket `type=reminders` only supports `action=add|create`.
+  - Other legacy actions return an error kind `reminders_legacy_removed`.
+- Daily brief no longer falls back to local SQLite reminders.
+
+#### Post-deploy verification checklist
+1. **Backend starts cleanly**
+   - Confirm `jarvis-backend` starts without attempting to create/migrate a `reminders` SQLite table.
+2. **Create a timed reminder**
+   - Via UI voice/text or `POST /reminders`, create a reminder with a time.
+   - Confirm a Calendar event is created in `Jarvis Reminders`.
+3. **Create a no-time reminder**
+   - Create a reminder without a time.
+   - Confirm a Google Task is created.
+4. **Confirm legacy reminder actions are rejected**
+   - From UI/WS, attempt any legacy reminder action (list/done/delete/later/reschedule) and confirm it returns `reminders_legacy_removed`.
 
 ## Preflight: confirm you’re using the latest ACTION.md
 Run this before taking actions if you had multiple chats open or you suspect drift.
@@ -357,237 +433,6 @@ Goal: a single, stable way to answer “how many items are in sheet X?” withou
     - next action
   - Prompt template:
     - `Append a memo: subject=back-to-mvt group=ops memo="MVT=<...> SNA=<...> outcome=<success|fail> next=<...>" then summarize in 3 lines.`
-
-## SNA for GitHub Actions watcher (deployed)
-### Inputs you must decide (fill before running)
-- **Base URL:** `https://assistance.idc1.surf-thailand.com/jarvis/api`
-- **Repo:** `tonezzz/chaba`
-- **Branch:** `idc1-assistance`
-- **Event:** optional (e.g. `push`, `pull_request`)
-- **Poll seconds:** default is fine unless debugging
-- **Stop on completed:** `true`
-- **Max runtime seconds:** e.g. `900` (15m)
-
-## Deploy/Build status awareness (save current state)
-### Goal
-- Be able to answer:
-  - “What version is deployed right now?”
-  - “Is the backend healthy?”
-  - “What’s the current CI run status for this branch?”
-  - “Did the deploy actually update?”
-
-Notes (from `stacks/idc1-assistance/CONFIG.md`):
-- Public WS URL is `wss://assistance.idc1.surf-thailand.com/jarvis/ws/live`.
-- Backend serves WS internally at `/ws/live` (edge proxy must strip `/jarvis`).
-- Hitting a WS URL as plain HTTP GET may return `404`; use a WS client.
-
-### Assess a pending job (might already be done)
-Use this when you think “the job is still running” but you suspect CI and/or redeploy already finished.
-
-#### Binary checks
-1. **Is CI already completed?**
-   - Call: `GET /github/actions/latest?owner=tonezzz&repo=chaba&branch=idc1-assistance`
-   - Pass if:
-     - `run.status=completed`
-     - and `run.updated_at` is recent (matches your last push time)
-   - If `status=in_progress|queued`, CI is still running.
-2. **Did the backend restart since that CI run?**
-   - Call: `GET /status`
-   - Compare:
-     - `uptime_s` (lower means a more recent restart)
-     - and `instance_id` (changes on restart)
-   - Heuristic pass if:
-     - `uptime_s` is less than ~1 hour AND your last redeploy was within that window.
-3. **Are containers healthy?**
-   - From `GET /status`, pass if key containers show `status=running` and `health=healthy` where available.
-
-#### If CI completed but you can’t prove the deploy updated
-If `GET /health` returns `build.git_sha=null` / `build.image_tag=null`, you cannot confirm “new code is running” from HTTP alone.
-
-Preferred options:
-- **Via Portainer/host inspection**
-  - Check the running `jarvis-backend` container image reference/digest matches the image built for the CI `head_sha`.
-- **Make /health authoritative (later)**
-  - Plumb build identity into the container env and have the backend return it.
-
-Build-to-deploy identity rule (preferred):
-- GitHub Actions publishes immutable tags per image:
-  - `:<branch>` (mutable)
-  - `:sha-<full_git_sha>` (immutable, preferred)
-  - `:sha-<short_git_sha>` (immutable)
-- This allows a binary check: running container image tag should match the CI `head_sha`.
-
-#### Portainer MCP (this repo)
-This repo includes a local Portainer + Portainer MCP stack at `stacks/idc1-portainer/`.
-
-Key references:
-- `stacks/idc1-portainer/docs/CONFIG.md`
-- `stacks/idc1-portainer/README.md`
-
-Connection endpoints (on the Docker host running the Portainer stack):
-- **Portainer API base:** `http://127.0.0.1:9000`
-- **Portainer MCP (HTTP/SSE):** `http://127.0.0.1:3052/mcp?app=windsurf`
-- **Portainer MCP health:** `http://127.0.0.1:3052/health`
-- **Portainer MCP (WebSocket gateway):** `ws://127.0.0.1:18183/ws`
-
-Read-only vs write tools:
-- By default this stack runs Portainer MCP in **read-only** mode (`PORTAINER_READ_ONLY=1` in `stacks/idc1-portainer/.env`).
-- If you need redeploy tools (start/stop/update stack), set `PORTAINER_READ_ONLY=0` and recreate the `mcp-bundle` container.
-
-Verify deployed image/digest via Portainer MCP (recommended)
-1. In your MCP client (Windsurf/Jarvis), run `tools/list` and confirm the Portainer tools are present (prefix varies by client):
-   - Look for: `portainer_*`
-2. Use a Portainer MCP “list containers” / “inspect container” tool to locate the running `jarvis-backend` container in the `idc1-assistance` stack.
-3. Capture these fields from the container inspect output:
-   - Image reference / digest (e.g. `RepoDigests`)
-   - Image ID
-   - Container `Created` / `StartedAt`
-4. Compare against expected deployment:
-   - CI `head_sha` from `GET /github/actions/latest`
-   - The expected GHCR image tag for that SHA:
-     - `ghcr.io/tonezzz/chaba/jarvis-backend:sha-<full head_sha>` (preferred)
-     - `ghcr.io/tonezzz/chaba/jarvis-backend:sha-<short head_sha>`
-     - (and/or use `RepoDigests` from image inspect)
-
-Optional: redeploy stack via Portainer MCP
-- Stop/Start:
-  - `portainer_1mcp_stopLocalStack`
-  - `portainer_1mcp_startLocalStack`
-- Update stack file + redeploy:
-  - `portainer_1mcp_getLocalStackFile`
-  - `portainer_1mcp_updateLocalStack`
-
-### Snapshot deployed backend state (binary)
-1. **Health (fast)**
-   - `GET /health`
-   - Success looks like:
-     - `ok=true`
-     - `build.git_sha` is present (if configured)
-     - `build.image_tag` is present (if configured)
-2. **Status (richer)**
-   - `GET /status`
-   - Capture:
-     - `instance_id`, `hostname`, `uptime_s`
-     - `startup_prewarm.ok`
-     - `containers` (if present)
-
-### Snapshot CI/build status (GitHub)
-- **Latest run (single fetch)**
-  - `GET /github/actions/latest?owner=tonezzz&repo=chaba&branch=idc1-assistance`
-- **Wait-until-completed (blocking poll, bounded)**
-  - `GET /github/actions/watch?owner=tonezzz&repo=chaba&branch=idc1-assistance&poll_seconds=10&timeout_seconds=600`
-- **Background watcher (push notifications + UI log, recommended while deploying)**
-  - Start: `POST /github/actions/watch/start`
-  - List: `GET /github/actions/watch/list`
-  - Stop: `POST /github/actions/watch/stop`
-
-Common failure mode:
-- If GitHub endpoints fail with `missing_github_personal_token_ro`, the backend is missing `GITHUB_PERSONAL_TOKEN_RO`.
-
-### Canonical deploy flow (Docker host)
-- Run: `./scripts/deploy-idc1-assistance.sh`
-- Source of truth config: `stacks/idc1-assistance/CONFIG.md`
-
-### Persist the snapshot (optional but preferred)
-- If you want “what was deployed” recorded for later comparison, persist it as a **single upserted status**:
-  - **Preferred:** memory key `runtime.deploy.snapshot.latest` via `POST /jarvis/memory/set`
-  - **Fallback:** sys_kv key `runtime.deploy.snapshot.latest` via `POST /jarvis/sys_kv/set`
-
-Memo text template (value to store):
-- `deploy_snapshot ts=<iso> env=idc1-assistance git_sha=<sha> image_tag=<tag> instance_id=<id> uptime_s=<n> ci_status=<status> ci_conclusion=<conclusion> ci_url=<url> ci_head_sha=<sha>`
-
-Example (preferred upsert):
-1. `POST /jarvis/memory/set`
-   - Body:
-     - `key=runtime.deploy.snapshot.latest`
-     - `value=<deploy_snapshot ...>`
-     - `scope=global`
-     - `priority=0`
-     - `enabled=true`
-
-### Ask Jarvis to do it (snapshot + memo + summary)
-- You can ask Jarvis (the deployed assistant) to:
-  - Fetch `/health` + `/status`
-  - Fetch `/github/actions/latest` (for `tonezzz/chaba` / `idc1-assistance`)
-  - Append a memo entry (`subject=deploy-snapshot`, `group=ops`)
-  - Return a short human summary you can paste back into this chat
-- Prompt template (edit as needed):
-  - `Run Deploy/Build status awareness now. Capture health/status + latest CI for tonezzz/chaba idc1-assistance. Append a memo deploy_snapshot with ts, git_sha, image_tag, instance_id, uptime, ci_status/conclusion/url, then summarize in 6 lines max.`
-
-### Steps
-1. **Start watcher**
-   - Call: `POST /github/actions/watch/start`
-2. **Confirm running**
-   - Call: `GET /github/actions/watch/list`
-3. **Wait for completion**
-   - Watch for “CI completed …” notification or poll:
-     - `GET /github/actions/watch`
-4. **Confirm auto-stop**
-   - `GET /github/actions/watch/list` should show:
-     - `running=false`
-     - `stopped_reason=completed` (or `timeout`)
-5. **Stop manually if needed**
-   - Call: `POST /github/actions/watch/stop`
-
-### Observability checklist
-- **State**
-  - `watch/list` includes the key you started, with `running`, `ts`, `stopped_reason`.
-- **Latest**
-  - `watch` returns the latest known run payload.
-- **UI log**
-  - Confirm the daily UI log includes entries with kinds:
-    - `run_detected`
-    - `run_completed`
-    - `watch_error` (only if error)
-    - `watch_timeout` (only if max-runtime hit)
-
-## Operator smoke checklist (Calendar + legacy scheduler)
-Run this after a deploy (or when debugging reminders).
-
-### A) Calendar reminder smoke (create + confirm)
-1. Create a reminder as a Google Calendar event via the `mcp-google-calendar` tool path (preferred).
-2. Confirm the reminder is visible:
-   - In Google Calendar (calendar like `Jarvis Reminders`), OR
-   - Via the backend (if you have an endpoint/tool for listing calendar reminders).
-3. Optional safety: confirm undo history exists:
-   - `GET /google-calendar/undo/list`
-   - If you just created something, it should appear near the top.
-
-### B) Legacy reminder scheduler disabled (no double notifications)
-The legacy scheduler loop should be disabled by default.
-
-1. Inspect the running backend container env (Portainer/host):
-   - Container: `idc1-assistance-jarvis-backend-1`
-   - Confirm `JARVIS_LEGACY_REMINDER_NOTIFICATIONS_ENABLED` is unset or `0`.
-2. If you observe legacy reminder popups/WS events unexpectedly:
-   - Check backend logs for legacy scheduler warnings (`reminder_scheduler_error`).
-   - Treat as config drift and redeploy after fixing env.
-
-## Unified context (what matters)
-### GitHub Actions watcher integration
-- **Triggering rule**
-  - Must be manual (voice command or REST), not automatic unless explicitly configured.
-- **Core endpoints**
-  - `POST /github/actions/watch/start`
-  - `POST /github/actions/watch/stop`
-  - `GET /github/actions/watch/list`
-  - `GET /github/actions/watch`
-  - `GET /github/actions/latest`
-- **Stop behavior**
-  - Auto-stop when completed if `stop_on_completed=true`.
-  - Auto-stop when runtime exceeds `max_runtime_seconds`.
-
-### Memory + System sheet upserts (header-aware)
-- **Invariant: created_at is preserved**
-  - Never overwrite a non-empty `created_at`.
-- **Invariant: updated_at is always refreshed**
-  - RFC3339 UTC (ends with `Z`).
-- **Invariant: do not clobber unrelated columns**
-  - Only set the mapped columns for the record.
-
-### Memo append (ops breadcrumbs)
-- Used to persist short operational outcomes you want to recover later.
-- Endpoint: `POST /jarvis/memo/add` (requires `memo.enabled=true`)
 
 ## Important warnings
 - **If you see repeated 500s on start**

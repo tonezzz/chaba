@@ -17,7 +17,7 @@ This repo uses a simple chat-driven operating loop.
   - Tell you the exact next utterance to make (usually `action`).
 
 ### `action`
-- Meaning: “Execute the current `Now` item.”
+- Meaning: “Execute the current `Now` item and show the `status chart`.”
 - Expected assistant behavior:
   - Execute exactly one Smallest Next Action (SNA): the top item in `TODO.md#now`.
   - Use the success criteria in `ACTION.md` for pass/fail observables.
@@ -26,6 +26,12 @@ This repo uses a simple chat-driven operating loop.
     - mark the completed TODO item `[x]`
     - promote the next item into `TODO.md#now`
     - update `ACTION.md` “Now” pointer to match
+
+### `status`
+- Meaning: “Show the current status table.”
+- Expected assistant behavior:
+  - Render the `ACTION.md` **Always-updated status chart** in chat.
+  - If the chart is missing values, suggest the next single SNA section to fill it.
 
 ### `proceed.`
 - Meaning: “Continue the current SNA / complete the next step in the same procedure.”

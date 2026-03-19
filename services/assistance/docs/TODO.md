@@ -3,26 +3,32 @@
 ## Now
 
 - [x] TODO-NOW-001: Validate deployed GitHub Actions watcher end-to-end
+  - Evidence (2026-03-19):
+    - `GET /jarvis/api/github/actions/latest?owner=tonezzz&repo=chaba&branch=idc1-assistance` => run `23291000409` status=`completed` conclusion=`success`
+    - `POST /jarvis/api/github/actions/watch/start` => started ok; `GET /jarvis/api/github/actions/watch/list` => `running=false` `stopped_reason=completed` and last `run` persisted
 - [x] TODO-NOW-002: Record deploy snapshot into Memory (`runtime.deploy.snapshot.latest`)
 - [x] TODO-NEXT-001: Add a small smoke checklist for operators (calendar reminder + legacy scheduler disabled)
+  - Added to `services/assistance/docs/ACTION.md` (Operator smoke checklist)
+- [x] TODO-NOW-003: Remove legacy reminders system completely (once Calendar cutover is stable)
+  - Evidence (2026-03-19): removed legacy SQLite `reminders` table usage, scheduler loop, and legacy WS actions; Calendar-based reminder creation preserved; `python -m py_compile services/assistance/jarvis-backend/main.py` passed
 
 ## Next
 
 ## Later
 
 - [ ] TODO-LATER-001: Remove legacy reminders system completely (once Calendar cutover is stable)
+  - Promoted to Now as TODO-NOW-003
 
 ## General
 
 - assess README.md before proceeding with any new features
 - Improve this file & other docs accordingly.
+
 ## Reminders: Google Calendar cutover follow-ups
 
-- Remove legacy reminders system completely (once Calendar cutover is stable)
-  - Delete legacy reminder scheduler loop and related code paths
-  - Remove/retire SQLite `reminders` table usage as a notification scheduler
-  - Remove or repurpose Weaviate `kind=reminder` storage if Calendar is authoritative going forward
-  - Ensure UI/agents/tooling no longer assumes local reminder IDs exist for new reminders
+- Canonical procedures + verification live in `services/assistance/docs/ACTION.md`:
+  - `Runbooks -> Operator smoke checklist (Calendar cutover)`
+  - `Runbooks -> Legacy reminders removal (breaking)`
 
 ## Reminders: Calendar UX / features
 
@@ -47,10 +53,7 @@
 ## Testing / verification
 
 - Add a small smoke checklist for operators
-  - Create calendar reminder via `POST /reminders`
-  - Confirm event appears in `Jarvis Reminders`
-  - Confirm legacy scheduler remains disabled by default
-  - Confirm legacy `/reminders/{id}/done` still works for existing local reminders
+  - See `services/assistance/docs/ACTION.md` -> `Runbooks` -> `Operator smoke checklist (Calendar cutover)`
 
 ## Tasks + Calendar (workflows)
 
