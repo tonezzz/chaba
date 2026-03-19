@@ -89,23 +89,37 @@ Use this workflow whenever you notice you context-switched and the current task 
    - To deploy / trigger CI, you must push manually after the workflow by running `git push` yourself.
 
 5. Update the queue (WIP limit = 1)
-   - Put exactly 1 item as "in progress".
-   - Convert everything else into:
-     - "Next" (max 3 items)
-     - "Waiting" (blocked by other people/systems)
-     - "Later" (nice-to-have)
-   - Delete or merge duplicates.
+  - Put exactly 1 item as "in progress".
+  - Convert everything else into:
+    - "Next" (max 3 items)
+    - "Waiting" (blocked by other people/systems)
+    - "Later" (nice-to-have)
+  - Delete or merge duplicates.
+
+5.1. Capture module ideas / concepts (when refactoring)
+  - If you extracted or refactored modules in this work session:
+    - Update/create a short doc that records:
+      - Module purpose (1-2 sentences)
+      - Inputs/outputs (key functions + key data)
+      - Dependencies/injection points
+      - Invariants / safety notes
+      - How to smoke-test
+    - Default location: `services/assistance/docs/JARVIS_MODULES.md`
 
 6. Update the Back-to-MVT doc (every run)
-   - Edit: `services/assistance/docs/BACK_TO_MVT.md`
-   - Add a single row to the Run log table with:
-     - Date/Time
-     - MVT (one sentence)
-     - SNA (one action)
-     - Outcome (success/fail)
-     - What improved (one sentence)
+  - Edit: `services/assistance/docs/BACK_TO_MVT.md`
+  - Add a single row to the Run log table with:
+    - Date/Time
+    - MVT (one sentence)
+    - SNA (one action)
+    - Outcome (success/fail)
+    - What improved (one sentence)
 
 6.1. Persist result into memo items (optional)
+  - If the run outcome should be remembered operationally, append a memo item (no UI required):
+    - `POST /jarvis/memo/add` (requires `memo.enabled=true`)
+    - Template (adjust host/token):
+      - `curl -sS -X POST http://<host>/jarvis/memo/add -H 'content-type: application/json' -H 'X-Api-Token: <token>' -d '{"memo":"MVT=<...> SNA=<...> outcome=<success|fail> next=<...>","group":"ops","subject":"back-to-mvt"}'`
    - If the run outcome should be remembered operationally, append a memo item (no UI required):
      - `POST /jarvis/memo/add` (requires `memo.enabled=true`)
      - Template (adjust host/token):
