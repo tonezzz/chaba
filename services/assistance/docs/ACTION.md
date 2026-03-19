@@ -14,7 +14,7 @@
 ## Now (what to do next)
 
 - **Say:** `action`
-- **I will run:** `TODO-NOW-004` (from `services/assistance/docs/TODO.md#now`)
+- **I will run:** `TODO-NOW-005` (from `services/assistance/docs/TODO.md#now`)
 
 ### 4 most valuable next actions (update this every time you run "Now")
 1. **Deploy/build snapshot (10 minutes)**
@@ -105,8 +105,9 @@ Notes (from `stacks/idc1-assistance/CONFIG.md`):
 
 #### Checklist
 1. **Create a Calendar reminder**
-   - Connect to WS: `wss://assistance.idc1.surf-thailand.com/jarvis/ws/live`.
-   - Send a message:
+   - Use the helper (recommended):
+     - `python scripts/ws_smoke_test.py --url wss://assistance.idc1.surf-thailand.com/jarvis/ws/live --timeout 25 --send-json '{"type":"reminders","action":"create","text":"smoke-<date> test reminder tomorrow 09:00"}' --expect-type planning_item_created`
+   - Or send directly over WS:
      - `{"type":"reminders","action":"create","text":"smoke-<date> test reminder tomorrow 09:00"}`
 2. **Confirm the event exists**
    - Confirm the event appears in the `Jarvis Reminders` calendar.
@@ -138,7 +139,9 @@ Notes (from `stacks/idc1-assistance/CONFIG.md`):
    - Via UI voice/text or WS `type=reminders action=create`, create a reminder without a time.
    - Confirm a Google Task is created.
 4. **Confirm legacy reminder actions are rejected**
-   - From WS, send a legacy action (example):
+   - Use the helper (recommended):
+     - `python scripts/ws_smoke_test.py --url wss://assistance.idc1.surf-thailand.com/jarvis/ws/live --timeout 20 --send-json '{"type":"reminders","action":"list"}' --expect-type error`
+   - Or send directly over WS:
      - `{"type":"reminders","action":"list"}`
    - Confirm it returns `reminders_legacy_removed`.
 
