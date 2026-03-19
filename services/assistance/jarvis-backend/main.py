@@ -2338,6 +2338,7 @@ async def memo_index_backfill(
     indexed = 0
     skipped = 0
     errors = 0
+    error_samples: list[str] = []
     for r in rows[-limit:]:
         if not isinstance(r, list):
             continue
@@ -2363,8 +2364,13 @@ async def memo_index_backfill(
                 date_time=_cell(r, "date_time"),
             )
             indexed += 1
-        except Exception:
+        except Exception as e:
             errors += 1
+            if len(error_samples) < 8:
+                try:
+                    error_samples.append(f"{type(e).__name__}: {e}")
+                except Exception:
+                    error_samples.append("index_error")
 
     return {
         "ok": True,
@@ -2373,6 +2379,7 @@ async def memo_index_backfill(
         "indexed": indexed,
         "skipped": skipped,
         "errors": errors,
+        "error_samples": error_samples,
     }
 
 
@@ -4443,13 +4450,18 @@ async def _gemini_summarize_text(*, system_instruction: str, prompt: str, model:
     if not api_key:
         raise HTTPException(status_code=500, detail="missing_api_key")
     m = _normalize_model_name(str(model or os.getenv("GEMINI_TEXT_MODEL") or "gemini-2.0-flash").strip() or "gemini-2.0-flash")
-    client = genai.Client(api_key=api_key)
-    cfg = {"system_instruction": str(system_instruction or "").strip()}
-    res = await client.aio.models.generate_content(model=m, contents=str(prompt), config=cfg)
-    txt = getattr(res, "text", None)
-    if txt is None:
-        txt = str(res)
-    return str(txt or "").strip()
+    try:
+        client = genai.Client(api_key=api_key)
+        cfg = {"system_instruction": str(system_instruction or "").strip()}
+        res = await client.aio.models.generate_content(model=m, contents=str(prompt), config=cfg)
+        txt = getattr(res, "text", None)
+        if txt is None:
+            txt = str(res)
+        return str(txt or "").strip()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={"gemini_generate_failed": f"{type(e).__name__}: {e}", "model": m})
 
 
 async def _gemini_embed_text(text: str) -> list[float]:
