@@ -28,21 +28,29 @@ Optional (defaults to system spreadsheet if omitted):
 ## Data model (Sheet header)
 The backend ensures the memo sheet has a header row and will create it if missing.
 
-Columns (current backend header):
+Canonical header (SSOT):
 
-- `date_time`
-- `group`
-- `status`
-- `subject`
-- `memo`
-- `result`
-- `merged_into`
-- `merged_at`
-- `_merged`
-- `_created`
-- `_updated`
+- Range: `A1:J1` (10 columns)
+- Order:
+  - `id`
+  - `active`
+  - `group`
+  - `memo`
+  - `status`
+  - `subject`
+  - `result`
+  - `date_time`
+  - `_created`
+  - `_updated`
 
 Rows are appended via Google Sheets `values.append`.
+
+Notes:
+
+- The backend normalizer rewrites `A1:J1` and best-effort clears `K1` (and beyond) to prevent stray manual header columns.
+- Debug and maintenance endpoints treat the canonical header as `A:J`:
+  - `GET /jarvis/debug/memo` returns `header` read from `A1:J1`.
+  - `POST /jarvis/memo/header/normalize` returns `before`/`after` read from `A1:J1`.
 
 ## Flow diagram
 

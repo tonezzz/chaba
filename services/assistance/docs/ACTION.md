@@ -219,6 +219,9 @@ Use this anytime you have multiple chats/agents editing the repo.
 Use this when you “don’t see memo/logs update” after a run.
 
 ### Memo (does memo append work?)
+Format SSOT:
+- See: `MEMO.md` (canonical sheet header/order, sys_kv keys, and normalize behavior)
+
 1. **Check effective memo config**
    - `GET /jarvis/debug/memo`
    - Success looks like:
