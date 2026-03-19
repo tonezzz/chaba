@@ -10148,6 +10148,84 @@ async def debug_memo() -> dict[str, Any]:
     }
 
 
+@app.get("/debug/counts")
+@app.get("/jarvis/debug/counts")
+async def debug_counts() -> dict[str, Any]:
+    sys_kv = _sys_kv_snapshot()
+
+    # Memory count (best-effort)
+    mem_n = 0
+    mem_cached_n = 0
+    mem_sheet: str | None = None
+    try:
+        mem_sheet = str((_SHEET_MEMORY_CACHE.get("memory_sheet_name") if isinstance(_SHEET_MEMORY_CACHE, dict) else "") or "").strip() or None
+        cached_items = _SHEET_MEMORY_CACHE.get("memory_items") if isinstance(_SHEET_MEMORY_CACHE, dict) else None
+        mem_cached_n = len(cached_items) if isinstance(cached_items, list) else 0
+    except Exception:
+        mem_cached_n = 0
+
+    try:
+        # If cache is empty, try to lazy-load once.
+        if mem_cached_n <= 0:
+            class _DummyWS:
+                def __init__(self) -> None:
+                    from types import SimpleNamespace
+
+                    self.state = SimpleNamespace()
+
+            ws = _DummyWS()
+            await _load_ws_sheet_memory(ws)
+            items = getattr(ws.state, "memory_items", None)
+            mem_n = len(items) if isinstance(items, list) else 0
+            ms = str(getattr(ws.state, "memory_sheet_name", "") or "").strip()
+            if ms:
+                mem_sheet = ms
+        else:
+            mem_n = mem_cached_n
+    except Exception:
+        mem_n = mem_cached_n
+
+    # Memo row count (best-effort)
+    memo_rows = 0
+    memo_sheet_name: str | None = None
+    memo_spreadsheet_id: str | None = None
+    memo_error: str | None = None
+    try:
+        memo_spreadsheet_id, memo_sheet_name = _memo_sheet_cfg_from_sys_kv(sys_kv if isinstance(sys_kv, dict) else None)
+        if memo_spreadsheet_id and memo_sheet_name:
+            sheet_a1 = _sheet_name_to_a1(memo_sheet_name, default="memo")
+            tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+            res = await _mcp_tools_call(tool_get, {"spreadsheet_id": memo_spreadsheet_id, "range": f"{sheet_a1}!A:A"})
+            parsed = _mcp_text_json(res)
+            values = None
+            if isinstance(parsed, dict):
+                values = parsed.get("values")
+                if not isinstance(values, list):
+                    data = parsed.get("data")
+                    if isinstance(data, dict):
+                        values = data.get("values")
+            if isinstance(values, list) and values:
+                # first row is header
+                memo_rows = max(0, len(values) - 1)
+    except Exception as e:
+        memo_error = f"{type(e).__name__}: {e}"
+
+    return {
+        "ok": True,
+        "memory": {
+            "sheet": mem_sheet,
+            "count": int(mem_n),
+            "cached_count": int(mem_cached_n),
+        },
+        "memo": {
+            "spreadsheet_id": memo_spreadsheet_id,
+            "sheet": memo_sheet_name,
+            "rows": int(memo_rows),
+            "error": memo_error,
+        },
+    }
+
+
 @app.get("/status")
 @app.get("/jarvis/status")
 @app.get("/api/status")

@@ -87,6 +87,24 @@ Use this when you “don’t see memo/logs update” after a run.
      - `JARVIS_SHEETS_LOGS_SPREADSHEET_ID=<id>` (if required by your deployment)
    - Then re-check `/jarvis/logs/sheets/status` until `queue_len` drains.
 
+## Verify counts: memo rows + memory items loaded
+Use this when Jarvis says things like: “I have **7 memory items loaded**” or when you want to confirm memo actually appended.
+
+### Check counts (single call)
+- `GET /jarvis/debug/counts`
+- Expected fields:
+  - `memory.count` (number of enabled memory items loaded)
+  - `memory.cached_count` (may be 0 if not preloaded yet)
+  - `memo.rows` (number of memo rows excluding header)
+  - `memo.sheet` / `memo.spreadsheet_id` (where it wrote)
+
+### Interpret
+- **If `memory.count` is lower than expected**
+  - Some memory items may be disabled or the memory sheet failed to load.
+  - Next check: `GET /status` → `startup_prewarm.ok` and consider reloading memory via the normal Jarvis flow.
+- **If `memo.rows` increases but you don’t see it**
+  - You’re likely looking at the wrong tab or a cached UI view; use `memo.sheet` from the response.
+
 ## Current MVT loop (based on @[/back-to-mvt])
 ### 1) Restate the objective (one sentence)
 - **MVT:** Validate the deployed GitHub Actions watcher end-to-end (start, observe, auto-stop, persist latest result).
