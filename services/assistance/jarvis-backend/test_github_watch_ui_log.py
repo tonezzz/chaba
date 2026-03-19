@@ -96,6 +96,8 @@ def test_github_watch_loop_appends_ui_log_events(monkeypatch: pytest.MonkeyPatch
                 branch=None,
                 event=None,
                 poll_seconds=0.01,
+                stop_on_completed=False,
+                max_runtime_seconds=1.0,
             )
         )
         await asyncio.sleep(0.06)

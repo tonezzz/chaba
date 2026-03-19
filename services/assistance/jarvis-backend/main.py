@@ -9733,6 +9733,19 @@ async def _startup() -> None:
                 poll_seconds = 15.0
             poll_seconds = max(2.0, min(300.0, poll_seconds))
 
+            stop_raw = _sys_str("github.actions.watch.stop_on_completed")
+            try:
+                stop_on_completed = _parse_bool_cell(stop_raw) if stop_raw else True
+            except Exception:
+                stop_on_completed = True
+
+            timeout_raw = _sys_str("github.actions.watch.max_runtime_seconds")
+            try:
+                max_runtime_seconds = float(timeout_raw) if timeout_raw else 900.0
+            except Exception:
+                max_runtime_seconds = 900.0
+            max_runtime_seconds = max(5.0, min(7200.0, max_runtime_seconds))
+
             key = _github_watch_key(owner, repo, branch, event)
             existing = _GITHUB_WATCH_TASKS.get(key)
             if not (existing and not existing.done()):
@@ -9744,6 +9757,8 @@ async def _startup() -> None:
                         branch=branch,
                         event=event,
                         poll_seconds=poll_seconds,
+                        stop_on_completed=stop_on_completed,
+                        max_runtime_seconds=max_runtime_seconds,
                     ),
                     name=f"github_watch:{key}",
                 )
@@ -10129,10 +10144,14 @@ async def _github_watch_loop(
     branch: str | None,
     event: str | None,
     poll_seconds: float,
+    stop_on_completed: bool = True,
+    max_runtime_seconds: float = 900.0,
 ) -> None:
     last_run_id: str | None = None
     last_status: str | None = None
     last_conclusion: str | None = None
+
+    started_ts = time.time()
 
     while True:
         try:
@@ -10247,6 +10266,16 @@ async def _github_watch_loop(
                         await _broadcast_to_user(DEFAULT_USER_ID, {"type": "text", "text": msg, "instance_id": INSTANCE_ID})
                     except Exception:
                         pass
+                    if stop_on_completed:
+                        try:
+                            st = dict(_GITHUB_WATCH_STATE.get(key) or {})
+                            st["running"] = False
+                            st["stopped_reason"] = "completed"
+                            st["ts"] = int(time.time())
+                            _GITHUB_WATCH_STATE[key] = st
+                        except Exception:
+                            pass
+                        return
         except asyncio.CancelledError:
             raise
         except Exception as e:
@@ -10292,6 +10321,38 @@ async def _github_watch_loop(
                 )
             except Exception:
                 pass
+        try:
+            if max_runtime_seconds and (time.time() - started_ts) >= float(max_runtime_seconds):
+                try:
+                    _append_ui_log_entries(
+                        [
+                            {
+                                "type": "github_actions",
+                                "kind": "watch_timeout",
+                                "ts": int(time.time()),
+                                "key": key,
+                                "owner": owner,
+                                "repo": repo,
+                                "branch": branch,
+                                "event": event,
+                                "timeout_seconds": float(max_runtime_seconds),
+                            }
+                        ]
+                    )
+                except Exception:
+                    pass
+                try:
+                    st = dict(_GITHUB_WATCH_STATE.get(key) or {})
+                    st["running"] = False
+                    st["stopped_reason"] = "timeout"
+                    st["ts"] = int(time.time())
+                    _GITHUB_WATCH_STATE[key] = st
+                except Exception:
+                    pass
+                return
+        except Exception:
+            pass
+
         await asyncio.sleep(poll_seconds)
 
 
@@ -10301,6 +10362,8 @@ class GitHubActionsWatchStartRequest(BaseModel):
     branch: str | None = None
     event: str | None = None
     poll_seconds: float = 15.0
+    stop_on_completed: bool = True
+    max_runtime_seconds: float = 900.0
 
 
 @app.post("/github/actions/watch/start")
@@ -10330,6 +10393,8 @@ async def github_actions_watch_start(req: GitHubActionsWatchStartRequest) -> dic
             branch=branch,
             event=event,
             poll_seconds=poll_seconds,
+            stop_on_completed=stop_on_completed,
+            max_runtime_seconds=max_runtime_seconds,
         )
     )
     _GITHUB_WATCH_TASKS[key] = task
@@ -10339,6 +10404,8 @@ async def github_actions_watch_start(req: GitHubActionsWatchStartRequest) -> dic
         "branch": branch,
         "event": event,
         "poll_seconds": poll_seconds,
+        "stop_on_completed": stop_on_completed,
+        "max_runtime_seconds": max_runtime_seconds,
         "ts": int(time.time()),
         "running": True,
     }
