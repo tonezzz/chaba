@@ -56,8 +56,50 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changes for this image
+        id: changes
+        env:
+          CONTEXT_PATH: ${{ matrix.context }}
+          DOCKERFILE_PATH: ${{ matrix.file }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          # Default to build if we can't reliably determine the diff.
+          changed="true"
+
+          if [ -n "${BEFORE_SHA}" ] && [ "${BEFORE_SHA}" != "0000000000000000000000000000000000000000" ]; then
+            if git cat-file -e "${BEFORE_SHA}^{commit}" 2>/dev/null && git cat-file -e "${AFTER_SHA}^{commit}" 2>/dev/null; then
+              changed="false"
+              mapfile -t files < <(git diff --name-only "${BEFORE_SHA}" "${AFTER_SHA}" || true)
+
+              for f in "${files[@]:-}"; do
+                # If the workflow itself changes, rebuild everything (safe default).
+                if [[ "${f}" == ".github/workflows/publish-idc1-assistance.yml" ]]; then
+                  changed="true"; break
+                fi
+
+                # Service-specific change.
+                if [[ "${f}" == "${CONTEXT_PATH#./}/"* ]] || [[ "${f}" == "${CONTEXT_PATH#./}" ]]; then
+                  changed="true"; break
+                fi
+
+                # Dockerfile change for this service.
+                if [[ "${f}" == "${DOCKERFILE_PATH#./}" ]]; then
+                  changed="true"; break
+                fi
+              done
+            fi
+          fi
+
+          echo "changed=${changed}" >> "${GITHUB_OUTPUT}"
 
       - name: Set up Docker Buildx (CLI)
+        if: steps.changes.outputs.changed == 'true'
         run: |
           set -euo pipefail
           docker version
@@ -66,11 +108,13 @@ jobs:
           docker buildx inspect --bootstrap
 
       - name: Log in to GHCR (CLI)
+        if: steps.changes.outputs.changed == 'true'
         run: |
           set -euo pipefail
           echo "${{ github.token }}" | docker login "${{ env.REGISTRY }}" -u "${{ github.actor }}" --password-stdin
 
       - name: Build and push (CLI)
+        if: steps.changes.outputs.changed == 'true'
         env:
           IMAGE: ${{ env.IMAGE_PREFIX }}/${{ matrix.image }}
         run: |
