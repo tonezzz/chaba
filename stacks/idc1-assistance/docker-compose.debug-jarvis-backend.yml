@@ -1,0 +1,31 @@
+name: idc1-assistance-jarvis-backend-debug
+
+version: "3.9"
+
+services:
+  jarvis-backend-debug:
+    image: ghcr.io/tonezzz/chaba/jarvis-backend:idc1-assistance
+    restart: unless-stopped
+    env_file:
+      - ./.env.local
+    ports:
+      - "127.0.0.1:48018:8018"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      PORT: 8018
+      MCP_BASE_URL: ${MCP_BASE_URL:-http://host.docker.internal:4051}
+      JARVIS_FEATURE_MEMO_ENABLED: "true"
+      JARVIS_FEATURE_MEMORY_ENABLED: "false"
+      JARVIS_FEATURE_KNOWLEDGE_ENABLED: "false"
+      JARVIS_SESSION_DB: /data/jarvis_sessions.sqlite
+    volumes:
+      - jarvis-backend-debug-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8018/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  jarvis-backend-debug-data:
