@@ -36,7 +36,7 @@
   - `/jarvis/github/actions/watch/start` returns 200
   - `/jarvis/github/actions/watch/list` shows `running=true`
   - After CI completes: watcher stops automatically (`running=false`, `stopped_reason=completed`) OR times out with `stopped_reason=timeout`
-  - `/jarvis/github/actions/watch/latest` reflects newest run and status
+  - `/jarvis/github/actions/watch` reflects newest run and status
   - UI log contains `run_detected` and `run_completed` (and possibly `watch_timeout` if timeout)
 - **If fail, inspect:**
   - `jarvis-backend` logs around watcher loop and `/watch/start` handler
@@ -74,7 +74,7 @@
    - Call: `GET /github/actions/watch/list`
 3. **Wait for completion**
    - Watch for “CI completed …” notification or poll:
-     - `GET /github/actions/watch/latest`
+     - `GET /github/actions/watch`
 4. **Confirm auto-stop**
    - `GET /github/actions/watch/list` should show:
      - `running=false`
@@ -86,7 +86,7 @@
 - **State**
   - `watch/list` includes the key you started, with `running`, `ts`, `stopped_reason`.
 - **Latest**
-  - `watch/latest` returns the latest known run payload.
+  - `watch` returns the latest known run payload.
 - **UI log**
   - Confirm the daily UI log includes entries with kinds:
     - `run_detected`
@@ -102,7 +102,8 @@
   - `POST /github/actions/watch/start`
   - `POST /github/actions/watch/stop`
   - `GET /github/actions/watch/list`
-  - `GET /github/actions/watch/latest`
+  - `GET /github/actions/watch`
+  - `GET /github/actions/latest`
 - **Stop behavior**
   - Auto-stop when completed if `stop_on_completed=true`.
   - Auto-stop when runtime exceeds `max_runtime_seconds`.
