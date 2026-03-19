@@ -16,13 +16,13 @@ async def ensure_header(
 
     header = [
         "id",
-        "active",
-        "group",
-        "memo",
-        "status",
-        "subject",
-        "result",
         "date_time",
+        "active",
+        "status",
+        "group",
+        "subject",
+        "memo",
+        "result",
         "_created",
         "_updated",
     ]

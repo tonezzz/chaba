@@ -1854,6 +1854,11 @@ class MemoRepairIdsRequest(BaseModel):
     dry_run: Optional[bool] = False
 
 
+class MemoReorderColumnsRequest(BaseModel):
+    limit: Optional[int] = 1000
+    dry_run: Optional[bool] = False
+
+
 class SysKvSetRequest(BaseModel):
     key: str
     value: str
@@ -2151,6 +2156,142 @@ async def memo_repair_ids(
         "dry_run": bool(req.dry_run),
         "samples": fixes[:20],
     }
+
+
+@app.post("/memo/columns/reorder")
+@app.post("/jarvis/memo/columns/reorder")
+async def memo_columns_reorder(
+    req: MemoReorderColumnsRequest,
+    x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token"),
+) -> dict[str, Any]:
+    _require_api_token_if_configured(x_api_token)
+    sys_kv = _sys_kv_snapshot()
+    spreadsheet_id, sheet_name = _memo_sheet_cfg_from_sys_kv(sys_kv if isinstance(sys_kv, dict) else None)
+    if not spreadsheet_id:
+        raise HTTPException(status_code=400, detail="missing_memo_ss")
+    if not sheet_name:
+        raise HTTPException(status_code=400, detail="missing_memo_sheet_name")
+    sheet_a1 = _sheet_name_to_a1(sheet_name, default="memo")
+
+    desired = [
+        "id",
+        "date_time",
+        "active",
+        "status",
+        "group",
+        "subject",
+        "memo",
+        "result",
+        "_created",
+        "_updated",
+    ]
+
+    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    tool_update = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+
+    # Read header + rows in current physical order.
+    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A1:J"})
+    parsed = _mcp_text_json(res)
+    data = parsed.get("data") if isinstance(parsed, dict) else None
+    vals = parsed.get("values") if isinstance(parsed, dict) else None
+    if not isinstance(vals, list) and isinstance(data, dict):
+        vals = data.get("values")
+    rows = vals if isinstance(vals, list) else []
+    if not isinstance(rows, list) or not rows:
+        rows = []
+
+    got_header = rows[0] if rows and isinstance(rows[0], list) else []
+    got_lower = [str(x or "").strip().lower() for x in got_header]
+    desired_lower = [x.lower() for x in desired]
+
+    # If header already matches desired, no migration needed.
+    if got_lower[: len(desired_lower)] == desired_lower:
+        return {"ok": True, "spreadsheet_id": spreadsheet_id, "sheet": sheet_name, "changed": False, "dry_run": bool(req.dry_run)}
+
+    # Build name->index map from current header.
+    name_to_j: dict[str, int] = {}
+    for j, name in enumerate(got_lower):
+        if name and name not in name_to_j:
+            name_to_j[name] = int(j)
+
+    missing = [c for c in desired_lower if c not in name_to_j]
+    if missing:
+        raise HTTPException(status_code=400, detail={"error": "memo_columns_reorder_missing_cols", "missing": missing, "header": got_header})
+
+    # Fetch data rows (A2:J) and transform.
+    limit = max(1, min(int(req.limit or 1000), 20000))
+    res2 = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A2:J"})
+    parsed2 = _mcp_text_json(res2)
+    data2 = parsed2.get("data") if isinstance(parsed2, dict) else None
+    vals2 = parsed2.get("values") if isinstance(parsed2, dict) else None
+    if not isinstance(vals2, list) and isinstance(data2, dict):
+        vals2 = data2.get("values")
+    data_rows = vals2 if isinstance(vals2, list) else []
+    if not isinstance(data_rows, list):
+        data_rows = []
+    window = data_rows[-limit:]
+
+    def _get_cell(r: list[Any], name: str) -> Any:
+        j = name_to_j.get(str(name).strip().lower())
+        if j is None or j < 0:
+            return ""
+        return r[j] if j < len(r) else ""
+
+    transformed: list[list[Any]] = []
+    for r in window:
+        if not isinstance(r, list):
+            continue
+        transformed.append([_get_cell(r, c) for c in desired])
+
+    if bool(req.dry_run):
+        return {
+            "ok": True,
+            "spreadsheet_id": spreadsheet_id,
+            "sheet": sheet_name,
+            "changed": True,
+            "dry_run": True,
+            "before_header": got_header,
+            "after_header": desired,
+            "rows_to_rewrite": len(transformed),
+            "sample_before": window[:2],
+            "sample_after": transformed[:2],
+        }
+
+    # Write new header.
+    await _mcp_tools_call(
+        tool_update,
+        {
+            "spreadsheet_id": spreadsheet_id,
+            "range": f"{sheet_a1}!A1:J1",
+            "values": [desired],
+            "value_input_option": "RAW",
+        },
+    )
+
+    # Rewrite window rows back into sheet in-place.
+    start_row = 2 + max(0, len(data_rows) - len(window))
+    batch_size = 200
+    for i in range(0, len(transformed), batch_size):
+        chunk = transformed[i : i + batch_size]
+        r0 = start_row + i
+        r1 = r0 + len(chunk) - 1
+        await _mcp_tools_call(
+            tool_update,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": f"{sheet_a1}!A{int(r0)}:J{int(r1)}",
+                "values": chunk,
+                "value_input_option": "USER_ENTERED",
+            },
+        )
+
+    # Ensure backend canonical header logic matches the new order.
+    try:
+        await _memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, force=False)
+    except Exception:
+        pass
+
+    return {"ok": True, "spreadsheet_id": spreadsheet_id, "sheet": sheet_name, "changed": True, "dry_run": False, "rows_rewritten": len(transformed)}
 
 
 @app.post("/memo/add")

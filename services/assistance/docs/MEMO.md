@@ -33,13 +33,13 @@ Canonical header (SSOT):
 - Range: `A1:J1` (10 columns)
 - Order:
   - `id`
-  - `active`
-  - `group`
-  - `memo`
-  - `status`
-  - `subject`
-  - `result`
   - `date_time`
+  - `active`
+  - `status`
+  - `group`
+  - `subject`
+  - `memo`
+  - `result`
   - `_created`
   - `_updated`
 
