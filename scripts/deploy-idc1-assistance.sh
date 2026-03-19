@@ -146,7 +146,7 @@ PY
 
   # IMPORTANT:
   # Updating a Git-backed stack via PUT /api/stacks/{id} will convert it to a file-based stack.
-  # If you want to keep the stack Git-backed, redeploy via Portainer UI (or a Git redeploy endpoint if supported).
+  # If you want to keep the stack Git-backed, use the Git redeploy endpoint.
   is_git_stack="$(python3 - <<'PY'
 import json
 with open('/tmp/portainer_stack_inspect.json','r',encoding='utf-8') as f:
@@ -157,14 +157,35 @@ print('1' if is_git else '0')
 PY
   )"
   if [[ "${is_git_stack}" == "1" ]]; then
-    if [[ "${ALLOW_FILE_BASED_REDEPLOY_FOR_GIT_STACKS:-}" != "true" ]]; then
-      echo "[deploy] ERROR: stack appears Git-backed (GitConfig present)." >&2
-      echo "[deploy] Refusing to redeploy via PUT /api/stacks/{id} because it converts Git-backed stacks to file-based." >&2
-      echo "[deploy] Action: redeploy the stack via Portainer UI (recommended), or rerun with:" >&2
+    echo "[deploy] Git-backed stack detected. Redeploying via Portainer Git redeploy endpoint." >&2
+
+    # Portainer CE supports Git-backed stacks. The UI uses a Git redeploy endpoint.
+    # We try the most common endpoint and treat 404 as "unsupported".
+    git_http_code="$(curl -sS -k --max-time 120 -o /tmp/portainer_git_redeploy.json -w '%{http_code}' \
+      -X POST \
+      -H "X-API-Key: ${portainer_api_key}" \
+      "${base}/api/stacks/${stack_id}/git/redeploy?endpointId=${portainer_endpoint_id}" || true)"
+
+    if [[ "${git_http_code}" == "200" || "${git_http_code}" == "204" ]]; then
+      echo "[deploy] Portainer Git redeploy OK (http=${git_http_code})" >&2
+      return 0
+    fi
+
+    if [[ "${git_http_code}" == "404" ]]; then
+      echo "[deploy] ERROR: Portainer Git redeploy endpoint not found (http=404)." >&2
+    else
+      echo "[deploy] ERROR: Portainer Git redeploy failed (http=${git_http_code})." >&2
+    fi
+    head -c 1500 /tmp/portainer_git_redeploy.json 2>/dev/null || true
+    echo >&2
+
+    if [[ "${ALLOW_FILE_BASED_REDEPLOY_FOR_GIT_STACKS:-}" == "true" ]]; then
+      echo "[deploy] WARN: override enabled; proceeding with file-based redeploy (this converts the stack away from Git-backed)." >&2
+    else
+      echo "[deploy] Action: redeploy via Portainer UI (Pull and redeploy), or rerun with:" >&2
       echo "[deploy]   export ALLOW_FILE_BASED_REDEPLOY_FOR_GIT_STACKS=true" >&2
       return 1
     fi
-    echo "[deploy] WARN: Git-backed stack detected but override enabled; proceeding with file-based redeploy." >&2
   fi
 
   # Prepare update payload:
