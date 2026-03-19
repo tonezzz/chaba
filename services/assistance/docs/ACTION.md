@@ -1,20 +1,63 @@
 # Action (Operator Playbook)
 
 ## Now (what to do next)
+
 - **Most valuable next action (10 minutes):** `TODO-NOW-001` (see `services/assistance/docs/TODO.md#now`)
-- **Success looks like:**
-  - Start returns 200: `POST /github/actions/watch/start`
-  - Auto-stop observed: `GET /github/actions/watch/list` shows `running=false` and `stopped_reason=completed` (or `timeout`)
 
-### Rule: keep `Now` updated (mandatory)
-After every `action` run, update this `Now` section so it reflects reality.
+### 4 most valuable next actions (update this every time you run "Now")
+1. **Deploy/build snapshot (10 minutes)**
+   - Run: **Deploy/Build status awareness (save current state)**
+   - Paste the results into the status chart below.
+   - Append a memo (optional but preferred).
+2. **Prove redeploy updated (10 minutes)**
+   - If `/health` doesn’t include build identity, run: **Assess a pending job (might already be done)** then prove the running image digest via Portainer/host inspection.
+3. **Watcher SNA (15 minutes)**
+   - Run: **SNA for GitHub Actions watcher (deployed)**
+   - Goal: verify start -> running -> completed/timeout -> auto-stop + UI log.
 
-- If the run succeeded:
-  - Replace the “Most valuable next action” with the next smallest verification or next deployment checkpoint.
-- If the run failed:
-  - Replace it with the **single** highest-leverage inspection step (one place to look).
-- Keep it short:
-  - 1 MVT sentence + 1 next action (<= 10 min) + 1 success observable.
+### Always-updated status chart (fill this every time you run “Now”)
+| Item | Value |
+| --- | --- |
+| Need rebuild? | |
+| Need redeploy? | |
+| Health ok | |
+| Status ok | |
+| uptime_s | |
+| Snapshot ts | |
+| Deployed base URL | `https://assistance.idc1.surf-thailand.com/jarvis/api` |
+| instance_id | |
+| CI status | |
+| CI conclusion | |
+| CI head_sha | |
+| CI updated_at | |
+| CI url | |
+| jarvis-backend image (tag) | |
+| jarvis-backend image digest | |
+| jarvis-backend image created | |
+| Backend image published in latest CI? | |
+
+Need redeploy? rule (binary):
+- **Yes** if CI is `completed/success` AND either:
+  - `jarvis-backend image created` is older than `CI updated_at`, OR
+  - (once SHA tags are deployed) running image tag is not `...:sha-<CI head_sha>`
+- Otherwise: **No/Unknown** (then run **Prove redeploy updated**).
+
+Need rebuild? rule (binary, selective CI):
+- **Yes** if the latest CI run is `completed/success` but the backend job did **not** publish a new backend image.
+- In the publish workflow, this is usually visible as **`Build and push (CLI) = skipped`** for the backend matrix job.
+- If you only redeploy without a new image being published, the container will restart on the same old digest.
+
+### Current cautions (read before doing anything)
+- If `build.git_sha` / `build.image_tag` are `null`, you cannot prove “new code is running” from `/health` alone.
+- GitHub Actions publishes images selectively (only images whose inputs changed).
+- Empty commits typically do not rebuild images anymore; to force a rebuild, change/touch a file inside the relevant service directory.
+- WIP limit = 1: if you start a new thing, merge it into the existing checklist/backlog section (see **Intake/merge policy** below).
+
+### Current pick
+- `<pick 1>` — `<why now>` — `<next command/section to run>`
+
+Update rule:
+- After you run any ACTION.md procedure, always come back here and set **Current pick** to the *single* next move.
 
 ## Preflight: confirm you’re using the latest ACTION.md
 Run this before taking actions if you had multiple chats open or you suspect drift.
@@ -69,6 +112,15 @@ Run this after you `git push`.
 - **Current objective:** GitHub Actions watcher integration for Jarvis (manual trigger only), plus reliable observability + persistence (UI log + memo/memory where appropriate).
 - **Target repo/branch:** `tonezzz/chaba` / `idc1-assistance`
 - **Deployed base URL:** `https://assistance.idc1.surf-thailand.com/jarvis/api`
+- **Host (loopback) endpoints (effective on the Docker host running the stack):**
+  - Backend health: `http://127.0.0.1:18018/health`
+  - Frontend UI: `http://127.0.0.1:18080/jarvis/`
+  - Deep-research-worker: `http://127.0.0.1:18030/health` (if exposed by the worker)
+- **Host port binds (from `stacks/idc1-assistance/docker-compose.yml`):**
+  - `127.0.0.1:18018` -> `jarvis-backend:8018`
+  - `127.0.0.1:18080` -> Jarvis frontend container
+  - `127.0.0.1:18030` -> `deep-research-worker:8030`
+  - `127.0.0.1:3051` -> `mcp-bundle:3050`
 - **Key health/version endpoints:**
   - `GET /health` (includes `build.git_sha` / `build.image_tag` when configured)
   - `GET /status` (includes uptime + optional container list)
@@ -171,11 +223,17 @@ Use this when you “don’t see memo/logs update” after a run.
      - `memo_enabled=true`
      - non-empty `spreadsheet_id` and `sheet_name`
      - `header_error=null`
-2. **Append a test memo**
+2. **If `memo_enabled=false` but you believe sys_kv is set**
+   - `/jarvis/debug/memo` reads from a cached `sys_kv` snapshot.
+   - Force a refresh by calling:
+     - `POST /jarvis/memo/header/normalize`
+   - Then re-check:
+     - `GET /jarvis/debug/memo`
+3. **Append a test memo**
    - `POST /jarvis/memo/add`
    - Success looks like:
      - response contains `ok=true` and `appended=1`
-3. **If you still can’t “see it”**
+4. **If you still can’t “see it”**
    - Confirm you are looking at the correct Google Sheet tab (`sheet_name` from debug output).
    - If you use a UI that reads memo, it may be cached; refresh/reload.
 
@@ -311,6 +369,86 @@ Goal: a single, stable way to answer “how many items are in sheet X?” withou
   - “What’s the current CI run status for this branch?”
   - “Did the deploy actually update?”
 
+Notes (from `stacks/idc1-assistance/CONFIG.md`):
+- Public WS URL is `wss://assistance.idc1.surf-thailand.com/jarvis/ws/live`.
+- Backend serves WS internally at `/ws/live` (edge proxy must strip `/jarvis`).
+- Hitting a WS URL as plain HTTP GET may return `404`; use a WS client.
+
+### Assess a pending job (might already be done)
+Use this when you think “the job is still running” but you suspect CI and/or redeploy already finished.
+
+#### Binary checks
+1. **Is CI already completed?**
+   - Call: `GET /github/actions/latest?owner=tonezzz&repo=chaba&branch=idc1-assistance`
+   - Pass if:
+     - `run.status=completed`
+     - and `run.updated_at` is recent (matches your last push time)
+   - If `status=in_progress|queued`, CI is still running.
+2. **Did the backend restart since that CI run?**
+   - Call: `GET /status`
+   - Compare:
+     - `uptime_s` (lower means a more recent restart)
+     - and `instance_id` (changes on restart)
+   - Heuristic pass if:
+     - `uptime_s` is less than ~1 hour AND your last redeploy was within that window.
+3. **Are containers healthy?**
+   - From `GET /status`, pass if key containers show `status=running` and `health=healthy` where available.
+
+#### If CI completed but you can’t prove the deploy updated
+If `GET /health` returns `build.git_sha=null` / `build.image_tag=null`, you cannot confirm “new code is running” from HTTP alone.
+
+Preferred options:
+- **Via Portainer/host inspection**
+  - Check the running `jarvis-backend` container image reference/digest matches the image built for the CI `head_sha`.
+- **Make /health authoritative (later)**
+  - Plumb build identity into the container env and have the backend return it.
+
+Build-to-deploy identity rule (preferred):
+- GitHub Actions publishes immutable tags per image:
+  - `:<branch>` (mutable)
+  - `:sha-<full_git_sha>` (immutable)
+  - `:sha-<short_git_sha>` (convenience)
+- This allows a binary check: running container image tag should match the CI `head_sha`.
+
+#### Portainer MCP (this repo)
+This repo includes a local Portainer + Portainer MCP stack at `stacks/idc1-portainer/`.
+
+Key references:
+- `stacks/idc1-portainer/docs/CONFIG.md`
+- `stacks/idc1-portainer/README.md`
+
+Connection endpoints (on the Docker host running the Portainer stack):
+- **Portainer API base:** `http://127.0.0.1:9000`
+- **Portainer MCP (HTTP/SSE):** `http://127.0.0.1:3052/mcp?app=windsurf`
+- **Portainer MCP health:** `http://127.0.0.1:3052/health`
+- **Portainer MCP (WebSocket gateway):** `ws://127.0.0.1:18183/ws`
+
+Read-only vs write tools:
+- By default this stack runs Portainer MCP in **read-only** mode (`PORTAINER_READ_ONLY=1` in `stacks/idc1-portainer/.env`).
+- If you need redeploy tools (start/stop/update stack), set `PORTAINER_READ_ONLY=0` and recreate the `mcp-bundle` container.
+
+Verify deployed image/digest via Portainer MCP (recommended)
+1. In your MCP client (Windsurf/Jarvis), run `tools/list` and confirm the Portainer tools are present (prefix varies by client):
+   - Look for: `portainer_*`
+2. Use a Portainer MCP “list containers” / “inspect container” tool to locate the running `jarvis-backend` container in the `idc1-assistance` stack.
+3. Capture these fields from the container inspect output:
+   - Image reference / digest (e.g. `RepoDigests`)
+   - Image ID
+   - Container `Created` / `StartedAt`
+4. Compare against expected deployment:
+   - CI `head_sha` from `GET /github/actions/latest`
+   - The expected GHCR image tag for that SHA:
+     - `ghcr.io/tonezzz/chaba/jarvis-backend:sha-<head_sha>`
+     - (and/or use `RepoDigests` from image inspect)
+
+Optional: redeploy stack via Portainer MCP
+- Stop/Start:
+  - `portainer_1mcp_stopLocalStack`
+  - `portainer_1mcp_startLocalStack`
+- Update stack file + redeploy:
+  - `portainer_1mcp_getLocalStackFile`
+  - `portainer_1mcp_updateLocalStack`
+
 ### Snapshot deployed backend state (binary)
 1. **Health (fast)**
    - `GET /health`
@@ -334,6 +472,13 @@ Goal: a single, stable way to answer “how many items are in sheet X?” withou
   - Start: `POST /github/actions/watch/start`
   - List: `GET /github/actions/watch/list`
   - Stop: `POST /github/actions/watch/stop`
+
+Common failure mode:
+- If GitHub endpoints fail with `missing_github_personal_token_ro`, the backend is missing `GITHUB_PERSONAL_TOKEN_RO`.
+
+### Canonical deploy flow (Docker host)
+- Run: `./scripts/deploy-idc1-assistance.sh`
+- Source of truth config: `stacks/idc1-assistance/CONFIG.md`
 
 ### Persist the snapshot (optional but preferred)
 - If you want “what was deployed” recorded for later comparison, persist it as a **single upserted status**:

@@ -1832,6 +1832,7 @@ class MemoAddRequest(BaseModel):
     subject: Optional[str] = None
     v: Optional[str] = None
     result: Optional[str] = None
+    active: Optional[bool] = None
 
 
 class SysKvSetRequest(BaseModel):
@@ -2018,9 +2019,33 @@ async def memo_header_normalize(x_api_token: Optional[str] = Header(default=None
 
 @app.post("/memo/add")
 @app.post("/jarvis/memo/add")
-async def memo_add(req: MemoAddRequest, x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token")) -> dict[str, Any]:
+async def memo_add(
+    req: MemoAddRequest,
+    x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token"),
+    x_session_id: Optional[str] = Header(default=None, alias="X-Session-Id"),
+) -> dict[str, Any]:
     _require_api_token_if_configured(x_api_token)
     sys_kv = _sys_kv_snapshot()
+
+    # If the caller provides a live session id, route through the memo tool path.
+    # This keeps behavior consistent with voice/text triggers and returns a stable memo id.
+    if str(x_session_id or "").strip():
+        sid = str(x_session_id or "").strip()
+        args: dict[str, Any] = {"memo": str(req.memo or "").strip()}
+        if req.group is not None:
+            args["group"] = str(req.group or "").strip()
+        if req.subject is not None:
+            args["subject"] = str(req.subject or "").strip()
+        if req.status is not None:
+            args["status"] = str(req.status or "").strip()
+        if req.result is not None:
+            args["result"] = str(req.result or "").strip()
+        if req.active is not None:
+            args["active"] = bool(req.active)
+        res = await _handle_mcp_tool_call(sid, "memo_add", args)
+        if isinstance(res, dict):
+            return res
+        return {"ok": True, "result": res}
 
     def _is_enabled(kv: Any) -> bool:
         try:
@@ -2094,6 +2119,51 @@ async def memo_add(req: MemoAddRequest, x_api_token: Optional[str] = Header(defa
     now_dt = datetime.now(tz=timezone.utc).replace(microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
     status = str(req.status or "").strip() or "new"
 
+    def _col_letter(col_idx0: int) -> str:
+        n = int(col_idx0) + 1
+        if n <= 0:
+            return "A"
+        out = ""
+        while n > 0:
+            n, r = divmod(n - 1, 26)
+            out = chr(ord("A") + r) + out
+        return out or "A"
+
+    async def _next_memo_id() -> int:
+        try:
+            id_col = "A"
+            try:
+                j0 = idx.get("id") if isinstance(idx, dict) else None
+                if isinstance(j0, int) and j0 >= 0:
+                    id_col = _col_letter(j0)
+            except Exception:
+                id_col = "A"
+            tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+            res_get = await _mcp_tools_call(
+                tool_get,
+                {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!{id_col}2:{id_col}", "major_dimension": "COLUMNS"},
+            )
+            parsed_get = _mcp_text_json(res_get)
+            data = parsed_get.get("data") if isinstance(parsed_get, dict) else None
+            vals = parsed_get.get("values") if isinstance(parsed_get, dict) else None
+            if not isinstance(vals, list) and isinstance(data, dict):
+                vals = data.get("values")
+            col = vals[0] if isinstance(vals, list) and vals and isinstance(vals[0], list) else []
+            max_id = 0
+            for v in col:
+                s2 = str(v or "").strip()
+                if not s2:
+                    continue
+                try:
+                    n2 = int(float(s2))
+                except Exception:
+                    continue
+                if n2 > max_id:
+                    max_id = n2
+            return max_id + 1
+        except Exception:
+            return 1
+
     def _set(row: list[Any], col: str, value: Any) -> None:
         j = idx.get(str(col or "").strip().lower())
         if j is None:
@@ -2102,18 +2172,18 @@ async def memo_add(req: MemoAddRequest, x_api_token: Optional[str] = Header(defa
             row.append("")
         row[j] = value
 
+    memo_id = await _next_memo_id()
     row: list[Any] = []
-    _set(row, "date_time", now_dt)
-    _set(row, "memo", str(req.memo or "").strip())
-    _set(row, "status", status)
+    _set(row, "id", memo_id)
+    _set(row, "active", True if req.active is None else bool(req.active))
     _set(row, "group", str(req.group or "").strip())
     _set(row, "subject", str(req.subject or "").strip())
+    _set(row, "memo", str(req.memo or "").strip())
+    _set(row, "status", status)
     _set(row, "result", str(req.result or "").strip())
+    _set(row, "date_time", now_dt)
     _set(row, "_created", now_dt)
     _set(row, "_updated", now_dt)
-    _set(row, "_merged", False)
-    _set(row, "merged_into", "")
-    _set(row, "merged_at", "")
 
     tool_append = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
     try:
@@ -2147,7 +2217,7 @@ async def memo_add(req: MemoAddRequest, x_api_token: Optional[str] = Header(defa
         )
     except Exception:
         pass
-    return {"ok": True, "appended": 1, "sheet": sheet_name, "spreadsheet_id": spreadsheet_id, "raw": parsed}
+    return {"ok": True, "id": memo_id, "appended": 1, "sheet": sheet_name, "spreadsheet_id": spreadsheet_id, "raw": parsed}
 
 
 @app.post("/sys_kv/set")
@@ -11934,8 +12004,36 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
                         "status": {"type": "string", "description": "Optional status (default new)."},
                         "v": {"type": "string", "description": "Optional version tag."},
                         "result": {"type": "string", "description": "Optional result/notes."},
+                        "active": {"type": "boolean", "description": "Optional active flag (default true)."},
                     },
                     "required": ["memo"],
+                },
+            }
+        )
+
+        decls.append(
+            {
+                "name": "memo_get",
+                "description": "Get a memo by stable numeric id (sheet-backed).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer", "description": "Memo id."},
+                    },
+                    "required": ["id"],
+                },
+            }
+        )
+
+        decls.append(
+            {
+                "name": "memo_list",
+                "description": "List recent memos (sheet-backed).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "limit": {"type": "integer", "description": "Max items (default 20)."},
+                    },
                 },
             }
         )
@@ -12380,6 +12478,8 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                             "pending_confirm",
                             "pending_cancel",
                             "memo_add",
+                            "memo_get",
+                            "memo_list",
                             "memory_add",
                             "memory_search",
                             "memory_list",

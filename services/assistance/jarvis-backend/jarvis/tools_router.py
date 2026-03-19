@@ -87,6 +87,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             session_ws = deps["SESSION_WS"]
             feature_enabled = deps["feature_enabled"]
             sys_kv_bool = deps["sys_kv_bool"]
+            safe_int = deps.get("safe_int")
             memo_sheet_cfg_from_sys_kv = deps["memo_sheet_cfg_from_sys_kv"]
             sheet_name_to_a1 = deps["sheet_name_to_a1"]
             sheet_get_header_row = deps["sheet_get_header_row"]
@@ -138,6 +139,56 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             group = str(args.get("group") or "").strip()
             subject = str(args.get("subject") or "").strip()
             result = str(args.get("result") or "").strip()
+            active = args.get("active")
+
+            def _col_letter(col_idx0: int) -> str:
+                n = int(col_idx0) + 1
+                if n <= 0:
+                    return "A"
+                out = ""
+                while n > 0:
+                    n, r = divmod(n - 1, 26)
+                    out = chr(ord("A") + r) + out
+                return out or "A"
+
+            async def _next_memo_id() -> int:
+                try:
+                    id_col = "A"
+                    try:
+                        j0 = idx.get("id") if isinstance(idx, dict) else None
+                        if isinstance(j0, int) and j0 >= 0:
+                            id_col = _col_letter(j0)
+                    except Exception:
+                        id_col = "A"
+                    tool_get = pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+                    res_get = await mcp_tools_call(
+                        tool_get,
+                        {
+                            "spreadsheet_id": spreadsheet_id,
+                            "range": f"{sheet_a1}!{id_col}2:{id_col}",
+                            "major_dimension": "COLUMNS",
+                        },
+                    )
+                    parsed_get = mcp_text_json(res_get)
+                    data = parsed_get.get("data") if isinstance(parsed_get, dict) else None
+                    vals = parsed_get.get("values") if isinstance(parsed_get, dict) else None
+                    if not isinstance(vals, list) and isinstance(data, dict):
+                        vals = data.get("values")
+                    col = vals[0] if isinstance(vals, list) and vals and isinstance(vals[0], list) else []
+                    max_id = 0
+                    for v in col:
+                        s2 = str(v or "").strip()
+                        if not s2:
+                            continue
+                        try:
+                            n2 = int(float(s2))
+                        except Exception:
+                            continue
+                        if n2 > max_id:
+                            max_id = n2
+                    return max_id + 1
+                except Exception:
+                    return 1
 
             def _set(row: list[Any], col: str, value: Any) -> None:
                 j = idx.get(str(col or "").strip().lower())
@@ -147,18 +198,21 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                     row.append("")
                 row[j] = value
 
+            memo_id = await _next_memo_id()
             row: list[Any] = []
-            _set(row, "date_time", now_dt)
-            _set(row, "memo", memo_txt)
-            _set(row, "status", status)
+            _set(row, "id", memo_id)
+            if active is None:
+                _set(row, "active", True)
+            else:
+                _set(row, "active", bool(active))
             _set(row, "group", group)
             _set(row, "subject", subject)
+            _set(row, "memo", memo_txt)
+            _set(row, "status", status)
             _set(row, "result", result)
+            _set(row, "date_time", now_dt)
             _set(row, "_created", now_dt)
             _set(row, "_updated", now_dt)
-            _set(row, "_merged", False)
-            _set(row, "merged_into", "")
-            _set(row, "merged_at", "")
 
             tool_append = pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
             res = await mcp_tools_call(
@@ -172,7 +226,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                 },
             )
             parsed = mcp_text_json(res)
-            out = {"ok": True, "sheet": sheet_name, "spreadsheet_id": spreadsheet_id, "raw": parsed}
+            out = {"ok": True, "id": memo_id, "sheet": sheet_name, "spreadsheet_id": spreadsheet_id, "raw": parsed}
 
             cfg = memo_prompt_cfg(sys_kv)
             if cfg.get("enabled"):
@@ -222,6 +276,196 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             except Exception:
                 pass
             return {"ok": False, "error": "memo_add_failed", "detail": f"{type(e).__name__}: {e}"}
+
+    if tool_name == "memo_get":
+        try:
+            session_ws = deps["SESSION_WS"]
+            feature_enabled = deps["feature_enabled"]
+            sys_kv_bool = deps["sys_kv_bool"]
+            safe_int = deps["safe_int"]
+            memo_sheet_cfg_from_sys_kv = deps["memo_sheet_cfg_from_sys_kv"]
+            sheet_name_to_a1 = deps["sheet_name_to_a1"]
+            sheet_get_header_row = deps["sheet_get_header_row"]
+            idx_from_header = deps["idx_from_header"]
+            memo_ensure_header = deps["memo_ensure_header"]
+            pick_sheets_tool_name = deps["pick_sheets_tool_name"]
+            mcp_tools_call = deps["mcp_tools_call"]
+            mcp_text_json = deps["mcp_text_json"]
+
+            ws = session_ws.get(str(session_id)) if session_id else None
+            if ws is None:
+                raise HTTPException(status_code=400, detail="missing_session_ws")
+            sys_kv = getattr(ws.state, "sys_kv", None)
+            if not feature_enabled("memo", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+                raise HTTPException(status_code=403, detail="feature_disabled:memo")
+            if not sys_kv_bool(sys_kv, "memo.enabled", False):
+                raise HTTPException(status_code=403, detail="memo_disabled")
+
+            memo_id = safe_int(args.get("id"), 0)
+            if memo_id <= 0:
+                raise HTTPException(status_code=400, detail="missing_id")
+
+            spreadsheet_id, sheet_name = memo_sheet_cfg_from_sys_kv(sys_kv if isinstance(sys_kv, dict) else None)
+            if not spreadsheet_id:
+                raise HTTPException(status_code=400, detail="missing_memo_ss")
+            if not sheet_name:
+                raise HTTPException(status_code=400, detail="missing_memo_sheet_name")
+
+            sheet_a1 = sheet_name_to_a1(sheet_name, default="memo")
+            header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
+            idx = idx_from_header(header)
+            if not idx:
+                await memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+                header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
+                idx = idx_from_header(header)
+            if not idx:
+                raise HTTPException(status_code=400, detail="memo_sheet_missing_header")
+
+            tool_get = pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+            res = await mcp_tools_call(
+                tool_get,
+                {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A2:K"},
+            )
+            parsed = mcp_text_json(res)
+            data = parsed.get("data") if isinstance(parsed, dict) else None
+            vals = parsed.get("values") if isinstance(parsed, dict) else None
+            if not isinstance(vals, list) and isinstance(data, dict):
+                vals = data.get("values")
+            rows = vals if isinstance(vals, list) else []
+
+            def _cell(row: list[Any], col: str) -> Any:
+                j = idx.get(str(col or "").strip().lower())
+                if j is None or j < 0 or j >= len(row):
+                    return ""
+                return row[j]
+
+            hit: dict[str, Any] | None = None
+            for r in rows:
+                if not isinstance(r, list):
+                    continue
+                v = str(_cell(r, "id") or "").strip()
+                try:
+                    rid = int(float(v)) if v else 0
+                except Exception:
+                    rid = 0
+                if rid == int(memo_id):
+                    hit = {
+                        "id": rid,
+                        "active": _cell(r, "active"),
+                        "group": str(_cell(r, "group") or ""),
+                        "subject": str(_cell(r, "subject") or ""),
+                        "memo": str(_cell(r, "memo") or ""),
+                        "status": str(_cell(r, "status") or ""),
+                        "result": str(_cell(r, "result") or ""),
+                        "date_time": str(_cell(r, "date_time") or ""),
+                        "_created": str(_cell(r, "_created") or ""),
+                        "_updated": str(_cell(r, "_updated") or ""),
+                    }
+                    break
+
+            if hit is None:
+                return {"ok": False, "error": "not_found", "id": int(memo_id)}
+            return {"ok": True, "memo": hit}
+        except HTTPException as e:
+            return {
+                "ok": False,
+                "error": "memo_get_failed",
+                "status_code": getattr(e, "status_code", None),
+                "detail": getattr(e, "detail", None),
+            }
+        except Exception as e:
+            return {"ok": False, "error": "memo_get_failed", "detail": f"{type(e).__name__}: {e}"}
+
+    if tool_name == "memo_list":
+        try:
+            session_ws = deps["SESSION_WS"]
+            feature_enabled = deps["feature_enabled"]
+            sys_kv_bool = deps["sys_kv_bool"]
+            safe_int = deps["safe_int"]
+            memo_sheet_cfg_from_sys_kv = deps["memo_sheet_cfg_from_sys_kv"]
+            sheet_name_to_a1 = deps["sheet_name_to_a1"]
+            sheet_get_header_row = deps["sheet_get_header_row"]
+            idx_from_header = deps["idx_from_header"]
+            memo_ensure_header = deps["memo_ensure_header"]
+            pick_sheets_tool_name = deps["pick_sheets_tool_name"]
+            mcp_tools_call = deps["mcp_tools_call"]
+            mcp_text_json = deps["mcp_text_json"]
+
+            ws = session_ws.get(str(session_id)) if session_id else None
+            if ws is None:
+                raise HTTPException(status_code=400, detail="missing_session_ws")
+            sys_kv = getattr(ws.state, "sys_kv", None)
+            if not feature_enabled("memo", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+                raise HTTPException(status_code=403, detail="feature_disabled:memo")
+            if not sys_kv_bool(sys_kv, "memo.enabled", False):
+                raise HTTPException(status_code=403, detail="memo_disabled")
+
+            limit = max(1, min(50, int(safe_int(args.get("limit"), 20))))
+
+            spreadsheet_id, sheet_name = memo_sheet_cfg_from_sys_kv(sys_kv if isinstance(sys_kv, dict) else None)
+            if not spreadsheet_id:
+                raise HTTPException(status_code=400, detail="missing_memo_ss")
+            if not sheet_name:
+                raise HTTPException(status_code=400, detail="missing_memo_sheet_name")
+
+            sheet_a1 = sheet_name_to_a1(sheet_name, default="memo")
+            header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
+            idx = idx_from_header(header)
+            if not idx:
+                await memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+                header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
+                idx = idx_from_header(header)
+            if not idx:
+                raise HTTPException(status_code=400, detail="memo_sheet_missing_header")
+
+            tool_get = pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+            res = await mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A2:K"})
+            parsed = mcp_text_json(res)
+            data = parsed.get("data") if isinstance(parsed, dict) else None
+            vals = parsed.get("values") if isinstance(parsed, dict) else None
+            if not isinstance(vals, list) and isinstance(data, dict):
+                vals = data.get("values")
+            rows = vals if isinstance(vals, list) else []
+
+            def _cell(row: list[Any], col: str) -> Any:
+                j = idx.get(str(col or "").strip().lower())
+                if j is None or j < 0 or j >= len(row):
+                    return ""
+                return row[j]
+
+            items: list[dict[str, Any]] = []
+            for r in rows:
+                if not isinstance(r, list):
+                    continue
+                v = str(_cell(r, "id") or "").strip()
+                try:
+                    rid = int(float(v)) if v else 0
+                except Exception:
+                    rid = 0
+                if rid <= 0:
+                    continue
+                items.append(
+                    {
+                        "id": rid,
+                        "active": _cell(r, "active"),
+                        "group": str(_cell(r, "group") or ""),
+                        "subject": str(_cell(r, "subject") or ""),
+                        "status": str(_cell(r, "status") or ""),
+                        "memo": str(_cell(r, "memo") or ""),
+                        "date_time": str(_cell(r, "date_time") or ""),
+                    }
+                )
+            items.sort(key=lambda it: int(it.get("id") or 0), reverse=True)
+            return {"ok": True, "items": items[:limit], "count": len(items[:limit])}
+        except HTTPException as e:
+            return {
+                "ok": False,
+                "error": "memo_list_failed",
+                "status_code": getattr(e, "status_code", None),
+                "detail": getattr(e, "detail", None),
+            }
+        except Exception as e:
+            return {"ok": False, "error": "memo_list_failed", "detail": f"{type(e).__name__}: {e}"}
 
     if tool_name == "memory_search":
         session_ws = deps["SESSION_WS"]

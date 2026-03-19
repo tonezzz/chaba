@@ -24,15 +24,14 @@ async def ensure_header(
             lowered = [str(x or "").strip().lower() for x in got_header if str(x or "").strip()]
             has_dupes = len(set(lowered)) != len(lowered)
             required = {
-                "date_time",
-                "memo",
-                "status",
+                "id",
+                "active",
                 "group",
                 "subject",
+                "memo",
+                "status",
                 "result",
-                "merged_into",
-                "merged_at",
-                "_merged",
+                "date_time",
                 "_created",
                 "_updated",
             }
@@ -43,15 +42,14 @@ async def ensure_header(
         pass
 
     header = [
-        "date_time",
+        "id",
+        "active",
         "group",
+        "memo",
         "status",
         "subject",
-        "memo",
         "result",
-        "merged_into",
-        "merged_at",
-        "_merged",
+        "date_time",
         "_created",
         "_updated",
     ]
