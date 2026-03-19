@@ -10799,12 +10799,25 @@ async def github_actions_watch_stop(
 @app.get("/jarvis/github/actions/watch/list")
 def github_actions_watch_list() -> dict[str, Any]:
     items: list[dict[str, Any]] = []
-    for key, task in list(_GITHUB_WATCH_TASKS.items()):
-        running = not task.done()
+
+    keys: set[str] = set()
+    try:
+        keys.update(list(_GITHUB_WATCH_TASKS.keys()))
+    except Exception:
+        pass
+    try:
+        keys.update(list(_GITHUB_WATCH_STATE.keys()))
+    except Exception:
+        pass
+
+    for key in sorted(keys):
+        task = _GITHUB_WATCH_TASKS.get(key)
+        running = bool(task is not None and not task.done())
         st = dict(_GITHUB_WATCH_STATE.get(key) or {})
         st["key"] = key
         st["running"] = running
         items.append(st)
+
     return {"ok": True, "watches": items}
 
 
