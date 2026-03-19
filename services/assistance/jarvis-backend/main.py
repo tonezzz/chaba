@@ -1849,6 +1849,11 @@ class MemoRelateRequest(BaseModel):
     group: Optional[str] = None
 
 
+class MemoRepairIdsRequest(BaseModel):
+    limit: Optional[int] = 500
+    dry_run: Optional[bool] = False
+
+
 class SysKvSetRequest(BaseModel):
     key: str
     value: str
@@ -2029,6 +2034,123 @@ async def memo_header_normalize(x_api_token: Optional[str] = Header(default=None
     await _memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, force=True)
     after = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
     return {"ok": True, "spreadsheet_id": spreadsheet_id, "sheet": sheet_name, "before": before, "after": after}
+
+
+@app.post("/memo/repair/ids")
+@app.post("/jarvis/memo/repair/ids")
+async def memo_repair_ids(
+    req: MemoRepairIdsRequest,
+    x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token"),
+) -> dict[str, Any]:
+    _require_api_token_if_configured(x_api_token)
+    sys_kv = _sys_kv_snapshot()
+    spreadsheet_id, sheet_name = _memo_sheet_cfg_from_sys_kv(sys_kv if isinstance(sys_kv, dict) else None)
+    if not spreadsheet_id:
+        raise HTTPException(status_code=400, detail="missing_memo_ss")
+    if not sheet_name:
+        raise HTTPException(status_code=400, detail="missing_memo_sheet_name")
+    sheet_a1 = _sheet_name_to_a1(sheet_name, default="memo")
+
+    # Ensure header is canonical so idx mapping is stable.
+    try:
+        await _memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, force=False)
+    except Exception:
+        pass
+    header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
+    idx = _idx_from_header(header)
+    if not idx:
+        raise HTTPException(status_code=400, detail="memo_sheet_missing_header")
+
+    j_id = idx.get("id")
+    if not isinstance(j_id, int) or j_id < 0:
+        raise HTTPException(status_code=400, detail="memo_sheet_missing_id_col")
+
+    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    tool_update = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+
+    # Read a window of rows (A2:J) and repair IDs in-place.
+    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A2:J"})
+    parsed = _mcp_text_json(res)
+    data = parsed.get("data") if isinstance(parsed, dict) else None
+    vals = parsed.get("values") if isinstance(parsed, dict) else None
+    if not isinstance(vals, list) and isinstance(data, dict):
+        vals = data.get("values")
+    rows = vals if isinstance(vals, list) else []
+    if not isinstance(rows, list):
+        rows = []
+
+    limit = max(1, min(int(req.limit or 500), 5000))
+    window = rows[-limit:]
+
+    # First pass: compute max existing id and find duplicates/missing.
+    seen: dict[int, int] = {}
+    max_id = 0
+    parsed_ids: list[int | None] = []
+    for r in window:
+        if not isinstance(r, list):
+            parsed_ids.append(None)
+            continue
+        raw = ""
+        if j_id < len(r):
+            raw = str(r[j_id] or "").strip()
+        n: int | None = None
+        if raw:
+            try:
+                n = int(float(raw))
+            except Exception:
+                n = None
+        if isinstance(n, int) and n > 0:
+            max_id = max(max_id, n)
+            seen[n] = seen.get(n, 0) + 1
+        parsed_ids.append(n if isinstance(n, int) and n > 0 else None)
+
+    # Second pass: assign new IDs for missing/invalid and for duplicates (keep first occurrence).
+    next_id = max_id + 1 if max_id > 0 else 1
+    dup_used: set[int] = set()
+    fixes: list[dict[str, Any]] = []
+    for i, n in enumerate(parsed_ids):
+        is_dup = False
+        if isinstance(n, int) and n > 0 and seen.get(n, 0) > 1:
+            # Keep first occurrence; reassign subsequent ones.
+            if n in dup_used:
+                is_dup = True
+            else:
+                dup_used.add(n)
+        if n is None or is_dup:
+            new_id = next_id
+            next_id += 1
+            # Compute absolute sheet row number: A2 is first row in rows list.
+            abs_row = 2 + (len(rows) - len(window)) + i
+            fixes.append({"row": abs_row, "old": n, "new": new_id})
+
+    if not fixes:
+        return {"ok": True, "spreadsheet_id": spreadsheet_id, "sheet": sheet_name, "fixed": 0, "dry_run": bool(req.dry_run)}
+
+    if not bool(req.dry_run):
+        id_col_letter = "A"
+        try:
+            id_col_letter = chr(ord("A") + int(j_id)) if int(j_id) < 26 else "A"
+        except Exception:
+            id_col_letter = "A"
+        for f in fixes:
+            await _mcp_tools_call(
+                tool_update,
+                {
+                    "spreadsheet_id": spreadsheet_id,
+                    "range": f"{sheet_a1}!{id_col_letter}{int(f['row'])}:{id_col_letter}{int(f['row'])}",
+                    "values": [[int(f["new"])]] ,
+                    "value_input_option": "USER_ENTERED",
+                },
+            )
+
+    return {
+        "ok": True,
+        "spreadsheet_id": spreadsheet_id,
+        "sheet": sheet_name,
+        "fixed": len(fixes),
+        "dry_run": bool(req.dry_run),
+        "samples": fixes[:20],
+    }
 
 
 @app.post("/memo/add")
