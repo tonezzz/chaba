@@ -139,9 +139,11 @@ jobs:
         run: |
           set -euo pipefail
           REF_NAME="${{ github.ref_name }}"
+          SHA_FULL="${GITHUB_SHA}"
           SHA_SHORT="${GITHUB_SHA::7}"
           TAG1="${IMAGE}:${REF_NAME}"
-          TAG2="${IMAGE}:sha-${SHA_SHORT}"
+          TAG2="${IMAGE}:sha-${SHA_FULL}"
+          TAG3="${IMAGE}:sha-${SHA_SHORT}"
 
           BUILD_ARGS=()
           while IFS= read -r line; do
@@ -157,6 +159,7 @@ jobs:
             --file "${{ matrix.file }}" \
             --tag "${TAG1}" \
             --tag "${TAG2}" \
+            --tag "${TAG3}" \
             --push \
             --cache-from type=gha \
             --cache-to type=gha,mode=max \

@@ -42,7 +42,7 @@
 Need redeploy? rule (binary):
 - **Yes** if CI is `completed/success` AND either:
   - `jarvis-backend image created` is older than `CI updated_at`, OR
-  - (once SHA tags are deployed) running image tag is not `...:sha-<short CI head_sha>`
+  - (once SHA tags are deployed) running image tag is not `...:sha-<full CI head_sha>` (preferred) or `...:sha-<short CI head_sha>`
 - Otherwise: **No/Unknown** (then run **Prove redeploy updated**).
 
 Need rebuild? rule (binary, selective CI):
@@ -413,6 +413,7 @@ Preferred options:
 Build-to-deploy identity rule (preferred):
 - GitHub Actions publishes immutable tags per image:
   - `:<branch>` (mutable)
+  - `:sha-<full_git_sha>` (immutable, preferred)
   - `:sha-<short_git_sha>` (immutable)
 - This allows a binary check: running container image tag should match the CI `head_sha`.
 
@@ -444,6 +445,7 @@ Verify deployed image/digest via Portainer MCP (recommended)
 4. Compare against expected deployment:
    - CI `head_sha` from `GET /github/actions/latest`
    - The expected GHCR image tag for that SHA:
+     - `ghcr.io/tonezzz/chaba/jarvis-backend:sha-<full head_sha>` (preferred)
      - `ghcr.io/tonezzz/chaba/jarvis-backend:sha-<short head_sha>`
      - (and/or use `RepoDigests` from image inspect)
 

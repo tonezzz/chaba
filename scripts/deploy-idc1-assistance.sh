@@ -191,13 +191,9 @@ PY
     head -c 1500 /tmp/portainer_git_redeploy.json 2>/dev/null || true
     echo >&2
 
-    if [[ "${ALLOW_FILE_BASED_REDEPLOY_FOR_GIT_STACKS:-}" == "true" ]]; then
-      echo "[deploy] WARN: override enabled; proceeding with file-based redeploy (this converts the stack away from Git-backed)." >&2
-    else
-      echo "[deploy] Action: redeploy via Portainer UI (Pull and redeploy), or rerun with:" >&2
-      echo "[deploy]   export ALLOW_FILE_BASED_REDEPLOY_FOR_GIT_STACKS=true" >&2
-      return 1
-    fi
+    echo "[deploy] Action: redeploy via Portainer UI (Pull and redeploy)." >&2
+    echo "[deploy] Note: this script will not fall back to file-based redeploy for Git-backed stacks." >&2
+    return 1
   fi
 
   # Prepare update payload:
@@ -325,8 +321,33 @@ docker compose -f "${compose_file}" pull
 
 echo "[deploy] Determining which services changed..."
 changed_services=()
+declare -A image_by_service
+while IFS=$'\t' read -r svc_name img_ref; do
+  if [[ -n "${svc_name}" && -n "${img_ref}" ]]; then
+    image_by_service["${svc_name}"]="${img_ref}"
+  fi
+done < <(python3 - <<'PY'
+import json
+import subprocess
+
+compose_file = "stacks/idc1-assistance/docker-compose.yml"
+cp = subprocess.run(
+    ["docker", "compose", "-f", compose_file, "config", "--format", "json"],
+    check=True,
+    capture_output=True,
+    text=True,
+)
+obj = json.loads(cp.stdout)
+services = obj.get("services") or {}
+for name, svc in services.items():
+    img = (svc or {}).get("image") or ""
+    if img:
+        print(f"{name}\t{img}")
+PY
+)
+
 for s in "${services[@]}"; do
-  image_ref="$(docker compose -f "${compose_file}" config --images "${s}" 2>/dev/null | head -n 1 | tr -d '\r' || true)"
+  image_ref="${image_by_service["${s}"]:-}"
   if [[ -z "${image_ref}" ]]; then
     continue
   fi
@@ -359,7 +380,9 @@ if (( ${#changed_services[@]} == 0 )); then
 fi
 
 echo "[deploy] Changes detected. Triggering Portainer-authoritative redeploy."
-trigger_portainer_redeploy
+if ! trigger_portainer_redeploy; then
+  exit 1
+fi
 
 echo "[deploy] Verifying container digests..."
 for s in "${changed_services[@]}"; do
