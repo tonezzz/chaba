@@ -3,6 +3,21 @@
 
 These diagrams are the architecture blueprint for the `services/assistance` stack. Keep them accurate and update them whenever service boundaries, ports, endpoints, or persistence rules change.
 
+## CI: sheet contract tests
+
+We run a lightweight `pytest` suite in CI to prevent regressions in the Google Sheets SSoT contracts (system/memory/knowledge KV5 parsing and memo header canonicalization).
+
+- Workflow: `.github/workflows/tests-idc1-assistance.yml`
+- Test location: `services/assistance/jarvis-backend/test_*.py` (notably `test_sheet_contracts.py`)
+
+Run locally:
+
+```bash
+cd services/assistance/jarvis-backend
+pip install -r requirements.txt
+pytest -q
+```
+
 ## 0) Google Sheets SSoT (sys/memory/knowledge/notes/gems)
 
 ```mermaid
