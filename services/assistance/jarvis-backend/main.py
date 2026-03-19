@@ -625,29 +625,16 @@ async def _handle_memo_trigger(ws: WebSocket, text: str) -> bool:
 
     now_dt = datetime.now(tz=timezone.utc).replace(microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
 
-    # Ensure header exists (best-effort).
+    # Ensure header exists (best-effort) using canonical memo header.
     try:
-        res_h = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name_a1}!A1:K1"})
-        parsed_h = _mcp_text_json(res_h)
-        vals_h = parsed_h.get("values") if isinstance(parsed_h, dict) else None
-        got_header = vals_h[0] if isinstance(vals_h, list) and vals_h and isinstance(vals_h[0], list) else None
-        if not got_header or not any(str(x or "").strip() for x in got_header):
-            await _mcp_tools_call(
-                tool_update,
-                {
-                    "spreadsheet_id": spreadsheet_id,
-                    "range": f"{sheet_name_a1}!A1:K1",
-                    "values": [["date_time", "group", "status", "subject", "memo", "result", "merged_into", "merged_at", "_merged", "_created", "_updated"]],
-                    "value_input_option": "USER_ENTERED",
-                },
-            )
+        await _memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_name_a1)
     except Exception:
         pass
 
     if is_merge:
         lo = min(int(src_row or 0), int(dst_row or 0))
         hi = max(int(src_row or 0), int(dst_row or 0))
-        res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name_a1}!A{lo}:K{hi}"})
+        res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name_a1}!A{lo}:J{hi}"})
         parsed = _mcp_text_json(res)
         vals = parsed.get("values") if isinstance(parsed, dict) else None
         if not isinstance(vals, list):
@@ -656,7 +643,7 @@ async def _handle_memo_trigger(ws: WebSocket, text: str) -> bool:
 
         header = []
         try:
-            header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_name_a1, max_cols="K")
+            header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_name_a1, max_cols="J")
         except Exception:
             header = []
         idx = _idx_from_header(header)
@@ -696,9 +683,6 @@ async def _handle_memo_trigger(ws: WebSocket, text: str) -> bool:
         _set(dst_vals, "status", str(_get(dst_vals, "status") or "").strip() or "new")
 
         _set(src_vals, "status", "merged")
-        _set(src_vals, "merged_into", str(int(dst_row or 0)))
-        _set(src_vals, "merged_at", now_dt)
-        _set(src_vals, "_merged", True)
         _set(src_vals, "_updated", now_dt)
         _set(dst_vals, "_updated", now_dt)
 
@@ -706,8 +690,8 @@ async def _handle_memo_trigger(ws: WebSocket, text: str) -> bool:
             tool_update,
             {
                 "spreadsheet_id": spreadsheet_id,
-                "range": f"{sheet_name_a1}!A{int(dst_row or 0)}:K{int(dst_row or 0)}",
-                "values": [dst_vals[:11]],
+                "range": f"{sheet_name_a1}!A{int(dst_row or 0)}:J{int(dst_row or 0)}",
+                "values": [dst_vals[:10]],
                 "value_input_option": "USER_ENTERED",
             },
         )
@@ -715,8 +699,8 @@ async def _handle_memo_trigger(ws: WebSocket, text: str) -> bool:
             tool_update,
             {
                 "spreadsheet_id": spreadsheet_id,
-                "range": f"{sheet_name_a1}!A{int(src_row or 0)}:K{int(src_row or 0)}",
-                "values": [src_vals[:11]],
+                "range": f"{sheet_name_a1}!A{int(src_row or 0)}:J{int(src_row or 0)}",
+                "values": [src_vals[:10]],
                 "value_input_option": "USER_ENTERED",
             },
         )
@@ -728,13 +712,24 @@ async def _handle_memo_trigger(ws: WebSocket, text: str) -> bool:
         await _ws_send_json(ws, {"type": "text", "text": "memo_missing_text", "instance_id": INSTANCE_ID})
         return True
 
-    row = [now_dt, "", "new", "", memo_text, "", "", "", False, now_dt, now_dt]
+    row: list[Any] = [
+        "",
+        True,
+        "",
+        memo_text,
+        "new",
+        "",
+        "",
+        now_dt,
+        now_dt,
+        now_dt,
+    ]
     try:
         await _mcp_tools_call(
             tool_append,
             {
                 "spreadsheet_id": spreadsheet_id,
-                "range": f"{sheet_name_a1}!A:K",
+                "range": f"{sheet_name_a1}!A:Z",
                 "values": [row],
                 "value_input_option": "USER_ENTERED",
                 "insert_data_option": "INSERT_ROWS",
@@ -1835,6 +1830,25 @@ class MemoAddRequest(BaseModel):
     active: Optional[bool] = None
 
 
+class MemoIndexBackfillRequest(BaseModel):
+    limit: Optional[int] = 200
+
+
+class MemoSummarizeRelatedRequest(BaseModel):
+    q: Optional[str] = None
+    memo_id: Optional[int] = None
+    k: Optional[int] = 30
+    group: Optional[str] = None
+    style: Optional[str] = "timeline"
+
+
+class MemoRelateRequest(BaseModel):
+    q: Optional[str] = None
+    memo_id: Optional[int] = None
+    k: Optional[int] = 50
+    group: Optional[str] = None
+
+
 class SysKvSetRequest(BaseModel):
     key: str
     value: str
@@ -2078,7 +2092,7 @@ async def memo_add(
         raise HTTPException(status_code=400, detail="missing_memo_sheet_name")
 
     sheet_a1 = _sheet_name_to_a1(sheet_name, default="memo")
-    header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
+    header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
     idx = _idx_from_header(header)
     if not idx:
         ensure_err: Exception | None = None
@@ -2086,7 +2100,7 @@ async def memo_add(
             await _memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
         except Exception as e:
             ensure_err = e
-        header_after = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
+        header_after = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
         idx = _idx_from_header(header_after)
     if not idx:
         def _trim_list(x: Any, max_n: int = 30) -> list[Any]:
@@ -2230,6 +2244,27 @@ async def memo_add(
         raise HTTPException(status_code=500, detail=f"memo_append_failed: {type(e).__name__}: {e}")
 
     parsed = _mcp_text_json(res)
+
+    # Best-effort semantic index in Weaviate (must never fail the memo append).
+    try:
+        if _weaviate_enabled():
+            await _weaviate_upsert_memo_item(
+                spreadsheet_id=spreadsheet_id,
+                sheet_name=sheet_name,
+                memo_id=int(memo_id),
+                active=True if req.active is None else bool(req.active),
+                group=str(req.group or "").strip(),
+                status=status,
+                subject=str(req.subject or "").strip(),
+                memo=str(req.memo or "").strip(),
+                result=str(req.result or "").strip(),
+                date_time=now_dt,
+                created_at=float(int(time.time())),
+                updated_at=float(int(time.time())),
+            )
+    except Exception:
+        pass
+
     try:
         memo_preview = str(req.memo or "").strip()
         if len(memo_preview) > 120:
@@ -2247,6 +2282,198 @@ async def memo_add(
     except Exception:
         pass
     return {"ok": True, "id": memo_id, "appended": 1, "sheet": sheet_name, "spreadsheet_id": spreadsheet_id, "raw": parsed}
+
+
+@app.post("/memo/index/backfill")
+@app.post("/jarvis/memo/index/backfill")
+async def memo_index_backfill(
+    req: MemoIndexBackfillRequest,
+    x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token"),
+) -> dict[str, Any]:
+    _require_api_token_if_configured(x_api_token)
+    if not _weaviate_enabled():
+        raise HTTPException(status_code=400, detail="weaviate_not_configured")
+
+    sys_kv = _sys_kv_snapshot()
+    spreadsheet_id, sheet_name = _memo_sheet_cfg_from_sys_kv(sys_kv if isinstance(sys_kv, dict) else None)
+    if not spreadsheet_id or not sheet_name:
+        raise HTTPException(status_code=400, detail="missing_memo_cfg")
+    sheet_a1 = _sheet_name_to_a1(sheet_name, default="memo")
+
+    limit = max(1, min(int(req.limit or 200), 2000))
+    header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
+    idx = _idx_from_header(header)
+    if not idx:
+        await _memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+        header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
+        idx = _idx_from_header(header)
+    if not idx:
+        raise HTTPException(status_code=400, detail="memo_sheet_missing_header")
+
+    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A2:J"})
+    parsed = _mcp_text_json(res)
+    data = parsed.get("data") if isinstance(parsed, dict) else None
+    vals = parsed.get("values") if isinstance(parsed, dict) else None
+    if not isinstance(vals, list) and isinstance(data, dict):
+        vals = data.get("values")
+    rows = vals if isinstance(vals, list) else []
+    if not isinstance(rows, list):
+        rows = []
+
+    def _cell(row: list[Any], col: str) -> str:
+        j = idx.get(str(col or "").strip().lower())
+        if j is None or j < 0 or j >= len(row):
+            return ""
+        return str(row[j] or "")
+
+    indexed = 0
+    skipped = 0
+    errors = 0
+    for r in rows[-limit:]:
+        if not isinstance(r, list):
+            continue
+        try:
+            mid_raw = str(_cell(r, "id") or "").strip()
+            try:
+                mid = int(float(mid_raw)) if mid_raw else 0
+            except Exception:
+                mid = 0
+            if mid <= 0:
+                skipped += 1
+                continue
+            await _weaviate_upsert_memo_item(
+                spreadsheet_id=spreadsheet_id,
+                sheet_name=sheet_name,
+                memo_id=mid,
+                active=str(_cell(r, "active") or "").strip().lower() not in {"false", "0", "no"},
+                group=_cell(r, "group"),
+                status=_cell(r, "status"),
+                subject=_cell(r, "subject"),
+                memo=_cell(r, "memo"),
+                result=_cell(r, "result"),
+                date_time=_cell(r, "date_time"),
+            )
+            indexed += 1
+        except Exception:
+            errors += 1
+
+    return {
+        "ok": True,
+        "spreadsheet_id": spreadsheet_id,
+        "sheet": sheet_name,
+        "indexed": indexed,
+        "skipped": skipped,
+        "errors": errors,
+    }
+
+
+@app.get("/memo/related")
+@app.get("/jarvis/memo/related")
+async def memo_related(
+    q: Optional[str] = None,
+    k: int = 30,
+    group: Optional[str] = None,
+    x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token"),
+) -> dict[str, Any]:
+    _require_api_token_if_configured(x_api_token)
+    if not _weaviate_enabled():
+        raise HTTPException(status_code=400, detail="weaviate_not_configured")
+    qq = str(q or "").strip()
+    items = await _weaviate_query_related_memos(q=qq, k=int(k), group=str(group or "").strip() or None)
+    return {"ok": True, "q": qq, "k": int(k), "group": str(group or "").strip() or None, "items": items}
+
+
+@app.post("/memo/summarize_related")
+@app.post("/jarvis/memo/summarize_related")
+async def memo_summarize_related(
+    req: MemoSummarizeRelatedRequest,
+    x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token"),
+) -> dict[str, Any]:
+    _require_api_token_if_configured(x_api_token)
+    if not _weaviate_enabled():
+        raise HTTPException(status_code=400, detail="weaviate_not_configured")
+    q = str(req.q or "").strip()
+    if not q:
+        raise HTTPException(status_code=400, detail="missing_q")
+    k = max(1, min(int(req.k or 30), 200))
+    group = str(req.group or "").strip() or None
+    items = await _weaviate_query_related_memos(q=q, k=k, group=group)
+
+    style = str(req.style or "timeline").strip().lower() or "timeline"
+    system_instruction = (
+        "You summarize memo entries for an operator. "
+        "Return concise markdown with: Summary, Key points, Open questions, Next actions."
+    )
+    prompt = {
+        "style": style,
+        "query": q,
+        "memos": [
+            {
+                "id": it.get("memo_id"),
+                "group": it.get("group"),
+                "subject": it.get("subject"),
+                "status": it.get("status"),
+                "date_time": it.get("date_time"),
+                "memo": it.get("memo"),
+                "result": it.get("result"),
+                "distance": (it.get("_additional") or {}).get("distance") if isinstance(it.get("_additional"), dict) else None,
+            }
+            for it in items
+            if isinstance(it, dict)
+        ],
+    }
+    txt = await _gemini_summarize_text(system_instruction=system_instruction, prompt=json.dumps(prompt, ensure_ascii=False))
+    used_ids = [int(float(it.get("memo_id"))) for it in items if isinstance(it, dict) and it.get("memo_id") is not None]
+    return {"ok": True, "q": q, "k": k, "group": group, "style": style, "used_memo_ids": used_ids, "summary_markdown": txt}
+
+
+@app.post("/memo/relate")
+@app.post("/jarvis/memo/relate")
+async def memo_relate(
+    req: MemoRelateRequest,
+    x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token"),
+) -> dict[str, Any]:
+    _require_api_token_if_configured(x_api_token)
+    if not _weaviate_enabled():
+        raise HTTPException(status_code=400, detail="weaviate_not_configured")
+    q = str(req.q or "").strip()
+    if not q:
+        raise HTTPException(status_code=400, detail="missing_q")
+    k = max(1, min(int(req.k or 50), 200))
+    group = str(req.group or "").strip() or None
+    items = await _weaviate_query_related_memos(q=q, k=k, group=group)
+
+    system_instruction = (
+        "You are an operations analyst. "
+        "Given a list of memo entries, suggest clusters and relations. "
+        "Return ONLY valid JSON with keys: clusters, links. "
+        "clusters: list of {cluster_id,label,memo_ids,rationale}. "
+        "links: list of {from_id,to_id,relation,confidence,why}."
+    )
+    payload = {
+        "query": q,
+        "memos": [
+            {
+                "id": it.get("memo_id"),
+                "group": it.get("group"),
+                "subject": it.get("subject"),
+                "status": it.get("status"),
+                "date_time": it.get("date_time"),
+                "memo": it.get("memo"),
+                "result": it.get("result"),
+            }
+            for it in items
+            if isinstance(it, dict)
+        ],
+    }
+    txt = await _gemini_summarize_text(system_instruction=system_instruction, prompt=json.dumps(payload, ensure_ascii=False))
+    parsed: Any = None
+    try:
+        parsed = json.loads(txt)
+    except Exception:
+        parsed = {"raw": txt}
+    return {"ok": True, "q": q, "k": k, "group": group, "result": parsed, "items": items}
 
 
 @app.post("/sys_kv/set")
@@ -4033,6 +4260,188 @@ def _weaviate_enabled() -> bool:
 def _weaviate_object_uuid(external_key: str) -> str:
     # Deterministic UUID for idempotent upserts.
     return str(uuid.uuid5(uuid.NAMESPACE_URL, f"jarvis::{external_key}"))
+
+
+def _memo_weaviate_external_key(*, spreadsheet_id: str, sheet_name: str, memo_id: int) -> str:
+    ss = str(spreadsheet_id or "").strip()
+    sh = str(sheet_name or "").strip()
+    mid = int(memo_id or 0)
+    return f"memo::{ss}::{sh}::{mid}".strip()
+
+
+def _memo_embed_text(*, subject: str, memo: str, result: str) -> str:
+    s_subject = str(subject or "").strip() or "(no subject)"
+    s_memo = str(memo or "").strip()
+    s_result = str(result or "").strip()
+    parts = [s_subject, s_memo]
+    if s_result:
+        parts.append(s_result)
+    return "\n".join([p for p in parts if p]).strip()
+
+
+_weaviate_memo_schema_ready: bool = False
+
+
+async def _weaviate_ensure_memo_schema() -> None:
+    global _weaviate_memo_schema_ready
+    if _weaviate_memo_schema_ready:
+        return
+    if not _weaviate_enabled():
+        return
+
+    schema = {
+        "class": "JarvisMemoItem",
+        "description": "Jarvis memo sheet items indexed for semantic retrieval.",
+        "vectorizer": "none",
+        "properties": [
+            {"name": "external_key", "dataType": ["text"]},
+            {"name": "spreadsheet_id", "dataType": ["text"]},
+            {"name": "sheet_name", "dataType": ["text"]},
+            {"name": "memo_id", "dataType": ["number"]},
+            {"name": "active", "dataType": ["boolean"]},
+            {"name": "group", "dataType": ["text"]},
+            {"name": "status", "dataType": ["text"]},
+            {"name": "subject", "dataType": ["text"]},
+            {"name": "memo", "dataType": ["text"]},
+            {"name": "result", "dataType": ["text"]},
+            {"name": "date_time", "dataType": ["text"]},
+            {"name": "created_at", "dataType": ["number"]},
+            {"name": "updated_at", "dataType": ["number"]},
+        ],
+    }
+
+    try:
+        await _weaviate_request("GET", "/v1/schema/JarvisMemoItem")
+        _weaviate_memo_schema_ready = True
+        return
+    except Exception:
+        pass
+
+    await _weaviate_request("POST", "/v1/schema", schema)
+    _weaviate_memo_schema_ready = True
+
+
+async def _weaviate_upsert_memo_item(
+    *,
+    spreadsheet_id: str,
+    sheet_name: str,
+    memo_id: int,
+    active: bool,
+    group: str,
+    status: str,
+    subject: str,
+    memo: str,
+    result: str,
+    date_time: str,
+    created_at: float | None = None,
+    updated_at: float | None = None,
+) -> dict[str, Any]:
+    await _weaviate_ensure_memo_schema()
+    external_key = _memo_weaviate_external_key(spreadsheet_id=spreadsheet_id, sheet_name=sheet_name, memo_id=int(memo_id))
+    obj_id = _weaviate_object_uuid(external_key)
+    text = _memo_embed_text(subject=subject, memo=memo, result=result)
+
+    vec: list[float]
+    try:
+        vec = await _gemini_embed_text_cached(text)
+    except Exception:
+        vec = _pseudo_embed_vector(text, dim=64)
+
+    props: dict[str, Any] = {
+        "external_key": external_key,
+        "spreadsheet_id": str(spreadsheet_id or "").strip(),
+        "sheet_name": str(sheet_name or "").strip(),
+        "memo_id": float(int(memo_id)),
+        "active": bool(active),
+        "group": str(group or "").strip(),
+        "status": str(status or "").strip(),
+        "subject": str(subject or "").strip(),
+        "memo": str(memo or "").strip(),
+        "result": str(result or "").strip(),
+        "date_time": str(date_time or "").strip(),
+    }
+    if created_at is not None:
+        props["created_at"] = float(created_at)
+    if updated_at is not None:
+        props["updated_at"] = float(updated_at)
+
+    payload: dict[str, Any] = {
+        "class": "JarvisMemoItem",
+        "id": obj_id,
+        "properties": props,
+        "vector": vec,
+    }
+    await _weaviate_request("PUT", f"/v1/objects/{obj_id}", payload)
+    return {"ok": True, "id": obj_id, "external_key": external_key}
+
+
+async def _weaviate_query_related_memos(*, q: str, k: int, group: str | None = None) -> list[dict[str, Any]]:
+    await _weaviate_ensure_memo_schema()
+    qq = str(q or "").strip()
+    if not qq:
+        raise HTTPException(status_code=400, detail="missing_q")
+    lim = max(1, min(int(k or 30), 200))
+    vec: list[float]
+    try:
+        vec = await _gemini_embed_text_cached(qq)
+    except Exception:
+        vec = _pseudo_embed_vector(qq, dim=64)
+
+    where_group = "" if not str(group or "").strip() else f'where: {{ path: ["group"], operator: Equal, valueText: "{str(group).strip()}" }}'
+    query = {
+        "query": f"""
+        {{
+          Get {{
+            JarvisMemoItem(
+              nearVector: {{ vector: {json.dumps(vec)} }}
+              limit: {int(lim)}
+              {where_group}
+            ) {{
+              memo_id
+              active
+              group
+              status
+              subject
+              memo
+              result
+              date_time
+              spreadsheet_id
+              sheet_name
+              external_key
+              _additional {{ distance }}
+            }}
+          }}
+        }}
+        """
+    }
+    res = await _weaviate_request("POST", "/v1/graphql", query)
+    items = (
+        res.get("data", {})
+        .get("Get", {})
+        .get("JarvisMemoItem", [])
+        if isinstance(res, dict)
+        else []
+    )
+    out: list[dict[str, Any]] = []
+    if isinstance(items, list):
+        for it in items:
+            if isinstance(it, dict):
+                out.append(it)
+    return out
+
+
+async def _gemini_summarize_text(*, system_instruction: str, prompt: str, model: str | None = None) -> str:
+    api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
+    if not api_key:
+        raise HTTPException(status_code=500, detail="missing_api_key")
+    m = _normalize_model_name(str(model or os.getenv("GEMINI_TEXT_MODEL") or "gemini-2.0-flash").strip() or "gemini-2.0-flash")
+    client = genai.Client(api_key=api_key)
+    cfg = {"system_instruction": str(system_instruction or "").strip()}
+    res = await client.aio.models.generate_content(model=m, contents=str(prompt), config=cfg)
+    txt = getattr(res, "text", None)
+    if txt is None:
+        txt = str(res)
+    return str(txt or "").strip()
 
 
 async def _gemini_embed_text(text: str) -> list[float]:

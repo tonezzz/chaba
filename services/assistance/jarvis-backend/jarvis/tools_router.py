@@ -125,11 +125,11 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                 raise HTTPException(status_code=400, detail="missing_memo_sheet_name")
 
             sheet_a1 = sheet_name_to_a1(sheet_name, default="memo")
-            header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
+            header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
             idx = idx_from_header(header)
             if not idx:
                 await memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
-                header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
+                header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
                 idx = idx_from_header(header)
             if not idx:
                 raise HTTPException(status_code=400, detail="memo_sheet_missing_header")
@@ -341,11 +341,11 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                 raise HTTPException(status_code=400, detail="missing_memo_sheet_name")
 
             sheet_a1 = sheet_name_to_a1(sheet_name, default="memo")
-            header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
+            header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
             idx = idx_from_header(header)
             if not idx:
                 await memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
-                header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
+                header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
                 idx = idx_from_header(header)
             if not idx:
                 raise HTTPException(status_code=400, detail="memo_sheet_missing_header")
@@ -353,7 +353,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             tool_get = pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
             res = await mcp_tools_call(
                 tool_get,
-                {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A2:K"},
+                {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A2:J"},
             )
             parsed = mcp_text_json(res)
             data = parsed.get("data") if isinstance(parsed, dict) else None
@@ -438,17 +438,17 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                 raise HTTPException(status_code=400, detail="missing_memo_sheet_name")
 
             sheet_a1 = sheet_name_to_a1(sheet_name, default="memo")
-            header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
+            header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
             idx = idx_from_header(header)
             if not idx:
                 await memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
-                header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
+                header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
                 idx = idx_from_header(header)
             if not idx:
                 raise HTTPException(status_code=400, detail="memo_sheet_missing_header")
 
             tool_get = pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
-            res = await mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A2:K"})
+            res = await mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A2:J"})
             parsed = mcp_text_json(res)
             data = parsed.get("data") if isinstance(parsed, dict) else None
             vals = parsed.get("values") if isinstance(parsed, dict) else None

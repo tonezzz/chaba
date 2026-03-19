@@ -14,6 +14,19 @@ async def ensure_header(
 ) -> None:
     tool_update = pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
 
+    header = [
+        "id",
+        "active",
+        "group",
+        "memo",
+        "status",
+        "subject",
+        "result",
+        "date_time",
+        "_created",
+        "_updated",
+    ]
+
     try:
         got_header = await sheet_get_header_row(
             spreadsheet_id=spreadsheet_id,
@@ -21,7 +34,8 @@ async def ensure_header(
             max_cols="J",
         )
         if got_header and any(str(x or "").strip() for x in got_header) and not force:
-            lowered = [str(x or "").strip().lower() for x in got_header if str(x or "").strip()]
+            lowered_all = [str(x or "").strip().lower() for x in got_header]
+            lowered = [x for x in lowered_all if x]
             has_dupes = len(set(lowered)) != len(lowered)
             required = {
                 "id",
@@ -36,23 +50,12 @@ async def ensure_header(
                 "_updated",
             }
             missing_required = any(k not in set(lowered) for k in required)
-            if not has_dupes and not missing_required:
+            canonical_lower = [c.lower() for c in header]
+            in_order = lowered_all[: len(canonical_lower)] == canonical_lower
+            if not has_dupes and not missing_required and in_order:
                 return
     except Exception:
         pass
-
-    header = [
-        "id",
-        "active",
-        "group",
-        "memo",
-        "status",
-        "subject",
-        "result",
-        "date_time",
-        "_created",
-        "_updated",
-    ]
 
     res_u = await mcp_tools_call(
         tool_update,
