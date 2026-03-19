@@ -1,11 +1,10 @@
 # Action (Operator Playbook)
 
 ## Now (what to do next)
-- **Most valuable next action (10 minutes):** Validate the deployed GitHub Actions watcher end-to-end.
-- **Then:** Confirm it auto-stops and persists state:
-  - Start: `POST /github/actions/watch/start` (use `stop_on_completed=true`, `max_runtime_seconds=900`)
-  - Verify running: `GET /github/actions/watch/list`
-  - Verify completion: watcher transitions to `running=false` with `stopped_reason=completed` (or `timeout`)
+- **Most valuable next action (10 minutes):** Record a deploy/build snapshot and upsert it into Memory.
+- **Success looks like:**
+  - `POST /jarvis/memory/set` updates `runtime.deploy.snapshot.latest` with a `deploy_snapshot ...` value
+  - `GET /jarvis/debug/counts` shows non-zero `memory.count` and no errors
 
 ### Rule: keep `Now` updated (mandatory)
 After every `action` run, update this `Now` section so it reflects reality.
