@@ -2,6 +2,7 @@
 
 ## Now
 
+- [ ] TODO-NOW-007: Docs cleanup pass (tighten ACTION.md ordering; remove drift/duplication)
 - [x] TODO-NOW-006: Make `/health` authoritative (non-null `build.git_sha` and `build.image_tag`)
 - [x] TODO-NOW-005: Add operator-friendly WS reminders smoke helper and reference it from ACTION.md
 - [x] TODO-NOW-004: Sync runbooks + status with deployed behavior (WS reminders) and push ACTION.md change
@@ -19,8 +20,6 @@
 
 ## Later
 
-- [ ] TODO-LATER-001: Remove legacy reminders system completely (once Calendar cutover is stable)
-  - Promoted to Now as TODO-NOW-003
 
 ## General
 

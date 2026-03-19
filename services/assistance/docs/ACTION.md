@@ -14,7 +14,7 @@
 ## Now (what to do next)
 
 - **Say:** `action`
-- **I will run:** `TODO-NOW-006` (from `services/assistance/docs/TODO.md#now`)
+- **I will run:** `TODO-NOW-007` (from `services/assistance/docs/TODO.md#now`)
 
 ### 4 most valuable next actions (update this every time you run "Now")
 1. **Deploy/build snapshot (10 minutes)**
@@ -59,7 +59,7 @@ Need rebuild? rule (binary, selective CI):
 - If you only redeploy without a new image being published, the container will restart on the same old digest.
 
 ### Current cautions (read before doing anything)
-- If `build.git_sha` / `build.image_tag` are `null`, you cannot prove “new code is running” from `/health` alone.
+- If `build.git_sha` / `build.image_tag` are `null`, the running backend likely hasn’t pulled the latest image (or it was built without build args); redeploy/pull and re-check `/health`.
 - GitHub Actions publishes images selectively (only images whose inputs changed).
 - Empty commits typically do not rebuild images anymore; to force a rebuild, change/touch a file inside the relevant service directory.
 - WIP limit = 1: if you start a new thing, merge it into the existing checklist/backlog section (see **Intake/merge policy** below).
