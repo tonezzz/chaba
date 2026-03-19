@@ -2132,6 +2132,18 @@ async def sys_kv_set(req: SysKvSetRequest, x_api_token: Optional[str] = Header(d
     sys_kv = _sys_kv_snapshot()
     enabled_raw = str(sys_kv.get("sys_kv.write.enabled") or "").strip() if isinstance(sys_kv, dict) else ""
     if not enabled_raw:
+        try:
+            fresh = await _load_sys_kv_from_sheet()
+            if isinstance(fresh, dict) and fresh:
+                sys_kv = fresh
+                enabled_raw = str(fresh.get("sys_kv.write.enabled") or "").strip()
+                try:
+                    _set_cached_sys_kv_only(dict(fresh))
+                except Exception:
+                    pass
+        except Exception:
+            pass
+    if not enabled_raw:
         raise HTTPException(
             status_code=400,
             detail={"error": "sys_kv_write_disabled", "detail": "Missing sys sheet key sys_kv.write.enabled (default disabled)"},
@@ -10470,6 +10482,13 @@ async def github_actions_watch_start(req: GitHubActionsWatchStartRequest) -> dic
     except Exception:
         poll_seconds = 15.0
     poll_seconds = max(2.0, min(300.0, poll_seconds))
+
+    stop_on_completed = bool(req.stop_on_completed is True)
+    try:
+        max_runtime_seconds = float(req.max_runtime_seconds)
+    except Exception:
+        max_runtime_seconds = 900.0
+    max_runtime_seconds = max(5.0, min(7200.0, max_runtime_seconds))
 
     key = _github_watch_key(owner, repo, branch, event)
     existing = _GITHUB_WATCH_TASKS.get(key)
