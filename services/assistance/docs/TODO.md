@@ -2,7 +2,7 @@
 
 ## Now
 
-- [ ] TODO-NOW-004: Sync runbooks + status with deployed behavior (WS reminders) and push ACTION.md change
+- [x] TODO-NOW-004: Sync runbooks + status with deployed behavior (WS reminders) and push ACTION.md change
 - [x] TODO-NOW-001: Validate deployed GitHub Actions watcher end-to-end
   - Evidence (2026-03-19):
     - `GET /jarvis/api/github/actions/latest?owner=tonezzz&repo=chaba&branch=idc1-assistance` => run `23291000409` status=`completed` conclusion=`success`
