@@ -37,6 +37,10 @@
     - `Read ACTION.md and execute: Current MVT loop`
     - `Read ACTION.md and execute: SNA for GitHub Actions watcher`
     - `Read ACTION.md and execute: Verification checklist (deployed)`
+- **Shortcut**
+  - If you say: `action`
+    - I will run: **Now (what to do next)**
+    - Output: snapshot summary + memo text (and I will append the memo if allowed)
 
 ## Guardrails (read first)
 - **WIP limit = 1**
@@ -47,6 +51,41 @@
   - Default end-state: watcher stopped (unless explicitly continuing).
 - **Prefer binary checks**
   - Every SNA must yield a pass/fail observable.
+
+## Immediate fix: memo/logs not updating
+Use this when you “don’t see memo/logs update” after a run.
+
+### Memo (does memo append work?)
+1. **Check effective memo config**
+   - `GET /jarvis/debug/memo`
+   - Success looks like:
+     - `feature_enabled=true`
+     - `memo_enabled=true`
+     - non-empty `spreadsheet_id` and `sheet_name`
+     - `header_error=null`
+2. **Append a test memo**
+   - `POST /jarvis/memo/add`
+   - Success looks like:
+     - response contains `ok=true` and `appended=1`
+3. **If you still can’t “see it”**
+   - Confirm you are looking at the correct Google Sheet tab (`sheet_name` from debug output).
+   - If you use a UI that reads memo, it may be cached; refresh/reload.
+
+### Sheets logs (is the log writer actually flushing?)
+1. **Check sheets logs status**
+   - `GET /jarvis/logs/sheets/status`
+   - Watch these fields:
+     - `enabled`
+     - `sheet_name` (must be non-empty)
+     - `queue_len` (should go down after appends)
+     - `server_enabled` (if false, queue may not flush)
+2. **If `queue_len` increases or stays > 0**
+   - Treat as config drift: logs are enabled but background flusher isn’t running.
+   - Fix by making the running container’s env effective (redeploy if needed):
+     - `JARVIS_SHEETS_LOGS_ENABLED=true`
+     - `JARVIS_SHEETS_LOGS_SHEET_NAME=<tab>`
+     - `JARVIS_SHEETS_LOGS_SPREADSHEET_ID=<id>` (if required by your deployment)
+   - Then re-check `/jarvis/logs/sheets/status` until `queue_len` drains.
 
 ## Current MVT loop (based on @[/back-to-mvt])
 ### 1) Restate the objective (one sentence)
