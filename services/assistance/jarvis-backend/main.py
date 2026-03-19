@@ -2092,6 +2092,14 @@ async def memo_add(
         raise HTTPException(status_code=400, detail="missing_memo_sheet_name")
 
     sheet_a1 = _sheet_name_to_a1(sheet_name, default="memo")
+
+    # Always ensure canonical header before indexing/appending. This prevents legacy/manual headers
+    # from silently causing incorrect column mapping.
+    try:
+        await _memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, force=False)
+    except Exception:
+        pass
+
     header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
     idx = _idx_from_header(header)
     if not idx:
