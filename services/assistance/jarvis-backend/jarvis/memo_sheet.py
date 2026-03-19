@@ -18,7 +18,7 @@ async def ensure_header(
         got_header = await sheet_get_header_row(
             spreadsheet_id=spreadsheet_id,
             sheet_a1=sheet_a1,
-            max_cols="K",
+            max_cols="J",
         )
         if got_header and any(str(x or "").strip() for x in got_header) and not force:
             lowered = [str(x or "").strip().lower() for x in got_header if str(x or "").strip()]
@@ -94,7 +94,7 @@ async def ensure_header(
         got_header2 = await sheet_get_header_row(
             spreadsheet_id=spreadsheet_id,
             sheet_a1=sheet_a1,
-            max_cols="K",
+            max_cols="J",
         )
         if got_header2 and any(str(x or "").strip() for x in got_header2):
             return

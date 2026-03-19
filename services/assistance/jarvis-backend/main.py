@@ -2011,9 +2011,9 @@ async def memo_header_normalize(x_api_token: Optional[str] = Header(default=None
     if not sheet_name:
         raise HTTPException(status_code=400, detail="missing_memo_sheet_name")
     sheet_a1 = _sheet_name_to_a1(sheet_name, default="memo")
-    before = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
+    before = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
     await _memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, force=True)
-    after = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
+    after = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
     return {"ok": True, "spreadsheet_id": spreadsheet_id, "sheet": sheet_name, "before": before, "after": after}
 
 
@@ -10324,7 +10324,7 @@ async def debug_memo() -> dict[str, Any]:
     header_err: str | None = None
     try:
         if spreadsheet_id and sheet_a1:
-            header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="K")
+            header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
     except Exception as e:
         header_err = f"{type(e).__name__}: {e}"
 
