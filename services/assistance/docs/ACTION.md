@@ -2,6 +2,8 @@
 
 **Chat protocol:** `services/assistance/docs/CHAT_PROTOCOL.md`
 
+**Checklist:** `services/assistance/docs/CHECKLIST.md`
+
 ## Jump
 - [Now (what to do next)](#now-what-to-do-next)
 - [Preflight: confirm you’re using the latest ACTION.md](#preflight-confirm-youre-using-the-latest-actionmd)
@@ -30,7 +32,7 @@
 | Item | Value |
 | --- | --- |
 | Need rebuild? | No |
-| Need redeploy? | No |
+| Need redeploy? | Yes |
 | Health ok | Yes |
 | Status ok | Yes |
 | uptime_s | 38 |
