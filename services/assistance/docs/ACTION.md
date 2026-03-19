@@ -16,14 +16,12 @@
 ## Now (what to do next)
 
 - **Say:** `action`
-- **I will run:** `TODO-NOW-008` (from `services/assistance/docs/TODO.md#now`)
+- **I will run:** `TODO-NOW-009` (from `services/assistance/docs/TODO.md#now`)
 
 ### Snapshot procedure (copy/paste; update the status chart)
 1. **Backend snapshot**
    - `GET /status`
      - Paste: `instance_id`, `uptime_s`, and container health (if present)
-   - `GET /health`
-     - Paste: `build.git_sha`, `build.image_tag` (must be non-null)
 2. **CI snapshot (this branch)**
    - `GET /github/actions/latest?owner=tonezzz&repo=chaba&branch=idc1-assistance`
      - Paste: `run.status`, `run.conclusion`, `run.head_sha`, `run.updated_at`, `run.html_url`
@@ -79,7 +77,7 @@ Need rebuild? rule (binary, selective CI):
 - WIP limit = 1: if you start a new thing, merge it into the existing checklist/backlog section (see **Intake/merge policy** below).
 
 ### Current pick
-- `Status loop polish (TODO-NOW-008)` — make the Now snapshot loop mechanical and reduce ambiguity
+- `Deploy verification completeness (TODO-NOW-009)` — fill digest/created/published fields reliably; tighten redeploy decision
 
 Update rule:
 - After you run any ACTION.md procedure, always come back here and set **Current pick** to the *single* next move.
