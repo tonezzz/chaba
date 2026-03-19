@@ -31,18 +31,18 @@
 | --- | --- |
 | Need rebuild? | No |
 | Need redeploy? | No |
-| Health ok | No |
+| Health ok | Yes |
 | Status ok | Yes |
-| uptime_s | 304 |
-| Snapshot ts | 2026-03-19T13:23:xxZ |
+| uptime_s | 38 |
+| Snapshot ts | 2026-03-19T14:07:xxZ |
 | Deployed base URL | `https://assistance.idc1.surf-thailand.com/jarvis/api` |
-| instance_id | jarvis_227171fd68 |
+| instance_id | jarvis_fd04117fbf |
 | CI status | completed |
 | CI conclusion | success |
-| CI head_sha | 0b63d03f0f70c321052b6c9232b752afa9948607 |
-| CI updated_at | 2026-03-19T13:13:37Z |
-| CI url | https://github.com/tonezzz/chaba/actions/runs/23296586310 |
-| jarvis-backend image (tag) |  |
+| CI head_sha | 7f8ce715e8da638ad9fa25c584e397a3a78065d4 |
+| CI updated_at | 2026-03-19T13:38:28Z |
+| CI url | https://github.com/tonezzz/chaba/actions/runs/23297625476 |
+| jarvis-backend image (tag) | ghcr.io/tonezzz/chaba/jarvis-backend:idc1-assistance |
 | jarvis-backend image digest |  |
 | jarvis-backend image created |  |
 | Backend image published in latest CI? |  |
