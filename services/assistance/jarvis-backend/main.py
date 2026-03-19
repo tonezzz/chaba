@@ -47,9 +47,26 @@ from checklist_mutation_v0 import (
     mark_checklist_step_done_by_text,
 )
 
-from google import genai
-from google.genai import types
-from google.genai import errors as genai_errors
+try:
+    from google import genai
+    from google.genai import types
+    from google.genai import errors as genai_errors
+except Exception:
+    class _GenaiErrorsStub:
+        class ClientError(Exception):
+            pass
+
+    class _GenaiStub:
+        class Client:
+            def __init__(self, *args: Any, **kwargs: Any):
+                raise RuntimeError("google-genai is not installed")
+
+    class _GenaiTypesStub:
+        pass
+
+    genai = _GenaiStub()
+    types = _GenaiTypesStub()
+    genai_errors = _GenaiErrorsStub()
 from pydantic import BaseModel, Field
 
 

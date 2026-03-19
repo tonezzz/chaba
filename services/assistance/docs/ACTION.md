@@ -1,5 +1,35 @@
 # Action (Operator Playbook)
 
+## Now (what to do next)
+- **Most valuable next action (10 minutes):** Record a deploy/build snapshot (health + status + CI) and append it to memo, so you can compare after the next push/redeploy.
+- **Then:** If you push a new change, rerun the snapshot and confirm:
+  - `git_sha` / `image_tag` changed (if configured)
+  - CI run SHA matches what you expect
+  - Containers remain healthy
+
+## Overview (quick context)
+- **What this is:** The single file you and I use to stay aligned, pick the next Most Valuable Task, and run verification steps without losing context.
+- **Current objective:** GitHub Actions watcher integration for Jarvis (manual trigger only), plus reliable observability + persistence (UI log + memo/memory where appropriate).
+- **Target repo/branch:** `tonezzz/chaba` / `idc1-assistance`
+- **Deployed base URL:** `https://assistance.idc1.surf-thailand.com/jarvis/api`
+- **Key health/version endpoints:**
+  - `GET /health` (includes `build.git_sha` / `build.image_tag` when configured)
+  - `GET /status` (includes uptime + optional container list)
+- **Key CI endpoints:**
+  - `GET /github/actions/latest?owner=tonezzz&repo=chaba&branch=idc1-assistance`
+  - `GET /github/actions/watch?...` (bounded wait-until-completed)
+- **Key watcher endpoints:**
+  - `POST /github/actions/watch/start`
+  - `GET /github/actions/watch/list`
+  - `POST /github/actions/watch/stop`
+
+## Policy: avoid redundant docs
+- **Single source of truth:** `services/assistance/docs/ACTION.md` is the authoritative operator playbook.
+- **Keep other docs short:** Other docs should link here instead of duplicating procedures.
+- **When you notice duplication:**
+  - Move the *canonical* procedure/checklist into `ACTION.md`.
+  - Replace the duplicated content elsewhere with a short pointer to the relevant `ACTION.md` section.
+
 ## How to use this file
 - **Command format**
   - Ask me: `Read ACTION.md and execute: <section>`
@@ -56,6 +86,14 @@
   - Add one row in `services/assistance/docs/BACK_TO_MVT.md`.
 - **Optional: memo append (ops)**
   - Append a memo with the result so it’s discoverable later.
+- **Ask Jarvis to append a run memo (preferred)**
+  - After each ACTION.md run (each SNA attempt), ask Jarvis to append a memo that records:
+    - MVT
+    - SNA
+    - outcome (success/fail)
+    - next action
+  - Prompt template:
+    - `Append a memo: subject=back-to-mvt group=ops memo="MVT=<...> SNA=<...> outcome=<success|fail> next=<...>" then summarize in 3 lines.`
 
 ## SNA for GitHub Actions watcher (deployed)
 ### Inputs you must decide (fill before running)
@@ -66,6 +104,54 @@
 - **Poll seconds:** default is fine unless debugging
 - **Stop on completed:** `true`
 - **Max runtime seconds:** e.g. `900` (15m)
+
+## Deploy/Build status awareness (save current state)
+### Goal
+- Be able to answer:
+  - “What version is deployed right now?”
+  - “Is the backend healthy?”
+  - “What’s the current CI run status for this branch?”
+  - “Did the deploy actually update?”
+
+### Snapshot deployed backend state (binary)
+1. **Health (fast)**
+   - `GET /health`
+   - Success looks like:
+     - `ok=true`
+     - `build.git_sha` is present (if configured)
+     - `build.image_tag` is present (if configured)
+2. **Status (richer)**
+   - `GET /status`
+   - Capture:
+     - `instance_id`, `hostname`, `uptime_s`
+     - `startup_prewarm.ok`
+     - `containers` (if present)
+
+### Snapshot CI/build status (GitHub)
+- **Latest run (single fetch)**
+  - `GET /github/actions/latest?owner=tonezzz&repo=chaba&branch=idc1-assistance`
+- **Wait-until-completed (blocking poll, bounded)**
+  - `GET /github/actions/watch?owner=tonezzz&repo=chaba&branch=idc1-assistance&poll_seconds=10&timeout_seconds=600`
+- **Background watcher (push notifications + UI log, recommended while deploying)**
+  - Start: `POST /github/actions/watch/start`
+  - List: `GET /github/actions/watch/list`
+  - Stop: `POST /github/actions/watch/stop`
+
+### Persist the snapshot (optional but preferred)
+- If you want “what was deployed” recorded for later comparison, append a memo:
+  - Subject: `deploy-snapshot`
+  - Group: `ops`
+  - Memo template:
+    - `deploy_snapshot ts=<iso> env=idc1-assistance git_sha=<sha> image_tag=<tag> instance_id=<id> uptime_s=<n> ci_status=<status> ci_conclusion=<conclusion> ci_url=<url>`
+
+### Ask Jarvis to do it (snapshot + memo + summary)
+- You can ask Jarvis (the deployed assistant) to:
+  - Fetch `/health` + `/status`
+  - Fetch `/github/actions/latest` (for `tonezzz/chaba` / `idc1-assistance`)
+  - Append a memo entry (`subject=deploy-snapshot`, `group=ops`)
+  - Return a short human summary you can paste back into this chat
+- Prompt template (edit as needed):
+  - `Run Deploy/Build status awareness now. Capture health/status + latest CI for tonezzz/chaba idc1-assistance. Append a memo deploy_snapshot with ts, git_sha, image_tag, instance_id, uptime, ci_status/conclusion/url, then summarize in 6 lines max.`
 
 ### Steps
 1. **Start watcher**
