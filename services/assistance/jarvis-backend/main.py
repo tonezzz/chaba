@@ -2160,7 +2160,36 @@ async def memo_add(
                     continue
                 if n2 > max_id:
                     max_id = n2
-            return max_id + 1
+            if max_id > 0:
+                return max_id + 1
+
+            # Header was normalized but existing rows may not have ids yet.
+            # Fall back to a safe row-count-based next id.
+            try:
+                anchor_col = "A"
+                j_memo = idx.get("memo") if isinstance(idx, dict) else None
+                j_dt = idx.get("date_time") if isinstance(idx, dict) else None
+                if isinstance(j_memo, int) and j_memo >= 0:
+                    anchor_col = _col_letter(j_memo)
+                elif isinstance(j_dt, int) and j_dt >= 0:
+                    anchor_col = _col_letter(j_dt)
+                res_rows = await _mcp_tools_call(
+                    tool_get,
+                    {
+                        "spreadsheet_id": spreadsheet_id,
+                        "range": f"{sheet_a1}!{anchor_col}2:{anchor_col}",
+                        "major_dimension": "COLUMNS",
+                    },
+                )
+                parsed_rows = _mcp_text_json(res_rows)
+                data2 = parsed_rows.get("data") if isinstance(parsed_rows, dict) else None
+                vals2 = parsed_rows.get("values") if isinstance(parsed_rows, dict) else None
+                if not isinstance(vals2, list) and isinstance(data2, dict):
+                    vals2 = data2.get("values")
+                col2 = vals2[0] if isinstance(vals2, list) and vals2 and isinstance(vals2[0], list) else []
+                return len(col2) + 1
+            except Exception:
+                return 1
         except Exception:
             return 1
 
