@@ -22,6 +22,7 @@ import xml.etree.ElementTree as ET
 from jarvis.feature_flags import feature_enabled
 from jarvis import memo_sheet
 from jarvis import memo_enrich
+from jarvis import daily_brief
 from jarvis import sheets_utils
 
 from routes.google_tasks import create_router as _create_google_tasks_router
@@ -4423,70 +4424,27 @@ def _list_reminders(
 
 
 async def _render_daily_brief(user_id: str) -> dict[str, Any]:
-    agents = _agents_snapshot()
-    statuses = _get_agent_statuses(user_id)
-    status_by_agent: dict[str, dict[str, Any]] = {}
-    for s in statuses:
-        aid = str(s.get("agent_id") or "").strip()
-        if aid and aid not in status_by_agent:
-            status_by_agent[aid] = s
+    def _now_ts() -> int:
+        return int(time.time())
 
-    now_ts = int(time.time())
-    upcoming_reminders: list[dict[str, Any]] = []
-    if _weaviate_enabled():
-        try:
-            upcoming_reminders = await _weaviate_query_upcoming_reminders(
-                start_ts=now_ts,
-                end_ts=now_ts + 24 * 3600,
-                limit=50,
-            )
-        except Exception:
-            upcoming_reminders = []
-    if not upcoming_reminders:
-        upcoming_reminders = _list_upcoming_pending_reminders(
-            user_id=user_id,
-            start_ts=now_ts,
-            end_ts=now_ts + 24 * 3600,
-            time_field="notify_at",
-            limit=50,
-        )
+    def _datetime_now_iso(tz: Any) -> str:
+        return datetime.now(tz=tz).isoformat()
 
-    lines: list[str] = []
-    lines.append(f"Daily Brief ({datetime.now(tz=_get_user_timezone(user_id)).isoformat()})")
+    def _datetime_from_ts_iso_utc(ts: int) -> str:
+        return datetime.fromtimestamp(int(ts), tz=timezone.utc).isoformat()
 
-    lines.append("\nAgents")
-    for agent_id in sorted(agents.keys()):
-        name = str(agents[agent_id].get("name") or agent_id)
-        s = status_by_agent.get(agent_id)
-        if not s:
-            lines.append(f"- {name}: no recent status")
-            continue
-        payload = s.get("payload")
-        summary = ""
-        if isinstance(payload, dict):
-            summary = str(payload.get("summary") or payload.get("status") or "").strip()
-        updated_at = int(s.get("updated_at") or 0)
-        when = datetime.fromtimestamp(updated_at, tz=timezone.utc).isoformat() if updated_at else ""
-        if summary:
-            lines.append(f"- {name}: {summary} ({when})")
-        else:
-            lines.append(f"- {name}: updated ({when})")
-
-    if upcoming_reminders:
-        lines.append("\nReminders (next 24h)")
-        for r in upcoming_reminders[:20]:
-            title = str(r.get("title") or "").strip() or "Reminder"
-            notify_at = r.get("notify_at")
-            due_at = r.get("due_at")
-            lines.append(f"- {title} (notify_at={notify_at}, due_at={due_at})")
-
-    return {
-        "user_id": user_id,
-        "generated_at": int(time.time()),
-        "agent_count": len(agents),
-        "status_count": len(statuses),
-        "brief_text": "\n".join(lines).strip(),
-    }
+    return await daily_brief.render_daily_brief(
+        user_id,
+        agents_snapshot=_agents_snapshot,
+        get_agent_statuses=_get_agent_statuses,
+        weaviate_enabled=_weaviate_enabled,
+        weaviate_query_upcoming_reminders=_weaviate_query_upcoming_reminders,
+        list_upcoming_pending_reminders=_list_upcoming_pending_reminders,
+        get_user_timezone=_get_user_timezone,
+        now_ts=_now_ts,
+        datetime_now_iso=_datetime_now_iso,
+        datetime_from_ts_iso_utc=_datetime_from_ts_iso_utc,
+    )
 
 
 def _extract_reminder_setup_title(text: str) -> str:
