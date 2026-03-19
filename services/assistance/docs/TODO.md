@@ -2,12 +2,11 @@
 
 ## Now
 
-- [ ] TODO-NOW-001: Validate deployed GitHub Actions watcher end-to-end
-- [ ] TODO-NOW-002: Record deploy snapshot into Memory (`runtime.deploy.snapshot.latest`)
+- [x] TODO-NOW-001: Validate deployed GitHub Actions watcher end-to-end
+- [x] TODO-NOW-002: Record deploy snapshot into Memory (`runtime.deploy.snapshot.latest`)
+- [ ] TODO-NEXT-001: Add a small smoke checklist for operators (calendar reminder + legacy scheduler disabled)
 
 ## Next
-
-- [ ] TODO-NEXT-001: Add a small smoke checklist for operators (calendar reminder + legacy scheduler disabled)
 
 ## Later
 
@@ -17,7 +16,6 @@
 
 - assess README.md before proceeding with any new features
 - Improve this file & other docs accordingly.
-
 ## Reminders: Google Calendar cutover follow-ups
 
 - Remove legacy reminders system completely (once Calendar cutover is stable)

@@ -1,8 +1,11 @@
 # Action (Operator Playbook)
 
+**Chat protocol:** `services/assistance/docs/CHAT_PROTOCOL.md`
+
 ## Now (what to do next)
 
-- **Most valuable next action (10 minutes):** `TODO-NOW-001` (see `services/assistance/docs/TODO.md#now`)
+- **Say:** `action`
+- **I will run:** `TODO-NEXT-001` (from `services/assistance/docs/TODO.md#now`)
 
 ### 4 most valuable next actions (update this every time you run "Now")
 1. **Deploy/build snapshot (10 minutes)**
