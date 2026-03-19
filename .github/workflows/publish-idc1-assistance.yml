@@ -27,32 +27,39 @@ jobs:
             context: ./services/assistance/jarvis-backend
             file: ./services/assistance/jarvis-backend/Dockerfile
             build_args: ""
+            extra_paths: ""
           - name: frontend
             image: jarvis-frontend
             context: ./services/assistance/jarvis-frontend
             file: ./services/assistance/jarvis-frontend/Dockerfile.frontend
             build_args: |
               VITE_BASE_PATH=/jarvis/
+            extra_paths: ""
           - name: web-fetcher
             image: web-fetcher
             context: ./services/assistance/web-fetcher
             file: ./services/assistance/web-fetcher/Dockerfile
             build_args: ""
+            extra_paths: ""
           - name: mcp-bundle
             image: mcp-bundle
             context: ./services/assistance/mcp-bundle
             file: ./services/assistance/mcp-bundle/Dockerfile
             build_args: ""
+            extra_paths: |
+              services/assistance/mcp-servers/mcp-google-sheets/server.js
           - name: mcp-image-pipeline
             image: mcp-image-pipeline
             context: ./services/assistance/mcp-image-pipeline
             file: ./services/assistance/mcp-image-pipeline/Dockerfile
             build_args: ""
+            extra_paths: ""
           - name: deep-research-worker
             image: deep-research-worker
             context: ./services/assistance/deep-research-worker
             file: ./services/assistance/deep-research-worker/Dockerfile
             build_args: ""
+            extra_paths: ""
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -64,6 +71,7 @@ jobs:
         env:
           CONTEXT_PATH: ${{ matrix.context }}
           DOCKERFILE_PATH: ${{ matrix.file }}
+          EXTRA_PATHS: ${{ matrix.extra_paths }}
           BEFORE_SHA: ${{ github.event.before }}
           AFTER_SHA: ${{ github.sha }}
         run: |
@@ -92,6 +100,17 @@ jobs:
                 if [[ "${f}" == "${DOCKERFILE_PATH#./}" ]]; then
                   changed="true"; break
                 fi
+
+                # Service-specific shared inputs.
+                while IFS= read -r p; do
+                  p2="${p//$'\r'/}"
+                  if [ -z "${p2}" ]; then
+                    continue
+                  fi
+                  if [[ "${f}" == "${p2}" ]]; then
+                    changed="true"; break 2
+                  fi
+                done <<< "${EXTRA_PATHS:-}"
               done
             fi
           fi
