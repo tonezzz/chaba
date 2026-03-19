@@ -2438,9 +2438,22 @@ async def memo_summarize_related(
             if isinstance(it, dict)
         ],
     }
-    txt = await _gemini_summarize_text(system_instruction=system_instruction, prompt=json.dumps(prompt, ensure_ascii=False))
     used_ids = [int(float(it.get("memo_id"))) for it in items if isinstance(it, dict) and it.get("memo_id") is not None]
-    return {"ok": True, "q": q, "k": k, "group": group, "style": style, "used_memo_ids": used_ids, "summary_markdown": txt}
+    try:
+        txt = await _gemini_summarize_text(system_instruction=system_instruction, prompt=json.dumps(prompt, ensure_ascii=False))
+        return {"ok": True, "q": q, "k": k, "group": group, "style": style, "used_memo_ids": used_ids, "summary_markdown": txt}
+    except HTTPException as e:
+        # Don't hard-fail the endpoint if Gemini quota/billing blocks generation.
+        return {
+            "ok": True,
+            "q": q,
+            "k": k,
+            "group": group,
+            "style": style,
+            "used_memo_ids": used_ids,
+            "summary_markdown": "",
+            "summary_error": getattr(e, "detail", str(e)),
+        }
 
 
 @app.post("/memo/relate")
@@ -2482,13 +2495,16 @@ async def memo_relate(
             if isinstance(it, dict)
         ],
     }
-    txt = await _gemini_summarize_text(system_instruction=system_instruction, prompt=json.dumps(payload, ensure_ascii=False))
-    parsed: Any = None
     try:
-        parsed = json.loads(txt)
-    except Exception:
-        parsed = {"raw": txt}
-    return {"ok": True, "q": q, "k": k, "group": group, "result": parsed, "items": items}
+        txt = await _gemini_summarize_text(system_instruction=system_instruction, prompt=json.dumps(payload, ensure_ascii=False))
+        parsed: Any = None
+        try:
+            parsed = json.loads(txt)
+        except Exception:
+            parsed = {"raw": txt}
+        return {"ok": True, "q": q, "k": k, "group": group, "result": parsed, "items": items}
+    except HTTPException as e:
+        return {"ok": True, "q": q, "k": k, "group": group, "result": {"error": getattr(e, "detail", str(e))}, "items": items}
 
 
 @app.post("/sys_kv/set")
@@ -4386,7 +4402,18 @@ async def _weaviate_upsert_memo_item(
         "properties": props,
         "vector": vec,
     }
-    await _weaviate_request("PUT", f"/v1/objects/{obj_id}", payload)
+
+    # Weaviate's PUT /v1/objects/{id} is update-by-id and can fail if the object doesn't exist.
+    # Use POST create first (idempotent enough with deterministic UUID), then fall back to PUT replace.
+    try:
+        await _weaviate_request("POST", "/v1/objects", payload)
+    except HTTPException as e:
+        # If already exists or create fails, attempt replace/update.
+        try:
+            await _weaviate_request("PUT", f"/v1/objects/{obj_id}", payload)
+        except Exception:
+            raise e
+
     return {"ok": True, "id": obj_id, "external_key": external_key}
 
 
