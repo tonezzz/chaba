@@ -3026,6 +3026,36 @@ async def _portainer_get_json(*, base_url: str, api_key: str, path: str) -> Any:
             raise HTTPException(status_code=502, detail="portainer_invalid_json")
 
 
+def _iso_utc_from_unix_ts(ts: Any) -> str:
+    try:
+        v = int(ts)
+        if v <= 0:
+            return ""
+        return datetime.fromtimestamp(v, tz=timezone.utc).isoformat()
+    except Exception:
+        return ""
+
+
+async def _portainer_get_image_meta(*, sys_kv: Any, image_id: str) -> dict[str, Any]:
+    cfg = _portainer_cfg(sys_kv)
+    base_url = cfg.get("url") or ""
+    api_key = cfg.get("api_key") or ""
+    endpoint_id = cfg.get("endpoint_id") or ""
+    if not base_url or not api_key or not endpoint_id:
+        return {}
+    image_id_norm = str(image_id or "").strip()
+    if not image_id_norm:
+        return {}
+    try:
+        return await _portainer_get_json(
+            base_url=base_url,
+            api_key=api_key,
+            path=f"/api/endpoints/{endpoint_id}/docker/images/{image_id_norm}/json",
+        )
+    except Exception:
+        return {}
+
+
 def _infer_health_from_docker_status(status: str) -> str:
     s = str(status or "").lower()
     if "unhealthy" in s:
@@ -3072,6 +3102,7 @@ async def _portainer_list_stack_containers(*, sys_kv: Any) -> list[dict[str, Any
         return []
 
     out: list[dict[str, Any]] = []
+    image_meta_cache: dict[str, dict[str, Any]] = {}
     for c in items:
         if not isinstance(c, dict):
             continue
@@ -3093,6 +3124,29 @@ async def _portainer_list_stack_containers(*, sys_kv: Any) -> list[dict[str, Any
         status = str(c.get("Status") or "")
         state = _infer_state_from_fields(c.get("State"), status)
         health = _infer_health_from_docker_status(status)
+
+        image_tag = str(c.get("Image") or "").strip()
+        image_id = str(c.get("ImageID") or "").strip()
+        created_ts = c.get("Created")
+        created_at = _iso_utc_from_unix_ts(created_ts)
+
+        image_repo_digests: list[str] = []
+        image_created_at = ""
+        if image_id:
+            meta = image_meta_cache.get(image_id)
+            if meta is None:
+                meta = await _portainer_get_image_meta(sys_kv=sys_kv, image_id=image_id)
+                image_meta_cache[image_id] = meta if isinstance(meta, dict) else {}
+                meta = image_meta_cache[image_id]
+            if isinstance(meta, dict):
+                rd = meta.get("RepoDigests")
+                if isinstance(rd, list):
+                    for it in rd:
+                        s = str(it or "").strip()
+                        if s:
+                            image_repo_digests.append(s)
+                image_created_at = str(meta.get("Created") or "").strip()
+
         out.append(
             {
                 "name": display,
@@ -3100,6 +3154,11 @@ async def _portainer_list_stack_containers(*, sys_kv: Any) -> list[dict[str, Any
                 "status": state or ("running" if status.lower().startswith("up") else ""),
                 "health": health,
                 "detail": status.strip(),
+                "image": image_tag,
+                "image_id": image_id,
+                "created_at": created_at,
+                "image_repo_digests": image_repo_digests,
+                "image_created_at": image_created_at,
             }
         )
 

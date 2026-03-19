@@ -21,7 +21,14 @@
 ### Snapshot procedure (copy/paste; update the status chart)
 1. **Backend snapshot**
    - `GET /status`
-     - Paste: `instance_id`, `uptime_s`, and container health (if present)
+     - Paste: `instance_id`, `uptime_s`, and container rows for `jarvis-backend`:
+       - `containers[*].image` (tag)
+       - `containers[*].image_id`
+       - `containers[*].image_repo_digests` (digest)
+       - `containers[*].image_created_at` (created)
+       - `containers[*].health`
+   - `GET /health`
+     - Paste: `build.git_sha`, `build.image_tag` (must be non-null)
 2. **CI snapshot (this branch)**
    - `GET /github/actions/latest?owner=tonezzz&repo=chaba&branch=idc1-assistance`
      - Paste: `run.status`, `run.conclusion`, `run.head_sha`, `run.updated_at`, `run.html_url`
@@ -33,7 +40,7 @@
    - Run: **Deploy/Build status awareness (save current state)**
    - Paste the results into the status chart below.
 2. **Prove redeploy updated (10 minutes)**
-   - If `/health.build.git_sha` / `/health.build.image_tag` are `null`, run: **Assess a pending job (might already be done)** then prove the running image digest via Portainer/host inspection.
+   - If `/health.build.*` are `null`, run: **Assess a pending job (might already be done)** then prove the running image digest via Portainer/host inspection.
 3. **Watcher SNA (15 minutes)**
    - Run: **SNA for GitHub Actions watcher (deployed)**
    - Goal: verify start -> running -> completed/timeout -> auto-stop + UI log.
@@ -57,6 +64,7 @@
 | jarvis-backend image (tag) | ghcr.io/tonezzz/chaba/jarvis-backend:idc1-assistance |
 | jarvis-backend image digest |  |
 | jarvis-backend image created |  |
+| jarvis-backend image_id |  |
 | Backend image published in latest CI? |  |
 
 Need redeploy? rule (binary):
