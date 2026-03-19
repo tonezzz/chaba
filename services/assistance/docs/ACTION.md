@@ -7,6 +7,24 @@
   - CI run SHA matches what you expect
   - Containers remain healthy
 
+## Preflight: confirm you’re using the latest ACTION.md
+Run this before taking actions if you had multiple chats open or you suspect drift.
+
+### Repo sync (local)
+1. `git status -sb`
+2. `git fetch origin`
+3. Confirm branch is up to date:
+   - `git rev-parse HEAD`
+   - `git rev-parse origin/idc1-assistance`
+   - If different: `git rebase origin/idc1-assistance`
+4. Confirm `services/assistance/docs/ACTION.md` is not stale:
+   - `git log -n 1 -- services/assistance/docs/ACTION.md`
+
+### Deploy sync (optional)
+- Check latest CI SHA for `idc1-assistance`:
+  - `GET /github/actions/latest?owner=tonezzz&repo=chaba&branch=idc1-assistance`
+- If you just pushed, confirm `head_sha` equals your latest commit SHA.
+
 ## Overview (quick context)
 - **What this is:** The single file you and I use to stay aligned, pick the next Most Valuable Task, and run verification steps without losing context.
 - **Current objective:** GitHub Actions watcher integration for Jarvis (manual trigger only), plus reliable observability + persistence (UI log + memo/memory where appropriate).
@@ -52,6 +70,37 @@
 - **Prefer binary checks**
   - Every SNA must yield a pass/fail observable.
 
+## Guardrail: avoid multi-chat file conflicts
+Use this anytime you have multiple chats/agents editing the repo.
+
+### Policy (single writer)
+- Only **one chat** is allowed to modify files at a time.
+- All other chats may:
+  - read files
+  - suggest edits
+  - run verification calls
+  - but must **not** apply patches/commits
+
+### Lightweight lock (recommended)
+- Before editing, write a memo “lock” so other chats can see it:
+  - `POST /jarvis/memo/add` with:
+    - `subject=repo-lock`
+    - `group=ops`
+    - `memo="lock repo=chaba branch=idc1-assistance owner=<name> ts=<iso> expires_in_min=30"`
+- After push, append an “unlock” memo:
+  - `memo="unlock repo=chaba branch=idc1-assistance ts=<iso>"`
+
+### Conflict prevention checklist (before you edit)
+1. `git status -sb` (must be clean or intentionally dirty)
+2. If remote may have changed:
+   - `git fetch origin`
+   - `git rebase origin/idc1-assistance`
+3. Make changes
+4. Run tests (or a targeted check)
+5. Commit
+6. `git push`
+7. Re-run deploy snapshot (Now)
+
 ## Immediate fix: memo/logs not updating
 Use this when you “don’t see memo/logs update” after a run.
 
@@ -90,6 +139,28 @@ Use this when you “don’t see memo/logs update” after a run.
 ## Verify counts: memo rows + memory items loaded
 Use this when Jarvis says things like: “I have **7 memory items loaded**” or when you want to confirm memo actually appended.
 
+### Proposal: `sheet_item_count` tool (recommended)
+Goal: a single, stable way to answer “how many items are in sheet X?” without relying on UI caching or ad-hoc parsing.
+
+- **Better name:** `sheet_row_count` (more precise) or `sheet_item_count` (OK if we define “item” clearly).
+- **Where to implement (preferred):** Jarvis backend endpoint + optional Jarvis tool wrapper.
+  - Endpoint: `GET /jarvis/debug/sheet_row_count?spreadsheet_id=<id>&sheet=<tab>&has_header=true`
+  - Returns:
+    - `ok`
+    - `spreadsheet_id`, `sheet`
+    - `rows_total`
+    - `rows_excluding_header`
+    - `error` (if any)
+- **Why an endpoint (not only an MCP tool):**
+  - It works even when the front-end is cached.
+  - It can reuse existing Sheets auth inside the running container.
+  - It can be protected by `_require_api_token_if_configured`.
+- **How we’ll use it (when deployed):**
+  - Memo rows:
+    - `GET /jarvis/debug/sheet_row_count?sheet=memo&has_header=true`
+  - Logs rows:
+    - `GET /jarvis/debug/sheet_row_count?sheet=logs&has_header=true`
+
 ### Check counts (single call)
 - `GET /jarvis/debug/counts`
 - Expected fields:
@@ -97,6 +168,17 @@ Use this when Jarvis says things like: “I have **7 memory items loaded**” or
   - `memory.cached_count` (may be 0 if not preloaded yet)
   - `memo.rows` (number of memo rows excluding header)
   - `memo.sheet` / `memo.spreadsheet_id` (where it wrote)
+
+### If `/jarvis/debug/counts` is 404
+- This usually means the deployed container hasn’t picked up the latest code yet.
+- Fallback checks:
+  1. **Memory count (backend prewarm)**
+     - `GET /status`
+     - Use: `startup_prewarm.memory_n` (this is the last prewarm load count; may be 0 if prewarm is disabled or didn’t load memory).
+  2. **Memo “count” confirmation (append evidence)**
+     - `POST /jarvis/memo/add`
+     - Confirm the response contains `ok=true` and an `updatedRange` like `memo!A27:K27`.
+       - The row number (e.g. `27`) is a quick proxy for “memo rows exist and are increasing”.
 
 ### Interpret
 - **If `memory.count` is lower than expected**
