@@ -21,7 +21,7 @@
    - Run: **Deploy/Build status awareness (save current state)**
    - Paste the results into the status chart below.
 2. **Prove redeploy updated (10 minutes)**
-   - If `/health` doesn’t include build identity, run: **Assess a pending job (might already be done)** then prove the running image digest via Portainer/host inspection.
+   - If `/health.build.git_sha` / `/health.build.image_tag` are `null`, run: **Assess a pending job (might already be done)** then prove the running image digest via Portainer/host inspection.
 3. **Watcher SNA (15 minutes)**
    - Run: **SNA for GitHub Actions watcher (deployed)**
    - Goal: verify start -> running -> completed/timeout -> auto-stop + UI log.
@@ -65,7 +65,7 @@ Need rebuild? rule (binary, selective CI):
 - WIP limit = 1: if you start a new thing, merge it into the existing checklist/backlog section (see **Intake/merge policy** below).
 
 ### Current pick
-- `Watcher SNA (15 minutes)` — prove watcher end-to-end post-deploy — run: **SNA for GitHub Actions watcher (deployed)**
+- `Docs cleanup pass (TODO-NOW-007)` — align ACTION.md/TODO.md and remove drift/duplication
 
 Update rule:
 - After you run any ACTION.md procedure, always come back here and set **Current pick** to the *single* next move.
