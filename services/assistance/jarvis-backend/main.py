@@ -10291,6 +10291,22 @@ def debug_tools() -> dict[str, Any]:
 @app.get("/jarvis/debug/memo")
 async def debug_memo() -> dict[str, Any]:
     sys_kv = _sys_kv_snapshot()
+
+    # Best-effort: if sys_kv cache is cold, try to load once so this endpoint reflects the sheet.
+    try:
+        spreadsheet_id0, sheet_name0 = _memo_sheet_cfg_from_sys_kv(sys_kv if isinstance(sys_kv, dict) else None)
+        if not sheet_name0:
+            class _DummyWS:
+                def __init__(self) -> None:
+                    from types import SimpleNamespace
+
+                    self.state = SimpleNamespace()
+
+            await _load_ws_system_kv(_DummyWS())
+            sys_kv = _sys_kv_snapshot()
+    except Exception:
+        pass
+
     feat = feature_enabled("memo", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True)
     memo_enabled = _sys_kv_bool(sys_kv, "memo.enabled", default=False)
     spreadsheet_id, sheet_name = _memo_sheet_cfg_from_sys_kv(sys_kv if isinstance(sys_kv, dict) else None)

@@ -58,11 +58,24 @@ async def ensure_header(
         tool_update,
         {
             "spreadsheet_id": spreadsheet_id,
-            "range": f"{sheet_a1}!A1:K1",
+            "range": f"{sheet_a1}!A1:J1",
             "values": [header],
             "value_input_option": "RAW",
         },
     )
+
+    try:
+        await mcp_tools_call(
+            tool_update,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": f"{sheet_a1}!K1:K1",
+                "values": [[""]],
+                "value_input_option": "RAW",
+            },
+        )
+    except Exception:
+        pass
 
     try:
         await mcp_tools_call(
