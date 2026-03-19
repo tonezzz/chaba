@@ -1,82 +1,111 @@
  # BUILD / DEPLOY (Single Source of Truth)
- 
- This file is the single source of truth for how we:
- - trigger **GHCR auto rebuilds** from this repo
- - **redeploy** the `idc1-assistance` stack via **Portainer**
- - verify we are actually running the **latest image digest** (not just the tag)
- - debug the common "I redeployed but it’s still old" failure mode
 
- See also:
- - `WINDSURF_PLAYBOOK.md` (repo working conventions, diagnostics, workflows)
- 
- ## TL;DR
- 
- - Push to branch `idc1-assistance`.
- - Wait for GitHub Actions to publish new GHCR images.
- - In Portainer, redeploy the stack with **pull latest images** enabled.
- - Verify the running container uses a new **IMAGE ID**.
- 
- ## Copy/paste message template (improved)
- 
- Use this message when you want the “push -> auto rebuild -> redeploy” loop:
- 
- ```text
- Please push the latest changes to branch `idc1-assistance` to trigger the GHCR auto rebuild.
- 
- After the GH Actions build completes, redeploy the stack in Portainer with “always pull latest image / re-pull image” enabled.
- 
- Finally verify the running containers are using the new image digest (IMAGE ID changed), not just the same tag.
- ```
- 
- ## Repo + branch conventions
- 
- - Deployment branch: `idc1-assistance`
- - Images are published to GHCR (examples):
-   - `ghcr.io/tonezzz/chaba/jarvis-backend:idc1-assistance`
-   - `ghcr.io/tonezzz/chaba/jarvis-frontend:idc1-assistance`
- 
- Operational rule:
- - **A Portainer redeploy must pull the latest digest.** If it doesn’t, you’ll keep running old code.
- 
- ## Workflow: change -> rebuild -> redeploy
- 
- ### 1) Make code changes
- 
- Application code lives under:
- - `services/assistance/jarvis-backend/`
- - `services/assistance/jarvis-frontend/`
- - `services/assistance/mcp-*`
- 
- Deployment configuration lives under:
- - `stacks/idc1-assistance/`
- 
- ### 2) Commit + push to `idc1-assistance`
- 
- ```bash
- git checkout idc1-assistance
- git status --porcelain
- git add <files>
- git commit -m "<message>"
- git push
- ```
- 
- If you need to force a rebuild without code changes:
- 
- ```bash
- git commit --allow-empty -m "ci: trigger rebuild"
- git push
- ```
- 
- ### 3) Wait for GitHub Actions
- 
- Expected:
- - CI builds and pushes updated `:idc1-assistance` images to GHCR.
- 
- If the build fails:
- - fix CI first; redeploying won’t change anything.
- 
- ### 4) Redeploy via Portainer
- 
+This file is the single source of truth for how we:
+- trigger **GHCR auto rebuilds** from this repo
+- **redeploy** the `idc1-assistance` stack via **Portainer**
+- verify we are actually running the **latest image digest** (not just the tag)
+- debug the common "I redeployed but it’s still old" failure mode
+
+See also:
+- `WINDSURF_PLAYBOOK.md` (repo working conventions, diagnostics, workflows)
+
+## TL;DR
+
+- Push to branch `idc1-assistance`.
+- Wait for GitHub Actions to publish new GHCR images.
+- In Portainer, redeploy the stack with **pull latest images** enabled.
+- Verify the running container uses a new **IMAGE ID**.
+
+Notes:
+
+- GitHub Actions publishes images **selectively** (only the images whose inputs changed).
+
+## Copy/paste message template (improved)
+
+Use this message when you want the “push -> auto rebuild -> redeploy” loop:
+
+```text
+Please push the latest changes to branch `idc1-assistance` to trigger the GHCR auto rebuild.
+
+After the GH Actions build completes, redeploy the stack in Portainer with “always pull latest image / re-pull image” enabled.
+
+Finally verify the running containers are using the new image digest (IMAGE ID changed), not just the same tag.
+```
+
+## Repo + branch conventions
+
+- Deployment branch: `idc1-assistance`
+- Images are published to GHCR (examples):
+  - `ghcr.io/tonezzz/chaba/jarvis-backend:idc1-assistance`
+  - `ghcr.io/tonezzz/chaba/jarvis-frontend:idc1-assistance`
+
+Operational rule:
+- **A Portainer redeploy must pull the latest digest.** If it doesn’t, you’ll keep running old code.
+
+## Workflow: change -> rebuild -> redeploy
+
+### 1) Make code changes
+
+Application code lives under:
+- `services/assistance/jarvis-backend/`
+- `services/assistance/jarvis-frontend/`
+- `services/assistance/mcp-*`
+
+Deployment configuration lives under:
+- `stacks/idc1-assistance/`
+
+### 2) Commit + push to `idc1-assistance`
+
+```bash
+git checkout idc1-assistance
+git status --porcelain
+git add <files>
+git commit -m "<message>"
+git push
+```
+
+### 2.1) Forcing a rebuild
+
+Important:
+
+- CI now builds/pushes images **only when their inputs change**.
+- An empty commit (`git commit --allow-empty ...`) typically produces **no changed files**, so it will usually **not** rebuild any images.
+
+If you need to force a rebuild (without functional code changes), use one of these:
+
+- Touch a file inside the service context you want to rebuild (preferred):
+
+```bash
+date > services/assistance/jarvis-backend/.ci-rebuild
+git add services/assistance/jarvis-backend/.ci-rebuild
+git commit -m "ci: force jarvis-backend rebuild"
+git push
+```
+
+- Or modify the workflow file to force rebuild-all (heavier):
+  - `.github/workflows/publish-idc1-assistance.yml`
+
+Current selective-build rules (high level):
+
+- `jarvis-backend` rebuilds on changes under `services/assistance/jarvis-backend/`
+- `jarvis-frontend` rebuilds on changes under `services/assistance/jarvis-frontend/`
+- `web-fetcher` rebuilds on changes under `services/assistance/web-fetcher/`
+- `deep-research-worker` rebuilds on changes under `services/assistance/deep-research-worker/`
+- `mcp-image-pipeline` rebuilds on changes under `services/assistance/mcp-image-pipeline/`
+- `mcp-bundle` rebuilds on changes under:
+  - `services/assistance/mcp-bundle/`
+  - `services/assistance/mcp-servers/mcp-google-sheets/server.js`
+
+### 3) Wait for GitHub Actions
+
+Expected:
+- CI builds and pushes updated `:idc1-assistance` images to GHCR.
+
+If the build fails:
+- fix CI first; redeploying won’t change anything.
+
+### 4) Redeploy via Portainer
+
 ### A) Confirm IMAGE ID changed (digest-level)
 
 On the host (or wherever Docker CLI is available):
@@ -155,7 +184,7 @@ Symptoms:
 
 Fix:
 - redeploy again with **pull latest image** enabled
-- if needed, force rebuild with an empty commit
+- if needed, force rebuild by touching a file inside the service context (see “2.1) Forcing a rebuild”)
 
 ### 2) Frontend shows disconnected when backend emits `{type:"error"}`
 
