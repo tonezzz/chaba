@@ -14,7 +14,7 @@
 ## Now (what to do next)
 
 - **Say:** `action`
-- **I will run:** `TODO-NOW-001` (from `services/assistance/docs/TODO.md#now`)
+- **I will run:** `TODO-NOW-004` (from `services/assistance/docs/TODO.md#now`)
 
 ### 4 most valuable next actions (update this every time you run "Now")
 1. **Deploy/build snapshot (10 minutes)**
@@ -31,21 +31,21 @@
 | --- | --- |
 | Need rebuild? | No |
 | Need redeploy? | No |
-| Health ok | Yes |
+| Health ok | No |
 | Status ok | Yes |
-| uptime_s | 1535 |
-| Snapshot ts | 2026-03-19T12:??:??Z |
+| uptime_s | 304 |
+| Snapshot ts | 2026-03-19T13:23:xxZ |
 | Deployed base URL | `https://assistance.idc1.surf-thailand.com/jarvis/api` |
-| instance_id | jarvis_01c4931e5c |
+| instance_id | jarvis_227171fd68 |
 | CI status | completed |
 | CI conclusion | success |
-| CI head_sha | d525231311b98caf312aeddf0db533ac97166d5d |
-| CI updated_at | 2026-03-19T12:11:10Z |
-| CI url | https://github.com/tonezzz/chaba/actions/runs/23294198774 |
-| jarvis-backend image (tag) | ghcr.io/tonezzz/chaba/jarvis-backend:idc1-assistance |
-| jarvis-backend image digest | sha256:e710d9a9093e20207440f29b40471f2077362546f442917e10212ccbe1b1bbe6 |
-| jarvis-backend image created | 2026-03-19T12:11:12Z |
-| Backend image published in latest CI? | Yes |
+| CI head_sha | 0b63d03f0f70c321052b6c9232b752afa9948607 |
+| CI updated_at | 2026-03-19T13:13:37Z |
+| CI url | https://github.com/tonezzz/chaba/actions/runs/23296586310 |
+| jarvis-backend image (tag) |  |
+| jarvis-backend image digest |  |
+| jarvis-backend image created |  |
+| Backend image published in latest CI? |  |
 
 Need redeploy? rule (binary):
 - **Yes** if CI is `completed/success` AND either:
@@ -105,7 +105,9 @@ Notes (from `stacks/idc1-assistance/CONFIG.md`):
 
 #### Checklist
 1. **Create a Calendar reminder**
-   - Use `POST /reminders` with a short test reminder (include a distinct prefix like `smoke-<date>`).
+   - Connect to WS: `wss://assistance.idc1.surf-thailand.com/jarvis/ws/live`.
+   - Send a message:
+     - `{"type":"reminders","action":"create","text":"smoke-<date> test reminder tomorrow 09:00"}`
 2. **Confirm the event exists**
    - Confirm the event appears in the `Jarvis Reminders` calendar.
 3. **Confirm legacy reminders are removed**
@@ -130,13 +132,15 @@ Notes (from `stacks/idc1-assistance/CONFIG.md`):
 1. **Backend starts cleanly**
    - Confirm `jarvis-backend` starts without attempting to create/migrate a `reminders` SQLite table.
 2. **Create a timed reminder**
-   - Via UI voice/text or `POST /reminders`, create a reminder with a time.
+   - Via UI voice/text or WS `type=reminders action=create`, create a reminder with a time.
    - Confirm a Calendar event is created in `Jarvis Reminders`.
 3. **Create a no-time reminder**
-   - Create a reminder without a time.
+   - Via UI voice/text or WS `type=reminders action=create`, create a reminder without a time.
    - Confirm a Google Task is created.
 4. **Confirm legacy reminder actions are rejected**
-   - From UI/WS, attempt any legacy reminder action (list/done/delete/later/reschedule) and confirm it returns `reminders_legacy_removed`.
+   - From WS, send a legacy action (example):
+     - `{"type":"reminders","action":"list"}`
+   - Confirm it returns `reminders_legacy_removed`.
 
 ## Preflight: confirm you’re using the latest ACTION.md
 Run this before taking actions if you had multiple chats open or you suspect drift.
