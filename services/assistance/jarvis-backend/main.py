@@ -535,82 +535,22 @@ async def _memo_enrich_prompt(ws: WebSocket) -> None:
 
 
 async def _handle_memo_enrich_followup(ws: WebSocket, text: str) -> bool:
-    pending = getattr(ws.state, "pending_memo_enrich", None)
-    if not isinstance(pending, dict):
-        return False
-    raw = str(text or "").strip()
-    if not raw:
-        return True
+    def _now_dt_utc() -> str:
+        return datetime.now(tz=timezone.utc).replace(microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
 
-    need = pending.get("need") if isinstance(pending.get("need"), dict) else {}
-    if need.get("subject"):
-        pending["subject"] = raw
-        need["subject"] = False
-        pending["need"] = need
-        await _memo_enrich_prompt(ws)
-        return True
-    if need.get("group"):
-        pending["group"] = raw
-        need["group"] = False
-        pending["need"] = need
-        await _memo_enrich_prompt(ws)
-        return True
-    if need.get("details"):
-        pending["details"] = raw
-        need["details"] = False
-        pending["need"] = need
-
-    # If no remaining needs, append an enriched memo entry.
-    if need.get("subject") or need.get("group") or need.get("details"):
-        await _memo_enrich_prompt(ws)
-        return True
-
-    sys_kv = getattr(ws.state, "sys_kv", None)
-    if not _sys_kv_bool(sys_kv, "memo.enabled", default=False):
-        return True
-
-    spreadsheet_id, sheet_name = _memo_sheet_cfg_from_sys_kv(sys_kv if isinstance(sys_kv, dict) else None)
-    if not spreadsheet_id or not sheet_name:
-        return True
-
-    memo_base = str(pending.get("memo") or "").strip()
-    subject = str(pending.get("subject") or "").strip()
-    group = str(pending.get("group") or "").strip()
-    details = str(pending.get("details") or "").strip()
-    memo_final = memo_base
-    if details:
-        memo_final = (memo_final.rstrip() + "\n\nDetails: " + details).strip()
-
-    tool_append = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
-    sheet_a1 = _sheet_name_to_a1(sheet_name, default="memo")
-    now_dt = datetime.now(tz=timezone.utc).replace(microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
-    row = [now_dt, group, "new", subject, memo_final, "", "", "", False, now_dt, now_dt]
-    try:
-        await _mcp_tools_call(
-            tool_append,
-            {
-                "spreadsheet_id": spreadsheet_id,
-                "range": f"{sheet_a1}!A:K",
-                "values": [row],
-                "value_input_option": "USER_ENTERED",
-                "insert_data_option": "INSERT_ROWS",
-            },
-        )
-    except Exception:
-        pass
-
-    try:
-        ws.state.pending_memo_enrich = None
-        ws.state.active_agent_id = None
-        ws.state.active_agent_until_ts = 0
-    except Exception:
-        pass
-
-    try:
-        await _ws_send_json(ws, {"type": "text", "text": "Memo updated.", "instance_id": INSTANCE_ID})
-    except Exception:
-        pass
-    return True
+    return await memo_enrich.handle_followup(
+        ws,
+        text,
+        sys_kv_bool=_sys_kv_bool,
+        memo_sheet_cfg_from_sys_kv=_memo_sheet_cfg_from_sys_kv,
+        sheet_name_to_a1=_sheet_name_to_a1,
+        pick_sheets_tool_name=_pick_sheets_tool_name,
+        mcp_tools_call=_mcp_tools_call,
+        ws_send_json=_ws_send_json,
+        live_say=_live_say,
+        instance_id=INSTANCE_ID,
+        now_dt_utc=_now_dt_utc,
+    )
 
 
 async def _handle_memo_trigger(ws: WebSocket, text: str) -> bool:

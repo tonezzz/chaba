@@ -69,3 +69,94 @@ async def enrich_prompt(
         await live_say(ws, prompt)
     except Exception:
         pass
+
+
+async def handle_followup(
+    ws: Any,
+    text: str,
+    *,
+    sys_kv_bool: Callable[[Any, str, bool], bool],
+    memo_sheet_cfg_from_sys_kv: Callable[[dict[str, Any] | None], tuple[str, str]],
+    sheet_name_to_a1: Callable[[str, str], str],
+    pick_sheets_tool_name: Callable[[str, str], str],
+    mcp_tools_call: Callable[[str, dict[str, Any]], Awaitable[Any]],
+    ws_send_json: Callable[[Any, dict[str, Any]], Awaitable[None]],
+    live_say: Callable[[Any, str], Awaitable[None]],
+    instance_id: str,
+    now_dt_utc: Callable[[], str],
+) -> bool:
+    pending = getattr(ws.state, "pending_memo_enrich", None)
+    if not isinstance(pending, dict):
+        return False
+    raw = str(text or "").strip()
+    if not raw:
+        return True
+
+    need = pending.get("need") if isinstance(pending.get("need"), dict) else {}
+    if need.get("subject"):
+        pending["subject"] = raw
+        need["subject"] = False
+        pending["need"] = need
+        await enrich_prompt(ws, ws_send_json=ws_send_json, live_say=live_say, instance_id=instance_id)
+        return True
+    if need.get("group"):
+        pending["group"] = raw
+        need["group"] = False
+        pending["need"] = need
+        await enrich_prompt(ws, ws_send_json=ws_send_json, live_say=live_say, instance_id=instance_id)
+        return True
+    if need.get("details"):
+        pending["details"] = raw
+        need["details"] = False
+        pending["need"] = need
+
+    if need.get("subject") or need.get("group") or need.get("details"):
+        await enrich_prompt(ws, ws_send_json=ws_send_json, live_say=live_say, instance_id=instance_id)
+        return True
+
+    sys_kv = getattr(ws.state, "sys_kv", None)
+    if not sys_kv_bool(sys_kv, "memo.enabled", False):
+        return True
+
+    spreadsheet_id, sheet_name = memo_sheet_cfg_from_sys_kv(sys_kv if isinstance(sys_kv, dict) else None)
+    if not spreadsheet_id or not sheet_name:
+        return True
+
+    memo_base = str(pending.get("memo") or "").strip()
+    subject = str(pending.get("subject") or "").strip()
+    group = str(pending.get("group") or "").strip()
+    details = str(pending.get("details") or "").strip()
+    memo_final = memo_base
+    if details:
+        memo_final = (memo_final.rstrip() + "\n\nDetails: " + details).strip()
+
+    tool_append = pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+    sheet_a1 = sheet_name_to_a1(sheet_name, "memo")
+    now_dt = now_dt_utc()
+    row = [now_dt, group, "new", subject, memo_final, "", "", "", False, now_dt, now_dt]
+    try:
+        await mcp_tools_call(
+            tool_append,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": f"{sheet_a1}!A:K",
+                "values": [row],
+                "value_input_option": "USER_ENTERED",
+                "insert_data_option": "INSERT_ROWS",
+            },
+        )
+    except Exception:
+        pass
+
+    try:
+        ws.state.pending_memo_enrich = None
+        ws.state.active_agent_id = None
+        ws.state.active_agent_until_ts = 0
+    except Exception:
+        pass
+
+    try:
+        await ws_send_json(ws, {"type": "text", "text": "Memo updated.", "instance_id": instance_id})
+    except Exception:
+        pass
+    return True
