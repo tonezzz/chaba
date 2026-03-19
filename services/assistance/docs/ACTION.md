@@ -7,6 +7,16 @@
   - CI run SHA matches what you expect
   - Containers remain healthy
 
+### Rule: keep `Now` updated (mandatory)
+After every `action` run, update this `Now` section so it reflects reality.
+
+- If the run succeeded:
+  - Replace the “Most valuable next action” with the next smallest verification or next deployment checkpoint.
+- If the run failed:
+  - Replace it with the **single** highest-leverage inspection step (one place to look).
+- Keep it short:
+  - 1 MVT sentence + 1 next action (<= 10 min) + 1 success observable.
+
 ## Preflight: confirm you’re using the latest ACTION.md
 Run this before taking actions if you had multiple chats open or you suspect drift.
 
@@ -94,6 +104,9 @@ Run this after you `git push`.
 - Prefer an **upsert** key for status snapshots.
 - **Preferred store:** Memory key `runtime.deploy.snapshot.latest`.
 - **Fallback store (if memory upsert path is unavailable):** sys_kv key `runtime.deploy.snapshot.latest` via `POST /jarvis/sys_kv/set`.
+
+Memory write gating:
+- `POST /jarvis/memory/set` requires sys_kv key `memory.write.enabled=true`.
 
 ## How to use this file
 - **Command format**
@@ -325,11 +338,20 @@ Goal: a single, stable way to answer “how many items are in sheet X?” withou
 
 ### Persist the snapshot (optional but preferred)
 - If you want “what was deployed” recorded for later comparison, persist it as a **single upserted status**:
-  - **Preferred:** memory key `runtime.deploy.snapshot.latest`
-  - **Fallback:** sys_kv key `runtime.deploy.snapshot.latest`
+  - **Preferred:** memory key `runtime.deploy.snapshot.latest` via `POST /jarvis/memory/set`
+  - **Fallback:** sys_kv key `runtime.deploy.snapshot.latest` via `POST /jarvis/sys_kv/set`
 
 Memo text template (value to store):
 - `deploy_snapshot ts=<iso> env=idc1-assistance git_sha=<sha> image_tag=<tag> instance_id=<id> uptime_s=<n> ci_status=<status> ci_conclusion=<conclusion> ci_url=<url> ci_head_sha=<sha>`
+
+Example (preferred upsert):
+1. `POST /jarvis/memory/set`
+   - Body:
+     - `key=runtime.deploy.snapshot.latest`
+     - `value=<deploy_snapshot ...>`
+     - `scope=global`
+     - `priority=0`
+     - `enabled=true`
 
 ### Ask Jarvis to do it (snapshot + memo + summary)
 - You can ask Jarvis (the deployed assistant) to:

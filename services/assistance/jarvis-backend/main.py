@@ -1840,6 +1840,14 @@ class SysKvSetRequest(BaseModel):
     dry_run: Optional[bool] = False
 
 
+class MemorySetRequest(BaseModel):
+    key: str
+    value: str
+    enabled: Optional[bool] = True
+    scope: Optional[str] = "global"
+    priority: Optional[int] = 0
+
+
 @app.post("/logs/ui/append")
 @app.post("/jarvis/logs/ui/append")
 async def logs_ui_append(req: _UILogAppendRequest) -> dict[str, Any]:
@@ -2191,6 +2199,77 @@ async def sys_kv_set(req: SysKvSetRequest, x_api_token: Optional[str] = Header(d
     except Exception:
         pass
     return {"ok": True, "key": k, "value": v, "dry_run": dry_run, "sys_kv_set": result}
+
+
+@app.post("/memory/set")
+@app.post("/jarvis/memory/set")
+async def memory_set(req: MemorySetRequest, x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token")) -> dict[str, Any]:
+    _require_api_token_if_configured(x_api_token)
+
+    sys_kv = _sys_kv_snapshot()
+    if not isinstance(sys_kv, dict) or "memory.write.enabled" not in sys_kv:
+        try:
+            class _DummyWS:
+                def __init__(self) -> None:
+                    from types import SimpleNamespace
+
+                    self.state = SimpleNamespace()
+
+            await _load_ws_system_kv(_DummyWS())
+        except Exception:
+            pass
+        sys_kv = _sys_kv_snapshot()
+        if not isinstance(sys_kv, dict) or "memory.write.enabled" not in sys_kv:
+            raise HTTPException(status_code=400, detail={"error": "missing_sys_kv_key", "key": "memory.write.enabled"})
+    if not _sys_kv_bool(sys_kv, "memory.write.enabled", default=False):
+        raise HTTPException(status_code=400, detail={"error": "memory_write_disabled"})
+
+    k = str(req.key or "").strip()
+    v = str(req.value or "").strip()
+    if not k:
+        raise HTTPException(status_code=400, detail={"error": "missing_key"})
+
+    scope = str(req.scope or "global").strip() or "global"
+    priority = _safe_int(req.priority, default=0)
+    enabled = bool(req.enabled is True)
+
+    class _DummyWS2:
+        def __init__(self) -> None:
+            from types import SimpleNamespace
+
+            self.state = SimpleNamespace()
+
+    ws = _DummyWS2()
+    try:
+        cached = _get_cached_sheet_memory()
+        if isinstance(cached, dict):
+            _apply_cached_sheet_memory_to_ws(ws, cached)
+    except Exception:
+        pass
+
+    try:
+        await _load_ws_sheet_memory(ws)
+    except Exception:
+        pass
+
+    result = await _memory_sheet_upsert(
+        ws,
+        key=k,
+        value=v,
+        scope=scope,
+        priority=int(priority),
+        enabled=enabled,
+        source="http.memory_set",
+    )
+    if not isinstance(result, dict) or not result.get("ok"):
+        raise HTTPException(status_code=500, detail={"error": "memory_set_failed", "detail": result})
+
+    try:
+        _clear_sheet_caches()
+    except Exception:
+        pass
+
+    return {"ok": True, "key": k, "value": v, "scope": scope, "priority": int(priority), "enabled": enabled, "memory_set": result}
 
 
 @app.get("/logs/ui/today")
