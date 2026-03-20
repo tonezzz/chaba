@@ -2,6 +2,7 @@ import asyncio
 import importlib
 import json
 import sys
+from typing import Any
 from types import ModuleType
 
 import pytest
@@ -153,6 +154,48 @@ def test_load_sys_kv_from_sheet_filters_enabled_and_resolves_priority(monkeypatc
     # Scope wins first (session > user > global), then priority.
     assert out.get("k1") == "v1_session_mid"
     assert out.get("k3") == "enabled"
+
+
+def test_macro_tools_from_sheet_are_declared_and_executable(monkeypatch: pytest.MonkeyPatch) -> None:
+    main = _import_main_with_genai_stub(monkeypatch)
+
+    monkeypatch.setattr(main, "_system_spreadsheet_id", lambda: "ssid")
+    monkeypatch.setattr(main, "_system_sheet_name", lambda: "system")
+
+    # Pretend sys_kv is already available.
+    monkeypatch.setattr(main, "_sys_kv_snapshot", lambda: {})
+
+    async def fake_mcp_tools_call(name: str, arguments: dict[str, Any]):
+        # Macro loader reads google_sheets_values_get for macros tab.
+        if "google_sheets_values_get" in str(name):
+            rng = str(arguments.get("range") or "")
+            if rng.startswith("macros!"):
+                header = ["name", "enabled", "description", "parameters_json", "steps_json"]
+                steps = json.dumps([{"tool": "time_now", "args": {}}])
+                rows = [["macro_time_now", "TRUE", "From sheet", "{}", steps]]
+                return _mcp_text_payload({"ok": True, "values": [header] + rows})
+            # Any other reads return empty.
+            return _mcp_text_payload({"ok": True, "values": []})
+        raise AssertionError(f"unexpected_tool_name {name}")
+
+    monkeypatch.setattr(main, "_mcp_tools_call", fake_mcp_tools_call)
+
+    # Load macros into cache.
+    asyncio.run(main._macro_tools_get_cached(sys_kv={}, ttl_s=0.0))
+
+    decls = main._mcp_tool_declarations()
+    names = [d.get("name") for d in decls if isinstance(d, dict)]
+    assert "macro_time_now" in names
+    assert "macro_run" in names
+
+    # Ensure macro execution dispatches to underlying tool.
+    out = asyncio.run(main._handle_mcp_tool_call(None, "macro_time_now", {}))
+    assert isinstance(out, dict)
+    assert out.get("ok") is True
+    assert out.get("macro") == "macro_time_now"
+    steps = out.get("steps")
+    assert isinstance(steps, list) and steps
+    assert steps[0].get("tool") == "time_now"
 
 
 def test_memo_enrich_followup_appends_canonical_row(monkeypatch: pytest.MonkeyPatch) -> None:

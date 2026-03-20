@@ -1722,6 +1722,130 @@ async def _load_sys_kv_from_sheet() -> dict[str, str]:
     return out
 
 
+_MACRO_TOOL_CACHE: dict[str, Any] = {"ts": 0.0, "macros": {}}
+
+
+def _system_macros_sheet_name(*, sys_kv: Optional[dict[str, Any]] = None) -> str:
+    try:
+        if isinstance(sys_kv, dict):
+            v = str(sys_kv.get("system.macros.sheet_name") or "").strip()
+            if v:
+                return v
+    except Exception:
+        pass
+    return "macros"
+
+
+def _as_bool(v: Any) -> bool:
+    s = str(v or "").strip().lower()
+    if s in ("1", "true", "t", "yes", "y", "on"):
+        return True
+    return False
+
+
+async def _load_macro_tools_from_sheet(*, sys_kv: Optional[dict[str, Any]] = None) -> dict[str, dict[str, Any]]:
+    spreadsheet_id = _system_spreadsheet_id()
+    if not spreadsheet_id:
+        return {}
+    sheet_name = _system_macros_sheet_name(sys_kv=sys_kv)
+
+    tool = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    res = await _mcp_tools_call(tool, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name}!A:Z"})
+    parsed = _mcp_text_json(res)
+    values = parsed.get("values") if isinstance(parsed, dict) else None
+    data = parsed.get("data") if isinstance(parsed, dict) else None
+    if not isinstance(values, list) and isinstance(data, dict):
+        values = data.get("values")
+    if not isinstance(values, list) or not values:
+        return {}
+
+    header = [str(c or "").strip().lower() for c in (values[0] if isinstance(values[0], list) else [])]
+    idx: dict[str, int] = {}
+    for i, col in enumerate(header):
+        if col and col not in idx:
+            idx[col] = i
+
+    def _cell(row: list[Any], col: str) -> Any:
+        j = idx.get(str(col or "").strip().lower())
+        if j is None or j < 0 or j >= len(row):
+            return ""
+        return row[j]
+
+    out: dict[str, dict[str, Any]] = {}
+    for r in values[1:]:
+        if not isinstance(r, list):
+            continue
+        enabled = _as_bool(_cell(r, "enabled"))
+        if not enabled:
+            continue
+        name = str(_cell(r, "name") or "").strip()
+        if not name:
+            continue
+        desc = str(_cell(r, "description") or "").strip()
+        parameters_raw = str(_cell(r, "parameters_json") or "").strip()
+        steps_raw = str(_cell(r, "steps_json") or "").strip()
+        if not steps_raw:
+            continue
+        try:
+            steps = json.loads(steps_raw)
+        except Exception:
+            continue
+        parameters: dict[str, Any] = {"type": "object", "properties": {}}
+        if parameters_raw:
+            try:
+                pj = json.loads(parameters_raw)
+                if isinstance(pj, dict):
+                    parameters = pj
+            except Exception:
+                pass
+        if not isinstance(steps, list):
+            continue
+        out[name] = {"name": name, "description": desc, "parameters": parameters, "steps": steps}
+
+    return out
+
+
+async def _macro_tools_get_cached(*, sys_kv: Optional[dict[str, Any]] = None, ttl_s: float = 15.0) -> dict[str, dict[str, Any]]:
+    now = time.time()
+    try:
+        ts = float(_MACRO_TOOL_CACHE.get("ts") or 0.0)
+    except Exception:
+        ts = 0.0
+    macros = _MACRO_TOOL_CACHE.get("macros")
+    if isinstance(macros, dict) and macros and (now - ts) < float(ttl_s or 0.0):
+        return macros
+    try:
+        loaded = await _load_macro_tools_from_sheet(sys_kv=sys_kv)
+    except Exception:
+        loaded = {}
+
+    # Minimal built-in sample macro (used if sheet is missing/empty).
+    if not loaded:
+        loaded = {
+            "macro_time_now": {
+                "name": "macro_time_now",
+                "description": "Sample macro: return current server time (calls time_now).",
+                "parameters": {"type": "object", "properties": {}},
+                "steps": [{"tool": "time_now", "args": {}}],
+            }
+        }
+
+    _MACRO_TOOL_CACHE["ts"] = now
+    _MACRO_TOOL_CACHE["macros"] = loaded
+    return loaded
+
+
+def _macro_tools_cached_snapshot() -> dict[str, dict[str, Any]]:
+    macros = _MACRO_TOOL_CACHE.get("macros")
+    if isinstance(macros, dict):
+        out: dict[str, dict[str, Any]] = {}
+        for k, v in macros.items():
+            if isinstance(k, str) and isinstance(v, dict):
+                out[k] = v
+        return out
+    return {}
+
+
 def _require_env(name: str) -> str:
     value = str(os.getenv(name, "") or "").strip()
     if not value:
@@ -10159,6 +10283,12 @@ async def _startup() -> None:
     except Exception as e:
         logger.warning("startup_prewarm_task_failed error=%s", e)
 
+    # Prewarm macro tool definitions (best-effort).
+    try:
+        asyncio.create_task(_macro_tools_get_cached(sys_kv=_sys_kv_snapshot(), ttl_s=0.0), name="startup_prewarm_macros")
+    except Exception:
+        pass
+
     try:
         if _SHEETS_LOGS_TASK is None or _SHEETS_LOGS_TASK.done():
             _SHEETS_LOGS_TASK = asyncio.create_task(_sheets_logs_flush_loop(), name="sheets_logs_flush")
@@ -12377,10 +12507,86 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
         }
     )
 
+    decls.append(
+        {
+            "name": "macro_run",
+            "description": "Run a configured macro tool by name (sheet-backed).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Macro tool name (e.g. macro_time_now)."},
+                },
+                "required": ["name"],
+            },
+        }
+    )
+
+    macros = _macro_tools_cached_snapshot()
+    if not macros:
+        macros = {
+            "macro_time_now": {
+                "name": "macro_time_now",
+                "description": "Sample macro: return current server time (calls time_now).",
+                "parameters": {"type": "object", "properties": {}},
+                "steps": [{"tool": "time_now", "args": {}}],
+            }
+        }
+    for name, meta in macros.items():
+        if not isinstance(meta, dict):
+            continue
+        desc = str(meta.get("description") or "").strip()
+        params = meta.get("parameters") if isinstance(meta.get("parameters"), dict) else {"type": "object", "properties": {}}
+        decls.append({"name": str(name), "description": desc, "parameters": params})
+
     return decls
 
 
 async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: dict[str, Any]) -> Any:
+    n = str(tool_name or "").strip()
+    if n and (n.startswith("macro_") or n == "macro_run"):
+        sys_kv = _sys_kv_snapshot()
+        macros = await _macro_tools_get_cached(sys_kv=sys_kv)
+        macro_name = n
+        if n == "macro_run":
+            macro_name = str(args.get("name") or "").strip()
+        macro = macros.get(macro_name) if isinstance(macros, dict) else None
+        if not isinstance(macro, dict):
+            raise HTTPException(status_code=400, detail={"macro_not_found": macro_name})
+        steps = macro.get("steps")
+        if not isinstance(steps, list) or not steps:
+            raise HTTPException(status_code=400, detail={"macro_invalid_steps": macro_name})
+
+        allowed = {
+            "time_now",
+            "memo_add",
+            "memo_get",
+            "memo_list",
+            "memory_add",
+            "memory_search",
+            "memory_list",
+            "pending_list",
+            "pending_confirm",
+            "pending_cancel",
+        }
+        out_steps: list[dict[str, Any]] = []
+        max_steps = 10
+        for i, st in enumerate(steps[:max_steps]):
+            if not isinstance(st, dict):
+                continue
+            step_tool = str(st.get("tool") or "").strip()
+            if not step_tool:
+                continue
+            if step_tool == "macro_run" or step_tool.startswith("macro_"):
+                raise HTTPException(status_code=400, detail={"macro_recursion_disallowed": step_tool})
+            if step_tool not in allowed and step_tool not in MCP_TOOL_MAP:
+                raise HTTPException(status_code=400, detail={"macro_step_tool_not_allowed": step_tool})
+            step_args = st.get("args")
+            if not isinstance(step_args, dict):
+                step_args = {}
+            res = await _handle_mcp_tool_call(session_id, step_tool, step_args)
+            out_steps.append({"step": i + 1, "tool": step_tool, "result": res})
+        return {"ok": True, "macro": macro_name, "steps": out_steps, "count": len(out_steps)}
+
     deps: dict[str, Any] = {
         "HTTPException": HTTPException,
         "ZoneInfo": ZoneInfo,
