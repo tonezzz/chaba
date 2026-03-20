@@ -10813,9 +10813,9 @@ def _google_gate_for_tool(tool_name: str) -> tuple[str, bool] | None:
         return None
     if n.startswith("google_sheets_"):
         return ("google.sheets.enabled", True)
-    if n.startswith("google_calendar_"):
+    if n.startswith("google-calendar_") or n.startswith("google_calendar_"):
         return ("google.calendar.enabled", False)
-    if n.startswith("google_tasks_"):
+    if n.startswith("google-tasks_") or n.startswith("google_tasks_"):
         return ("google.tasks.enabled", False)
     if n.startswith("gmail_"):
         return ("gmail.enabled", False)
