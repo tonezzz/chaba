@@ -2760,7 +2760,7 @@ async def memo_relate(
     }
     try:
         txt = await _gemini_summarize_text(system_instruction=system_instruction, prompt=json.dumps(payload, ensure_ascii=False))
-        parsed: Any = None
+        parsed: Any
         try:
             parsed = json.loads(txt)
         except Exception:
@@ -2769,55 +2769,19 @@ async def memo_relate(
     except HTTPException as e:
         return {"ok": True, "q": q, "k": k, "group": group, "result": {"error": getattr(e, "detail", str(e))}, "items": items}
 
-@app.post("/jarvis/sys_kv/set")
-async def sys_kv_set(req: SysKvSetRequest, x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token")) -> dict[str, Any]:
+
+@app.post("/sys_kv/reload")
+@app.post("/jarvis/sys_kv/reload")
+async def sys_kv_reload(x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token")) -> dict[str, Any]:
     _require_api_token_if_configured(x_api_token)
-
-    sys_kv = _sys_kv_snapshot()
-    enabled_raw = str(sys_kv.get("sys_kv.write.enabled") or "").strip() if isinstance(sys_kv, dict) else ""
-    if not enabled_raw:
-        try:
-            fresh = await _load_sys_kv_from_sheet()
-            if isinstance(fresh, dict) and fresh:
-                sys_kv = fresh
-                enabled_raw = str(fresh.get("sys_kv.write.enabled") or "").strip()
-                try:
-                    _set_cached_sys_kv_only(dict(fresh))
-                except Exception:
-                    pass
-        except Exception:
-            pass
-    if not enabled_raw:
-        raise HTTPException(
-            status_code=400,
-            detail={"error": "sys_kv_write_disabled", "detail": "Missing sys sheet key sys_kv.write.enabled (default disabled)"},
-        )
+    fresh = await _load_sys_kv_from_sheet()
+    if not isinstance(fresh, dict) or not fresh:
+        return {"ok": False, "error": "sys_kv_reload_failed"}
     try:
-        if not _parse_bool_cell(enabled_raw):
-            raise HTTPException(
-                status_code=400,
-                detail={"error": "sys_kv_write_disabled", "detail": "Enable via sys sheet key sys_kv.write.enabled=true"},
-            )
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(status_code=400, detail={"error": "sys_kv_write_disabled", "detail": "Invalid sys_kv.write.enabled"})
-
-    k = str(req.key or "").strip()
-    v = str(req.value or "").strip()
-    if not k:
-        raise HTTPException(status_code=400, detail={"error": "missing_key"})
-    dry_run = bool(req.dry_run is True)
-    result = await _sys_kv_upsert_sheet(key=k, value=v, dry_run=dry_run)
-    if not isinstance(result, dict) or not result.get("ok"):
-        raise HTTPException(status_code=500, detail={"error": "sys_kv_set_failed", "detail": result})
-    try:
-        fresh = dict(sys_kv) if isinstance(sys_kv, dict) else {}
-        fresh[k] = v
-        _set_cached_sys_kv_only(fresh)
+        _set_cached_sys_kv_only({str(k or "").strip(): str(v or "").strip() for k, v in fresh.items() if str(k or "").strip()})
     except Exception:
         pass
-    return {"ok": True, "key": k, "value": v, "dry_run": dry_run, "sys_kv_set": result}
+    return {"ok": True, "keys": sorted([str(k or "").strip() for k in fresh.keys() if str(k or "").strip()])}
 
 
 @app.post("/sys_kv/bootstrap/google_gates")
