@@ -16,7 +16,7 @@
 ## Now (what to do next)
 
 - **Say:** `action`
-- **I will run:** `TODO-NOW-009` (from `services/assistance/docs/TODO.md#now`)
+- **I will run:** Promote the next MVT (from `services/assistance/docs/TODO.md#now`) and update **Current pick** below
 
 ### Snapshot procedure (copy/paste; update the status chart)
 1. **Backend snapshot**
@@ -89,7 +89,7 @@ Need rebuild? rule (binary, selective CI):
 - WIP limit = 1: if you start a new thing, merge it into the existing checklist/backlog section (see **Intake/merge policy** below).
 
 ### Current pick
-- `Deploy verification completeness (TODO-NOW-009)` — fill digest/created/published fields reliably; tighten redeploy decision
+- Promote a new `TODO-NOW-010` (the `TODO.md#Now` list is fully checked)
 
 Update rule:
 - After you run any ACTION.md procedure, always come back here and set **Current pick** to the *single* next move.
@@ -121,6 +121,23 @@ Notes (from `stacks/idc1-assistance/CONFIG.md`):
 - Public WS URL is `wss://assistance.idc1.surf-thailand.com/jarvis/ws/live`.
 - Backend serves WS internally at `/ws/live` (edge proxy must strip `/jarvis`).
 - Hitting a WS URL as plain HTTP GET may return `404`; use a WS client.
+
+### Google tools gating verification (deployed)
+#### Goal
+- Prove granular Google gates are enforced by the backend (HTTP `403`) while Sheets remains enabled.
+
+#### Checks
+1. **Verify cached gates**
+   - `GET /sys_kv/snapshot`
+     - Confirm `google_gates.google.sheets.enabled=true`
+     - Confirm `google_gates.google.calendar.enabled=false`
+     - Confirm `google_gates.google.tasks.enabled=false`
+2. **Tasks gate**
+   - `GET /google-tasks/sequential/summary?max_results=1`
+     - Expect: `403` with `required_sys_kv_key=google.tasks.enabled`
+3. **Calendar gate**
+   - `GET /google-calendar/auth/status`
+     - Expect: `403` with `required_sys_kv_key=google.calendar.enabled`
 
 ### Operator smoke checklist (Calendar cutover)
 #### Preconditions
