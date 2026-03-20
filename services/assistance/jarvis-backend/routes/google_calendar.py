@@ -24,6 +24,29 @@ def create_router(
 ) -> APIRouter:
     router = APIRouter()
 
+    @router.get("/google-calendar/auth/status")
+    async def google_calendar_auth_status() -> dict[str, Any]:
+        auth_meta = mcp_tool_map.get("google_calendar_auth_status") if isinstance(mcp_tool_map, dict) else None
+        if not isinstance(auth_meta, dict):
+            raise HTTPException(status_code=500, detail="google_calendar_tools_not_configured")
+        auth_tool = str(auth_meta.get("mcp_name") or "").strip()
+        if not auth_tool:
+            raise HTTPException(status_code=500, detail="google_calendar_tools_not_configured")
+
+        try:
+            res = await mcp_tools_call(auth_tool, {})
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=502, detail={"google_calendar_auth_status_failed": str(e)})
+
+        parsed = mcp_text_json(res)
+        if isinstance(parsed, dict) and isinstance(parsed.get("data"), dict):
+            return {"ok": True, "data": parsed.get("data")}
+        if isinstance(parsed, dict):
+            return parsed
+        return {"ok": True, "raw": parsed}
+
     @router.get("/google-calendar/undo/list", response_model=GoogleCalendarUndoListResponse)
     async def google_calendar_undo_list(limit: int = 10) -> GoogleCalendarUndoListResponse:
         items = undo_list(limit)
