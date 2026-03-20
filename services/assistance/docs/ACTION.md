@@ -53,19 +53,19 @@
 | Need redeploy? | No |
 | Health ok | Yes |
 | Status ok | Yes |
-| uptime_s | 35328 |
-| Snapshot ts | 2026-03-20T01:33:xxZ |
+| uptime_s | 30 |
+| Snapshot ts | 2026-03-20T01:41:xxZ |
 | Deployed base URL | `https://assistance.idc1.surf-thailand.com/jarvis/api` |
-| instance_id | jarvis_188a8a3fcb |
+| instance_id | jarvis_dbca7a0224 |
 | CI status | completed |
 | CI conclusion | success |
-| CI head_sha | d462666c015a960eb174882b5877175381020aa0 |
-| CI updated_at | 2026-03-19T14:34:45Z |
-| CI url | https://github.com/tonezzz/chaba/actions/runs/23300124908 |
+| CI head_sha | 3f16deb487ffc2ba644481ff038fa94206e477bc |
+| CI updated_at | 2026-03-20T01:40:34Z |
+| CI url | https://github.com/tonezzz/chaba/actions/runs/23325429676 |
 | jarvis-backend image (tag) | ghcr.io/tonezzz/chaba/jarvis-backend:idc1-assistance |
-| jarvis-backend image digest | ghcr.io/tonezzz/chaba/jarvis-backend@sha256:9fefa087c14bb48a5d7c69550532d7af025d0d883790f02840957278b7051c30 |
-| jarvis-backend image created | 2026-03-19T14:34:52.572034486Z |
-| jarvis-backend image_id | sha256:9fefa087c14bb48a5d7c69550532d7af025d0d883790f02840957278b7051c30 |
+| jarvis-backend image digest | ghcr.io/tonezzz/chaba/jarvis-backend@sha256:17c97056c28c81e3246f34832b6478f214d0e52bf40c39d45e6e0cd01287cc3e |
+| jarvis-backend image created | 2026-03-20T01:40:37.679326021Z |
+| jarvis-backend image_id | sha256:17c97056c28c81e3246f34832b6478f214d0e52bf40c39d45e6e0cd01287cc3e |
 | Backend image published in latest CI? | Yes |
 
 Need redeploy? rule (binary):

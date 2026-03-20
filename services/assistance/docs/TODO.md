@@ -2,7 +2,7 @@
 
 ## Now
 
-- [ ] TODO-NOW-009: Deploy verification completeness (fill digest/created/published fields reliably; tighten redeploy decision)
+- [x] TODO-NOW-009: Deploy verification completeness (fill digest/created/published fields reliably; tighten redeploy decision)
 - [x] TODO-NOW-008: Status loop polish (make ACTION.md Now loop more mechanical)
 - [x] TODO-NOW-007: Docs cleanup pass (tighten ACTION.md ordering; remove drift/duplication)
 - [x] TODO-NOW-006: Make `/health` authoritative (non-null `build.git_sha` and `build.image_tag`)
