@@ -1835,6 +1835,17 @@ async def _macro_tools_get_cached(*, sys_kv: Optional[dict[str, Any]] = None, tt
     return loaded
 
 
+async def _macro_tools_force_reload_from_sheet(*, sys_kv: Optional[dict[str, Any]] = None) -> dict[str, dict[str, Any]]:
+    now = time.time()
+    try:
+        loaded = await _load_macro_tools_from_sheet(sys_kv=sys_kv)
+    except Exception:
+        loaded = {}
+    _MACRO_TOOL_CACHE["ts"] = now
+    _MACRO_TOOL_CACHE["macros"] = loaded if isinstance(loaded, dict) else {}
+    return _MACRO_TOOL_CACHE["macros"]
+
+
 def _macro_tools_cached_snapshot() -> dict[str, dict[str, Any]]:
     macros = _MACRO_TOOL_CACHE.get("macros")
     if isinstance(macros, dict):
@@ -8542,7 +8553,8 @@ async def _handle_reload_system(ws: WebSocket, text: str) -> bool:
 
         try:
             # System reload now only refreshes the system KV sheet and system.instruction.
-            await _load_ws_system_kv(ws)
+            sys_kv = await _load_ws_system_kv(ws)
+            await _macro_tools_force_reload_from_sheet(sys_kv=sys_kv)
         except Exception as e:
             def _short_reload_err(err: Exception) -> str:
                 s = str(err or "").strip()
