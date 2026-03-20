@@ -2769,11 +2769,10 @@ async def memo_relate(
     except HTTPException as e:
         return {"ok": True, "q": q, "k": k, "group": group, "result": {"error": getattr(e, "detail", str(e))}, "items": items}
 
-
-@app.post("/sys_kv/set")
 @app.post("/jarvis/sys_kv/set")
 async def sys_kv_set(req: SysKvSetRequest, x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token")) -> dict[str, Any]:
     _require_api_token_if_configured(x_api_token)
+
     sys_kv = _sys_kv_snapshot()
     enabled_raw = str(sys_kv.get("sys_kv.write.enabled") or "").strip() if isinstance(sys_kv, dict) else ""
     if not enabled_raw:
@@ -2819,6 +2818,117 @@ async def sys_kv_set(req: SysKvSetRequest, x_api_token: Optional[str] = Header(d
     except Exception:
         pass
     return {"ok": True, "key": k, "value": v, "dry_run": dry_run, "sys_kv_set": result}
+
+
+@app.post("/sys_kv/bootstrap/google_gates")
+@app.post("/jarvis/sys_kv/bootstrap/google_gates")
+async def sys_kv_bootstrap_google_gates(
+    x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token"),
+) -> dict[str, Any]:
+    _require_api_token_if_configured(x_api_token)
+
+    keys: list[tuple[str, str]] = [
+        ("google.sheets.enabled", "true"),
+        ("google.calendar.enabled", "false"),
+        ("google.tasks.enabled", "false"),
+        ("gmail.enabled", "false"),
+    ]
+
+    upserts: list[dict[str, Any]] = []
+    for k, v in keys:
+        try:
+            upserts.append(await _sys_kv_upsert_sheet(key=k, value=v, dry_run=False))
+        except Exception as e:
+            upserts.append({"ok": False, "key": k, "error": f"{type(e).__name__}: {e}"})
+
+    checkbox_result: Any = None
+    try:
+        spreadsheet_id = _system_spreadsheet_id()
+        sys_sheet = _system_sheet_name()
+        if spreadsheet_id and sys_sheet:
+            tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+            res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sys_sheet}!A:Z"})
+            parsed = _mcp_text_json(res)
+            values = parsed.get("values") if isinstance(parsed, dict) else None
+            if not isinstance(values, list) or not values:
+                data = parsed.get("data") if isinstance(parsed, dict) else None
+                if isinstance(data, dict):
+                    values = data.get("values")
+
+            tool_meta = _pick_sheets_tool_name("google_sheets_get_spreadsheet", "google_sheets_get_spreadsheet")
+            meta_res = await _mcp_tools_call(tool_meta, {"spreadsheet_id": spreadsheet_id})
+            meta_parsed = _mcp_text_json(meta_res)
+            meta_data = meta_parsed.get("data") if isinstance(meta_parsed, dict) else None
+            if not isinstance(meta_data, dict):
+                meta_data = meta_parsed
+
+            sheet_id: Optional[int] = None
+            sheets = meta_data.get("sheets") if isinstance(meta_data, dict) else None
+            if isinstance(sheets, list):
+                for s in sheets:
+                    props = s.get("properties") if isinstance(s, dict) else None
+                    title = str(props.get("title") or "") if isinstance(props, dict) else ""
+                    if title.strip() == sys_sheet:
+                        try:
+                            sheet_id = int(props.get("sheetId"))
+                        except Exception:
+                            sheet_id = None
+                        break
+
+            if isinstance(values, list) and sheet_id is not None:
+                header = values[0] if values and isinstance(values[0], list) else []
+                header_lower = [str(c or "").strip().lower() for c in header] if isinstance(header, list) else []
+                key_col = None
+                val_col = None
+                for j, name in enumerate(header_lower):
+                    if name == "key" and key_col is None:
+                        key_col = int(j)
+                    if name == "value" and val_col is None:
+                        val_col = int(j)
+                if key_col is None:
+                    key_col = 0
+                if val_col is None:
+                    val_col = 1
+
+                targets: list[dict[str, int]] = []
+                desired_keys = {k for k, _ in keys}
+                for i, row in enumerate(values, start=1):
+                    if i == 1:
+                        continue
+                    if not isinstance(row, list) or len(row) <= key_col:
+                        continue
+                    rk = str(row[key_col] or "").strip()
+                    if rk in desired_keys:
+                        targets.append({"row": i - 1, "col": int(val_col)})
+
+                if targets:
+                    tool_bu = _pick_sheets_tool_name("google_sheets_batch_update", "google_sheets_batch_update")
+                    requests: list[dict[str, Any]] = []
+                    for t in targets:
+                        r0 = int(t["row"])
+                        c0 = int(t["col"])
+                        requests.append(
+                            {
+                                "setDataValidation": {
+                                    "range": {
+                                        "sheetId": int(sheet_id),
+                                        "startRowIndex": r0,
+                                        "endRowIndex": r0 + 1,
+                                        "startColumnIndex": c0,
+                                        "endColumnIndex": c0 + 1,
+                                    },
+                                    "rule": {
+                                        "condition": {"type": "BOOLEAN"},
+                                        "showCustomUi": True,
+                                    },
+                                }
+                            }
+                        )
+                    checkbox_result = await _mcp_tools_call(tool_bu, {"spreadsheet_id": spreadsheet_id, "requests": requests})
+    except Exception as e:
+        checkbox_result = {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+    return {"ok": True, "upserts": upserts, "checkbox": _mcp_text_json(checkbox_result) if checkbox_result is not None else None}
 
 
 @app.post("/memory/set")
@@ -10712,28 +10822,39 @@ async def _mcp_tools_list() -> list[dict[str, Any]]:
     return await mcp_client.mcp_tools_list(base)
 
 
-def _is_google_tool_name(tool_name: str) -> bool:
+def _google_gate_for_tool(tool_name: str) -> tuple[str, bool] | None:
     n = str(tool_name or "").strip().lower()
     if not n:
-        return False
-    if n.startswith("google_"):
-        return True
+        return None
+    if n.startswith("google_sheets_"):
+        return ("google.sheets.enabled", True)
+    if n.startswith("google_calendar_"):
+        return ("google.calendar.enabled", False)
+    if n.startswith("google_tasks_"):
+        return ("google.tasks.enabled", False)
     if n.startswith("gmail_"):
-        return True
-    return False
+        return ("gmail.enabled", False)
+    if n.startswith("google_"):
+        return ("google.tools.enabled", False)
+    return None
 
 
 async def _mcp_tools_call(name: str, arguments: dict[str, Any]) -> Any:
-    if _is_google_tool_name(str(name or "")):
+    gate = _google_gate_for_tool(str(name or ""))
+    if gate is not None:
+        gate_key, gate_default = gate
         sys_kv = _sys_kv_snapshot()
-        enabled = _sys_kv_bool(sys_kv, "google.tools.enabled", default=False)
+        default_enabled = gate_default
+        if gate_key != "google.tools.enabled":
+            default_enabled = _sys_kv_bool(sys_kv, "google.tools.enabled", default=gate_default)
+        enabled = _sys_kv_bool(sys_kv, gate_key, default=default_enabled)
         if not enabled:
             raise HTTPException(
                 status_code=403,
                 detail={
                     "error": "google_tools_disabled",
                     "tool": str(name or ""),
-                    "required_sys_kv_key": "google.tools.enabled",
+                    "required_sys_kv_key": gate_key,
                 },
             )
     base = MCP_BASE_URL

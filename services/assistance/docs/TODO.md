@@ -25,7 +25,7 @@
 ## Later
 
 - Re-enable Google tools gate (when Jarvis is stable)
-  - Google MCP tools are currently gated by sys_kv `google.tools.enabled` (default disabled)
+  - Google MCP tools are currently gated by sys_kv keys: `google.sheets.enabled`, `google.calendar.enabled`, `google.tasks.enabled`, `gmail.enabled`
   - Goal: add a safe rollout checklist + explicit enable/disable procedure
 
 ## General
