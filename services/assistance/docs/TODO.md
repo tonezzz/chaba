@@ -15,13 +15,18 @@
 - [x] TODO-NOW-002: Record deploy snapshot into Memory (`runtime.deploy.snapshot.latest`)
 - [x] TODO-NEXT-001: Add a small smoke checklist for operators (calendar reminder + legacy scheduler disabled)
   - Added to `services/assistance/docs/ACTION.md` (Operator smoke checklist)
+- [x] TODO-NOW-002: Record deploy snapshot into Memory (`runtime.deploy.snapshot.latest`)
 - [x] TODO-NOW-003: Remove legacy reminders system completely (once Calendar cutover is stable)
   - Evidence (2026-03-19): removed legacy SQLite `reminders` table usage, scheduler loop, and legacy WS actions; Calendar-based reminder creation preserved; `python -m py_compile services/assistance/jarvis-backend/main.py` passed
 
 ## Next
 
+
 ## Later
 
+- Re-enable Google tools gate (when Jarvis is stable)
+  - Google MCP tools are currently gated by sys_kv `google.tools.enabled` (default disabled)
+  - Goal: add a safe rollout checklist + explicit enable/disable procedure
 
 ## General
 

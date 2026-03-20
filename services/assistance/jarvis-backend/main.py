@@ -10712,7 +10712,30 @@ async def _mcp_tools_list() -> list[dict[str, Any]]:
     return await mcp_client.mcp_tools_list(base)
 
 
+def _is_google_tool_name(tool_name: str) -> bool:
+    n = str(tool_name or "").strip().lower()
+    if not n:
+        return False
+    if n.startswith("google_"):
+        return True
+    if n.startswith("gmail_"):
+        return True
+    return False
+
+
 async def _mcp_tools_call(name: str, arguments: dict[str, Any]) -> Any:
+    if _is_google_tool_name(str(name or "")):
+        sys_kv = _sys_kv_snapshot()
+        enabled = _sys_kv_bool(sys_kv, "google.tools.enabled", default=False)
+        if not enabled:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "google_tools_disabled",
+                    "tool": str(name or ""),
+                    "required_sys_kv_key": "google.tools.enabled",
+                },
+            )
     base = MCP_BASE_URL
     if MCP_PLAYWRIGHT_BASE_URL and (
         str(name or "").startswith("playwright_") or str(name or "").startswith("browser_")
