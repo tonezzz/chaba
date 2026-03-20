@@ -2,6 +2,7 @@
 
 ## Now
 
+- [ ] TODO-NOW-010: TODO.md drift fix (dedupe Now list; tighten ordering; remove obvious duplication)
 - [x] TODO-NOW-009: Deploy verification completeness (fill digest/created/published fields reliably; tighten redeploy decision)
 - [x] TODO-NOW-008: Status loop polish (make ACTION.md Now loop more mechanical)
 - [x] TODO-NOW-007: Docs cleanup pass (tighten ACTION.md ordering; remove drift/duplication)
@@ -15,7 +16,6 @@
 - [x] TODO-NOW-002: Record deploy snapshot into Memory (`runtime.deploy.snapshot.latest`)
 - [x] TODO-NEXT-001: Add a small smoke checklist for operators (calendar reminder + legacy scheduler disabled)
   - Added to `services/assistance/docs/ACTION.md` (Operator smoke checklist)
-- [x] TODO-NOW-002: Record deploy snapshot into Memory (`runtime.deploy.snapshot.latest`)
 - [x] TODO-NOW-003: Remove legacy reminders system completely (once Calendar cutover is stable)
   - Evidence (2026-03-19): removed legacy SQLite `reminders` table usage, scheduler loop, and legacy WS actions; Calendar-based reminder creation preserved; `python -m py_compile services/assistance/jarvis-backend/main.py` passed
 
