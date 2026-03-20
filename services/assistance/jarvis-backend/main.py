@@ -2902,7 +2902,7 @@ async def sys_kv_bootstrap_google_gates(
                         targets.append({"row": i - 1, "col": int(val_col)})
 
                 if targets:
-                    tool_bu = _pick_sheets_tool_name("google_sheets_batch_update", "google_sheets_batch_update")
+                    tool_bu = await _resolve_mcp_tool_name("google_sheets_batch_update", fallback="google_sheets_batch_update")
                     requests: list[dict[str, Any]] = []
                     for t in targets:
                         r0 = int(t["row"])
@@ -10820,6 +10820,27 @@ async def _mcp_tools_list() -> list[dict[str, Any]]:
             out.append(t)
         return out
     return await mcp_client.mcp_tools_list(base)
+
+
+async def _resolve_mcp_tool_name(alias: str, *, fallback: str) -> str:
+    name = _get_sheets_tool_name(alias)
+    if name:
+        return name
+    try:
+        tools = await _mcp_tools_list()
+    except Exception:
+        tools = []
+    want = str(fallback or alias or "").strip()
+    if want:
+        for t in tools or []:
+            if not isinstance(t, dict):
+                continue
+            n = str(t.get("name") or "").strip()
+            if n == want:
+                return n
+            if want in n:
+                return n
+    return want or str(alias or "").strip()
 
 
 def _google_gate_for_tool(tool_name: str) -> tuple[str, bool] | None:
