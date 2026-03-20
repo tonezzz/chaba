@@ -64,6 +64,8 @@ def create_router(
 
         try:
             auth_res = await mcp_tools_call(auth_tool, {})
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(status_code=502, detail={"google_tasks_auth_status_failed": str(e)})
 
@@ -80,6 +82,8 @@ def create_router(
         if not chosen_tasklist_id or desired_tasklist_title:
             try:
                 tl_res = await mcp_tools_call(list_tasklists_tool, {})
+            except HTTPException:
+                raise
             except Exception as e:
                 raise HTTPException(status_code=502, detail={"google_tasks_list_tasklists_failed": str(e)})
 
@@ -145,6 +149,8 @@ def create_router(
 
         try:
             tasks_res = await mcp_tools_call(list_tasks_tool, args)
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(status_code=502, detail={"google_tasks_list_tasks_failed": str(e)})
 

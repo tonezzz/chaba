@@ -132,3 +132,26 @@ def test_google_tasks_sequential_summary_not_authenticated(monkeypatch: pytest.M
     res = client.get("/google-tasks/sequential/summary")
     assert res.status_code == 401
     assert res.json()["detail"] == "google_tasks_not_authenticated"
+
+
+def test_google_tasks_sequential_summary_propagates_http_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def fake_call(name: str, arguments: dict):
+        if name.endswith("google_tasks_auth_status"):
+            raise main.HTTPException(
+                status_code=403,
+                detail={
+                    "error": "google_tools_disabled",
+                    "tool": name,
+                    "required_sys_kv_key": "google.tasks.enabled",
+                },
+            )
+        raise AssertionError(f"unexpected_tool_name {name}")
+
+    monkeypatch.setattr(main, "_mcp_tools_call", fake_call)
+
+    client = TestClient(main.app)
+    res = client.get("/google-tasks/sequential/summary")
+    assert res.status_code == 403
+    detail = res.json().get("detail")
+    assert isinstance(detail, dict)
+    assert detail.get("error") == "google_tools_disabled"
