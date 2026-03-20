@@ -2571,6 +2571,18 @@ async def tools_api_call(tool_name: str, args: dict[str, Any], session_id: str |
             forwarded_args = _adapt_playwright_tool_args(mcp_name, forwarded_args)
         return await mcp_client.mcp_tools_call(url, mcp_name, forwarded_args)
 
+    # Route non-MCP tools through the same dispatcher used by the websocket runtime.
+    # This includes macro tools (macro_* / macro_run) and any tools declared in MCP_TOOL_MAP.
+    try:
+        n = str(tool_name or "").strip()
+        if n and (n.startswith("macro_") or n == "macro_run" or n in MCP_TOOL_MAP):
+            forwarded_args = dict(args or {})
+            return await _handle_mcp_tool_call(session_id, n, forwarded_args)
+    except HTTPException:
+        raise
+    except Exception:
+        pass
+
     raise HTTPException(status_code=400, detail={"unknown_tool": tool_name})
 
 
