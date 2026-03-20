@@ -78,6 +78,9 @@ async def handle_followup(
     sys_kv_bool: Callable[[Any, str, bool], bool],
     memo_sheet_cfg_from_sys_kv: Callable[[dict[str, Any] | None], tuple[str, str]],
     sheet_name_to_a1: Callable[[str, str], str],
+    sheet_get_header_row: Callable[..., Awaitable[list[Any]]],
+    idx_from_header: Callable[[list[Any]], dict[str, int]],
+    memo_ensure_header: Callable[..., Awaitable[None]],
     pick_sheets_tool_name: Callable[[str, str], str],
     mcp_tools_call: Callable[[str, dict[str, Any]], Awaitable[Any]],
     ws_send_json: Callable[[Any, dict[str, Any]], Awaitable[None]],
@@ -130,16 +133,56 @@ async def handle_followup(
     if details:
         memo_final = (memo_final.rstrip() + "\n\nDetails: " + details).strip()
 
-    tool_append = pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
     sheet_a1 = sheet_name_to_a1(sheet_name, "memo")
     now_dt = now_dt_utc()
-    row = [now_dt, group, "new", subject, memo_final, "", "", "", False, now_dt, now_dt]
+
+    header = []
+    idx: dict[str, int] = {}
+    try:
+        header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
+        idx = idx_from_header(header)
+    except Exception:
+        idx = {}
+    if not idx:
+        try:
+            await memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+        except Exception:
+            pass
+        try:
+            header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
+            idx = idx_from_header(header)
+        except Exception:
+            idx = {}
+
+    def _set(row: list[Any], col: str, value: Any) -> None:
+        try:
+            j = idx.get(str(col or "").strip().lower())
+            if j is None:
+                return
+            while len(row) <= j:
+                row.append("")
+            row[j] = value
+        except Exception:
+            return
+
+    row: list[Any] = []
+    _set(row, "active", True)
+    _set(row, "group", group)
+    _set(row, "subject", subject)
+    _set(row, "memo", memo_final)
+    _set(row, "status", "new")
+    _set(row, "result", "")
+    _set(row, "date_time", now_dt)
+    _set(row, "_created", now_dt)
+    _set(row, "_updated", now_dt)
+
+    tool_append = pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
     try:
         await mcp_tools_call(
             tool_append,
             {
                 "spreadsheet_id": spreadsheet_id,
-                "range": f"{sheet_a1}!A:K",
+                "range": f"{sheet_a1}!A:Z",
                 "values": [row],
                 "value_input_option": "USER_ENTERED",
                 "insert_data_option": "INSERT_ROWS",

@@ -37,12 +37,15 @@
    - If CI is green but `/health.build.*` doesn’t match `run.head_sha`, redeploy.
 
 ### 4 most valuable next actions (update this every time you run "Now")
-1. **Deploy/build snapshot (10 minutes)**
+1. **Docs cleanup pass (TODO-NOW-007) (15 minutes)**
+   - Goal: tighten `ACTION.md` ordering and remove drift/duplication.
+   - Rule: keep `ACTION.md` as the operator SSOT; other docs should link here.
+2. **Deploy/build snapshot (10 minutes)**
    - Run: **Deploy/Build status awareness (save current state)**
    - Paste the results into the status chart below.
-2. **Prove redeploy updated (10 minutes)**
-   - If `/health.build.*` are `null`, run: **Assess a pending job (might already be done)** then prove the running image digest via Portainer/host inspection.
-3. **Watcher SNA (15 minutes)**
+3. **Prove redeploy updated (10 minutes)**
+   - If `/health.build.git_sha` / `/health.build.image_tag` are `null`, run: **Assess a pending job (might already be done)** then prove the running image digest via Portainer/host inspection.
+4. **Watcher SNA (15 minutes)**
    - Run: **SNA for GitHub Actions watcher (deployed)**
    - Goal: verify start -> running -> completed/timeout -> auto-stop + UI log.
 
@@ -321,6 +324,20 @@ Use this anytime you have multiple chats/agents editing the repo.
 
 ## Immediate fix: memo/logs not updating
 Use this when you “don’t see memo/logs update” after a run.
+
+### Memo (Thai commands + schema notes)
+- Canonical memo header is enforced on-write (see `MEMO.md`).
+- Thai commands:
+  - `สรุปเมโม <id>`
+    - Uses the memo already in session context if it matches `<id>`, otherwise loads from the memo sheet.
+    - Output is adaptive (short memos: concise bullets; long/complex: sectioned markdown).
+  - `แก้ไขเมโม` / `ปรับปรุงเมโม`
+    - Hybrid flow: collects the new memo text, then requires explicit confirmation (`ยืนยัน` / `ยกเลิก`) before writing to the sheet.
+
+Local verification (jarvis-backend):
+- `python3 -m venv services/assistance/jarvis-backend/.venv`
+- `services/assistance/jarvis-backend/.venv/bin/pip install -r services/assistance/jarvis-backend/requirements.txt`
+- `services/assistance/jarvis-backend/.venv/bin/python -m pytest -q services/assistance/jarvis-backend`
 
 ### Memo (does memo append work?)
 Format SSOT:

@@ -125,6 +125,14 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                 raise HTTPException(status_code=400, detail="missing_memo_sheet_name")
 
             sheet_a1 = sheet_name_to_a1(sheet_name, default="memo")
+
+            # Always ensure canonical header before indexing/appending. This prevents legacy/manual headers
+            # from silently causing incorrect column mapping.
+            try:
+                await memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, force=False)
+            except Exception:
+                pass
+
             header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
             idx = idx_from_header(header)
             if not idx:

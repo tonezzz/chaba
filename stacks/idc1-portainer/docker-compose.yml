@@ -17,8 +17,6 @@ services:
     restart: unless-stopped
     depends_on:
       - portainer
-    env_file:
-      - ./.env
     ports:
       - "${MCP_BUNDLE_PORT:-3052}:3050"
     command:

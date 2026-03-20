@@ -346,6 +346,323 @@ def _memory_capture_enabled(sys_kv: Any) -> bool:
     return True
 
 
+def _is_history_trigger(text: str) -> bool:
+    s = " ".join(str(text or "").strip().split())
+    if not s:
+        return False
+    sl = s.lower()
+    compact = re.sub(r"[^a-z0-9\u0E00-\u0E7F]+", " ", sl).strip()
+    compact = " ".join(compact.split())
+    # English
+    if compact in {"history", "conversation history", "chat history"}:
+        return True
+    if compact.startswith("show history") or compact.startswith("show conversation"):
+        return True
+    # Thai
+    if compact in {"ประวัติ", "ประวัติแชท", "ประวัติสนทนา"}:
+        return True
+    if "ประวัติ" in compact and ("แชท" in compact or "สนทนา" in compact):
+        return True
+    return False
+
+
+async def _memo_context_upsert(*, ws: WebSocket, category: str, value: str) -> None:
+    sys_kv = getattr(ws.state, "sys_kv", None)
+    if not isinstance(sys_kv, dict):
+        return
+    if not _sys_kv_bool(sys_kv, "memo.enabled", default=False):
+        return
+    spreadsheet_id, sheet_name = _memo_sheet_cfg_from_sys_kv(sys_kv)
+    if not spreadsheet_id or not sheet_name:
+        return
+    sheet_a1 = _sheet_name_to_a1(sheet_name, default="memo")
+
+    subject = f"jarvis.contexts.{str(category or '').strip()}".strip().lower()
+    if not subject or subject == "jarvis.contexts.":
+        return
+
+    memo_txt = str(value or "").strip()
+    if len(memo_txt) > 8000:
+        memo_txt = memo_txt[:8000] + "..."
+
+    now_dt = datetime.now(tz=timezone.utc).replace(microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
+
+    try:
+        await _memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, force=False)
+    except Exception:
+        pass
+    header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
+    idx = _idx_from_header(header)
+    if not idx:
+        return
+
+    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    tool_append = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+    tool_update = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+
+    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A2:J"})
+    parsed = _mcp_text_json(res)
+    data = parsed.get("data") if isinstance(parsed, dict) else None
+    vals = parsed.get("values") if isinstance(parsed, dict) else None
+    if not isinstance(vals, list) and isinstance(data, dict):
+        vals = data.get("values")
+    rows = vals if isinstance(vals, list) else []
+    if not isinstance(rows, list):
+        rows = []
+
+    j_subject = idx.get("subject")
+    j_id = idx.get("id")
+    if not isinstance(j_subject, int) or j_subject < 0:
+        return
+
+    def _cell(r: list[Any], j: int) -> str:
+        if not isinstance(r, list):
+            return ""
+        if j < 0 or j >= len(r):
+            return ""
+        return str(r[j] or "")
+
+    hit_i: int | None = None
+    existing_row: list[Any] | None = None
+    for i, r in enumerate(rows):
+        if not isinstance(r, list):
+            continue
+        if str(_cell(r, j_subject) or "").strip().lower() == subject:
+            hit_i = i
+            existing_row = list(r)
+            break
+
+    def _set(row: list[Any], col: str, value2: Any) -> None:
+        j = idx.get(str(col or "").strip().lower())
+        if not isinstance(j, int) or j < 0:
+            return
+        while len(row) <= j:
+            row.append("")
+        row[j] = value2
+
+    if hit_i is not None and existing_row is not None:
+        out_row: list[Any] = []
+        for k in ["id", "date_time", "active", "status", "group", "subject", "memo", "result", "_created", "_updated"]:
+            _set(out_row, k, "")
+        if isinstance(j_id, int) and j_id >= 0 and j_id < len(existing_row):
+            _set(out_row, "id", existing_row[j_id])
+        _set(out_row, "active", True)
+        _set(out_row, "status", "context")
+        _set(out_row, "group", "jarvis.contexts")
+        _set(out_row, "subject", subject)
+        _set(out_row, "memo", memo_txt)
+        _set(out_row, "date_time", now_dt)
+        created = ""
+        try:
+            j_created = idx.get("_created")
+            if isinstance(j_created, int) and j_created >= 0 and j_created < len(existing_row):
+                created = str(existing_row[j_created] or "")
+        except Exception:
+            created = ""
+        _set(out_row, "_created", created or now_dt)
+        _set(out_row, "_updated", now_dt)
+
+        row_num = 2 + int(hit_i)
+        await _mcp_tools_call(
+            tool_update,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": f"{sheet_a1}!A{row_num}:J{row_num}",
+                "values": [out_row[:10]],
+                "value_input_option": "USER_ENTERED",
+            },
+        )
+        return
+
+    next_id = 1
+    if isinstance(j_id, int) and j_id >= 0:
+        max_id = 0
+        for r in rows:
+            if not isinstance(r, list):
+                continue
+            if j_id >= len(r):
+                continue
+            raw = str(r[j_id] or "").strip()
+            if not raw:
+                continue
+            try:
+                n = int(float(raw))
+            except Exception:
+                continue
+            if n > max_id:
+                max_id = n
+        next_id = (max_id + 1) if max_id > 0 else (len(rows) + 1)
+
+    new_row: list[Any] = []
+    _set(new_row, "id", int(next_id))
+    _set(new_row, "active", True)
+    _set(new_row, "status", "context")
+    _set(new_row, "group", "jarvis.contexts")
+    _set(new_row, "subject", subject)
+    _set(new_row, "memo", memo_txt)
+    _set(new_row, "result", "")
+    _set(new_row, "date_time", now_dt)
+    _set(new_row, "_created", now_dt)
+    _set(new_row, "_updated", now_dt)
+
+    await _mcp_tools_call(
+        tool_append,
+        {
+            "spreadsheet_id": spreadsheet_id,
+            "range": f"{sheet_a1}!A:Z",
+            "values": [new_row],
+            "value_input_option": "USER_ENTERED",
+            "insert_data_option": "INSERT_ROWS",
+        },
+    )
+
+
+async def _memo_context_read_all(ws: WebSocket) -> dict[str, str]:
+    sys_kv = getattr(ws.state, "sys_kv", None)
+    if not isinstance(sys_kv, dict):
+        return {}
+    if not _sys_kv_bool(sys_kv, "memo.enabled", default=False):
+        return {}
+    spreadsheet_id, sheet_name = _memo_sheet_cfg_from_sys_kv(sys_kv)
+    if not spreadsheet_id or not sheet_name:
+        return {}
+    sheet_a1 = _sheet_name_to_a1(sheet_name, default="memo")
+
+    try:
+        await _memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, force=False)
+    except Exception:
+        pass
+    header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
+    idx = _idx_from_header(header)
+    if not idx:
+        return {}
+    j_subject = idx.get("subject")
+    j_memo = idx.get("memo")
+    if not isinstance(j_subject, int) or not isinstance(j_memo, int):
+        return {}
+
+    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A2:J"})
+    parsed = _mcp_text_json(res)
+    data = parsed.get("data") if isinstance(parsed, dict) else None
+    vals = parsed.get("values") if isinstance(parsed, dict) else None
+    if not isinstance(vals, list) and isinstance(data, dict):
+        vals = data.get("values")
+    rows = vals if isinstance(vals, list) else []
+    if not isinstance(rows, list):
+        rows = []
+
+    out: dict[str, str] = {}
+    for r in rows:
+        if not isinstance(r, list):
+            continue
+        subj = str(r[j_subject] or "").strip().lower() if j_subject < len(r) else ""
+        if not subj.startswith("jarvis.contexts."):
+            continue
+        memo_v = str(r[j_memo] or "").strip() if j_memo < len(r) else ""
+        out[subj] = memo_v
+    return out
+
+
+async def _ws_update_contexts_from_text(ws: WebSocket, text: str, *, handled: bool) -> None:
+    now_ts = int(time.time())
+    try:
+        cache = getattr(ws.state, "contexts_cache", None)
+        if not isinstance(cache, dict):
+            cache = {}
+            ws.state.contexts_cache = cache
+    except Exception:
+        cache = {}
+
+    try:
+        last_write = getattr(ws.state, "contexts_last_write_ts", None)
+        if not isinstance(last_write, dict):
+            last_write = {}
+            ws.state.contexts_last_write_ts = last_write
+    except Exception:
+        last_write = {}
+
+    def _should_write(category: str, value: str, min_interval_s: int = 10) -> bool:
+        k = str(category or "").strip().lower()
+        v = str(value or "").strip()
+        if not k or not v:
+            return False
+        if str(cache.get(k) or "") == v:
+            return False
+        try:
+            ts0 = int(last_write.get(k) or 0)
+        except Exception:
+            ts0 = 0
+        if ts0 and (now_ts - ts0) < int(min_interval_s):
+            return False
+        cache[k] = v
+        last_write[k] = now_ts
+        return True
+
+    s = str(text or "").strip()
+    if not s:
+        return
+
+    try:
+        recent = getattr(ws.state, "recent_user_texts", None)
+        if not isinstance(recent, list):
+            recent = []
+            ws.state.recent_user_texts = recent
+        recent.append(s)
+        ws.state.recent_user_texts = recent[-8:]
+    except Exception:
+        recent = [s]
+
+    conv_summary = "\n".join([f"- {t}" for t in recent[-6:]]).strip()
+    if _should_write("conversation_summary", conv_summary, min_interval_s=10):
+        try:
+            await _memo_context_upsert(ws=ws, category="conversation_summary", value=conv_summary)
+        except Exception:
+            pass
+
+    intent_txt = "handled_local" if handled else "gemini"
+    if _should_write("last_intent_and_args", intent_txt, min_interval_s=10):
+        try:
+            await _memo_context_upsert(ws=ws, category="last_intent_and_args", value=intent_txt)
+        except Exception:
+            pass
+
+    entities: list[str] = []
+    try:
+        last_memo = getattr(ws.state, "last_memo", None)
+        if isinstance(last_memo, dict):
+            mid = last_memo.get("id")
+            if mid is not None:
+                entities.append(f"last_memo.id={mid}")
+            g = str(last_memo.get("group") or "").strip()
+            if g:
+                entities.append(f"last_memo.group={g}")
+            subj = str(last_memo.get("subject") or "").strip()
+            if subj:
+                entities.append(f"last_memo.subject={subj}")
+    except Exception:
+        pass
+
+    ent_txt = "\n".join([f"- {e}" for e in entities]).strip()
+    if ent_txt and _should_write("last_entities", ent_txt, min_interval_s=10):
+        try:
+            await _memo_context_upsert(ws=ws, category="last_entities", value=ent_txt)
+        except Exception:
+            pass
+
+    ops_txt = ""
+    try:
+        if s.lower().strip() == "action" or "todo-now" in s.lower():
+            ops_txt = s
+    except Exception:
+        ops_txt = ""
+    if ops_txt and _should_write("ops_snapshot", ops_txt, min_interval_s=10):
+        try:
+            await _memo_context_upsert(ws=ws, category="ops_snapshot", value=ops_txt)
+        except Exception:
+            pass
+
+
 def _redact_capture_text(text: str) -> str:
     s = str(text or "")
     if not s:
@@ -404,6 +721,300 @@ async def _maybe_capture_to_memory(ws: WebSocket, *, key: str, value: str, sourc
         except Exception:
             pass
         return
+
+
+async def _memo_load_by_id(*, ws: WebSocket, memo_id: int) -> dict[str, Any] | None:
+    if memo_id <= 0:
+        return None
+    sys_kv = getattr(ws.state, "sys_kv", None)
+    if not _sys_kv_bool(sys_kv, "memo.enabled", default=False):
+        return None
+
+    spreadsheet_id, sheet_name = _memo_sheet_cfg_from_sys_kv(sys_kv if isinstance(sys_kv, dict) else None)
+    if not spreadsheet_id or not sheet_name:
+        return None
+    sheet_a1 = _sheet_name_to_a1(sheet_name, default="memo")
+    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+
+    try:
+        header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
+    except Exception:
+        header = []
+    idx = _idx_from_header(header)
+    if not idx:
+        try:
+            await _memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
+        except Exception:
+            pass
+        try:
+            header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
+        except Exception:
+            header = []
+        idx = _idx_from_header(header)
+    if not idx:
+        return None
+
+    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A2:J"})
+    parsed = _mcp_text_json(res)
+    data = parsed.get("data") if isinstance(parsed, dict) else None
+    vals = parsed.get("values") if isinstance(parsed, dict) else None
+    if not isinstance(vals, list) and isinstance(data, dict):
+        vals = data.get("values")
+    rows = vals if isinstance(vals, list) else []
+
+    def _cell(row: list[Any], col: str) -> Any:
+        j = idx.get(str(col or "").strip().lower())
+        if j is None or j < 0 or j >= len(row):
+            return ""
+        return row[j]
+
+    for i, r in enumerate(rows, start=2):
+        if not isinstance(r, list):
+            continue
+        v = str(_cell(r, "id") or "").strip()
+        try:
+            rid = int(float(v)) if v else 0
+        except Exception:
+            rid = 0
+        if rid != int(memo_id):
+            continue
+        return {
+            "row_num": int(i),
+            "spreadsheet_id": spreadsheet_id,
+            "sheet_a1": sheet_a1,
+            "memo": {
+                "id": rid,
+                "active": _cell(r, "active"),
+                "group": str(_cell(r, "group") or ""),
+                "subject": str(_cell(r, "subject") or ""),
+                "memo": str(_cell(r, "memo") or ""),
+                "status": str(_cell(r, "status") or ""),
+                "result": str(_cell(r, "result") or ""),
+                "date_time": str(_cell(r, "date_time") or ""),
+                "_created": str(_cell(r, "_created") or ""),
+                "_updated": str(_cell(r, "_updated") or ""),
+            },
+        }
+    return None
+
+
+def _parse_th_memo_summarize(text: str) -> int | None:
+    s = " ".join(str(text or "").strip().split())
+    if not s:
+        return None
+    # Note: do NOT use _normalize_thai_compact here; it removes Thai vowels and can break keyword matching.
+    m = re.match(r"^สรุป\s*(?:เมโม|เมมโม|เมโม่|เมม)\s*(\d+)\b", s)
+    if not m:
+        return None
+    try:
+        return int(m.group(1))
+    except Exception:
+        return None
+
+
+def _is_th_memo_edit_trigger(text: str) -> bool:
+    s = " ".join(str(text or "").strip().split())
+    if not s:
+        return False
+    return bool(re.match(r"^(?:ปรับปรุง|แก้ไข)\s*(?:เมโม|เมมโม|เมโม่|เมม)\b", s))
+
+
+async def _memo_summarize_item(ws: WebSocket, memo_item: dict[str, Any]) -> str:
+    m = str(memo_item.get("memo") or "").strip()
+    subj = str(memo_item.get("subject") or "").strip()
+    group = str(memo_item.get("group") or "").strip()
+    status = str(memo_item.get("status") or "").strip()
+    result = str(memo_item.get("result") or "").strip()
+    dt = str(memo_item.get("date_time") or "").strip()
+    memo_id = memo_item.get("id")
+
+    payload = {
+        "id": memo_id,
+        "date_time": dt,
+        "group": group,
+        "subject": subj,
+        "status": status,
+        "memo": m,
+        "result": result,
+    }
+
+    longish = len(m) >= 320 or len(result) >= 160 or (subj and len(m) >= 180)
+    if longish:
+        system_instruction = (
+            "You summarize a memo entry for an operator. "
+            "Return concise markdown with: Summary, Key points, Open questions, Next actions."
+        )
+    else:
+        system_instruction = (
+            "You summarize a memo entry for an operator. "
+            "Return 3-8 concise bullet points plus 1-3 next actions. "
+            "Return markdown only."
+        )
+    return await _gemini_summarize_text(system_instruction=system_instruction, prompt=json.dumps(payload, ensure_ascii=False))
+
+
+async def _handle_thai_memo_commands(ws: WebSocket, text: str) -> bool:
+    s = str(text or "").strip()
+    if not s:
+        return False
+
+    memo_id = _parse_th_memo_summarize(s)
+    if memo_id is not None:
+        last = getattr(ws.state, "last_memo", None)
+        memo_item: dict[str, Any] | None = None
+        if isinstance(last, dict) and int(last.get("id") or 0) == int(memo_id):
+            memo_item = last
+        if memo_item is None:
+            loaded = await _memo_load_by_id(ws=ws, memo_id=int(memo_id))
+            if isinstance(loaded, dict):
+                memo_item = loaded.get("memo") if isinstance(loaded.get("memo"), dict) else None
+                if isinstance(memo_item, dict):
+                    try:
+                        ws.state.last_memo = dict(memo_item)
+                    except Exception:
+                        pass
+        if memo_item is None:
+            await _ws_send_json(ws, {"type": "text", "text": f"ไม่พบเมโม {memo_id}", "instance_id": INSTANCE_ID})
+            return True
+        try:
+            txt = await _memo_summarize_item(ws, memo_item)
+        except Exception:
+            txt = "สรุปเมโมไม่สำเร็จ"
+        await _ws_send_json(ws, {"type": "text", "text": txt, "instance_id": INSTANCE_ID})
+        try:
+            await _live_say(ws, txt)
+        except Exception:
+            pass
+        return True
+
+    if _is_th_memo_edit_trigger(s):
+        last = getattr(ws.state, "last_memo", None)
+        memo_item = last if isinstance(last, dict) else None
+        if not isinstance(memo_item, dict) or int(memo_item.get("id") or 0) <= 0:
+            await _ws_send_json(ws, {"type": "text", "text": "ต้องการแก้ไขเมโมไหน? พิมพ์: สรุปเมโม <id>", "instance_id": INSTANCE_ID})
+            return True
+        try:
+            ws.state.pending_memo_edit = {"stage": "collect", "memo": dict(memo_item)}
+            ws.state.active_agent_id = "memo_edit"
+            ws.state.active_agent_until_ts = int(time.time()) + AGENT_CONTINUE_WINDOW_SECONDS
+        except Exception:
+            pass
+        await _ws_send_json(
+            ws,
+            {
+                "type": "text",
+                "text": "พิมพ์ข้อความเต็มใหม่ของเมโม (จะใช้แทนที่ช่อง memo) แล้วฉันจะขอให้ยืนยันก่อนบันทึก",
+                "instance_id": INSTANCE_ID,
+            },
+        )
+        return True
+
+    return False
+
+
+async def _handle_memo_edit_followup(ws: WebSocket, text: str) -> bool:
+    pending = getattr(ws.state, "pending_memo_edit", None)
+    if not isinstance(pending, dict):
+        return False
+    raw = str(text or "").strip()
+    if not raw:
+        return True
+
+    stage = str(pending.get("stage") or "collect").strip().lower() or "collect"
+    memo_item = pending.get("memo") if isinstance(pending.get("memo"), dict) else None
+    if not isinstance(memo_item, dict):
+        return True
+
+    if stage == "collect":
+        pending["proposed"] = {"memo": raw}
+        pending["stage"] = "confirm"
+        await _ws_send_json(
+            ws,
+            {
+                "type": "text",
+                "text": "ยืนยันการบันทึกไหม? พิมพ์: ยืนยัน (หรือ พิมพ์: ยกเลิก)",
+                "instance_id": INSTANCE_ID,
+            },
+        )
+        return True
+
+    if stage == "confirm":
+        t = _normalize_thai_compact(raw).strip().lower()
+        if t in {"ยกเลิก", "cancel", "ไม่", "no"}:
+            try:
+                ws.state.pending_memo_edit = None
+            except Exception:
+                pass
+            await _ws_send_json(ws, {"type": "text", "text": "ยกเลิกแล้ว", "instance_id": INSTANCE_ID})
+            return True
+
+        if t not in {"ยืนยัน", "confirm", "ตกลง", "ok", "โอเค"}:
+            await _ws_send_json(ws, {"type": "text", "text": "พิมพ์ ยืนยัน หรือ ยกเลิก", "instance_id": INSTANCE_ID})
+            return True
+
+        memo_id = int(memo_item.get("id") or 0)
+        loaded = await _memo_load_by_id(ws=ws, memo_id=memo_id)
+        if not isinstance(loaded, dict):
+            await _ws_send_json(ws, {"type": "text", "text": "โหลดเมโมไม่สำเร็จ", "instance_id": INSTANCE_ID})
+            return True
+
+        row_num = int(loaded.get("row_num") or 0)
+        spreadsheet_id = str(loaded.get("spreadsheet_id") or "").strip()
+        sheet_a1 = str(loaded.get("sheet_a1") or "").strip()
+        current = loaded.get("memo") if isinstance(loaded.get("memo"), dict) else {}
+        proposed = pending.get("proposed") if isinstance(pending.get("proposed"), dict) else {}
+
+        now_dt = datetime.now(tz=timezone.utc).replace(microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
+
+        try:
+            header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
+        except Exception:
+            header = []
+        idx = _idx_from_header(header)
+        if not idx:
+            await _ws_send_json(ws, {"type": "text", "text": "memo_sheet_missing_header", "instance_id": INSTANCE_ID})
+            return True
+
+        row: list[Any] = []
+
+        def _set(col: str, value: Any) -> None:
+            j = idx.get(str(col or "").strip().lower())
+            if j is None:
+                return
+            while len(row) <= j:
+                row.append("")
+            row[j] = value
+
+        for k in ["id", "date_time", "active", "status", "group", "subject", "memo", "result", "_created", "_updated"]:
+            _set(k, current.get(k) if isinstance(current, dict) else "")
+        if isinstance(proposed, dict) and "memo" in proposed:
+            _set("memo", str(proposed.get("memo") or ""))
+        _set("_updated", now_dt)
+
+        tool_update = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+        await _mcp_tools_call(
+            tool_update,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": f"{sheet_a1}!A{row_num}:J{row_num}",
+                "values": [row[:10]],
+                "value_input_option": "USER_ENTERED",
+            },
+        )
+
+        try:
+            ws.state.last_memo = dict({**(current if isinstance(current, dict) else {}), **({"memo": str(proposed.get("memo") or "")} if isinstance(proposed, dict) else {})})
+        except Exception:
+            pass
+        try:
+            ws.state.pending_memo_edit = None
+        except Exception:
+            pass
+        await _ws_send_json(ws, {"type": "text", "text": "บันทึกแล้ว", "instance_id": INSTANCE_ID})
+        return True
+
+    return True
+
 
 
 async def _load_sheet_table(*, spreadsheet_id: str, sheet_name: str, max_rows: int = 250, max_cols: str = "Q") -> list[list[Any]]:
@@ -563,6 +1174,9 @@ async def _handle_memo_enrich_followup(ws: WebSocket, text: str) -> bool:
         sys_kv_bool=_sys_kv_bool,
         memo_sheet_cfg_from_sys_kv=_memo_sheet_cfg_from_sys_kv,
         sheet_name_to_a1=_sheet_name_to_a1,
+        sheet_get_header_row=_sheet_get_header_row,
+        idx_from_header=_idx_from_header,
+        memo_ensure_header=_memo_ensure_header,
         pick_sheets_tool_name=_pick_sheets_tool_name,
         mcp_tools_call=_mcp_tools_call,
         ws_send_json=_ws_send_json,
@@ -680,7 +1294,22 @@ async def _handle_memo_trigger(ws: WebSocket, text: str) -> bool:
         merged = dst_memo.rstrip() + "\n\n---\n" + src_memo
 
         _set(dst_vals, "memo", merged)
-        _set(dst_vals, "status", str(_get(dst_vals, "status") or "").strip() or "new")
+
+        dst_status = str(_get(dst_vals, "status") or "").strip()
+        src_status = str(_get(src_vals, "status") or "").strip()
+        if not dst_status:
+            dst_status = src_status or "new"
+        _set(dst_vals, "status", dst_status)
+
+        dst_group = str(_get(dst_vals, "group") or "").strip()
+        if not dst_group:
+            _set(dst_vals, "group", str(_get(src_vals, "group") or "").strip())
+        dst_subject = str(_get(dst_vals, "subject") or "").strip()
+        if not dst_subject:
+            _set(dst_vals, "subject", str(_get(src_vals, "subject") or "").strip())
+        dst_result = str(_get(dst_vals, "result") or "").strip()
+        if not dst_result:
+            _set(dst_vals, "result", str(_get(src_vals, "result") or "").strip())
 
         _set(src_vals, "status", "merged")
         _set(src_vals, "_updated", now_dt)
@@ -7605,6 +8234,12 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
                 ws.state.active_agent_id = None
                 ws.state.active_agent_until_ts = None
             return handled
+        if agent_id_norm == "memo_edit":
+            handled = await _handle_memo_edit_followup(ws, text)
+            if handled:
+                ws.state.active_agent_id = None
+                ws.state.active_agent_until_ts = None
+            return handled
         if agent_id_norm == "reminder-setup":
             handled = await _handle_reminder_setup_trigger(ws, text)
             if handled:
@@ -7639,6 +8274,9 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
     sys_kv = getattr(ws.state, "sys_kv", None)
 
     if feature_enabled("memo", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+        handled = await _handle_thai_memo_commands(ws, text)
+        if handled:
+            return True
         handled = await _handle_memo_trigger(ws, text)
         if handled:
             return True
@@ -11854,11 +12492,6 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             try:
                 head = str(text).lstrip()
                 if head.startswith("RESUME_CONTEXT (recent dialog"):
-                    try:
-                        ws.state.resume_context_text = str(text)
-                        ws.state.resume_context_pending = True
-                    except Exception:
-                        pass
                     continue
             except Exception:
                 pass
@@ -11923,9 +12556,39 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
                 )
                 continue
 
+            if _is_history_trigger(s):
+                try:
+                    ctx = await _memo_context_read_all(ws)
+                except Exception:
+                    ctx = {}
+                lines: list[str] = []
+                for k in (
+                    "jarvis.contexts.conversation_summary",
+                    "jarvis.contexts.last_intent_and_args",
+                    "jarvis.contexts.last_entities",
+                    "jarvis.contexts.ops_snapshot",
+                ):
+                    v = str(ctx.get(k) or "").strip()
+                    if v:
+                        lines.append(f"## {k}\n{v}")
+                out_txt = "\n\n".join(lines).strip() or "(no memo contexts found)"
+                try:
+                    await _ws_send_json(ws, {"type": "text", "text": out_txt, "instance_id": INSTANCE_ID}, trace_id=trace_id2)
+                except Exception:
+                    pass
+                try:
+                    await _ws_update_contexts_from_text(ws, s, handled=True)
+                except Exception:
+                    pass
+                continue
+
             handled = await _dispatch_sub_agents(ws, text)
             logger.info("ws_in_text_dispatched handled=%s active_agent_id=%s", handled, getattr(ws.state, "active_agent_id", None))
             if handled:
+                try:
+                    await _ws_update_contexts_from_text(ws, s, handled=True)
+                except Exception:
+                    pass
                 continue
             if not gemini_available:
                 try:
@@ -11934,24 +12597,11 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
                     pass
                 continue
             try:
-                resume_pending = False
-                resume_text = ""
-                try:
-                    resume_pending = bool(getattr(ws.state, "resume_context_pending", False))
-                    resume_text = str(getattr(ws.state, "resume_context_text", "") or "").strip()
-                except Exception:
-                    resume_pending = False
-                    resume_text = ""
-
-                if resume_pending and resume_text:
-                    combined = (resume_text + "\n\n" + "USER_MESSAGE:\n" + str(text)).strip()
-                    try:
-                        ws.state.resume_context_pending = False
-                    except Exception:
-                        pass
-                    await session.send_client_content(turns={"parts": [{"text": combined}]}, turn_complete=True)
-                else:
-                    await session.send_client_content(turns={"parts": [{"text": text}]}, turn_complete=True)
+                await _ws_update_contexts_from_text(ws, s, handled=False)
+            except Exception:
+                pass
+            try:
+                await session.send_client_content(turns={"parts": [{"text": text}]}, turn_complete=True)
             except Exception as e:
                 gemini_available = False
                 logger.warning("gemini_send_text_failed error=%s", str(e))
