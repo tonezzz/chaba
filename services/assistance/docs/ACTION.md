@@ -24,7 +24,8 @@
      - Paste: `instance_id`, `uptime_s`, and container rows for `jarvis-backend`:
        - `containers[*].image` (tag)
        - `containers[*].image_id`
-       - `containers[*].image_repo_digests` (digest)
+       - `containers[*].image_repo_digest` (digest)
+       - `containers[*].image_repo_digests` (digest list)
        - `containers[*].image_created_at` (created)
        - `containers[*].health`
    - `GET /health`

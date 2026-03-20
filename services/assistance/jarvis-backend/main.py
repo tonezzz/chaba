@@ -3147,6 +3147,13 @@ async def _portainer_list_stack_containers(*, sys_kv: Any) -> list[dict[str, Any
                             image_repo_digests.append(s)
                 image_created_at = str(meta.get("Created") or "").strip()
 
+        image_repo_digest = ""
+        if image_repo_digests:
+            try:
+                image_repo_digest = str(image_repo_digests[0] or "").strip()
+            except Exception:
+                image_repo_digest = ""
+
         out.append(
             {
                 "name": display,
@@ -3157,6 +3164,7 @@ async def _portainer_list_stack_containers(*, sys_kv: Any) -> list[dict[str, Any
                 "image": image_tag,
                 "image_id": image_id,
                 "created_at": created_at,
+                "image_repo_digest": image_repo_digest,
                 "image_repo_digests": image_repo_digests,
                 "image_created_at": image_created_at,
             }
