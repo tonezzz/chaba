@@ -129,6 +129,32 @@ def test_load_sheet_kv5_parses_enabled_scope_priority(monkeypatch: pytest.Monkey
     assert out[2]["priority"] == 5
 
 
+def test_load_sys_kv_from_sheet_filters_enabled_and_resolves_priority(monkeypatch: pytest.MonkeyPatch) -> None:
+    main = _import_main_with_genai_stub(monkeypatch)
+
+    monkeypatch.setattr(main, "_system_spreadsheet_id", lambda: "ssid")
+    monkeypatch.setattr(main, "_system_sheet_name", lambda: "system")
+
+    async def fake_load_sheet_kv5(*, spreadsheet_id: str, sheet_name: str):
+        assert spreadsheet_id == "ssid"
+        assert sheet_name == "system"
+        return [
+            {"key": "k1", "value": "v1_global_hi", "enabled": True, "scope": "global", "priority": 100},
+            {"key": "k1", "value": "v1_user_lo", "enabled": True, "scope": "user", "priority": 0},
+            {"key": "k1", "value": "v1_session_mid", "enabled": True, "scope": "session", "priority": 10},
+            {"key": "k2", "value": "disabled", "enabled": False, "scope": "global", "priority": 999},
+            {"key": "k3", "value": "enabled", "enabled": True, "scope": "global", "priority": 0},
+        ]
+
+    monkeypatch.setattr(main, "_load_sheet_kv5", fake_load_sheet_kv5)
+
+    out = asyncio.run(main._load_sys_kv_from_sheet())
+    assert out.get("k2") is None
+    # Scope wins first (session > user > global), then priority.
+    assert out.get("k1") == "v1_session_mid"
+    assert out.get("k3") == "enabled"
+
+
 def test_memo_enrich_followup_appends_canonical_row(monkeypatch: pytest.MonkeyPatch) -> None:
     main = _import_main_with_genai_stub(monkeypatch)
 

@@ -1691,14 +1691,34 @@ async def _load_sys_kv_from_sheet() -> dict[str, str]:
         rows = await _load_sheet_kv5(spreadsheet_id=spreadsheet_id, sheet_name=sys_sheet)
     except Exception:
         rows = []
-    out: dict[str, str] = {}
+
+    def _scope_rank(v: Any) -> int:
+        s = str(v or "").strip().lower()
+        if s == "session":
+            return 3
+        if s == "user":
+            return 2
+        return 1
+
+    best: dict[str, tuple[int, int, str]] = {}
     for it in rows:
         if not isinstance(it, dict):
             continue
+        if not bool(it.get("enabled", True)):
+            continue
         k = str(it.get("key") or "").strip()
+        if not k:
+            continue
         v = str(it.get("value") or "").strip()
-        if k:
-            out[k] = v
+        pri = _safe_int(it.get("priority", 0), default=0)
+        rank = _scope_rank(it.get("scope", "global"))
+        prev = best.get(k)
+        if prev is None or (rank, pri) > (prev[0], prev[1]):
+            best[k] = (rank, pri, v)
+
+    out: dict[str, str] = {}
+    for k, (_, __, v) in best.items():
+        out[k] = v
     return out
 
 
