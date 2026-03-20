@@ -2784,6 +2784,24 @@ async def sys_kv_reload(x_api_token: Optional[str] = Header(default=None, alias=
     return {"ok": True, "keys": sorted([str(k or "").strip() for k in fresh.keys() if str(k or "").strip()])}
 
 
+@app.get("/sys_kv/snapshot")
+@app.get("/jarvis/sys_kv/snapshot")
+def sys_kv_snapshot_http(x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token")) -> dict[str, Any]:
+    _require_api_token_if_configured(x_api_token)
+    sys_kv = _sys_kv_snapshot()
+    if not isinstance(sys_kv, dict):
+        sys_kv = {}
+    keys = [
+        "google.tools.enabled",
+        "google.sheets.enabled",
+        "google.calendar.enabled",
+        "google.tasks.enabled",
+        "gmail.enabled",
+    ]
+    google_gates: dict[str, Any] = {k: sys_kv.get(k) for k in keys}
+    return {"ok": True, "sys_kv": sys_kv, "google_gates": google_gates}
+
+
 @app.post("/sys_kv/bootstrap/google_gates")
 @app.post("/jarvis/sys_kv/bootstrap/google_gates")
 async def sys_kv_bootstrap_google_gates(
