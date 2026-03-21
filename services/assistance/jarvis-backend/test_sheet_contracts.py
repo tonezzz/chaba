@@ -284,6 +284,402 @@ def test_macro_parameter_templating_substitutes_step_args(monkeypatch: pytest.Mo
     assert forwarded[1][1].get("n") == 5
 
 
+def test_macro_step_result_templating_allows_referencing_prior_outputs(monkeypatch: pytest.MonkeyPatch) -> None:
+    main = _import_main_with_genai_stub(monkeypatch)
+
+    async def fake_get_cached(*, sys_kv=None, ttl_s=15.0):
+        return {
+            "macro_chain": {
+                "name": "macro_chain",
+                "description": "Chain outputs",
+                "parameters": {"type": "object", "properties": {"query": {"type": "string"}}},
+                "steps": [
+                    {"tool": "dummy_tool", "args": {"q": "{{query}}"}},
+                    {
+                        "tool": "dummy_tool",
+                        "args": {
+                            "prev_q": "{{steps.1.result.arguments.q}}",
+                            "prev_ok": "{{steps.1.result.ok}}",
+                            "msg": "hello {{steps.1.result.arguments.q}}",
+                        },
+                    },
+                ],
+            }
+        }
+
+    monkeypatch.setattr(main, "_macro_tools_get_cached", fake_get_cached)
+    monkeypatch.setattr(main, "_sys_kv_snapshot", lambda: {})
+
+    monkeypatch.setattr(
+        main,
+        "MCP_TOOL_MAP",
+        {
+            **dict(getattr(main, "MCP_TOOL_MAP", {}) or {}),
+            "dummy_tool": {
+                "mcp_name": "dummy_mcp_tool",
+                "description": "Dummy",
+                "parameters": {"type": "object", "properties": {}},
+                "requires_confirmation": False,
+            },
+        },
+    )
+
+    forwarded: list[tuple[str, dict[str, Any]]] = []
+
+    async def fake_mcp_tools_call(name: str, arguments: dict[str, Any]):
+        forwarded.append((str(name), dict(arguments)))
+        return {"ok": True, "mcp_name": str(name), "arguments": dict(arguments)}
+
+    monkeypatch.setattr(main, "_mcp_tools_call", fake_mcp_tools_call)
+
+    out = asyncio.run(main._handle_mcp_tool_call(None, "macro_chain", {"query": "Bangkok"}))
+    assert out.get("ok") is True
+    assert len(forwarded) == 2
+
+    # Step 2 should see step 1 output via steps.1.result.* placeholders.
+    assert forwarded[1][1].get("prev_q") == "Bangkok"
+    assert forwarded[1][1].get("prev_ok") is True
+    assert forwarded[1][1].get("msg") == "hello Bangkok"
+
+
+def test_macro_template_functions_row_find_and_cell_get(monkeypatch: pytest.MonkeyPatch) -> None:
+    main = _import_main_with_genai_stub(monkeypatch)
+
+    async def fake_get_cached(*, sys_kv=None, ttl_s=15.0):
+        return {
+            "macro_sheet_math": {
+                "name": "macro_sheet_math",
+                "description": "row_find + cell_get",
+                "parameters": {"type": "object", "properties": {"id": {"type": "string"}}},
+                "steps": [
+                    {"tool": "dummy_tool", "args": {}},
+                    {
+                        "tool": "dummy_tool",
+                        "args": {
+                            "row": "{{row_find(steps.1.result.values, id, 'id', 1)}}",
+                            "memo": "{{cell_get(steps.1.result.values, row_find(steps.1.result.values, id, 'id', 1), 'memo', 1)}}",
+                            "msg": "row={{row_find(steps.1.result.values, id, 'id', 1)}} memo={{cell_get(steps.1.result.values, row_find(steps.1.result.values, id, 'id', 1), 'memo', 1)}}",
+                        },
+                    },
+                ],
+            }
+        }
+
+    monkeypatch.setattr(main, "_macro_tools_get_cached", fake_get_cached)
+    monkeypatch.setattr(main, "_sys_kv_snapshot", lambda: {})
+
+    monkeypatch.setattr(
+        main,
+        "MCP_TOOL_MAP",
+        {
+            **dict(getattr(main, "MCP_TOOL_MAP", {}) or {}),
+            "dummy_tool": {
+                "mcp_name": "dummy_mcp_tool",
+                "description": "Dummy",
+                "parameters": {"type": "object", "properties": {}},
+                "requires_confirmation": False,
+            },
+        },
+    )
+
+    calls = 0
+    forwarded: list[tuple[str, dict[str, Any]]] = []
+
+    async def fake_mcp_tools_call(name: str, arguments: dict[str, Any]):
+        nonlocal calls
+        calls += 1
+        forwarded.append((str(name), dict(arguments)))
+        if calls == 1:
+            return {
+                "ok": True,
+                "values": [
+                    ["id", "memo"],
+                    ["1", "one"],
+                    ["2", "two"],
+                    ["3", "three"],
+                ],
+            }
+        return {"ok": True, "mcp_name": str(name), "arguments": dict(arguments)}
+
+    monkeypatch.setattr(main, "_mcp_tools_call", fake_mcp_tools_call)
+
+    out = asyncio.run(main._handle_mcp_tool_call(None, "macro_sheet_math", {"id": "2"}))
+    assert out.get("ok") is True
+
+    assert len(forwarded) == 2
+    step2_args = forwarded[1][1]
+
+    # Header row is at base_row=1; found row should be 3 (header=1, id=1 at row2, id=2 at row3).
+    assert step2_args.get("row") == 3
+    assert step2_args.get("memo") == "two"
+    assert step2_args.get("msg") == "row=3 memo=two"
+
+
+def test_macro_template_helpers_a1_and_require(monkeypatch: pytest.MonkeyPatch) -> None:
+    main = _import_main_with_genai_stub(monkeypatch)
+
+    async def fake_get_cached(*, sys_kv=None, ttl_s=15.0):
+        return {
+            "macro_a1": {
+                "name": "macro_a1",
+                "description": "A1 helpers",
+                "parameters": {"type": "object", "properties": {"id": {"type": "string"}}},
+                "steps": [
+                    {"tool": "dummy_tool", "args": {}},
+                    {
+                        "tool": "dummy_tool",
+                        "args": {
+                            "col": "{{col_a1(steps.1.result.values, 'memo')}}",
+                            "cell": "{{a1(steps.1.result.values, 3, 'memo', 1)}}",
+                            "rng": "{{range_row(steps.1.result.values, 3, 'id', 'memo', 1)}}",
+                            "ok": "{{require(row_find(steps.1.result.values, id, 'id', 1), 'missing_id')}}",
+                        },
+                    },
+                ],
+            }
+        }
+
+    monkeypatch.setattr(main, "_macro_tools_get_cached", fake_get_cached)
+    monkeypatch.setattr(main, "_sys_kv_snapshot", lambda: {})
+
+    monkeypatch.setattr(
+        main,
+        "MCP_TOOL_MAP",
+        {
+            **dict(getattr(main, "MCP_TOOL_MAP", {}) or {}),
+            "dummy_tool": {
+                "mcp_name": "dummy_mcp_tool",
+                "description": "Dummy",
+                "parameters": {"type": "object", "properties": {}},
+                "requires_confirmation": False,
+            },
+        },
+    )
+
+    calls = 0
+    forwarded: list[tuple[str, dict[str, Any]]] = []
+
+    async def fake_mcp_tools_call(name: str, arguments: dict[str, Any]):
+        nonlocal calls
+        calls += 1
+        forwarded.append((str(name), dict(arguments)))
+        if calls == 1:
+            return {
+                "ok": True,
+                "values": [
+                    ["id", "memo"],
+                    ["1", "one"],
+                    ["2", "two"],
+                    ["3", "three"],
+                ],
+            }
+        return {"ok": True, "mcp_name": str(name), "arguments": dict(arguments)}
+
+    monkeypatch.setattr(main, "_mcp_tools_call", fake_mcp_tools_call)
+
+    out = asyncio.run(main._handle_mcp_tool_call(None, "macro_a1", {"id": "2"}))
+    assert out.get("ok") is True
+    assert len(forwarded) == 2
+    step2_args = forwarded[1][1]
+
+    assert step2_args.get("col") == "B"
+    assert step2_args.get("cell") == "B3"
+    assert step2_args.get("rng") == "A3:B3"
+    assert step2_args.get("ok") is True
+
+
+def test_macro_template_require_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    main = _import_main_with_genai_stub(monkeypatch)
+
+    async def fake_get_cached(*, sys_kv=None, ttl_s=15.0):
+        return {
+            "macro_require": {
+                "name": "macro_require",
+                "description": "require",
+                "parameters": {"type": "object", "properties": {}},
+                "steps": [
+                    {"tool": "dummy_tool", "args": {"ok": "{{require(false, 'nope')}}"}},
+                    {"tool": "dummy_tool", "args": {"after": "should_not_run"}},
+                ],
+            }
+        }
+
+    monkeypatch.setattr(main, "_macro_tools_get_cached", fake_get_cached)
+    monkeypatch.setattr(main, "_sys_kv_snapshot", lambda: {})
+
+    monkeypatch.setattr(
+        main,
+        "MCP_TOOL_MAP",
+        {
+            **dict(getattr(main, "MCP_TOOL_MAP", {}) or {}),
+            "dummy_tool": {
+                "mcp_name": "dummy_mcp_tool",
+                "description": "Dummy",
+                "parameters": {"type": "object", "properties": {}},
+                "requires_confirmation": False,
+            },
+        },
+    )
+
+    forwarded: list[tuple[str, dict[str, Any]]] = []
+
+    async def fake_mcp_tools_call(name: str, arguments: dict[str, Any]):
+        forwarded.append((str(name), dict(arguments)))
+        return {"ok": True, "mcp_name": str(name), "arguments": dict(arguments)}
+
+    monkeypatch.setattr(main, "_mcp_tools_call", fake_mcp_tools_call)
+
+    with pytest.raises(Exception) as ei:
+        asyncio.run(main._handle_mcp_tool_call(None, "macro_require", {}))
+    # Should fail before any MCP call happens.
+    assert forwarded == []
+    assert "macro_template_require_failed" in str(getattr(ei.value, "detail", "")) or "macro_template_require_failed" in str(ei.value)
+
+
+def test_system_reload_tool_calls_load_ws_system_kv_and_macro_reload(monkeypatch: pytest.MonkeyPatch) -> None:
+    main = _import_main_with_genai_stub(monkeypatch)
+
+    # Fake WS bound to a session.
+    ws = SimpleNamespace()
+    ws.state = SimpleNamespace(sys_kv={})
+    monkeypatch.setattr(main, "_SESSION_WS", {"s1": ws})
+
+    async def fake_load_ws_system_kv(_ws):
+        _ws.state.sys_kv = {"k": "v"}
+        return {"k": "v"}
+
+    async def fake_macro_tools_force_reload_from_sheet(*, sys_kv=None):
+        assert sys_kv == {"k": "v"}
+        return {"macro_a": {"name": "macro_a", "steps": []}}
+
+    monkeypatch.setattr(main, "_load_ws_system_kv", fake_load_ws_system_kv)
+    monkeypatch.setattr(main, "_macro_tools_force_reload_from_sheet", fake_macro_tools_force_reload_from_sheet)
+
+    out = asyncio.run(main._handle_mcp_tool_call("s1", "system_reload", {}))
+    assert out.get("ok") is True
+    assert out.get("macros_count") == 1
+
+
+def test_system_macro_get_reads_from_macros_sheet(monkeypatch: pytest.MonkeyPatch) -> None:
+    main = _import_main_with_genai_stub(monkeypatch)
+
+    ws = SimpleNamespace()
+    ws.state = SimpleNamespace(sys_kv={})
+    monkeypatch.setattr(main, "_SESSION_WS", {"s1": ws})
+    monkeypatch.setattr(main, "_system_spreadsheet_id", lambda: "ssid")
+    monkeypatch.setattr(main, "_system_macros_sheet_name", lambda **_kw: "macros")
+    monkeypatch.setattr(main, "_pick_sheets_tool_name", lambda a, b: a)
+
+    async def fake_mcp_tools_call(name: str, arguments: dict[str, Any]):
+        assert "google_sheets_values_get" in str(name)
+        assert arguments.get("spreadsheet_id") == "ssid"
+        assert str(arguments.get("range")) == "macros!A:Z"
+        header = ["name", "enabled", "description", "parameters_json", "steps_json"]
+        row = ["macro_x", "TRUE", "desc", "{}", "[]"]
+        return {"content": [{"type": "text", "text": json.dumps({"ok": True, "values": [header, row]})}]}
+
+    monkeypatch.setattr(main, "_mcp_tools_call", fake_mcp_tools_call)
+
+    out = asyncio.run(main._handle_mcp_tool_call("s1", "system_macro_get", {"name": "macro_x"}))
+    assert out.get("ok") is True
+    assert out.get("name") == "macro_x"
+    assert out.get("enabled") is True
+    assert out.get("steps_json") == "[]"
+
+
+def test_system_macro_upsert_queues_pending_append_and_confirm_executes(monkeypatch: pytest.MonkeyPatch) -> None:
+    main = _import_main_with_genai_stub(monkeypatch)
+
+    ws = SimpleNamespace()
+    ws.state = SimpleNamespace(sys_kv={})
+    monkeypatch.setattr(main, "_SESSION_WS", {"s1": ws})
+    monkeypatch.setattr(main, "_system_spreadsheet_id", lambda: "ssid")
+    monkeypatch.setattr(main, "_system_macros_sheet_name", lambda **_kw: "macros")
+    monkeypatch.setattr(main, "_pick_sheets_tool_name", lambda a, b: a)
+
+    pending: dict[str, Any] = {}
+
+    def fake_create_pending_write(session_id: str, action: str, payload: Any) -> str:
+        assert session_id == "s1"
+        assert action == "mcp_tools_call"
+        pending["payload"] = payload
+        return "pw_1"
+
+    def fake_pop_pending_write(session_id: str, confirmation_id: str):
+        assert session_id == "s1"
+        assert confirmation_id == "pw_1"
+        return {"action": "mcp_tools_call", "payload": pending.get("payload"), "created_at": 0}
+
+    monkeypatch.setattr(main, "_create_pending_write", fake_create_pending_write)
+    monkeypatch.setattr(main, "_pop_pending_write", fake_pop_pending_write)
+
+    forwarded: list[tuple[str, dict[str, Any]]] = []
+
+    async def fake_mcp_tools_call(name: str, arguments: dict[str, Any]):
+        # First call: read macros sheet
+        if "google_sheets_values_get" in str(name):
+            header = ["name", "enabled", "description", "parameters_json", "steps_json"]
+            # no existing rows => insert
+            return {"content": [{"type": "text", "text": json.dumps({"ok": True, "values": [header]})}]}
+        forwarded.append((str(name), dict(arguments)))
+        return {"ok": True}
+
+    monkeypatch.setattr(main, "_mcp_tools_call", fake_mcp_tools_call)
+
+    out = asyncio.run(
+        main._handle_mcp_tool_call(
+            "s1",
+            "system_macro_upsert",
+            {"name": "macro_new", "steps_json": "[]", "parameters_json": "{}", "description": "d", "enabled": True},
+        )
+    )
+    assert out.get("ok") is True
+    assert out.get("queued") is True
+    assert out.get("confirmation_id") == "pw_1"
+
+    # Confirm should execute append.
+    asyncio.run(main._handle_mcp_tool_call("s1", "pending_confirm", {"confirmation_id": "pw_1"}))
+    assert forwarded
+    assert "google_sheets_values_append" in forwarded[0][0]
+    assert forwarded[0][1].get("spreadsheet_id") == "ssid"
+
+
+def test_system_macro_upsert_queues_pending_update_when_row_exists(monkeypatch: pytest.MonkeyPatch) -> None:
+    main = _import_main_with_genai_stub(monkeypatch)
+
+    ws = SimpleNamespace()
+    ws.state = SimpleNamespace(sys_kv={})
+    monkeypatch.setattr(main, "_SESSION_WS", {"s1": ws})
+    monkeypatch.setattr(main, "_system_spreadsheet_id", lambda: "ssid")
+    monkeypatch.setattr(main, "_system_macros_sheet_name", lambda **_kw: "macros")
+    monkeypatch.setattr(main, "_pick_sheets_tool_name", lambda a, b: a)
+
+    pending: dict[str, Any] = {}
+
+    def fake_create_pending_write(session_id: str, action: str, payload: Any) -> str:
+        pending["payload"] = payload
+        return "pw_2"
+
+    monkeypatch.setattr(main, "_create_pending_write", fake_create_pending_write)
+
+    async def fake_mcp_tools_call(name: str, arguments: dict[str, Any]):
+        if "google_sheets_values_get" in str(name):
+            header = ["name", "enabled", "description", "parameters_json", "steps_json"]
+            row = ["macro_x", "TRUE", "desc", "{}", "[]"]
+            return {"content": [{"type": "text", "text": json.dumps({"ok": True, "values": [header, row]})}]}
+        return {"ok": True}
+
+    monkeypatch.setattr(main, "_mcp_tools_call", fake_mcp_tools_call)
+
+    out = asyncio.run(main._handle_mcp_tool_call("s1", "system_macro_upsert", {"name": "macro_x", "steps_json": "[]"}))
+    assert out.get("ok") is True
+    assert out.get("action") == "update"
+    assert out.get("confirmation_id") == "pw_2"
+    payload = pending.get("payload")
+    assert isinstance(payload, dict)
+    assert "google_sheets_values_update" in str(payload.get("mcp_name"))
+
+
 def test_memo_enrich_followup_appends_canonical_row(monkeypatch: pytest.MonkeyPatch) -> None:
     main = _import_main_with_genai_stub(monkeypatch)
 

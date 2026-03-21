@@ -2062,6 +2062,16 @@ def _read_text_file_tail_lines(path: str, max_lines: int = 100, max_bytes: int =
     return "\n".join(lines[-n:])
 
 
+def _truncate_log_blob(s: Any, *, limit: int) -> str:
+    txt = str(s or "")
+    lim = int(limit) if isinstance(limit, int) or str(limit).strip().isdigit() else 0
+    if lim <= 0:
+        return txt
+    if len(txt) <= lim:
+        return txt
+    return txt[:lim] + "..."
+
+
 async def _ws_record(ws: WebSocket, direction: str, msg: Any) -> None:
     global _WS_RECORD_LOCK
     try:
@@ -2087,6 +2097,13 @@ async def _ws_record(ws: WebSocket, direction: str, msg: Any) -> None:
             "type": msg.get("type") if isinstance(msg, dict) else None,
             "msg": msg,
         }
+        # Guard against huge payloads bloating disk.
+        try:
+            msg_json = json.dumps(msg, ensure_ascii=False)
+            if len(msg_json) > 50000:
+                rec["msg"] = {"_truncated": True, "len": len(msg_json), "preview": _truncate_log_blob(msg_json, limit=2000)}
+        except Exception:
+            pass
         async with _WS_RECORD_LOCK:
             with open(path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(rec, ensure_ascii=False) + "\n")
@@ -2289,13 +2306,14 @@ async def _sheets_logs_enqueue_ws(ws: WebSocket, direction: str, msg: Any) -> No
     text = ""
     try:
         if isinstance(msg, dict) and msg.get("text") is not None:
-            text = str(msg.get("text") or "")
+            text = _truncate_log_blob(msg.get("text") or "", limit=2000)
     except Exception:
         text = ""
     try:
         msg_json = json.dumps(msg, ensure_ascii=False)
     except Exception:
         msg_json = str(msg)
+    msg_json = _truncate_log_blob(msg_json, limit=50000)
     rec = {
         "ts_ms": ts_ms,
         "ts": ts,
@@ -2328,6 +2346,7 @@ async def _sheets_logs_enqueue_http(*, typ: str, text: str, msg: Any | None = No
             msg_json = json.dumps(msg, ensure_ascii=False)
     except Exception:
         msg_json = str(msg)
+    msg_json = _truncate_log_blob(msg_json, limit=50000)
     rec = {
         "ts_ms": ts_ms,
         "ts": ts,
@@ -2335,7 +2354,7 @@ async def _sheets_logs_enqueue_http(*, typ: str, text: str, msg: Any | None = No
         "session_id": "",
         "trace_id": "",
         "type": str(typ or "http"),
-        "text": str(text or ""),
+        "text": _truncate_log_blob(text or "", limit=2000),
         "msg_json": msg_json,
         "instance_id": INSTANCE_ID,
     }
@@ -2360,6 +2379,7 @@ async def _sheets_logs_enqueue_server(*, typ: str, text: str, msg: Any | None = 
             msg_json = json.dumps(msg, ensure_ascii=False)
     except Exception:
         msg_json = str(msg)
+    msg_json = _truncate_log_blob(msg_json, limit=50000)
     rec = {
         "ts_ms": ts_ms,
         "ts": ts,
@@ -2367,7 +2387,7 @@ async def _sheets_logs_enqueue_server(*, typ: str, text: str, msg: Any | None = 
         "session_id": "",
         "trace_id": "",
         "type": str(typ or "server"),
-        "text": str(text or ""),
+        "text": _truncate_log_blob(text or "", limit=2000),
         "msg_json": msg_json,
         "instance_id": INSTANCE_ID,
     }
@@ -6027,23 +6047,23 @@ def _startup_prewarm_status_line(lang: str) -> str:
     running = bool(st.get("running"))
     if str(lang or "").lower().startswith("th"):
         if running:
-            return "พรีวอร์มตอนเริ่มระบบ: running"
+            return "Prepare to connect: running"
         if ts <= 0 and (not ok) and (not err):
-            return "พรีวอร์มตอนเริ่มระบบ: pending"
+            return "Prepare to connect: pending"
         if ok:
-            return f"พรีวอร์มตอนเริ่มระบบ: ok | memory={mem_n} knowledge={know_n}"
+            return f"Prepare to connect: ok | memory={mem_n} knowledge={know_n}"
         if err:
-            return f"พรีวอร์มตอนเริ่มระบบ: error | {err}"
-        return "พรีวอร์มตอนเริ่มระบบ: pending"
+            return f"Prepare to connect: error | {err}"
+        return "Prepare to connect: pending"
     if running:
-        return "Startup prewarm: running"
+        return "Prepare to connect: running"
     if ts <= 0 and (not ok) and (not err):
-        return "Startup prewarm: pending"
+        return "Prepare to connect: pending"
     if ok:
-        return f"Startup prewarm: ok | memory={mem_n} knowledge={know_n}"
+        return f"Prepare to connect: ok | memory={mem_n} knowledge={know_n}"
     if err:
-        return f"Startup prewarm: error | {err}"
-    return "Startup prewarm: pending"
+        return f"Prepare to connect: error | {err}"
+    return "Prepare to connect: pending"
 
 
 async def _startup_prewarm_sheets() -> None:
@@ -10303,10 +10323,6 @@ async def _startup() -> None:
     except Exception as e:
         logger.warning("session_db_init_failed error=%s", e)
     try:
-        _ensure_cars_data_dirs()
-    except Exception as e:
-        logger.warning("cars_data_dir_init_failed error=%s", e)
-    try:
         await _startup_resync_from_weaviate()
     except Exception as e:
         logger.warning("startup_resync_failed error=%s", e)
@@ -12410,6 +12426,46 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
             }
         )
 
+        decls.append(
+            {
+                "name": "system_reload",
+                "description": "Reload system sheet KV (sys_kv) and force macro tools reload from sheet.",
+                "parameters": {"type": "object", "properties": {}},
+            }
+        )
+
+        decls.append(
+            {
+                "name": "system_macro_get",
+                "description": "Get a macro row definition from the system macros sheet by name.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string", "description": "Macro tool name (e.g. macro_save_memo_v2)."}
+                    },
+                    "required": ["name"],
+                },
+            }
+        )
+
+        decls.append(
+            {
+                "name": "system_macro_upsert",
+                "description": "Insert or update a macro row in the system macros sheet (confirmation-gated write).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string", "description": "Macro tool name (e.g. macro_save_memo_v2)."},
+                        "enabled": {"type": "boolean", "description": "Whether macro is enabled (default true)."},
+                        "description": {"type": "string", "description": "Macro description."},
+                        "parameters_json": {"type": "string", "description": "JSON schema string for parameters_json cell."},
+                        "steps_json": {"type": "string", "description": "JSON list string for steps_json cell."},
+                    },
+                    "required": ["name", "steps_json"],
+                },
+            }
+        )
+
     decls.append(
         {
             "name": "session_last_get",
@@ -12592,34 +12648,272 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         if not isinstance(steps, list) or not steps:
             raise HTTPException(status_code=400, detail={"macro_invalid_steps": macro_name})
 
-        def _macro_substitute(v: Any, params: dict[str, Any]) -> Any:
+        def _macro_split_args(s: str) -> list[str]:
+            out: list[str] = []
+            buf: list[str] = []
+            depth = 0
+            quote: str | None = None
+            for ch in str(s or ""):
+                if quote:
+                    buf.append(ch)
+                    if ch == quote:
+                        quote = None
+                    continue
+                if ch in ("'", '"'):
+                    quote = ch
+                    buf.append(ch)
+                    continue
+                if ch == "(":
+                    depth += 1
+                    buf.append(ch)
+                    continue
+                if ch == ")":
+                    depth = max(0, depth - 1)
+                    buf.append(ch)
+                    continue
+                if ch == "," and depth == 0:
+                    part = "".join(buf).strip()
+                    if part:
+                        out.append(part)
+                    buf = []
+                    continue
+                buf.append(ch)
+            part = "".join(buf).strip()
+            if part:
+                out.append(part)
+            return out
+
+        def _macro_resolve_path(path: str, params: dict[str, Any], out_steps: list[dict[str, Any]]) -> Any:
+            k = str(path or "").strip()
+            if not k:
+                return ""
+            if not k.startswith("steps."):
+                return params.get(k, "")
+            parts = k.split(".")
+            if len(parts) < 3:
+                return ""
+            idx_raw = str(parts[1] or "").strip().lower()
+            if idx_raw == "last":
+                idx = len(out_steps)
+            else:
+                try:
+                    idx = int(idx_raw)
+                except Exception:
+                    return ""
+            if idx <= 0 or idx > len(out_steps):
+                return ""
+            cur: Any = out_steps[idx - 1]
+            for p in parts[2:]:
+                if isinstance(cur, dict):
+                    cur = cur.get(p)
+                elif isinstance(cur, list):
+                    try:
+                        j = int(p)
+                    except Exception:
+                        return ""
+                    if j < 0 or j >= len(cur):
+                        return ""
+                    cur = cur[j]
+                else:
+                    return ""
+            return "" if cur is None else cur
+
+        def _macro_resolve_expr(expr: str, params: dict[str, Any], out_steps: list[dict[str, Any]]) -> Any:
+            e = str(expr or "").strip()
+            if not e:
+                return ""
+            if (len(e) >= 2) and ((e[0] == e[-1] == '"') or (e[0] == e[-1] == "'")):
+                return e[1:-1]
+            if re.fullmatch(r"-?\d+", e):
+                try:
+                    return int(e)
+                except Exception:
+                    return e
+            if re.fullmatch(r"-?\d+\.\d+", e):
+                try:
+                    return float(e)
+                except Exception:
+                    return e
+            if e.lower() in ("true", "false"):
+                return e.lower() == "true"
+            fm = re.fullmatch(r"([a-zA-Z0-9_]+)\((.*)\)", e)
+            if fm:
+                fn = str(fm.group(1) or "").strip()
+                raw_args = str(fm.group(2) or "")
+                parts = _macro_split_args(raw_args)
+                args_resolved = [_macro_resolve_expr(p, params, out_steps) for p in parts]
+
+                def _header_and_col_idx(values: Any, col: Any) -> tuple[list[Any], int | None]:
+                    if not isinstance(values, list) or not values or not isinstance(values[0], list):
+                        return ([], None)
+                    header = values[0]
+                    if isinstance(col, int):
+                        return (header, int(col))
+                    try:
+                        col_i = int(str(col))
+                        return (header, col_i)
+                    except Exception:
+                        pass
+                    want = str(col or "").strip().lower()
+                    if not want:
+                        return (header, None)
+                    for j, h in enumerate(header):
+                        if str(h or "").strip().lower() == want:
+                            return (header, int(j))
+                    return (header, None)
+
+                def _a1_col_letter(idx0: int) -> str:
+                    if idx0 < 0:
+                        return ""
+                    n = idx0 + 1
+                    out = ""
+                    while n > 0:
+                        n, rem = divmod(n - 1, 26)
+                        out = chr(ord("A") + rem) + out
+                    return out
+
+                if fn == "row_find":
+                    values = args_resolved[0] if len(args_resolved) >= 1 else None
+                    needle = args_resolved[1] if len(args_resolved) >= 2 else ""
+                    col = args_resolved[2] if len(args_resolved) >= 3 else 0
+                    base_row = args_resolved[3] if len(args_resolved) >= 4 else 1
+                    if not isinstance(base_row, int):
+                        try:
+                            base_row = int(base_row)
+                        except Exception:
+                            base_row = 1
+                    if not isinstance(values, list) or not values:
+                        return 0
+                    header, col_idx = _header_and_col_idx(values, col)
+                    if col_idx is None or col_idx < 0:
+                        return 0
+                    for i, row in enumerate(values[1:], start=1):
+                        if not isinstance(row, list):
+                            continue
+                        v = row[col_idx] if col_idx < len(row) else ""
+                        if str(v) == str(needle):
+                            return int(base_row) + i
+                    return 0
+
+                if fn == "cell_get":
+                    values = args_resolved[0] if len(args_resolved) >= 1 else None
+                    row = args_resolved[1] if len(args_resolved) >= 2 else 0
+                    col = args_resolved[2] if len(args_resolved) >= 3 else 0
+                    base_row = args_resolved[3] if len(args_resolved) >= 4 else 1
+                    try:
+                        row_i = int(row)
+                    except Exception:
+                        row_i = 0
+                    try:
+                        base_i = int(base_row)
+                    except Exception:
+                        base_i = 1
+                    if not isinstance(values, list) or row_i <= 0:
+                        return ""
+                    idx = row_i - base_i
+                    if idx < 0 or idx >= len(values):
+                        return ""
+                    r = values[idx]
+                    if not isinstance(r, list):
+                        return ""
+                    header, col_idx_maybe = _header_and_col_idx(values, col)
+                    col_idx = col_idx_maybe if col_idx_maybe is not None else -1
+                    if col_idx < 0 or col_idx >= len(r):
+                        return ""
+                    return r[col_idx]
+
+                if fn == "col_a1":
+                    values = args_resolved[0] if len(args_resolved) >= 1 else None
+                    col = args_resolved[1] if len(args_resolved) >= 2 else 0
+                    header, col_idx = _header_and_col_idx(values, col)
+                    if col_idx is None or col_idx < 0:
+                        return ""
+                    return _a1_col_letter(int(col_idx))
+
+                if fn == "a1":
+                    values = args_resolved[0] if len(args_resolved) >= 1 else None
+                    row = args_resolved[1] if len(args_resolved) >= 2 else 0
+                    col = args_resolved[2] if len(args_resolved) >= 3 else 0
+                    base_row = args_resolved[3] if len(args_resolved) >= 4 else 1
+                    try:
+                        row_i = int(row)
+                    except Exception:
+                        row_i = 0
+                    if row_i <= 0:
+                        return ""
+                    header, col_idx = _header_and_col_idx(values, col)
+                    if col_idx is None or col_idx < 0:
+                        return ""
+                    col_letter = _a1_col_letter(int(col_idx))
+                    return f"{col_letter}{row_i}"
+
+                if fn == "range_row":
+                    values = args_resolved[0] if len(args_resolved) >= 1 else None
+                    row = args_resolved[1] if len(args_resolved) >= 2 else 0
+                    start_col = args_resolved[2] if len(args_resolved) >= 3 else 0
+                    end_col = args_resolved[3] if len(args_resolved) >= 4 else start_col
+                    base_row = args_resolved[4] if len(args_resolved) >= 5 else 1
+                    try:
+                        row_i = int(row)
+                    except Exception:
+                        row_i = 0
+                    if row_i <= 0:
+                        return ""
+                    header, s_idx = _header_and_col_idx(values, start_col)
+                    header, e_idx = _header_and_col_idx(values, end_col)
+                    if s_idx is None or e_idx is None:
+                        return ""
+                    if s_idx < 0 or e_idx < 0:
+                        return ""
+                    a = _a1_col_letter(int(min(s_idx, e_idx)))
+                    b = _a1_col_letter(int(max(s_idx, e_idx)))
+                    return f"{a}{row_i}:{b}{row_i}"
+
+                if fn == "require":
+                    cond = args_resolved[0] if len(args_resolved) >= 1 else False
+                    msg = args_resolved[1] if len(args_resolved) >= 2 else "macro_require_failed"
+                    ok = bool(cond)
+                    if not ok:
+                        raise HTTPException(
+                            status_code=400,
+                            detail={"macro_template_require_failed": str(msg or "macro_require_failed")},
+                        )
+                    return True
+
+                return ""
+
+            return _macro_resolve_path(e, params, out_steps)
+
+        def _macro_substitute(v: Any, params: dict[str, Any], out_steps: list[dict[str, Any]]) -> Any:
             if isinstance(v, dict):
-                return {k: _macro_substitute(v2, params) for k, v2 in v.items()}
+                return {k: _macro_substitute(v2, params, out_steps) for k, v2 in v.items()}
             if isinstance(v, list):
-                return [_macro_substitute(v2, params) for v2 in v]
+                return [_macro_substitute(v2, params, out_steps) for v2 in v]
             if isinstance(v, str):
                 s = v
                 # If the whole string is exactly a single placeholder, preserve types.
-                m = re.fullmatch(r"\{\{\s*([a-zA-Z0-9_\-\.]+)\s*\}\}", s)
+                m = re.fullmatch(r"\{\{\s*([^}]+?)\s*\}\}", s)
                 if m:
-                    key = m.group(1)
-                    return params.get(key, "")
+                    expr = m.group(1)
+                    return _macro_resolve_expr(str(expr or ""), params, out_steps)
                 # Otherwise do string interpolation.
                 def _repl(mm: re.Match) -> str:
-                    key = str(mm.group(1) or "")
-                    val = params.get(key, "")
+                    expr = str(mm.group(1) or "")
+                    val = _macro_resolve_expr(expr, params, out_steps)
                     if val is None:
                         return ""
                     return str(val)
 
-                return re.sub(r"\{\{\s*([a-zA-Z0-9_\-\.]+)\s*\}\}", _repl, s)
+                return re.sub(r"\{\{\s*([^}]+?)\s*\}\}", _repl, s)
             return v
 
         allowed = {
             "time_now",
+            "system_reload",
             "memo_add",
             "memo_get",
             "memo_list",
+            "chaba_search_memo",
             "memory_add",
             "memory_search",
             "memory_list",
@@ -12646,10 +12940,13 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
                 # Allow macros to pass-through runtime arguments via {{param}} placeholders.
                 # Exclude the macro control field itself.
                 params = {k: v for k, v in (args or {}).items() if k != "name"}
-                step_args = _macro_substitute(step_args, params)
+                step_args = _macro_substitute(step_args, params, out_steps)
                 if not isinstance(step_args, dict):
                     step_args = {}
-            except Exception:
+            except Exception as e:
+                # Don't swallow FastAPI HTTPExceptions (e.g. require(...) guards).
+                if isinstance(e, HTTPException):
+                    raise
                 pass
             res = await _handle_mcp_tool_call(session_id, step_tool, step_args)
             out_steps.append({"step": i + 1, "tool": step_tool, "result": res})
@@ -12672,6 +12969,10 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         "get_user_timezone": _get_user_timezone,
         "get_session_last_item": _get_session_last_item,
         "set_session_last_item": _set_session_last_item,
+        "load_ws_system_kv": _load_ws_system_kv,
+        "macro_tools_force_reload_from_sheet": _macro_tools_force_reload_from_sheet,
+        "system_spreadsheet_id": _system_spreadsheet_id,
+        "system_macros_sheet_name": _system_macros_sheet_name,
         "memory_sheet_upsert": _memory_sheet_upsert,
         "load_ws_sheet_memory": _load_ws_sheet_memory,
         "memo_sheet_cfg_from_sys_kv": _memo_sheet_cfg_from_sys_kv,
@@ -13325,6 +13626,34 @@ async def ws_live(ws: WebSocket) -> None:
         except Exception as e:
             err = f"system_sheets_validation_failed: {str(e)}"
         if err:
+            now_utc = datetime.now(tz=timezone.utc).replace(microsecond=0)
+            try:
+                tz = _get_user_timezone(DEFAULT_USER_ID)
+            except Exception:
+                tz = timezone.utc
+            now_local = now_utc.astimezone(tz)
+            try:
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "connect_status",
+                        "instance_id": INSTANCE_ID,
+                        "session_id": session_id,
+                        "client_id": getattr(ws.state, "client_id", None),
+                        "client_tag": getattr(ws.state, "client_tag", None),
+                        "connected_at_utc": now_utc.isoformat().replace("+00:00", "Z"),
+                        "connected_at_local": now_local.isoformat(),
+                        "connected_tz": getattr(tz, "key", str(tz)),
+                        "sys_kv_loaded": isinstance(sys_kv, dict) and bool(sys_kv),
+                        "system_sheet_valid": False,
+                        "system_sheet_error": str(err),
+                        "macros_reloaded": False,
+                        "memory_cached": bool(_get_cached_sheet_memory()),
+                        "knowledge_cached": bool(_get_cached_sheet_knowledge()),
+                    },
+                )
+            except Exception:
+                pass
             detail = {
                 "error": str(err),
                 "hint": "system.sheets supports only memory/knowledge. Configure notes separately via notes_ss + notes.sheet_name/notes_sh.",
@@ -13349,13 +13678,46 @@ async def ws_live(ws: WebSocket) -> None:
                 pass
             return
 
-        tz = _get_user_timezone(DEFAULT_USER_ID)
-        now_local = datetime.now(tz=timezone.utc).astimezone(tz)
-        lang = str(getattr(ws.state, "user_lang", "") or "").strip() or _lang_from_ws(ws)
+        # Keep macro cache consistent with the just-loaded sys_kv.
+        # Best-effort: do not fail the session if macro sheet is unavailable.
+        macros_reloaded = False
         try:
-            await _ws_send_json(ws, {"type": "text", "text": _short_datetime_line(lang, now_local), "instance_id": INSTANCE_ID})
+            await _macro_tools_force_reload_from_sheet(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+            macros_reloaded = True
         except Exception:
             pass
+
+        now_utc = datetime.now(tz=timezone.utc).replace(microsecond=0)
+        try:
+            tz = _get_user_timezone(DEFAULT_USER_ID)
+        except Exception:
+            tz = timezone.utc
+        now_local = now_utc.astimezone(tz)
+
+        try:
+            await _ws_send_json(
+                ws,
+                {
+                    "type": "connect_status",
+                    "instance_id": INSTANCE_ID,
+                    "session_id": session_id,
+                    "client_id": getattr(ws.state, "client_id", None),
+                    "client_tag": getattr(ws.state, "client_tag", None),
+                    "connected_at_utc": now_utc.isoformat().replace("+00:00", "Z"),
+                    "connected_at_local": now_local.isoformat(),
+                    "connected_tz": getattr(tz, "key", str(tz)),
+                    "sys_kv_loaded": isinstance(sys_kv, dict) and bool(sys_kv),
+                    "system_sheet_valid": True,
+                    "system_sheet_error": "",
+                    "macros_reloaded": macros_reloaded,
+                    "memory_cached": bool(_get_cached_sheet_memory()),
+                    "knowledge_cached": bool(_get_cached_sheet_knowledge()),
+                },
+            )
+        except Exception:
+            pass
+
+        lang = str(getattr(ws.state, "user_lang", "") or "").strip() or _lang_from_ws(ws)
 
         cached = _get_cached_sheet_memory()
         if isinstance(cached, dict):
