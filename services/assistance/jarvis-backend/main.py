@@ -13996,7 +13996,17 @@ async def ws_live(ws: WebSocket) -> None:
                 async with session_cm as session:
                     logger.info("gemini_live_connected model=%s", model)
                     ws.state.gemini_live_session = session
-                    await _ws_send_json(ws, {"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
+                    await _ws_send_json(
+                        ws,
+                        {
+                            "type": "state",
+                            "state": "connected",
+                            "instance_id": INSTANCE_ID,
+                            "session_id": getattr(ws.state, "session_id", None),
+                            "client_id": getattr(ws.state, "client_id", None),
+                            "client_tag": getattr(ws.state, "client_tag", None),
+                        },
+                    )
                     connected_sent = True
                     try:
                         await _emit_live_connect_greeting(ws)
@@ -14113,30 +14123,23 @@ async def ws_live(ws: WebSocket) -> None:
                 await _ws_send_json(ws, {"type": "error", **classified})
             except Exception:
                 pass
-
-            # Keep the client ws connected even if Gemini is unavailable.
             if not connected_sent:
-                try:
-                    await _ws_send_json(ws, {"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
-                except Exception:
-                    pass
-            try:
-                await _ws_local_only_loop(ws)
-            except Exception:
-                pass
-            return
-
-        # No candidates worked and no error captured: keep the client alive.
-        try:
-            if not connected_sent:
-                await _ws_send_json(ws, {"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "state",
+                        "state": "connected",
+                        "instance_id": INSTANCE_ID,
+                        "session_id": getattr(ws.state, "session_id", None),
+                        "client_id": getattr(ws.state, "client_id", None),
+                        "client_tag": getattr(ws.state, "client_tag", None),
+                    },
+                )
                 try:
                     await _emit_live_connect_greeting(ws)
                 except Exception:
                     pass
             await _ws_local_only_loop(ws)
-        except Exception:
-            pass
         return
     finally:
         notes_board_task = getattr(ws.state, "notes_board_task", None)
