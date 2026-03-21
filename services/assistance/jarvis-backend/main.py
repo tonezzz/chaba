@@ -12999,7 +12999,11 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                             )
                         except Exception:
                             pass
-                        if fc_name in MCP_TOOL_MAP or fc_name in (
+                        if (
+                            fc_name.startswith("macro_")
+                            or fc_name == "macro_run"
+                            or fc_name in MCP_TOOL_MAP
+                            or fc_name in (
                             "time_now",
                             "session_last_get",
                             "pending_list",
@@ -13011,6 +13015,7 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                             "memory_add",
                             "memory_search",
                             "memory_list",
+                            )
                         ):
                             result = await _handle_mcp_tool_call(session_id, fc_name, fc_args)
                         else:
