@@ -2,7 +2,8 @@
 
 ## Now
 
-- [ ] TODO-NOW-011: Docs upkeep pass (finalize Now/Next/Later structure; keep one active Now item)
+- [ ] TODO-NOW-012: Refresh ACTION.md status chart snapshot (run /status, /health, /github/actions/latest)
+- [x] TODO-NOW-011: Docs upkeep pass (finalize Now/Next/Later structure; keep one active Now item)
 - [x] TODO-NOW-010: TODO.md drift fix (dedupe Now list; tighten ordering; remove obvious duplication)
 - [x] TODO-NOW-009: Deploy verification completeness (fill digest/created/published fields reliably; tighten redeploy decision)
 - [x] TODO-NOW-008: Status loop polish (make ACTION.md Now loop more mechanical)

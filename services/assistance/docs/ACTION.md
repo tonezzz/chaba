@@ -16,7 +16,7 @@
 ## Now (what to do next)
 
 - **Say:** `action`
-- **I will run:** `TODO-NOW-011` (from `services/assistance/docs/TODO.md#now`)
+- **I will run:** `TODO-NOW-012` (from `services/assistance/docs/TODO.md#now`)
 
 ### Snapshot procedure (copy/paste; update the status chart)
 1. **Backend snapshot**
@@ -56,19 +56,19 @@
 | Need redeploy? | Yes |
 | Health ok | Yes |
 | Status ok | Yes |
-| uptime_s | 122 |
-| Snapshot ts | 2026-03-20T15:35:09Z |
+| uptime_s | 3388 |
+| Snapshot ts | 2026-03-21T01:11:26Z |
 | Deployed base URL | `https://assistance.idc1.surf-thailand.com/jarvis/api` |
-| instance_id | jarvis_0221a67e08 |
+| instance_id | jarvis_ed0374c517 |
 | CI status | completed |
 | CI conclusion | success |
-| CI head_sha | 4ebee5b2b55bad4d520d255f1450b6a700529ddd |
-| CI updated_at | 2026-03-20T15:14:33Z |
-| CI url | https://github.com/tonezzz/chaba/actions/runs/23349295838 |
+| CI head_sha | 85081c62655be31c822fdf4a27f5e9eea06dee37 |
+| CI updated_at | 2026-03-21T00:56:46Z |
+| CI url | https://github.com/tonezzz/chaba/actions/runs/23368489021 |
 | jarvis-backend image (tag) | ghcr.io/tonezzz/chaba/jarvis-backend:idc1-assistance |
-| jarvis-backend image digest | ghcr.io/tonezzz/chaba/jarvis-backend@sha256:01406af5c0285957fc1cf6d6be691426d2c3ba4d170d3626a3ce60721461e7de |
-| jarvis-backend image created | 2026-03-20T15:11:13.066435268Z |
-| jarvis-backend image_id | sha256:01406af5c0285957fc1cf6d6be691426d2c3ba4d170d3626a3ce60721461e7de |
+| jarvis-backend image digest | ghcr.io/tonezzz/chaba/jarvis-backend@sha256:8b8b29195b81cc2395704f4e779d6d7d71248f82e5e02ca76f0b182e9544ac1a |
+| jarvis-backend image created | 2026-03-21T00:13:53.583643199Z |
+| jarvis-backend image_id | sha256:8b8b29195b81cc2395704f4e779d6d7d71248f82e5e02ca76f0b182e9544ac1a |
 | Backend image published in latest CI? | Yes |
 
 Need redeploy? rule (binary):
@@ -89,7 +89,7 @@ Need rebuild? rule (binary, selective CI):
 - WIP limit = 1: if you start a new thing, merge it into the existing checklist/backlog section (see **Intake/merge policy** below).
 
 ### Current pick
-- `TODO-NOW-011`: Docs upkeep pass (finalize Now/Next/Later structure; keep one active Now item)
+- `TODO-NOW-012`: Refresh ACTION.md status chart snapshot (run /status, /health, /github/actions/latest)
 
 Update rule:
 - After you run any ACTION.md procedure, always come back here and set **Current pick** to the *single* next move.
