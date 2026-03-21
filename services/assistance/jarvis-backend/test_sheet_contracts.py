@@ -198,6 +198,37 @@ def test_macro_tools_from_sheet_are_declared_and_executable(monkeypatch: pytest.
     assert steps[0].get("tool") == "time_now"
 
 
+def test_macros_only_mode_filters_tool_declarations(monkeypatch: pytest.MonkeyPatch) -> None:
+    main = _import_main_with_genai_stub(monkeypatch)
+
+    # Simulate macros-only mode enabled in sys_kv.
+    monkeypatch.setattr(main, "_sys_kv_snapshot", lambda: {"system.macros.only": "TRUE"})
+
+    # Simulate a loaded macro in cache.
+    monkeypatch.setattr(
+        main,
+        "_macro_tools_cached_snapshot",
+        lambda: {
+            "macro_time_now": {
+                "name": "macro_time_now",
+                "description": "From sheet",
+                "parameters": {"type": "object", "properties": {}},
+                "steps": [{"tool": "time_now", "args": {}}],
+            }
+        },
+    )
+
+    decls = main._mcp_tool_declarations()
+    names = {d.get("name") for d in decls if isinstance(d, dict)}
+
+    assert "macro_run" in names
+    assert "macro_time_now" in names
+    # Low-level tools should not be exposed to Gemini in macros-only mode.
+    assert "memo_add" not in names
+    assert "memory_add" not in names
+    assert "time_now" not in names
+
+
 def test_memo_enrich_followup_appends_canonical_row(monkeypatch: pytest.MonkeyPatch) -> None:
     main = _import_main_with_genai_stub(monkeypatch)
 

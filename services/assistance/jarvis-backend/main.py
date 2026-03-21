@@ -8638,6 +8638,16 @@ def _parse_bool_cell(v: Any) -> bool:
     return s in {"1", "true", "t", "yes", "y", "on", "enabled"}
 
 
+def _macros_only_enabled(*, sys_kv: Optional[dict[str, Any]] = None) -> bool:
+    try:
+        if isinstance(sys_kv, dict):
+            v = str(sys_kv.get("system.macros.only") or "").strip().lower()
+            return v in {"1", "true", "t", "yes", "y", "on"}
+    except Exception:
+        pass
+    return False
+
+
 def _safe_int(v: Any, default: int = 0) -> int:
     try:
         return int(str(v).strip())
@@ -12375,28 +12385,30 @@ app.include_router(
 def _mcp_tool_declarations() -> list[dict[str, Any]]:
     sys_kv = _sys_kv_snapshot()
     decls: list[dict[str, Any]] = []
-    for name, meta in MCP_TOOL_MAP.items():
-        if str(meta.get("mcp_base") or "").strip().lower() == "aim" and not AIM_MCP_BASE_URL:
-            continue
+    macros_only = _macros_only_enabled(sys_kv=sys_kv)
+    if not macros_only:
+        for name, meta in MCP_TOOL_MAP.items():
+            if str(meta.get("mcp_base") or "").strip().lower() == "aim" and not AIM_MCP_BASE_URL:
+                continue
+            decls.append(
+                {
+                    "name": name,
+                    "description": str(meta.get("description") or ""),
+                    "parameters": meta.get("parameters") or {"type": "object", "properties": {}},
+                }
+            )
         decls.append(
             {
-                "name": name,
-                "description": str(meta.get("description") or ""),
-                "parameters": meta.get("parameters") or {"type": "object", "properties": {}},
+                "name": "time_now",
+                "description": "Return the authoritative current server time (UTC + local timezone).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "timezone": {"type": "string", "description": "IANA timezone name (e.g. Asia/Bangkok)."},
+                    },
+                },
             }
         )
-    decls.append(
-        {
-            "name": "time_now",
-            "description": "Return the authoritative current server time (UTC + local timezone).",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "timezone": {"type": "string", "description": "IANA timezone name (e.g. Asia/Bangkok)."},
-                },
-            },
-        }
-    )
 
     decls.append(
         {
@@ -12412,7 +12424,7 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
         }
     )
 
-    if feature_enabled("memory", sys_kv=sys_kv, default=True):
+    if (not macros_only) and feature_enabled("memory", sys_kv=sys_kv, default=True):
         decls.append(
             {
                 "name": "memory_add",
@@ -12430,7 +12442,7 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
             }
         )
 
-    if feature_enabled("memo", sys_kv=sys_kv, default=True):
+    if (not macros_only) and feature_enabled("memo", sys_kv=sys_kv, default=True):
         decls.append(
             {
                 "name": "memo_add",
@@ -12478,7 +12490,7 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
             }
         )
 
-    if feature_enabled("memory", sys_kv=sys_kv, default=True):
+    if (not macros_only) and feature_enabled("memory", sys_kv=sys_kv, default=True):
         decls.append(
             {
                 "name": "memory_search",
@@ -12999,25 +13011,36 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                             )
                         except Exception:
                             pass
-                        if (
-                            fc_name.startswith("chaba_")
-                            or fc_name.startswith("macro_")
-                            or fc_name == "macro_run"
-                            or fc_name in MCP_TOOL_MAP
-                            or fc_name in (
-                            "time_now",
-                            "session_last_get",
-                            "pending_list",
-                            "pending_confirm",
-                            "pending_cancel",
-                            "memo_add",
-                            "memo_get",
-                            "memo_list",
-                            "memory_add",
-                            "memory_search",
-                            "memory_list",
+                        sys_kv = _sys_kv_snapshot()
+                        macros_only = _macros_only_enabled(sys_kv=sys_kv)
+                        if macros_only:
+                            allowed = (
+                                fc_name.startswith("macro_")
+                                or fc_name == "macro_run"
+                                or fc_name in ("pending_list", "pending_confirm", "pending_cancel", "session_last_get")
                             )
-                        ):
+                        else:
+                            allowed = (
+                                fc_name.startswith("chaba_")
+                                or fc_name.startswith("macro_")
+                                or fc_name == "macro_run"
+                                or fc_name in MCP_TOOL_MAP
+                                or fc_name
+                                in (
+                                    "time_now",
+                                    "session_last_get",
+                                    "pending_list",
+                                    "pending_confirm",
+                                    "pending_cancel",
+                                    "memo_add",
+                                    "memo_get",
+                                    "memo_list",
+                                    "memory_add",
+                                    "memory_search",
+                                    "memory_list",
+                                )
+                            )
+                        if allowed:
                             result = await _handle_mcp_tool_call(session_id, fc_name, fc_args)
                         else:
                             raise HTTPException(status_code=400, detail={"unknown_tool": fc_name})
