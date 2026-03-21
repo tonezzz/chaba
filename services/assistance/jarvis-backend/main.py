@@ -13000,7 +13000,8 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                         except Exception:
                             pass
                         if (
-                            fc_name.startswith("macro_")
+                            fc_name.startswith("chaba_")
+                            or fc_name.startswith("macro_")
                             or fc_name == "macro_run"
                             or fc_name in MCP_TOOL_MAP
                             or fc_name in (
