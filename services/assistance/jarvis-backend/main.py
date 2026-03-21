@@ -12592,6 +12592,29 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         if not isinstance(steps, list) or not steps:
             raise HTTPException(status_code=400, detail={"macro_invalid_steps": macro_name})
 
+        def _macro_substitute(v: Any, params: dict[str, Any]) -> Any:
+            if isinstance(v, dict):
+                return {k: _macro_substitute(v2, params) for k, v2 in v.items()}
+            if isinstance(v, list):
+                return [_macro_substitute(v2, params) for v2 in v]
+            if isinstance(v, str):
+                s = v
+                # If the whole string is exactly a single placeholder, preserve types.
+                m = re.fullmatch(r"\{\{\s*([a-zA-Z0-9_\-\.]+)\s*\}\}", s)
+                if m:
+                    key = m.group(1)
+                    return params.get(key, "")
+                # Otherwise do string interpolation.
+                def _repl(mm: re.Match) -> str:
+                    key = str(mm.group(1) or "")
+                    val = params.get(key, "")
+                    if val is None:
+                        return ""
+                    return str(val)
+
+                return re.sub(r"\{\{\s*([a-zA-Z0-9_\-\.]+)\s*\}\}", _repl, s)
+            return v
+
         allowed = {
             "time_now",
             "memo_add",
@@ -12619,6 +12642,15 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             step_args = st.get("args")
             if not isinstance(step_args, dict):
                 step_args = {}
+            try:
+                # Allow macros to pass-through runtime arguments via {{param}} placeholders.
+                # Exclude the macro control field itself.
+                params = {k: v for k, v in (args or {}).items() if k != "name"}
+                step_args = _macro_substitute(step_args, params)
+                if not isinstance(step_args, dict):
+                    step_args = {}
+            except Exception:
+                pass
             res = await _handle_mcp_tool_call(session_id, step_tool, step_args)
             out_steps.append({"step": i + 1, "tool": step_tool, "result": res})
         return {"ok": True, "macro": macro_name, "steps": out_steps, "count": len(out_steps)}

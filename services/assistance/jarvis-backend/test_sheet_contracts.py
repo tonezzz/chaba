@@ -229,6 +229,61 @@ def test_macros_only_mode_filters_tool_declarations(monkeypatch: pytest.MonkeyPa
     assert "time_now" not in names
 
 
+def test_macro_parameter_templating_substitutes_step_args(monkeypatch: pytest.MonkeyPatch) -> None:
+    main = _import_main_with_genai_stub(monkeypatch)
+
+    async def fake_get_cached(*, sys_kv=None, ttl_s=15.0):
+        return {
+            "macro_echo": {
+                "name": "macro_echo",
+                "description": "Echo test",
+                "parameters": {"type": "object", "properties": {"query": {"type": "string"}, "limit": {"type": "integer"}}},
+                "steps": [
+                    {"tool": "dummy_tool", "args": {"q": "{{query}}", "n": "{{limit}}"}},
+                    {"tool": "dummy_tool", "args": {"q": "Asia/{{query}}", "n": "{{limit}}"}},
+                ],
+            }
+        }
+
+    monkeypatch.setattr(main, "_macro_tools_get_cached", fake_get_cached)
+    monkeypatch.setattr(main, "_sys_kv_snapshot", lambda: {})
+
+    # Ensure the macro engine can execute a predictable step tool by routing via MCP_TOOL_MAP.
+    monkeypatch.setattr(
+        main,
+        "MCP_TOOL_MAP",
+        {
+            **dict(getattr(main, "MCP_TOOL_MAP", {}) or {}),
+            "dummy_tool": {
+                "mcp_name": "dummy_mcp_tool",
+                "description": "Dummy",
+                "parameters": {"type": "object", "properties": {}},
+                "requires_confirmation": False,
+            },
+        },
+    )
+
+    forwarded: list[tuple[str, dict[str, Any]]] = []
+
+    async def fake_mcp_tools_call(name: str, arguments: dict[str, Any]):
+        forwarded.append((str(name), dict(arguments)))
+        return {"ok": True, "mcp_name": str(name), "arguments": dict(arguments)}
+
+    monkeypatch.setattr(main, "_mcp_tools_call", fake_mcp_tools_call)
+
+    out = asyncio.run(main._handle_mcp_tool_call(None, "macro_echo", {"query": "Bangkok", "limit": 5}))
+    assert out.get("ok") is True
+    assert len(forwarded) == 2
+
+    assert forwarded[0][0] == "dummy_mcp_tool"
+    assert forwarded[0][1].get("q") == "Bangkok"
+    assert forwarded[0][1].get("n") == 5
+
+    assert forwarded[1][0] == "dummy_mcp_tool"
+    assert forwarded[1][1].get("q") == "Asia/Bangkok"
+    assert forwarded[1][1].get("n") == 5
+
+
 def test_memo_enrich_followup_appends_canonical_row(monkeypatch: pytest.MonkeyPatch) -> None:
     main = _import_main_with_genai_stub(monkeypatch)
 
