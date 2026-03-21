@@ -2,7 +2,8 @@
 
 ## Now
 
-- [ ] TODO-NOW-010: TODO.md drift fix (dedupe Now list; tighten ordering; remove obvious duplication)
+- [ ] TODO-NOW-011: Docs upkeep pass (finalize Now/Next/Later structure; keep one active Now item)
+- [x] TODO-NOW-010: TODO.md drift fix (dedupe Now list; tighten ordering; remove obvious duplication)
 - [x] TODO-NOW-009: Deploy verification completeness (fill digest/created/published fields reliably; tighten redeploy decision)
 - [x] TODO-NOW-008: Status loop polish (make ACTION.md Now loop more mechanical)
 - [x] TODO-NOW-007: Docs cleanup pass (tighten ACTION.md ordering; remove drift/duplication)
@@ -21,15 +22,13 @@
 
 ## Next
 
-
-## Later
-
 - Re-enable Google tools gate (when Jarvis is stable)
   - Google MCP tools are currently gated by sys_kv keys: `google.sheets.enabled`, `google.calendar.enabled`, `google.tasks.enabled`, `gmail.enabled`
   - Goal: add a safe rollout checklist + explicit enable/disable procedure
 
-## General
+## Later
 
+## General
 - assess README.md before proceeding with any new features
 - Improve this file & other docs accordingly.
 

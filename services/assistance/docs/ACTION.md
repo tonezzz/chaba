@@ -16,7 +16,7 @@
 ## Now (what to do next)
 
 - **Say:** `action`
-- **I will run:** `TODO-NOW-010` (from `services/assistance/docs/TODO.md#now`)
+- **I will run:** `TODO-NOW-011` (from `services/assistance/docs/TODO.md#now`)
 
 ### Snapshot procedure (copy/paste; update the status chart)
 1. **Backend snapshot**
@@ -89,7 +89,7 @@ Need rebuild? rule (binary, selective CI):
 - WIP limit = 1: if you start a new thing, merge it into the existing checklist/backlog section (see **Intake/merge policy** below).
 
 ### Current pick
-- `TODO-NOW-010`: TODO.md drift fix (dedupe Now list; tighten ordering; remove obvious duplication)
+- `TODO-NOW-011`: Docs upkeep pass (finalize Now/Next/Later structure; keep one active Now item)
 
 Update rule:
 - After you run any ACTION.md procedure, always come back here and set **Current pick** to the *single* next move.
