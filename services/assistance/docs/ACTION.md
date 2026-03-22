@@ -84,6 +84,40 @@ Current pointers (recently created from chat/TODO):
 - `#98` Calendar events: add traceability fields (extendedProperties.private)
 - `#99` Recurring reminders end-to-end (RRULE)
 
+#### Remote GitHub Issues (from any machine)
+Goal:
+- Be able to create/search/comment Issues immediately from a fresh chat session.
+
+Prereqs:
+- `gh` CLI installed.
+- Auth is configured on the machine you’re chatting from.
+
+Auth (copy/paste):
+1. Check auth:
+   - `gh auth status`
+2. If not logged in:
+   - `gh auth login`
+   - Choose:
+     - GitHub.com
+     - HTTPS
+     - Authenticate via browser (preferred) or paste a PAT
+
+Repo shortcut:
+- Set once per terminal session:
+  - `$env:GH_REPO = "tonezzz/chaba"`
+
+Merge/dedupe helpers:
+- Search by keyword:
+  - `gh issue list --search "<keyword>" --limit 20`
+- Quick view:
+  - `gh issue view <number> --comments`
+
+Create a new issue (template):
+- `gh issue create --title "[area] <short outcome>" --body "Goal\n- ...\n\nAcceptance criteria\n- ...\n\nVerification\n- ...\n"`
+
+Add a note to an existing issue (preferred when overlapping):
+- `gh issue comment <number> --body "Update: ...\n\nNext: ..."`
+
 ### Snapshot procedure (copy/paste; update the status chart)
 1. **Backend snapshot**
    - `GET /status`
