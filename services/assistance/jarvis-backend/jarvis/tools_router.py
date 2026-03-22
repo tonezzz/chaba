@@ -1060,24 +1060,49 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             ws = session_ws.get(str(session_id)) if isinstance(session_ws, dict) else None
             if ws is None:
                 raise HTTPException(status_code=400, detail="missing_session_ws")
+            lang = str(getattr(getattr(ws, "state", None), "user_lang", "") or "").strip() or "en"
             mode = "full"
             if isinstance(payload, dict):
                 mode = str(payload.get("mode") or "full").strip().lower() or "full"
+            try:
+                await ws.send_json({"type": "text", "text": "reloading system", "instance_id": deps.get("INSTANCE_ID")})
+            except Exception:
+                pass
             if mode in {"full", "all"}:
                 if system_reload_impl is not None:
                     out = await system_reload_impl(ws)
+                    try:
+                        done_txt = "system reloaded" if lang != "th" else "รีโหลดระบบสำเร็จ"
+                        await ws.send_json({"type": "text", "text": done_txt, "instance_id": deps.get("INSTANCE_ID")})
+                    except Exception:
+                        pass
                     return {"ok": True, "reloaded": True, "mode": mode, "result": out}
                 sys_kv = await load_ws_system_kv(ws)
                 macros = await macro_tools_force_reload_from_sheet(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
                 keys = sorted([str(k or "").strip() for k in (sys_kv or {}).keys()]) if isinstance(sys_kv, dict) else []
+                try:
+                    done_txt = "system reloaded" if lang != "th" else "รีโหลดระบบสำเร็จ"
+                    await ws.send_json({"type": "text", "text": done_txt, "instance_id": deps.get("INSTANCE_ID")})
+                except Exception:
+                    pass
                 return {"ok": True, "reloaded": True, "mode": mode, "sys_kv_keys": keys or [], "macros_count": len(macros or {})}
             # For now, partial modes are treated as full reload (safe/consistent).
             if system_reload_impl is not None:
                 out2 = await system_reload_impl(ws)
+                try:
+                    done_txt = "system reloaded" if lang != "th" else "รีโหลดระบบสำเร็จ"
+                    await ws.send_json({"type": "text", "text": done_txt, "instance_id": deps.get("INSTANCE_ID")})
+                except Exception:
+                    pass
                 return {"ok": True, "reloaded": True, "mode": mode, "result": out2}
             sys_kv2 = await load_ws_system_kv(ws)
             macros2 = await macro_tools_force_reload_from_sheet(sys_kv=sys_kv2 if isinstance(sys_kv2, dict) else None)
             keys2 = sorted([str(k or "").strip() for k in (sys_kv2 or {}).keys()]) if isinstance(sys_kv2, dict) else []
+            try:
+                done_txt = "system reloaded" if lang != "th" else "รีโหลดระบบสำเร็จ"
+                await ws.send_json({"type": "text", "text": done_txt, "instance_id": deps.get("INSTANCE_ID")})
+            except Exception:
+                pass
             return {"ok": True, "reloaded": True, "mode": mode, "sys_kv_keys": keys2, "macros_count": len(macros2 or {})}
         if action == "mcp_tools_call":
             if not isinstance(payload, dict):

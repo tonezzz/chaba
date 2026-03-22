@@ -13463,6 +13463,13 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             if handled_local:
                 continue
 
+        if msg_type == "ping":
+            try:
+                await _ws_send_json(ws, {"type": "pong", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+            except Exception:
+                pass
+            continue
+
         if msg_type == "cars_ingest_image":
             await _handle_cars_ingest_image(ws, msg if isinstance(msg, dict) else {})
             await _ws_voice_job_done(ws, trace_id2)
@@ -13670,6 +13677,13 @@ async def _ws_local_only_loop(ws: WebSocket) -> None:
             handled_local = await _handle_local_tools_message(ws, msg, trace_id=trace_id2)
             if handled_local:
                 continue
+
+        if msg_type == "ping":
+            try:
+                await _ws_send_json(ws, {"type": "pong", "instance_id": INSTANCE_ID}, trace_id=trace_id2)
+            except Exception:
+                pass
+            continue
 
         if msg_type == "cars_ingest_image":
             await _handle_cars_ingest_image(ws, msg if isinstance(msg, dict) else {})

@@ -33,6 +33,7 @@ export class LiveService {
   private inputStream: MediaStream | null = null;
   private connectInFlight: boolean = false;
   private wsSeq: number = 0;
+  private keepaliveTimer: number | null = null;
   private currentCameraFrame: string | null = null;
   private lastVoiceCommandTs: Record<string, number> = {};
   private lastVoiceCommandName: string | null = null;
@@ -566,6 +567,10 @@ export class LiveService {
         }
         this.ws = null;
       }
+		if (this.keepaliveTimer != null) {
+			try { window.clearInterval(this.keepaliveTimer); } catch {}
+			this.keepaliveTimer = null;
+		}
 
       const mySeq = ++this.wsSeq;
       // Always try to establish the WebSocket connection even if audio init fails.
@@ -622,6 +627,20 @@ export class LiveService {
         this.connectInFlight = false;
 			void this.ensureVoiceCmdCfgLoaded();
         this.onStateChange(ConnectionState.CONNECTED);
+			try {
+				if (this.keepaliveTimer != null) {
+					window.clearInterval(this.keepaliveTimer);
+					this.keepaliveTimer = null;
+				}
+				this.keepaliveTimer = window.setInterval(() => {
+					try {
+						if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+						this.wsSend({ type: "ping", trace_id: this.createTraceId("ping") });
+					} catch {
+					}
+				}, 25000);
+			} catch {
+			}
         this.onMessage({
           id: `${Date.now()}_ws_open`,
           role: "system",
@@ -649,6 +668,10 @@ export class LiveService {
       this.ws.onclose = (ev) => {
         if (mySeq !== this.wsSeq) return;
         this.connectInFlight = false;
+			if (this.keepaliveTimer != null) {
+				try { window.clearInterval(this.keepaliveTimer); } catch {}
+				this.keepaliveTimer = null;
+			}
         try {
           console.warn("ws_close", { code: ev.code, reason: ev.reason, wasClean: ev.wasClean });
         } catch {
@@ -665,6 +688,10 @@ export class LiveService {
       this.ws.onerror = (err) => {
         if (mySeq !== this.wsSeq) return;
         this.connectInFlight = false;
+			if (this.keepaliveTimer != null) {
+				try { window.clearInterval(this.keepaliveTimer); } catch {}
+				this.keepaliveTimer = null;
+			}
         console.error(err);
         this.onStateChange(ConnectionState.ERROR);
         this.onMessage({
@@ -707,6 +734,10 @@ export class LiveService {
       }
       this.ws.close();
     }
+		if (this.keepaliveTimer != null) {
+			try { window.clearInterval(this.keepaliveTimer); } catch {}
+			this.keepaliveTimer = null;
+		}
 
     try {
       if (this.inputStream) {
