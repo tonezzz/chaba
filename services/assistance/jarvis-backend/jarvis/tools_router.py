@@ -40,12 +40,19 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
 
     if tool_name == "system_reload":
         session_ws = deps["SESSION_WS"]
+        system_reload_impl = deps.get("system_reload_impl")
         load_ws_system_kv = deps["load_ws_system_kv"]
         macro_tools_force_reload_from_sheet = deps["macro_tools_force_reload_from_sheet"]
 
         ws = session_ws.get(str(session_id)) if session_id else None
         if ws is None:
             raise HTTPException(status_code=400, detail="missing_session_ws")
+
+        if system_reload_impl is not None:
+            out = await system_reload_impl(ws)
+            keys = out.get("sys_kv_keys") if isinstance(out, dict) else None
+            macros_count = out.get("macros_count") if isinstance(out, dict) else None
+            return {"ok": True, "sys_kv_keys": keys or [], "macros_count": int(macros_count or 0)}
 
         sys_kv = await load_ws_system_kv(ws)
         macros = await macro_tools_force_reload_from_sheet(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)

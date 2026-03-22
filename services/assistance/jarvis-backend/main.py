@@ -8507,6 +8507,14 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
     return False
 
 
+async def _system_reload_impl(ws: WebSocket) -> dict[str, Any]:
+    async with _reload_system_lock:
+        sys_kv = await _load_ws_system_kv(ws)
+        macros = await _macro_tools_force_reload_from_sheet(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+        keys = sorted([str(k or "").strip() for k in (sys_kv or {}).keys()]) if isinstance(sys_kv, dict) else []
+        return {"ok": True, "sys_kv": sys_kv if isinstance(sys_kv, dict) else None, "sys_kv_keys": keys, "macros_count": len(macros or {})}
+
+
 async def _handle_reload_system(ws: WebSocket, text: str) -> bool:
     s = " ".join(str(text or "").strip().split())
     if not s:
@@ -8576,80 +8584,75 @@ async def _handle_reload_system(ws: WebSocket, text: str) -> bool:
     except Exception:
         pass
 
-    async with _reload_system_lock:
-        lang = str(getattr(ws.state, "user_lang", "") or "").strip() or "en"
-        try:
-            await _ws_send_json(ws, {"type": "text", "text": "reloading system", "instance_id": INSTANCE_ID})
-        except Exception:
-            pass
+    lang = str(getattr(ws.state, "user_lang", "") or "").strip() or "en"
+    try:
+        await _ws_send_json(ws, {"type": "text", "text": "reloading system", "instance_id": INSTANCE_ID})
+    except Exception:
+        pass
 
-        try:
-            # System reload now only refreshes the system KV sheet and system.instruction.
-            sys_kv = await _load_ws_system_kv(ws)
-            await _macro_tools_force_reload_from_sheet(sys_kv=sys_kv)
-        except Exception as e:
-            def _short_reload_err(err: Exception) -> str:
-                s = str(err or "").strip()
-                # Heuristic: extract the root cause from nested MCP error dicts.
-                try:
-                    if "mcp_error" in s:
-                        m = re.search(r"'error':\s*'([^']+)'", s)
-                        if m:
-                            return m.group(1)
-                        m2 = re.search(r"\"error\"\s*:\s*\"([^\"]+)\"", s)
-                        if m2:
-                            return m2.group(1)
-                except Exception:
-                    pass
-                # Common fast-path: our MCP servers throw specific sentinel errors.
-                for tok in (
-                    "missing_google_sheets_client_id",
-                    "missing_google_tasks_client_id",
-                    "missing_google_calendar_client_id",
-                    "auth_required",
-                    "invalid_client",
-                ):
-                    if tok in s:
-                        return tok
-                # Fallback: trim huge nested blobs.
-                if len(s) > 180:
-                    return s[:180] + "..."
-                return s
-
-            short = _short_reload_err(e)
-            msg = (
-                f"Reload System failed: {short}" if lang != "th" else f"Reload System ล้มเหลว: {short}"
-            )
+    try:
+        await _system_reload_impl(ws)
+    except Exception as e:
+        def _short_reload_err(err: Exception) -> str:
+            s = str(err or "").strip()
+            # Heuristic: extract the root cause from nested MCP error dicts.
             try:
-                await _ws_send_json(
-                    ws,
-                    {
-                        "type": "error",
-                        "kind": "reload_system_failed",
-                        "message": msg,
-                        "detail": str(e),
-                        "instance_id": INSTANCE_ID,
-                    },
-                )
+                if "mcp_error" in s:
+                    m = re.search(r"'error':\s*'([^']+)'", s)
+                    if m:
+                        return m.group(1)
+                    m2 = re.search(r"\"error\"\s*:\s*\"([^\"]+)\"", s)
+                    if m2:
+                        return m2.group(1)
             except Exception:
                 pass
-            return True
+            # Common fast-path: our MCP servers throw specific sentinel errors.
+            for tok in (
+                "missing_google_sheets_client_id",
+                "missing_google_tasks_client_id",
+                "missing_google_calendar_client_id",
+                "auth_required",
+                "invalid_client",
+            ):
+                if tok in s:
+                    return tok
+            # Fallback: trim huge nested blobs.
+            if len(s) > 180:
+                return s[:180] + "..."
+            return s
 
+        short = _short_reload_err(e)
+        msg = f"Reload System failed: {short}" if lang != "th" else f"Reload System ล้มเหลว: {short}"
         try:
-            out = "system reloaded"
-            if lang == "th":
-                out = "รีโหลดระบบสำเร็จ"
-            await _ws_send_json(ws, {"type": "text", "text": out, "instance_id": INSTANCE_ID})
+            await _ws_send_json(
+                ws,
+                {
+                    "type": "error",
+                    "kind": "reload_system_failed",
+                    "message": msg,
+                    "detail": str(e),
+                    "instance_id": INSTANCE_ID,
+                },
+            )
         except Exception:
             pass
+        return True
 
-        # Start notes board runner only after system reload succeeded.
-        try:
-            existing = getattr(ws.state, "notes_board_task", None)
-            if existing is None or not hasattr(existing, "done") or existing.done():
-                ws.state.notes_board_task = asyncio.create_task(_notes_board_runner(ws), name="notes_board_runner")
-        except Exception:
-            pass
+    try:
+        out = "system reloaded"
+        if lang == "th":
+            out = "รีโหลดระบบสำเร็จ"
+        await _ws_send_json(ws, {"type": "text", "text": out, "instance_id": INSTANCE_ID})
+    except Exception:
+        pass
+
+    # Start notes board runner only after system reload succeeded.
+    try:
+        existing = getattr(ws.state, "notes_board_task", None)
+        if existing is None or not hasattr(existing, "done") or existing.done():
+            ws.state.notes_board_task = asyncio.create_task(_notes_board_runner(ws), name="notes_board_runner")
+    except Exception:
+        pass
     return True
 
 
@@ -12969,6 +12972,7 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         "get_user_timezone": _get_user_timezone,
         "get_session_last_item": _get_session_last_item,
         "set_session_last_item": _set_session_last_item,
+        "system_reload_impl": _system_reload_impl,
         "load_ws_system_kv": _load_ws_system_kv,
         "macro_tools_force_reload_from_sheet": _macro_tools_force_reload_from_sheet,
         "system_spreadsheet_id": _system_spreadsheet_id,
