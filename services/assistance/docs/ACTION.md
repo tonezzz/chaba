@@ -118,6 +118,40 @@ Create a new issue (template):
 Add a note to an existing issue (preferred when overlapping):
 - `gh issue comment <number> --body "Update: ...\n\nNext: ..."`
 
+#### GitHub Issues via Jarvis backend (HTTP, gated)
+Goal:
+- Allow remote issue creation/comment/search even when you do not have `gh` on the machine.
+
+Safety model:
+- Disabled by default.
+- Requires sys_kv key `github.issues.write.enabled=true`.
+- Also requires `X-Api-Token` if the backend is configured to require it.
+
+Prereqs:
+- Backend has a RW token configured:
+  - `GITHUB_PERSONAL_TOKEN_RW` (must have permission to create/comment issues)
+
+Enable gate (one-time per environment):
+- Set sys_kv key:
+  - `github.issues.write.enabled=true`
+
+Endpoints:
+- Search:
+  - `POST /github/issues/search`
+  - Body: `{ "q": "repo:tonezzz/chaba is:issue is:open <keywords>", "per_page": 10 }`
+- Create:
+  - `POST /github/issues/create`
+  - Body: `{ "owner":"tonezzz","repo":"chaba","title":"...","body":"...","labels":["P1"],"assignees":[] }`
+- Comment:
+  - `POST /github/issues/comment`
+  - Body: `{ "owner":"tonezzz","repo":"chaba","issue_number": 96, "body":"Update: ..." }`
+
+Copy/paste (PowerShell):
+1. Set base:
+   - `$base = "https://assistance.idc1.surf-thailand.com/jarvis/api"`
+2. Search:
+   - `curl.exe -sS -X POST "$base/github/issues/search" -H "Content-Type: application/json" -d '{"q":"repo:tonezzz/chaba is:issue #96","per_page":5}'`
+
 ### Snapshot procedure (copy/paste; update the status chart)
 1. **Backend snapshot**
    - `GET /status`
