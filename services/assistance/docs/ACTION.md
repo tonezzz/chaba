@@ -50,6 +50,40 @@ Process (copy/paste friendly):
 5. **Prove it survived**
    - Re-open `TODO.md` (or the IDE todo list) and confirm the items are present.
 
+### Convert remaining chat work into GitHub Issues (dev SSOT)
+Use this whenever:
+- You finished a stabilization loop and have leftover ideas/tasks in chat.
+- You’re about to start “new work”.
+
+Rule:
+- GitHub Issues are the SSOT for development scope, acceptance criteria, and progress updates.
+- Merge/dedupe aggressively: prefer adding to an existing Issue over creating a new one.
+
+Process (copy/paste friendly):
+1. **Extract candidates**
+   - List 3-10 short items from chat as:
+     - `Title` (1 line)
+     - `Done = ...` (acceptance criteria)
+     - `Next action = ...`
+2. **Merge check**
+   - Search for overlap:
+     - `gh issue list --repo tonezzz/chaba --search "<keyword>" --limit 20`
+   - If overlap exists: add a comment to the existing Issue and stop.
+3. **Create Issue(s)**
+   - One Issue per outcome (avoid “mega issues”).
+   - Include:
+     - context
+     - acceptance criteria
+     - verification steps
+4. **Link back**
+   - Add a short pointer in `TODO.md` (optional) and/or in the chat.
+
+Current pointers (recently created from chat/TODO):
+- `#96` README/docs audit: align pointers + remove duplication
+- `#97` Google tools gates: rollout checklist + enable/disable runbook
+- `#98` Calendar events: add traceability fields (extendedProperties.private)
+- `#99` Recurring reminders end-to-end (RRULE)
+
 ### Snapshot procedure (copy/paste; update the status chart)
 1. **Backend snapshot**
    - `GET /status`
