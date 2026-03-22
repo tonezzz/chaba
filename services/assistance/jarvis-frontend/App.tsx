@@ -2116,7 +2116,47 @@ return (
                              {pendingErr}
                            </div>
                          )}
-                         <div className="text-[12px] font-mono text-slate-400">pending writes: {pendingItems.length}</div>
+                         <div className="flex items-center justify-between gap-2">
+                           <div className="text-[12px] font-mono text-slate-400">pending writes: {pendingItems.length}</div>
+                           <div className="flex items-center gap-2">
+                             <button
+                               disabled={pendingActionBusy}
+                               onClick={() => void refreshPending()}
+                               className="text-[11px] font-mono px-2 py-1 rounded border border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40 disabled:opacity-50"
+                             >
+                               refresh
+                             </button>
+                             <button
+                               disabled={pendingActionBusy}
+                               onClick={() => {
+                                 setPendingActionBusy(true);
+                                 setPendingErr("");
+                                 setPendingActionResult(null);
+                                 (async () => {
+                                   try {
+                                     const res = await liveService.current?.invokeTool("system_macro_upsert_bundle_queue", {
+                                       name: "macro_system_reload",
+                                       enabled: true,
+                                       description: "Reload system sheet KV and reload macros from sheet.",
+                                       parameters_json: "{\"type\":\"object\",\"properties\":{}}",
+                                       steps_json: "[{\"tool\":\"system_reload\",\"args\":{}}]",
+                                       reload_mode: "full",
+                                     });
+                                     setPendingActionResult(res);
+                                     await refreshPending();
+                                   } catch (e: any) {
+                                     setPendingErr(String(e?.message || e || "bundle_queue_failed"));
+                                   } finally {
+                                     setPendingActionBusy(false);
+                                   }
+                                 })();
+                               }}
+                               className="text-[11px] font-mono px-2 py-1 rounded border border-cyan-700/40 bg-cyan-950/20 text-cyan-200 hover:bg-cyan-900/30 disabled:opacity-50"
+                             >
+                               bundle publish + reload
+                             </button>
+                           </div>
+                         </div>
                          <div className="grid grid-cols-1 gap-2">
                            {pendingItems.length === 0 ? (
                              <div className="text-slate-600 font-mono text-sm">(none)</div>
