@@ -2452,7 +2452,7 @@ async def _sheets_logs_maybe_trim(*, spreadsheet_id: str, sheet_name: str, cfg: 
         }
         return
 
-    tool_bu = await _resolve_mcp_tool_name("google_sheets_batch_update", fallback="google_sheets_batch_update")
+    tool_bu = _pick_sheets_tool_name("google_sheets_batch_update", "google_sheets_batch_update")
     req = {
         "deleteDimension": {
             "range": {
