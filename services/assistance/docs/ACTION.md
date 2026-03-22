@@ -18,6 +18,38 @@
 - **Say:** `action`
 - **I will run:** `TODO-NOW-012` (from `services/assistance/docs/TODO.md#now`)
 
+### Pending Jobs (capture from chat; don’t lose work)
+Use this whenever:
+- You’re about to redeploy.
+- You’re switching contexts.
+- The chat is getting long.
+- You have more than 2 pending items in your head.
+
+Goal:
+- Keep a durable, searchable list of open items.
+- Avoid losing tasks across reconnects / redeploys / new chats.
+
+Process (copy/paste friendly):
+1. **Capture**
+   - In the chat, ask for a single consolidated list of “pending jobs / open loops”.
+   - Ensure each item is:
+     - outcome-oriented
+     - has a clear “done” condition
+     - has the next concrete action (command or UI click)
+2. **Persist**
+   - Put the list into:
+     - `services/assistance/docs/TODO.md` (project backlog), and/or
+     - your IDE todo list (fast per-session tracking)
+3. **Merge / dedupe (WIP limit = 1)**
+   - If an item overlaps an existing TODO, merge instead of duplicating.
+   - Keep only one `in_progress` item at a time.
+4. **Sync ACTION.md**
+   - Update:
+     - **Current pick** (single next move)
+     - status chart snapshot if you redeployed or pushed
+5. **Prove it survived**
+   - Re-open `TODO.md` (or the IDE todo list) and confirm the items are present.
+
 ### Snapshot procedure (copy/paste; update the status chart)
 1. **Backend snapshot**
    - `GET /status`
