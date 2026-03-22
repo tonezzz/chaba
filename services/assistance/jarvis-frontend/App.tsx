@@ -295,6 +295,15 @@ export default function App() {
     }
   }, []);
 
+  const copyPendingJson = useCallback(async (value: any) => {
+    try {
+      const txt = typeof value === "string" ? value : JSON.stringify(value ?? null, null, 2);
+      await navigator.clipboard.writeText(txt);
+    } catch (e: any) {
+      setPendingErr(String(e?.message || e || "copy_failed"));
+    }
+  }, []);
+
   const previewPending = useCallback(async (confirmationId: string) => {
     const cid = String(confirmationId || "").trim();
     if (!cid) return;
@@ -2208,14 +2217,32 @@ return (
                                    {selected && (
                                      <div className="mt-2 grid grid-cols-1 gap-2">
                                        {pendingPreview && (
-                                         <pre className="text-[11px] font-mono text-slate-300 whitespace-pre-wrap border border-slate-800 rounded-lg bg-slate-950/20 px-3 py-2">
-                                           {JSON.stringify(pendingPreview, null, 2)}
-                                         </pre>
+                                         <div className="border border-slate-800 rounded-lg bg-slate-950/20 px-3 py-2">
+                                           <div className="flex items-center justify-between gap-2 mb-2">
+                                             <div className="text-[10px] font-mono text-slate-500">preview json</div>
+                                             <button
+                                               onClick={() => void copyPendingJson(pendingPreview)}
+                                               className="text-[11px] font-mono px-2 py-1 rounded border border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
+                                             >
+                                               copy
+                                             </button>
+                                           </div>
+                                           <pre className="text-[11px] font-mono text-slate-300 whitespace-pre-wrap">{JSON.stringify(pendingPreview, null, 2)}</pre>
+                                         </div>
                                        )}
                                        {pendingActionResult != null && (
-                                         <pre className="text-[11px] font-mono text-slate-400 whitespace-pre-wrap border border-slate-800 rounded-lg bg-slate-950/10 px-3 py-2">
-                                           {JSON.stringify(pendingActionResult, null, 2)}
-                                         </pre>
+                                         <div className="border border-slate-800 rounded-lg bg-slate-950/10 px-3 py-2">
+                                           <div className="flex items-center justify-between gap-2 mb-2">
+                                             <div className="text-[10px] font-mono text-slate-500">result json</div>
+                                             <button
+                                               onClick={() => void copyPendingJson(pendingActionResult)}
+                                               className="text-[11px] font-mono px-2 py-1 rounded border border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
+                                             >
+                                               copy
+                                             </button>
+                                           </div>
+                                           <pre className="text-[11px] font-mono text-slate-400 whitespace-pre-wrap">{JSON.stringify(pendingActionResult, null, 2)}</pre>
+                                         </div>
                                        )}
                                      </div>
                                    )}
