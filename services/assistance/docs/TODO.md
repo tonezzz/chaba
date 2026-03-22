@@ -2,7 +2,8 @@
 
 ## Now
 
-- [ ] TODO-NOW-012: Refresh ACTION.md status chart snapshot (run /status, /health, /github/actions/latest)
+- [ ] TODO-NOW-014: GitHub Issue SSOT — `#95` Bound log payload size + enforce Sheets logs retention
+- [x] TODO-NOW-012: Refresh ACTION.md status chart snapshot (run /status, /health, /github/actions/latest)
 - [x] TODO-NOW-011: Docs upkeep pass (finalize Now/Next/Later structure; keep one active Now item)
 - [x] TODO-NOW-010: TODO.md drift fix (dedupe Now list; tighten ordering; remove obvious duplication)
 - [x] TODO-NOW-009: Deploy verification completeness (fill digest/created/published fields reliably; tighten redeploy decision)
@@ -23,6 +24,7 @@
 
 ## Next
 
+- TODO-NEXT-013: README/docs audit (assess README.md; align docs pointers; remove obvious duplication)
 - Re-enable Google tools gate (when Jarvis is stable)
   - Google MCP tools are currently gated by sys_kv keys: `google.sheets.enabled`, `google.calendar.enabled`, `google.tasks.enabled`, `gmail.enabled`
   - Goal: add a safe rollout checklist + explicit enable/disable procedure

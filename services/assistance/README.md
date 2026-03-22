@@ -10,10 +10,14 @@ The `/services/assistance/` tree is the source-of-truth for all *Assistance* app
 - `CHARTS.md`
 - `TOOLS_POLICY.md`
 - `MEMORY_POLICY.md`
+- Operator playbook (single source of truth): `docs/ACTION.md`
 - Build / deploy (single source of truth): `docs/BUILD.md`
 - Reminders (overview + data flow): `docs/REMINDERS.md`
 
 ## Authoritative runtime surfaces (Jarvis)
+- Operator note:
+  - Treat `docs/ACTION.md` as the operator SSOT for runbooks/checklists.
+  - For an authoritative, current API surface, prefer `GET /openapi.json` on the running backend.
 - Jarvis Backend (HTTP):
   - `GET /health`
   - `GET /agents`

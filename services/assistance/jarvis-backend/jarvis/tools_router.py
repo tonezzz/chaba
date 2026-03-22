@@ -6,6 +6,61 @@ from typing import Any, Optional
 async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: dict[str, Any], *, deps: dict[str, Any]) -> Any:
     HTTPException = deps["HTTPException"]
 
+    if tool_name == "memo_header_assess":
+        session_ws = deps["SESSION_WS"]
+        feature_enabled = deps["feature_enabled"]
+        sys_kv_bool = deps["sys_kv_bool"]
+        memo_sheet_cfg_from_sys_kv = deps["memo_sheet_cfg_from_sys_kv"]
+        sheet_name_to_a1 = deps["sheet_name_to_a1"]
+        sheet_get_header_row = deps["sheet_get_header_row"]
+
+        ws = session_ws.get(str(session_id)) if session_id else None
+        if ws is None:
+            raise HTTPException(status_code=400, detail="missing_session_ws")
+
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        if not feature_enabled("memo", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+            raise HTTPException(status_code=403, detail="feature_disabled:memo")
+        if not sys_kv_bool(sys_kv, "memo.enabled", False):
+            raise HTTPException(status_code=403, detail="memo_disabled")
+
+        spreadsheet_id, sheet_name = memo_sheet_cfg_from_sys_kv(sys_kv if isinstance(sys_kv, dict) else None)
+        if not spreadsheet_id:
+            raise HTTPException(status_code=400, detail="missing_memo_ss")
+        if not sheet_name:
+            raise HTTPException(status_code=400, detail="missing_memo_sheet_name")
+
+        sheet_a1 = sheet_name_to_a1(sheet_name, default="memo")
+        header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
+        got = [str(x or "").strip().lower() for x in (header or [])]
+        expected = [
+            "id",
+            "date_time",
+            "active",
+            "status",
+            "group",
+            "subject",
+            "memo",
+            "result",
+            "_created",
+            "_updated",
+        ]
+
+        ok = got[: len(expected)] == expected
+        if not ok:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": "memo_header_mismatch",
+                    "spreadsheet_id": spreadsheet_id,
+                    "sheet": sheet_name,
+                    "got": got,
+                    "expected": expected,
+                },
+            )
+
+        return {"ok": True, "spreadsheet_id": spreadsheet_id, "sheet": sheet_name, "header": expected}
+
     if tool_name == "time_now":
         ZoneInfo = deps["ZoneInfo"]
         datetime = deps["datetime"]

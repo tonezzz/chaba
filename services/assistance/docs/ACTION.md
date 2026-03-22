@@ -16,7 +16,7 @@
 ## Now (what to do next)
 
 - **Say:** `action`
-- **I will run:** `TODO-NOW-012` (from `services/assistance/docs/TODO.md#now`)
+- **I will run:** `TODO-NOW-014` (from `services/assistance/docs/TODO.md#now`)
 
 ### Pending Jobs (capture from chat; don’t lose work)
 Use this whenever:
@@ -121,7 +121,11 @@ Need rebuild? rule (binary, selective CI):
 - WIP limit = 1: if you start a new thing, merge it into the existing checklist/backlog section (see **Intake/merge policy** below).
 
 ### Current pick
-- `TODO-NOW-012`: Refresh ACTION.md status chart snapshot (run /status, /health, /github/actions/latest)
+- `TODO-NOW-014`: GitHub Issue SSOT — `#95` Bound log payload size + enforce Sheets logs retention
+
+GitHub Issue SSOT rule:
+- For development work, the GitHub Issue is the SSOT for scope, acceptance criteria, and progress updates.
+- `ACTION.md` stays focused on operator runbooks, snapshot/verification procedures, and “what to run next”.
 
 Update rule:
 - After you run any ACTION.md procedure, always come back here and set **Current pick** to the *single* next move.

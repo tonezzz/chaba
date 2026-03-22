@@ -1973,6 +1973,7 @@ _SHEETS_LOGS_LOCK: asyncio.Lock | None = None
 _SHEETS_LOGS_TASK: asyncio.Task[None] | None = None
 _SHEETS_LOGS_SERVER_TASK: asyncio.Task[None] | None = None
 _SHEETS_LOGS_LAST_HDR: float = 0.0
+_SHEETS_LOGS_LAST_TRIM: float = 0.0
 
 _LOGS_DIR = str(os.getenv("JARVIS_LOGS_DIR") or "/data/jarvis_logs").strip() or "/data/jarvis_logs"
 
@@ -2143,6 +2144,34 @@ def _sheets_logs_cfg() -> dict[str, Any]:
     hb_raw_env = _get_env("JARVIS_SHEETS_LOGS_SERVER_HEARTBEAT_SECONDS")
     hb_s = _safe_int(hb_raw_env, default=30) if hb_raw_env else 30
 
+    queue_max_env = _get_env("JARVIS_SHEETS_LOGS_QUEUE_MAX")
+    queue_max = _safe_int(queue_max_env, default=5000) if queue_max_env else 5000
+
+    max_rows_env = _get_env("JARVIS_SHEETS_LOGS_MAX_ROWS")
+    max_rows = _safe_int(max_rows_env, default=5000) if max_rows_env else 5000
+
+    max_age_days_env = _get_env("JARVIS_SHEETS_LOGS_MAX_AGE_DAYS")
+    max_age_days = _safe_int(max_age_days_env, default=7) if max_age_days_env else 7
+
+    trim_interval_env = _get_env("JARVIS_SHEETS_LOGS_TRIM_INTERVAL_SECONDS")
+    trim_interval_s = _safe_int(trim_interval_env, default=600) if trim_interval_env else 600
+
+    queue_max_sys = _get_sys("logs.sheets.queue_max")
+    if queue_max_sys:
+        queue_max = max(0, _safe_int(queue_max_sys, default=int(queue_max)))
+
+    max_rows_sys = _get_sys("logs.sheets.max_rows")
+    if max_rows_sys:
+        max_rows = max(0, _safe_int(max_rows_sys, default=int(max_rows)))
+
+    max_age_days_sys = _get_sys("logs.sheets.max_age_days")
+    if max_age_days_sys:
+        max_age_days = max(0, _safe_int(max_age_days_sys, default=int(max_age_days)))
+
+    trim_interval_sys = _get_sys("logs.sheets.trim_interval_seconds")
+    if trim_interval_sys:
+        trim_interval_s = max(10, _safe_int(trim_interval_sys, default=int(trim_interval_s)))
+
     # sys_kv overrides (explicit sys_kv disable should win).
     raw_enabled_sys = _get_sys("logs.enabled") or _get_sys("logs.sheet.enabled")
     if raw_enabled_sys:
@@ -2167,6 +2196,9 @@ def _sheets_logs_cfg() -> dict[str, Any]:
         hb_s = _safe_int(hb_raw_sys, default=30)
 
     hb_s = max(5, min(int(hb_s), 3600))
+    max_rows = max(0, int(max_rows))
+    max_age_days = max(0, int(max_age_days))
+    trim_interval_s = max(10, min(int(trim_interval_s), 86400))
     if not spreadsheet_id:
         try:
             spreadsheet_id = _system_spreadsheet_id()
@@ -2178,6 +2210,10 @@ def _sheets_logs_cfg() -> dict[str, Any]:
         "sheet_name": sheet_name,
         "server_enabled": server_enabled,
         "server_heartbeat_seconds": hb_s,
+        "queue_max": queue_max,
+        "max_rows": max_rows,
+        "max_age_days": max_age_days,
+        "trim_interval_seconds": trim_interval_s,
     }
 
 
@@ -2270,11 +2306,119 @@ async def _sheets_logs_flush_once() -> int:
                 "insert_data_option": "INSERT_ROWS",
             },
         )
+        try:
+            asyncio.create_task(_sheets_logs_maybe_trim(spreadsheet_id=spreadsheet_id, sheet_name=sheet_name, cfg=cfg))
+        except Exception:
+            pass
         return len(rows)
     except Exception:
         async with _SHEETS_LOGS_LOCK:
             _SHEETS_LOGS_QUEUE = batch + _SHEETS_LOGS_QUEUE
         return 0
+
+
+async def _sheets_logs_maybe_trim(*, spreadsheet_id: str, sheet_name: str, cfg: dict[str, Any] | None = None) -> None:
+    global _SHEETS_LOGS_LAST_TRIM
+    if cfg is None:
+        cfg = _sheets_logs_cfg()
+    if not isinstance(cfg, dict) or not cfg.get("enabled"):
+        return
+    now = time.time()
+    try:
+        interval_s = int(cfg.get("trim_interval_seconds") or 600)
+    except Exception:
+        interval_s = 600
+    if _SHEETS_LOGS_LAST_TRIM and (now - float(_SHEETS_LOGS_LAST_TRIM)) < float(interval_s):
+        return
+    _SHEETS_LOGS_LAST_TRIM = now
+
+    try:
+        max_rows = int(cfg.get("max_rows") or 0)
+    except Exception:
+        max_rows = 0
+    try:
+        max_age_days = int(cfg.get("max_age_days") or 0)
+    except Exception:
+        max_age_days = 0
+    if max_rows <= 0 and max_age_days <= 0:
+        return
+
+    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    sheet_a1 = _sheet_name_to_a1(sheet_name, default="logs")
+
+    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A2:D"})
+    parsed = _mcp_text_json(res)
+    values = parsed.get("values") if isinstance(parsed, dict) else None
+    data = parsed.get("data") if isinstance(parsed, dict) else None
+    if not isinstance(values, list) and isinstance(data, dict):
+        values = data.get("values")
+    rows = values if isinstance(values, list) else []
+    total = len(rows)
+    if total <= 0:
+        return
+
+    cutoff_ms = 0
+    if max_age_days > 0:
+        cutoff_ms = int((time.time() - (max_age_days * 86400)) * 1000)
+
+    remove_age = 0
+    if cutoff_ms > 0:
+        for r in rows:
+            if not isinstance(r, list) or len(r) < 4:
+                remove_age += 1
+                continue
+            try:
+                ts_ms = int(float(str(r[3] or "0").strip() or "0"))
+            except Exception:
+                ts_ms = 0
+            if ts_ms and ts_ms < cutoff_ms:
+                remove_age += 1
+                continue
+            break
+
+    remove_rows = 0
+    if max_rows > 0 and total > max_rows:
+        remove_rows = total - max_rows
+
+    remove_n = max(int(remove_age), int(remove_rows))
+    if remove_n <= 0:
+        return
+
+    tool_meta = _pick_sheets_tool_name("google_sheets_get_spreadsheet", "google_sheets_get_spreadsheet")
+    meta_res = await _mcp_tools_call(tool_meta, {"spreadsheet_id": spreadsheet_id})
+    meta_parsed = _mcp_text_json(meta_res)
+    meta_data = meta_parsed.get("data") if isinstance(meta_parsed, dict) else None
+    meta = meta_data if isinstance(meta_data, dict) else (meta_parsed if isinstance(meta_parsed, dict) else {})
+    sheet_id: int | None = None
+    try:
+        sheets = meta.get("sheets") if isinstance(meta, dict) else None
+        if isinstance(sheets, list):
+            for sh in sheets:
+                props = sh.get("properties") if isinstance(sh, dict) else None
+                title = str(props.get("title") or "") if isinstance(props, dict) else ""
+                if title.strip() == sheet_name:
+                    try:
+                        sheet_id = int(props.get("sheetId"))
+                    except Exception:
+                        sheet_id = None
+                    break
+    except Exception:
+        sheet_id = None
+    if sheet_id is None:
+        return
+
+    tool_bu = await _resolve_mcp_tool_name("google_sheets_batch_update", fallback="google_sheets_batch_update")
+    req = {
+        "deleteDimension": {
+            "range": {
+                "sheetId": int(sheet_id),
+                "dimension": "ROWS",
+                "startIndex": 1,
+                "endIndex": 1 + int(remove_n),
+            }
+        }
+    }
+    await _mcp_tools_call(tool_bu, {"spreadsheet_id": spreadsheet_id, "requests": [req]})
 
 
 async def _sheets_logs_flush_loop() -> None:
@@ -2327,8 +2471,9 @@ async def _sheets_logs_enqueue_ws(ws: WebSocket, direction: str, msg: Any) -> No
     }
     async with _SHEETS_LOGS_LOCK:
         _SHEETS_LOGS_QUEUE.append(rec)
-        if len(_SHEETS_LOGS_QUEUE) > 5000:
-            _SHEETS_LOGS_QUEUE = _SHEETS_LOGS_QUEUE[-5000:]
+        qmax = int(cfg.get("queue_max") or 0)
+        if qmax > 0 and len(_SHEETS_LOGS_QUEUE) > qmax:
+            _SHEETS_LOGS_QUEUE = _SHEETS_LOGS_QUEUE[-qmax:]
 
 
 async def _sheets_logs_enqueue_http(*, typ: str, text: str, msg: Any | None = None) -> None:
@@ -2360,8 +2505,9 @@ async def _sheets_logs_enqueue_http(*, typ: str, text: str, msg: Any | None = No
     }
     async with _SHEETS_LOGS_LOCK:
         _SHEETS_LOGS_QUEUE.append(rec)
-        if len(_SHEETS_LOGS_QUEUE) > 5000:
-            _SHEETS_LOGS_QUEUE = _SHEETS_LOGS_QUEUE[-5000:]
+        qmax = int(cfg.get("queue_max") or 0)
+        if qmax > 0 and len(_SHEETS_LOGS_QUEUE) > qmax:
+            _SHEETS_LOGS_QUEUE = _SHEETS_LOGS_QUEUE[-qmax:]
 
 
 async def _sheets_logs_enqueue_server(*, typ: str, text: str, msg: Any | None = None) -> None:
@@ -2393,8 +2539,9 @@ async def _sheets_logs_enqueue_server(*, typ: str, text: str, msg: Any | None = 
     }
     async with _SHEETS_LOGS_LOCK:
         _SHEETS_LOGS_QUEUE.append(rec)
-        if len(_SHEETS_LOGS_QUEUE) > 5000:
-            _SHEETS_LOGS_QUEUE = _SHEETS_LOGS_QUEUE[-5000:]
+        qmax = int(cfg.get("queue_max") or 0)
+        if qmax > 0 and len(_SHEETS_LOGS_QUEUE) > qmax:
+            _SHEETS_LOGS_QUEUE = _SHEETS_LOGS_QUEUE[-qmax:]
 
 
 async def _sheets_logs_server_loop() -> None:
@@ -12597,6 +12744,14 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
 
         decls.append(
             {
+                "name": "memo_header_assess",
+                "description": "Validate memo sheet header matches canonical order (fails fast on mismatch).",
+                "parameters": {"type": "object", "properties": {}},
+            }
+        )
+
+        decls.append(
+            {
                 "name": "memo_get",
                 "description": "Get a memo by stable numeric id (sheet-backed).",
                 "parameters": {
@@ -12988,6 +13143,7 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             "system_reload",
             "system_reload_queue",
             "memo_add",
+            "memo_header_assess",
             "memo_get",
             "memo_list",
             "memo_search",
