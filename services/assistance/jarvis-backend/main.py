@@ -2071,7 +2071,34 @@ def _truncate_log_blob(s: Any, *, limit: int) -> str:
         return txt
     if len(txt) <= lim:
         return txt
-    return txt[:lim] + "..."
+    return txt[:lim]
+
+
+def _truncate_log_blob_marker(s: Any, *, limit: int, preview_limit: int = 2000) -> tuple[str, bool]:
+    txt = str(s or "")
+    lim = int(limit) if isinstance(limit, int) or str(limit).strip().isdigit() else 0
+    if lim <= 0 or len(txt) <= lim:
+        return txt, False
+    try:
+        plim = int(preview_limit) if preview_limit else 2000
+        plim = max(0, plim)
+        # Ensure marker itself respects the output limit; shrink preview until it fits.
+        for _ in range(12):
+            marker = {"_truncated": True, "len": len(txt), "preview": _truncate_log_blob(txt, limit=plim)}
+            out = json.dumps(marker, ensure_ascii=False)
+            if len(out) <= lim:
+                return out, True
+            # Reduce preview substantially to converge quickly.
+            plim = int(plim * 0.7)
+            if plim <= 0:
+                break
+        # Last resort: hard truncate the marker string (still best-effort bounded).
+        marker2 = {"_truncated": True, "len": len(txt), "preview": ""}
+        out2 = json.dumps(marker2, ensure_ascii=False)
+        return _truncate_log_blob(out2, limit=lim), True
+    except Exception:
+        # Best-effort: fall back to hard truncation.
+        return _truncate_log_blob(txt, limit=lim), True
 
 
 async def _ws_record(ws: WebSocket, direction: str, msg: Any) -> None:
@@ -2375,7 +2402,7 @@ async def _sheets_logs_maybe_trim(*, spreadsheet_id: str, sheet_name: str, cfg: 
     tool_upd = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
     sheet_a1 = _sheet_name_to_a1(sheet_name, default="logs")
 
-    # Fetch full row shape so we can rewrite the sheet without relying on batch_update.
+    # Fetch full row shape so we can rewrite the sheet without relying on batchUpdate.
     res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A1:H"})
     parsed = _mcp_text_json(res)
     values = parsed.get("values") if isinstance(parsed, dict) else None
@@ -2438,6 +2465,10 @@ async def _sheets_logs_maybe_trim(*, spreadsheet_id: str, sheet_name: str, cfg: 
 
     kept = rows[int(remove_n) :] if int(remove_n) < len(rows) else []
 
+    reason = "rows" if remove_rows > 0 else "age" if remove_age > 0 else "unknown"
+    if remove_rows > 0 and remove_age > 0:
+        reason = "both"
+
     # Overwrite the sheet values to clear removed rows without relying on Sheets batchUpdate.
     # We preserve the header row and pad with blank rows so we overwrite the previous filled range.
     width = max(1, len(header))
@@ -2470,10 +2501,16 @@ async def _sheets_logs_maybe_trim(*, spreadsheet_id: str, sheet_name: str, cfg: 
             "value_input_option": "RAW",
         },
     )
+    try:
+        logger.info("sheets_logs_trimmed removed=%s remaining=%s reason=%s", int(remove_n), int(len(kept)), reason)
+    except Exception:
+        pass
     _SHEETS_LOGS_LAST_TRIM_RESULT = {
         "ok": True,
         "removed": int(remove_n),
         "mode": "rewrite_values",
+        "remaining": int(len(kept)),
+        "reason": reason,
         "total": int(total),
         "max_rows": int(max_rows),
         "max_age_days": int(max_age_days),
@@ -2509,14 +2546,14 @@ async def _sheets_logs_enqueue_ws(ws: WebSocket, direction: str, msg: Any) -> No
     text = ""
     try:
         if isinstance(msg, dict) and msg.get("text") is not None:
-            text = _truncate_log_blob(msg.get("text") or "", limit=2000)
+            text, _ = _truncate_log_blob_marker(msg.get("text") or "", limit=2000, preview_limit=2000)
     except Exception:
         text = ""
     try:
         msg_json = json.dumps(msg, ensure_ascii=False)
     except Exception:
         msg_json = str(msg)
-    msg_json = _truncate_log_blob(msg_json, limit=50000)
+    msg_json, _ = _truncate_log_blob_marker(msg_json, limit=50000, preview_limit=2000)
     rec = {
         "ts_ms": ts_ms,
         "ts": ts,
@@ -2550,7 +2587,7 @@ async def _sheets_logs_enqueue_http(*, typ: str, text: str, msg: Any | None = No
             msg_json = json.dumps(msg, ensure_ascii=False)
     except Exception:
         msg_json = str(msg)
-    msg_json = _truncate_log_blob(msg_json, limit=50000)
+    msg_json, _ = _truncate_log_blob_marker(msg_json, limit=50000, preview_limit=2000)
     rec = {
         "ts_ms": ts_ms,
         "ts": ts,
@@ -2558,7 +2595,7 @@ async def _sheets_logs_enqueue_http(*, typ: str, text: str, msg: Any | None = No
         "session_id": "",
         "trace_id": "",
         "type": str(typ or "http"),
-        "text": _truncate_log_blob(text or "", limit=2000),
+        "text": _truncate_log_blob_marker(text or "", limit=2000, preview_limit=2000)[0],
         "msg_json": msg_json,
         "instance_id": INSTANCE_ID,
     }
@@ -2584,7 +2621,7 @@ async def _sheets_logs_enqueue_server(*, typ: str, text: str, msg: Any | None = 
             msg_json = json.dumps(msg, ensure_ascii=False)
     except Exception:
         msg_json = str(msg)
-    msg_json = _truncate_log_blob(msg_json, limit=50000)
+    msg_json, _ = _truncate_log_blob_marker(msg_json, limit=50000, preview_limit=2000)
     rec = {
         "ts_ms": ts_ms,
         "ts": ts,
@@ -2592,7 +2629,7 @@ async def _sheets_logs_enqueue_server(*, typ: str, text: str, msg: Any | None = 
         "session_id": "",
         "trace_id": "",
         "type": str(typ or "server"),
-        "text": _truncate_log_blob(text or "", limit=2000),
+        "text": _truncate_log_blob_marker(text or "", limit=2000, preview_limit=2000)[0],
         "msg_json": msg_json,
         "instance_id": INSTANCE_ID,
     }
