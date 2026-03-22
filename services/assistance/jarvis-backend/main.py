@@ -5634,6 +5634,115 @@ async def _weaviate_request(method: str, path: str, payload: Any = None) -> Any:
             return res.text
 
 
+async def _github_api_post(path: str, *, json_body: dict[str, Any] | None = None) -> Any:
+    token = _github_rw_token()
+    if not token:
+        raise HTTPException(status_code=500, detail="missing_github_personal_token_rw")
+
+    url = f"https://api.github.com{path}"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "jarvis-backend",
+    }
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        res = await client.post(url, headers=headers, json=json_body or {})
+        if res.status_code >= 400:
+            detail: Any
+            try:
+                detail = res.json()
+            except Exception:
+                detail = res.text
+            raise HTTPException(status_code=int(res.status_code), detail={"github_error": detail})
+        try:
+            return res.json()
+        except Exception:
+            return res.text
+
+
+def _require_github_issues_write_enabled(*, x_api_token: Optional[str] = None) -> None:
+    _require_api_token_if_configured(x_api_token)
+    sys_kv = _sys_kv_snapshot()
+    if not _sys_kv_bool(sys_kv, "github.issues.write.enabled", False):
+        raise HTTPException(status_code=403, detail="feature_disabled:github.issues.write.enabled")
+
+
+class GitHubIssueSearchRequest(BaseModel):
+    q: str
+    per_page: int = 10
+
+
+class GitHubIssueCreateRequest(BaseModel):
+    owner: str = "tonezzz"
+    repo: str = "chaba"
+    title: str
+    body: str | None = None
+    labels: list[str] | None = None
+    assignees: list[str] | None = None
+
+
+class GitHubIssueCommentRequest(BaseModel):
+    owner: str = "tonezzz"
+    repo: str = "chaba"
+    issue_number: int
+    body: str
+
+
+@app.post("/github/issues/search")
+@app.post("/jarvis/github/issues/search")
+async def github_issues_search(req: GitHubIssueSearchRequest, x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token")) -> dict[str, Any]:
+    _require_github_issues_write_enabled(x_api_token=x_api_token)
+    q = str(req.q or "").strip()
+    if not q:
+        raise HTTPException(status_code=400, detail="missing_q")
+    try:
+        per_page = int(req.per_page)
+    except Exception:
+        per_page = 10
+    per_page = max(1, min(50, per_page))
+    data = await _github_api_get("/search/issues", params={"q": q, "per_page": per_page})
+    return {"ok": True, "q": q, "per_page": per_page, "result": data}
+
+
+@app.post("/github/issues/create")
+@app.post("/jarvis/github/issues/create")
+async def github_issues_create(req: GitHubIssueCreateRequest, x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token")) -> dict[str, Any]:
+    _require_github_issues_write_enabled(x_api_token=x_api_token)
+    owner = str(req.owner or "").strip() or "tonezzz"
+    repo = str(req.repo or "").strip() or "chaba"
+    title = str(req.title or "").strip()
+    body = str(req.body or "").strip() if req.body is not None else ""
+    if not title:
+        raise HTTPException(status_code=400, detail="missing_title")
+    payload: dict[str, Any] = {"title": title}
+    if body:
+        payload["body"] = body
+    if isinstance(req.labels, list) and req.labels:
+        payload["labels"] = [str(x) for x in req.labels if str(x).strip()]
+    if isinstance(req.assignees, list) and req.assignees:
+        payload["assignees"] = [str(x) for x in req.assignees if str(x).strip()]
+    data = await _github_api_post(f"/repos/{owner}/{repo}/issues", json_body=payload)
+    return {"ok": True, "owner": owner, "repo": repo, "issue": data}
+
+
+@app.post("/github/issues/comment")
+@app.post("/jarvis/github/issues/comment")
+async def github_issues_comment(req: GitHubIssueCommentRequest, x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token")) -> dict[str, Any]:
+    _require_github_issues_write_enabled(x_api_token=x_api_token)
+    owner = str(req.owner or "").strip() or "tonezzz"
+    repo = str(req.repo or "").strip() or "chaba"
+    try:
+        issue_number = int(req.issue_number)
+    except Exception:
+        raise HTTPException(status_code=400, detail="invalid_issue_number")
+    body = str(req.body or "").strip()
+    if not body:
+        raise HTTPException(status_code=400, detail="missing_body")
+    data = await _github_api_post(f"/repos/{owner}/{repo}/issues/{issue_number}/comments", json_body={"body": body})
+    return {"ok": True, "owner": owner, "repo": repo, "issue_number": issue_number, "comment": data}
+
+
 def _adapt_playwright_tool_args(tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
     tool = str(tool_name or "").strip()
     out = dict(args or {})
@@ -11114,6 +11223,10 @@ async def status() -> dict[str, Any]:
 
 def _github_ro_token() -> str:
     return str(os.getenv("GITHUB_PERSONAL_TOKEN_RO") or "").strip()
+
+
+def _github_rw_token() -> str:
+    return str(os.getenv("GITHUB_PERSONAL_TOKEN_RW") or "").strip()
 
 
 async def _github_api_get(path: str, *, params: dict[str, Any] | None = None) -> Any:
