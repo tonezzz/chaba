@@ -7,7 +7,7 @@ The `/services/assistance/` tree is the source-of-truth for all *Assistance* app
 
 ## Start here
 - `CONCEPT.md`
-- `CHARTS.md`
+- `docs/CHARTS.md`
 - `TOOLS_POLICY.md`
 - `MEMORY_POLICY.md`
 - Operator playbook (single source of truth): `docs/ACTION.md`
@@ -18,42 +18,10 @@ The `/services/assistance/` tree is the source-of-truth for all *Assistance* app
 - Operator note:
   - Treat `docs/ACTION.md` as the operator SSOT for runbooks/checklists.
   - For an authoritative, current API surface, prefer `GET /openapi.json` on the running backend.
-- Jarvis Backend (HTTP):
-  - `GET /health`
-  - `GET /agents`
-  - `GET /debug/agents`
-  - `GET /daily-brief`
-  - Tasks (sequential checklists):
-    - `POST /tasks/sequential/suggest`
-    - `POST /tasks/sequential/apply_and_suggest`
-  - Google Tasks (read-only):
-    - `GET /google-tasks/sequential/summary`
-      - optional query params:
-        - `tasklist_id` or `tasklist_title`
-        - `only_incomplete`, `only_with_notes`, `only_with_checklists`
-        - `include_notes`
-        - `debug`
-  - Google Tasks (write, requires `confirm=true`):
-    - `POST /google-tasks/tasks/create`
-    - `POST /google-tasks/tasks/update`
-    - `POST /google-tasks/tasks/complete`
-    - `POST /google-tasks/tasks/delete`
-  - Google Tasks (undo, requires `confirm=true`):
-    - `GET /google-tasks/undo/list`
-    - `POST /google-tasks/undo/last`
-      - note: undoing delete recreates the task (new task ID)
-  - Google Calendar (undo, requires `confirm=true`):
-    - `GET /google-calendar/undo/list`
-    - `POST /google-calendar/undo/last`
-      - note: undoing delete recreates the event (new event ID)
-  - `GET /reminders`
-  - `GET /reminders/upcoming`
-  - `POST /reminders/{reminder_id}/done`
-  - `POST /reminders/{reminder_id}/later`
-  - `GET /reminders/{reminder_id}/reschedule/suggest`
-  - `POST /reminders/{reminder_id}/reschedule`
-- Jarvis Backend (WebSocket):
-  - `WS /ws/live`
+- Jarvis Backend:
+  - HTTP health: `GET /health`
+  - HTTP API surface: `GET /openapi.json`
+  - WebSocket: `WS /ws/live`
 
 Troubleshooting:
 - If the UI disconnects immediately after clicking Initialize, check `jarvis-backend` logs for Gemini Live connection errors (and ensure Portainer actually pulled the latest image digest on redeploy).
