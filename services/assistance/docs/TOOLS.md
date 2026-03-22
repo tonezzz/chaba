@@ -48,6 +48,7 @@ Outbound (backend -> client) message types (selected):
 
 | `type` | Meaning | Notes |
 |---|---|---|
+| `connect_status` | initial connection metadata | emitted immediately after WS connect; includes `instance_id`, `session_id`, and sheet/cache load flags |
 | `state` | connection state | e.g. `connected` |
 | `text` | plain text message | model output or backend status lines |
 | `transcript` | speech-to-text transcript | `source=input|output` |

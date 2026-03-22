@@ -144,22 +144,19 @@ Supported examples:
 
 ## Backend HTTP endpoints
 
-- `GET /reminders`
-- `GET /reminders/upcoming`
-- `POST /reminders/{reminder_id}/done`
-- `POST /reminders/{reminder_id}/later?days=1`
-- `GET /reminders/{reminder_id}/reschedule/suggest`
-- `POST /reminders/{reminder_id}/reschedule?notify_at=<unix_ts>`
+Operator SSOT:
+
+- `docs/ACTION.md` (runbooks + what to run next)
+
+API SSOT:
+
+- Prefer the live backend OpenAPI: `GET /openapi.json`
 
 ## WebSocket quick commands
 
-- `reminder setup: <text>`
-- `reminder add: <text>`
-- `reminder list pending`
-- `reminder done: <reminder_id>`
-- `reminder later: <reminder_id> 1`
-- `reminder reschedule: <reminder_id> tomorrow 09:00`
-- `reminder delete: <reminder_id>`
+Operator SSOT:
+
+- `docs/ACTION.md` (smoke checklist + WS helpers)
 
 ## Debugging reminders (WS)
 
