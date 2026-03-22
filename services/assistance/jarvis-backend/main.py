@@ -7511,7 +7511,7 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
         tool_args = msg.get("args")
         if not isinstance(tool_args, dict):
             tool_args = {}
-        allowed = {"pending_list", "pending_get", "pending_preview", "pending_confirm", "pending_cancel"}
+        allowed = {"pending_list", "pending_get", "pending_preview", "pending_confirm", "pending_cancel", "system_reload_queue"}
         if name not in allowed:
             try:
                 await _ws_send_json(
@@ -12986,10 +12986,11 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         allowed = {
             "time_now",
             "system_reload",
+            "system_reload_queue",
             "memo_add",
             "memo_get",
             "memo_list",
-            "chaba_search_memo",
+            "memo_search",
             "memory_add",
             "memory_search",
             "memory_list",
@@ -13443,10 +13444,11 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                                     "pending_list",
                                     "pending_confirm",
                                     "pending_cancel",
+                                    "system_reload_queue",
                                     "memo_add",
                                     "memo_get",
                                     "memo_list",
-                                    "memory_add",
+                                    "memo_search",
                                     "memory_search",
                                     "memory_list",
                                 )

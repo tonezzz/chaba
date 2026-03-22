@@ -59,6 +59,17 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         keys = sorted([str(k or "").strip() for k in (sys_kv or {}).keys()]) if isinstance(sys_kv, dict) else []
         return {"ok": True, "sys_kv_keys": keys, "macros_count": len(macros or {})}
 
+    if tool_name == "system_reload_queue":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        create_pending_write = deps["create_pending_write"]
+        mode = str(args.get("mode") or "full").strip().lower() or "full"
+        allowed_modes = {"full", "all", "memory", "knowledge", "sys", "gems"}
+        if mode not in allowed_modes:
+            raise HTTPException(status_code=400, detail="invalid_reload_mode")
+        confirmation_id = create_pending_write(str(session_id), "system_reload", {"mode": mode})
+        return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "mode": mode}
+
     if tool_name in {"system_macro_get", "system_macro_upsert"}:
         session_ws = deps["SESSION_WS"]
         system_spreadsheet_id = deps["system_spreadsheet_id"]
@@ -948,6 +959,13 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                 preview["risk"] = "high"
                 preview["summary"] = f"{tool_kind or action}"
                 preview["details"] = {"mcp_name": mcp_name, "tool_name": tool_kind}
+        elif action == "system_reload" and isinstance(payload, dict):
+            mode = str(payload.get("mode") or "full").strip().lower() or "full"
+            preview["risk"] = "high"
+            preview["writes_count"] = 0
+            preview["targets"] = [{"kind": "system", "action": "system_reload", "mode": mode}]
+            preview["summary"] = f"system_reload (mode={mode})"
+            preview["details"] = {"mode": mode}
         else:
             preview["risk"] = "high"
             preview["summary"] = action or "pending"
@@ -959,6 +977,10 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             raise HTTPException(status_code=400, detail="missing_session_id")
 
         pop_pending_write = deps["pop_pending_write"]
+        session_ws = deps["SESSION_WS"]
+        system_reload_impl = deps.get("system_reload_impl")
+        load_ws_system_kv = deps["load_ws_system_kv"]
+        macro_tools_force_reload_from_sheet = deps["macro_tools_force_reload_from_sheet"]
         adapt_aim_tool_args = deps["adapt_aim_tool_args"]
         aim_mcp_tools_call = deps["aim_mcp_tools_call"]
         mcp_tools_call = deps["mcp_tools_call"]
@@ -979,6 +1001,29 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             raise HTTPException(status_code=404, detail="pending_write_not_found")
         action = str(pending.get("action") or "")
         payload = pending.get("payload")
+        if action == "system_reload":
+            ws = session_ws.get(str(session_id)) if isinstance(session_ws, dict) else None
+            if ws is None:
+                raise HTTPException(status_code=400, detail="missing_session_ws")
+            mode = "full"
+            if isinstance(payload, dict):
+                mode = str(payload.get("mode") or "full").strip().lower() or "full"
+            if mode in {"full", "all"}:
+                if system_reload_impl is not None:
+                    out = await system_reload_impl(ws)
+                    return {"ok": True, "reloaded": True, "mode": mode, "result": out}
+                sys_kv = await load_ws_system_kv(ws)
+                macros = await macro_tools_force_reload_from_sheet(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+                keys = sorted([str(k or "").strip() for k in (sys_kv or {}).keys()]) if isinstance(sys_kv, dict) else []
+                return {"ok": True, "reloaded": True, "mode": mode, "sys_kv_keys": keys or [], "macros_count": len(macros or {})}
+            # For now, partial modes are treated as full reload (safe/consistent).
+            if system_reload_impl is not None:
+                out2 = await system_reload_impl(ws)
+                return {"ok": True, "reloaded": True, "mode": mode, "result": out2}
+            sys_kv2 = await load_ws_system_kv(ws)
+            macros2 = await macro_tools_force_reload_from_sheet(sys_kv=sys_kv2 if isinstance(sys_kv2, dict) else None)
+            keys2 = sorted([str(k or "").strip() for k in (sys_kv2 or {}).keys()]) if isinstance(sys_kv2, dict) else []
+            return {"ok": True, "reloaded": True, "mode": mode, "sys_kv_keys": keys2, "macros_count": len(macros2 or {})}
         if action == "mcp_tools_call":
             if not isinstance(payload, dict):
                 raise HTTPException(status_code=400, detail="invalid_pending_payload")
