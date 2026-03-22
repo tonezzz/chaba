@@ -2372,15 +2372,26 @@ async def _sheets_logs_maybe_trim(*, spreadsheet_id: str, sheet_name: str, cfg: 
         return
 
     tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    tool_upd = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
     sheet_a1 = _sheet_name_to_a1(sheet_name, default="logs")
 
-    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A2:D"})
+    # Fetch full row shape so we can rewrite the sheet without relying on batch_update.
+    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A1:H"})
     parsed = _mcp_text_json(res)
     values = parsed.get("values") if isinstance(parsed, dict) else None
     data = parsed.get("data") if isinstance(parsed, dict) else None
     if not isinstance(values, list) and isinstance(data, dict):
         values = data.get("values")
-    rows = values if isinstance(values, list) else []
+    all_rows = values if isinstance(values, list) else []
+    if not all_rows or not isinstance(all_rows[0], list):
+        _SHEETS_LOGS_LAST_TRIM_RESULT = {
+            "ok": True,
+            "removed": 0,
+            "mode": "empty",
+        }
+        return
+    header = all_rows[0] if isinstance(all_rows[0], list) else []
+    rows = all_rows[1:] if len(all_rows) > 1 else []
     total = len(rows)
     if total <= 0:
         _SHEETS_LOGS_LAST_TRIM_RESULT = {
@@ -2425,49 +2436,44 @@ async def _sheets_logs_maybe_trim(*, spreadsheet_id: str, sheet_name: str, cfg: 
         }
         return
 
-    tool_meta = _pick_sheets_tool_name("google_sheets_get_spreadsheet", "google_sheets_get_spreadsheet")
-    meta_res = await _mcp_tools_call(tool_meta, {"spreadsheet_id": spreadsheet_id})
-    meta_parsed = _mcp_text_json(meta_res)
-    meta_data = meta_parsed.get("data") if isinstance(meta_parsed, dict) else None
-    meta = meta_data if isinstance(meta_data, dict) else (meta_parsed if isinstance(meta_parsed, dict) else {})
-    sheet_id: int | None = None
-    try:
-        sheets = meta.get("sheets") if isinstance(meta, dict) else None
-        if isinstance(sheets, list):
-            for sh in sheets:
-                props = sh.get("properties") if isinstance(sh, dict) else None
-                title = str(props.get("title") or "") if isinstance(props, dict) else ""
-                if title.strip() == sheet_name:
-                    try:
-                        sheet_id = int(props.get("sheetId"))
-                    except Exception:
-                        sheet_id = None
-                    break
-    except Exception:
-        sheet_id = None
-    if sheet_id is None:
-        _SHEETS_LOGS_LAST_TRIM_RESULT = {
-            "ok": False,
-            "error": "missing_sheet_id",
-        }
-        return
+    kept = rows[int(remove_n) :] if int(remove_n) < len(rows) else []
 
-    tool_bu = _pick_sheets_tool_name("google_sheets_batch_update", "google_sheets_batch_update")
-    req = {
-        "deleteDimension": {
-            "range": {
-                "sheetId": int(sheet_id),
-                "dimension": "ROWS",
-                "startIndex": 1,
-                "endIndex": 1 + int(remove_n),
-            }
-        }
-    }
-    await _mcp_tools_call(tool_bu, {"spreadsheet_id": spreadsheet_id, "requests": [req]})
+    # Overwrite the sheet values to clear removed rows without relying on Sheets batchUpdate.
+    # We preserve the header row and pad with blank rows so we overwrite the previous filled range.
+    width = max(1, len(header))
+
+    def _ensure_width(r: Any) -> list[Any]:
+        out = list(r) if isinstance(r, list) else []
+        while len(out) < width:
+            out.append("")
+        if len(out) > width:
+            out = out[:width]
+        return out
+
+    out_values: list[list[Any]] = [_ensure_width(header)]
+    for r in kept:
+        out_values.append(_ensure_width(r))
+
+    # Clear remainder of the existing table range.
+    existing_len = 1 + int(total)
+    while len(out_values) < existing_len:
+        out_values.append([""] * width)
+
+    end_row = len(out_values)
+    tool_range = f"{sheet_a1}!A1:H{end_row}"
+    await _mcp_tools_call(
+        tool_upd,
+        {
+            "spreadsheet_id": spreadsheet_id,
+            "range": tool_range,
+            "values": out_values,
+            "value_input_option": "RAW",
+        },
+    )
     _SHEETS_LOGS_LAST_TRIM_RESULT = {
         "ok": True,
         "removed": int(remove_n),
-        "mode": "delete_rows",
+        "mode": "rewrite_values",
         "total": int(total),
         "max_rows": int(max_rows),
         "max_age_days": int(max_age_days),
