@@ -1974,6 +1974,7 @@ _SHEETS_LOGS_TASK: asyncio.Task[None] | None = None
 _SHEETS_LOGS_SERVER_TASK: asyncio.Task[None] | None = None
 _SHEETS_LOGS_LAST_HDR: float = 0.0
 _SHEETS_LOGS_LAST_TRIM: float = 0.0
+_SHEETS_LOGS_LAST_TRIM_RESULT: dict[str, Any] = {}
 
 _LOGS_DIR = str(os.getenv("JARVIS_LOGS_DIR") or "/data/jarvis_logs").strip() or "/data/jarvis_logs"
 
@@ -2307,7 +2308,24 @@ async def _sheets_logs_flush_once() -> int:
             },
         )
         try:
-            asyncio.create_task(_sheets_logs_maybe_trim(spreadsheet_id=spreadsheet_id, sheet_name=sheet_name, cfg=cfg))
+            t = asyncio.create_task(_sheets_logs_maybe_trim(spreadsheet_id=spreadsheet_id, sheet_name=sheet_name, cfg=cfg))
+
+            def _on_done(task: asyncio.Task) -> None:
+                global _SHEETS_LOGS_LAST_TRIM_RESULT
+                try:
+                    exc = task.exception()
+                except Exception:
+                    exc = None
+                if exc is not None:
+                    try:
+                        _SHEETS_LOGS_LAST_TRIM_RESULT = {
+                            "ok": False,
+                            "error": f"{type(exc).__name__}: {exc}",
+                        }
+                    except Exception:
+                        pass
+
+            t.add_done_callback(_on_done)
         except Exception:
             pass
         return len(rows)
@@ -2318,7 +2336,7 @@ async def _sheets_logs_flush_once() -> int:
 
 
 async def _sheets_logs_maybe_trim(*, spreadsheet_id: str, sheet_name: str, cfg: dict[str, Any] | None = None) -> None:
-    global _SHEETS_LOGS_LAST_TRIM
+    global _SHEETS_LOGS_LAST_TRIM, _SHEETS_LOGS_LAST_TRIM_RESULT
     if cfg is None:
         cfg = _sheets_logs_cfg()
     if not isinstance(cfg, dict) or not cfg.get("enabled"):
@@ -2331,6 +2349,11 @@ async def _sheets_logs_maybe_trim(*, spreadsheet_id: str, sheet_name: str, cfg: 
     if _SHEETS_LOGS_LAST_TRIM and (now - float(_SHEETS_LOGS_LAST_TRIM)) < float(interval_s):
         return
     _SHEETS_LOGS_LAST_TRIM = now
+    _SHEETS_LOGS_LAST_TRIM_RESULT = {
+        "ok": True,
+        "removed": 0,
+        "mode": "skip",
+    }
 
     try:
         max_rows = int(cfg.get("max_rows") or 0)
@@ -2341,6 +2364,11 @@ async def _sheets_logs_maybe_trim(*, spreadsheet_id: str, sheet_name: str, cfg: 
     except Exception:
         max_age_days = 0
     if max_rows <= 0 and max_age_days <= 0:
+        _SHEETS_LOGS_LAST_TRIM_RESULT = {
+            "ok": True,
+            "removed": 0,
+            "mode": "disabled",
+        }
         return
 
     tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
@@ -2355,6 +2383,11 @@ async def _sheets_logs_maybe_trim(*, spreadsheet_id: str, sheet_name: str, cfg: 
     rows = values if isinstance(values, list) else []
     total = len(rows)
     if total <= 0:
+        _SHEETS_LOGS_LAST_TRIM_RESULT = {
+            "ok": True,
+            "removed": 0,
+            "mode": "empty",
+        }
         return
 
     cutoff_ms = 0
@@ -2382,6 +2415,14 @@ async def _sheets_logs_maybe_trim(*, spreadsheet_id: str, sheet_name: str, cfg: 
 
     remove_n = max(int(remove_age), int(remove_rows))
     if remove_n <= 0:
+        _SHEETS_LOGS_LAST_TRIM_RESULT = {
+            "ok": True,
+            "removed": 0,
+            "mode": "noop",
+            "total": int(total),
+            "max_rows": int(max_rows),
+            "max_age_days": int(max_age_days),
+        }
         return
 
     tool_meta = _pick_sheets_tool_name("google_sheets_get_spreadsheet", "google_sheets_get_spreadsheet")
@@ -2405,6 +2446,10 @@ async def _sheets_logs_maybe_trim(*, spreadsheet_id: str, sheet_name: str, cfg: 
     except Exception:
         sheet_id = None
     if sheet_id is None:
+        _SHEETS_LOGS_LAST_TRIM_RESULT = {
+            "ok": False,
+            "error": "missing_sheet_id",
+        }
         return
 
     tool_bu = await _resolve_mcp_tool_name("google_sheets_batch_update", fallback="google_sheets_batch_update")
@@ -2419,6 +2464,14 @@ async def _sheets_logs_maybe_trim(*, spreadsheet_id: str, sheet_name: str, cfg: 
         }
     }
     await _mcp_tools_call(tool_bu, {"spreadsheet_id": spreadsheet_id, "requests": [req]})
+    _SHEETS_LOGS_LAST_TRIM_RESULT = {
+        "ok": True,
+        "removed": int(remove_n),
+        "mode": "delete_rows",
+        "total": int(total),
+        "max_rows": int(max_rows),
+        "max_age_days": int(max_age_days),
+    }
 
 
 async def _sheets_logs_flush_loop() -> None:
@@ -2867,12 +2920,22 @@ def logs_sheets_status() -> dict[str, Any]:
         q_len = len(_SHEETS_LOGS_QUEUE)
     except Exception:
         q_len = 0
+    trim_result: dict[str, Any] = {}
+    try:
+        if isinstance(_SHEETS_LOGS_LAST_TRIM_RESULT, dict):
+            trim_result = dict(_SHEETS_LOGS_LAST_TRIM_RESULT)
+    except Exception:
+        trim_result = {}
     env_enabled = str(os.getenv("JARVIS_SHEETS_LOGS_ENABLED") or "")
     env_sheet_name = str(os.getenv("JARVIS_SHEETS_LOGS_SHEET_NAME") or "")
     env_spreadsheet_id = str(os.getenv("JARVIS_SHEETS_LOGS_SPREADSHEET_ID") or "")
     return {
         **cfg,
         "queue_len": q_len,
+        "last_trim": {
+            "ts": float(_SHEETS_LOGS_LAST_TRIM or 0.0),
+            **(trim_result if isinstance(trim_result, dict) else {}),
+        },
         "ok": True,
         "env": {
             "JARVIS_SHEETS_LOGS_ENABLED": env_enabled,
