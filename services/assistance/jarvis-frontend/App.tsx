@@ -29,10 +29,16 @@ export default function App() {
   const [activeMedia, setActiveMedia] = useState<MessageLog | null>(null);
   const [isTalking, setIsTalking] = useState(false);
   const [activeRightPanel, setActiveRightPanel] = useState<"output" | "cars" | "checklist">("output");
-  const [activeOutputTab, setActiveOutputTab] = useState<"dialog" | "ui_log" | "ws_log">("dialog");
+  const [activeOutputTab, setActiveOutputTab] = useState<"dialog" | "ui_log" | "ws_log" | "pending">("dialog");
   const [uiLogText, setUiLogText] = useState<string>("");
   const [wsLogText, setWsLogText] = useState<string>("");
   const [wsLogErr, setWsLogErr] = useState<string>("");
+  const [pendingItems, setPendingItems] = useState<any[]>([]);
+  const [pendingSelectedId, setPendingSelectedId] = useState<string | null>(null);
+  const [pendingPreview, setPendingPreview] = useState<any | null>(null);
+  const [pendingActionBusy, setPendingActionBusy] = useState<boolean>(false);
+  const [pendingActionResult, setPendingActionResult] = useState<any | null>(null);
+  const [pendingErr, setPendingErr] = useState<string>("");
   const uiLogPendingRef = useRef<Array<{ ts: number; entry: any }>>([]);
   const uiLogFlushTimerRef = useRef<number | null>(null);
   const [composerText, setComposerText] = useState<string>("");
@@ -257,6 +263,68 @@ export default function App() {
     // Failed to send; put back (best-effort)
     uiLogPendingRef.current = [...entries.map((entry) => ({ ts: Date.now(), entry })), ...uiLogPendingRef.current];
   }, [backendCandidates]);
+
+  const refreshPending = useCallback(async () => {
+    setPendingErr("");
+    try {
+      const res = await liveService.current?.invokeTool("pending_list", {});
+      if (Array.isArray(res)) {
+        setPendingItems(res);
+      } else {
+        setPendingItems([]);
+      }
+    } catch (e: any) {
+      setPendingErr(String(e?.message || e || "pending_list_failed"));
+      setPendingItems([]);
+    }
+  }, []);
+
+  const previewPending = useCallback(async (confirmationId: string) => {
+    const cid = String(confirmationId || "").trim();
+    if (!cid) return;
+    setPendingSelectedId(cid);
+    setPendingPreview(null);
+    setPendingActionResult(null);
+    setPendingErr("");
+    try {
+      const res = await liveService.current?.invokeTool("pending_preview", { confirmation_id: cid });
+      setPendingPreview(res);
+    } catch (e: any) {
+      setPendingErr(String(e?.message || e || "pending_preview_failed"));
+    }
+  }, []);
+
+  const confirmPending = useCallback(async (confirmationId: string) => {
+    const cid = String(confirmationId || "").trim();
+    if (!cid) return;
+    setPendingActionBusy(true);
+    setPendingErr("");
+    try {
+      const res = await liveService.current?.invokeTool("pending_confirm", { confirmation_id: cid });
+      setPendingActionResult(res);
+      await refreshPending();
+    } catch (e: any) {
+      setPendingErr(String(e?.message || e || "pending_confirm_failed"));
+    } finally {
+      setPendingActionBusy(false);
+    }
+  }, [refreshPending]);
+
+  const cancelPending = useCallback(async (confirmationId: string) => {
+    const cid = String(confirmationId || "").trim();
+    if (!cid) return;
+    setPendingActionBusy(true);
+    setPendingErr("");
+    try {
+      const res = await liveService.current?.invokeTool("pending_cancel", { confirmation_id: cid });
+      setPendingActionResult(res);
+      await refreshPending();
+    } catch (e: any) {
+      setPendingErr(String(e?.message || e || "pending_cancel_failed"));
+    } finally {
+      setPendingActionBusy(false);
+    }
+  }, [refreshPending]);
 
   const scheduleUiLogFlush = useCallback(() => {
     if (uiLogFlushTimerRef.current != null) return;
@@ -1936,6 +2004,19 @@ return (
                            </button>
                            <button
                              onClick={() => {
+                               setActiveOutputTab("pending");
+                               void refreshPending();
+                             }}
+                             className={`text-[11px] font-mono px-3 py-1 rounded-lg border transition-colors ${
+                               activeOutputTab === "pending"
+                                 ? "border-cyan-500/40 bg-cyan-950/30 text-cyan-200"
+                                 : "border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
+                             }`}
+                           >
+                             Pending
+                           </button>
+                           <button
+                             onClick={() => {
                                setActiveOutputTab("ws_log");
                                void refreshWsLog();
                              }}
@@ -1950,26 +2031,34 @@ return (
                          </div>
                          <div className="flex items-center gap-2">
                            {activeOutputTab === "ui_log" && (
-                             <button
-                               onClick={() => {
-                                 const txt = loadUiLogFromLocalStorage();
-                                 setUiLogText(txt);
-                               }}
-                               className="text-[11px] font-mono px-3 py-1 rounded-lg border border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
-                             >
-                               refresh
-                             </button>
-                           )}
-                           {activeOutputTab === "ws_log" && (
-                             <button
-                               onClick={() => void refreshWsLog()}
-                               className="text-[11px] font-mono px-3 py-1 rounded-lg border border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
-                             >
-                               refresh
-                             </button>
-                           )}
-                         </div>
-                       </div>
+                            <button
+                              onClick={() => {
+                                const txt = loadUiLogFromLocalStorage();
+                                setUiLogText(txt);
+                              }}
+                              className="text-[11px] font-mono px-3 py-1 rounded-lg border border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
+                            >
+                              refresh
+                            </button>
+                          )}
+                          {activeOutputTab === "pending" && (
+                            <button
+                              onClick={() => void refreshPending()}
+                              className="text-[11px] font-mono px-3 py-1 rounded-lg border border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
+                            >
+                              refresh
+                            </button>
+                          )}
+                          {activeOutputTab === "ws_log" && (
+                            <button
+                              onClick={() => void refreshWsLog()}
+                              className="text-[11px] font-mono px-3 py-1 rounded-lg border border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
+                            >
+                              refresh
+                            </button>
+                          )}
+                        </div>
+                      </div>
 
                        {activeOutputTab === "dialog" ? (
                         <div className="flex flex-col gap-2">
@@ -2003,16 +2092,92 @@ return (
                         </div>
                       ) : activeOutputTab === "ui_log" ? (
                          <pre className="text-[12px] font-mono text-slate-200 whitespace-pre-wrap">{uiLogText || "(empty)"}</pre>
-                       ) : (
-                         <>
-                           {wsLogErr && <div className="text-[12px] font-mono text-red-300 mb-2">{wsLogErr}</div>}
-                           <pre className="text-[12px] font-mono text-slate-200 whitespace-pre-wrap">{wsLogText || "(empty)"}</pre>
-                         </>
-                       )}
-                     </div>
-                   )}
-                 </div>
-               )}
+                       ) : activeOutputTab === "pending" ? (
+                        <div className="flex flex-col gap-3">
+                          {pendingErr && (
+                            <div className="text-[12px] font-mono text-red-300 border border-red-900/40 bg-red-950/20 rounded-lg px-3 py-2">
+                              {pendingErr}
+                            </div>
+                          )}
+                          <div className="text-[12px] font-mono text-slate-400">pending writes: {pendingItems.length}</div>
+                          <div className="grid grid-cols-1 gap-2">
+                            {pendingItems.length === 0 ? (
+                              <div className="text-slate-600 font-mono text-sm">(none)</div>
+                            ) : (
+                              pendingItems.map((it: any) => {
+                                const cid = String(it?.confirmation_id || "");
+                                const selected = cid && pendingSelectedId === cid;
+                                const action = String(it?.action || "");
+                                const created = it?.created_at ? new Date(Number(it.created_at) * 1000).toLocaleString() : "";
+                                return (
+                                  <div
+                                    key={cid || Math.random()}
+                                    className={`rounded-lg border px-3 py-2 ${
+                                      selected ? "border-cyan-500/40 bg-cyan-950/10" : "border-slate-800 bg-slate-950/20"
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div className="min-w-0">
+                                        <div className="text-[12px] font-mono text-slate-200 truncate">{cid}</div>
+                                        <div className="text-[11px] font-mono text-slate-500">
+                                          {action}
+                                          {created ? ` • ${created}` : ""}
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-2 shrink-0">
+                                        <button
+                                          disabled={!cid || pendingActionBusy}
+                                          onClick={() => void previewPending(cid)}
+                                          className="text-[11px] font-mono px-2 py-1 rounded border border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40 disabled:opacity-50"
+                                        >
+                                          preview
+                                        </button>
+                                        <button
+                                          disabled={!cid || pendingActionBusy}
+                                          onClick={() => void confirmPending(cid)}
+                                          className="text-[11px] font-mono px-2 py-1 rounded border border-cyan-700/40 bg-cyan-950/20 text-cyan-200 hover:bg-cyan-900/30 disabled:opacity-50"
+                                        >
+                                          confirm
+                                        </button>
+                                        <button
+                                          disabled={!cid || pendingActionBusy}
+                                          onClick={() => void cancelPending(cid)}
+                                          className="text-[11px] font-mono px-2 py-1 rounded border border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40 disabled:opacity-50"
+                                        >
+                                          cancel
+                                        </button>
+                                      </div>
+                                    </div>
+                                    {selected && (
+                                      <div className="mt-2 grid grid-cols-1 gap-2">
+                                        {pendingPreview && (
+                                          <pre className="text-[11px] font-mono text-slate-300 whitespace-pre-wrap border border-slate-800 rounded-lg bg-slate-950/20 px-3 py-2">
+                                            {JSON.stringify(pendingPreview, null, 2)}
+                                          </pre>
+                                        )}
+                                        {pendingActionResult != null && (
+                                          <pre className="text-[11px] font-mono text-slate-400 whitespace-pre-wrap border border-slate-800 rounded-lg bg-slate-950/10 px-3 py-2">
+                                            {JSON.stringify(pendingActionResult, null, 2)}
+                                          </pre>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {wsLogErr && <div className="text-[12px] font-mono text-red-300 mb-2">{wsLogErr}</div>}
+                          <pre className="text-[12px] font-mono text-slate-200 whitespace-pre-wrap">{wsLogText || "(empty)"}</pre>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
          </div>
        </div>

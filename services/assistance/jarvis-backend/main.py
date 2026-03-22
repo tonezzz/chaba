@@ -7506,6 +7506,75 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
 async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_id: str | None = None) -> bool:
     tid = _ws_ensure_trace_id(ws, trace_id)
     msg_type = str(msg.get("type") or "").strip().lower()
+    if msg_type == "tool":
+        name = str(msg.get("name") or "").strip()
+        tool_args = msg.get("args")
+        if not isinstance(tool_args, dict):
+            tool_args = {}
+        allowed = {"pending_list", "pending_get", "pending_preview", "pending_confirm", "pending_cancel"}
+        if name not in allowed:
+            try:
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "tool_result",
+                        "name": name,
+                        "ok": False,
+                        "error": "tool_not_allowed",
+                        "instance_id": INSTANCE_ID,
+                    },
+                    trace_id=tid,
+                )
+            except Exception:
+                pass
+            return True
+
+        session_id = getattr(ws.state, "session_id", None)
+        try:
+            res = await _handle_mcp_tool_call(session_id, name, dict(tool_args))
+            await _ws_send_json(
+                ws,
+                {
+                    "type": "tool_result",
+                    "name": name,
+                    "ok": True,
+                    "result": res,
+                    "instance_id": INSTANCE_ID,
+                },
+                trace_id=tid,
+            )
+        except HTTPException as e:
+            try:
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "tool_result",
+                        "name": name,
+                        "ok": False,
+                        "error": e.detail,
+                        "status_code": e.status_code,
+                        "instance_id": INSTANCE_ID,
+                    },
+                    trace_id=tid,
+                )
+            except Exception:
+                pass
+        except Exception as e:
+            try:
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "tool_result",
+                        "name": name,
+                        "ok": False,
+                        "error": str(e),
+                        "instance_id": INSTANCE_ID,
+                    },
+                    trace_id=tid,
+                )
+            except Exception:
+                pass
+        return True
     if msg_type == "system":
         action = str(msg.get("action") or "").strip().lower()
         if action == "reload":
@@ -10477,6 +10546,10 @@ def _list_pending_writes(session_id: str) -> list[dict[str, Any]]:
     return db_session.list_pending_writes(SESSION_DB_PATH, session_id)
 
 
+def _get_pending_write(session_id: str, confirmation_id: str) -> Optional[dict[str, Any]]:
+    return db_session.get_pending_write(SESSION_DB_PATH, session_id, confirmation_id)
+
+
 def _pop_pending_write(session_id: str, confirmation_id: str) -> Optional[dict[str, Any]]:
     return db_session.pop_pending_write(SESSION_DB_PATH, session_id, confirmation_id)
 
@@ -12991,6 +13064,7 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         "memo_needs_enrich": _memo_needs_enrich,
         "memo_enrich_prompt": _memo_enrich_prompt,
         "list_pending_writes": _list_pending_writes,
+        "get_pending_write": _get_pending_write,
         "create_pending_write": _create_pending_write,
         "pop_pending_write": _pop_pending_write,
         "cancel_pending_write": _cancel_pending_write,

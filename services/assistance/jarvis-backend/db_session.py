@@ -97,6 +97,28 @@ def list_pending_writes(db_path: str, session_id: str) -> list[dict[str, Any]]:
     return out
 
 
+def get_pending_write(db_path: str, session_id: str, confirmation_id: str) -> Optional[dict[str, Any]]:
+    init_session_db(db_path)
+    sid = str(session_id or "").strip()
+    cid = str(confirmation_id or "").strip()
+    if not sid or not cid:
+        return None
+    with sqlite3.connect(db_path) as conn:
+        cur = conn.execute(
+            "SELECT action, payload_json, created_at FROM pending_writes WHERE session_id = ? AND confirmation_id = ?",
+            (sid, cid),
+        )
+        row = cur.fetchone()
+    if not row:
+        return None
+    action, payload_json, created_at = row
+    try:
+        payload = json.loads(payload_json)
+    except Exception:
+        payload = payload_json
+    return {"confirmation_id": cid, "action": action, "payload": payload, "created_at": int(created_at or 0)}
+
+
 def pop_pending_write(db_path: str, session_id: str, confirmation_id: str) -> Optional[dict[str, Any]]:
     init_session_db(db_path)
     with sqlite3.connect(db_path) as conn:

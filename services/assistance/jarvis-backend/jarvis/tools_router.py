@@ -875,6 +875,85 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         list_pending_writes = deps["list_pending_writes"]
         return list_pending_writes(session_id)
 
+    if tool_name == "pending_get":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        get_pending_write = deps["get_pending_write"]
+        confirmation_id = str(args.get("confirmation_id") or "").strip()
+        if not confirmation_id:
+            raise HTTPException(status_code=400, detail="missing_confirmation_id")
+        out = get_pending_write(str(session_id), confirmation_id)
+        if not out:
+            raise HTTPException(status_code=404, detail="pending_write_not_found")
+        return out
+
+    if tool_name == "pending_preview":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        get_pending_write = deps["get_pending_write"]
+        confirmation_id = str(args.get("confirmation_id") or "").strip()
+        if not confirmation_id:
+            raise HTTPException(status_code=400, detail="missing_confirmation_id")
+        item = get_pending_write(str(session_id), confirmation_id)
+        if not item:
+            raise HTTPException(status_code=404, detail="pending_write_not_found")
+
+        action = str(item.get("action") or "")
+        payload = item.get("payload")
+
+        preview: dict[str, Any] = {
+            "ok": True,
+            "confirmation_id": str(item.get("confirmation_id") or confirmation_id),
+            "created_at": int(item.get("created_at") or 0),
+            "action": action,
+            "risk": "medium",
+            "writes_count": 1,
+            "targets": [],
+            "summary": "",
+            "details": {},
+        }
+
+        if action == "mcp_tools_call" and isinstance(payload, dict):
+            mcp_name = str(payload.get("mcp_name") or "")
+            mcp_args = payload.get("arguments") if isinstance(payload.get("arguments"), dict) else {}
+            original_tool = str(payload.get("tool_name") or "")
+            spreadsheet_id = str(mcp_args.get("spreadsheet_id") or "").strip()
+            rng = str(mcp_args.get("range") or "").strip()
+            values = mcp_args.get("values")
+            row_count = len(values) if isinstance(values, list) else 0
+            tool_kind = original_tool or mcp_name
+            if tool_kind in {"google_sheets_values_update", "google_sheets_values_append"}:
+                sheet = ""
+                if rng and "!" in rng:
+                    sheet = rng.split("!", 1)[0]
+                preview["risk"] = "medium"
+                preview["targets"] = [
+                    {
+                        "kind": "google_sheet",
+                        "spreadsheet_id": spreadsheet_id,
+                        "sheet": sheet,
+                        "tool": tool_kind,
+                        "range": rng,
+                        "rows": row_count,
+                    }
+                ]
+                preview["summary"] = f"{tool_kind}: {sheet or rng or 'sheet'}" + (f" (rows={row_count})" if row_count else "")
+                preview["details"] = {
+                    "mcp_name": mcp_name,
+                    "tool_name": tool_kind,
+                    "range": rng,
+                    "rows": row_count,
+                }
+            else:
+                preview["risk"] = "high"
+                preview["summary"] = f"{tool_kind or action}"
+                preview["details"] = {"mcp_name": mcp_name, "tool_name": tool_kind}
+        else:
+            preview["risk"] = "high"
+            preview["summary"] = action or "pending"
+
+        return preview
+
     if tool_name == "pending_confirm":
         if not session_id:
             raise HTTPException(status_code=400, detail="missing_session_id")

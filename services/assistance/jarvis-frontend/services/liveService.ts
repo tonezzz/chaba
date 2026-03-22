@@ -40,6 +40,15 @@ export class LiveService {
   private lastSysKvSetAt: number = 0;
   private voiceCmdCfg: any | null = null;
   private voiceCmdCfgLoadedAt: number = 0;
+  private toolPending: Map<
+    string,
+    {
+      resolve: (v: any) => void;
+      reject: (e: any) => void;
+      name: string;
+      createdAt: number;
+    }
+  > = new Map();
 
 	private createTraceId(prefix?: string): string {
 		const p = String(prefix || "tr").trim() || "tr";
@@ -109,6 +118,25 @@ export class LiveService {
 		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
 			this.ws.send(JSON.stringify(payload));
 		}
+	}
+
+	public invokeTool(name: string, args?: Record<string, any>): Promise<any> {
+		const toolName = String(name || "").trim();
+		if (!toolName) return Promise.reject(new Error("missing_tool_name"));
+		if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return Promise.reject(new Error("ws_not_connected"));
+		const traceId = this.createTraceId(`tool_${toolName}`);
+		const payloadArgs = args && typeof args === "object" ? args : {};
+		return new Promise((resolve, reject) => {
+			this.toolPending.set(traceId, { resolve, reject, name: toolName, createdAt: Date.now() });
+			this.wsSend({ type: "tool", name: toolName, args: payloadArgs, trace_id: traceId });
+			// Timeout (best-effort)
+			window.setTimeout(() => {
+				const cur = this.toolPending.get(traceId);
+				if (!cur) return;
+				this.toolPending.delete(traceId);
+				reject(new Error("tool_timeout"));
+			}, 20_000);
+		});
 	}
 
 	private buildDefaultVoiceCmdCfg(): any {
@@ -746,6 +774,30 @@ export class LiveService {
       client_tag: message?.client_tag != null ? String(message.client_tag) : undefined,
       client_id: message?.client_id != null ? String(message.client_id) : undefined,
     };
+
+		if (message?.type === "tool_result") {
+			const toolName = message?.name != null ? String(message.name) : "tool";
+			const ok = message?.ok === true;
+			// Resolve any pending invokeTool promises.
+			if (traceId) {
+				const pending = this.toolPending.get(traceId);
+				if (pending) {
+					this.toolPending.delete(traceId);
+					if (ok) pending.resolve(message?.result);
+					else pending.reject(message?.error ?? "tool_failed");
+				}
+			}
+			// Also emit a UI log line.
+			const summary = ok ? "ok" : "error";
+			this.onMessage({
+				id: `${Date.now()}_tool_result_${toolName}`,
+				role: "system",
+				text: `tool_result ${toolName}: ${summary}`,
+				timestamp: new Date(),
+				metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: ok ? "info" : "warn", category: "ws" },
+			});
+			return;
+		}
 
 		if (message?.type === "reconnect") {
 			const reason = message?.reason != null ? String(message.reason) : "";
