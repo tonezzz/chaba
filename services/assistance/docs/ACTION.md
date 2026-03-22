@@ -16,7 +16,7 @@
 ## Now (what to do next)
 
 - **Say:** `action`
-- **I will run:** `TODO-NOW-014` (from `services/assistance/docs/TODO.md#now`)
+- **I will run:** `TODO-NOW-015` (from `services/assistance/docs/TODO.md#now`)
 
 ### Pending Jobs (capture from chat; don’t lose work)
 Use this whenever:
@@ -189,7 +189,7 @@ Need rebuild? rule (binary, selective CI):
 - WIP limit = 1: if you start a new thing, merge it into the existing checklist/backlog section (see **Intake/merge policy** below).
 
 ### Current pick
-- `TODO-NOW-014`: GitHub Issue SSOT — `#95` Bound log payload size + enforce Sheets logs retention
+- `TODO-NOW-015`: GitHub Issue SSOT — `#96` README/docs audit (align pointers + remove duplication)
 
 GitHub Issue SSOT rule:
 - For development work, the GitHub Issue is the SSOT for scope, acceptance criteria, and progress updates.
