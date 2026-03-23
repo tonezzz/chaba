@@ -12118,6 +12118,8 @@ def _google_gate_for_tool(tool_name: str) -> tuple[str, bool] | None:
     n = str(tool_name or "").strip().lower()
     if not n:
         return None
+    if n.startswith("google_account_relink_"):
+        return None
     if n.startswith("google_sheets_"):
         return ("google.sheets.enabled", True)
     if n.startswith("google-calendar_") or n.startswith("google_calendar_"):
