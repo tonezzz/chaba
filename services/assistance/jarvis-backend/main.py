@@ -14087,7 +14087,9 @@ async def ws_live(ws: WebSocket) -> None:
             pass
 
         # Fail-closed: system sheet is authoritative configuration.
-        # If it cannot be loaded, do not proceed with a live session.
+        # If it cannot be loaded, keep the WS session alive in a degraded mode
+        # so operators can see the error and recover (e.g. re-auth MCP) without
+        # the UI constantly disconnecting.
         try:
             sys_kv = await _load_ws_system_kv(ws)
         except Exception as e:
@@ -14110,16 +14112,49 @@ async def ws_live(ws: WebSocket) -> None:
                 )
             except Exception:
                 pass
+
+            # Degraded mode: proceed with empty sys_kv snapshot (no validation,
+            # no macro reload). The UI can remain connected.
+            sys_kv = {}
             try:
-                await ws.close(code=1011)
+                ws.state.sys_kv = {}
             except Exception:
                 pass
-            return
+            now_utc = datetime.now(tz=timezone.utc).replace(microsecond=0)
+            try:
+                tz = _get_user_timezone(DEFAULT_USER_ID)
+            except Exception:
+                tz = timezone.utc
+            now_local = now_utc.astimezone(tz)
+            try:
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "connect_status",
+                        "instance_id": INSTANCE_ID,
+                        "session_id": session_id,
+                        "client_id": getattr(ws.state, "client_id", None),
+                        "client_tag": getattr(ws.state, "client_tag", None),
+                        "connected_at_utc": now_utc.isoformat().replace("+00:00", "Z"),
+                        "connected_at_local": now_local.isoformat(),
+                        "connected_tz": getattr(tz, "key", str(tz)),
+                        "sys_kv_loaded": False,
+                        "system_sheet_valid": False,
+                        "system_sheet_error": "system_sheet_unavailable",
+                        "macros_reloaded": False,
+                        "memory_cached": bool(_get_cached_sheet_memory()),
+                        "knowledge_cached": bool(_get_cached_sheet_knowledge()),
+                    },
+                )
+            except Exception:
+                pass
 
-        try:
-            err = _validate_system_sheets_plan(sys_kv)
-        except Exception as e:
-            err = f"system_sheets_validation_failed: {str(e)}"
+        err = None
+        if isinstance(sys_kv, dict) and sys_kv:
+            try:
+                err = _validate_system_sheets_plan(sys_kv)
+            except Exception as e:
+                err = f"system_sheets_validation_failed: {str(e)}"
         if err:
             now_utc = datetime.now(tz=timezone.utc).replace(microsecond=0)
             try:
@@ -14176,11 +14211,12 @@ async def ws_live(ws: WebSocket) -> None:
         # Keep macro cache consistent with the just-loaded sys_kv.
         # Best-effort: do not fail the session if macro sheet is unavailable.
         macros_reloaded = False
-        try:
-            await _macro_tools_force_reload_from_sheet(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
-            macros_reloaded = True
-        except Exception:
-            pass
+        if isinstance(sys_kv, dict) and sys_kv:
+            try:
+                await _macro_tools_force_reload_from_sheet(sys_kv=sys_kv)
+                macros_reloaded = True
+            except Exception:
+                macros_reloaded = False
 
         now_utc = datetime.now(tz=timezone.utc).replace(microsecond=0)
         try:
