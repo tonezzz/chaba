@@ -321,6 +321,25 @@ export default function App() {
     }
   }, []);
 
+  const queueGoogleRelink = useCallback(async () => {
+    setPendingErr("");
+    setPendingActionBusy(true);
+    try {
+      const res: any = await liveService.current?.invokeTool("google_account_relink_queue", {});
+      const cid = String(res?.confirmation_id || "").trim();
+      setActiveRightPanel("output");
+      setActiveOutputTab("pending");
+      await refreshPending();
+      if (cid) {
+        await previewPending(cid);
+      }
+    } catch (e: any) {
+      setPendingErr(String(e?.message || e || "google_account_relink_queue_failed"));
+    } finally {
+      setPendingActionBusy(false);
+    }
+  }, [previewPending, refreshPending]);
+
   const confirmPending = useCallback(async (confirmationId: string) => {
     const cid = String(confirmationId || "").trim();
     if (!cid) return;
@@ -2129,6 +2148,25 @@ return (
                              {pendingErr}
                            </div>
                          )}
+                         <div className="flex items-center justify-between">
+                           <div className="text-[12px] font-mono text-slate-400">pending</div>
+                           <div className="flex items-center gap-2">
+                             <button
+                               disabled={pendingActionBusy}
+                               onClick={() => void queueGoogleRelink()}
+                               className="text-[11px] font-mono px-2 py-1 rounded border border-amber-700/40 bg-amber-950/20 text-amber-200 hover:bg-amber-900/30 disabled:opacity-50"
+                             >
+                               queue google relink
+                             </button>
+                             <button
+                               disabled={pendingActionBusy}
+                               onClick={() => void refreshPending()}
+                               className="text-[11px] font-mono px-2 py-1 rounded border border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40 disabled:opacity-50"
+                             >
+                               refresh
+                             </button>
+                           </div>
+                         </div>
                          <div className="flex items-center justify-between gap-2">
                            <div className="text-[12px] font-mono text-slate-400">pending writes: {pendingItems.length}</div>
                            <div className="flex items-center gap-2">

@@ -148,6 +148,35 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         )
         return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "reload_mode": mode, "macro": {"name": macro_args.get("name")}}
 
+    if tool_name == "google_account_relink_queue":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        create_pending_write = deps["create_pending_write"]
+        list_pending_writes = deps["list_pending_writes"]
+        mcp_tools_call = deps["mcp_tools_call"]
+        mcp_text_json = deps["mcp_text_json"]
+
+        existing = list_pending_writes(str(session_id))
+        for it in existing:
+            if isinstance(it, dict) and str(it.get("action") or "") == "google_account_relink":
+                return {"ok": True, "queued": False, "already": True, "confirmation_id": str(it.get("confirmation_id") or "")}
+
+        begin_res = await mcp_tools_call("google_account_relink_begin", {})
+        begin_parsed = mcp_text_json(begin_res)
+        if not isinstance(begin_parsed, dict):
+            raise HTTPException(status_code=500, detail="google_account_relink_begin_failed")
+
+        payload = {
+            "provider": "google",
+            "auth_url": str(begin_parsed.get("auth_url") or "").strip(),
+            "redirect_uri": str(begin_parsed.get("redirect_uri") or "").strip(),
+            "token_path": str(begin_parsed.get("token_path") or "").strip(),
+            "scopes": begin_parsed.get("scopes") if isinstance(begin_parsed.get("scopes"), list) else [],
+            "queued_by": "manual",
+        }
+        confirmation_id = create_pending_write(str(session_id), "google_account_relink", payload)
+        return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "action": "google_account_relink"}
+
     if tool_name in {"system_macro_get", "system_macro_upsert"}:
         session_ws = deps["SESSION_WS"]
         system_spreadsheet_id = deps["system_spreadsheet_id"]
