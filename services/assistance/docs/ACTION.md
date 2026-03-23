@@ -7,6 +7,7 @@
 ## Jump
 - [Now (what to do next)](#now-what-to-do-next)
 - [Recent status (success / problems / next)](#recent-status-success--problems--next)
+- [Docs governance (GitHub Issues SSOT)](#docs-governance-github-issues-ssot)
 - [Preflight: confirm you’re using the latest ACTION.md](#preflight-confirm-youre-using-the-latest-actionmd)
 - [Post-push status (do I need to redeploy?)](#post-push-status-do-i-need-to-redeploy)
 - [Runbooks](#runbooks)
@@ -37,6 +38,43 @@
     - Inventory top-level docs (`README.md`, `services/assistance/README.md`, `services/assistance/docs/*`).
     - Decide the SSOT location for each topic and replace duplicates with pointers.
     - Verify all runbook pointers resolve and nothing essential was deleted.
+
+## Docs governance (GitHub Issues SSOT)
+
+Rule:
+- GitHub Issues are the SSOT for doc change intent, scope, acceptance criteria, and historical context.
+- Repo docs (this file + linked runbooks) are the SSOT for the current operator procedure.
+
+Index:
+- Maintain 1 pinned **Docs Index** GitHub Issue that acts as:
+  - the map of `ACTION.md` + linked runbooks
+  - the running changelog (links to doc-change Issues + PRs/commits)
+
+Doc change record:
+- For any meaningful doc update:
+  1. Create a new GitHub Issue using the **Doc Change Record** template.
+  2. Make the edit(s) and link the Issue in the PR/commit.
+  3. Close the Issue and add a 1-line changelog entry to the Docs Index.
+
+Doc drift policy:
+- Avoid duplicated endpoint/procedure lists across docs.
+- Prefer pointers to:
+  - `GET /openapi.json` (runtime API surface)
+  - `services/assistance/docs/ACTION.md` (operator runbooks)
+
+Linked runbooks (map):
+- `services/assistance/docs/CHAT_PROTOCOL.md`
+  - Label: `docs:runbook`
+- `services/assistance/docs/CHECKLIST.md`
+  - Label: `docs:runbook`
+- `services/assistance/docs/SYSTEM.md`
+  - Label: `docs:runbook`
+- `services/assistance/docs/BUILD.md`
+  - Label: `docs:runbook`
+- `services/assistance/docs/CONFIG.md`
+  - Label: `docs:runbook`
+- `services/assistance/docs/TOOLS.md`
+  - Label: `docs:runbook`
 
 ### Pending Jobs (capture from chat; don’t lose work)
 Use this whenever:
