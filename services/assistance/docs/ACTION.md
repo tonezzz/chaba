@@ -80,6 +80,17 @@ Branch sanity check (run before edits):
 1. `git branch --show-current`
 2. `git status -sb`
 
+Preferred reset commands:
+- `action pc1`
+  - Expected branch: `work/idc1-assistance/pc1`
+- `action idc1`
+  - Expected branch: `work/idc1-assistance/idc1`
+
+When you use a reset command, do this before anything else:
+1. Run the branch sanity check.
+2. If the branch is wrong, switch branches before continuing.
+3. Then execute the current `Now` item.
+
 Rules:
 - Never force-push.
 - Keep work on your machine branch; share changes via PRs.
