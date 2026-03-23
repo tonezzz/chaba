@@ -2083,7 +2083,7 @@ services:
         }
 
         main().catch((e) => {
-          process.stderr.write(`proxy startup error: ${String(e && e.message ? e.message : e)}\n`);
+          process.stderr.write(`proxy startup error: $${String(e && e.message ? e.message : e)}\n`);
           process.exit(1);
         });
         EOF
