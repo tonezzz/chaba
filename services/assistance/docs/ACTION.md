@@ -6,6 +6,7 @@
 
 ## Jump
 - [Now (what to do next)](#now-what-to-do-next)
+- [Recent status (success / problems / next)](#recent-status-success--problems--next)
 - [Preflight: confirm you’re using the latest ACTION.md](#preflight-confirm-youre-using-the-latest-actionmd)
 - [Post-push status (do I need to redeploy?)](#post-push-status-do-i-need-to-redeploy)
 - [Runbooks](#runbooks)
@@ -17,6 +18,25 @@
 
 - **Say:** `action`
 - **I will run:** `TODO-NOW-015` (from `services/assistance/docs/TODO.md#now`)
+
+## Recent status (success / problems / next)
+
+- **Success (recently completed)**
+  - `#95` Bound Sheets logs payload size + retention/trim behavior (no longer the active focus).
+  - Pending/confirmation tooling + macro admin tooling is working well enough to proceed with operator workflows.
+- **Failures / risks (current)**
+  - Docs drift/duplication: multiple sources of truth (README vs docs vs `ACTION.md`).
+  - Context loss risk across redeploys/new chats unless work is consistently captured into GitHub Issues + `TODO.md`.
+  - GitHub Issues via backend HTTP is gated; keep it disabled unless explicitly enabled and tokened.
+- **Recommended update (right now)**
+  - Treat GitHub Issue `#96` as the SSOT for the README/docs audit.
+  - Remove obvious duplication and make non-operator docs link to `ACTION.md` instead of repeating runbooks.
+  - Keep `TODO.md` with exactly one active **Now** item.
+- **What to do next (single move)**
+  - Execute `TODO-NOW-015` / Issue `#96`:
+    - Inventory top-level docs (`README.md`, `services/assistance/README.md`, `services/assistance/docs/*`).
+    - Decide the SSOT location for each topic and replace duplicates with pointers.
+    - Verify all runbook pointers resolve and nothing essential was deleted.
 
 ### Pending Jobs (capture from chat; don’t lose work)
 Use this whenever:
@@ -59,6 +79,9 @@ Rule:
 - GitHub Issues are the SSOT for development scope, acceptance criteria, and progress updates.
 - Merge/dedupe aggressively: prefer adding to an existing Issue over creating a new one.
 
+Gated hint:
+- Optional: the Jarvis backend may expose GitHub Issues create/search/comment over HTTP, but it should remain disabled unless explicitly enabled (gated) and tokened.
+
 Process (copy/paste friendly):
 1. **Extract candidates**
    - List 3-10 short items from chat as:
@@ -78,137 +101,33 @@ Process (copy/paste friendly):
 4. **Link back**
    - Add a short pointer in `TODO.md` (optional) and/or in the chat.
 
-Current pointers (recently created from chat/TODO):
-- `#96` README/docs audit: align pointers + remove duplication
-- `#97` Google tools gates: rollout checklist + enable/disable runbook
-- `#98` Calendar events: add traceability fields (extendedProperties.private)
-- `#99` Recurring reminders end-to-end (RRULE)
-
-#### Remote GitHub Issues (from any machine)
-Goal:
-- Be able to create/search/comment Issues immediately from a fresh chat session.
-
-Prereqs:
-- `gh` CLI installed.
-- Auth is configured on the machine you’re chatting from.
-
-Auth (copy/paste):
-1. Check auth:
-   - `gh auth status`
-2. If not logged in:
-   - `gh auth login`
-   - Choose:
-     - GitHub.com
-     - HTTPS
-     - Authenticate via browser (preferred) or paste a PAT
-
-Repo shortcut:
-- Set once per terminal session:
-  - `$env:GH_REPO = "tonezzz/chaba"`
-
-Merge/dedupe helpers:
-- Search by keyword:
-  - `gh issue list --search "<keyword>" --limit 20`
-- Quick view:
-  - `gh issue view <number> --comments`
-
-Create a new issue (template):
-- `gh issue create --title "[area] <short outcome>" --body "Goal\n- ...\n\nAcceptance criteria\n- ...\n\nVerification\n- ...\n"`
-
-Add a note to an existing issue (preferred when overlapping):
-- `gh issue comment <number> --body "Update: ...\n\nNext: ..."`
-
-#### GitHub Issues via Jarvis backend (HTTP, gated)
-Goal:
-- Allow remote issue creation/comment/search even when you do not have `gh` on the machine.
-
-Safety model:
-- Disabled by default.
-- Requires sys_kv key `github.issues.write.enabled=true`.
-- Also requires `X-Api-Token` if the backend is configured to require it.
-
-Prereqs:
-- Backend has a RW token configured:
-  - `GITHUB_PERSONAL_TOKEN_RW` (must have permission to create/comment issues)
-
-Enable gate (one-time per environment):
-- Set sys_kv key:
-  - `github.issues.write.enabled=true`
-
-Note:
-- Public base URL for backend HTTP calls is `https://assistance.idc1.surf-thailand.com/jarvis/api`.
-- After you change sys_kv values (via WS `sys_kv_set`), refresh the running instance cache:
-  - `POST /sys_kv/reload`
-
-Endpoints:
-- Search:
-  - `POST /github/issues/search`
-  - Body: `{ "q": "repo:tonezzz/chaba is:issue is:open <keywords>", "per_page": 10 }`
-- Create:
-  - `POST /github/issues/create`
-  - Body: `{ "owner":"tonezzz","repo":"chaba","title":"...","body":"...","labels":["P1"],"assignees":[] }`
-- Comment:
-  - `POST /github/issues/comment`
-  - Body: `{ "owner":"tonezzz","repo":"chaba","issue_number": 96, "body":"Update: ..." }`
-
-Copy/paste (PowerShell):
-1. Set base:
-   - `$base = "https://assistance.idc1.surf-thailand.com/jarvis/api"`
-2. Search:
-   - `curl.exe -sS -X POST "$base/github/issues/search" -H "Content-Type: application/json" -d '{"q":"repo:tonezzz/chaba is:issue #96","per_page":5}'`
-
 ### Snapshot procedure (copy/paste; update the status chart)
 1. **Backend snapshot**
    - `GET /status`
-     - Paste: `instance_id`, `uptime_s`, and container rows for `jarvis-backend`:
-       - `containers[*].image` (tag)
-       - `containers[*].image_id`
-       - `containers[*].image_repo_digest` (digest)
-       - `containers[*].image_repo_digests` (digest list)
-       - `containers[*].image_created_at` (created)
-       - `containers[*].health`
    - `GET /health`
      - Paste: `build.git_sha`, `build.image_tag` (must be non-null)
 2. **CI snapshot (this branch)**
    - `GET /github/actions/latest?owner=tonezzz&repo=chaba&branch=idc1-assistance`
-     - Paste: `run.status`, `run.conclusion`, `run.head_sha`, `run.updated_at`, `run.html_url`
 3. **Decision**
    - If CI is green but `/health.build.*` doesn’t match `run.head_sha`, redeploy.
 
 ### 4 most valuable next actions (update this every time you run "Now")
-1. **Docs cleanup pass (TODO-NOW-007) (15 minutes)**
-   - Goal: tighten `ACTION.md` ordering and remove drift/duplication.
-   - Rule: keep `ACTION.md` as the operator SSOT; other docs should link here.
-2. **Deploy/build snapshot (10 minutes)**
-   - Run: **Deploy/Build status awareness (save current state)**
-   - Paste the results into the status chart below.
-3. **Prove redeploy updated (10 minutes)**
-   - If `/health.build.git_sha` / `/health.build.image_tag` are `null`, run: **Assess a pending job (might already be done)** then prove the running image digest via Portainer/host inspection.
-4. **Watcher SNA (15 minutes)**
-   - Run: **SNA for GitHub Actions watcher (deployed)**
-   - Goal: verify start -> running -> completed/timeout -> auto-stop + UI log.
+1. **Do the current `TODO.md#Now` item (15-60 minutes)**
+   - Rule: 1 active Now item only.
+2. **Capture any open loops (5 minutes)**
+   - Use: **Pending Jobs (capture from chat; don’t lose work)** above.
+3. **Snapshot (5-10 minutes)**
+   - Run: **Deploy/Build status awareness (save current state)** and record the key fields.
+4. **Only if you touched deployment/CI (10-15 minutes)**
+   - Run: **SNA for GitHub Actions watcher (deployed)**.
 
-### Always-updated status chart (fill this every time you run “Now”)
-| Item | Value |
-| --- | --- |
-| Need rebuild? | No |
-| Need redeploy? | Yes |
-| Health ok | Yes |
-| Status ok | Yes |
-| uptime_s | 3388 |
-| Snapshot ts | 2026-03-21T01:11:26Z |
-| Deployed base URL | `https://assistance.idc1.surf-thailand.com/jarvis/api` |
-| instance_id | jarvis_ed0374c517 |
-| CI status | completed |
-| CI conclusion | success |
-| CI head_sha | 85081c62655be31c822fdf4a27f5e9eea06dee37 |
-| CI updated_at | 2026-03-21T00:56:46Z |
-| CI url | https://github.com/tonezzz/chaba/actions/runs/23368489021 |
-| jarvis-backend image (tag) | ghcr.io/tonezzz/chaba/jarvis-backend:idc1-assistance |
-| jarvis-backend image digest | ghcr.io/tonezzz/chaba/jarvis-backend@sha256:8b8b29195b81cc2395704f4e779d6d7d71248f82e5e02ca76f0b182e9544ac1a |
-| jarvis-backend image created | 2026-03-21T00:13:53.583643199Z |
-| jarvis-backend image_id | sha256:8b8b29195b81cc2395704f4e779d6d7d71248f82e5e02ca76f0b182e9544ac1a |
-| Backend image published in latest CI? | Yes |
+### Always-updated status chart (minimal; paste these fields)
+- `Snapshot ts`
+- `Deployed base URL`
+- `instance_id`, `uptime_s`
+- `health_ok` + `/health.build.git_sha`
+- `CI run`: `status`, `conclusion`, `head_sha`, `updated_at`, `url`
+- `jarvis-backend`: `image_tag`, `image_digest`, `image_created_at`
 
 Need redeploy? rule (binary):
 - **Yes** if CI is `completed/success` AND either:
