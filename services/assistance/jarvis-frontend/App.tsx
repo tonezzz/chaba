@@ -240,7 +240,7 @@ export default function App() {
 
   const backendCandidates = useCallback((): string[] => {
     const isJarvisSubpath = location.pathname.startsWith("/jarvis");
-    return isJarvisSubpath ? ["/jarvis/api", "/jarvis"] : ["", "/jarvis/api", "/jarvis"];
+    return isJarvisSubpath ? ["/jarvis", ""] : ["", "/jarvis"];
   }, []);
 
   const flushUiLogToBackend = useCallback(async () => {
