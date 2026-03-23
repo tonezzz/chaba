@@ -171,7 +171,8 @@ PY
     git_payload='{"pullImage":true,"prune":true}'
 
     # Portainer CE supports Git-backed stacks. The UI uses a Git redeploy endpoint.
-    # We try the most common endpoint and treat 404 as "unsupported".
+    # Different Portainer versions differ in the expected method (POST vs PUT).
+    # Some versions may return a non-2xx on POST but still accept PUT.
     git_http_code="$(curl -sS -k --max-time 120 -o /tmp/portainer_git_redeploy.json -w '%{http_code}' \
       -X POST \
       -H "X-API-Key: ${portainer_api_key}" \
@@ -179,8 +180,7 @@ PY
       --data-binary "${git_payload}" \
       "${base}/api/stacks/${stack_id}/git/redeploy?endpointId=${portainer_endpoint_id}" || true)"
 
-    # Portainer versions differ in the expected method. Some return 405 for POST but accept PUT.
-    if [[ "${git_http_code}" == "405" ]]; then
+    if [[ "${git_http_code}" != "200" && "${git_http_code}" != "204" ]]; then
       git_http_code="$(curl -sS -k --max-time 120 -o /tmp/portainer_git_redeploy.json -w '%{http_code}' \
         -X PUT \
         -H "X-API-Key: ${portainer_api_key}" \
