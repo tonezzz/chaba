@@ -19,6 +19,7 @@ portainer_url="${PORTAINER_URL:-}"
 portainer_api_key="${PORTAINER_API_KEY:-}"
 portainer_endpoint_id="${PORTAINER_ENDPOINT_ID:-2}"
 portainer_stack_name="${PORTAINER_STACK_NAME:-idc1-assistance-dev}"
+portainer_container_name="${PORTAINER_CONTAINER_NAME:-idc1-portainer}"
 
 healthcheck_url="${HEALTHCHECK_URL:-http://127.0.0.1:28018/health}"
 healthcheck_container_name="${HEALTHCHECK_CONTAINER_NAME:-${portainer_stack_name}-jarvis-backend-1}"
@@ -47,6 +48,9 @@ window_seconds="${HEALTH_WINDOW_SECONDS:-120}"
 force_redeploy="${FORCE_REDEPLOY:-0}"
 
 echo "[deploy] repo=${repo} workflow=${workflow_name} branch=${branch} compose=${compose_file}"
+
+# Ensure sub-processes (python snippets) see the same compose file.
+export COMPOSE_FILE="${compose_file}"
 
 get_container_id() {
   local service="$1"
@@ -209,6 +213,38 @@ PY
       fi
 
       echo "[deploy] Falling back to file-based stack update (this will detach the stack from Git)." >&2
+
+      # Portainer will attempt to persist the stack file to /data/compose/<id>/<EntryPoint>.
+      # When Git checkout is broken, that path may not exist. Ensure it exists in the Portainer /data volume.
+      entrypoint_path="$(python3 - <<'PY'
+import json
+with open('/tmp/portainer_stack_inspect.json','r',encoding='utf-8') as f:
+  obj=json.load(f)
+print((obj.get('EntryPoint') or '').strip())
+PY
+      )"
+      if [[ -z "${entrypoint_path}" ]]; then
+        echo "[deploy] ERROR: missing stack EntryPoint from Portainer inspect" >&2
+        return 1
+      fi
+
+      if ! command -v docker >/dev/null 2>&1; then
+        echo "[deploy] ERROR: docker not found in PATH" >&2
+        return 1
+      fi
+
+      if ! docker ps --format '{{.Names}}' | grep -qx "${portainer_container_name}"; then
+        echo "[deploy] ERROR: Portainer container not found: ${portainer_container_name}" >&2
+        echo "[deploy] Hint: set PORTAINER_CONTAINER_NAME if your Portainer container name differs." >&2
+        return 1
+      fi
+
+      echo "[deploy] Ensuring Portainer stack entrypoint exists: /data/compose/${stack_id}/${entrypoint_path}" >&2
+      docker run --rm \
+        --volumes-from "${portainer_container_name}" \
+        -v "$(readlink -f "${compose_file}"):/tmp/stack-compose.yml:ro" \
+        alpine:3.20 \
+        sh -lc "set -e; mkdir -p \"/data/compose/${stack_id}/$(dirname \"${entrypoint_path}\")\"; cp /tmp/stack-compose.yml \"/data/compose/${stack_id}/${entrypoint_path}\""
 
       python3 - <<'PY'
 import json
