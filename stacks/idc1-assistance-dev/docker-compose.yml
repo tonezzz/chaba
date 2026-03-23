@@ -1,0 +1,2756 @@
+version: "3.9"
+
+x-default-service: &default-service
+  restart: unless-stopped
+  networks:
+    - idc1-assistance-dev-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  jarvis-backend:
+    <<: *default-service
+    image: ghcr.io/tonezzz/chaba/jarvis-backend:idc1-assistance
+    ports:
+      - "127.0.0.1:28018:8018"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      PORT: 8018
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_LIVE_MODEL: ${GEMINI_LIVE_MODEL:-gemini-2.5-flash-native-audio-preview-12-2025}
+      JARVIS_FEATURE_MEMO_ENABLED: "true"
+      JARVIS_FEATURE_MEMORY_ENABLED: "false"
+      JARVIS_FEATURE_KNOWLEDGE_ENABLED: "false"
+      GITHUB_PERSONAL_TOKEN_RO: ${GITHUB_PERSONAL_TOKEN_RO:-}
+      GITHUB_PERSONAL_TOKEN_RW: ${GITHUB_PERSONAL_TOKEN_RW:-}
+      CHABA_SYSTEM_SPREADSHEET_ID: ${CHABA_SYSTEM_SPREADSHEET_ID:-}
+      CHABA_SYSTEM_SHEET_NAME: ${CHABA_SYSTEM_SHEET_NAME:-}
+      JARVIS_SHEETS_LOGS_ENABLED: ${JARVIS_SHEETS_LOGS_ENABLED:-true}
+      JARVIS_SHEETS_LOGS_SHEET_NAME: ${JARVIS_SHEETS_LOGS_SHEET_NAME:-logs}
+      PORTAINER_URL: ${PORTAINER_URL:-http://portainer:9000}
+      PORTAINER_TOKEN: ${PORTAINER_TOKEN:-}
+      PORTAINER_ENDPOINT_ID: ${PORTAINER_ENDPOINT_ID:-2}
+      PORTAINER_STACK_NAME: ${PORTAINER_STACK_NAME:-idc1-assistance}
+      JARVIS_SESSION_DB: ${JARVIS_SESSION_DB:-/data/jarvis_sessions.sqlite}
+      JARVIS_IMAGEN_ASSETS_DIR: ${JARVIS_IMAGEN_ASSETS_DIR:-/app/imagen_assets}
+      JARVIS_CARS_DATA_DIR: ${JARVIS_CARS_DATA_DIR:-/app/assistance_data/cars}
+      JARVIS_IMAGEN_MODEL: ${JARVIS_IMAGEN_MODEL:-imagen-4.0-generate-001}
+      JARVIS_IMAGEN_ALLOWED_MODELS: ${JARVIS_IMAGEN_ALLOWED_MODELS:-imagen-4.0-generate-001,imagen-4.0-ultra-generate-001,imagen-4.0-fast-generate-001}
+      JARVIS_IMAGE_MODEL: ${JARVIS_IMAGE_MODEL:-gemini-3.1-flash-image-preview}
+      JARVIS_IMAGE_ALLOWED_MODELS: ${JARVIS_IMAGE_ALLOWED_MODELS:-gemini-3.1-flash-image-preview}
+      WEB_FETCHER_BASE_URL: ${WEB_FETCHER_BASE_URL:-http://web-fetcher:8028}
+      MCP_BASE_URL: ${MCP_BASE_URL:-http://mcp-bundle-dev:3050}
+      MCP_PLAYWRIGHT_BASE_URL: ${MCP_PLAYWRIGHT_BASE_URL:-http://mcp-playwright:3050}
+      DEEP_RESEARCH_WORKER_BASE_URL: ${DEEP_RESEARCH_WORKER_BASE_URL:-http://deep-research-worker:8030}
+      WEAVIATE_URL: ${WEAVIATE_URL:-http://weaviate:8080}
+    volumes:
+      - jarvis-imagen-assets-dev:${JARVIS_IMAGEN_ASSETS_DIR:-/app/imagen_assets}
+      - jarvis-session-db-dev:/data
+      - ../../services/assistance_data:/app/assistance_data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8018/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+    networks:
+      - idc1-assistance-dev-net
+      - idc1-portainer_default
+
+  deep-research-worker:
+    <<: *default-service
+    image: ghcr.io/tonezzz/chaba/deep-research-worker:idc1-assistance
+    ports:
+      - "127.0.0.1:28030:8030"
+    environment:
+      PORT: 8030
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      DEEP_RESEARCH_AGENT: ${DEEP_RESEARCH_AGENT:-deep-research-pro-preview-12-2025}
+      DEEP_RESEARCH_DB: ${DEEP_RESEARCH_DB:-/data/deep_research.sqlite}
+      DEEP_RESEARCH_POLL_SECONDS: ${DEEP_RESEARCH_POLL_SECONDS:-10}
+    volumes:
+      - deep-research-worker-data-dev:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8030/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-bundle:
+    <<: *default-service
+    image: ghcr.io/tonezzz/chaba/mcp-bundle:idc1-assistance
+    ports:
+      - "127.0.0.1:4051:3050"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      ONE_MCP_HOST: 0.0.0.0
+      ONE_MCP_PORT: 3050
+      ONE_MCP_EXTERNAL_URL: http://127.0.0.1:4051
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_TASKS_TOKEN_PATH: ${GOOGLE_SHARED_TOKEN_PATH:-/root/.config/1mcp/google.tokens.json}
+      GOOGLE_SHEETS_TOKEN_PATH: ${GOOGLE_SHARED_TOKEN_PATH:-/root/.config/1mcp/google.tokens.json}
+      GOOGLE_CALENDAR_TOKEN_PATH: ${GOOGLE_SHARED_TOKEN_PATH:-/root/.config/1mcp/google.tokens.json}
+      GOOGLE_TASKS_SCOPES: ${GOOGLE_SHARED_SCOPES:-https://www.googleapis.com/auth/tasks,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/spreadsheets}
+      GOOGLE_SHEETS_SCOPES: ${GOOGLE_SHARED_SCOPES:-https://www.googleapis.com/auth/tasks,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/spreadsheets}
+      GOOGLE_CALENDAR_SCOPES: ${GOOGLE_SHARED_SCOPES:-https://www.googleapis.com/auth/tasks,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/spreadsheets}
+    volumes:
+      - mcp-bundle-config-dev:/root/.config/1mcp
+    networks:
+      idc1-assistance-dev-net:
+        aliases:
+          - mcp-bundle-dev
+    command:
+      - sh
+      - -lc
+      - |
+        set -e
+
+        mkdir -p /app/mcp-config
+
+        mkdir -p /app/mcp-servers/mcp-google-tasks
+        cat > /app/mcp-servers/mcp-google-tasks/server.js <<'EOF'
+        "use strict";
+
+        const APP_NAME = "mcp-google-tasks";
+        const APP_VERSION = "0.0.1";
+
+        const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
+        const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
+        const GOOGLE_TASKS_API_BASE = "https://tasks.googleapis.com/tasks/v1";
+
+        const TOKEN_PATH = (process.env.GOOGLE_TASKS_TOKEN_PATH || "/root/.config/1mcp/google-tasks.tokens.json").trim();
+        const CLIENT_ID = String(process.env.GOOGLE_TASKS_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || "").trim();
+        const CLIENT_SECRET = String(process.env.GOOGLE_TASKS_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || "").trim();
+        const SCOPES = String(process.env.GOOGLE_TASKS_SCOPES || "https://www.googleapis.com/auth/tasks")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+
+        const fs = require("node:fs");
+        const path = require("node:path");
+
+        function safeJsonParse(s) {
+          try {
+            return JSON.parse(s);
+          } catch {
+            return null;
+          }
+        }
+
+        let _ioMode = null; // "content-length" | "line"
+
+        function write(obj) {
+          const body = JSON.stringify(obj);
+          if (_ioMode === "line") {
+            process.stdout.write(body + "\n");
+            return;
+          }
+          const len = Buffer.byteLength(body, "utf8");
+          process.stdout.write("Content-Length: " + String(len) + "\r\n\r\n" + body);
+        }
+
+        let _traceCount = 0;
+
+        function nowIso() {
+          return new Date().toISOString();
+        }
+
+        function ensureTokenDir() {
+          const dir = path.dirname(TOKEN_PATH);
+          fs.mkdirSync(dir, { recursive: true });
+        }
+
+        function readTokens() {
+          try {
+            if (!fs.existsSync(TOKEN_PATH)) return null;
+            const raw = fs.readFileSync(TOKEN_PATH, "utf-8");
+            const obj = safeJsonParse(raw);
+            if (!obj || typeof obj !== "object") return null;
+            return obj;
+          } catch {
+            return null;
+          }
+        }
+
+        function writeTokens(tokens) {
+          ensureTokenDir();
+          fs.writeFileSync(TOKEN_PATH, JSON.stringify(tokens, null, 2));
+        }
+
+        function requireClientId() {
+          if (!CLIENT_ID) {
+            throw new Error("missing_google_tasks_client_id");
+          }
+        }
+
+        function secondsNow() {
+          return Math.floor(Date.now() / 1000);
+        }
+
+        async function httpForm(url, formObj) {
+          const body = new URLSearchParams();
+          for (const [k, v] of Object.entries(formObj || {})) {
+            if (v === undefined || v === null) continue;
+            body.set(k, String(v));
+          }
+
+          const r = await fetch(url, {
+            method: "POST",
+            headers: {
+              "content-type": "application/x-www-form-urlencoded",
+              accept: "application/json",
+            },
+            body,
+          });
+
+          const text = await r.text();
+          const obj = safeJsonParse(text) || { raw: text };
+          if (!r.ok) {
+            const e = new Error("http_error");
+            e.details = { url, status: r.status, body: obj };
+            throw e;
+          }
+          return obj;
+        }
+
+        async function googleTasksPatch(pathname, bodyObj, query) {
+          const token = await getValidAccessToken();
+          const url = new URL(GOOGLE_TASKS_API_BASE + pathname);
+          for (const [k, v] of Object.entries(query || {})) {
+            if (v === undefined || v === null) continue;
+            url.searchParams.set(k, String(v));
+          }
+
+          const r = await fetch(url.toString(), {
+            method: "PATCH",
+            headers: {
+              authorization: "Bearer " + String(token),
+              accept: "application/json",
+              "content-type": "application/json",
+            },
+            body: JSON.stringify(bodyObj || {}),
+          });
+
+          const text = await r.text();
+          const obj = safeJsonParse(text) || { raw: text };
+          if (!r.ok) {
+            const e = new Error("google_api_error");
+            e.details = { status: r.status, body: obj };
+            throw e;
+          }
+          return obj;
+        }
+
+        async function googleTasksDelete(pathname, query) {
+          const token = await getValidAccessToken();
+          const url = new URL(GOOGLE_TASKS_API_BASE + pathname);
+          for (const [k, v] of Object.entries(query || {})) {
+            if (v === undefined || v === null) continue;
+            url.searchParams.set(k, String(v));
+          }
+
+          const r = await fetch(url.toString(), {
+            method: "DELETE",
+            headers: {
+              authorization: "Bearer " + String(token),
+              accept: "application/json",
+            },
+          });
+
+          const text = await r.text();
+          if (!r.ok) {
+            const obj = safeJsonParse(text) || { raw: text };
+            const e = new Error("google_api_error");
+            e.details = { status: r.status, body: obj };
+            throw e;
+          }
+          return { ok: true };
+        }
+
+        async function googleTasksPost(pathname, bodyObj, query) {
+          const token = await getValidAccessToken();
+          const url = new URL(GOOGLE_TASKS_API_BASE + pathname);
+          for (const [k, v] of Object.entries(query || {})) {
+            if (v === undefined || v === null) continue;
+            url.searchParams.set(k, String(v));
+          }
+
+          const r = await fetch(url.toString(), {
+            method: "POST",
+            headers: {
+              authorization: "Bearer " + String(token),
+              accept: "application/json",
+              "content-type": "application/json",
+            },
+            body: JSON.stringify(bodyObj || {}),
+          });
+
+          const text = await r.text();
+          const obj = safeJsonParse(text) || { raw: text };
+          if (!r.ok) {
+            const e = new Error("google_api_error");
+            e.details = { status: r.status, body: obj };
+            throw e;
+          }
+          return obj;
+        }
+
+        async function refreshAccessToken(refreshToken) {
+          requireClientId();
+          const payload = {
+            client_id: CLIENT_ID,
+            grant_type: "refresh_token",
+            refresh_token: refreshToken,
+          };
+          if (CLIENT_SECRET) payload.client_secret = CLIENT_SECRET;
+
+          const res = await httpForm(GOOGLE_TOKEN_URL, payload);
+          const access_token = res.access_token;
+          const expires_in = Number(res.expires_in || 0);
+          if (!access_token || !expires_in) {
+            const e = new Error("invalid_refresh_response");
+            e.details = res;
+            throw e;
+          }
+          return {
+            access_token,
+            expires_at: secondsNow() + Math.max(30, expires_in - 10),
+          };
+        }
+
+        async function getValidAccessToken() {
+          const tokens = readTokens();
+          if (!tokens || typeof tokens !== "object") {
+            const e = new Error("auth_required");
+            e.details = {
+              token_path: TOKEN_PATH,
+              hint: "Run: node /app/mcp-servers/mcp-google-tasks/server.js auth",
+            };
+            throw e;
+          }
+
+          const access = typeof tokens.access_token === "string" ? tokens.access_token : "";
+          const expires_at = Number(tokens.expires_at || 0);
+          const refresh = typeof tokens.refresh_token === "string" ? tokens.refresh_token : "";
+
+          if (access && expires_at && expires_at > secondsNow() + 30) {
+            return access;
+          }
+
+          if (!refresh) {
+            const e = new Error("auth_required");
+            e.details = {
+              token_path: TOKEN_PATH,
+              reason: "missing_refresh_token",
+              hint: "Re-run auth: node /app/mcp-servers/mcp-google-tasks/server.js auth",
+            };
+            throw e;
+          }
+
+          const refreshed = await refreshAccessToken(refresh);
+          const merged = { ...tokens, ...refreshed };
+          writeTokens(merged);
+          return merged.access_token;
+        }
+
+        async function googleTasksGet(pathname, query) {
+          const token = await getValidAccessToken();
+          const url = new URL(GOOGLE_TASKS_API_BASE + pathname);
+          for (const [k, v] of Object.entries(query || {})) {
+            if (v === undefined || v === null) continue;
+            url.searchParams.set(k, String(v));
+          }
+
+          const r = await fetch(url.toString(), {
+            method: "GET",
+            headers: {
+              authorization: "Bearer " + String(token),
+              accept: "application/json",
+            },
+          });
+
+          const text = await r.text();
+          const obj = safeJsonParse(text) || { raw: text };
+          if (!r.ok) {
+            const e = new Error("google_api_error");
+            e.details = { status: r.status, body: obj };
+            throw e;
+          }
+          return obj;
+        }
+
+        async function runAuthCodeFlowCopyPaste() {
+          requireClientId();
+          ensureTokenDir();
+
+          // We use a localhost redirect URI even without a local server.
+          // After consent, your browser will attempt to redirect to localhost and may show an error.
+          // Copy the URL from the address bar (it will contain ?code=...) and paste it back here.
+          const redirect_uri = "http://127.0.0.1:53682/oauth2callback";
+
+          const qs = new URLSearchParams({
+            client_id: CLIENT_ID,
+            redirect_uri,
+            response_type: "code",
+            scope: SCOPES.join(" "),
+            access_type: "offline",
+            prompt: "consent",
+          });
+
+          const authUrl = GOOGLE_AUTH_URL + "?" + qs.toString();
+
+          process.stderr.write("\n== Google Tasks OAuth (Auth Code) ==\n");
+          process.stderr.write("1) Open this URL in your browser:\n" + authUrl + "\n\n");
+          process.stderr.write("2) After approving, your browser will redirect to localhost.\n");
+          process.stderr.write("   Copy the FULL redirected URL from the address bar (or just the code) and paste it here.\n\n");
+          process.stderr.write("Paste redirected URL or code and press Enter:\n");
+
+          const readline = require("node:readline");
+          const rl = readline.createInterface({ input: process.stdin, output: process.stderr, terminal: true });
+
+          const pasted = await new Promise((resolve) => rl.question("", (ans) => resolve(ans)));
+          rl.close();
+
+          const raw = String(pasted || "").trim();
+          if (!raw) throw new Error("missing_auth_code");
+
+          let code = raw;
+          try {
+            if (raw.startsWith("http://") || raw.startsWith("https://")) {
+              const u = new URL(raw);
+              code = u.searchParams.get("code") || "";
+            }
+          } catch {}
+
+          code = String(code || "").trim();
+          if (!code) throw new Error("missing_auth_code");
+
+          const tok = await httpForm(GOOGLE_TOKEN_URL, {
+            client_id: CLIENT_ID,
+            client_secret: CLIENT_SECRET || undefined,
+            code,
+            redirect_uri,
+            grant_type: "authorization_code",
+          });
+
+          const access_token = tok.access_token;
+          const refresh_token = tok.refresh_token;
+          const expires_in = Number(tok.expires_in || 0);
+          const scope = tok.scope;
+          const token_type = tok.token_type;
+
+          if (!access_token) {
+            const e = new Error("token_missing_access_token");
+            e.details = { tok };
+            throw e;
+          }
+
+          const tokens = {
+            access_token,
+            refresh_token,
+            token_type,
+            scope,
+            expires_at: expires_in ? secondsNow() + expires_in : null,
+            updated_at: nowIso(),
+          };
+
+          writeTokens(tokens);
+          process.stderr.write("Saved tokens to " + TOKEN_PATH + "\n");
+          return tokens;
+        }
+
+        const TOOLS = [
+          {
+            name: "google_tasks_ping",
+            description: "Minimal connectivity test for the Google Tasks MCP server.",
+            inputSchema: {
+              type: "object",
+              properties: {
+                message: { type: "string", description: "Optional message to echo." },
+              },
+            },
+          },
+          {
+            name: "google_tasks_auth_status",
+            description: "Check OAuth token status for Google Tasks (single-account).",
+            inputSchema: {
+              type: "object",
+              properties: {
+                include_raw_tokens: {
+                  type: "boolean",
+                  description: "If true, include raw token JSON in the response (not recommended).",
+                },
+              },
+            },
+          },
+          {
+            name: "google_tasks_list_tasklists",
+            description: "List the user's Google Tasklists (requires OAuth tokens).",
+            inputSchema: {
+              type: "object",
+              properties: {
+                max_results: { type: "integer", description: "Max results (1-100)." },
+                page_token: { type: "string", description: "Page token from a previous call." },
+              },
+            },
+          },
+          {
+            name: "google_tasks_create_task",
+            description: "Create a Google Task item in a tasklist (requires OAuth tokens).",
+            inputSchema: {
+              type: "object",
+              properties: {
+                tasklist_id: { type: "string", description: "Tasklist ID. If omitted, uses the first tasklist." },
+                title: { type: "string", description: "Task title." },
+                notes: { type: "string", description: "Optional notes." },
+                due: { type: "string", description: "Optional RFC3339 due datetime (e.g. 2026-03-13T00:00:00Z)." },
+              },
+              required: ["title"],
+            },
+          },
+          {
+            name: "google_tasks_list_tasks",
+            description: "List tasks within a tasklist (requires OAuth tokens).",
+            inputSchema: {
+              type: "object",
+              properties: {
+                tasklist_id: { type: "string", description: "Tasklist ID. If omitted, uses the first tasklist." },
+                max_results: { type: "integer", description: "Max results (1-100)." },
+                page_token: { type: "string", description: "Page token from a previous call." },
+                show_completed: { type: "boolean", description: "Include completed tasks." },
+                show_hidden: { type: "boolean", description: "Include hidden tasks." },
+              },
+            },
+          },
+          {
+            name: "google_tasks_update_task",
+            description: "Update a task in a tasklist (requires OAuth tokens).",
+            inputSchema: {
+              type: "object",
+              properties: {
+                tasklist_id: { type: "string", description: "Tasklist ID. If omitted, uses the first tasklist." },
+                task_id: { type: "string", description: "Task ID to update." },
+                title: { type: "string", description: "Optional new title." },
+                notes: { type: "string", description: "Optional new notes." },
+                due: { type: "string", description: "Optional RFC3339 due datetime." },
+                status: { type: "string", description: "Optional status (e.g. needsAction|completed)." },
+              },
+              required: ["task_id"],
+            },
+          },
+          {
+            name: "google_tasks_complete_task",
+            description: "Mark a task as completed (requires OAuth tokens).",
+            inputSchema: {
+              type: "object",
+              properties: {
+                tasklist_id: { type: "string", description: "Tasklist ID. If omitted, uses the first tasklist." },
+                task_id: { type: "string", description: "Task ID to complete." },
+              },
+              required: ["task_id"],
+            },
+          },
+          {
+            name: "google_tasks_delete_task",
+            description: "Delete a task (requires OAuth tokens).",
+            inputSchema: {
+              type: "object",
+              properties: {
+                tasklist_id: { type: "string", description: "Tasklist ID. If omitted, uses the first tasklist." },
+                task_id: { type: "string", description: "Task ID to delete." },
+              },
+              required: ["task_id"],
+            },
+          },
+        ];
+
+        async function handleRpc(msg) {
+          const jsonrpc = msg && msg.jsonrpc;
+          const id = msg && msg.id;
+          const method = msg && msg.method;
+          const params = msg && msg.params;
+
+          if (_traceCount < 30) {
+            _traceCount++;
+            try {
+              const hasId = msg && Object.prototype.hasOwnProperty.call(msg, "id");
+              process.stderr.write("[mcp-google-tasks] inbound method=" + String(method) + " hasId=" + String(Boolean(hasId)) + "\n");
+            } catch {}
+          }
+
+          const hasId = msg && Object.prototype.hasOwnProperty.call(msg, "id");
+          if (!hasId) {
+            try {
+              if (typeof method === "string" && method) {
+                process.stderr.write("[mcp-google-tasks] notification method=" + method + "\n");
+              }
+            } catch {}
+            return null;
+          }
+
+          if (method === "initialize") {
+            const requestedPv = params && params.protocolVersion;
+            return {
+              jsonrpc: "2.0",
+              id,
+              result: {
+                protocolVersion: (typeof requestedPv === "string" && requestedPv) ? requestedPv : "2024-11-05",
+                capabilities: { tools: {}, resources: {}, prompts: {} },
+                serverInfo: { name: APP_NAME, version: APP_VERSION },
+              },
+            };
+          }
+
+          if (method === "initialized") {
+            try {
+              process.stderr.write("[mcp-google-tasks] initialized\n");
+            } catch {}
+            return null;
+          }
+
+          if (method === "tools/list") {
+            return {
+              jsonrpc: "2.0",
+              id,
+              result: {
+                tools: TOOLS,
+              },
+            };
+          }
+
+          if (method === "resources/list") {
+            return {
+              jsonrpc: "2.0",
+              id,
+              result: {
+                resources: [],
+              },
+            };
+          }
+
+          if (method === "prompts/list") {
+            return {
+              jsonrpc: "2.0",
+              id,
+              result: {
+                prompts: [],
+              },
+            };
+          }
+
+          if (method === "tools/call") {
+            const name = params && params.name;
+            const args = (params && params.arguments) || {};
+
+            if (name === "google_tasks_ping") {
+              const message = typeof args.message === "string" ? args.message : "pong";
+              return {
+                jsonrpc: "2.0",
+                id,
+                result: {
+                  content: [
+                    {
+                      type: "text",
+                      text: JSON.stringify({ ok: true, message, server: APP_NAME, version: APP_VERSION, now: nowIso() }),
+                    },
+                  ],
+                },
+              };
+            }
+
+            if (name === "google_tasks_auth_status") {
+              const includeRaw = Boolean(args.include_raw_tokens);
+              const tokens = readTokens();
+              const now = secondsNow();
+              const access_token = tokens && typeof tokens.access_token === "string" ? tokens.access_token : null;
+              const refresh_token = tokens && typeof tokens.refresh_token === "string" ? tokens.refresh_token : null;
+              const expires_at = tokens && tokens.expires_at ? Number(tokens.expires_at) : null;
+              const scope = tokens && typeof tokens.scope === "string" ? tokens.scope : SCOPES.join(" ");
+
+              const out = {
+                ok: true,
+                token_path: TOKEN_PATH,
+                has_token_file: Boolean(tokens),
+                has_access_token: Boolean(access_token),
+                has_refresh_token: Boolean(refresh_token),
+                expires_at: expires_at,
+                expires_in_seconds: expires_at ? Math.max(0, expires_at - now) : null,
+                is_access_token_valid: expires_at ? expires_at > now + 30 : false,
+                scopes: String(scope)
+                  .split(/\s+/)
+                  .map((s) => s.trim())
+                  .filter(Boolean),
+                client_id_present: Boolean(CLIENT_ID),
+                auth_hint: "Run: node /app/mcp-servers/mcp-google-tasks/server.js auth",
+              };
+
+              if (includeRaw) {
+                out.raw_tokens = tokens;
+              }
+
+              return {
+                jsonrpc: "2.0",
+                id,
+                result: {
+                  content: [{ type: "text", text: JSON.stringify(out) }],
+                },
+              };
+            }
+
+            if (name === "google_tasks_list_tasklists") {
+              const max_results_raw = args.max_results;
+              const page_token_raw = args.page_token;
+              const maxResults =
+                typeof max_results_raw === "number" && Number.isFinite(max_results_raw)
+                  ? Math.max(1, Math.min(100, Math.floor(max_results_raw)))
+                  : undefined;
+              const pageToken = typeof page_token_raw === "string" && page_token_raw.trim() ? page_token_raw.trim() : undefined;
+
+              const data = await googleTasksGet("/users/@me/lists", {
+                maxResults,
+                pageToken,
+              });
+
+              return {
+                jsonrpc: "2.0",
+                id,
+                result: {
+                  content: [{ type: "text", text: JSON.stringify({ ok: true, data }) }],
+                },
+              };
+            }
+
+            if (name === "google_tasks_create_task") {
+              const tasklist_id_raw = args.tasklist_id;
+              const title_raw = args.title;
+              const notes_raw = args.notes;
+              const due_raw = args.due;
+
+              const title = typeof title_raw === "string" ? title_raw.trim() : "";
+              if (!title) {
+                return {
+                  jsonrpc: "2.0",
+                  id,
+                  error: {
+                    code: -32602,
+                    message: "Invalid params",
+                    data: { field: "title" },
+                  },
+                };
+              }
+
+              let tasklistId = typeof tasklist_id_raw === "string" && tasklist_id_raw.trim() ? tasklist_id_raw.trim() : "";
+              if (!tasklistId) {
+                const lists = await googleTasksGet("/users/@me/lists", { maxResults: 1 });
+                tasklistId = lists && lists.items && lists.items[0] && lists.items[0].id ? String(lists.items[0].id) : "";
+              }
+              if (!tasklistId) {
+                const e = new Error("no_tasklists_found");
+                e.details = { hint: "Create a tasklist in Google Tasks or pass tasklist_id" };
+                throw e;
+              }
+
+              const body = {
+                title,
+              };
+              if (typeof notes_raw === "string" && notes_raw.trim()) body.notes = notes_raw;
+              if (typeof due_raw === "string" && due_raw.trim()) body.due = due_raw;
+
+              const data = await googleTasksPost("/lists/" + encodeURIComponent(tasklistId) + "/tasks", body);
+
+              return {
+                jsonrpc: "2.0",
+                id,
+                result: {
+                  content: [{ type: "text", text: JSON.stringify({ ok: true, tasklist_id: tasklistId, data }) }],
+                },
+              };
+            }
+
+            if (name === "google_tasks_list_tasks") {
+              const tasklist_id_raw = args.tasklist_id;
+              const max_results_raw = args.max_results;
+              const page_token_raw = args.page_token;
+              const show_completed_raw = args.show_completed;
+              const show_hidden_raw = args.show_hidden;
+
+              const maxResults =
+                typeof max_results_raw === "number" && Number.isFinite(max_results_raw)
+                  ? Math.max(1, Math.min(100, Math.floor(max_results_raw)))
+                  : undefined;
+              const pageToken = typeof page_token_raw === "string" && page_token_raw.trim() ? page_token_raw.trim() : undefined;
+              const showCompleted = typeof show_completed_raw === "boolean" ? show_completed_raw : undefined;
+              const showHidden = typeof show_hidden_raw === "boolean" ? show_hidden_raw : undefined;
+
+              let tasklistId = typeof tasklist_id_raw === "string" && tasklist_id_raw.trim() ? tasklist_id_raw.trim() : "";
+              if (!tasklistId) {
+                const lists = await googleTasksGet("/users/@me/lists", { maxResults: 1 });
+                tasklistId = lists && lists.items && lists.items[0] && lists.items[0].id ? String(lists.items[0].id) : "";
+              }
+              if (!tasklistId) {
+                const e = new Error("no_tasklists_found");
+                e.details = { hint: "Create a tasklist in Google Tasks or pass tasklist_id" };
+                throw e;
+              }
+
+              const data = await googleTasksGet("/lists/" + encodeURIComponent(tasklistId) + "/tasks", {
+                maxResults,
+                pageToken,
+                showCompleted,
+                showHidden,
+              });
+
+              return {
+                jsonrpc: "2.0",
+                id,
+                result: {
+                  content: [{ type: "text", text: JSON.stringify({ ok: true, tasklist_id: tasklistId, data }) }],
+                },
+              };
+            }
+
+            if (name === "google_tasks_update_task") {
+              const tasklist_id_raw = args.tasklist_id;
+              const task_id_raw = args.task_id;
+              const title_raw = args.title;
+              const notes_raw = args.notes;
+              const due_raw = args.due;
+              const status_raw = args.status;
+
+              const taskId = typeof task_id_raw === "string" ? task_id_raw.trim() : "";
+              if (!taskId) {
+                return {
+                  jsonrpc: "2.0",
+                  id,
+                  error: {
+                    code: -32602,
+                    message: "Invalid params",
+                    data: { field: "task_id" },
+                  },
+                };
+              }
+
+              let tasklistId = typeof tasklist_id_raw === "string" && tasklist_id_raw.trim() ? tasklist_id_raw.trim() : "";
+              if (!tasklistId) {
+                const lists = await googleTasksGet("/users/@me/lists", { maxResults: 1 });
+                tasklistId = lists && lists.items && lists.items[0] && lists.items[0].id ? String(lists.items[0].id) : "";
+              }
+              if (!tasklistId) {
+                const e = new Error("no_tasklists_found");
+                e.details = { hint: "Create a tasklist in Google Tasks or pass tasklist_id" };
+                throw e;
+              }
+
+              const body = {};
+              if (typeof title_raw === "string") body.title = title_raw;
+              if (typeof notes_raw === "string") body.notes = notes_raw;
+              if (typeof due_raw === "string") body.due = due_raw;
+              if (typeof status_raw === "string") body.status = status_raw;
+
+              const data = await googleTasksPatch(
+                "/lists/" + encodeURIComponent(tasklistId) + "/tasks/" + encodeURIComponent(taskId),
+                body
+              );
+
+              return {
+                jsonrpc: "2.0",
+                id,
+                result: {
+                  content: [{ type: "text", text: JSON.stringify({ ok: true, tasklist_id: tasklistId, task_id: taskId, data }) }],
+                },
+              };
+            }
+
+            if (name === "google_tasks_complete_task") {
+              const tasklist_id_raw = args.tasklist_id;
+              const task_id_raw = args.task_id;
+
+              const taskId = typeof task_id_raw === "string" ? task_id_raw.trim() : "";
+              if (!taskId) {
+                return {
+                  jsonrpc: "2.0",
+                  id,
+                  error: {
+                    code: -32602,
+                    message: "Invalid params",
+                    data: { field: "task_id" },
+                  },
+                };
+              }
+
+              let tasklistId = typeof tasklist_id_raw === "string" && tasklist_id_raw.trim() ? tasklist_id_raw.trim() : "";
+              if (!tasklistId) {
+                const lists = await googleTasksGet("/users/@me/lists", { maxResults: 1 });
+                tasklistId = lists && lists.items && lists.items[0] && lists.items[0].id ? String(lists.items[0].id) : "";
+              }
+              if (!tasklistId) {
+                const e = new Error("no_tasklists_found");
+                e.details = { hint: "Create a tasklist in Google Tasks or pass tasklist_id" };
+                throw e;
+              }
+
+              const data = await googleTasksPatch(
+                "/lists/" + encodeURIComponent(tasklistId) + "/tasks/" + encodeURIComponent(taskId),
+                { status: "completed" }
+              );
+
+              return {
+                jsonrpc: "2.0",
+                id,
+                result: {
+                  content: [{ type: "text", text: JSON.stringify({ ok: true, tasklist_id: tasklistId, task_id: taskId, data }) }],
+                },
+              };
+            }
+
+            if (name === "google_tasks_delete_task") {
+              const tasklist_id_raw = args.tasklist_id;
+              const task_id_raw = args.task_id;
+
+              const taskId = typeof task_id_raw === "string" ? task_id_raw.trim() : "";
+              if (!taskId) {
+                return {
+                  jsonrpc: "2.0",
+                  id,
+                  error: {
+                    code: -32602,
+                    message: "Invalid params",
+                    data: { field: "task_id" },
+                  },
+                };
+              }
+
+              let tasklistId = typeof tasklist_id_raw === "string" && tasklist_id_raw.trim() ? tasklist_id_raw.trim() : "";
+              if (!tasklistId) {
+                const lists = await googleTasksGet("/users/@me/lists", { maxResults: 1 });
+                tasklistId = lists && lists.items && lists.items[0] && lists.items[0].id ? String(lists.items[0].id) : "";
+              }
+              if (!tasklistId) {
+                const e = new Error("no_tasklists_found");
+                e.details = { hint: "Create a tasklist in Google Tasks or pass tasklist_id" };
+                throw e;
+              }
+
+              const data = await googleTasksDelete(
+                "/lists/" + encodeURIComponent(tasklistId) + "/tasks/" + encodeURIComponent(taskId)
+              );
+
+              return {
+                jsonrpc: "2.0",
+                id,
+                result: {
+                  content: [{ type: "text", text: JSON.stringify({ ok: true, tasklist_id: tasklistId, task_id: taskId, data }) }],
+                },
+              };
+            }
+
+            return {
+              jsonrpc: "2.0",
+              id,
+              error: {
+                code: -32601,
+                message: "Tool not found",
+                data: { name },
+              },
+            };
+          }
+
+          return {
+            jsonrpc: "2.0",
+            id,
+            error: {
+              code: -32601,
+              message: "Method not found",
+              data: { method },
+            },
+          };
+        }
+
+        let buf = Buffer.alloc(0);
+        let lineBuf = "";
+
+        async function main() {
+          const args = process.argv.slice(2);
+          if (args.includes("auth")) {
+            await runAuthCodeFlowCopyPaste();
+            process.exit(0);
+          }
+        }
+
+        main().catch((e) => {
+          try {
+            if (e && e.details) {
+              process.stderr.write("mcp-google-tasks error details: " + JSON.stringify(e.details) + "\n");
+            }
+          } catch {}
+          process.stderr.write("mcp-google-tasks startup error: " + String(e && e.message ? e.message : e) + "\n");
+          process.exit(1);
+        });
+
+        function parseNextFrame(buffer) {
+          let headerEnd = buffer.indexOf(Buffer.from("\r\n\r\n"));
+          let headerSepLen = 4;
+          if (headerEnd < 0) {
+            headerEnd = buffer.indexOf(Buffer.from("\n\n"));
+            headerSepLen = 2;
+          }
+          if (headerEnd < 0) return null;
+
+          const headerText = buffer.slice(0, headerEnd).toString("utf8");
+          const headers = headerText.split(/\r?\n/);
+          let contentLength = null;
+          for (const h of headers) {
+            const m = /^content-length\s*:\s*(\d+)\s*$/i.exec(h);
+            if (m) {
+              contentLength = Number(m[1]);
+              break;
+            }
+          }
+          if (!contentLength || !Number.isFinite(contentLength) || contentLength <= 0) {
+            return null;
+          }
+
+          const bodyStart = headerEnd + headerSepLen;
+          if (buffer.length < bodyStart + contentLength) return null;
+
+          const bodyBuf = buffer.slice(bodyStart, bodyStart + contentLength);
+          const rest = buffer.slice(bodyStart + contentLength);
+          return { body: bodyBuf.toString("utf8"), rest };
+        }
+
+        async function handleMessage(msg) {
+          try {
+            const res = await handleRpc(msg);
+            if (res) {
+              write(res);
+            }
+          } catch (e) {
+            write({
+              jsonrpc: "2.0",
+              id: msg && Object.prototype.hasOwnProperty.call(msg, "id") ? msg.id : null,
+              error: {
+                code: -32603,
+                message: "Internal error",
+                data: { error: String(e && e.message ? e.message : e) },
+              },
+            });
+          }
+        }
+
+        process.stdin.on("data", async (chunk) => {
+          const b = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk), "utf8");
+          buf = Buffer.concat([buf, b]);
+          lineBuf += b.toString("utf8");
+
+          // First try Content-Length framing.
+          while (true) {
+            const frame = parseNextFrame(buf);
+            if (!frame) break;
+            _ioMode = _ioMode || "content-length";
+
+            buf = frame.rest;
+            const msg = safeJsonParse(frame.body);
+            if (!msg) {
+              process.stderr.write("mcp-google-tasks parse error\n");
+              continue;
+            }
+
+            await handleMessage(msg);
+          }
+
+          // Fallback: newline-delimited JSON.
+          while (true) {
+            const idx = lineBuf.indexOf("\n");
+            if (idx < 0) break;
+            const line = lineBuf.slice(0, idx).trim();
+            lineBuf = lineBuf.slice(idx + 1);
+            if (!line) continue;
+            const msg = safeJsonParse(line);
+            if (!msg) continue;
+            _ioMode = _ioMode || "line";
+            await handleMessage(msg);
+          }
+
+          // Fallback: single JSON object without trailing newline.
+          // (Some clients may write a single JSON-RPC object to stdin without framing.)
+          const trimmed = lineBuf.trim();
+          if (trimmed && (trimmed.startsWith("{") || trimmed.startsWith("["))) {
+            const msg = safeJsonParse(trimmed);
+            if (msg) {
+              lineBuf = "";
+              _ioMode = _ioMode || "line";
+              await handleMessage(msg);
+            }
+          }
+        });
+
+        process.stdin.on("end", () => {
+          process.exit(0);
+        });
+
+        EOF
+
+        mkdir -p /app/mcp-servers/mcp-google-calendar
+        cat > /app/mcp-servers/mcp-google-calendar/server.js <<'EOF'
+        "use strict";
+
+        const APP_NAME = "mcp-google-calendar";
+        const APP_VERSION = "0.0.1";
+
+        const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
+        const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
+        const GOOGLE_CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3";
+
+        const DEFAULT_REDIRECT_URI = "http://127.0.0.1:53682/oauth2callback";
+        const JARVIS_CALENDAR_NAME = String(process.env.GOOGLE_CALENDAR_JARVIS_CALENDAR_NAME || "Jarvis Reminders").trim();
+
+        const TOKEN_PATH = (process.env.GOOGLE_CALENDAR_TOKEN_PATH || "/root/.config/1mcp/google-calendar.tokens.json").trim();
+        const CLIENT_ID = String(
+          process.env.GOOGLE_CALENDAR_CLIENT_ID || process.env.GOOGLE_TASKS_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || ""
+        ).trim();
+        const CLIENT_SECRET = String(
+          process.env.GOOGLE_CALENDAR_CLIENT_SECRET || process.env.GOOGLE_TASKS_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || ""
+        ).trim();
+        const REDIRECT_URI = String(process.env.GOOGLE_CALENDAR_REDIRECT_URI || DEFAULT_REDIRECT_URI).trim();
+        const SCOPES = String(process.env.GOOGLE_CALENDAR_SCOPES || "https://www.googleapis.com/auth/calendar")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+
+        const fs = require("node:fs");
+        const path = require("node:path");
+
+        function safeJsonParse(s) {
+          try {
+            return JSON.parse(s);
+          } catch {
+            return null;
+          }
+        }
+
+        let _ioMode = null; // "content-length" | "line"
+
+        function write(obj) {
+          const body = JSON.stringify(obj);
+          if (_ioMode === "line") {
+            process.stdout.write(body + "\n");
+            return;
+          }
+          const len = Buffer.byteLength(body, "utf8");
+          process.stdout.write("Content-Length: " + String(len) + "\r\n\r\n" + body);
+        }
+
+        function ensureTokenDir() {
+          const dir = path.dirname(TOKEN_PATH);
+          fs.mkdirSync(dir, { recursive: true });
+        }
+
+        function readTokens() {
+          try {
+            if (!fs.existsSync(TOKEN_PATH)) return null;
+            const raw = fs.readFileSync(TOKEN_PATH, "utf-8");
+            const obj = safeJsonParse(raw);
+            if (!obj || typeof obj !== "object") return null;
+            return obj;
+          } catch {
+            return null;
+          }
+        }
+
+        function writeTokens(tokens) {
+          ensureTokenDir();
+          fs.writeFileSync(TOKEN_PATH, JSON.stringify(tokens, null, 2));
+        }
+
+        function requireClientId() {
+          if (!CLIENT_ID) {
+            throw new Error("missing_google_calendar_client_id");
+          }
+        }
+
+        function secondsNow() {
+          return Math.floor(Date.now() / 1000);
+        }
+
+        async function httpForm(url, formObj) {
+          const body = new URLSearchParams();
+          for (const [k, v] of Object.entries(formObj || {})) {
+            if (v === undefined || v === null) continue;
+            body.set(k, String(v));
+          }
+
+          const r = await fetch(url, {
+            method: "POST",
+            headers: {
+              "content-type": "application/x-www-form-urlencoded",
+              accept: "application/json",
+            },
+            body,
+          });
+
+          const text = await r.text();
+          const obj = safeJsonParse(text) || { raw: text };
+          if (!r.ok) {
+            const e = new Error("http_error");
+            e.details = { url, status: r.status, body: obj };
+            throw e;
+          }
+          return obj;
+        }
+
+        async function refreshAccessToken(refreshToken) {
+          requireClientId();
+          const payload = {
+            client_id: CLIENT_ID,
+            grant_type: "refresh_token",
+            refresh_token: refreshToken,
+          };
+          if (CLIENT_SECRET) payload.client_secret = CLIENT_SECRET;
+
+          const res = await httpForm(GOOGLE_TOKEN_URL, payload);
+          const access_token = res.access_token;
+          const expires_in = Number(res.expires_in || 0);
+          if (!access_token || !expires_in) {
+            const e = new Error("invalid_refresh_response");
+            e.details = res;
+            throw e;
+          }
+          return {
+            access_token,
+            expires_at: secondsNow() + Math.max(30, expires_in - 10),
+          };
+        }
+
+        async function getValidAccessToken() {
+          const tokens = readTokens();
+          if (!tokens || typeof tokens !== "object") {
+            const e = new Error("auth_required");
+            e.details = {
+              token_path: TOKEN_PATH,
+              hint: "Run: node /app/mcp-servers/mcp-google-calendar/server.js auth",
+            };
+            throw e;
+          }
+
+          const access = typeof tokens.access_token === "string" ? tokens.access_token : "";
+          const expires_at = Number(tokens.expires_at || 0);
+          const refresh = typeof tokens.refresh_token === "string" ? tokens.refresh_token : "";
+
+          if (access && expires_at && expires_at > secondsNow() + 30) {
+            return access;
+          }
+
+          if (!refresh) {
+            const e = new Error("auth_required");
+            e.details = {
+              token_path: TOKEN_PATH,
+              reason: "missing_refresh_token",
+              hint: "Re-run auth: node /app/mcp-servers/mcp-google-calendar/server.js auth",
+            };
+            throw e;
+          }
+
+          const refreshed = await refreshAccessToken(refresh);
+          const merged = { ...tokens, ...refreshed };
+          writeTokens(merged);
+          return merged.access_token;
+        }
+
+        function _authUrl() {
+          requireClientId();
+          const url = new URL(GOOGLE_AUTH_URL);
+          url.searchParams.set("client_id", CLIENT_ID);
+          url.searchParams.set("redirect_uri", REDIRECT_URI);
+          url.searchParams.set("response_type", "code");
+          url.searchParams.set("access_type", "offline");
+          url.searchParams.set("prompt", "consent");
+          url.searchParams.set("scope", SCOPES.join(" "));
+          return url.toString();
+        }
+
+        function _extractCodeFromUserInput(raw) {
+          const s = String(raw || "").trim();
+          if (!s) return "";
+          if (/^[A-Za-z0-9_\-]+$/.test(s) && s.length > 10) return s;
+          try {
+            const u = new URL(s);
+            const code = u.searchParams.get("code");
+            if (code) return code;
+          } catch {
+            // ignore
+          }
+          const m = /\bcode=([^&\s]+)/.exec(s);
+          return m ? decodeURIComponent(m[1]) : "";
+        }
+
+        async function runAuthCodeFlowCopyPaste() {
+          requireClientId();
+          ensureTokenDir();
+
+          process.stderr.write("\nGOOGLE CALENDAR AUTH\n");
+          process.stderr.write("1) Open this URL in your browser:\n" + _authUrl() + "\n\n");
+          process.stderr.write(
+            "2) Complete consent, then copy either the full redirect URL (http://127.0.0.1:53682/oauth2callback?code=...) or the `code` value.\n\n"
+          );
+          process.stderr.write("Paste here and press Enter:\n");
+
+          const input = await new Promise((resolve) => {
+            let buf = "";
+            process.stdin.setEncoding("utf8");
+            process.stdin.on("data", (chunk) => {
+              buf += String(chunk);
+              if (buf.includes("\n")) {
+                resolve(buf.trim());
+              }
+            });
+          });
+
+          const code = _extractCodeFromUserInput(input);
+          if (!code) {
+            throw new Error("missing_auth_code");
+          }
+
+          const tok = await httpForm(GOOGLE_TOKEN_URL, {
+            code,
+            client_id: CLIENT_ID,
+            client_secret: CLIENT_SECRET || undefined,
+            redirect_uri: REDIRECT_URI,
+            grant_type: "authorization_code",
+          });
+
+          const access_token = tok.access_token;
+          const refresh_token = tok.refresh_token;
+          const expiresIn = Number(tok.expires_in || 0);
+          if (!access_token || !expiresIn) {
+            const e = new Error("invalid_token_response");
+            e.details = tok;
+            throw e;
+          }
+
+          const saved = {
+            access_token,
+            refresh_token: refresh_token || null,
+            expires_at: secondsNow() + Math.max(30, expiresIn - 10),
+            scope: tok.scope || SCOPES.join(" "),
+            token_type: tok.token_type || "Bearer",
+            created_at: secondsNow(),
+          };
+          writeTokens(saved);
+          process.stderr.write("Saved tokens to: " + TOKEN_PATH + "\n");
+        }
+
+        async function calendarRequest(method, pathname, bodyObj, query) {
+          const token = await getValidAccessToken();
+          const url = new URL(GOOGLE_CALENDAR_API_BASE + pathname);
+          for (const [k, v] of Object.entries(query || {})) {
+            if (v === undefined || v === null) continue;
+            url.searchParams.set(k, String(v));
+          }
+
+          const headers = {
+            authorization: "Bearer " + String(token),
+            accept: "application/json",
+          };
+          let body = undefined;
+          if (bodyObj !== undefined) {
+            headers["content-type"] = "application/json";
+            body = JSON.stringify(bodyObj || {});
+          }
+
+          const r = await fetch(url.toString(), {
+            method,
+            headers,
+            body,
+          });
+
+          const text = await r.text();
+          const obj = safeJsonParse(text) || { raw: text };
+          if (!r.ok) {
+            const e = new Error("google_api_error");
+            e.details = { status: r.status, body: obj };
+            throw e;
+          }
+          return obj;
+        }
+
+        async function listCalendars() {
+          return await calendarRequest("GET", "/users/me/calendarList", undefined, { maxResults: 250 });
+        }
+
+        async function findJarvisCalendar() {
+          const data = await listCalendars();
+          const items = Array.isArray(data.items) ? data.items : [];
+          const name = JARVIS_CALENDAR_NAME;
+          for (const it of items) {
+            if (!it || typeof it !== "object") continue;
+            const summary = typeof it.summary === "string" ? it.summary : "";
+            if (summary.trim() === name) {
+              const id = typeof it.id === "string" ? it.id : "";
+              if (id) return { ok: true, calendar_id: id, created: false, item: it };
+            }
+          }
+          return { ok: true, calendar_id: "", created: false, item: null };
+        }
+
+        async function ensureJarvisCalendar() {
+          const found = await findJarvisCalendar();
+          if (found.calendar_id) return found;
+
+          const created = await calendarRequest("POST", "/calendars", { summary: JARVIS_CALENDAR_NAME });
+          const cid = created && typeof created.id === "string" ? created.id : "";
+          if (!cid) {
+            const e = new Error("calendar_create_failed");
+            e.details = created;
+            throw e;
+          }
+          return { ok: true, calendar_id: cid, created: true, item: created };
+        }
+
+        const TOOLS = [
+          {
+            name: "google_calendar_auth_status",
+            description: "Check OAuth token status for Google Calendar (single-account).",
+            inputSchema: {
+              type: "object",
+              properties: {
+                include_raw_tokens: {
+                  type: "boolean",
+                  description: "If true, include raw token JSON in the response (not recommended).",
+                },
+              },
+            },
+          },
+          {
+            name: "google_calendar_ensure_jarvis_calendar",
+            description: "Find or create the dedicated Jarvis Reminders calendar.",
+            inputSchema: { type: "object", properties: {} },
+          },
+          {
+            name: "google_calendar_list_events",
+            description: "List events in the Jarvis Reminders calendar.",
+            inputSchema: {
+              type: "object",
+              properties: {
+                time_min: { type: "string", description: "RFC3339 inclusive lower bound (optional)." },
+                time_max: { type: "string", description: "RFC3339 exclusive upper bound (optional)." },
+                q: { type: "string", description: "Free text search (optional)." },
+                max_results: { type: "integer", description: "Max results (1-250)." },
+                single_events: { type: "boolean", description: "Expand recurring events into instances." },
+                order_by: { type: "string", description: "Order by (startTime|updated)." },
+              },
+            },
+          },
+          {
+            name: "google_calendar_create_event",
+            description: "Create an event in the Jarvis Reminders calendar (supports recurrence + reminders).",
+            inputSchema: {
+              type: "object",
+              properties: {
+                summary: { type: "string", description: "Event summary/title." },
+                description: { type: "string", description: "Optional description." },
+                start: { type: "string", description: "RFC3339 start datetime (or YYYY-MM-DD for all-day)." },
+                end: { type: "string", description: "RFC3339 end datetime (or YYYY-MM-DD for all-day)." },
+                timezone: { type: "string", description: "IANA timezone (e.g. Asia/Bangkok)." },
+                reminders_minutes: { type: "array", items: { type: "integer" }, description: "Popup reminder offsets in minutes." },
+                rrule: { type: "string", description: "Optional RRULE string (without 'RRULE:')." },
+              },
+              required: ["summary", "start", "end"],
+            },
+          },
+          {
+            name: "google_calendar_update_event",
+            description: "Update an event in the Jarvis Reminders calendar.",
+            inputSchema: {
+              type: "object",
+              properties: {
+                event_id: { type: "string", description: "Event ID." },
+                summary: { type: "string", description: "Optional new summary/title." },
+                description: { type: "string", description: "Optional new description." },
+                start: { type: "string", description: "Optional new start (RFC3339 or YYYY-MM-DD)." },
+                end: { type: "string", description: "Optional new end (RFC3339 or YYYY-MM-DD)." },
+                timezone: { type: "string", description: "IANA timezone (optional)." },
+                reminders_minutes: { type: "array", items: { type: "integer" }, description: "Optional new popup reminder offsets in minutes." },
+                rrule: { type: "string", description: "Optional RRULE string (without 'RRULE:')." },
+              },
+              required: ["event_id"],
+            },
+          },
+          {
+            name: "google_calendar_delete_event",
+            description: "Delete an event in the Jarvis Reminders calendar.",
+            inputSchema: {
+              type: "object",
+              properties: {
+                event_id: { type: "string", description: "Event ID." },
+              },
+              required: ["event_id"],
+            },
+          },
+        ];
+
+        function _toEventTime(raw, tz) {
+          const s = typeof raw === "string" ? raw.trim() : "";
+          if (!s) return null;
+          if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+            return { date: s };
+          }
+          const out = { dateTime: s };
+          if (tz && typeof tz === "string" && tz.trim()) {
+            out.timeZone = tz.trim();
+          }
+          return out;
+        }
+
+        function _buildReminders(remindersMinutes) {
+          if (!Array.isArray(remindersMinutes) || remindersMinutes.length === 0) return undefined;
+          const overrides = [];
+          for (const m of remindersMinutes) {
+            const n = Number(m);
+            if (!Number.isFinite(n)) continue;
+            overrides.push({ method: "popup", minutes: Math.max(0, Math.floor(n)) });
+          }
+          if (!overrides.length) return undefined;
+          return { useDefault: false, overrides };
+        }
+
+        async function handleRpc(msg) {
+          const jsonrpc = msg && msg.jsonrpc;
+          const id = msg && Object.prototype.hasOwnProperty.call(msg, "id") ? msg.id : null;
+          const method = msg && msg.method;
+          const params = (msg && msg.params) || {};
+
+          const hasId = msg && Object.prototype.hasOwnProperty.call(msg, "id");
+          if (!hasId) return null;
+
+          if (method === "initialize") {
+            const pv = params && typeof params.protocolVersion === "string" ? params.protocolVersion : "2024-11-05";
+            return {
+              jsonrpc: "2.0",
+              id,
+              result: {
+                protocolVersion: pv,
+                capabilities: { tools: {}, resources: {}, prompts: {} },
+                serverInfo: { name: APP_NAME, version: APP_VERSION },
+              },
+            };
+          }
+
+          if (method === "initialized") {
+            return null;
+          }
+
+          if (method === "resources/list") {
+            return { jsonrpc: "2.0", id, result: { resources: [] } };
+          }
+
+          if (method === "prompts/list") {
+            return { jsonrpc: "2.0", id, result: { prompts: [] } };
+          }
+
+          if (method === "tools/list") {
+            return {
+              jsonrpc: "2.0",
+              id,
+              result: { tools: TOOLS },
+            };
+          }
+
+          if (method === "tools/call") {
+            const name = params && params.name;
+            const args = (params && params.arguments) || {};
+
+            if (name === "google_calendar_auth_status") {
+              const includeRaw = Boolean(args.include_raw_tokens);
+              const tokens = readTokens();
+              const now = secondsNow();
+              const access_token = tokens && typeof tokens.access_token === "string" ? tokens.access_token : null;
+              const refresh_token = tokens && typeof tokens.refresh_token === "string" ? tokens.refresh_token : null;
+              const expires_at = tokens && tokens.expires_at ? Number(tokens.expires_at) : null;
+              const scope = tokens && typeof tokens.scope === "string" ? tokens.scope : SCOPES.join(" ");
+
+              const out = {
+                ok: true,
+                token_path: TOKEN_PATH,
+                has_token_file: Boolean(tokens),
+                has_access_token: Boolean(access_token),
+                has_refresh_token: Boolean(refresh_token),
+                expires_at: expires_at,
+                expires_in_seconds: expires_at ? Math.max(0, expires_at - now) : null,
+                is_access_token_valid: expires_at ? expires_at > now + 30 : false,
+                scopes: String(scope)
+                  .split(/\s+/)
+                  .map((s) => s.trim())
+                  .filter(Boolean),
+                client_id_present: Boolean(CLIENT_ID),
+                redirect_uri: REDIRECT_URI,
+                jarvis_calendar_name: JARVIS_CALENDAR_NAME,
+                auth_hint: "Run: node /app/mcp-servers/mcp-google-calendar/server.js auth",
+              };
+
+              if (includeRaw) out.raw_tokens = tokens;
+
+              return {
+                jsonrpc: "2.0",
+                id,
+                result: { content: [{ type: "text", text: JSON.stringify(out) }] },
+              };
+            }
+
+            if (name === "google_calendar_ensure_jarvis_calendar") {
+              const out = await ensureJarvisCalendar();
+              return {
+                jsonrpc: "2.0",
+                id,
+                result: { content: [{ type: "text", text: JSON.stringify(out) }] },
+              };
+            }
+
+            if (name === "google_calendar_list_events") {
+              const ensured = await ensureJarvisCalendar();
+              const calendarId = ensured.calendar_id;
+
+              const max_raw = args.max_results;
+              const maxResults =
+                typeof max_raw === "number" && Number.isFinite(max_raw)
+                  ? Math.max(1, Math.min(250, Math.floor(max_raw)))
+                  : undefined;
+
+              const timeMin = typeof args.time_min === "string" && args.time_min.trim() ? args.time_min.trim() : undefined;
+              const timeMax = typeof args.time_max === "string" && args.time_max.trim() ? args.time_max.trim() : undefined;
+              const q = typeof args.q === "string" && args.q.trim() ? args.q.trim() : undefined;
+              const singleEvents = typeof args.single_events === "boolean" ? args.single_events : true;
+              const orderByRaw = typeof args.order_by === "string" ? args.order_by.trim() : "";
+              const orderBy = orderByRaw === "updated" ? "updated" : "startTime";
+
+              const data = await calendarRequest(
+                "GET",
+                "/calendars/" + encodeURIComponent(calendarId) + "/events",
+                undefined,
+                {
+                  maxResults,
+                  timeMin,
+                  timeMax,
+                  q,
+                  singleEvents,
+                  orderBy,
+                }
+              );
+
+              return {
+                jsonrpc: "2.0",
+                id,
+                result: {
+                  content: [{ type: "text", text: JSON.stringify({ ok: true, calendar_id: calendarId, data }) }],
+                },
+              };
+            }
+
+            if (name === "google_calendar_create_event") {
+              const ensured = await ensureJarvisCalendar();
+              const calendarId = ensured.calendar_id;
+
+              const summary = typeof args.summary === "string" ? args.summary.trim() : "";
+              if (!summary) {
+                return {
+                  jsonrpc: "2.0",
+                  id,
+                  error: { code: -32602, message: "Invalid params", data: { field: "summary" } },
+                };
+              }
+
+              const tz = typeof args.timezone === "string" ? args.timezone.trim() : "";
+              const start = _toEventTime(args.start, tz);
+              const end = _toEventTime(args.end, tz);
+              if (!start || !end) {
+                return {
+                  jsonrpc: "2.0",
+                  id,
+                  error: { code: -32602, message: "Invalid params", data: { field: "start/end" } },
+                };
+              }
+
+              const body = {
+                summary,
+                start,
+                end,
+              };
+              if (typeof args.description === "string" && args.description.trim()) body.description = args.description;
+
+              const reminders = _buildReminders(args.reminders_minutes);
+              if (reminders) body.reminders = reminders;
+
+              const rrule = typeof args.rrule === "string" ? args.rrule.trim() : "";
+              if (rrule) body.recurrence = [rrule.startsWith("RRULE:") ? rrule : "RRULE:" + rrule];
+
+              body.extendedProperties = { private: { jarvis_managed: "true" } };
+
+              const data = await calendarRequest(
+                "POST",
+                "/calendars/" + encodeURIComponent(calendarId) + "/events",
+                body,
+                { sendUpdates: "none" }
+              );
+
+              return {
+                jsonrpc: "2.0",
+                id,
+                result: {
+                  content: [{ type: "text", text: JSON.stringify({ ok: true, calendar_id: calendarId, data }) }],
+                },
+              };
+            }
+
+            if (name === "google_calendar_update_event") {
+              const ensured = await ensureJarvisCalendar();
+              const calendarId = ensured.calendar_id;
+
+              const eventId = typeof args.event_id === "string" ? args.event_id.trim() : "";
+              if (!eventId) {
+                return {
+                  jsonrpc: "2.0",
+                  id,
+                  error: { code: -32602, message: "Invalid params", data: { field: "event_id" } },
+                };
+              }
+
+              const existing = await calendarRequest(
+                "GET",
+                "/calendars/" + encodeURIComponent(calendarId) + "/events/" + encodeURIComponent(eventId)
+              );
+
+              const body = { ...existing };
+
+              if (typeof args.summary === "string") body.summary = args.summary;
+              if (typeof args.description === "string") body.description = args.description;
+
+              const tz = typeof args.timezone === "string" ? args.timezone.trim() : "";
+              const start = args.start !== undefined ? _toEventTime(args.start, tz) : null;
+              const end = args.end !== undefined ? _toEventTime(args.end, tz) : null;
+              if (start) body.start = start;
+              if (end) body.end = end;
+
+              if (args.reminders_minutes !== undefined) {
+                const reminders = _buildReminders(args.reminders_minutes);
+                if (reminders) body.reminders = reminders;
+                else body.reminders = { useDefault: true };
+              }
+
+              if (args.rrule !== undefined) {
+                const rrule = typeof args.rrule === "string" ? args.rrule.trim() : "";
+                if (rrule) body.recurrence = [rrule.startsWith("RRULE:") ? rrule : "RRULE:" + rrule];
+                else body.recurrence = [];
+              }
+
+              body.extendedProperties = body.extendedProperties || {};
+              body.extendedProperties.private = body.extendedProperties.private || {};
+              body.extendedProperties.private.jarvis_managed = "true";
+
+              const data = await calendarRequest(
+                "PUT",
+                "/calendars/" + encodeURIComponent(calendarId) + "/events/" + encodeURIComponent(eventId),
+                body,
+                { sendUpdates: "none" }
+              );
+
+              return {
+                jsonrpc: "2.0",
+                id,
+                result: {
+                  content: [
+                    {
+                      type: "text",
+                      text: JSON.stringify({ ok: true, calendar_id: calendarId, event_id: eventId, data }),
+                    },
+                  ],
+                },
+              };
+            }
+
+            if (name === "google_calendar_delete_event") {
+              const ensured = await ensureJarvisCalendar();
+              const calendarId = ensured.calendar_id;
+
+              const eventId = typeof args.event_id === "string" ? args.event_id.trim() : "";
+              if (!eventId) {
+                return {
+                  jsonrpc: "2.0",
+                  id,
+                  error: { code: -32602, message: "Invalid params", data: { field: "event_id" } },
+                };
+              }
+
+              const data = await calendarRequest(
+                "DELETE",
+                "/calendars/" + encodeURIComponent(calendarId) + "/events/" + encodeURIComponent(eventId)
+              );
+
+              return {
+                jsonrpc: "2.0",
+                id,
+                result: {
+                  content: [{ type: "text", text: JSON.stringify({ ok: true, calendar_id: calendarId, event_id: eventId, data }) }],
+                },
+              };
+            }
+
+            return {
+              jsonrpc: "2.0",
+              id,
+              error: {
+                code: -32601,
+                message: "Tool not found",
+                data: { name },
+              },
+            };
+          }
+
+          return {
+            jsonrpc: "2.0",
+            id,
+            error: {
+              code: -32601,
+              message: "Method not found",
+              data: { method, jsonrpc },
+            },
+          };
+        }
+
+        let buf = Buffer.alloc(0);
+        let lineBuf = "";
+
+        async function main() {
+          const args = process.argv.slice(2);
+          if (args.includes("auth")) {
+            await runAuthCodeFlowCopyPaste();
+            process.exit(0);
+          }
+        }
+
+        main().catch((e) => {
+          try {
+            if (e && e.details) {
+              process.stderr.write("mcp-google-calendar error details: " + JSON.stringify(e.details) + "\n");
+            }
+          } catch {}
+          process.stderr.write("mcp-google-calendar startup error: " + String(e && e.message ? e.message : e) + "\n");
+          process.exit(1);
+        });
+
+        function parseNextFrame(buffer) {
+          let headerEnd = buffer.indexOf(Buffer.from("\r\n\r\n"));
+          let headerSepLen = 4;
+          if (headerEnd < 0) {
+            headerEnd = buffer.indexOf(Buffer.from("\n\n"));
+            headerSepLen = 2;
+          }
+          if (headerEnd < 0) return null;
+
+          const headerText = buffer.slice(0, headerEnd).toString("utf8");
+          const headers = headerText.split(/\r?\n/);
+          let contentLength = null;
+          for (const h of headers) {
+            const m = /^content-length\s*:\s*(\d+)\s*$/i.exec(h);
+            if (m) {
+              contentLength = Number(m[1]);
+              break;
+            }
+          }
+          if (!contentLength || !Number.isFinite(contentLength) || contentLength <= 0) {
+            return null;
+          }
+
+          const bodyStart = headerEnd + headerSepLen;
+          if (buffer.length < bodyStart + contentLength) return null;
+
+          const bodyBuf = buffer.slice(bodyStart, bodyStart + contentLength);
+          const rest = buffer.slice(bodyStart + contentLength);
+          return { body: bodyBuf.toString("utf8"), rest };
+        }
+
+        async function handleMessage(msg) {
+          try {
+            const res = await handleRpc(msg);
+            if (res) write(res);
+          } catch (e) {
+            write({
+              jsonrpc: "2.0",
+              id: msg && Object.prototype.hasOwnProperty.call(msg, "id") ? msg.id : null,
+              error: {
+                code: -32603,
+                message: "Internal error",
+                data: { error: String(e && e.message ? e.message : e) },
+              },
+            });
+          }
+        }
+
+        process.stdin.on("data", async (chunk) => {
+          const b = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk), "utf8");
+          buf = Buffer.concat([buf, b]);
+          lineBuf += b.toString("utf8");
+
+          while (true) {
+            const frame = parseNextFrame(buf);
+            if (!frame) break;
+            _ioMode = _ioMode || "content-length";
+            buf = frame.rest;
+            const msg = safeJsonParse(frame.body);
+            if (!msg) continue;
+            await handleMessage(msg);
+          }
+
+          while (true) {
+            const idx = lineBuf.indexOf("\n");
+            if (idx < 0) break;
+            const line = lineBuf.slice(0, idx).trim();
+            lineBuf = lineBuf.slice(idx + 1);
+            if (!line) continue;
+            const msg = safeJsonParse(line);
+            if (!msg) continue;
+            _ioMode = _ioMode || "line";
+            await handleMessage(msg);
+          }
+
+          const trimmed = lineBuf.trim();
+          if (trimmed && (trimmed.startsWith("{") || trimmed.startsWith("["))) {
+            const msg = safeJsonParse(trimmed);
+            if (msg) {
+              lineBuf = "";
+              _ioMode = _ioMode || "line";
+              await handleMessage(msg);
+            }
+          }
+        });
+
+        process.stdin.on("end", () => process.exit(0));
+
+        EOF
+
+        cat > /app/mcp-config/mcp.json <<'EOF'
+        {
+          "$schema": "https://docs.1mcp.app/schemas/v1.0.0/mcp-config.json",
+          "mcpServers": {
+            "fetch": {
+              "command": "/opt/venv/bin/python",
+              "args": ["-m", "mcp_server_fetch"],
+              "tags": ["fetch", "web"],
+              "disabled": false
+            },
+            "server-sequential-thinking": {
+              "command": "npx",
+              "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+              "tags": ["thinking"],
+              "disabled": false
+            },
+            "google-tasks": {
+              "command": "node",
+              "args": ["/app/mcp-servers/mcp-google-tasks/server.js"],
+              "env": {
+                "GOOGLE_CLIENT_ID": "$${GOOGLE_CLIENT_ID}",
+                "GOOGLE_CLIENT_SECRET": "$${GOOGLE_CLIENT_SECRET}",
+                "GOOGLE_TASKS_CLIENT_ID": "$${GOOGLE_TASKS_CLIENT_ID}",
+                "GOOGLE_TASKS_CLIENT_SECRET": "$${GOOGLE_TASKS_CLIENT_SECRET}",
+                "GOOGLE_TASKS_SCOPES": "$${GOOGLE_TASKS_SCOPES}",
+                "GOOGLE_TASKS_TOKEN_PATH": "$${GOOGLE_TASKS_TOKEN_PATH}"
+              },
+              "tags": ["google", "tasks"],
+              "disabled": false
+            },
+            "google-sheets": {
+              "command": "node",
+              "args": ["/app/mcp-servers/mcp-google-sheets/server.js"],
+              "env": {
+                "GOOGLE_CLIENT_ID": "$${GOOGLE_CLIENT_ID}",
+                "GOOGLE_CLIENT_SECRET": "$${GOOGLE_CLIENT_SECRET}",
+                "GOOGLE_SHEETS_CLIENT_ID": "$${GOOGLE_SHEETS_CLIENT_ID}",
+                "GOOGLE_SHEETS_CLIENT_SECRET": "$${GOOGLE_SHEETS_CLIENT_SECRET}",
+                "GOOGLE_SHEETS_SCOPES": "$${GOOGLE_SHEETS_SCOPES}",
+                "GOOGLE_SHEETS_TOKEN_PATH": "$${GOOGLE_SHEETS_TOKEN_PATH}"
+              },
+              "tags": ["google", "sheets"],
+              "disabled": false
+            },
+            "google-calendar": {
+              "command": "node",
+              "args": ["/app/mcp-servers/mcp-google-calendar/server.js"],
+              "env": {
+                "GOOGLE_CLIENT_ID": "$${GOOGLE_CLIENT_ID}",
+                "GOOGLE_CLIENT_SECRET": "$${GOOGLE_CLIENT_SECRET}",
+                "GOOGLE_CALENDAR_CLIENT_ID": "$${GOOGLE_CALENDAR_CLIENT_ID}",
+                "GOOGLE_CALENDAR_CLIENT_SECRET": "$${GOOGLE_CALENDAR_CLIENT_SECRET}",
+                "GOOGLE_CALENDAR_SCOPES": "$${GOOGLE_CALENDAR_SCOPES}",
+                "GOOGLE_CALENDAR_TOKEN_PATH": "$${GOOGLE_CALENDAR_TOKEN_PATH}",
+                "GOOGLE_CALENDAR_REDIRECT_URI": "$${GOOGLE_CALENDAR_REDIRECT_URI}",
+                "GOOGLE_CALENDAR_JARVIS_CALENDAR_NAME": "$${GOOGLE_CALENDAR_JARVIS_CALENDAR_NAME}",
+                "GOOGLE_TASKS_CLIENT_ID": "$${GOOGLE_TASKS_CLIENT_ID}",
+                "GOOGLE_TASKS_CLIENT_SECRET": "$${GOOGLE_TASKS_CLIENT_SECRET}"
+              },
+              "tags": ["google", "calendar"],
+              "disabled": false
+            }
+          }
+        }
+        EOF
+
+        mkdir -p /root/.config/1mcp
+        ln -sf /app/mcp-config/mcp.json /root/.config/1mcp/mcp.json
+
+        exec node index.js
+
+  mcp-playwright:
+    <<: *default-service
+    image: mcr.microsoft.com/playwright:v1.58.2-jammy
+    # Internal-only: no host ports.
+    environment:
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+    command:
+      - bash
+      - -lc
+      - |
+        set -e
+        node -v
+        if ! node -e 'require("playwright")' >/dev/null 2>&1; then
+          npm -g i playwright@1.58.2
+        fi
+        if ! node -e 'require("@playwright/mcp")' >/dev/null 2>&1; then
+          npm -g i @playwright/mcp@0.0.68
+        fi
+        CHROMIUM_BIN="$(find /ms-playwright -maxdepth 6 -type f -name chrome -print -quit 2>/dev/null)"
+        if [ -z "$$CHROMIUM_BIN" ]; then
+          echo "missing_chromium_bin"
+          ls -la /ms-playwright 2>/dev/null || true
+          find /ms-playwright -maxdepth 4 -type f -name chrome 2>/dev/null | head -n 20 || true
+          exit 1
+        fi
+        npx @playwright/mcp@0.0.68 --host 0.0.0.0 --port 3050 --no-sandbox --allowed-hosts '*' --allowed-origins '*' --browser chromium --executable-path "$$CHROMIUM_BIN"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sS http://127.0.0.1:3050/ | grep -q 'Invalid request' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-image-pipeline:
+    <<: *default-service
+    image: ghcr.io/tonezzz/chaba/mcp-image-pipeline:idc1-assistance
+    ports:
+      - "127.0.0.1:3053:3050"
+    environment:
+      ONE_MCP_HOST: 0.0.0.0
+      ONE_MCP_PORT: 3050
+      ONE_MCP_EXTERNAL_URL: http://127.0.0.1:3053
+      ONE_MCP_LOG_LEVEL: info
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      IMAGE_PIPELINE_ASSETS_DIR: ${IMAGE_PIPELINE_ASSETS_DIR:-/data/assets}
+      IMAGE_PIPELINE_MODEL: ${IMAGE_PIPELINE_MODEL:-imagen-4.0-generate-001}
+      IMAGE_PIPELINE_ALLOWED_MODELS: ${IMAGE_PIPELINE_ALLOWED_MODELS:-imagen-4.0-generate-001,imagen-4.0-fast-generate-001,imagen-4.0-ultra-generate-001,gemini-3.1-flash-image-preview}
+    volumes:
+      - image-pipeline-assets-dev:${IMAGE_PIPELINE_ASSETS_DIR:-/data/assets}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3050/health >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-ws-gateway:
+    <<: *default-service
+    image: node:20-alpine
+    depends_on:
+      - mcp-bundle
+    ports:
+      - "127.0.0.1:18182:8182"
+    working_dir: /app
+    command:
+      - sh
+      - -lc
+      - |
+        set -e
+
+        cat > /app/index.js <<'EOF'
+        const express = require('express');
+        const http = require('http');
+        const crypto = require('crypto');
+        const WebSocket = require('ws');
+        
+        const APP_NAME = 'mcp-ws-gateway';
+        const APP_VERSION = '0.1.0';
+        
+        const PORT = Number(process.env.PORT || 8182);
+        const WS_PATH = process.env.WS_PATH || '/ws';
+        
+        const OPENAI_GATEWAY_URL = (process.env.OPENAI_GATEWAY_URL || 'http://mcp-openai-gateway:8181').replace(/\/$/, '');
+        const MCP_AGENT_URL = (process.env.MCP_AGENT_URL || 'http://1mcp-agent:3051/mcp?app=windsurf').trim();
+        
+        function newId(prefix = 'req') {
+          return String(prefix) + '-' + String(Date.now()) + '-' + String(crypto.randomUUID?.() || Math.random().toString(16).slice(2));
+        }
+        
+        function safeJsonParse(s) {
+          try {
+            return JSON.parse(s);
+          } catch {
+            return null;
+          }
+        }
+        
+        async function mcpInitialize() {
+          const initPayload = {
+            jsonrpc: '2.0',
+            id: '1',
+            method: 'initialize',
+            params: {
+              protocolVersion: '2024-11-05',
+              capabilities: { tools: {}, resources: {}, prompts: {} },
+              clientInfo: { name: APP_NAME, version: APP_VERSION }
+            }
+          };
+        
+          const r = await fetch(MCP_AGENT_URL, {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              accept: 'application/json, text/event-stream'
+            },
+            body: JSON.stringify(initPayload)
+          });
+        
+          const sessionId = r.headers.get('mcp-session-id');
+          const text = await r.text();
+          const obj = parseStreamableJsonResponse(text);
+          if (!r.ok) {
+            throw new Error('mcp initialize failed: ' + String(r.status) + ' ' + String(text));
+          }
+          if (obj?.error) {
+            throw new Error('mcp initialize error: ' + String(JSON.stringify(obj.error)));
+          }
+          if (!sessionId) {
+            throw new Error('mcp initialize: missing mcp-session-id header');
+          }
+          return sessionId;
+        }
+        
+        function parseStreamableJsonResponse(bodyText) {
+          const trimmed = (bodyText || '').trim();
+          if (!trimmed) return null;
+        
+          if (trimmed.startsWith('{')) {
+            return safeJsonParse(trimmed);
+          }
+        
+          const lines = trimmed.split(/\r?\n/);
+          for (const line of lines) {
+            if (line.startsWith('data:')) {
+              const payload = line.replace(/^data:\s*/, '').trim();
+              const obj = safeJsonParse(payload);
+              if (obj) return obj;
+            }
+          }
+          return null;
+        }
+        
+        async function mcpToolsCall(sessionId, toolName, argumentsObj) {
+          const payload = {
+            jsonrpc: '2.0',
+            id: newId('call'),
+            method: 'tools/call',
+            params: { name: toolName, arguments: argumentsObj || {} }
+          };
+        
+          const r = await fetch(MCP_AGENT_URL, {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              accept: 'application/json, text/event-stream',
+              'mcp-session-id': sessionId
+            },
+            body: JSON.stringify(payload)
+          });
+        
+          const text = await r.text();
+          const obj = parseStreamableJsonResponse(text);
+          if (!r.ok) {
+            throw new Error('mcp tools/call failed: ' + String(r.status) + ' ' + String(text));
+          }
+          return obj;
+        }
+        
+        async function openaiChatStream({ messages, model, temperature, max_tokens, apiKey }) {
+          const url = String(OPENAI_GATEWAY_URL) + '/v1/chat/completions';
+        
+          const headers = {
+            'content-type': 'application/json',
+            accept: 'text/event-stream'
+          };
+        
+          if (apiKey) {
+            headers.authorization = 'Bearer ' + String(apiKey);
+          }
+        
+          const payload = {
+            model: model || 'glama-default',
+            messages: Array.isArray(messages) ? messages : [],
+            temperature: temperature,
+            max_tokens: max_tokens,
+            stream: true
+          };
+        
+          const r = await fetch(url, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(payload)
+          });
+        
+          if (!r.ok) {
+            const text = await r.text();
+            throw new Error('openai gateway error: ' + String(r.status) + ' ' + String(text));
+          }
+        
+          if (!r.body) {
+            throw new Error('openai gateway: missing response body');
+          }
+        
+          return r.body;
+        }
+        
+        function send(ws, obj) {
+          if (ws.readyState !== WebSocket.OPEN) return;
+          ws.send(JSON.stringify(obj));
+        }
+        
+        const app = express();
+        app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '2mb' }));
+        
+        app.get('/health', (_req, res) => {
+          res.json({
+            ok: true,
+            service: APP_NAME,
+            version: APP_VERSION,
+            wsPath: WS_PATH,
+            openaiGatewayUrl: OPENAI_GATEWAY_URL,
+            mcpAgentUrl: MCP_AGENT_URL
+          });
+        });
+        
+        const server = http.createServer(app);
+        const wss = new WebSocket.Server({ server, path: WS_PATH });
+        
+        wss.on('connection', async (ws, req) => {
+          const connId = newId('conn');
+          ws._connId = connId;
+        
+          send(ws, { type: 'hello', connId, server: { name: APP_NAME, version: APP_VERSION } });
+        
+          const mcpSessionPromise = (async () => {
+            try {
+              const sessionId = await mcpInitialize();
+              send(ws, { type: 'mcp.ready' });
+              return sessionId;
+            } catch (e) {
+              send(ws, { type: 'mcp.error', error: { message: 'MCP init failed: ' + String(e && e.message ? e.message : e) } });
+              return null;
+            }
+          })();
+        
+          ws.on('message', async (data) => {
+            const raw = data.toString('utf-8');
+            const msg = safeJsonParse(raw);
+            if (!msg || typeof msg.type !== 'string') {
+              return send(ws, { type: 'error', error: { message: 'Invalid message (expected JSON with type)' } });
+            }
+        
+            const requestId = msg.requestId || newId('ws');
+        
+            if (msg.type === 'chat.start') {
+              send(ws, { type: 'chat.start.ack', requestId });
+              try {
+                const bodyStream = await openaiChatStream({
+                  messages: msg.messages,
+                  model: msg.model,
+                  temperature: msg.temperature,
+                  max_tokens: msg.max_tokens,
+                  apiKey: msg.apiKey
+                });
+        
+                const reader = bodyStream.getReader();
+                const decoder = new TextDecoder();
+                let buf = '';
+        
+                for (;;) {
+                  const { value, done } = await reader.read();
+                  if (done) break;
+        
+                  buf += decoder.decode(value, { stream: true });
+                  const parts = buf.split(/\r?\n/);
+                  buf = parts.pop() || '';
+        
+                  for (const line of parts) {
+                    if (!line.startsWith('data:')) continue;
+                    const payload = line.replace(/^data:\s*/, '').trim();
+                    if (!payload) continue;
+                    if (payload === '[DONE]') {
+                      send(ws, { type: 'chat.done', requestId });
+                      continue;
+                    }
+        
+                    const obj = safeJsonParse(payload);
+                    if (!obj) continue;
+        
+                    const delta = obj?.choices?.[0]?.delta?.content;
+                    if (typeof delta === 'string' && delta.length) {
+                      send(ws, { type: 'chat.token', requestId, delta });
+                    }
+        
+                    const toolCalls = obj?.choices?.[0]?.delta?.tool_calls;
+                    if (toolCalls) {
+                      send(ws, { type: 'chat.tool_calls.delta', requestId, toolCalls });
+                    }
+                  }
+                }
+              } catch (e) {
+                send(ws, { type: 'chat.error', requestId, error: { message: e.message } });
+              }
+              return;
+            }
+        
+            if (msg.type === 'tools.call') {
+              const mcpSessionId = await mcpSessionPromise;
+              if (!mcpSessionId) {
+                return send(ws, { type: 'tools.error', requestId, error: { message: 'MCP not initialized' } });
+              }
+              const toolName = msg.name;
+              if (!toolName) {
+                return send(ws, { type: 'tools.error', requestId, error: { message: 'Missing tool name' } });
+              }
+        
+              send(ws, { type: 'tool.start', requestId, name: toolName, arguments: msg.arguments || {} });
+              try {
+                const result = await mcpToolsCall(mcpSessionId, toolName, msg.arguments || {});
+                send(ws, { type: 'tool.done', requestId, name: toolName, result });
+              } catch (e) {
+                send(ws, { type: 'tool.error', requestId, name: toolName, error: { message: e.message } });
+              }
+              return;
+            }
+        
+            if (msg.type === 'task.poll') {
+              return send(ws, { type: 'task.poll.ack', requestId });
+            }
+        
+            return send(ws, { type: 'error', requestId, error: { message: 'Unknown message type: ' + String(msg.type) } });
+          });
+        
+          ws.on('close', () => {});
+        });
+        
+        server.listen(PORT, '0.0.0.0', () => {
+          console.log('[' + String(APP_NAME) + '] listening on 0.0.0.0:' + String(PORT) + ' (ws: ' + String(WS_PATH) + ')');
+        });
+        EOF
+
+        if [ ! -f /app/package.json ]; then
+          npm init -y >/dev/null 2>&1
+        fi
+        if [ ! -d /app/node_modules ]; then
+          npm install --silent express ws
+        fi
+        exec node /app/index.js
+    environment:
+      PORT: 8182
+      WS_PATH: /ws
+      MCP_AGENT_URL: http://mcp-bundle:3050/mcp?app=windsurf
+      OPENAI_GATEWAY_URL: ${OPENAI_GATEWAY_URL:-http://mcp-openai-gateway:8181}
+    volumes:
+      - mcp-ws-gateway-data-dev:/app
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8182/health >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-ws-gateway-portainer:
+    <<: *default-service
+    image: node:20-alpine
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:18183:8182"
+    working_dir: /app
+    command:
+      - sh
+      - -lc
+      - |
+        set -e
+
+        cat > /app/index.js <<'EOF'
+        const express = require('express');
+        const http = require('http');
+        const crypto = require('crypto');
+        const WebSocket = require('ws');
+        
+        const APP_NAME = 'mcp-ws-gateway';
+        const APP_VERSION = '0.1.0';
+        
+        const PORT = Number(process.env.PORT || 8182);
+        const WS_PATH = process.env.WS_PATH || '/ws';
+        
+        const OPENAI_GATEWAY_URL = (process.env.OPENAI_GATEWAY_URL || 'http://mcp-openai-gateway:8181').replace(/\/$/, '');
+        const MCP_AGENT_URL = (process.env.MCP_AGENT_URL || 'http://1mcp-agent:3051/mcp?app=windsurf').trim();
+        
+        function newId(prefix = 'req') {
+          return String(prefix) + '-' + String(Date.now()) + '-' + String(crypto.randomUUID?.() || Math.random().toString(16).slice(2));
+        }
+        
+        function safeJsonParse(s) {
+          try {
+            return JSON.parse(s);
+          } catch {
+            return null;
+          }
+        }
+        
+        async function mcpInitialize() {
+          const initPayload = {
+            jsonrpc: '2.0',
+            id: '1',
+            method: 'initialize',
+            params: {
+              protocolVersion: '2024-11-05',
+              capabilities: { tools: {}, resources: {}, prompts: {} },
+              clientInfo: { name: APP_NAME, version: APP_VERSION }
+            }
+          };
+        
+          const r = await fetch(MCP_AGENT_URL, {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              accept: 'application/json, text/event-stream'
+            },
+            body: JSON.stringify(initPayload)
+          });
+        
+          const sessionId = r.headers.get('mcp-session-id');
+          const text = await r.text();
+          const obj = parseStreamableJsonResponse(text);
+          if (!r.ok) {
+            throw new Error('mcp initialize failed: ' + String(r.status) + ' ' + String(text));
+          }
+          if (obj?.error) {
+            throw new Error('mcp initialize error: ' + String(JSON.stringify(obj.error)));
+          }
+          if (!sessionId) {
+            throw new Error('mcp initialize: missing mcp-session-id header');
+          }
+          return sessionId;
+        }
+        
+        function parseStreamableJsonResponse(bodyText) {
+          const trimmed = (bodyText || '').trim();
+          if (!trimmed) return null;
+        
+          if (trimmed.startsWith('{')) {
+            return safeJsonParse(trimmed);
+          }
+        
+          const lines = trimmed.split(/\r?\n/);
+          for (const line of lines) {
+            if (line.startsWith('data:')) {
+              const payload = line.replace(/^data:\s*/, '').trim();
+              const obj = safeJsonParse(payload);
+              if (obj) return obj;
+            }
+          }
+          return null;
+        }
+        
+        async function mcpToolsCall(sessionId, toolName, argumentsObj) {
+          const payload = {
+            jsonrpc: '2.0',
+            id: newId('call'),
+            method: 'tools/call',
+            params: { name: toolName, arguments: argumentsObj || {} }
+          };
+        
+          const r = await fetch(MCP_AGENT_URL, {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              accept: 'application/json, text/event-stream',
+              'mcp-session-id': sessionId
+            },
+            body: JSON.stringify(payload)
+          });
+        
+          const text = await r.text();
+          const obj = parseStreamableJsonResponse(text);
+          if (!r.ok) {
+            throw new Error('mcp tools/call failed: ' + String(r.status) + ' ' + String(text));
+          }
+          return obj;
+        }
+        
+        async function openaiChatStream({ messages, model, temperature, max_tokens, apiKey }) {
+          const url = String(OPENAI_GATEWAY_URL) + '/v1/chat/completions';
+        
+          const headers = {
+            'content-type': 'application/json',
+            accept: 'text/event-stream'
+          };
+        
+          if (apiKey) {
+            headers.authorization = 'Bearer ' + String(apiKey);
+          }
+        
+          const payload = {
+            model: model || 'glama-default',
+            messages: Array.isArray(messages) ? messages : [],
+            temperature: temperature,
+            max_tokens: max_tokens,
+            stream: true
+          };
+        
+          const r = await fetch(url, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(payload)
+          });
+        
+          if (!r.ok) {
+            const text = await r.text();
+            throw new Error('openai gateway error: ' + String(r.status) + ' ' + String(text));
+          }
+        
+          if (!r.body) {
+            throw new Error('openai gateway: missing response body');
+          }
+        
+          return r.body;
+        }
+        
+        function send(ws, obj) {
+          if (ws.readyState !== WebSocket.OPEN) return;
+          ws.send(JSON.stringify(obj));
+        }
+        
+        const app = express();
+        app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '2mb' }));
+        
+        app.get('/health', (_req, res) => {
+          res.json({
+            ok: true,
+            service: APP_NAME,
+            version: APP_VERSION,
+            wsPath: WS_PATH,
+            openaiGatewayUrl: OPENAI_GATEWAY_URL,
+            mcpAgentUrl: MCP_AGENT_URL
+          });
+        });
+        
+        const server = http.createServer(app);
+        const wss = new WebSocket.Server({ server, path: WS_PATH });
+        
+        wss.on('connection', async (ws, req) => {
+          const connId = newId('conn');
+          ws._connId = connId;
+        
+          send(ws, { type: 'hello', connId, server: { name: APP_NAME, version: APP_VERSION } });
+        
+          const mcpSessionPromise = (async () => {
+            try {
+              const sessionId = await mcpInitialize();
+              send(ws, { type: 'mcp.ready' });
+              return sessionId;
+            } catch (e) {
+              send(ws, { type: 'mcp.error', error: { message: 'MCP init failed: ' + String(e && e.message ? e.message : e) } });
+              return null;
+            }
+          })();
+        
+          ws.on('message', async (data) => {
+            const raw = data.toString('utf-8');
+            const msg = safeJsonParse(raw);
+            if (!msg || typeof msg.type !== 'string') {
+              return send(ws, { type: 'error', error: { message: 'Invalid message (expected JSON with type)' } });
+            }
+        
+            const requestId = msg.requestId || newId('ws');
+        
+            if (msg.type === 'chat.start') {
+              send(ws, { type: 'chat.start.ack', requestId });
+              try {
+                const bodyStream = await openaiChatStream({
+                  messages: msg.messages,
+                  model: msg.model,
+                  temperature: msg.temperature,
+                  max_tokens: msg.max_tokens,
+                  apiKey: msg.apiKey
+                });
+        
+                const reader = bodyStream.getReader();
+                const decoder = new TextDecoder();
+                let buf = '';
+        
+                for (;;) {
+                  const { value, done } = await reader.read();
+                  if (done) break;
+        
+                  buf += decoder.decode(value, { stream: true });
+                  const parts = buf.split(/\r?\n/);
+                  buf = parts.pop() || '';
+        
+                  for (const line of parts) {
+                    if (!line.startsWith('data:')) continue;
+                    const payload = line.replace(/^data:\s*/, '').trim();
+                    if (!payload) continue;
+                    if (payload === '[DONE]') {
+                      send(ws, { type: 'chat.done', requestId });
+                      continue;
+                    }
+        
+                    const obj = safeJsonParse(payload);
+                    if (!obj) continue;
+        
+                    const delta = obj?.choices?.[0]?.delta?.content;
+                    if (typeof delta === 'string' && delta.length) {
+                      send(ws, { type: 'chat.token', requestId, delta });
+                    }
+        
+                    const toolCalls = obj?.choices?.[0]?.delta?.tool_calls;
+                    if (toolCalls) {
+                      send(ws, { type: 'chat.tool_calls.delta', requestId, toolCalls });
+                    }
+                  }
+                }
+              } catch (e) {
+                send(ws, { type: 'chat.error', requestId, error: { message: e.message } });
+              }
+              return;
+            }
+        
+            if (msg.type === 'tools.call') {
+              const mcpSessionId = await mcpSessionPromise;
+              if (!mcpSessionId) {
+                return send(ws, { type: 'tools.error', requestId, error: { message: 'MCP not initialized' } });
+              }
+              const toolName = msg.name;
+              if (!toolName) {
+                return send(ws, { type: 'tools.error', requestId, error: { message: 'Missing tool name' } });
+              }
+        
+              send(ws, { type: 'tool.start', requestId, name: toolName, arguments: msg.arguments || {} });
+              try {
+                const result = await mcpToolsCall(mcpSessionId, toolName, msg.arguments || {});
+                send(ws, { type: 'tool.done', requestId, name: toolName, result });
+              } catch (e) {
+                send(ws, { type: 'tool.error', requestId, name: toolName, error: { message: e.message } });
+              }
+              return;
+            }
+        
+            if (msg.type === 'task.poll') {
+              return send(ws, { type: 'task.poll.ack', requestId });
+            }
+        
+            return send(ws, { type: 'error', requestId, error: { message: 'Unknown message type: ' + String(msg.type) } });
+          });
+        
+          ws.on('close', () => {});
+        });
+        
+        server.listen(PORT, '0.0.0.0', () => {
+          console.log('[' + String(APP_NAME) + '] listening on 0.0.0.0:' + String(PORT) + ' (ws: ' + String(WS_PATH) + ')');
+        });
+        EOF
+
+        if [ ! -f /app/package.json ]; then
+          npm init -y >/dev/null 2>&1
+        fi
+        if [ ! -d /app/node_modules ]; then
+          npm install --silent express ws
+        fi
+        exec node /app/index.js
+    environment:
+      PORT: 8182
+      WS_PATH: /ws
+      MCP_AGENT_URL: http://host.docker.internal:3052/mcp?app=windsurf
+      OPENAI_GATEWAY_URL: ${OPENAI_GATEWAY_URL:-http://mcp-openai-gateway:8181}
+    volumes:
+      - mcp-ws-gateway-portainer-data:/app
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8182/health >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  web-fetcher:
+    <<: *default-service
+    image: ghcr.io/tonezzz/chaba/web-fetcher:idc1-assistance
+    environment:
+      PORT: 8028
+      WEB_FETCH_MAX_BYTES: ${WEB_FETCH_MAX_BYTES:-2000000}
+      WEB_FETCH_MAX_REDIRECTS: ${WEB_FETCH_MAX_REDIRECTS:-5}
+      WEB_FETCH_CONNECT_TIMEOUT_S: ${WEB_FETCH_CONNECT_TIMEOUT_S:-5}
+      WEB_FETCH_READ_TIMEOUT_S: ${WEB_FETCH_READ_TIMEOUT_S:-15}
+      WEB_FETCH_ALLOWED_CONTENT_TYPES: ${WEB_FETCH_ALLOWED_CONTENT_TYPES:-text/html,text/plain,application/json}
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8028/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  jarvis-frontend:
+    <<: *default-service
+    image: ghcr.io/tonezzz/chaba/jarvis-frontend:idc1-assistance
+    ports:
+      - "127.0.0.1:28080:80"
+
+  weaviate:
+    <<: *default-service
+    image: semitechnologies/weaviate:1.24.10
+    environment:
+      QUERY_DEFAULTS_LIMIT: 50
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: "/var/lib/weaviate"
+      DEFAULT_VECTORIZER_MODULE: "none"
+      ENABLE_MODULES: ""
+      CLUSTER_HOSTNAME: "node1"
+    volumes:
+      - weaviate-data-dev:/var/lib/weaviate
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/v1/.well-known/ready >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  idc1-assistance-dev-net:
+    driver: bridge
+
+  idc1-portainer_default:
+    external: true
+    name: idc1-portainer_default
+
+volumes:
+  mcp-bundle-data-dev:
+  mcp-bundle-cache-dev:
+  mcp-bundle-config-dev:
+  jarvis-imagen-assets-dev:
+  jarvis-session-db-dev:
+  deep-research-worker-data-dev:
+  mcp-ws-gateway-data-dev:
+  mcp-ws-gateway-portainer-data:
+  weaviate-data-dev:
+  image-pipeline-assets-dev:
