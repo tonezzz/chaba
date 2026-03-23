@@ -202,8 +202,61 @@ PY
     head -c 1500 /tmp/portainer_git_redeploy.json 2>/dev/null || true
     echo >&2
 
+    if [[ "${ALLOW_GIT_DETACH_FALLBACK:-0}" == "1" || "${ALLOW_GIT_DETACH_FALLBACK:-0}" == "true" || "${ALLOW_GIT_DETACH_FALLBACK:-0}" == "yes" ]]; then
+      if [[ ! -f "${compose_file}" ]]; then
+        echo "[deploy] ERROR: compose_file not found on disk: ${compose_file}" >&2
+        return 1
+      fi
+
+      echo "[deploy] Falling back to file-based stack update (this will detach the stack from Git)." >&2
+
+      python3 - <<'PY'
+import json
+import os
+
+compose_file=os.environ.get('COMPOSE_FILE')
+if not compose_file:
+    raise SystemExit('COMPOSE_FILE not set')
+
+with open('/tmp/portainer_stack_inspect.json','r',encoding='utf-8') as f:
+    inspect_obj=json.load(f)
+
+with open(compose_file,'r',encoding='utf-8') as f:
+    stack_file=f.read()
+
+env_list=inspect_obj.get('Env') or []
+
+out={
+  'StackFileContent': stack_file,
+  'Env': env_list,
+  'Prune': True,
+  'RepullImageAndRedeploy': True,
+}
+
+with open('/tmp/portainer_stack_update_payload.json','w',encoding='utf-8') as f:
+    json.dump(out,f)
+PY
+
+      http_code="$(curl -sS -k --max-time 120 -o /tmp/portainer_stack_update.json -w '%{http_code}' \
+        -X PUT \
+        -H "X-API-Key: ${portainer_api_key}" \
+        -H 'Content-Type: application/json' \
+        "${base}/api/stacks/${stack_id}?endpointId=${portainer_endpoint_id}" \
+        --data-binary @/tmp/portainer_stack_update_payload.json)"
+
+      if [[ "${http_code}" != "200" ]]; then
+        echo "[deploy] ERROR: Portainer stack update returned http=${http_code}" >&2
+        head -c 1500 /tmp/portainer_stack_update.json 2>/dev/null || true
+        echo
+        return 1
+      fi
+
+      echo "[deploy] Portainer stack update OK (http=${http_code})" >&2
+      return 0
+    fi
+
     echo "[deploy] Action: redeploy via Portainer UI (Pull and redeploy)." >&2
-    echo "[deploy] Note: this script will not fall back to file-based redeploy for Git-backed stacks." >&2
+    echo "[deploy] Note: set ALLOW_GIT_DETACH_FALLBACK=1 to allow this script to detach and redeploy as a file-based stack." >&2
     return 1
   fi
 
