@@ -2122,6 +2122,8 @@ services:
                 res.statusCode = r.status;
                 const ct = r.headers.get('content-type');
                 if (ct) res.setHeader('content-type', ct);
+                const sid = r.headers.get('mcp-session-id');
+                if (sid) res.setHeader('mcp-session-id', sid);
                 const out = Buffer.from(await r.arrayBuffer());
                 res.end(out);
                 return;
