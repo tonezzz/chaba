@@ -9,6 +9,10 @@ Jarvis requires these environment variables:
 - `CHABA_SYSTEM_SPREADSHEET_ID`
 - `CHABA_SYSTEM_SHEET_NAME`
 
+Notes:
+- Effective deployed base URL + operator procedures: `services/assistance/docs/ACTION.md`
+- Runtime endpoints: `GET /openapi.json`
+
 ## System KV keys
 
 ### `system.sheets` (required)
@@ -183,16 +187,10 @@ Jarvis has two daily logs:
 
 ### Backend endpoints
 
-- `POST /jarvis/logs/ui/append`
-  - Body: `{ "entries": [ ... ] }` (each entry is a JSON object)
-- `GET /jarvis/logs/ui/today?max_bytes=200000`
-- `GET /jarvis/logs/ws/today?max_bytes=200000`
+SSOT:
 
-Non-`/jarvis` aliases also exist:
-
-- `/logs/ui/append`
-- `/logs/ui/today`
-- `/logs/ws/today`
+- Operator runbooks: `services/assistance/docs/ACTION.md`
+- Runtime API surface: `GET /openapi.json` (deployed base URL is documented in `ACTION.md`)
 
 ### Backend storage
 

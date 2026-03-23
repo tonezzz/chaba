@@ -135,6 +135,11 @@ Enable gate (one-time per environment):
 - Set sys_kv key:
   - `github.issues.write.enabled=true`
 
+Note:
+- Public base URL for backend HTTP calls is `https://assistance.idc1.surf-thailand.com/jarvis/api`.
+- After you change sys_kv values (via WS `sys_kv_set`), refresh the running instance cache:
+  - `POST /sys_kv/reload`
+
 Endpoints:
 - Search:
   - `POST /github/issues/search`
