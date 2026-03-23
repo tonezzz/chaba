@@ -240,11 +240,22 @@ PY
       fi
 
       echo "[deploy] Ensuring Portainer stack entrypoint exists: /data/compose/${stack_id}/${entrypoint_path}" >&2
+      entrypoint_dir="$(python3 - <<'PY'
+import os
+import sys
+ep=sys.argv[1] if len(sys.argv) > 1 else ''
+print(os.path.dirname(ep) if ep else '')
+PY
+        "${entrypoint_path}"
+      )"
       docker run --rm \
         --volumes-from "${portainer_container_name}" \
         -v "$(readlink -f "${compose_file}"):/tmp/stack-compose.yml:ro" \
         alpine:3.20 \
-        sh -lc "set -e; mkdir -p \"/data/compose/${stack_id}/$(dirname \"${entrypoint_path}\")\"; cp /tmp/stack-compose.yml \"/data/compose/${stack_id}/${entrypoint_path}\""
+        sh -lc 'set -e; mkdir -p "/data/compose/${STACK_ID}/${ENTRYPOINT_DIR}"; cp /tmp/stack-compose.yml "/data/compose/${STACK_ID}/${ENTRYPOINT_PATH}"' \
+        -e "STACK_ID=${stack_id}" \
+        -e "ENTRYPOINT_PATH=${entrypoint_path}" \
+        -e "ENTRYPOINT_DIR=${entrypoint_dir}"
 
       python3 - <<'PY'
 import json
