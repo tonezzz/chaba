@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-compose_file="stacks/idc1-assistance/docker-compose.yml"
+# Default to the dev stack because prod is Git-backed and may require manual UI changes.
+# Override via COMPOSE_FILE/PORTAINER_STACK_NAME/HEALTHCHECK_URL when needed.
+compose_file="${COMPOSE_FILE:-stacks/idc1-assistance-dev/docker-compose.yml}"
 repo="tonezzz/chaba"
 workflow_name="Publish (idc1-assistance)"
 branch="idc1-assistance"
@@ -16,7 +18,10 @@ branch="idc1-assistance"
 portainer_url="${PORTAINER_URL:-}"
 portainer_api_key="${PORTAINER_API_KEY:-}"
 portainer_endpoint_id="${PORTAINER_ENDPOINT_ID:-2}"
-portainer_stack_name="${PORTAINER_STACK_NAME:-idc1-assistance}"
+portainer_stack_name="${PORTAINER_STACK_NAME:-idc1-assistance-dev}"
+
+healthcheck_url="${HEALTHCHECK_URL:-http://127.0.0.1:28018/health}"
+healthcheck_container_name="${HEALTHCHECK_CONTAINER_NAME:-${portainer_stack_name}-jarvis-backend-1}"
 
 # Convenience: allow using the same token used by the local Portainer MCP stack.
 # - `PORTAINER_TOKEN` is treated as an alias of `PORTAINER_API_KEY`.
@@ -54,7 +59,7 @@ get_container_id() {
   fi
 
   # Fallback: explicit container name convention used by this stack
-  cid="$(docker ps --filter "name=^/idc1-assistance-${service}-1$" --format '{{.ID}}' | head -n 1)"
+  cid="$(docker ps --filter "name=^/${portainer_stack_name}-${service}-1$" --format '{{.ID}}' | head -n 1)"
   if [[ -n "${cid}" ]]; then
     echo "${cid}"
     return 0
@@ -329,8 +334,9 @@ while IFS=$'\t' read -r svc_name img_ref; do
 done < <(python3 - <<'PY'
 import json
 import subprocess
+import os
 
-compose_file = "stacks/idc1-assistance/docker-compose.yml"
+compose_file = os.environ.get("COMPOSE_FILE") or "stacks/idc1-assistance-dev/docker-compose.yml"
 cp = subprocess.run(
     ["docker", "compose", "-f", compose_file, "config", "--format", "json"],
     check=True,
@@ -398,12 +404,12 @@ for s in "${changed_services[@]}"; do
 done
 
 echo "[deploy] Health check (best-effort)..."
-# Jarvis backend is published to localhost:18018 by stack config. If it exists, check it.
-if curl -fsS "http://127.0.0.1:18018/health" >/dev/null 2>&1; then
+# If it exists, check it.
+if curl -fsS "${healthcheck_url}" >/dev/null 2>&1; then
   echo "[deploy] jarvis-backend health OK"
 else
   echo "[deploy] WARN: jarvis-backend health not OK yet; tailing logs (last ${window_seconds}s)" >&2
-  docker logs --since "${window_seconds}s" --tail 400 idc1-assistance-jarvis-backend-1 2>/dev/null || true
+  docker logs --since "${window_seconds}s" --tail 400 "${healthcheck_container_name}" 2>/dev/null || true
 fi
 
 echo "[deploy] Done."
