@@ -1056,6 +1056,29 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             ]
             preview["summary"] = f"publish macro '{macro_name}' + system_reload (mode={mode})"
             preview["details"] = {"macro": {"name": macro_name}, "reload_mode": mode}
+        elif action == "google_account_relink" and isinstance(payload, dict):
+            auth_url = str(payload.get("auth_url") or "").strip()
+            redirect_uri = str(payload.get("redirect_uri") or "").strip()
+            token_path = str(payload.get("token_path") or "").strip()
+            scopes = payload.get("scopes") if isinstance(payload.get("scopes"), list) else None
+            preview["risk"] = "high"
+            preview["writes_count"] = 0
+            preview["targets"] = [
+                {
+                    "kind": "google",
+                    "action": "oauth_relink",
+                    "token_path": token_path,
+                }
+            ]
+            preview["summary"] = "google_account_relink"
+            preview["details"] = {
+                "provider": "google",
+                "auth_url": auth_url,
+                "redirect_uri": redirect_uri,
+                "token_path": token_path,
+                "scopes": scopes or [],
+                "instructions": "Open auth_url, approve consent, then paste the redirected URL (or code) into confirm input.",
+            }
         else:
             preview["risk"] = "high"
             preview["summary"] = action or "pending"
@@ -1086,6 +1109,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         confirmation_id = str(args.get("confirmation_id") or "").strip()
         if not confirmation_id:
             raise HTTPException(status_code=400, detail="missing_confirmation_id")
+        user_input = args.get("input") if isinstance(args.get("input"), dict) else {}
         pending = pop_pending_write(session_id, confirmation_id)
         if not pending:
             raise HTTPException(status_code=404, detail="pending_write_not_found")
@@ -1300,6 +1324,16 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                 "reload_mode": reload_mode,
                 "reload_result": reload_result,
             }
+
+        if action == "google_account_relink":
+            if not isinstance(payload, dict):
+                raise HTTPException(status_code=400, detail="invalid_pending_payload")
+            code_or_url = str(user_input.get("code_or_redirected_url") or "").strip()
+            if not code_or_url:
+                raise HTTPException(status_code=400, detail="missing_code_or_redirected_url")
+            res = await mcp_tools_call("google_account_relink_finish", {"code_or_redirected_url": code_or_url})
+            parsed = mcp_text_json(res)
+            return parsed if isinstance(parsed, dict) else {"ok": True, "result": parsed}
         if action == "mcp_tools_call":
             if not isinstance(payload, dict):
                 raise HTTPException(status_code=400, detail="invalid_pending_payload")

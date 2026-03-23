@@ -13058,7 +13058,7 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
             "description": "Confirm and execute a queued pending action.",
             "parameters": {
                 "type": "object",
-                "properties": {"confirmation_id": {"type": "string"}},
+                "properties": {"confirmation_id": {"type": "string"}, "input": {"type": "object"}},
                 "required": ["confirmation_id"],
             },
         }
@@ -14099,6 +14099,41 @@ async def ws_live(ws: WebSocket) -> None:
                 "sheet_name_env": "CHABA_SYSTEM_SHEET_NAME",
                 "mcp_base_url": str(os.getenv("MCP_BASE_URL") or "http://mcp-bundle:3050").strip() or "http://mcp-bundle:3050",
             }
+
+            # If Google OAuth refresh token is invalid, auto-queue a relink job so operators can
+            # complete re-auth via Pending canvas.
+            try:
+                err_txt = str(e)
+                should_queue = "invalid_grant" in err_txt or "Token has been expired or revoked" in err_txt
+                if should_queue and session_id:
+                    existing = []
+                    try:
+                        existing = _list_pending_writes(str(session_id))
+                    except Exception:
+                        existing = []
+                    already = False
+                    for it in existing:
+                        if isinstance(it, dict) and str(it.get("action") or "") == "google_account_relink":
+                            already = True
+                            break
+                    if not already:
+                        begin_res = await _mcp_tools_call("google_account_relink_begin", {})
+                        begin_parsed = _mcp_text_json(begin_res)
+                        if isinstance(begin_parsed, dict):
+                            payload = {
+                                "provider": "google",
+                                "auth_url": str(begin_parsed.get("auth_url") or "").strip(),
+                                "redirect_uri": str(begin_parsed.get("redirect_uri") or "").strip(),
+                                "token_path": str(begin_parsed.get("token_path") or "").strip(),
+                                "scopes": begin_parsed.get("scopes") if isinstance(begin_parsed.get("scopes"), list) else [],
+                                "error": err_txt,
+                            }
+                            try:
+                                _create_pending_write(str(session_id), "google_account_relink", payload)
+                            except Exception:
+                                pass
+            except Exception:
+                pass
             try:
                 await _ws_send_json(
                     ws,

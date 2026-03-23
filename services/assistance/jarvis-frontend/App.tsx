@@ -185,6 +185,8 @@ export default function App() {
     return `${y}-${m}-${dd}`;
   }, []);
 
+  const [pendingAuthCode, setPendingAuthCode] = useState<string>("");
+
   const uiLogStorageKey = useCallback((): string => {
     return `jarvis_ui_log_${todayLocalYmd()}`;
   }, [todayLocalYmd]);
@@ -325,7 +327,9 @@ export default function App() {
     setPendingActionBusy(true);
     setPendingErr("");
     try {
-      const res = await liveService.current?.invokeTool("pending_confirm", { confirmation_id: cid });
+      const isAuth = String(pendingPreview?.action || "") === "google_account_relink";
+      const input = isAuth ? { code_or_redirected_url: String(pendingAuthCode || "").trim() } : undefined;
+      const res = await liveService.current?.invokeTool("pending_confirm", input ? { confirmation_id: cid, input } : { confirmation_id: cid });
       setPendingActionResult(res);
       await refreshPending();
     } catch (e: any) {
@@ -333,7 +337,7 @@ export default function App() {
     } finally {
       setPendingActionBusy(false);
     }
-  }, [refreshPending]);
+  }, [pendingAuthCode, pendingPreview?.action, refreshPending]);
 
   const cancelPending = useCallback(async (confirmationId: string) => {
     const cid = String(confirmationId || "").trim();
@@ -2230,6 +2234,36 @@ return (
                                            <pre className="text-[11px] font-mono text-slate-300 whitespace-pre-wrap">{JSON.stringify(pendingPreview, null, 2)}</pre>
                                          </div>
                                        )}
+
+                                       {pendingPreview && String(pendingPreview.action || "") === "google_account_relink" && (
+                                         <div className="border border-slate-800 rounded-lg bg-slate-950/10 px-3 py-2">
+                                           <div className="text-[10px] font-mono text-slate-500 mb-2">google relink</div>
+                                           <div className="text-[11px] font-mono text-slate-300 mb-2 break-words">{String((pendingPreview as any)?.details?.auth_url || "")}</div>
+                                           <div className="flex items-center gap-2 mb-3 flex-wrap">
+                                             <button
+                                               onClick={() => void copyPendingJson(String((pendingPreview as any)?.details?.auth_url || ""))}
+                                               className="text-[11px] font-mono px-2 py-1 rounded border border-slate-700 bg-slate-950/30 text-slate-300 hover:bg-slate-800/40"
+                                             >
+                                               copy url
+                                             </button>
+                                             <a
+                                               href={String((pendingPreview as any)?.details?.auth_url || "")}
+                                               target="_blank"
+                                               rel="noopener noreferrer"
+                                               className="text-[11px] font-mono px-2 py-1 rounded border border-cyan-700/40 bg-cyan-950/20 text-cyan-200 hover:bg-cyan-900/30"
+                                             >
+                                               open url
+                                             </a>
+                                           </div>
+                                           <input
+                                             value={pendingAuthCode}
+                                             onChange={(e) => setPendingAuthCode(e.target.value)}
+                                             placeholder="Paste redirected URL (or code)"
+                                             className="w-full px-3 py-2 rounded-lg text-xs font-mono bg-slate-950 border border-slate-800 text-slate-200 placeholder:text-slate-600"
+                                           />
+                                         </div>
+                                       )}
+
                                        {pendingActionResult != null && (
                                          <div className="border border-slate-800 rounded-lg bg-slate-950/10 px-3 py-2">
                                            <div className="flex items-center justify-between gap-2 mb-2">

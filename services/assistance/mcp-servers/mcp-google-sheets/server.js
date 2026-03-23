@@ -109,6 +109,72 @@ async function httpForm(url, formObj) {
   return obj;
 }
 
+function buildAuthUrl() {
+  requireClientId();
+  const redirect_uri = "http://127.0.0.1:53682/oauth2callback";
+  const qs = new URLSearchParams({
+    client_id: CLIENT_ID,
+    redirect_uri,
+    response_type: "code",
+    scope: SCOPES.join(" "),
+    access_type: "offline",
+    prompt: "consent",
+  });
+  const auth_url = GOOGLE_AUTH_URL + "?" + qs.toString();
+  return { auth_url, redirect_uri };
+}
+
+function parseAuthCode(codeOrUrl) {
+  const raw = String(codeOrUrl || "").trim();
+  if (!raw) return "";
+  let code = raw;
+  try {
+    if (raw.startsWith("http://") || raw.startsWith("https://")) {
+      const u = new URL(raw);
+      code = u.searchParams.get("code") || "";
+    }
+  } catch {
+    // ignore
+  }
+  return String(code || "").trim();
+}
+
+async function exchangeAuthCodeToTokens(code) {
+  requireClientId();
+  ensureTokenDir();
+  const redirect_uri = "http://127.0.0.1:53682/oauth2callback";
+  const tok = await httpForm(GOOGLE_TOKEN_URL, {
+    client_id: CLIENT_ID,
+    client_secret: CLIENT_SECRET || undefined,
+    code,
+    redirect_uri,
+    grant_type: "authorization_code",
+  });
+
+  const access_token = tok.access_token;
+  const refresh_token = tok.refresh_token;
+  const expires_in = Number(tok.expires_in || 0);
+  const scope = tok.scope;
+  const token_type = tok.token_type;
+
+  if (!access_token) {
+    const e = new Error("token_missing_access_token");
+    e.details = { tok };
+    throw e;
+  }
+
+  const tokens = {
+    access_token,
+    refresh_token,
+    token_type,
+    scope,
+    expires_at: expires_in ? secondsNow() + expires_in : null,
+    updated_at: nowIso(),
+  };
+  writeTokens(tokens);
+  return { token_path: TOKEN_PATH, updated_at: tokens.updated_at };
+}
+
 async function sheetsPutJson(pathname, query, bodyObj) {
   const token = await getValidAccessToken();
   const url = new URL(GOOGLE_SHEETS_API_BASE + pathname);
@@ -361,6 +427,25 @@ const TOOLS = [
           description: "If true, include raw token JSON in the response (not recommended).",
         },
       },
+    },
+  },
+  {
+    name: "google_account_relink_begin",
+    description: "Begin a Google Account OAuth relink flow (shared tokens used by Sheets/Calendar/Tasks). Returns an auth URL.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
+    name: "google_account_relink_finish",
+    description: "Finish a Google Account OAuth relink flow by exchanging an auth code for tokens and persisting them (does not return secrets).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        code_or_redirected_url: { type: "string", description: "Paste either the auth code or the full redirected URL containing ?code=..." },
+      },
+      required: ["code_or_redirected_url"],
     },
   },
   {
@@ -668,6 +753,44 @@ async function handleRpc(msg) {
         out.raw_tokens = tokens;
       }
 
+      return {
+        jsonrpc: "2.0",
+        id,
+        result: {
+          content: [{ type: "text", text: JSON.stringify(out) }],
+        },
+      };
+    }
+
+    if (name === "google_account_relink_begin") {
+      const { auth_url, redirect_uri } = buildAuthUrl();
+      const out = {
+        ok: true,
+        auth_url,
+        redirect_uri,
+        token_path: TOKEN_PATH,
+        scopes: SCOPES,
+        client_id_present: Boolean(CLIENT_ID),
+      };
+      return {
+        jsonrpc: "2.0",
+        id,
+        result: {
+          content: [{ type: "text", text: JSON.stringify(out) }],
+        },
+      };
+    }
+
+    if (name === "google_account_relink_finish") {
+      const codeRaw = typeof args.code_or_redirected_url === "string" ? args.code_or_redirected_url : "";
+      const code = parseAuthCode(codeRaw);
+      if (!code) throw new Error("missing_auth_code");
+      const saved = await exchangeAuthCodeToTokens(code);
+      const out = {
+        ok: true,
+        token_path: saved.token_path,
+        updated_at: saved.updated_at,
+      };
       return {
         jsonrpc: "2.0",
         id,
