@@ -2018,7 +2018,7 @@ services:
           const env = { ...process.env, ONE_MCP_PORT: String(UPSTREAM_PORT), ONE_MCP_HOST: '0.0.0.0' };
           const child = spawn('node', ['/usr/src/app/index.js'], { env, stdio: 'inherit' });
           child.on('exit', (code) => {
-            process.stderr.write(`upstream 1mcp exited code=${code}\n`);
+            process.stderr.write(`upstream 1mcp exited code=$${code}\n`);
             process.exit(code || 1);
           });
           return child;
@@ -2028,7 +2028,7 @@ services:
           const start = Date.now();
           while (Date.now() - start < timeoutMs) {
             try {
-              const r = await fetch(`http://${UPSTREAM_HOST}:${UPSTREAM_PORT}/health`);
+              const r = await fetch(`http://$${UPSTREAM_HOST}:$${UPSTREAM_PORT}/health`);
               if (r.ok) return true;
             } catch {}
             await new Promise((r) => setTimeout(r, 250));
@@ -2048,7 +2048,7 @@ services:
 
           app.get('/health', async (_req, res) => {
             try {
-              const r = await fetch(`http://${UPSTREAM_HOST}:${UPSTREAM_PORT}/health`);
+              const r = await fetch(`http://$${UPSTREAM_HOST}:$${UPSTREAM_PORT}/health`);
               const txt = await r.text();
               res.status(r.status).type(r.headers.get('content-type') || 'application/json').send(txt);
             } catch (e) {
@@ -2057,7 +2057,7 @@ services:
           });
 
           app.post('/mcp', async (req, res) => {
-            const url = `http://${UPSTREAM_HOST}:${UPSTREAM_PORT}/mcp${req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''}`;
+            const url = `http://$${UPSTREAM_HOST}:$${UPSTREAM_PORT}/mcp$${req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''}`;
             try {
               const r = await fetch(url, {
                 method: 'POST',
@@ -2080,7 +2080,7 @@ services:
 
           const server = http.createServer(app);
           server.listen(PROXY_PORT, PROXY_HOST, () => {
-            process.stdout.write(`mcp proxy listening on http://${PROXY_HOST}:${PROXY_PORT} (json limit ${JSON_LIMIT}), upstream :${UPSTREAM_PORT}\n`);
+            process.stdout.write(`mcp proxy listening on http://$${PROXY_HOST}:$${PROXY_PORT} (json limit $${JSON_LIMIT}), upstream :$${UPSTREAM_PORT}\n`);
           });
         }
 
