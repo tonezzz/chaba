@@ -12980,6 +12980,45 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
 
         decls.append(
             {
+                "name": "memo_assess",
+                "description": "Assess a memo and suggest improved fields (subject/group/status/result) and an improved memo text.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer", "description": "Optional memo id (for traceability)."},
+                        "memo": {"type": "string", "description": "Memo text/body."},
+                        "group": {"type": "string", "description": "Current group label."},
+                        "subject": {"type": "string", "description": "Current subject label."},
+                        "status": {"type": "string", "description": "Current status."},
+                        "result": {"type": "string", "description": "Current result/notes."},
+                    },
+                    "required": ["memo"],
+                },
+            }
+        )
+
+        decls.append(
+            {
+                "name": "memo_update_queue",
+                "description": "Queue an update to an existing memo entry (Pending-confirmed write).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer", "description": "Memo id."},
+                        "memo": {"type": "string", "description": "Replacement memo text/body (optional)."},
+                        "group": {"type": "string", "description": "Replacement group label (optional)."},
+                        "subject": {"type": "string", "description": "Replacement subject label (optional)."},
+                        "status": {"type": "string", "description": "Replacement status (optional)."},
+                        "result": {"type": "string", "description": "Replacement result/notes (optional)."},
+                        "active": {"type": "boolean", "description": "Replacement active flag (optional)."},
+                    },
+                    "required": ["id"],
+                },
+            }
+        )
+
+        decls.append(
+            {
                 "name": "memo_header_assess",
                 "description": "Validate memo sheet header matches canonical order (fails fast on mismatch).",
                 "parameters": {"type": "object", "properties": {}},
@@ -13398,6 +13437,8 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             "system_reload_queue",
             "system_macro_upsert_bundle_queue",
             "memo_add",
+            "memo_assess",
+            "memo_update_queue",
             "memo_get",
             "memo_list",
             "memo_search",
@@ -13445,6 +13486,7 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         "datetime": datetime,
         "timezone": timezone,
         "time": time,
+        "json": json,
         "logger": logger,
         "DEFAULT_USER_ID": DEFAULT_USER_ID,
         "AGENT_CONTINUE_WINDOW_SECONDS": AGENT_CONTINUE_WINDOW_SECONDS,
@@ -13474,6 +13516,7 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         "memo_prompt_cfg": _memo_prompt_cfg,
         "memo_needs_enrich": _memo_needs_enrich,
         "memo_enrich_prompt": _memo_enrich_prompt,
+        "gemini_summarize_text": _gemini_summarize_text,
         "list_pending_writes": _list_pending_writes,
         "get_pending_write": _get_pending_write,
         "create_pending_write": _create_pending_write,
