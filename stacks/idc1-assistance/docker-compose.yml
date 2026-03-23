@@ -2003,7 +2003,94 @@ services:
         mkdir -p /root/.config/1mcp
         ln -sf /app/mcp-config/mcp.json /root/.config/1mcp/mcp.json
 
-        exec node index.js
+        cat > /app/proxy.js <<'EOF'
+        const express = require('express');
+        const http = require('http');
+        const { spawn } = require('child_process');
+
+        const PROXY_PORT = Number(process.env.ONE_MCP_PORT || process.env.PORT || 3050);
+        const PROXY_HOST = String(process.env.ONE_MCP_HOST || '0.0.0.0');
+        const UPSTREAM_PORT = Number(process.env.ONE_MCP_UPSTREAM_PORT || 3052);
+        const UPSTREAM_HOST = '127.0.0.1';
+        const JSON_LIMIT = String(process.env.ONE_MCP_PROXY_JSON_LIMIT || '5mb');
+
+        function startUpstream() {
+          const env = { ...process.env, ONE_MCP_PORT: String(UPSTREAM_PORT), ONE_MCP_HOST: '0.0.0.0' };
+          const child = spawn('node', ['/usr/src/app/index.js'], { env, stdio: 'inherit' });
+          child.on('exit', (code) => {
+            process.stderr.write(`upstream 1mcp exited code=${code}\n`);
+            process.exit(code || 1);
+          });
+          return child;
+        }
+
+        async function waitHealthy(timeoutMs = 20000) {
+          const start = Date.now();
+          while (Date.now() - start < timeoutMs) {
+            try {
+              const r = await fetch(`http://${UPSTREAM_HOST}:${UPSTREAM_PORT}/health`);
+              if (r.ok) return true;
+            } catch {}
+            await new Promise((r) => setTimeout(r, 250));
+          }
+          return false;
+        }
+
+        async function main() {
+          startUpstream();
+          const ok = await waitHealthy();
+          if (!ok) {
+            process.stderr.write('upstream healthcheck failed\n');
+          }
+
+          const app = express();
+          app.use(express.json({ limit: JSON_LIMIT }));
+
+          app.get('/health', async (_req, res) => {
+            try {
+              const r = await fetch(`http://${UPSTREAM_HOST}:${UPSTREAM_PORT}/health`);
+              const txt = await r.text();
+              res.status(r.status).type(r.headers.get('content-type') || 'application/json').send(txt);
+            } catch (e) {
+              res.status(502).json({ ok: false, error: String(e && e.message ? e.message : e) });
+            }
+          });
+
+          app.post('/mcp', async (req, res) => {
+            const url = `http://${UPSTREAM_HOST}:${UPSTREAM_PORT}/mcp${req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''}`;
+            try {
+              const r = await fetch(url, {
+                method: 'POST',
+                headers: {
+                  'content-type': 'application/json',
+                  accept: req.get('accept') || 'application/json, text/event-stream',
+                  'mcp-session-id': req.get('mcp-session-id') || '',
+                },
+                body: JSON.stringify(req.body || {}),
+              });
+              res.status(r.status);
+              const ct = r.headers.get('content-type');
+              if (ct) res.setHeader('content-type', ct);
+              const body = await r.arrayBuffer();
+              res.send(Buffer.from(body));
+            } catch (e) {
+              res.status(502).json({ ok: false, error: String(e && e.message ? e.message : e) });
+            }
+          });
+
+          const server = http.createServer(app);
+          server.listen(PROXY_PORT, PROXY_HOST, () => {
+            process.stdout.write(`mcp proxy listening on http://${PROXY_HOST}:${PROXY_PORT} (json limit ${JSON_LIMIT}), upstream :${UPSTREAM_PORT}\n`);
+          });
+        }
+
+        main().catch((e) => {
+          process.stderr.write(`proxy startup error: ${String(e && e.message ? e.message : e)}\n`);
+          process.exit(1);
+        });
+        EOF
+
+        exec node /app/proxy.js
 
   mcp-playwright:
     <<: *default-service
