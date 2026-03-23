@@ -161,7 +161,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             if isinstance(it, dict) and str(it.get("action") or "") == "google_account_relink":
                 return {"ok": True, "queued": False, "already": True, "confirmation_id": str(it.get("confirmation_id") or "")}
 
-        begin_res = await mcp_tools_call("google_account_relink_begin", {})
+        begin_res = await mcp_tools_call("google-sheets_1mcp_google_account_relink_begin", {})
         begin_parsed = mcp_text_json(begin_res)
         if not isinstance(begin_parsed, dict):
             raise HTTPException(status_code=500, detail="google_account_relink_begin_failed")
@@ -1360,7 +1360,9 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             code_or_url = str(user_input.get("code_or_redirected_url") or "").strip()
             if not code_or_url:
                 raise HTTPException(status_code=400, detail="missing_code_or_redirected_url")
-            res = await mcp_tools_call("google_account_relink_finish", {"code_or_redirected_url": code_or_url})
+            res = await mcp_tools_call(
+                "google-sheets_1mcp_google_account_relink_finish", {"code_or_redirected_url": code_or_url}
+            )
             parsed = mcp_text_json(res)
             return parsed if isinstance(parsed, dict) else {"ok": True, "result": parsed}
         if action == "mcp_tools_call":
