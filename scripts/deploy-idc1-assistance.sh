@@ -44,6 +44,7 @@ fi
 wait_timeout_seconds="${WAIT_TIMEOUT_SECONDS:-1800}"
 poll_seconds="${POLL_SECONDS:-10}"
 window_seconds="${HEALTH_WINDOW_SECONDS:-120}"
+force_redeploy="${FORCE_REDEPLOY:-0}"
 
 echo "[deploy] repo=${repo} workflow=${workflow_name} branch=${branch} compose=${compose_file}"
 
@@ -379,6 +380,11 @@ for s in "${services[@]}"; do
     echo "[deploy] Service ${s}: unchanged (image=${image_ref})"
   fi
 done
+
+if [[ "${force_redeploy}" == "1" || "${force_redeploy}" == "true" || "${force_redeploy}" == "yes" ]]; then
+  echo "[deploy] FORCE_REDEPLOY is set. Forcing Portainer redeploy even if image digests are unchanged."
+  changed_services=("${services[@]}")
+fi
 
 if (( ${#changed_services[@]} == 0 )); then
   echo "[deploy] No services changed. Skipping redeploy to minimize downtime."
