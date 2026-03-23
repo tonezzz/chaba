@@ -84,13 +84,13 @@ services:
     <<: *default-service
     image: ghcr.io/tonezzz/chaba/mcp-bundle:idc1-assistance
     ports:
-      - "127.0.0.1:4051:3050"
+      - "127.0.0.1:28051:3050"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
       ONE_MCP_HOST: 0.0.0.0
       ONE_MCP_PORT: 3050
-      ONE_MCP_EXTERNAL_URL: http://127.0.0.1:4051
+      ONE_MCP_EXTERNAL_URL: http://127.0.0.1:28051
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_TASKS_TOKEN_PATH: ${GOOGLE_SHARED_TOKEN_PATH:-/root/.config/1mcp/google.tokens.json}
