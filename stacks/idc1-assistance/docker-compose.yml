@@ -2,6 +2,8 @@ version: "3.9"
 
 x-default-service: &default-service
   restart: unless-stopped
+  env_file:
+    - .env.example
   networks:
     - idc1-stack-net
   logging:
