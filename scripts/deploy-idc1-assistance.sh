@@ -165,13 +165,18 @@ PY
   if [[ "${is_git_stack}" == "1" ]]; then
     echo "[deploy] Git-backed stack detected. Redeploying via Portainer Git redeploy endpoint." >&2
 
+    # Portainer expects a JSON body for git redeploy (at least pullImage).
+    # If the body is empty, Portainer may not refresh the git checkout, which can lead to
+    # missing compose files under /data/compose/<id>/...
+    git_payload='{"pullImage":true,"prune":true}'
+
     # Portainer CE supports Git-backed stacks. The UI uses a Git redeploy endpoint.
     # We try the most common endpoint and treat 404 as "unsupported".
     git_http_code="$(curl -sS -k --max-time 120 -o /tmp/portainer_git_redeploy.json -w '%{http_code}' \
       -X POST \
       -H "X-API-Key: ${portainer_api_key}" \
       -H 'Content-Type: application/json' \
-      --data-binary '{}' \
+      --data-binary "${git_payload}" \
       "${base}/api/stacks/${stack_id}/git/redeploy?endpointId=${portainer_endpoint_id}" || true)"
 
     # Portainer versions differ in the expected method. Some return 405 for POST but accept PUT.
@@ -180,7 +185,7 @@ PY
         -X PUT \
         -H "X-API-Key: ${portainer_api_key}" \
         -H 'Content-Type: application/json' \
-        --data-binary '{}' \
+        --data-binary "${git_payload}" \
         "${base}/api/stacks/${stack_id}/git/redeploy?endpointId=${portainer_endpoint_id}" || true)"
     fi
 
