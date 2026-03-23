@@ -12134,6 +12134,12 @@ def _google_gate_for_tool(tool_name: str) -> tuple[str, bool] | None:
 
 
 async def _mcp_tools_call(name: str, arguments: dict[str, Any]) -> Any:
+    call_name = str(name or "")
+    if call_name.startswith("google_account_relink_"):
+        try:
+            call_name = await _resolve_mcp_tool_name(call_name, fallback=f"google-sheets_1mcp_{call_name}")
+        except Exception:
+            call_name = f"google-sheets_1mcp_{call_name}"
     gate = _google_gate_for_tool(str(name or ""))
     if gate is not None:
         gate_key, gate_default = gate
@@ -12156,7 +12162,7 @@ async def _mcp_tools_call(name: str, arguments: dict[str, Any]) -> Any:
         str(name or "").startswith("playwright_") or str(name or "").startswith("browser_")
     ):
         base = MCP_PLAYWRIGHT_BASE_URL
-    return await mcp_client.mcp_tools_call(base, name, arguments)
+    return await mcp_client.mcp_tools_call(base, call_name, arguments)
 
 
 async def _aim_mcp_tools_call(name: str, arguments: dict[str, Any]) -> Any:
