@@ -2008,6 +2008,7 @@ services:
           fi
           if [ -f "$$f" ]; then
             sed -i "s/express\\.json()/express.json({ limit: process.env.ONE_MCP_HTTP_JSON_LIMIT || \"$${MCP_HTTP_JSON_LIMIT}\" })/g" "$$f" || true
+            sed -i "s/express_1\\.default\\.json()/express_1.default.json({ limit: process.env.ONE_MCP_HTTP_JSON_LIMIT || \"$${MCP_HTTP_JSON_LIMIT}\" })/g" "$$f" || true
           fi
         done
 
