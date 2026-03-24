@@ -2003,11 +2003,11 @@ services:
 
         MCP_HTTP_JSON_LIMIT="$${ONE_MCP_HTTP_JSON_LIMIT:-5mb}"
         find /usr/src/app/node_modules -type f -path '*@modelcontextprotocol*' -path '*/server/express.js' 2>/dev/null | while IFS= read -r f; do
-          if [ -z "$f" ]; then
+          if [ -z "$$f" ]; then
             continue
           fi
-          if [ -f "$f" ]; then
-            sed -i "s/express\\.json()/express.json({ limit: process.env.ONE_MCP_HTTP_JSON_LIMIT || \"$${MCP_HTTP_JSON_LIMIT}\" })/g" "$f" || true
+          if [ -f "$$f" ]; then
+            sed -i "s/express\\.json()/express.json({ limit: process.env.ONE_MCP_HTTP_JSON_LIMIT || \"$${MCP_HTTP_JSON_LIMIT}\" })/g" "$$f" || true
           fi
         done
 
