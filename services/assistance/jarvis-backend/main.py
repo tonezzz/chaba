@@ -13912,10 +13912,13 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                                     "pending_confirm",
                                     "pending_cancel",
                                     "system_reload_queue",
+                                    "memo_header_assess",
                                     "memo_add",
+                                    "memo_assess",
                                     "memo_get",
                                     "memo_list",
                                     "memo_search",
+                                    "memo_update_queue",
                                     "memory_search",
                                     "memory_list",
                                 )
