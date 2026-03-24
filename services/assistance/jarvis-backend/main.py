@@ -7689,6 +7689,10 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             except Exception:
                 return ""
 
+    def _canon_k(s: Any) -> str:
+        # Case-insensitive key identity for sys_kv.
+        return _norm_k(s).lower()
+
     spreadsheet_id = _system_spreadsheet_id()
     if not spreadsheet_id:
         return {"ok": False, "error": "missing_spreadsheet"}
@@ -7762,7 +7766,8 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
         start_row = 1
 
     row_idx: Optional[int] = None
-    nk = _norm_k(k)
+    duplicates: list[int] = []
+    nk = _canon_k(k)
     for i, r in enumerate(values, start=1):
         if i < start_row:
             continue
@@ -7770,12 +7775,14 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             continue
         if header_mode:
             rr = _ensure_len(r, max(1, len(header)))
-            if _norm_k(rr[key_col]) == nk:
-                row_idx = i
-                break
-        elif _norm_k(r[0]) == nk:
-            row_idx = i
-            break
+            if _canon_k(rr[key_col]) == nk:
+                duplicates.append(i)
+        elif _canon_k(r[0]) == nk:
+            duplicates.append(i)
+
+    if duplicates:
+        # If duplicates exist, update the last one (most recent append) deterministically.
+        row_idx = duplicates[-1]
 
     if dry_run:
         return {
@@ -7785,8 +7792,9 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             "sheet": sys_sheet,
             "action": "update" if row_idx else "append",
             "row": row_idx,
-            "key": k,
+            "key": _canon_k(k),
             "value": v,
+            "duplicates": duplicates,
         }
 
     if header_mode:
@@ -7796,7 +7804,7 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             base_row = _ensure_len(values[row_idx - 1], col_count)
         out_row = _ensure_len(base_row, col_count)
 
-        out_row[key_col] = k
+        out_row[key_col] = _canon_k(k)
         out_row[val_col] = v
         if enabled_col is not None:
             out_row[enabled_col] = "true"
@@ -7835,6 +7843,7 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
                 "action": "update",
                 "row": row_idx,
                 "range": rng2,
+                "duplicates": duplicates,
                 "response": parsed_hu if isinstance(parsed_hu, dict) else {"raw": parsed_hu},
             }
 
@@ -7854,8 +7863,9 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             "spreadsheet_id": spreadsheet_id,
             "sheet": sys_sheet,
             "action": "append",
-            "key": k,
+            "key": _canon_k(k),
             "value": v,
+            "duplicates": duplicates,
             "response": parsed_ha if isinstance(parsed_ha, dict) else {"raw": parsed_ha},
         }
 
@@ -7878,7 +7888,7 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             {
                 "spreadsheet_id": spreadsheet_id,
                 "range": rng,
-                "values": [[k, v, "true", scope, priority]],
+                "values": [[_canon_k(k), v, "true", scope, priority]],
                 "value_input_option": "RAW",
             },
         )
@@ -7890,6 +7900,7 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             "action": "update",
             "row": row_idx,
             "range": rng,
+            "duplicates": duplicates,
             "response": parsed2 if isinstance(parsed2, dict) else {"raw": parsed2},
         }
 
@@ -7899,7 +7910,7 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
         {
             "spreadsheet_id": spreadsheet_id,
             "range": f"{sys_sheet}!A:E",
-            "values": [[k, v, "true", "global", "0"]],
+            "values": [[_canon_k(k), v, "true", "global", "0"]],
             "value_input_option": "RAW",
         },
     )
@@ -7909,8 +7920,9 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
         "spreadsheet_id": spreadsheet_id,
         "sheet": sys_sheet,
         "action": "append",
-        "key": k,
+        "key": _canon_k(k),
         "value": v,
+        "duplicates": duplicates,
         "response": parsed3 if isinstance(parsed3, dict) else {"raw": parsed3},
     }
 
