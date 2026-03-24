@@ -13971,7 +13971,13 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                             except Exception:
                                 pass
                     except HTTPException as e:
-                        logger.info("gemini_tool_call_error name=%s status_code=%s", fc_name, e.status_code)
+                        logger.info(
+                            "gemini_tool_call_error name=%s status_code=%s detail=%s session_id=%s",
+                            fc_name,
+                            e.status_code,
+                            e.detail,
+                            str(session_id),
+                        )
                         function_responses.append(
                             types.FunctionResponse(
                                 id=fc_id,
