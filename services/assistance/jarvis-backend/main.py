@@ -737,7 +737,7 @@ async def _memo_load_by_id(*, ws: WebSocket, memo_id: int) -> dict[str, Any] | N
     tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
 
     try:
-        header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
+        header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="Z")
     except Exception:
         header = []
     idx = _idx_from_header(header)
@@ -747,14 +747,14 @@ async def _memo_load_by_id(*, ws: WebSocket, memo_id: int) -> dict[str, Any] | N
         except Exception:
             pass
         try:
-            header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
+            header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="Z")
         except Exception:
             header = []
         idx = _idx_from_header(header)
     if not idx:
         return None
 
-    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A2:J"})
+    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A2:Z"})
     parsed = _mcp_text_json(res)
     data = parsed.get("data") if isinstance(parsed, dict) else None
     vals = parsed.get("values") if isinstance(parsed, dict) else None
