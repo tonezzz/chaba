@@ -126,7 +126,36 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             "Never include markdown, code fences, or commentary. "
             "Keep changes minimal and do not invent facts."
         )
-        txt = await gemini_summarize_text(system_instruction=system_instruction, prompt=json.dumps(payload, ensure_ascii=False))
+        try:
+            txt = await gemini_summarize_text(
+                system_instruction=system_instruction,
+                prompt=json.dumps(payload, ensure_ascii=False),
+            )
+        except Exception as e:
+            # Common failure mode: upstream LLM quota exhausted (HTTP 429).
+            if isinstance(e, HTTPException) and int(getattr(e, "status_code", 0) or 0) == 429:
+                memo_clean = "\n".join([ln.strip() for ln in memo_txt.splitlines()]).strip()
+                memo_one_line = " ".join(memo_clean.split())
+                subject_guess = str(args.get("subject") or "").strip()
+                if not subject_guess:
+                    subject_guess = memo_one_line[:80].strip()
+                group_guess = str(args.get("group") or "").strip() or "general"
+                status_guess = str(args.get("status") or "").strip() or "new"
+                result_guess = str(args.get("result") or "").strip()
+                parsed_fallback = {
+                    "memo": memo_clean,
+                    "group": group_guess,
+                    "subject": subject_guess,
+                    "status": status_guess,
+                    "result": result_guess,
+                    "rationale": "fallback: quota_exhausted (429) - heuristic suggestion; please retry later for LLM-quality assessment",
+                    "degraded": True,
+                }
+                out_fb: dict[str, Any] = {"ok": True, "suggestion": parsed_fallback}
+                if memo_id > 0:
+                    out_fb["id"] = memo_id
+                return out_fb
+            raise
         raw = str(txt or "")
         s = raw.strip()
         if s.startswith("```"):
