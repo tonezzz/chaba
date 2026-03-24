@@ -2001,6 +2001,16 @@ services:
         mkdir -p /root/.config/1mcp
         ln -sf /app/mcp-config/mcp.json /root/.config/1mcp/mcp.json
 
+        MCP_HTTP_JSON_LIMIT="$${ONE_MCP_HTTP_JSON_LIMIT:-5mb}"
+        for f in \
+          /usr/src/app/node_modules/@modelcontextprotocol/sdk/dist/esm/server/express.js \
+          /usr/src/app/node_modules/@modelcontextprotocol/sdk/dist/cjs/server/express.js
+        do
+          if [ -f "$f" ]; then
+            sed -i "s/express\\.json()/express.json({ limit: process.env.ONE_MCP_HTTP_JSON_LIMIT || \"$${MCP_HTTP_JSON_LIMIT}\" })/g" "$f" || true
+          fi
+        done
+
         cat > /app/proxy.js <<'EOF'
         const http = require('http');
         const { spawn } = require('child_process');
