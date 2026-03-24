@@ -14474,7 +14474,16 @@ async def ws_live(ws: WebSocket) -> None:
         def _classify_gemini_live_error(err: Exception, model: str) -> dict[str, Any]:
             msg = str(err)
             status_code = getattr(err, "status_code", None)
-            if status_code == 1008 or "requested entity was not found" in msg.lower():
+            msg_l = msg.lower()
+            # Gemini Live can return model-not-found as status_code=1008, or as a plain string
+            # mentioning 1008 / not found / not supported for bidiGenerateContent.
+            is_1008 = (status_code == 1008) or ("1008" in msg_l)
+            if is_1008 and (
+                "requested entity was not found" in msg_l
+                or " is not found for api version" in msg_l
+                or "not supported for bidigeneratecontent" in msg_l
+                or "model" in msg_l and "not found" in msg_l
+            ):
                 return {
                     "kind": "gemini_model_not_found",
                     "message": "gemini_live_model_not_found",
@@ -14482,7 +14491,7 @@ async def ws_live(ws: WebSocket) -> None:
                     "hint": "Set GEMINI_LIVE_MODEL to a model your API key can access.",
                     "detail": msg,
                 }
-            if status_code == 1011 or "service is currently unavailable" in msg.lower():
+            if status_code == 1011 or "service is currently unavailable" in msg_l:
                 return {
                     "kind": "gemini_service_unavailable",
                     "message": "gemini_service_unavailable",
