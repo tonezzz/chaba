@@ -14466,6 +14466,11 @@ async def ws_live(ws: WebSocket) -> None:
                 super().__init__(detail)
                 self.detail = detail
 
+        class _GeminiLiveServiceUnavailable(Exception):
+            def __init__(self, detail: str) -> None:
+                super().__init__(detail)
+                self.detail = detail
+
         def _classify_gemini_live_error(err: Exception, model: str) -> dict[str, Any]:
             msg = str(err)
             status_code = getattr(err, "status_code", None)
@@ -14475,6 +14480,14 @@ async def ws_live(ws: WebSocket) -> None:
                     "message": "gemini_live_model_not_found",
                     "model": model,
                     "hint": "Set GEMINI_LIVE_MODEL to a model your API key can access.",
+                    "detail": msg,
+                }
+            if status_code == 1011 or "service is currently unavailable" in msg.lower():
+                return {
+                    "kind": "gemini_service_unavailable",
+                    "message": "gemini_service_unavailable",
+                    "model": model,
+                    "hint": "Gemini Live is temporarily unavailable; retrying other models/candidates.",
                     "detail": msg,
                 }
             return {
@@ -14725,6 +14738,8 @@ async def ws_live(ws: WebSocket) -> None:
                             kind = (gemini_failed_error or {}).get("kind")
                             if kind == "gemini_model_not_found":
                                 raise _GeminiLiveModelNotFound(str(detail))
+                            if kind == "gemini_service_unavailable":
+                                raise _GeminiLiveServiceUnavailable(str(detail))
                             raise _GeminiLiveSessionFailed(str(detail))
 
                         # Client disconnected or finished.
@@ -14753,6 +14768,7 @@ async def ws_live(ws: WebSocket) -> None:
                     pass
 
         last_error: Exception | None = None
+        last_error_classified: dict[str, Any] | None = None
         candidates = model_candidates or [GEMINI_LIVE_MODEL_OVERRIDE or GEMINI_LIVE_MODEL_DEFAULT]
         for cand in candidates:
             try:
@@ -14760,12 +14776,19 @@ async def ws_live(ws: WebSocket) -> None:
                 return
             except _GeminiLiveModelNotFound as e:
                 last_error = e
+                last_error_classified = {"kind": "gemini_model_not_found", "detail": str(e)}
+                continue
+            except _GeminiLiveServiceUnavailable as e:
+                last_error = e
+                last_error_classified = {"kind": "gemini_service_unavailable", "detail": str(e)}
                 continue
             except _GeminiLiveSessionFailed as e:
                 last_error = e
+                last_error_classified = {"kind": "gemini_session_failed", "detail": str(e)}
                 break
             except Exception as e:
                 last_error = e
+                last_error_classified = _classify_gemini_live_error(e, _normalize_model_name(str(cand)))
                 break
 
         if last_error is not None:
@@ -14787,6 +14810,15 @@ async def ws_live(ws: WebSocket) -> None:
                 return
 
             classified = _classify_gemini_live_error(last_error, model_used_norm)
+            # If all candidates failed due to transient unavailability, keep the WS session alive
+            # by falling back to local-only mode instead of permanently failing the connection.
+            if (last_error_classified or {}).get("kind") == "gemini_service_unavailable":
+                try:
+                    await _ws_send_json(ws, {"type": "error", **classified})
+                except Exception:
+                    pass
+                await _ws_local_only_loop(ws)
+                return
             if classified.get("kind") == "gemini_model_not_found":
                 logger.warning(
                     "gemini_live_connect_failed_model_not_found model=%s error=%s",
