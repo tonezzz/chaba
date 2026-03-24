@@ -120,42 +120,82 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             "result": str(args.get("result") or "").strip(),
         }
 
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        model_primary = ""
+        model_fallbacks: list[str] = []
+        if isinstance(sys_kv, dict):
+            try:
+                model_primary = str(sys_kv.get("gemini.text.model_toolcall") or "").strip()
+            except Exception:
+                model_primary = ""
+            try:
+                raw_fb = sys_kv.get("gemini.text.fallback_models_json")
+                if isinstance(raw_fb, str) and raw_fb.strip():
+                    parsed_fb = json.loads(raw_fb)
+                    if isinstance(parsed_fb, list):
+                        model_fallbacks = [str(x or "").strip() for x in parsed_fb if str(x or "").strip()]
+            except Exception:
+                pass
+
+        candidates: list[str | None] = []
+        candidates.append(model_primary or None)
+        candidates.extend([m for m in model_fallbacks if m])
+        if not any(candidates):
+            candidates = [None]
+
         system_instruction = (
             "You are an operations assistant. Given a memo entry, propose improved fields and a cleaned memo text. "
             "Return ONLY valid JSON with keys: memo, group, subject, status, result, rationale. "
             "Never include markdown, code fences, or commentary. "
             "Keep changes minimal and do not invent facts."
         )
-        try:
-            txt = await gemini_summarize_text(
-                system_instruction=system_instruction,
-                prompt=json.dumps(payload, ensure_ascii=False),
+        last_err: Exception | None = None
+        txt: Any = None
+        for cand in candidates:
+            try:
+                txt = await gemini_summarize_text(
+                    system_instruction=system_instruction,
+                    prompt=json.dumps(payload, ensure_ascii=False),
+                    model=str(cand) if cand else None,
+                )
+                last_err = None
+                break
+            except Exception as e:
+                last_err = e
+                # Common failure mode: upstream LLM quota exhausted (HTTP 429).
+                if isinstance(e, HTTPException) and int(getattr(e, "status_code", 0) or 0) == 429:
+                    memo_clean = "\n".join([ln.strip() for ln in memo_txt.splitlines()]).strip()
+                    memo_one_line = " ".join(memo_clean.split())
+                    subject_guess = str(args.get("subject") or "").strip()
+                    if not subject_guess:
+                        subject_guess = memo_one_line[:80].strip()
+                    group_guess = str(args.get("group") or "").strip() or "general"
+                    status_guess = str(args.get("status") or "").strip() or "new"
+                    result_guess = str(args.get("result") or "").strip()
+                    parsed_fallback = {
+                        "memo": memo_clean,
+                        "group": group_guess,
+                        "subject": subject_guess,
+                        "status": status_guess,
+                        "result": result_guess,
+                        "rationale": "fallback: quota_exhausted (429) - heuristic suggestion; please retry later for LLM-quality assessment",
+                        "degraded": True,
+                    }
+                    out_fb: dict[str, Any] = {"ok": True, "suggestion": parsed_fallback}
+                    if memo_id > 0:
+                        out_fb["id"] = memo_id
+                    return out_fb
+                continue
+
+        if last_err is not None:
+            raise HTTPException(
+                status_code=502,
+                detail={
+                    "error": "memo_assess_failed",
+                    "detail": str(last_err),
+                    "models_tried": [str(x) for x in candidates if x],
+                },
             )
-        except Exception as e:
-            # Common failure mode: upstream LLM quota exhausted (HTTP 429).
-            if isinstance(e, HTTPException) and int(getattr(e, "status_code", 0) or 0) == 429:
-                memo_clean = "\n".join([ln.strip() for ln in memo_txt.splitlines()]).strip()
-                memo_one_line = " ".join(memo_clean.split())
-                subject_guess = str(args.get("subject") or "").strip()
-                if not subject_guess:
-                    subject_guess = memo_one_line[:80].strip()
-                group_guess = str(args.get("group") or "").strip() or "general"
-                status_guess = str(args.get("status") or "").strip() or "new"
-                result_guess = str(args.get("result") or "").strip()
-                parsed_fallback = {
-                    "memo": memo_clean,
-                    "group": group_guess,
-                    "subject": subject_guess,
-                    "status": status_guess,
-                    "result": result_guess,
-                    "rationale": "fallback: quota_exhausted (429) - heuristic suggestion; please retry later for LLM-quality assessment",
-                    "degraded": True,
-                }
-                out_fb: dict[str, Any] = {"ok": True, "suggestion": parsed_fallback}
-                if memo_id > 0:
-                    out_fb["id"] = memo_id
-                return out_fb
-            raise
         raw = str(txt or "")
         s = raw.strip()
         if s.startswith("```"):

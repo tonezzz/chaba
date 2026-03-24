@@ -14614,6 +14614,18 @@ async def ws_live(ws: WebSocket) -> None:
             ],
         }
 
+        # System sheet overrides (sys_kv wins over env/defaults)
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        if isinstance(sys_kv, dict):
+            try:
+                rm = sys_kv.get("gemini.live.response_modalities_json")
+                if isinstance(rm, str) and rm.strip():
+                    parsed_rm = json.loads(rm)
+                    if isinstance(parsed_rm, list) and all(isinstance(x, str) for x in parsed_rm) and parsed_rm:
+                        base_config["response_modalities"] = [str(x).strip().upper() for x in parsed_rm if str(x).strip()]
+            except Exception:
+                pass
+
         base_candidates = [
             "gemini-2.0-flash-live-001",
             "gemini-2.5-flash-native-audio-preview-12-2025",
@@ -14621,9 +14633,30 @@ async def ws_live(ws: WebSocket) -> None:
             "gemini-2.5-flash-native-audio-latest",
         ]
 
+        sys_candidates: list[str] = []
+        sys_override_model = ""
+        if isinstance(sys_kv, dict):
+            try:
+                sys_override_model = str(sys_kv.get("gemini.live.model_override") or "").strip()
+            except Exception:
+                sys_override_model = ""
+            try:
+                raw = sys_kv.get("gemini.live.model_candidates_json")
+                if isinstance(raw, str) and raw.strip():
+                    parsed = json.loads(raw)
+                    if isinstance(parsed, list):
+                        sys_candidates = [str(x or "").strip() for x in parsed if str(x or "").strip()]
+            except Exception:
+                pass
+
         raw_candidates = [
+            sys_override_model,
             GEMINI_LIVE_MODEL_OVERRIDE,
-            *(base_candidates if GEMINI_LIVE_MODEL_OVERRIDE else [GEMINI_LIVE_MODEL_DEFAULT, *base_candidates]),
+            *(
+                sys_candidates
+                if sys_candidates
+                else (base_candidates if GEMINI_LIVE_MODEL_OVERRIDE else [GEMINI_LIVE_MODEL_DEFAULT, *base_candidates])
+            ),
         ]
 
         # Gemini Live model naming can vary by endpoint/version. Be permissive:
@@ -14821,7 +14854,13 @@ async def ws_live(ws: WebSocket) -> None:
             classified = _classify_gemini_live_error(last_error, model_used_norm)
             # If all candidates failed due to transient unavailability, keep the WS session alive
             # by falling back to local-only mode instead of permanently failing the connection.
-            if (last_error_classified or {}).get("kind") == "gemini_service_unavailable":
+            fallback_local_only = True
+            if isinstance(sys_kv, dict):
+                try:
+                    fallback_local_only = _sys_kv_bool(sys_kv, "gemini.live.fallback_local_only", default=True)
+                except Exception:
+                    fallback_local_only = True
+            if fallback_local_only and (last_error_classified or {}).get("kind") == "gemini_service_unavailable":
                 try:
                     await _ws_send_json(ws, {"type": "error", **classified})
                 except Exception:
