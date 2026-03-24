@@ -2004,13 +2004,8 @@ services:
         ln -sf /app/mcp-config/mcp.json /root/.config/1mcp/mcp.json
 
         MCP_HTTP_JSON_LIMIT="$${ONE_MCP_HTTP_JSON_LIMIT:-5mb}"
-        for f in \
-          /usr/src/app/node_modules/@modelcontextprotocol/sdk/dist/esm/server/express.js \
-          /usr/src/app/node_modules/@modelcontextprotocol/sdk/dist/cjs/server/express.js
-        do
-          if [ -f "$f" ]; then
-            sed -i "s/express\\.json()/express.json({ limit: process.env.ONE_MCP_HTTP_JSON_LIMIT || \"$${MCP_HTTP_JSON_LIMIT}\" })/g" "$f" || true
-          fi
+        find /usr/src/app/node_modules -type f -path '*@modelcontextprotocol*' -path '*/server/express.js' 2>/dev/null | while read -r f; do
+          sed -i "s/express\\.json()/express.json({ limit: process.env.ONE_MCP_HTTP_JSON_LIMIT || \"$${MCP_HTTP_JSON_LIMIT}\" })/g" "$f" || true
         done
 
         cat > /app/proxy.js <<'EOF'
