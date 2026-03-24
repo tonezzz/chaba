@@ -1147,6 +1147,31 @@ def _parse_memo_merge(text: str) -> tuple[Optional[int], Optional[int]]:
         return (None, None)
 
 
+def _parse_memo_get_id(text: str) -> Optional[int]:
+    s = " ".join(str(text or "").strip().split())
+    if not s:
+        return None
+
+    low = s.lower().strip()
+    m = re.match(r"^(?:memo|read\s+memo|load\s+memo)\s+#?(\d+)$", low)
+    if m:
+        try:
+            memo_id = int(m.group(1))
+            return memo_id if memo_id > 0 else None
+        except Exception:
+            return None
+
+    s0n = _normalize_thai_compact(s)
+    m_th = re.match(r"^(?:อ่าน|โหลด)?\s*(เมโม|เมมโม)\s+#?(\d+)$", s0n)
+    if m_th:
+        try:
+            memo_id = int(m_th.group(2))
+            return memo_id if memo_id > 0 else None
+        except Exception:
+            return None
+    return None
+
+
 def _memo_prompt_cfg(sys_kv: Any) -> dict[str, Any]:
     return memo_enrich.prompt_cfg(sys_kv, sys_kv_bool=_sys_kv_bool, safe_int=_safe_int)
 
@@ -1190,6 +1215,31 @@ async def _handle_memo_trigger(ws: WebSocket, text: str) -> bool:
     s = str(text or "").strip()
     if not s:
         return False
+
+    memo_get_id = _parse_memo_get_id(s)
+    if memo_get_id is not None and memo_get_id > 0:
+        loaded = await _memo_load_by_id(ws=ws, memo_id=int(memo_get_id))
+        memo_item: dict[str, Any] | None = None
+        if isinstance(loaded, dict):
+            memo_item = loaded.get("memo") if isinstance(loaded.get("memo"), dict) else None
+        if isinstance(memo_item, dict):
+            try:
+                ws.state.last_memo = dict(memo_item)
+            except Exception:
+                pass
+            subj = str(memo_item.get("subject") or "").strip()
+            grp = str(memo_item.get("group") or "").strip()
+            await _ws_send_json(
+                ws,
+                {
+                    "type": "text",
+                    "text": f"memo {memo_get_id}: {subj or '(no subject)'}{(' [' + grp + ']') if grp else ''}",
+                    "instance_id": INSTANCE_ID,
+                },
+            )
+            return True
+        await _ws_send_json(ws, {"type": "text", "text": f"memo_not_found:{memo_get_id}", "instance_id": INSTANCE_ID})
+        return True
 
     src_row, dst_row = _parse_memo_merge(s)
     is_merge = src_row is not None and dst_row is not None
