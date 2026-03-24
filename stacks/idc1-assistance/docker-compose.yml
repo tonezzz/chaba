@@ -2014,6 +2014,8 @@ services:
           fi
         done
 
+        sed -i "s/bodyParser\\.json()/bodyParser.json({ limit: process.env.ONE_MCP_HTTP_JSON_LIMIT || \"$${MCP_HTTP_JSON_LIMIT}\" })/g" /usr/src/app/transport/http/server.js || true
+
         cat > /app/proxy.js <<'EOF'
         const http = require('http');
         const { spawn } = require('child_process');
