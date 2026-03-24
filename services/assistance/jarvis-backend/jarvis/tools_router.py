@@ -79,11 +79,38 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         if not sys_kv_bool(sys_kv, "memo.enabled", False):
             raise HTTPException(status_code=403, detail="memo_disabled")
 
-        memo_txt = str(args.get("memo") or "").strip()
-        if not memo_txt:
-            raise HTTPException(status_code=400, detail="memo_missing_text")
-
         memo_id = safe_int(args.get("id"), 0)
+        memo_txt = str(args.get("memo") or "").strip()
+        if not memo_txt and memo_id > 0:
+            try:
+                last_memo = getattr(ws.state, "last_memo", None)
+            except Exception:
+                last_memo = None
+            if isinstance(last_memo, dict):
+                try:
+                    last_id = safe_int(last_memo.get("id"), 0)
+                except Exception:
+                    last_id = 0
+                if last_id == int(memo_id):
+                    memo_txt = str(last_memo.get("memo") or "").strip()
+                    # Use current fields as defaults when not provided.
+                    if "group" not in args:
+                        args = {**args, "group": last_memo.get("group")}
+                    if "subject" not in args:
+                        args = {**args, "subject": last_memo.get("subject")}
+                    if "status" not in args:
+                        args = {**args, "status": last_memo.get("status")}
+                    if "result" not in args:
+                        args = {**args, "result": last_memo.get("result")}
+        if not memo_txt:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": "memo_missing_text",
+                    "hint": "Call memo_assess with memo text, or first load a memo by id (e.g. `memo 61`) then call memo_assess with that same id.",
+                },
+            )
+
         payload = {
             "id": memo_id if memo_id > 0 else None,
             "memo": memo_txt,
@@ -100,12 +127,19 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             "Keep changes minimal and do not invent facts."
         )
         txt = await gemini_summarize_text(system_instruction=system_instruction, prompt=json.dumps(payload, ensure_ascii=False))
+        raw = str(txt or "")
+        s = raw.strip()
+        if s.startswith("```"):
+            s = s.strip("`")
+            s = s.strip()
+            if s.lower().startswith("json"):
+                s = s[4:].strip()
         try:
-            parsed = json.loads(str(txt or ""))
+            parsed = json.loads(s)
         except Exception:
-            raise HTTPException(status_code=502, detail={"error": "memo_assess_invalid_json", "raw": str(txt or "")[:800]})
+            raise HTTPException(status_code=502, detail={"error": "memo_assess_invalid_json", "raw": raw[:800]})
         if not isinstance(parsed, dict):
-            raise HTTPException(status_code=502, detail={"error": "memo_assess_invalid_json", "raw": str(txt or "")[:800]})
+            raise HTTPException(status_code=502, detail={"error": "memo_assess_invalid_json", "raw": raw[:800]})
 
         out: dict[str, Any] = {"ok": True, "suggestion": parsed}
         if memo_id > 0:
