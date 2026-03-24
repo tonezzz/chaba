@@ -13042,7 +13042,7 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
                         "status": {"type": "string", "description": "Current status."},
                         "result": {"type": "string", "description": "Current result/notes."},
                     },
-                    "required": ["memo"],
+                    "required": [],
                 },
             }
         )
