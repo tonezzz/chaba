@@ -1770,9 +1770,25 @@ return (
                           const tagText = label ? `[${label}] ` : "";
                           const role = String(m.role || "");
                           const txt = String(m.text || "");
+                          const forceText = (e as any)?.shiftKey === true;
+                          const rawAny: any = (m.metadata as any)?.raw;
+                          if (!forceText && rawAny != null) {
+                            try {
+                              if (rawAny && typeof rawAny === "object" && !Array.isArray(rawAny)) {
+                                const copy: any = { ...rawAny };
+                                delete copy.client_id;
+                                delete copy.client_tag;
+                                void copyText(JSON.stringify(copy, null, 2));
+                                return;
+                              }
+                              void copyText(JSON.stringify(rawAny, null, 2));
+                              return;
+                            } catch {
+                            }
+                          }
                           void copyText(`[${ts}] ${tagText}${role}: ${txt}`);
                         }}
-                        title="Copy"
+                        title="Copy (JSON if available; Shift+Click to copy text)"
                         aria-label="Copy"
                       >
                         <Copy className="w-3 h-3" />
