@@ -1917,6 +1917,77 @@ async def _macro_tools_get_cached(*, sys_kv: Optional[dict[str, Any]] = None, tt
     return loaded
 
 
+async def _load_macro_fixtures_from_sheet(
+    *,
+    macro_name: str,
+    sys_kv: Optional[dict[str, Any]] = None,
+) -> list[dict[str, Any]]:
+    spreadsheet_id = _system_spreadsheet_id()
+    if not spreadsheet_id:
+        return []
+
+    sheet_name = "macro_fixtures"
+    if isinstance(sys_kv, dict):
+        try:
+            v = str(sys_kv.get("system.macros.fixtures.sheet_name") or "").strip()
+            if v:
+                sheet_name = v
+        except Exception:
+            pass
+
+    tool = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    res = await _mcp_tools_call(tool, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name}!A:Z"})
+    parsed = _mcp_text_json(res)
+    values = parsed.get("values") if isinstance(parsed, dict) else None
+    data = parsed.get("data") if isinstance(parsed, dict) else None
+    if not isinstance(values, list) and isinstance(data, dict):
+        values = data.get("values")
+    if not isinstance(values, list) or not values:
+        return []
+
+    header = [str(c or "").strip().lower() for c in (values[0] if isinstance(values[0], list) else [])]
+    idx: dict[str, int] = {}
+    for i, col in enumerate(header):
+        if col and col not in idx:
+            idx[col] = int(i)
+
+    def _cell(row: list[Any], col: str) -> Any:
+        j = idx.get(str(col or "").strip().lower())
+        if j is None or j < 0 or j >= len(row):
+            return ""
+        return row[j]
+
+    out: list[dict[str, Any]] = []
+    for raw in values[1:]:
+        if not isinstance(raw, list) or not raw:
+            continue
+        enabled = _as_bool(_cell(raw, "enabled") or "true")
+        if not enabled:
+            continue
+        name = str(_cell(raw, "name") or _cell(raw, "macro") or "").strip()
+        if not name or name != str(macro_name or "").strip():
+            continue
+        args_raw = str(_cell(raw, "args_json") or _cell(raw, "args") or "").strip()
+        contains = str(_cell(raw, "expect_contains") or _cell(raw, "contains") or "").strip()
+        expected_raw = str(_cell(raw, "expected_json") or _cell(raw, "expected") or "").strip()
+        args: dict[str, Any] = {}
+        if args_raw:
+            try:
+                parsed_args = json.loads(args_raw)
+                if isinstance(parsed_args, dict):
+                    args = parsed_args
+            except Exception:
+                args = {}
+        expected: Any = None
+        if expected_raw:
+            try:
+                expected = json.loads(expected_raw)
+            except Exception:
+                expected = expected_raw
+        out.append({"name": name, "args": args, "expect_contains": contains, "expected": expected})
+    return out
+
+
 async def _macro_tools_force_reload_from_sheet(*, sys_kv: Optional[dict[str, Any]] = None) -> dict[str, dict[str, Any]]:
     now = time.time()
     try:
@@ -13410,6 +13481,38 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
 
     decls.append(
         {
+            "name": "system_macro_test_run",
+            "description": "Run a macro against fixtures from the macro fixtures sheet and return a structured test report (no writes).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Macro tool name (macro_*)."},
+                    "limit": {"type": "integer", "description": "Max fixtures to run (default 20)."},
+                },
+                "required": ["name"],
+            },
+        }
+    )
+
+    decls.append(
+        {
+            "name": "system_macro_test_evaluate",
+            "description": "Evaluate a macro test report and propose a macro update (optionally queued as a pending upsert+reload bundle).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Macro tool name (macro_*)."},
+                    "report": {"type": "object", "description": "Output from system_macro_test_run."},
+                    "queue": {"type": "boolean", "description": "If true, queue a pending macro upsert+reload bundle (requires pending_confirm)."},
+                    "reload_mode": {"type": "string", "description": "Reload mode for queued bundle (default full)."},
+                },
+                "required": ["name", "report"],
+            },
+        }
+    )
+
+    decls.append(
+        {
             "name": "system_run_macro",
             "description": "Run a configured macro tool by name (server-side canonical runner).",
             "parameters": {
@@ -13986,6 +14089,190 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             res = await _handle_mcp_tool_call(session_id, step_tool, step_args)
             out_steps.append({"step": i + 1, "tool": step_tool, "result": res})
         return {"ok": True, "macro": macro_name, "steps": out_steps, "count": len(out_steps)}
+
+    if n == "system_macro_test_run":
+        macro_name = str((args or {}).get("name") or "").strip()
+        if not macro_name:
+            raise HTTPException(status_code=400, detail="missing_macro_name")
+        if not macro_name.startswith("macro_"):
+            raise HTTPException(status_code=400, detail={"invalid_macro_name": macro_name})
+        try:
+            limit = int((args or {}).get("limit") or 20)
+        except Exception:
+            limit = 20
+        limit = max(1, min(limit, 200))
+
+        fixtures = await _load_macro_fixtures_from_sheet(macro_name=macro_name, sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+        fixtures = fixtures[:limit]
+        results: list[dict[str, Any]] = []
+        passed = 0
+        for i, fx in enumerate(fixtures, start=1):
+            fx_args = fx.get("args") if isinstance(fx.get("args"), dict) else {}
+            expect_contains = str(fx.get("expect_contains") or "").strip()
+            expected = fx.get("expected")
+            try:
+                out = await _run_macro(macro_name=macro_name, macro_args=dict(fx_args))
+                ok = True
+                if expect_contains:
+                    hay = json.dumps(out, ensure_ascii=False)
+                    ok = expect_contains in hay
+                if expected is not None:
+                    ok = ok and (out == expected)
+                if ok:
+                    passed += 1
+                results.append(
+                    {
+                        "i": i,
+                        "ok": bool(ok),
+                        "args": fx_args,
+                        "expect_contains": expect_contains or None,
+                        "expected": expected,
+                        "output": out,
+                    }
+                )
+            except Exception as e:
+                results.append(
+                    {
+                        "i": i,
+                        "ok": False,
+                        "args": fx_args,
+                        "expect_contains": expect_contains or None,
+                        "expected": expected,
+                        "error": str(e),
+                    }
+                )
+        return {"ok": True, "macro": macro_name, "fixtures": len(fixtures), "passed": passed, "failed": len(fixtures) - passed, "results": results}
+
+    if n == "system_macro_test_evaluate":
+        macro_name = str((args or {}).get("name") or "").strip()
+        report = (args or {}).get("report")
+        if not macro_name:
+            raise HTTPException(status_code=400, detail="missing_macro_name")
+        if not macro_name.startswith("macro_"):
+            raise HTTPException(status_code=400, detail={"invalid_macro_name": macro_name})
+        if not isinstance(report, dict):
+            raise HTTPException(status_code=400, detail="invalid_report")
+
+        sys_kv_dict = sys_kv if isinstance(sys_kv, dict) else None
+        enabled = False
+        if isinstance(sys_kv_dict, dict):
+            try:
+                raw = str(sys_kv_dict.get("system.macros.evaluator.enabled") or "").strip()
+                if raw:
+                    enabled = _parse_bool_cell(raw)
+            except Exception:
+                enabled = False
+        if not enabled:
+            raise HTTPException(status_code=403, detail="macro_evaluator_disabled")
+
+        macros = await _macro_tools_get_cached(sys_kv=sys_kv_dict)
+        current = macros.get(macro_name) if isinstance(macros, dict) else None
+        if not isinstance(current, dict):
+            raise HTTPException(status_code=404, detail={"macro_not_found": macro_name})
+
+        current_desc = str(current.get("description") or "").strip()
+        current_params = current.get("parameters") if isinstance(current.get("parameters"), dict) else {"type": "object", "properties": {}}
+        current_steps = current.get("steps") if isinstance(current.get("steps"), list) else []
+
+        eval_system_instruction = (
+            "You are a macro quality evaluator. Given a macro definition and its test report, decide if the macro should be updated. "
+            "Return ONLY valid JSON. Do not include markdown, code fences, or commentary. "
+            "Output schema: {action: 'noop'|'update', rationale: string, macro: {name, description, parameters_json, steps_json}}. "
+            "If action='noop', omit macro. If action='update', macro.name must match input name. "
+            "steps_json must be a JSON string representing a list of step objects {tool,args}. "
+            "parameters_json must be a JSON string representing a JSON schema object. "
+            "Keep changes minimal. Never propose macro recursion (macro_* or macro_run)."
+        )
+        payload = {
+            "name": macro_name,
+            "current": {
+                "name": macro_name,
+                "description": current_desc,
+                "parameters": current_params,
+                "steps": current_steps,
+            },
+            "report": report,
+        }
+
+        txt = await _gemini_summarize_text(system_instruction=eval_system_instruction, prompt=json.dumps(payload, ensure_ascii=False))
+        raw = str(txt or "")
+        s = raw.strip()
+        if s.startswith("```"):
+            s = s.strip("`").strip()
+            if s.lower().startswith("json"):
+                s = s[4:].strip()
+        try:
+            parsed = json.loads(s)
+        except Exception:
+            raise HTTPException(status_code=502, detail={"error": "macro_test_evaluate_invalid_json", "raw": raw[:800]})
+        if not isinstance(parsed, dict):
+            raise HTTPException(status_code=502, detail={"error": "macro_test_evaluate_invalid_json", "raw": raw[:800]})
+        action = str(parsed.get("action") or "").strip().lower()
+        if action not in {"noop", "update"}:
+            raise HTTPException(status_code=502, detail={"error": "macro_test_evaluate_invalid_action", "action": action})
+
+        out: dict[str, Any] = {"ok": True, "action": action, "rationale": str(parsed.get("rationale") or "").strip()}
+        if action == "noop":
+            return out
+
+        macro = parsed.get("macro")
+        if not isinstance(macro, dict):
+            raise HTTPException(status_code=502, detail="macro_test_evaluate_missing_macro")
+        nm = str(macro.get("name") or "").strip()
+        if nm != macro_name:
+            raise HTTPException(status_code=502, detail={"macro_test_evaluate_name_mismatch": nm, "expected": macro_name})
+        desc2 = str(macro.get("description") or "").strip()
+        parameters_json = str(macro.get("parameters_json") or "").strip()
+        steps_json = str(macro.get("steps_json") or "").strip()
+        if not steps_json:
+            raise HTTPException(status_code=502, detail="macro_test_evaluate_missing_steps_json")
+        # Validate json strings minimally.
+        try:
+            steps_val = json.loads(steps_json)
+        except Exception:
+            raise HTTPException(status_code=502, detail="macro_test_evaluate_invalid_steps_json")
+        if not isinstance(steps_val, list):
+            raise HTTPException(status_code=502, detail="macro_test_evaluate_invalid_steps_json")
+        if parameters_json:
+            try:
+                pj = json.loads(parameters_json)
+                if not isinstance(pj, dict):
+                    raise Exception("not_dict")
+            except Exception:
+                raise HTTPException(status_code=502, detail="macro_test_evaluate_invalid_parameters_json")
+
+        out["macro"] = {
+            "name": macro_name,
+            "description": desc2,
+            "parameters_json": parameters_json,
+            "steps_json": steps_json,
+        }
+
+        if bool((args or {}).get("queue")):
+            if not session_id:
+                raise HTTPException(status_code=400, detail="missing_session_id")
+            mode = str((args or {}).get("reload_mode") or "full").strip().lower() or "full"
+            if mode not in {"full", "all", "memory", "knowledge", "sys", "gems"}:
+                raise HTTPException(status_code=400, detail="invalid_reload_mode")
+            create_pending_write = _create_pending_write
+            confirmation_id = create_pending_write(
+                str(session_id),
+                "bundle_publish_macro_reload",
+                {
+                    "macro": {
+                        "name": macro_name,
+                        "enabled": True,
+                        "description": desc2,
+                        "parameters_json": parameters_json,
+                        "steps_json": steps_json,
+                    },
+                    "reload_mode": mode,
+                },
+            )
+            out["queued"] = True
+            out["confirmation_id"] = confirmation_id
+            out["reload_mode"] = mode
+        return out
 
     if n == "system_run_macro":
         macro_name = str((args or {}).get("name") or "").strip()
