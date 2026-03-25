@@ -13327,6 +13327,21 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
         }
     )
 
+    decls.append(
+        {
+            "name": "system_run_macro",
+            "description": "Run a configured macro tool by name (server-side canonical runner).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Macro tool name (e.g. macro_time_now)."},
+                    "args": {"type": "object", "description": "Optional macro parameters."},
+                },
+                "required": ["name"],
+            },
+        }
+    )
+
     if not macros_only:
         decls.append(
             {
@@ -13568,14 +13583,13 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
     macros_only = _macros_only_enabled(sys_kv=sys_kv)
     if macros_only and n and (not n.startswith("macro_")) and (not n.startswith("system_")):
         raise HTTPException(status_code=403, detail={"tool_not_allowed": n, "mode": "macros_only"})
-    if n and (n.startswith("macro_") or n == "macro_run"):
-        if macros_only and n == "macro_run":
-            raise HTTPException(status_code=403, detail={"tool_not_allowed": "macro_run", "mode": "macros_only"})
 
+    async def _run_macro(*, macro_name: str, macro_args: dict[str, Any]) -> Any:
+        if not macro_name:
+            raise HTTPException(status_code=400, detail="missing_macro_name")
+        if not macro_name.startswith("macro_"):
+            raise HTTPException(status_code=400, detail={"invalid_macro_name": macro_name})
         macros = await _macro_tools_get_cached(sys_kv=sys_kv)
-        macro_name = n
-        if n == "macro_run":
-            macro_name = str(args.get("name") or "").strip()
         macro = macros.get(macro_name) if isinstance(macros, dict) else None
         if not isinstance(macro, dict):
             raise HTTPException(status_code=400, detail={"macro_not_found": macro_name})
@@ -13826,12 +13840,11 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
                 return [_macro_substitute(v2, params, out_steps) for v2 in v]
             if isinstance(v, str):
                 s = v
-                # If the whole string is exactly a single placeholder, preserve types.
                 m = re.fullmatch(r"\{\{\s*([^}]+?)\s*\}\}", s)
                 if m:
                     expr = m.group(1)
                     return _macro_resolve_expr(str(expr or ""), params, out_steps)
-                # Otherwise do string interpolation.
+
                 def _repl(mm: re.Match) -> str:
                     expr = str(mm.group(1) or "")
                     val = _macro_resolve_expr(expr, params, out_steps)
@@ -13881,20 +13894,35 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             if not isinstance(step_args, dict):
                 step_args = {}
             try:
-                # Allow macros to pass-through runtime arguments via {{param}} placeholders.
-                # Exclude the macro control field itself.
-                params = {k: v for k, v in (args or {}).items() if k != "name"}
+                params = {k: v for k, v in (macro_args or {}).items() if k != "name"}
                 step_args = _macro_substitute(step_args, params, out_steps)
                 if not isinstance(step_args, dict):
                     step_args = {}
             except Exception as e:
-                # Don't swallow FastAPI HTTPExceptions (e.g. require(...) guards).
                 if isinstance(e, HTTPException):
                     raise
                 pass
             res = await _handle_mcp_tool_call(session_id, step_tool, step_args)
             out_steps.append({"step": i + 1, "tool": step_tool, "result": res})
         return {"ok": True, "macro": macro_name, "steps": out_steps, "count": len(out_steps)}
+
+    if n == "system_run_macro":
+        macro_name = str((args or {}).get("name") or "").strip()
+        macro_args = (args or {}).get("args")
+        if not isinstance(macro_args, dict):
+            macro_args = {}
+        return await _run_macro(macro_name=macro_name, macro_args=macro_args)
+
+    if n and (n.startswith("macro_") or n == "macro_run"):
+        if macros_only and n == "macro_run":
+            raise HTTPException(status_code=403, detail={"tool_not_allowed": "macro_run", "mode": "macros_only"})
+
+        macro_name = n
+        macro_args: dict[str, Any] = dict(args or {})
+        if n == "macro_run":
+            macro_name = str(args.get("name") or "").strip()
+            macro_args = {k: v for k, v in (args or {}).items() if k != "name"}
+        return await _run_macro(macro_name=macro_name, macro_args=macro_args)
 
     deps: dict[str, Any] = {
         "HTTPException": HTTPException,
