@@ -8104,7 +8104,7 @@ async def _sys_kv_dedupe_disable_sheet(*, dry_run: bool = True, sort: bool = Fal
     sort_applied: Any = None
     if sort and isinstance(sort_plan, dict) and sort_plan.get("sheet_id") is not None:
         try:
-            tool_bu = await _resolve_mcp_tool_name("google_sheets_batch_update", fallback="google_sheets_batch_update")
+            tool_bu = _pick_sheets_tool_name("google_sheets_batch_update", "google-sheets_1mcp_google_sheets_batch_update")
             sort_req = {
                 "sortRange": {
                     "range": {
