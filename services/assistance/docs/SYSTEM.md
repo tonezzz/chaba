@@ -61,6 +61,52 @@ If Memory/Knowledge is needed, ask the user to run:
 Then continue using the loaded context.
 ```
 
+### `system.instructions.*` (ordered instruction blocks)
+
+In addition to the single `system.instruction` string, Jarvis supports ordered instruction blocks using keys:
+
+- `system.instructions.<priority_int>`
+
+Behavior:
+
+- All enabled `system.instructions.*` keys are collected.
+- `<priority_int>` is parsed as an integer; lower numbers come first.
+- If parsing fails, the block is treated as very low priority (comes last).
+- Final system instruction text is built as:
+  - `system.instruction` (if present)
+  - then the ordered `system.instructions.*` blocks
+
+This is used to make NL routing and policies sheet-driven.
+
+### Macros-only mode (tool surface restriction)
+
+Key:
+
+- `system.macros.only=true`
+
+When enabled, the backend filters tool declarations so Gemini can only see tools prefixed with `system_*` and `macro_*`.
+
+### Macro registry injection (NL routing helper)
+
+Keys:
+
+- `system.macros.registry.enabled` (default true)
+- `system.macros.registry.max_items` (default 30)
+
+When enabled, Jarvis injects a compact macro registry summary into the Gemini system prompt so the model can route NL requests to the appropriate `macro_*` tool.
+
+### Macro fixtures + evaluator (self-test loop)
+
+Keys:
+
+- `system.macros.fixtures.sheet_name` (default `macro_fixtures`)
+- `system.macros.evaluator.enabled` (default false)
+
+Notes:
+
+- `system_macro_test_run` reads fixtures from the fixtures sheet.
+- `system_macro_test_evaluate` is disabled unless explicitly enabled and can optionally queue a pending macro upsert bundle.
+
 ### Portainer integration (module/container status report)
 
 Jarvis supports a deterministic WS action:
