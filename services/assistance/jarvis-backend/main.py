@@ -8320,6 +8320,7 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             "pending_cancel",
             "system_reload_queue",
             "system_macro_upsert_bundle_queue",
+            "system_macro_seed_baseline_queue",
             "google_account_relink_queue",
         }
         if name not in allowed:
