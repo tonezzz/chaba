@@ -239,8 +239,18 @@ export default function App() {
   }, [persistUiLogLine]);
 
   const backendCandidates = useCallback((): string[] => {
+    const override = String(((import.meta as any).env?.VITE_JARVIS_HTTP_URL as string | undefined) || "").trim();
+    const normOverride = override ? override.replace(/\/+$|\s+$/g, "").replace(/\/+$/g, "") : "";
     const isJarvisSubpath = location.pathname.startsWith("/jarvis");
-    return isJarvisSubpath ? ["/jarvis/api", "/jarvis", ""] : ["", "/jarvis/api", "/jarvis"];
+    const defaults = isJarvisSubpath ? ["/jarvis/api", "/jarvis", ""] : ["", "/jarvis/api", "/jarvis"];
+    const out = normOverride ? [normOverride, ...defaults] : defaults;
+    const seen = new Set<string>();
+    return out.filter((v) => {
+      const k = String(v || "");
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
   }, []);
 
   const flushUiLogToBackend = useCallback(async () => {
@@ -1301,9 +1311,11 @@ export default function App() {
 
   const [containerStatus, setContainerStatus] = useState<any>(null);
   const [containerStatusError, setContainerStatusError] = useState<string>("");
+  const [uiCardInputByMsgId, setUiCardInputByMsgId] = useState<Record<string, string>>({});
 
   const [depsStatus, setDepsStatus] = useState<any>(null);
   const [depsStatusError, setDepsStatusError] = useState<string>("");
+  const [depsStatusRefreshNonce, setDepsStatusRefreshNonce] = useState<number>(0);
 
   useEffect(() => {
     if (hasKey) return;
@@ -1311,37 +1323,59 @@ export default function App() {
     const fetchOnce = async () => {
       try {
         setContainerStatusError("");
-        let res: Response | null = null;
-        try {
-          res = await fetch("/jarvis/api/status", { cache: "no-store" });
-        } catch {
-          res = null;
-        }
-        if (!res || !res.ok) {
-          try {
-            res = await fetch("/jarvis/status", { cache: "no-store" });
-          } catch {
-            res = null;
+        const joinUrl = (base: string, path: string): string => {
+          const b = String(base || "").replace(/\/+$/, "");
+          const p = String(path || "");
+          if (!b) return p;
+          return `${b}${p}`;
+        };
+
+        const pathsToTry = ["/api/status", "/status", "/jarvis/api/status", "/jarvis/status", "/status"];
+        let lastErr = "status_fetch_failed";
+        let okJson: any = null;
+
+        outer: for (const base of backendCandidates()) {
+          for (const p of pathsToTry) {
+            try {
+              const attempt = await fetch(joinUrl(base, p), { cache: "no-store" });
+              if (!attempt || !attempt.ok) {
+                if (attempt) lastErr = `status_fetch_failed (http ${attempt.status})`;
+                continue;
+              }
+
+              // If the server returns HTML (e.g. /jarvis/ index), do NOT accept it.
+              const ct = String(attempt.headers.get("content-type") || "").toLowerCase();
+              const bodyText = await attempt.text();
+              const trimmed = String(bodyText || "").trim();
+              if (!trimmed) {
+                lastErr = `status_error: empty response (http ${attempt.status})`;
+                continue;
+              }
+
+              // Prefer explicit JSON content-type, but also allow valid JSON even if content-type is wrong.
+              if (ct && !ct.includes("json") && (trimmed.startsWith("<!doctype") || trimmed.startsWith("<html") || trimmed.startsWith("<"))) {
+                const preview = trimmed.length > 220 ? trimmed.slice(0, 220) + "…" : trimmed;
+                lastErr = `status_error: non_json_response (http ${attempt.status}) preview=${preview}`;
+                continue;
+              }
+
+              try {
+                okJson = JSON.parse(trimmed);
+                break outer;
+              } catch {
+                const preview = trimmed.length > 220 ? trimmed.slice(0, 220) + "…" : trimmed;
+                lastErr = `status_error: invalid json (http ${attempt.status}) preview=${preview}`;
+                continue;
+              }
+            } catch (e: any) {
+              lastErr = String(e?.message || e || "status_fetch_failed");
+              continue;
+            }
           }
         }
-        if (!res || !res.ok) {
-          res = await fetch("/status", { cache: "no-store" });
-        }
-        if (!res) throw new Error("status_fetch_failed");
 
-        const bodyText = await res.text();
-        const trimmed = String(bodyText || "").trim();
-        if (!trimmed) {
-          throw new Error(`status_error: empty response (http ${res.status})`);
-        }
-        let js: any = null;
-        try {
-          js = JSON.parse(trimmed);
-        } catch (e: any) {
-          const preview = trimmed.length > 220 ? trimmed.slice(0, 220) + "…" : trimmed;
-          throw new Error(`status_error: invalid json (http ${res.status}) preview=${preview}`);
-        }
-        if (!cancelled) setContainerStatus(js);
+        if (okJson == null) throw new Error(lastErr);
+        if (!cancelled) setContainerStatus(okJson);
       } catch (e: any) {
         if (!cancelled) {
           setContainerStatus(null);
@@ -1355,7 +1389,7 @@ export default function App() {
       cancelled = true;
       window.clearInterval(t);
     };
-  }, [hasKey]);
+  }, [hasKey, backendCandidates]);
 
   useEffect(() => {
     if (!hasKey) return;
@@ -1403,12 +1437,12 @@ export default function App() {
       }
     };
     void fetchOnce();
-    const t = window.setInterval(fetchOnce, 5000);
+    const t = window.setInterval(fetchOnce, 60000);
     return () => {
       cancelled = true;
       window.clearInterval(t);
     };
-  }, [hasKey, statusDetailsOpen]);
+  }, [hasKey, statusDetailsOpen, depsStatusRefreshNonce]);
 
   const getSeqCompletedTasks = () => {
     const completedBlocks = String(seqCompletedNotes || "")
@@ -1814,7 +1848,20 @@ return (
 
                  <div className="text-[11px] font-mono text-slate-400 border border-slate-800 rounded-lg bg-slate-950/20 px-2 py-2">
                    <div className="flex items-center justify-between gap-2">
-                     <span className="text-slate-500 uppercase tracking-widest">deps</span>
+                     <div className="flex items-center gap-2 min-w-0">
+                       <span className="text-slate-500 uppercase tracking-widest">deps</span>
+                       <button
+                         className="text-[10px] font-mono px-2 py-[2px] rounded border border-slate-800 bg-slate-950/40 text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
+                         onClick={(e) => {
+                           e.preventDefault();
+                           e.stopPropagation();
+                           setDepsStatusRefreshNonce((v) => (Number.isFinite(v) ? v + 1 : Date.now()));
+                         }}
+                         title="Refresh dependency status"
+                       >
+                         refresh
+                       </button>
+                     </div>
                      {depsStatusError ? (
                        <span className="text-red-300">error</span>
                      ) : depsStatus ? (
@@ -1948,6 +1995,8 @@ return (
                  return true;
                });
                return filtered.map((m) => {
+               const uiRaw: any = (m.metadata?.raw as any) ?? (m.metadata?.ws as any) ?? null;
+               const isUiCard = String(uiRaw?.type || "").toLowerCase() === "ui";
                const canExpand = Boolean(m.metadata?.raw || m.metadata?.trace_id || m.metadata?.ws?.type || m.metadata?.ws?.instance_id);
               const expanded = expandedLogId === m.id;
               let rawText = "";
@@ -1970,6 +2019,127 @@ return (
                const typeLine = m.metadata?.ws?.type ? `type=${String(m.metadata.ws.type)}` : "";
                const instLine = m.metadata?.ws?.instance_id ? `instance_id=${String(m.metadata.ws.instance_id)}` : "";
                const metaLine = [typeLine, instLine, traceLine].filter(Boolean).join(" ");
+
+               const renderUiCard = () => {
+                 const kind = String(uiRaw?.kind || "ui");
+                 const title = uiRaw?.title != null ? String(uiRaw.title) : "";
+                 const body = uiRaw?.body != null ? String(uiRaw.body) : "";
+                 const risk = uiRaw?.risk != null ? String(uiRaw.risk) : "";
+                 const confirmationId = uiRaw?.confirmation_id != null ? String(uiRaw.confirmation_id) : "";
+                 const primary = uiRaw?.primary && typeof uiRaw.primary === "object" ? uiRaw.primary : null;
+                 const secondary = uiRaw?.secondary && typeof uiRaw.secondary === "object" ? uiRaw.secondary : null;
+                 const input = uiRaw?.input && typeof uiRaw.input === "object" ? uiRaw.input : null;
+                 const inputName = input?.name != null ? String(input.name) : "";
+                 const inputLabel = input?.label != null ? String(input.label) : "";
+                 const inputPlaceholder = input?.placeholder != null ? String(input.placeholder) : "";
+                 const inputValue = uiCardInputByMsgId[m.id] ?? "";
+
+                 const riskClass = risk === "high" ? "border-red-500/40" : risk === "medium" ? "border-yellow-500/40" : "border-cyan-500/30";
+                 const badgeClass = risk === "high"
+                   ? "text-red-300 bg-red-950/30 border-red-500/30"
+                   : risk === "medium"
+                     ? "text-yellow-300 bg-yellow-950/30 border-yellow-500/30"
+                     : "text-cyan-200 bg-cyan-950/30 border-cyan-500/30";
+
+                 const invokeUiTool = async (tool: string, extraArgs?: any) => {
+                   const toolName = String(tool || "").trim();
+                   if (!toolName) return;
+                   const args: any = extraArgs && typeof extraArgs === "object" ? { ...extraArgs } : {};
+                   if (confirmationId && (toolName === "pending_confirm" || toolName === "pending_cancel" || toolName === "pending_preview" || toolName === "pending_get")) {
+                     if (args.confirmation_id == null) args.confirmation_id = confirmationId;
+                   }
+                   if (toolName === "pending_confirm" && confirmationId && inputName) {
+                     const v = String(inputValue || "").trim();
+                     if (v) args.input = { ...(args.input && typeof args.input === "object" ? args.input : {}), [inputName]: v };
+                   }
+
+                   setMessages((prev) => [
+                     {
+                       id: `${Date.now()}_ui_action_${Math.random().toString(16).slice(2)}`,
+                       role: "user",
+                       text: `ui_action ${toolName}${confirmationId ? ` confirmation_id=${confirmationId}` : ""}`,
+                       timestamp: new Date(),
+                     },
+                     ...prev,
+                   ]);
+
+                   try {
+                     const res = await liveService.current?.invokeTool(toolName, args);
+                     setMessages((prev) => [
+                       {
+                         id: `${Date.now()}_ui_action_ok_${Math.random().toString(16).slice(2)}`,
+                         role: "system",
+                         text: `ui_action_ok ${toolName}`,
+                         timestamp: new Date(),
+                         metadata: { raw: res, severity: "info", category: "ws" },
+                       },
+                       ...prev,
+                     ]);
+                   } catch (e: any) {
+                     setMessages((prev) => [
+                       {
+                         id: `${Date.now()}_ui_action_err_${Math.random().toString(16).slice(2)}`,
+                         role: "system",
+                         text: `ui_action_error ${toolName}: ${String(e?.message || e || "error")}`,
+                         timestamp: new Date(),
+                         metadata: { severity: "warn", category: "ws" },
+                       },
+                       ...prev,
+                     ]);
+                   }
+                 };
+
+                 return (
+                   <div
+                     className={`pl-5 border-l ${riskClass} py-2 rounded-md bg-slate-950/30`}
+                     onClick={(e) => {
+                       e.preventDefault();
+                       e.stopPropagation();
+                     }}
+                   >
+                     <div className="flex items-start justify-between gap-2">
+                       <div className="min-w-0">
+                         <div className="flex items-center gap-2">
+                           <span className="text-[11px] font-mono text-slate-400">{kind}</span>
+                           {risk ? <span className={`text-[10px] font-mono px-2 py-[2px] rounded border ${badgeClass}`}>{risk}</span> : null}
+                         </div>
+                         {title ? <div className="text-slate-100 font-mono text-sm mt-1">{title}</div> : null}
+                       </div>
+                       {confirmationId ? <span className="text-[10px] font-mono text-slate-500 shrink-0">{confirmationId}</span> : null}
+                     </div>
+                     {body ? <div className="mt-2 text-slate-300 whitespace-pre-wrap text-sm">{body}</div> : null}
+                     {inputName ? (
+                       <div className="mt-3">
+                         {inputLabel ? <div className="text-[11px] font-mono text-slate-400 mb-1">{inputLabel}</div> : null}
+                         <input
+                           value={inputValue}
+                           onChange={(e) => setUiCardInputByMsgId((prev) => ({ ...prev, [m.id]: e.target.value }))}
+                           placeholder={inputPlaceholder}
+                           className="w-full px-3 py-2 rounded-lg text-sm font-mono bg-slate-950 border border-slate-800 text-slate-200 placeholder:text-slate-600"
+                         />
+                       </div>
+                     ) : null}
+                     <div className="mt-3 flex items-center gap-2">
+                       {secondary?.label && secondary?.tool ? (
+                         <button
+                           className="px-3 py-2 rounded-lg border border-slate-700 bg-slate-950/40 text-slate-200 hover:bg-slate-800/60 text-xs font-mono"
+                           onClick={() => void invokeUiTool(String(secondary.tool), secondary.args)}
+                         >
+                           {String(secondary.label)}
+                         </button>
+                       ) : null}
+                       {primary?.label && primary?.tool ? (
+                         <button
+                           className="px-3 py-2 rounded-lg border border-cyan-500/40 bg-cyan-950/20 text-cyan-200 hover:bg-cyan-950/40 text-xs font-mono"
+                           onClick={() => void invokeUiTool(String(primary.tool), primary.args)}
+                         >
+                           {String(primary.label)}
+                         </button>
+                       ) : null}
+                     </div>
+                   </div>
+                 );
+               };
                return (
                  <div
                    key={m.id}
@@ -2026,7 +2196,7 @@ return (
                      )}
                   </div>
                    <div className="text-slate-300 pl-5 border-l border-slate-700 py-1 whitespace-pre-wrap">
-                      {m.text}
+                      {isUiCard ? renderUiCard() : m.text}
                       {expanded && metaLine && (
                         <div className="mt-2 text-[11px] font-mono text-slate-500 whitespace-pre-wrap">{metaLine}</div>
                       )}

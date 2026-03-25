@@ -818,6 +818,20 @@ export class LiveService {
       client_id: message?.client_id != null ? String(message.client_id) : undefined,
     };
 
+    if (message?.type === "ui") {
+      const kind = message?.kind != null ? String(message.kind) : "ui";
+      const title = message?.title != null ? String(message.title) : "";
+      const summary = title ? `${kind}: ${title}` : String(kind);
+      this.onMessage({
+        id: `${Date.now()}_ui_${Math.random().toString(16).slice(2)}`,
+        role: "system",
+        text: summary,
+        timestamp: new Date(),
+        metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "info", category: "ws" },
+      });
+      return;
+    }
+
 		if (message?.type === "tool_result") {
 			const toolName = message?.name != null ? String(message.name) : "tool";
 			const ok = message?.ok === true;
