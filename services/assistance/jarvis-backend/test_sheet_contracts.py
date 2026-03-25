@@ -921,6 +921,71 @@ def test_system_macro_upsert_queues_pending_update_when_row_exists(monkeypatch: 
     assert "google_sheets_values_update" in str(payload.get("mcp_name"))
 
 
+def test_system_macro_test_run_uses_fixtures_sheet(monkeypatch: pytest.MonkeyPatch) -> None:
+    main = _import_main_with_genai_stub(monkeypatch)
+
+    ws = SimpleNamespace()
+    ws.state = SimpleNamespace(sys_kv={})
+    monkeypatch.setattr(main, "_SESSION_WS", {"s1": ws})
+    monkeypatch.setattr(main, "_system_spreadsheet_id", lambda: "ssid")
+    monkeypatch.setattr(main, "_system_macros_sheet_name", lambda **_kw: "macros")
+    monkeypatch.setattr(main, "_pick_sheets_tool_name", lambda a, b: a)
+
+    # Provide a single macro in the macro sheet.
+    async def fake_mcp_tools_call(name: str, arguments: dict[str, Any]):
+        if "google_sheets_values_get" in str(name):
+            rng = str(arguments.get("range") or "")
+            if rng.startswith("macros!"):
+                header = ["name", "enabled", "description", "parameters_json", "steps_json"]
+                row = ["macro_x", "TRUE", "desc", "{}", "[{\"tool\": \"time_now\", \"args\": {}}]"]
+                return {"content": [{"type": "text", "text": json.dumps({"ok": True, "values": [header, row]})}]}
+            if rng.startswith("macro_fixtures!"):
+                header = ["name", "enabled", "args_json", "expect_contains", "expected_json"]
+                row = ["macro_x", "TRUE", "{}", "unix_ts", ""]
+                return {"content": [{"type": "text", "text": json.dumps({"ok": True, "values": [header, row]})}]}
+        raise RuntimeError(f"unexpected mcp call: {name} {arguments}")
+
+    monkeypatch.setattr(main, "_mcp_tools_call", fake_mcp_tools_call)
+
+    # Make time_now deterministic.
+    out = asyncio.run(main._handle_mcp_tool_call("s1", "time_now", {"timezone": "UTC"}))
+    assert isinstance(out, dict)
+
+    report = asyncio.run(main._handle_mcp_tool_call("s1", "system_macro_test_run", {"name": "macro_x", "limit": 5}))
+    assert report.get("ok") is True
+    assert report.get("macro") == "macro_x"
+    assert report.get("fixtures") == 1
+    assert report.get("passed") == 1
+
+
+def test_system_macro_test_evaluate_requires_flag_and_parses_noop(monkeypatch: pytest.MonkeyPatch) -> None:
+    main = _import_main_with_genai_stub(monkeypatch)
+
+    # Evaluator disabled by default.
+    monkeypatch.setattr(main, "_sys_kv_snapshot", lambda: {})
+    with pytest.raises(Exception) as e:
+        asyncio.run(main._handle_mcp_tool_call("s1", "system_macro_test_evaluate", {"name": "macro_x", "report": {"ok": True}}))
+    assert "macro_evaluator_disabled" in str(e.value)
+
+    # Enable evaluator.
+    monkeypatch.setattr(main, "_sys_kv_snapshot", lambda: {"system.macros.evaluator.enabled": "true"})
+
+    async def fake_macro_cached(**_kw):
+        return {"macro_x": {"name": "macro_x", "description": "d", "parameters": {"type": "object", "properties": {}}, "steps": [{"tool": "time_now", "args": {}}]}}
+
+    monkeypatch.setattr(main, "_macro_tools_get_cached", fake_macro_cached)
+
+    async def fake_gemini_summarize_text(*, system_instruction: str, prompt: str, model: str | None = None) -> str:
+        _ = (system_instruction, prompt, model)
+        return json.dumps({"action": "noop", "rationale": "ok"})
+
+    monkeypatch.setattr(main, "_gemini_summarize_text", fake_gemini_summarize_text)
+
+    out = asyncio.run(main._handle_mcp_tool_call("s1", "system_macro_test_evaluate", {"name": "macro_x", "report": {"ok": True}}))
+    assert out.get("ok") is True
+    assert out.get("action") == "noop"
+
+
 def test_memo_enrich_followup_appends_canonical_row(monkeypatch: pytest.MonkeyPatch) -> None:
     main = _import_main_with_genai_stub(monkeypatch)
 
