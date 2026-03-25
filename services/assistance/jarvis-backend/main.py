@@ -8321,6 +8321,7 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             "system_reload_queue",
             "system_macro_upsert_bundle_queue",
             "system_macro_seed_baseline_queue",
+            "system_macro_get",
             "system_run_macro",
             "google_account_relink_queue",
         }
