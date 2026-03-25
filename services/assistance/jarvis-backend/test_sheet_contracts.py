@@ -958,6 +958,33 @@ def test_system_macro_test_run_uses_fixtures_sheet(monkeypatch: pytest.MonkeyPat
     assert report.get("passed") == 1
 
 
+def test_system_macro_seed_baseline_queue_creates_pending_bundle(monkeypatch: pytest.MonkeyPatch) -> None:
+    main = _import_main_with_genai_stub(monkeypatch)
+
+    pending: dict[str, Any] = {}
+
+    def fake_create_pending_write(session_id: str, action: str, payload: Any) -> str:
+        assert session_id == "s1"
+        assert action == "bundle_seed_macros"
+        pending["payload"] = payload
+        return "pw_seed"
+
+    monkeypatch.setattr(main, "_create_pending_write", fake_create_pending_write)
+    monkeypatch.setattr(main, "_MACRO_TOOL_CACHE", {"ts": 0.0, "macros": {}})
+
+    out = asyncio.run(main._handle_mcp_tool_call("s1", "system_macro_seed_baseline_queue", {"reload_mode": "full"}))
+    assert out.get("ok") is True
+    assert out.get("queued") is True
+    assert out.get("confirmation_id") == "pw_seed"
+
+    payload = pending.get("payload")
+    assert isinstance(payload, dict)
+    assert payload.get("reload_mode") == "full"
+    macros = payload.get("macros")
+    assert isinstance(macros, list)
+    assert any(isinstance(m, dict) and str(m.get("name") or "") == "macro_time_now" for m in macros)
+
+
 def test_system_macro_test_evaluate_requires_flag_and_parses_noop(monkeypatch: pytest.MonkeyPatch) -> None:
     main = _import_main_with_genai_stub(monkeypatch)
 

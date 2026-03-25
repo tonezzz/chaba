@@ -1312,6 +1312,20 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             ]
             preview["summary"] = f"publish macro '{macro_name}' + system_reload (mode={mode})"
             preview["details"] = {"macro": {"name": macro_name}, "reload_mode": mode}
+        elif action == "bundle_seed_macros" and isinstance(payload, dict):
+            macros = payload.get("macros") if isinstance(payload.get("macros"), list) else []
+            mode = str(payload.get("reload_mode") or "full").strip().lower() or "full"
+            names: list[str] = []
+            for it in macros:
+                if isinstance(it, dict):
+                    nm = str(it.get("name") or "").strip()
+                    if nm:
+                        names.append(nm)
+            preview["risk"] = "high"
+            preview["writes_count"] = len(names)
+            preview["targets"] = [{"kind": "google_sheet", "action": "macro_upsert", "name": nm} for nm in names[:50]]
+            preview["summary"] = f"seed_macros count={len(names)} + reload (mode={mode})"
+            preview["details"] = {"count": len(names), "names": names[:200], "reload_mode": mode}
         elif action == "google_account_relink" and isinstance(payload, dict):
             auth_url = str(payload.get("auth_url") or "").strip()
             redirect_uri = str(payload.get("redirect_uri") or "").strip()
@@ -1586,6 +1600,163 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                 "macro_write_result": mcp_text_json(macro_write_result),
                 "reload_mode": reload_mode,
                 "reload_result": reload_result,
+            }
+
+        if action == "bundle_seed_macros":
+            ws = session_ws.get(str(session_id)) if isinstance(session_ws, dict) else None
+            if ws is None:
+                raise HTTPException(status_code=400, detail="missing_session_ws")
+            if not isinstance(payload, dict):
+                raise HTTPException(status_code=400, detail="invalid_pending_payload")
+            macros_in = payload.get("macros")
+            reload_mode = str(payload.get("reload_mode") or "full").strip().lower() or "full"
+            if not isinstance(macros_in, list):
+                raise HTTPException(status_code=400, detail="invalid_pending_payload")
+
+            # Upsert each macro row, then reload once.
+            system_spreadsheet_id = deps["system_spreadsheet_id"]
+            system_macros_sheet_name = deps["system_macros_sheet_name"]
+            pick_sheets_tool_name = deps["pick_sheets_tool_name"]
+            mcp_tools_call = deps["mcp_tools_call"]
+            mcp_text_json = deps["mcp_text_json"]
+            sys_kv0 = getattr(ws.state, "sys_kv", None)
+            sys_kv_dict0 = sys_kv0 if isinstance(sys_kv0, dict) else None
+
+            spreadsheet_id = str(system_spreadsheet_id() or "").strip()
+            if not spreadsheet_id:
+                raise HTTPException(status_code=400, detail="missing_system_spreadsheet_id")
+            sheet_name = str(system_macros_sheet_name(sys_kv=sys_kv_dict0) or "").strip() or "macros"
+
+            tool_get = pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+            res = await mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name}!A:Z"})
+            parsed = mcp_text_json(res)
+            values = parsed.get("values") if isinstance(parsed, dict) else None
+            data = parsed.get("data") if isinstance(parsed, dict) else None
+            if not isinstance(values, list) and isinstance(data, dict):
+                values = data.get("values")
+            if not isinstance(values, list) or not values:
+                raise HTTPException(status_code=400, detail="system_macros_sheet_empty")
+
+            header = [str(c or "").strip().lower() for c in (values[0] if isinstance(values[0], list) else [])]
+            idx: dict[str, int] = {}
+            for i, col in enumerate(header):
+                if col and col not in idx:
+                    idx[col] = int(i)
+
+            required_cols = ["name", "enabled", "description", "parameters_json", "steps_json"]
+            missing = [c for c in required_cols if c not in idx]
+            if missing:
+                raise HTTPException(status_code=400, detail={"system_macros_sheet_missing_columns": missing})
+
+            def _col_letter(col_idx0: int) -> str:
+                n = int(col_idx0) + 1
+                if n <= 0:
+                    return "A"
+                out = ""
+                while n > 0:
+                    n, r = divmod(n - 1, 26)
+                    out = chr(ord("A") + r) + out
+                return out or "A"
+
+            def _cell(row: list[Any], col: str) -> Any:
+                j = idx.get(str(col or "").strip().lower())
+                if j is None or j < 0 or j >= len(row):
+                    return ""
+                return row[j]
+
+            max_col = max(idx[c] for c in required_cols)
+            tool_append = pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+            tool_update = pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+
+            writes: list[dict[str, Any]] = []
+            for macro_args in macros_in:
+                if not isinstance(macro_args, dict):
+                    continue
+                name = str(macro_args.get("name") or "").strip()
+                if not name:
+                    continue
+                enabled = macro_args.get("enabled")
+                if enabled is None:
+                    enabled = True
+                enabled_cell = "TRUE" if bool(enabled) else "FALSE"
+                description = str(macro_args.get("description") or "").strip()
+                parameters_json = str(macro_args.get("parameters_json") or "").strip()
+                steps_json = str(macro_args.get("steps_json") or "").strip()
+                if not steps_json:
+                    continue
+
+                found_row_num: int | None = None
+                for i, r in enumerate(values[1:], start=2):
+                    if not isinstance(r, list):
+                        continue
+                    nm = str(_cell(r, "name") or "").strip()
+                    if nm == name:
+                        found_row_num = int(i)
+                        break
+
+                row_out: list[Any] = [""] * (max_col + 1)
+                row_out[idx["name"]] = name
+                row_out[idx["enabled"]] = enabled_cell
+                row_out[idx["description"]] = description
+                row_out[idx["parameters_json"]] = parameters_json
+                row_out[idx["steps_json"]] = steps_json
+
+                if found_row_num is None:
+                    res_w = await mcp_tools_call(
+                        tool_append,
+                        {
+                            "spreadsheet_id": spreadsheet_id,
+                            "range": f"{sheet_name}!A:Z",
+                            "values": [row_out],
+                            "value_input_option": "RAW",
+                        },
+                    )
+                    writes.append({"name": name, "op": "append", "result": mcp_text_json(res_w)})
+                else:
+                    start_col = _col_letter(0)
+                    end_col = _col_letter(max_col)
+                    res_w = await mcp_tools_call(
+                        tool_update,
+                        {
+                            "spreadsheet_id": spreadsheet_id,
+                            "range": f"{sheet_name}!{start_col}{found_row_num}:{end_col}{found_row_num}",
+                            "values": [row_out],
+                            "value_input_option": "RAW",
+                        },
+                    )
+                    writes.append({"name": name, "op": "update", "row": found_row_num, "result": mcp_text_json(res_w)})
+
+            # Reload system after seeding.
+            try:
+                await ws.send_json({"type": "text", "text": "reloading system"})
+            except Exception:
+                pass
+            reload_result: Any
+            if system_reload_impl is not None:
+                reload_result = await system_reload_impl(ws)
+            else:
+                sys_kv = await load_ws_system_kv(ws)
+                macros = await macro_tools_force_reload_from_sheet(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+                keys = sorted([str(k or "").strip() for k in (sys_kv or {}).keys()]) if isinstance(sys_kv, dict) else []
+                reload_result = {"ok": True, "sys_kv": sys_kv if isinstance(sys_kv, dict) else None, "sys_kv_keys": keys, "macros_count": len(macros or {})}
+
+            try:
+                lang = str(getattr(getattr(ws, "state", None), "user_lang", "") or "").strip() or "en"
+                done_txt = "system reloaded" if lang != "th" else "รีโหลดระบบสำเร็จ"
+                await ws.send_json({"type": "text", "text": done_txt})
+            except Exception:
+                pass
+
+            return {
+                "ok": True,
+                "bundle": True,
+                "seeded": True,
+                "count": len(writes),
+                "writes": writes,
+                "reload_mode": reload_mode,
+                "reload_result": reload_result,
+                "sheet": sheet_name,
+                "spreadsheet_id": spreadsheet_id,
             }
 
         if action == "google_account_relink":
