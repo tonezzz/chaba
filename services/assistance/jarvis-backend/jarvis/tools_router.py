@@ -301,6 +301,46 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         keys = sorted([str(k or "").strip() for k in (sys_kv or {}).keys()]) if isinstance(sys_kv, dict) else []
         return {"ok": True, "sys_kv_keys": keys, "macros_count": len(macros or {})}
 
+    if tool_name == "system_reload_macros":
+        session_ws = deps["SESSION_WS"]
+        load_ws_system_kv = deps["load_ws_system_kv"]
+        macro_tools_force_reload_from_sheet = deps["macro_tools_force_reload_from_sheet"]
+        macro_tools_reload_selected_from_sheet = deps.get("macro_tools_reload_selected_from_sheet")
+
+        ws = session_ws.get(str(session_id)) if session_id else None
+        if ws is None:
+            raise HTTPException(status_code=400, detail="missing_session_ws")
+
+        mode = str(args.get("mode") or "all").strip().lower() or "all"
+        if mode not in {"all", "by_name", "by_id"}:
+            raise HTTPException(status_code=400, detail={"invalid_mode": mode, "allowed": ["all", "by_name", "by_id"]})
+
+        sys_kv = await load_ws_system_kv(ws)
+        sys_kv_dict = sys_kv if isinstance(sys_kv, dict) else None
+
+        if mode == "all":
+            macros = await macro_tools_force_reload_from_sheet(sys_kv=sys_kv_dict)
+            return {"ok": True, "mode": "all", "macros_count": len(macros or {})}
+
+        # by_name / by_id (aliases)
+        single = str(args.get("name") or "").strip()
+        if mode == "by_id" and not single:
+            single = str(args.get("id") or "").strip()
+        names_in = args.get("names")
+        if mode == "by_id" and not isinstance(names_in, list):
+            names_in = args.get("ids")
+        names: list[str] = []
+        if single:
+            names.append(single)
+        if isinstance(names_in, list):
+            names.extend([str(x or "").strip() for x in names_in])
+        names = [n for n in names if n]
+        if not names:
+            raise HTTPException(status_code=400, detail="missing_macro_name")
+        if macro_tools_reload_selected_from_sheet is None:
+            raise HTTPException(status_code=500, detail="missing_macro_tools_reload_selected_from_sheet")
+        return await macro_tools_reload_selected_from_sheet(names=names, sys_kv=sys_kv_dict)
+
     if tool_name == "system_reload_queue":
         if not session_id:
             raise HTTPException(status_code=400, detail="missing_session_id")
