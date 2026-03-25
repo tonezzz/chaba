@@ -1095,6 +1095,15 @@ def _memo_match_anywhere(text: str) -> tuple[bool, str | None]:
     except Exception:
         pass
 
+    # Guard: do not treat memo subcommands as "add/save memo" triggers.
+    # Example bug: "memo assess 1" was being interpreted as a memo creation trigger,
+    # appending a new memo row and then starting memo_enrich follow-ups.
+    try:
+        if re.match(r"^memo\s+(assess|update|merge|list|pending|confirm|preview)\b", low, flags=re.IGNORECASE):
+            return (False, None)
+    except Exception:
+        pass
+
     # EN patterns (allow keyword anywhere).
     m_en = re.search(r"\b(?:add|save|create)?\s*memo\b\s*[:\-]?\s*(.*)$", low, flags=re.IGNORECASE)
     if m_en:
