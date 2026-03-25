@@ -845,15 +845,16 @@ export default function App() {
 			return { key, value, dryRun };
 		};
 
-		const parseSysDedupe = (raw: string): { dryRun: boolean } | null => {
+		const parseSysDedupe = (raw: string): { dryRun: boolean; sort: boolean } | null => {
 			const s = String(raw || "")
 				.replace(/[\u00A0\u200B-\u200D\uFEFF]/g, "")
 				.replace(/\s+/g, " ")
 				.trim();
-			const m = s.match(/^\/(?:sys|system)\s+dedupe(?:\s+(dry))?$/i);
+			const m = s.match(/^\/(?:sys|system)\s+dedupe(?:\s+(sort))?(?:\s+(dry))?$/i);
 			if (!m) return null;
-			const dryRun = String(m[1] || "").toLowerCase() === "dry";
-			return { dryRun };
+			const sort = String(m[1] || "").toLowerCase() === "sort";
+			const dryRun = String(m[2] || "").toLowerCase() === "dry";
+			return { dryRun, sort };
 		};
 
 		const sysSet = parseSysSet(normalized);
@@ -883,7 +884,7 @@ export default function App() {
 
 		const sysDedupe = parseSysDedupe(normalized);
 		if (sysDedupe) {
-			liveService.current?.sendSysKvDedupe({ dry_run: sysDedupe.dryRun });
+			liveService.current?.sendSysKvDedupe({ dry_run: sysDedupe.dryRun, sort: sysDedupe.sort });
 			setComposerText("");
 			setAttachments([]);
 			setMessages((prev) => [
@@ -891,7 +892,7 @@ export default function App() {
 				{
 					id: `${Date.now()}_sys_dedupe_ui`,
 					role: "system",
-					text: `${sysDedupe.dryRun ? "sys_kv_dedupe (dry_run)" : "sys_kv_dedupe"}`,
+					text: `${sysDedupe.dryRun ? "sys_kv_dedupe (dry_run)" : "sys_kv_dedupe"}${sysDedupe.sort ? " (sort)" : ""}`,
 					timestamp: new Date(),
 					metadata: { severity: "info", category: "ws" },
 				},

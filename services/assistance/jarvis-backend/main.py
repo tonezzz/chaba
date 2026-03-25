@@ -7931,7 +7931,7 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
     }
 
 
-async def _sys_kv_dedupe_disable_sheet(*, dry_run: bool = True) -> dict[str, Any]:
+async def _sys_kv_dedupe_disable_sheet(*, dry_run: bool = True, sort: bool = False) -> dict[str, Any]:
     spreadsheet_id = _system_spreadsheet_id()
     if not spreadsheet_id:
         return {"ok": False, "error": "missing_spreadsheet"}
@@ -8038,6 +8038,40 @@ async def _sys_kv_dedupe_disable_sheet(*, dry_run: bool = True) -> dict[str, Any
             rng = f"{sys_sheet}!{col_letter}{rnum}:{col_letter}{rnum}"
             changes.append({"row": rnum, "range": rng, "value": "false"})
 
+    sort_plan: Optional[dict[str, Any]] = None
+    if sort:
+        try:
+            tool_meta = _pick_sheets_tool_name("google_sheets_get_spreadsheet", "google_sheets_get_spreadsheet")
+            meta_res = await _mcp_tools_call(tool_meta, {"spreadsheet_id": spreadsheet_id})
+            meta_parsed = _mcp_text_json(meta_res)
+            meta_data = meta_parsed.get("data") if isinstance(meta_parsed, dict) else None
+            if not isinstance(meta_data, dict):
+                meta_data = meta_parsed
+
+            sheet_id: Optional[int] = None
+            sheets = meta_data.get("sheets") if isinstance(meta_data, dict) else None
+            if isinstance(sheets, list):
+                for s in sheets:
+                    props = s.get("properties") if isinstance(s, dict) else None
+                    title = str(props.get("title") or "") if isinstance(props, dict) else ""
+                    if title.strip() == sys_sheet:
+                        try:
+                            sheet_id = int(props.get("sheetId"))
+                        except Exception:
+                            sheet_id = None
+                        break
+
+            if sheet_id is not None:
+                # Skip header row if present.
+                sr0 = 1 if int(start_row) > 1 else 0
+                sort_plan = {
+                    "sheet_id": sheet_id,
+                    "startRowIndex": sr0,
+                    "sortColumnIndex": int(key_col or 0),
+                }
+        except Exception:
+            sort_plan = None
+
     if dry_run:
         return {
             "ok": True,
@@ -8046,6 +8080,8 @@ async def _sys_kv_dedupe_disable_sheet(*, dry_run: bool = True) -> dict[str, Any
             "sheet": sys_sheet,
             "duplicates": dupes,
             "changes": changes,
+            "sort": bool(sort),
+            "sort_plan": sort_plan,
         }
 
     tool_upd = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
@@ -8065,6 +8101,28 @@ async def _sys_kv_dedupe_disable_sheet(*, dry_run: bool = True) -> dict[str, Any
         except Exception as e:
             applied.append({"ok": False, "row": ch.get("row"), "range": ch.get("range"), "error": f"{type(e).__name__}: {e}"})
 
+    sort_applied: Any = None
+    if sort and isinstance(sort_plan, dict) and sort_plan.get("sheet_id") is not None:
+        try:
+            tool_bu = await _resolve_mcp_tool_name("google_sheets_batch_update", fallback="google_sheets_batch_update")
+            sort_req = {
+                "sortRange": {
+                    "range": {
+                        "sheetId": int(sort_plan["sheet_id"]),
+                        "startRowIndex": int(sort_plan.get("startRowIndex") or 0),
+                    },
+                    "sortSpecs": [
+                        {
+                            "dimensionIndex": int(sort_plan.get("sortColumnIndex") or 0),
+                            "sortOrder": "ASCENDING",
+                        }
+                    ],
+                }
+            }
+            sort_applied = _mcp_text_json(await _mcp_tools_call(tool_bu, {"spreadsheet_id": spreadsheet_id, "requests": [sort_req]}))
+        except Exception as e:
+            sort_applied = {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
     return {
         "ok": True,
         "dry_run": False,
@@ -8073,6 +8131,9 @@ async def _sys_kv_dedupe_disable_sheet(*, dry_run: bool = True) -> dict[str, Any
         "duplicates": dupes,
         "changes": changes,
         "applied": applied,
+        "sort": bool(sort),
+        "sort_plan": sort_plan,
+        "sort_applied": sort_applied,
     }
 
 
@@ -8206,8 +8267,9 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
                 return True
 
             dry_run = bool(msg.get("dry_run") is True)
+            sort = bool(msg.get("sort") is True)
             try:
-                result = await _sys_kv_dedupe_disable_sheet(dry_run=dry_run)
+                result = await _sys_kv_dedupe_disable_sheet(dry_run=dry_run, sort=sort)
             except Exception as e:
                 await _ws_send_json(
                     ws,
