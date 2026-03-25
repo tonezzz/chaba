@@ -907,8 +907,104 @@ export default function App() {
 			return;
 		}
 
+		const parseToolInvoke = (raw: string): { name: string; args: Record<string, any> } | null => {
+			const s = String(raw || "")
+				.replace(/[\u00A0\u200B-\u200D\uFEFF]/g, "")
+				.replace(/\s+/g, " ")
+				.trim();
+			const m = s.match(/^\/tool\s+([^\s]+)(?:\s+(.+))?$/i);
+			if (!m) return null;
+			const name = String(m[1] || "").trim();
+			const rest = String(m[2] || "").trim();
+			if (!name) return null;
+			const okPrefix =
+				name.startsWith("system_") ||
+				name.startsWith("pending_") ||
+				name.startsWith("macro_");
+			if (!okPrefix) return { name, args: { __invalid_tool_prefix: true } };
+			if (!rest) return { name, args: {} };
+			try {
+				const parsed = JSON.parse(rest);
+				if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+					return { name, args: parsed as Record<string, any> };
+				}
+				return { name, args: { __invalid_tool_args: true } };
+			} catch {
+				return { name, args: { __invalid_tool_args: true } };
+			}
+		};
+
 		// Never send slash-commands to Gemini; handle locally to avoid confusing "task not found" replies.
 		if (normalized.startsWith("/")) {
+			const toolInvoke = parseToolInvoke(normalized);
+			if (toolInvoke) {
+				setComposerText("");
+				setAttachments([]);
+				if ((toolInvoke.args as any)?.__invalid_tool_prefix) {
+					setMessages((prev) => [
+						...prev,
+						{
+							id: `${Date.now()}_tool_invalid_prefix`,
+							role: "system",
+							text: `tool rejected (prefix): ${toolInvoke.name}`,
+							timestamp: new Date(),
+							metadata: { severity: "warn", category: "ws" },
+						},
+					]);
+					return;
+				}
+				if ((toolInvoke.args as any)?.__invalid_tool_args) {
+					setMessages((prev) => [
+						...prev,
+						{
+							id: `${Date.now()}_tool_invalid_args`,
+							role: "system",
+							text: `tool args must be a JSON object: ${toolInvoke.name}`,
+							timestamp: new Date(),
+							metadata: { severity: "warn", category: "ws" },
+						},
+					]);
+					return;
+				}
+				try {
+					setMessages((prev) => [
+						...prev,
+						{
+							id: `${Date.now()}_tool_ui`,
+							role: "system",
+							text: `tool: ${toolInvoke.name}`,
+							timestamp: new Date(),
+							metadata: { severity: "info", category: "ws" },
+						},
+					]);
+					void liveService.current
+						?.invokeTool(toolInvoke.name, toolInvoke.args)
+						.catch((e: any) => {
+							setMessages((prev) => [
+								...prev,
+								{
+									id: `${Date.now()}_tool_send_err`,
+									role: "system",
+									text: `tool failed: ${toolInvoke.name} (${String(e?.message || e || "tool_failed")})`,
+									timestamp: new Date(),
+									metadata: { severity: "error", category: "ws" },
+								},
+							]);
+						});
+				} catch (e: any) {
+					setMessages((prev) => [
+						...prev,
+						{
+							id: `${Date.now()}_tool_send_throw`,
+							role: "system",
+							text: `tool failed: ${toolInvoke.name} (${String(e?.message || e || "tool_failed")})`,
+							timestamp: new Date(),
+							metadata: { severity: "error", category: "ws" },
+						},
+					]);
+				}
+				return;
+			}
 			const s2 = normalized.toLowerCase();
 			if (s2 === "/system clear job" || s2 === "/sys clear job" || s2 === "/system clear" || s2 === "/sys clear") {
 				liveService.current?.sendSystemClearJob();
