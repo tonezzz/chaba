@@ -13589,6 +13589,40 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             except Exception:
                 s = str(text or "").strip()
 
+            # Debug / development trigger: emit a backend-driven UI card.
+            if s.strip().lower() == "ui test":
+                try:
+                    await _ws_send_json(
+                        ws,
+                        {
+                            "type": "ui",
+                            "kind": "test_card",
+                            "title": "UI test card",
+                            "body": "This is a backend-driven UI card. Use buttons to invoke tools.\n\nTip: click 'Pending list' to validate tool routing.",
+                            "risk": "low",
+                            "input": {
+                                "name": "note",
+                                "label": "Optional note",
+                                "placeholder": "Type something…",
+                            },
+                            "secondary": {
+                                "label": "Time now",
+                                "tool": "time_now",
+                                "args": {},
+                            },
+                            "primary": {
+                                "label": "Pending list",
+                                "tool": "pending_list",
+                                "args": {},
+                            },
+                            "instance_id": INSTANCE_ID,
+                        },
+                        trace_id=trace_id2,
+                    )
+                except Exception:
+                    pass
+                continue
+
             if s.startswith("/"):
                 m = re.match(r"^/(?:sys|system)\s+(set|dry)\s+(.+)$", s, flags=re.IGNORECASE)
                 if m:
@@ -13765,6 +13799,34 @@ async def _ws_local_only_loop(ws: WebSocket) -> None:
             if not text:
                 continue
             logger.info("ws_in_text_local_only trace_id=%s len=%s head=%s", trace_id, len(text), text[:120])
+
+            try:
+                s0 = str(text or "").strip()
+                s = re.sub(r"[\u00A0\u200B-\u200D\uFEFF]+", "", s0)
+                s = " ".join(s.split())
+            except Exception:
+                s = str(text or "").strip()
+
+            if s.strip().lower() == "ui test":
+                try:
+                    await _ws_send_json(
+                        ws,
+                        {
+                            "type": "ui",
+                            "kind": "test_card",
+                            "title": "UI test card (local-only)",
+                            "body": "Backend-driven UI card (local-only WS loop). Buttons still invoke deterministic tools.",
+                            "risk": "low",
+                            "secondary": {"label": "Time now", "tool": "time_now", "args": {}},
+                            "primary": {"label": "Pending list", "tool": "pending_list", "args": {}},
+                            "instance_id": INSTANCE_ID,
+                        },
+                        trace_id=trace_id2,
+                    )
+                except Exception:
+                    pass
+                continue
+
             handled = await _dispatch_sub_agents(ws, text)
             logger.info(
                 "ws_in_text_local_only_dispatched handled=%s active_agent_id=%s",
