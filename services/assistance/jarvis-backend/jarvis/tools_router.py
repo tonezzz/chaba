@@ -458,6 +458,12 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         if missing:
             raise HTTPException(status_code=400, detail={"system_macros_sheet_missing_columns": missing})
 
+        def _cell(row: list[Any], col: str) -> Any:
+            j = idx.get(str(col or "").strip().lower())
+            if j is None or j < 0 or j >= len(row):
+                return ""
+            return row[j]
+
         if tool_name == "system_macros_list":
             items: list[dict[str, Any]] = []
             for i, r in enumerate(values[1:], start=2):
@@ -473,12 +479,6 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         name = str(args.get("name") or "").strip()
         if not name:
             raise HTTPException(status_code=400, detail="missing_macro_name")
-
-        def _cell(row: list[Any], col: str) -> Any:
-            j = idx.get(str(col or "").strip().lower())
-            if j is None or j < 0 or j >= len(row):
-                return ""
-            return row[j]
 
         found_row_num: int | None = None
         found_row: list[Any] | None = None
