@@ -475,6 +475,18 @@ const TOOLS = [
     },
   },
   {
+    name: "google_sheets_batch_update",
+    description: "Call Google Sheets spreadsheets:batchUpdate (advanced formatting/validation).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        spreadsheet_id: { type: "string", description: "Spreadsheet ID" },
+        requests: { type: "array", description: "Google Sheets batchUpdate request list", items: {} },
+      },
+      required: ["spreadsheet_id", "requests"],
+    },
+  },
+  {
     name: "google_sheets_values_append",
     description: "Append rows to a spreadsheet range (requires write OAuth scope).",
     inputSchema: {
@@ -610,6 +622,28 @@ async function handleRpc(msg) {
         {
           requests: [{ addSheet }],
         }
+      );
+
+      return {
+        jsonrpc: "2.0",
+        id,
+        result: {
+          content: [{ type: "text", text: JSON.stringify({ ok: true, data }) }],
+        },
+      };
+    }
+
+    if (name === "google_sheets_batch_update") {
+      const spreadsheetId = typeof args.spreadsheet_id === "string" ? args.spreadsheet_id.trim() : "";
+      if (!spreadsheetId) throw new Error("missing_spreadsheet_id");
+
+      const requests = Array.isArray(args.requests) ? args.requests : null;
+      if (!requests || !requests.length) throw new Error("missing_requests");
+
+      const data = await sheetsPostJson(
+        "/spreadsheets/" + encodeURIComponent(spreadsheetId) + ":batchUpdate",
+        {},
+        { requests }
       );
 
       return {
