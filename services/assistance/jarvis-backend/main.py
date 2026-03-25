@@ -8322,6 +8322,7 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             "system_macro_upsert_bundle_queue",
             "system_macro_seed_baseline_queue",
             "system_macro_get",
+            "system_macros_list",
             "system_run_macro",
             "google_account_relink_queue",
         }
@@ -13459,6 +13460,14 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
                 "properties": {"name": {"type": "string", "description": "Macro tool name (e.g. macro_save_memo_v2)."}},
                 "required": ["name"],
             },
+        }
+    )
+
+    decls.append(
+        {
+            "name": "system_macros_list",
+            "description": "List macro rows (name, row, enabled) from the system macros sheet.",
+            "parameters": {"type": "object", "properties": {}},
         }
     )
 

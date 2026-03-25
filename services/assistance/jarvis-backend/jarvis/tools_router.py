@@ -404,7 +404,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         confirmation_id = create_pending_write(str(session_id), "google_account_relink", payload)
         return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "action": "google_account_relink"}
 
-    if tool_name in {"system_macro_get", "system_macro_upsert"}:
+    if tool_name in {"system_macro_get", "system_macro_upsert", "system_macros_list"}:
         session_ws = deps["SESSION_WS"]
         system_spreadsheet_id = deps["system_spreadsheet_id"]
         system_macros_sheet_name = deps["system_macros_sheet_name"]
@@ -457,6 +457,18 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         missing = [c for c in required_cols if c not in idx]
         if missing:
             raise HTTPException(status_code=400, detail={"system_macros_sheet_missing_columns": missing})
+
+        if tool_name == "system_macros_list":
+            items: list[dict[str, Any]] = []
+            for i, r in enumerate(values[1:], start=2):
+                if not isinstance(r, list):
+                    continue
+                nm = str(_cell(r, "name") or "").strip()
+                if not nm:
+                    continue
+                items.append({"row": int(i), "name": nm, "enabled": _as_bool_cell(_cell(r, "enabled"))})
+            items.sort(key=lambda it: str(it.get("name") or ""))
+            return {"ok": True, "sheet": sheet_name, "count": len(items), "items": items}
 
         name = str(args.get("name") or "").strip()
         if not name:
