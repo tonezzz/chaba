@@ -13422,8 +13422,6 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
             }
         )
 
-        pass
-
     decls.append(
         {
             "name": "system_reload",
@@ -13685,21 +13683,38 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
 
     if not macros_only:
         decls.append({"name": "pending_list", "description": "List queued pending actions waiting for confirmation."})
+
+        decls.append(
+            {
+                "name": "pending_get",
+                "description": "Get a queued pending action by confirmation_id (without executing it).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"confirmation_id": {"type": "string"}},
+                    "required": ["confirmation_id"],
+                },
+            }
+        )
+
         decls.append(
             {
                 "name": "system_macro_upsert_bundle_queue",
                 "description": "Queue a single pending action: upsert a macro row in the system macros sheet, then reload system (on confirmation).",
                 "parameters": {
                     "type": "object",
-                    "properties": {
-                        "name": {"type": "string"},
-                        "enabled": {"type": "boolean"},
-                        "description": {"type": "string"},
-                        "parameters_json": {"type": "string"},
-                        "steps_json": {"type": "string"},
-                        "reload_mode": {"type": "string", "description": "full|all|memory|knowledge|sys|gems"},
-                    },
-                    "required": ["name", "steps_json"],
+                    "properties": {"confirmation_id": {"type": "string"}},
+                    "required": ["confirmation_id"],
+                },
+            }
+        )
+        decls.append(
+            {
+                "name": "pending_preview",
+                "description": "Preview a queued pending action (risk/targets/summary) without executing it.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"confirmation_id": {"type": "string"}},
+                    "required": ["confirmation_id"],
                 },
             }
         )
@@ -14044,6 +14059,7 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             "system_reload",
             "system_reload_queue",
             "system_macro_upsert_bundle_queue",
+            "google_account_relink_queue",
             "memo_add",
             "memo_assess",
             "memo_update_queue",
@@ -14054,6 +14070,8 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             "memory_search",
             "memory_list",
             "pending_list",
+            "pending_get",
+            "pending_preview",
             "pending_confirm",
             "pending_cancel",
         }
