@@ -1928,6 +1928,38 @@ async def _macro_tools_force_reload_from_sheet(*, sys_kv: Optional[dict[str, Any
     return _MACRO_TOOL_CACHE["macros"]
 
 
+async def _macro_tools_reload_selected_from_sheet(
+    *,
+    names: list[str],
+    sys_kv: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
+    want = [str(n or "").strip() for n in (names or [])]
+    want = [n for n in want if n]
+    if not want:
+        return {"ok": True, "mode": "by_name", "requested": [], "updated": 0, "missing": [], "macros_count": len(_macro_tools_cached_snapshot() or {})}
+
+    loaded = await _load_macro_tools_from_sheet(sys_kv=sys_kv)
+    if not isinstance(loaded, dict):
+        loaded = {}
+
+    cur = _MACRO_TOOL_CACHE.get("macros")
+    if not isinstance(cur, dict):
+        cur = {}
+
+    missing: list[str] = []
+    updated = 0
+    for nm in want:
+        if nm in loaded and isinstance(loaded.get(nm), dict):
+            cur[nm] = loaded[nm]
+            updated += 1
+        else:
+            missing.append(nm)
+
+    _MACRO_TOOL_CACHE["ts"] = time.time()
+    _MACRO_TOOL_CACHE["macros"] = cur
+    return {"ok": True, "mode": "by_name", "requested": want, "updated": updated, "missing": missing, "macros_count": len(cur)}
+
+
 def _macro_tools_cached_snapshot() -> dict[str, dict[str, Any]]:
     macros = _MACRO_TOOL_CACHE.get("macros")
     if isinstance(macros, dict):
@@ -13299,6 +13331,23 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
 
     decls.append(
         {
+            "name": "system_reload_macros",
+            "description": "Reload macro tools from sheet (all, or a subset by macro tool name).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "mode": {"type": "string", "description": "all|by_name|by_id"},
+                    "name": {"type": "string", "description": "Single macro tool name (macro_*)."},
+                    "names": {"type": "array", "items": {"type": "string"}, "description": "List of macro tool names (macro_*)."},
+                    "id": {"type": "string", "description": "Alias for name when mode=by_id (macro_*)."},
+                    "ids": {"type": "array", "items": {"type": "string"}, "description": "Alias for names when mode=by_id (macro_*)."},
+                },
+            },
+        }
+    )
+
+    decls.append(
+        {
             "name": "system_macro_get",
             "description": "Get a macro row definition from the system macros sheet by name.",
             "parameters": {
@@ -13945,6 +13994,7 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         "system_reload_impl": _system_reload_impl,
         "load_ws_system_kv": _load_ws_system_kv,
         "macro_tools_force_reload_from_sheet": _macro_tools_force_reload_from_sheet,
+        "macro_tools_reload_selected_from_sheet": _macro_tools_reload_selected_from_sheet,
         "system_spreadsheet_id": _system_spreadsheet_id,
         "system_macros_sheet_name": _system_macros_sheet_name,
         "memory_sheet_upsert": _memory_sheet_upsert,
