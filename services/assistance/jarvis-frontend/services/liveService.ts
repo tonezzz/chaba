@@ -241,6 +241,18 @@ export class LiveService {
 		}
 	}
 
+	public sendSysKvDedupe(opts?: { dry_run?: boolean; sort?: boolean }) {
+		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			this.wsSend({
+				type: "system",
+				action: "sys_kv_dedupe",
+				dry_run: Boolean(opts?.dry_run),
+				sort: Boolean(opts?.sort),
+				trace_id: this.createTraceId("sys_kv_dedupe"),
+			});
+		}
+	}
+
 	public sendRemindersAdd(text: string) {
 		const body = String(text || "").trim();
 		if (!body) return;

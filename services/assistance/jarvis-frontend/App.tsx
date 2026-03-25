@@ -242,15 +242,7 @@ export default function App() {
     const override = String(((import.meta as any).env?.VITE_JARVIS_HTTP_URL as string | undefined) || "").trim();
     const normOverride = override ? override.replace(/\/+$/, "") : "";
     const isJarvisSubpath = location.pathname.startsWith("/jarvis");
-    const defaults = isJarvisSubpath ? ["/jarvis", ""] : ["", "/jarvis"];
-    const out = normOverride ? [normOverride, ...defaults] : defaults;
-    const seen = new Set<string>();
-    return out.filter((v) => {
-      const k = String(v || "");
-      if (seen.has(k)) return false;
-      seen.add(k);
-      return true;
-    });
+    return isJarvisSubpath ? ["/jarvis/api", "/jarvis", ""] : ["", "/jarvis/api", "/jarvis"];
   }, []);
 
   const flushUiLogToBackend = useCallback(async () => {
@@ -855,6 +847,18 @@ export default function App() {
 			return { key, value, dryRun };
 		};
 
+		const parseSysDedupe = (raw: string): { dryRun: boolean; sort: boolean } | null => {
+			const s = String(raw || "")
+				.replace(/[\u00A0\u200B-\u200D\uFEFF]/g, "")
+				.replace(/\s+/g, " ")
+				.trim();
+			const m = s.match(/^\/(?:sys|system)\s+dedupe(?:\s+(sort))?(?:\s+(dry))?$/i);
+			if (!m) return null;
+			const sort = String(m[1] || "").toLowerCase() === "sort";
+			const dryRun = String(m[2] || "").toLowerCase() === "dry";
+			return { dryRun, sort };
+		};
+
 		const sysSet = parseSysSet(normalized);
 		if (sysSet) {
 			liveService.current?.sendSysKvSet(sysSet.key, sysSet.value, { dry_run: sysSet.dryRun });
@@ -880,6 +884,24 @@ export default function App() {
 			return;
 		}
 
+		const sysDedupe = parseSysDedupe(normalized);
+		if (sysDedupe) {
+			liveService.current?.sendSysKvDedupe({ dry_run: sysDedupe.dryRun, sort: sysDedupe.sort });
+			setComposerText("");
+			setAttachments([]);
+			setMessages((prev) => [
+				...prev,
+				{
+					id: `${Date.now()}_sys_dedupe_ui`,
+					role: "system",
+					text: `${sysDedupe.dryRun ? "sys_kv_dedupe (dry_run)" : "sys_kv_dedupe"}${sysDedupe.sort ? " (sort)" : ""}`,
+					timestamp: new Date(),
+					metadata: { severity: "info", category: "ws" },
+				},
+			]);
+			return;
+		}
+
 		if (normalized.toLowerCase() === "system clear job" || normalized.toLowerCase() === "sys clear job") {
 			liveService.current?.sendSystemClearJob();
 			setComposerText("");
@@ -887,8 +909,104 @@ export default function App() {
 			return;
 		}
 
+		const parseToolInvoke = (raw: string): { name: string; args: Record<string, any> } | null => {
+			const s = String(raw || "")
+				.replace(/[\u00A0\u200B-\u200D\uFEFF]/g, "")
+				.replace(/\s+/g, " ")
+				.trim();
+			const m = s.match(/^\/tool\s+([^\s]+)(?:\s+(.+))?$/i);
+			if (!m) return null;
+			const name = String(m[1] || "").trim();
+			const rest = String(m[2] || "").trim();
+			if (!name) return null;
+			const okPrefix =
+				name.startsWith("system_") ||
+				name.startsWith("pending_") ||
+				name.startsWith("macro_");
+			if (!okPrefix) return { name, args: { __invalid_tool_prefix: true } };
+			if (!rest) return { name, args: {} };
+			try {
+				const parsed = JSON.parse(rest);
+				if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+					return { name, args: parsed as Record<string, any> };
+				}
+				return { name, args: { __invalid_tool_args: true } };
+			} catch {
+				return { name, args: { __invalid_tool_args: true } };
+			}
+		};
+
 		// Never send slash-commands to Gemini; handle locally to avoid confusing "task not found" replies.
 		if (normalized.startsWith("/")) {
+			const toolInvoke = parseToolInvoke(normalized);
+			if (toolInvoke) {
+				setComposerText("");
+				setAttachments([]);
+				if ((toolInvoke.args as any)?.__invalid_tool_prefix) {
+					setMessages((prev) => [
+						...prev,
+						{
+							id: `${Date.now()}_tool_invalid_prefix`,
+							role: "system",
+							text: `tool rejected (prefix): ${toolInvoke.name}`,
+							timestamp: new Date(),
+							metadata: { severity: "warn", category: "ws" },
+						},
+					]);
+					return;
+				}
+				if ((toolInvoke.args as any)?.__invalid_tool_args) {
+					setMessages((prev) => [
+						...prev,
+						{
+							id: `${Date.now()}_tool_invalid_args`,
+							role: "system",
+							text: `tool args must be a JSON object: ${toolInvoke.name}`,
+							timestamp: new Date(),
+							metadata: { severity: "warn", category: "ws" },
+						},
+					]);
+					return;
+				}
+				try {
+					setMessages((prev) => [
+						...prev,
+						{
+							id: `${Date.now()}_tool_ui`,
+							role: "system",
+							text: `tool: ${toolInvoke.name}`,
+							timestamp: new Date(),
+							metadata: { severity: "info", category: "ws" },
+						},
+					]);
+					void liveService.current
+						?.invokeTool(toolInvoke.name, toolInvoke.args)
+						.catch((e: any) => {
+							setMessages((prev) => [
+								...prev,
+								{
+									id: `${Date.now()}_tool_send_err`,
+									role: "system",
+									text: `tool failed: ${toolInvoke.name} (${String(e?.message || e || "tool_failed")})`,
+									timestamp: new Date(),
+									metadata: { severity: "error", category: "ws" },
+								},
+							]);
+						});
+				} catch (e: any) {
+					setMessages((prev) => [
+						...prev,
+						{
+							id: `${Date.now()}_tool_send_throw`,
+							role: "system",
+							text: `tool failed: ${toolInvoke.name} (${String(e?.message || e || "tool_failed")})`,
+							timestamp: new Date(),
+							metadata: { severity: "error", category: "ws" },
+						},
+					]);
+				}
+				return;
+			}
 			const s2 = normalized.toLowerCase();
 			if (s2 === "/system clear job" || s2 === "/sys clear job" || s2 === "/system clear" || s2 === "/sys clear") {
 				liveService.current?.sendSystemClearJob();
@@ -1926,9 +2044,25 @@ return (
                           const tagText = label ? `[${label}] ` : "";
                           const role = String(m.role || "");
                           const txt = String(m.text || "");
+                          const forceText = (e as any)?.shiftKey === true;
+                          const rawAny: any = (m.metadata as any)?.raw;
+                          if (!forceText && rawAny != null) {
+                            try {
+                              if (rawAny && typeof rawAny === "object" && !Array.isArray(rawAny)) {
+                                const copy: any = { ...rawAny };
+                                delete copy.client_id;
+                                delete copy.client_tag;
+                                void copyText(JSON.stringify(copy, null, 2));
+                                return;
+                              }
+                              void copyText(JSON.stringify(rawAny, null, 2));
+                              return;
+                            } catch {
+                            }
+                          }
                           void copyText(`[${ts}] ${tagText}${role}: ${txt}`);
                         }}
-                        title="Copy"
+                        title="Copy (JSON if available; Shift+Click to copy text)"
                         aria-label="Copy"
                       >
                         <Copy className="w-3 h-3" />

@@ -737,7 +737,7 @@ async def _memo_load_by_id(*, ws: WebSocket, memo_id: int) -> dict[str, Any] | N
     tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
 
     try:
-        header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
+        header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="Z")
     except Exception:
         header = []
     idx = _idx_from_header(header)
@@ -747,14 +747,14 @@ async def _memo_load_by_id(*, ws: WebSocket, memo_id: int) -> dict[str, Any] | N
         except Exception:
             pass
         try:
-            header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
+            header = await _sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="Z")
         except Exception:
             header = []
         idx = _idx_from_header(header)
     if not idx:
         return None
 
-    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A2:J"})
+    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A2:Z"})
     parsed = _mcp_text_json(res)
     data = parsed.get("data") if isinstance(parsed, dict) else None
     vals = parsed.get("values") if isinstance(parsed, dict) else None
@@ -876,6 +876,7 @@ async def _handle_thai_memo_commands(ws: WebSocket, text: str) -> bool:
         if memo_item is None:
             await _ws_send_json(ws, {"type": "text", "text": f"ไม่พบเมโม {memo_id}", "instance_id": INSTANCE_ID})
             return True
+
         try:
             txt = await _memo_summarize_item(ws, memo_item)
         except Exception:
@@ -1072,9 +1073,17 @@ def _normalize_thai_compact(s: str) -> str:
         return str(s or "")
 
 
+def _normalize_cmd_text(s: str) -> str:
+    try:
+        s2 = re.sub(r"[\u00A0\u200B-\u200D\uFEFF]+", "", str(s or ""))
+        return " ".join(str(s2).strip().split())
+    except Exception:
+        return " ".join(str(s or "").strip().split())
+
+
 def _memo_match_anywhere(text: str) -> tuple[bool, str | None]:
     # Returns (matched, extracted_memo_text_or_none).
-    raw = str(text or "").strip()
+    raw = _normalize_cmd_text(str(text or ""))
     if not raw:
         return (False, None)
 
@@ -1092,6 +1101,25 @@ def _memo_match_anywhere(text: str) -> tuple[bool, str | None]:
             "",
             s0,
         ).strip()
+    except Exception:
+        pass
+
+    try:
+        if re.match(r"^memo\s+(assess|update|merge|list|pending|confirm|preview)\b", low, flags=re.IGNORECASE):
+            return (False, None)
+    except Exception:
+        pass
+
+    try:
+        if re.match(r"^(?:memo\s+(?:get|read|load)\b|read\s+memo\b|load\s+memo\b)", low, flags=re.IGNORECASE):
+            return (False, None)
+    except Exception:
+        pass
+
+    try:
+        s0n2 = _normalize_thai_compact(s0)
+        if re.match(r"^(?:อ่าน|โหลด)\s*(เมโม|เมมโม)\b", s0n2):
+            return (False, None)
     except Exception:
         pass
 
@@ -1147,6 +1175,31 @@ def _parse_memo_merge(text: str) -> tuple[Optional[int], Optional[int]]:
         return (None, None)
 
 
+def _parse_memo_get_id(text: str) -> Optional[int]:
+    s = _normalize_cmd_text(str(text or ""))
+    if not s:
+        return None
+
+    low = s.lower().strip()
+    m = re.match(r"^(?:memo(?:\s+(?:get|read|load))?|read\s+memo|load\s+memo)\s+#?(\d+)\b", low)
+    if m:
+        try:
+            memo_id = int(m.group(1))
+            return memo_id if memo_id > 0 else None
+        except Exception:
+            return None
+
+    s0n = _normalize_thai_compact(s)
+    m_th = re.match(r"^(?:อ่าน|โหลด)?\s*(เมโม|เมมโม)\s+#?(\d+)$", s0n)
+    if m_th:
+        try:
+            memo_id = int(m_th.group(2))
+            return memo_id if memo_id > 0 else None
+        except Exception:
+            return None
+    return None
+
+
 def _memo_prompt_cfg(sys_kv: Any) -> dict[str, Any]:
     return memo_enrich.prompt_cfg(sys_kv, sys_kv_bool=_sys_kv_bool, safe_int=_safe_int)
 
@@ -1187,9 +1240,38 @@ async def _handle_memo_enrich_followup(ws: WebSocket, text: str) -> bool:
 
 
 async def _handle_memo_trigger(ws: WebSocket, text: str) -> bool:
-    s = str(text or "").strip()
+    s = _normalize_cmd_text(str(text or ""))
     if not s:
         return False
+
+    low = s.lower().strip()
+    logger.info("memo_trigger_in text=%s", s[:240])
+
+    memo_get_id = _parse_memo_get_id(s)
+    logger.info("memo_trigger_parsed_get_id id=%s", memo_get_id)
+    if memo_get_id is not None and memo_get_id > 0:
+        loaded = await _memo_load_by_id(ws=ws, memo_id=int(memo_get_id))
+        memo_item: dict[str, Any] | None = None
+        if isinstance(loaded, dict):
+            memo_item = loaded.get("memo") if isinstance(loaded.get("memo"), dict) else None
+        if isinstance(memo_item, dict):
+            try:
+                ws.state.last_memo = dict(memo_item)
+            except Exception:
+                pass
+            subj = str(memo_item.get("subject") or "").strip()
+            grp = str(memo_item.get("group") or "").strip()
+            await _ws_send_json(
+                ws,
+                {
+                    "type": "text",
+                    "text": f"memo {memo_get_id}: {subj or '(no subject)'}{(' [' + grp + ']') if grp else ''}",
+                    "instance_id": INSTANCE_ID,
+                },
+            )
+            return True
+        await _ws_send_json(ws, {"type": "text", "text": f"memo_not_found:{memo_get_id}", "instance_id": INSTANCE_ID})
+        return True
 
     src_row, dst_row = _parse_memo_merge(s)
     is_merge = src_row is not None and dst_row is not None
@@ -1835,6 +1917,77 @@ async def _macro_tools_get_cached(*, sys_kv: Optional[dict[str, Any]] = None, tt
     return loaded
 
 
+async def _load_macro_fixtures_from_sheet(
+    *,
+    macro_name: str,
+    sys_kv: Optional[dict[str, Any]] = None,
+) -> list[dict[str, Any]]:
+    spreadsheet_id = _system_spreadsheet_id()
+    if not spreadsheet_id:
+        return []
+
+    sheet_name = "macro_fixtures"
+    if isinstance(sys_kv, dict):
+        try:
+            v = str(sys_kv.get("system.macros.fixtures.sheet_name") or "").strip()
+            if v:
+                sheet_name = v
+        except Exception:
+            pass
+
+    tool = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    res = await _mcp_tools_call(tool, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name}!A:Z"})
+    parsed = _mcp_text_json(res)
+    values = parsed.get("values") if isinstance(parsed, dict) else None
+    data = parsed.get("data") if isinstance(parsed, dict) else None
+    if not isinstance(values, list) and isinstance(data, dict):
+        values = data.get("values")
+    if not isinstance(values, list) or not values:
+        return []
+
+    header = [str(c or "").strip().lower() for c in (values[0] if isinstance(values[0], list) else [])]
+    idx: dict[str, int] = {}
+    for i, col in enumerate(header):
+        if col and col not in idx:
+            idx[col] = int(i)
+
+    def _cell(row: list[Any], col: str) -> Any:
+        j = idx.get(str(col or "").strip().lower())
+        if j is None or j < 0 or j >= len(row):
+            return ""
+        return row[j]
+
+    out: list[dict[str, Any]] = []
+    for raw in values[1:]:
+        if not isinstance(raw, list) or not raw:
+            continue
+        enabled = _as_bool(_cell(raw, "enabled") or "true")
+        if not enabled:
+            continue
+        name = str(_cell(raw, "name") or _cell(raw, "macro") or "").strip()
+        if not name or name != str(macro_name or "").strip():
+            continue
+        args_raw = str(_cell(raw, "args_json") or _cell(raw, "args") or "").strip()
+        contains = str(_cell(raw, "expect_contains") or _cell(raw, "contains") or "").strip()
+        expected_raw = str(_cell(raw, "expected_json") or _cell(raw, "expected") or "").strip()
+        args: dict[str, Any] = {}
+        if args_raw:
+            try:
+                parsed_args = json.loads(args_raw)
+                if isinstance(parsed_args, dict):
+                    args = parsed_args
+            except Exception:
+                args = {}
+        expected: Any = None
+        if expected_raw:
+            try:
+                expected = json.loads(expected_raw)
+            except Exception:
+                expected = expected_raw
+        out.append({"name": name, "args": args, "expect_contains": contains, "expected": expected})
+    return out
+
+
 async def _macro_tools_force_reload_from_sheet(*, sys_kv: Optional[dict[str, Any]] = None) -> dict[str, dict[str, Any]]:
     now = time.time()
     try:
@@ -1844,6 +1997,70 @@ async def _macro_tools_force_reload_from_sheet(*, sys_kv: Optional[dict[str, Any
     _MACRO_TOOL_CACHE["ts"] = now
     _MACRO_TOOL_CACHE["macros"] = loaded if isinstance(loaded, dict) else {}
     return _MACRO_TOOL_CACHE["macros"]
+
+
+async def _macro_tools_reload_selected_from_sheet(
+    *,
+    names: list[str],
+    sys_kv: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
+    want = [str(n or "").strip() for n in (names or [])]
+    want = [n for n in want if n]
+    if not want:
+        return {"ok": True, "mode": "by_name", "requested": [], "updated": 0, "missing": [], "macros_count": len(_macro_tools_cached_snapshot() or {})}
+
+    loaded = await _load_macro_tools_from_sheet(sys_kv=sys_kv)
+    if not isinstance(loaded, dict):
+        loaded = {}
+
+    cur = _MACRO_TOOL_CACHE.get("macros")
+    if not isinstance(cur, dict):
+        cur = {}
+
+    missing: list[str] = []
+    updated = 0
+    for nm in want:
+        if nm in loaded and isinstance(loaded.get(nm), dict):
+            cur[nm] = loaded[nm]
+            updated += 1
+        else:
+            missing.append(nm)
+
+    _MACRO_TOOL_CACHE["ts"] = time.time()
+    _MACRO_TOOL_CACHE["macros"] = cur
+    return {"ok": True, "mode": "by_name", "requested": want, "updated": updated, "missing": missing, "macros_count": len(cur)}
+
+
+def _macro_registry_text(*, macros: Any, max_items: int = 30) -> str:
+    if not isinstance(macros, dict) or not macros:
+        return ""
+    try:
+        lim = int(max_items)
+    except Exception:
+        lim = 30
+    lim = max(1, min(lim, 200))
+
+    # Keep compact: only name + description. The full tool schemas are already
+    # provided via function_declarations.
+    items: list[tuple[str, str]] = []
+    for k, v in macros.items():
+        name = str(k or "").strip()
+        if not name or not name.startswith("macro_"):
+            continue
+        desc = ""
+        if isinstance(v, dict):
+            desc = str(v.get("description") or "").strip()
+        items.append((name, desc))
+    items.sort(key=lambda t: t[0])
+    if not items:
+        return ""
+    out_lines: list[str] = []
+    for name, desc in items[:lim]:
+        if desc:
+            out_lines.append(f"- {name}: {desc}")
+        else:
+            out_lines.append(f"- {name}")
+    return "\n".join(out_lines).strip()
 
 
 def _macro_tools_cached_snapshot() -> dict[str, dict[str, Any]]:
@@ -2838,7 +3055,7 @@ async def tools_api_call(tool_name: str, args: dict[str, Any], session_id: str |
     # This includes macro tools (macro_* / macro_run) and any tools declared in MCP_TOOL_MAP.
     try:
         n = str(tool_name or "").strip()
-        if n and (n.startswith("macro_") or n == "macro_run" or n in MCP_TOOL_MAP):
+        if n and (n.startswith("macro_") or n.startswith("system_") or n == "macro_run" or n in MCP_TOOL_MAP):
             forwarded_args = dict(args or {})
             return await _handle_mcp_tool_call(session_id, n, forwarded_args)
     except HTTPException:
@@ -7639,6 +7856,10 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             except Exception:
                 return ""
 
+    def _canon_k(s: Any) -> str:
+        # Case-insensitive key identity for sys_kv.
+        return _norm_k(s).lower()
+
     spreadsheet_id = _system_spreadsheet_id()
     if not spreadsheet_id:
         return {"ok": False, "error": "missing_spreadsheet"}
@@ -7652,6 +7873,10 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
     if not isinstance(parsed, dict):
         return {"ok": False, "error": "values_get_invalid_response"}
     values = parsed.get("values")
+    if not isinstance(values, list):
+        data = parsed.get("data")
+        if isinstance(data, dict):
+            values = data.get("values")
     if not isinstance(values, list) or not values:
         # If sheet is empty, just append.
         values = []
@@ -7712,7 +7937,8 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
         start_row = 1
 
     row_idx: Optional[int] = None
-    nk = _norm_k(k)
+    duplicates: list[int] = []
+    nk = _canon_k(k)
     for i, r in enumerate(values, start=1):
         if i < start_row:
             continue
@@ -7720,12 +7946,14 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             continue
         if header_mode:
             rr = _ensure_len(r, max(1, len(header)))
-            if _norm_k(rr[key_col]) == nk:
-                row_idx = i
-                break
-        elif _norm_k(r[0]) == nk:
-            row_idx = i
-            break
+            if _canon_k(rr[key_col]) == nk:
+                duplicates.append(i)
+        elif _canon_k(r[0]) == nk:
+            duplicates.append(i)
+
+    if duplicates:
+        # If duplicates exist, update the last one (most recent append) deterministically.
+        row_idx = duplicates[-1]
 
     if dry_run:
         return {
@@ -7735,8 +7963,9 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             "sheet": sys_sheet,
             "action": "update" if row_idx else "append",
             "row": row_idx,
-            "key": k,
+            "key": _canon_k(k),
             "value": v,
+            "duplicates": duplicates,
         }
 
     if header_mode:
@@ -7746,7 +7975,7 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             base_row = _ensure_len(values[row_idx - 1], col_count)
         out_row = _ensure_len(base_row, col_count)
 
-        out_row[key_col] = k
+        out_row[key_col] = _canon_k(k)
         out_row[val_col] = v
         if enabled_col is not None:
             out_row[enabled_col] = "true"
@@ -7785,6 +8014,7 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
                 "action": "update",
                 "row": row_idx,
                 "range": rng2,
+                "duplicates": duplicates,
                 "response": parsed_hu if isinstance(parsed_hu, dict) else {"raw": parsed_hu},
             }
 
@@ -7804,8 +8034,9 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             "spreadsheet_id": spreadsheet_id,
             "sheet": sys_sheet,
             "action": "append",
-            "key": k,
+            "key": _canon_k(k),
             "value": v,
+            "duplicates": duplicates,
             "response": parsed_ha if isinstance(parsed_ha, dict) else {"raw": parsed_ha},
         }
 
@@ -7828,7 +8059,7 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             {
                 "spreadsheet_id": spreadsheet_id,
                 "range": rng,
-                "values": [[k, v, "true", scope, priority]],
+                "values": [[_canon_k(k), v, "true", scope, priority]],
                 "value_input_option": "RAW",
             },
         )
@@ -7840,6 +8071,7 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             "action": "update",
             "row": row_idx,
             "range": rng,
+            "duplicates": duplicates,
             "response": parsed2 if isinstance(parsed2, dict) else {"raw": parsed2},
         }
 
@@ -7849,7 +8081,7 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
         {
             "spreadsheet_id": spreadsheet_id,
             "range": f"{sys_sheet}!A:E",
-            "values": [[k, v, "true", "global", "0"]],
+            "values": [[_canon_k(k), v, "true", "global", "0"]],
             "value_input_option": "RAW",
         },
     )
@@ -7859,9 +8091,216 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
         "spreadsheet_id": spreadsheet_id,
         "sheet": sys_sheet,
         "action": "append",
-        "key": k,
+        "key": _canon_k(k),
         "value": v,
+        "duplicates": duplicates,
         "response": parsed3 if isinstance(parsed3, dict) else {"raw": parsed3},
+    }
+
+
+async def _sys_kv_dedupe_disable_sheet(*, dry_run: bool = True, sort: bool = False) -> dict[str, Any]:
+    spreadsheet_id = _system_spreadsheet_id()
+    if not spreadsheet_id:
+        return {"ok": False, "error": "missing_spreadsheet"}
+    sys_sheet = _system_sheet_name()
+
+    def _norm_k(s: Any) -> str:
+        try:
+            ss = str(s or "").strip()
+            ss = re.sub(r"[\u00A0\u200B-\u200D\uFEFF]+", "", ss)
+            ss = " ".join(ss.split())
+            return ss
+        except Exception:
+            try:
+                return str(s or "").strip()
+            except Exception:
+                return ""
+
+    def _canon_k(s: Any) -> str:
+        return _norm_k(s).lower()
+
+    def _col_letter(n: int) -> str:
+        s = ""
+        x = int(n)
+        while x > 0:
+            x, r = divmod(x - 1, 26)
+            s = chr(ord("A") + r) + s
+        return s
+
+    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sys_sheet}!A:Z"})
+    parsed = _mcp_text_json(res)
+    if not isinstance(parsed, dict):
+        return {"ok": False, "error": "values_get_invalid_response"}
+    values = parsed.get("values")
+    if not isinstance(values, list):
+        data = parsed.get("data")
+        if isinstance(data, dict):
+            values = data.get("values")
+    if not isinstance(values, list) or not values:
+        return {"ok": True, "dry_run": dry_run, "spreadsheet_id": spreadsheet_id, "sheet": sys_sheet, "changes": [], "duplicates": []}
+
+    header: list[str] = []
+    idx: dict[str, int] = {}
+    if values and isinstance(values[0], list):
+        header = [str(c or "").strip().lower() for c in values[0]]
+        for i, col in enumerate(header):
+            if col:
+                idx[col] = i
+
+    def _get_col(name: str) -> Optional[int]:
+        j = idx.get(name)
+        if j is None:
+            return None
+        try:
+            return int(j)
+        except Exception:
+            return None
+
+    key_col = _get_col("key")
+    enabled_col = _get_col("enabled")
+    header_mode = key_col is not None
+
+    start_row = 1
+    try:
+        if header_mode and values and isinstance(values[0], list):
+            # Treat first row as header if it contains the key column.
+            start_row = 2
+        elif values and isinstance(values[0], list) and values[0]:
+            h0 = _norm_k(values[0][0]).lower()
+            h1 = _norm_k(values[0][1]).lower() if len(values[0]) > 1 else ""
+            h2 = _norm_k(values[0][2]).lower() if len(values[0]) > 2 else ""
+            if h0 in {"key", "k"} and (not h1 or h1 in {"value", "v"}) and (not h2 or h2 in {"enabled", "enable"}):
+                start_row = 2
+    except Exception:
+        start_row = 1
+
+    # Fallback (KV5): key=A, enabled=C
+    if key_col is None:
+        key_col = 0
+    if enabled_col is None:
+        enabled_col = 2
+
+    by_key: dict[str, list[int]] = {}
+    for i, r in enumerate(values, start=1):
+        if i < start_row:
+            continue
+        if not isinstance(r, list) or len(r) <= key_col:
+            continue
+        ck = _canon_k(r[key_col])
+        if not ck:
+            continue
+        by_key.setdefault(ck, []).append(i)
+
+    changes: list[dict[str, Any]] = []
+    dupes: list[dict[str, Any]] = []
+    for ck, rows in sorted(by_key.items()):
+        if len(rows) <= 1:
+            continue
+        keep = rows[-1]
+        disable = rows[:-1]
+        dupes.append({"key": ck, "rows": rows, "keep": keep, "disable": disable})
+        col_letter = _col_letter(int(enabled_col) + 1)
+        for rnum in disable:
+            rng = f"{sys_sheet}!{col_letter}{rnum}:{col_letter}{rnum}"
+            changes.append({"row": rnum, "range": rng, "value": "false"})
+
+    sort_plan: Optional[dict[str, Any]] = None
+    if sort:
+        try:
+            tool_meta = _pick_sheets_tool_name("google_sheets_get_spreadsheet", "google_sheets_get_spreadsheet")
+            meta_res = await _mcp_tools_call(tool_meta, {"spreadsheet_id": spreadsheet_id})
+            meta_parsed = _mcp_text_json(meta_res)
+            meta_data = meta_parsed.get("data") if isinstance(meta_parsed, dict) else None
+            if not isinstance(meta_data, dict):
+                meta_data = meta_parsed
+
+            sheet_id: Optional[int] = None
+            sheets = meta_data.get("sheets") if isinstance(meta_data, dict) else None
+            if isinstance(sheets, list):
+                for s in sheets:
+                    props = s.get("properties") if isinstance(s, dict) else None
+                    title = str(props.get("title") or "") if isinstance(props, dict) else ""
+                    if title.strip() == sys_sheet:
+                        try:
+                            sheet_id = int(props.get("sheetId"))
+                        except Exception:
+                            sheet_id = None
+                        break
+
+            if sheet_id is not None:
+                # Skip header row if present.
+                sr0 = 1 if int(start_row) > 1 else 0
+                sort_plan = {
+                    "sheet_id": sheet_id,
+                    "startRowIndex": sr0,
+                    "sortColumnIndex": int(key_col or 0),
+                }
+        except Exception:
+            sort_plan = None
+
+    if dry_run:
+        return {
+            "ok": True,
+            "dry_run": True,
+            "spreadsheet_id": spreadsheet_id,
+            "sheet": sys_sheet,
+            "duplicates": dupes,
+            "changes": changes,
+            "sort": bool(sort),
+            "sort_plan": sort_plan,
+        }
+
+    tool_upd = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+    applied: list[dict[str, Any]] = []
+    for ch in changes:
+        try:
+            res_u = await _mcp_tools_call(
+                tool_upd,
+                {
+                    "spreadsheet_id": spreadsheet_id,
+                    "range": str(ch["range"]),
+                    "values": [["false"]],
+                    "value_input_option": "RAW",
+                },
+            )
+            applied.append({"ok": True, "row": ch.get("row"), "range": ch.get("range"), "response": _mcp_text_json(res_u)})
+        except Exception as e:
+            applied.append({"ok": False, "row": ch.get("row"), "range": ch.get("range"), "error": f"{type(e).__name__}: {e}"})
+
+    sort_applied: Any = None
+    if sort and isinstance(sort_plan, dict) and sort_plan.get("sheet_id") is not None:
+        try:
+            tool_bu = _pick_sheets_tool_name("google_sheets_batch_update", "google-sheets_1mcp_google_sheets_batch_update")
+            sort_req = {
+                "sortRange": {
+                    "range": {
+                        "sheetId": int(sort_plan["sheet_id"]),
+                        "startRowIndex": int(sort_plan.get("startRowIndex") or 0),
+                    },
+                    "sortSpecs": [
+                        {
+                            "dimensionIndex": int(sort_plan.get("sortColumnIndex") or 0),
+                            "sortOrder": "ASCENDING",
+                        }
+                    ],
+                }
+            }
+            sort_applied = _mcp_text_json(await _mcp_tools_call(tool_bu, {"spreadsheet_id": spreadsheet_id, "requests": [sort_req]}))
+        except Exception as e:
+            sort_applied = {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+    return {
+        "ok": True,
+        "dry_run": False,
+        "spreadsheet_id": spreadsheet_id,
+        "sheet": sys_sheet,
+        "duplicates": dupes,
+        "changes": changes,
+        "applied": applied,
+        "sort": bool(sort),
+        "sort_plan": sort_plan,
+        "sort_applied": sort_applied,
     }
 
 
@@ -7881,9 +8320,13 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             "pending_cancel",
             "system_reload_queue",
             "system_macro_upsert_bundle_queue",
+            "system_macro_seed_baseline_queue",
+            "system_macro_get",
+            "system_macros_list",
+            "system_run_macro",
             "google_account_relink_queue",
         }
-        if name not in allowed:
+        if name not in allowed and not name.startswith("macro_"):
             try:
                 await _ws_send_json(
                     ws,
@@ -7951,6 +8394,104 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
         if action == "reload":
             mode = str(msg.get("mode") or "full")
             await _handle_system_reload_mode(ws, mode, trace_id=tid)
+            await _ws_voice_job_done(ws, tid)
+            return True
+
+        if action in {"sys_kv_dedupe", "syskv_dedupe", "sys_dedupe"}:
+            sys_kv = getattr(ws.state, "sys_kv", None)
+            enabled_raw = ""
+            if isinstance(sys_kv, dict):
+                enabled_raw = str(sys_kv.get("sys_kv.write.enabled") or "").strip()
+            if not enabled_raw:
+                try:
+                    fresh = await _load_sys_kv_from_sheet()
+                    if isinstance(fresh, dict) and fresh:
+                        ws.state.sys_kv = fresh
+                        enabled_raw = str(fresh.get("sys_kv.write.enabled") or "").strip()
+                except Exception:
+                    pass
+            if enabled_raw and not _parse_bool_cell(enabled_raw):
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "sys_kv_write_disabled",
+                        "message": "sys_kv_write_disabled",
+                        "detail": "Enable via sys sheet key sys_kv.write.enabled=true",
+                        "instance_id": INSTANCE_ID,
+                    },
+                    trace_id=tid,
+                )
+                return True
+            if not enabled_raw:
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "sys_kv_write_disabled",
+                        "message": "sys_kv_write_disabled",
+                        "detail": "Missing sys sheet key sys_kv.write.enabled (default disabled)",
+                        "instance_id": INSTANCE_ID,
+                    },
+                    trace_id=tid,
+                )
+                return True
+
+            dry_run = bool(msg.get("dry_run") is True)
+            sort = bool(msg.get("sort") is True)
+            try:
+                result = await _sys_kv_dedupe_disable_sheet(dry_run=dry_run, sort=sort)
+            except Exception as e:
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "sys_kv_dedupe_failed",
+                        "message": "sys_kv_dedupe_failed",
+                        "detail": str(e),
+                        "instance_id": INSTANCE_ID,
+                    },
+                    trace_id=tid,
+                )
+                return True
+
+            if not isinstance(result, dict) or not result.get("ok"):
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "sys_kv_dedupe_failed",
+                        "message": "sys_kv_dedupe_failed",
+                        "detail": str((result or {}).get("error") or "unknown"),
+                        "instance_id": INSTANCE_ID,
+                    },
+                    trace_id=tid,
+                )
+                return True
+
+            await _ws_send_json(
+                ws,
+                {
+                    "type": "text",
+                    "text": f"sys_kv_dedupe ok" + (" (dry_run)" if dry_run else ""),
+                    "instance_id": INSTANCE_ID,
+                    "sys_kv_dedupe": result,
+                },
+                trace_id=tid,
+            )
+
+            if not dry_run:
+                try:
+                    fresh = await _load_sys_kv_from_sheet()
+                    if isinstance(fresh, dict) and fresh:
+                        try:
+                            ws.state.sys_kv = fresh
+                        except Exception:
+                            pass
+                        _set_cached_sys_kv_only(fresh)
+                except Exception:
+                    pass
+
             await _ws_voice_job_done(ws, tid)
             return True
         if action in {"module_status_report", "module_status", "modules_status", "status_report"}:
@@ -12118,6 +12659,8 @@ def _google_gate_for_tool(tool_name: str) -> tuple[str, bool] | None:
     n = str(tool_name or "").strip().lower()
     if not n:
         return None
+    if n.startswith("google_account_relink_"):
+        return None
     if n.startswith("google_sheets_"):
         return ("google.sheets.enabled", True)
     if n.startswith("google-calendar_") or n.startswith("google_calendar_"):
@@ -12132,6 +12675,12 @@ def _google_gate_for_tool(tool_name: str) -> tuple[str, bool] | None:
 
 
 async def _mcp_tools_call(name: str, arguments: dict[str, Any]) -> Any:
+    call_name = str(name or "")
+    if call_name.startswith("google_account_relink_"):
+        try:
+            call_name = await _resolve_mcp_tool_name(call_name, fallback=f"google-sheets_1mcp_{call_name}")
+        except Exception:
+            call_name = f"google-sheets_1mcp_{call_name}"
     gate = _google_gate_for_tool(str(name or ""))
     if gate is not None:
         gate_key, gate_default = gate
@@ -12154,7 +12703,7 @@ async def _mcp_tools_call(name: str, arguments: dict[str, Any]) -> Any:
         str(name or "").startswith("playwright_") or str(name or "").startswith("browser_")
     ):
         base = MCP_PLAYWRIGHT_BASE_URL
-    return await mcp_client.mcp_tools_call(base, name, arguments)
+    return await mcp_client.mcp_tools_call(base, call_name, arguments)
 
 
 async def _aim_mcp_tools_call(name: str, arguments: dict[str, Any]) -> Any:
@@ -12877,59 +13426,143 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
             }
         )
 
-        decls.append(
-            {
-                "name": "system_reload",
-                "description": "Reload system sheet KV (sys_kv) and force macro tools reload from sheet.",
-                "parameters": {"type": "object", "properties": {}},
-            }
-        )
-
-        decls.append(
-            {
-                "name": "system_macro_get",
-                "description": "Get a macro row definition from the system macros sheet by name.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "name": {"type": "string", "description": "Macro tool name (e.g. macro_save_memo_v2)."}
-                    },
-                    "required": ["name"],
-                },
-            }
-        )
-
-        decls.append(
-            {
-                "name": "system_macro_upsert",
-                "description": "Insert or update a macro row in the system macros sheet (confirmation-gated write).",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "name": {"type": "string", "description": "Macro tool name (e.g. macro_save_memo_v2)."},
-                        "enabled": {"type": "boolean", "description": "Whether macro is enabled (default true)."},
-                        "description": {"type": "string", "description": "Macro description."},
-                        "parameters_json": {"type": "string", "description": "JSON schema string for parameters_json cell."},
-                        "steps_json": {"type": "string", "description": "JSON list string for steps_json cell."},
-                    },
-                    "required": ["name", "steps_json"],
-                },
-            }
-        )
+    decls.append(
+        {
+            "name": "system_reload",
+            "description": "Reload system sheet KV (sys_kv) and force macro tools reload from sheet.",
+            "parameters": {"type": "object", "properties": {}},
+        }
+    )
 
     decls.append(
         {
-            "name": "session_last_get",
-            "description": "Get the last created/modified item for this voice session (task or calendar_event).",
+            "name": "system_reload_macros",
+            "description": "Reload macro tools from sheet (all, or a subset by macro tool name).",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "slot": {"type": "string", "enum": ["last_created", "last_modified"]},
+                    "mode": {"type": "string", "description": "all|by_name|by_id"},
+                    "name": {"type": "string", "description": "Single macro tool name (macro_*)."},
+                    "names": {"type": "array", "items": {"type": "string"}, "description": "List of macro tool names (macro_*)."},
+                    "id": {"type": "string", "description": "Alias for name when mode=by_id (macro_*)."},
+                    "ids": {"type": "array", "items": {"type": "string"}, "description": "Alias for names when mode=by_id (macro_*)."},
                 },
-                "required": ["slot"],
             },
         }
     )
+
+    decls.append(
+        {
+            "name": "system_macro_get",
+            "description": "Get a macro row definition from the system macros sheet by name.",
+            "parameters": {
+                "type": "object",
+                "properties": {"name": {"type": "string", "description": "Macro tool name (e.g. macro_save_memo_v2)."}},
+                "required": ["name"],
+            },
+        }
+    )
+
+    decls.append(
+        {
+            "name": "system_macros_list",
+            "description": "List macro rows (name, row, enabled) from the system macros sheet.",
+            "parameters": {"type": "object", "properties": {}},
+        }
+    )
+
+    decls.append(
+        {
+            "name": "system_macro_upsert",
+            "description": "Insert or update a macro row in the system macros sheet (confirmation-gated write).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Macro tool name (e.g. macro_save_memo_v2)."},
+                    "enabled": {"type": "boolean", "description": "Whether macro is enabled (default true)."},
+                    "description": {"type": "string", "description": "Macro description."},
+                    "parameters_json": {"type": "string", "description": "JSON schema string for parameters_json cell."},
+                    "steps_json": {"type": "string", "description": "JSON list string for steps_json cell."},
+                },
+                "required": ["name", "steps_json"],
+            },
+        }
+    )
+
+    decls.append(
+        {
+            "name": "system_macro_test_run",
+            "description": "Run a macro against fixtures from the macro fixtures sheet and return a structured test report (no writes).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Macro tool name (macro_*)."},
+                    "limit": {"type": "integer", "description": "Max fixtures to run (default 20)."},
+                },
+                "required": ["name"],
+            },
+        }
+    )
+
+    decls.append(
+        {
+            "name": "system_macro_test_evaluate",
+            "description": "Evaluate a macro test report and propose a macro update (optionally queued as a pending upsert+reload bundle).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Macro tool name (macro_*)."},
+                    "report": {"type": "object", "description": "Output from system_macro_test_run."},
+                    "queue": {"type": "boolean", "description": "If true, queue a pending macro upsert+reload bundle (requires pending_confirm)."},
+                    "reload_mode": {"type": "string", "description": "Reload mode for queued bundle (default full)."},
+                },
+                "required": ["name", "report"],
+            },
+        }
+    )
+
+    decls.append(
+        {
+            "name": "system_macro_seed_baseline_queue",
+            "description": "Queue a confirmation-gated write to upsert baseline macros into the system macros sheet (useful for seeding an empty sheet).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "reload_mode": {"type": "string", "description": "Reload mode to run after seeding (default full)."},
+                },
+            },
+        }
+    )
+
+    decls.append(
+        {
+            "name": "system_run_macro",
+            "description": "Run a configured macro tool by name (server-side canonical runner).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Macro tool name (e.g. macro_time_now)."},
+                    "args": {"type": "object", "description": "Optional macro parameters."},
+                },
+                "required": ["name"],
+            },
+        }
+    )
+
+    if not macros_only:
+        decls.append(
+            {
+                "name": "session_last_get",
+                "description": "Get the last created/modified item for this voice session (task or calendar_event).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "slot": {"type": "string", "enum": ["last_created", "last_modified"]},
+                    },
+                    "required": ["slot"],
+                },
+            }
+        )
 
     if (not macros_only) and feature_enabled("memory", sys_kv=sys_kv, default=True):
         decls.append(
@@ -12966,6 +13599,45 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
                         "active": {"type": "boolean", "description": "Optional active flag (default true)."},
                     },
                     "required": ["memo"],
+                },
+            }
+        )
+
+        decls.append(
+            {
+                "name": "memo_assess",
+                "description": "Assess a memo and suggest improved fields (subject/group/status/result) and an improved memo text.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer", "description": "Optional memo id (for traceability)."},
+                        "memo": {"type": "string", "description": "Memo text/body."},
+                        "group": {"type": "string", "description": "Current group label."},
+                        "subject": {"type": "string", "description": "Current subject label."},
+                        "status": {"type": "string", "description": "Current status."},
+                        "result": {"type": "string", "description": "Current result/notes."},
+                    },
+                    "required": [],
+                },
+            }
+        )
+
+        decls.append(
+            {
+                "name": "memo_update_queue",
+                "description": "Queue an update to an existing memo entry (Pending-confirmed write).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer", "description": "Memo id."},
+                        "memo": {"type": "string", "description": "Replacement memo text/body (optional)."},
+                        "group": {"type": "string", "description": "Replacement group label (optional)."},
+                        "subject": {"type": "string", "description": "Replacement subject label (optional)."},
+                        "status": {"type": "string", "description": "Replacement status (optional)."},
+                        "result": {"type": "string", "description": "Replacement result/notes (optional)."},
+                        "active": {"type": "boolean", "description": "Replacement active flag (optional)."},
+                    },
+                    "required": ["id"],
                 },
             }
         )
@@ -13034,61 +13706,80 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
             }
         )
 
-    decls.append({"name": "pending_list", "description": "List queued pending actions waiting for confirmation."})
-    decls.append(
-        {
-            "name": "system_macro_upsert_bundle_queue",
-            "description": "Queue a single pending action: upsert a macro row in the system macros sheet, then reload system (on confirmation).",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "name": {"type": "string"},
-                    "enabled": {"type": "boolean"},
-                    "description": {"type": "string"},
-                    "parameters_json": {"type": "string"},
-                    "steps_json": {"type": "string"},
-                    "reload_mode": {"type": "string", "description": "full|all|memory|knowledge|sys|gems"},
-                },
-                "required": ["name", "steps_json"],
-            },
-        }
-    )
-    decls.append(
-        {
-            "name": "pending_confirm",
-            "description": "Confirm and execute a queued pending action.",
-            "parameters": {
-                "type": "object",
-                "properties": {"confirmation_id": {"type": "string"}, "input": {"type": "object"}},
-                "required": ["confirmation_id"],
-            },
-        }
-    )
-    decls.append(
-        {
-            "name": "pending_cancel",
-            "description": "Cancel a queued pending action.",
-            "parameters": {
-                "type": "object",
-                "properties": {"confirmation_id": {"type": "string"}},
-                "required": ["confirmation_id"],
-            },
-        }
-    )
+    if not macros_only:
+        decls.append({"name": "pending_list", "description": "List queued pending actions waiting for confirmation."})
 
-    decls.append(
-        {
-            "name": "macro_run",
-            "description": "Run a configured macro tool by name (sheet-backed).",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "name": {"type": "string", "description": "Macro tool name (e.g. macro_time_now)."},
+        decls.append(
+            {
+                "name": "pending_get",
+                "description": "Get a queued pending action by confirmation_id (without executing it).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"confirmation_id": {"type": "string"}},
+                    "required": ["confirmation_id"],
                 },
-                "required": ["name"],
-            },
-        }
-    )
+            }
+        )
+
+        decls.append(
+            {
+                "name": "system_macro_upsert_bundle_queue",
+                "description": "Queue a single pending action: upsert a macro row in the system macros sheet, then reload system (on confirmation).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"confirmation_id": {"type": "string"}},
+                    "required": ["confirmation_id"],
+                },
+            }
+        )
+        decls.append(
+            {
+                "name": "pending_preview",
+                "description": "Preview a queued pending action (risk/targets/summary) without executing it.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"confirmation_id": {"type": "string"}},
+                    "required": ["confirmation_id"],
+                },
+            }
+        )
+        decls.append(
+            {
+                "name": "pending_confirm",
+                "description": "Confirm and execute a queued pending action.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"confirmation_id": {"type": "string"}, "input": {"type": "object"}},
+                    "required": ["confirmation_id"],
+                },
+            }
+        )
+        decls.append(
+            {
+                "name": "pending_cancel",
+                "description": "Cancel a queued pending action.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"confirmation_id": {"type": "string"}},
+                    "required": ["confirmation_id"],
+                },
+            }
+        )
+
+    if not macros_only:
+        decls.append(
+            {
+                "name": "macro_run",
+                "description": "Run a configured macro tool by name (sheet-backed).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string", "description": "Macro tool name (e.g. macro_time_now)."},
+                    },
+                    "required": ["name"],
+                },
+            }
+        )
 
     macros = _macro_tools_cached_snapshot()
     if not macros:
@@ -13112,12 +13803,17 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
 
 async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: dict[str, Any]) -> Any:
     n = str(tool_name or "").strip()
-    if n and (n.startswith("macro_") or n == "macro_run"):
-        sys_kv = _sys_kv_snapshot()
+    sys_kv = _sys_kv_snapshot()
+    macros_only = _macros_only_enabled(sys_kv=sys_kv)
+    if macros_only and n and (not n.startswith("macro_")) and (not n.startswith("system_")):
+        raise HTTPException(status_code=403, detail={"tool_not_allowed": n, "mode": "macros_only"})
+
+    async def _run_macro(*, macro_name: str, macro_args: dict[str, Any]) -> Any:
+        if not macro_name:
+            raise HTTPException(status_code=400, detail="missing_macro_name")
+        if not macro_name.startswith("macro_"):
+            raise HTTPException(status_code=400, detail={"invalid_macro_name": macro_name})
         macros = await _macro_tools_get_cached(sys_kv=sys_kv)
-        macro_name = n
-        if n == "macro_run":
-            macro_name = str(args.get("name") or "").strip()
         macro = macros.get(macro_name) if isinstance(macros, dict) else None
         if not isinstance(macro, dict):
             raise HTTPException(status_code=400, detail={"macro_not_found": macro_name})
@@ -13368,12 +14064,11 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
                 return [_macro_substitute(v2, params, out_steps) for v2 in v]
             if isinstance(v, str):
                 s = v
-                # If the whole string is exactly a single placeholder, preserve types.
                 m = re.fullmatch(r"\{\{\s*([^}]+?)\s*\}\}", s)
                 if m:
                     expr = m.group(1)
                     return _macro_resolve_expr(str(expr or ""), params, out_steps)
-                # Otherwise do string interpolation.
+
                 def _repl(mm: re.Match) -> str:
                     expr = str(mm.group(1) or "")
                     val = _macro_resolve_expr(expr, params, out_steps)
@@ -13389,7 +14084,10 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             "system_reload",
             "system_reload_queue",
             "system_macro_upsert_bundle_queue",
+            "google_account_relink_queue",
             "memo_add",
+            "memo_assess",
+            "memo_update_queue",
             "memo_get",
             "memo_list",
             "memo_search",
@@ -13397,6 +14095,8 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             "memory_search",
             "memory_list",
             "pending_list",
+            "pending_get",
+            "pending_preview",
             "pending_confirm",
             "pending_cancel",
         }
@@ -13410,20 +14110,22 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
                 continue
             if step_tool == "macro_run" or step_tool.startswith("macro_"):
                 raise HTTPException(status_code=400, detail={"macro_recursion_disallowed": step_tool})
+            if macros_only and (not step_tool.startswith("system_")):
+                raise HTTPException(
+                    status_code=403,
+                    detail={"macro_step_tool_not_allowed": step_tool, "mode": "macros_only", "hint": "use system_* tools inside macros"},
+                )
             if step_tool not in allowed and step_tool not in MCP_TOOL_MAP:
                 raise HTTPException(status_code=400, detail={"macro_step_tool_not_allowed": step_tool})
             step_args = st.get("args")
             if not isinstance(step_args, dict):
                 step_args = {}
             try:
-                # Allow macros to pass-through runtime arguments via {{param}} placeholders.
-                # Exclude the macro control field itself.
-                params = {k: v for k, v in (args or {}).items() if k != "name"}
+                params = {k: v for k, v in (macro_args or {}).items() if k != "name"}
                 step_args = _macro_substitute(step_args, params, out_steps)
                 if not isinstance(step_args, dict):
                     step_args = {}
             except Exception as e:
-                # Don't swallow FastAPI HTTPExceptions (e.g. require(...) guards).
                 if isinstance(e, HTTPException):
                     raise
                 pass
@@ -13431,12 +14133,271 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             out_steps.append({"step": i + 1, "tool": step_tool, "result": res})
         return {"ok": True, "macro": macro_name, "steps": out_steps, "count": len(out_steps)}
 
+    if n == "system_macro_test_run":
+        macro_name = str((args or {}).get("name") or "").strip()
+        if not macro_name:
+            raise HTTPException(status_code=400, detail="missing_macro_name")
+        if not macro_name.startswith("macro_"):
+            raise HTTPException(status_code=400, detail={"invalid_macro_name": macro_name})
+        try:
+            limit = int((args or {}).get("limit") or 20)
+        except Exception:
+            limit = 20
+        limit = max(1, min(limit, 200))
+
+        fixtures = await _load_macro_fixtures_from_sheet(macro_name=macro_name, sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+        fixtures = fixtures[:limit]
+        results: list[dict[str, Any]] = []
+        passed = 0
+        for i, fx in enumerate(fixtures, start=1):
+            fx_args = fx.get("args") if isinstance(fx.get("args"), dict) else {}
+            expect_contains = str(fx.get("expect_contains") or "").strip()
+            expected = fx.get("expected")
+            try:
+                out = await _run_macro(macro_name=macro_name, macro_args=dict(fx_args))
+                ok = True
+                if expect_contains:
+                    hay = json.dumps(out, ensure_ascii=False)
+                    ok = expect_contains in hay
+                if expected is not None:
+                    ok = ok and (out == expected)
+                if ok:
+                    passed += 1
+                results.append(
+                    {
+                        "i": i,
+                        "ok": bool(ok),
+                        "args": fx_args,
+                        "expect_contains": expect_contains or None,
+                        "expected": expected,
+                        "output": out,
+                    }
+                )
+            except Exception as e:
+                results.append(
+                    {
+                        "i": i,
+                        "ok": False,
+                        "args": fx_args,
+                        "expect_contains": expect_contains or None,
+                        "expected": expected,
+                        "error": str(e),
+                    }
+                )
+        return {"ok": True, "macro": macro_name, "fixtures": len(fixtures), "passed": passed, "failed": len(fixtures) - passed, "results": results}
+
+    if n == "system_macro_test_evaluate":
+        macro_name = str((args or {}).get("name") or "").strip()
+        report = (args or {}).get("report")
+        if not macro_name:
+            raise HTTPException(status_code=400, detail="missing_macro_name")
+        if not macro_name.startswith("macro_"):
+            raise HTTPException(status_code=400, detail={"invalid_macro_name": macro_name})
+        if not isinstance(report, dict):
+            raise HTTPException(status_code=400, detail="invalid_report")
+
+        sys_kv_dict = sys_kv if isinstance(sys_kv, dict) else None
+        enabled = False
+        if isinstance(sys_kv_dict, dict):
+            try:
+                raw = str(sys_kv_dict.get("system.macros.evaluator.enabled") or "").strip()
+                if raw:
+                    enabled = _parse_bool_cell(raw)
+            except Exception:
+                enabled = False
+        if not enabled:
+            raise HTTPException(status_code=403, detail="macro_evaluator_disabled")
+
+        macros = await _macro_tools_get_cached(sys_kv=sys_kv_dict)
+        current = macros.get(macro_name) if isinstance(macros, dict) else None
+        if not isinstance(current, dict):
+            raise HTTPException(status_code=404, detail={"macro_not_found": macro_name})
+
+        current_desc = str(current.get("description") or "").strip()
+        current_params = current.get("parameters") if isinstance(current.get("parameters"), dict) else {"type": "object", "properties": {}}
+        current_steps = current.get("steps") if isinstance(current.get("steps"), list) else []
+
+        eval_system_instruction = (
+            "You are a macro quality evaluator. Given a macro definition and its test report, decide if the macro should be updated. "
+            "Return ONLY valid JSON. Do not include markdown, code fences, or commentary. "
+            "Output schema: {action: 'noop'|'update', rationale: string, macro: {name, description, parameters_json, steps_json}}. "
+            "If action='noop', omit macro. If action='update', macro.name must match input name. "
+            "steps_json must be a JSON string representing a list of step objects {tool,args}. "
+            "parameters_json must be a JSON string representing a JSON schema object. "
+            "Keep changes minimal. Never propose macro recursion (macro_* or macro_run)."
+        )
+        payload = {
+            "name": macro_name,
+            "current": {
+                "name": macro_name,
+                "description": current_desc,
+                "parameters": current_params,
+                "steps": current_steps,
+            },
+            "report": report,
+        }
+
+        txt = await _gemini_summarize_text(system_instruction=eval_system_instruction, prompt=json.dumps(payload, ensure_ascii=False))
+        raw = str(txt or "")
+        s = raw.strip()
+        if s.startswith("```"):
+            s = s.strip("`").strip()
+            if s.lower().startswith("json"):
+                s = s[4:].strip()
+        try:
+            parsed = json.loads(s)
+        except Exception:
+            raise HTTPException(status_code=502, detail={"error": "macro_test_evaluate_invalid_json", "raw": raw[:800]})
+        if not isinstance(parsed, dict):
+            raise HTTPException(status_code=502, detail={"error": "macro_test_evaluate_invalid_json", "raw": raw[:800]})
+        action = str(parsed.get("action") or "").strip().lower()
+        if action not in {"noop", "update"}:
+            raise HTTPException(status_code=502, detail={"error": "macro_test_evaluate_invalid_action", "action": action})
+
+        out: dict[str, Any] = {"ok": True, "action": action, "rationale": str(parsed.get("rationale") or "").strip()}
+        if action == "noop":
+            return out
+
+        macro = parsed.get("macro")
+        if not isinstance(macro, dict):
+            raise HTTPException(status_code=502, detail="macro_test_evaluate_missing_macro")
+        nm = str(macro.get("name") or "").strip()
+        if nm != macro_name:
+            raise HTTPException(status_code=502, detail={"macro_test_evaluate_name_mismatch": nm, "expected": macro_name})
+        desc2 = str(macro.get("description") or "").strip()
+        parameters_json = str(macro.get("parameters_json") or "").strip()
+        steps_json = str(macro.get("steps_json") or "").strip()
+        if not steps_json:
+            raise HTTPException(status_code=502, detail="macro_test_evaluate_missing_steps_json")
+        # Validate json strings minimally.
+        try:
+            steps_val = json.loads(steps_json)
+        except Exception:
+            raise HTTPException(status_code=502, detail="macro_test_evaluate_invalid_steps_json")
+        if not isinstance(steps_val, list):
+            raise HTTPException(status_code=502, detail="macro_test_evaluate_invalid_steps_json")
+        if parameters_json:
+            try:
+                pj = json.loads(parameters_json)
+                if not isinstance(pj, dict):
+                    raise Exception("not_dict")
+            except Exception:
+                raise HTTPException(status_code=502, detail="macro_test_evaluate_invalid_parameters_json")
+
+        out["macro"] = {
+            "name": macro_name,
+            "description": desc2,
+            "parameters_json": parameters_json,
+            "steps_json": steps_json,
+        }
+
+        if bool((args or {}).get("queue")):
+            if not session_id:
+                raise HTTPException(status_code=400, detail="missing_session_id")
+            mode = str((args or {}).get("reload_mode") or "full").strip().lower() or "full"
+            if mode not in {"full", "all", "memory", "knowledge", "sys", "gems"}:
+                raise HTTPException(status_code=400, detail="invalid_reload_mode")
+            create_pending_write = _create_pending_write
+            confirmation_id = create_pending_write(
+                str(session_id),
+                "bundle_publish_macro_reload",
+                {
+                    "macro": {
+                        "name": macro_name,
+                        "enabled": True,
+                        "description": desc2,
+                        "parameters_json": parameters_json,
+                        "steps_json": steps_json,
+                    },
+                    "reload_mode": mode,
+                },
+            )
+            out["queued"] = True
+            out["confirmation_id"] = confirmation_id
+            out["reload_mode"] = mode
+        return out
+
+    if n == "system_macro_seed_baseline_queue":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        mode = str((args or {}).get("reload_mode") or "full").strip().lower() or "full"
+        if mode not in {"full", "all", "memory", "knowledge", "sys", "gems"}:
+            raise HTTPException(status_code=400, detail="invalid_reload_mode")
+
+        macros = _macro_tools_cached_snapshot()
+        if not macros:
+            macros = {
+                "macro_time_now": {
+                    "name": "macro_time_now",
+                    "description": "Sample macro: return current server time (calls time_now).",
+                    "parameters": {"type": "object", "properties": {}},
+                    "steps": [{"tool": "time_now", "args": {}}],
+                }
+            }
+
+        seed: list[dict[str, Any]] = []
+        for k, v in (macros or {}).items():
+            name = str(k or "").strip()
+            if not name.startswith("macro_"):
+                continue
+            if not isinstance(v, dict):
+                continue
+            desc = str(v.get("description") or "").strip()
+            params = v.get("parameters") if isinstance(v.get("parameters"), dict) else {"type": "object", "properties": {}}
+            steps = v.get("steps") if isinstance(v.get("steps"), list) else []
+            try:
+                parameters_json = json.dumps(params, ensure_ascii=False)
+            except Exception:
+                parameters_json = "{}"
+            try:
+                steps_json = json.dumps(steps, ensure_ascii=False)
+            except Exception:
+                steps_json = "[]"
+            if not str(steps_json or "").strip():
+                continue
+            seed.append(
+                {
+                    "name": name,
+                    "enabled": True,
+                    "description": desc,
+                    "parameters_json": parameters_json,
+                    "steps_json": steps_json,
+                }
+            )
+        seed.sort(key=lambda m: str(m.get("name") or ""))
+
+        confirmation_id = _create_pending_write(
+            str(session_id),
+            "bundle_seed_macros",
+            {"macros": seed, "reload_mode": mode},
+        )
+        return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "macros": len(seed), "reload_mode": mode}
+
+    if n == "system_run_macro":
+        macro_name = str((args or {}).get("name") or "").strip()
+        macro_args = (args or {}).get("args")
+        if not isinstance(macro_args, dict):
+            macro_args = {}
+        return await _run_macro(macro_name=macro_name, macro_args=macro_args)
+
+    if n and (n.startswith("macro_") or n == "macro_run"):
+        if macros_only and n == "macro_run":
+            raise HTTPException(status_code=403, detail={"tool_not_allowed": "macro_run", "mode": "macros_only"})
+
+        macro_name = n
+        macro_args: dict[str, Any] = dict(args or {})
+        if n == "macro_run":
+            macro_name = str(args.get("name") or "").strip()
+            macro_args = {k: v for k, v in (args or {}).items() if k != "name"}
+        return await _run_macro(macro_name=macro_name, macro_args=macro_args)
+
     deps: dict[str, Any] = {
         "HTTPException": HTTPException,
         "ZoneInfo": ZoneInfo,
         "datetime": datetime,
         "timezone": timezone,
         "time": time,
+        "json": json,
         "logger": logger,
         "DEFAULT_USER_ID": DEFAULT_USER_ID,
         "AGENT_CONTINUE_WINDOW_SECONDS": AGENT_CONTINUE_WINDOW_SECONDS,
@@ -13451,6 +14412,7 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         "system_reload_impl": _system_reload_impl,
         "load_ws_system_kv": _load_ws_system_kv,
         "macro_tools_force_reload_from_sheet": _macro_tools_force_reload_from_sheet,
+        "macro_tools_reload_selected_from_sheet": _macro_tools_reload_selected_from_sheet,
         "system_spreadsheet_id": _system_spreadsheet_id,
         "system_macros_sheet_name": _system_macros_sheet_name,
         "memory_sheet_upsert": _memory_sheet_upsert,
@@ -13466,6 +14428,7 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         "memo_prompt_cfg": _memo_prompt_cfg,
         "memo_needs_enrich": _memo_needs_enrich,
         "memo_enrich_prompt": _memo_enrich_prompt,
+        "gemini_summarize_text": _gemini_summarize_text,
         "list_pending_writes": _list_pending_writes,
         "get_pending_write": _get_pending_write,
         "create_pending_write": _create_pending_write,
@@ -13503,12 +14466,30 @@ def _fc_args(fc: Any) -> dict[str, Any]:
     return {}
 
 
+async def _ws_emit_gemini_unavailable(ws: WebSocket, *, trace_id: str | None = None) -> None:
+    try:
+        last = getattr(ws.state, "gemini_last_error", None)
+    except Exception:
+        last = None
+    if isinstance(last, dict) and (last.get("message") or last.get("kind")):
+        try:
+            await _ws_send_json(ws, {"type": "error", **last}, trace_id=trace_id)
+            return
+        except Exception:
+            pass
+    try:
+        await _ws_send_json(ws, {"type": "error", "message": "gemini_unavailable"}, trace_id=trace_id)
+    except Exception:
+        pass
+
+
 async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
     audio_frames = 0
     gemini_available = True
-    pending_first = getattr(ws.state, "prefetched_client_msgs", None)
+    pending_first = getattr(ws.state, "pending_first", None)
     if not isinstance(pending_first, list):
         pending_first = []
+
     while True:
         if pending_first:
             msg = pending_first.pop(0)
@@ -13552,6 +14533,14 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             except Exception as e:
                 gemini_available = False
                 logger.warning("gemini_send_audio_failed error=%s", str(e))
+                try:
+                    ws.state.gemini_last_error = {
+                        "kind": "gemini_send_audio_failed",
+                        "message": "gemini_unavailable",
+                        "detail": str(e),
+                    }
+                except Exception:
+                    pass
                 try:
                     await _ws_send_json(ws, {"type": "error", "message": "gemini_unavailable", "detail": str(e)}, trace_id=trace_id)
                 except Exception:
@@ -13708,10 +14697,7 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
                     pass
                 continue
             if not gemini_available:
-                try:
-                    await _ws_send_json(ws, {"type": "error", "message": "gemini_unavailable"}, trace_id=trace_id)
-                except Exception:
-                    pass
+                await _ws_emit_gemini_unavailable(ws, trace_id=trace_id)
                 continue
             try:
                 await _ws_update_contexts_from_text(ws, s, handled=False)
@@ -13722,6 +14708,14 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             except Exception as e:
                 gemini_available = False
                 logger.warning("gemini_send_text_failed error=%s", str(e))
+                try:
+                    ws.state.gemini_last_error = {
+                        "kind": "gemini_send_text_failed",
+                        "message": "gemini_unavailable",
+                        "detail": str(e),
+                    }
+                except Exception:
+                    pass
                 try:
                     await _ws_send_json(ws, {"type": "error", "message": "gemini_unavailable", "detail": str(e)}, trace_id=trace_id)
                 except Exception:
@@ -13736,6 +14730,14 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             except Exception as e:
                 gemini_available = False
                 logger.warning("gemini_send_audio_end_failed error=%s", str(e))
+                try:
+                    ws.state.gemini_last_error = {
+                        "kind": "gemini_send_audio_end_failed",
+                        "message": "gemini_unavailable",
+                        "detail": str(e),
+                    }
+                except Exception:
+                    pass
                 try:
                     await _ws_send_json(ws, {"type": "error", "message": "gemini_unavailable", "detail": str(e)}, trace_id=trace_id)
                 except Exception:
@@ -13835,7 +14837,7 @@ async def _ws_local_only_loop(ws: WebSocket) -> None:
             )
             if handled:
                 continue
-            await _ws_send_json(ws, {"type": "error", "message": "gemini_unavailable"}, trace_id=trace_id)
+            await _ws_emit_gemini_unavailable(ws, trace_id=trace_id)
             continue
 
         if msg_type == "close":
@@ -13923,10 +14925,13 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                                     "pending_confirm",
                                     "pending_cancel",
                                     "system_reload_queue",
+                                    "memo_header_assess",
                                     "memo_add",
+                                    "memo_assess",
                                     "memo_get",
                                     "memo_list",
                                     "memo_search",
+                                    "memo_update_queue",
                                     "memory_search",
                                     "memory_list",
                                 )
@@ -13982,7 +14987,13 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                             except Exception:
                                 pass
                     except HTTPException as e:
-                        logger.info("gemini_tool_call_error name=%s status_code=%s", fc_name, e.status_code)
+                        logger.info(
+                            "gemini_tool_call_error name=%s status_code=%s detail=%s session_id=%s",
+                            fc_name,
+                            e.status_code,
+                            e.detail,
+                            str(session_id),
+                        )
                         function_responses.append(
                             types.FunctionResponse(
                                 id=fc_id,
@@ -14418,15 +15429,37 @@ async def ws_live(ws: WebSocket) -> None:
                 super().__init__(detail)
                 self.detail = detail
 
+        class _GeminiLiveServiceUnavailable(Exception):
+            def __init__(self, detail: str) -> None:
+                super().__init__(detail)
+                self.detail = detail
+
         def _classify_gemini_live_error(err: Exception, model: str) -> dict[str, Any]:
             msg = str(err)
             status_code = getattr(err, "status_code", None)
-            if status_code == 1008 or "requested entity was not found" in msg.lower():
+            msg_l = msg.lower()
+            # Gemini Live can return model-not-found as status_code=1008, or as a plain string
+            # mentioning 1008 / not found / not supported for bidiGenerateContent.
+            is_1008 = (status_code == 1008) or ("1008" in msg_l)
+            if is_1008 and (
+                "requested entity was not found" in msg_l
+                or " is not found for api version" in msg_l
+                or "not supported for bidigeneratecontent" in msg_l
+                or "model" in msg_l and "not found" in msg_l
+            ):
                 return {
                     "kind": "gemini_model_not_found",
                     "message": "gemini_live_model_not_found",
                     "model": model,
                     "hint": "Set GEMINI_LIVE_MODEL to a model your API key can access.",
+                    "detail": msg,
+                }
+            if status_code == 1011 or "service is currently unavailable" in msg_l:
+                return {
+                    "kind": "gemini_service_unavailable",
+                    "message": "gemini_service_unavailable",
+                    "model": model,
+                    "hint": "Gemini Live is temporarily unavailable; retrying other models/candidates.",
                     "detail": msg,
                 }
             return {
@@ -14503,6 +15536,26 @@ async def ws_live(ws: WebSocket) -> None:
                 + extra_sys
             )
 
+        # Macro registry (from macro sheet) to make NL routing tool-centric.
+        # This avoids hardcoded intent routing in code.
+        try:
+            sys_kv = getattr(ws.state, "sys_kv", None)
+            enabled = True
+            if isinstance(sys_kv, dict):
+                raw_enabled = str(sys_kv.get("system.macros.registry.enabled") or "").strip()
+                if raw_enabled:
+                    enabled = _parse_bool_cell(raw_enabled)
+                max_items = _safe_int(sys_kv.get("system.macros.registry.max_items"), default=30)
+            else:
+                max_items = 30
+            if enabled:
+                macros = await _macro_tools_get_cached(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+                reg = _macro_registry_text(macros=macros, max_items=max_items)
+                if reg:
+                    system_instruction = system_instruction + "\n\n" + "MACRO_REGISTRY (from system macros sheet; internal)\n" + reg
+        except Exception:
+            pass
+
         try:
             mem_items = getattr(ws.state, "memory_items", None)
             know_items = getattr(ws.state, "knowledge_items", None)
@@ -14544,6 +15597,18 @@ async def ws_live(ws: WebSocket) -> None:
             ],
         }
 
+        # System sheet overrides (sys_kv wins over env/defaults)
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        if isinstance(sys_kv, dict):
+            try:
+                rm = sys_kv.get("gemini.live.response_modalities_json")
+                if isinstance(rm, str) and rm.strip():
+                    parsed_rm = json.loads(rm)
+                    if isinstance(parsed_rm, list) and all(isinstance(x, str) for x in parsed_rm) and parsed_rm:
+                        base_config["response_modalities"] = [str(x).strip().upper() for x in parsed_rm if str(x).strip()]
+            except Exception:
+                pass
+
         base_candidates = [
             "gemini-2.0-flash-live-001",
             "gemini-2.5-flash-native-audio-preview-12-2025",
@@ -14551,9 +15616,30 @@ async def ws_live(ws: WebSocket) -> None:
             "gemini-2.5-flash-native-audio-latest",
         ]
 
+        sys_candidates: list[str] = []
+        sys_override_model = ""
+        if isinstance(sys_kv, dict):
+            try:
+                sys_override_model = str(sys_kv.get("gemini.live.model_override") or "").strip()
+            except Exception:
+                sys_override_model = ""
+            try:
+                raw = sys_kv.get("gemini.live.model_candidates_json")
+                if isinstance(raw, str) and raw.strip():
+                    parsed = json.loads(raw)
+                    if isinstance(parsed, list):
+                        sys_candidates = [str(x or "").strip() for x in parsed if str(x or "").strip()]
+            except Exception:
+                pass
+
         raw_candidates = [
+            sys_override_model,
             GEMINI_LIVE_MODEL_OVERRIDE,
-            *(base_candidates if GEMINI_LIVE_MODEL_OVERRIDE else [GEMINI_LIVE_MODEL_DEFAULT, *base_candidates]),
+            *(
+                sys_candidates
+                if sys_candidates
+                else (base_candidates if GEMINI_LIVE_MODEL_OVERRIDE else [GEMINI_LIVE_MODEL_DEFAULT, *base_candidates])
+            ),
         ]
 
         # Gemini Live model naming can vary by endpoint/version. Be permissive:
@@ -14602,6 +15688,10 @@ async def ws_live(ws: WebSocket) -> None:
                     getattr(e, "status_code", None),
                 )
                 try:
+                    try:
+                        ws2.state.gemini_last_error = dict(classified)
+                    except Exception:
+                        pass
                     await _ws_send_json(ws2, {"type": "error", **classified})
                 except Exception:
                     pass
@@ -14677,6 +15767,8 @@ async def ws_live(ws: WebSocket) -> None:
                             kind = (gemini_failed_error or {}).get("kind")
                             if kind == "gemini_model_not_found":
                                 raise _GeminiLiveModelNotFound(str(detail))
+                            if kind == "gemini_service_unavailable":
+                                raise _GeminiLiveServiceUnavailable(str(detail))
                             raise _GeminiLiveSessionFailed(str(detail))
 
                         # Client disconnected or finished.
@@ -14705,6 +15797,7 @@ async def ws_live(ws: WebSocket) -> None:
                     pass
 
         last_error: Exception | None = None
+        last_error_classified: dict[str, Any] | None = None
         candidates = model_candidates or [GEMINI_LIVE_MODEL_OVERRIDE or GEMINI_LIVE_MODEL_DEFAULT]
         for cand in candidates:
             try:
@@ -14712,12 +15805,19 @@ async def ws_live(ws: WebSocket) -> None:
                 return
             except _GeminiLiveModelNotFound as e:
                 last_error = e
+                last_error_classified = {"kind": "gemini_model_not_found", "detail": str(e)}
+                continue
+            except _GeminiLiveServiceUnavailable as e:
+                last_error = e
+                last_error_classified = {"kind": "gemini_service_unavailable", "detail": str(e)}
                 continue
             except _GeminiLiveSessionFailed as e:
                 last_error = e
+                last_error_classified = {"kind": "gemini_session_failed", "detail": str(e)}
                 break
             except Exception as e:
                 last_error = e
+                last_error_classified = _classify_gemini_live_error(e, _normalize_model_name(str(cand)))
                 break
 
         if last_error is not None:
@@ -14739,6 +15839,25 @@ async def ws_live(ws: WebSocket) -> None:
                 return
 
             classified = _classify_gemini_live_error(last_error, model_used_norm)
+            # If all candidates failed due to transient unavailability, keep the WS session alive
+            # by falling back to local-only mode instead of permanently failing the connection.
+            fallback_local_only = True
+            if isinstance(sys_kv, dict):
+                try:
+                    fallback_local_only = _sys_kv_bool(sys_kv, "gemini.live.fallback_local_only", default=True)
+                except Exception:
+                    fallback_local_only = True
+            if fallback_local_only and (last_error_classified or {}).get("kind") == "gemini_service_unavailable":
+                try:
+                    try:
+                        ws.state.gemini_last_error = dict(classified)
+                    except Exception:
+                        pass
+                    await _ws_send_json(ws, {"type": "error", **classified})
+                except Exception:
+                    pass
+                await _ws_local_only_loop(ws)
+                return
             if classified.get("kind") == "gemini_model_not_found":
                 logger.warning(
                     "gemini_live_connect_failed_model_not_found model=%s error=%s",
@@ -14749,6 +15868,10 @@ async def ws_live(ws: WebSocket) -> None:
                 logger.exception("gemini_live_session_failed model=%s error=%s", model_used_norm, msg)
 
             try:
+                try:
+                    ws.state.gemini_last_error = dict(classified)
+                except Exception:
+                    pass
                 await _ws_send_json(ws, {"type": "error", **classified})
             except Exception:
                 pass
