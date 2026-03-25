@@ -1,0 +1,56 @@
+flowchart LR
+  subgraph ClientUI[Client/UI]
+    UI[jarvis-frontend (assumption)]
+  end
+
+  subgraph Backend[Backend]
+    JBE[jarvis-backend (HTTP+WS)]
+    ROUTE[agent routing (main.py)]
+  end
+
+  subgraph MCPTools[MCP/Tools]
+    MCP[mcp-bundle (1MCP gateway)]
+  end
+
+  subgraph Workers[Workers]
+    DRW[deep-research-worker (HTTP)]
+  end
+
+  subgraph AuthSecrets[Auth/Secrets (env vars)]
+    SECRETS[env vars / tokens / OAuth]
+  end
+
+  subgraph DataStores[Data Stores]
+    JSQL[sqlite (jarvis sessions)]
+    DSQL[sqlite (deep research)]
+    WV[weaviate]
+  end
+
+  subgraph ExternalServices[External Services]
+    GEM[Gemini API]
+    GAPIS[Google APIs]
+    GS[Google Sheets]
+    GH[GitHub API]
+    PORT[Portainer API]
+  end
+
+  UI -->|WS /ws/live| JBE
+  UI -->|HTTP /health, /openapi.json| JBE
+
+  JBE -->|route/dispatch| ROUTE
+  ROUTE -->|LLM API calls| GEM
+  ROUTE -->|tool calls| MCP
+
+  JBE -->|HTTP calls| DRW
+
+  JBE -->|SQLite (JARVIS_SESSION_DB)| JSQL
+  DRW -->|SQLite (DEEP_RESEARCH_DB)| DSQL
+  JBE -->|retrieval/index (WEAVIATE_URL)| WV
+
+  MCP -->|tool calls (OAuth)| GAPIS
+  JBE -->|memory read/write| GS
+  JBE -->|API calls (token RO/RW)| GH
+  JBE -->|API calls| PORT
+
+  JBE -.->|reads secrets| SECRETS
+  MCP -.->|reads secrets| SECRETS
