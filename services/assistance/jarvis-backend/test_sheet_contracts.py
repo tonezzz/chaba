@@ -15,6 +15,212 @@ def _mcp_text_payload(obj: object) -> dict:
 
 
 def _import_main_with_genai_stub(monkeypatch: pytest.MonkeyPatch):
+    # Some CI/dev environments running these unit tests may not have the full
+    # runtime dependencies installed (e.g. fastapi/httpx). We stub the minimal
+    # surface required for importing `main.py` and its helpers.
+    if "httpx" not in sys.modules:
+        httpx_stub = ModuleType("httpx")
+
+        class _AsyncClientStub:  # pragma: no cover
+            def __init__(self, *args: Any, **kwargs: Any):
+                pass
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+            async def post(self, *args: Any, **kwargs: Any):
+                raise RuntimeError("httpx is not installed (stubbed in tests)")
+
+        setattr(httpx_stub, "AsyncClient", _AsyncClientStub)
+        sys.modules["httpx"] = httpx_stub
+
+    if "fastapi" not in sys.modules:
+        fastapi_stub = ModuleType("fastapi")
+
+        class _HTTPExceptionStub(Exception):
+            def __init__(self, status_code: int = 400, detail: Any = None):
+                super().__init__(str(detail))
+                self.status_code = status_code
+                self.detail = detail
+
+        class _FastAPIStub:  # pragma: no cover
+            def __init__(self, *args: Any, **kwargs: Any):
+                pass
+
+            def include_router(self, *args: Any, **kwargs: Any):
+                return None
+
+            def get(self, *args: Any, **kwargs: Any):
+                def _decor(fn):
+                    return fn
+
+                return _decor
+
+            def post(self, *args: Any, **kwargs: Any):
+                def _decor(fn):
+                    return fn
+
+                return _decor
+
+            def put(self, *args: Any, **kwargs: Any):
+                def _decor(fn):
+                    return fn
+
+                return _decor
+
+            def delete(self, *args: Any, **kwargs: Any):
+                def _decor(fn):
+                    return fn
+
+                return _decor
+
+            def on_event(self, *args: Any, **kwargs: Any):
+                def _decor(fn):
+                    return fn
+
+                return _decor
+
+            def add_middleware(self, *args: Any, **kwargs: Any):
+                return None
+
+            def websocket(self, *args: Any, **kwargs: Any):
+                def _decor(fn):
+                    return fn
+
+                return _decor
+
+            def __getattr__(self, name: str):
+                # Fallback for optional FastAPI APIs referenced by main.py that are
+                # irrelevant for these unit tests (e.g. mount, exception_handler).
+                def _noop(*args: Any, **kwargs: Any):
+                    return None
+
+                def _decorator_factory(*args: Any, **kwargs: Any):
+                    def _decor(fn):
+                        return fn
+
+                    return _decor
+
+                if name in {"mount", "add_api_route", "exception_handler", "middleware"}:
+                    return _noop
+                if name in {"patch", "head", "options"}:
+                    return _decorator_factory
+                return _noop
+
+        class _APIRouterStub:  # pragma: no cover
+            def __init__(self, *args: Any, **kwargs: Any):
+                pass
+
+            def add_api_route(self, *args: Any, **kwargs: Any):
+                return None
+
+            def get(self, *args: Any, **kwargs: Any):
+                def _decor(fn):
+                    return fn
+
+                return _decor
+
+            def post(self, *args: Any, **kwargs: Any):
+                def _decor(fn):
+                    return fn
+
+                return _decor
+
+            def put(self, *args: Any, **kwargs: Any):
+                def _decor(fn):
+                    return fn
+
+                return _decor
+
+            def delete(self, *args: Any, **kwargs: Any):
+                def _decor(fn):
+                    return fn
+
+                return _decor
+
+        setattr(fastapi_stub, "FastAPI", _FastAPIStub)
+        setattr(fastapi_stub, "APIRouter", _APIRouterStub)
+        setattr(fastapi_stub, "HTTPException", _HTTPExceptionStub)
+        setattr(fastapi_stub, "WebSocket", object)
+        setattr(fastapi_stub, "WebSocketDisconnect", Exception)
+
+        def _BodyStub(*args: Any, **kwargs: Any):
+            return None
+
+        def _HeaderStub(*args: Any, **kwargs: Any):
+            return None
+
+        setattr(fastapi_stub, "Body", _BodyStub)
+        setattr(fastapi_stub, "Header", _HeaderStub)
+        sys.modules["fastapi"] = fastapi_stub
+
+        # Submodules used by main.py
+        cors_stub = ModuleType("fastapi.middleware.cors")
+        setattr(cors_stub, "CORSMiddleware", object)
+        sys.modules["fastapi.middleware"] = ModuleType("fastapi.middleware")
+        sys.modules["fastapi.middleware.cors"] = cors_stub
+
+        responses_stub = ModuleType("fastapi.responses")
+        setattr(responses_stub, "Response", object)
+        sys.modules["fastapi.responses"] = responses_stub
+
+    if "PIL" not in sys.modules:
+        pil_stub = ModuleType("PIL")
+        pil_image_stub = ModuleType("PIL.Image")
+
+        class _ImageStub:  # pragma: no cover
+            pass
+
+        setattr(pil_image_stub, "Image", _ImageStub)
+        setattr(pil_stub, "Image", pil_image_stub)
+        sys.modules["PIL"] = pil_stub
+        sys.modules["PIL.Image"] = pil_image_stub
+
+    if "dotenv" not in sys.modules:
+        dotenv_stub = ModuleType("dotenv")
+
+        def _load_dotenv_stub(*args: Any, **kwargs: Any):  # pragma: no cover
+            return False
+
+        setattr(dotenv_stub, "load_dotenv", _load_dotenv_stub)
+        sys.modules["dotenv"] = dotenv_stub
+
+    if "pydantic" not in sys.modules:
+        pydantic_stub = ModuleType("pydantic")
+
+        class _BaseModelStub:  # pragma: no cover
+            pass
+
+        def _FieldStub(*args: Any, **kwargs: Any):  # pragma: no cover
+            return None
+
+        setattr(pydantic_stub, "BaseModel", _BaseModelStub)
+        setattr(pydantic_stub, "Field", _FieldStub)
+        sys.modules["pydantic"] = pydantic_stub
+
+    # Stub route modules imported by main.py to avoid pulling in FastAPI-dependent code.
+    if "routes" not in sys.modules:
+        sys.modules["routes"] = ModuleType("routes")
+    if "routes.google_tasks" not in sys.modules:
+        gt_stub = ModuleType("routes.google_tasks")
+
+        def _create_router_stub(*args: Any, **kwargs: Any):
+            return object()
+
+        setattr(gt_stub, "create_router", _create_router_stub)
+        sys.modules["routes.google_tasks"] = gt_stub
+    if "routes.google_calendar" not in sys.modules:
+        gc_stub = ModuleType("routes.google_calendar")
+
+        def _create_router_stub2(*args: Any, **kwargs: Any):
+            return object()
+
+        setattr(gc_stub, "create_router", _create_router_stub2)
+        sys.modules["routes.google_calendar"] = gc_stub
+
     if "google" not in sys.modules:
         sys.modules["google"] = ModuleType("google")
     if "google.genai" not in sys.modules:
@@ -221,8 +427,11 @@ def test_macros_only_mode_filters_tool_declarations(monkeypatch: pytest.MonkeyPa
     decls = main._mcp_tool_declarations()
     names = {d.get("name") for d in decls if isinstance(d, dict)}
 
-    assert "macro_run" in names
+    assert "macro_run" not in names
     assert "macro_time_now" in names
+    assert "system_reload" in names
+    assert "system_macro_get" in names
+    assert "system_macro_upsert" in names
     # Low-level tools should not be exposed to Gemini in macros-only mode.
     assert "memo_add" not in names
     assert "memory_add" not in names

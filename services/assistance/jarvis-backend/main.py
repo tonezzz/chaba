@@ -876,6 +876,7 @@ async def _handle_thai_memo_commands(ws: WebSocket, text: str) -> bool:
         if memo_item is None:
             await _ws_send_json(ws, {"type": "text", "text": f"ไม่พบเมโม {memo_id}", "instance_id": INSTANCE_ID})
             return True
+
         try:
             txt = await _memo_summarize_item(ws, memo_item)
         except Exception:
@@ -1072,9 +1073,17 @@ def _normalize_thai_compact(s: str) -> str:
         return str(s or "")
 
 
+def _normalize_cmd_text(s: str) -> str:
+    try:
+        s2 = re.sub(r"[\u00A0\u200B-\u200D\uFEFF]+", "", str(s or ""))
+        return " ".join(str(s2).strip().split())
+    except Exception:
+        return " ".join(str(s or "").strip().split())
+
+
 def _memo_match_anywhere(text: str) -> tuple[bool, str | None]:
     # Returns (matched, extracted_memo_text_or_none).
-    raw = str(text or "").strip()
+    raw = _normalize_cmd_text(str(text or ""))
     if not raw:
         return (False, None)
 
@@ -1095,11 +1104,21 @@ def _memo_match_anywhere(text: str) -> tuple[bool, str | None]:
     except Exception:
         pass
 
-    # Guard: do not treat memo subcommands as "add/save memo" triggers.
-    # Example bug: "memo assess 1" was being interpreted as a memo creation trigger,
-    # appending a new memo row and then starting memo_enrich follow-ups.
     try:
         if re.match(r"^memo\s+(assess|update|merge|list|pending|confirm|preview)\b", low, flags=re.IGNORECASE):
+            return (False, None)
+    except Exception:
+        pass
+
+    try:
+        if re.match(r"^(?:memo\s+(?:get|read|load)\b|read\s+memo\b|load\s+memo\b)", low, flags=re.IGNORECASE):
+            return (False, None)
+    except Exception:
+        pass
+
+    try:
+        s0n2 = _normalize_thai_compact(s0)
+        if re.match(r"^(?:อ่าน|โหลด)\s*(เมโม|เมมโม)\b", s0n2):
             return (False, None)
     except Exception:
         pass
@@ -1157,12 +1176,12 @@ def _parse_memo_merge(text: str) -> tuple[Optional[int], Optional[int]]:
 
 
 def _parse_memo_get_id(text: str) -> Optional[int]:
-    s = " ".join(str(text or "").strip().split())
+    s = _normalize_cmd_text(str(text or ""))
     if not s:
         return None
 
     low = s.lower().strip()
-    m = re.match(r"^(?:memo|read\s+memo|load\s+memo)\s+#?(\d+)$", low)
+    m = re.match(r"^(?:memo(?:\s+(?:get|read|load))?|read\s+memo|load\s+memo)\s+#?(\d+)\b", low)
     if m:
         try:
             memo_id = int(m.group(1))
@@ -1221,11 +1240,15 @@ async def _handle_memo_enrich_followup(ws: WebSocket, text: str) -> bool:
 
 
 async def _handle_memo_trigger(ws: WebSocket, text: str) -> bool:
-    s = str(text or "").strip()
+    s = _normalize_cmd_text(str(text or ""))
     if not s:
         return False
 
+    low = s.lower().strip()
+    logger.info("memo_trigger_in text=%s", s[:240])
+
     memo_get_id = _parse_memo_get_id(s)
+    logger.info("memo_trigger_parsed_get_id id=%s", memo_get_id)
     if memo_get_id is not None and memo_get_id > 0:
         loaded = await _memo_load_by_id(ws=ws, memo_id=int(memo_get_id))
         memo_item: dict[str, Any] | None = None
@@ -2897,7 +2920,7 @@ async def tools_api_call(tool_name: str, args: dict[str, Any], session_id: str |
     # This includes macro tools (macro_* / macro_run) and any tools declared in MCP_TOOL_MAP.
     try:
         n = str(tool_name or "").strip()
-        if n and (n.startswith("macro_") or n == "macro_run" or n in MCP_TOOL_MAP):
+        if n and (n.startswith("macro_") or n.startswith("system_") or n == "macro_run" or n in MCP_TOOL_MAP):
             forwarded_args = dict(args or {})
             return await _handle_mcp_tool_call(session_id, n, forwarded_args)
     except HTTPException:
@@ -13264,59 +13287,60 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
             }
         )
 
-        decls.append(
-            {
-                "name": "system_reload",
-                "description": "Reload system sheet KV (sys_kv) and force macro tools reload from sheet.",
-                "parameters": {"type": "object", "properties": {}},
-            }
-        )
-
-        decls.append(
-            {
-                "name": "system_macro_get",
-                "description": "Get a macro row definition from the system macros sheet by name.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "name": {"type": "string", "description": "Macro tool name (e.g. macro_save_memo_v2)."}
-                    },
-                    "required": ["name"],
-                },
-            }
-        )
-
-        decls.append(
-            {
-                "name": "system_macro_upsert",
-                "description": "Insert or update a macro row in the system macros sheet (confirmation-gated write).",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "name": {"type": "string", "description": "Macro tool name (e.g. macro_save_memo_v2)."},
-                        "enabled": {"type": "boolean", "description": "Whether macro is enabled (default true)."},
-                        "description": {"type": "string", "description": "Macro description."},
-                        "parameters_json": {"type": "string", "description": "JSON schema string for parameters_json cell."},
-                        "steps_json": {"type": "string", "description": "JSON list string for steps_json cell."},
-                    },
-                    "required": ["name", "steps_json"],
-                },
-            }
-        )
+        pass
 
     decls.append(
         {
-            "name": "session_last_get",
-            "description": "Get the last created/modified item for this voice session (task or calendar_event).",
+            "name": "system_reload",
+            "description": "Reload system sheet KV (sys_kv) and force macro tools reload from sheet.",
+            "parameters": {"type": "object", "properties": {}},
+        }
+    )
+
+    decls.append(
+        {
+            "name": "system_macro_get",
+            "description": "Get a macro row definition from the system macros sheet by name.",
             "parameters": {
                 "type": "object",
-                "properties": {
-                    "slot": {"type": "string", "enum": ["last_created", "last_modified"]},
-                },
-                "required": ["slot"],
+                "properties": {"name": {"type": "string", "description": "Macro tool name (e.g. macro_save_memo_v2)."}},
+                "required": ["name"],
             },
         }
     )
+
+    decls.append(
+        {
+            "name": "system_macro_upsert",
+            "description": "Insert or update a macro row in the system macros sheet (confirmation-gated write).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Macro tool name (e.g. macro_save_memo_v2)."},
+                    "enabled": {"type": "boolean", "description": "Whether macro is enabled (default true)."},
+                    "description": {"type": "string", "description": "Macro description."},
+                    "parameters_json": {"type": "string", "description": "JSON schema string for parameters_json cell."},
+                    "steps_json": {"type": "string", "description": "JSON list string for steps_json cell."},
+                },
+                "required": ["name", "steps_json"],
+            },
+        }
+    )
+
+    if not macros_only:
+        decls.append(
+            {
+                "name": "session_last_get",
+                "description": "Get the last created/modified item for this voice session (task or calendar_event).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "slot": {"type": "string", "enum": ["last_created", "last_modified"]},
+                    },
+                    "required": ["slot"],
+                },
+            }
+        )
 
     if (not macros_only) and feature_enabled("memory", sys_kv=sys_kv, default=True):
         decls.append(
@@ -13460,61 +13484,63 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
             }
         )
 
-    decls.append({"name": "pending_list", "description": "List queued pending actions waiting for confirmation."})
-    decls.append(
-        {
-            "name": "system_macro_upsert_bundle_queue",
-            "description": "Queue a single pending action: upsert a macro row in the system macros sheet, then reload system (on confirmation).",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "name": {"type": "string"},
-                    "enabled": {"type": "boolean"},
-                    "description": {"type": "string"},
-                    "parameters_json": {"type": "string"},
-                    "steps_json": {"type": "string"},
-                    "reload_mode": {"type": "string", "description": "full|all|memory|knowledge|sys|gems"},
+    if not macros_only:
+        decls.append({"name": "pending_list", "description": "List queued pending actions waiting for confirmation."})
+        decls.append(
+            {
+                "name": "system_macro_upsert_bundle_queue",
+                "description": "Queue a single pending action: upsert a macro row in the system macros sheet, then reload system (on confirmation).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "enabled": {"type": "boolean"},
+                        "description": {"type": "string"},
+                        "parameters_json": {"type": "string"},
+                        "steps_json": {"type": "string"},
+                        "reload_mode": {"type": "string", "description": "full|all|memory|knowledge|sys|gems"},
+                    },
+                    "required": ["name", "steps_json"],
                 },
-                "required": ["name", "steps_json"],
-            },
-        }
-    )
-    decls.append(
-        {
-            "name": "pending_confirm",
-            "description": "Confirm and execute a queued pending action.",
-            "parameters": {
-                "type": "object",
-                "properties": {"confirmation_id": {"type": "string"}, "input": {"type": "object"}},
-                "required": ["confirmation_id"],
-            },
-        }
-    )
-    decls.append(
-        {
-            "name": "pending_cancel",
-            "description": "Cancel a queued pending action.",
-            "parameters": {
-                "type": "object",
-                "properties": {"confirmation_id": {"type": "string"}},
-                "required": ["confirmation_id"],
-            },
-        }
-    )
+            }
+        )
+        decls.append(
+            {
+                "name": "pending_confirm",
+                "description": "Confirm and execute a queued pending action.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"confirmation_id": {"type": "string"}, "input": {"type": "object"}},
+                    "required": ["confirmation_id"],
+                },
+            }
+        )
+        decls.append(
+            {
+                "name": "pending_cancel",
+                "description": "Cancel a queued pending action.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"confirmation_id": {"type": "string"}},
+                    "required": ["confirmation_id"],
+                },
+            }
+        )
 
-    decls.append(
-        {
-            "name": "macro_run",
-            "description": "Run a configured macro tool by name (sheet-backed).",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "name": {"type": "string", "description": "Macro tool name (e.g. macro_time_now)."},
+    if not macros_only:
+        decls.append(
+            {
+                "name": "macro_run",
+                "description": "Run a configured macro tool by name (sheet-backed).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string", "description": "Macro tool name (e.g. macro_time_now)."},
+                    },
+                    "required": ["name"],
                 },
-                "required": ["name"],
-            },
-        }
-    )
+            }
+        )
 
     macros = _macro_tools_cached_snapshot()
     if not macros:
@@ -13538,8 +13564,14 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
 
 async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: dict[str, Any]) -> Any:
     n = str(tool_name or "").strip()
+    sys_kv = _sys_kv_snapshot()
+    macros_only = _macros_only_enabled(sys_kv=sys_kv)
+    if macros_only and n and (not n.startswith("macro_")) and (not n.startswith("system_")):
+        raise HTTPException(status_code=403, detail={"tool_not_allowed": n, "mode": "macros_only"})
     if n and (n.startswith("macro_") or n == "macro_run"):
-        sys_kv = _sys_kv_snapshot()
+        if macros_only and n == "macro_run":
+            raise HTTPException(status_code=403, detail={"tool_not_allowed": "macro_run", "mode": "macros_only"})
+
         macros = await _macro_tools_get_cached(sys_kv=sys_kv)
         macro_name = n
         if n == "macro_run":
@@ -13838,6 +13870,11 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
                 continue
             if step_tool == "macro_run" or step_tool.startswith("macro_"):
                 raise HTTPException(status_code=400, detail={"macro_recursion_disallowed": step_tool})
+            if macros_only and (not step_tool.startswith("system_")):
+                raise HTTPException(
+                    status_code=403,
+                    detail={"macro_step_tool_not_allowed": step_tool, "mode": "macros_only", "hint": "use system_* tools inside macros"},
+                )
             if step_tool not in allowed and step_tool not in MCP_TOOL_MAP:
                 raise HTTPException(status_code=400, detail={"macro_step_tool_not_allowed": step_tool})
             step_args = st.get("args")
@@ -13933,12 +13970,30 @@ def _fc_args(fc: Any) -> dict[str, Any]:
     return {}
 
 
+async def _ws_emit_gemini_unavailable(ws: WebSocket, *, trace_id: str | None = None) -> None:
+    try:
+        last = getattr(ws.state, "gemini_last_error", None)
+    except Exception:
+        last = None
+    if isinstance(last, dict) and (last.get("message") or last.get("kind")):
+        try:
+            await _ws_send_json(ws, {"type": "error", **last}, trace_id=trace_id)
+            return
+        except Exception:
+            pass
+    try:
+        await _ws_send_json(ws, {"type": "error", "message": "gemini_unavailable"}, trace_id=trace_id)
+    except Exception:
+        pass
+
+
 async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
     audio_frames = 0
     gemini_available = True
-    pending_first = getattr(ws.state, "prefetched_client_msgs", None)
+    pending_first = getattr(ws.state, "pending_first", None)
     if not isinstance(pending_first, list):
         pending_first = []
+
     while True:
         if pending_first:
             msg = pending_first.pop(0)
@@ -13982,6 +14037,14 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             except Exception as e:
                 gemini_available = False
                 logger.warning("gemini_send_audio_failed error=%s", str(e))
+                try:
+                    ws.state.gemini_last_error = {
+                        "kind": "gemini_send_audio_failed",
+                        "message": "gemini_unavailable",
+                        "detail": str(e),
+                    }
+                except Exception:
+                    pass
                 try:
                     await _ws_send_json(ws, {"type": "error", "message": "gemini_unavailable", "detail": str(e)}, trace_id=trace_id)
                 except Exception:
@@ -14104,10 +14167,7 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
                     pass
                 continue
             if not gemini_available:
-                try:
-                    await _ws_send_json(ws, {"type": "error", "message": "gemini_unavailable"}, trace_id=trace_id)
-                except Exception:
-                    pass
+                await _ws_emit_gemini_unavailable(ws, trace_id=trace_id)
                 continue
             try:
                 await _ws_update_contexts_from_text(ws, s, handled=False)
@@ -14118,6 +14178,14 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             except Exception as e:
                 gemini_available = False
                 logger.warning("gemini_send_text_failed error=%s", str(e))
+                try:
+                    ws.state.gemini_last_error = {
+                        "kind": "gemini_send_text_failed",
+                        "message": "gemini_unavailable",
+                        "detail": str(e),
+                    }
+                except Exception:
+                    pass
                 try:
                     await _ws_send_json(ws, {"type": "error", "message": "gemini_unavailable", "detail": str(e)}, trace_id=trace_id)
                 except Exception:
@@ -14132,6 +14200,14 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             except Exception as e:
                 gemini_available = False
                 logger.warning("gemini_send_audio_end_failed error=%s", str(e))
+                try:
+                    ws.state.gemini_last_error = {
+                        "kind": "gemini_send_audio_end_failed",
+                        "message": "gemini_unavailable",
+                        "detail": str(e),
+                    }
+                except Exception:
+                    pass
                 try:
                     await _ws_send_json(ws, {"type": "error", "message": "gemini_unavailable", "detail": str(e)}, trace_id=trace_id)
                 except Exception:
@@ -14203,7 +14279,7 @@ async def _ws_local_only_loop(ws: WebSocket) -> None:
             )
             if handled:
                 continue
-            await _ws_send_json(ws, {"type": "error", "message": "gemini_unavailable"}, trace_id=trace_id)
+            await _ws_emit_gemini_unavailable(ws, trace_id=trace_id)
             continue
 
         if msg_type == "close":
@@ -15034,6 +15110,10 @@ async def ws_live(ws: WebSocket) -> None:
                     getattr(e, "status_code", None),
                 )
                 try:
+                    try:
+                        ws2.state.gemini_last_error = dict(classified)
+                    except Exception:
+                        pass
                     await _ws_send_json(ws2, {"type": "error", **classified})
                 except Exception:
                     pass
@@ -15191,6 +15271,10 @@ async def ws_live(ws: WebSocket) -> None:
                     fallback_local_only = True
             if fallback_local_only and (last_error_classified or {}).get("kind") == "gemini_service_unavailable":
                 try:
+                    try:
+                        ws.state.gemini_last_error = dict(classified)
+                    except Exception:
+                        pass
                     await _ws_send_json(ws, {"type": "error", **classified})
                 except Exception:
                     pass
@@ -15206,6 +15290,10 @@ async def ws_live(ws: WebSocket) -> None:
                 logger.exception("gemini_live_session_failed model=%s error=%s", model_used_norm, msg)
 
             try:
+                try:
+                    ws.state.gemini_last_error = dict(classified)
+                except Exception:
+                    pass
                 await _ws_send_json(ws, {"type": "error", **classified})
             except Exception:
                 pass
