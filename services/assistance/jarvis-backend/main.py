@@ -7706,6 +7706,10 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
     if not isinstance(parsed, dict):
         return {"ok": False, "error": "values_get_invalid_response"}
     values = parsed.get("values")
+    if not isinstance(values, list):
+        data = parsed.get("data")
+        if isinstance(data, dict):
+            values = data.get("values")
     if not isinstance(values, list) or not values:
         # If sheet is empty, just append.
         values = []
