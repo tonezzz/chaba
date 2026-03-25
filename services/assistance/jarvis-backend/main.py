@@ -13511,6 +13511,19 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
 
     decls.append(
         {
+            "name": "system_macro_seed_baseline_queue",
+            "description": "Queue a confirmation-gated write to upsert baseline macros into the system macros sheet (useful for seeding an empty sheet).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "reload_mode": {"type": "string", "description": "Reload mode to run after seeding (default full)."},
+                },
+            },
+        }
+    )
+
+    decls.append(
+        {
             "name": "system_run_macro",
             "description": "Run a configured macro tool by name (server-side canonical runner).",
             "parameters": {
@@ -14291,6 +14304,62 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             out["confirmation_id"] = confirmation_id
             out["reload_mode"] = mode
         return out
+
+    if n == "system_macro_seed_baseline_queue":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        mode = str((args or {}).get("reload_mode") or "full").strip().lower() or "full"
+        if mode not in {"full", "all", "memory", "knowledge", "sys", "gems"}:
+            raise HTTPException(status_code=400, detail="invalid_reload_mode")
+
+        macros = _macro_tools_cached_snapshot()
+        if not macros:
+            macros = {
+                "macro_time_now": {
+                    "name": "macro_time_now",
+                    "description": "Sample macro: return current server time (calls time_now).",
+                    "parameters": {"type": "object", "properties": {}},
+                    "steps": [{"tool": "time_now", "args": {}}],
+                }
+            }
+
+        seed: list[dict[str, Any]] = []
+        for k, v in (macros or {}).items():
+            name = str(k or "").strip()
+            if not name.startswith("macro_"):
+                continue
+            if not isinstance(v, dict):
+                continue
+            desc = str(v.get("description") or "").strip()
+            params = v.get("parameters") if isinstance(v.get("parameters"), dict) else {"type": "object", "properties": {}}
+            steps = v.get("steps") if isinstance(v.get("steps"), list) else []
+            try:
+                parameters_json = json.dumps(params, ensure_ascii=False)
+            except Exception:
+                parameters_json = "{}"
+            try:
+                steps_json = json.dumps(steps, ensure_ascii=False)
+            except Exception:
+                steps_json = "[]"
+            if not str(steps_json or "").strip():
+                continue
+            seed.append(
+                {
+                    "name": name,
+                    "enabled": True,
+                    "description": desc,
+                    "parameters_json": parameters_json,
+                    "steps_json": steps_json,
+                }
+            )
+        seed.sort(key=lambda m: str(m.get("name") or ""))
+
+        confirmation_id = _create_pending_write(
+            str(session_id),
+            "bundle_seed_macros",
+            {"macros": seed, "reload_mode": mode},
+        )
+        return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "macros": len(seed), "reload_mode": mode}
 
     if n == "system_run_macro":
         macro_name = str((args or {}).get("name") or "").strip()
