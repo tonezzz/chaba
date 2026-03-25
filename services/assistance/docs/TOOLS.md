@@ -92,12 +92,66 @@ flowchart TB
     BE --> MEML[memory_list]
     BE --> MADD[memo_add]
     BE --> PL[pending_list]
+    BE --> PG[pending_get]
+    BE --> PP[pending_preview]
     BE --> PC[pending_confirm]
     BE --> PX[pending_cancel]
   end
   BE -->|FunctionResponse| GL
   BE -->|MCP JSON-RPC (Sheets/Calendar/Tasks/etc.)| MCP[MCP servers]
 ```
+
+## Macros-only mode (tool surface restriction)
+
+Jarvis can run in a **macros-only** mode controlled by system sheet KV:
+
+- `system.macros.only=true`
+
+In macros-only mode:
+
+- Only tools prefixed with `system_*` and `macro_*` are declared to Gemini.
+- Macro steps are restricted to `system_*` tools (server-enforced).
+
+This is a hard safety boundary (least privilege): it prevents Gemini from directly declaring or calling broad MCP tools.
+
+## Macro tools (sheet-backed)
+
+Macros are defined in the system macros sheet and surfaced to Gemini as tools named `macro_*`.
+
+Key concepts:
+
+- `macro_*`: a tool that runs a stored sequence of steps.
+- `system_run_macro`: canonical server-side macro runner (invokes the same execution path as `macro_*`).
+- Macro step tools are validated at runtime (no recursion).
+
+## Macro self-test + evaluator loop
+
+Jarvis includes a deterministic test harness for macros:
+
+### Tool: `system_macro_test_run`
+
+Purpose: run a macro against fixtures from the macro fixtures sheet and return a structured report.
+
+- Fixtures sheet: `macro_fixtures` (default)
+- Override via sys_kv: `system.macros.fixtures.sheet_name`
+
+Signature:
+
+- `system_macro_test_run({ name: "macro_*", limit? })`
+
+### Tool: `system_macro_test_evaluate`
+
+Purpose: use an LLM to evaluate a test report and propose a minimal macro update.
+
+Safety:
+
+- Disabled by default.
+- Enable via sys_kv: `system.macros.evaluator.enabled=true`
+- If `queue=true`, the evaluator will create a pending upsert+reload bundle which still requires `pending_confirm`.
+
+Signature:
+
+- `system_macro_test_evaluate({ name: "macro_*", report: <system_macro_test_run output>, queue?, reload_mode? })`
 
 ### Tool: `memo_add`
 
@@ -154,6 +208,8 @@ Purpose: fetch “last created/modified” object for the current voice session.
 Purpose: manage queued “pending” actions (confirmation-based writes).
 
 - `pending_list({})`
+- `pending_get({ confirmation_id })`
+- `pending_preview({ confirmation_id })`
 - `pending_confirm({ confirmation_id })`
 - `pending_cancel({ confirmation_id })`
 
