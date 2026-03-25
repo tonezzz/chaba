@@ -7931,6 +7931,151 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
     }
 
 
+async def _sys_kv_dedupe_disable_sheet(*, dry_run: bool = True) -> dict[str, Any]:
+    spreadsheet_id = _system_spreadsheet_id()
+    if not spreadsheet_id:
+        return {"ok": False, "error": "missing_spreadsheet"}
+    sys_sheet = _system_sheet_name()
+
+    def _norm_k(s: Any) -> str:
+        try:
+            ss = str(s or "").strip()
+            ss = re.sub(r"[\u00A0\u200B-\u200D\uFEFF]+", "", ss)
+            ss = " ".join(ss.split())
+            return ss
+        except Exception:
+            try:
+                return str(s or "").strip()
+            except Exception:
+                return ""
+
+    def _canon_k(s: Any) -> str:
+        return _norm_k(s).lower()
+
+    def _col_letter(n: int) -> str:
+        s = ""
+        x = int(n)
+        while x > 0:
+            x, r = divmod(x - 1, 26)
+            s = chr(ord("A") + r) + s
+        return s
+
+    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sys_sheet}!A:Z"})
+    parsed = _mcp_text_json(res)
+    if not isinstance(parsed, dict):
+        return {"ok": False, "error": "values_get_invalid_response"}
+    values = parsed.get("values")
+    if not isinstance(values, list):
+        data = parsed.get("data")
+        if isinstance(data, dict):
+            values = data.get("values")
+    if not isinstance(values, list) or not values:
+        return {"ok": True, "dry_run": dry_run, "spreadsheet_id": spreadsheet_id, "sheet": sys_sheet, "changes": [], "duplicates": []}
+
+    header: list[str] = []
+    idx: dict[str, int] = {}
+    if values and isinstance(values[0], list):
+        header = [str(c or "").strip().lower() for c in values[0]]
+        for i, col in enumerate(header):
+            if col:
+                idx[col] = i
+
+    def _get_col(name: str) -> Optional[int]:
+        j = idx.get(name)
+        if j is None:
+            return None
+        try:
+            return int(j)
+        except Exception:
+            return None
+
+    key_col = _get_col("key")
+    enabled_col = _get_col("enabled")
+    header_mode = key_col is not None
+
+    start_row = 1
+    try:
+        if header_mode and values and isinstance(values[0], list):
+            # Treat first row as header if it contains the key column.
+            start_row = 2
+        elif values and isinstance(values[0], list) and values[0]:
+            h0 = _norm_k(values[0][0]).lower()
+            h1 = _norm_k(values[0][1]).lower() if len(values[0]) > 1 else ""
+            h2 = _norm_k(values[0][2]).lower() if len(values[0]) > 2 else ""
+            if h0 in {"key", "k"} and (not h1 or h1 in {"value", "v"}) and (not h2 or h2 in {"enabled", "enable"}):
+                start_row = 2
+    except Exception:
+        start_row = 1
+
+    # Fallback (KV5): key=A, enabled=C
+    if key_col is None:
+        key_col = 0
+    if enabled_col is None:
+        enabled_col = 2
+
+    by_key: dict[str, list[int]] = {}
+    for i, r in enumerate(values, start=1):
+        if i < start_row:
+            continue
+        if not isinstance(r, list) or len(r) <= key_col:
+            continue
+        ck = _canon_k(r[key_col])
+        if not ck:
+            continue
+        by_key.setdefault(ck, []).append(i)
+
+    changes: list[dict[str, Any]] = []
+    dupes: list[dict[str, Any]] = []
+    for ck, rows in sorted(by_key.items()):
+        if len(rows) <= 1:
+            continue
+        keep = rows[-1]
+        disable = rows[:-1]
+        dupes.append({"key": ck, "rows": rows, "keep": keep, "disable": disable})
+        col_letter = _col_letter(int(enabled_col) + 1)
+        for rnum in disable:
+            rng = f"{sys_sheet}!{col_letter}{rnum}:{col_letter}{rnum}"
+            changes.append({"row": rnum, "range": rng, "value": "false"})
+
+    if dry_run:
+        return {
+            "ok": True,
+            "dry_run": True,
+            "spreadsheet_id": spreadsheet_id,
+            "sheet": sys_sheet,
+            "duplicates": dupes,
+            "changes": changes,
+        }
+
+    tool_upd = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+    applied: list[dict[str, Any]] = []
+    for ch in changes:
+        try:
+            res_u = await _mcp_tools_call(
+                tool_upd,
+                {
+                    "spreadsheet_id": spreadsheet_id,
+                    "range": str(ch["range"]),
+                    "values": [["false"]],
+                    "value_input_option": "RAW",
+                },
+            )
+            applied.append({"ok": True, "row": ch.get("row"), "range": ch.get("range"), "response": _mcp_text_json(res_u)})
+        except Exception as e:
+            applied.append({"ok": False, "row": ch.get("row"), "range": ch.get("range"), "error": f"{type(e).__name__}: {e}"})
+
+    return {
+        "ok": True,
+        "dry_run": False,
+        "spreadsheet_id": spreadsheet_id,
+        "sheet": sys_sheet,
+        "duplicates": dupes,
+        "changes": changes,
+        "applied": applied,
+    }
+
+
 async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_id: str | None = None) -> bool:
     tid = _ws_ensure_trace_id(ws, trace_id)
     msg_type = str(msg.get("type") or "").strip().lower()
@@ -8017,6 +8162,103 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
         if action == "reload":
             mode = str(msg.get("mode") or "full")
             await _handle_system_reload_mode(ws, mode, trace_id=tid)
+            await _ws_voice_job_done(ws, tid)
+            return True
+
+        if action in {"sys_kv_dedupe", "syskv_dedupe", "sys_dedupe"}:
+            sys_kv = getattr(ws.state, "sys_kv", None)
+            enabled_raw = ""
+            if isinstance(sys_kv, dict):
+                enabled_raw = str(sys_kv.get("sys_kv.write.enabled") or "").strip()
+            if not enabled_raw:
+                try:
+                    fresh = await _load_sys_kv_from_sheet()
+                    if isinstance(fresh, dict) and fresh:
+                        ws.state.sys_kv = fresh
+                        enabled_raw = str(fresh.get("sys_kv.write.enabled") or "").strip()
+                except Exception:
+                    pass
+            if enabled_raw and not _parse_bool_cell(enabled_raw):
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "sys_kv_write_disabled",
+                        "message": "sys_kv_write_disabled",
+                        "detail": "Enable via sys sheet key sys_kv.write.enabled=true",
+                        "instance_id": INSTANCE_ID,
+                    },
+                    trace_id=tid,
+                )
+                return True
+            if not enabled_raw:
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "sys_kv_write_disabled",
+                        "message": "sys_kv_write_disabled",
+                        "detail": "Missing sys sheet key sys_kv.write.enabled (default disabled)",
+                        "instance_id": INSTANCE_ID,
+                    },
+                    trace_id=tid,
+                )
+                return True
+
+            dry_run = bool(msg.get("dry_run") is True)
+            try:
+                result = await _sys_kv_dedupe_disable_sheet(dry_run=dry_run)
+            except Exception as e:
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "sys_kv_dedupe_failed",
+                        "message": "sys_kv_dedupe_failed",
+                        "detail": str(e),
+                        "instance_id": INSTANCE_ID,
+                    },
+                    trace_id=tid,
+                )
+                return True
+
+            if not isinstance(result, dict) or not result.get("ok"):
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "error",
+                        "kind": "sys_kv_dedupe_failed",
+                        "message": "sys_kv_dedupe_failed",
+                        "detail": str((result or {}).get("error") or "unknown"),
+                        "instance_id": INSTANCE_ID,
+                    },
+                    trace_id=tid,
+                )
+                return True
+
+            await _ws_send_json(
+                ws,
+                {
+                    "type": "text",
+                    "text": f"sys_kv_dedupe ok" + (" (dry_run)" if dry_run else ""),
+                    "instance_id": INSTANCE_ID,
+                    "sys_kv_dedupe": result,
+                },
+                trace_id=tid,
+            )
+
+            if not dry_run:
+                try:
+                    fresh = await _load_sys_kv_from_sheet()
+                    if isinstance(fresh, dict) and fresh:
+                        try:
+                            ws.state.sys_kv = fresh
+                        except Exception:
+                            pass
+                        _set_cached_sys_kv_only(fresh)
+                except Exception:
+                    pass
+
             await _ws_voice_job_done(ws, tid)
             return True
         if action in {"module_status_report", "module_status", "modules_status", "status_report"}:

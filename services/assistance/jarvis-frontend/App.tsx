@@ -845,6 +845,17 @@ export default function App() {
 			return { key, value, dryRun };
 		};
 
+		const parseSysDedupe = (raw: string): { dryRun: boolean } | null => {
+			const s = String(raw || "")
+				.replace(/[\u00A0\u200B-\u200D\uFEFF]/g, "")
+				.replace(/\s+/g, " ")
+				.trim();
+			const m = s.match(/^\/(?:sys|system)\s+dedupe(?:\s+(dry))?$/i);
+			if (!m) return null;
+			const dryRun = String(m[1] || "").toLowerCase() === "dry";
+			return { dryRun };
+		};
+
 		const sysSet = parseSysSet(normalized);
 		if (sysSet) {
 			liveService.current?.sendSysKvSet(sysSet.key, sysSet.value, { dry_run: sysSet.dryRun });
@@ -865,6 +876,24 @@ export default function App() {
 					text: "Hint: run 'reload system' to apply sys changes.",
 					timestamp: new Date(),
 					metadata: { severity: "debug", category: "ws" },
+				},
+			]);
+			return;
+		}
+
+		const sysDedupe = parseSysDedupe(normalized);
+		if (sysDedupe) {
+			liveService.current?.sendSysKvDedupe({ dry_run: sysDedupe.dryRun });
+			setComposerText("");
+			setAttachments([]);
+			setMessages((prev) => [
+				...prev,
+				{
+					id: `${Date.now()}_sys_dedupe_ui`,
+					role: "system",
+					text: `${sysDedupe.dryRun ? "sys_kv_dedupe (dry_run)" : "sys_kv_dedupe"}`,
+					timestamp: new Date(),
+					metadata: { severity: "info", category: "ws" },
 				},
 			]);
 			return;
