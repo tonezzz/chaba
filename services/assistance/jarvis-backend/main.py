@@ -1960,6 +1960,38 @@ async def _macro_tools_reload_selected_from_sheet(
     return {"ok": True, "mode": "by_name", "requested": want, "updated": updated, "missing": missing, "macros_count": len(cur)}
 
 
+def _macro_registry_text(*, macros: Any, max_items: int = 30) -> str:
+    if not isinstance(macros, dict) or not macros:
+        return ""
+    try:
+        lim = int(max_items)
+    except Exception:
+        lim = 30
+    lim = max(1, min(lim, 200))
+
+    # Keep compact: only name + description. The full tool schemas are already
+    # provided via function_declarations.
+    items: list[tuple[str, str]] = []
+    for k, v in macros.items():
+        name = str(k or "").strip()
+        if not name or not name.startswith("macro_"):
+            continue
+        desc = ""
+        if isinstance(v, dict):
+            desc = str(v.get("description") or "").strip()
+        items.append((name, desc))
+    items.sort(key=lambda t: t[0])
+    if not items:
+        return ""
+    out_lines: list[str] = []
+    for name, desc in items[:lim]:
+        if desc:
+            out_lines.append(f"- {name}: {desc}")
+        else:
+            out_lines.append(f"- {name}")
+    return "\n".join(out_lines).strip()
+
+
 def _macro_tools_cached_snapshot() -> dict[str, dict[str, Any]]:
     macros = _MACRO_TOOL_CACHE.get("macros")
     if isinstance(macros, dict):
@@ -15055,6 +15087,26 @@ async def ws_live(ws: WebSocket) -> None:
                 + "SYSTEM_INSTRUCTION (from system sheet; internal)\n"
                 + extra_sys
             )
+
+        # Macro registry (from macro sheet) to make NL routing tool-centric.
+        # This avoids hardcoded intent routing in code.
+        try:
+            sys_kv = getattr(ws.state, "sys_kv", None)
+            enabled = True
+            if isinstance(sys_kv, dict):
+                raw_enabled = str(sys_kv.get("system.macros.registry.enabled") or "").strip()
+                if raw_enabled:
+                    enabled = _parse_bool_cell(raw_enabled)
+                max_items = _safe_int(sys_kv.get("system.macros.registry.max_items"), default=30)
+            else:
+                max_items = 30
+            if enabled:
+                macros = await _macro_tools_get_cached(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+                reg = _macro_registry_text(macros=macros, max_items=max_items)
+                if reg:
+                    system_instruction = system_instruction + "\n\n" + "MACRO_REGISTRY (from system macros sheet; internal)\n" + reg
+        except Exception:
+            pass
 
         try:
             mem_items = getattr(ws.state, "memory_items", None)

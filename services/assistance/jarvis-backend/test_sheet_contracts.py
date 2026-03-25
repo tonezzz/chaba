@@ -1,6 +1,7 @@
 import asyncio
 import importlib
 import json
+import os
 import sys
 from typing import Any
 from types import ModuleType
@@ -18,6 +19,9 @@ def _import_main_with_genai_stub(monkeypatch: pytest.MonkeyPatch):
     # Some CI/dev environments running these unit tests may not have the full
     # runtime dependencies installed (e.g. fastapi/httpx). We stub the minimal
     # surface required for importing `main.py` and its helpers.
+    backend_dir = os.path.dirname(os.path.abspath(__file__))
+    if backend_dir and backend_dir not in sys.path:
+        sys.path.insert(0, backend_dir)
     if "httpx" not in sys.modules:
         httpx_stub = ModuleType("httpx")
 
@@ -248,6 +252,34 @@ def _import_main_with_genai_stub(monkeypatch: pytest.MonkeyPatch):
     if "main" in sys.modules:
         return importlib.reload(sys.modules["main"])
     return importlib.import_module("main")
+
+
+def test_system_instruction_from_sys_kv_orders_extras(monkeypatch: pytest.MonkeyPatch):
+    main = _import_main_with_genai_stub(monkeypatch)
+    sys_kv = {
+        "system.instruction": "BASE",
+        "system.instructions.20": "B",
+        "system.instructions.10": "A",
+        "system.instructions.x": "Z",
+        "other": "ignored",
+    }
+    out = main._system_instruction_from_sys_kv(sys_kv)
+    assert out == "BASE\n\nA\n\nB\n\nZ"
+
+
+def test_macro_registry_text_is_compact_and_filters(monkeypatch: pytest.MonkeyPatch) -> None:
+    main = _import_main_with_genai_stub(monkeypatch)
+    macros = {
+        "macro_a": {"name": "macro_a", "description": "A"},
+        "macro_b": {"name": "macro_b", "description": ""},
+        "system_not_macro": {"name": "system_not_macro", "description": "no"},
+    }
+    txt = main._macro_registry_text(macros=macros, max_items=10)
+    assert "macro_a" in txt
+    assert "macro_b" in txt
+    assert "system_not_macro" not in txt
+    # Ensure compact (bulleted) format.
+    assert "- macro_a: A" in txt
 
 
 def test_memo_header_canonical_order_is_enforced(monkeypatch: pytest.MonkeyPatch) -> None:
