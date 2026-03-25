@@ -8321,9 +8321,10 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             "system_reload_queue",
             "system_macro_upsert_bundle_queue",
             "system_macro_seed_baseline_queue",
+            "system_run_macro",
             "google_account_relink_queue",
         }
-        if name not in allowed:
+        if name not in allowed and not name.startswith("macro_"):
             try:
                 await _ws_send_json(
                     ws,
