@@ -564,6 +564,88 @@ async def _memo_context_read_all(ws: WebSocket) -> dict[str, str]:
     return out
 
 
+async def _debug_status_check_http(
+    name: str,
+    base_url: str,
+    path: str,
+    *,
+    timeout_s: float = 2.5,
+    allow_any_status: bool = False,
+) -> dict[str, Any]:
+    base = str(base_url or "").strip().rstrip("/")
+    p = str(path or "").strip()
+    if not base:
+        return {"name": name, "ok": False, "skipped": True, "error": "not_configured"}
+    if not p.startswith("/"):
+        p = "/" + p
+    url = base + p
+
+    t0 = time.time()
+    try:
+        async with httpx.AsyncClient(timeout=timeout_s) as client:
+            res = await client.get(url)
+        dt_ms = int(max(0.0, (time.time() - t0) * 1000.0))
+        ok = bool(res.status_code < 400) if not allow_any_status else True
+        return {
+            "name": name,
+            "ok": ok,
+            "url": url,
+            "status_code": int(res.status_code),
+            "latency_ms": dt_ms,
+        }
+    except Exception as e:
+        dt_ms = int(max(0.0, (time.time() - t0) * 1000.0))
+        return {
+            "name": name,
+            "ok": False,
+            "url": url,
+            "error": str(e),
+            "latency_ms": dt_ms,
+        }
+
+
+@app.get("/debug/status")
+@app.get("/jarvis/debug/status")
+@app.get("/api/debug/status")
+@app.get("/jarvis/api/debug/status")
+async def debug_status() -> dict[str, Any]:
+    # Read-only aggregated dependency status (safe for prod).
+    deep_research_base = (
+        str(os.getenv("DEEP_RESEARCH_WORKER_BASE_URL") or "http://deep-research-worker:8030").strip().rstrip("/")
+    )
+    mcp_base = str(MCP_BASE_URL or "").strip().rstrip("/")
+    mcp_pw_base = str(MCP_PLAYWRIGHT_BASE_URL or "").strip().rstrip("/")
+    web_fetcher_base = str(WEB_FETCHER_BASE_URL or "").strip().rstrip("/")
+    weaviate_base = str(WEAVIATE_URL or "").strip().rstrip("/")
+
+    checks = await asyncio.gather(
+        _debug_status_check_http("deep-research-worker", deep_research_base, "/health", timeout_s=2.5),
+        _debug_status_check_http("web-fetcher", web_fetcher_base, "/health", timeout_s=2.5),
+        # MCP servers may not have /health; treat any HTTP response as reachability.
+        _debug_status_check_http("mcp-bundle", mcp_base, "/", timeout_s=2.5, allow_any_status=True),
+        _debug_status_check_http("mcp-playwright", mcp_pw_base, "/", timeout_s=2.5, allow_any_status=True),
+        _debug_status_check_http("weaviate", weaviate_base, "/v1/.well-known/ready", timeout_s=2.5),
+    )
+
+    ok = True
+    for c in checks:
+        if not isinstance(c, dict):
+            continue
+        if c.get("skipped"):
+            continue
+        if not c.get("ok"):
+            ok = False
+            break
+
+    return {
+        "ok": ok,
+        "service": "jarvis-backend",
+        "instance_id": INSTANCE_ID,
+        "ts": int(time.time()),
+        "checks": checks,
+    }
+
+
 async def _ws_update_contexts_from_text(ws: WebSocket, text: str, *, handled: bool) -> None:
     now_ts = int(time.time())
     try:

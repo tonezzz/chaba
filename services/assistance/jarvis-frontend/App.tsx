@@ -1302,6 +1302,9 @@ export default function App() {
   const [containerStatus, setContainerStatus] = useState<any>(null);
   const [containerStatusError, setContainerStatusError] = useState<string>("");
 
+  const [depsStatus, setDepsStatus] = useState<any>(null);
+  const [depsStatusError, setDepsStatusError] = useState<string>("");
+
   useEffect(() => {
     if (hasKey) return;
     let cancelled = false;
@@ -1353,6 +1356,59 @@ export default function App() {
       window.clearInterval(t);
     };
   }, [hasKey]);
+
+  useEffect(() => {
+    if (!hasKey) return;
+    if (!statusDetailsOpen) return;
+    let cancelled = false;
+    const fetchOnce = async () => {
+      try {
+        setDepsStatusError("");
+        let res: Response | null = null;
+        try {
+          res = await fetch("/jarvis/api/debug/status", { cache: "no-store" });
+        } catch {
+          res = null;
+        }
+        if (!res || !res.ok) {
+          try {
+            res = await fetch("/jarvis/debug/status", { cache: "no-store" });
+          } catch {
+            res = null;
+          }
+        }
+        if (!res || !res.ok) {
+          res = await fetch("/debug/status", { cache: "no-store" });
+        }
+        if (!res) throw new Error("deps_status_fetch_failed");
+
+        const bodyText = await res.text();
+        const trimmed = String(bodyText || "").trim();
+        if (!trimmed) {
+          throw new Error(`deps_status_error: empty response (http ${res.status})`);
+        }
+        let js: any = null;
+        try {
+          js = JSON.parse(trimmed);
+        } catch {
+          const preview = trimmed.length > 220 ? trimmed.slice(0, 220) + "…" : trimmed;
+          throw new Error(`deps_status_error: invalid json (http ${res.status}) preview=${preview}`);
+        }
+        if (!cancelled) setDepsStatus(js);
+      } catch (e: any) {
+        if (!cancelled) {
+          setDepsStatus(null);
+          setDepsStatusError(String(e?.message || e || "deps_status_fetch_failed"));
+        }
+      }
+    };
+    void fetchOnce();
+    const t = window.setInterval(fetchOnce, 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(t);
+    };
+  }, [hasKey, statusDetailsOpen]);
 
   const getSeqCompletedTasks = () => {
     const completedBlocks = String(seqCompletedNotes || "")
@@ -1733,26 +1789,72 @@ return (
              </div>
 
              {statusDetailsOpen && (
-               <div className="flex items-center justify-between mt-2 gap-2">
-                 <div className="flex items-center gap-2">
-                   <span className="text-[11px] font-mono px-2 py-1 rounded-full border border-slate-700 bg-slate-950/20 text-slate-300">
-                     mem:{systemCounts.memory}
-                   </span>
-                   <span className="text-[11px] font-mono px-2 py-1 rounded-full border border-slate-700 bg-slate-950/20 text-slate-300">
-                     know:{systemCounts.knowledge}
+               <div className="mt-2 space-y-2">
+                 <div className="flex items-center justify-between gap-2">
+                   <div className="flex items-center gap-2">
+                     <span className="text-[11px] font-mono px-2 py-1 rounded-full border border-slate-700 bg-slate-950/20 text-slate-300">
+                       mem:{systemCounts.memory}
+                     </span>
+                     <span className="text-[11px] font-mono px-2 py-1 rounded-full border border-slate-700 bg-slate-950/20 text-slate-300">
+                       know:{systemCounts.knowledge}
+                     </span>
+                   </div>
+                   <span
+                     className={`inline-flex items-center gap-1 text-[11px] font-mono px-2 py-1 rounded-full border ${
+                       audioStatus.ok
+                         ? 'border-cyan-500/30 bg-cyan-950/10 text-cyan-200'
+                         : 'border-slate-700 bg-slate-950/20 text-slate-300'
+                     }`}
+                     title={audioStatus.ok ? 'audio_ok' : 'audio_unavailable'}
+                   >
+                     {audioStatus.ok ? <Mic className="w-3 h-3" /> : <MicOff className="w-3 h-3" />}
+                     audio
                    </span>
                  </div>
-                 <span
-                   className={`inline-flex items-center gap-1 text-[11px] font-mono px-2 py-1 rounded-full border ${
-                     audioStatus.ok
-                       ? 'border-cyan-500/30 bg-cyan-950/10 text-cyan-200'
-                       : 'border-slate-700 bg-slate-950/20 text-slate-300'
-                   }`}
-                   title={audioStatus.ok ? 'audio_ok' : 'audio_unavailable'}
-                 >
-                   {audioStatus.ok ? <Mic className="w-3 h-3" /> : <MicOff className="w-3 h-3" />}
-                   audio
-                 </span>
+
+                 <div className="text-[11px] font-mono text-slate-400 border border-slate-800 rounded-lg bg-slate-950/20 px-2 py-2">
+                   <div className="flex items-center justify-between gap-2">
+                     <span className="text-slate-500 uppercase tracking-widest">deps</span>
+                     {depsStatusError ? (
+                       <span className="text-red-300">error</span>
+                     ) : depsStatus ? (
+                       <span className="text-slate-300">ok</span>
+                     ) : (
+                       <span className="text-slate-500">loading…</span>
+                     )}
+                   </div>
+
+                   {depsStatusError ? (
+                     <div className="mt-1 text-red-300 break-words">{depsStatusError}</div>
+                   ) : Array.isArray((depsStatus as any)?.checks) ? (
+                     <div className="mt-1 space-y-1">
+                       {(depsStatus as any).checks.map((c: any) => {
+                         const name = String(c?.name || "").trim() || "(unknown)";
+                         const skipped = Boolean(c?.skipped);
+                         const ok = Boolean(c?.ok);
+                         const latency = c?.latency_ms;
+                         const latencyTxt = typeof latency === "number" && Number.isFinite(latency) ? `${Math.floor(latency)}ms` : "";
+                         const icon = skipped ? (
+                           <AlertTriangle className="w-3.5 h-3.5 text-slate-500" />
+                         ) : ok ? (
+                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                         ) : (
+                           <XCircle className="w-3.5 h-3.5 text-red-400" />
+                         );
+                         return (
+                           <div key={name} className="flex items-center justify-between gap-2">
+                             <div className="flex items-center gap-2 min-w-0">
+                               {icon}
+                               <span className="text-slate-300 truncate">{name}</span>
+                               {skipped ? <span className="text-slate-500">(skipped)</span> : null}
+                             </div>
+                             <div className="shrink-0 text-slate-500">{latencyTxt}</div>
+                           </div>
+                         );
+                       })}
+                     </div>
+                   ) : null}
+                 </div>
                </div>
              )}
           </div>
