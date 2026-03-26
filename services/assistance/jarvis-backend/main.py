@@ -604,6 +604,47 @@ async def _debug_status_check_http(
         }
 
 
+async def _debug_status_check_http_any(
+    name: str,
+    base_urls: list[str],
+    path: str,
+    *,
+    timeout_s: float = 2.5,
+    allow_any_status: bool = False,
+) -> dict[str, Any]:
+    bases = []
+    for b in base_urls:
+        s = str(b or "").strip().rstrip("/")
+        if s:
+            bases.append(s)
+    seen: set[str] = set()
+    bases = [b for b in bases if not (b in seen or seen.add(b))]
+    if not bases:
+        return {"name": name, "ok": False, "skipped": True, "error": "not_configured"}
+
+    attempts: list[dict[str, Any]] = []
+    last: dict[str, Any] | None = None
+    for b in bases:
+        res = await _debug_status_check_http(
+            name,
+            b,
+            path,
+            timeout_s=timeout_s,
+            allow_any_status=allow_any_status,
+        )
+        last = res if isinstance(res, dict) else None
+        if isinstance(res, dict):
+            attempts.append(dict(res))
+        if isinstance(res, dict) and res.get("ok"):
+            out = dict(res)
+            out["attempts"] = attempts
+            return out
+
+    out = dict(last or {"name": name, "ok": False})
+    out["attempts"] = attempts
+    return out
+
+
 async def _ws_update_contexts_from_text(ws: WebSocket, text: str, *, handled: bool) -> None:
     now_ts = int(time.time())
     try:
@@ -3166,7 +3207,17 @@ async def debug_status() -> dict[str, Any]:
         _debug_status_check_http("deep-research-worker", deep_research_base, "/health", timeout_s=2.5),
         _debug_status_check_http("web-fetcher", web_fetcher_base, "/health", timeout_s=2.5),
         _debug_status_check_http("mcp-bundle", mcp_base, "/", timeout_s=2.5, allow_any_status=True),
-        _debug_status_check_http("mcp-playwright", mcp_pw_base, "/", timeout_s=2.5, allow_any_status=True),
+        _debug_status_check_http_any(
+            "mcp-playwright",
+            [
+                mcp_pw_base,
+                "http://mcp-playwright:3050",
+                "http://host.docker.internal:4054",
+            ],
+            "/",
+            timeout_s=2.5,
+            allow_any_status=True,
+        ),
         _debug_status_check_http("weaviate", weaviate_base, "/v1/.well-known/ready", timeout_s=2.5),
     )
 
