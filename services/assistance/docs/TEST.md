@@ -1,5 +1,13 @@
 # Test info
 
+Operator SSOT:
+
+- `services/assistance/docs/ACTION.md`
+
+API SSOT:
+
+- Prefer the live backend OpenAPI: `GET /openapi.json`
+
 ## Context
 
 This file is a scratchpad for validating the GitHub Actions watcher integration in Jarvis.

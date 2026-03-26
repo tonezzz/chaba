@@ -1,5 +1,9 @@
 # Cleanup: Docker disk full (Portainer pull fails)
 
+Operator SSOT:
+
+- `services/assistance/docs/ACTION.md`
+
 ## Symptom
 
 Portainer stack deploy/pull fails with errors like:
