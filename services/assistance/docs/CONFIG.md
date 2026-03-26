@@ -8,6 +8,14 @@ Rules:
 - Prefer documenting **actual bind ports/URLs** that operators use.
 - Compose defaults do not override values configured in **Portainer stack env**.
 
+Operator SSOT:
+
+- `services/assistance/docs/ACTION.md`
+
+API SSOT:
+
+- Prefer the live backend OpenAPI: `GET /openapi.json`
+
 ## Host endpoints (effective)
 
 - Jarvis UI:
