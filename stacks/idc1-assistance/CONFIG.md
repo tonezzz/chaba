@@ -8,6 +8,14 @@ Rules:
 - Prefer documenting **effective bind ports/URLs** that operators use.
 - Compose defaults do not override values configured in **Portainer stack env**.
 
+Operator SSOT:
+
+- `services/assistance/docs/ACTION.md`
+
+API SSOT:
+
+- Prefer the live backend OpenAPI: `GET /openapi.json`
+
 ## Host endpoints (effective)
 
 Loopback binds (host):
@@ -102,6 +110,9 @@ Frontend:
 - If generating `mcp.json` via heredoc in compose, avoid `${VAR}` in the JSON content (compose may expand it at deploy-time). Prefer `$${VAR}`.
 
 ## Verification checklist (post-redeploy)
+
+- Operator SSOT:
+  - See `services/assistance/docs/ACTION.md` for the current deployed verification checklist and exact commands.
 
 - Backend health:
   - `curl -fsS http://127.0.0.1:18018/health`

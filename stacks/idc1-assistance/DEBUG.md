@@ -7,6 +7,14 @@ Rules:
 - These files are for local/operator testing.
 - Do not commit secrets to git. Use `./.env.local` (already gitignored).
 
+Operator SSOT:
+
+- `services/assistance/docs/ACTION.md`
+
+API SSOT:
+
+- Prefer the live backend OpenAPI: `GET /openapi.json`
+
 ## Debug MCP bundle
 
 Start MCP bundle on port `4051`:
