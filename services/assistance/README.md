@@ -7,16 +7,16 @@ The `/services/assistance/` tree is the source-of-truth for all *Assistance* app
 
 ## Start here
 - `CONCEPT.md`
-- `docs/CHARTS.md`
+- `services/assistance/docs/CHARTS.md`
 - `TOOLS_POLICY.md`
 - `MEMORY_POLICY.md`
-- Operator playbook (single source of truth): `docs/ACTION.md`
-- Build / deploy (single source of truth): `docs/BUILD.md`
-- Reminders (overview + data flow): `docs/REMINDERS.md`
+- Operator playbook (single source of truth): `services/assistance/docs/ACTION.md`
+- Build / deploy (single source of truth): `services/assistance/docs/BUILD.md`
+- Reminders (overview + data flow): `services/assistance/docs/REMINDERS.md`
 
 ## Authoritative runtime surfaces (Jarvis)
 - Operator note:
-  - Treat `docs/ACTION.md` as the operator SSOT for runbooks/checklists.
+  - Treat `services/assistance/docs/ACTION.md` as the operator SSOT for runbooks/checklists.
   - For an authoritative, current API surface, prefer `GET /openapi.json` on the running backend.
 - Jarvis Backend:
   - HTTP health: `GET /health`
@@ -82,18 +82,18 @@ How this is more advanced than a plain backend "skill":
 - `trip/ARCHITECTURE.md`
 - `mcp-servers/ARCHITECTURE.md`
 - Ground truth specs:
-  - `docs/IMAGEN.md`
-  - `docs/WEAVIATE.md`
-  - `docs/MEMORY.md`
-  - `docs/TOOLS.md`
+  - `services/assistance/docs/IMAGEN.md`
+  - `services/assistance/docs/WEAVIATE.md`
+  - `services/assistance/docs/MEMORY.md`
+  - `services/assistance/docs/TOOLS.md`
   - `TOKEN_OPTIMIZE.md`
 
 ## Memory (current direction)
 
 Hybrid memory model:
 
-- Authoritative store for user-configured memory/knowledge: Google Sheets (see `docs/MEMORY.md`)
-- Optional index/cache for search/ranking: Weaviate (internal-only; see `docs/WEAVIATE.md`)
+- Authoritative store for user-configured memory/knowledge: Google Sheets (see `services/assistance/docs/MEMORY.md`)
+- Optional index/cache for search/ranking: Weaviate (internal-only; see `services/assistance/docs/WEAVIATE.md`)
 - Operational cache/scheduler: Jarvis backend SQLite (`JARVIS_SESSION_DB`) for reliable reminders
 
 Reminder semantics (current direction):
