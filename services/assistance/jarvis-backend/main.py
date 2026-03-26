@@ -14382,6 +14382,7 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             "memo_get",
             "memo_list",
             "memo_search",
+            "chaba_search_memo",
             "memory_add",
             "memory_search",
             "memory_list",
