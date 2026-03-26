@@ -1826,12 +1826,17 @@ async def _load_sys_kv_from_sheet() -> dict[str, str]:
     for it in rows:
         if not isinstance(it, dict):
             continue
-        if not bool(it.get("enabled", True)):
-            continue
         k = str(it.get("key") or "").strip()
         if not k:
             continue
-        v = str(it.get("value") or "").strip()
+        is_toggle = k.endswith(".enabled") or k.startswith("feature.")
+        enabled = bool(it.get("enabled", True))
+        if is_toggle:
+            v = "true" if enabled else "false"
+        else:
+            if not enabled:
+                continue
+            v = str(it.get("value") or "").strip()
         pri = _safe_int(it.get("priority", 0), default=0)
         rank = _scope_rank(it.get("scope", "global"))
         prev = best.get(k)
@@ -3137,6 +3142,17 @@ app = FastAPI(title="jarvis-backend", version="0.1.0")
 @app.get("/api/debug/status")
 @app.get("/jarvis/api/debug/status")
 async def debug_status() -> dict[str, Any]:
+    cached = _get_cached_sheet_memory()
+    sys_kv = None
+    try:
+        if isinstance(cached, dict) and isinstance(cached.get("sys_kv"), dict):
+            sys_kv = cached.get("sys_kv")
+    except Exception:
+        sys_kv = None
+
+    if not feature_enabled("debug_status", sys_kv=sys_kv, default=False):
+        raise HTTPException(status_code=404, detail={"disabled": True})
+
     # Read-only aggregated dependency status (safe for prod).
     deep_research_base = (
         str(os.getenv("DEEP_RESEARCH_WORKER_BASE_URL") or "http://deep-research-worker:8030").strip().rstrip("/")
@@ -9998,11 +10014,21 @@ async def _load_ws_sheet_memory(ws: WebSocket) -> None:
 
     sys_sheet = _system_sheet_name()
     sys_rows = await _load_sheet_kv5(spreadsheet_id=spreadsheet_id, sheet_name=sys_sheet)
-    sys_kv = {
-        str(it.get("key") or "").strip(): str(it.get("value") or "").strip()
-        for it in sys_rows
-        if isinstance(it, dict) and bool(it.get("enabled")) and str(it.get("key") or "").strip()
-    }
+    sys_kv: dict[str, str] = {}
+    for it in sys_rows:
+        if not isinstance(it, dict):
+            continue
+        k = str(it.get("key") or "").strip()
+        if not k:
+            continue
+        enabled = bool(it.get("enabled"))
+        is_toggle = k.endswith(".enabled") or k.startswith("feature.")
+        if is_toggle:
+            sys_kv[k] = "true" if enabled else "false"
+            continue
+        if not enabled:
+            continue
+        sys_kv[k] = str(it.get("value") or "").strip()
 
     # Optional: extra system instruction to inject into Gemini system prompt.
     try:
@@ -10188,11 +10214,21 @@ async def _load_ws_system_kv(ws: WebSocket) -> dict[str, str]:
     spreadsheet_id = _system_spreadsheet_id()
     sys_sheet = _system_sheet_name()
     sys_rows = await _load_sheet_kv5(spreadsheet_id=spreadsheet_id, sheet_name=sys_sheet)
-    sys_kv = {
-        str(it.get("key") or "").strip(): str(it.get("value") or "").strip()
-        for it in sys_rows
-        if isinstance(it, dict) and bool(it.get("enabled")) and str(it.get("key") or "").strip()
-    }
+    sys_kv: dict[str, str] = {}
+    for it in sys_rows:
+        if not isinstance(it, dict):
+            continue
+        k = str(it.get("key") or "").strip()
+        if not k:
+            continue
+        enabled = bool(it.get("enabled"))
+        is_toggle = k.endswith(".enabled") or k.startswith("feature.")
+        if is_toggle:
+            sys_kv[k] = "true" if enabled else "false"
+            continue
+        if not enabled:
+            continue
+        sys_kv[k] = str(it.get("value") or "").strip()
     try:
         ws.state.sys_kv = sys_kv
     except Exception:
@@ -14661,6 +14697,9 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
 
             # Debug / development trigger: emit a backend-driven UI card.
             if s.strip().lower() == "ui test":
+                sys_kv = getattr(ws.state, "sys_kv", None)
+                if not feature_enabled("ui_test_card", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=False):
+                    continue
                 try:
                     await _ws_send_json(
                         ws,
@@ -14891,6 +14930,9 @@ async def _ws_local_only_loop(ws: WebSocket) -> None:
                 s = str(text or "").strip()
 
             if s.strip().lower() == "ui test":
+                sys_kv = getattr(ws.state, "sys_kv", None)
+                if not feature_enabled("ui_test_card", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=False):
+                    continue
                 try:
                     await _ws_send_json(
                         ws,

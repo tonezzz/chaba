@@ -23,6 +23,13 @@ def _sys_kv_bool(sys_kv: Any, key: str, default: bool) -> bool:
     return _parse_bool(sys_kv.get(key), default=default)
 
 
+def _sys_kv_has(sys_kv: Any, key: str) -> bool:
+    try:
+        return isinstance(sys_kv, dict) and key in sys_kv
+    except Exception:
+        return False
+
+
 def feature_enabled(feature: str, *, sys_kv: Optional[dict[str, Any]], default: bool = True) -> bool:
     """Master feature switch:
 
@@ -42,4 +49,14 @@ def feature_enabled(feature: str, *, sys_kv: Optional[dict[str, Any]], default: 
         if not _parse_bool(env_raw, default=default):
             return False
 
-    return _sys_kv_bool(sys_kv, f"feature.{name}.enabled", default=default)
+    # Prefer explicit sys_kv keys (even if they match the default).
+    # This supports both:
+    # - feature.<name>.enabled
+    # - feature.<name>
+    k1 = f"feature.{name}.enabled"
+    if _sys_kv_has(sys_kv, k1):
+        return _sys_kv_bool(sys_kv, k1, default=default)
+    k2 = f"feature.{name}"
+    if _sys_kv_has(sys_kv, k2):
+        return _sys_kv_bool(sys_kv, k2, default=default)
+    return default
