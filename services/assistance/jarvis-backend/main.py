@@ -1948,6 +1948,100 @@ async def _load_sys_kv_from_sheet() -> dict[str, str]:
     return out
 
 
+def _system_skills_sheet_name(*, sys_kv: Optional[dict[str, Any]] = None) -> str:
+    try:
+        if isinstance(sys_kv, dict):
+            v = str(sys_kv.get("system.skills.sheet_name") or "").strip()
+            if v:
+                return v
+    except Exception:
+        pass
+    return "skills"
+
+
+async def _load_skills_from_sheet(*, sys_kv: Optional[dict[str, Any]] = None) -> list[dict[str, Any]]:
+    spreadsheet_id = _system_spreadsheet_id()
+    if not spreadsheet_id:
+        return []
+    sheet_name = _system_skills_sheet_name(sys_kv=sys_kv)
+
+    tool = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    res = await _mcp_tools_call(tool, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name}!A:Z"})
+    parsed = _mcp_text_json(res)
+    values = parsed.get("values") if isinstance(parsed, dict) else None
+    data = parsed.get("data") if isinstance(parsed, dict) else None
+    if not isinstance(values, list) and isinstance(data, dict):
+        values = data.get("values")
+    if not isinstance(values, list) or not values:
+        return []
+
+    header = [str(c or "").strip().lower() for c in (values[0] if isinstance(values[0], list) else [])]
+    idx: dict[str, int] = {}
+    for i, col in enumerate(header):
+        if col and col not in idx:
+            idx[col] = int(i)
+
+    def _cell(row: list[Any], col: str) -> Any:
+        j = idx.get(str(col or "").strip().lower())
+        if j is None or j < 0 or j >= len(row):
+            return ""
+        return row[j]
+
+    def _as_bool_cell(v: Any) -> bool:
+        s = str(v or "").strip().lower()
+        return s in {"1", "true", "t", "yes", "y", "on"}
+
+    out: list[dict[str, Any]] = []
+    for i, r in enumerate(values[1:], start=2):
+        if not isinstance(r, list):
+            continue
+        name = str(_cell(r, "name") or "").strip()
+        if not name:
+            continue
+        enabled = _as_bool_cell(_cell(r, "enabled") or "true")
+        priority = _safe_int(_cell(r, "priority") or 0, default=0)
+        scope = str(_cell(r, "scope") or "global").strip() or "global"
+        content = str(_cell(r, "content") or "").strip()
+        out.append(
+            {
+                "row": int(i),
+                "name": name,
+                "enabled": bool(enabled),
+                "priority": int(priority),
+                "scope": scope,
+                "content": content,
+            }
+        )
+    return out
+
+
+def _skills_text_from_rows(rows: Any) -> str:
+    if not isinstance(rows, list) or not rows:
+        return ""
+    enabled_rows: list[dict[str, Any]] = []
+    for it in rows:
+        if not isinstance(it, dict):
+            continue
+        if not bool(it.get("enabled")):
+            continue
+        txt = str(it.get("content") or "").strip()
+        if not txt:
+            continue
+        enabled_rows.append(it)
+    enabled_rows.sort(key=lambda it: (int(it.get("priority") or 0), str(it.get("name") or "")))
+    parts: list[str] = []
+    for it in enabled_rows:
+        nm = str(it.get("name") or "").strip()
+        txt = str(it.get("content") or "").strip()
+        if not txt:
+            continue
+        if nm:
+            parts.append(f"# Skill: {nm}\n\n{txt}")
+        else:
+            parts.append(txt)
+    return "\n\n".join([p for p in parts if str(p).strip()]).strip()
+
+
 _MACRO_TOOL_CACHE: dict[str, Any] = {"ts": 0.0, "macros": {}}
 
 
@@ -3531,6 +3625,22 @@ def _system_instruction_from_sys_kv(sys_kv: Any) -> str:
     for _, _, txt in extras:
         parts.append(txt)
     return "\n\n".join([p for p in parts if str(p).strip()]).strip()
+
+
+async def _build_system_instruction_extra(*, sys_kv: dict[str, Any]) -> str:
+    extra = _system_instruction_from_sys_kv(sys_kv)
+    if not feature_enabled("skills", sys_kv=sys_kv, default=False):
+        return extra
+    try:
+        rows = await _load_skills_from_sheet(sys_kv=sys_kv)
+        skills_txt = _skills_text_from_rows(rows)
+        if skills_txt:
+            if extra:
+                return (extra + "\n\n" + skills_txt).strip()
+            return skills_txt
+    except Exception:
+        pass
+    return extra
 
 
 def _memo_sheet_cfg_from_sys_kv(sys_kv: dict[str, Any] | None) -> tuple[str, str]:
@@ -8602,6 +8712,8 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             "system_macro_seed_baseline_queue",
             "system_macro_get",
             "system_macros_list",
+            "system_skills_list",
+            "system_skill_get",
             "system_run_macro",
             "google_account_relink_queue",
         }
@@ -10214,7 +10326,7 @@ async def _load_ws_sheet_memory(ws: WebSocket) -> None:
 
     # Optional: extra system instruction to inject into Gemini system prompt.
     try:
-        ws.state.system_instruction_extra = _system_instruction_from_sys_kv(sys_kv)
+        ws.state.system_instruction_extra = await _build_system_instruction_extra(sys_kv=sys_kv)
     except Exception:
         pass
 
@@ -10417,7 +10529,7 @@ async def _load_ws_system_kv(ws: WebSocket) -> dict[str, str]:
         pass
     _set_cached_sys_kv_only(sys_kv)
     try:
-        ws.state.system_instruction_extra = _system_instruction_from_sys_kv(sys_kv)
+        ws.state.system_instruction_extra = await _build_system_instruction_extra(sys_kv=sys_kv)
     except Exception:
         pass
 
@@ -13772,6 +13884,26 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
 
     decls.append(
         {
+            "name": "system_skills_list",
+            "description": "List skills (name, row, enabled, priority, scope) from the system skills sheet.",
+            "parameters": {"type": "object", "properties": {}},
+        }
+    )
+
+    decls.append(
+        {
+            "name": "system_skill_get",
+            "description": "Get a skill definition (including content) from the system skills sheet by name.",
+            "parameters": {
+                "type": "object",
+                "properties": {"name": {"type": "string", "description": "Skill name."}},
+                "required": ["name"],
+            },
+        }
+    )
+
+    decls.append(
+        {
             "name": "system_macro_upsert",
             "description": "Insert or update a macro row in the system macros sheet (confirmation-gated write).",
             "parameters": {
@@ -14715,6 +14847,7 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         "macro_tools_reload_selected_from_sheet": _macro_tools_reload_selected_from_sheet,
         "system_spreadsheet_id": _system_spreadsheet_id,
         "system_macros_sheet_name": _system_macros_sheet_name,
+        "system_skills_sheet_name": _system_skills_sheet_name,
         "memory_sheet_upsert": _memory_sheet_upsert,
         "load_ws_sheet_memory": _load_ws_sheet_memory,
         "memo_sheet_cfg_from_sys_kv": _memo_sheet_cfg_from_sys_kv,

@@ -404,6 +404,99 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         confirmation_id = create_pending_write(str(session_id), "google_account_relink", payload)
         return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "action": "google_account_relink"}
 
+    if tool_name in {"system_skills_list", "system_skill_get"}:
+        session_ws = deps["SESSION_WS"]
+        system_spreadsheet_id = deps["system_spreadsheet_id"]
+        system_skills_sheet_name = deps["system_skills_sheet_name"]
+        pick_sheets_tool_name = deps["pick_sheets_tool_name"]
+        mcp_tools_call = deps["mcp_tools_call"]
+        mcp_text_json = deps["mcp_text_json"]
+        safe_int = deps["safe_int"]
+
+        ws = session_ws.get(str(session_id)) if session_id else None
+        if ws is None:
+            raise HTTPException(status_code=400, detail="missing_session_ws")
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        sys_kv_dict = sys_kv if isinstance(sys_kv, dict) else None
+
+        spreadsheet_id = str(system_spreadsheet_id() or "").strip()
+        if not spreadsheet_id:
+            raise HTTPException(status_code=400, detail="missing_system_spreadsheet_id")
+        sheet_name = str(system_skills_sheet_name(sys_kv=sys_kv_dict) or "").strip() or "skills"
+
+        tool_get = pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+        res = await mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name}!A:Z"})
+        parsed = mcp_text_json(res)
+        values = parsed.get("values") if isinstance(parsed, dict) else None
+        data = parsed.get("data") if isinstance(parsed, dict) else None
+        if not isinstance(values, list) and isinstance(data, dict):
+            values = data.get("values")
+        if not isinstance(values, list) or not values:
+            return {"ok": True, "sheet": sheet_name, "count": 0, "items": []} if tool_name == "system_skills_list" else {"ok": False, "error": "skills_sheet_empty"}
+
+        header = [str(c or "").strip().lower() for c in (values[0] if isinstance(values[0], list) else [])]
+        idx: dict[str, int] = {}
+        for i, col in enumerate(header):
+            if col and col not in idx:
+                idx[col] = int(i)
+
+        required_cols = ["name", "enabled", "priority", "scope", "content"]
+        missing = [c for c in required_cols if c not in idx]
+        if missing:
+            raise HTTPException(status_code=400, detail={"skills_sheet_missing_columns": missing})
+
+        def _cell(row: list[Any], col: str) -> Any:
+            j = idx.get(str(col or "").strip().lower())
+            if j is None or j < 0 or j >= len(row):
+                return ""
+            return row[j]
+
+        def _as_bool_cell(v: Any) -> bool:
+            s = str(v or "").strip().lower()
+            return s in {"1", "true", "t", "yes", "y", "on"}
+
+        if tool_name == "system_skills_list":
+            items: list[dict[str, Any]] = []
+            for i, r in enumerate(values[1:], start=2):
+                if not isinstance(r, list):
+                    continue
+                nm = str(_cell(r, "name") or "").strip()
+                if not nm:
+                    continue
+                items.append(
+                    {
+                        "row": int(i),
+                        "name": nm,
+                        "enabled": _as_bool_cell(_cell(r, "enabled")),
+                        "priority": int(safe_int(_cell(r, "priority"), 0)),
+                        "scope": str(_cell(r, "scope") or "global").strip() or "global",
+                    }
+                )
+            items.sort(key=lambda it: (int(it.get("priority") or 0), str(it.get("name") or "")))
+            return {"ok": True, "sheet": sheet_name, "count": len(items), "items": items}
+
+        name = str(args.get("name") or "").strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="missing_skill_name")
+
+        for i, r in enumerate(values[1:], start=2):
+            if not isinstance(r, list):
+                continue
+            nm = str(_cell(r, "name") or "").strip()
+            if nm != name:
+                continue
+            return {
+                "ok": True,
+                "sheet": sheet_name,
+                "row": int(i),
+                "name": nm,
+                "enabled": _as_bool_cell(_cell(r, "enabled")),
+                "priority": int(safe_int(_cell(r, "priority"), 0)),
+                "scope": str(_cell(r, "scope") or "global").strip() or "global",
+                "content": str(_cell(r, "content") or ""),
+            }
+        raise HTTPException(status_code=404, detail={"skill_not_found": name})
+
     if tool_name in {"system_macro_get", "system_macro_upsert", "system_macros_list"}:
         session_ws = deps["SESSION_WS"]
         system_spreadsheet_id = deps["system_spreadsheet_id"]
