@@ -89,6 +89,46 @@ Doc drift policy:
   - `GET /openapi.json` (runtime API surface)
   - `services/assistance/docs/ACTION.md` (operator runbooks)
 
+## 2-computer workflow (anti-drift mechanism)
+
+Goal:
+- Prevent accidental divergence when you use more than one machine.
+- Keep deploy-triggering changes intentional.
+
+Branch model:
+- Integration/deploy branch:
+  - `idc1-assistance`
+  - Update via PR merges only.
+- Per-machine branches (slash style):
+  - `work/idc1-assistance/pc1`
+  - `work/idc1-assistance/idc1`
+
+Branch sanity check (run before edits):
+1. `git branch --show-current`
+2. `git status -sb`
+
+Preferred reset commands:
+- `action pc1`
+  - Expected branch: `work/idc1-assistance/pc1`
+- `action idc1`
+  - Expected branch: `work/idc1-assistance/idc1`
+
+When you use a reset command, do this before anything else:
+1. Run the branch sanity check.
+2. If the branch is wrong, switch branches before continuing.
+3. Then execute the current `Now` item.
+
+Rules:
+- Never force-push.
+- Keep work on your machine branch; share changes via PRs.
+- If you are unsure which branch you should be on, stop and say: `action`.
+
+Drift triggers (say `action` immediately):
+- You are about to commit/push but can’t name the target Issue you’re working against.
+- You are about to push to `idc1-assistance` (integration) without explicitly intending to deploy.
+- You can’t quickly answer: “which machine owns which branch right now?”
+- You have more than one plausible “next step”.
+
 Linked runbooks (map):
 - `services/assistance/docs/CHAT_PROTOCOL.md`
   - Label: `docs:runbook`
