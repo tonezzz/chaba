@@ -39,6 +39,17 @@ jobs:
       - name: Python syntax check (compileall)
         run: |
           python -m compileall mcp
+          python -m compileall services/assistance/jarvis-backend
+
+      - name: Install jarvis-backend test dependencies
+        working-directory: services/assistance/jarvis-backend
+        run: pip install -r requirements.txt
+
+      - name: Run jarvis-backend unit tests
+        working-directory: services/assistance/jarvis-backend
+        env:
+          PYTHONPATH: .
+        run: pytest -q test_log_bounding.py test_sheet_contracts.py test_github_watch_ui_log.py test_sheet_upserts_timestamps.py test_checklist_v0.py test_checklist_mutation_v0.py
 
       - name: Prepare stack env files for compose validation
         run: |
