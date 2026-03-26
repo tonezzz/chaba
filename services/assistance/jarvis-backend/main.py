@@ -564,6 +564,145 @@ async def _memo_context_read_all(ws: WebSocket) -> dict[str, str]:
     return out
 
 
+async def _debug_status_check_http(
+    name: str,
+    base_url: str,
+    path: str,
+    *,
+    timeout_s: float = 2.5,
+    allow_any_status: bool = False,
+) -> dict[str, Any]:
+    base = str(base_url or "").strip().rstrip("/")
+    p = str(path or "").strip()
+    if not base:
+        return {"name": name, "ok": False, "skipped": True, "error": "not_configured"}
+    if not p.startswith("/"):
+        p = "/" + p
+    url = base + p
+
+    t0 = time.time()
+    try:
+        async with httpx.AsyncClient(timeout=timeout_s) as client:
+            res = await client.get(url)
+        dt_ms = int(max(0.0, (time.time() - t0) * 1000.0))
+        ok = bool(res.status_code < 400) if not allow_any_status else True
+        return {
+            "name": name,
+            "ok": ok,
+            "url": url,
+            "status_code": int(res.status_code),
+            "latency_ms": dt_ms,
+        }
+    except Exception as e:
+        dt_ms = int(max(0.0, (time.time() - t0) * 1000.0))
+        return {
+            "name": name,
+            "ok": False,
+            "url": url,
+            "error": str(e),
+            "latency_ms": dt_ms,
+        }
+
+
+async def _debug_status_check_http_any(
+    name: str,
+    base_urls: list[str],
+    path: str,
+    *,
+    timeout_s: float = 2.5,
+    allow_any_status: bool = False,
+) -> dict[str, Any]:
+    bases = []
+    for b in base_urls:
+        s = str(b or "").strip().rstrip("/")
+        if s:
+            bases.append(s)
+    seen: set[str] = set()
+    bases = [b for b in bases if not (b in seen or seen.add(b))]
+    if not bases:
+        return {"name": name, "ok": False, "skipped": True, "error": "not_configured"}
+
+    attempts: list[dict[str, Any]] = []
+    last: dict[str, Any] | None = None
+    for b in bases:
+        res = await _debug_status_check_http(
+            name,
+            b,
+            path,
+            timeout_s=timeout_s,
+            allow_any_status=allow_any_status,
+        )
+        last = res if isinstance(res, dict) else None
+        if isinstance(res, dict):
+            attempts.append(dict(res))
+        if isinstance(res, dict) and res.get("ok"):
+            out = dict(res)
+            out["attempts"] = attempts
+            return out
+
+    out = dict(last or {"name": name, "ok": False})
+    out["attempts"] = attempts
+    return out
+
+
+async def _verify_frontend_bundle(
+    base_url: str,
+    *,
+    timeout_s: float = 6.0,
+) -> dict[str, Any]:
+    import re
+
+    b = str(base_url or "").strip()
+    if not b:
+        return {"name": "jarvis-frontend", "ok": False, "skipped": True, "error": "not_configured"}
+
+    b = b.rstrip("/") + "/"
+    required = [
+        "jarvis_status_details_open",
+        "/jarvis/api/debug/status",
+        "Hide status details",
+    ]
+
+    timeout = httpx.Timeout(timeout_s)
+    async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
+        try:
+            r = await client.get(b, headers={"cache-control": "no-cache"})
+            html = r.text
+        except Exception as e:
+            return {"name": "jarvis-frontend", "ok": False, "url": b, "error": str(e)}
+
+        m = re.search(r'src="([^"]*assets/[^"]+\.js)"', html)
+        if not m:
+            return {"name": "jarvis-frontend", "ok": False, "url": b, "error": "missing_assets_js"}
+
+        src = str(m.group(1) or "").strip()
+        if src.startswith("http://") or src.startswith("https://"):
+            js_url = src
+        elif src.startswith("/"):
+            m2 = re.match(r"^(https?://[^/]+)", b)
+            origin = m2.group(1) if m2 else ""
+            js_url = origin + src
+        else:
+            js_url = b.rstrip("/") + "/" + src
+
+        try:
+            r2 = await client.get(js_url, headers={"cache-control": "no-cache"})
+            bundle = r2.text
+        except Exception as e:
+            return {"name": "jarvis-frontend", "ok": False, "url": js_url, "error": str(e)}
+
+        is_html = bool(re.search(r"<!doctype html|<html", bundle[:200], re.IGNORECASE))
+        hits: dict[str, bool] = {s: (s in bundle) for s in required}
+        ok = (not is_html) and all(hits.values())
+        return {
+            "name": "jarvis-frontend",
+            "ok": ok,
+            "url": js_url,
+            "is_html": is_html,
+            "markers": hits,
+        }
+
+
 async def _ws_update_contexts_from_text(ws: WebSocket, text: str, *, handled: bool) -> None:
     now_ts = int(time.time())
     try:
@@ -1786,12 +1925,17 @@ async def _load_sys_kv_from_sheet() -> dict[str, str]:
     for it in rows:
         if not isinstance(it, dict):
             continue
-        if not bool(it.get("enabled", True)):
-            continue
         k = str(it.get("key") or "").strip()
         if not k:
             continue
-        v = str(it.get("value") or "").strip()
+        is_toggle = k.endswith(".enabled") or k.startswith("feature.")
+        enabled = bool(it.get("enabled", True))
+        if is_toggle:
+            v = "true" if enabled else "false"
+        else:
+            if not enabled:
+                continue
+            v = str(it.get("value") or "").strip()
         pri = _safe_int(it.get("priority", 0), default=0)
         rank = _scope_rank(it.get("scope", "global"))
         prev = best.get(k)
@@ -3090,6 +3234,133 @@ async def _ws_progress(
     await _ws_send_json(ws, payload, trace_id=trace_id)
 
 app = FastAPI(title="jarvis-backend", version="0.1.0")
+
+
+@app.get("/debug/status")
+@app.get("/jarvis/debug/status")
+@app.get("/api/debug/status")
+@app.get("/jarvis/api/debug/status")
+async def debug_status() -> dict[str, Any]:
+    cached = _get_cached_sheet_memory()
+    sys_kv = None
+    try:
+        if isinstance(cached, dict) and isinstance(cached.get("sys_kv"), dict):
+            sys_kv = cached.get("sys_kv")
+    except Exception:
+        sys_kv = None
+
+    if not feature_enabled("debug_status", sys_kv=sys_kv, default=True):
+        raise HTTPException(status_code=404, detail={"disabled": True})
+
+    # Read-only aggregated dependency status (safe for prod).
+    deep_research_base = (
+        str(os.getenv("DEEP_RESEARCH_WORKER_BASE_URL") or "http://deep-research-worker:8030").strip().rstrip("/")
+    )
+    mcp_base = str(MCP_BASE_URL or "").strip().rstrip("/")
+    mcp_pw_base = str(MCP_PLAYWRIGHT_BASE_URL or "").strip().rstrip("/")
+    web_fetcher_base = str(WEB_FETCHER_BASE_URL or "").strip().rstrip("/")
+    weaviate_base = str(WEAVIATE_URL or "").strip().rstrip("/")
+
+    checks = await asyncio.gather(
+        _debug_status_check_http("deep-research-worker", deep_research_base, "/health", timeout_s=2.5),
+        _debug_status_check_http("web-fetcher", web_fetcher_base, "/health", timeout_s=2.5),
+        _debug_status_check_http("mcp-bundle", mcp_base, "/", timeout_s=2.5, allow_any_status=True),
+        _debug_status_check_http_any(
+            "mcp-playwright",
+            [
+                mcp_pw_base,
+                "http://mcp-playwright:3050",
+                "http://host.docker.internal:4054",
+            ],
+            "/",
+            timeout_s=2.5,
+            allow_any_status=True,
+        ),
+        _debug_status_check_http("weaviate", weaviate_base, "/v1/.well-known/ready", timeout_s=2.5),
+    )
+
+    ok = True
+    for c in checks:
+        if not isinstance(c, dict):
+            continue
+        if c.get("skipped"):
+            continue
+        if not c.get("ok"):
+            ok = False
+            break
+
+    return {
+        "ok": ok,
+        "service": "jarvis-backend",
+        "instance_id": INSTANCE_ID,
+        "ts": int(time.time()),
+        "checks": checks,
+    }
+
+
+@app.get("/verify/status")
+@app.get("/jarvis/verify/status")
+@app.get("/api/verify/status")
+@app.get("/jarvis/api/verify/status")
+async def verify_status() -> dict[str, Any]:
+    cached = _get_cached_sheet_memory()
+    sys_kv = None
+    try:
+        if isinstance(cached, dict) and isinstance(cached.get("sys_kv"), dict):
+            sys_kv = cached.get("sys_kv")
+    except Exception:
+        sys_kv = None
+
+    if not feature_enabled("debug_status", sys_kv=sys_kv, default=True):
+        raise HTTPException(status_code=404, detail={"disabled": True})
+
+    frontend_base = (
+        str(os.getenv("JARVIS_VERIFY_FRONTEND_BASE_URL") or "").strip()
+        or str(os.getenv("JARVIS_PUBLIC_BASE_URL") or "").strip()
+    )
+    if frontend_base and not frontend_base.endswith("/jarvis/") and "/jarvis" not in frontend_base:
+        frontend_base = frontend_base.rstrip("/") + "/jarvis/"
+
+    # Important: do NOT call 127.0.0.1 over HTTP here. In production the backend
+    # runs inside a container and 127.0.0.1 refers to the container itself, not
+    # the host port mapping used for operator checks.
+    #
+    # Instead, call in-process route handlers directly.
+    checks: list[dict[str, Any]] = []
+    try:
+        h = health()
+        checks.append({"name": "jarvis-backend", "ok": bool(h.get("ok")), "details": h})
+    except Exception as e:
+        checks.append({"name": "jarvis-backend", "ok": False, "error": str(e)})
+
+    try:
+        ds = await debug_status()
+        checks.append({"name": "jarvis-backend-debug-status", "ok": bool(ds.get("ok")), "details": ds})
+    except Exception as e:
+        checks.append({"name": "jarvis-backend-debug-status", "ok": False, "error": str(e)})
+
+    try:
+        checks.append(await _verify_frontend_bundle(frontend_base, timeout_s=6.0))
+    except Exception as e:
+        checks.append({"name": "jarvis-frontend", "ok": False, "error": str(e)})
+
+    ok = True
+    for c in checks:
+        if not isinstance(c, dict):
+            continue
+        if c.get("skipped"):
+            continue
+        if not c.get("ok"):
+            ok = False
+            break
+
+    return {
+        "ok": ok,
+        "service": "jarvis-backend",
+        "instance_id": INSTANCE_ID,
+        "ts": int(time.time()),
+        "checks": checks,
+    }
 
 
 class _UILogAppendRequest(BaseModel):
@@ -9917,11 +10188,21 @@ async def _load_ws_sheet_memory(ws: WebSocket) -> None:
 
     sys_sheet = _system_sheet_name()
     sys_rows = await _load_sheet_kv5(spreadsheet_id=spreadsheet_id, sheet_name=sys_sheet)
-    sys_kv = {
-        str(it.get("key") or "").strip(): str(it.get("value") or "").strip()
-        for it in sys_rows
-        if isinstance(it, dict) and bool(it.get("enabled")) and str(it.get("key") or "").strip()
-    }
+    sys_kv: dict[str, str] = {}
+    for it in sys_rows:
+        if not isinstance(it, dict):
+            continue
+        k = str(it.get("key") or "").strip()
+        if not k:
+            continue
+        enabled = bool(it.get("enabled"))
+        is_toggle = k.endswith(".enabled") or k.startswith("feature.")
+        if is_toggle:
+            sys_kv[k] = "true" if enabled else "false"
+            continue
+        if not enabled:
+            continue
+        sys_kv[k] = str(it.get("value") or "").strip()
 
     # Optional: extra system instruction to inject into Gemini system prompt.
     try:
@@ -10107,11 +10388,21 @@ async def _load_ws_system_kv(ws: WebSocket) -> dict[str, str]:
     spreadsheet_id = _system_spreadsheet_id()
     sys_sheet = _system_sheet_name()
     sys_rows = await _load_sheet_kv5(spreadsheet_id=spreadsheet_id, sheet_name=sys_sheet)
-    sys_kv = {
-        str(it.get("key") or "").strip(): str(it.get("value") or "").strip()
-        for it in sys_rows
-        if isinstance(it, dict) and bool(it.get("enabled")) and str(it.get("key") or "").strip()
-    }
+    sys_kv: dict[str, str] = {}
+    for it in sys_rows:
+        if not isinstance(it, dict):
+            continue
+        k = str(it.get("key") or "").strip()
+        if not k:
+            continue
+        enabled = bool(it.get("enabled"))
+        is_toggle = k.endswith(".enabled") or k.startswith("feature.")
+        if is_toggle:
+            sys_kv[k] = "true" if enabled else "false"
+            continue
+        if not enabled:
+            continue
+        sys_kv[k] = str(it.get("value") or "").strip()
     try:
         ws.state.sys_kv = sys_kv
     except Exception:
@@ -14091,6 +14382,7 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             "memo_get",
             "memo_list",
             "memo_search",
+            "chaba_search_memo",
             "memory_add",
             "memory_search",
             "memory_list",
@@ -14580,6 +14872,9 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
 
             # Debug / development trigger: emit a backend-driven UI card.
             if s.strip().lower() == "ui test":
+                sys_kv = getattr(ws.state, "sys_kv", None)
+                if not feature_enabled("ui_test_card", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=False):
+                    continue
                 try:
                     await _ws_send_json(
                         ws,
@@ -14810,6 +15105,9 @@ async def _ws_local_only_loop(ws: WebSocket) -> None:
                 s = str(text or "").strip()
 
             if s.strip().lower() == "ui test":
+                sys_kv = getattr(ws.state, "sys_kv", None)
+                if not feature_enabled("ui_test_card", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=False):
+                    continue
                 try:
                     await _ws_send_json(
                         ws,
@@ -15610,7 +15908,6 @@ async def ws_live(ws: WebSocket) -> None:
                 pass
 
         base_candidates = [
-            "gemini-2.0-flash-live-001",
             "gemini-2.5-flash-native-audio-preview-12-2025",
             "gemini-2.5-flash-native-audio-preview-09-2025",
             "gemini-2.5-flash-native-audio-latest",
@@ -15632,6 +15929,8 @@ async def ws_live(ws: WebSocket) -> None:
             except Exception:
                 pass
 
+        explicit_override = bool(sys_override_model or GEMINI_LIVE_MODEL_OVERRIDE)
+
         raw_candidates = [
             sys_override_model,
             GEMINI_LIVE_MODEL_OVERRIDE,
@@ -15641,6 +15940,16 @@ async def ws_live(ws: WebSocket) -> None:
                 else (base_candidates if GEMINI_LIVE_MODEL_OVERRIDE else [GEMINI_LIVE_MODEL_DEFAULT, *base_candidates])
             ),
         ]
+        if not explicit_override:
+            raw_candidates = [GEMINI_LIVE_MODEL_DEFAULT, *raw_candidates]
+
+        legacy_blocked = "gemini-2.0-flash-live-001"
+        legacy_allowed = (
+            _normalize_model_name(sys_override_model) == legacy_blocked
+            or _normalize_model_name(GEMINI_LIVE_MODEL_OVERRIDE) == legacy_blocked
+        )
+        if not legacy_allowed:
+            raw_candidates = [m for m in raw_candidates if _normalize_model_name(str(m)) != legacy_blocked]
 
         # Gemini Live model naming can vary by endpoint/version. Be permissive:
         # - accept both with and without the `models/` prefix

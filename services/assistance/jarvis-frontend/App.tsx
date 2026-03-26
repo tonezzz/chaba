@@ -240,9 +240,17 @@ export default function App() {
 
   const backendCandidates = useCallback((): string[] => {
     const override = String(((import.meta as any).env?.VITE_JARVIS_HTTP_URL as string | undefined) || "").trim();
-    const normOverride = override ? override.replace(/\/+$/, "") : "";
+    const normOverride = override ? override.replace(/\/+$|\s+$/g, "").replace(/\/+$/g, "") : "";
     const isJarvisSubpath = location.pathname.startsWith("/jarvis");
-    return isJarvisSubpath ? ["/jarvis/api", "/jarvis", ""] : ["", "/jarvis/api", "/jarvis"];
+    const defaults = isJarvisSubpath ? ["/jarvis/api", "/jarvis", ""] : ["", "/jarvis/api", "/jarvis"];
+    const out = normOverride ? [normOverride, ...defaults] : defaults;
+    const seen = new Set<string>();
+    return out.filter((v) => {
+      const k = String(v || "");
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
   }, []);
 
   const flushUiLogToBackend = useCallback(async () => {
@@ -1305,6 +1313,10 @@ export default function App() {
   const [containerStatusError, setContainerStatusError] = useState<string>("");
   const [uiCardInputByMsgId, setUiCardInputByMsgId] = useState<Record<string, string>>({});
 
+  const [depsStatus, setDepsStatus] = useState<any>(null);
+  const [depsStatusError, setDepsStatusError] = useState<string>("");
+  const [depsStatusRefreshNonce, setDepsStatusRefreshNonce] = useState<number>(0);
+
   useEffect(() => {
     if (hasKey) return;
     let cancelled = false;
@@ -1378,6 +1390,59 @@ export default function App() {
       window.clearInterval(t);
     };
   }, [hasKey, backendCandidates]);
+
+  useEffect(() => {
+    if (!hasKey) return;
+    if (!statusDetailsOpen) return;
+    let cancelled = false;
+    const fetchOnce = async () => {
+      try {
+        setDepsStatusError("");
+        let res: Response | null = null;
+        try {
+          res = await fetch("/jarvis/api/debug/status", { cache: "no-store" });
+        } catch {
+          res = null;
+        }
+        if (!res || !res.ok) {
+          try {
+            res = await fetch("/jarvis/debug/status", { cache: "no-store" });
+          } catch {
+            res = null;
+          }
+        }
+        if (!res || !res.ok) {
+          res = await fetch("/debug/status", { cache: "no-store" });
+        }
+        if (!res) throw new Error("deps_status_fetch_failed");
+
+        const bodyText = await res.text();
+        const trimmed = String(bodyText || "").trim();
+        if (!trimmed) {
+          throw new Error(`deps_status_error: empty response (http ${res.status})`);
+        }
+        let js: any = null;
+        try {
+          js = JSON.parse(trimmed);
+        } catch {
+          const preview = trimmed.length > 220 ? trimmed.slice(0, 220) + "…" : trimmed;
+          throw new Error(`deps_status_error: invalid json (http ${res.status}) preview=${preview}`);
+        }
+        if (!cancelled) setDepsStatus(js);
+      } catch (e: any) {
+        if (!cancelled) {
+          setDepsStatus(null);
+          setDepsStatusError(String(e?.message || e || "deps_status_fetch_failed"));
+        }
+      }
+    };
+    void fetchOnce();
+    const t = window.setInterval(fetchOnce, 60000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(t);
+    };
+  }, [hasKey, statusDetailsOpen, depsStatusRefreshNonce]);
 
   const getSeqCompletedTasks = () => {
     const completedBlocks = String(seqCompletedNotes || "")
@@ -1758,26 +1823,85 @@ return (
              </div>
 
              {statusDetailsOpen && (
-               <div className="flex items-center justify-between mt-2 gap-2">
-                 <div className="flex items-center gap-2">
-                   <span className="text-[11px] font-mono px-2 py-1 rounded-full border border-slate-700 bg-slate-950/20 text-slate-300">
-                     mem:{systemCounts.memory}
-                   </span>
-                   <span className="text-[11px] font-mono px-2 py-1 rounded-full border border-slate-700 bg-slate-950/20 text-slate-300">
-                     know:{systemCounts.knowledge}
+               <div className="mt-2 space-y-2">
+                 <div className="flex items-center justify-between gap-2">
+                   <div className="flex items-center gap-2">
+                     <span className="text-[11px] font-mono px-2 py-1 rounded-full border border-slate-700 bg-slate-950/20 text-slate-300">
+                       mem:{systemCounts.memory}
+                     </span>
+                     <span className="text-[11px] font-mono px-2 py-1 rounded-full border border-slate-700 bg-slate-950/20 text-slate-300">
+                       know:{systemCounts.knowledge}
+                     </span>
+                   </div>
+                   <span
+                     className={`inline-flex items-center gap-1 text-[11px] font-mono px-2 py-1 rounded-full border ${
+                       audioStatus.ok
+                         ? 'border-cyan-500/30 bg-cyan-950/10 text-cyan-200'
+                         : 'border-slate-700 bg-slate-950/20 text-slate-300'
+                     }`}
+                     title={audioStatus.ok ? 'audio_ok' : 'audio_unavailable'}
+                   >
+                     {audioStatus.ok ? <Mic className="w-3 h-3" /> : <MicOff className="w-3 h-3" />}
+                     audio
                    </span>
                  </div>
-                 <span
-                   className={`inline-flex items-center gap-1 text-[11px] font-mono px-2 py-1 rounded-full border ${
-                     audioStatus.ok
-                       ? 'border-cyan-500/30 bg-cyan-950/10 text-cyan-200'
-                       : 'border-slate-700 bg-slate-950/20 text-slate-300'
-                   }`}
-                   title={audioStatus.ok ? 'audio_ok' : 'audio_unavailable'}
-                 >
-                   {audioStatus.ok ? <Mic className="w-3 h-3" /> : <MicOff className="w-3 h-3" />}
-                   audio
-                 </span>
+
+                 <div className="text-[11px] font-mono text-slate-400 border border-slate-800 rounded-lg bg-slate-950/20 px-2 py-2">
+                   <div className="flex items-center justify-between gap-2">
+                     <div className="flex items-center gap-2 min-w-0">
+                       <span className="text-slate-500 uppercase tracking-widest">deps</span>
+                       <button
+                         className="text-[10px] font-mono px-2 py-[2px] rounded border border-slate-800 bg-slate-950/40 text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
+                         onClick={(e) => {
+                           e.preventDefault();
+                           e.stopPropagation();
+                           setDepsStatusRefreshNonce((v) => (Number.isFinite(v) ? v + 1 : Date.now()));
+                         }}
+                         title="Refresh dependency status"
+                       >
+                         refresh
+                       </button>
+                     </div>
+                     {depsStatusError ? (
+                       <span className="text-red-300">error</span>
+                     ) : depsStatus ? (
+                       <span className="text-slate-300">ok</span>
+                     ) : (
+                       <span className="text-slate-500">loading…</span>
+                     )}
+                   </div>
+
+                   {depsStatusError ? (
+                     <div className="mt-1 text-red-300 break-words">{depsStatusError}</div>
+                   ) : Array.isArray((depsStatus as any)?.checks) ? (
+                     <div className="mt-1 space-y-1">
+                       {(depsStatus as any).checks.map((c: any) => {
+                         const name = String(c?.name || "").trim() || "(unknown)";
+                         const skipped = Boolean(c?.skipped);
+                         const ok = Boolean(c?.ok);
+                         const latency = c?.latency_ms;
+                         const latencyTxt = typeof latency === "number" && Number.isFinite(latency) ? `${Math.floor(latency)}ms` : "";
+                         const icon = skipped ? (
+                           <AlertTriangle className="w-3.5 h-3.5 text-slate-500" />
+                         ) : ok ? (
+                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                         ) : (
+                           <XCircle className="w-3.5 h-3.5 text-red-400" />
+                         );
+                         return (
+                           <div key={name} className="flex items-center justify-between gap-2">
+                             <div className="flex items-center gap-2 min-w-0">
+                               {icon}
+                               <span className="text-slate-300 truncate">{name}</span>
+                               {skipped ? <span className="text-slate-500">(skipped)</span> : null}
+                             </div>
+                             <div className="shrink-0 text-slate-500">{latencyTxt}</div>
+                           </div>
+                         );
+                       })}
+                     </div>
+                   ) : null}
+                 </div>
                </div>
              )}
           </div>
@@ -1920,6 +2044,20 @@ return (
                  const invokeUiTool = async (tool: string, extraArgs?: any) => {
                    const toolName = String(tool || "").trim();
                    if (!toolName) return;
+                   const okPrefix = toolName.startsWith("system_") || toolName.startsWith("pending_") || toolName.startsWith("macro_") || toolName === "time_now";
+                   if (!okPrefix) {
+                     setMessages((prev) => [
+                       {
+                         id: `${Date.now()}_ui_action_rejected_${Math.random().toString(16).slice(2)}`,
+                         role: "system",
+                         text: `ui_action_rejected (tool_not_allowed): ${toolName}`,
+                         timestamp: new Date(),
+                         metadata: { severity: "warn", category: "ws" },
+                       },
+                       ...prev,
+                     ]);
+                     return;
+                   }
                    const args: any = extraArgs && typeof extraArgs === "object" ? { ...extraArgs } : {};
                    if (confirmationId && (toolName === "pending_confirm" || toolName === "pending_cancel" || toolName === "pending_preview" || toolName === "pending_get")) {
                      if (args.confirmation_id == null) args.confirmation_id = confirmationId;
