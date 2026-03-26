@@ -2044,6 +2044,20 @@ return (
                  const invokeUiTool = async (tool: string, extraArgs?: any) => {
                    const toolName = String(tool || "").trim();
                    if (!toolName) return;
+                   const okPrefix = toolName.startsWith("system_") || toolName.startsWith("pending_") || toolName.startsWith("macro_") || toolName === "time_now";
+                   if (!okPrefix) {
+                     setMessages((prev) => [
+                       {
+                         id: `${Date.now()}_ui_action_rejected_${Math.random().toString(16).slice(2)}`,
+                         role: "system",
+                         text: `ui_action_rejected (tool_not_allowed): ${toolName}`,
+                         timestamp: new Date(),
+                         metadata: { severity: "warn", category: "ws" },
+                       },
+                       ...prev,
+                     ]);
+                     return;
+                   }
                    const args: any = extraArgs && typeof extraArgs === "object" ? { ...extraArgs } : {};
                    if (confirmationId && (toolName === "pending_confirm" || toolName === "pending_cancel" || toolName === "pending_preview" || toolName === "pending_get")) {
                      if (args.confirmation_id == null) args.confirmation_id = confirmationId;
