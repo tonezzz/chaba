@@ -3321,20 +3321,28 @@ async def verify_status() -> dict[str, Any]:
     if frontend_base and not frontend_base.endswith("/jarvis/") and "/jarvis" not in frontend_base:
         frontend_base = frontend_base.rstrip("/") + "/jarvis/"
 
-    checks = await asyncio.gather(
-        _debug_status_check_http("jarvis-backend", "http://127.0.0.1:18018", "/health", timeout_s=2.5),
-        _debug_status_check_http_any(
-            "jarvis-backend-debug-status",
-            [
-                "http://127.0.0.1:18018",
-                "http://127.0.0.1:18018/jarvis",
-            ],
-            "/api/debug/status",
-            timeout_s=2.5,
-            allow_any_status=False,
-        ),
-        _verify_frontend_bundle(frontend_base, timeout_s=6.0),
-    )
+    # Important: do NOT call 127.0.0.1 over HTTP here. In production the backend
+    # runs inside a container and 127.0.0.1 refers to the container itself, not
+    # the host port mapping used for operator checks.
+    #
+    # Instead, call in-process route handlers directly.
+    checks: list[dict[str, Any]] = []
+    try:
+        h = health()
+        checks.append({"name": "jarvis-backend", "ok": bool(h.get("ok")), "details": h})
+    except Exception as e:
+        checks.append({"name": "jarvis-backend", "ok": False, "error": str(e)})
+
+    try:
+        ds = await debug_status()
+        checks.append({"name": "jarvis-backend-debug-status", "ok": bool(ds.get("ok")), "details": ds})
+    except Exception as e:
+        checks.append({"name": "jarvis-backend-debug-status", "ok": False, "error": str(e)})
+
+    try:
+        checks.append(await _verify_frontend_bundle(frontend_base, timeout_s=6.0))
+    except Exception as e:
+        checks.append({"name": "jarvis-frontend", "ok": False, "error": str(e)})
 
     ok = True
     for c in checks:
