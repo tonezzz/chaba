@@ -27,7 +27,7 @@
 
 If you need to hand off to another machine or operator mid-session:
 
-1. Ask the assistant: *"Summarise what we've done and what's left, in a short bullet list."*
+1. Ask the assistant: *"Summarize what we've done and what's left, in a short bullet list."*
 2. Copy the summary into a GitHub issue comment or a `TODO.md` entry.
 3. On the receiving machine: start a new chat, paste the summary + ACTION.md link as the first message.
 
