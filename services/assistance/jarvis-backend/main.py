@@ -645,6 +645,64 @@ async def _debug_status_check_http_any(
     return out
 
 
+async def _verify_frontend_bundle(
+    base_url: str,
+    *,
+    timeout_s: float = 6.0,
+) -> dict[str, Any]:
+    import re
+
+    b = str(base_url or "").strip()
+    if not b:
+        return {"name": "jarvis-frontend", "ok": False, "skipped": True, "error": "not_configured"}
+
+    b = b.rstrip("/") + "/"
+    required = [
+        "jarvis_status_details_open",
+        "/jarvis/api/debug/status",
+        "Hide status details",
+    ]
+
+    timeout = httpx.Timeout(timeout_s)
+    async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
+        try:
+            r = await client.get(b, headers={"cache-control": "no-cache"})
+            html = r.text
+        except Exception as e:
+            return {"name": "jarvis-frontend", "ok": False, "url": b, "error": str(e)}
+
+        m = re.search(r'src="([^"]*assets/[^"]+\.js)"', html)
+        if not m:
+            return {"name": "jarvis-frontend", "ok": False, "url": b, "error": "missing_assets_js"}
+
+        src = str(m.group(1) or "").strip()
+        if src.startswith("http://") or src.startswith("https://"):
+            js_url = src
+        elif src.startswith("/"):
+            m2 = re.match(r"^(https?://[^/]+)", b)
+            origin = m2.group(1) if m2 else ""
+            js_url = origin + src
+        else:
+            js_url = b.rstrip("/") + "/" + src
+
+        try:
+            r2 = await client.get(js_url, headers={"cache-control": "no-cache"})
+            bundle = r2.text
+        except Exception as e:
+            return {"name": "jarvis-frontend", "ok": False, "url": js_url, "error": str(e)}
+
+        is_html = bool(re.search(r"<!doctype html|<html", bundle[:200], re.IGNORECASE))
+        hits: dict[str, bool] = {s: (s in bundle) for s in required}
+        ok = (not is_html) and all(hits.values())
+        return {
+            "name": "jarvis-frontend",
+            "ok": ok,
+            "url": js_url,
+            "is_html": is_html,
+            "markers": hits,
+        }
+
+
 async def _ws_update_contexts_from_text(ws: WebSocket, text: str, *, handled: bool) -> None:
     now_ts = int(time.time())
     try:
@@ -3219,6 +3277,63 @@ async def debug_status() -> dict[str, Any]:
             allow_any_status=True,
         ),
         _debug_status_check_http("weaviate", weaviate_base, "/v1/.well-known/ready", timeout_s=2.5),
+    )
+
+    ok = True
+    for c in checks:
+        if not isinstance(c, dict):
+            continue
+        if c.get("skipped"):
+            continue
+        if not c.get("ok"):
+            ok = False
+            break
+
+    return {
+        "ok": ok,
+        "service": "jarvis-backend",
+        "instance_id": INSTANCE_ID,
+        "ts": int(time.time()),
+        "checks": checks,
+    }
+
+
+@app.get("/verify/status")
+@app.get("/jarvis/verify/status")
+@app.get("/api/verify/status")
+@app.get("/jarvis/api/verify/status")
+async def verify_status() -> dict[str, Any]:
+    cached = _get_cached_sheet_memory()
+    sys_kv = None
+    try:
+        if isinstance(cached, dict) and isinstance(cached.get("sys_kv"), dict):
+            sys_kv = cached.get("sys_kv")
+    except Exception:
+        sys_kv = None
+
+    if not feature_enabled("debug_status", sys_kv=sys_kv, default=True):
+        raise HTTPException(status_code=404, detail={"disabled": True})
+
+    frontend_base = (
+        str(os.getenv("JARVIS_VERIFY_FRONTEND_BASE_URL") or "").strip()
+        or str(os.getenv("JARVIS_PUBLIC_BASE_URL") or "").strip()
+    )
+    if frontend_base and not frontend_base.endswith("/jarvis/") and "/jarvis" not in frontend_base:
+        frontend_base = frontend_base.rstrip("/") + "/jarvis/"
+
+    checks = await asyncio.gather(
+        _debug_status_check_http("jarvis-backend", "http://127.0.0.1:18018", "/health", timeout_s=2.5),
+        _debug_status_check_http_any(
+            "jarvis-backend-debug-status",
+            [
+                "http://127.0.0.1:18018",
+                "http://127.0.0.1:18018/jarvis",
+            ],
+            "/api/debug/status",
+            timeout_s=2.5,
+            allow_any_status=False,
+        ),
+        _verify_frontend_bundle(frontend_base, timeout_s=6.0),
     )
 
     ok = True
