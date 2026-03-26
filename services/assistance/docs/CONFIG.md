@@ -150,19 +150,12 @@ This script:
 
 ## Verification checklist (post-redeploy)
 
-- Backend health:
-  - `curl -fsS http://127.0.0.1:18018/health`
-- Reminders list:
-  - `curl -fsS 'http://127.0.0.1:18018/reminders?status=pending&limit=5'`
-- Backend logs (recent):
-  - `docker logs --since 15m --tail 400 idc1-assistance-jarvis-backend-1`
+Operator SSOT:
+
+- See `services/assistance/docs/ACTION.md` for the deployed verification checklist and exact commands.
 
 ## Collect debug evidence (single command)
 
-After reproducing an issue, collect a snapshot of the current host state:
+Operator SSOT:
 
-- `./scripts/collect-idc1-assistance-evidence.sh`
-
-If you have a `trace_id` from the Operation Log, filter backend logs to just that trace:
-
-- `./scripts/collect-idc1-assistance-evidence.sh <trace_id>`
+- See `services/assistance/docs/ACTION.md` for the current evidence collection commands and how to use `trace_id`.
