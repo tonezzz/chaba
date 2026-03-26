@@ -3,6 +3,12 @@
 
 These diagrams are the architecture blueprint for the `services/assistance` stack. Keep them accurate and update them whenever service boundaries, ports, endpoints, or persistence rules change.
 
+## Pointers (SSOT)
+
+- Operator runbooks (SSOT): `services/assistance/docs/ACTION.md`
+- Assistance overview: `services/assistance/README.md`
+- Runtime API surface (authoritative): `GET /openapi.json`
+
 ## CI: sheet contract tests
 
 We run a lightweight `pytest` suite in CI to prevent regressions in the Google Sheets SSoT contracts (system/memory/knowledge KV5 parsing and memo header canonicalization).
