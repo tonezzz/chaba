@@ -15733,10 +15733,10 @@ async def ws_live(ws: WebSocket) -> None:
                 pass
 
         base_candidates = [
-            "gemini-2.0-flash-live-001",
             "gemini-2.5-flash-native-audio-preview-12-2025",
             "gemini-2.5-flash-native-audio-preview-09-2025",
             "gemini-2.5-flash-native-audio-latest",
+            "gemini-2.0-flash-live-001",
         ]
 
         sys_candidates: list[str] = []
@@ -15755,6 +15755,8 @@ async def ws_live(ws: WebSocket) -> None:
             except Exception:
                 pass
 
+        explicit_override = bool(sys_override_model or GEMINI_LIVE_MODEL_OVERRIDE)
+
         raw_candidates = [
             sys_override_model,
             GEMINI_LIVE_MODEL_OVERRIDE,
@@ -15764,6 +15766,8 @@ async def ws_live(ws: WebSocket) -> None:
                 else (base_candidates if GEMINI_LIVE_MODEL_OVERRIDE else [GEMINI_LIVE_MODEL_DEFAULT, *base_candidates])
             ),
         ]
+        if not explicit_override:
+            raw_candidates = [GEMINI_LIVE_MODEL_DEFAULT, *raw_candidates]
 
         # Gemini Live model naming can vary by endpoint/version. Be permissive:
         # - accept both with and without the `models/` prefix
