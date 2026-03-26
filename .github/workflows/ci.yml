@@ -54,3 +54,24 @@ jobs:
           docker compose -f stacks/pc1-stack/docker-compose.yml config >/dev/null
           docker compose -f stacks/pc2-worker/docker-compose.yml config >/dev/null
           docker compose -f stacks/idc1-stack/docker-compose.yml config >/dev/null
+
+  jarvis-smoke:
+    name: Jarvis API smoke tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Jarvis dependencies
+        run: pip install -r services/jarvis/requirements.txt
+
+      - name: Run smoke tests
+        working-directory: services/jarvis
+        run: pytest tests/ -v --tb=short
