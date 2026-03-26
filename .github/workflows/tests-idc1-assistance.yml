@@ -1,0 +1,38 @@
+name: Tests (idc1-assistance)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'services/assistance/jarvis-backend/**'
+      - '.github/workflows/tests-idc1-assistance.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'services/assistance/jarvis-backend/**'
+      - '.github/workflows/tests-idc1-assistance.yml'
+
+jobs:
+  pytest-jarvis-backend:
+    name: pytest jarvis-backend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: services/assistance/jarvis-backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run contract tests
+        run: pytest -q
