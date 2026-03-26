@@ -8,6 +8,15 @@ This is a practical runbook for debugging the `idc1-assistance` stack.
 Build/deploy:
 - If you suspect you are running old images after a redeploy, follow `services/assistance/docs/BUILD.md` (single source of truth).
 
+Operator SSOT:
+- `services/assistance/docs/ACTION.md`
+
+API SSOT:
+- Prefer the live backend OpenAPI: `GET /openapi.json`
+
+Note:
+- The endpoint list below is a practical checklist and may be incomplete; treat `/openapi.json` as authoritative.
+
 ### Jarvis Backend
 - `GET /health`
 - `GET /agents`
