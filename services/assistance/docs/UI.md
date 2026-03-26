@@ -2,6 +2,12 @@
 
 This file documents the high-level UI structure for `jarvis-frontend`.
 
+Operator SSOT:
+- `services/assistance/docs/ACTION.md`
+
+API SSOT:
+- Prefer the live backend OpenAPI: `GET /openapi.json`
+
 ## Structure (diagram)
 
 ```mermaid

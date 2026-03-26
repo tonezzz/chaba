@@ -2,6 +2,12 @@
 
 This file is intentionally short. The primary runbook lives at `services/assistance/DEBUG.md`.
 
+Operator SSOT:
+- `services/assistance/docs/ACTION.md`
+
+API SSOT:
+- Prefer the live backend OpenAPI: `GET /openapi.json`
+
 ## Quick checks
 
 - `GET /health`
