@@ -34,6 +34,7 @@ Derived inventories / URL lists (useful for discovery, but do not treat as opera
 ## idc1
 - **VPN (wg-easy + CoreDNS)**: `docs/idc1-vpn.json`
 - **Core MCP stack**: `docs/idc1-stack.json`
+- **Assistance (Jarvis frontend + backend)**: `services/assistance/docs/ACTION.md`
 
 ## app-demo
 - **Path**: `stacks/app-demo/`
