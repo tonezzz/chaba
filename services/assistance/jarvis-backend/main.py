@@ -15768,6 +15768,14 @@ async def ws_live(ws: WebSocket) -> None:
         if not explicit_override:
             raw_candidates = [GEMINI_LIVE_MODEL_DEFAULT, *raw_candidates]
 
+        legacy_blocked = "gemini-2.0-flash-live-001"
+        legacy_allowed = (
+            _normalize_model_name(sys_override_model) == legacy_blocked
+            or _normalize_model_name(GEMINI_LIVE_MODEL_OVERRIDE) == legacy_blocked
+        )
+        if not legacy_allowed:
+            raw_candidates = [m for m in raw_candidates if _normalize_model_name(str(m)) != legacy_blocked]
+
         # Gemini Live model naming can vary by endpoint/version. Be permissive:
         # - accept both with and without the `models/` prefix
         # - try `models/<id>` first to match `models.list()` output
