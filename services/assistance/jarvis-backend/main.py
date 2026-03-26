@@ -8714,6 +8714,7 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             "system_macros_list",
             "system_skills_list",
             "system_skill_get",
+            "system_skills_bootstrap_queue",
             "system_run_macro",
             "google_account_relink_queue",
         }
@@ -13904,6 +13905,19 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
 
     decls.append(
         {
+            "name": "system_skills_bootstrap_queue",
+            "description": "Queue a confirmation-gated write to create the skills sheet tab (if missing), write the header row, and seed one example skill row.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "seed_name": {"type": "string", "description": "Optional skill name to seed (default jarvis-skill-smoke-test)."},
+                },
+            },
+        }
+    )
+
+    decls.append(
+        {
             "name": "system_macro_upsert",
             "description": "Insert or update a macro row in the system macros sheet (confirmation-gated write).",
             "parameters": {
@@ -14804,6 +14818,17 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             {"macros": seed, "reload_mode": mode},
         )
         return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "macros": len(seed), "reload_mode": mode}
+
+    if n == "system_skills_bootstrap_queue":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        seed_name = str((args or {}).get("seed_name") or "").strip() or "jarvis-skill-smoke-test"
+        confirmation_id = _create_pending_write(
+            str(session_id),
+            "bundle_bootstrap_skills",
+            {"seed_name": seed_name},
+        )
+        return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "seed_name": seed_name}
 
     if n == "system_run_macro":
         macro_name = str((args or {}).get("name") or "").strip()

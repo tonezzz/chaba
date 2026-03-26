@@ -1864,6 +1864,111 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                 "spreadsheet_id": spreadsheet_id,
             }
 
+        if action == "bundle_bootstrap_skills":
+            ws = session_ws.get(str(session_id)) if isinstance(session_ws, dict) else None
+            if ws is None:
+                raise HTTPException(status_code=400, detail="missing_session_ws")
+            if not isinstance(payload, dict):
+                raise HTTPException(status_code=400, detail="invalid_pending_payload")
+
+            system_spreadsheet_id = deps["system_spreadsheet_id"]
+            system_skills_sheet_name = deps["system_skills_sheet_name"]
+            pick_sheets_tool_name = deps["pick_sheets_tool_name"]
+            mcp_tools_call = deps["mcp_tools_call"]
+            mcp_text_json = deps["mcp_text_json"]
+
+            sys_kv0 = getattr(ws.state, "sys_kv", None)
+            sys_kv_dict0 = sys_kv0 if isinstance(sys_kv0, dict) else None
+            spreadsheet_id = str(system_spreadsheet_id() or "").strip()
+            if not spreadsheet_id:
+                raise HTTPException(status_code=400, detail="missing_system_spreadsheet_id")
+            sheet_name = str(system_skills_sheet_name(sys_kv=sys_kv_dict0) or "").strip() or "skills"
+            seed_name = str(payload.get("seed_name") or "").strip() or "jarvis-skill-smoke-test"
+
+            # Ensure the sheet tab exists.
+            tool_meta = pick_sheets_tool_name("google_sheets_get_spreadsheet", "google_sheets_get_spreadsheet")
+            meta_res = await mcp_tools_call(tool_meta, {"spreadsheet_id": spreadsheet_id})
+            meta_parsed = mcp_text_json(meta_res)
+            meta_data = meta_parsed.get("data") if isinstance(meta_parsed, dict) else None
+            if not isinstance(meta_data, dict):
+                meta_data = meta_parsed if isinstance(meta_parsed, dict) else {}
+            sheets = meta_data.get("sheets") if isinstance(meta_data, dict) else None
+            exists = False
+            if isinstance(sheets, list):
+                for s in sheets:
+                    props = s.get("properties") if isinstance(s, dict) else None
+                    title = str(props.get("title") or "") if isinstance(props, dict) else ""
+                    if title.strip() == sheet_name:
+                        exists = True
+                        break
+
+            create_result: Any = None
+            if not exists:
+                tool_bu = pick_sheets_tool_name("google_sheets_batch_update", "google-sheets_1mcp_google_sheets_batch_update")
+                req = {"addSheet": {"properties": {"title": sheet_name}}}
+                create_result = await mcp_tools_call(tool_bu, {"spreadsheet_id": spreadsheet_id, "requests": [req]})
+
+            # Write header row.
+            tool_upd = pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+            header = [["name", "enabled", "priority", "scope", "content"]]
+            header_result = await mcp_tools_call(
+                tool_upd,
+                {
+                    "spreadsheet_id": spreadsheet_id,
+                    "range": f"{sheet_name}!A1:E1",
+                    "values": header,
+                    "value_input_option": "RAW",
+                },
+            )
+
+            # Seed one example skill row.
+            tool_append = pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+            seed_row = [[seed_name, "TRUE", "10", "global", "This is a seeded Jarvis skill row. Replace content with SKILL.md-style instructions."]]
+            seed_result = await mcp_tools_call(
+                tool_append,
+                {
+                    "spreadsheet_id": spreadsheet_id,
+                    "range": f"{sheet_name}!A:Z",
+                    "values": seed_row,
+                    "value_input_option": "RAW",
+                },
+            )
+
+            # Reload system so the sheet is available immediately.
+            try:
+                await ws.send_json({"type": "text", "text": "reloading system"})
+            except Exception:
+                pass
+            reload_result: Any
+            if system_reload_impl is not None:
+                reload_result = await system_reload_impl(ws)
+            else:
+                sys_kv = await load_ws_system_kv(ws)
+                macros = await macro_tools_force_reload_from_sheet(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+                keys = sorted([str(k or "").strip() for k in (sys_kv or {}).keys()]) if isinstance(sys_kv, dict) else []
+                reload_result = {"ok": True, "sys_kv": sys_kv if isinstance(sys_kv, dict) else None, "sys_kv_keys": keys, "macros_count": len(macros or {})}
+
+            try:
+                lang = str(getattr(getattr(ws, "state", None), "user_lang", "") or "").strip() or "en"
+                done_txt = "system reloaded" if lang != "th" else "รีโหลดระบบสำเร็จ"
+                await ws.send_json({"type": "text", "text": done_txt})
+            except Exception:
+                pass
+
+            return {
+                "ok": True,
+                "bundle": True,
+                "action": "bootstrap_skills",
+                "spreadsheet_id": spreadsheet_id,
+                "sheet": sheet_name,
+                "created": (not exists),
+                "create_result": mcp_text_json(create_result) if create_result is not None else None,
+                "header_result": mcp_text_json(header_result),
+                "seed_result": mcp_text_json(seed_result),
+                "seed_name": seed_name,
+                "reload_result": reload_result,
+            }
+
         if action == "google_account_relink":
             if not isinstance(payload, dict):
                 raise HTTPException(status_code=400, detail="invalid_pending_payload")
