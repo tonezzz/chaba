@@ -3241,15 +3241,23 @@ app = FastAPI(title="jarvis-backend", version="0.1.0")
 @app.get("/api/debug/status")
 @app.get("/jarvis/api/debug/status")
 async def debug_status() -> dict[str, Any]:
-    cached = _get_cached_sheet_memory()
     sys_kv = None
     try:
-        if isinstance(cached, dict) and isinstance(cached.get("sys_kv"), dict):
-            sys_kv = cached.get("sys_kv")
+        sys_kv = await _load_sys_kv_from_sheet()
+        if not isinstance(sys_kv, dict) or not sys_kv:
+            sys_kv = None
     except Exception:
         sys_kv = None
 
-    if not feature_enabled("debug_status", sys_kv=sys_kv, default=True):
+    if sys_kv is None:
+        cached = _get_cached_sheet_memory()
+        try:
+            if isinstance(cached, dict) and isinstance(cached.get("sys_kv"), dict):
+                sys_kv = cached.get("sys_kv")
+        except Exception:
+            sys_kv = None
+
+    if not feature_enabled("debug_status", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=False):
         raise HTTPException(status_code=404, detail={"disabled": True})
 
     # Read-only aggregated dependency status (safe for prod).
