@@ -1,5 +1,13 @@
 # Memo / Memory Sheet Handoff (Jarvis)
 
+Operator SSOT:
+
+- `services/assistance/docs/ACTION.md`
+
+API SSOT:
+
+- Prefer the live backend OpenAPI: `GET /openapi.json`
+
 This doc is meant to be a quick handoff for another chat/session to safely work on Jarvis “memo/memory sheet” behavior without having to re-discover the conventions.
 
 ## What “memo sheet” means in this repo

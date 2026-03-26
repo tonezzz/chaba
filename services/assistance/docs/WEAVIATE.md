@@ -1,5 +1,13 @@
 # Weaviate Memory Store (Ground Truth Spec)
 
+Operator SSOT:
+
+- `services/assistance/docs/ACTION.md`
+
+API SSOT:
+
+- Prefer the live backend OpenAPI: `GET /openapi.json`
+
  See also:
  - `WINDSURF_PLAYBOOK.md` (repo working conventions, diagnostics, workflows)
 

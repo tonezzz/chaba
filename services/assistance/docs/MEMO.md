@@ -1,5 +1,13 @@
 # Memo system
 
+Operator SSOT:
+
+- `services/assistance/docs/ACTION.md`
+
+API SSOT:
+
+- Prefer the live backend OpenAPI: `GET /openapi.json`
+
 ## Overview
 The memo system provides a lightweight, append-only log into a Google Sheet tab (default: `memo`).
 

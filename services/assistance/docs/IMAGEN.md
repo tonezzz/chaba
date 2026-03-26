@@ -1,5 +1,13 @@
 # Imagen Projects (Ground Truth Spec)
 
+Operator SSOT:
+
+- `services/assistance/docs/ACTION.md`
+
+API SSOT:
+
+- Prefer the live backend OpenAPI: `GET /openapi.json`
+
 ## Objective
 Build an **Imagen Project workflow** in Jarvis using the **Gemini Developer API key** (**server-side only**).
 
