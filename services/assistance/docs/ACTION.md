@@ -17,8 +17,35 @@
 
 ## Now (what to do next)
 
-- **Say:** `action`
-- **I will run:** `TODO-NOW-015` (from `services/assistance/docs/TODO.md#now`)
+- **Preferred (strong-standalone):**
+  - **Say:** `action pc1` or `action idc1`
+    - This implicitly runs: `status` (see below) and then starts the **Now** item.
+  - If you only say `action`, I must ask which machine (`pc1` vs `idc1`) before proceeding.
+
+### Strong-standalone protocol (status + action)
+
+Definition:
+- **Strong** = hard-stop on ambiguity or unsafe state.
+- **Standalone** = `action <machine>` implicitly runs `status` first.
+
+`status` (read-only snapshot):
+- `git branch --show-current`
+- `git status -sb`
+- If reachable, check runtime health endpoints (see **Overview (quick context)**).
+
+`action pc1` / `action idc1` (hard gates):
+1. **Machine intent must be explicit**
+   - Allowed: `action pc1`, `action idc1`.
+2. **Branch must match machine**
+   - `pc1` expects: `work/idc1-assistance/pc1`
+   - `idc1` expects: `work/idc1-assistance/idc1`
+3. **Working tree must be clean**
+   - If dirty: stop and choose one: commit+push, stash, or discard.
+4. **Integration branch safety**
+   - If on `idc1-assistance`: stop unless you explicitly intend to do deploy-triggering work.
+
+Once gates pass:
+- **I will run:** the current `TODO.md#Now` item (currently `TODO-NOW-015`).
 
 ## Recent status (success / problems / next)
 

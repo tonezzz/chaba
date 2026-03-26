@@ -604,48 +604,6 @@ async def _debug_status_check_http(
         }
 
 
-@app.get("/debug/status")
-@app.get("/jarvis/debug/status")
-@app.get("/api/debug/status")
-@app.get("/jarvis/api/debug/status")
-async def debug_status() -> dict[str, Any]:
-    # Read-only aggregated dependency status (safe for prod).
-    deep_research_base = (
-        str(os.getenv("DEEP_RESEARCH_WORKER_BASE_URL") or "http://deep-research-worker:8030").strip().rstrip("/")
-    )
-    mcp_base = str(MCP_BASE_URL or "").strip().rstrip("/")
-    mcp_pw_base = str(MCP_PLAYWRIGHT_BASE_URL or "").strip().rstrip("/")
-    web_fetcher_base = str(WEB_FETCHER_BASE_URL or "").strip().rstrip("/")
-    weaviate_base = str(WEAVIATE_URL or "").strip().rstrip("/")
-
-    checks = await asyncio.gather(
-        _debug_status_check_http("deep-research-worker", deep_research_base, "/health", timeout_s=2.5),
-        _debug_status_check_http("web-fetcher", web_fetcher_base, "/health", timeout_s=2.5),
-        # MCP servers may not have /health; treat any HTTP response as reachability.
-        _debug_status_check_http("mcp-bundle", mcp_base, "/", timeout_s=2.5, allow_any_status=True),
-        _debug_status_check_http("mcp-playwright", mcp_pw_base, "/", timeout_s=2.5, allow_any_status=True),
-        _debug_status_check_http("weaviate", weaviate_base, "/v1/.well-known/ready", timeout_s=2.5),
-    )
-
-    ok = True
-    for c in checks:
-        if not isinstance(c, dict):
-            continue
-        if c.get("skipped"):
-            continue
-        if not c.get("ok"):
-            ok = False
-            break
-
-    return {
-        "ok": ok,
-        "service": "jarvis-backend",
-        "instance_id": INSTANCE_ID,
-        "ts": int(time.time()),
-        "checks": checks,
-    }
-
-
 async def _ws_update_contexts_from_text(ws: WebSocket, text: str, *, handled: bool) -> None:
     now_ts = int(time.time())
     try:
@@ -3172,6 +3130,47 @@ async def _ws_progress(
     await _ws_send_json(ws, payload, trace_id=trace_id)
 
 app = FastAPI(title="jarvis-backend", version="0.1.0")
+
+
+@app.get("/debug/status")
+@app.get("/jarvis/debug/status")
+@app.get("/api/debug/status")
+@app.get("/jarvis/api/debug/status")
+async def debug_status() -> dict[str, Any]:
+    # Read-only aggregated dependency status (safe for prod).
+    deep_research_base = (
+        str(os.getenv("DEEP_RESEARCH_WORKER_BASE_URL") or "http://deep-research-worker:8030").strip().rstrip("/")
+    )
+    mcp_base = str(MCP_BASE_URL or "").strip().rstrip("/")
+    mcp_pw_base = str(MCP_PLAYWRIGHT_BASE_URL or "").strip().rstrip("/")
+    web_fetcher_base = str(WEB_FETCHER_BASE_URL or "").strip().rstrip("/")
+    weaviate_base = str(WEAVIATE_URL or "").strip().rstrip("/")
+
+    checks = await asyncio.gather(
+        _debug_status_check_http("deep-research-worker", deep_research_base, "/health", timeout_s=2.5),
+        _debug_status_check_http("web-fetcher", web_fetcher_base, "/health", timeout_s=2.5),
+        _debug_status_check_http("mcp-bundle", mcp_base, "/", timeout_s=2.5, allow_any_status=True),
+        _debug_status_check_http("mcp-playwright", mcp_pw_base, "/", timeout_s=2.5, allow_any_status=True),
+        _debug_status_check_http("weaviate", weaviate_base, "/v1/.well-known/ready", timeout_s=2.5),
+    )
+
+    ok = True
+    for c in checks:
+        if not isinstance(c, dict):
+            continue
+        if c.get("skipped"):
+            continue
+        if not c.get("ok"):
+            ok = False
+            break
+
+    return {
+        "ok": ok,
+        "service": "jarvis-backend",
+        "instance_id": INSTANCE_ID,
+        "ts": int(time.time()),
+        "checks": checks,
+    }
 
 
 class _UILogAppendRequest(BaseModel):
