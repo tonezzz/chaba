@@ -14119,25 +14119,6 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
 
         decls.append(
             {
-                "name": "memo_assess",
-                "description": "Assess a memo and suggest improved fields (subject/group/status/result) and an improved memo text.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "id": {"type": "integer", "description": "Optional memo id (for traceability)."},
-                        "memo": {"type": "string", "description": "Memo text/body."},
-                        "group": {"type": "string", "description": "Current group label."},
-                        "subject": {"type": "string", "description": "Current subject label."},
-                        "status": {"type": "string", "description": "Current status."},
-                        "result": {"type": "string", "description": "Current result/notes."},
-                    },
-                    "required": [],
-                },
-            }
-        )
-
-        decls.append(
-            {
                 "name": "memo_update_queue",
                 "description": "Queue an update to an existing memo entry (Pending-confirmed write).",
                 "parameters": {
@@ -14153,14 +14134,6 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
                     },
                     "required": ["id"],
                 },
-            }
-        )
-
-        decls.append(
-            {
-                "name": "memo_header_assess",
-                "description": "Validate memo sheet header matches canonical order (fails fast on mismatch).",
-                "parameters": {"type": "object", "properties": {}},
             }
         )
 
@@ -14600,7 +14573,6 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
             "system_macro_upsert_bundle_queue",
             "google_account_relink_queue",
             "memo_add",
-            "memo_assess",
             "memo_update_queue",
             "memo_get",
             "memo_list",
@@ -15507,9 +15479,7 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                                     "pending_confirm",
                                     "pending_cancel",
                                     "system_reload_queue",
-                                    "memo_header_assess",
                                     "memo_add",
-                                    "memo_assess",
                                     "memo_get",
                                     "memo_list",
                                     "memo_search",
