@@ -39,6 +39,12 @@ jobs:
       - name: Python syntax check (compileall)
         run: |
           python -m compileall mcp
+          python -m compileall services/assistance/jarvis-backend
+
+      - name: jarvis-backend unit tests
+        run: |
+          pip install pytest fastapi pydantic --quiet
+          python -m pytest services/assistance/jarvis-backend/test_skills_router.py -v
 
       - name: Prepare stack env files for compose validation
         run: |
