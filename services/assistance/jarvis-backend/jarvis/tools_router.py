@@ -1100,6 +1100,152 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         except Exception as e:
             return {"ok": False, "error": "memo_list_failed", "detail": f"{type(e).__name__}: {e}"}
 
+    if tool_name in {"current_news_get", "current_news_refresh", "current_news_sources", "current_news_details"}:
+        try:
+            session_ws = deps["SESSION_WS"]
+            feature_enabled = deps["feature_enabled"]
+            get_news_cache = deps["get_news_cache"]
+            set_news_cache = deps["set_news_cache"]
+            refresh_current_news_cache = deps["refresh_current_news_cache"]
+            render_current_news_brief = deps["render_current_news_brief"]
+
+            ws = session_ws.get(str(session_id)) if session_id else None
+            if ws is None:
+                raise HTTPException(status_code=400, detail="missing_session_ws")
+            sys_kv = getattr(ws.state, "sys_kv", None)
+            if not feature_enabled("current-news", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+                raise HTTPException(status_code=403, detail="feature_disabled:current-news")
+
+            cached = get_news_cache("current-news")
+            ctx = cached.get("payload") if isinstance(cached, dict) else None
+            if not isinstance(ctx, dict):
+                ctx = None
+
+            if tool_name == "current_news_refresh":
+                ctx = await refresh_current_news_cache()
+                try:
+                    set_news_cache("current-news", ctx)
+                except Exception:
+                    pass
+                return {"ok": True, "refreshed": True, "context": ctx, "brief": render_current_news_brief(ctx) if isinstance(ctx, dict) else ""}
+
+            if ctx is None:
+                ctx = await refresh_current_news_cache()
+                try:
+                    set_news_cache("current-news", ctx)
+                except Exception:
+                    pass
+
+            if tool_name == "current_news_sources":
+                return {"ok": True, "sources": ctx.get("sources") or [], "updated_at": ctx.get("updated_at"), "context": ctx}
+
+            if tool_name == "current_news_details":
+                topic = str(args.get("topic") or "").strip().lower()
+                topics = ctx.get("topics") if isinstance(ctx.get("topics"), dict) else {}
+                key_map = {
+                    "iran": "iran_war",
+                    "iran war": "iran_war",
+                    "war": "iran_war",
+                    "gold": "gold",
+                    "dollar": "usd",
+                    "usd": "usd",
+                    "oil": "oil",
+                    "baht": "thb",
+                    "thai baht": "thb",
+                    "thb": "thb",
+                    "usd/thb": "thb",
+                }
+                chosen = key_map.get(topic, "")
+                if chosen and isinstance(topics, dict) and isinstance(topics.get(chosen), dict):
+                    return {"ok": True, "topic": chosen, "data": topics.get(chosen), "updated_at": ctx.get("updated_at"), "context": ctx}
+                return {"ok": False, "error": "unknown_topic", "topic": topic, "hint": "Try: iran | gold | usd | oil | baht", "context": ctx}
+
+            brief = render_current_news_brief(ctx)
+            return {"ok": True, "brief": brief, "updated_at": ctx.get("updated_at"), "context": ctx}
+        except HTTPException as e:
+            return {"ok": False, "error": "current_news_failed", "status_code": getattr(e, "status_code", None), "detail": getattr(e, "detail", None)}
+        except Exception as e:
+            return {"ok": False, "error": "current_news_failed", "detail": f"{type(e).__name__}: {e}"}
+
+    if tool_name in {
+        "news_follow_list",
+        "news_follow_refresh",
+        "news_follow_report",
+        "news_follow_focus_list",
+        "news_follow_focus_add",
+        "news_follow_focus_remove",
+    }:
+        try:
+            session_ws = deps["SESSION_WS"]
+            feature_enabled = deps["feature_enabled"]
+            get_news_follow_focus = deps["get_news_follow_focus"]
+            set_news_follow_focus = deps["set_news_follow_focus"]
+            get_news_follow_summaries = deps["get_news_follow_summaries"]
+            refresh_news_follow_summaries = deps["refresh_news_follow_summaries"]
+            default_user_id = deps.get("DEFAULT_USER_ID")
+
+            ws = session_ws.get(str(session_id)) if session_id else None
+            if ws is None:
+                raise HTTPException(status_code=400, detail="missing_session_ws")
+            sys_kv = getattr(ws.state, "sys_kv", None)
+            if not feature_enabled("follow-news", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+                raise HTTPException(status_code=403, detail="feature_disabled:follow-news")
+
+            user_id = str(default_user_id or "").strip() or "default"
+            focus = get_news_follow_focus(user_id)
+            summaries = get_news_follow_summaries(user_id)
+
+            if tool_name == "news_follow_focus_list":
+                return {"ok": True, "focus": focus}
+
+            if tool_name == "news_follow_focus_add":
+                item = str(args.get("item") or "").strip()
+                if not item:
+                    raise HTTPException(status_code=400, detail="missing_focus_item")
+                set_news_follow_focus(user_id, focus + [item])
+                return {"ok": True, "focus": get_news_follow_focus(user_id)}
+
+            if tool_name == "news_follow_focus_remove":
+                item = str(args.get("item") or "").strip().lower()
+                if not item:
+                    raise HTTPException(status_code=400, detail="missing_focus_item")
+                new_focus = [f for f in focus if str(f or "").strip().lower() != item]
+                set_news_follow_focus(user_id, new_focus)
+                return {"ok": True, "focus": get_news_follow_focus(user_id)}
+
+            if tool_name == "news_follow_refresh":
+                payload = await refresh_news_follow_summaries(user_id, focus)
+                return {"ok": True, "refreshed": True, "status": payload}
+
+            if tool_name == "news_follow_report":
+                summary_id = str(args.get("summary_id") or "").strip()
+                if not summary_id:
+                    raise HTTPException(status_code=400, detail="missing_summary_id")
+                chosen = None
+                for it in summaries:
+                    if isinstance(it, dict) and str(it.get("summary_id") or "").strip() == summary_id:
+                        chosen = it
+                        break
+                if not isinstance(chosen, dict):
+                    return {"ok": False, "error": "summary_not_found", "summary_id": summary_id, "summaries": summaries}
+                return {"ok": True, "summary": chosen}
+
+            available = [
+                {
+                    "summary_id": str(it.get("summary_id") or ""),
+                    "title": str(it.get("title") or ""),
+                    "created_at": it.get("created_at"),
+                    "focus": it.get("focus"),
+                }
+                for it in summaries
+                if isinstance(it, dict)
+            ]
+            return {"ok": True, "focus": focus, "summaries": available, "count": len(available)}
+        except HTTPException as e:
+            return {"ok": False, "error": "news_follow_failed", "status_code": getattr(e, "status_code", None), "detail": getattr(e, "detail", None)}
+        except Exception as e:
+            return {"ok": False, "error": "news_follow_failed", "detail": f"{type(e).__name__}: {e}"}
+
     if tool_name == "chaba_search_memo":
         try:
             session_ws = deps["SESSION_WS"]
