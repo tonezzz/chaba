@@ -16452,26 +16452,75 @@ async def ws_live(ws: WebSocket) -> None:
         last_error: Exception | None = None
         last_error_classified: dict[str, Any] | None = None
         candidates = model_candidates or [GEMINI_LIVE_MODEL_OVERRIDE or GEMINI_LIVE_MODEL_DEFAULT]
-        for cand in candidates:
+        retry_count = 0
+        retry_backoff_s = 0.0
+        if isinstance(sys_kv, dict):
             try:
-                await _run_with_config(str(cand), dict(base_config))
-                return
-            except _GeminiLiveModelNotFound as e:
-                last_error = e
-                last_error_classified = {"kind": "gemini_model_not_found", "detail": str(e)}
+                retry_count = int(sys_kv.get("gemini.live.retry.count") or 0)
+            except Exception:
+                retry_count = 0
+            try:
+                retry_backoff_s = float(sys_kv.get("gemini.live.retry.backoff_seconds") or 0.0)
+            except Exception:
+                retry_backoff_s = 0.0
+        if retry_count <= 0:
+            try:
+                retry_count = int(os.getenv("GEMINI_LIVE_RETRY_COUNT") or 0)
+            except Exception:
+                retry_count = 0
+        if retry_backoff_s <= 0.0:
+            try:
+                retry_backoff_s = float(os.getenv("GEMINI_LIVE_RETRY_BACKOFF_SECONDS") or 0.0)
+            except Exception:
+                retry_backoff_s = 0.0
+        if retry_backoff_s <= 0.0:
+            retry_backoff_s = 2.0
+
+        models_tried: list[str] = []
+        attempts_total = max(0, int(retry_count)) + 1
+        for attempt_i in range(attempts_total):
+            last_error = None
+            last_error_classified = None
+            models_tried = []
+            for cand in candidates:
+                cand_s = _normalize_model_name(str(cand))
+                if cand_s:
+                    models_tried.append(cand_s)
+                try:
+                    await _run_with_config(str(cand), dict(base_config))
+                    return
+                except _GeminiLiveModelNotFound as e:
+                    last_error = e
+                    last_error_classified = {"kind": "gemini_model_not_found", "detail": str(e)}
+                    continue
+                except _GeminiLiveServiceUnavailable as e:
+                    last_error = e
+                    last_error_classified = {"kind": "gemini_service_unavailable", "detail": str(e)}
+                    continue
+                except _GeminiLiveSessionFailed as e:
+                    last_error = e
+                    last_error_classified = {"kind": "gemini_session_failed", "detail": str(e)}
+                    break
+                except Exception as e:
+                    last_error = e
+                    last_error_classified = _classify_gemini_live_error(e, cand_s)
+                    break
+
+            if (last_error_classified or {}).get("kind") == "gemini_service_unavailable" and attempt_i < (attempts_total - 1):
+                sleep_s = float(retry_backoff_s) * (2.0**attempt_i)
+                sleep_s = max(0.5, min(30.0, sleep_s))
+                try:
+                    classified_retry = _classify_gemini_live_error(last_error or Exception("gemini_service_unavailable"), _normalize_model_name(str(getattr(ws.state, "gemini_live_model", None) or "")))
+                    classified_retry["models_tried"] = list(models_tried)
+                    classified_retry["retry_attempt"] = attempt_i + 1
+                    classified_retry["retry_attempts_total"] = attempts_total
+                    classified_retry["will_retry_in_s"] = sleep_s
+                    await _ws_send_json(ws, {"type": "error", **classified_retry})
+                except Exception:
+                    pass
+                await asyncio.sleep(sleep_s)
                 continue
-            except _GeminiLiveServiceUnavailable as e:
-                last_error = e
-                last_error_classified = {"kind": "gemini_service_unavailable", "detail": str(e)}
-                continue
-            except _GeminiLiveSessionFailed as e:
-                last_error = e
-                last_error_classified = {"kind": "gemini_session_failed", "detail": str(e)}
-                break
-            except Exception as e:
-                last_error = e
-                last_error_classified = _classify_gemini_live_error(e, _normalize_model_name(str(cand)))
-                break
+            break
 
         if last_error is not None:
             msg = str(last_error)
@@ -16492,6 +16541,10 @@ async def ws_live(ws: WebSocket) -> None:
                 return
 
             classified = _classify_gemini_live_error(last_error, model_used_norm)
+            try:
+                classified["models_tried"] = list(models_tried) if isinstance(models_tried, list) else []
+            except Exception:
+                pass
             # If all candidates failed due to transient unavailability, keep the WS session alive
             # by falling back to local-only mode instead of permanently failing the connection.
             fallback_local_only = True
