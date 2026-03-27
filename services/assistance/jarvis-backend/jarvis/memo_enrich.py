@@ -165,16 +165,28 @@ async def handle_followup(
         except Exception:
             return
 
-    row: list[Any] = []
-    _set(row, "active", True)
-    _set(row, "group", group)
-    _set(row, "subject", subject)
-    _set(row, "memo", memo_final)
-    _set(row, "status", "new")
-    _set(row, "result", "")
-    _set(row, "date_time", now_dt)
-    _set(row, "_created", now_dt)
-    _set(row, "_updated", now_dt)
+    def _as_bool_cell(v: Any) -> str:
+        s = str(v or "").strip().lower()
+        if s in {"true", "t", "1", "yes", "y", "on"}:
+            return "TRUE"
+        if s in {"false", "f", "0", "no", "n", "off"}:
+            return "FALSE"
+        return "TRUE" if bool(v) else "FALSE"
+
+    # Canonical fixed-width row so Sheets "Table" formatting can't shift columns.
+    # Note: memo_enrich followup doesn't allocate an id here; keep id blank.
+    row_out: list[Any] = [
+        "",  # id
+        now_dt,
+        _as_bool_cell(True),
+        "new",
+        group,
+        subject,
+        memo_final,
+        "",
+        now_dt,
+        now_dt,
+    ]
 
     tool_append = pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
     try:
@@ -182,8 +194,8 @@ async def handle_followup(
             tool_append,
             {
                 "spreadsheet_id": spreadsheet_id,
-                "range": f"{sheet_a1}!A:Z",
-                "values": [row],
+                "range": f"{sheet_a1}!A:J",
+                "values": [row_out],
                 "value_input_option": "USER_ENTERED",
                 "insert_data_option": "INSERT_ROWS",
             },

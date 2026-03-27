@@ -854,29 +854,37 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                     row.append("")
                 row[j] = value
 
+            def _as_bool_cell(v: Any) -> str:
+                s = str(v or "").strip().lower()
+                if s in {"true", "t", "1", "yes", "y", "on"}:
+                    return "TRUE"
+                if s in {"false", "f", "0", "no", "n", "off"}:
+                    return "FALSE"
+                return "TRUE" if bool(v) else "FALSE"
+
             memo_id = await _next_memo_id()
-            row: list[Any] = []
-            _set(row, "id", memo_id)
-            if active is None:
-                _set(row, "active", True)
-            else:
-                _set(row, "active", bool(active))
-            _set(row, "group", group)
-            _set(row, "subject", subject)
-            _set(row, "memo", memo_txt)
-            _set(row, "status", status)
-            _set(row, "result", result)
-            _set(row, "date_time", now_dt)
-            _set(row, "_created", now_dt)
-            _set(row, "_updated", now_dt)
+            active_cell = _as_bool_cell(True if active is None else active)
+            # Append a canonical fixed-width row so Sheets "Table" formatting can't shift columns.
+            row_out: list[Any] = [
+                memo_id,
+                now_dt,
+                active_cell,
+                status,
+                group,
+                subject,
+                memo_txt,
+                result,
+                now_dt,
+                now_dt,
+            ]
 
             tool_append = pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
             res = await mcp_tools_call(
                 tool_append,
                 {
                     "spreadsheet_id": spreadsheet_id,
-                    "range": f"{sheet_a1}!A:Z",
-                    "values": [row],
+                    "range": f"{sheet_a1}!A:J",
+                    "values": [row_out],
                     "value_input_option": "USER_ENTERED",
                     "insert_data_option": "INSERT_ROWS",
                 },
