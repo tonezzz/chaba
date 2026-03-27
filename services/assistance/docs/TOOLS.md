@@ -213,6 +213,58 @@ Purpose: manage queued “pending” actions (confirmation-based writes).
 - `pending_confirm({ confirmation_id })`
 - `pending_cancel({ confirmation_id })`
 
+## Skills Sheet tools
+
+### `system_skills_list`
+
+Returns all currently loaded skill rows from the active Skills Sheet.
+
+Request:
+
+```json
+{}
+```
+
+Response (shape):
+
+```json
+{
+  "ok": true,
+  "skills": [
+    {
+      "name": "weather_lookup",
+      "enabled": true,
+      "priority": 10,
+      "match_type": "prefix",
+      "pattern": "อากาศ",
+      "lang": "th",
+      "handler": "tool_call",
+      "arg_json": {"tool": "get_weather", "args": {}}
+    }
+  ],
+  "routing_enabled": true,
+  "sheet_name": "jarvis-skills-prod"
+}
+```
+
+### `system_skill_get`
+
+Fetch a single skill row by name.
+
+Request:
+
+```json
+{ "name": "weather_lookup" }
+```
+
+Response (shape):
+
+```json
+{ "ok": true, "skill": { "name": "weather_lookup" } }
+```
+
+Operator verification flow: `services/assistance/docs/ACTION.md`.
+
 ### Tool chart: memory.*
 
 Purpose: read/write authoritative memory items in the Memory Sheet (KV5 schema: key,value,enabled,scope,priority).

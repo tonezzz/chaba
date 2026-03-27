@@ -13,6 +13,8 @@ The `/services/assistance/` tree is the source-of-truth for all *Assistance* app
 - Operator playbook (single source of truth): `services/assistance/docs/ACTION.md`
 - Build / deploy (single source of truth): `services/assistance/docs/BUILD.md`
 - Reminders (overview + data flow): `services/assistance/docs/REMINDERS.md`
+- Skills Sheet SSOT routing: `services/assistance/docs/SYSTEM.md`
+- Deterministic tools reference: `services/assistance/docs/TOOLS.md`
 
 ## Authoritative runtime surfaces (Jarvis)
 - Operator note:

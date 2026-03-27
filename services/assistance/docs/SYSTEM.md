@@ -13,6 +13,36 @@ Notes:
 - Effective deployed base URL + operator procedures: `services/assistance/docs/ACTION.md`
 - Runtime endpoints: `GET /openapi.json`
 
+## Skills Sheet SSOT routing
+
+Jarvis can treat the **Skills Sheet** as the single source of truth (SSOT) for:
+
+- Skill routing (sheet-first dispatch)
+- System-instruction injection (inject-only rows)
+
+The active sheet is identified by sys_kv key:
+
+- `system.skills.sheet_name`
+
+Routing can be enabled/disabled by:
+
+- `system.skills.routing.enabled` (default `false`)
+
+### Skill row schema
+
+| Column | Type | Required | Description |
+|---|---:|:---:|---|
+| `name` | string | ✓ | Unique identifier for the skill (unique key) |
+| `enabled` | boolean | ✓ | `true` to activate; `false` to ignore |
+| `priority` | integer | ✓ | Lower number runs earlier (tie-break + injection order) |
+| `match_type` | enum | — | `exact`, `prefix`, `regex`, or `none` (inject-only) |
+| `pattern` | string | — | Match pattern, interpreted per `match_type` |
+| `lang` | string | — | Optional language tag (e.g. `th`, `en`) |
+| `handler` | enum | ✓ | `tool_call`, `inject`, or `passthrough` |
+| `arg_json` | JSON string | — | Optional handler args (for `tool_call`: `{ "tool": "...", "args": {...} }`) |
+
+Operator procedure (update → reload → verify): `services/assistance/docs/ACTION.md`.
+
 ## System KV keys
 
 ### `system.sheets` (required)

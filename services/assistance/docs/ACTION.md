@@ -90,6 +90,42 @@ Doc drift policy:
   - `GET /openapi.json` (runtime API surface)
   - `services/assistance/docs/ACTION.md` (operator runbooks)
 
+## Runbook: Skills Sheet SSOT routing
+
+Background + schema: `services/assistance/docs/SYSTEM.md`.
+
+### Update the Skills Sheet
+
+- Edit rows in the sheet identified by sys_kv key `system.skills.sheet_name`.
+- Keep `name` unique.
+- Use `enabled=false` to disable without deleting.
+- Use `match_type=none` for inject-only rows.
+- Ensure `arg_json` is valid JSON when present.
+
+### Apply: system reload
+
+- Trigger a backend reload (UI: Settings → System → Reload).
+
+### Verify
+
+1) List loaded skills:
+
+```
+/tool system_skills_list {}
+```
+
+2) Fetch a specific skill:
+
+```
+/tool system_skill_get { "name": "<skill-name>" }
+```
+
+3) Compat endpoint (clients):
+
+```bash
+curl http://127.0.0.1:18018/config/voice_commands
+```
+
 ## 2-computer workflow (anti-drift mechanism)
 
 Goal:

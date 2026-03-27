@@ -41,6 +41,7 @@ graph TD
 - Build/deploy (SSOT): `services/assistance/docs/BUILD.md`
 - System notes: `services/assistance/docs/SYSTEM.md`
 - WS protocol/tools: `services/assistance/docs/TOOLS.md`
+- Skills Sheet SSOT routing: `services/assistance/docs/SYSTEM.md`
 
 ## Conventions
 
