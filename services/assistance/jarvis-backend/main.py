@@ -15089,7 +15089,8 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
                 s0 = str(text or "").strip()
                 # Normalize common copy/paste oddities.
                 s = re.sub(r"[\u00A0\u200B-\u200D\uFEFF]+", "", s0)
-                s = " ".join(s.split())
+                if not s.lstrip().startswith("/"):
+                    s = " ".join(s.split())
             except Exception:
                 s = str(text or "").strip()
 
@@ -15155,12 +15156,40 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
                 continue
 
             if s.startswith("/"):
-                m = re.match(r"^/(?:sys|system)\s+(set|dry)\s+(.+)$", s, flags=re.IGNORECASE)
-                if m:
-                    dry_run = str(m.group(1) or "").strip().lower() == "dry"
-                    rest = str(m.group(2) or "").strip()
-                    eq = rest.find("=")
-                    if eq > 0:
+                # Support pasting multiple /sys commands at once (one per line).
+                cmd_lines = [ln.strip() for ln in str(s).splitlines() if str(ln or "").strip()]
+                if not cmd_lines:
+                    cmd_lines = [str(s).strip()]
+
+                handled_any = False
+                all_sys = True
+                for ln in cmd_lines:
+                    if not re.match(r"^/(?:sys|system)\b", ln, flags=re.IGNORECASE):
+                        all_sys = False
+                        break
+
+                if all_sys:
+                    for ln in cmd_lines:
+                        m = re.match(r"^/(?:sys|system)\s+(set|dry)\s+(.+)$", ln, flags=re.IGNORECASE)
+                        if not m:
+                            continue
+                        dry_run = str(m.group(1) or "").strip().lower() == "dry"
+                        rest = str(m.group(2) or "").strip()
+                        eq = rest.find("=")
+                        if eq <= 0:
+                            await _ws_send_json(
+                                ws,
+                                {
+                                    "type": "error",
+                                    "kind": "invalid_sys_command",
+                                    "message": "invalid_sys_command",
+                                    "detail": "Expected /sys set <key>=<value>",
+                                    "instance_id": INSTANCE_ID,
+                                },
+                                trace_id=trace_id2,
+                            )
+                            handled_any = True
+                            continue
                         key = rest[:eq].strip()
                         value = rest[eq + 1 :].strip()
                         # Route via deterministic local tools.
@@ -15176,19 +15205,9 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
                             },
                             trace_id=trace_id2,
                         )
+                        handled_any = True
+                    if handled_any:
                         continue
-                    await _ws_send_json(
-                        ws,
-                        {
-                            "type": "error",
-                            "kind": "invalid_sys_command",
-                            "message": "invalid_sys_command",
-                            "detail": "Expected /sys set <key>=<value>",
-                            "instance_id": INSTANCE_ID,
-                        },
-                        trace_id=trace_id2,
-                    )
-                    continue
 
                 # Unknown slash command: handle locally (do not forward to Gemini).
                 await _ws_send_json(
