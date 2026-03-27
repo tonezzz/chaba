@@ -15626,11 +15626,21 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                     try:
                         sys_kv = getattr(ws.state, "sys_kv", None)
                         if _ui_log_transcript_enabled(sys_kv if isinstance(sys_kv, dict) else None):
+                            try:
+                                _sid = getattr(ws.state, "session_id", None)
+                            except Exception:
+                                _sid = None
+                            try:
+                                _tid = getattr(ws.state, "trace_id", None)
+                            except Exception:
+                                _tid = None
                             _append_ui_log_entries(
                                 [
                                     {
                                         "type": "transcript",
                                         "ts": int(time.time()),
+                                        "session_id": str(_sid or "").strip() or None,
+                                        "trace_id": str(_tid or "").strip() or None,
                                         "source": "input",
                                         "text": _truncate_capture_text(_redact_capture_text(str(text))),
                                     }
@@ -15680,11 +15690,21 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                         try:
                             sys_kv = getattr(ws.state, "sys_kv", None)
                             if _ui_log_transcript_enabled(sys_kv if isinstance(sys_kv, dict) else None):
+                                try:
+                                    _sid = getattr(ws.state, "session_id", None)
+                                except Exception:
+                                    _sid = None
+                                try:
+                                    _tid = getattr(ws.state, "trace_id", None)
+                                except Exception:
+                                    _tid = None
                                 _append_ui_log_entries(
                                     [
                                         {
                                             "type": "transcript",
                                             "ts": int(time.time()),
+                                            "session_id": str(_sid or "").strip() or None,
+                                            "trace_id": str(_tid or "").strip() or None,
                                             "source": "input",
                                             "text": _truncate_capture_text(_redact_capture_text(str(text))),
                                         }
@@ -15702,11 +15722,21 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                         try:
                             sys_kv = getattr(ws.state, "sys_kv", None)
                             if _ui_log_transcript_enabled(sys_kv if isinstance(sys_kv, dict) else None):
+                                try:
+                                    _sid = getattr(ws.state, "session_id", None)
+                                except Exception:
+                                    _sid = None
+                                try:
+                                    _tid = getattr(ws.state, "trace_id", None)
+                                except Exception:
+                                    _tid = None
                                 _append_ui_log_entries(
                                     [
                                         {
                                             "type": "transcript",
                                             "ts": int(time.time()),
+                                            "session_id": str(_sid or "").strip() or None,
+                                            "trace_id": str(_tid or "").strip() or None,
                                             "source": "output",
                                             "text": _truncate_capture_text(_redact_capture_text(str(text))),
                                         }
