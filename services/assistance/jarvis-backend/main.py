@@ -828,6 +828,21 @@ def _truncate_capture_text(text: str, limit: int = 1800) -> str:
     return s[:limit].rstrip() + "…"
 
 
+def _ui_log_transcript_enabled(sys_kv: dict[str, Any] | None) -> bool:
+    try:
+        if _sys_kv_bool(sys_kv, "ui.log.transcript.enabled", default=False):
+            return True
+    except Exception:
+        pass
+    try:
+        raw = str(os.getenv("JARVIS_UI_LOG_TRANSCRIPT_ENABLED") or "").strip().lower()
+        if raw in {"1", "true", "yes", "y", "on"}:
+            return True
+    except Exception:
+        pass
+    return False
+
+
 async def _maybe_capture_to_memory(ws: WebSocket, *, key: str, value: str, source: str) -> None:
     sys_kv = getattr(ws.state, "sys_kv", None)
     if not _memory_capture_enabled(sys_kv):
@@ -15608,6 +15623,21 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                     except Exception as e:
                         logger.info("live_transcription_dispatch_failed error=%s", str(e))
                     await ws.send_json({"type": "transcript", "text": str(text), "source": "input"})
+                    try:
+                        sys_kv = getattr(ws.state, "sys_kv", None)
+                        if _ui_log_transcript_enabled(sys_kv if isinstance(sys_kv, dict) else None):
+                            _append_ui_log_entries(
+                                [
+                                    {
+                                        "type": "transcript",
+                                        "ts": int(time.time()),
+                                        "source": "input",
+                                        "text": _truncate_capture_text(_redact_capture_text(str(text))),
+                                    }
+                                ]
+                            )
+                    except Exception:
+                        pass
                     continue
             elif not logged_shape:
                 # One-time debug to understand server message fields.
@@ -15647,6 +15677,21 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                         except Exception as e:
                             logger.info("input_transcript_dispatch_failed error=%s", str(e))
                         await ws.send_json({"type": "transcript", "text": str(text), "source": "input"})
+                        try:
+                            sys_kv = getattr(ws.state, "sys_kv", None)
+                            if _ui_log_transcript_enabled(sys_kv if isinstance(sys_kv, dict) else None):
+                                _append_ui_log_entries(
+                                    [
+                                        {
+                                            "type": "transcript",
+                                            "ts": int(time.time()),
+                                            "source": "input",
+                                            "text": _truncate_capture_text(_redact_capture_text(str(text))),
+                                        }
+                                    ]
+                                )
+                        except Exception:
+                            pass
                         continue
 
                 output_tr = getattr(server_content, "output_transcription", None)
@@ -15654,6 +15699,21 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                     text = getattr(output_tr, "text", None)
                     if text:
                         await ws.send_json({"type": "transcript", "text": str(text), "source": "output"})
+                        try:
+                            sys_kv = getattr(ws.state, "sys_kv", None)
+                            if _ui_log_transcript_enabled(sys_kv if isinstance(sys_kv, dict) else None):
+                                _append_ui_log_entries(
+                                    [
+                                        {
+                                            "type": "transcript",
+                                            "ts": int(time.time()),
+                                            "source": "output",
+                                            "text": _truncate_capture_text(_redact_capture_text(str(text))),
+                                        }
+                                    ]
+                                )
+                        except Exception:
+                            pass
                         continue
 
                 model_turn = getattr(server_content, "model_turn", None)
