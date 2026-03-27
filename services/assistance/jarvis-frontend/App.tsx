@@ -930,7 +930,9 @@ export default function App() {
 			const okPrefix =
 				name.startsWith("system_") ||
 				name.startsWith("pending_") ||
-				name.startsWith("macro_");
+				name.startsWith("macro_") ||
+				name.startsWith("current_news_") ||
+				name.startsWith("news_follow_");
 			if (!okPrefix) return { name, args: { __invalid_tool_prefix: true } };
 			if (!rest) return { name, args: {} };
 			try {
