@@ -15157,7 +15157,15 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
 
             if s.startswith("/"):
                 # Support pasting multiple /sys commands at once (one per line).
-                cmd_lines = [ln.strip() for ln in str(s).splitlines() if str(ln or "").strip()]
+                s_cmd = str(s)
+                # Some clients collapse newlines into spaces. If multiple /sys commands are present
+                # in one line, split them by inserting newlines before each subsequent /sys token.
+                try:
+                    s_cmd = re.sub(r"\s+/(sys|system)\b", r"\n/\1", s_cmd, flags=re.IGNORECASE)
+                except Exception:
+                    s_cmd = str(s)
+
+                cmd_lines = [ln.strip() for ln in str(s_cmd).splitlines() if str(ln or "").strip()]
                 if not cmd_lines:
                     cmd_lines = [str(s).strip()]
 
