@@ -15363,8 +15363,32 @@ async def _ws_local_only_loop(ws: WebSocket) -> None:
                         },
                         trace_id=trace_id2,
                     )
-                except Exception:
-                    pass
+                    try:
+                        await _ws_send_json(
+                            ws,
+                            {
+                                "type": "text",
+                                "text": "ui test: emitted ui card",
+                                "instance_id": INSTANCE_ID,
+                            },
+                            trace_id=trace_id2,
+                        )
+                    except Exception:
+                        pass
+                except Exception as e:
+                    logger.warning("ui_test_card_emit_failed_local_only error=%s", e)
+                    try:
+                        await _ws_send_json(
+                            ws,
+                            {
+                                "type": "text",
+                                "text": "ui test: failed to emit ui card",
+                                "instance_id": INSTANCE_ID,
+                            },
+                            trace_id=trace_id2,
+                        )
+                    except Exception:
+                        pass
                 continue
 
             handled = await _dispatch_sub_agents(ws, text)
