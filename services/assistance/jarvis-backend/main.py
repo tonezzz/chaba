@@ -8717,6 +8717,7 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             "system_skills_bootstrap_queue",
             "system_run_macro",
             "google_account_relink_queue",
+            "memo_update_queue",
         }
         if name not in allowed and not name.startswith("macro_"):
             try:
