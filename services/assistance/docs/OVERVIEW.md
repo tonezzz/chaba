@@ -41,6 +41,7 @@ graph TD
 - Build/deploy (SSOT): `services/assistance/docs/BUILD.md`
 - System notes: `services/assistance/docs/SYSTEM.md`
 - WS protocol/tools: `services/assistance/docs/TOOLS.md`
+- Operator verification endpoint: `services/assistance/docs/verify-status.md`
 
 ## Conventions
 
