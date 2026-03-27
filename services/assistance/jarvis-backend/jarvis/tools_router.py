@@ -261,8 +261,6 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
 
         action = str(args.get("action") or "").strip()
         payload = args.get("payload")
-        if not action:
-            raise HTTPException(status_code=400, detail="missing_action")
         if payload is None:
             payload = {}
         if not isinstance(payload, dict):
@@ -276,6 +274,36 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             "google_account_relink",
             "memo_update",
         }
+
+        supported_actions = {
+            "system_reload": {
+                "payload": {"mode": "full|macros|macros_only"},
+                "notes": "Queues a system reload (pending_confirm required).",
+            },
+            "bundle_publish_macro_reload": {
+                "payload": {"macro": {"name": "...", "enabled": True, "steps": []}, "reload_mode": "full|macros|macros_only"},
+                "notes": "Publishes macro row then reloads (pending_confirm required).",
+            },
+            "bundle_seed_macros": {
+                "payload": {"macros": [{"name": "...", "steps": []}], "reload_mode": "full|macros|macros_only"},
+                "notes": "Seeds macros then reloads (pending_confirm required).",
+            },
+            "bundle_bootstrap_skills": {
+                "payload": {"spreadsheet_id": "...", "sheet_name": "skills", "seed_name": "skill_ping"},
+                "notes": "Creates/initializes skills tab + seed row then reloads.",
+            },
+            "google_account_relink": {
+                "payload": {"auth_url": "...", "redirect_uri": "...", "token_path": "...", "scopes": []},
+                "notes": "Queues relink flow; confirm step expects pasted redirected url/code.",
+            },
+            "memo_update": {
+                "payload": {"id": 123, "memo": "...", "group": "...", "subject": "...", "status": "...", "result": "...", "active": True},
+                "notes": "Updates a memo row by stable id (pending_confirm required).",
+            },
+        }
+
+        if (not action) or action.lower() in {"help", "list", "supported"}:
+            return {"ok": True, "supported_actions": supported_actions}
         if action not in allowlisted:
             raise HTTPException(status_code=403, detail={"error": "action_not_allowed", "action": action})
 
@@ -315,7 +343,13 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             payload = proposed
 
         confirmation_id = create_pending_write(str(session_id), action, payload)
-        return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "action": action}
+        return {
+            "ok": True,
+            "queued": True,
+            "confirmation_id": confirmation_id,
+            "action": action,
+            "supported_actions": supported_actions,
+        }
 
     if tool_name == "time_now":
         ZoneInfo = deps["ZoneInfo"]

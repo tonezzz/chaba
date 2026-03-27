@@ -2016,17 +2016,26 @@ async def _load_skills_from_sheet(*, sys_kv: Optional[dict[str, Any]] = None) ->
         decls.append(
             {
                 "name": "system_write_queue",
-                "description": "Queue an allowlisted pending-confirm write action (system_-prefixed universal queue).",
+                "description": "Queue an allowlisted pending-confirm write action (system_-prefixed universal queue). If action is omitted, returns supported actions.",
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "action": {
                             "type": "string",
-                            "description": "Allowlisted action name (e.g. system_reload, memo_update, bundle_publish_macro_reload, bundle_seed_macros, bundle_bootstrap_skills, google_account_relink).",
+                            "enum": [
+                                "system_reload",
+                                "bundle_publish_macro_reload",
+                                "bundle_seed_macros",
+                                "bundle_bootstrap_skills",
+                                "google_account_relink",
+                                "memo_update",
+                                "help",
+                            ],
+                            "description": "Allowlisted action name. Use 'help' (or omit) to list supported actions.",
                         },
                         "payload": {"type": "object", "description": "Action payload (validated per action)."},
                     },
-                    "required": ["action"],
+                    "required": [],
                 },
             }
         )
