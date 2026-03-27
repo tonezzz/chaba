@@ -955,7 +955,7 @@ def _is_th_memo_edit_trigger(text: str) -> bool:
     s = " ".join(str(text or "").strip().split())
     if not s:
         return False
-    return bool(re.match(r"^(?:ปรับปรุง|แก้ไข)\s*(?:เมโม|เมมโม|เมโม่|เมม)\b", s))
+    return bool(re.match(r"^(?:ปรับปรุง|แก้ไข)\s*(?:เมโม|เมมโม|เมโม่|เมม)\s*$", s))
 
 
 async def _memo_summarize_item(ws: WebSocket, memo_item: dict[str, Any]) -> str:
