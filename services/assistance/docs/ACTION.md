@@ -11,6 +11,7 @@
 - [Preflight: confirm you’re using the latest ACTION.md](#preflight-confirm-youre-using-the-latest-actionmd)
 - [Post-push status (do I need to redeploy?)](#post-push-status-do-i-need-to-redeploy)
 - [Runbooks](#runbooks)
+- [Update OVERVIEW.md (diagram + links)](#update-overviewmd-diagram--links)
 - [Important warnings](#important-warnings)
 - [Decision log (keep to 3 lines max)](#decision-log-keep-to-3-lines-max)
 - [Improvements (pair-working backlog)](#improvements-pair-working-backlog)
@@ -142,6 +143,8 @@ Linked runbooks (map):
   - Label: `docs:runbook`
 - `services/assistance/docs/TOOLS.md`
   - Label: `docs:runbook`
+- `services/assistance/docs/OVERVIEW.md`
+  - Label: `docs:runbook`
 
 ### Pending Jobs (capture from chat; don’t lose work)
 Use this whenever:
@@ -262,6 +265,28 @@ Update rule:
 - After you run any ACTION.md procedure, always come back here and set **Current pick** to the *single* next move.
 
 ## Runbooks
+
+### Update OVERVIEW.md (diagram + links)
+#### Goal
+- Keep `services/assistance/docs/OVERVIEW.md` as the SSOT for the current project overview + latest architecture diagram.
+
+#### When to run
+- After any meaningful architecture, routing, deploy, or stack layout change.
+- Before handing off work to another chat.
+
+#### Checklist
+1. Update `services/assistance/docs/OVERVIEW.md`:
+   - Update **Current architecture (latest)** Mermaid diagram.
+   - Update **Links** (new runbooks, stacks, dashboards).
+   - Update **Conventions** if a new rule was discovered.
+   - Update **Last updated** fields.
+2. If the change was driven by a discussion/decision:
+   - Add/attach the relevant GitHub Issue link under **Last updated**.
+3. Sanity check:
+   - Confirm Mermaid renders on GitHub (preview in PR or open the file on GitHub).
+
+#### Done
+- `services/assistance/docs/OVERVIEW.md` reflects the current system and includes an up-to-date diagram.
 
 ### SNA for GitHub Actions watcher (deployed)
 #### Inputs you must decide (fill before running)
