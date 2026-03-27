@@ -248,6 +248,44 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         confirmation_id = create_pending_write(str(session_id), "memo_update", proposed)
         return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "id": int(memo_id)}
 
+    if tool_name == "system_skill_upsert_queue":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        session_ws = deps["SESSION_WS"]
+        feature_enabled = deps["feature_enabled"]
+        safe_int = deps["safe_int"]
+        create_pending_write = deps["create_pending_write"]
+
+        ws = session_ws.get(str(session_id)) if session_id else None
+        if ws is None:
+            raise HTTPException(status_code=400, detail="missing_session_ws")
+
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        if not feature_enabled("skills", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=False):
+            raise HTTPException(status_code=403, detail="feature_disabled:skills")
+
+        name = str(args.get("name") or "").strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="missing_name")
+
+        enabled_raw = args.get("enabled")
+        enabled = True if enabled_raw is None else bool(enabled_raw)
+        priority = int(safe_int(args.get("priority"), 0))
+        scope = str(args.get("scope") or "global").strip() or "global"
+        content = str(args.get("content") or "")
+        if not content.strip():
+            raise HTTPException(status_code=400, detail="missing_content")
+
+        payload = {
+            "name": name,
+            "enabled": bool(enabled),
+            "priority": int(priority),
+            "scope": scope,
+            "content": content,
+        }
+        confirmation_id = create_pending_write(str(session_id), "skill_upsert", payload)
+        return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "name": name}
+
     if tool_name == "system_write_queue":
         if not session_id:
             raise HTTPException(status_code=400, detail="missing_session_id")
@@ -273,6 +311,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             "bundle_bootstrap_skills",
             "google_account_relink",
             "memo_update",
+            "skill_upsert",
         }
 
         supported_actions = {
@@ -299,6 +338,10 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             "memo_update": {
                 "payload": {"id": 123, "memo": "...", "group": "...", "subject": "...", "status": "...", "result": "...", "active": True},
                 "notes": "Updates a memo row by stable id (pending_confirm required).",
+            },
+            "skill_upsert": {
+                "payload": {"name": "...", "enabled": True, "priority": 10, "scope": "global", "content": "..."},
+                "notes": "Upserts a row in the skills sheet by name (pending_confirm required).",
             },
         }
 
@@ -341,6 +384,24 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             if "active" in payload and payload.get("active") is not None:
                 proposed["active"] = bool(payload.get("active"))
             payload = proposed
+        elif action == "skill_upsert":
+            name = str(payload.get("name") or "").strip()
+            if not name:
+                raise HTTPException(status_code=400, detail="missing_name")
+            content = str(payload.get("content") or "")
+            if not content.strip():
+                raise HTTPException(status_code=400, detail="missing_content")
+            enabled_raw = payload.get("enabled")
+            enabled = True if enabled_raw is None else bool(enabled_raw)
+            priority = int(safe_int(payload.get("priority"), 0))
+            scope = str(payload.get("scope") or "global").strip() or "global"
+            payload = {
+                "name": name,
+                "enabled": bool(enabled),
+                "priority": int(priority),
+                "scope": scope,
+                "content": content,
+            }
 
         confirmation_id = create_pending_write(str(session_id), action, payload)
         return {
@@ -1585,6 +1646,13 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             preview["targets"] = [{"kind": "google_sheet", "action": "memo_update", "id": memo_id}]
             preview["summary"] = f"memo_update id={memo_id}"
             preview["details"] = {"id": memo_id, "proposed": payload}
+        elif action == "skill_upsert" and isinstance(payload, dict):
+            name = payload.get("name")
+            preview["risk"] = "high"
+            preview["writes_count"] = 1
+            preview["targets"] = [{"kind": "google_sheet", "action": "skill_upsert", "name": name}]
+            preview["summary"] = f"skill_upsert name={name}"
+            preview["details"] = {"name": name, "proposed": payload}
         else:
             preview["risk"] = "high"
             preview["summary"] = action or "pending"
@@ -1650,7 +1718,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                     await ws.send_json({"type": "text", "text": done_txt})
                 except Exception:
                     pass
-                return {"ok": True, "reloaded": True, "mode": mode, "sys_kv_keys": keys or [], "macros_count": len(macros or {})}
+                return {"ok": True, "reloaded": True, "mode": mode, "sys_kv_keys": keys, "macros_count": len(macros or {})}
             # For now, partial modes are treated as full reload (safe/consistent).
             if system_reload_impl is not None:
                 out2 = await system_reload_impl(ws)
@@ -2264,6 +2332,138 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             except Exception:
                 pass
             return {"ok": True, "updated": True, "id": int(memo_id), "row": int(row_num)}
+
+        if action == "skill_upsert":
+            if not isinstance(payload, dict):
+                raise HTTPException(status_code=400, detail="invalid_pending_payload")
+
+            ws = session_ws.get(str(session_id)) if isinstance(session_ws, dict) else None
+            if ws is None:
+                raise HTTPException(status_code=400, detail="missing_session_ws")
+
+            system_spreadsheet_id = deps["system_spreadsheet_id"]
+            system_skills_sheet_name = deps["system_skills_sheet_name"]
+            pick_sheets_tool_name = deps["pick_sheets_tool_name"]
+            mcp_tools_call = deps["mcp_tools_call"]
+            mcp_text_json = deps["mcp_text_json"]
+            safe_int = deps["safe_int"]
+
+            sys_kv0 = getattr(ws.state, "sys_kv", None)
+            sys_kv_dict0 = sys_kv0 if isinstance(sys_kv0, dict) else None
+            spreadsheet_id = str(system_spreadsheet_id() or "").strip()
+            if not spreadsheet_id:
+                raise HTTPException(status_code=400, detail="missing_system_spreadsheet_id")
+            sheet_name = str(system_skills_sheet_name(sys_kv=sys_kv_dict0) or "").strip() or "skills"
+
+            tool_get = pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+            res_get = await mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name}!A:Z"})
+            parsed_get = mcp_text_json(res_get)
+            values = parsed_get.get("values") if isinstance(parsed_get, dict) else None
+            data = parsed_get.get("data") if isinstance(parsed_get, dict) else None
+            if not isinstance(values, list) and isinstance(data, dict):
+                values = data.get("values")
+            if not isinstance(values, list) or not values:
+                raise HTTPException(status_code=400, detail="skills_sheet_empty")
+
+            header = [str(c or "").strip().lower() for c in (values[0] if isinstance(values[0], list) else [])]
+            idx: dict[str, int] = {}
+            for i, col in enumerate(header):
+                if col and col not in idx:
+                    idx[col] = int(i)
+
+            required_cols = ["name", "enabled", "priority", "scope", "content"]
+            missing = [c for c in required_cols if c not in idx]
+            if missing:
+                raise HTTPException(status_code=400, detail={"skills_sheet_missing_columns": missing})
+
+            def _cell(row: list[Any], col: str) -> Any:
+                j = idx.get(str(col or "").strip().lower())
+                if j is None or j < 0 or j >= len(row):
+                    return ""
+                return row[j]
+
+            def _col_letter(col_idx0: int) -> str:
+                n = int(col_idx0) + 1
+                if n <= 0:
+                    return "A"
+                out = ""
+                while n > 0:
+                    n, r = divmod(n - 1, 26)
+                    out = chr(ord("A") + r) + out
+                return out or "A"
+
+            name = str(payload.get("name") or "").strip()
+            if not name:
+                raise HTTPException(status_code=400, detail="missing_name")
+            content = str(payload.get("content") or "")
+            if not content.strip():
+                raise HTTPException(status_code=400, detail="missing_content")
+
+            enabled_raw = payload.get("enabled")
+            enabled = True if enabled_raw is None else bool(enabled_raw)
+            priority = int(safe_int(payload.get("priority"), 0))
+            scope = str(payload.get("scope") or "global").strip() or "global"
+            enabled_cell = "TRUE" if enabled else "FALSE"
+
+            max_col = max(int(idx[c]) for c in required_cols)
+            row_out: list[Any] = [""] * (max_col + 1)
+            row_out[int(idx["name"])] = name
+            row_out[int(idx["enabled"])] = enabled_cell
+            row_out[int(idx["priority"])] = str(int(priority))
+            row_out[int(idx["scope"])] = scope
+            row_out[int(idx["content"])] = content
+
+            found_row_num: int | None = None
+            for i, r in enumerate(values[1:], start=2):
+                if not isinstance(r, list):
+                    continue
+                nm = str(_cell(r, "name") or "").strip()
+                if nm == name:
+                    found_row_num = int(i)
+                    break
+
+            tool_update = pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+            tool_append = pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+
+            if found_row_num is not None:
+                start_col = _col_letter(0)
+                end_col = _col_letter(max_col)
+                rng = f"{sheet_name}!{start_col}{found_row_num}:{end_col}{found_row_num}"
+                res_upd = await mcp_tools_call(
+                    tool_update,
+                    {
+                        "spreadsheet_id": spreadsheet_id,
+                        "range": rng,
+                        "values": [row_out],
+                        "value_input_option": "RAW",
+                    },
+                )
+                return {
+                    "ok": True,
+                    "updated": True,
+                    "name": name,
+                    "row": int(found_row_num),
+                    "sheet": sheet_name,
+                    "range": rng,
+                    "response": mcp_text_json(res_upd),
+                }
+
+            res_app = await mcp_tools_call(
+                tool_append,
+                {
+                    "spreadsheet_id": spreadsheet_id,
+                    "range": f"{sheet_name}!A:Z",
+                    "values": [row_out],
+                    "value_input_option": "RAW",
+                },
+            )
+            return {
+                "ok": True,
+                "created": True,
+                "name": name,
+                "sheet": sheet_name,
+                "response": mcp_text_json(res_app),
+            }
         if action == "mcp_tools_call":
             if not isinstance(payload, dict):
                 raise HTTPException(status_code=400, detail="invalid_pending_payload")

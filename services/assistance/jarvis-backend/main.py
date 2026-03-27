@@ -2059,6 +2059,24 @@ async def _load_skills_from_sheet(*, sys_kv: Optional[dict[str, Any]] = None) ->
                 },
             }
         )
+
+        decls.append(
+            {
+                "name": "system_skill_upsert_queue",
+                "description": "Queue an upsert to the skills sheet by skill name (Pending-confirmed write).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string", "description": "Skill name (unique key)."},
+                        "enabled": {"type": "boolean", "description": "Enabled flag (default true)."},
+                        "priority": {"type": "integer", "description": "Lower runs earlier (default 0)."},
+                        "scope": {"type": "string", "description": "Skill scope (default global)."},
+                        "content": {"type": "string", "description": "Skill instruction content."},
+                    },
+                    "required": ["name", "content"],
+                },
+            }
+        )
     return out
 
 
@@ -8767,6 +8785,7 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             "memo_update_queue",
             "system_memo_update_queue",
             "system_write_queue",
+            "system_skill_upsert_queue",
         }
         if name not in allowed and not name.startswith("macro_"):
             try:
