@@ -33,15 +33,10 @@ After saving sheet changes, trigger a reload so the backend picks them up:
 2. Confirm the reload prompt.
 3. Wait for the success toast / status indicator.
 
-**Option B — API**
-```bash
-curl -X POST http://127.0.0.1:18018/jarvis/api/system/reload
-```
+**Option B — API (deployment-specific)**
 
-Expected response:
-```json
-{ "ok": true, "reloaded_at": "2026-03-27T05:00:00Z" }
-```
+If your deployment exposes an admin HTTP API for reload, use the endpoint documented for that environment.
+The exact path and port can vary by stack; prefer the admin UI above when available.
 
 > A reload does **not** restart the WebSocket session; active clients reconnect automatically.
 

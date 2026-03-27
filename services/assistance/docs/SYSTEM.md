@@ -34,7 +34,7 @@ The sheet to load is identified by the `system.skills.sheet_name` key in `sys_kv
 |-------|-----------|
 | `exact` | Case-folded exact string match |
 | `prefix` | Transcript starts with `pattern` (after trimming) |
-| `regex` | Full ECMAScript regex match against the transcript |
+| `regex` | Regular expression match against the transcript (server-side; Python `re` semantics) |
 | `none` | Row is never matched at runtime (inject-only rows use this) |
 
 ### Example rows

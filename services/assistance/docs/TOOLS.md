@@ -146,7 +146,7 @@ Tools can be invoked in three ways:
 |--------|---------|
 | Direct WS message | `/tool system_skills_list {}` |
 | Gemini model tool call | Model emits a `functionCall` that the dispatcher resolves |
-| HTTP (debug only) | `POST /jarvis/api/tool/invoke` `{ "name": "system_skills_list", "args": {} }` |
+| HTTP (debug only; deployment-specific) | If enabled in your environment, use the documented admin/debug HTTP endpoint for tool invocation |
 
 ---
 
