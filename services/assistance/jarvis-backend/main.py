@@ -2015,6 +2015,24 @@ async def _load_skills_from_sheet(*, sys_kv: Optional[dict[str, Any]] = None) ->
 
         decls.append(
             {
+                "name": "system_write_queue",
+                "description": "Queue an allowlisted pending-confirm write action (system_-prefixed universal queue).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "description": "Allowlisted action name (e.g. system_reload, memo_update, bundle_publish_macro_reload, bundle_seed_macros, bundle_bootstrap_skills, google_account_relink).",
+                        },
+                        "payload": {"type": "object", "description": "Action payload (validated per action)."},
+                    },
+                    "required": ["action"],
+                },
+            }
+        )
+
+        decls.append(
+            {
                 "name": "system_memo_update_queue",
                 "description": "Queue an update to an existing memo entry (Pending-confirmed write).",
                 "parameters": {
@@ -8739,6 +8757,7 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             "google_account_relink_queue",
             "memo_update_queue",
             "system_memo_update_queue",
+            "system_write_queue",
         }
         if name not in allowed and not name.startswith("macro_"):
             try:

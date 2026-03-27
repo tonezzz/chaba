@@ -248,6 +248,75 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         confirmation_id = create_pending_write(str(session_id), "memo_update", proposed)
         return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "id": int(memo_id)}
 
+    if tool_name == "system_write_queue":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        session_ws = deps["SESSION_WS"]
+        create_pending_write = deps["create_pending_write"]
+        safe_int = deps["safe_int"]
+
+        ws = session_ws.get(str(session_id)) if session_id else None
+        if ws is None:
+            raise HTTPException(status_code=400, detail="missing_session_ws")
+
+        action = str(args.get("action") or "").strip()
+        payload = args.get("payload")
+        if not action:
+            raise HTTPException(status_code=400, detail="missing_action")
+        if payload is None:
+            payload = {}
+        if not isinstance(payload, dict):
+            raise HTTPException(status_code=400, detail="invalid_payload")
+
+        allowlisted = {
+            "system_reload",
+            "bundle_publish_macro_reload",
+            "bundle_seed_macros",
+            "bundle_bootstrap_skills",
+            "google_account_relink",
+            "memo_update",
+        }
+        if action not in allowlisted:
+            raise HTTPException(status_code=403, detail={"error": "action_not_allowed", "action": action})
+
+        # Minimal per-action validation to prevent footguns.
+        if action == "system_reload":
+            mode = str(payload.get("mode") or "full").strip().lower() or "full"
+            if mode not in {"full", "macros", "macros_only"}:
+                raise HTTPException(status_code=400, detail={"error": "invalid_mode", "mode": mode})
+            payload = {"mode": mode}
+        elif action == "bundle_publish_macro_reload":
+            macro = payload.get("macro")
+            if not isinstance(macro, dict):
+                raise HTTPException(status_code=400, detail="missing_macro")
+            macro_name = str(macro.get("name") or "").strip()
+            if not macro_name:
+                raise HTTPException(status_code=400, detail="missing_macro_name")
+        elif action == "bundle_seed_macros":
+            macros = payload.get("macros")
+            if not isinstance(macros, list) or not macros:
+                raise HTTPException(status_code=400, detail="missing_macros")
+        elif action == "google_account_relink":
+            auth_url = str(payload.get("auth_url") or "").strip()
+            redirect_uri = str(payload.get("redirect_uri") or "").strip()
+            token_path = str(payload.get("token_path") or "").strip()
+            if not auth_url or not redirect_uri or not token_path:
+                raise HTTPException(status_code=400, detail="missing_relink_fields")
+        elif action == "memo_update":
+            memo_id = safe_int(payload.get("id"), 0)
+            if memo_id <= 0:
+                raise HTTPException(status_code=400, detail="missing_id")
+            proposed: dict[str, Any] = {"id": int(memo_id)}
+            for k in ("memo", "group", "subject", "status", "result"):
+                if k in payload and payload.get(k) is not None:
+                    proposed[k] = str(payload.get(k) or "")
+            if "active" in payload and payload.get("active") is not None:
+                proposed["active"] = bool(payload.get("active"))
+            payload = proposed
+
+        confirmation_id = create_pending_write(str(session_id), action, payload)
+        return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "action": action}
+
     if tool_name == "time_now":
         ZoneInfo = deps["ZoneInfo"]
         datetime = deps["datetime"]
