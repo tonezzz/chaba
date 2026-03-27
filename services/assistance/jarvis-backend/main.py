@@ -15004,6 +15004,7 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
         else:
             msg = await ws.receive_json()
         trace_id = _ws_capture_trace_id(ws, msg)
+        trace_id2 = _ws_ensure_trace_id(ws, trace_id)
         try:
             await _ws_record(ws, "in", msg)
         except Exception:
