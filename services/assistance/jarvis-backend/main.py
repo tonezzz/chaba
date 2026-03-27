@@ -9890,20 +9890,8 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
                 ws.state.active_agent_id = agent_id_norm
                 ws.state.active_agent_until_ts = int(time.time()) + AGENT_CONTINUE_WINDOW_SECONDS
             return handled
-        if agent_id_norm == "current-news":
-            handled = await _handle_current_news_trigger(ws, text)
-            if handled:
-                ws.state.active_agent_id = agent_id_norm
-                ws.state.active_agent_until_ts = int(time.time()) + AGENT_CONTINUE_WINDOW_SECONDS
-            return handled
         if agent_id_norm == "deep-research":
             handled = await _handle_deep_research_trigger(ws, text)
-            if handled:
-                ws.state.active_agent_id = agent_id_norm
-                ws.state.active_agent_until_ts = int(time.time()) + AGENT_CONTINUE_WINDOW_SECONDS
-            return handled
-        if agent_id_norm == "follow_news":
-            handled = await _handle_news_follow_trigger(ws, text)
             if handled:
                 ws.state.active_agent_id = agent_id_norm
                 ws.state.active_agent_until_ts = int(time.time()) + AGENT_CONTINUE_WINDOW_SECONDS
@@ -14179,6 +14167,96 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
             }
         )
 
+    if (not macros_only) and feature_enabled("current-news", sys_kv=sys_kv, default=True):
+        decls.append(
+            {
+                "name": "current_news_get",
+                "description": "Get the current news brief and cached context (refreshes automatically if missing).",
+                "parameters": {"type": "object", "properties": {}},
+            }
+        )
+        decls.append(
+            {
+                "name": "current_news_refresh",
+                "description": "Refresh current news cache from RSS feeds and return updated context + brief.",
+                "parameters": {"type": "object", "properties": {}},
+            }
+        )
+        decls.append(
+            {
+                "name": "current_news_sources",
+                "description": "List source links for the current-news cache.",
+                "parameters": {"type": "object", "properties": {}},
+            }
+        )
+        decls.append(
+            {
+                "name": "current_news_details",
+                "description": "Get details for a current-news topic (iran|gold|usd|oil|baht).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"topic": {"type": "string", "description": "Topic key or alias."}},
+                    "required": ["topic"],
+                },
+            }
+        )
+
+    if (not macros_only) and feature_enabled("follow-news", sys_kv=sys_kv, default=True):
+        decls.append(
+            {
+                "name": "news_follow_list",
+                "description": "List cached follow-news summaries (and current focus).",
+                "parameters": {"type": "object", "properties": {}},
+            }
+        )
+        decls.append(
+            {
+                "name": "news_follow_refresh",
+                "description": "Refresh follow-news summaries using current focus list.",
+                "parameters": {"type": "object", "properties": {}},
+            }
+        )
+        decls.append(
+            {
+                "name": "news_follow_report",
+                "description": "Return the stored follow-news report by summary_id.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"summary_id": {"type": "string", "description": "Summary id from news_follow_list."}},
+                    "required": ["summary_id"],
+                },
+            }
+        )
+        decls.append(
+            {
+                "name": "news_follow_focus_list",
+                "description": "List follow-news focus keywords.",
+                "parameters": {"type": "object", "properties": {}},
+            }
+        )
+        decls.append(
+            {
+                "name": "news_follow_focus_add",
+                "description": "Add a keyword to the follow-news focus list.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"item": {"type": "string", "description": "Keyword/topic to add."}},
+                    "required": ["item"],
+                },
+            }
+        )
+        decls.append(
+            {
+                "name": "news_follow_focus_remove",
+                "description": "Remove a keyword from the follow-news focus list.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"item": {"type": "string", "description": "Keyword/topic to remove."}},
+                    "required": ["item"],
+                },
+            }
+        )
+
     if (not macros_only) and feature_enabled("memory", sys_kv=sys_kv, default=True):
         decls.append(
             {
@@ -14958,6 +15036,14 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         "google_calendar_undo_log": _google_calendar_undo_log,
         "google_tasks_undo_log": _google_tasks_undo_log,
         "adapt_playwright_tool_args": _adapt_playwright_tool_args,
+        "get_news_cache": _get_news_cache,
+        "set_news_cache": _set_news_cache,
+        "refresh_current_news_cache": _refresh_current_news_cache,
+        "render_current_news_brief": _render_current_news_brief,
+        "get_news_follow_focus": _get_news_follow_focus,
+        "set_news_follow_focus": _set_news_follow_focus,
+        "get_news_follow_summaries": _get_news_follow_summaries,
+        "refresh_news_follow_summaries": _refresh_news_follow_summaries,
     }
     return await tools_router.handle_mcp_tool_call(session_id, tool_name, args, deps=deps)
 
@@ -15165,6 +15251,12 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
                 except Exception:
                     s_cmd = str(s)
 
+                # Same for /tool commands.
+                try:
+                    s_cmd = re.sub(r"\s+/(tool)\b", r"\n/\1", s_cmd, flags=re.IGNORECASE)
+                except Exception:
+                    pass
+
                 cmd_lines = [ln.strip() for ln in str(s_cmd).splitlines() if str(ln or "").strip()]
                 if not cmd_lines:
                     cmd_lines = [str(s).strip()]
@@ -15211,6 +15303,52 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
                                 "dry_run": dry_run,
                                 "trace_id": trace_id2,
                             },
+                            trace_id=trace_id2,
+                        )
+                        handled_any = True
+                    if handled_any:
+                        continue
+
+                all_tool = True
+                for ln in cmd_lines:
+                    if not re.match(r"^/tool\b", ln, flags=re.IGNORECASE):
+                        all_tool = False
+                        break
+
+                if all_tool:
+                    for ln in cmd_lines:
+                        m = re.match(r"^/tool\s+(\S+)(?:\s+(.*))?$", ln, flags=re.IGNORECASE)
+                        if not m:
+                            continue
+                        tool_name = str(m.group(1) or "").strip()
+                        raw_args = str(m.group(2) or "").strip()
+                        tool_args: dict[str, Any] = {}
+                        if raw_args:
+                            try:
+                                parsed_args = json.loads(raw_args)
+                                if isinstance(parsed_args, dict):
+                                    tool_args = parsed_args
+                            except Exception:
+                                try:
+                                    await _ws_send_json(
+                                        ws,
+                                        {
+                                            "type": "tool_result",
+                                            "name": tool_name,
+                                            "ok": False,
+                                            "error": "invalid_tool_args_json",
+                                            "instance_id": INSTANCE_ID,
+                                        },
+                                        trace_id=trace_id2,
+                                    )
+                                except Exception:
+                                    pass
+                                handled_any = True
+                                continue
+
+                        await _handle_local_tools_message(
+                            ws,
+                            {"type": "tool", "name": tool_name, "args": tool_args, "trace_id": trace_id2},
                             trace_id=trace_id2,
                         )
                         handled_any = True
