@@ -753,6 +753,28 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                 pass
 
             header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
+            # If Google Sheets "Table" conversion inserts non-canonical columns (e.g. a type/format column like "Tr"),
+            # treat that as corruption and force-write the canonical header.
+            try:
+                canonical = {
+                    "id",
+                    "date_time",
+                    "active",
+                    "status",
+                    "group",
+                    "subject",
+                    "memo",
+                    "result",
+                    "_created",
+                    "_updated",
+                }
+                lowered_first = [str(x or "").strip().lower() for x in (header or [])][:10]
+                unknown = [c for c in lowered_first if c and c not in canonical]
+                if unknown:
+                    await memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, force=True)
+                    header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
+            except Exception:
+                pass
             idx = idx_from_header(header)
             if not idx:
                 await memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)

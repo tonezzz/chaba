@@ -136,23 +136,36 @@ async def handle_followup(
     sheet_a1 = sheet_name_to_a1(sheet_name, "memo")
     now_dt = now_dt_utc()
 
-    header = []
-    idx: dict[str, int] = {}
+    await memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, force=False)
+
+    header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
+    # If Google Sheets "Table" conversion inserts non-canonical columns (e.g. a type/format column),
+    # treat that as corruption and force-write the canonical header.
     try:
+        canonical = {
+            "id",
+            "date_time",
+            "active",
+            "status",
+            "group",
+            "subject",
+            "memo",
+            "result",
+            "_created",
+            "_updated",
+        }
+        lowered_first = [str(x or "").strip().lower() for x in (header or [])][:10]
+        unknown = [c for c in lowered_first if c and c not in canonical]
+        if unknown:
+            await memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, force=True)
+            header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
+    except Exception:
+        pass
+    idx = idx_from_header(header)
+    if not idx:
+        await memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
         header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
         idx = idx_from_header(header)
-    except Exception:
-        idx = {}
-    if not idx:
-        try:
-            await memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
-        except Exception:
-            pass
-        try:
-            header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
-            idx = idx_from_header(header)
-        except Exception:
-            idx = {}
 
     def _set(row: list[Any], col: str, value: Any) -> None:
         try:
