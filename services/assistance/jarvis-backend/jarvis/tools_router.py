@@ -2039,11 +2039,43 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                 raise HTTPException(status_code=400, detail="missing_memo_sheet_name")
             sheet_a1 = sheet_name_to_a1(sheet_name, default="memo")
 
-            header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="Z")
+            header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
+            # If the sheet was converted to a Google Sheets "Table" it may insert non-canonical columns in A:J
+            # (e.g. "Tr"), or shift canonical columns beyond J. In either case, force canonical header.
+            canonical = {
+                "id",
+                "date_time",
+                "active",
+                "status",
+                "group",
+                "subject",
+                "memo",
+                "result",
+                "_created",
+                "_updated",
+            }
+            try:
+                lowered_first = [str(x or "").strip().lower() for x in (header or [])][:10]
+                unknown = [c for c in lowered_first if c and c not in canonical]
+            except Exception:
+                unknown = []
+
             idx = idx_from_header(header)
+            needs_force = False
+            if unknown:
+                needs_force = True
             if not idx:
-                await memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1)
-                header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="Z")
+                needs_force = True
+            else:
+                for k in canonical:
+                    j = idx.get(k)
+                    if j is None or not isinstance(j, int) or j < 0 or j >= 10:
+                        needs_force = True
+                        break
+
+            if needs_force:
+                await memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, force=True)
+                header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
                 idx = idx_from_header(header)
             if not idx:
                 raise HTTPException(status_code=400, detail="memo_sheet_missing_header")
@@ -2095,22 +2127,12 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
 
             now_dt = datetime.now(tz=timezone.utc).replace(microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
 
-            def _as_bool_cell(v: Any) -> str:
-                s = str(v or "").strip().lower()
-                if s in {"true", "t", "1", "yes", "y", "on"}:
-                    return "TRUE"
-                if s in {"false", "f", "0", "no", "n", "off"}:
-                    return "FALSE"
-                return "TRUE" if bool(v) else "FALSE"
-
-            out_row: list[Any] = []
+            out_row: list[Any] = [""] * 10
 
             def _set(col: str, value: Any) -> None:
                 j = idx.get(str(col or "").strip().lower())
-                if j is None:
+                if j is None or not isinstance(j, int) or j < 0 or j >= 10:
                     return
-                while len(out_row) <= j:
-                    out_row.append("")
                 out_row[j] = value
 
             for k in ["id", "date_time", "active", "status", "group", "subject", "memo", "result", "_created", "_updated"]:
@@ -2120,7 +2142,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                 if k in payload:
                     _set(k, str(payload.get(k) or ""))
             if "active" in payload:
-                _set("active", _as_bool_cell(payload.get("active")))
+                _set("active", bool(payload.get("active")))
             _set("_updated", now_dt)
 
             tool_update = pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
@@ -2129,7 +2151,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                 {
                     "spreadsheet_id": spreadsheet_id,
                     "range": f"{sheet_a1}!A{row_num}:J{row_num}",
-                    "values": [out_row[:10]],
+                    "values": [out_row],
                     "value_input_option": "USER_ENTERED",
                 },
             )
