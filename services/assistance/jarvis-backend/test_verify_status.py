@@ -15,6 +15,7 @@ async def _stub_verify_frontend_bundle(base_url: str, *, timeout_s: float = 6.0)
 def test_verify_status_contract(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(main, "debug_status", _stub_debug_status)
     monkeypatch.setattr(main, "_verify_frontend_bundle", _stub_verify_frontend_bundle)
+    monkeypatch.setattr(main, "feature_enabled", lambda _name: True)
 
     client = TestClient(main.app)
     res = client.get("/jarvis/api/verify/status")
