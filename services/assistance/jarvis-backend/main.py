@@ -3739,6 +3739,29 @@ def _memo_sheet_cfg_from_sys_kv(sys_kv: dict[str, Any] | None) -> tuple[str, str
     return (spreadsheet_id, sheet_name)
 
 
+def _current_news_sheet_cfg_from_sys_kv(sys_kv: dict[str, Any] | None) -> tuple[str, str]:
+    spreadsheet_id = ""
+    sheet_name = ""
+    if isinstance(sys_kv, dict):
+        spreadsheet_id = str(
+            sys_kv.get("current_news.spreadsheet_id")
+            or sys_kv.get("current_news.spreadsheet_name")
+            or sys_kv.get("current_news_ss")
+            or ""
+        ).strip()
+        sheet_name = str(
+            sys_kv.get("current_news.sheet_name")
+            or sys_kv.get("current_news_sheet_name")
+            or sys_kv.get("current_news_sh")
+            or ""
+        ).strip()
+    if not spreadsheet_id:
+        spreadsheet_id = _system_spreadsheet_id()
+    if not sheet_name:
+        sheet_name = "current_news"
+    return (spreadsheet_id, sheet_name)
+
+
 async def _sheet_get_header_row(*, spreadsheet_id: str, sheet_a1: str, max_cols: str = "Z") -> list[Any]:
     return await sheets_utils.sheet_get_header_row(
         spreadsheet_id=spreadsheet_id,
@@ -11313,7 +11336,7 @@ def _build_current_news_context(items: list[dict[str, Any]]) -> dict[str, Any]:
 
     now_ts = int(time.time())
     return {
-        "summary": "CNN current-news context refreshed",
+        "summary": "Current-news context refreshed",
         "updated_at": now_ts,
         "sources": sources,
         "topics": {
@@ -11329,13 +11352,13 @@ def _build_current_news_context(items: list[dict[str, Any]]) -> dict[str, Any]:
 def _render_current_news_brief(ctx: dict[str, Any]) -> str:
     topics = ctx.get("topics") if isinstance(ctx, dict) else None
     if not isinstance(topics, dict):
-        return "Current news: no cached context available. Say 'current news refresh' to fetch from CNN."
+        return "Current news: no cached context available. Say 'current news refresh' to fetch."
 
     def block(title: str, key: str, max_lines: int) -> str:
         sec = topics.get(key)
         headlines = sec.get("headlines") if isinstance(sec, dict) else None
         if not isinstance(headlines, list) or not headlines:
-            return f"{title}: (no recent CNN headlines found)"
+            return f"{title}: (no recent headlines found)"
         lines = [f"{title}:"]
         for h in headlines[:max_lines]:
             hh = str(h or "").strip()
@@ -11354,16 +11377,46 @@ def _render_current_news_brief(ctx: dict[str, Any]) -> str:
     return "\n\n".join([p for p in parts if p.strip()])
 
 
-async def _refresh_current_news_cache() -> dict[str, Any]:
-    feeds = [
-        "https://rss.cnn.com/rss/edition.rss",
-        "https://rss.cnn.com/rss/edition_world.rss",
-        "https://rss.cnn.com/rss/money_latest.rss",
-    ]
-    all_items: list[dict[str, Any]] = []
-    for url in feeds:
-        xml_text = await _mcp_web_fetch_text(url, max_length=250000)
-        all_items.extend(_parse_rss_items(xml_text))
+def _cell_str(row: list[Any], idx: dict[str, int], key: str) -> str:
+    j = idx.get(str(key or "").strip().lower())
+    if j is None:
+        return ""
+    try:
+        return str(row[j] if j < len(row) else "").strip()
+    except Exception:
+        return ""
+
+
+async def _load_current_news_items_from_sheet(*, sys_kv: dict[str, Any] | None) -> list[dict[str, Any]]:
+    spreadsheet_id, sheet_name = _current_news_sheet_cfg_from_sys_kv(sys_kv)
+    if not spreadsheet_id:
+        raise RuntimeError("current_news_missing_spreadsheet_id")
+
+    sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="current_news")
+    table = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_a1, max_rows=500, max_cols="H")
+    if not table:
+        return []
+    header = table[0] if isinstance(table[0], list) else []
+    idx = _idx_from_header(header)
+    if not idx:
+        return []
+
+    out: list[dict[str, Any]] = []
+    for r in table[1:]:
+        if not isinstance(r, list):
+            continue
+        title = _cell_str(r, idx, "title")
+        link = _cell_str(r, idx, "link") or _cell_str(r, idx, "url")
+        desc = _cell_str(r, idx, "description")
+        pub = _cell_str(r, idx, "pubdate") or _cell_str(r, idx, "published")
+        if not title and not link:
+            continue
+        out.append({"title": title, "link": link, "pubDate": pub, "description": desc})
+    return out
+
+
+async def _refresh_current_news_cache(*, sys_kv: dict[str, Any] | None = None) -> dict[str, Any]:
+    all_items = await _load_current_news_items_from_sheet(sys_kv=sys_kv)
 
     seen: set[str] = set()
     deduped: list[dict[str, Any]] = []
@@ -11417,7 +11470,8 @@ async def _handle_current_news_trigger(ws: WebSocket, text: str) -> bool:
         ctx = cached["payload"]
 
     if wants_refresh or ctx is None:
-        ctx = await _refresh_current_news_cache()
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        ctx = await _refresh_current_news_cache(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
 
     if not isinstance(ctx, dict):
         return False

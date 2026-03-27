@@ -1122,7 +1122,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                 ctx = None
 
             if tool_name == "current_news_refresh":
-                ctx = await refresh_current_news_cache()
+                ctx = await refresh_current_news_cache(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
                 try:
                     set_news_cache("current-news", ctx)
                 except Exception:
@@ -1130,7 +1130,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                 return {"ok": True, "refreshed": True, "context": ctx, "brief": render_current_news_brief(ctx) if isinstance(ctx, dict) else ""}
 
             if ctx is None:
-                ctx = await refresh_current_news_cache()
+                ctx = await refresh_current_news_cache(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
                 try:
                     set_news_cache("current-news", ctx)
                 except Exception:
