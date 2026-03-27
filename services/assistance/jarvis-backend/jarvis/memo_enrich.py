@@ -165,28 +165,19 @@ async def handle_followup(
         except Exception:
             return
 
-    def _as_bool_cell(v: Any) -> str:
-        s = str(v or "").strip().lower()
-        if s in {"true", "t", "1", "yes", "y", "on"}:
-            return "TRUE"
-        if s in {"false", "f", "0", "no", "n", "off"}:
-            return "FALSE"
-        return "TRUE" if bool(v) else "FALSE"
-
     # Canonical fixed-width row so Sheets "Table" formatting can't shift columns.
     # Note: memo_enrich followup doesn't allocate an id here; keep id blank.
-    row_out: list[Any] = [
-        "",  # id
-        now_dt,
-        _as_bool_cell(True),
-        "new",
-        group,
-        subject,
-        memo_final,
-        "",
-        now_dt,
-        now_dt,
-    ]
+    row_out: list[Any] = [""] * 10
+    _set(row_out, "id", "")
+    _set(row_out, "date_time", now_dt)
+    _set(row_out, "active", True)
+    _set(row_out, "status", "new")
+    _set(row_out, "group", group)
+    _set(row_out, "subject", subject)
+    _set(row_out, "memo", memo_final)
+    _set(row_out, "result", "")
+    _set(row_out, "_created", now_dt)
+    _set(row_out, "_updated", now_dt)
 
     tool_append = pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
     try:

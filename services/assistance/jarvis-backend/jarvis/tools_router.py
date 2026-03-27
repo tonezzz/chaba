@@ -854,29 +854,20 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                     row.append("")
                 row[j] = value
 
-            def _as_bool_cell(v: Any) -> str:
-                s = str(v or "").strip().lower()
-                if s in {"true", "t", "1", "yes", "y", "on"}:
-                    return "TRUE"
-                if s in {"false", "f", "0", "no", "n", "off"}:
-                    return "FALSE"
-                return "TRUE" if bool(v) else "FALSE"
-
             memo_id = await _next_memo_id()
-            active_cell = _as_bool_cell(True if active is None else active)
-            # Append a canonical fixed-width row so Sheets "Table" formatting can't shift columns.
-            row_out: list[Any] = [
-                memo_id,
-                now_dt,
-                active_cell,
-                status,
-                group,
-                subject,
-                memo_txt,
-                result,
-                now_dt,
-                now_dt,
-            ]
+            # Write a fixed-width row (A:J) but map values by header-derived indices.
+            # This preserves legacy header order while preventing Sheets "Table" formatting from shifting columns.
+            row_out: list[Any] = [""] * 10
+            _set(row_out, "id", memo_id)
+            _set(row_out, "date_time", now_dt)
+            _set(row_out, "active", True if active is None else bool(active))
+            _set(row_out, "status", status)
+            _set(row_out, "group", group)
+            _set(row_out, "subject", subject)
+            _set(row_out, "memo", memo_txt)
+            _set(row_out, "result", result)
+            _set(row_out, "_created", now_dt)
+            _set(row_out, "_updated", now_dt)
 
             tool_append = pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
             res = await mcp_tools_call(
