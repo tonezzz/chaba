@@ -1146,19 +1146,53 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                     "iran": "iran_war",
                     "iran war": "iran_war",
                     "war": "iran_war",
+                    "อิหร่าน": "iran_war",
+                    "สงคราม": "iran_war",
+                    "สงครามอิหร่าน": "iran_war",
                     "gold": "gold",
+                    "ทอง": "gold",
+                    "ทองคำ": "gold",
+                    "xau": "gold",
                     "dollar": "usd",
                     "usd": "usd",
+                    "ดอลลาร์": "usd",
+                    "อัตราดอกเบี้ย": "usd",
+                    "เฟด": "usd",
                     "oil": "oil",
+                    "น้ำมัน": "oil",
+                    "ราคาน้ำมัน": "oil",
                     "baht": "thb",
                     "thai baht": "thb",
                     "thb": "thb",
                     "usd/thb": "thb",
+                    "เงินบาท": "thb",
+                    "ค่าเงินบาท": "thb",
                 }
+                if not topic:
+                    available = sorted([str(k) for k in (topics.keys() if isinstance(topics, dict) else []) if str(k).strip()])
+                    return {
+                        "ok": True,
+                        "found": False,
+                        "topic": "",
+                        "hint": "Provide a topic, e.g. iran | gold | usd | oil | baht (also Thai: อิหร่าน | ทอง | น้ำมัน | เงินบาท)",
+                        "available": available,
+                        "updated_at": ctx.get("updated_at"),
+                        "context": ctx,
+                    }
+
                 chosen = key_map.get(topic, "")
                 if chosen and isinstance(topics, dict) and isinstance(topics.get(chosen), dict):
-                    return {"ok": True, "topic": chosen, "data": topics.get(chosen), "updated_at": ctx.get("updated_at"), "context": ctx}
-                return {"ok": False, "error": "unknown_topic", "topic": topic, "hint": "Try: iran | gold | usd | oil | baht", "context": ctx}
+                    return {"ok": True, "found": True, "topic": chosen, "data": topics.get(chosen), "updated_at": ctx.get("updated_at"), "context": ctx}
+                available = sorted([str(k) for k in (topics.keys() if isinstance(topics, dict) else []) if str(k).strip()])
+                return {
+                    "ok": True,
+                    "found": False,
+                    "topic": topic,
+                    "hint": "Unknown topic. Try: iran | gold | usd | oil | baht (Thai: อิหร่าน | ทอง | น้ำมัน | เงินบาท)",
+                    "available": available,
+                    "updated_at": ctx.get("updated_at"),
+                    "context": ctx,
+                }
 
             brief = render_current_news_brief(ctx)
             return {"ok": True, "brief": brief, "updated_at": ctx.get("updated_at"), "context": ctx}
