@@ -1,0 +1,29 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+ARG GIT_SHA=""
+ARG IMAGE_TAG=""
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
+
+COPY . /app
+
+ENV JARVIS_GIT_SHA=${GIT_SHA} \
+    JARVIS_IMAGE_TAG=${IMAGE_TAG}
+
+ENV PORT=8018
+EXPOSE 8018
+
+HEALTHCHECK --interval=10s --timeout=3s --retries=12 \
+  CMD curl -fsS "http://127.0.0.1:${PORT}/health" || exit 1
+
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8018"]
