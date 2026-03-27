@@ -2012,6 +2012,26 @@ async def _load_skills_from_sheet(*, sys_kv: Optional[dict[str, Any]] = None) ->
                 "content": content,
             }
         )
+
+        decls.append(
+            {
+                "name": "system_memo_update_queue",
+                "description": "Queue an update to an existing memo entry (Pending-confirmed write).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer", "description": "Memo id."},
+                        "memo": {"type": "string", "description": "Replacement memo text/body (optional)."},
+                        "group": {"type": "string", "description": "Replacement group label (optional)."},
+                        "subject": {"type": "string", "description": "Replacement subject label (optional)."},
+                        "status": {"type": "string", "description": "Replacement status (optional)."},
+                        "result": {"type": "string", "description": "Replacement result/notes (optional)."},
+                        "active": {"type": "boolean", "description": "Replacement active flag (optional)."},
+                    },
+                    "required": ["id"],
+                },
+            }
+        )
     return out
 
 
@@ -8718,6 +8738,7 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             "system_run_macro",
             "google_account_relink_queue",
             "memo_update_queue",
+            "system_memo_update_queue",
         }
         if name not in allowed and not name.startswith("macro_"):
             try:

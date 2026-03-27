@@ -215,7 +215,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             out["id"] = memo_id
         return out
 
-    if tool_name == "memo_update_queue":
+    if tool_name in {"memo_update_queue", "system_memo_update_queue"}:
         if not session_id:
             raise HTTPException(status_code=400, detail="missing_session_id")
         session_ws = deps["SESSION_WS"]
