@@ -6,6 +6,7 @@ import { useFullscreenEscape } from './hooks/useFullscreenEscape';
 import { useAutoScroll } from './hooks/useAutoScroll';
 import { useResumeContext } from './hooks/useResumeContext';
 import { useUiLog } from './hooks/useUiLog';
+import { usePending } from './hooks/usePending';
 
 import Visualizer from './components/Visualizer';
 import CameraFeed from './components/CameraFeed';
@@ -39,12 +40,6 @@ export default function App() {
   const [activeOutputTab, setActiveOutputTab] = useState<"dialog" | "ui_log" | "ws_log" | "pending">("dialog");
   const [wsLogText, setWsLogText] = useState<string>("");
   const [wsLogErr, setWsLogErr] = useState<string>("");
-  const [pendingItems, setPendingItems] = useState<any[]>([]);
-  const [pendingSelectedId, setPendingSelectedId] = useState<string | null>(null);
-  const [pendingPreview, setPendingPreview] = useState<any | null>(null);
-  const [pendingActionBusy, setPendingActionBusy] = useState<boolean>(false);
-  const [pendingActionResult, setPendingActionResult] = useState<any | null>(null);
-  const [pendingErr, setPendingErr] = useState<string>("");
 
   const [composerText, setComposerText] = useState<string>("");
   const [seqNotes, setSeqNotes] = useState<string>("");
@@ -108,8 +103,6 @@ export default function App() {
 
   useResumeContext({ messages, hasKey, state, liveService, resumeSentRef, lastConnStateRef });
 
-  const [pendingAuthCode, setPendingAuthCode] = useState<string>("");
-
   const backendCandidates = useCallback((): string[] => {
     const override = String(((import.meta as any).env?.VITE_JARVIS_HTTP_URL as string | undefined) || "").trim();
     const normOverride = override ? override.trim().replace(/\/+$/, "").replace(/^\s+|\s+$/g, "") : "";
@@ -130,113 +123,27 @@ export default function App() {
     backendCandidates,
   });
 
-  const refreshPending = useCallback(async () => {
-    setPendingErr("");
-    try {
-      const res = await liveService.current?.invokeTool("pending_list", {});
-      if (Array.isArray(res)) {
-        const prio = (it: any): number => {
-          const a = String(it?.action || "").trim();
-          if (a === "system_reload") return 0;
-          if (a === "mcp_tools_call") return 1;
-          return 2;
-        };
-        const ts = (it: any): number => {
-          const v = Number(it?.created_at || 0);
-          return Number.isFinite(v) ? v : 0;
-        };
-        const sorted = [...res].sort((a, b) => {
-          const pa = prio(a);
-          const pb = prio(b);
-          if (pa !== pb) return pa - pb;
-          return ts(b) - ts(a);
-        });
-        setPendingItems(sorted);
-      } else {
-        setPendingItems([]);
-      }
-    } catch (e: any) {
-      setPendingErr(String(e?.message || e || "pending_list_failed"));
-      setPendingItems([]);
-    }
-  }, []);
-
-  const copyPendingJson = useCallback(async (value: any) => {
-    try {
-      const txt = typeof value === "string" ? value : JSON.stringify(value ?? null, null, 2);
-      await navigator.clipboard.writeText(txt);
-    } catch (e: any) {
-      setPendingErr(String(e?.message || e || "copy_failed"));
-    }
-  }, []);
-
-  const previewPending = useCallback(async (confirmationId: string) => {
-    const cid = String(confirmationId || "").trim();
-    if (!cid) return;
-    setPendingSelectedId(cid);
-    setPendingPreview(null);
-    setPendingActionResult(null);
-    setPendingErr("");
-    try {
-      const res = await liveService.current?.invokeTool("pending_preview", { confirmation_id: cid });
-      setPendingPreview(res);
-    } catch (e: any) {
-      setPendingErr(String(e?.message || e || "pending_preview_failed"));
-    }
-  }, []);
-
-  const queueGoogleRelink = useCallback(async () => {
-    setPendingErr("");
-    setPendingActionBusy(true);
-    try {
-      const res: any = await liveService.current?.invokeTool("google_account_relink_queue", {});
-      const cid = String(res?.confirmation_id || "").trim();
-      setActiveRightPanel("output");
-      setActiveOutputTab("pending");
-      await refreshPending();
-      if (cid) {
-        await previewPending(cid);
-      }
-    } catch (e: any) {
-      setPendingErr(String(e?.message || e || "google_account_relink_queue_failed"));
-    } finally {
-      setPendingActionBusy(false);
-    }
-  }, [previewPending, refreshPending]);
-
-  const confirmPending = useCallback(async (confirmationId: string) => {
-    const cid = String(confirmationId || "").trim();
-    if (!cid) return;
-    setPendingActionBusy(true);
-    setPendingErr("");
-    try {
-      const isAuth = String(pendingPreview?.action || "") === "google_account_relink";
-      const input = isAuth ? { code_or_redirected_url: String(pendingAuthCode || "").trim() } : undefined;
-      const res = await liveService.current?.invokeTool("pending_confirm", input ? { confirmation_id: cid, input } : { confirmation_id: cid });
-      setPendingActionResult(res);
-      await refreshPending();
-    } catch (e: any) {
-      setPendingErr(String(e?.message || e || "pending_confirm_failed"));
-    } finally {
-      setPendingActionBusy(false);
-    }
-  }, [pendingAuthCode, pendingPreview?.action, refreshPending]);
-
-  const cancelPending = useCallback(async (confirmationId: string) => {
-    const cid = String(confirmationId || "").trim();
-    if (!cid) return;
-    setPendingActionBusy(true);
-    setPendingErr("");
-    try {
-      const res = await liveService.current?.invokeTool("pending_cancel", { confirmation_id: cid });
-      setPendingActionResult(res);
-      await refreshPending();
-    } catch (e: any) {
-      setPendingErr(String(e?.message || e || "pending_cancel_failed"));
-    } finally {
-      setPendingActionBusy(false);
-    }
-  }, [refreshPending]);
+  const {
+    pendingItems,
+    pendingSelectedId,
+    pendingPreview,
+    pendingActionBusy,
+    pendingActionResult,
+    pendingErr,
+    pendingAuthCode,
+    setPendingAuthCode,
+    refreshPending,
+    copyPendingJson,
+    previewPending,
+    queueGoogleRelink,
+    confirmPending,
+    cancelPending,
+    queueBundlePublishReload,
+  } = usePending({
+    liveService,
+    setActiveRightPanel,
+    setActiveOutputTab,
+  });
 
   const refreshWsLog = useCallback(async () => {
     setWsLogErr("");
@@ -2463,29 +2370,7 @@ export default function App() {
                              </button>
                              <button
                                disabled={pendingActionBusy}
-                               onClick={() => {
-                                 setPendingActionBusy(true);
-                                 setPendingErr("");
-                                 setPendingActionResult(null);
-                                 (async () => {
-                                   try {
-                                     const res = await liveService.current?.invokeTool("system_macro_upsert_bundle_queue", {
-                                       name: "macro_system_reload",
-                                       enabled: true,
-                                       description: "Reload system sheet KV and reload macros from sheet.",
-                                       parameters_json: "{\"type\":\"object\",\"properties\":{}}",
-                                       steps_json: "[{\"tool\":\"system_reload\",\"args\":{}}]",
-                                       reload_mode: "full",
-                                     });
-                                     setPendingActionResult(res);
-                                     await refreshPending();
-                                   } catch (e: any) {
-                                     setPendingErr(String(e?.message || e || "bundle_queue_failed"));
-                                   } finally {
-                                     setPendingActionBusy(false);
-                                   }
-                                 })();
-                               }}
+                               onClick={() => void queueBundlePublishReload()}
                                className="text-[11px] font-mono px-2 py-1 rounded border border-cyan-700/40 bg-cyan-950/20 text-cyan-200 hover:bg-cyan-900/30 disabled:opacity-50"
                              >
                                bundle publish + reload
