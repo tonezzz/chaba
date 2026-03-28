@@ -22,7 +22,10 @@ CA_BUNDLE = str(os.getenv("WEB_FETCH_CA_BUNDLE") or "/etc/ssl/certs/ca-certifica
 
 ALLOWED_CONTENT_TYPES = tuple(
     ct.strip().lower()
-    for ct in (os.getenv("WEB_FETCH_ALLOWED_CONTENT_TYPES") or "text/html,text/plain,application/json").split(",")
+    for ct in (
+        os.getenv("WEB_FETCH_ALLOWED_CONTENT_TYPES")
+        or "text/html,text/plain,application/json,application/rss+xml,application/atom+xml,application/xml,text/xml"
+    ).split(",")
     if ct.strip()
 )
 

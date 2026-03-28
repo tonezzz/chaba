@@ -11802,11 +11802,29 @@ async def _fetch_news_items_from_source(
     debug: bool = False,
     debug_out: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
-    text = await _mcp_web_fetch_text(url, max_length=350000, raw=True)
+    fetch_meta: dict[str, Any] = {}
+    text = ""
+    try:
+        res = await _web_fetcher_post("/fetch", {"url": url})
+        if isinstance(res, dict):
+            text = str(res.get("text") or "")
+            fetch_meta = {
+                "status_code": res.get("status_code"),
+                "content_type": res.get("content_type"),
+                "final_url": res.get("final_url"),
+            }
+        else:
+            text = ""
+    except Exception as e:
+        text = str(e)
+
     if debug and isinstance(debug_out, list):
         try:
             preview = str(text or "")[:240]
-            debug_out.append({"url": url, "len": len(str(text or "")), "preview": preview})
+            row: dict[str, Any] = {"url": url, "len": len(str(text or "")), "preview": preview}
+            if isinstance(fetch_meta, dict) and fetch_meta:
+                row.update(fetch_meta)
+            debug_out.append(row)
         except Exception:
             pass
 
