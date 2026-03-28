@@ -11815,8 +11815,15 @@ async def _fetch_news_items_from_source(
             }
         else:
             text = ""
+    except HTTPException as e:
+        text = ""
+        try:
+            fetch_meta = {"status_code": e.status_code, "detail": e.detail}
+        except Exception:
+            fetch_meta = {"status_code": getattr(e, "status_code", None)}
     except Exception as e:
-        text = str(e)
+        text = ""
+        fetch_meta = {"error": e.__class__.__name__, "message": str(e)}
 
     if debug and isinstance(debug_out, list):
         try:
