@@ -15730,6 +15730,16 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                                     "memo_update_queue",
                                     "memory_search",
                                     "memory_list",
+                                    "current_news_get",
+                                    "current_news_refresh",
+                                    "current_news_sources",
+                                    "current_news_details",
+                                    "news_follow_list",
+                                    "news_follow_refresh",
+                                    "news_follow_report",
+                                    "news_follow_focus_list",
+                                    "news_follow_focus_add",
+                                    "news_follow_focus_remove",
                                 )
                             )
                         if allowed:
