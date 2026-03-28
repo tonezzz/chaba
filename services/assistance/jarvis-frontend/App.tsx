@@ -1562,6 +1562,25 @@ export default function App() {
     }
   };
 
+  useEffect(() => {
+    if (!leftFullscreen) return;
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setLeftFullscreen(false);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [leftFullscreen]);
+
   if (!hasKey) {
     const renderHealthIcon = (healthRaw: any) => {
       const h = String(healthRaw || "").trim().toLowerCase();
@@ -1766,25 +1785,6 @@ export default function App() {
     );
   }
 
-  useEffect(() => {
-    if (!leftFullscreen) return;
-
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setLeftFullscreen(false);
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [leftFullscreen]);
-
   return (
     <div className="h-[100dvh] bg-slate-950 text-slate-100 flex flex-col md:flex-row relative selection:bg-cyan-500/30 overflow-hidden">
       
@@ -1854,7 +1854,7 @@ export default function App() {
                   title={statusDetailsOpen ? "Hide status details" : "Show status details"}
                   aria-label={statusDetailsOpen ? "Hide status details" : "Show status details"}
                 >
-                  <ChevronRight className={`w-4 h-4 transition-transform ${statusDetailsOpen ? "rotate-90" : ""}`} />
+                  <ChevronRight className={`w-4 h-4 text-slate-500 transition-transform ${statusDetailsOpen ? "rotate-90" : ""}`} />
                 </button>
 
                {state === ConnectionState.CONNECTED ? (
