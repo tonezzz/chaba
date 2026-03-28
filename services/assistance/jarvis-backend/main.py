@@ -2480,7 +2480,123 @@ if not REMINDER_TITLE_MODELS:
 
 INSTANCE_ID = str(os.getenv("JARVIS_INSTANCE_ID") or "").strip() or f"jarvis_{uuid.uuid4().hex[:10]}"
 
-logger = logging.getLogger("jarvis-backend")
+logger = logging.getLogger(__name__)
+
+INSTANCE_ID = str(uuid.uuid4())
+
+# Gemini Live session resumption (provider-side).
+# Store the latest resumable handle per Jarvis session_id so subsequent
+# connections can resume without replaying large local context payloads.
+_GEMINI_LIVE_RESUMPTION: dict[str, dict[str, Any]] = {}
+_GEMINI_LIVE_RESUMPTION_TTL_SECONDS = 2 * 60 * 60
+
+
+def _gemini_live_get_resumption_handle(session_id: Optional[str]) -> Optional[str]:
+    sid = str(session_id or "").strip()
+    if not sid:
+        return None
+    try:
+        rec = _GEMINI_LIVE_RESUMPTION.get(sid)
+        if not isinstance(rec, dict):
+            return None
+        handle = str(rec.get("handle") or "").strip()
+        ts = float(rec.get("ts") or 0.0)
+        if not handle or not ts:
+            return None
+        if (time.time() - ts) > float(_GEMINI_LIVE_RESUMPTION_TTL_SECONDS):
+            _GEMINI_LIVE_RESUMPTION.pop(sid, None)
+            return None
+        return handle
+    except Exception:
+        return None
+
+
+def _gemini_live_set_resumption_handle(session_id: Optional[str], handle: Optional[str]) -> None:
+    sid = str(session_id or "").strip()
+    h = str(handle or "").strip()
+    if not sid or not h:
+        return
+    prev = None
+    try:
+        rec = _GEMINI_LIVE_RESUMPTION.get(sid)
+        if isinstance(rec, dict):
+            prev = str(rec.get("handle") or "").strip() or None
+    except Exception:
+        prev = None
+    _GEMINI_LIVE_RESUMPTION[sid] = {"handle": h, "ts": float(time.time())}
+    try:
+        if prev != h:
+            logger.info("gemini_live_resumption_handle_updated session_id=%s handle_suffix=%s", sid, h[-8:])
+    except Exception:
+        pass
+
+
+def _gemini_live_resumption_enabled(sys_kv: Optional[dict[str, Any]] = None) -> bool:
+    if isinstance(sys_kv, dict):
+        try:
+            raw = str(sys_kv.get("gemini.live.session_resumption.enabled") or "").strip()
+            if raw:
+                return _parse_bool_cell(raw)
+        except Exception:
+            pass
+    try:
+        raw = str(os.getenv("GEMINI_LIVE_SESSION_RESUMPTION_ENABLED") or "").strip()
+        if raw:
+            return _parse_bool_cell(raw)
+    except Exception:
+        pass
+    return True
+
+
+def _gemini_live_context_window_compression_config(sys_kv: Optional[dict[str, Any]] = None) -> Optional[dict[str, Any]]:
+    enabled = False
+    if isinstance(sys_kv, dict):
+        try:
+            raw = str(sys_kv.get("gemini.live.context_window_compression.enabled") or "").strip()
+            if raw:
+                enabled = _parse_bool_cell(raw)
+        except Exception:
+            enabled = False
+    if not enabled:
+        try:
+            raw = str(os.getenv("GEMINI_LIVE_CONTEXT_WINDOW_COMPRESSION_ENABLED") or "").strip()
+            if raw:
+                enabled = _parse_bool_cell(raw)
+        except Exception:
+            enabled = False
+    if not enabled:
+        return None
+
+    def _opt_int(v: Any) -> Optional[int]:
+        s = str(v or "").strip()
+        if not s:
+            return None
+        try:
+            return int(s)
+        except Exception:
+            return None
+
+    trigger_tokens: Optional[int] = None
+    target_tokens: Optional[int] = None
+    if isinstance(sys_kv, dict):
+        trigger_tokens = _opt_int(sys_kv.get("gemini.live.context_window_compression.trigger_tokens"))
+        target_tokens = _opt_int(sys_kv.get("gemini.live.context_window_compression.target_tokens"))
+
+    if trigger_tokens is None:
+        trigger_tokens = _opt_int(os.getenv("GEMINI_LIVE_CONTEXT_WINDOW_COMPRESSION_TRIGGER_TOKENS"))
+    if target_tokens is None:
+        target_tokens = _opt_int(os.getenv("GEMINI_LIVE_CONTEXT_WINDOW_COMPRESSION_TARGET_TOKENS"))
+
+    # If the operator didn't specify values, let the server pick sensible defaults.
+    cfg: dict[str, Any] = {"sliding_window": {}}
+    if trigger_tokens is not None and int(trigger_tokens) > 0:
+        cfg["trigger_tokens"] = int(trigger_tokens)
+    if target_tokens is not None and int(target_tokens) > 0:
+        cfg["sliding_window"]["target_tokens"] = int(target_tokens)
+    if not cfg.get("sliding_window"):
+        cfg.pop("sliding_window", None)
+    return cfg
+
 logging.basicConfig(level=logging.INFO)
 
 
@@ -15878,6 +15994,24 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
     logged_server_content_shape = False
     while True:
         async for server_msg in session.receive():
+            # Provider-side session resumption.
+            try:
+                upd = getattr(server_msg, "session_resumption_update", None)
+                if upd is None:
+                    upd = getattr(server_msg, "sessionResumptionUpdate", None)
+                if upd is not None:
+                    new_handle = str(getattr(upd, "new_handle", None) or getattr(upd, "newHandle", None) or "").strip()
+                    resumable = getattr(upd, "resumable", None)
+                    if new_handle and (resumable is None or bool(resumable) is True):
+                        try:
+                            sid = str(getattr(ws.state, "session_id", None) or "").strip()
+                            logger.info("gemini_live_session_resumption_update session_id=%s handle_suffix=%s", sid, new_handle[-8:])
+                        except Exception:
+                            pass
+                        _gemini_live_set_resumption_handle(getattr(ws.state, "session_id", None), new_handle)
+            except Exception:
+                pass
+
             tool_call = getattr(server_msg, "tool_call", None)
             if tool_call is not None:
                 function_calls = getattr(tool_call, "function_calls", None) or []
@@ -16656,6 +16790,31 @@ async def ws_live(ws: WebSocket) -> None:
                 {"function_declarations": _mcp_tool_declarations()},
             ],
         }
+
+        # Optional: Gemini Live provider-side session resumption + context window compression.
+        try:
+            resume_enabled = _gemini_live_resumption_enabled(sys_kv if isinstance(sys_kv, dict) else None)
+        except Exception:
+            resume_enabled = True
+        if resume_enabled:
+            handle = _gemini_live_get_resumption_handle(session_id)
+            base_config["session_resumption"] = {"handle": handle} if handle else {}
+            if handle:
+                try:
+                    logger.info(
+                        "gemini_live_session_resumption_connect session_id=%s handle_suffix=%s",
+                        str(session_id or "").strip() or None,
+                        str(handle)[-8:],
+                    )
+                except Exception:
+                    pass
+
+        try:
+            cwc = _gemini_live_context_window_compression_config(sys_kv if isinstance(sys_kv, dict) else None)
+            if isinstance(cwc, dict) and cwc:
+                base_config["context_window_compression"] = cwc
+        except Exception:
+            pass
 
         # System sheet overrides (sys_kv wins over env/defaults)
         sys_kv = getattr(ws.state, "sys_kv", None)
