@@ -1948,11 +1948,11 @@ export default function App() {
               logStickToBottomRef.current = remaining < 40;
             }}
           >
-             <div className="text-xs font-mono text-slate-500 uppercase tracking-widest sticky top-0 bg-slate-900/90 py-1 mb-2 flex items-center justify-between">
+             <div className="text-xs font-mono text-slate-500 uppercase tracking-widest sticky top-0 bg-slate-900/90 py-1 mb-2 flex items-center justify-between gap-2">
                <span>Operation Log</span>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
                 <button
-                  className="text-[10px] font-mono text-slate-600 hover:text-slate-400 normal-case"
+                  className="text-[10px] font-mono text-slate-600 hover:text-slate-400 normal-case whitespace-nowrap"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -1983,7 +1983,7 @@ export default function App() {
                   copy all
                 </button>
                 <button
-                  className="text-[10px] font-mono text-slate-600 hover:text-slate-400 normal-case"
+                  className="text-[10px] font-mono text-slate-600 hover:text-slate-400 normal-case whitespace-nowrap"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
