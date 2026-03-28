@@ -2,15 +2,17 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { LiveService } from './services/liveService';
 import { sequentialApplyAndSuggest } from './services/sequentialService';
 import { ConnectionState, MessageLog } from './types';
+
 import Visualizer from './components/Visualizer';
 import CameraFeed from './components/CameraFeed';
 import CarsPanel from './components/CarsPanel';
-import { Play, Mic, MicOff, Search, Image as ImageIcon, Camera, Activity, Lock, ChevronRight, Paperclip, Send, X, Link2Off, Copy, CheckCircle2, AlertTriangle, XCircle, HeartPulse } from 'lucide-react';
+import { Play, Mic, MicOff, Search, Image as ImageIcon, Camera, Activity, Lock, ChevronRight, Paperclip, Send, X, Link2Off, Copy, CheckCircle2, AlertTriangle, XCircle, HeartPulse, Maximize2, Minimize2 } from 'lucide-react';
 
 export default function App() {
   const [hasKey, setHasKey] = useState(false);
   const [state, setState] = useState<ConnectionState>(ConnectionState.DISCONNECTED);
   const [volume, setVolume] = useState(0);
+
   const [messages, setMessages] = useState<MessageLog[]>([]);
   const resumeSentRef = useRef<boolean>(false);
   const lastConnStateRef = useRef<ConnectionState>(ConnectionState.DISCONNECTED);
@@ -28,6 +30,7 @@ export default function App() {
   const liveService = useRef<LiveService | null>(null);
   const [activeMedia, setActiveMedia] = useState<MessageLog | null>(null);
   const [isTalking, setIsTalking] = useState(false);
+  const [leftFullscreen, setLeftFullscreen] = useState(false);
   const [activeRightPanel, setActiveRightPanel] = useState<"output" | "cars" | "checklist">("output");
   const [activeOutputTab, setActiveOutputTab] = useState<"dialog" | "ui_log" | "ws_log" | "pending">("dialog");
   const [uiLogText, setUiLogText] = useState<string>("");
@@ -39,6 +42,7 @@ export default function App() {
   const [pendingActionBusy, setPendingActionBusy] = useState<boolean>(false);
   const [pendingActionResult, setPendingActionResult] = useState<any | null>(null);
   const [pendingErr, setPendingErr] = useState<string>("");
+
   const uiLogPendingRef = useRef<Array<{ ts: number; entry: any }>>([]);
   const uiLogFlushTimerRef = useRef<number | null>(null);
   const [composerText, setComposerText] = useState<string>("");
@@ -240,7 +244,7 @@ export default function App() {
 
   const backendCandidates = useCallback((): string[] => {
     const override = String(((import.meta as any).env?.VITE_JARVIS_HTTP_URL as string | undefined) || "").trim();
-    const normOverride = override ? override.replace(/\/+$|\s+$/g, "").replace(/\/+$/g, "") : "";
+    const normOverride = override ? override.trim().replace(/\/+$/, "").replace(/^\s+|\s+$/g, "") : "";
     const isJarvisSubpath = location.pathname.startsWith("/jarvis");
     const defaults = isJarvisSubpath ? ["/jarvis/api", "/jarvis", ""] : ["", "/jarvis/api", "/jarvis"];
     const out = normOverride ? [normOverride, ...defaults] : defaults;
@@ -1709,8 +1713,8 @@ export default function App() {
                   <div className="mt-2 space-y-1">
                     {rows.length ? (
                       rows.map((r) => (
-                        <div key={r.name} className="flex items-start gap-2">
-                          <div className="mt-[1px] flex items-center gap-1">
+                        <div key={r.name} className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
                             {renderStatusIcon(r.status)}
                             {renderHealthIcon(r.health)}
                           </div>
@@ -1739,8 +1743,27 @@ export default function App() {
     );
   }
 
-return (
-  <div className="h-[100dvh] bg-slate-950 text-slate-100 flex flex-col md:flex-row relative selection:bg-cyan-500/30 overflow-hidden">
+  useEffect(() => {
+    if (!leftFullscreen) return;
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setLeftFullscreen(false);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [leftFullscreen]);
+
+  return (
+    <div className="h-[100dvh] bg-slate-950 text-slate-100 flex flex-col md:flex-row relative selection:bg-cyan-500/30 overflow-hidden">
       
       {/* Background Grid Animation */}
       <div className="absolute inset-0 z-0 pointer-events-none opacity-20" 
@@ -1751,7 +1774,14 @@ return (
       </div>
 
       {/* LEFT COLUMN: Controls & Logs */}
-      <div className="w-full md:w-1/3 lg:w-1/4 p-4 md:p-6 flex flex-col gap-6 z-10 bg-slate-900/80 backdrop-blur-md border-r border-slate-800 overflow-hidden h-[100dvh]">
+      <div
+        className={`p-4 md:p-6 flex flex-col gap-6 bg-slate-900/80 backdrop-blur-md overflow-hidden h-[100dvh] ${
+          leftFullscreen
+            ? "fixed inset-0 z-50 w-screen border-0"
+            : "w-full md:w-1/3 lg:w-1/4 z-10 border-r border-slate-800"
+        }`}
+      >
+        
         <header>
           <h1 className="text-4xl font-bold font-hud text-cyan-400 tracking-tighter mb-1">JARVIS</h1>
           <p className="text-xs text-cyan-600 font-mono uppercase tracking-[0.2em]">Live Interface System</p>
@@ -1766,7 +1796,7 @@ return (
                   <span
                     className={`inline-flex items-center gap-2 px-2 py-1 rounded-full border text-[11px] font-mono uppercase tracking-wide ${
                       state === ConnectionState.CONNECTED
-                        ? 'border-cyan-500/40 bg-cyan-950/20 text-cyan-200'
+                        ? 'border-cyan-500/40 bg-cyan-950/10 text-cyan-200'
                         : state === ConnectionState.CONNECTING
                           ? 'border-yellow-500/40 bg-yellow-950/10 text-yellow-200'
                           : state === ConnectionState.ERROR
@@ -1961,6 +1991,18 @@ return (
                   }}
                 >
                   {showDebugLogs ? "hide debug" : "show debug"}
+                </button>
+                <button
+                  className="w-7 h-7 rounded-lg border border-slate-800 bg-slate-950/30 text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 flex items-center justify-center"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setLeftFullscreen((v) => !v);
+                  }}
+                  title={leftFullscreen ? "Exit fullscreen (Esc)" : "Fullscreen"}
+                  aria-label={leftFullscreen ? "Exit fullscreen" : "Fullscreen"}
+                >
+                  {leftFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                 </button>
               </div>
              </div>
@@ -2312,7 +2354,7 @@ return (
       </div>
 
       {/* RIGHT COLUMN: Visualizer & Output */}
-      <div className="flex-1 p-4 md:p-6 flex flex-col gap-4 relative z-10 min-h-0 overflow-hidden">
+      <div className={`flex-1 p-4 md:p-6 flex flex-col gap-4 relative z-10 min-h-0 overflow-hidden ${leftFullscreen ? "hidden" : ""}`}>
          
          {/* Top Section: Visualizer & Camera */}
          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-none h-[64px] min-h-[64px] max-h-[64px]">
