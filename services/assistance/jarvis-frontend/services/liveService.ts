@@ -86,6 +86,29 @@ export class LiveService {
 		}
 	}
 
+	private getOrCreateSessionId(): string {
+		const storageKey = "jarvis_session_id";
+		try {
+			const desiredRaw = (import.meta as any).env?.VITE_JARVIS_SESSION_ID as string | undefined;
+			const desired = desiredRaw != null ? String(desiredRaw).trim() : "";
+			const existing = String(window.localStorage.getItem(storageKey) || "").trim();
+			if (desired) {
+				if (existing && existing === desired) return existing;
+				window.localStorage.setItem(storageKey, desired);
+				return desired;
+			}
+			if (existing) return existing;
+			const newId =
+				(typeof crypto !== "undefined" && typeof (crypto as any).randomUUID === "function"
+					? (crypto as any).randomUUID()
+					: `${Date.now()}_${Math.random().toString(16).slice(2)}`);
+			window.localStorage.setItem(storageKey, newId);
+			return newId;
+		} catch {
+			return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+		}
+	}
+
 	private extractGemsAnalyze(text: string): { gem_id: string; criteria: string } | null {
 		const raw = String(text || "").trim();
 		if (!raw) return null;
@@ -483,21 +506,6 @@ export class LiveService {
 		return false;
 	}
 
-	private getOrCreateSessionId(): string {
-		const storageKey = "jarvis_session_id";
-		try {
-			const existing = String(window.localStorage.getItem(storageKey) || "").trim();
-			if (existing) return existing;
-			const newId =
-				(typeof crypto !== "undefined" && typeof (crypto as any).randomUUID === "function"
-					? (crypto as any).randomUUID()
-					: `${Date.now()}_${Math.random().toString(16).slice(2)}`);
-			window.localStorage.setItem(storageKey, newId);
-			return newId;
-		} catch {
-			return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
-		}
-	}
 
   public getSessionId(): string {
     if (!this.sessionId) this.sessionId = this.getOrCreateSessionId();
@@ -524,6 +532,7 @@ export class LiveService {
 
   public onStateChange: (state: ConnectionState) => void = () => {};
   public onMessage: (msg: MessageLog) => void = () => {};
+  public onPendingEvent: (ev: any) => void = () => {};
   public onVolume: (vol: number) => void = () => {};
   public onCarsIngestResult: (ev: CarsIngestResult) => void = () => {};
 
@@ -658,6 +667,7 @@ export class LiveService {
           role: "system",
           text: "connected",
           timestamp: new Date(),
+          metadata: { severity: "info", category: "ws" },
         });
         try {
           if (this.outputAudioContext && this.outputAudioContext.state === "suspended") {
@@ -695,6 +705,7 @@ export class LiveService {
           role: "system",
           text: `disconnected (code=${ev.code}${ev.reason ? ` reason=${ev.reason}` : ""})`,
           timestamp: new Date(),
+          metadata: { severity: "info", category: "ws" },
         });
       };
       this.ws.onerror = (err) => {
@@ -711,6 +722,7 @@ export class LiveService {
           role: "system",
           text: "connection_error",
           timestamp: new Date(),
+          metadata: { severity: "info", category: "ws" },
         });
       };
       this.ws.onmessage = (event) => {
@@ -853,6 +865,30 @@ export class LiveService {
 				timestamp: new Date(),
 				metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: ok ? "info" : "warn", category: "ws" },
 			});
+			return;
+		}
+
+		if (message?.type === "pending_event") {
+			try {
+				this.onPendingEvent(message);
+			} catch {
+				// ignore
+			}
+			try {
+				const ev = String(message?.event || "pending").trim() || "pending";
+				const cid = String(message?.confirmation_id || "").trim();
+				const action = String(message?.action || "").trim();
+				const summary = `pending_event ${ev}${action ? ` action=${action}` : ""}${cid ? ` id=${cid}` : ""}`;
+				this.onMessage({
+					id: `${Date.now()}_pending_event_${ev}`,
+					role: "system",
+					text: summary,
+					timestamp: new Date(),
+					metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "info", category: "ws" },
+				});
+			} catch {
+				// ignore
+			}
 			return;
 		}
 

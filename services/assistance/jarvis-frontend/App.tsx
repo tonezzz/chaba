@@ -598,6 +598,28 @@ export default function App() {
     liveService.current = new LiveService();
     liveService.current.onStateChange = setState;
     liveService.current.onVolume = setVolume;
+    liveService.current.onPendingEvent = (ev) => {
+      try {
+        const event = String((ev as any)?.event || "").trim();
+        const cid = String((ev as any)?.confirmation_id || "").trim();
+        if (event === "awaiting_user" && cid) {
+          setActiveRightPanel("output");
+          setActiveOutputTab("pending");
+        }
+        (async () => {
+          try {
+            await refreshPending();
+            if (event === "awaiting_user" && cid) {
+              await previewPending(cid);
+            }
+          } catch {
+            // ignore
+          }
+        })();
+      } catch {
+        // ignore
+      }
+    };
     liveService.current.onCarsIngestResult = (ev) => {
       setMessages((prev) => [
         {
@@ -610,6 +632,7 @@ export default function App() {
       ]);
       setActiveRightPanel("cars");
     };
+
     liveService.current.onMessage = (msg) => {
       try {
         appendUiLogEntry(msg);
@@ -713,7 +736,7 @@ export default function App() {
     return () => {
       liveService.current?.disconnect();
     };
-  }, [hasKey]);
+  }, [hasKey, previewPending, refreshPending]);
 
   useEffect(() => {
     const el = logScrollRef.current;
