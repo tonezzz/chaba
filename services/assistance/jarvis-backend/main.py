@@ -11509,12 +11509,22 @@ def _extract_mcp_text(result: Any) -> str:
     return mcp_client.extract_mcp_text(result)
 
 
-async def _mcp_web_fetch_text(url: str, max_length: int = 200000) -> str:
+async def _mcp_web_fetch_text(
+    url: str,
+    max_length: int = 200000,
+    start_index: int | None = None,
+    raw: bool | None = None,
+) -> str:
     meta = MCP_TOOL_MAP.get("web_fetch") or {}
     mcp_name = str(meta.get("mcp_name") or "").strip()
     if not mcp_name:
         raise HTTPException(status_code=500, detail="mcp_web_fetch_missing")
-    result = await _mcp_tools_call(mcp_name, {"url": url, "max_length": int(max_length)})
+    payload: dict[str, Any] = {"url": url, "max_length": int(max_length)}
+    if start_index is not None:
+        payload["start_index"] = int(start_index)
+    if raw is not None:
+        payload["raw"] = bool(raw)
+    result = await _mcp_tools_call(mcp_name, payload)
     return _extract_mcp_text(result)
 
 
@@ -11786,8 +11796,20 @@ async def _load_news_topics_from_sheet(*, sys_kv: dict[str, Any] | None) -> dict
     return out
 
 
-async def _fetch_news_items_from_source(url: str) -> list[dict[str, Any]]:
-    text = await _mcp_web_fetch_text(url, max_length=350000)
+async def _fetch_news_items_from_source(
+    url: str,
+    *,
+    debug: bool = False,
+    debug_out: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    text = await _mcp_web_fetch_text(url, max_length=350000, raw=True)
+    if debug and isinstance(debug_out, list):
+        try:
+            preview = str(text or "")[:240]
+            debug_out.append({"url": url, "len": len(str(text or "")), "preview": preview})
+        except Exception:
+            pass
+
     items = _parse_rss_items(text)
     if items:
         return items
@@ -11829,6 +11851,7 @@ async def _refresh_current_news_cache(*, sys_kv: dict[str, Any] | None = None) -
     sources_rows: list[dict[str, Any]] = []
     topics_cfg: dict[str, dict[str, Any]] = {}
     all_items: list[dict[str, Any]] = []
+    fetch_debug: list[dict[str, Any]] = []
 
     try:
         sources_rows = await _load_news_sources_from_sheet(sys_kv=sys_kv)
@@ -11845,7 +11868,13 @@ async def _refresh_current_news_cache(*, sys_kv: dict[str, Any] | None = None) -
                 url = str(src.get("url") or "").strip()
                 if not url:
                     continue
-                all_items.extend(await _fetch_news_items_from_source(url))
+                all_items.extend(
+                    await _fetch_news_items_from_source(
+                        url,
+                        debug=_sys_kv_bool(sys_kv, "current_news.debug.enabled", default=False),
+                        debug_out=fetch_debug,
+                    )
+                )
             except Exception:
                 continue
     else:
@@ -11891,6 +11920,7 @@ async def _refresh_current_news_cache(*, sys_kv: dict[str, Any] | None = None) -
                 "sources_count": len(sources_rows),
                 "sources": [str(s.get("url") or "").strip() for s in sources_rows[:10] if isinstance(s, dict)],
                 "topics_cfg_keys": sorted([str(k) for k in (topics_cfg.keys() if isinstance(topics_cfg, dict) else [])]),
+                "fetch": fetch_debug[:10],
             }
         except Exception:
             pass
