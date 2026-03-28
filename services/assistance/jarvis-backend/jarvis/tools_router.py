@@ -7,6 +7,26 @@ from typing import Any, Optional
 async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: dict[str, Any], *, deps: dict[str, Any]) -> Any:
     HTTPException = deps["HTTPException"]
 
+    async def _emit_pending_awaiting_user(*, session_id0: str, confirmation_id: str, action: str, payload: Any) -> None:
+        try:
+            session_ws0 = deps.get("SESSION_WS")
+            if not isinstance(session_ws0, dict):
+                return
+            ws0 = session_ws0.get(str(session_id0))
+            if ws0 is None:
+                return
+            await ws0.send_json(
+                {
+                    "type": "pending_event",
+                    "event": "awaiting_user",
+                    "confirmation_id": str(confirmation_id),
+                    "action": str(action or ""),
+                    "payload": payload,
+                }
+            )
+        except Exception:
+            return
+
     if tool_name in {"memo_update_queue", "system_memo_update_queue"}:
         if not session_id:
             raise HTTPException(status_code=400, detail="missing_session_id")
@@ -38,6 +58,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             proposed["active"] = bool(args.get("active"))
 
         confirmation_id = create_pending_write(str(session_id), "memo_update", proposed)
+        await _emit_pending_awaiting_user(session_id0=str(session_id), confirmation_id=confirmation_id, action="memo_update", payload=proposed)
         return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "id": int(memo_id)}
 
     if tool_name == "system_skill_upsert_queue":
@@ -76,6 +97,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             "content": content,
         }
         confirmation_id = create_pending_write(str(session_id), "skill_upsert", payload)
+        await _emit_pending_awaiting_user(session_id0=str(session_id), confirmation_id=confirmation_id, action="skill_upsert", payload=payload)
         return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "name": name}
 
     if tool_name == "system_write_queue":
@@ -140,7 +162,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         if (not action) or action.lower() in {"help", "list", "supported"}:
             return {"ok": True, "supported_actions": supported_actions}
         if action not in allowlisted:
-            raise HTTPException(status_code=403, detail={"error": "action_not_allowed", "action": action})
+            raise HTTPException(status_code=400, detail={"error": "action_not_allowed", "action": action})
 
         # Minimal per-action validation to prevent footguns.
         if action == "system_reload":
@@ -196,6 +218,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             }
 
         confirmation_id = create_pending_write(str(session_id), action, payload)
+        await _emit_pending_awaiting_user(session_id0=str(session_id), confirmation_id=confirmation_id, action=action, payload=payload)
         return {
             "ok": True,
             "queued": True,
@@ -305,7 +328,9 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         allowed_modes = {"full", "all", "memory", "knowledge", "sys", "gems"}
         if mode not in allowed_modes:
             raise HTTPException(status_code=400, detail="invalid_reload_mode")
-        confirmation_id = create_pending_write(str(session_id), "system_reload", {"mode": mode})
+        payload = {"mode": mode}
+        confirmation_id = create_pending_write(str(session_id), "system_reload", payload)
+        await _emit_pending_awaiting_user(session_id0=str(session_id), confirmation_id=confirmation_id, action="system_reload", payload=payload)
         return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "mode": mode}
 
     if tool_name == "system_macro_upsert_bundle_queue":
@@ -324,11 +349,13 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             raise HTTPException(status_code=400, detail="missing_macro_name")
         if not str(macro_args.get("steps_json") or "").strip():
             raise HTTPException(status_code=400, detail="missing_steps_json")
+        payload = {"macro": macro_args, "reload_mode": mode}
         confirmation_id = create_pending_write(
             str(session_id),
             "bundle_publish_macro_reload",
-            {"macro": macro_args, "reload_mode": mode},
+            payload,
         )
+        await _emit_pending_awaiting_user(session_id0=str(session_id), confirmation_id=confirmation_id, action="bundle_publish_macro_reload", payload=payload)
         return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "reload_mode": mode, "macro": {"name": macro_args.get("name")}}
 
     if tool_name == "google_account_relink_queue":
@@ -358,6 +385,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             "queued_by": "manual",
         }
         confirmation_id = create_pending_write(str(session_id), "google_account_relink", payload)
+        await _emit_pending_awaiting_user(session_id0=str(session_id), confirmation_id=confirmation_id, action="google_account_relink", payload=payload)
         return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "action": "google_account_relink"}
 
     if tool_name in {"system_skills_list", "system_skill_get"}:
@@ -576,41 +604,51 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
 
         if found_row_num is None:
             tool_append = pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+            pending_payload = {
+                "mcp_name": tool_append,
+                "arguments": {
+                    "spreadsheet_id": spreadsheet_id,
+                    "range": f"{sheet_name}!A:Z",
+                    "values": [row_out],
+                },
+                "mcp_base": "",
+                "tool_name": tool_append,
+            }
             confirmation_id = create_pending_write(
                 str(session_id),
                 action="mcp_tools_call",
-                payload={
-                    "mcp_name": tool_append,
-                    "arguments": {
-                        "spreadsheet_id": spreadsheet_id,
-                        "range": f"{sheet_name}!A:Z",
-                        "values": [row_out],
-                        "value_input_option": "RAW",
-                    },
-                    "mcp_base": "",
-                    "tool_name": "google_sheets_values_append",
-                },
+                payload=pending_payload,
             )
-            return {"ok": True, "queued": True, "action": "insert", "name": name, "confirmation_id": confirmation_id}
+            await _emit_pending_awaiting_user(session_id0=str(session_id), confirmation_id=confirmation_id, action="mcp_tools_call", payload=pending_payload)
+            return {
+                "ok": True,
+                "queued": True,
+                "confirmation_id": confirmation_id,
+                "action": "system_macro_upsert",
+                "mode": "append",
+                "row": 0,
+            }
 
         tool_update = pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
         start_col = _col_letter(0)
         end_col = _col_letter(max_col)
+        pending_payload2 = {
+            "mcp_name": tool_update,
+            "arguments": {
+                "spreadsheet_id": spreadsheet_id,
+                "range": f"{sheet_name}!{start_col}{found_row_num}:{end_col}{found_row_num}",
+                "values": [row_out],
+                "value_input_option": "RAW",
+            },
+            "mcp_base": "",
+            "tool_name": tool_update,
+        }
         confirmation_id2 = create_pending_write(
             str(session_id),
             action="mcp_tools_call",
-            payload={
-                "mcp_name": tool_update,
-                "arguments": {
-                    "spreadsheet_id": spreadsheet_id,
-                    "range": f"{sheet_name}!{start_col}{found_row_num}:{end_col}{found_row_num}",
-                    "values": [row_out],
-                    "value_input_option": "RAW",
-                },
-                "mcp_base": "",
-                "tool_name": "google_sheets_values_update",
-            },
+            payload=pending_payload2,
         )
+        await _emit_pending_awaiting_user(session_id0=str(session_id), confirmation_id=confirmation_id2, action="mcp_tools_call", payload=pending_payload2)
         return {"ok": True, "queued": True, "action": "update", "name": name, "row": found_row_num, "confirmation_id": confirmation_id2}
 
     if tool_name == "memory_add":
@@ -1486,10 +1524,24 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         if not session_id:
             raise HTTPException(status_code=400, detail="missing_session_id")
         get_pending_write = deps["get_pending_write"]
+        get_pending_write_any_session = deps.get("get_pending_write_any_session")
+        session_ws = deps.get("SESSION_WS")
         confirmation_id = str(args.get("confirmation_id") or "").strip()
         if not confirmation_id:
             raise HTTPException(status_code=400, detail="missing_confirmation_id")
         out = get_pending_write(str(session_id), confirmation_id)
+        if not out and get_pending_write_any_session and isinstance(session_ws, dict):
+            ws = session_ws.get(str(session_id))
+            is_admin = bool(getattr(getattr(ws, "state", None), "is_admin", False)) if ws is not None else False
+            if is_admin:
+                out_any = get_pending_write_any_session(confirmation_id)
+                if isinstance(out_any, dict):
+                    out = {
+                        "confirmation_id": str(out_any.get("confirmation_id") or confirmation_id),
+                        "action": out_any.get("action"),
+                        "payload": out_any.get("payload"),
+                        "created_at": out_any.get("created_at"),
+                    }
         if not out:
             raise HTTPException(status_code=404, detail="pending_write_not_found")
         return out
@@ -1498,10 +1550,24 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         if not session_id:
             raise HTTPException(status_code=400, detail="missing_session_id")
         get_pending_write = deps["get_pending_write"]
+        get_pending_write_any_session = deps.get("get_pending_write_any_session")
+        session_ws = deps.get("SESSION_WS")
         confirmation_id = str(args.get("confirmation_id") or "").strip()
         if not confirmation_id:
             raise HTTPException(status_code=400, detail="missing_confirmation_id")
         item = get_pending_write(str(session_id), confirmation_id)
+        if not item and get_pending_write_any_session and isinstance(session_ws, dict):
+            ws = session_ws.get(str(session_id))
+            is_admin = bool(getattr(getattr(ws, "state", None), "is_admin", False)) if ws is not None else False
+            if is_admin:
+                out_any = get_pending_write_any_session(confirmation_id)
+                if isinstance(out_any, dict):
+                    item = {
+                        "confirmation_id": str(out_any.get("confirmation_id") or confirmation_id),
+                        "action": out_any.get("action"),
+                        "payload": out_any.get("payload"),
+                        "created_at": out_any.get("created_at"),
+                    }
         if not item:
             raise HTTPException(status_code=404, detail="pending_write_not_found")
 
@@ -1636,6 +1702,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             raise HTTPException(status_code=400, detail="missing_session_id")
 
         pop_pending_write = deps["pop_pending_write"]
+        pop_pending_write_any_session = deps.get("pop_pending_write_any_session")
         session_ws = deps["SESSION_WS"]
         system_reload_impl = deps.get("system_reload_impl")
         load_ws_system_kv = deps["load_ws_system_kv"]
@@ -1656,9 +1723,39 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         if not confirmation_id:
             raise HTTPException(status_code=400, detail="missing_confirmation_id")
         user_input = args.get("input") if isinstance(args.get("input"), dict) else {}
+        owner_session_id: str | None = str(session_id)
         pending = pop_pending_write(session_id, confirmation_id)
+        if not pending and pop_pending_write_any_session and isinstance(session_ws, dict):
+            ws0 = session_ws.get(str(session_id))
+            is_admin = bool(getattr(getattr(ws0, "state", None), "is_admin", False)) if ws0 is not None else False
+            if is_admin:
+                pending_any = pop_pending_write_any_session(confirmation_id)
+                if isinstance(pending_any, dict):
+                    owner_session_id = str(pending_any.get("session_id") or "").strip() or None
+                    pending = {
+                        "action": pending_any.get("action"),
+                        "payload": pending_any.get("payload"),
+                        "created_at": pending_any.get("created_at"),
+                    }
         if not pending:
             raise HTTPException(status_code=404, detail="pending_write_not_found")
+
+        # Emit best-effort event (owner + actor session).
+        try:
+            ev = {
+                "type": "pending_event",
+                "event": "confirmed",
+                "confirmation_id": confirmation_id,
+                "action": str(pending.get("action") or ""),
+            }
+            ws_owner = session_ws.get(str(owner_session_id)) if owner_session_id else None
+            ws_actor = session_ws.get(str(session_id)) if session_id else None
+            if ws_owner is not None:
+                await ws_owner.send_json(ev)
+            if ws_actor is not None and ws_actor is not ws_owner:
+                await ws_actor.send_json(ev)
+        except Exception:
+            pass
         action = str(pending.get("action") or "")
         payload = pending.get("payload")
         if action == "system_reload":
@@ -2594,12 +2691,95 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         if not session_id:
             raise HTTPException(status_code=400, detail="missing_session_id")
         cancel_pending_write = deps["cancel_pending_write"]
+        cancel_pending_write_any_session = deps.get("cancel_pending_write_any_session")
+        session_ws = deps.get("SESSION_WS")
+        get_pending_write_any_session = deps.get("get_pending_write_any_session")
         confirmation_id = str(args.get("confirmation_id") or "").strip()
         if not confirmation_id:
             raise HTTPException(status_code=400, detail="missing_confirmation_id")
+        owner_session_id: str | None = str(session_id)
         ok = cancel_pending_write(session_id, confirmation_id)
+        if not ok and cancel_pending_write_any_session and isinstance(session_ws, dict):
+            ws = session_ws.get(str(session_id))
+            is_admin = bool(getattr(getattr(ws, "state", None), "is_admin", False)) if ws is not None else False
+            if is_admin:
+                if get_pending_write_any_session is not None:
+                    try:
+                        out_any = get_pending_write_any_session(confirmation_id)
+                        if isinstance(out_any, dict):
+                            owner_session_id = str(out_any.get("session_id") or "").strip() or None
+                    except Exception:
+                        pass
+                ok = bool(cancel_pending_write_any_session(confirmation_id))
         if not ok:
             raise HTTPException(status_code=404, detail="pending_write_not_found")
+
+        # Emit best-effort event (owner + actor session).
+        try:
+            ev = {"type": "pending_event", "event": "cancelled", "confirmation_id": confirmation_id}
+            ws_owner = session_ws.get(str(owner_session_id)) if isinstance(session_ws, dict) and owner_session_id else None
+            ws_actor = session_ws.get(str(session_id)) if isinstance(session_ws, dict) and session_id else None
+            if ws_owner is not None:
+                await ws_owner.send_json(ev)
+            if ws_actor is not None and ws_actor is not ws_owner:
+                await ws_actor.send_json(ev)
+        except Exception:
+            pass
+        return {"ok": True}
+
+    if tool_name == "pending_reassign":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        session_ws = deps.get("SESSION_WS")
+        reassign_pending_write = deps.get("reassign_pending_write")
+        get_pending_write_any_session = deps.get("get_pending_write_any_session")
+        if not reassign_pending_write:
+            raise HTTPException(status_code=500, detail="missing_reassign_pending_write")
+        ws = session_ws.get(str(session_id)) if isinstance(session_ws, dict) else None
+        is_admin = bool(getattr(getattr(ws, "state", None), "is_admin", False)) if ws is not None else False
+        if not is_admin:
+            raise HTTPException(status_code=403, detail="admin_required")
+        confirmation_id = str(args.get("confirmation_id") or "").strip()
+        new_session_id = str(args.get("new_session_id") or "").strip()
+        if not confirmation_id:
+            raise HTTPException(status_code=400, detail="missing_confirmation_id")
+        if not new_session_id:
+            raise HTTPException(status_code=400, detail="missing_new_session_id")
+
+        prev_owner: str | None = None
+        if get_pending_write_any_session is not None:
+            try:
+                out_any = get_pending_write_any_session(confirmation_id)
+                if isinstance(out_any, dict):
+                    prev_owner = str(out_any.get("session_id") or "").strip() or None
+            except Exception:
+                prev_owner = None
+
+        ok = bool(reassign_pending_write(confirmation_id, new_session_id))
+        if not ok:
+            raise HTTPException(status_code=404, detail="pending_write_not_found")
+
+        # Emit best-effort event (prev owner, new owner, actor).
+        try:
+            ev = {
+                "type": "pending_event",
+                "event": "reassigned",
+                "confirmation_id": confirmation_id,
+                "new_session_id": new_session_id,
+                "prev_session_id": prev_owner,
+            }
+            if isinstance(session_ws, dict):
+                ws_prev = session_ws.get(str(prev_owner)) if prev_owner else None
+                ws_new = session_ws.get(str(new_session_id)) if new_session_id else None
+                ws_actor = session_ws.get(str(session_id)) if session_id else None
+                if ws_prev is not None:
+                    await ws_prev.send_json(ev)
+                if ws_new is not None and ws_new is not ws_prev:
+                    await ws_new.send_json(ev)
+                if ws_actor is not None and ws_actor is not ws_prev and ws_actor is not ws_new:
+                    await ws_actor.send_json(ev)
+        except Exception:
+            pass
         return {"ok": True}
 
     mcp_tool_map = deps["MCP_TOOL_MAP"]
@@ -2618,11 +2798,13 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         if not session_id:
             raise HTTPException(status_code=400, detail="missing_session_id")
         create_pending_write = deps["create_pending_write"]
+        pending_payload = {"mcp_name": mcp_name, "arguments": dict(args), "mcp_base": mcp_base, "tool_name": tool_name}
         confirmation_id = create_pending_write(
             session_id,
             action="mcp_tools_call",
-            payload={"mcp_name": mcp_name, "arguments": dict(args), "mcp_base": mcp_base, "tool_name": tool_name},
+            payload=pending_payload,
         )
+        await _emit_pending_awaiting_user(session_id0=str(session_id), confirmation_id=confirmation_id, action="mcp_tools_call", payload=pending_payload)
         return {
             "requires_confirmation": True,
             "confirmation_id": confirmation_id,

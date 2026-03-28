@@ -4853,6 +4853,12 @@ AGENTS_DIR = str(os.getenv("JARVIS_AGENTS_DIR") or "/app/agents").strip() or "/a
 DEFAULT_USER_ID = os.getenv("DEFAULT_USER_ID", "default")
 DEFAULT_TIMEZONE = os.getenv("DEFAULT_TIMEZONE", "Asia/Bangkok")
 
+ADMIN_SESSION_IDS = {
+    s.strip()
+    for s in str(os.getenv("JARVIS_ADMIN_SESSION_IDS") or "").split(",")
+    if s.strip()
+}
+
 MORNING_BRIEF_HOUR = int(str(os.getenv("JARVIS_MORNING_BRIEF_HOUR") or "8").strip() or "8")
 MORNING_BRIEF_MINUTE = int(str(os.getenv("JARVIS_MORNING_BRIEF_MINUTE") or "0").strip() or "0")
 
@@ -12128,12 +12134,28 @@ def _get_pending_write(session_id: str, confirmation_id: str) -> Optional[dict[s
     return db_session.get_pending_write(SESSION_DB_PATH, session_id, confirmation_id)
 
 
+def _get_pending_write_any_session(confirmation_id: str) -> Optional[dict[str, Any]]:
+    return db_session.get_pending_write_any_session(SESSION_DB_PATH, confirmation_id)
+
+
 def _pop_pending_write(session_id: str, confirmation_id: str) -> Optional[dict[str, Any]]:
     return db_session.pop_pending_write(SESSION_DB_PATH, session_id, confirmation_id)
 
 
+def _pop_pending_write_any_session(confirmation_id: str) -> Optional[dict[str, Any]]:
+    return db_session.pop_pending_write_any_session(SESSION_DB_PATH, confirmation_id)
+
+
 def _cancel_pending_write(session_id: str, confirmation_id: str) -> bool:
     return db_session.cancel_pending_write(SESSION_DB_PATH, session_id, confirmation_id)
+
+
+def _cancel_pending_write_any_session(confirmation_id: str) -> bool:
+    return db_session.cancel_pending_write_any_session(SESSION_DB_PATH, confirmation_id)
+
+
+def _reassign_pending_write(confirmation_id: str, new_session_id: str) -> bool:
+    return db_session.reassign_pending_write(SESSION_DB_PATH, confirmation_id, new_session_id)
 
 app.add_middleware(
     CORSMiddleware,
@@ -14557,6 +14579,18 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
             }
         )
 
+        decls.append(
+            {
+                "name": "pending_reassign",
+                "description": "Admin-only: move a pending write to a different session_id (ownership transfer).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"confirmation_id": {"type": "string"}, "new_session_id": {"type": "string"}},
+                    "required": ["confirmation_id", "new_session_id"],
+                },
+            }
+        )
+
     if not macros_only:
         decls.append(
             {
@@ -15249,9 +15283,13 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         "gemini_summarize_text": _gemini_summarize_text,
         "list_pending_writes": _list_pending_writes,
         "get_pending_write": _get_pending_write,
+        "get_pending_write_any_session": _get_pending_write_any_session,
         "create_pending_write": _create_pending_write,
         "pop_pending_write": _pop_pending_write,
         "cancel_pending_write": _cancel_pending_write,
+        "pop_pending_write_any_session": _pop_pending_write_any_session,
+        "cancel_pending_write_any_session": _cancel_pending_write_any_session,
+        "reassign_pending_write": _reassign_pending_write,
         "adapt_aim_tool_args": _adapt_aim_tool_args,
         "aim_mcp_tools_call": _aim_mcp_tools_call,
         "parse_time_from_text": _parse_time_from_text,
@@ -16155,6 +16193,11 @@ async def ws_live(ws: WebSocket) -> None:
     # per-session state across reconnects.
     session_id = str(ws.query_params.get("session_id") or "").strip() or None
     ws.state.session_id = session_id
+
+    try:
+        ws.state.is_admin = bool(session_id and str(session_id) in ADMIN_SESSION_IDS)
+    except Exception:
+        ws.state.is_admin = False
 
     if session_id:
         try:

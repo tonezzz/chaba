@@ -119,6 +119,33 @@ def get_pending_write(db_path: str, session_id: str, confirmation_id: str) -> Op
     return {"confirmation_id": cid, "action": action, "payload": payload, "created_at": int(created_at or 0)}
 
 
+def get_pending_write_any_session(db_path: str, confirmation_id: str) -> Optional[dict[str, Any]]:
+    init_session_db(db_path)
+    cid = str(confirmation_id or "").strip()
+    if not cid:
+        return None
+    with sqlite3.connect(db_path) as conn:
+        cur = conn.execute(
+            "SELECT session_id, action, payload_json, created_at FROM pending_writes WHERE confirmation_id = ?",
+            (cid,),
+        )
+        row = cur.fetchone()
+    if not row:
+        return None
+    session_id, action, payload_json, created_at = row
+    try:
+        payload = json.loads(payload_json)
+    except Exception:
+        payload = payload_json
+    return {
+        "confirmation_id": cid,
+        "session_id": str(session_id or "").strip() or None,
+        "action": action,
+        "payload": payload,
+        "created_at": int(created_at or 0),
+    }
+
+
 def pop_pending_write(db_path: str, session_id: str, confirmation_id: str) -> Optional[dict[str, Any]]:
     init_session_db(db_path)
     with sqlite3.connect(db_path) as conn:
@@ -142,6 +169,35 @@ def pop_pending_write(db_path: str, session_id: str, confirmation_id: str) -> Op
     return {"action": action, "payload": payload, "created_at": created_at}
 
 
+def pop_pending_write_any_session(db_path: str, confirmation_id: str) -> Optional[dict[str, Any]]:
+    init_session_db(db_path)
+    cid = str(confirmation_id or "").strip()
+    if not cid:
+        return None
+    with sqlite3.connect(db_path) as conn:
+        cur = conn.execute(
+            "SELECT session_id, action, payload_json, created_at FROM pending_writes WHERE confirmation_id = ?",
+            (cid,),
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+        session_id, action, payload_json, created_at = row
+        conn.execute("DELETE FROM pending_writes WHERE confirmation_id = ?", (cid,))
+        conn.commit()
+    try:
+        payload = json.loads(payload_json)
+    except Exception:
+        payload = payload_json
+    return {
+        "confirmation_id": cid,
+        "session_id": str(session_id or "").strip() or None,
+        "action": action,
+        "payload": payload,
+        "created_at": int(created_at or 0),
+    }
+
+
 def cancel_pending_write(db_path: str, session_id: str, confirmation_id: str) -> bool:
     init_session_db(db_path)
     with sqlite3.connect(db_path) as conn:
@@ -149,6 +205,29 @@ def cancel_pending_write(db_path: str, session_id: str, confirmation_id: str) ->
             "DELETE FROM pending_writes WHERE session_id = ? AND confirmation_id = ?",
             (session_id, confirmation_id),
         )
+        conn.commit()
+        return (cur.rowcount or 0) > 0
+
+
+def cancel_pending_write_any_session(db_path: str, confirmation_id: str) -> bool:
+    init_session_db(db_path)
+    cid = str(confirmation_id or "").strip()
+    if not cid:
+        return False
+    with sqlite3.connect(db_path) as conn:
+        cur = conn.execute("DELETE FROM pending_writes WHERE confirmation_id = ?", (cid,))
+        conn.commit()
+        return (cur.rowcount or 0) > 0
+
+
+def reassign_pending_write(db_path: str, confirmation_id: str, new_session_id: str) -> bool:
+    init_session_db(db_path)
+    cid = str(confirmation_id or "").strip()
+    sid = str(new_session_id or "").strip()
+    if not cid or not sid:
+        return False
+    with sqlite3.connect(db_path) as conn:
+        cur = conn.execute("UPDATE pending_writes SET session_id = ? WHERE confirmation_id = ?", (sid, cid))
         conn.commit()
         return (cur.rowcount or 0) > 0
 
