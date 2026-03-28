@@ -3878,6 +3878,54 @@ def _current_news_sheet_cfg_from_sys_kv(sys_kv: dict[str, Any] | None) -> tuple[
     return (spreadsheet_id, sheet_name)
 
 
+def _current_news_sources_sheet_cfg_from_sys_kv(sys_kv: dict[str, Any] | None) -> tuple[str, str]:
+    spreadsheet_id = ""
+    sheet_name = ""
+    if isinstance(sys_kv, dict):
+        spreadsheet_id = str(
+            sys_kv.get("current_news.sources.spreadsheet_id")
+            or sys_kv.get("current_news.sources.spreadsheet_name")
+            or sys_kv.get("current_news.spreadsheet_id")
+            or sys_kv.get("current_news_ss")
+            or ""
+        ).strip()
+        sheet_name = str(
+            sys_kv.get("current_news.sources.sheet_name")
+            or sys_kv.get("news_sources.sheet_name")
+            or sys_kv.get("news_sources_sh")
+            or ""
+        ).strip()
+    if not spreadsheet_id:
+        spreadsheet_id = _system_spreadsheet_id()
+    if not sheet_name:
+        sheet_name = "news_sources"
+    return (spreadsheet_id, sheet_name)
+
+
+def _current_news_topics_sheet_cfg_from_sys_kv(sys_kv: dict[str, Any] | None) -> tuple[str, str]:
+    spreadsheet_id = ""
+    sheet_name = ""
+    if isinstance(sys_kv, dict):
+        spreadsheet_id = str(
+            sys_kv.get("current_news.topics.spreadsheet_id")
+            or sys_kv.get("current_news.topics.spreadsheet_name")
+            or sys_kv.get("current_news.spreadsheet_id")
+            or sys_kv.get("current_news_ss")
+            or ""
+        ).strip()
+        sheet_name = str(
+            sys_kv.get("current_news.topics.sheet_name")
+            or sys_kv.get("news_topics.sheet_name")
+            or sys_kv.get("news_topics_sh")
+            or ""
+        ).strip()
+    if not spreadsheet_id:
+        spreadsheet_id = _system_spreadsheet_id()
+    if not sheet_name:
+        sheet_name = "news_topics"
+    return (spreadsheet_id, sheet_name)
+
+
 async def _sheet_get_header_row(*, spreadsheet_id: str, sheet_a1: str, max_cols: str = "Z") -> list[Any]:
     return await sheets_utils.sheet_get_header_row(
         spreadsheet_id=spreadsheet_id,
@@ -11491,6 +11539,34 @@ def _parse_rss_items(xml_text: str) -> list[dict[str, Any]]:
     return items
 
 
+def _parse_atom_items(xml_text: str) -> list[dict[str, Any]]:
+    s = str(xml_text or "")
+    if not s.strip():
+        return []
+    try:
+        root = ET.fromstring(s)
+    except Exception:
+        return []
+
+    items: list[dict[str, Any]] = []
+    ns = {"atom": "http://www.w3.org/2005/Atom"}
+    for it in root.findall(".//atom:entry", ns) + root.findall(".//entry"):
+        title = (it.findtext("atom:title", default="", namespaces=ns) or it.findtext("title") or "").strip()
+        pub = (it.findtext("atom:updated", default="", namespaces=ns) or it.findtext("updated") or it.findtext("published") or "").strip()
+        link = ""
+        try:
+            ln = it.find("atom:link", ns) or it.find("link")
+            if ln is not None:
+                link = str(ln.get("href") or ln.text or "").strip()
+        except Exception:
+            link = ""
+        desc = (it.findtext("atom:summary", default="", namespaces=ns) or it.findtext("summary") or "").strip()
+        if not title and not link:
+            continue
+        items.append({"title": title, "link": link, "pubDate": pub, "description": desc})
+    return items
+
+
 def _topic_match(text: str, keywords: list[str]) -> bool:
     s = " ".join(str(text or "").lower().split())
     if not s:
@@ -11501,7 +11577,7 @@ def _topic_match(text: str, keywords: list[str]) -> bool:
     return False
 
 
-def _build_current_news_context(items: list[dict[str, Any]]) -> dict[str, Any]:
+def _build_current_news_context(items: list[dict[str, Any]], topics_cfg: Optional[dict[str, dict[str, Any]]] = None) -> dict[str, Any]:
     def pick(keywords: list[str], limit: int = 6) -> list[dict[str, Any]]:
         out: list[dict[str, Any]] = []
         for it in items:
@@ -11512,32 +11588,51 @@ def _build_current_news_context(items: list[dict[str, Any]]) -> dict[str, Any]:
                 break
         return out
 
-    iran = pick(
-        [
-            "iran",
-            "israel",
-            "tehran",
-            "gaza",
-            "hezbollah",
-            "missile",
-            "drone",
-            "strike",
-            "ceasefire",
-            "u.s.",
-            "us ",
-            "pentagon",
-        ]
-    )
-    gold = pick(["gold", "bullion", "xau"], limit=4)
-    usd = pick(["dollar", "usd", "treasury", "yield", "fed"], limit=4)
-    oil = pick(["oil", "crude", "brent", "wti", "opec"], limit=4)
-    thb = pick(["thai baht", "baht", "thb", "usd/thb", "thb/usd", "bank of thailand", "bot"], limit=4)
+    defaults: dict[str, dict[str, Any]] = {
+        "iran_war": {
+            "keywords": [
+                "iran",
+                "israel",
+                "tehran",
+                "gaza",
+                "hezbollah",
+                "missile",
+                "drone",
+                "strike",
+                "ceasefire",
+                "u.s.",
+                "us ",
+                "pentagon",
+            ],
+            "limit": 6,
+            "headlines": 5,
+        },
+        "gold": {"keywords": ["gold", "bullion", "xau"], "limit": 4, "headlines": 3},
+        "usd": {"keywords": ["dollar", "usd", "treasury", "yield", "fed"], "limit": 4, "headlines": 3},
+        "oil": {"keywords": ["oil", "crude", "brent", "wti", "opec"], "limit": 4, "headlines": 3},
+        "thb": {"keywords": ["thai baht", "baht", "thb", "usd/thb", "thb/usd", "bank of thailand", "bot"], "limit": 4, "headlines": 3},
+    }
 
-    sources: list[str] = []
-    for it in (iran + gold + usd + oil + thb):
-        link = str(it.get("link") or "").strip()
-        if link and link not in sources:
-            sources.append(link)
+    merged: dict[str, dict[str, Any]] = {k: dict(v) for k, v in defaults.items()}
+    if isinstance(topics_cfg, dict):
+        for k, v in topics_cfg.items():
+            kk = str(k or "").strip()
+            if not kk or not isinstance(v, dict):
+                continue
+            cur = merged.get(kk, {})
+            if isinstance(v.get("keywords"), list):
+                cur["keywords"] = [str(x or "").strip() for x in v.get("keywords") if str(x or "").strip()]
+            if v.get("limit") is not None:
+                try:
+                    cur["limit"] = int(v.get("limit"))
+                except Exception:
+                    pass
+            if v.get("headlines") is not None:
+                try:
+                    cur["headlines"] = int(v.get("headlines"))
+                except Exception:
+                    pass
+            merged[kk] = cur
 
     def brief_lines(section_items: list[dict[str, Any]], max_lines: int) -> list[str]:
         lines: list[str] = []
@@ -11547,18 +11642,26 @@ def _build_current_news_context(items: list[dict[str, Any]]) -> dict[str, Any]:
                 lines.append(t)
         return lines
 
+    topics_out: dict[str, Any] = {}
+    sources: list[str] = []
+    for key in ["iran_war", "gold", "usd", "oil", "thb"]:
+        cfg = merged.get(key) or {}
+        kw = cfg.get("keywords") if isinstance(cfg.get("keywords"), list) else []
+        lim = int(cfg.get("limit") or 6)
+        hl = int(cfg.get("headlines") or 3)
+        picked = pick([str(x) for x in kw], limit=lim)
+        topics_out[key] = {"headlines": brief_lines(picked, hl), "items": picked}
+        for it in picked:
+            link = str(it.get("link") or "").strip()
+            if link and link not in sources:
+                sources.append(link)
+
     now_ts = int(time.time())
     return {
         "summary": "Current-news context refreshed",
         "updated_at": now_ts,
         "sources": sources,
-        "topics": {
-            "iran_war": {"headlines": brief_lines(iran, 5), "items": iran},
-            "gold": {"headlines": brief_lines(gold, 3), "items": gold},
-            "usd": {"headlines": brief_lines(usd, 3), "items": usd},
-            "oil": {"headlines": brief_lines(oil, 3), "items": oil},
-            "thb": {"headlines": brief_lines(thb, 3), "items": thb},
-        },
+        "topics": topics_out,
     }
 
 
@@ -11600,6 +11703,100 @@ def _cell_str(row: list[Any], idx: dict[str, int], key: str) -> str:
         return ""
 
 
+async def _load_news_sources_from_sheet(*, sys_kv: dict[str, Any] | None) -> list[dict[str, Any]]:
+    spreadsheet_id, sheet_name = _current_news_sources_sheet_cfg_from_sys_kv(sys_kv)
+    sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="news_sources")
+    table = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_a1, max_rows=500, max_cols="H")
+    if not table:
+        return []
+    header = table[0] if isinstance(table[0], list) else []
+    idx = _idx_from_header(header)
+    if not idx:
+        return []
+
+    out: list[dict[str, Any]] = []
+    for r in table[1:]:
+        if not isinstance(r, list):
+            continue
+        url = _cell_str(r, idx, "url") or _cell_str(r, idx, "link")
+        if not url:
+            continue
+        enabled_raw = _cell_str(r, idx, "enabled") or _cell_str(r, idx, "active")
+        enabled = True
+        if enabled_raw:
+            try:
+                enabled = _parse_bool_cell(enabled_raw)
+            except Exception:
+                enabled = True
+        if not enabled:
+            continue
+        name = _cell_str(r, idx, "name") or _cell_str(r, idx, "id")
+        typ = _cell_str(r, idx, "type")
+        tags = _cell_str(r, idx, "tags")
+        out.append({"name": name, "url": url, "type": typ, "tags": tags, "enabled": True})
+    return out
+
+
+async def _load_news_topics_from_sheet(*, sys_kv: dict[str, Any] | None) -> dict[str, dict[str, Any]]:
+    spreadsheet_id, sheet_name = _current_news_topics_sheet_cfg_from_sys_kv(sys_kv)
+    sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="news_topics")
+    table = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_a1, max_rows=500, max_cols="K")
+    if not table:
+        return {}
+    header = table[0] if isinstance(table[0], list) else []
+    idx = _idx_from_header(header)
+    if not idx:
+        return {}
+
+    out: dict[str, dict[str, Any]] = {}
+    for r in table[1:]:
+        if not isinstance(r, list):
+            continue
+        key = (_cell_str(r, idx, "topic") or _cell_str(r, idx, "key") or _cell_str(r, idx, "name")).strip()
+        if not key:
+            continue
+        enabled_raw = _cell_str(r, idx, "enabled") or _cell_str(r, idx, "active")
+        if enabled_raw and not _parse_bool_cell(enabled_raw):
+            continue
+
+        kw_raw = _cell_str(r, idx, "keywords") or _cell_str(r, idx, "keyword")
+        keywords: list[str] = []
+        if kw_raw:
+            try:
+                parsed = json.loads(kw_raw)
+                if isinstance(parsed, list):
+                    keywords = [str(x or "").strip() for x in parsed if str(x or "").strip()]
+            except Exception:
+                keywords = [x.strip() for x in kw_raw.split(",") if x.strip()]
+
+        limit_v = _cell_str(r, idx, "limit")
+        headlines_v = _cell_str(r, idx, "headlines")
+        cfg: dict[str, Any] = {"keywords": keywords}
+        if limit_v:
+            try:
+                cfg["limit"] = int(float(limit_v))
+            except Exception:
+                pass
+        if headlines_v:
+            try:
+                cfg["headlines"] = int(float(headlines_v))
+            except Exception:
+                pass
+        out[key] = cfg
+    return out
+
+
+async def _fetch_news_items_from_source(url: str) -> list[dict[str, Any]]:
+    text = await _mcp_web_fetch_text(url, max_length=350000)
+    items = _parse_rss_items(text)
+    if items:
+        return items
+    items2 = _parse_atom_items(text)
+    if items2:
+        return items2
+    return []
+
+
 async def _load_current_news_items_from_sheet(*, sys_kv: dict[str, Any] | None) -> list[dict[str, Any]]:
     spreadsheet_id, sheet_name = _current_news_sheet_cfg_from_sys_kv(sys_kv)
     if not spreadsheet_id:
@@ -11629,29 +11826,51 @@ async def _load_current_news_items_from_sheet(*, sys_kv: dict[str, Any] | None) 
 
 
 async def _refresh_current_news_cache(*, sys_kv: dict[str, Any] | None = None) -> dict[str, Any]:
-    spreadsheet_id, sheet_name = _current_news_sheet_cfg_from_sys_kv(sys_kv)
-    sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="current_news")
-
-    table: list[list[Any]] = []
-    header: list[Any] = []
-    idx: dict[str, int] = {}
+    sources_rows: list[dict[str, Any]] = []
+    topics_cfg: dict[str, dict[str, Any]] = {}
     all_items: list[dict[str, Any]] = []
+
     try:
-        table = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_a1, max_rows=500, max_cols="H")
-        header = table[0] if isinstance(table[0], list) else []
-        idx = _idx_from_header(header)
-        for r in table[1:]:
-            if not isinstance(r, list):
-                continue
-            title = _cell_str(r, idx, "title")
-            link = _cell_str(r, idx, "link") or _cell_str(r, idx, "url")
-            desc = _cell_str(r, idx, "description")
-            pub = _cell_str(r, idx, "pubdate") or _cell_str(r, idx, "published")
-            if not title and not link:
-                continue
-            all_items.append({"title": title, "link": link, "pubDate": pub, "description": desc})
+        sources_rows = await _load_news_sources_from_sheet(sys_kv=sys_kv)
     except Exception:
-        all_items = await _load_current_news_items_from_sheet(sys_kv=sys_kv)
+        sources_rows = []
+    try:
+        topics_cfg = await _load_news_topics_from_sheet(sys_kv=sys_kv)
+    except Exception:
+        topics_cfg = {}
+
+    if sources_rows:
+        for src in sources_rows:
+            try:
+                url = str(src.get("url") or "").strip()
+                if not url:
+                    continue
+                all_items.extend(await _fetch_news_items_from_source(url))
+            except Exception:
+                continue
+    else:
+        spreadsheet_id, sheet_name = _current_news_sheet_cfg_from_sys_kv(sys_kv)
+        sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="current_news")
+
+        table: list[list[Any]] = []
+        header: list[Any] = []
+        idx: dict[str, int] = {}
+        try:
+            table = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_a1, max_rows=500, max_cols="H")
+            header = table[0] if isinstance(table[0], list) else []
+            idx = _idx_from_header(header)
+            for r in table[1:]:
+                if not isinstance(r, list):
+                    continue
+                title = _cell_str(r, idx, "title")
+                link = _cell_str(r, idx, "link") or _cell_str(r, idx, "url")
+                desc = _cell_str(r, idx, "description")
+                pub = _cell_str(r, idx, "pubdate") or _cell_str(r, idx, "published")
+                if not title and not link:
+                    continue
+                all_items.append({"title": title, "link": link, "pubDate": pub, "description": desc})
+        except Exception:
+            all_items = await _load_current_news_items_from_sheet(sys_kv=sys_kv)
 
     seen: set[str] = set()
     deduped: list[dict[str, Any]] = []
@@ -11663,19 +11882,15 @@ async def _refresh_current_news_cache(*, sys_kv: dict[str, Any] | None = None) -
         seen.add(key)
         deduped.append(it)
 
-    ctx = _build_current_news_context(deduped)
+    ctx = _build_current_news_context(deduped, topics_cfg=topics_cfg if isinstance(topics_cfg, dict) else None)
     if _sys_kv_bool(sys_kv, "current_news.debug.enabled", default=False):
         try:
             ctx["_debug"] = {
-                "spreadsheet_id": spreadsheet_id,
-                "sheet_name": sheet_name,
-                "sheet_a1": sheet_a1,
-                "rows_total": len(table),
-                "rows_data": max(0, len(table) - 1),
-                "header": [str(x or "").strip() for x in (header or []) if str(x or "").strip()],
-                "header_keys": sorted([str(k) for k in (idx.keys() if isinstance(idx, dict) else [])]),
                 "items_loaded": len(all_items),
                 "items_deduped": len(deduped),
+                "sources_count": len(sources_rows),
+                "sources": [str(s.get("url") or "").strip() for s in sources_rows[:10] if isinstance(s, dict)],
+                "topics_cfg_keys": sorted([str(k) for k in (topics_cfg.keys() if isinstance(topics_cfg, dict) else [])]),
             }
         except Exception:
             pass
