@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { LiveService } from './services/liveService';
 import { sequentialApplyAndSuggest } from './services/sequentialService';
 import { ConnectionState, MessageLog } from './types';
+import { useFullscreenEscape } from './hooks/useFullscreenEscape';
 
 import Visualizer from './components/Visualizer';
 import CameraFeed from './components/CameraFeed';
@@ -248,6 +249,7 @@ export default function App() {
     const isJarvisSubpath = location.pathname.startsWith("/jarvis");
     const defaults = isJarvisSubpath ? ["/jarvis/api", "/jarvis", ""] : ["", "/jarvis/api", "/jarvis"];
     const out = normOverride ? [normOverride, ...defaults] : defaults;
+
     const seen = new Set<string>();
     return out.filter((v) => {
       const k = String(v || "");
@@ -1562,24 +1564,7 @@ export default function App() {
     }
   };
 
-  useEffect(() => {
-    if (!leftFullscreen) return;
-
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setLeftFullscreen(false);
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [leftFullscreen]);
+  useFullscreenEscape(leftFullscreen, setLeftFullscreen);
 
   if (!hasKey) {
     const renderHealthIcon = (healthRaw: any) => {
