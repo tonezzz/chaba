@@ -830,6 +830,19 @@ export class LiveService {
       client_id: message?.client_id != null ? String(message.client_id) : undefined,
     };
 
+    if (message?.type === "session_resume") {
+      const ok = message?.ok === true;
+      const turns = Array.isArray(message?.turns) ? message.turns : [];
+      this.onMessage({
+        id: `${Date.now()}_session_resume`,
+        role: "system",
+        text: ok ? `session_resume ok turns=${turns.length}` : "session_resume empty",
+        timestamp: new Date(),
+        metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: "info", category: "ws", resume: { ok, turns } },
+      });
+      return;
+    }
+
     if (message?.type === "ui") {
       const kind = message?.kind != null ? String(message.kind) : "ui";
       const title = message?.title != null ? String(message.title) : "";

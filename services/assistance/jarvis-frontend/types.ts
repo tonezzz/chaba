@@ -23,6 +23,10 @@ export interface MessageLog {
     trace_id?: string;
     severity?: 'debug' | 'info' | 'warn' | 'error';
     category?: 'live' | 'reminder' | 'weaviate' | 'ws' | 'unknown';
+    resume?: {
+      ok: boolean;
+      turns: Array<{ role: 'user' | 'model'; text: string; ts: number; trace_id?: string }>;
+    };
     ws?: {
       type?: string;
       instance_id?: string;

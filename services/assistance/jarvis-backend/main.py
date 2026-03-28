@@ -19,6 +19,11 @@ from typing import Any, Optional, Literal
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
+try:
+    import redis.asyncio as redis_async
+except Exception:
+    redis_async = None
+
 from jarvis.feature_flags import feature_enabled
 from jarvis import memo_sheet
 from jarvis import memo_enrich
@@ -79,6 +84,148 @@ _SHEET_MEMORY_CACHE: dict[str, Any] = {
     "memory_sheet_name": None,
     "memory_context_text": "",
 }
+
+
+RECENT_DIALOG_TTL_SECONDS = int(os.getenv("JARVIS_RECENT_DIALOG_TTL_SECONDS") or "21600")
+RECENT_DIALOG_MAX_TURNS = int(os.getenv("JARVIS_RECENT_DIALOG_MAX_TURNS") or "40")
+RECENT_DIALOG_MAX_CHARS = int(os.getenv("JARVIS_RECENT_DIALOG_MAX_CHARS") or "4000")
+
+_RECENT_DIALOG_MEM: dict[str, list[dict[str, Any]]] = {}
+_RECENT_DIALOG_MEM_LOCK: asyncio.Lock = asyncio.Lock()
+_redis_client: Any = None
+
+
+def _recent_dialog_redis_key(session_id: str) -> str:
+    sid = str(session_id or "").strip()
+    return f"jarvis:recent_dialog:v1:{sid}"
+
+
+async def _get_redis_client() -> Any:
+    global _redis_client
+    if _redis_client is not None:
+        return _redis_client
+    if redis_async is None:
+        _redis_client = None
+        return None
+    url = str(os.getenv("REDIS_URL") or "").strip()
+    if not url:
+        _redis_client = None
+        return None
+    try:
+        _redis_client = redis_async.from_url(url, decode_responses=True)
+    except Exception:
+        _redis_client = None
+    return _redis_client
+
+
+def _clamp_text(s: Any, limit: int) -> str:
+    try:
+        t = str(s or "")
+    except Exception:
+        return ""
+    t = t.strip()
+    if not t:
+        return ""
+    if len(t) > limit:
+        return t[:limit].rstrip() + "…"
+    return t
+
+
+async def _recent_dialog_append(session_id: str | None, role: str, text: str, *, trace_id: str | None = None) -> None:
+    sid = str(session_id or "").strip()
+    if not sid:
+        return
+    r = str(role or "").strip().lower()
+    if r not in {"user", "model"}:
+        return
+    t = _clamp_text(text, RECENT_DIALOG_MAX_CHARS)
+    if not t:
+        return
+    item = {
+        "role": r,
+        "text": t,
+        "ts": int(time.time() * 1000),
+    }
+    if trace_id:
+        item["trace_id"] = str(trace_id)
+
+    client = await _get_redis_client()
+    if client is not None:
+        try:
+            key = _recent_dialog_redis_key(sid)
+            await client.rpush(key, json.dumps(item))
+            # Cap list length to last N turns.
+            await client.ltrim(key, -RECENT_DIALOG_MAX_TURNS, -1)
+            await client.expire(key, RECENT_DIALOG_TTL_SECONDS)
+            return
+        except Exception:
+            # Fall back to in-memory.
+            pass
+
+    try:
+        async with _RECENT_DIALOG_MEM_LOCK:
+            buf = _RECENT_DIALOG_MEM.get(sid)
+            if not isinstance(buf, list):
+                buf = []
+            buf.append(item)
+            if len(buf) > RECENT_DIALOG_MAX_TURNS:
+                buf = buf[-RECENT_DIALOG_MAX_TURNS :]
+            _RECENT_DIALOG_MEM[sid] = buf
+    except Exception:
+        pass
+
+
+async def _recent_dialog_load(session_id: str | None) -> list[dict[str, Any]]:
+    sid = str(session_id or "").strip()
+    if not sid:
+        return []
+
+    client = await _get_redis_client()
+    if client is not None:
+        try:
+            key = _recent_dialog_redis_key(sid)
+            raw = await client.lrange(key, 0, -1)
+            out: list[dict[str, Any]] = []
+            if isinstance(raw, list):
+                for it in raw:
+                    try:
+                        js = json.loads(it)
+                        if isinstance(js, dict) and js.get("role") in {"user", "model"} and js.get("text"):
+                            out.append(js)
+                    except Exception:
+                        continue
+            return out
+        except Exception:
+            pass
+
+    try:
+        async with _RECENT_DIALOG_MEM_LOCK:
+            buf = _RECENT_DIALOG_MEM.get(sid)
+            if isinstance(buf, list):
+                return list(buf)
+    except Exception:
+        pass
+    return []
+
+
+async def _ws_emit_session_resume(ws: WebSocket) -> None:
+    try:
+        sid = getattr(ws.state, "session_id", None)
+    except Exception:
+        sid = None
+    turns = await _recent_dialog_load(str(sid) if sid else None)
+    ok = bool(turns)
+    payload = {
+        "type": "session_resume",
+        "ok": ok,
+        "session_id": str(sid) if sid else None,
+        "turns": turns if ok else [],
+        "instance_id": INSTANCE_ID,
+    }
+    try:
+        await _ws_send_json(ws, payload)
+    except Exception:
+        pass
 
 _SHEET_KNOWLEDGE_CACHE: dict[str, Any] = {
     "loaded_at": 0,
@@ -15819,6 +15966,11 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             except Exception:
                 pass
 
+            try:
+                await _recent_dialog_append(getattr(ws.state, "session_id", None), "user", text, trace_id=trace_id2)
+            except Exception:
+                pass
+
             # Intercept local slash commands (typed) so they never go to Gemini.
             # This avoids confusing model replies like "task not found" for /sys commands.
             try:
@@ -16583,7 +16735,12 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
             # Send text if present (useful for debugging / future UI)
             text = getattr(server_msg, "text", None)
             if text:
-                await _ws_send_json(ws, {"type": "text", "text": str(text)})
+                out_text = str(text)
+                await _ws_send_json(ws, {"type": "text", "text": out_text})
+                try:
+                    await _recent_dialog_append(getattr(ws.state, "session_id", None), "model", out_text)
+                except Exception:
+                    pass
 
 
 @app.websocket("/ws/live")
@@ -16613,6 +16770,11 @@ async def ws_live(ws: WebSocket) -> None:
     try:
         ws.state.client_id = str(ws.query_params.get("client_id") or "").strip() or None
         ws.state.client_tag = str(ws.query_params.get("client_tag") or "").strip() or None
+    except Exception:
+        pass
+
+    try:
+        await _ws_emit_session_resume(ws)
     except Exception:
         pass
 
