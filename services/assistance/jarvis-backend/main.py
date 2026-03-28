@@ -10149,6 +10149,87 @@ def _macros_only_enabled(*, sys_kv: Optional[dict[str, Any]] = None) -> bool:
     return False
 
 
+def _gemini_local_tool_required_feature(name: str) -> str | None:
+    n = str(name or "").strip()
+    if not n:
+        return None
+    if n in {"memo_add", "memo_get", "memo_list", "memo_search", "memo_update_queue"}:
+        return "memo"
+    if n in {"memory_search", "memory_list"}:
+        return "memory"
+    if n in {"current_news_get", "current_news_refresh", "current_news_sources", "current_news_details"}:
+        return "current-news"
+    if n in {
+        "news_follow_list",
+        "news_follow_refresh",
+        "news_follow_report",
+        "news_follow_focus_list",
+        "news_follow_focus_add",
+        "news_follow_focus_remove",
+    }:
+        return "follow-news"
+    return None
+
+
+def _gemini_local_tool_allowed(*, name: str, sys_kv: Optional[dict[str, Any]] = None, macros_only: bool) -> tuple[bool, str, str]:
+    n = str(name or "").strip()
+    if not n:
+        return False, "invalid_tool", "Missing tool name"
+    if macros_only:
+        return False, "macros_only", "macros_only mode: only macro_* and system_* tools are allowed"
+
+    required = _gemini_local_tool_required_feature(n)
+    if required and not feature_enabled(required, sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+        return False, "feature_disabled", f"Feature disabled: {required}"
+
+    allowed_local = {
+        "time_now",
+        "session_last_get",
+        "pending_list",
+        "pending_confirm",
+        "pending_cancel",
+        "system_reload_queue",
+        "memo_add",
+        "memo_get",
+        "memo_list",
+        "memo_search",
+        "memo_update_queue",
+        "memory_search",
+        "memory_list",
+        "current_news_get",
+        "current_news_refresh",
+        "current_news_sources",
+        "current_news_details",
+        "news_follow_list",
+        "news_follow_refresh",
+        "news_follow_report",
+        "news_follow_focus_list",
+        "news_follow_focus_add",
+        "news_follow_focus_remove",
+    }
+    if n in allowed_local:
+        return True, "ok", ""
+    return False, "not_allowlisted", "Tool exists but is not allowlisted for Gemini execution"
+
+
+def _gemini_tool_allowed(*, name: str, sys_kv: Optional[dict[str, Any]] = None, macros_only: bool) -> tuple[bool, str, str]:
+    n = str(name or "").strip()
+    if not n:
+        return False, "invalid_tool", "Missing tool name"
+    if macros_only:
+        if n.startswith("macro_") or n == "macro_run" or n.startswith("system_"):
+            return True, "ok", ""
+        if n in {"pending_list", "pending_confirm", "pending_cancel", "session_last_get"}:
+            return True, "ok", ""
+        return False, "macros_only", "macros_only mode: only macro_* and system_* tools are allowed"
+
+    if n.startswith("chaba_") or n.startswith("macro_") or n == "macro_run":
+        return True, "ok", ""
+    if n in MCP_TOOL_MAP:
+        return True, "ok", ""
+    return _gemini_local_tool_allowed(name=n, sys_kv=sys_kv, macros_only=macros_only)
+
+
 def _safe_int(v: Any, default: int = 0) -> int:
     try:
         return int(str(v).strip())
@@ -14168,19 +14249,21 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
     )
 
     if not macros_only:
-        decls.append(
-            {
-                "name": "session_last_get",
-                "description": "Get the last created/modified item for this voice session (task or calendar_event).",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "slot": {"type": "string", "enum": ["last_created", "last_modified"]},
+        ok, _, _ = _gemini_tool_allowed(name="session_last_get", sys_kv=sys_kv, macros_only=macros_only)
+        if ok:
+            decls.append(
+                {
+                    "name": "session_last_get",
+                    "description": "Get the last created/modified item for this voice session (task or calendar_event).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "slot": {"type": "string", "enum": ["last_created", "last_modified"]},
+                        },
+                        "required": ["slot"],
                     },
-                    "required": ["slot"],
-                },
-            }
-        )
+                }
+            )
 
     if (not macros_only) and feature_enabled("memory", sys_kv=sys_kv, default=True):
         decls.append(
@@ -14201,162 +14284,189 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
         )
 
     if (not macros_only) and feature_enabled("memo", sys_kv=sys_kv, default=True):
-        decls.append(
-            {
-                "name": "memo_add",
-                "description": "Append a memo entry to the memo sheet (Google Sheets).",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "memo": {"type": "string", "description": "Memo text/body."},
-                        "group": {"type": "string", "description": "Optional group label."},
-                        "subject": {"type": "string", "description": "Optional subject label."},
-                        "status": {"type": "string", "description": "Optional status (default new)."},
-                        "v": {"type": "string", "description": "Optional version tag."},
-                        "result": {"type": "string", "description": "Optional result/notes."},
-                        "active": {"type": "boolean", "description": "Optional active flag (default true)."},
+        ok_add, _, _ = _gemini_tool_allowed(name="memo_add", sys_kv=sys_kv, macros_only=macros_only)
+        if ok_add:
+            decls.append(
+                {
+                    "name": "memo_add",
+                    "description": "Append a memo entry to the memo sheet (Google Sheets).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "memo": {"type": "string", "description": "Memo text/body."},
+                            "group": {"type": "string", "description": "Optional group label."},
+                            "subject": {"type": "string", "description": "Optional subject label."},
+                            "status": {"type": "string", "description": "Optional status (default new)."},
+                            "v": {"type": "string", "description": "Optional version tag."},
+                            "result": {"type": "string", "description": "Optional result/notes."},
+                            "active": {"type": "boolean", "description": "Optional active flag (default true)."},
+                        },
+                        "required": ["memo"],
                     },
-                    "required": ["memo"],
-                },
-            }
-        )
+                }
+            )
 
-        decls.append(
-            {
-                "name": "memo_update_queue",
-                "description": "Queue an update to an existing memo entry (Pending-confirmed write).",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "id": {"type": "integer", "description": "Memo id."},
-                        "memo": {"type": "string", "description": "Replacement memo text/body (optional)."},
-                        "group": {"type": "string", "description": "Replacement group label (optional)."},
-                        "subject": {"type": "string", "description": "Replacement subject label (optional)."},
-                        "status": {"type": "string", "description": "Replacement status (optional)."},
-                        "result": {"type": "string", "description": "Replacement result/notes (optional)."},
-                        "active": {"type": "boolean", "description": "Replacement active flag (optional)."},
+        ok_update, _, _ = _gemini_tool_allowed(name="memo_update_queue", sys_kv=sys_kv, macros_only=macros_only)
+        if ok_update:
+            decls.append(
+                {
+                    "name": "memo_update_queue",
+                    "description": "Queue an update to an existing memo entry (Pending-confirmed write).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "integer", "description": "Memo id."},
+                            "memo": {"type": "string", "description": "Replacement memo text/body (optional)."},
+                            "group": {"type": "string", "description": "Replacement group label (optional)."},
+                            "subject": {"type": "string", "description": "Replacement subject label (optional)."},
+                            "status": {"type": "string", "description": "Replacement status (optional)."},
+                            "result": {"type": "string", "description": "Replacement result/notes (optional)."},
+                            "active": {"type": "boolean", "description": "Replacement active flag (optional)."},
+                        },
+                        "required": ["id"],
                     },
-                    "required": ["id"],
-                },
-            }
-        )
+                }
+            )
 
-        decls.append(
-            {
-                "name": "memo_get",
-                "description": "Get a memo by stable numeric id (sheet-backed).",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "id": {"type": "integer", "description": "Memo id."},
+        ok_get, _, _ = _gemini_tool_allowed(name="memo_get", sys_kv=sys_kv, macros_only=macros_only)
+        if ok_get:
+            decls.append(
+                {
+                    "name": "memo_get",
+                    "description": "Get a memo by stable numeric id (sheet-backed).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "integer", "description": "Memo id."},
+                        },
+                        "required": ["id"],
                     },
-                    "required": ["id"],
-                },
-            }
-        )
+                }
+            )
 
-        decls.append(
-            {
-                "name": "memo_list",
-                "description": "List recent memos (sheet-backed).",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "limit": {"type": "integer", "description": "Max items (default 20)."},
+        ok_list, _, _ = _gemini_tool_allowed(name="memo_list", sys_kv=sys_kv, macros_only=macros_only)
+        if ok_list:
+            decls.append(
+                {
+                    "name": "memo_list",
+                    "description": "List recent memos (sheet-backed).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "limit": {"type": "integer", "description": "Max items (default 20)."},
+                        },
                     },
-                },
-            }
-        )
+                }
+            )
 
     if (not macros_only) and feature_enabled("current-news", sys_kv=sys_kv, default=True):
-        decls.append(
-            {
-                "name": "current_news_get",
-                "description": "Get the current news brief and cached context (refreshes automatically if missing).",
-                "parameters": {"type": "object", "properties": {}},
-            }
-        )
-        decls.append(
-            {
-                "name": "current_news_refresh",
-                "description": "Refresh current news cache from RSS feeds and return updated context + brief.",
-                "parameters": {"type": "object", "properties": {}},
-            }
-        )
-        decls.append(
-            {
-                "name": "current_news_sources",
-                "description": "List source links for the current-news cache.",
-                "parameters": {"type": "object", "properties": {}},
-            }
-        )
-        decls.append(
-            {
-                "name": "current_news_details",
-                "description": "Get details for a current-news topic (iran|gold|usd|oil|baht).",
-                "parameters": {
-                    "type": "object",
-                    "properties": {"topic": {"type": "string", "description": "Topic key or alias."}},
-                    "required": ["topic"],
-                },
-            }
-        )
+        ok, _, _ = _gemini_tool_allowed(name="current_news_get", sys_kv=sys_kv, macros_only=macros_only)
+        if ok:
+            decls.append(
+                {
+                    "name": "current_news_get",
+                    "description": "Get the current news brief and cached context (refreshes automatically if missing).",
+                    "parameters": {"type": "object", "properties": {}},
+                }
+            )
+        ok, _, _ = _gemini_tool_allowed(name="current_news_refresh", sys_kv=sys_kv, macros_only=macros_only)
+        if ok:
+            decls.append(
+                {
+                    "name": "current_news_refresh",
+                    "description": "Refresh current news cache from RSS feeds and return updated context + brief.",
+                    "parameters": {"type": "object", "properties": {}},
+                }
+            )
+        ok, _, _ = _gemini_tool_allowed(name="current_news_sources", sys_kv=sys_kv, macros_only=macros_only)
+        if ok:
+            decls.append(
+                {
+                    "name": "current_news_sources",
+                    "description": "List source links for the current-news cache.",
+                    "parameters": {"type": "object", "properties": {}},
+                }
+            )
+        ok, _, _ = _gemini_tool_allowed(name="current_news_details", sys_kv=sys_kv, macros_only=macros_only)
+        if ok:
+            decls.append(
+                {
+                    "name": "current_news_details",
+                    "description": "Get details for a current-news topic (iran|gold|usd|oil|baht).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {"topic": {"type": "string", "description": "Topic key or alias."}},
+                        "required": ["topic"],
+                    },
+                }
+            )
 
     if (not macros_only) and feature_enabled("follow-news", sys_kv=sys_kv, default=True):
-        decls.append(
-            {
-                "name": "news_follow_list",
-                "description": "List cached follow-news summaries (and current focus).",
-                "parameters": {"type": "object", "properties": {}},
-            }
-        )
-        decls.append(
-            {
-                "name": "news_follow_refresh",
-                "description": "Refresh follow-news summaries using current focus list.",
-                "parameters": {"type": "object", "properties": {}},
-            }
-        )
-        decls.append(
-            {
-                "name": "news_follow_report",
-                "description": "Return the stored follow-news report by summary_id.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {"summary_id": {"type": "string", "description": "Summary id from news_follow_list."}},
-                    "required": ["summary_id"],
+        for tool_name, tool_decl in (
+            (
+                "news_follow_list",
+                {
+                    "name": "news_follow_list",
+                    "description": "List cached follow-news summaries (and current focus).",
+                    "parameters": {"type": "object", "properties": {}},
                 },
-            }
-        )
-        decls.append(
-            {
-                "name": "news_follow_focus_list",
-                "description": "List follow-news focus keywords.",
-                "parameters": {"type": "object", "properties": {}},
-            }
-        )
-        decls.append(
-            {
-                "name": "news_follow_focus_add",
-                "description": "Add a keyword to the follow-news focus list.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {"item": {"type": "string", "description": "Keyword/topic to add."}},
-                    "required": ["item"],
+            ),
+            (
+                "news_follow_refresh",
+                {
+                    "name": "news_follow_refresh",
+                    "description": "Refresh follow-news summaries using current focus list.",
+                    "parameters": {"type": "object", "properties": {}},
                 },
-            }
-        )
-        decls.append(
-            {
-                "name": "news_follow_focus_remove",
-                "description": "Remove a keyword from the follow-news focus list.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {"item": {"type": "string", "description": "Keyword/topic to remove."}},
-                    "required": ["item"],
+            ),
+            (
+                "news_follow_report",
+                {
+                    "name": "news_follow_report",
+                    "description": "Return the stored follow-news report by summary_id.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {"summary_id": {"type": "string", "description": "Summary id from news_follow_list."}},
+                        "required": ["summary_id"],
+                    },
                 },
-            }
-        )
+            ),
+            (
+                "news_follow_focus_list",
+                {
+                    "name": "news_follow_focus_list",
+                    "description": "List follow-news focus keywords.",
+                    "parameters": {"type": "object", "properties": {}},
+                },
+            ),
+            (
+                "news_follow_focus_add",
+                {
+                    "name": "news_follow_focus_add",
+                    "description": "Add a keyword to the follow-news focus list.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {"item": {"type": "string", "description": "Keyword/topic to add."}},
+                        "required": ["item"],
+                    },
+                },
+            ),
+            (
+                "news_follow_focus_remove",
+                {
+                    "name": "news_follow_focus_remove",
+                    "description": "Remove a keyword from the follow-news focus list.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {"item": {"type": "string", "description": "Keyword/topic to remove."}},
+                        "required": ["item"],
+                    },
+                },
+            ),
+        ):
+            ok, _, _ = _gemini_tool_allowed(name=tool_name, sys_kv=sys_kv, macros_only=macros_only)
+            if ok:
+                decls.append(tool_decl)
 
     if (not macros_only) and feature_enabled("memory", sys_kv=sys_kv, default=True):
         decls.append(
@@ -14479,7 +14589,22 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
         params = meta.get("parameters") if isinstance(meta.get("parameters"), dict) else {"type": "object", "properties": {}}
         decls.append({"name": str(name), "description": desc, "parameters": params})
 
-    return decls
+    filtered: list[dict[str, Any]] = []
+    for d in decls:
+        if not isinstance(d, dict):
+            continue
+        n = str(d.get("name") or "").strip()
+        if not n:
+            continue
+        ok, _, _ = _gemini_tool_allowed(
+            name=n,
+            sys_kv=sys_kv if isinstance(sys_kv, dict) else None,
+            macros_only=macros_only,
+        )
+        if ok:
+            filtered.append(d)
+
+    return filtered
 
 
 async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: dict[str, Any]) -> Any:
@@ -15740,49 +15865,23 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                             pass
                         sys_kv = _sys_kv_snapshot()
                         macros_only = _macros_only_enabled(sys_kv=sys_kv)
-                        if macros_only:
-                            allowed = (
-                                fc_name.startswith("macro_")
-                                or fc_name == "macro_run"
-                                or fc_name in ("pending_list", "pending_confirm", "pending_cancel", "session_last_get")
-                            )
-                        else:
-                            allowed = (
-                                fc_name.startswith("chaba_")
-                                or fc_name.startswith("macro_")
-                                or fc_name == "macro_run"
-                                or fc_name in MCP_TOOL_MAP
-                                or fc_name
-                                in (
-                                    "time_now",
-                                    "session_last_get",
-                                    "pending_list",
-                                    "pending_confirm",
-                                    "pending_cancel",
-                                    "system_reload_queue",
-                                    "memo_add",
-                                    "memo_get",
-                                    "memo_list",
-                                    "memo_search",
-                                    "memo_update_queue",
-                                    "memory_search",
-                                    "memory_list",
-                                    "current_news_get",
-                                    "current_news_refresh",
-                                    "current_news_sources",
-                                    "current_news_details",
-                                    "news_follow_list",
-                                    "news_follow_refresh",
-                                    "news_follow_report",
-                                    "news_follow_focus_list",
-                                    "news_follow_focus_add",
-                                    "news_follow_focus_remove",
-                                )
-                            )
+                        allowed, reason, hint = _gemini_tool_allowed(
+                            name=fc_name,
+                            sys_kv=sys_kv if isinstance(sys_kv, dict) else None,
+                            macros_only=macros_only,
+                        )
                         if allowed:
                             result = await _handle_mcp_tool_call(session_id, fc_name, fc_args)
                         else:
-                            raise HTTPException(status_code=400, detail={"unknown_tool": fc_name})
+                            raise HTTPException(
+                                status_code=403,
+                                detail={
+                                    "tool_not_allowed": fc_name,
+                                    "reason": reason,
+                                    "hint": hint,
+                                    "mode": "macros_only" if macros_only else "default",
+                                },
+                            )
                         # Tool handlers may return structured failures like {"ok": False, ...}.
                         # Preserve those failures (don't wrap them as ok:true) so Gemini and the UI
                         # can surface the real error detail.
