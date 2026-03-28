@@ -107,7 +107,12 @@ def _content_type_allowed(content_type_header: str) -> bool:
     content_type = (content_type_header or "").split(";")[0].strip().lower()
     if not content_type:
         return False
-    return any(content_type == allowed for allowed in ALLOWED_CONTENT_TYPES)
+    if any(content_type == allowed for allowed in ALLOWED_CONTENT_TYPES):
+        return True
+    # Some feeds return non-standard but still-safe XML-ish content-types.
+    if "xml" in content_type or "rss" in content_type or "atom" in content_type:
+        return True
+    return False
 
 
 def _html_to_text(html: str) -> tuple[str, Optional[str]]:
@@ -151,7 +156,13 @@ async def _fetch_once(client: httpx.AsyncClient, url: str) -> dict[str, Any]:
 
     content_type = res.headers.get("content-type") or ""
     if not _content_type_allowed(content_type):
-        raise HTTPException(status_code=415, detail="unsupported_content_type")
+        raise HTTPException(
+            status_code=415,
+            detail={
+                "error": "unsupported_content_type",
+                "content_type": (content_type or "").strip(),
+            },
+        )
 
     # Streaming byte limit enforcement
     total = 0
