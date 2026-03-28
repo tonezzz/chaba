@@ -11426,7 +11426,29 @@ async def _load_current_news_items_from_sheet(*, sys_kv: dict[str, Any] | None) 
 
 
 async def _refresh_current_news_cache(*, sys_kv: dict[str, Any] | None = None) -> dict[str, Any]:
-    all_items = await _load_current_news_items_from_sheet(sys_kv=sys_kv)
+    spreadsheet_id, sheet_name = _current_news_sheet_cfg_from_sys_kv(sys_kv)
+    sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="current_news")
+
+    table: list[list[Any]] = []
+    header: list[Any] = []
+    idx: dict[str, int] = {}
+    all_items: list[dict[str, Any]] = []
+    try:
+        table = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_a1, max_rows=500, max_cols="H")
+        header = table[0] if isinstance(table[0], list) else []
+        idx = _idx_from_header(header)
+        for r in table[1:]:
+            if not isinstance(r, list):
+                continue
+            title = _cell_str(r, idx, "title")
+            link = _cell_str(r, idx, "link") or _cell_str(r, idx, "url")
+            desc = _cell_str(r, idx, "description")
+            pub = _cell_str(r, idx, "pubdate") or _cell_str(r, idx, "published")
+            if not title and not link:
+                continue
+            all_items.append({"title": title, "link": link, "pubDate": pub, "description": desc})
+    except Exception:
+        all_items = await _load_current_news_items_from_sheet(sys_kv=sys_kv)
 
     seen: set[str] = set()
     deduped: list[dict[str, Any]] = []
@@ -11439,6 +11461,21 @@ async def _refresh_current_news_cache(*, sys_kv: dict[str, Any] | None = None) -
         deduped.append(it)
 
     ctx = _build_current_news_context(deduped)
+    if _sys_kv_bool(sys_kv, "current_news.debug.enabled", default=False):
+        try:
+            ctx["_debug"] = {
+                "spreadsheet_id": spreadsheet_id,
+                "sheet_name": sheet_name,
+                "sheet_a1": sheet_a1,
+                "rows_total": len(table),
+                "rows_data": max(0, len(table) - 1),
+                "header": [str(x or "").strip() for x in (header or []) if str(x or "").strip()],
+                "header_keys": sorted([str(k) for k in (idx.keys() if isinstance(idx, dict) else [])]),
+                "items_loaded": len(all_items),
+                "items_deduped": len(deduped),
+            }
+        except Exception:
+            pass
     _set_news_cache("current-news", ctx)
     _upsert_agent_status(DEFAULT_USER_ID, "current-news", ctx)
     return ctx
