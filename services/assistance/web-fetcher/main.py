@@ -129,7 +129,18 @@ def _html_to_text(html: str) -> tuple[str, Optional[str]]:
 async def _fetch_once(client: httpx.AsyncClient, url: str) -> dict[str, Any]:
     _enforce_ssrf(url)
 
-    res = await client.get(url)
+    try:
+        res = await client.get(url)
+    except httpx.RequestError as e:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "error": "upstream_request_failed",
+                "url": url,
+                "exception": e.__class__.__name__,
+                "message": str(e),
+            },
+        )
 
     # Handle redirects manually so we can SSRF-check each hop.
     if res.status_code in (301, 302, 303, 307, 308):
