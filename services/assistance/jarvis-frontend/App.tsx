@@ -3,6 +3,7 @@ import { LiveService } from './services/liveService';
 import { sequentialApplyAndSuggest } from './services/sequentialService';
 import { ConnectionState, MessageLog } from './types';
 import { useFullscreenEscape } from './hooks/useFullscreenEscape';
+import { useAutoScroll } from './hooks/useAutoScroll';
 
 import Visualizer from './components/Visualizer';
 import CameraFeed from './components/CameraFeed';
@@ -740,27 +741,8 @@ export default function App() {
     };
   }, [hasKey, previewPending, refreshPending]);
 
-  useEffect(() => {
-    const el = logScrollRef.current;
-    if (!el) return;
-    if (!logStickToBottomRef.current) return;
-    try {
-      el.scrollTop = el.scrollHeight;
-    } catch {
-      // ignore
-    }
-  }, [messages, showDebugLogs]);
-
-  useEffect(() => {
-    const el = outputScrollRef.current;
-    if (!el) return;
-    if (!outputStickToBottomRef.current) return;
-    try {
-      el.scrollTop = el.scrollHeight;
-    } catch {
-      // ignore
-    }
-  }, [outputDialog]);
+  useAutoScroll(logScrollRef, logStickToBottomRef, [messages, showDebugLogs]);
+  useAutoScroll(outputScrollRef, outputStickToBottomRef, [outputDialog]);
 
   useEffect(() => {
     if (state !== ConnectionState.CONNECTED && isTalking) {
