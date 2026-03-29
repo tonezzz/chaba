@@ -1312,6 +1312,37 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         except Exception as e:
             return {"ok": False, "error": "news_sources_upsert_failed", "detail": f"{type(e).__name__}: {e}"}
 
+    if tool_name == "news_items_upsert":
+        try:
+            session_ws = deps["SESSION_WS"]
+            feature_enabled = deps["feature_enabled"]
+            news_items_upsert = deps["news_items_upsert"]
+
+            ws = session_ws.get(str(session_id)) if session_id else None
+            if ws is None:
+                raise HTTPException(status_code=400, detail="missing_session_ws")
+            sys_kv = getattr(ws.state, "sys_kv", None)
+            if not feature_enabled("current-news", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+                raise HTTPException(status_code=403, detail="feature_disabled:current-news")
+
+            link = str(args.get("link") or "").strip()
+            title = args.get("title")
+            pub_date = args.get("pubDate")
+            description = args.get("description")
+
+            payload = await news_items_upsert(
+                sys_kv=sys_kv if isinstance(sys_kv, dict) else None,
+                link=link,
+                title=str(title).strip() if title is not None else None,
+                pubDate=str(pub_date).strip() if pub_date is not None else None,
+                description=str(description).strip() if description is not None else None,
+            )
+            return {"ok": True, **(payload if isinstance(payload, dict) else {"result": payload})}
+        except HTTPException as e:
+            return {"ok": False, "error": "news_items_upsert_failed", "status_code": getattr(e, "status_code", None), "detail": getattr(e, "detail", None)}
+        except Exception as e:
+            return {"ok": False, "error": "news_items_upsert_failed", "detail": f"{type(e).__name__}: {e}"}
+
     if tool_name in {
         "news_follow_list",
         "news_follow_refresh",
