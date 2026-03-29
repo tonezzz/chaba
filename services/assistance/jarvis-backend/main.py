@@ -12236,6 +12236,12 @@ async def _handle_current_news_trigger(ws: WebSocket, text: str) -> bool:
             "refresh news",
             "update current news",
             "current news update",
+            "อัปเดตข่าวปัจจุบัน",
+            "อัปเดตข่าว",
+            "รีเฟรชข่าว",
+            "รีเฟรช ข่าว",
+            "ข่าวปัจจุบัน อัปเดต",
+            "ข่าวปัจจุบันอัปเดต",
         )
     )
     wants_sources = "list sources" in s or s == "sources"
