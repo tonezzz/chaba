@@ -116,7 +116,7 @@ def _content_type_allowed(content_type_header: str) -> bool:
 
 
 def _html_to_text(html: str) -> tuple[str, Optional[str]]:
-    soup = BeautifulSoup(html, "lxml")
+    soup = BeautifulSoup(html, "html.parser")
 
     title: Optional[str] = None
     if soup.title and soup.title.string:
@@ -222,7 +222,7 @@ async def fetch(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
 
     timeout = httpx.Timeout(timeout=READ_TIMEOUT_S, connect=CONNECT_TIMEOUT_S)
     headers = {
-        "User-Agent": "web-fetcher/0.1 (+https://example.invalid)",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
         "Accept": ", ".join(ALLOWED_CONTENT_TYPES),
     }
 

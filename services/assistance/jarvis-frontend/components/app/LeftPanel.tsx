@@ -657,6 +657,48 @@ export function LeftPanel(props: {
                         const txt = String(m.text || "");
                         const forceText = (e as any)?.shiftKey === true;
                         const rawAny: any = (m.metadata as any)?.raw;
+                        const traceId = m.metadata?.trace_id ? String(m.metadata.trace_id) : "";
+                        if (!forceText && traceId) {
+                          try {
+                            const grouped = messages
+                              .filter((mm) => (mm.metadata?.trace_id ? String(mm.metadata.trace_id) : "") === traceId)
+                              .slice()
+                              .sort((a, b) => {
+                                const ta = a.timestamp?.getTime?.() ? a.timestamp.getTime() : 0;
+                                const tb = b.timestamp?.getTime?.() ? b.timestamp.getTime() : 0;
+                                if (ta !== tb) return ta - tb;
+                                return String(a.id || "").localeCompare(String(b.id || ""));
+                              });
+                            if (grouped.length > 1) {
+                              const parts = grouped.map((mm) => {
+                                const mts = mm.timestamp.toLocaleTimeString();
+                                const mlabel = clientLabelForMsg(mm);
+                                const mtagText = mlabel ? `[${mlabel}] ` : "";
+                                const mrole = String(mm.role || "");
+                                const mtxt = String(mm.text || "");
+                                const mraw: any = (mm.metadata as any)?.raw;
+                                if (mraw != null) {
+                                  try {
+                                    if (mraw && typeof mraw === "object" && !Array.isArray(mraw)) {
+                                      const copy: any = { ...mraw };
+                                      delete copy.client_id;
+                                      delete copy.client_tag;
+                                      return JSON.stringify(copy, null, 2);
+                                    }
+                                    return JSON.stringify(mraw, null, 2);
+                                  } catch {
+                                    return String(mraw);
+                                  }
+                                }
+                                return `[${mts}] ${mtagText}${mrole}: ${mtxt}`;
+                              });
+                              void copyText(parts.join("\n\n"));
+                              return;
+                            }
+                          } catch {
+                            // ignore
+                          }
+                        }
                         if (!forceText && rawAny != null) {
                           try {
                             if (rawAny && typeof rawAny === "object" && !Array.isArray(rawAny)) {
