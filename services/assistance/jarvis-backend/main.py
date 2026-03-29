@@ -11753,7 +11753,18 @@ def _topic_match(text: str, keywords: list[str]) -> bool:
     if not s:
         return False
     for k in keywords:
-        if k and k.lower() in s:
+        kk = str(k or "").strip().lower()
+        if not kk:
+            continue
+        if re.fullmatch(r"[a-z0-9]+", kk) and len(kk) <= 3:
+            try:
+                if re.search(r"\b" + re.escape(kk) + r"\b", s):
+                    return True
+            except Exception:
+                if kk in s:
+                    return True
+            continue
+        if kk in s:
             return True
     return False
 
@@ -11791,7 +11802,7 @@ def _build_current_news_context(items: list[dict[str, Any]], topics_cfg: Optiona
         "gold": {"keywords": ["gold", "bullion", "xau"], "limit": 4, "headlines": 3},
         "usd": {"keywords": ["dollar", "usd", "treasury", "yield", "fed"], "limit": 4, "headlines": 3},
         "oil": {"keywords": ["oil", "crude", "brent", "wti", "opec"], "limit": 4, "headlines": 3},
-        "thb": {"keywords": ["thai baht", "baht", "thb", "usd/thb", "thb/usd", "bank of thailand", "bot"], "limit": 4, "headlines": 3},
+        "thb": {"keywords": ["thai baht", "baht", "thb", "usd/thb", "thb/usd", "bank of thailand"], "limit": 4, "headlines": 3},
     }
 
     merged: dict[str, dict[str, Any]] = {k: dict(v) for k, v in defaults.items()}
