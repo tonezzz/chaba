@@ -391,7 +391,41 @@ export function LeftPanel(props: {
               seenKeys.add(k);
               return true;
             });
-            return filtered.map((m) => {
+            const coalesced: MessageLog[] = [];
+            for (const m of filtered) {
+              const prev = coalesced.length ? coalesced[coalesced.length - 1] : null;
+              const role = String((m as any)?.role || "");
+              const prevRole = prev ? String((prev as any)?.role || "") : "";
+              const ts = m.timestamp?.getTime?.() ? m.timestamp.getTime() : 0;
+              const prevTs = prev && prev.timestamp?.getTime?.() ? prev.timestamp.getTime() : 0;
+              const gap = prev ? ts - prevTs : Number.POSITIVE_INFINITY;
+              const txt = String(m.text || "").trim();
+              const prevTxt = prev ? String(prev.text || "").trim() : "";
+
+              const mergeable =
+                role === "user" &&
+                prev &&
+                prevRole === "user" &&
+                gap >= 0 &&
+                gap <= 2500 &&
+                txt &&
+                prevTxt &&
+                txt.length <= 80 &&
+                prevTxt.length <= 200;
+
+              if (mergeable) {
+                const mergedText = `${prevTxt} ${txt}`.replace(/\s+/g, " ").trim();
+                coalesced[coalesced.length - 1] = {
+                  ...(prev as any),
+                  text: mergedText,
+                } as MessageLog;
+                continue;
+              }
+
+              coalesced.push(m);
+            }
+
+            return coalesced.map((m) => {
               const uiRaw: any = (m.metadata?.raw as any) ?? (m.metadata?.ws as any) ?? null;
               const isUiCard = String(uiRaw?.type || "").toLowerCase() === "ui";
               const canExpand = Boolean(m.metadata?.raw || m.metadata?.trace_id || m.metadata?.ws?.type || m.metadata?.ws?.instance_id);
