@@ -8,6 +8,7 @@ import time
 import uuid
 import re
 import hashlib
+import urllib.parse
 from io import BytesIO
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -124,6 +125,7 @@ def _clamp_text(s: Any, limit: int) -> str:
         t = str(s or "")
     except Exception:
         return ""
+
     t = t.strip()
     if not t:
         return ""
@@ -9231,6 +9233,9 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             "news_topics_upsert",
             "news_sources_upsert",
             "news_items_upsert",
+            "news_sources_list",
+            "gnews_rss_build",
+            "it_topic_packs_seed",
             "news_follow_list",
             "news_follow_refresh",
             "news_follow_report",
@@ -10565,7 +10570,18 @@ def _gemini_local_tool_required_feature(name: str) -> str | None:
         return "memo"
     if n in {"memory_search", "memory_list"}:
         return "memory"
-    if n in {"current_news_get", "current_news_refresh", "current_news_sources", "current_news_details", "news_topics_upsert", "news_sources_upsert", "news_items_upsert"}:
+    if n in {
+        "current_news_get",
+        "current_news_refresh",
+        "current_news_sources",
+        "current_news_details",
+        "news_topics_upsert",
+        "news_sources_upsert",
+        "news_items_upsert",
+        "news_sources_list",
+        "gnews_rss_build",
+        "it_topic_packs_seed",
+    }:
         return "current-news"
     if n in {
         "news_follow_list",
@@ -10611,6 +10627,9 @@ def _gemini_local_tool_allowed(*, name: str, sys_kv: Optional[dict[str, Any]] = 
         "news_topics_upsert",
         "news_sources_upsert",
         "news_items_upsert",
+        "news_sources_list",
+        "gnews_rss_build",
+        "it_topic_packs_seed",
         "news_follow_list",
         "news_follow_refresh",
         "news_follow_report",
@@ -11965,6 +11984,100 @@ def _cell_str(row: list[Any], idx: dict[str, int], key: str) -> str:
         return ""
 
 
+async def _news_sources_list(*, sys_kv: dict[str, Any] | None, include_disabled: bool = False) -> dict[str, Any]:
+    spreadsheet_id, sheet_name = _current_news_sources_sheet_cfg_from_sys_kv(sys_kv)
+    sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="news_sources")
+    table = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_a1, max_rows=800, max_cols="H")
+    if not table:
+        return {"ok": True, "sources": []}
+    header = table[0] if isinstance(table[0], list) else []
+    idx = _idx_from_header(header)
+    if not idx:
+        return {"ok": True, "sources": []}
+
+    out: list[dict[str, Any]] = []
+    for r in table[1:]:
+        if not isinstance(r, list):
+            continue
+        url = _cell_str(r, idx, "url") or _cell_str(r, idx, "link")
+        if not url:
+            continue
+        enabled_raw = _cell_str(r, idx, "enabled") or _cell_str(r, idx, "active")
+        enabled = True
+        if enabled_raw:
+            try:
+                enabled = _parse_bool_cell(enabled_raw)
+            except Exception:
+                enabled = True
+        if (not include_disabled) and (not enabled):
+            continue
+        name = _cell_str(r, idx, "name") or _cell_str(r, idx, "id")
+        typ = _cell_str(r, idx, "type")
+        tags = _cell_str(r, idx, "tags")
+        out.append({"name": name, "url": str(url).strip(), "type": typ, "tags": tags, "enabled": bool(enabled)})
+
+    out.sort(key=lambda x: (0 if x.get("enabled") else 1, str(x.get("name") or ""), str(x.get("url") or "")))
+    return {"ok": True, "sources": out}
+
+
+def _gnews_rss_build(*, query: str, hl: str | None = None, gl: str | None = None, ceid: str | None = None) -> dict[str, Any]:
+    q = str(query or "").strip()
+    if not q:
+        raise HTTPException(status_code=400, detail="missing_query")
+    hl_v = (str(hl or "").strip() or "th")
+    gl_v = (str(gl or "").strip() or "TH")
+    ceid_v = (str(ceid or "").strip() or f"{gl_v}:{hl_v}")
+    q_enc = urllib.parse.quote_plus(q)
+    hl_enc = urllib.parse.quote_plus(hl_v)
+    gl_enc = urllib.parse.quote_plus(gl_v)
+    ceid_enc = urllib.parse.quote_plus(ceid_v)
+    url = f"https://news.google.com/rss/search?q={q_enc}&hl={hl_enc}&gl={gl_enc}&ceid={ceid_enc}"
+    return {"ok": True, "url": url, "query": q, "hl": hl_v, "gl": gl_v, "ceid": ceid_v}
+
+
+async def _it_topic_packs_seed(*, sys_kv: dict[str, Any] | None, pack: str | None = None) -> dict[str, Any]:
+    want = str(pack or "").strip().lower()
+    packs: dict[str, dict[str, Any]] = {
+        "it_security": {
+            "keywords": ["security", "vulnerability", "cve", "zero-day", "exploit", "patch", "ransomware", "malware", "breach", "microsoft", "windows", "linux"],
+            "limit": 10,
+            "headlines": 6,
+        },
+        "it_ai": {
+            "keywords": ["ai", "llm", "openai", "gemini", "claude", "model", "inference", "gpu", "nvidia"],
+            "limit": 10,
+            "headlines": 6,
+        },
+        "it_cloud": {
+            "keywords": ["aws", "gcp", "azure", "cloud", "kubernetes", "k8s", "docker", "terraform", "serverless"],
+            "limit": 10,
+            "headlines": 6,
+        },
+        "it_dev": {
+            "keywords": ["python", "javascript", "typescript", "node", "react", "rust", "go", "postgres", "redis"],
+            "limit": 10,
+            "headlines": 6,
+        },
+    }
+
+    keys = [want] if want else sorted(packs.keys())
+    results: dict[str, Any] = {}
+    for k in keys:
+        cfg = packs.get(k)
+        if not isinstance(cfg, dict):
+            continue
+        res = await _news_topics_upsert(
+            sys_kv=sys_kv,
+            topic=k,
+            keywords=list(cfg.get("keywords") or []),
+            limit=cfg.get("limit"),
+            headlines=cfg.get("headlines"),
+            enabled=True,
+        )
+        results[k] = res
+    return {"ok": True, "seeded": sorted(results.keys()), "results": results}
+
+
 async def _load_news_sources_from_sheet(*, sys_kv: dict[str, Any] | None) -> list[dict[str, Any]]:
     spreadsheet_id, sheet_name = _current_news_sources_sheet_cfg_from_sys_kv(sys_kv)
     sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="news_sources")
@@ -12874,7 +12987,6 @@ async def _handle_deep_research_trigger(ws: WebSocket, text: str) -> bool:
                     "hint": "Run a deep research first and poll until completed.",
                 }
             )
-            return True
         res = await _deep_research_worker_post("/deep-research/followup", {"previous_interaction_id": prev, "question": arg})
         job_id = str(res.get("job_id") or "").strip()
         interaction_id = str(res.get("interaction_id") or "").strip()
@@ -15551,6 +15663,55 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
                 }
             )
 
+        ok, _, _ = _gemini_tool_allowed(name="news_sources_list", sys_kv=sys_kv, macros_only=macros_only)
+        if ok:
+            decls.append(
+                {
+                    "name": "news_sources_list",
+                    "description": "List sources from the news_sources sheet.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "include_disabled": {"type": "boolean", "description": "Include disabled sources (default false)."},
+                        },
+                    },
+                }
+            )
+
+        ok, _, _ = _gemini_tool_allowed(name="gnews_rss_build", sys_kv=sys_kv, macros_only=macros_only)
+        if ok:
+            decls.append(
+                {
+                    "name": "gnews_rss_build",
+                    "description": "Build a Google News RSS search URL from a query.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {"type": "string", "description": "Google News query (supports operators like site:)."},
+                            "hl": {"type": "string", "description": "Language (default th)."},
+                            "gl": {"type": "string", "description": "Country (default TH)."},
+                            "ceid": {"type": "string", "description": "Edition id (default GL:HL)."},
+                        },
+                        "required": ["query"],
+                    },
+                }
+            )
+
+        ok, _, _ = _gemini_tool_allowed(name="it_topic_packs_seed", sys_kv=sys_kv, macros_only=macros_only)
+        if ok:
+            decls.append(
+                {
+                    "name": "it_topic_packs_seed",
+                    "description": "Seed preset IT topic configs into the news_topics sheet (via safe upsert).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "pack": {"type": "string", "description": "Optional: one of it_security|it_ai|it_cloud|it_dev. If omitted, seeds all."},
+                        },
+                    },
+                }
+            )
+
     if (not macros_only) and feature_enabled("follow-news", sys_kv=sys_kv, default=True):
         for tool_name, tool_decl in (
             (
@@ -16070,6 +16231,9 @@ async def _handle_mcp_tool_call(session_id: str, tool_name: str, args: dict[str,
             "news_sources_upsert",
             "news_topics_upsert",
             "news_items_upsert",
+            "news_sources_list",
+            "gnews_rss_build",
+            "it_topic_packs_seed",
         }
         out_steps: list[dict[str, Any]] = []
         max_steps = 10
@@ -16442,6 +16606,9 @@ async def _handle_mcp_tool_call(session_id: str, tool_name: str, args: dict[str,
         "news_topics_upsert": _news_topics_upsert,
         "news_sources_upsert": _news_sources_upsert,
         "news_items_upsert": _news_items_upsert,
+        "news_sources_list": _news_sources_list,
+        "gnews_rss_build": _gnews_rss_build,
+        "it_topic_packs_seed": _it_topic_packs_seed,
     }
     return await tools_router.handle_mcp_tool_call(session_id, tool_name, args, deps=deps)
 

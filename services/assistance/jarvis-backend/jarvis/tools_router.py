@@ -1343,6 +1343,67 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         except Exception as e:
             return {"ok": False, "error": "news_items_upsert_failed", "detail": f"{type(e).__name__}: {e}"}
 
+    if tool_name == "news_sources_list":
+        try:
+            session_ws = deps["SESSION_WS"]
+            feature_enabled = deps["feature_enabled"]
+            news_sources_list = deps["news_sources_list"]
+
+            ws = session_ws.get(str(session_id)) if session_id else None
+            if ws is None:
+                raise HTTPException(status_code=400, detail="missing_session_ws")
+            sys_kv = getattr(ws.state, "sys_kv", None)
+            if not feature_enabled("current-news", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+                raise HTTPException(status_code=403, detail="feature_disabled:current-news")
+
+            include_disabled = bool(args.get("include_disabled") or False)
+            payload = await news_sources_list(sys_kv=sys_kv if isinstance(sys_kv, dict) else None, include_disabled=include_disabled)
+            return {"ok": True, **(payload if isinstance(payload, dict) else {"result": payload})}
+        except HTTPException as e:
+            return {"ok": False, "error": "news_sources_list_failed", "status_code": getattr(e, "status_code", None), "detail": getattr(e, "detail", None)}
+        except Exception as e:
+            return {"ok": False, "error": "news_sources_list_failed", "detail": f"{type(e).__name__}: {e}"}
+
+    if tool_name == "gnews_rss_build":
+        try:
+            gnews_rss_build = deps["gnews_rss_build"]
+            query = str(args.get("query") or "").strip()
+            hl = args.get("hl")
+            gl = args.get("gl")
+            ceid = args.get("ceid")
+            payload = gnews_rss_build(
+                query=query,
+                hl=str(hl).strip() if hl is not None else None,
+                gl=str(gl).strip() if gl is not None else None,
+                ceid=str(ceid).strip() if ceid is not None else None,
+            )
+            return {"ok": True, **(payload if isinstance(payload, dict) else {"result": payload})}
+        except HTTPException as e:
+            return {"ok": False, "error": "gnews_rss_build_failed", "status_code": getattr(e, "status_code", None), "detail": getattr(e, "detail", None)}
+        except Exception as e:
+            return {"ok": False, "error": "gnews_rss_build_failed", "detail": f"{type(e).__name__}: {e}"}
+
+    if tool_name == "it_topic_packs_seed":
+        try:
+            session_ws = deps["SESSION_WS"]
+            feature_enabled = deps["feature_enabled"]
+            it_topic_packs_seed = deps["it_topic_packs_seed"]
+
+            ws = session_ws.get(str(session_id)) if session_id else None
+            if ws is None:
+                raise HTTPException(status_code=400, detail="missing_session_ws")
+            sys_kv = getattr(ws.state, "sys_kv", None)
+            if not feature_enabled("current-news", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+                raise HTTPException(status_code=403, detail="feature_disabled:current-news")
+
+            pack = args.get("pack")
+            payload = await it_topic_packs_seed(sys_kv=sys_kv if isinstance(sys_kv, dict) else None, pack=str(pack).strip() if pack is not None else None)
+            return {"ok": True, **(payload if isinstance(payload, dict) else {"result": payload})}
+        except HTTPException as e:
+            return {"ok": False, "error": "it_topic_packs_seed_failed", "status_code": getattr(e, "status_code", None), "detail": getattr(e, "detail", None)}
+        except Exception as e:
+            return {"ok": False, "error": "it_topic_packs_seed_failed", "detail": f"{type(e).__name__}: {e}"}
+
     if tool_name in {
         "news_follow_list",
         "news_follow_refresh",
