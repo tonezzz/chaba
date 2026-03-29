@@ -9185,6 +9185,7 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             "current_news_refresh",
             "current_news_sources",
             "current_news_details",
+            "news_topics_upsert",
             "news_follow_list",
             "news_follow_refresh",
             "news_follow_report",
@@ -10519,7 +10520,7 @@ def _gemini_local_tool_required_feature(name: str) -> str | None:
         return "memo"
     if n in {"memory_search", "memory_list"}:
         return "memory"
-    if n in {"current_news_get", "current_news_refresh", "current_news_sources", "current_news_details"}:
+    if n in {"current_news_get", "current_news_refresh", "current_news_sources", "current_news_details", "news_topics_upsert"}:
         return "current-news"
     if n in {
         "news_follow_list",
@@ -10562,6 +10563,7 @@ def _gemini_local_tool_allowed(*, name: str, sys_kv: Optional[dict[str, Any]] = 
         "current_news_refresh",
         "current_news_sources",
         "current_news_details",
+        "news_topics_upsert",
         "news_follow_list",
         "news_follow_refresh",
         "news_follow_report",
