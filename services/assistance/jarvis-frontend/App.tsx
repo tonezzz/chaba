@@ -643,11 +643,10 @@ export default function App() {
       return false;
     };
 
-    const extractSystemReloadMode = (text: string): "full" | "memory" | "knowledge" | "sys" | "gems" => {
+    const extractSystemReloadMode = (text: string): "full" | "memory" | "knowledge" | "sys" => {
       const s = String(text || "").trim().toLowerCase();
       const compact = s.replace(/[^a-z0-9\u0E00-\u0E7F]+/g, " ").trim().replace(/\s+/g, " ");
       const has = (w: string) => compact.includes(w);
-      if (has("gems") || has("gem") || has("models") || has("model") || has("เจม") || has("โมเดล")) return "gems";
       if (has("knowledge") || has("kb") || has("know") || has("ความรู้")) return "knowledge";
       if (has("memory") || has("mem") || has("เมม") || has("เมมโม")) return "memory";
       return "full";
@@ -687,131 +686,16 @@ export default function App() {
       return;
     }
 
-    const isGemsListPhrase = (text: string): boolean => {
-      const s = String(text || "").trim().toLowerCase();
-      if (!s) return false;
-      const compact = s.replace(/[^a-z0-9\u0E00-\u0E7F]+/g, " ").trim().replace(/\s+/g, " ");
-      if (!compact) return false;
-      if (compact === "gems" || compact === "list gems" || compact === "gems list") return true;
-      if (compact === "models" || compact === "list models" || compact === "models list") return true;
-      if (compact.includes("list gems") || compact.includes("gems list")) return true;
-      if (compact.includes("list models") || compact.includes("models list")) return true;
-      if ((compact.includes("ลิส") || compact.includes("รายการ") || compact.includes("ดู")) && (compact.includes("เจม") || compact.includes("โมเดล") || compact.includes("รุ่น"))) return true;
-      return false;
-    };
-
-    const extractGemsRemoveId = (text: string): string | null => {
-      const raw = String(text || "").trim();
-      if (!raw) return null;
-      const m = raw.match(/^gems\s+(?:remove|delete)\s*[:\-]?\s*(.+)$/i);
-      if (m && String(m[1] || "").trim()) return String(m[1]).trim();
-      const m2 = raw.match(/^ลบ\s*(?:เจม|โมเดล)\s*[:\-]?\s*(.+)$/);
-      if (m2 && String(m2[1] || "").trim()) return String(m2[1]).trim();
-      return null;
-    };
-
-    const extractGemsUpsertJson = (text: string): any | null => {
-      const raw = String(text || "").trim();
-      if (!raw) return null;
-      const m = raw.match(/^gems\s+(?:add|create|update|upsert)\s*[:\-]?\s*(\{[\s\S]+\})\s*$/i);
-      if (!m) return null;
-      try {
-        const obj = JSON.parse(String(m[1] || ""));
-        return obj && typeof obj === "object" ? obj : null;
-      } catch {
-        return null;
-      }
-    };
-
-    const extractGemsCreateId = (text: string): string | null => {
-      const raw = String(text || "").trim();
-      if (!raw) return null;
-      // Support: "gems create noble-a-unit" (without JSON payload)
-      const m = raw.match(/^gems\s+create\s+([a-z0-9_-]+)\s*$/i);
-      if (m && String(m[1] || "").trim()) return String(m[1]).trim();
-      const m2 = raw.match(/^สร้าง\s*(?:เจม|โมเดล)\s+([a-z0-9_-]+)\s*$/i);
-      if (m2 && String(m2[1] || "").trim()) return String(m2[1]).trim();
-      return null;
-    };
-
-    const extractGemsAnalyze = (text: string): { gem_id: string; criteria: string } | null => {
-      const raw = String(text || "").trim();
-      if (!raw) return null;
-      const m = raw.match(/^gems\s+analy[sz]e\s+([a-z0-9_-]+)(?:\s*(?::|\s-\s)\s*(.+))?$/i);
-      if (m && String(m[1] || "").trim()) return { gem_id: String(m[1]).trim(), criteria: String(m[2] || "").trim() };
-      const m2 = raw.match(/^วิเคราะห์\s*(?:เจม|โมเดล)\s+([a-z0-9_-]+)(?:\s*(?::|\s-\s)\s*(.+))?$/i);
-      if (m2 && String(m2[1] || "").trim()) return { gem_id: String(m2[1]).trim(), criteria: String(m2[2] || "").trim() };
-      return null;
-    };
-
-    const extractGemsDraftAction = (text: string): { action: "apply" | "discard"; draft_id: string } | null => {
-      const raw = String(text || "").trim();
-      if (!raw) return null;
-      const m = raw.match(/^gems\s+draft\s+(apply|discard)\s*[:\-]?\s*(\w+)$/i);
-      if (m && String(m[2] || "").trim()) return { action: String(m[1]).toLowerCase() === "apply" ? "apply" : "discard", draft_id: String(m[2]).trim() };
-      const m2 = raw.match(/^ยืนยัน\s*ดราฟท์\s*[:\-]?\s*(\w+)$/);
-      if (m2 && String(m2[1] || "").trim()) return { action: "apply", draft_id: String(m2[1]).trim() };
-      const m3 = raw.match(/^ยกเลิก\s*ดราฟท์\s*[:\-]?\s*(\w+)$/);
-      if (m3 && String(m3[1] || "").trim()) return { action: "discard", draft_id: String(m3[1]).trim() };
-      return null;
-    };
-
-    if (base && isGemsListPhrase(base)) {
-      liveService.current?.sendGemsList();
-      setComposerText("");
-      setAttachments([]);
-      return;
-    }
-
-    const gemRemoveId = base ? extractGemsRemoveId(base) : null;
-    if (gemRemoveId) {
-      liveService.current?.sendGemsRemove(gemRemoveId);
-      setComposerText("");
-      setAttachments([]);
-      return;
-    }
-
-    const gemUpsert = base ? extractGemsUpsertJson(base) : null;
-    if (gemUpsert) {
-      liveService.current?.sendGemsUpsert(gemUpsert);
-      setComposerText("");
-      setAttachments([]);
-      return;
-    }
-
-    const gemCreateId = base ? extractGemsCreateId(base) : null;
-    if (gemCreateId) {
-      liveService.current?.sendGemsUpsert({ id: gemCreateId, name: gemCreateId });
-      setComposerText("");
-      setAttachments([]);
-      return;
-    }
-
-    const gemAnalyze = base ? extractGemsAnalyze(base) : null;
-    if (gemAnalyze) {
-      liveService.current?.sendGemsAnalyze(gemAnalyze.gem_id, gemAnalyze.criteria);
-      setComposerText("");
-      setAttachments([]);
-      return;
-    }
-
-    const gemDraft = base ? extractGemsDraftAction(base) : null;
-    if (gemDraft) {
-      if (gemDraft.action === "apply") liveService.current?.sendGemsDraftApply(gemDraft.draft_id);
-      else liveService.current?.sendGemsDraftDiscard(gemDraft.draft_id);
-      setComposerText("");
-      setAttachments([]);
-      return;
-    }
-
     const textAttachments = attachments.filter((a) => a.kind === "text" && typeof a.text === "string");
     const pendingAttachments = attachments.filter((a) => a.kind !== "text");
     const blocks: string[] = [];
+
     if (base) blocks.push(base);
     for (const a of textAttachments) {
       const body = String(a.text || "");
       blocks.push(`Attached file: ${a.name}\n\n\`\`\`\n${body}\n\`\`\``);
     }
+
     if (pendingAttachments.length) {
       const summary = pendingAttachments
         .map((a) => `${a.name} (${a.kind}, ${Math.round(a.size / 1024)}KB)`)
