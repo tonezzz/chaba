@@ -131,6 +131,21 @@ def _html_to_text(html: str) -> tuple[str, Optional[str]]:
     return text.strip(), title
 
 
+def _fallback_urls_for_upstream(url: str) -> list[str]:
+    parts = urlsplit(url)
+    host = (parts.hostname or "").strip().lower()
+    if not host:
+        return []
+    if host != "rss.cnn.com":
+        return []
+    if parts.scheme.lower() == "https":
+        try:
+            return [urlunsplit(parts._replace(scheme="http"))]
+        except Exception:
+            return []
+    return []
+
+
 async def _fetch_once(client: httpx.AsyncClient, url: str) -> dict[str, Any]:
     _enforce_ssrf(url)
 
@@ -212,11 +227,30 @@ async def fetch(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
     }
 
     async with httpx.AsyncClient(timeout=timeout, headers=headers, follow_redirects=False, verify=CA_BUNDLE) as client:
-        current = url
-        for _ in range(MAX_REDIRECTS + 1):
-            result = await _fetch_once(client, current)
-            if not result.get("redirect"):
-                return {"ok": True, **result}
-            current = str(result["location"])
+        def _is_retryable_upstream_error(exc: HTTPException) -> bool:
+            try:
+                return exc.status_code == 502 and isinstance(exc.detail, dict) and exc.detail.get("error") == "upstream_request_failed"
+            except Exception:
+                return False
 
-        raise HTTPException(status_code=508, detail="too_many_redirects")
+        attempts = [url] + _fallback_urls_for_upstream(url)
+        last_exc: Optional[HTTPException] = None
+
+        for attempt_url in attempts:
+            current = attempt_url
+            try:
+                for _ in range(MAX_REDIRECTS + 1):
+                    result = await _fetch_once(client, current)
+                    if not result.get("redirect"):
+                        return {"ok": True, **result}
+                    current = str(result["location"])
+                raise HTTPException(status_code=508, detail="too_many_redirects")
+            except HTTPException as e:
+                last_exc = e
+                if attempt_url != attempts[-1] and _is_retryable_upstream_error(e):
+                    continue
+                raise
+
+        if last_exc is not None:
+            raise last_exc
+        raise HTTPException(status_code=502, detail="upstream_request_failed")
