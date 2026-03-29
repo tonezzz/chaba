@@ -15,6 +15,8 @@ import { LeftPanel } from './components/app/LeftPanel';
 import { OutputPanel } from './components/app/OutputPanel';
 import { Play, Mic, MicOff, Search, Image as ImageIcon, Camera, Activity, Lock, ChevronRight, Paperclip, Send, X, Link2Off, Copy, CheckCircle2, AlertTriangle, XCircle, HeartPulse, Maximize2, Minimize2 } from 'lucide-react';
 
+import { extractReminderAddText, normalizeComposerText, parseSysDedupe, parseSysSet, parseToolInvoke, splitSentences } from './lib/appHelpers';
+
 export default function App() {
   const [hasKey, setHasKey] = useState(false);
   const [state, setState] = useState<ConnectionState>(ConnectionState.DISCONNECTED);
@@ -198,26 +200,6 @@ export default function App() {
         if (ta !== tb) return ta - tb;
         return String(a.id || "").localeCompare(String(b.id || ""));
       });
-
-    const splitSentences = (text: string): Array<{ t: string; complete: boolean }> => {
-      const raw = String(text || "").replace(/\r\n/g, "\n");
-      const parts = raw.split(/\n+/g);
-      const out: Array<{ t: string; complete: boolean }> = [];
-      for (const p of parts) {
-        const s = String(p || "").trim();
-        if (!s) continue;
-        // Basic multilingual sentence splitter.
-        const chunks = s.split(/(?<=[.!?。！？])\s+/g);
-        for (const c of chunks) {
-          const cc = String(c || "").trim();
-          if (!cc) continue;
-          const complete = /[.!?。！？]$/.test(cc);
-          out.push({ t: cc, complete });
-        }
-      }
-      if (!out.length && raw.trim()) out.push({ t: raw.trim(), complete: /[.!?。！？]$/.test(raw.trim()) });
-      return out;
-    };
 
     const dialog: Array<{ id: string; text: string }> = [];
     for (const m of ordered) {
@@ -420,7 +402,6 @@ export default function App() {
     }
   }, [statusDetailsOpen]);
 
-// ... (rest of the code remains the same)
   useEffect(() => {
     if (state !== ConnectionState.CONNECTED && isTalking) {
       setIsTalking(false);
@@ -521,247 +502,132 @@ export default function App() {
   const handleSendComposer = () => {
     if (state !== ConnectionState.CONNECTED) return;
     const base = composerText.trim();
-		const normalized = String(base || "")
-			.replace(/[\u00A0\u200B-\u200D\uFEFF]/g, "")
-			.replace(/\s+/g, " ")
-			.trim();
+    const normalized = normalizeComposerText(base);
 
-		const parseSysSet = (raw: string): { key: string; value: string; dryRun: boolean } | null => {
-			const s = String(raw || "")
-				.replace(/[\u00A0\u200B-\u200D\uFEFF]/g, "")
-				.replace(/\s+/g, " ")
-				.trim();
-			const m = s.match(/^\/(?:sys|system)\s+(set|dry)\s+(.+)$/i);
-			if (!m) return null;
-			const dryRun = String(m[1] || "").toLowerCase() === "dry";
-			const rest = String(m[2] || "").trim();
-			const eq = rest.indexOf("=");
-			if (eq < 1) return null;
-			const key = rest.slice(0, eq).trim();
-			const value = rest.slice(eq + 1).trim();
-			if (!key) return null;
-			return { key, value, dryRun };
-		};
+    const sysSet = parseSysSet(normalized);
+    if (sysSet) {
+      liveService.current?.sendSysKvSet(sysSet.key, sysSet.value, { dry_run: sysSet.dryRun });
+      setComposerText("");
+      setAttachments([]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}_sys_set_ui`,
+          role: "system",
+          text: `${sysSet.dryRun ? "sys_kv_set (dry_run)" : "sys_kv_set"}: ${sysSet.key}=${sysSet.value}`,
+          timestamp: new Date(),
+          metadata: { severity: "info", category: "ws" },
+        },
+        {
+          id: `${Date.now()}_sys_set_hint`,
+          role: "system",
+          text: "Hint: run 'reload system' to apply sys changes.",
+          timestamp: new Date(),
+          metadata: { severity: "debug", category: "ws" },
+        },
+      ]);
+      return;
+    }
 
-		const parseSysDedupe = (raw: string): { dryRun: boolean; sort: boolean } | null => {
-			const s = String(raw || "")
-				.replace(/[\u00A0\u200B-\u200D\uFEFF]/g, "")
-				.replace(/\s+/g, " ")
-				.trim();
-			const m = s.match(/^\/(?:sys|system)\s+dedupe(?:\s+(sort))?(?:\s+(dry))?$/i);
-			if (!m) return null;
-			const sort = String(m[1] || "").toLowerCase() === "sort";
-			const dryRun = String(m[2] || "").toLowerCase() === "dry";
-			return { dryRun, sort };
-		};
+    const sysDedupe = parseSysDedupe(normalized);
+    if (sysDedupe) {
+      liveService.current?.sendSysKvDedupe({ dry_run: sysDedupe.dryRun, sort: sysDedupe.sort });
+      setComposerText("");
+      setAttachments([]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}_sys_dedupe_ui`,
+          role: "system",
+          text: `${sysDedupe.dryRun ? "sys_kv_dedupe (dry_run)" : "sys_kv_dedupe"}${sysDedupe.sort ? " (sort)" : ""}`,
+          timestamp: new Date(),
+          metadata: { severity: "info", category: "ws" },
+        },
+      ]);
+      return;
+    }
 
-		const sysSet = parseSysSet(normalized);
-		if (sysSet) {
-			liveService.current?.sendSysKvSet(sysSet.key, sysSet.value, { dry_run: sysSet.dryRun });
-			setComposerText("");
-			setAttachments([]);
-			setMessages((prev) => [
-				...prev,
-				{
-					id: `${Date.now()}_sys_set_ui`,
-					role: "system",
-					text: `${sysSet.dryRun ? "sys_kv_set (dry_run)" : "sys_kv_set"}: ${sysSet.key}=${sysSet.value}`,
-					timestamp: new Date(),
-					metadata: { severity: "info", category: "ws" },
-				},
-				{
-					id: `${Date.now()}_sys_set_hint`,
-					role: "system",
-					text: "Hint: run 'reload system' to apply sys changes.",
-					timestamp: new Date(),
-					metadata: { severity: "debug", category: "ws" },
-				},
-			]);
-			return;
-		}
+    if (normalized.toLowerCase() === "system clear job" || normalized.toLowerCase() === "sys clear job") {
+      liveService.current?.sendSystemClearJob();
+      setComposerText("");
+      setAttachments([]);
+      return;
+    }
 
-		const sysDedupe = parseSysDedupe(normalized);
-		if (sysDedupe) {
-			liveService.current?.sendSysKvDedupe({ dry_run: sysDedupe.dryRun, sort: sysDedupe.sort });
-			setComposerText("");
-			setAttachments([]);
-			setMessages((prev) => [
-				...prev,
-				{
-					id: `${Date.now()}_sys_dedupe_ui`,
-					role: "system",
-					text: `${sysDedupe.dryRun ? "sys_kv_dedupe (dry_run)" : "sys_kv_dedupe"}${sysDedupe.sort ? " (sort)" : ""}`,
-					timestamp: new Date(),
-					metadata: { severity: "info", category: "ws" },
-				},
-			]);
-			return;
-		}
-
-		if (normalized.toLowerCase() === "system clear job" || normalized.toLowerCase() === "sys clear job") {
-			liveService.current?.sendSystemClearJob();
-			setComposerText("");
-			setAttachments([]);
-			return;
-		}
-
-		const parseToolInvoke = (raw: string): { name: string; args: Record<string, any> } | null => {
-			const s = String(raw || "")
-				.replace(/[\u00A0\u200B-\u200D\uFEFF]/g, "")
-				.replace(/\s+/g, " ")
-				.trim();
-			const m = s.match(/^\/tool\s+([^\s]+)(?:\s+(.+))?$/i);
-			if (!m) return null;
-			const name = String(m[1] || "").trim();
-			const rest = String(m[2] || "").trim();
-			if (!name) return null;
-			const okPrefix =
-				name.startsWith("system_") ||
-				name.startsWith("pending_") ||
-				name.startsWith("macro_") ||
-				name.startsWith("current_news_") ||
-				name.startsWith("news_follow_");
-			if (!okPrefix) return { name, args: { __invalid_tool_prefix: true } };
-			if (!rest) return { name, args: {} };
-			try {
-				const parsed = JSON.parse(rest);
-				if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-					return { name, args: parsed as Record<string, any> };
-				}
-				return { name, args: { __invalid_tool_args: true } };
-			} catch {
-				return { name, args: { __invalid_tool_args: true } };
-			}
-		};
-
-		// Never send slash-commands to Gemini; handle locally to avoid confusing "task not found" replies.
-		if (normalized.startsWith("/")) {
-			const toolInvoke = parseToolInvoke(normalized);
-			if (toolInvoke) {
-				setComposerText("");
-				setAttachments([]);
-				if ((toolInvoke.args as any)?.__invalid_tool_prefix) {
-					setMessages((prev) => [
-						...prev,
-						{
-							id: `${Date.now()}_tool_invalid_prefix`,
-							role: "system",
-							text: `tool rejected (prefix): ${toolInvoke.name}`,
-							timestamp: new Date(),
-							metadata: { severity: "warn", category: "ws" },
-						},
-					]);
-					return;
-				}
-				if ((toolInvoke.args as any)?.__invalid_tool_args) {
-					setMessages((prev) => [
-						...prev,
-						{
-							id: `${Date.now()}_tool_invalid_args`,
-							role: "system",
-							text: `tool args must be a JSON object: ${toolInvoke.name}`,
-							timestamp: new Date(),
-							metadata: { severity: "warn", category: "ws" },
-						},
-					]);
-					return;
-				}
-				try {
-					setMessages((prev) => [
-						...prev,
-						{
-							id: `${Date.now()}_tool_ui`,
-							role: "system",
-							text: `tool: ${toolInvoke.name}`,
-							timestamp: new Date(),
-							metadata: { severity: "info", category: "ws" },
-						},
-					]);
-					void liveService.current
-						?.invokeTool(toolInvoke.name, toolInvoke.args)
-						.catch((e: any) => {
-							setMessages((prev) => [
-								...prev,
-								{
-									id: `${Date.now()}_tool_send_err`,
-									role: "system",
-									text: `tool failed: ${toolInvoke.name} (${String(e?.message || e || "tool_failed")})`,
-									timestamp: new Date(),
-									metadata: { severity: "error", category: "ws" },
-								},
-							]);
-						});
-				} catch (e: any) {
-					setMessages((prev) => [
-						...prev,
-						{
-							id: `${Date.now()}_tool_send_throw`,
-							role: "system",
-							text: `tool failed: ${toolInvoke.name} (${String(e?.message || e || "tool_failed")})`,
-							timestamp: new Date(),
-							metadata: { severity: "error", category: "ws" },
-						},
-					]);
-				}
-				return;
-			}
-			const s2 = normalized.toLowerCase();
-			if (s2 === "/system clear job" || s2 === "/sys clear job" || s2 === "/system clear" || s2 === "/sys clear") {
-				liveService.current?.sendSystemClearJob();
-				setComposerText("");
-				setAttachments([]);
-				return;
-			}
-			setComposerText("");
-			setAttachments([]);
-			setMessages((prev) => [
-				...prev,
-				{
-					id: `${Date.now()}_slash_unknown`,
-					role: "system",
-					text: `unknown_command: ${normalized}`,
-					timestamp: new Date(),
-					metadata: { severity: "info", category: "ws" },
-				},
-			]);
-			return;
-		}
-
-    const extractReminderAddText = (text: string): string | null => {
-      const raw = String(text || "").trim();
-      if (!raw) return null;
-
-      const eng = [
-        /^remind\s+me\s+to\s+(.+)$/i,
-        /^remind\s+me\s+(.+)$/i,
-        /^set\s+(?:a\s+)?reminder\s*[:\-]?\s*(.+)$/i,
-        /^create\s+(?:a\s+)?reminder\s*[:\-]?\s*(.+)$/i,
-        /^reminder\s+add\s*[:\-]?\s*(.+)$/i,
-      ];
-      for (const re of eng) {
-        const m = raw.match(re);
-        if (m && String(m[1] || "").trim()) return String(m[1]).trim();
+    const toolInvoke = parseToolInvoke(normalized);
+    if (toolInvoke) {
+      setComposerText("");
+      setAttachments([]);
+      if ((toolInvoke.args as any)?.__invalid_tool_prefix) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `${Date.now()}_tool_invalid_prefix`,
+            role: "system",
+            text: `tool rejected (prefix): ${toolInvoke.name}`,
+            timestamp: new Date(),
+            metadata: { severity: "warn", category: "ws" },
+          },
+        ]);
+        return;
       }
-
-      const thai = [
-        /^เตือนฉัน\s*(?:ว่า|ให้)?\s*(.+)$/,
-        /^ช่วยเตือน(?:ฉัน)?\s*(?:ว่า|ให้)?\s*(.+)$/,
-        /^ตั้ง(?:การ)?แจ้งเตือน\s*[:\-]?\s*(.+)$/,
-        /^ตั้งเตือน\s*[:\-]?\s*(.+)$/,
-        /^อย่าลืม\s*(.+)$/,
-        /^เตือน\s*[:\-]?\s*(.+)$/,
-      ];
-      for (const re of thai) {
-        const m = raw.match(re);
-        if (m && String(m[1] || "").trim()) return String(m[1]).trim();
+      if ((toolInvoke.args as any)?.__invalid_tool_args) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `${Date.now()}_tool_invalid_args`,
+            role: "system",
+            text: `tool args must be a JSON object: ${toolInvoke.name}`,
+            timestamp: new Date(),
+            metadata: { severity: "warn", category: "ws" },
+          },
+        ]);
+        return;
       }
-
-      return null;
-    };
+      try {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `${Date.now()}_tool_ui`,
+            role: "system",
+            text: `tool: ${toolInvoke.name}`,
+            timestamp: new Date(),
+            metadata: { severity: "info", category: "ws" },
+          },
+        ]);
+        void liveService.current
+          ?.invokeTool(toolInvoke.name, toolInvoke.args)
+          .catch((e: any) => {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: `${Date.now()}_tool_send_err`,
+                role: "system",
+                text: `tool failed: ${toolInvoke.name} (${String(e?.message || e || "tool_failed")})`,
+                timestamp: new Date(),
+                metadata: { severity: "error", category: "ws" },
+              },
+            ]);
+          });
+      } catch (e: any) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `${Date.now()}_tool_send_throw`,
+            role: "system",
+            text: `tool failed: ${toolInvoke.name} (${String(e?.message || e || "tool_failed")})`,
+            timestamp: new Date(),
+            metadata: { severity: "error", category: "ws" },
+          },
+        ]);
+      }
+      return;
+    }
 
     const isReloadSystemPhrase = (text: string): boolean => {
       const s = String(text || "").trim().toLowerCase();
       if (!s) return false;
+
       const compact = s.replace(/[^a-z0-9\u0E00-\u0E7F]+/g, " ").trim().replace(/\s+/g, " ");
       if (!compact) return false;
       // Keep permissive matching (voice + typed).
