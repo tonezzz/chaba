@@ -9186,6 +9186,7 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             "current_news_sources",
             "current_news_details",
             "news_topics_upsert",
+            "news_sources_upsert",
             "news_follow_list",
             "news_follow_refresh",
             "news_follow_report",
@@ -10520,7 +10521,7 @@ def _gemini_local_tool_required_feature(name: str) -> str | None:
         return "memo"
     if n in {"memory_search", "memory_list"}:
         return "memory"
-    if n in {"current_news_get", "current_news_refresh", "current_news_sources", "current_news_details", "news_topics_upsert"}:
+    if n in {"current_news_get", "current_news_refresh", "current_news_sources", "current_news_details", "news_topics_upsert", "news_sources_upsert"}:
         return "current-news"
     if n in {
         "news_follow_list",
@@ -10564,6 +10565,7 @@ def _gemini_local_tool_allowed(*, name: str, sys_kv: Optional[dict[str, Any]] = 
         "current_news_sources",
         "current_news_details",
         "news_topics_upsert",
+        "news_sources_upsert",
         "news_follow_list",
         "news_follow_refresh",
         "news_follow_report",
@@ -11950,6 +11952,152 @@ async def _load_news_sources_from_sheet(*, sys_kv: dict[str, Any] | None) -> lis
         tags = _cell_str(r, idx, "tags")
         out.append({"name": name, "url": url, "type": typ, "tags": tags, "enabled": True})
     return out
+
+
+async def _news_sources_upsert(
+    *,
+    sys_kv: dict[str, Any] | None,
+    url: str,
+    name: str | None = None,
+    typ: str | None = None,
+    tags: str | None = None,
+    enabled: bool | None = None,
+) -> dict[str, Any]:
+    u = str(url or "").strip()
+    if not u:
+        raise HTTPException(status_code=400, detail="missing_url")
+    if enabled is not None and enabled is False:
+        raise HTTPException(status_code=400, detail="safe_upsert_only_enabled_must_be_true")
+
+    spreadsheet_id, sheet_name = _current_news_sources_sheet_cfg_from_sys_kv(sys_kv)
+    if not spreadsheet_id:
+        raise HTTPException(status_code=400, detail="missing_spreadsheet_id")
+    sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="news_sources")
+
+    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    tool_update = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+    tool_append = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+
+    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A1:H"})
+    parsed = _mcp_text_json(res)
+    vals = parsed.get("values") if isinstance(parsed, dict) else None
+    data = parsed.get("data") if isinstance(parsed, dict) else None
+    if not isinstance(vals, list) and isinstance(data, dict):
+        vals = data.get("values")
+    table = vals if isinstance(vals, list) else []
+    if not table:
+        raise HTTPException(status_code=400, detail="news_sources_missing_header")
+
+    header = table[0] if isinstance(table[0], list) else []
+    idx = _idx_from_header(header)
+    if not idx:
+        raise HTTPException(status_code=400, detail="news_sources_missing_header")
+
+    def _norm_col_name(v: Any) -> str:
+        s = str(v or "").strip().lower()
+        if not s:
+            return ""
+        return re.sub(r"[^a-z0-9]+", "", s)
+
+    idx_norm: dict[str, int] = {}
+    for k, v in idx.items():
+        nk = _norm_col_name(k)
+        if nk and nk not in idx_norm:
+            idx_norm[nk] = v
+
+    def _col_any(*names: str) -> int | None:
+        for n in names:
+            key_raw = str(n or "").strip().lower()
+            if key_raw and key_raw in idx:
+                return idx[key_raw]
+            key_norm = _norm_col_name(n)
+            if key_norm and key_norm in idx_norm:
+                return idx_norm[key_norm]
+        return None
+
+    c_url = _col_any("url", "link")
+    c_enabled = _col_any("enabled", "active", "is_enabled", "isenabled")
+    c_name = _col_any("name")
+    c_type = _col_any("type")
+    c_tags = _col_any("tags", "tag")
+    if c_url is None:
+        raise HTTPException(status_code=400, detail="news_sources_missing_required_columns")
+
+    existing_row_num: int | None = None
+    for i, r in enumerate(table[1:], start=2):
+        if not isinstance(r, list):
+            continue
+        cur = str(r[c_url] if c_url < len(r) else "").strip()
+        if cur and cur.strip().lower() == u.lower():
+            existing_row_num = i
+            break
+
+    def _set_cell(out_row: list[Any], col: int | None, value: Any) -> None:
+        if col is None:
+            return
+        if col >= len(out_row):
+            out_row.extend([""] * (col - len(out_row) + 1))
+        out_row[col] = value
+
+    if existing_row_num is not None:
+        row_len = max(len(header), 1)
+        out_row: list[Any] = [""] * row_len
+        _set_cell(out_row, c_url, u)
+        if c_enabled is not None:
+            _set_cell(out_row, c_enabled, True)
+        if name is not None and str(name).strip() and c_name is not None:
+            _set_cell(out_row, c_name, str(name).strip())
+        if typ is not None and str(typ).strip() and c_type is not None:
+            _set_cell(out_row, c_type, str(typ).strip())
+        if tags is not None and str(tags).strip() and c_tags is not None:
+            _set_cell(out_row, c_tags, str(tags).strip())
+        last_col = chr(ord("A") + (len(out_row) - 1))
+        rng = f"{sheet_a1}!A{existing_row_num}:{last_col}{existing_row_num}"
+        res2 = await _mcp_tools_call(
+            tool_update,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": rng,
+                "values": [out_row],
+                "value_input_option": "USER_ENTERED",
+            },
+        )
+        return {"ok": True, "mode": "update", "url": u, "row_number": existing_row_num, "result": _mcp_text_json(res2)}
+
+    append_row: list[Any] = []
+    if c_url is not None:
+        while len(append_row) <= c_url:
+            append_row.append("")
+        append_row[c_url] = u
+    if c_enabled is not None:
+        while len(append_row) <= c_enabled:
+            append_row.append("")
+        append_row[c_enabled] = True
+    if c_name is not None and name is not None and str(name).strip():
+        while len(append_row) <= c_name:
+            append_row.append("")
+        append_row[c_name] = str(name).strip()
+    if c_type is not None and typ is not None and str(typ).strip():
+        while len(append_row) <= c_type:
+            append_row.append("")
+        append_row[c_type] = str(typ).strip()
+    if c_tags is not None and tags is not None and str(tags).strip():
+        while len(append_row) <= c_tags:
+            append_row.append("")
+        append_row[c_tags] = str(tags).strip()
+
+    last_col = chr(ord("A") + max(0, len(append_row) - 1))
+    res3 = await _mcp_tools_call(
+        tool_append,
+        {
+            "spreadsheet_id": spreadsheet_id,
+            "range": f"{sheet_a1}!A:{last_col}",
+            "values": [append_row],
+            "value_input_option": "USER_ENTERED",
+            "insert_data_option": "INSERT_ROWS",
+        },
+    )
+    return {"ok": True, "mode": "append", "url": u, "result": _mcp_text_json(res3)}
 
 
 async def _load_news_topics_from_sheet(*, sys_kv: dict[str, Any] | None) -> dict[str, dict[str, Any]]:
@@ -15184,6 +15332,26 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
                 }
             )
 
+        ok, _, _ = _gemini_tool_allowed(name="news_sources_upsert", sys_kv=sys_kv, macros_only=macros_only)
+        if ok:
+            decls.append(
+                {
+                    "name": "news_sources_upsert",
+                    "description": "Upsert one row in the news_sources sheet (safe: create/update only; no disable/delete).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "url": {"type": "string", "description": "RSS/Atom feed URL."},
+                            "name": {"type": "string", "description": "Display name for the source."},
+                            "type": {"type": "string", "description": "Source type (e.g. rss)."},
+                            "tags": {"type": "string", "description": "Comma-separated tags."},
+                            "enabled": {"type": "boolean", "description": "Must be true (tool is safe upsert-only)."},
+                        },
+                        "required": ["url"],
+                    },
+                }
+            )
+
     if (not macros_only) and feature_enabled("follow-news", sys_kv=sys_kv, default=True):
         for tool_name, tool_decl in (
             (
@@ -15700,6 +15868,8 @@ async def _handle_mcp_tool_call(session_id: str, tool_name: str, args: dict[str,
             "pending_preview",
             "pending_confirm",
             "pending_cancel",
+            "news_sources_upsert",
+            "news_topics_upsert",
         }
         out_steps: list[dict[str, Any]] = []
         max_steps = 10
@@ -16070,6 +16240,7 @@ async def _handle_mcp_tool_call(session_id: str, tool_name: str, args: dict[str,
         "get_news_follow_summaries": _get_news_follow_summaries,
         "refresh_news_follow_summaries": _refresh_news_follow_summaries,
         "news_topics_upsert": _news_topics_upsert,
+        "news_sources_upsert": _news_sources_upsert,
     }
     return await tools_router.handle_mcp_tool_call(session_id, tool_name, args, deps=deps)
 
