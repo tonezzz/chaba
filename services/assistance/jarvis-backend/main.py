@@ -215,11 +215,30 @@ async def _ws_emit_session_resume(ws: WebSocket) -> None:
         sid = None
     turns = await _recent_dialog_load(str(sid) if sid else None)
     ok = bool(turns)
+
+    # Keep the resume payload small: omit per-turn trace_id (debug-only).
+    safe_turns: list[dict[str, Any]] = []
+    if ok and isinstance(turns, list):
+        for it in turns:
+            if not isinstance(it, dict):
+                continue
+            role = it.get("role")
+            text = it.get("text")
+            ts = it.get("ts")
+            if role not in {"user", "model"}:
+                continue
+            if not text:
+                continue
+            out_it: dict[str, Any] = {"role": role, "text": text}
+            if isinstance(ts, int) and ts > 0:
+                out_it["ts"] = ts
+            safe_turns.append(out_it)
+
     payload = {
         "type": "session_resume",
         "ok": ok,
         "session_id": str(sid) if sid else None,
-        "turns": turns if ok else [],
+        "turns": safe_turns if ok else [],
         "instance_id": INSTANCE_ID,
     }
     try:

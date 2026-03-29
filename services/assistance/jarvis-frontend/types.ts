@@ -25,7 +25,7 @@ export interface MessageLog {
     category?: 'live' | 'reminder' | 'weaviate' | 'ws' | 'unknown';
     resume?: {
       ok: boolean;
-      turns: Array<{ role: 'user' | 'model'; text: string; ts: number; trace_id?: string }>;
+      turns: Array<{ role: 'user' | 'model'; text: string; ts: number }>;
     };
     ws?: {
       type?: string;
