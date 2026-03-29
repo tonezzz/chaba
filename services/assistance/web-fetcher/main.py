@@ -168,7 +168,9 @@ async def _fetch_once(client: httpx.AsyncClient, url: str) -> dict[str, Any]:
         if not location:
             raise HTTPException(status_code=502, detail="redirect_missing_location")
         try:
-            return {"redirect": True, "location": httpx.URL(location, base=res.url).human_repr()}
+            base = httpx.URL(str(res.url))
+            target = base.join(location)
+            return {"redirect": True, "location": target.human_repr()}
         except Exception as e:
             raise HTTPException(
                 status_code=502,
