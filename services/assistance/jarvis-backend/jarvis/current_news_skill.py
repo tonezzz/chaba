@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Awaitable, Callable, Optional
 
+from fastapi import APIRouter
 from fastapi import WebSocket
 
 
@@ -100,3 +101,27 @@ async def handle_current_news_trigger(
     brief = render_brief(ctx)
     await ws.send_json({"type": "current_news", "brief": brief, "context": ctx, "updated_at": ctx.get("updated_at")})
     return True
+
+
+def create_router(
+    *,
+    get_cached_ctx: Callable[[], Optional[dict[str, Any]]],
+    refresh_ctx: Callable[[bool], Awaitable[dict[str, Any]]],
+    render_brief: Callable[[dict[str, Any]], str],
+) -> APIRouter:
+    router = APIRouter()
+
+    @router.get("/current-news/brief")
+    async def current_news_brief() -> dict[str, Any]:
+        cached = get_cached_ctx()
+        if cached and isinstance(cached, dict):
+            return {"ok": True, "cached": True, "brief": render_brief(cached), "context": cached}
+        ctx = await refresh_ctx(False)
+        return {"ok": True, "cached": False, "brief": render_brief(ctx), "context": ctx}
+
+    @router.post("/current-news/refresh")
+    async def current_news_refresh() -> dict[str, Any]:
+        ctx = await refresh_ctx(True)
+        return {"ok": True, "context": ctx}
+
+    return router
