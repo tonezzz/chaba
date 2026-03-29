@@ -1160,7 +1160,12 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                 ctx = None
 
             if tool_name == "current_news_refresh":
-                ctx = await refresh_current_news_cache(sys_kv=sys_kv if isinstance(sys_kv, dict) else None, force_fetch=True)
+                source = args.get("source")
+                ctx = await refresh_current_news_cache(
+                    sys_kv=sys_kv if isinstance(sys_kv, dict) else None,
+                    force_fetch=True,
+                    source=str(source).strip() if source is not None else None,
+                )
                 try:
                     set_news_cache("current-news", ctx)
                 except Exception:

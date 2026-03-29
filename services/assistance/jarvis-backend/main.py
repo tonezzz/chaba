@@ -12732,6 +12732,7 @@ async def _refresh_current_news_cache(
     *,
     sys_kv: dict[str, Any] | None = None,
     force_fetch: bool = True,
+    source: str | None = None,
 ) -> dict[str, Any]:
     sources_rows: list[dict[str, Any]] = []
     topics_cfg: dict[str, dict[str, Any]] = {}
@@ -12754,6 +12755,19 @@ async def _refresh_current_news_cache(
             sources_rows = await _load_news_sources_from_sheet(sys_kv=sys_kv)
         except Exception:
             sources_rows = []
+
+        source_filter = str(source or "").strip().lower()
+        if source_filter and sources_rows:
+            filtered: list[dict[str, Any]] = []
+            for s in sources_rows:
+                if not isinstance(s, dict):
+                    continue
+                url0 = str(s.get("url") or "").strip()
+                name0 = str(s.get("name") or "").strip()
+                hay = f"{name0} {url0}".lower()
+                if source_filter in hay:
+                    filtered.append(s)
+            sources_rows = filtered
 
         if sources_rows:
             for src in sources_rows:
@@ -12802,6 +12816,7 @@ async def _refresh_current_news_cache(
                 "items_deduped": len(deduped),
                 "sources_count": len(sources_rows),
                 "sources": [str(s.get("url") or "").strip() for s in sources_rows[:10] if isinstance(s, dict)],
+                "source_filter": str(source or "").strip(),
                 "topics_cfg_keys": sorted([str(k) for k in (topics_cfg.keys() if isinstance(topics_cfg, dict) else [])]),
                 "fetch": fetch_debug[:10],
             }
@@ -15578,7 +15593,15 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
                 {
                     "name": "current_news_refresh",
                     "description": "Refresh current news cache from RSS feeds and return updated context + brief.",
-                    "parameters": {"type": "object", "properties": {}},
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "source": {
+                                "type": "string",
+                                "description": "Optional: filter to a specific source by name/url substring (debugging).",
+                            }
+                        },
+                    },
                 }
             )
         ok, _, _ = _gemini_tool_allowed(name="current_news_sources", sys_kv=sys_kv, macros_only=macros_only)
