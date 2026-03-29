@@ -511,6 +511,7 @@ export function LeftPanel(props: {
                     toolName.startsWith("pending_") ||
                     toolName.startsWith("macro_") ||
                     toolName.startsWith("news_") ||
+                    toolName.startsWith("gnews_") ||
                     toolName.startsWith("current_news_") ||
                     toolName.startsWith("reminders_") ||
                     toolName.startsWith("gems_") ||
