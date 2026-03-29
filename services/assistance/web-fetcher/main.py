@@ -167,7 +167,19 @@ async def _fetch_once(client: httpx.AsyncClient, url: str) -> dict[str, Any]:
         location = res.headers.get("location")
         if not location:
             raise HTTPException(status_code=502, detail="redirect_missing_location")
-        return {"redirect": True, "location": httpx.URL(location, base=res.url).human_repr()}
+        try:
+            return {"redirect": True, "location": httpx.URL(location, base=res.url).human_repr()}
+        except Exception as e:
+            raise HTTPException(
+                status_code=502,
+                detail={
+                    "error": "redirect_location_invalid",
+                    "url": str(res.url),
+                    "location": str(location),
+                    "exception": e.__class__.__name__,
+                    "message": str(e),
+                },
+            )
 
     content_type = res.headers.get("content-type") or ""
     if not _content_type_allowed(content_type):
@@ -250,6 +262,16 @@ async def fetch(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
                 if attempt_url != attempts[-1] and _is_retryable_upstream_error(e):
                     continue
                 raise
+            except Exception as e:
+                raise HTTPException(
+                    status_code=502,
+                    detail={
+                        "error": "web_fetcher_internal_error",
+                        "url": str(current),
+                        "exception": e.__class__.__name__,
+                        "message": str(e),
+                    },
+                )
 
         if last_exc is not None:
             raise last_exc
