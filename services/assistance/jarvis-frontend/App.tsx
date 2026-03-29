@@ -15,7 +15,7 @@ import { LeftPanel } from './components/app/LeftPanel';
 import { OutputPanel } from './components/app/OutputPanel';
 import { Play, Mic, MicOff, Search, Image as ImageIcon, Camera, Activity, Lock, ChevronRight, Paperclip, Send, X, Link2Off, Copy, CheckCircle2, AlertTriangle, XCircle, HeartPulse, Maximize2, Minimize2 } from 'lucide-react';
 
-import { extractReminderAddText, normalizeComposerText, parseSysDedupe, parseSysSet, parseToolInvoke, splitSentences } from './lib/appHelpers';
+import { extractReminderAddText, normalizeComposerText, parseJsonToolRequest, parseSysDedupe, parseSysSet, parseToolInvoke, splitSentences } from './lib/appHelpers';
 
 export default function App() {
   const [hasKey, setHasKey] = useState(false);
@@ -554,10 +554,47 @@ export default function App() {
       return;
     }
 
+    const jsonToolReq = parseJsonToolRequest(base);
+    if (jsonToolReq) {
+      setComposerText("");
+      setAttachments([]);
+      const toolName = String(jsonToolReq.name || "").trim();
+      const args = jsonToolReq.args && typeof jsonToolReq.args === "object" ? jsonToolReq.args : {};
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}_ui_json_tool_${Math.random().toString(16).slice(2)}`,
+          role: "system",
+          text: `ui: tool ${toolName}`,
+          timestamp: new Date(),
+          metadata: {
+            severity: "info",
+            category: "ws",
+            raw: {
+              type: "ui",
+              kind: "tool",
+              title: toolName,
+              body: (() => {
+                try {
+                  return JSON.stringify(args, null, 2);
+                } catch {
+                  return String(args);
+                }
+              })(),
+              risk: "low",
+              primary: { label: "Run", tool: toolName, args },
+            },
+          },
+        },
+      ]);
+      return;
+    }
+
     const toolInvoke = parseToolInvoke(normalized);
     if (toolInvoke) {
       setComposerText("");
       setAttachments([]);
+
       if ((toolInvoke.args as any)?.__invalid_tool_prefix) {
         setMessages((prev) => [
           ...prev,
