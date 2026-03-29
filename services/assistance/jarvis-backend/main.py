@@ -11797,15 +11797,52 @@ def _parse_rss_items(xml_text: str) -> list[dict[str, Any]]:
     except Exception:
         return []
 
+    def _degoogle_link(link: str, desc: str) -> tuple[str, str]:
+        lnk = str(link or "").strip()
+        if not lnk:
+            return ("", "")
+        try:
+            u = urllib.parse.urlsplit(lnk)
+            host = str(u.hostname or "").lower()
+            if host != "news.google.com":
+                return (lnk, "")
+
+            q = urllib.parse.parse_qs(u.query)
+            for key in ("url", "u"):
+                vv = q.get(key)
+                if vv and str(vv[0] or "").strip():
+                    orig = str(vv[0]).strip()
+                    return (orig, lnk)
+
+            # Best-effort: sometimes the publisher URL is embedded in the HTML description.
+            try:
+                m = re.search(r"href=\"([^\"]+)\"", str(desc or ""))
+                if m:
+                    cand = str(m.group(1) or "").strip()
+                    if cand:
+                        uu = urllib.parse.urlsplit(cand)
+                        h2 = str(uu.hostname or "").lower()
+                        if h2 and h2 != "news.google.com":
+                            return (cand, lnk)
+            except Exception:
+                pass
+        except Exception:
+            return (lnk, "")
+        return (lnk, "")
+
     items: list[dict[str, Any]] = []
     for it in root.findall(".//item"):
         title = (it.findtext("title") or "").strip()
-        link = (it.findtext("link") or "").strip()
+        link0 = (it.findtext("link") or "").strip()
         pub = (it.findtext("pubDate") or "").strip()
         desc = (it.findtext("description") or "").strip()
-        if not title and not link:
+        if not title and not link0:
             continue
-        items.append({"title": title, "link": link, "pubDate": pub, "description": desc})
+        link, gnews_link = _degoogle_link(link0, desc)
+        row: dict[str, Any] = {"title": title, "link": link, "pubDate": pub, "description": desc}
+        if gnews_link:
+            row["gnews_link"] = gnews_link
+        items.append(row)
     return items
 
 
@@ -11817,6 +11854,37 @@ def _parse_atom_items(xml_text: str) -> list[dict[str, Any]]:
         root = ET.fromstring(s)
     except Exception:
         return []
+
+    def _degoogle_link(link: str, desc: str) -> tuple[str, str]:
+        lnk = str(link or "").strip()
+        if not lnk:
+            return ("", "")
+        try:
+            u = urllib.parse.urlsplit(lnk)
+            host = str(u.hostname or "").lower()
+            if host != "news.google.com":
+                return (lnk, "")
+            q = urllib.parse.parse_qs(u.query)
+            for key in ("url", "u"):
+                vv = q.get(key)
+                if vv and str(vv[0] or "").strip():
+                    orig = str(vv[0]).strip()
+                    return (orig, lnk)
+
+            try:
+                m = re.search(r"href=\"([^\"]+)\"", str(desc or ""))
+                if m:
+                    cand = str(m.group(1) or "").strip()
+                    if cand:
+                        uu = urllib.parse.urlsplit(cand)
+                        h2 = str(uu.hostname or "").lower()
+                        if h2 and h2 != "news.google.com":
+                            return (cand, lnk)
+            except Exception:
+                pass
+        except Exception:
+            return (lnk, "")
+        return (lnk, "")
 
     items: list[dict[str, Any]] = []
     ns = {"atom": "http://www.w3.org/2005/Atom"}
@@ -11833,7 +11901,11 @@ def _parse_atom_items(xml_text: str) -> list[dict[str, Any]]:
         desc = (it.findtext("atom:summary", default="", namespaces=ns) or it.findtext("summary") or "").strip()
         if not title and not link:
             continue
-        items.append({"title": title, "link": link, "pubDate": pub, "description": desc})
+        link2, gnews_link = _degoogle_link(link, desc)
+        row: dict[str, Any] = {"title": title, "link": link2, "pubDate": pub, "description": desc}
+        if gnews_link:
+            row["gnews_link"] = gnews_link
+        items.append(row)
     return items
 
 
