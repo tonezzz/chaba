@@ -276,8 +276,7 @@ export function LeftPanel(props: {
                         <div key={name} className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
                             {icon}
-                            <span className="text-slate-300 truncate">{name}</span>
-                            {skipped ? <span className="text-slate-500">(skipped)</span> : null}
+                            <span className="text-slate-300 break-words">{name}</span>
                           </div>
                           <div className="shrink-0 text-slate-500">{latencyTxt}</div>
                         </div>
@@ -463,6 +462,7 @@ export function LeftPanel(props: {
                 const confirmationId = uiRaw?.confirmation_id != null ? String(uiRaw.confirmation_id) : "";
                 const primary = uiRaw?.primary && typeof uiRaw.primary === "object" ? uiRaw.primary : null;
                 const secondary = uiRaw?.secondary && typeof uiRaw.secondary === "object" ? uiRaw.secondary : null;
+                const tertiary = uiRaw?.tertiary && typeof uiRaw.tertiary === "object" ? uiRaw.tertiary : null;
                 const input = uiRaw?.input && typeof uiRaw.input === "object" ? uiRaw.input : null;
                 const inputName = input?.name != null ? String(input.name) : "";
                 const inputLabel = input?.label != null ? String(input.label) : "";
@@ -554,6 +554,17 @@ export function LeftPanel(props: {
                       </div>
                     ) : null}
                     <div className="mt-3 flex items-center gap-2">
+                      {tertiary?.label && tertiary?.tool ? (
+                        <button
+                          disabled={actionState.busy}
+                          className={`px-3 py-2 rounded-lg border border-slate-700 bg-slate-950/40 text-slate-200 text-xs font-mono ${
+                            actionState.busy ? "opacity-50 cursor-not-allowed" : "hover:bg-slate-800/60"
+                          }`}
+                          onClick={() => void invokeUiTool(String(tertiary.tool), tertiary.args)}
+                        >
+                          {String(tertiary.label)}
+                        </button>
+                      ) : null}
                       {secondary?.label && secondary?.tool ? (
                         <button
                           disabled={actionState.busy}

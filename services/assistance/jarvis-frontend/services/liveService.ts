@@ -891,6 +891,39 @@ export class LiveService {
 				const ev = String(message?.event || "pending").trim() || "pending";
 				const cid = String(message?.confirmation_id || "").trim();
 				const action = String(message?.action || "").trim();
+				if (ev === "awaiting_user" && cid) {
+					const payload = (message as any)?.payload;
+					let body = "";
+					try {
+						if (payload != null) body = JSON.stringify(payload, null, 2);
+					} catch {
+						body = String(payload ?? "");
+					}
+					this.onMessage({
+						id: `${Date.now()}_pending_await_${Math.random().toString(16).slice(2)}`,
+						role: "system",
+						text: `pending: ${action || "confirm"}`,
+						timestamp: new Date(),
+						metadata: {
+							trace_id: traceId,
+							ws: wsMeta,
+							raw: {
+								type: "ui",
+								kind: "pending",
+								title: action ? `Confirm: ${action}` : "Confirm pending action",
+								body,
+								risk: "high",
+								confirmation_id: cid,
+								primary: { label: "Confirm", tool: "pending_confirm", args: {} },
+								secondary: { label: "Cancel", tool: "pending_cancel", args: {} },
+								tertiary: { label: "Preview", tool: "pending_preview", args: {} },
+							},
+							severity: "info",
+							category: "ws",
+						},
+					});
+					return;
+				}
 				const summary = `pending_event ${ev}${action ? ` action=${action}` : ""}${cid ? ` id=${cid}` : ""}`;
 				this.onMessage({
 					id: `${Date.now()}_pending_event_${ev}`,
