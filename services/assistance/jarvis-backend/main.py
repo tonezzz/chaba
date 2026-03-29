@@ -197,6 +197,7 @@ async def _recent_dialog_load(session_id: str | None) -> list[dict[str, Any]]:
                         continue
             return out
         except Exception:
+            # Fall back to in-memory.
             pass
 
     try:
@@ -11998,6 +11999,131 @@ async def _load_news_topics_from_sheet(*, sys_kv: dict[str, Any] | None) -> dict
     return out
 
 
+async def _news_topics_upsert(
+    *,
+    sys_kv: dict[str, Any] | None,
+    topic: str,
+    keywords: list[str],
+    limit: int | None = None,
+    headlines: int | None = None,
+    enabled: bool | None = None,
+) -> dict[str, Any]:
+    t = str(topic or "").strip()
+    if not t:
+        raise HTTPException(status_code=400, detail="missing_topic")
+    if enabled is not None and enabled is False:
+        raise HTTPException(status_code=400, detail="safe_upsert_only_enabled_must_be_true")
+
+    kw = [str(x or "").strip() for x in (keywords or []) if str(x or "").strip()]
+    if not kw:
+        raise HTTPException(status_code=400, detail="missing_keywords")
+
+    spreadsheet_id, sheet_name = _current_news_topics_sheet_cfg_from_sys_kv(sys_kv)
+    if not spreadsheet_id:
+        raise HTTPException(status_code=400, detail="missing_spreadsheet_id")
+    sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="news_topics")
+
+    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    tool_update = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+    tool_append = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+
+    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A1:K"})
+    parsed = _mcp_text_json(res)
+    vals = parsed.get("values") if isinstance(parsed, dict) else None
+    data = parsed.get("data") if isinstance(parsed, dict) else None
+    if not isinstance(vals, list) and isinstance(data, dict):
+        vals = data.get("values")
+    table = vals if isinstance(vals, list) else []
+    if not table:
+        raise HTTPException(status_code=400, detail="news_topics_missing_header")
+
+    header = table[0] if isinstance(table[0], list) else []
+    idx = _idx_from_header(header)
+    if not idx:
+        raise HTTPException(status_code=400, detail="news_topics_missing_header")
+
+    def _col(name: str) -> int | None:
+        return idx.get(str(name or "").strip().lower())
+
+    c_topic = _col("topic") or _col("key") or _col("name")
+    c_enabled = _col("enabled") or _col("active")
+    c_keywords = _col("keywords") or _col("keyword")
+    c_limit = _col("limit")
+    c_headlines = _col("headlines")
+
+    if c_topic is None or c_keywords is None:
+        raise HTTPException(status_code=400, detail="news_topics_missing_required_columns")
+
+    existing_row_num: int | None = None
+    for i, r in enumerate(table[1:], start=2):
+        if not isinstance(r, list):
+            continue
+        cur = str(r[c_topic] if c_topic < len(r) else "").strip()
+        if cur.lower() == t.lower():
+            existing_row_num = i
+            break
+
+    kw_cell = json.dumps(kw, ensure_ascii=False)
+
+    def _build_row_for_update() -> list[Any]:
+        row_len = max(len(header), 1)
+        out_row: list[Any] = [""] * row_len
+        out_row[c_topic] = t
+        if c_enabled is not None:
+            out_row[c_enabled] = True
+        out_row[c_keywords] = kw_cell
+        if c_limit is not None and limit is not None:
+            out_row[c_limit] = int(limit)
+        if c_headlines is not None and headlines is not None:
+            out_row[c_headlines] = int(headlines)
+        return out_row
+
+    if existing_row_num is not None:
+        out_row = _build_row_for_update()
+        last_col = chr(ord("A") + (len(out_row) - 1))
+        rng = f"{sheet_a1}!A{existing_row_num}:{last_col}{existing_row_num}"
+        res2 = await _mcp_tools_call(
+            tool_update,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": rng,
+                "values": [out_row],
+                "value_input_option": "USER_ENTERED",
+            },
+        )
+        return {"ok": True, "mode": "update", "topic": t, "row_number": existing_row_num, "result": _mcp_text_json(res2)}
+
+    append_row: list[Any] = [t]
+    if c_enabled is not None:
+        while len(append_row) <= c_enabled:
+            append_row.append("")
+        append_row[c_enabled] = True
+    while len(append_row) <= c_keywords:
+        append_row.append("")
+    append_row[c_keywords] = kw_cell
+    if c_limit is not None and limit is not None:
+        while len(append_row) <= c_limit:
+            append_row.append("")
+        append_row[c_limit] = int(limit)
+    if c_headlines is not None and headlines is not None:
+        while len(append_row) <= c_headlines:
+            append_row.append("")
+        append_row[c_headlines] = int(headlines)
+
+    last_col = chr(ord("A") + max(0, len(append_row) - 1))
+    res3 = await _mcp_tools_call(
+        tool_append,
+        {
+            "spreadsheet_id": spreadsheet_id,
+            "range": f"{sheet_a1}!A:{last_col}",
+            "values": [append_row],
+            "value_input_option": "USER_ENTERED",
+            "insert_data_option": "INSERT_ROWS",
+        },
+    )
+    return {"ok": True, "mode": "append", "topic": t, "result": _mcp_text_json(res3)}
+
+
 async def _fetch_news_items_from_source(
     url: str,
     *,
@@ -12247,20 +12373,21 @@ async def _handle_current_news_trigger(ws: WebSocket, text: str) -> bool:
     )
 
 
-@app.get("/current-news/brief")
-async def current_news_brief() -> dict[str, Any]:
-    cached = _get_news_cache("current-news")
-    if cached and isinstance(cached.get("payload"), dict):
-        ctx = cached["payload"]
-        return {"ok": True, "cached": True, "brief": _render_current_news_brief(ctx), "context": ctx}
-    ctx2 = await _refresh_current_news_cache(force_fetch=False)
-    return {"ok": True, "cached": False, "brief": _render_current_news_brief(ctx2), "context": ctx2}
+def _current_news_router() -> Any:
+    def _get_cached_ctx() -> Optional[dict[str, Any]]:
+        cached = _get_news_cache("current-news")
+        if cached and isinstance(cached.get("payload"), dict):
+            return cached["payload"]
+        return None
 
+    async def _refresh(force_fetch: bool) -> dict[str, Any]:
+        return await _refresh_current_news_cache(force_fetch=bool(force_fetch))
 
-@app.post("/current-news/refresh")
-async def current_news_refresh() -> dict[str, Any]:
-    ctx = await _refresh_current_news_cache(force_fetch=True)
-    return {"ok": True, "context": ctx}
+    return current_news_skill.create_router(
+        get_cached_ctx=_get_cached_ctx,
+        refresh_ctx=_refresh,
+        render_brief=_render_current_news_brief,
+    )
 
 
 def _parse_deep_research_command(text: str) -> dict[str, str]:
@@ -14676,6 +14803,9 @@ app.include_router(
 )
 
 
+app.include_router(_current_news_router())
+
+
 def _mcp_tool_declarations() -> list[dict[str, Any]]:
     sys_kv = _sys_kv_snapshot()
     decls: list[dict[str, Any]] = []
@@ -15013,6 +15143,26 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
                 }
             )
 
+        ok, _, _ = _gemini_tool_allowed(name="news_topics_upsert", sys_kv=sys_kv, macros_only=macros_only)
+        if ok:
+            decls.append(
+                {
+                    "name": "news_topics_upsert",
+                    "description": "Upsert one row in the news_topics sheet (safe: create/update only; no disable/delete).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "topic": {"type": "string", "description": "Topic key (e.g. thb, oil, usd)."},
+                            "keywords": {"type": "array", "items": {"type": "string"}, "description": "List of keywords/synonyms."},
+                            "limit": {"type": "integer", "description": "Max items to keep in this topic section."},
+                            "headlines": {"type": "integer", "description": "Max headlines to show in brief."},
+                            "enabled": {"type": "boolean", "description": "Must be true (tool is safe upsert-only)."},
+                        },
+                        "required": ["topic", "keywords"],
+                    },
+                }
+            )
+
     if (not macros_only) and feature_enabled("follow-news", sys_kv=sys_kv, default=True):
         for tool_name, tool_decl in (
             (
@@ -15231,7 +15381,7 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
     return filtered
 
 
-async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: dict[str, Any]) -> Any:
+async def _handle_mcp_tool_call(session_id: str, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
     n = str(tool_name or "").strip()
     sys_kv = _sys_kv_snapshot()
     macros_only = _macros_only_enabled(sys_kv=sys_kv)
@@ -15898,6 +16048,7 @@ async def _handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args:
         "set_news_follow_focus": _set_news_follow_focus,
         "get_news_follow_summaries": _get_news_follow_summaries,
         "refresh_news_follow_summaries": _refresh_news_follow_summaries,
+        "news_topics_upsert": _news_topics_upsert,
     }
     return await tools_router.handle_mcp_tool_call(session_id, tool_name, args, deps=deps)
 

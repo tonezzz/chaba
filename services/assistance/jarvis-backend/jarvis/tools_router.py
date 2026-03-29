@@ -1239,6 +1239,44 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         except Exception as e:
             return {"ok": False, "error": "current_news_failed", "detail": f"{type(e).__name__}: {e}"}
 
+    if tool_name == "news_topics_upsert":
+        try:
+            session_ws = deps["SESSION_WS"]
+            feature_enabled = deps["feature_enabled"]
+            news_topics_upsert = deps["news_topics_upsert"]
+
+            ws = session_ws.get(str(session_id)) if session_id else None
+            if ws is None:
+                raise HTTPException(status_code=400, detail="missing_session_ws")
+            sys_kv = getattr(ws.state, "sys_kv", None)
+            if not feature_enabled("current-news", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+                raise HTTPException(status_code=403, detail="feature_disabled:current-news")
+
+            topic = str(args.get("topic") or "").strip()
+            kw_raw = args.get("keywords")
+            keywords: list[str] = []
+            if isinstance(kw_raw, list):
+                keywords = [str(x or "").strip() for x in kw_raw if str(x or "").strip()]
+            limit = args.get("limit")
+            headlines = args.get("headlines")
+            enabled = args.get("enabled")
+            if enabled is None:
+                enabled = True
+
+            payload = await news_topics_upsert(
+                sys_kv=sys_kv if isinstance(sys_kv, dict) else None,
+                topic=topic,
+                keywords=keywords,
+                limit=int(limit) if limit is not None else None,
+                headlines=int(headlines) if headlines is not None else None,
+                enabled=bool(enabled),
+            )
+            return {"ok": True, **(payload if isinstance(payload, dict) else {"result": payload})}
+        except HTTPException as e:
+            return {"ok": False, "error": "news_topics_upsert_failed", "status_code": getattr(e, "status_code", None), "detail": getattr(e, "detail", None)}
+        except Exception as e:
+            return {"ok": False, "error": "news_topics_upsert_failed", "detail": f"{type(e).__name__}: {e}"}
+
     if tool_name in {
         "news_follow_list",
         "news_follow_refresh",
