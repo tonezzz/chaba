@@ -170,7 +170,7 @@ async def _fetch_once(client: httpx.AsyncClient, url: str) -> dict[str, Any]:
         try:
             base = httpx.URL(str(res.url))
             target = base.join(location)
-            return {"redirect": True, "location": target.human_repr()}
+            return {"redirect": True, "location": str(target)}
         except Exception as e:
             raise HTTPException(
                 status_code=502,
