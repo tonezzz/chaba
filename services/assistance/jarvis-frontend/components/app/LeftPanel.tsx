@@ -478,7 +478,14 @@ export function LeftPanel(props: {
                   const toolName = String(tool || "").trim();
                   if (!toolName) return;
                   const okPrefix =
-                    toolName.startsWith("system_") || toolName.startsWith("pending_") || toolName.startsWith("macro_") || toolName === "time_now";
+                    toolName.startsWith("system_") ||
+                    toolName.startsWith("pending_") ||
+                    toolName.startsWith("macro_") ||
+                    toolName.startsWith("news_") ||
+                    toolName.startsWith("current_news_") ||
+                    toolName.startsWith("reminders_") ||
+                    toolName.startsWith("gems_") ||
+                    toolName === "time_now";
                   if (!okPrefix) {
                     setMessages((prev) => [
                       {
@@ -504,9 +511,10 @@ export function LeftPanel(props: {
                   setMessages((prev) => [
                     {
                       id: `${Date.now()}_ui_action_${Math.random().toString(16).slice(2)}`,
-                      role: "user",
+                      role: "system",
                       text: `ui_action ${toolName}${confirmationId ? ` confirmation_id=${confirmationId}` : ""}`,
                       timestamp: new Date(),
+                      metadata: { severity: "info", category: "ws" },
                     },
                     ...prev,
                   ]);
