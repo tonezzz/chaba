@@ -156,7 +156,7 @@ export class LiveService {
 				role: "system",
 				text: `tool_call ${toolName}`,
 				timestamp: new Date(),
-				metadata: { trace_id: traceId, severity: "info", category: "tool", raw: { type: "tool_call", name: toolName, args: payloadArgs }, kind: "tool_call" },
+				metadata: { trace_id: traceId, severity: "info", category: "ws", raw: { type: "tool_call", name: toolName, args: payloadArgs } },
 			});
 		} catch {
 			// ignore
@@ -883,14 +883,59 @@ export class LiveService {
 				}
 			}
 			const summary = ok ? "ok" : "error";
-			if (hadPending) {
-				this.onMessage({
-					id: `${Date.now()}_tool_result_${toolName}`,
-					role: "system",
-					text: `tool_result ${toolName}: ${summary}`,
-					timestamp: new Date(),
-					metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: ok ? "info" : "warn", category: "tool", kind: "tool_result" },
-				});
+			this.onMessage({
+				id: `${Date.now()}_tool_result_${toolName}`,
+				role: "system",
+				text: `tool_result ${toolName}: ${summary}`,
+				timestamp: new Date(),
+				metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: ok ? "info" : "warn", category: "ws" },
+			});
+
+			// Convenience UI card: after building a Google News RSS URL, offer to add it to news_sources.
+			if (ok && toolName === "gnews_rss_build") {
+				try {
+					const res: any = (message as any)?.result;
+					const url = res?.url != null ? String(res.url) : "";
+					const query = res?.query != null ? String(res.query) : "";
+					const hl = res?.hl != null ? String(res.hl) : "";
+					const gl = res?.gl != null ? String(res.gl) : "";
+					if (url.trim()) {
+						const name = query ? `Google News: ${query}` : "Google News RSS";
+						this.onMessage({
+							id: `${Date.now()}_ui_add_news_source_${Math.random().toString(16).slice(2)}`,
+							role: "system",
+							text: "ui: add news source",
+							timestamp: new Date(),
+							metadata: {
+								trace_id: traceId,
+								ws: wsMeta,
+								raw: {
+									type: "ui",
+									kind: "tool",
+									title: "Add Google News RSS source",
+									body: [
+										url ? `url: ${url}` : "",
+										query ? `query: ${query}` : "",
+										hl ? `hl: ${hl}` : "",
+										gl ? `gl: ${gl}` : "",
+									]
+										.filter(Boolean)
+										.join("\n"),
+									risk: "low",
+									primary: {
+										label: "Add",
+										tool: "news_sources_upsert",
+										args: { url, name, type: "rss", tags: "gnews", enabled: true },
+									},
+								},
+								severity: "info",
+								category: "ws",
+							},
+						});
+					}
+				} catch {
+					// ignore
+				}
 			}
 			return;
 		}
