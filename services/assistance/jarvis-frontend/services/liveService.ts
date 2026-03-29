@@ -902,10 +902,12 @@ export class LiveService {
 				// ignore
 			}
 			try {
-				const ev = String(message?.event || "pending").trim() || "pending";
+				const evRaw = String(message?.event || "pending").trim() || "pending";
+				const ev = evRaw.toLowerCase();
+				const evNorm = ev.replace(/\s+/g, "_");
 				const cid = String(message?.confirmation_id || "").trim();
 				const action = String(message?.action || "").trim();
-				if (ev === "awaiting_user" && cid) {
+				if (evNorm === "awaiting_user" && cid) {
 					const payload = (message as any)?.payload;
 					let body = "";
 					try {
@@ -938,7 +940,7 @@ export class LiveService {
 					});
 					return;
 				}
-				const summary = `pending_event ${ev}${action ? ` action=${action}` : ""}${cid ? ` id=${cid}` : ""}`;
+				const summary = `pending_event ${evRaw}${action ? ` action=${action}` : ""}${cid ? ` id=${cid}` : ""}`;
 				this.onMessage({
 					id: `${Date.now()}_pending_event_${ev}`,
 					role: "system",
