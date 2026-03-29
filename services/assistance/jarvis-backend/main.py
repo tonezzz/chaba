@@ -132,6 +132,47 @@ def _clamp_text(s: Any, limit: int) -> str:
     return t
 
 
+def _recent_dialog_should_store(role: str, text: str) -> bool:
+    r = str(role or "").strip().lower()
+    if r not in {"user", "model"}:
+        return False
+    t = str(text or "").strip()
+    if not t:
+        return False
+
+    # Skip obvious command/tool invocations from the user to keep resume focused.
+    if r == "user":
+        low = t.lower().strip()
+
+        # Slash commands.
+        if low.startswith("/"):
+            return False
+
+        # Common internal command prefixes.
+        for pfx in (
+            "current_news_",
+            "news_",
+            "system_",
+            "pending_",
+            "macro_",
+            "gems_",
+            "reminders_",
+        ):
+            if low.startswith(pfx):
+                return False
+
+        # JSON tool payloads typed/pasted by the user.
+        if len(t) <= 6000 and t.startswith("{") and t.rstrip().endswith("}"):
+            try:
+                js = json.loads(t)
+                if isinstance(js, dict) and isinstance(js.get("args"), dict) and ("name" in js or "tool" in js):
+                    return False
+            except Exception:
+                pass
+
+    return True
+
+
 async def _recent_dialog_append(session_id: str | None, role: str, text: str, *, trace_id: str | None = None) -> None:
     sid = str(session_id or "").strip()
     if not sid:
@@ -141,6 +182,8 @@ async def _recent_dialog_append(session_id: str | None, role: str, text: str, *,
         return
     t = _clamp_text(text, RECENT_DIALOG_MAX_CHARS)
     if not t:
+        return
+    if not _recent_dialog_should_store(r, t):
         return
     item = {
         "role": r,
