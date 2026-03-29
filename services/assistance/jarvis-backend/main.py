@@ -12044,14 +12044,33 @@ async def _news_topics_upsert(
     if not idx:
         raise HTTPException(status_code=400, detail="news_topics_missing_header")
 
-    def _col(name: str) -> int | None:
-        return idx.get(str(name or "").strip().lower())
+    def _norm_col_name(v: Any) -> str:
+        s = str(v or "").strip().lower()
+        if not s:
+            return ""
+        return re.sub(r"[^a-z0-9]+", "", s)
 
-    c_topic = _col("topic") or _col("key") or _col("name")
-    c_enabled = _col("enabled") or _col("active")
-    c_keywords = _col("keywords") or _col("keyword")
-    c_limit = _col("limit")
-    c_headlines = _col("headlines")
+    idx_norm: dict[str, int] = {}
+    for k, v in idx.items():
+        nk = _norm_col_name(k)
+        if nk and nk not in idx_norm:
+            idx_norm[nk] = v
+
+    def _col_any(*names: str) -> int | None:
+        for n in names:
+            key_raw = str(n or "").strip().lower()
+            if key_raw and key_raw in idx:
+                return idx[key_raw]
+            key_norm = _norm_col_name(n)
+            if key_norm and key_norm in idx_norm:
+                return idx_norm[key_norm]
+        return None
+
+    c_topic = _col_any("topic", "key", "name", "topic_key", "topic id", "topicid", "id")
+    c_enabled = _col_any("enabled", "active", "is_enabled", "isenabled", "is_active", "isactive")
+    c_keywords = _col_any("keywords", "keyword", "match_terms", "match terms", "terms", "keywords_json", "keywords json")
+    c_limit = _col_any("limit", "max_items", "max items", "max")
+    c_headlines = _col_any("headlines", "max_headlines", "max headlines")
 
     if c_topic is None or c_keywords is None:
         raise HTTPException(status_code=400, detail="news_topics_missing_required_columns")
