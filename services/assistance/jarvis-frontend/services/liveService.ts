@@ -150,6 +150,17 @@ export class LiveService {
 		if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return Promise.reject(new Error("ws_not_connected"));
 		const traceId = this.createTraceId(`tool_${toolName}`);
 		const payloadArgs = args && typeof args === "object" ? args : {};
+		try {
+			this.onMessage({
+				id: `${Date.now()}_tool_call_${toolName}`,
+				role: "system",
+				text: `tool_call ${toolName}`,
+				timestamp: new Date(),
+				metadata: { trace_id: traceId, severity: "info", category: "tool", raw: { type: "tool_call", name: toolName, args: payloadArgs }, kind: "tool_call" },
+			});
+		} catch {
+			// ignore
+		}
 		return new Promise((resolve, reject) => {
 			this.toolPending.set(traceId, { resolve, reject, name: toolName, createdAt: Date.now() });
 			this.wsSend({ type: "tool", name: toolName, args: payloadArgs, trace_id: traceId });
@@ -860,24 +871,27 @@ export class LiveService {
 		if (message?.type === "tool_result") {
 			const toolName = message?.name != null ? String(message.name) : "tool";
 			const ok = message?.ok === true;
+			let hadPending = false;
 			// Resolve any pending invokeTool promises.
 			if (traceId) {
 				const pending = this.toolPending.get(traceId);
 				if (pending) {
 					this.toolPending.delete(traceId);
+					hadPending = true;
 					if (ok) pending.resolve(message?.result);
 					else pending.reject(message?.error ?? "tool_failed");
 				}
 			}
-			// Also emit a UI log line.
 			const summary = ok ? "ok" : "error";
-			this.onMessage({
-				id: `${Date.now()}_tool_result_${toolName}`,
-				role: "system",
-				text: `tool_result ${toolName}: ${summary}`,
-				timestamp: new Date(),
-				metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: ok ? "info" : "warn", category: "ws" },
-			});
+			if (hadPending) {
+				this.onMessage({
+					id: `${Date.now()}_tool_result_${toolName}`,
+					role: "system",
+					text: `tool_result ${toolName}: ${summary}`,
+					timestamp: new Date(),
+					metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: ok ? "info" : "warn", category: "tool", kind: "tool_result" },
+				});
+			}
 			return;
 		}
 

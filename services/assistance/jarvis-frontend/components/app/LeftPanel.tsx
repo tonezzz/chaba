@@ -372,6 +372,16 @@ export function LeftPanel(props: {
                 if (ta !== tb) return ta - tb;
                 return String(a.id || "").localeCompare(String(b.id || ""));
               });
+
+            const toolCallsByTraceId = new Set<string>();
+            const toolResultsByTraceId = new Map<string, MessageLog>();
+            for (const m of ordered) {
+              const tr = m.metadata?.trace_id ? String(m.metadata.trace_id) : "";
+              if (!tr) continue;
+              const kind = String((m.metadata as any)?.kind || "").trim();
+              if (kind === "tool_call") toolCallsByTraceId.add(tr);
+              if (kind === "tool_result") toolResultsByTraceId.set(tr, m);
+            }
             const seenKeys = new Set<string>();
             const dedupeKeyForRender = (t: string): string | null => {
               const s = String(t || "")
@@ -388,6 +398,11 @@ export function LeftPanel(props: {
               return null;
             };
             const filtered = ordered.filter((m) => {
+              const kind = String((m.metadata as any)?.kind || "").trim();
+              if (kind === "tool_result") {
+                const tr = m.metadata?.trace_id ? String(m.metadata.trace_id) : "";
+                if (tr && toolCallsByTraceId.has(tr)) return false;
+              }
               const k = dedupeKeyForRender(String(m.text || ""));
               if (!k) return true;
               if (seenKeys.has(k)) return false;
@@ -431,6 +446,13 @@ export function LeftPanel(props: {
             return coalesced.map((m) => {
               const uiRaw: any = (m.metadata?.raw as any) ?? (m.metadata?.ws as any) ?? null;
               const isUiCard = String(uiRaw?.type || "").toLowerCase() === "ui";
+              const toolKind = String((m.metadata as any)?.kind || "").trim();
+              const isToolCall = toolKind === "tool_call";
+              const tr = m.metadata?.trace_id ? String(m.metadata.trace_id) : "";
+              const toolResult = isToolCall && tr ? toolResultsByTraceId.get(tr) : undefined;
+              const toolResultRaw: any = toolResult?.metadata?.raw ?? null;
+              const toolResultOk = toolResultRaw && typeof toolResultRaw === "object" ? toolResultRaw.ok === true : null;
+              const toolResultSummary = toolResultOk == null ? "" : toolResultOk ? "ok" : "error";
               const canExpand = Boolean(m.metadata?.raw || m.metadata?.trace_id || m.metadata?.ws?.type || m.metadata?.ws?.instance_id);
               const expanded = expandedLogId === m.id;
               let rawText = "";
@@ -659,8 +681,24 @@ export function LeftPanel(props: {
                   </div>
                   <div className="text-slate-300 pl-5 border-l border-slate-700 py-1 whitespace-pre-wrap">
                     {isUiCard ? renderUiCard() : m.text}
+                    {isToolCall && toolResultSummary ? (
+                      <div className={`mt-1 text-[11px] font-mono ${toolResultOk ? "text-emerald-300" : "text-amber-300"}`}>
+                        {`result: ${toolResultSummary}`}
+                      </div>
+                    ) : null}
                     {expanded && metaLine && <div className="mt-2 text-[11px] font-mono text-slate-500 whitespace-pre-wrap">{metaLine}</div>}
                     {expanded && rawText && <pre className="mt-2 text-[11px] font-mono text-slate-400 whitespace-pre-wrap">{rawText}</pre>}
+                    {expanded && isToolCall && toolResultRaw != null ? (
+                      <pre className="mt-2 text-[11px] font-mono text-slate-400 whitespace-pre-wrap">
+                        {(() => {
+                          try {
+                            return JSON.stringify(toolResultRaw, null, 2);
+                          } catch {
+                            return String(toolResultRaw);
+                          }
+                        })()}
+                      </pre>
+                    ) : null}
                   </div>
                 </div>
               );
