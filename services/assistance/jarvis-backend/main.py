@@ -17401,14 +17401,6 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             text = str(msg.get("text") or "")
             if not text:
                 continue
-
-            handled_status = False
-            try:
-                handled_status = await _handle_status_or_action(ws, text, trace_id=trace_id2)
-            except Exception:
-                handled_status = False
-            if handled_status:
-                continue
             logger.info("ws_in_text trace_id=%s len=%s head=%s", trace_id, len(text), text[:120])
 
             # Frontend reconnect-resume support: the UI may send a synthetic RESUME_CONTEXT
