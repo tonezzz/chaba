@@ -302,8 +302,53 @@ async def _handle_status_or_action(ws: WebSocket, text: str, *, trace_id: str) -
         await _ws_send_json(ws, {"type": "text", "text": "\n".join(lines), "instance_id": INSTANCE_ID}, trace_id=trace_id)
         return True
 
+    async def _run_action_tool(tool: str, args: dict[str, Any]) -> None:
+        await _ws_progress(ws, f"action: {tool}", phase="start", tool_name=tool, trace_id=trace_id)
+        try:
+            session_id = getattr(ws.state, "session_id", None)
+            res = await _handle_mcp_tool_call(session_id, tool, dict(args))
+            await _ws_send_json(
+                ws,
+                {"type": "tool_result", "name": tool, "ok": True, "result": res, "instance_id": INSTANCE_ID},
+                trace_id=trace_id,
+            )
+            await _ws_progress(ws, f"action: {tool}", phase="done", tool_name=tool, trace_id=trace_id)
+        except Exception as e:
+            await _ws_send_json(
+                ws,
+                {"type": "tool_result", "name": tool, "ok": False, "error": str(e), "instance_id": INSTANCE_ID},
+                trace_id=trace_id,
+            )
+            await _ws_progress(ws, f"action failed: {tool}", phase="error", tool_name=tool, trace_id=trace_id)
+
     last_ui = getattr(ws.state, "last_ui_action", None)
     if not isinstance(last_ui, dict):
+        # Default behavior: if there's no explicit suggested action, try to surface actionable work.
+        # Prefer pending items; otherwise, queue a system reload (safe read/refresh step).
+        try:
+            if _action_allowlisted_tool("pending_list"):
+                session_id = getattr(ws.state, "session_id", None)
+                pending = await _handle_mcp_tool_call(session_id, "pending_list", {})
+                await _ws_send_json(
+                    ws,
+                    {"type": "tool_result", "name": "pending_list", "ok": True, "result": pending, "instance_id": INSTANCE_ID},
+                    trace_id=trace_id,
+                )
+                first_id = ""
+                if isinstance(pending, dict) and isinstance(pending.get("items"), list) and pending.get("items"):
+                    it0 = pending.get("items")[0]
+                    if isinstance(it0, dict):
+                        first_id = str(it0.get("confirmation_id") or "").strip()
+                if first_id and _action_allowlisted_tool("pending_preview"):
+                    await _run_action_tool("pending_preview", {"confirmation_id": first_id})
+                    return True
+        except Exception:
+            pass
+
+        if _action_allowlisted_tool("system_reload_queue"):
+            await _run_action_tool("system_reload_queue", {})
+            return True
+
         await _ws_send_json(ws, {"type": "text", "text": "no_suggested_action", "instance_id": INSTANCE_ID}, trace_id=trace_id)
         return True
     tool = str(last_ui.get("tool") or "").strip()
@@ -315,27 +360,11 @@ async def _handle_status_or_action(ws: WebSocket, text: str, *, trace_id: str) -
         await _ws_send_json(ws, {"type": "text", "text": f"action_not_allowed: {tool}", "instance_id": INSTANCE_ID}, trace_id=trace_id)
         return True
 
-    await _ws_progress(ws, f"action: {tool}", phase="start", tool_name=tool, trace_id=trace_id)
+    await _run_action_tool(tool, dict(args))
     try:
-        session_id = getattr(ws.state, "session_id", None)
-        res = await _handle_mcp_tool_call(session_id, tool, dict(args))
-        await _ws_send_json(
-            ws,
-            {"type": "tool_result", "name": tool, "ok": True, "result": res, "instance_id": INSTANCE_ID},
-            trace_id=trace_id,
-        )
-        await _ws_progress(ws, f"action: {tool}", phase="done", tool_name=tool, trace_id=trace_id)
-        try:
-            ws.state.last_ui_action = None
-        except Exception:
-            pass
-    except Exception as e:
-        await _ws_send_json(
-            ws,
-            {"type": "tool_result", "name": tool, "ok": False, "error": str(e), "instance_id": INSTANCE_ID},
-            trace_id=trace_id,
-        )
-        await _ws_progress(ws, f"action failed: {tool}", phase="error", tool_name=tool, trace_id=trace_id)
+        ws.state.last_ui_action = None
+    except Exception:
+        pass
     return True
 
 
