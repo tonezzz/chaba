@@ -4014,7 +4014,21 @@ app = FastAPI(title="jarvis-backend", version="0.1.0")
 @app.get("/jarvis/api/oauth/callback")
 async def oauth_callback_capture(request: Request) -> Response:
     try:
-        full_url = str(request.url)
+        # When running behind a reverse proxy, request.url may reflect internal scheme/host.
+        # Prefer forwarded headers so operators can copy-paste the same URL Google redirected to.
+        proto = str(request.headers.get("x-forwarded-proto") or request.url.scheme or "").strip() or "http"
+        host = str(
+            request.headers.get("x-forwarded-host")
+            or request.headers.get("host")
+            or request.url.netloc
+            or ""
+        ).strip()
+        path = str(request.url.path or "")
+        query = str(request.url.query or "")
+        if host:
+            full_url = f"{proto}://{host}{path}" + (f"?{query}" if query else "")
+        else:
+            full_url = str(request.url)
     except Exception:
         full_url = ""
     try:
