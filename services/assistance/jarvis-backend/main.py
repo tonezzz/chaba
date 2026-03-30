@@ -195,6 +195,147 @@ def _is_low_quality_news_description(*, title: str, description: str) -> bool:
     return False
 
 
+def _normalize_simple_cmd(text: str) -> str:
+    s = str(text or "").strip().lower()
+    if not s:
+        return ""
+    s = re.sub(r"[^a-z0-9\u0E00-\u0E7F]+", " ", s).strip()
+    return " ".join(s.split())
+
+
+def _action_allowlisted_tool(name: str) -> bool:
+    n = str(name or "").strip()
+    if not n:
+        return False
+    if n.startswith("macro_"):
+        return True
+    return n in {
+        "pending_list",
+        "pending_get",
+        "pending_preview",
+        "pending_confirm",
+        "pending_cancel",
+        "system_reload_queue",
+        "system_macro_upsert_bundle_queue",
+        "system_macro_seed_baseline_queue",
+        "system_macro_get",
+        "system_macros_list",
+        "system_skills_list",
+        "system_skill_get",
+        "system_skills_bootstrap_queue",
+        "system_run_macro",
+        "current_news_get",
+        "current_news_refresh",
+        "current_news_sources",
+        "current_news_details",
+        "news_topics_upsert",
+        "news_sources_upsert",
+        "news_items_upsert",
+        "news_sources_list",
+        "gnews_rss_build",
+        "it_topic_packs_seed",
+        "news_follow_list",
+        "news_follow_refresh",
+        "news_follow_report",
+        "news_follow_focus_list",
+        "news_follow_focus_add",
+        "news_follow_focus_remove",
+        "google_account_relink_queue",
+        "memo_update_queue",
+        "system_memo_update_queue",
+        "system_write_queue",
+        "system_skill_upsert_queue",
+    }
+
+
+async def _handle_status_or_action(ws: WebSocket, text: str, *, trace_id: str) -> bool:
+    compact = _normalize_simple_cmd(text)
+    if not compact:
+        return False
+
+    wants_status = compact in {"status", "what status", "what s status", "state", "progress"} or compact.startswith("status ")
+    wants_action = compact in {"action", "do action", "do it", "run", "proceed", "next", "continue"} or compact.startswith("action ")
+    if not wants_status and not wants_action:
+        return False
+
+    if wants_status:
+        active_agent = str(getattr(ws.state, "active_agent_id", "") or "").strip()
+        active_until = getattr(ws.state, "active_agent_until_ts", None)
+        try:
+            active_until_i = int(active_until) if active_until is not None else 0
+        except Exception:
+            active_until_i = 0
+        last_prog = getattr(ws.state, "last_progress", None)
+        last_ui = getattr(ws.state, "last_ui_action", None)
+
+        lines: list[str] = []
+        if active_agent:
+            lines.append(f"active_agent: {active_agent}{(' until ' + str(active_until_i)) if active_until_i else ''}")
+        if isinstance(last_prog, dict) and str(last_prog.get("message") or "").strip():
+            pmsg = str(last_prog.get("message") or "").strip()
+            ptool = str(last_prog.get("tool") or "").strip()
+            pphase = str(last_prog.get("phase") or "").strip()
+            step = last_prog.get("step")
+            total = last_prog.get("total")
+            step_txt = f" ({step}/{total})" if isinstance(step, int) and isinstance(total, int) and total else ""
+            head = f"progress: {pmsg}{step_txt}"
+            if ptool:
+                head = f"progress[{ptool}/{pphase}]: {pmsg}{step_txt}" if pphase else f"progress[{ptool}]: {pmsg}{step_txt}"
+            lines.append(head)
+        if isinstance(last_ui, dict) and str(last_ui.get("tool") or "").strip():
+            label = str(last_ui.get("label") or "").strip()
+            title = str(last_ui.get("title") or "").strip()
+            tool = str(last_ui.get("tool") or "").strip()
+            hint = f"next_action: {tool}"
+            if label and title:
+                hint = f"next_action: {label} ({title})"
+            elif title:
+                hint = f"next_action: {tool} ({title})"
+            lines.append(hint)
+            lines.append("say 'action' to run it")
+        if not lines:
+            lines = ["idle", "say what you want to do, or ask for current news"]
+
+        await _ws_send_json(ws, {"type": "text", "text": "\n".join(lines), "instance_id": INSTANCE_ID}, trace_id=trace_id)
+        return True
+
+    last_ui = getattr(ws.state, "last_ui_action", None)
+    if not isinstance(last_ui, dict):
+        await _ws_send_json(ws, {"type": "text", "text": "no_suggested_action", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+        return True
+    tool = str(last_ui.get("tool") or "").strip()
+    args = last_ui.get("args")
+    if not tool or not isinstance(args, dict):
+        await _ws_send_json(ws, {"type": "text", "text": "no_suggested_action", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+        return True
+    if not _action_allowlisted_tool(tool):
+        await _ws_send_json(ws, {"type": "text", "text": f"action_not_allowed: {tool}", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+        return True
+
+    await _ws_progress(ws, f"action: {tool}", phase="start", tool_name=tool, trace_id=trace_id)
+    try:
+        session_id = getattr(ws.state, "session_id", None)
+        res = await _handle_mcp_tool_call(session_id, tool, dict(args))
+        await _ws_send_json(
+            ws,
+            {"type": "tool_result", "name": tool, "ok": True, "result": res, "instance_id": INSTANCE_ID},
+            trace_id=trace_id,
+        )
+        await _ws_progress(ws, f"action: {tool}", phase="done", tool_name=tool, trace_id=trace_id)
+        try:
+            ws.state.last_ui_action = None
+        except Exception:
+            pass
+    except Exception as e:
+        await _ws_send_json(
+            ws,
+            {"type": "tool_result", "name": tool, "ok": False, "error": str(e), "instance_id": INSTANCE_ID},
+            trace_id=trace_id,
+        )
+        await _ws_progress(ws, f"action failed: {tool}", phase="error", tool_name=tool, trace_id=trace_id)
+    return True
+
+
 def _clean_news_description(*, title: str, description: str) -> str:
     d0 = str(description or "")
     d = _strip_html_tags(d0) if ("<" in d0 and ">" in d0) else str(d0).strip()
@@ -3736,6 +3877,25 @@ async def _ws_send_json(ws: WebSocket, payload: dict[str, Any], trace_id: str | 
         pass
 
     try:
+        if str(payload.get("type") or "").strip().lower() == "ui":
+            raw = payload
+            primary = raw.get("primary")
+            if isinstance(primary, dict):
+                tool = str(primary.get("tool") or "").strip()
+                args = primary.get("args")
+                if tool and isinstance(args, dict):
+                    ws.state.last_ui_action = {
+                        "tool": tool,
+                        "args": dict(args),
+                        "label": str(primary.get("label") or "").strip(),
+                        "title": str(raw.get("title") or "").strip(),
+                        "trace_id": str(tid or "").strip(),
+                        "ts": int(time.time()),
+                    }
+    except Exception:
+        pass
+
+    try:
         if str(payload.get("type") or "").strip().lower() == "text":
             text0 = str(payload.get("text") or "")
             low = text0.strip().lower()
@@ -3803,6 +3963,18 @@ async def _ws_progress(
         payload["step"] = int(step)
     if total is not None:
         payload["total"] = int(total)
+    try:
+        ws.state.last_progress = {
+            "message": str(message or ""),
+            "phase": str(phase or ""),
+            "tool": str(tool_name or "") if tool_name else "",
+            "step": int(step) if step is not None else None,
+            "total": int(total) if total is not None else None,
+            "trace_id": str(trace_id or "").strip(),
+            "ts": int(time.time()),
+        }
+    except Exception:
+        pass
     await _ws_send_json(ws, payload, trace_id=trace_id)
 
 app = FastAPI(title="jarvis-backend", version="0.1.0")
@@ -17082,6 +17254,14 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             text = str(msg.get("text") or "")
             if not text:
                 continue
+
+            handled_status = False
+            try:
+                handled_status = await _handle_status_or_action(ws, text, trace_id=trace_id2)
+            except Exception:
+                handled_status = False
+            if handled_status:
+                continue
             logger.info("ws_in_text trace_id=%s len=%s head=%s", trace_id, len(text), text[:120])
 
             # Frontend reconnect-resume support: the UI may send a synthetic RESUME_CONTEXT
@@ -17094,6 +17274,14 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
                     continue
             except Exception:
                 pass
+
+            handled_status = False
+            try:
+                handled_status = await _handle_status_or_action(ws, text, trace_id=trace_id2)
+            except Exception:
+                handled_status = False
+            if handled_status:
+                continue
 
             try:
                 await _recent_dialog_append(getattr(ws.state, "session_id", None), "user", text, trace_id=trace_id2)
@@ -17440,6 +17628,14 @@ async def _ws_local_only_loop(ws: WebSocket) -> None:
                 continue
             logger.info("ws_in_text_local_only trace_id=%s len=%s head=%s", trace_id, len(text), text[:120])
 
+            handled_status = False
+            try:
+                handled_status = await _handle_status_or_action(ws, text, trace_id=trace_id2)
+            except Exception:
+                handled_status = False
+            if handled_status:
+                continue
+
             try:
                 s0 = str(text or "").strip()
                 s = re.sub(r"[\u00A0\u200B-\u200D\uFEFF]+", "", s0)
@@ -17502,6 +17698,18 @@ async def _ws_local_only_loop(ws: WebSocket) -> None:
             )
             if handled:
                 continue
+            try:
+                await _ws_update_contexts_from_text(ws, s, handled=False)
+            except Exception:
+                pass
+            try:
+                await _ws_send_json(ws, {"type": "status", "status": "ok", "instance_id": INSTANCE_ID}, trace_id=trace_id2)
+            except Exception:
+                pass
+            try:
+                await _ws_send_json(ws, {"type": "action", "action": "done", "instance_id": INSTANCE_ID}, trace_id=trace_id2)
+            except Exception:
+                pass
             await _ws_emit_gemini_unavailable(ws, trace_id=trace_id)
             continue
 
