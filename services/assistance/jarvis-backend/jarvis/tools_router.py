@@ -4,6 +4,105 @@ import json
 from typing import Any, Optional
 
 
+def _json_loads_loose(raw: Any) -> Any:
+    if raw is None:
+        return None
+    if isinstance(raw, (dict, list)):
+        return raw
+    s = str(raw or "").strip()
+    if not s:
+        return None
+    try:
+        return json.loads(s)
+    except Exception:
+        return None
+
+
+def _normalize_projects_registry(obj: Any) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    if obj is None:
+        return out
+    if isinstance(obj, dict):
+        # Accept mapping forms: {"name": "spreadsheet_id"} or {"spreadsheet_id": "name"}.
+        for k, v in obj.items():
+            k2 = str(k or "").strip()
+            if not k2:
+                continue
+            if isinstance(v, str):
+                v2 = str(v or "").strip()
+                if not v2:
+                    continue
+                # Heuristic: spreadsheet ids are longer and contain dashes/underscores.
+                if len(v2) >= 20:
+                    out.append({"name": k2, "spreadsheet_id": v2})
+                else:
+                    out.append({"name": v2, "spreadsheet_id": k2})
+            else:
+                v_obj = v if isinstance(v, dict) else {}
+                sid = str(v_obj.get("spreadsheet_id") or v_obj.get("id") or "").strip()
+                nm = str(v_obj.get("name") or k2).strip()
+                if sid:
+                    out.append({"name": nm, "spreadsheet_id": sid})
+        return out
+    if isinstance(obj, list):
+        for it in obj:
+            if isinstance(it, str):
+                sid = str(it or "").strip()
+                if sid:
+                    out.append({"name": "", "spreadsheet_id": sid})
+                continue
+            if isinstance(it, dict):
+                sid = str(it.get("spreadsheet_id") or it.get("id") or "").strip()
+                nm = str(it.get("name") or it.get("title") or "").strip()
+                if sid:
+                    out.append({"name": nm, "spreadsheet_id": sid})
+        return out
+    return out
+
+
+def _find_registry_match(registry: list[dict[str, Any]], *, name: str) -> dict[str, Any] | None:
+    want = str(name or "").strip().lower()
+    if not want:
+        return None
+    for it in registry:
+        if not isinstance(it, dict):
+            continue
+        nm = str(it.get("name") or "").strip().lower()
+        if nm and nm == want:
+            return it
+    # fallback: substring
+    for it in registry:
+        if not isinstance(it, dict):
+            continue
+        nm = str(it.get("name") or "").strip().lower()
+        if nm and want in nm:
+            return it
+    return None
+
+
+def _header_index(values: Any) -> dict[str, int]:
+    if not isinstance(values, list) or not values or not isinstance(values[0], list):
+        return {}
+    idx: dict[str, int] = {}
+    for j, h in enumerate(values[0]):
+        k = str(h or "").strip().lower()
+        if k and k not in idx:
+            idx[k] = int(j)
+    return idx
+
+
+def _set_row_value(row: list[Any], idx: dict[str, int], key: str, value: Any) -> None:
+    k = str(key or "").strip().lower()
+    if not k:
+        return
+    j = idx.get(k)
+    if j is None:
+        return
+    if j >= len(row):
+        row.extend([""] * (j + 1 - len(row)))
+    row[j] = value
+
+
 async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: dict[str, Any], *, deps: dict[str, Any]) -> Any:
     HTTPException = deps["HTTPException"]
 
@@ -225,6 +324,190 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             "confirmation_id": confirmation_id,
             "action": action,
             "supported_actions": supported_actions,
+        }
+
+    if tool_name == "projects_registry_list":
+        session_ws = deps["SESSION_WS"]
+        ws = session_ws.get(str(session_id)) if session_id else None
+        if ws is None:
+            raise HTTPException(status_code=400, detail="missing_session_ws")
+
+        namespace = str(args.get("namespace") or "").strip()
+        if not namespace:
+            raise HTTPException(status_code=400, detail="missing_namespace")
+
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        sys_kv_dict = sys_kv if isinstance(sys_kv, dict) else None
+        if not sys_kv_dict:
+            raise HTTPException(status_code=400, detail="missing_sys_kv")
+
+        reg_key = f"projects.{namespace}.projects_json"
+        raw = sys_kv_dict.get(reg_key)
+        parsed = _json_loads_loose(raw)
+        items = _normalize_projects_registry(parsed)
+        active_id = str(sys_kv_dict.get(f"projects.{namespace}.active_id") or "").strip() or None
+        return {"ok": True, "namespace": namespace, "active_id": active_id, "items": items, "count": len(items)}
+
+    if tool_name == "projects_sheet_read":
+        session_ws = deps["SESSION_WS"]
+        pick_sheets_tool_name = deps["pick_sheets_tool_name"]
+        mcp_tools_call = deps["mcp_tools_call"]
+        mcp_text_json = deps["mcp_text_json"]
+
+        ws = session_ws.get(str(session_id)) if session_id else None
+        if ws is None:
+            raise HTTPException(status_code=400, detail="missing_session_ws")
+
+        namespace = str(args.get("namespace") or "").strip()
+        if not namespace:
+            raise HTTPException(status_code=400, detail="missing_namespace")
+
+        tab = str(args.get("tab") or "").strip()
+        if not tab:
+            raise HTTPException(status_code=400, detail="missing_tab")
+
+        spreadsheet_id = str(args.get("spreadsheet_id") or "").strip()
+        project_name = str(args.get("project_name") or args.get("name") or "").strip()
+        a1_range = str(args.get("range") or "").strip()
+        if not a1_range:
+            a1_range = f"{tab}!A:Z"
+
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        sys_kv_dict = sys_kv if isinstance(sys_kv, dict) else None
+        if not sys_kv_dict:
+            raise HTTPException(status_code=400, detail="missing_sys_kv")
+
+        if not spreadsheet_id:
+            active_id = str(sys_kv_dict.get(f"projects.{namespace}.active_id") or "").strip()
+            if active_id:
+                spreadsheet_id = active_id
+
+        if not spreadsheet_id and project_name:
+            reg_key = f"projects.{namespace}.projects_json"
+            reg = _normalize_projects_registry(_json_loads_loose(sys_kv_dict.get(reg_key)))
+            hit = _find_registry_match(reg, name=project_name)
+            if hit is not None:
+                spreadsheet_id = str(hit.get("spreadsheet_id") or "").strip()
+
+        if not spreadsheet_id:
+            raise HTTPException(status_code=400, detail="missing_spreadsheet_id")
+
+        tool_get = pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+        res = await mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": a1_range})
+        parsed = mcp_text_json(res)
+        if isinstance(parsed, dict) and isinstance(parsed.get("data"), dict) and "values" not in parsed:
+            # mcp-google-sheets wraps google payload under data; normalize.
+            data_obj = parsed.get("data")
+            if isinstance(data_obj, dict) and "values" in data_obj:
+                parsed = {"ok": True, "data": data_obj, "values": data_obj.get("values")}
+        values = parsed.get("values") if isinstance(parsed, dict) else None
+        return {"ok": True, "namespace": namespace, "spreadsheet_id": spreadsheet_id, "range": a1_range, "values": values}
+
+    if tool_name == "projects_proposal_start_project":
+        session_ws = deps["SESSION_WS"]
+        pick_sheets_tool_name = deps["pick_sheets_tool_name"]
+        mcp_tools_call = deps["mcp_tools_call"]
+        mcp_text_json = deps["mcp_text_json"]
+
+        ws = session_ws.get(str(session_id)) if session_id else None
+        if ws is None:
+            raise HTTPException(status_code=400, detail="missing_session_ws")
+
+        namespace = str(args.get("namespace") or "").strip()
+        if not namespace:
+            raise HTTPException(status_code=400, detail="missing_namespace")
+
+        new_project_title = str(args.get("new_project_title") or args.get("project_title") or args.get("title") or "").strip()
+        if not new_project_title:
+            raise HTTPException(status_code=400, detail="missing_new_project_title")
+
+        objective = str(args.get("objective") or "").strip()
+        priority = str(args.get("priority") or "").strip()
+        due_date = str(args.get("due_date") or "").strip()
+        seed_tasks = args.get("seed_tasks")
+        if seed_tasks is None:
+            seed_tasks = []
+        if not isinstance(seed_tasks, list):
+            raise HTTPException(status_code=400, detail="invalid_seed_tasks")
+
+        spreadsheet_id = str(args.get("spreadsheet_id") or "").strip()
+        project_name = str(args.get("project_name") or args.get("name") or "").strip()
+
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        sys_kv_dict = sys_kv if isinstance(sys_kv, dict) else None
+        if not sys_kv_dict:
+            raise HTTPException(status_code=400, detail="missing_sys_kv")
+
+        if not spreadsheet_id:
+            active_id = str(sys_kv_dict.get(f"projects.{namespace}.active_id") or "").strip()
+            if active_id:
+                spreadsheet_id = active_id
+
+        if not spreadsheet_id and project_name:
+            reg_key = f"projects.{namespace}.projects_json"
+            reg = _normalize_projects_registry(_json_loads_loose(sys_kv_dict.get(reg_key)))
+            hit = _find_registry_match(reg, name=project_name)
+            if hit is not None:
+                spreadsheet_id = str(hit.get("spreadsheet_id") or "").strip()
+
+        if not spreadsheet_id:
+            raise HTTPException(status_code=400, detail="missing_spreadsheet_id")
+
+        # Build payload and append a proposal row (robust to schema differences).
+        payload = {
+            "action": "start_project",
+            "new_project_title": new_project_title,
+            "objective": objective or None,
+            "priority": priority or None,
+            "due_date": due_date or None,
+            "seed_tasks": [str(x or "").strip() for x in seed_tasks if str(x or "").strip()],
+        }
+
+        tool_get = pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+        header_res = await mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": "proposals!A1:Z1"})
+        header_parsed = mcp_text_json(header_res)
+        header_values = None
+        if isinstance(header_parsed, dict):
+            header_values = header_parsed.get("values")
+            if header_values is None and isinstance(header_parsed.get("data"), dict):
+                header_values = header_parsed.get("data", {}).get("values")
+        idx = _header_index(header_values)
+
+        row: list[Any] = [""] * (max(idx.values()) + 1) if idx else []
+        _set_row_value(row, idx, "created_at", "")
+        _set_row_value(row, idx, "created", "")
+        _set_row_value(row, idx, "ts", "")
+        _set_row_value(row, idx, "kind", "start_project")
+        _set_row_value(row, idx, "type", "start_project")
+        _set_row_value(row, idx, "title", new_project_title)
+        _set_row_value(row, idx, "project_title", new_project_title)
+        _set_row_value(row, idx, "objective", objective)
+        _set_row_value(row, idx, "priority", priority)
+        _set_row_value(row, idx, "due_date", due_date)
+        _set_row_value(row, idx, "payload_json", json.dumps(payload, ensure_ascii=False))
+        _set_row_value(row, idx, "status", "proposed")
+
+        if not row:
+            row = ["", "start_project", new_project_title, json.dumps(payload, ensure_ascii=False), "proposed"]
+
+        tool_append = pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+        res = await mcp_tools_call(
+            tool_append,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": "proposals!A:Z",
+                "values": [row],
+                "value_input_option": "USER_ENTERED",
+                "insert_data_option": "INSERT_ROWS",
+            },
+        )
+        parsed = mcp_text_json(res)
+        return {
+            "ok": True,
+            "namespace": namespace,
+            "spreadsheet_id": spreadsheet_id,
+            "proposal": payload,
+            "append": parsed,
         }
 
     if tool_name == "time_now":
@@ -2405,6 +2688,14 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             if not isinstance(payload, dict):
                 raise HTTPException(status_code=400, detail="invalid_pending_payload")
             code_or_url = str(user_input.get("code_or_redirected_url") or "").strip()
+            if not code_or_url:
+                try:
+                    last = deps.get("oauth_callback_last")
+                except Exception:
+                    last = None
+                if isinstance(last, dict):
+                    # Prefer full redirected URL (it may contain state + other params), fall back to code.
+                    code_or_url = str(last.get("url") or "").strip() or str(last.get("code") or "").strip()
             if not code_or_url:
                 raise HTTPException(status_code=400, detail="missing_code_or_redirected_url")
             res = await mcp_tools_call(

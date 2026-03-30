@@ -47,7 +47,7 @@ from routes.google_calendar import create_router as _create_google_calendar_rout
 from PIL import Image
 
 import httpx
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Body, Header
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Body, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 
@@ -83,6 +83,9 @@ except Exception:
     types = _GenaiTypesStub()
     genai_errors = _GenaiErrorsStub()
 from pydantic import BaseModel, Field
+
+
+_OAUTH_CALLBACK_LAST: dict[str, Any] = {}
 
 
 _SHEET_MEMORY_CACHE: dict[str, Any] = {
@@ -4003,6 +4006,62 @@ async def _ws_progress(
     await _ws_send_json(ws, payload, trace_id=trace_id)
 
 app = FastAPI(title="jarvis-backend", version="0.1.0")
+
+
+@app.get("/oauth/callback")
+@app.get("/jarvis/oauth/callback")
+@app.get("/api/oauth/callback")
+@app.get("/jarvis/api/oauth/callback")
+async def oauth_callback_capture(request: Request) -> Response:
+    try:
+        full_url = str(request.url)
+    except Exception:
+        full_url = ""
+    try:
+        code = request.query_params.get("code")
+    except Exception:
+        code = None
+    try:
+        error = request.query_params.get("error")
+    except Exception:
+        error = None
+    try:
+        state = request.query_params.get("state")
+    except Exception:
+        state = None
+    try:
+        _OAUTH_CALLBACK_LAST.clear()
+        _OAUTH_CALLBACK_LAST.update(
+            {
+                "url": full_url,
+                "code": str(code) if code is not None else None,
+                "error": str(error) if error is not None else None,
+                "state": str(state) if state is not None else None,
+                "ts": int(time.time()),
+            }
+        )
+    except Exception:
+        pass
+
+    body = "OK\n"
+    if code:
+        body += f"code={code}\n"
+    if error:
+        body += f"error={error}\n"
+    if state:
+        body += f"state={state}\n"
+    if full_url:
+        body += f"url={full_url}\n"
+    body += "\nCopy the FULL url=... line (or just the code=...) into pending_confirm as input.code_or_redirected_url.\n"
+    return Response(content=body, media_type="text/plain")
+
+
+@app.get("/oauth/callback/last")
+@app.get("/jarvis/oauth/callback/last")
+@app.get("/api/oauth/callback/last")
+@app.get("/jarvis/api/oauth/callback/last")
+def oauth_callback_last() -> dict[str, Any]:
+    return {"ok": True, "last": dict(_OAUTH_CALLBACK_LAST)}
 
 
 @app.get("/debug/status")
@@ -16140,6 +16199,69 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
                 }
             )
 
+        ok, _, _ = _gemini_tool_allowed(name="projects_registry_list", sys_kv=sys_kv, macros_only=macros_only)
+        if ok:
+            decls.append(
+                {
+                    "name": "projects_registry_list",
+                    "description": "List registered Project OS spreadsheets from system sheet KV (projects.<namespace>.projects_json).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "namespace": {"type": "string", "description": "Registry namespace (e.g. proman)."},
+                        },
+                        "required": ["namespace"],
+                    },
+                }
+            )
+
+        ok, _, _ = _gemini_tool_allowed(name="projects_sheet_read", sys_kv=sys_kv, macros_only=macros_only)
+        if ok:
+            decls.append(
+                {
+                    "name": "projects_sheet_read",
+                    "description": "Read values from a Project OS spreadsheet tab (read-only helper via google_sheets_values_get).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "namespace": {"type": "string", "description": "Registry namespace (e.g. proman)."},
+                            "spreadsheet_id": {"type": "string", "description": "Target Project OS spreadsheet id (optional if projects.<ns>.active_id is set)."},
+                            "project_name": {"type": "string", "description": "Optional: resolve spreadsheet by name in registry."},
+                            "name": {"type": "string", "description": "Alias for project_name."},
+                            "tab": {"type": "string", "description": "Tab name (e.g. instructions, entities, relations, proposals)."},
+                            "range": {"type": "string", "description": "Optional A1 range; default is <tab>!A:Z."},
+                        },
+                        "required": ["namespace", "tab"],
+                    },
+                }
+            )
+
+        ok, _, _ = _gemini_tool_allowed(name="projects_proposal_start_project", sys_kv=sys_kv, macros_only=macros_only)
+        if ok:
+            decls.append(
+                {
+                    "name": "projects_proposal_start_project",
+                    "description": "Create a start-project proposal in a Project OS spreadsheet (writes one row to proposals tab).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "namespace": {"type": "string", "description": "Registry namespace (e.g. proman)."},
+                            "spreadsheet_id": {"type": "string", "description": "Target Project OS spreadsheet id (optional if projects.<ns>.active_id is set)."},
+                            "project_name": {"type": "string", "description": "Alias for spreadsheet selection by name from registry (optional)."},
+                            "name": {"type": "string", "description": "Alias for project_name."},
+                            "title": {"type": "string", "description": "Alias for new_project_title."},
+                            "new_project_title": {"type": "string", "description": "Title of the new project to create."},
+                            "project_title": {"type": "string", "description": "Alias for new_project_title."},
+                            "objective": {"type": "string", "description": "Optional project objective."},
+                            "priority": {"type": "string", "description": "Optional project priority."},
+                            "due_date": {"type": "string", "description": "Optional due date string."},
+                            "seed_tasks": {"type": "array", "items": {"type": "string"}, "description": "Optional list of seed task titles."},
+                        },
+                        "required": ["namespace", "new_project_title"],
+                    },
+                }
+            )
+
     if (not macros_only) and feature_enabled("memory", sys_kv=sys_kv, default=True):
         decls.append(
             {
@@ -17289,6 +17411,7 @@ async def _handle_mcp_tool_call(session_id: str, tool_name: str, args: dict[str,
         "news_sources_list": _news_sources_list,
         "gnews_rss_build": _gnews_rss_build,
         "it_topic_packs_seed": _it_topic_packs_seed,
+        "oauth_callback_last": _OAUTH_CALLBACK_LAST,
     }
     return await tools_router.handle_mcp_tool_call(session_id, tool_name, args, deps=deps)
 
@@ -17442,6 +17565,18 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             if s.strip().lower() == "ui test":
                 sys_kv = getattr(ws.state, "sys_kv", None)
                 if not feature_enabled("ui_test_card", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=False):
+                    try:
+                        await _ws_send_json(
+                            ws,
+                            {
+                                "type": "text",
+                                "text": "ui_test_card_disabled",
+                                "instance_id": INSTANCE_ID,
+                            },
+                            trace_id=trace_id2,
+                        )
+                    except Exception:
+                        pass
                     continue
                 try:
                     await _ws_send_json(
@@ -17785,6 +17920,18 @@ async def _ws_local_only_loop(ws: WebSocket) -> None:
             if s.strip().lower() == "ui test":
                 sys_kv = getattr(ws.state, "sys_kv", None)
                 if not feature_enabled("ui_test_card", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=False):
+                    try:
+                        await _ws_send_json(
+                            ws,
+                            {
+                                "type": "text",
+                                "text": "ui_test_card_disabled",
+                                "instance_id": INSTANCE_ID,
+                            },
+                            trace_id=trace_id2,
+                        )
+                    except Exception:
+                        pass
                     continue
                 try:
                     await _ws_send_json(
