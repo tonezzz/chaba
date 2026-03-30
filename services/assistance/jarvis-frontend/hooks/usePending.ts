@@ -102,7 +102,8 @@ export function usePending(args: {
       setPendingErr("");
       try {
         const isAuth = String(pendingPreview?.action || "") === "google_account_relink";
-        const input = isAuth ? { code_or_redirected_url: String(pendingAuthCode || "").trim() } : undefined;
+        const authValue = String(pendingAuthCode || "").trim();
+        const input = isAuth && authValue ? { code_or_redirected_url: authValue } : undefined;
         const res = await liveService.current?.invokeTool(
           "pending_confirm",
           input ? { confirmation_id: cid, input } : { confirmation_id: cid }

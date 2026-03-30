@@ -509,14 +509,20 @@ export function OutputPanel(props: {
                                         >
                                           copy url
                                         </button>
-                                        <a
-                                          href={String((pendingPreview as any)?.details?.auth_url || "")}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
+                                        <button
+                                          onClick={() => {
+                                            const url = String((pendingPreview as any)?.details?.auth_url || "");
+                                            if (!url) return;
+                                            try {
+                                              window.open(url, "_blank", "noopener,noreferrer");
+                                            } catch {
+                                              // ignore
+                                            }
+                                          }}
                                           className="text-[11px] font-mono px-2 py-1 rounded border border-cyan-700/40 bg-cyan-950/20 text-cyan-200 hover:bg-cyan-900/30"
                                         >
                                           open url
-                                        </a>
+                                        </button>
                                       </div>
                                       <input
                                         value={pendingAuthCode}
