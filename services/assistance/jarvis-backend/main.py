@@ -142,6 +142,67 @@ def _clamp_text(s: Any, limit: int) -> str:
     return t
 
 
+def _strip_html_tags(s: str) -> str:
+    txt = str(s or "")
+    if not txt:
+        return ""
+    try:
+        txt = re.sub(r"<[^>]+>", " ", txt)
+    except Exception:
+        txt = txt
+    try:
+        txt = _html.unescape(txt)
+    except Exception:
+        pass
+    try:
+        txt = re.sub(r"\s+", " ", txt).strip()
+    except Exception:
+        txt = txt.strip()
+    return txt
+
+
+def _is_low_quality_news_description(*, title: str, description: str) -> bool:
+    t = str(title or "").strip()
+    d0 = str(description or "").strip()
+    if not d0:
+        return True
+
+    d = _strip_html_tags(d0) if ("<" in d0 and ">" in d0) else d0
+    d = str(d or "").strip()
+    if not d:
+        return True
+
+    tl = t.lower().strip()
+    dl = d.lower().strip()
+    if tl and dl == tl:
+        return True
+
+    # Common Google News RSS pattern: description is just the title as an <a> tag + publisher.
+    if tl and dl.startswith(tl):
+        rest = d[len(t) :].strip()
+        rest = rest.replace("\u00a0", " ")
+        rest = re.sub(r"\s+", " ", rest).strip()
+        # If remainder looks like only a source label (e.g. Reuters) or is extremely short, treat as low quality.
+        if not rest:
+            return True
+        if len(rest) <= 30 and re.fullmatch(r"[\w\-\|\s\.]+", rest or ""):
+            return True
+
+    # If the original description was HTML-y and stripping leaves something very short, treat as low quality.
+    if ("<" in d0 and ">" in d0) and len(d) <= 40:
+        return True
+
+    return False
+
+
+def _clean_news_description(*, title: str, description: str) -> str:
+    d0 = str(description or "")
+    d = _strip_html_tags(d0) if ("<" in d0 and ">" in d0) else str(d0).strip()
+    if _is_low_quality_news_description(title=str(title or ""), description=d):
+        return ""
+    return str(d or "").strip()
+
+
 def _recent_dialog_should_store(role: str, text: str) -> bool:
     r = str(role or "").strip().lower()
     if r not in {"user", "model"}:
@@ -11897,7 +11958,8 @@ async def _enrich_news_item_description(
     if not isinstance(item, dict):
         return item
     desc0 = str(item.get("description") or "").strip()
-    if desc0:
+    title0 = str(item.get("title") or "").strip()
+    if desc0 and not _is_low_quality_news_description(title=title0, description=desc0):
         return item
     url = str(item.get("link") or "").strip()
     if not url:
@@ -11989,7 +12051,7 @@ def _parse_rss_items(xml_text: str) -> list[dict[str, Any]]:
         if not desc:
             # Some feeds use <media:description>.
             desc = _xml_first_child_text_by_localname(it, ["media:description", "description"]) or ""
-        desc = str(desc or "").strip()
+        desc = _clean_news_description(title=title, description=str(desc or ""))
         if not title and not link0:
             continue
         link, gnews_link = _degoogle_link(link0, desc)
@@ -12061,6 +12123,7 @@ def _parse_atom_items(xml_text: str) -> list[dict[str, Any]]:
                     desc = str("".join(content_el.itertext()) or "").strip()
             except Exception:
                 desc = desc
+        desc = _clean_news_description(title=title, description=str(desc or ""))
         if not title and not link:
             continue
         link2, gnews_link = _degoogle_link(link, desc)
