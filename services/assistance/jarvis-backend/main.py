@@ -18288,6 +18288,15 @@ async def ws_live(ws: WebSocket) -> None:
 
     if session_id:
         try:
+            prev = _SESSION_WS.get(str(session_id))
+        except Exception:
+            prev = None
+        if prev is not None and prev is not ws:
+            try:
+                await prev.close(code=4000, reason="session_taken_over")
+            except Exception:
+                pass
+        try:
             _SESSION_WS[str(session_id)] = ws
         except Exception:
             pass

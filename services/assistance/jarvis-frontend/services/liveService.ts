@@ -705,19 +705,24 @@ export class LiveService {
 				try { window.clearInterval(this.keepaliveTimer); } catch {}
 				this.keepaliveTimer = null;
 			}
-        try {
-          console.warn("ws_close", { code: ev.code, reason: ev.reason, wasClean: ev.wasClean });
-        } catch {
-          // ignore
+        const quiet = ev.code === 4000 || String(ev.reason || "").toLowerCase().includes("session_taken_over");
+        if (!quiet) {
+          try {
+            console.warn("ws_close", { code: ev.code, reason: ev.reason, wasClean: ev.wasClean });
+          } catch {
+            // ignore
+          }
         }
         this.onStateChange(ConnectionState.DISCONNECTED);
-        this.onMessage({
-          id: `${Date.now()}_ws_close`,
-          role: "system",
-          text: `disconnected (code=${ev.code}${ev.reason ? ` reason=${ev.reason}` : ""})`,
-          timestamp: new Date(),
-          metadata: { trace_id: this.createTraceId("ws_close"), ws: { type: "ws_close", instance_id: sessionId, client_tag: clientTag, client_id: clientId }, raw: { type: "ws_close" }, severity: "info", category: "ws" },
-        });
+        if (!quiet) {
+          this.onMessage({
+            id: `${Date.now()}_ws_close`,
+            role: "system",
+            text: `disconnected (code=${ev.code}${ev.reason ? ` reason=${ev.reason}` : ""})`,
+            timestamp: new Date(),
+            metadata: { trace_id: this.createTraceId("ws_close"), ws: { type: "ws_close", instance_id: sessionId, client_tag: clientTag, client_id: clientId }, raw: { type: "ws_close" }, severity: "info", category: "ws" },
+          });
+        }
       };
       this.ws.onerror = (err) => {
         if (mySeq !== this.wsSeq) return;
@@ -1001,6 +1006,9 @@ export class LiveService {
 
 		if (message?.type === "reconnect") {
 			const reason = message?.reason != null ? String(message.reason) : "";
+			if (reason.toLowerCase().includes("session_taken_over")) {
+				return;
+			}
 			this.onMessage({
 				id: `${Date.now()}_reconnect`,
 				role: "system",
