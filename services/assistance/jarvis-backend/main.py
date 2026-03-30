@@ -4107,8 +4107,6 @@ def oauth_callback_last() -> dict[str, Any]:
     return {"ok": True, "last": dict(_OAUTH_CALLBACK_LAST)}
 
 
-@app.get("/debug/status")
-@app.get("/jarvis/debug/status")
 @app.get("/api/debug/status")
 @app.get("/jarvis/api/debug/status")
 async def debug_status() -> dict[str, Any]:
@@ -14243,8 +14241,8 @@ def health() -> dict[str, Any]:
     }
 
 
-@app.get("/debug/tools")
-@app.get("/jarvis/debug/tools")
+@app.get("/api/debug/tools")
+@app.get("/jarvis/api/debug/tools")
 def debug_tools() -> dict[str, Any]:
     sys_kv = _sys_kv_snapshot()
     tools = _mcp_tool_declarations()
@@ -14268,8 +14266,8 @@ def debug_tools() -> dict[str, Any]:
     return {"ok": True, "enabled": enabled, "env": env, "tools": names}
 
 
-@app.get("/debug/memo")
-@app.get("/jarvis/debug/memo")
+@app.get("/api/debug/memo")
+@app.get("/jarvis/api/debug/memo")
 async def debug_memo() -> dict[str, Any]:
     sys_kv = _sys_kv_snapshot()
 
@@ -14323,8 +14321,8 @@ async def debug_memo() -> dict[str, Any]:
     }
 
 
-@app.get("/debug/counts")
-@app.get("/jarvis/debug/counts")
+@app.get("/api/debug/counts")
+@app.get("/jarvis/api/debug/counts")
 async def debug_counts() -> dict[str, Any]:
     sys_kv = _sys_kv_snapshot()
 
@@ -15216,10 +15214,16 @@ async def daily_brief() -> dict[str, Any]:
     return {"ok": True, "brief": await _render_daily_brief(DEFAULT_USER_ID)}
 
 
-@app.get("/debug/agents")
+@app.get("/api/debug/agents")
+@app.get("/jarvis/api/debug/agents")
 def debug_agents() -> dict[str, Any]:
     agents = _agents_snapshot()
     triggers = _agent_triggers_snapshot()
+    pending: dict[str, Any] = {}
+    try:
+        pending = _pending_snapshot()
+    except Exception:
+        pass
     return {
         "ok": True,
         "agents_dir": AGENTS_DIR,
@@ -15227,6 +15231,7 @@ def debug_agents() -> dict[str, Any]:
         "agents": agents,
         "triggers": triggers,
         "continuation_window_seconds": AGENT_CONTINUE_WINDOW_SECONDS,
+        "pending": pending,
     }
 
 

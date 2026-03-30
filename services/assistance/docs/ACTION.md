@@ -589,18 +589,18 @@ Format SSOT:
 - See: `MEMO.md` (canonical sheet header/order, sys_kv keys, and normalize behavior)
 
 1. **Check effective memo config**
-   - `GET /jarvis/debug/memo`
+   - `GET /jarvis/api/debug/memo`
    - Success looks like:
      - `feature_enabled=true`
      - `memo_enabled=true`
      - non-empty `spreadsheet_id` and `sheet_name`
      - `header_error=null`
 2. **If `memo_enabled=false` but you believe sys_kv is set**
-   - `/jarvis/debug/memo` reads from a cached `sys_kv` snapshot.
+   - `/jarvis/api/debug/memo` reads from a cached `sys_kv` snapshot.
    - Force a refresh by calling:
      - `POST /jarvis/memo/header/normalize`
    - Then re-check:
-     - `GET /jarvis/debug/memo`
+     - `GET /jarvis/api/debug/memo`
 3. **Append a test memo**
    - `POST /jarvis/memo/add`
    - Success looks like:
@@ -633,7 +633,7 @@ Goal: a single, stable way to answer “how many items are in sheet X?” withou
 
 - **Better name:** `sheet_row_count` (more precise) or `sheet_item_count` (OK if we define “item” clearly).
 - **Where to implement (preferred):** Jarvis backend endpoint + optional Jarvis tool wrapper.
-  - Endpoint: `GET /jarvis/debug/sheet_row_count?spreadsheet_id=<id>&sheet=<tab>&has_header=true`
+  - Endpoint: `GET /jarvis/api/debug/sheet_row_count?spreadsheet_id=<id>&sheet=<tab>&has_header=true`
   - Returns:
     - `ok`
     - `spreadsheet_id`, `sheet`
@@ -646,19 +646,19 @@ Goal: a single, stable way to answer “how many items are in sheet X?” withou
   - It can be protected by `_require_api_token_if_configured`.
 - **How we’ll use it (when deployed):**
   - Memo rows:
-    - `GET /jarvis/debug/sheet_row_count?sheet=memo&has_header=true`
+    - `GET /jarvis/api/debug/sheet_row_count?sheet=memo&has_header=true`
   - Logs rows:
-    - `GET /jarvis/debug/sheet_row_count?sheet=logs&has_header=true`
+    - `GET /jarvis/api/debug/sheet_row_count?sheet=logs&has_header=true`
 
 ### Check counts (single call)
-- `GET /jarvis/debug/counts`
+- `GET /jarvis/api/debug/counts`
 - Expected fields:
   - `memory.count` (number of enabled memory items loaded)
   - `memory.cached_count` (may be 0 if not preloaded yet)
   - `memo.rows` (number of memo rows excluding header)
   - `memo.sheet` / `memo.spreadsheet_id` (where it wrote)
 
-### If `/jarvis/debug/counts` is 404
+### If `/jarvis/api/debug/counts` is 404
 - This usually means the deployed container hasn’t picked up the latest code yet.
 - Fallback checks:
   1. **Memory count (backend prewarm)**

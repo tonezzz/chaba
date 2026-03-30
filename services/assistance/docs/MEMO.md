@@ -57,7 +57,7 @@ Notes:
 
 - The backend normalizer rewrites `A1:J1` and best-effort clears `K1` (and beyond) to prevent stray manual header columns.
 - Debug and maintenance endpoints treat the canonical header as `A:J`:
-  - `GET /jarvis/debug/memo` returns `header` read from `A1:J1`.
+  - `GET /jarvis/api/debug/memo` returns `header` read from `A1:J1`.
   - `POST /jarvis/memo/header/normalize` returns `before`/`after` read from `A1:J1`.
 
 ## Flow diagram

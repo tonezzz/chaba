@@ -881,17 +881,10 @@ export default function App() {
         } catch {
           res = null;
         }
+
         if (!res || !res.ok) {
-          try {
-            res = await fetch("/jarvis/debug/status", { cache: "no-store" });
-          } catch {
-            res = null;
-          }
+          throw new Error(`status_http_${res ? res.status : "fetch_failed"}`);
         }
-        if (!res || !res.ok) {
-          res = await fetch("/debug/status", { cache: "no-store" });
-        }
-        if (!res) throw new Error("deps_status_fetch_failed");
 
         const bodyText = await res.text();
         const trimmed = String(bodyText || "").trim();
@@ -919,31 +912,7 @@ export default function App() {
       cancelled = true;
       window.clearInterval(t);
     };
-  }, [hasKey, statusDetailsOpen, depsStatusRefreshNonce]);
-
-  const getSeqCompletedTasks = () => {
-    const completedBlocks = String(seqCompletedNotes || "")
-      .split(/\n\s*---\s*\n/g)
-      .map((b) => b.trim())
-      .filter(Boolean);
-    return completedBlocks.length ? completedBlocks.map((notes) => ({ notes })) : undefined;
-  };
-
-  const applySeqResponse = (res: any) => {
-    setSeqNotes(res.notes);
-    setSeqNextText(res.next_step_text);
-    setSeqNextIndex(res.next_step_index);
-    setSeqTemplate(res.template);
-  };
-
-  const handleSeqSuggest = async () => {
-    setSeqBusy(true);
-    setSeqError("");
-    try {
-      const completed_tasks = getSeqCompletedTasks();
-      const res = await sequentialApplyAndSuggest({ mode: "suggest", notes: seqNotes, completed_tasks });
-      applySeqResponse(res);
-    } catch (e: any) {
+  },
       setSeqError(String(e?.message || e || "suggest_failed"));
       setSeqNextText(null);
       setSeqNextIndex(null);
