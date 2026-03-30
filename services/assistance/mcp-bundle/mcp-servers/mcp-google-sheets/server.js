@@ -34,6 +34,13 @@ const SCOPES = String(process.env.GOOGLE_SHEETS_SCOPES || DEFAULT_SCOPES)
 const fs = require("node:fs");
 const path = require("node:path");
 
+const DEFAULT_REDIRECT_URI = "http://127.0.0.1:53682/oauth2callback";
+const REDIRECT_URI = (
+  _envOrEmpty(process.env.GOOGLE_SHEETS_REDIRECT_URI) ||
+  _envOrEmpty(process.env.GOOGLE_REDIRECT_URI) ||
+  DEFAULT_REDIRECT_URI
+).trim();
+
 function safeJsonParse(s) {
   try {
     return JSON.parse(s);
@@ -111,7 +118,7 @@ async function httpForm(url, formObj) {
 
 function buildAuthUrl() {
   requireClientId();
-  const redirect_uri = "http://127.0.0.1:53682/oauth2callback";
+  const redirect_uri = REDIRECT_URI;
   const qs = new URLSearchParams({
     client_id: CLIENT_ID,
     redirect_uri,
@@ -142,7 +149,7 @@ function parseAuthCode(codeOrUrl) {
 async function exchangeAuthCodeToTokens(code) {
   requireClientId();
   ensureTokenDir();
-  const redirect_uri = "http://127.0.0.1:53682/oauth2callback";
+  const redirect_uri = REDIRECT_URI;
   const tok = await httpForm(GOOGLE_TOKEN_URL, {
     client_id: CLIENT_ID,
     client_secret: CLIENT_SECRET || undefined,
