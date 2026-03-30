@@ -20,6 +20,7 @@ export interface MessageLog {
     sources?: GroundingSource[];
     type?: 'search' | 'image_gen' | 'reimagine' | 'text';
     source?: 'input' | 'output';
+    kind?: string;
     trace_id?: string;
     severity?: 'debug' | 'info' | 'warn' | 'error';
     category?: 'live' | 'reminder' | 'weaviate' | 'ws' | 'unknown';
@@ -30,6 +31,8 @@ export interface MessageLog {
     ws?: {
       type?: string;
       instance_id?: string;
+      client_id?: string;
+      client_tag?: string;
     };
     raw?: any;
   };
