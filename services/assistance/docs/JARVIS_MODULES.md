@@ -27,7 +27,7 @@ Invariants / safety notes:
 
 Smoke test:
 - `POST /jarvis/memo/header/normalize`
-- Then `GET /jarvis/debug/memo` to confirm header matches expected schema.
+- Then `GET /jarvis/api/debug/memo` to confirm header matches expected schema.
 
 
 ## jarvis/sheets_utils.py
