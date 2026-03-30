@@ -156,7 +156,7 @@ export class LiveService {
 				role: "system",
 				text: `tool_call ${toolName}`,
 				timestamp: new Date(),
-				metadata: { trace_id: traceId, severity: "info", category: "tool", raw: { type: "tool_call", name: toolName, args: payloadArgs }, kind: "tool_call" },
+				metadata: { trace_id: traceId, kind: "tool_call", severity: "info", category: "ws", raw: { type: "tool_call", name: toolName, args: payloadArgs } },
 			});
 		} catch {
 			// ignore
@@ -678,7 +678,7 @@ export class LiveService {
           role: "system",
           text: "connected",
           timestamp: new Date(),
-          metadata: { severity: "info", category: "ws" },
+          metadata: { trace_id: this.createTraceId("ws_open"), ws: { type: "ws_open", instance_id: sessionId, client_tag: clientTag, client_id: clientId }, raw: { type: "ws_open" }, severity: "info", category: "ws" },
         });
         try {
           if (this.outputAudioContext && this.outputAudioContext.state === "suspended") {
@@ -716,7 +716,7 @@ export class LiveService {
           role: "system",
           text: `disconnected (code=${ev.code}${ev.reason ? ` reason=${ev.reason}` : ""})`,
           timestamp: new Date(),
-          metadata: { severity: "info", category: "ws" },
+          metadata: { trace_id: this.createTraceId("ws_close"), ws: { type: "ws_close", instance_id: sessionId, client_tag: clientTag, client_id: clientId }, raw: { type: "ws_close" }, severity: "info", category: "ws" },
         });
       };
       this.ws.onerror = (err) => {
@@ -733,7 +733,7 @@ export class LiveService {
           role: "system",
           text: "connection_error",
           timestamp: new Date(),
-          metadata: { severity: "info", category: "ws" },
+          metadata: { trace_id: this.createTraceId("ws_error"), ws: { type: "ws_error", instance_id: sessionId, client_tag: clientTag, client_id: clientId }, raw: { type: "ws_error" }, severity: "info", category: "ws" },
         });
       };
       this.ws.onmessage = (event) => {
@@ -883,14 +883,59 @@ export class LiveService {
 				}
 			}
 			const summary = ok ? "ok" : "error";
-			if (hadPending) {
-				this.onMessage({
-					id: `${Date.now()}_tool_result_${toolName}`,
-					role: "system",
-					text: `tool_result ${toolName}: ${summary}`,
-					timestamp: new Date(),
-					metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: ok ? "info" : "warn", category: "tool", kind: "tool_result" },
-				});
+			this.onMessage({
+				id: `${Date.now()}_tool_result_${toolName}`,
+				role: "system",
+				text: `tool_result ${toolName}: ${summary}`,
+				timestamp: new Date(),
+				metadata: { trace_id: traceId, kind: "tool_result", ws: wsMeta, raw: message, severity: ok ? "info" : "warn", category: "ws" },
+			});
+
+			// Convenience UI card: after building a Google News RSS URL, offer to add it to news_sources.
+			if (ok && toolName === "gnews_rss_build") {
+				try {
+					const res: any = (message as any)?.result;
+					const url = res?.url != null ? String(res.url) : "";
+					const query = res?.query != null ? String(res.query) : "";
+					const hl = res?.hl != null ? String(res.hl) : "";
+					const gl = res?.gl != null ? String(res.gl) : "";
+					if (url.trim()) {
+						const name = query ? `Google News: ${query}` : "Google News RSS";
+						this.onMessage({
+							id: `${Date.now()}_ui_add_news_source_${Math.random().toString(16).slice(2)}`,
+							role: "system",
+							text: "ui: add news source",
+							timestamp: new Date(),
+							metadata: {
+								trace_id: traceId,
+								ws: wsMeta,
+								raw: {
+									type: "ui",
+									kind: "tool",
+									title: "Add Google News RSS source",
+									body: [
+										url ? `url: ${url}` : "",
+										query ? `query: ${query}` : "",
+										hl ? `hl: ${hl}` : "",
+										gl ? `gl: ${gl}` : "",
+									]
+										.filter(Boolean)
+										.join("\n"),
+									risk: "low",
+									primary: {
+										label: "Add",
+										tool: "news_sources_upsert",
+										args: { url, name, type: "rss", tags: "gnews", enabled: true },
+									},
+								},
+								severity: "info",
+								category: "ws",
+							},
+						});
+					}
+				} catch {
+					// ignore
+				}
 			}
 			return;
 		}
@@ -902,10 +947,45 @@ export class LiveService {
 				// ignore
 			}
 			try {
-				const ev = String(message?.event || "pending").trim() || "pending";
+				const evRaw = String(message?.event || "pending").trim() || "pending";
+				const ev = evRaw.toLowerCase();
+				const evNorm = ev.replace(/\s+/g, "_");
 				const cid = String(message?.confirmation_id || "").trim();
 				const action = String(message?.action || "").trim();
-				const summary = `pending_event ${ev}${action ? ` action=${action}` : ""}${cid ? ` id=${cid}` : ""}`;
+				if (evNorm === "awaiting_user" && cid) {
+					const payload = (message as any)?.payload;
+					let body = "";
+					try {
+						if (payload != null) body = JSON.stringify(payload, null, 2);
+					} catch {
+						body = String(payload ?? "");
+					}
+					this.onMessage({
+						id: `${Date.now()}_pending_await_${Math.random().toString(16).slice(2)}`,
+						role: "system",
+						text: `pending: ${action || "confirm"}`,
+						timestamp: new Date(),
+						metadata: {
+							trace_id: traceId,
+							ws: wsMeta,
+							raw: {
+								type: "ui",
+								kind: "pending",
+								title: action ? `Confirm: ${action}` : "Confirm pending action",
+								body,
+								risk: "high",
+								confirmation_id: cid,
+								primary: { label: "Confirm", tool: "pending_confirm", args: {} },
+								secondary: { label: "Cancel", tool: "pending_cancel", args: {} },
+								tertiary: { label: "Preview", tool: "pending_preview", args: {} },
+							},
+							severity: "info",
+							category: "ws",
+						},
+					});
+					return;
+				}
+				const summary = `pending_event ${evRaw}${action ? ` action=${action}` : ""}${cid ? ` id=${cid}` : ""}`;
 				this.onMessage({
 					id: `${Date.now()}_pending_event_${ev}`,
 					role: "system",

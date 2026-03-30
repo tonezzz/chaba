@@ -1,13 +1,21 @@
 import asyncio
 import base64
+import binascii
+import contextlib
+import datetime
+import html as _html
+import functools
+import hashlib
+import hmac
+import inspect
+import io
+import json
 import os
 import logging
-import json
 import sqlite3
 import time
 import uuid
 import re
-import hashlib
 import urllib.parse
 from io import BytesIO
 from datetime import datetime, timedelta, timezone
@@ -132,6 +140,208 @@ def _clamp_text(s: Any, limit: int) -> str:
     if len(t) > limit:
         return t[:limit].rstrip() + "…"
     return t
+
+
+def _strip_html_tags(s: str) -> str:
+    txt = str(s or "")
+    if not txt:
+        return ""
+    try:
+        txt = re.sub(r"<[^>]+>", " ", txt)
+    except Exception:
+        txt = txt
+    try:
+        txt = _html.unescape(txt)
+    except Exception:
+        pass
+    try:
+        txt = re.sub(r"\s+", " ", txt).strip()
+    except Exception:
+        txt = txt.strip()
+    return txt
+
+
+def _is_low_quality_news_description(*, title: str, description: str) -> bool:
+    t = str(title or "").strip()
+    d0 = str(description or "").strip()
+    if not d0:
+        return True
+
+    d = _strip_html_tags(d0) if ("<" in d0 and ">" in d0) else d0
+    d = str(d or "").strip()
+    if not d:
+        return True
+
+    tl = t.lower().strip()
+    dl = d.lower().strip()
+    if tl and dl == tl:
+        return True
+
+    # Common Google News RSS pattern: description is just the title as an <a> tag + publisher.
+    if tl and dl.startswith(tl):
+        rest = d[len(t) :].strip()
+        rest = rest.replace("\u00a0", " ")
+        rest = re.sub(r"\s+", " ", rest).strip()
+        # If remainder looks like only a source label (e.g. Reuters) or is extremely short, treat as low quality.
+        if not rest:
+            return True
+        if len(rest) <= 30 and re.fullmatch(r"[\w\-\|\s\.]+", rest or ""):
+            return True
+
+    # If the original description was HTML-y and stripping leaves something very short, treat as low quality.
+    if ("<" in d0 and ">" in d0) and len(d) <= 40:
+        return True
+
+    return False
+
+
+def _normalize_simple_cmd(text: str) -> str:
+    s = str(text or "").strip().lower()
+    if not s:
+        return ""
+    s = re.sub(r"[^a-z0-9\u0E00-\u0E7F]+", " ", s).strip()
+    return " ".join(s.split())
+
+
+def _action_allowlisted_tool(name: str) -> bool:
+    n = str(name or "").strip()
+    if not n:
+        return False
+    if n.startswith("macro_"):
+        return True
+    return n in {
+        "pending_list",
+        "pending_get",
+        "pending_preview",
+        "pending_confirm",
+        "pending_cancel",
+        "system_reload_queue",
+        "system_macro_upsert_bundle_queue",
+        "system_macro_seed_baseline_queue",
+        "system_macro_get",
+        "system_macros_list",
+        "system_skills_list",
+        "system_skill_get",
+        "system_skills_bootstrap_queue",
+        "system_run_macro",
+        "current_news_get",
+        "current_news_refresh",
+        "current_news_sources",
+        "current_news_details",
+        "news_topics_upsert",
+        "news_sources_upsert",
+        "news_items_upsert",
+        "news_sources_list",
+        "gnews_rss_build",
+        "it_topic_packs_seed",
+        "news_follow_list",
+        "news_follow_refresh",
+        "news_follow_report",
+        "news_follow_focus_list",
+        "news_follow_focus_add",
+        "news_follow_focus_remove",
+        "google_account_relink_queue",
+        "memo_update_queue",
+        "system_memo_update_queue",
+        "system_write_queue",
+        "system_skill_upsert_queue",
+    }
+
+
+async def _handle_status_or_action(ws: WebSocket, text: str, *, trace_id: str) -> bool:
+    compact = _normalize_simple_cmd(text)
+    if not compact:
+        return False
+
+    wants_status = compact in {"status", "what status", "what s status", "state", "progress"} or compact.startswith("status ")
+    wants_action = compact in {"action", "do action", "do it", "run", "proceed", "next", "continue"} or compact.startswith("action ")
+    if not wants_status and not wants_action:
+        return False
+
+    if wants_status:
+        active_agent = str(getattr(ws.state, "active_agent_id", "") or "").strip()
+        active_until = getattr(ws.state, "active_agent_until_ts", None)
+        try:
+            active_until_i = int(active_until) if active_until is not None else 0
+        except Exception:
+            active_until_i = 0
+        last_prog = getattr(ws.state, "last_progress", None)
+        last_ui = getattr(ws.state, "last_ui_action", None)
+
+        lines: list[str] = []
+        if active_agent:
+            lines.append(f"active_agent: {active_agent}{(' until ' + str(active_until_i)) if active_until_i else ''}")
+        if isinstance(last_prog, dict) and str(last_prog.get("message") or "").strip():
+            pmsg = str(last_prog.get("message") or "").strip()
+            ptool = str(last_prog.get("tool") or "").strip()
+            pphase = str(last_prog.get("phase") or "").strip()
+            step = last_prog.get("step")
+            total = last_prog.get("total")
+            step_txt = f" ({step}/{total})" if isinstance(step, int) and isinstance(total, int) and total else ""
+            head = f"progress: {pmsg}{step_txt}"
+            if ptool:
+                head = f"progress[{ptool}/{pphase}]: {pmsg}{step_txt}" if pphase else f"progress[{ptool}]: {pmsg}{step_txt}"
+            lines.append(head)
+        if isinstance(last_ui, dict) and str(last_ui.get("tool") or "").strip():
+            label = str(last_ui.get("label") or "").strip()
+            title = str(last_ui.get("title") or "").strip()
+            tool = str(last_ui.get("tool") or "").strip()
+            hint = f"next_action: {tool}"
+            if label and title:
+                hint = f"next_action: {label} ({title})"
+            elif title:
+                hint = f"next_action: {tool} ({title})"
+            lines.append(hint)
+            lines.append("say 'action' to run it")
+        if not lines:
+            lines = ["idle", "say what you want to do, or ask for current news"]
+
+        await _ws_send_json(ws, {"type": "text", "text": "\n".join(lines), "instance_id": INSTANCE_ID}, trace_id=trace_id)
+        return True
+
+    last_ui = getattr(ws.state, "last_ui_action", None)
+    if not isinstance(last_ui, dict):
+        await _ws_send_json(ws, {"type": "text", "text": "no_suggested_action", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+        return True
+    tool = str(last_ui.get("tool") or "").strip()
+    args = last_ui.get("args")
+    if not tool or not isinstance(args, dict):
+        await _ws_send_json(ws, {"type": "text", "text": "no_suggested_action", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+        return True
+    if not _action_allowlisted_tool(tool):
+        await _ws_send_json(ws, {"type": "text", "text": f"action_not_allowed: {tool}", "instance_id": INSTANCE_ID}, trace_id=trace_id)
+        return True
+
+    await _ws_progress(ws, f"action: {tool}", phase="start", tool_name=tool, trace_id=trace_id)
+    try:
+        session_id = getattr(ws.state, "session_id", None)
+        res = await _handle_mcp_tool_call(session_id, tool, dict(args))
+        await _ws_send_json(
+            ws,
+            {"type": "tool_result", "name": tool, "ok": True, "result": res, "instance_id": INSTANCE_ID},
+            trace_id=trace_id,
+        )
+        await _ws_progress(ws, f"action: {tool}", phase="done", tool_name=tool, trace_id=trace_id)
+        try:
+            ws.state.last_ui_action = None
+        except Exception:
+            pass
+    except Exception as e:
+        await _ws_send_json(
+            ws,
+            {"type": "tool_result", "name": tool, "ok": False, "error": str(e), "instance_id": INSTANCE_ID},
+            trace_id=trace_id,
+        )
+        await _ws_progress(ws, f"action failed: {tool}", phase="error", tool_name=tool, trace_id=trace_id)
+    return True
+
+
+def _clean_news_description(*, title: str, description: str) -> str:
+    d0 = str(description or "")
+    d = _strip_html_tags(d0) if ("<" in d0 and ">" in d0) else str(d0).strip()
+    if _is_low_quality_news_description(title=str(title or ""), description=d):
+        return ""
+    return str(d or "").strip()
 
 
 def _recent_dialog_should_store(role: str, text: str) -> bool:
@@ -3692,6 +3902,25 @@ async def _ws_send_json(ws: WebSocket, payload: dict[str, Any], trace_id: str | 
         pass
 
     try:
+        if str(payload.get("type") or "").strip().lower() == "ui":
+            raw = payload
+            primary = raw.get("primary")
+            if isinstance(primary, dict):
+                tool = str(primary.get("tool") or "").strip()
+                args = primary.get("args")
+                if tool and isinstance(args, dict):
+                    ws.state.last_ui_action = {
+                        "tool": tool,
+                        "args": dict(args),
+                        "label": str(primary.get("label") or "").strip(),
+                        "title": str(raw.get("title") or "").strip(),
+                        "trace_id": str(tid or "").strip(),
+                        "ts": int(time.time()),
+                    }
+    except Exception:
+        pass
+
+    try:
         if str(payload.get("type") or "").strip().lower() == "text":
             text0 = str(payload.get("text") or "")
             low = text0.strip().lower()
@@ -3759,6 +3988,18 @@ async def _ws_progress(
         payload["step"] = int(step)
     if total is not None:
         payload["total"] = int(total)
+    try:
+        ws.state.last_progress = {
+            "message": str(message or ""),
+            "phase": str(phase or ""),
+            "tool": str(tool_name or "") if tool_name else "",
+            "step": int(step) if step is not None else None,
+            "total": int(total) if total is not None else None,
+            "trace_id": str(trace_id or "").strip(),
+            "ts": int(time.time()),
+        }
+    except Exception:
+        pass
     await _ws_send_json(ws, payload, trace_id=trace_id)
 
 app = FastAPI(title="jarvis-backend", version="0.1.0")
@@ -11935,6 +12176,146 @@ async def _mcp_web_fetch_text(
     return _extract_mcp_text(result)
 
 
+def _xml_localname(tag: Any) -> str:
+    try:
+        t = str(tag or "")
+    except Exception:
+        return ""
+    if "}" in t:
+        return t.split("}", 1)[1]
+    return t
+
+
+def _xml_first_child_text_by_localname(el: Any, names: list[str]) -> str:
+    if el is None:
+        return ""
+    wanted = {str(n or "").strip().lower() for n in (names or []) if str(n or "").strip()}
+    if not wanted:
+        return ""
+    try:
+        for child in list(el):
+            ln = _xml_localname(getattr(child, "tag", "")).strip().lower()
+            if ln and ln in wanted:
+                try:
+                    txt = "".join(child.itertext())
+                except Exception:
+                    txt = str(getattr(child, "text", "") or "")
+                return str(txt or "").strip()
+    except Exception:
+        return ""
+    return ""
+
+
+def _extract_html_meta_description(html_text: str) -> str:
+    s = str(html_text or "")
+    if not s.strip():
+        return ""
+
+    # Restrict to <head> first for speed.
+    head = s
+    try:
+        m = re.search(r"<head[^>]*>(.*?)</head>", s, flags=re.IGNORECASE | re.DOTALL)
+        if m and m.group(1):
+            head = m.group(1)
+    except Exception:
+        head = s
+
+    def _pick(pattern: str) -> str:
+        try:
+            mm = re.search(pattern, head, flags=re.IGNORECASE | re.DOTALL)
+            if not mm:
+                return ""
+            val = str(mm.group(1) or "")
+            val = _html.unescape(val)
+            val = re.sub(r"\s+", " ", val).strip()
+            return val
+        except Exception:
+            return ""
+
+    # og:description
+    v = _pick(r"<meta[^>]+property=\"og:description\"[^>]+content=\"([^\"]+)\"")
+    if v:
+        return v
+    v = _pick(r"<meta[^>]+content=\"([^\"]+)\"[^>]+property=\"og:description\"")
+    if v:
+        return v
+
+    # name=description
+    v = _pick(r"<meta[^>]+name=\"description\"[^>]+content=\"([^\"]+)\"")
+    if v:
+        return v
+    v = _pick(r"<meta[^>]+content=\"([^\"]+)\"[^>]+name=\"description\"")
+    if v:
+        return v
+
+    return ""
+
+
+def _extract_html_first_paragraph(html_text: str) -> str:
+    s = str(html_text or "")
+    if not s.strip():
+        return ""
+    try:
+        m = re.search(r"<p[^>]*>(.*?)</p>", s, flags=re.IGNORECASE | re.DOTALL)
+        if not m:
+            return ""
+        body = str(m.group(1) or "")
+        body = re.sub(r"<[^>]+>", " ", body)
+        body = _html.unescape(body)
+        body = re.sub(r"\s+", " ", body).strip()
+        return body
+    except Exception:
+        return ""
+
+
+async def _enrich_news_item_description(
+    item: dict[str, Any],
+    *,
+    debug: bool = False,
+    debug_out: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    if not isinstance(item, dict):
+        return item
+    desc0 = str(item.get("description") or "").strip()
+    title0 = str(item.get("title") or "").strip()
+    if desc0 and not _is_low_quality_news_description(title=title0, description=desc0):
+        return item
+    url = str(item.get("link") or "").strip()
+    if not url:
+        return item
+
+    meta: dict[str, Any] = {}
+    html_text = ""
+    try:
+        res = await _web_fetcher_post("/fetch", {"url": url, "raw": True})
+        if isinstance(res, dict):
+            html_text = str(res.get("text") or "")
+            meta = {
+                "status_code": res.get("status_code"),
+                "content_type": res.get("content_type"),
+                "final_url": res.get("final_url"),
+            }
+    except Exception as e:
+        meta = {"error": e.__class__.__name__, "message": str(e)}
+
+    picked = _extract_html_meta_description(html_text)
+    if not picked:
+        picked = _extract_html_first_paragraph(html_text)
+    picked = str(picked or "").strip()
+    if picked:
+        item["description"] = picked
+
+    if debug and isinstance(debug_out, list):
+        try:
+            row = {"url": url, "enriched": bool(picked)}
+            if meta:
+                row.update(meta)
+            debug_out.append(row)
+        except Exception:
+            pass
+    return item
+
+
 def _parse_rss_items(xml_text: str) -> list[dict[str, Any]]:
     s = str(xml_text or "")
     if not s.strip():
@@ -11944,15 +12325,59 @@ def _parse_rss_items(xml_text: str) -> list[dict[str, Any]]:
     except Exception:
         return []
 
+    def _degoogle_link(link: str, desc: str) -> tuple[str, str]:
+        lnk = str(link or "").strip()
+        if not lnk:
+            return ("", "")
+        try:
+            u = urllib.parse.urlsplit(lnk)
+            host = str(u.hostname or "").lower()
+            if host != "news.google.com":
+                return (lnk, "")
+
+            q = urllib.parse.parse_qs(u.query)
+            for key in ("url", "u"):
+                vv = q.get(key)
+                if vv and str(vv[0] or "").strip():
+                    orig = str(vv[0]).strip()
+                    return (orig, lnk)
+
+            # Best-effort: sometimes the publisher URL is embedded in the HTML description.
+            try:
+                m = re.search(r"href=\"([^\"]+)\"", str(desc or ""))
+                if m:
+                    cand = str(m.group(1) or "").strip()
+                    if cand:
+                        uu = urllib.parse.urlsplit(cand)
+                        h2 = str(uu.hostname or "").lower()
+                        if h2 and h2 != "news.google.com":
+                            return (cand, lnk)
+            except Exception:
+                pass
+        except Exception:
+            return (lnk, "")
+        return (lnk, "")
+
     items: list[dict[str, Any]] = []
     for it in root.findall(".//item"):
         title = (it.findtext("title") or "").strip()
-        link = (it.findtext("link") or "").strip()
+        link0 = (it.findtext("link") or "").strip()
         pub = (it.findtext("pubDate") or "").strip()
         desc = (it.findtext("description") or "").strip()
-        if not title and not link:
+        if not desc:
+            # Common RSS pattern: <content:encoded> contains full HTML content.
+            desc = _xml_first_child_text_by_localname(it, ["encoded", "content"]) or ""
+        if not desc:
+            # Some feeds use <media:description>.
+            desc = _xml_first_child_text_by_localname(it, ["media:description", "description"]) or ""
+        desc = _clean_news_description(title=title, description=str(desc or ""))
+        if not title and not link0:
             continue
-        items.append({"title": title, "link": link, "pubDate": pub, "description": desc})
+        link, gnews_link = _degoogle_link(link0, desc)
+        row: dict[str, Any] = {"title": title, "link": link, "pubDate": pub, "description": desc}
+        if gnews_link:
+            row["gnews_link"] = gnews_link
+        items.append(row)
     return items
 
 
@@ -11964,6 +12389,37 @@ def _parse_atom_items(xml_text: str) -> list[dict[str, Any]]:
         root = ET.fromstring(s)
     except Exception:
         return []
+
+    def _degoogle_link(link: str, desc: str) -> tuple[str, str]:
+        lnk = str(link or "").strip()
+        if not lnk:
+            return ("", "")
+        try:
+            u = urllib.parse.urlsplit(lnk)
+            host = str(u.hostname or "").lower()
+            if host != "news.google.com":
+                return (lnk, "")
+            q = urllib.parse.parse_qs(u.query)
+            for key in ("url", "u"):
+                vv = q.get(key)
+                if vv and str(vv[0] or "").strip():
+                    orig = str(vv[0]).strip()
+                    return (orig, lnk)
+
+            try:
+                m = re.search(r"href=\"([^\"]+)\"", str(desc or ""))
+                if m:
+                    cand = str(m.group(1) or "").strip()
+                    if cand:
+                        uu = urllib.parse.urlsplit(cand)
+                        h2 = str(uu.hostname or "").lower()
+                        if h2 and h2 != "news.google.com":
+                            return (cand, lnk)
+            except Exception:
+                pass
+        except Exception:
+            return (lnk, "")
+        return (lnk, "")
 
     items: list[dict[str, Any]] = []
     ns = {"atom": "http://www.w3.org/2005/Atom"}
@@ -11978,9 +12434,22 @@ def _parse_atom_items(xml_text: str) -> list[dict[str, Any]]:
         except Exception:
             link = ""
         desc = (it.findtext("atom:summary", default="", namespaces=ns) or it.findtext("summary") or "").strip()
+        if not desc:
+            # Atom often uses <content>.
+            try:
+                content_el = it.find("atom:content", ns) or it.find("content")
+                if content_el is not None:
+                    desc = str("".join(content_el.itertext()) or "").strip()
+            except Exception:
+                desc = desc
+        desc = _clean_news_description(title=title, description=str(desc or ""))
         if not title and not link:
             continue
-        items.append({"title": title, "link": link, "pubDate": pub, "description": desc})
+        link2, gnews_link = _degoogle_link(link, desc)
+        row: dict[str, Any] = {"title": title, "link": link2, "pubDate": pub, "description": desc}
+        if gnews_link:
+            row["gnews_link"] = gnews_link
+        items.append(row)
     return items
 
 
@@ -12879,6 +13348,8 @@ async def _refresh_current_news_cache(
     *,
     sys_kv: dict[str, Any] | None = None,
     force_fetch: bool = True,
+    source: str | None = None,
+    enrich_missing: bool | None = None,
 ) -> dict[str, Any]:
     sources_rows: list[dict[str, Any]] = []
     topics_cfg: dict[str, dict[str, Any]] = {}
@@ -12901,6 +13372,19 @@ async def _refresh_current_news_cache(
             sources_rows = await _load_news_sources_from_sheet(sys_kv=sys_kv)
         except Exception:
             sources_rows = []
+
+        source_filter = str(source or "").strip().lower()
+        if source_filter and sources_rows:
+            filtered: list[dict[str, Any]] = []
+            for s in sources_rows:
+                if not isinstance(s, dict):
+                    continue
+                url0 = str(s.get("url") or "").strip()
+                name0 = str(s.get("name") or "").strip()
+                hay = f"{name0} {url0}".lower()
+                if source_filter in hay:
+                    filtered.append(s)
+            sources_rows = filtered
 
         if sources_rows:
             for src in sources_rows:
@@ -12941,6 +13425,44 @@ async def _refresh_current_news_cache(
         seen.add(key)
         deduped.append(it)
 
+    do_enrich = False
+    if enrich_missing is not None:
+        do_enrich = bool(enrich_missing)
+    else:
+        do_enrich = _sys_kv_bool(sys_kv, "current_news.enrich_missing.enabled", default=False)
+
+    enriched_count = 0
+    if do_enrich and deduped:
+        try:
+            max_items = 20
+            if isinstance(sys_kv, dict):
+                try:
+                    max_items = int(sys_kv.get("current_news.enrich_missing.max_items") or 20)
+                except Exception:
+                    max_items = 20
+            max_items = max(1, min(max_items, 80))
+
+            debug_enabled = _sys_kv_bool(sys_kv, "current_news.debug.enabled", default=False)
+
+            for it in deduped:
+                if enriched_count >= max_items:
+                    break
+                if not isinstance(it, dict):
+                    continue
+                if str(it.get("description") or "").strip():
+                    continue
+                await _enrich_news_item_description(it, debug=bool(debug_enabled), debug_out=fetch_debug if debug_enabled else None)
+                if str(it.get("description") or "").strip():
+                    enriched_count += 1
+        except Exception:
+            pass
+
+        if enriched_count > 0:
+            try:
+                await _save_current_news_items_to_items_tab(items=deduped, sys_kv=sys_kv)
+            except Exception:
+                pass
+
     ctx = _build_current_news_context(deduped, topics_cfg=topics_cfg if isinstance(topics_cfg, dict) else None)
     if _sys_kv_bool(sys_kv, "current_news.debug.enabled", default=False):
         try:
@@ -12949,6 +13471,9 @@ async def _refresh_current_news_cache(
                 "items_deduped": len(deduped),
                 "sources_count": len(sources_rows),
                 "sources": [str(s.get("url") or "").strip() for s in sources_rows[:10] if isinstance(s, dict)],
+                "source_filter": str(source or "").strip(),
+                "enriched_count": int(enriched_count),
+                "enrich_missing": bool(do_enrich),
                 "topics_cfg_keys": sorted([str(k) for k in (topics_cfg.keys() if isinstance(topics_cfg, dict) else [])]),
                 "fetch": fetch_debug[:10],
             }
@@ -15725,7 +16250,15 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
                 {
                     "name": "current_news_refresh",
                     "description": "Refresh current news cache from RSS feeds and return updated context + brief.",
-                    "parameters": {"type": "object", "properties": {}},
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "source": {
+                                "type": "string",
+                                "description": "Optional: filter to a specific source by name/url substring (debugging).",
+                            }
+                        },
+                    },
                 }
             )
         ok, _, _ = _gemini_tool_allowed(name="current_news_sources", sys_kv=sys_kv, macros_only=macros_only)
@@ -16868,6 +17401,14 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             text = str(msg.get("text") or "")
             if not text:
                 continue
+
+            handled_status = False
+            try:
+                handled_status = await _handle_status_or_action(ws, text, trace_id=trace_id2)
+            except Exception:
+                handled_status = False
+            if handled_status:
+                continue
             logger.info("ws_in_text trace_id=%s len=%s head=%s", trace_id, len(text), text[:120])
 
             # Frontend reconnect-resume support: the UI may send a synthetic RESUME_CONTEXT
@@ -16880,6 +17421,14 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
                     continue
             except Exception:
                 pass
+
+            handled_status = False
+            try:
+                handled_status = await _handle_status_or_action(ws, text, trace_id=trace_id2)
+            except Exception:
+                handled_status = False
+            if handled_status:
+                continue
 
             try:
                 await _recent_dialog_append(getattr(ws.state, "session_id", None), "user", text, trace_id=trace_id2)
@@ -17226,6 +17775,14 @@ async def _ws_local_only_loop(ws: WebSocket) -> None:
                 continue
             logger.info("ws_in_text_local_only trace_id=%s len=%s head=%s", trace_id, len(text), text[:120])
 
+            handled_status = False
+            try:
+                handled_status = await _handle_status_or_action(ws, text, trace_id=trace_id2)
+            except Exception:
+                handled_status = False
+            if handled_status:
+                continue
+
             try:
                 s0 = str(text or "").strip()
                 s = re.sub(r"[\u00A0\u200B-\u200D\uFEFF]+", "", s0)
@@ -17288,6 +17845,18 @@ async def _ws_local_only_loop(ws: WebSocket) -> None:
             )
             if handled:
                 continue
+            try:
+                await _ws_update_contexts_from_text(ws, s, handled=False)
+            except Exception:
+                pass
+            try:
+                await _ws_send_json(ws, {"type": "status", "status": "ok", "instance_id": INSTANCE_ID}, trace_id=trace_id2)
+            except Exception:
+                pass
+            try:
+                await _ws_send_json(ws, {"type": "action", "action": "done", "instance_id": INSTANCE_ID}, trace_id=trace_id2)
+            except Exception:
+                pass
             await _ws_emit_gemini_unavailable(ws, trace_id=trace_id)
             continue
 

@@ -49,6 +49,13 @@ async def handle_current_news_trigger(
     if not is_trigger:
         return False
 
+    trace_id = None
+    try:
+        trace_id = getattr(ws.state, "trace_id", None)
+    except Exception:
+        trace_id = None
+    trace_id = str(trace_id).strip() if trace_id is not None else ""
+
     ctx = get_cached_ctx()
     if wants_refresh or ctx is None:
         ctx = await refresh_ctx(bool(wants_refresh))
@@ -57,13 +64,14 @@ async def handle_current_news_trigger(
         return False
 
     if wants_sources:
-        await ws.send_json(
-            {
-                "type": "current_news_sources",
-                "sources": ctx.get("sources") or [],
-                "updated_at": ctx.get("updated_at"),
-            }
-        )
+        payload = {
+            "type": "current_news_sources",
+            "sources": ctx.get("sources") or [],
+            "updated_at": ctx.get("updated_at"),
+        }
+        if trace_id:
+            payload["trace_id"] = trace_id
+        await ws.send_json(payload)
         return True
 
     if wants_details:
@@ -84,22 +92,27 @@ async def handle_current_news_trigger(
         }
         chosen = key_map.get(topic, "")
         if chosen and isinstance(topics, dict) and isinstance(topics.get(chosen), dict):
-            await ws.send_json(
-                {"type": "current_news_details", "topic": chosen, "data": topics.get(chosen), "updated_at": ctx.get("updated_at")}
-            )
+            payload = {"type": "current_news_details", "topic": chosen, "data": topics.get(chosen), "updated_at": ctx.get("updated_at")}
+            if trace_id:
+                payload["trace_id"] = trace_id
+            await ws.send_json(payload)
         else:
-            await ws.send_json(
-                {
-                    "type": "current_news_details",
-                    "topic": topic,
-                    "error": "unknown_topic",
-                    "hint": "Try: details iran | details gold | details usd | details oil",
-                }
-            )
+            payload = {
+                "type": "current_news_details",
+                "topic": topic,
+                "error": "unknown_topic",
+                "hint": "Try: details iran | details gold | details usd | details oil",
+            }
+            if trace_id:
+                payload["trace_id"] = trace_id
+            await ws.send_json(payload)
         return True
 
     brief = render_brief(ctx)
-    await ws.send_json({"type": "current_news", "brief": brief, "context": ctx, "updated_at": ctx.get("updated_at")})
+    payload = {"type": "current_news", "brief": brief, "context": ctx, "updated_at": ctx.get("updated_at")}
+    if trace_id:
+        payload["trace_id"] = trace_id
+    await ws.send_json(payload)
     return True
 
 

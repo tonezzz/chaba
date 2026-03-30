@@ -113,6 +113,10 @@ export function LeftPanel(props: {
     handleToggleTalk,
   } = props;
 
+  const [uiCardActionByMsgId, setUiCardActionByMsgId] = React.useState<
+    Record<string, { busy: boolean; status: "idle" | "ok" | "error"; message?: string }>
+  >({});
+
   return (
     <div
       className={`p-4 md:p-6 flex flex-col gap-6 bg-slate-900/80 backdrop-blur-md overflow-hidden h-[100dvh] ${
@@ -272,8 +276,7 @@ export function LeftPanel(props: {
                         <div key={name} className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
                             {icon}
-                            <span className="text-slate-300 truncate">{name}</span>
-                            {skipped ? <span className="text-slate-500">(skipped)</span> : null}
+                            <span className="text-slate-300 break-words">{name}</span>
                           </div>
                           <div className="shrink-0 text-slate-500">{latencyTxt}</div>
                         </div>
@@ -416,6 +419,14 @@ export function LeftPanel(props: {
               const gap = prev ? ts - prevTs : Number.POSITIVE_INFINITY;
               const txt = String(m.text || "").trim();
               const prevTxt = prev ? String(prev.text || "").trim() : "";
+              const tr = m.metadata?.trace_id ? String(m.metadata.trace_id) : "";
+              const prevTr = prev?.metadata?.trace_id ? String(prev.metadata.trace_id) : "";
+              const kind = String((m.metadata as any)?.kind || "").trim();
+              const prevKind = String((prev?.metadata as any)?.kind || "").trim();
+              const uiRaw: any = (m.metadata?.raw as any) ?? (m.metadata?.ws as any) ?? null;
+              const prevUiRaw: any = (prev?.metadata?.raw as any) ?? (prev?.metadata?.ws as any) ?? null;
+              const isUiCard = String(uiRaw?.type || "").toLowerCase() === "ui";
+              const prevIsUiCard = String(prevUiRaw?.type || "").toLowerCase() === "ui";
 
               const mergeable =
                 role === "user" &&
@@ -430,6 +441,35 @@ export function LeftPanel(props: {
 
               if (mergeable) {
                 const mergedText = `${prevTxt} ${txt}`.replace(/\s+/g, " ").trim();
+                coalesced[coalesced.length - 1] = {
+                  ...(prev as any),
+                  text: mergedText,
+                } as MessageLog;
+                continue;
+              }
+
+              const mergeableTraceGroup =
+                Boolean(tr) &&
+                prev &&
+                Boolean(prevTr) &&
+                tr === prevTr &&
+                gap >= 0 &&
+                gap <= 2500 &&
+                role === prevRole &&
+                (role === "model" || role === "system") &&
+                !isUiCard &&
+                !prevIsUiCard &&
+                kind !== "tool_call" &&
+                kind !== "tool_result" &&
+                prevKind !== "tool_call" &&
+                prevKind !== "tool_result" &&
+                txt &&
+                prevTxt &&
+                txt.length <= 200 &&
+                prevTxt.length <= 600;
+
+              if (mergeableTraceGroup) {
+                const mergedText = `${prevTxt}\n${txt}`.trim();
                 coalesced[coalesced.length - 1] = {
                   ...(prev as any),
                   text: mergedText,
@@ -481,11 +521,14 @@ export function LeftPanel(props: {
                 const confirmationId = uiRaw?.confirmation_id != null ? String(uiRaw.confirmation_id) : "";
                 const primary = uiRaw?.primary && typeof uiRaw.primary === "object" ? uiRaw.primary : null;
                 const secondary = uiRaw?.secondary && typeof uiRaw.secondary === "object" ? uiRaw.secondary : null;
+                const tertiary = uiRaw?.tertiary && typeof uiRaw.tertiary === "object" ? uiRaw.tertiary : null;
                 const input = uiRaw?.input && typeof uiRaw.input === "object" ? uiRaw.input : null;
                 const inputName = input?.name != null ? String(input.name) : "";
                 const inputLabel = input?.label != null ? String(input.label) : "";
                 const inputPlaceholder = input?.placeholder != null ? String(input.placeholder) : "";
                 const inputValue = uiCardInputByMsgId[m.id] ?? "";
+
+                const actionState = uiCardActionByMsgId[m.id] || { busy: false, status: "idle" as const };
 
                 const riskClass =
                   risk === "high" ? "border-red-500/40" : risk === "medium" ? "border-yellow-500/40" : "border-cyan-500/30";
@@ -499,26 +542,22 @@ export function LeftPanel(props: {
                 const invokeUiTool = async (tool: string, extraArgs?: any) => {
                   const toolName = String(tool || "").trim();
                   if (!toolName) return;
+                  setUiCardActionByMsgId((prev) => ({ ...prev, [m.id]: { busy: true, status: "idle" } }));
                   const okPrefix =
                     toolName.startsWith("system_") ||
                     toolName.startsWith("pending_") ||
                     toolName.startsWith("macro_") ||
                     toolName.startsWith("news_") ||
+                    toolName.startsWith("gnews_") ||
                     toolName.startsWith("current_news_") ||
                     toolName.startsWith("reminders_") ||
                     toolName.startsWith("gems_") ||
                     toolName === "time_now";
                   if (!okPrefix) {
-                    setMessages((prev) => [
-                      {
-                        id: `${Date.now()}_ui_action_rejected_${Math.random().toString(16).slice(2)}`,
-                        role: "system",
-                        text: `ui_action_rejected (tool_not_allowed): ${toolName}`,
-                        timestamp: new Date(),
-                        metadata: { severity: "warn", category: "ws" },
-                      },
+                    setUiCardActionByMsgId((prev) => ({
                       ...prev,
-                    ]);
+                      [m.id]: { busy: false, status: "error", message: `tool_not_allowed: ${toolName}` },
+                    }));
                     return;
                   }
                   const args: any = extraArgs && typeof extraArgs === "object" ? { ...extraArgs } : {};
@@ -530,40 +569,17 @@ export function LeftPanel(props: {
                     if (v) args.input = { ...(args.input && typeof args.input === "object" ? args.input : {}), [inputName]: v };
                   }
 
-                  setMessages((prev) => [
-                    {
-                      id: `${Date.now()}_ui_action_${Math.random().toString(16).slice(2)}`,
-                      role: "system",
-                      text: `ui_action ${toolName}${confirmationId ? ` confirmation_id=${confirmationId}` : ""}`,
-                      timestamp: new Date(),
-                      metadata: { severity: "info", category: "ws" },
-                    },
-                    ...prev,
-                  ]);
-
                   try {
-                    const res = await liveServiceCurrent?.invokeTool(toolName, args);
-                    setMessages((prev) => [
-                      {
-                        id: `${Date.now()}_ui_action_ok_${Math.random().toString(16).slice(2)}`,
-                        role: "system",
-                        text: `ui_action_ok ${toolName}`,
-                        timestamp: new Date(),
-                        metadata: { raw: res, severity: "info", category: "ws" },
-                      },
+                    await liveServiceCurrent?.invokeTool(toolName, args);
+                    setUiCardActionByMsgId((prev) => ({
                       ...prev,
-                    ]);
+                      [m.id]: { busy: false, status: "ok", message: `ok: ${toolName}` },
+                    }));
                   } catch (e: any) {
-                    setMessages((prev) => [
-                      {
-                        id: `${Date.now()}_ui_action_err_${Math.random().toString(16).slice(2)}`,
-                        role: "system",
-                        text: `ui_action_error ${toolName}: ${String(e?.message || e || "error")}`,
-                        timestamp: new Date(),
-                        metadata: { severity: "warn", category: "ws" },
-                      },
+                    setUiCardActionByMsgId((prev) => ({
                       ...prev,
-                    ]);
+                      [m.id]: { busy: false, status: "error", message: String(e?.message || e || "error") },
+                    }));
                   }
                 };
 
@@ -598,9 +614,23 @@ export function LeftPanel(props: {
                       </div>
                     ) : null}
                     <div className="mt-3 flex items-center gap-2">
+                      {tertiary?.label && tertiary?.tool ? (
+                        <button
+                          disabled={actionState.busy}
+                          className={`px-3 py-2 rounded-lg border border-slate-700 bg-slate-950/40 text-slate-200 text-xs font-mono ${
+                            actionState.busy ? "opacity-50 cursor-not-allowed" : "hover:bg-slate-800/60"
+                          }`}
+                          onClick={() => void invokeUiTool(String(tertiary.tool), tertiary.args)}
+                        >
+                          {String(tertiary.label)}
+                        </button>
+                      ) : null}
                       {secondary?.label && secondary?.tool ? (
                         <button
-                          className="px-3 py-2 rounded-lg border border-slate-700 bg-slate-950/40 text-slate-200 hover:bg-slate-800/60 text-xs font-mono"
+                          disabled={actionState.busy}
+                          className={`px-3 py-2 rounded-lg border border-slate-700 bg-slate-950/40 text-slate-200 text-xs font-mono ${
+                            actionState.busy ? "opacity-50 cursor-not-allowed" : "hover:bg-slate-800/60"
+                          }`}
                           onClick={() => void invokeUiTool(String(secondary.tool), secondary.args)}
                         >
                           {String(secondary.label)}
@@ -608,13 +638,30 @@ export function LeftPanel(props: {
                       ) : null}
                       {primary?.label && primary?.tool ? (
                         <button
-                          className="px-3 py-2 rounded-lg border border-cyan-500/40 bg-cyan-950/20 text-cyan-200 hover:bg-cyan-950/40 text-xs font-mono"
+                          disabled={actionState.busy}
+                          className={`px-3 py-2 rounded-lg border border-cyan-500/40 bg-cyan-950/20 text-cyan-200 text-xs font-mono ${
+                            actionState.busy ? "opacity-50 cursor-not-allowed" : "hover:bg-cyan-950/40"
+                          }`}
                           onClick={() => void invokeUiTool(String(primary.tool), primary.args)}
                         >
                           {String(primary.label)}
                         </button>
                       ) : null}
                     </div>
+
+                    {actionState.busy || actionState.status !== "idle" ? (
+                      <div
+                        className={`mt-2 text-[11px] font-mono ${
+                          actionState.busy
+                            ? "text-slate-500"
+                            : actionState.status === "ok"
+                              ? "text-emerald-300"
+                              : "text-amber-300"
+                        }`}
+                      >
+                        {actionState.busy ? "working…" : actionState.message || (actionState.status === "ok" ? "ok" : "error")}
+                      </div>
+                    ) : null}
                   </div>
                 );
               };
@@ -647,6 +694,48 @@ export function LeftPanel(props: {
                         const txt = String(m.text || "");
                         const forceText = (e as any)?.shiftKey === true;
                         const rawAny: any = (m.metadata as any)?.raw;
+                        const traceId = m.metadata?.trace_id ? String(m.metadata.trace_id) : "";
+                        if (!forceText && traceId) {
+                          try {
+                            const grouped = messages
+                              .filter((mm) => (mm.metadata?.trace_id ? String(mm.metadata.trace_id) : "") === traceId)
+                              .slice()
+                              .sort((a, b) => {
+                                const ta = a.timestamp?.getTime?.() ? a.timestamp.getTime() : 0;
+                                const tb = b.timestamp?.getTime?.() ? b.timestamp.getTime() : 0;
+                                if (ta !== tb) return ta - tb;
+                                return String(a.id || "").localeCompare(String(b.id || ""));
+                              });
+                            if (grouped.length > 1) {
+                              const parts = grouped.map((mm) => {
+                                const mts = mm.timestamp.toLocaleTimeString();
+                                const mlabel = clientLabelForMsg(mm);
+                                const mtagText = mlabel ? `[${mlabel}] ` : "";
+                                const mrole = String(mm.role || "");
+                                const mtxt = String(mm.text || "");
+                                const mraw: any = (mm.metadata as any)?.raw;
+                                if (mraw != null) {
+                                  try {
+                                    if (mraw && typeof mraw === "object" && !Array.isArray(mraw)) {
+                                      const copy: any = { ...mraw };
+                                      delete copy.client_id;
+                                      delete copy.client_tag;
+                                      return JSON.stringify(copy, null, 2);
+                                    }
+                                    return JSON.stringify(mraw, null, 2);
+                                  } catch {
+                                    return String(mraw);
+                                  }
+                                }
+                                return `[${mts}] ${mtagText}${mrole}: ${mtxt}`;
+                              });
+                              void copyText(parts.join("\n\n"));
+                              return;
+                            }
+                          } catch {
+                            // ignore
+                          }
+                        }
                         if (!forceText && rawAny != null) {
                           try {
                             if (rawAny && typeof rawAny === "object" && !Array.isArray(rawAny)) {

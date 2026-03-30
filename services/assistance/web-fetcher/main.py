@@ -116,7 +116,7 @@ def _content_type_allowed(content_type_header: str) -> bool:
 
 
 def _html_to_text(html: str) -> tuple[str, Optional[str]]:
-    soup = BeautifulSoup(html, "lxml")
+    soup = BeautifulSoup(html, "html.parser")
 
     title: Optional[str] = None
     if soup.title and soup.title.string:
@@ -146,7 +146,7 @@ def _fallback_urls_for_upstream(url: str) -> list[str]:
     return []
 
 
-async def _fetch_once(client: httpx.AsyncClient, url: str) -> dict[str, Any]:
+async def _fetch_once(client: httpx.AsyncClient, url: str, *, raw_html: bool = False) -> dict[str, Any]:
     _enforce_ssrf(url)
 
     try:
@@ -167,7 +167,21 @@ async def _fetch_once(client: httpx.AsyncClient, url: str) -> dict[str, Any]:
         location = res.headers.get("location")
         if not location:
             raise HTTPException(status_code=502, detail="redirect_missing_location")
-        return {"redirect": True, "location": httpx.URL(location, base=res.url).human_repr()}
+        try:
+            base = httpx.URL(str(res.url))
+            target = base.join(location)
+            return {"redirect": True, "location": str(target)}
+        except Exception as e:
+            raise HTTPException(
+                status_code=502,
+                detail={
+                    "error": "redirect_location_invalid",
+                    "url": str(res.url),
+                    "location": str(location),
+                    "exception": e.__class__.__name__,
+                    "message": str(e),
+                },
+            )
 
     content_type = res.headers.get("content-type") or ""
     if not _content_type_allowed(content_type):
@@ -198,7 +212,7 @@ async def _fetch_once(client: httpx.AsyncClient, url: str) -> dict[str, Any]:
 
     base_ct = content_type.split(";")[0].strip().lower()
     title: Optional[str] = None
-    if base_ct == "text/html":
+    if base_ct == "text/html" and not raw_html:
         text, title = _html_to_text(text)
 
     return {
@@ -219,10 +233,11 @@ def health() -> dict[str, Any]:
 @app.post("/fetch")
 async def fetch(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
     url = _normalize_url(str(payload.get("url") or ""))
+    raw = bool(payload.get("raw"))
 
     timeout = httpx.Timeout(timeout=READ_TIMEOUT_S, connect=CONNECT_TIMEOUT_S)
     headers = {
-        "User-Agent": "web-fetcher/0.1 (+https://example.invalid)",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
         "Accept": ", ".join(ALLOWED_CONTENT_TYPES),
     }
 
@@ -240,7 +255,7 @@ async def fetch(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
             current = attempt_url
             try:
                 for _ in range(MAX_REDIRECTS + 1):
-                    result = await _fetch_once(client, current)
+                    result = await _fetch_once(client, current, raw_html=bool(raw))
                     if not result.get("redirect"):
                         return {"ok": True, **result}
                     current = str(result["location"])
@@ -250,6 +265,16 @@ async def fetch(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
                 if attempt_url != attempts[-1] and _is_retryable_upstream_error(e):
                     continue
                 raise
+            except Exception as e:
+                raise HTTPException(
+                    status_code=502,
+                    detail={
+                        "error": "web_fetcher_internal_error",
+                        "url": str(current),
+                        "exception": e.__class__.__name__,
+                        "message": str(e),
+                    },
+                )
 
         if last_exc is not None:
             raise last_exc

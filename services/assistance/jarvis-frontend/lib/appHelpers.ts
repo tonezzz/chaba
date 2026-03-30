@@ -1,6 +1,7 @@
 export type SysSetCommand = { key: string; value: string; dryRun: boolean };
 export type SysDedupeCommand = { dryRun: boolean; sort: boolean };
 export type ToolInvoke = { name: string; args: Record<string, any> };
+export type JsonToolRequest = { name: string; args: Record<string, any> };
 
 export function normalizeComposerText(text: string): string {
   return String(text || "")
@@ -76,6 +77,31 @@ export function parseToolInvoke(raw: string): ToolInvoke | null {
     return { name, args: { __invalid_tool_args: true } };
   } catch {
     return { name, args: { __invalid_tool_args: true } };
+  }
+}
+
+export function parseJsonToolRequest(raw: string): JsonToolRequest | null {
+  const s = String(raw || "").trim();
+  if (!s.startsWith("{") || !s.endsWith("}")) return null;
+  if (s.length > 200_000) return null;
+  try {
+    const js = JSON.parse(s);
+    if (!js || typeof js !== "object" || Array.isArray(js)) return null;
+    const typ = String((js as any).type || "").trim().toLowerCase();
+    const isToolEnvelope = typ === "tool_call" || typ === "toolcall" || typ === "tool";
+
+    const name = String(
+      (js as any).name ||
+        (js as any).tool ||
+        (isToolEnvelope ? (js as any).tool_name : "") ||
+        ""
+    ).trim();
+    const args = (js as any).args != null ? (js as any).args : (isToolEnvelope ? (js as any).parameters : undefined);
+    if (!name) return null;
+    if (!args || typeof args !== "object" || Array.isArray(args)) return null;
+    return { name, args: args as Record<string, any> };
+  } catch {
+    return null;
   }
 }
 
