@@ -528,6 +528,24 @@ export function LeftPanel(props: {
                 const inputPlaceholder = input?.placeholder != null ? String(input.placeholder) : "";
                 const inputValue = uiCardInputByMsgId[m.id] ?? "";
 
+                let authUrl = "";
+                try {
+                  const direct = (uiRaw as any)?.details?.auth_url != null ? String((uiRaw as any).details.auth_url) : "";
+                  if (direct && direct.trim()) {
+                    authUrl = direct.trim();
+                  } else {
+                    const candidate = String(body || "").trim();
+                    if (candidate.startsWith("{") && candidate.endsWith("}")) {
+                      const parsed: any = JSON.parse(candidate);
+                      const a = parsed?.auth_url != null ? String(parsed.auth_url) : "";
+                      const p = parsed?.provider != null ? String(parsed.provider) : "";
+                      if (p.toLowerCase() === "google" && a.trim()) authUrl = a.trim();
+                    }
+                  }
+                } catch {
+                  authUrl = "";
+                }
+
                 const actionState = uiCardActionByMsgId[m.id] || { busy: false, status: "idle" as const };
 
                 const riskClass =
@@ -614,6 +632,22 @@ export function LeftPanel(props: {
                       </div>
                     ) : null}
                     <div className="mt-3 flex items-center gap-2">
+                      {authUrl ? (
+                        <button
+                          disabled={actionState.busy}
+                          className={`px-3 py-2 rounded-lg border border-cyan-500/40 bg-cyan-950/20 text-cyan-200 text-xs font-mono ${
+                            actionState.busy ? "opacity-50 cursor-not-allowed" : "hover:bg-cyan-950/40"
+                          }`}
+                          onClick={() => {
+                            try {
+                              window.open(authUrl, "_blank", "noopener,noreferrer");
+                            } catch {
+                            }
+                          }}
+                        >
+                          Open link
+                        </button>
+                      ) : null}
                       {tertiary?.label && tertiary?.tool ? (
                         <button
                           disabled={actionState.busy}
