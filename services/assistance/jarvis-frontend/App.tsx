@@ -912,15 +912,7 @@ export default function App() {
       cancelled = true;
       window.clearInterval(t);
     };
-  },
-      setSeqError(String(e?.message || e || "suggest_failed"));
-      setSeqNextText(null);
-      setSeqNextIndex(null);
-      setSeqTemplate(null);
-    } finally {
-      setSeqBusy(false);
-    }
-  };
+  }, [hasKey, statusDetailsOpen, depsStatusRefreshNonce]);
 
   const handleSeqApply = async () => {
     if (seqNextIndex == null) return;
