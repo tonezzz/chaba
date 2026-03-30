@@ -146,7 +146,7 @@ def _fallback_urls_for_upstream(url: str) -> list[str]:
     return []
 
 
-async def _fetch_once(client: httpx.AsyncClient, url: str) -> dict[str, Any]:
+async def _fetch_once(client: httpx.AsyncClient, url: str, *, raw_html: bool = False) -> dict[str, Any]:
     _enforce_ssrf(url)
 
     try:
@@ -212,7 +212,7 @@ async def _fetch_once(client: httpx.AsyncClient, url: str) -> dict[str, Any]:
 
     base_ct = content_type.split(";")[0].strip().lower()
     title: Optional[str] = None
-    if base_ct == "text/html":
+    if base_ct == "text/html" and not raw_html:
         text, title = _html_to_text(text)
 
     return {
@@ -233,6 +233,7 @@ def health() -> dict[str, Any]:
 @app.post("/fetch")
 async def fetch(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
     url = _normalize_url(str(payload.get("url") or ""))
+    raw = bool(payload.get("raw"))
 
     timeout = httpx.Timeout(timeout=READ_TIMEOUT_S, connect=CONNECT_TIMEOUT_S)
     headers = {
@@ -254,7 +255,7 @@ async def fetch(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
             current = attempt_url
             try:
                 for _ in range(MAX_REDIRECTS + 1):
-                    result = await _fetch_once(client, current)
+                    result = await _fetch_once(client, current, raw_html=bool(raw))
                     if not result.get("redirect"):
                         return {"ok": True, **result}
                     current = str(result["location"])

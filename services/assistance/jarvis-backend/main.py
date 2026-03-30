@@ -1,13 +1,21 @@
 import asyncio
 import base64
+import binascii
+import contextlib
+import datetime
+import html as _html
+import functools
+import hashlib
+import hmac
+import inspect
+import io
+import json
 import os
 import logging
-import json
 import sqlite3
 import time
 import uuid
 import re
-import hashlib
 import urllib.parse
 from io import BytesIO
 from datetime import datetime, timedelta, timezone
@@ -11788,6 +11796,145 @@ async def _mcp_web_fetch_text(
     return _extract_mcp_text(result)
 
 
+def _xml_localname(tag: Any) -> str:
+    try:
+        t = str(tag or "")
+    except Exception:
+        return ""
+    if "}" in t:
+        return t.split("}", 1)[1]
+    return t
+
+
+def _xml_first_child_text_by_localname(el: Any, names: list[str]) -> str:
+    if el is None:
+        return ""
+    wanted = {str(n or "").strip().lower() for n in (names or []) if str(n or "").strip()}
+    if not wanted:
+        return ""
+    try:
+        for child in list(el):
+            ln = _xml_localname(getattr(child, "tag", "")).strip().lower()
+            if ln and ln in wanted:
+                try:
+                    txt = "".join(child.itertext())
+                except Exception:
+                    txt = str(getattr(child, "text", "") or "")
+                return str(txt or "").strip()
+    except Exception:
+        return ""
+    return ""
+
+
+def _extract_html_meta_description(html_text: str) -> str:
+    s = str(html_text or "")
+    if not s.strip():
+        return ""
+
+    # Restrict to <head> first for speed.
+    head = s
+    try:
+        m = re.search(r"<head[^>]*>(.*?)</head>", s, flags=re.IGNORECASE | re.DOTALL)
+        if m and m.group(1):
+            head = m.group(1)
+    except Exception:
+        head = s
+
+    def _pick(pattern: str) -> str:
+        try:
+            mm = re.search(pattern, head, flags=re.IGNORECASE | re.DOTALL)
+            if not mm:
+                return ""
+            val = str(mm.group(1) or "")
+            val = _html.unescape(val)
+            val = re.sub(r"\s+", " ", val).strip()
+            return val
+        except Exception:
+            return ""
+
+    # og:description
+    v = _pick(r"<meta[^>]+property=\"og:description\"[^>]+content=\"([^\"]+)\"")
+    if v:
+        return v
+    v = _pick(r"<meta[^>]+content=\"([^\"]+)\"[^>]+property=\"og:description\"")
+    if v:
+        return v
+
+    # name=description
+    v = _pick(r"<meta[^>]+name=\"description\"[^>]+content=\"([^\"]+)\"")
+    if v:
+        return v
+    v = _pick(r"<meta[^>]+content=\"([^\"]+)\"[^>]+name=\"description\"")
+    if v:
+        return v
+
+    return ""
+
+
+def _extract_html_first_paragraph(html_text: str) -> str:
+    s = str(html_text or "")
+    if not s.strip():
+        return ""
+    try:
+        m = re.search(r"<p[^>]*>(.*?)</p>", s, flags=re.IGNORECASE | re.DOTALL)
+        if not m:
+            return ""
+        body = str(m.group(1) or "")
+        body = re.sub(r"<[^>]+>", " ", body)
+        body = _html.unescape(body)
+        body = re.sub(r"\s+", " ", body).strip()
+        return body
+    except Exception:
+        return ""
+
+
+async def _enrich_news_item_description(
+    item: dict[str, Any],
+    *,
+    debug: bool = False,
+    debug_out: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    if not isinstance(item, dict):
+        return item
+    desc0 = str(item.get("description") or "").strip()
+    if desc0:
+        return item
+    url = str(item.get("link") or "").strip()
+    if not url:
+        return item
+
+    meta: dict[str, Any] = {}
+    html_text = ""
+    try:
+        res = await _web_fetcher_post("/fetch", {"url": url, "raw": True})
+        if isinstance(res, dict):
+            html_text = str(res.get("text") or "")
+            meta = {
+                "status_code": res.get("status_code"),
+                "content_type": res.get("content_type"),
+                "final_url": res.get("final_url"),
+            }
+    except Exception as e:
+        meta = {"error": e.__class__.__name__, "message": str(e)}
+
+    picked = _extract_html_meta_description(html_text)
+    if not picked:
+        picked = _extract_html_first_paragraph(html_text)
+    picked = str(picked or "").strip()
+    if picked:
+        item["description"] = picked
+
+    if debug and isinstance(debug_out, list):
+        try:
+            row = {"url": url, "enriched": bool(picked)}
+            if meta:
+                row.update(meta)
+            debug_out.append(row)
+        except Exception:
+            pass
+    return item
+
+
 def _parse_rss_items(xml_text: str) -> list[dict[str, Any]]:
     s = str(xml_text or "")
     if not s.strip():
@@ -11836,6 +11983,13 @@ def _parse_rss_items(xml_text: str) -> list[dict[str, Any]]:
         link0 = (it.findtext("link") or "").strip()
         pub = (it.findtext("pubDate") or "").strip()
         desc = (it.findtext("description") or "").strip()
+        if not desc:
+            # Common RSS pattern: <content:encoded> contains full HTML content.
+            desc = _xml_first_child_text_by_localname(it, ["encoded", "content"]) or ""
+        if not desc:
+            # Some feeds use <media:description>.
+            desc = _xml_first_child_text_by_localname(it, ["media:description", "description"]) or ""
+        desc = str(desc or "").strip()
         if not title and not link0:
             continue
         link, gnews_link = _degoogle_link(link0, desc)
@@ -11899,6 +12053,14 @@ def _parse_atom_items(xml_text: str) -> list[dict[str, Any]]:
         except Exception:
             link = ""
         desc = (it.findtext("atom:summary", default="", namespaces=ns) or it.findtext("summary") or "").strip()
+        if not desc:
+            # Atom often uses <content>.
+            try:
+                content_el = it.find("atom:content", ns) or it.find("content")
+                if content_el is not None:
+                    desc = str("".join(content_el.itertext()) or "").strip()
+            except Exception:
+                desc = desc
         if not title and not link:
             continue
         link2, gnews_link = _degoogle_link(link, desc)
@@ -12805,6 +12967,7 @@ async def _refresh_current_news_cache(
     sys_kv: dict[str, Any] | None = None,
     force_fetch: bool = True,
     source: str | None = None,
+    enrich_missing: bool | None = None,
 ) -> dict[str, Any]:
     sources_rows: list[dict[str, Any]] = []
     topics_cfg: dict[str, dict[str, Any]] = {}
@@ -12880,6 +13043,44 @@ async def _refresh_current_news_cache(
         seen.add(key)
         deduped.append(it)
 
+    do_enrich = False
+    if enrich_missing is not None:
+        do_enrich = bool(enrich_missing)
+    else:
+        do_enrich = _sys_kv_bool(sys_kv, "current_news.enrich_missing.enabled", default=False)
+
+    enriched_count = 0
+    if do_enrich and deduped:
+        try:
+            max_items = 20
+            if isinstance(sys_kv, dict):
+                try:
+                    max_items = int(sys_kv.get("current_news.enrich_missing.max_items") or 20)
+                except Exception:
+                    max_items = 20
+            max_items = max(1, min(max_items, 80))
+
+            debug_enabled = _sys_kv_bool(sys_kv, "current_news.debug.enabled", default=False)
+
+            for it in deduped:
+                if enriched_count >= max_items:
+                    break
+                if not isinstance(it, dict):
+                    continue
+                if str(it.get("description") or "").strip():
+                    continue
+                await _enrich_news_item_description(it, debug=bool(debug_enabled), debug_out=fetch_debug if debug_enabled else None)
+                if str(it.get("description") or "").strip():
+                    enriched_count += 1
+        except Exception:
+            pass
+
+        if enriched_count > 0:
+            try:
+                await _save_current_news_items_to_items_tab(items=deduped, sys_kv=sys_kv)
+            except Exception:
+                pass
+
     ctx = _build_current_news_context(deduped, topics_cfg=topics_cfg if isinstance(topics_cfg, dict) else None)
     if _sys_kv_bool(sys_kv, "current_news.debug.enabled", default=False):
         try:
@@ -12889,6 +13090,8 @@ async def _refresh_current_news_cache(
                 "sources_count": len(sources_rows),
                 "sources": [str(s.get("url") or "").strip() for s in sources_rows[:10] if isinstance(s, dict)],
                 "source_filter": str(source or "").strip(),
+                "enriched_count": int(enriched_count),
+                "enrich_missing": bool(do_enrich),
                 "topics_cfg_keys": sorted([str(k) for k in (topics_cfg.keys() if isinstance(topics_cfg, dict) else [])]),
                 "fetch": fetch_debug[:10],
             }
