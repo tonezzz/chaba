@@ -3181,6 +3181,31 @@ async def _ws_record(ws: WebSocket, direction: str, msg: Any) -> None:
         await _sheets_logs_enqueue_ws(ws, direction, msg)
     except Exception:
         pass
+
+    try:
+        buf = getattr(ws.state, "recent_ws_records", None)
+        if not isinstance(buf, list):
+            buf = []
+            ws.state.recent_ws_records = buf
+        typ = msg.get("type") if isinstance(msg, dict) else None
+        text = ""
+        try:
+            if isinstance(msg, dict) and (typ in {"text", "error", "state", "connect_status", "tool", "tool_result", "reconnect"}):
+                text = str(msg.get("text") or msg.get("message") or "")
+        except Exception:
+            text = ""
+        buf.append(
+            {
+                "ts": int(time.time() * 1000),
+                "direction": str(direction),
+                "type": typ,
+                "text": _truncate_log_blob(text, limit=400) if text else "",
+            }
+        )
+        if len(buf) > 200:
+            ws.state.recent_ws_records = buf[-200:]
+    except Exception:
+        pass
     if not _WS_RECORD_ENABLED:
         return
     path = _ws_record_daily_path()
@@ -5507,6 +5532,9 @@ MORNING_BRIEF_MINUTE = int(str(os.getenv("JARVIS_MORNING_BRIEF_MINUTE") or "0").
 AGENT_CONTINUE_WINDOW_SECONDS = int(str(os.getenv("JARVIS_AGENT_CONTINUE_WINDOW_SECONDS") or "120").strip() or "120")
 
 _ws_by_user: dict[str, set[WebSocket]] = {}
+
+_ACTIVE_WS_BY_USER: dict[str, WebSocket] = {}
+_ACTIVE_WS_LOCK: asyncio.Lock | None = None
 
 # Map sticky session_id -> last active websocket for that session.
 # This is used so Gemini tool calls can reach back into the correct session state.
@@ -9447,6 +9475,125 @@ async def _sys_kv_dedupe_disable_sheet(*, dry_run: bool = True, sort: bool = Fal
 async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_id: str | None = None) -> bool:
     tid = _ws_ensure_trace_id(ws, trace_id)
     msg_type = str(msg.get("type") or "").strip().lower()
+
+    if msg_type == "text":
+        raw = str(msg.get("text") or "")
+        compact = " ".join(raw.strip().lower().split())
+        if compact in {"status", "สถานะระบบ"}:
+            try:
+                uptime_s = max(0.0, float(time.time() - float(_PROCESS_START_TS)))
+            except Exception:
+                uptime_s = 0.0
+            sys_kv = getattr(ws.state, "sys_kv", None)
+            sys_kv_loaded = isinstance(sys_kv, dict) and bool(sys_kv)
+            gem_model = getattr(ws.state, "gemini_live_model", None)
+            gem_last_error = getattr(ws.state, "gemini_last_error", None)
+            gem_connected = bool(getattr(ws.state, "gemini_live_session", None))
+            local_only = bool(getattr(ws.state, "local_only", False))
+            gem_connect_attempt_ms = getattr(ws.state, "gemini_connect_attempt_ms", None)
+            gem_connected_at_ms = getattr(ws.state, "gemini_connected_at_ms", None)
+            gem_disconnected_at_ms = getattr(ws.state, "gemini_disconnected_at_ms", None)
+            session_id = getattr(ws.state, "session_id", None)
+            client_id = getattr(ws.state, "client_id", None)
+            client_tag = getattr(ws.state, "client_tag", None)
+            recent = getattr(ws.state, "recent_ws_records", None)
+            recent_items = recent[-30:] if isinstance(recent, list) else []
+
+            tools = []
+            try:
+                tools = [str(d.get("name") or "").strip() for d in _mcp_tool_declarations() if isinstance(d, dict) and str(d.get("name") or "").strip()]
+            except Exception:
+                tools = []
+            tools = sorted(set([t for t in tools if t]))
+
+            payload = {
+                "instance_id": INSTANCE_ID,
+                "uptime_s": int(uptime_s),
+                "session_id": session_id,
+                "client_id": client_id,
+                "client_tag": client_tag,
+                "sys_kv_loaded": sys_kv_loaded,
+                "local_only": local_only,
+                "gemini_connected": gem_connected,
+                "gemini_model": str(gem_model or ""),
+                "gemini_last_error": gem_last_error if isinstance(gem_last_error, dict) else (str(gem_last_error) if gem_last_error else ""),
+                "gemini_connect_attempt_ms": int(gem_connect_attempt_ms) if isinstance(gem_connect_attempt_ms, (int, float)) else None,
+                "gemini_connected_at_ms": int(gem_connected_at_ms) if isinstance(gem_connected_at_ms, (int, float)) else None,
+                "gemini_disconnected_at_ms": int(gem_disconnected_at_ms) if isinstance(gem_disconnected_at_ms, (int, float)) else None,
+                "tools_n": len(tools),
+                "tools": tools,
+                "recent_ws": recent_items,
+            }
+
+            txt_lines = [
+                "System status",
+                f"- instance_id: {INSTANCE_ID}",
+                f"- uptime_s: {int(uptime_s)}",
+                f"- session_id: {session_id}",
+                f"- client: {str(client_tag or client_id or '')}",
+                f"- sys_kv_loaded: {str(sys_kv_loaded).lower()}",
+                f"- local_only: {str(local_only).lower()}",
+                f"- gemini_connected: {str(gem_connected).lower()}",
+                f"- gemini_model: {str(gem_model or '')}",
+            ]
+            if gem_last_error:
+                try:
+                    if isinstance(gem_last_error, dict):
+                        txt_lines.append(f"- gemini_last_error: {str(gem_last_error.get('message') or gem_last_error.get('kind') or gem_last_error.get('detail') or '')}")
+                    else:
+                        txt_lines.append(f"- gemini_last_error: {str(gem_last_error)}")
+                except Exception:
+                    pass
+            try:
+                if isinstance(gem_connect_attempt_ms, (int, float)) and gem_connect_attempt_ms:
+                    txt_lines.append(f"- gemini_connect_attempt_ms: {int(gem_connect_attempt_ms)}")
+                if isinstance(gem_connected_at_ms, (int, float)) and gem_connected_at_ms:
+                    txt_lines.append(f"- gemini_connected_at_ms: {int(gem_connected_at_ms)}")
+                if isinstance(gem_disconnected_at_ms, (int, float)) and gem_disconnected_at_ms:
+                    txt_lines.append(f"- gemini_disconnected_at_ms: {int(gem_disconnected_at_ms)}")
+            except Exception:
+                pass
+            txt_lines.append(f"- tools_n: {len(tools)}")
+            txt_lines.append("\nRecent WS events (tail):")
+            for it in recent_items:
+                if not isinstance(it, dict):
+                    continue
+                ts = it.get("ts")
+                d = str(it.get("direction") or "")
+                ty = str(it.get("type") or "")
+                t = str(it.get("text") or "")
+                line = f"- {ts} {d} {ty}" + (f": {t}" if t else "")
+                txt_lines.append(line)
+
+            await _ws_send_json(
+                ws,
+                {
+                    "type": "text",
+                    "text": "\n".join(txt_lines),
+                    "instance_id": INSTANCE_ID,
+                    "status": payload,
+                },
+                trace_id=tid,
+            )
+            await _ws_voice_job_done(ws, tid)
+            return True
+
+        if compact in {"system shutdown"}:
+            await _ws_send_json(
+                ws,
+                {
+                    "type": "text",
+                    "text": "system shutdown: closing sessions",
+                    "instance_id": INSTANCE_ID,
+                },
+                trace_id=tid,
+            )
+            await _ws_voice_job_done(ws, tid)
+            try:
+                await _shutdown_user_sessions(DEFAULT_USER_ID, reason="system_shutdown")
+            except Exception:
+                pass
+            return True
     if msg_type == "tool":
         name = str(msg.get("name") or "").strip()
         tool_args = msg.get("args")
@@ -18087,6 +18234,48 @@ async def ws_live(ws: WebSocket) -> None:
     user_id = DEFAULT_USER_ID
     _ws_by_user.setdefault(user_id, set()).add(ws)
 
+    global _ACTIVE_WS_LOCK
+    try:
+        if _ACTIVE_WS_LOCK is None:
+            _ACTIVE_WS_LOCK = asyncio.Lock()
+    except Exception:
+        _ACTIVE_WS_LOCK = None
+
+    try:
+        if _ACTIVE_WS_LOCK is not None:
+            async with _ACTIVE_WS_LOCK:
+                prev = _ACTIVE_WS_BY_USER.get(user_id)
+                if prev is not None and prev is not ws:
+                    try:
+                        await _ws_send_json(
+                            prev,
+                            {
+                                "type": "reconnect",
+                                "reason": "replaced_by_new_connection",
+                                "instance_id": INSTANCE_ID,
+                            },
+                        )
+                    except Exception:
+                        pass
+                    try:
+                        await prev.close(code=1001)
+                    except Exception:
+                        pass
+                    try:
+                        s0 = _ws_by_user.get(user_id)
+                        if s0 is not None:
+                            s0.discard(prev)
+                    except Exception:
+                        pass
+                _ACTIVE_WS_BY_USER[user_id] = ws
+        else:
+            _ACTIVE_WS_BY_USER[user_id] = ws
+    except Exception:
+        try:
+            _ACTIVE_WS_BY_USER[user_id] = ws
+        except Exception:
+            pass
+
     # Sticky session support: the frontend provides ?session_id=... so we can persist
     # per-session state across reconnects.
     session_id = str(ws.query_params.get("session_id") or "").strip() or None
@@ -18120,6 +18309,11 @@ async def ws_live(ws: WebSocket) -> None:
     try:
         try:
             ws.state.user_lang = _lang_from_ws(ws)
+        except Exception:
+            pass
+
+        try:
+            ws.state.local_only = False
         except Exception:
             pass
 
@@ -18378,6 +18572,17 @@ async def ws_live(ws: WebSocket) -> None:
                     "detail": "Missing required env var: API_KEY (or GEMINI_API_KEY)",
                 }
             )
+            try:
+                ws.state.local_only = True
+                ws.state.gemini_last_error = {
+                    "kind": "missing_api_key",
+                    "message": "missing_api_key",
+                    "detail": "Missing required env var: API_KEY (or GEMINI_API_KEY)",
+                }
+                ws.state.gemini_connect_attempt_ms = int(time.time() * 1000)
+                ws.state.gemini_disconnected_at_ms = int(time.time() * 1000)
+            except Exception:
+                pass
             await _ws_local_only_loop(ws)
             return
         client = genai.Client(api_key=api_key)
@@ -18708,12 +18913,22 @@ async def ws_live(ws: WebSocket) -> None:
                 gemini_failed_event.clear()
             except Exception:
                 pass
+            try:
+                ws.state.gemini_connect_attempt_ms = int(time.time() * 1000)
+            except Exception:
+                pass
             ws.state.gemini_live_model = model
             session_cm = client.aio.live.connect(model=model, config=cfg)
             try:
                 async with session_cm as session:
                     logger.info("gemini_live_connected model=%s", model)
                     ws.state.gemini_live_session = session
+                    try:
+                        ws.state.gemini_connected_at_ms = int(time.time() * 1000)
+                        ws.state.gemini_disconnected_at_ms = None
+                        ws.state.local_only = False
+                    except Exception:
+                        pass
                     await _ws_send_json(
                         ws,
                         {
@@ -18792,6 +19007,10 @@ async def ws_live(ws: WebSocket) -> None:
             finally:
                 try:
                     ws.state.gemini_live_session = None
+                except Exception:
+                    pass
+                try:
+                    ws.state.gemini_disconnected_at_ms = int(time.time() * 1000)
                 except Exception:
                     pass
 
@@ -18970,6 +19189,35 @@ async def ws_live(ws: WebSocket) -> None:
                     _SESSION_WS.pop(sid, None)
             except Exception:
                 pass
+        try:
+            cur2 = _ACTIVE_WS_BY_USER.get(user_id)
+            if cur2 is ws:
+                _ACTIVE_WS_BY_USER.pop(user_id, None)
+        except Exception:
+            pass
         s = _ws_by_user.get(user_id)
         if s is not None:
             s.discard(ws)
+
+
+async def _shutdown_user_sessions(user_id: str, reason: str) -> None:
+    conns = list(_ws_by_user.get(user_id, set()))
+    for ws in conns:
+        try:
+            await _ws_send_json(ws, {"type": "reconnect", "reason": str(reason), "instance_id": INSTANCE_ID})
+        except Exception:
+            pass
+        try:
+            await ws.close(code=1001)
+        except Exception:
+            pass
+    try:
+        _ws_by_user.get(user_id, set()).clear()
+    except Exception:
+        pass
+    try:
+        cur = _ACTIVE_WS_BY_USER.get(user_id)
+        if cur is not None:
+            _ACTIVE_WS_BY_USER.pop(user_id, None)
+    except Exception:
+        pass
