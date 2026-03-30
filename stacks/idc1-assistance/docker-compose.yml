@@ -116,6 +116,8 @@ services:
       ONE_MCP_EXTERNAL_URL: http://127.0.0.1:3051
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
+      GOOGLE_SHEETS_REDIRECT_URI: ${GOOGLE_SHEETS_REDIRECT_URI:-}
       GOOGLE_TASKS_TOKEN_PATH: ${GOOGLE_SHARED_TOKEN_PATH:-/root/.config/1mcp/google.tokens.json}
       GOOGLE_SHEETS_TOKEN_PATH: ${GOOGLE_SHARED_TOKEN_PATH:-/root/.config/1mcp/google.tokens.json}
       GOOGLE_CALENDAR_TOKEN_PATH: ${GOOGLE_SHARED_TOKEN_PATH:-/root/.config/1mcp/google.tokens.json}
@@ -1994,7 +1996,9 @@ services:
                 "GOOGLE_SHEETS_CLIENT_ID": "$${GOOGLE_SHEETS_CLIENT_ID}",
                 "GOOGLE_SHEETS_CLIENT_SECRET": "$${GOOGLE_SHEETS_CLIENT_SECRET}",
                 "GOOGLE_SHEETS_SCOPES": "$${GOOGLE_SHEETS_SCOPES}",
-                "GOOGLE_SHEETS_TOKEN_PATH": "$${GOOGLE_SHEETS_TOKEN_PATH}"
+                "GOOGLE_SHEETS_TOKEN_PATH": "$${GOOGLE_SHEETS_TOKEN_PATH}",
+                "GOOGLE_REDIRECT_URI": "$${GOOGLE_REDIRECT_URI}",
+                "GOOGLE_SHEETS_REDIRECT_URI": "$${GOOGLE_SHEETS_REDIRECT_URI}"
               },
               "tags": ["google", "sheets"],
               "disabled": false
