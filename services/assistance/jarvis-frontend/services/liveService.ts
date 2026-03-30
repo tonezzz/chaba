@@ -156,7 +156,7 @@ export class LiveService {
 				role: "system",
 				text: `tool_call ${toolName}`,
 				timestamp: new Date(),
-				metadata: { trace_id: traceId, severity: "info", category: "ws", raw: { type: "tool_call", name: toolName, args: payloadArgs } },
+				metadata: { trace_id: traceId, kind: "tool_call", severity: "info", category: "ws", raw: { type: "tool_call", name: toolName, args: payloadArgs } },
 			});
 		} catch {
 			// ignore
@@ -678,7 +678,7 @@ export class LiveService {
           role: "system",
           text: "connected",
           timestamp: new Date(),
-          metadata: { severity: "info", category: "ws" },
+          metadata: { trace_id: this.createTraceId("ws_open"), ws: { type: "ws_open", instance_id: sessionId, client_tag: clientTag, client_id: clientId }, raw: { type: "ws_open" }, severity: "info", category: "ws" },
         });
         try {
           if (this.outputAudioContext && this.outputAudioContext.state === "suspended") {
@@ -716,7 +716,7 @@ export class LiveService {
           role: "system",
           text: `disconnected (code=${ev.code}${ev.reason ? ` reason=${ev.reason}` : ""})`,
           timestamp: new Date(),
-          metadata: { severity: "info", category: "ws" },
+          metadata: { trace_id: this.createTraceId("ws_close"), ws: { type: "ws_close", instance_id: sessionId, client_tag: clientTag, client_id: clientId }, raw: { type: "ws_close" }, severity: "info", category: "ws" },
         });
       };
       this.ws.onerror = (err) => {
@@ -733,7 +733,7 @@ export class LiveService {
           role: "system",
           text: "connection_error",
           timestamp: new Date(),
-          metadata: { severity: "info", category: "ws" },
+          metadata: { trace_id: this.createTraceId("ws_error"), ws: { type: "ws_error", instance_id: sessionId, client_tag: clientTag, client_id: clientId }, raw: { type: "ws_error" }, severity: "info", category: "ws" },
         });
       };
       this.ws.onmessage = (event) => {
@@ -888,7 +888,7 @@ export class LiveService {
 				role: "system",
 				text: `tool_result ${toolName}: ${summary}`,
 				timestamp: new Date(),
-				metadata: { trace_id: traceId, ws: wsMeta, raw: message, severity: ok ? "info" : "warn", category: "ws" },
+				metadata: { trace_id: traceId, kind: "tool_result", ws: wsMeta, raw: message, severity: ok ? "info" : "warn", category: "ws" },
 			});
 
 			// Convenience UI card: after building a Google News RSS URL, offer to add it to news_sources.

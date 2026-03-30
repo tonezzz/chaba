@@ -419,6 +419,14 @@ export function LeftPanel(props: {
               const gap = prev ? ts - prevTs : Number.POSITIVE_INFINITY;
               const txt = String(m.text || "").trim();
               const prevTxt = prev ? String(prev.text || "").trim() : "";
+              const tr = m.metadata?.trace_id ? String(m.metadata.trace_id) : "";
+              const prevTr = prev?.metadata?.trace_id ? String(prev.metadata.trace_id) : "";
+              const kind = String((m.metadata as any)?.kind || "").trim();
+              const prevKind = String((prev?.metadata as any)?.kind || "").trim();
+              const uiRaw: any = (m.metadata?.raw as any) ?? (m.metadata?.ws as any) ?? null;
+              const prevUiRaw: any = (prev?.metadata?.raw as any) ?? (prev?.metadata?.ws as any) ?? null;
+              const isUiCard = String(uiRaw?.type || "").toLowerCase() === "ui";
+              const prevIsUiCard = String(prevUiRaw?.type || "").toLowerCase() === "ui";
 
               const mergeable =
                 role === "user" &&
@@ -433,6 +441,35 @@ export function LeftPanel(props: {
 
               if (mergeable) {
                 const mergedText = `${prevTxt} ${txt}`.replace(/\s+/g, " ").trim();
+                coalesced[coalesced.length - 1] = {
+                  ...(prev as any),
+                  text: mergedText,
+                } as MessageLog;
+                continue;
+              }
+
+              const mergeableTraceGroup =
+                Boolean(tr) &&
+                prev &&
+                Boolean(prevTr) &&
+                tr === prevTr &&
+                gap >= 0 &&
+                gap <= 2500 &&
+                role === prevRole &&
+                (role === "model" || role === "system") &&
+                !isUiCard &&
+                !prevIsUiCard &&
+                kind !== "tool_call" &&
+                kind !== "tool_result" &&
+                prevKind !== "tool_call" &&
+                prevKind !== "tool_result" &&
+                txt &&
+                prevTxt &&
+                txt.length <= 200 &&
+                prevTxt.length <= 600;
+
+              if (mergeableTraceGroup) {
+                const mergedText = `${prevTxt}\n${txt}`.trim();
                 coalesced[coalesced.length - 1] = {
                   ...(prev as any),
                   text: mergedText,
