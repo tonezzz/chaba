@@ -4126,7 +4126,7 @@ async def debug_status() -> dict[str, Any]:
         except Exception:
             sys_kv = None
 
-    if not feature_enabled("debug_status", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=False):
+    if not feature_enabled("debug_status", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
         raise HTTPException(status_code=404, detail={"disabled": True})
 
     # Read-only aggregated dependency status (safe for prod).
