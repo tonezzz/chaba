@@ -36,6 +36,9 @@ export default function App() {
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
   const [showDebugLogs, setShowDebugLogs] = useState(false);
   const showDebugLogsRef = useRef<boolean>(false);
+  const prevConnStateRef = useRef<ConnectionState>(ConnectionState.DISCONNECTED);
+  const lastActivityTextRef = useRef<string>("");
+  const lastActivityTsRef = useRef<number>(0);
   const liveService = useRef<LiveService | null>(null);
   const [activeMedia, setActiveMedia] = useState<MessageLog | null>(null);
   const [isTalking, setIsTalking] = useState(false);
@@ -355,6 +358,21 @@ export default function App() {
         // ignore
       }
 
+      // Track what Jarvis was doing, so if we disconnect we can show context.
+      try {
+        const txt = String((msg as any)?.text || "").trim();
+        const sev = String((msg as any)?.metadata?.severity || "").trim();
+        const cat = String((msg as any)?.metadata?.category || "").trim();
+        const ts = msg.timestamp instanceof Date ? msg.timestamp.getTime() : Date.now();
+        const isActivity = msg.id === "sticky_progress" || (msg.role === "system" && !!txt && (cat === "ws" || cat === "live") && sev !== "debug");
+        if (isActivity) {
+          lastActivityTextRef.current = txt;
+          lastActivityTsRef.current = ts;
+        }
+      } catch {
+        // ignore
+      }
+
       // Policy (3): suppress autospeak triggers until the backend model is ready.
       // This avoids the confusing "autospeak: triggering" followed by seconds of silence.
       try {
@@ -470,6 +488,31 @@ export default function App() {
       readinessPhaseRef.current = "";
       setReadinessPhase("");
       setReadinessSinceMs(0);
+    }
+  }, [state]);
+
+  useEffect(() => {
+    const prev = prevConnStateRef.current;
+    prevConnStateRef.current = state;
+    if (prev !== ConnectionState.CONNECTED) return;
+    if (state !== ConnectionState.DISCONNECTED && state !== ConnectionState.ERROR) return;
+
+    try {
+      const activity = String(lastActivityTextRef.current || "").trim();
+      const activityAgeMs = lastActivityTsRef.current ? Date.now() - lastActivityTsRef.current : Number.POSITIVE_INFINITY;
+      const activityOk = !!activity && Number.isFinite(activityAgeMs) && activityAgeMs >= 0 && activityAgeMs <= 45000;
+      const suffix = activityOk ? ` (was: ${activity})` : "";
+      setMessages((prevMsgs) => [
+        ...prevMsgs,
+        {
+          id: `${Date.now()}_disconnect_context_${Math.random().toString(16).slice(2)}`,
+          role: "system",
+          text: `${state}${suffix}`,
+          timestamp: new Date(),
+        },
+      ]);
+    } catch {
+      // ignore
     }
   }, [state]);
 
