@@ -8,25 +8,23 @@ Assumes:
 
 ```caddy
 assistance.idc1.surf-thailand.com {
-  # WebSocket endpoint to backend (strip /jarvis prefix)
-  handle_path /jarvis/ws/* {
+  # WebSocket endpoint to backend (do NOT strip; backend expects /ws/*)
+  handle /jarvis/ws/* {
     reverse_proxy 127.0.0.1:18018
   }
 
-  # Backend HTTP API (strip /jarvis/api prefix)
-  handle_path /jarvis/api/* {
+  # Backend HTTP API (do NOT strip; backend expects /api/*)
+  handle /jarvis/api/* {
     reverse_proxy 127.0.0.1:18018
   }
 
   # All other /jarvis paths go to the SPA frontend
-  handle_path /jarvis/* {
+  handle /jarvis/* {
     reverse_proxy 127.0.0.1:18080
   }
 }
 ```
 
 Notes:
-- `handle_path` strips the matched prefix before proxying.
-  - `/jarvis/ws/live` becomes `/ws/live` at the backend.
-  - `/jarvis/...` becomes `/...` at the frontend.
+- `handle` does not rewrite the request path.
 - WebSockets work automatically through `reverse_proxy`.
