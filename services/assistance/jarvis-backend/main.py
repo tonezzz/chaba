@@ -10127,7 +10127,16 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
                 return True
 
             k = str(msg.get("key") or "").strip()
-            v = str(msg.get("value") or "").strip()
+            v_raw = msg.get("value")
+            if isinstance(v_raw, bool):
+                v = "TRUE" if v_raw else "FALSE"
+            else:
+                v = str(v_raw or "").strip()
+                v_l = v.lower()
+                if v_l == "true":
+                    v = "TRUE"
+                elif v_l == "false":
+                    v = "FALSE"
             dry_run = bool(msg.get("dry_run") is True)
             try:
                 result = await _sys_kv_upsert_sheet(key=k, value=v, dry_run=dry_run)
