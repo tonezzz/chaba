@@ -32,6 +32,8 @@ export function LeftPanel(props: {
 
   systemCounts: { memory: number; knowledge: number; ok: boolean };
   audioStatus: { ok: boolean; lastConn: number; lastAudioUnavailable: number };
+  readinessPhase: string;
+  readinessSinceMs: number;
 
   depsStatusError: string;
   depsStatus: any;
@@ -84,6 +86,8 @@ export function LeftPanel(props: {
     setStatusDetailsOpen,
     systemCounts,
     audioStatus,
+    readinessPhase,
+    readinessSinceMs,
     depsStatusError,
     depsStatus,
     setDepsStatusRefreshNonce,
@@ -112,6 +116,17 @@ export function LeftPanel(props: {
     isTalking,
     handleToggleTalk,
   } = props;
+
+  const readinessText = React.useMemo(() => {
+    const p = String(readinessPhase || "").trim();
+    if (!p) return "";
+    const base = `readiness: ${p}`;
+    const since = Number(readinessSinceMs || 0);
+    if (!since) return base;
+    const elapsed = Math.max(0, Date.now() - since);
+    const s = (elapsed / 1000).toFixed(elapsed < 10_000 ? 1 : 0);
+    return `${base} (${s}s)`;
+  }, [readinessPhase, readinessSinceMs]);
 
   const [uiCardActionByMsgId, setUiCardActionByMsgId] = React.useState<
     Record<string, { busy: boolean; status: "idle" | "ok" | "error"; message?: string }>
@@ -204,6 +219,12 @@ export function LeftPanel(props: {
               </button>
             )}
           </div>
+
+          {!!readinessText && (
+            <div className="mt-2 text-[11px] font-mono text-slate-400 border border-slate-800 rounded-lg bg-slate-950/20 px-2 py-1">
+              {readinessText}
+            </div>
+          )}
 
           {statusDetailsOpen && (
             <div className="mt-2 space-y-2">
