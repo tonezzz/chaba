@@ -46,6 +46,7 @@ export default function App() {
 
   const [readinessPhase, setReadinessPhase] = useState<string>("");
   const [readinessSinceMs, setReadinessSinceMs] = useState<number>(0);
+  const readinessPhaseRef = useRef<string>("");
 
   const [composerText, setComposerText] = useState<string>("");
   const [seqNotes, setSeqNotes] = useState<string>("");
@@ -302,6 +303,7 @@ export default function App() {
       try {
         const phase = String(ev?.phase || "").trim();
         if (!phase) return;
+        readinessPhaseRef.current = phase;
         setReadinessPhase(phase);
         setReadinessSinceMs((prev) => (prev ? prev : typeof ev?.ts === "number" ? ev.ts : Date.now()));
       } catch {
@@ -351,6 +353,19 @@ export default function App() {
         // ignore
       }
 
+      // Policy (3): suppress autospeak triggers until the backend model is ready.
+      // This avoids the confusing "autospeak: triggering" followed by seconds of silence.
+      try {
+        const txt = String((msg as any)?.text || "").trim();
+        if (txt.toLowerCase().startsWith("autospeak:")) {
+          if (readinessPhaseRef.current !== "model_ready") {
+            return;
+          }
+        }
+      } catch {
+        // ignore
+      }
+
       try {
         const resume = (msg as any)?.metadata?.resume;
         const ok = resume?.ok === true;
@@ -387,6 +402,32 @@ export default function App() {
           if (!txt) return without;
           return [...without, msg];
         }
+
+        // Group rapid-fire short text chunks into a single line for a cleaner Operation Log,
+        // especially for Thai STT fragments.
+        try {
+          const nextTxt = String(msg.text || "");
+          const nextTrim = nextTxt.trim();
+          const last = prev.length ? prev[prev.length - 1] : null;
+          const nextTs = msg.timestamp instanceof Date ? msg.timestamp.getTime() : Date.now();
+          const lastTs = last?.timestamp instanceof Date ? last.timestamp.getTime() : 0;
+          const withinWindow = lastTs > 0 && nextTs - lastTs >= 0 && nextTs - lastTs <= 900;
+          const canMergeRole = last && last.role === msg.role && (msg.role === "model" || msg.role === "system");
+          const looksLikeChunk = nextTrim.length > 0 && nextTrim.length <= 40 && !nextTrim.includes("\n");
+          const lastTxt = last ? String(last.text || "") : "";
+          const lastTrim = lastTxt.trim();
+          const lastLooksLikeChunk = lastTrim.length > 0 && lastTrim.length <= 60 && !lastTrim.includes("\n");
+          const lastEndsSentence = /[.!?…。、！？]$/.test(lastTrim);
+          const nextStartsNewSentence = /^[A-Z0-9]/.test(nextTrim);
+          if (withinWindow && canMergeRole && looksLikeChunk && lastLooksLikeChunk && !lastEndsSentence && !nextStartsNewSentence) {
+            const joiner = /\s$/.test(lastTxt) ? "" : " ";
+            const merged: any = { ...last, text: `${lastTxt}${joiner}${nextTrim}`, timestamp: msg.timestamp };
+            return [...prev.slice(0, -1), merged];
+          }
+        } catch {
+          // ignore
+        }
+
         return [...prev, msg];
       });
 
@@ -406,6 +447,7 @@ export default function App() {
 
   useEffect(() => {
     if (state !== ConnectionState.CONNECTED) {
+      readinessPhaseRef.current = "";
       setReadinessPhase("");
       setReadinessSinceMs(0);
     }
