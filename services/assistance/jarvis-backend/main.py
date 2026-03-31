@@ -10178,18 +10178,11 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
                 where = (" (" + ", ".join(where_parts) + ")") if where_parts else ""
             except Exception:
                 where = ""
-            await _ws_send_json(
-                ws,
-                {
-                    "type": "text",
-                    "text": f"sys_kv_set ok: {k}={v}" + (" (dry_run)" if dry_run else "") + where,
-                    "instance_id": INSTANCE_ID,
-                    "sys_kv_set": result,
-                },
-                trace_id=tid,
-            )
+
+            verify = ""
             # Refresh sys_kv state + global cache so HTTP endpoints (e.g., /config/voice_commands)
-            # reflect the new values immediately.
+            # reflect the new values immediately. Also use this refresh as a best-effort
+            # read-after-write verification.
             if not dry_run:
                 try:
                     fresh = await _load_sys_kv_from_sheet()
@@ -10199,13 +10192,38 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
                         except Exception:
                             pass
                         _set_cached_sys_kv_only(fresh)
+                        try:
+                            rb = fresh.get(k)
+                            rb_s = "" if rb is None else str(rb)
+                            if rb is None:
+                                verify = " read_back=<missing>"
+                            elif rb_s.strip() == v.strip():
+                                verify = f" read_back={rb_s}"
+                            else:
+                                verify = f" read_back={rb_s} mismatch(expected={v})"
+                        except Exception:
+                            verify = ""
                 except Exception:
                     pass
+            else:
+                verify = " read_back=<dry_run>"
+
+            ok_text = f"sys_kv_set ok: {k}={v}" + (" (dry_run)" if dry_run else "") + where + verify
+            await _ws_send_json(
+                ws,
+                {
+                    "type": "text",
+                    "text": ok_text,
+                    "instance_id": INSTANCE_ID,
+                    "sys_kv_set": result,
+                },
+                trace_id=tid,
+            )
             try:
                 await _maybe_capture_to_memory(
                     ws,
                     key="runtime.system.sys_kv_set.latest",
-                    value=f"sys_kv_set ok: {k}={v}" + (" (dry_run)" if dry_run else "") + where,
+                    value=ok_text,
                     source="system.sys_kv_set",
                 )
             except Exception:
