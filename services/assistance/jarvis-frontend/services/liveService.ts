@@ -209,8 +209,8 @@ export class LiveService {
 		const isJarvisSubpath = location.pathname.startsWith("/jarvis");
 		try {
 			const candidates = isJarvisSubpath
-				? ["/jarvis/config/voice_commands", "/config/voice_commands"]
-				: ["/config/voice_commands", "/jarvis/config/voice_commands"];
+				? ["/jarvis/api/config/voice_commands", "/config/voice_commands"]
+				: ["/config/voice_commands", "/jarvis/api/config/voice_commands"];
 			let j: any = null;
 			for (const u of candidates) {
 				try {

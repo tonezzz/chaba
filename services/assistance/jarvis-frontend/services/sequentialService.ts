@@ -72,7 +72,7 @@ function getBackendHttpBaseUrl(): string {
 
   const isJarvisSubpath = location.pathname.startsWith("/jarvis");
   if (isJarvisSubpath) {
-    return `${location.origin}/jarvis`;
+    return `${location.origin}/jarvis/api`;
   }
 
   return `${location.protocol}//${location.hostname}:8018`;
