@@ -10860,6 +10860,10 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
         if handled:
             return True
 
+    handled = await _handle_recent_activity_voice(ws, text)
+    if handled:
+        return True
+
     handled = await _handle_note_trigger(ws, text)
     if handled:
         return True
@@ -14181,6 +14185,15 @@ def _voice_command_config_from_sys_kv(sys_kv: dict[str, str]) -> dict[str, Any]:
     return {
         "enabled": enabled,
         "debounce_ms": debounce_ms,
+        "recent_activity": {
+            "enabled": _parse_bool_cell(_get("voice_cmd.recent_activity.enabled", "true")),
+            "phrases": _split_phrases(
+                _get(
+                    "voice_cmd.recent_activity.phrases",
+                    "recent tasks,recent task,recent activity,what was i doing,what were you doing,เมื่อกี้ทำอะไร,เมื่อกี้ทำอะไรอยู่,ทำอะไรล่าสุด,งานล่าสุด,ล่าสุดทำอะไร",
+                )
+            ),
+        },
         "reload": {
             "enabled": _parse_bool_cell(_get("voice_cmd.reload.enabled", "true")),
             "phrases": _split_phrases(_get("voice_cmd.reload.phrases", "")),
@@ -14215,6 +14228,80 @@ def _voice_command_config_from_sys_kv(sys_kv: dict[str, str]) -> dict[str, Any]:
             "debounce_ms": _safe_int(_get("voice_cmd.github_watch.debounce_ms", str(debounce_ms)), default=debounce_ms),
         },
     }
+
+
+async def _handle_recent_activity_voice(ws: WebSocket, text: str) -> bool:
+    s0 = " ".join(str(text or "").strip().split())
+    if not s0:
+        return False
+
+    try:
+        s_norm = re.sub(r"[^a-z0-9\u0E00-\u0E7F]+", " ", s0.lower()).strip()
+        s_norm = " ".join(s_norm.split())
+    except Exception:
+        s_norm = s0.lower()
+
+    sys_kv = _sys_kv_snapshot()
+    cfg = _voice_command_config_from_sys_kv(sys_kv if isinstance(sys_kv, dict) else {})
+    if not isinstance(cfg, dict) or not cfg.get("enabled"):
+        return False
+
+    ra_cfg = cfg.get("recent_activity") if isinstance(cfg.get("recent_activity"), dict) else {}
+    if not isinstance(ra_cfg, dict) or not ra_cfg.get("enabled"):
+        return False
+
+    phrases = ra_cfg.get("phrases") if isinstance(ra_cfg.get("phrases"), list) else []
+    if not phrases:
+        return False
+
+    matched = False
+    for p in phrases:
+        pl = str(p or "").strip().lower()
+        if not pl:
+            continue
+        try:
+            pl_norm = re.sub(r"[^a-z0-9\u0E00-\u0E7F]+", " ", pl).strip()
+            pl_norm = " ".join(pl_norm.split())
+        except Exception:
+            pl_norm = pl
+        if pl_norm and pl_norm in s_norm:
+            matched = True
+            break
+    if not matched:
+        return False
+
+    lang = str(getattr(ws.state, "user_lang", "") or "").strip() or "en"
+    sid = getattr(ws.state, "session_id", None)
+    turns = await _recent_dialog_load(str(sid) if sid else None)
+    if not isinstance(turns, list):
+        turns = []
+
+    show = turns[-8:] if len(turns) > 8 else turns
+    lines: list[str] = []
+    for t in show:
+        if not isinstance(t, dict):
+            continue
+        role = str(t.get("role") or "").strip().lower()
+        txt = str(t.get("text") or "").strip()
+        if not txt:
+            continue
+        prefix = "you" if role == "user" else "jarvis" if role == "model" else role
+        if lang == "th":
+            prefix = "คุณ" if role == "user" else "จาร์วิส" if role == "model" else prefix
+        lines.append(f"- {prefix}: {txt}")
+
+    out_txt = "\n".join(lines).strip()
+    if not out_txt:
+        out_txt = "(no recent activity)" if lang != "th" else "(ไม่มีประวัติล่าสุด)"
+    else:
+        head = "Recent activity:" if lang != "th" else "กิจกรรมล่าสุด:"
+        out_txt = f"{head}\n{out_txt}"
+
+    try:
+        await _ws_send_json(ws, {"type": "text", "text": out_txt, "instance_id": INSTANCE_ID})
+    except Exception:
+        pass
+    return True
 
 
 @app.get("/config/voice_commands")
