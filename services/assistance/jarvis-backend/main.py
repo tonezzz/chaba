@@ -7851,6 +7851,51 @@ def _text_is_thai(text: str) -> bool:
     return False
 
 
+def _maybe_update_user_lang_from_text(ws: WebSocket, text: str) -> None:
+    # Thai-first UX: default to Thai; only switch to English if the user keeps
+    # using non-Thai input repeatedly.
+    s = str(text or "").strip()
+    if not s:
+        return
+
+    is_th = _text_is_thai(s)
+    cur = str(getattr(ws.state, "user_lang", "") or "").strip().lower() or "th"
+
+    try:
+        non_th = int(getattr(ws.state, "lang_non_th_streak", 0) or 0)
+    except Exception:
+        non_th = 0
+    try:
+        th_streak = int(getattr(ws.state, "lang_th_streak", 0) or 0)
+    except Exception:
+        th_streak = 0
+
+    if is_th:
+        th_streak += 1
+        non_th = 0
+        # Switching back to Thai should be quick.
+        if not cur.startswith("th") and th_streak >= 2:
+            try:
+                ws.state.user_lang = "th"
+            except Exception:
+                pass
+    else:
+        non_th += 1
+        th_streak = 0
+        # Switching away from Thai should require repeated evidence.
+        if not cur.startswith("en") and non_th >= 3:
+            try:
+                ws.state.user_lang = "en"
+            except Exception:
+                pass
+
+    try:
+        ws.state.lang_non_th_streak = non_th
+        ws.state.lang_th_streak = th_streak
+    except Exception:
+        pass
+
+
 def _lang_from_ws(ws: WebSocket) -> str:
     try:
         accept = str(getattr(ws, "headers", {}).get("accept-language") or "")
@@ -7876,7 +7921,7 @@ def _short_greeting_for_now(*, lang: str, now_local: datetime) -> str:
 async def _emit_live_connect_greeting(ws: WebSocket) -> None:
     tz = _get_user_timezone(DEFAULT_USER_ID)
     now_local = datetime.now(tz=timezone.utc).astimezone(tz)
-    lang = str(getattr(ws.state, "user_lang", "") or "").strip() or _lang_from_ws(ws)
+    lang = str(getattr(ws.state, "user_lang", "") or "").strip() or "th"
     msg = _short_greeting_for_now(lang=lang, now_local=now_local)
     try:
         await _ws_send_json(ws, {"type": "text", "text": msg})
@@ -18465,7 +18510,7 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                     # Some Gemini Live server messages only provide a generic transcription object.
                     # Treat it as an input transcript for voice UX fallback triggers.
                     try:
-                        ws.state.user_lang = "th" if _text_is_thai(str(text)) else "en"
+                        _maybe_update_user_lang_from_text(ws, str(text))
                     except Exception:
                         pass
                     try:
@@ -18527,7 +18572,7 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
                     if text:
                         logger.info("live_input_transcript text=%s", str(text)[:300])
                         try:
-                            ws.state.user_lang = "th" if _text_is_thai(str(text)) else "en"
+                            _maybe_update_user_lang_from_text(ws, str(text))
                         except Exception:
                             pass
                         # Voice UX: allow local sub-agents (e.g., reminders) to trigger from
@@ -18722,7 +18767,7 @@ async def ws_live(ws: WebSocket) -> None:
     ws.state.notes_board_task = None
     try:
         try:
-            ws.state.user_lang = _lang_from_ws(ws)
+            ws.state.user_lang = "th"
         except Exception:
             pass
 
@@ -18961,7 +19006,7 @@ async def ws_live(ws: WebSocket) -> None:
         except Exception:
             pass
 
-        lang = str(getattr(ws.state, "user_lang", "") or "").strip() or _lang_from_ws(ws)
+        lang = str(getattr(ws.state, "user_lang", "") or "").strip() or "th"
 
         cached = _get_cached_sheet_memory()
         if isinstance(cached, dict):
