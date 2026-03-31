@@ -19462,6 +19462,29 @@ async def ws_live(ws: WebSocket) -> None:
                     except Exception:
                         pass
 
+                    # If enabled, speak the auto-status message on connect once Gemini Live is ready.
+                    try:
+                        already = bool(getattr(ws.state, "autostatus_spoken", False))
+                    except Exception:
+                        already = False
+                    if not already:
+                        try:
+                            sys_kv = getattr(ws.state, "sys_kv", None)
+                            if feature_enabled(
+                                "ui_autostatus_on_connect",
+                                sys_kv=sys_kv if isinstance(sys_kv, dict) else None,
+                                default=False,
+                            ):
+                                resumed = bool(getattr(ws.state, "session_resume_ok", False))
+                                prefix = "reconnected (resumed session)" if resumed else "connected (new session)"
+                                await _live_say(ws, prefix + "\n" + "\n".join(_status_lines_for_ws(ws)))
+                                try:
+                                    ws.state.autostatus_spoken = True
+                                except Exception:
+                                    pass
+                        except Exception:
+                            pass
+
                     to_gemini = asyncio.create_task(_ws_to_gemini_loop(ws, session), name="ws_to_gemini")
                     to_ws = asyncio.create_task(_safe_gemini_to_ws_loop(ws, session), name="gemini_to_ws")
                     wait_failed: asyncio.Task[bool] | None = None
