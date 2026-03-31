@@ -21,6 +21,12 @@ portainer_endpoint_id="${PORTAINER_ENDPOINT_ID:-2}"
 portainer_stack_name="${PORTAINER_STACK_NAME:-idc1-assistance-dev}"
 portainer_container_name="${PORTAINER_CONTAINER_NAME:-idc1-portainer}"
 
+# Multi-stack mode (comma-separated):
+# - PORTAINER_STACK_NAMES='idc1-assistance-core,idc1-assistance-workers'
+# - COMPOSE_FILES='stacks/idc1-assistance-core/docker-compose.yml,stacks/idc1-assistance-workers/docker-compose.yml'
+portainer_stack_names_csv="${PORTAINER_STACK_NAMES:-}"
+compose_files_csv="${COMPOSE_FILES:-}"
+
 healthcheck_url="${HEALTHCHECK_URL:-http://127.0.0.1:28018/health}"
 healthcheck_container_name="${HEALTHCHECK_CONTAINER_NAME:-${portainer_stack_name}-jarvis-backend-1}"
 
@@ -46,25 +52,41 @@ wait_timeout_seconds="${WAIT_TIMEOUT_SECONDS:-1800}"
 poll_seconds="${POLL_SECONDS:-10}"
 window_seconds="${HEALTH_WINDOW_SECONDS:-120}"
 force_redeploy="${FORCE_REDEPLOY:-0}"
+dry_run="${DRY_RUN:-0}"
 
 echo "[deploy] repo=${repo} workflow=${workflow_name} branch=${branch} compose=${compose_file}"
 
 # Ensure sub-processes (python snippets) see the same compose file.
 export COMPOSE_FILE="${compose_file}"
 
+split_csv() {
+  local s="$1"
+  local -a out=()
+  local item=""
+  IFS=',' read -r -a out <<<"${s}"
+  for item in "${out[@]}"; do
+    item="$(echo "${item}" | xargs)"
+    if [[ -n "${item}" ]]; then
+      echo "${item}"
+    fi
+  done
+}
+
 get_container_id() {
   local service="$1"
+  local stack_name="$2"
+  local compose_path="$3"
   local cid=""
 
   # Prefer docker compose (when containers have compose labels)
-  cid="$(docker compose -f "${compose_file}" ps -q "${service}" 2>/dev/null || true)"
+  cid="$(docker compose -f "${compose_path}" ps -q "${service}" 2>/dev/null || true)"
   if [[ -n "${cid}" ]]; then
     echo "${cid}"
     return 0
   fi
 
   # Fallback: explicit container name convention used by this stack
-  cid="$(docker ps --filter "name=^/${portainer_stack_name}-${service}-1$" --format '{{.ID}}' | head -n 1)"
+  cid="$(docker ps --filter "name=^/${stack_name}-${service}-1$" --format '{{.ID}}' | head -n 1)"
   if [[ -n "${cid}" ]]; then
     echo "${cid}"
     return 0
@@ -74,6 +96,7 @@ get_container_id() {
 }
 
 trigger_portainer_redeploy() {
+  local stack_name="$1"
   if [[ -z "${portainer_api_key}" ]]; then
     echo "[deploy] ERROR: PORTAINER_API_KEY is not set" >&2
     return 1
@@ -101,7 +124,7 @@ trigger_portainer_redeploy() {
     return 1
   fi
 
-  echo "[deploy] Discovering stack id for name=${portainer_stack_name} endpointId=${portainer_endpoint_id}"
+  echo "[deploy] Discovering stack id for name=${stack_name} endpointId=${portainer_endpoint_id}"
   stacks_http="$(curl -sS -k --max-time 30 -o /tmp/portainer_stacks.json -w '%{http_code}' -H "X-API-Key: ${portainer_api_key}" "${base}/api/stacks" || true)"
   if [[ "${stacks_http}" != "200" ]]; then
     echo "[deploy] ERROR: Portainer /api/stacks returned http=${stacks_http}" >&2
@@ -110,7 +133,7 @@ trigger_portainer_redeploy() {
     return 1
   fi
 
-  stack_id="$(STACK_NAME="${portainer_stack_name}" ENDPOINT_ID="${portainer_endpoint_id}" python3 - <<'PY'
+  stack_id="$(STACK_NAME="${stack_name}" ENDPOINT_ID="${portainer_endpoint_id}" python3 - <<'PY'
 import json,os,sys
 
 name=os.environ.get('STACK_NAME','')
@@ -144,7 +167,7 @@ PY
 )"
 
   if [[ -z "${stack_id}" ]]; then
-    echo "[deploy] ERROR: could not find stack id for name=${portainer_stack_name}" >&2
+    echo "[deploy] ERROR: could not find stack id for name=${stack_name}" >&2
     return 1
   fi
 
@@ -399,40 +422,46 @@ while true; do
   sleep "${poll_seconds}"
 done
 
-echo "[deploy] Collecting current running container image IDs..."
-mapfile -t services < <(docker compose -f "${compose_file}" config --services)
+detect_changed_services_for_stack() {
+  local stack_name="$1"
+  local compose_path="$2"
 
-if (( ${#services[@]} == 0 )); then
-  echo "[deploy] ERROR: no services found in compose config" >&2
-  exit 1
-fi
+  echo "[deploy] [${stack_name}] Collecting current running container image IDs..."
+  mapfile -t services < <(docker compose -f "${compose_path}" config --services)
 
-declare -A running_image_by_service
-for s in "${services[@]}"; do
-  cid="$(get_container_id "${s}" || true)"
-  if [[ -z "${cid}" ]]; then
-    running_image_by_service["${s}"]=""
-    continue
+  if (( ${#services[@]} == 0 )); then
+    echo "[deploy] [${stack_name}] ERROR: no services found in compose config" >&2
+    return 2
   fi
-  running_image_by_service["${s}"]="$(docker inspect -f '{{.Image}}' "${cid}" 2>/dev/null || true)"
-done
 
-echo "[deploy] Pulling stack images..."
-docker compose -f "${compose_file}" pull
+  declare -A running_image_by_service
+  for s in "${services[@]}"; do
+    cid="$(get_container_id "${s}" "${stack_name}" "${compose_path}" || true)"
+    if [[ -z "${cid}" ]]; then
+      running_image_by_service["${s}"]=""
+      continue
+    fi
+    running_image_by_service["${s}"]="$(docker inspect -f '{{.Image}}' "${cid}" 2>/dev/null || true)"
+  done
 
-echo "[deploy] Determining which services changed..."
-changed_services=()
-declare -A image_by_service
-while IFS=$'\t' read -r svc_name img_ref; do
-  if [[ -n "${svc_name}" && -n "${img_ref}" ]]; then
-    image_by_service["${svc_name}"]="${img_ref}"
-  fi
-done < <(python3 - <<'PY'
+  echo "[deploy] [${stack_name}] Pulling stack images..."
+  docker compose -f "${compose_path}" pull
+
+  echo "[deploy] [${stack_name}] Determining which services changed..."
+  declare -A image_by_service
+  while IFS=$'\t' read -r svc_name img_ref; do
+    if [[ -n "${svc_name}" && -n "${img_ref}" ]]; then
+      image_by_service["${svc_name}"]="${img_ref}"
+    fi
+  done < <(python3 - <<'PY'
 import json
 import subprocess
 import os
 
-compose_file = os.environ.get("COMPOSE_FILE") or "stacks/idc1-assistance-dev/docker-compose.yml"
+compose_file = os.environ.get("COMPOSE_FILE")
+if not compose_file:
+    raise SystemExit("COMPOSE_FILE not set")
+
 cp = subprocess.run(
     ["docker", "compose", "-f", compose_file, "config", "--format", "json"],
     check=True,
@@ -446,66 +475,125 @@ for name, svc in services.items():
     if img:
         print(f"{name}\t{img}")
 PY
-)
+  )
 
-for s in "${services[@]}"; do
-  image_ref="${image_by_service["${s}"]:-}"
-  if [[ -z "${image_ref}" ]]; then
-    continue
+  changed_services=()
+  for s in "${services[@]}"; do
+    image_ref="${image_by_service["${s}"]:-}"
+    if [[ -z "${image_ref}" ]]; then
+      continue
+    fi
+
+    new_image_id="$(docker image inspect -f '{{.Id}}' "${image_ref}" 2>/dev/null || true)"
+    old_image_id="${running_image_by_service["${s}"]}"
+
+    if [[ -z "${new_image_id}" ]]; then
+      echo "[deploy] [${stack_name}] WARN: could not inspect pulled image for service=${s} image=${image_ref}" >&2
+      continue
+    fi
+
+    if [[ -z "${old_image_id}" ]]; then
+      echo "[deploy] [${stack_name}] Service ${s}: not running -> will start/update (image=${image_ref})"
+      changed_services+=("${s}")
+      continue
+    fi
+
+    if [[ "${new_image_id}" != "${old_image_id}" ]]; then
+      echo "[deploy] [${stack_name}] Service ${s}: CHANGED old=${old_image_id} new=${new_image_id} image=${image_ref}"
+      changed_services+=("${s}")
+    else
+      echo "[deploy] [${stack_name}] Service ${s}: unchanged (image=${image_ref})"
+    fi
+  done
+
+  if [[ "${force_redeploy}" == "1" || "${force_redeploy}" == "true" || "${force_redeploy}" == "yes" ]]; then
+    echo "[deploy] [${stack_name}] FORCE_REDEPLOY is set. Forcing redeploy even if image digests are unchanged."
+    changed_services=("${services[@]}")
   fi
 
-  new_image_id="$(docker image inspect -f '{{.Id}}' "${image_ref}" 2>/dev/null || true)"
-  old_image_id="${running_image_by_service["${s}"]}"
+  printf '%s\n' "${changed_services[@]:-}"
+}
 
-  if [[ -z "${new_image_id}" ]]; then
-    echo "[deploy] WARN: could not inspect pulled image for service=${s} image=${image_ref}" >&2
-    continue
+declare -a stack_names
+declare -a stack_compose_files
+if [[ -n "${portainer_stack_names_csv}" || -n "${compose_files_csv}" ]]; then
+  if [[ -z "${portainer_stack_names_csv}" || -z "${compose_files_csv}" ]]; then
+    echo "[deploy] ERROR: PORTAINER_STACK_NAMES and COMPOSE_FILES must both be set for multi-stack mode" >&2
+    exit 1
   fi
-
-  if [[ -z "${old_image_id}" ]]; then
-    echo "[deploy] Service ${s}: not running -> will start/update (image=${image_ref})"
-    changed_services+=("${s}")
-    continue
+  mapfile -t stack_names < <(split_csv "${portainer_stack_names_csv}")
+  mapfile -t stack_compose_files < <(split_csv "${compose_files_csv}")
+  if (( ${#stack_names[@]} == 0 )); then
+    echo "[deploy] ERROR: no stack names parsed from PORTAINER_STACK_NAMES" >&2
+    exit 1
   fi
-
-  if [[ "${new_image_id}" != "${old_image_id}" ]]; then
-    echo "[deploy] Service ${s}: CHANGED old=${old_image_id} new=${new_image_id} image=${image_ref}"
-    changed_services+=("${s}")
-  else
-    echo "[deploy] Service ${s}: unchanged (image=${image_ref})"
+  if (( ${#stack_names[@]} != ${#stack_compose_files[@]} )); then
+    echo "[deploy] ERROR: PORTAINER_STACK_NAMES count (${#stack_names[@]}) != COMPOSE_FILES count (${#stack_compose_files[@]})" >&2
+    exit 1
   fi
-done
-
-if [[ "${force_redeploy}" == "1" || "${force_redeploy}" == "true" || "${force_redeploy}" == "yes" ]]; then
-  echo "[deploy] FORCE_REDEPLOY is set. Forcing Portainer redeploy even if image digests are unchanged."
-  changed_services=("${services[@]}")
+else
+  stack_names=("${portainer_stack_name}")
+  stack_compose_files=("${compose_file}")
 fi
 
-if (( ${#changed_services[@]} == 0 )); then
-  echo "[deploy] No services changed. Skipping redeploy to minimize downtime."
+echo "[deploy] stack_count=${#stack_names[@]}"
+
+redeployed_any=0
+would_redeploy_any=0
+for i in "${!stack_names[@]}"; do
+  stack_name="${stack_names[$i]}"
+  compose_path="${stack_compose_files[$i]}"
+
+  if [[ ! -f "${compose_path}" ]]; then
+    echo "[deploy] [${stack_name}] ERROR: compose file not found: ${compose_path}" >&2
+    exit 1
+  fi
+
+  export COMPOSE_FILE="${compose_path}"
+
+  mapfile -t changed_services < <(detect_changed_services_for_stack "${stack_name}" "${compose_path}")
+  if (( ${#changed_services[@]} == 0 )); then
+    echo "[deploy] [${stack_name}] No services changed. Skipping redeploy to minimize downtime."
+    continue
+  fi
+
+  would_redeploy_any=1
+
+  echo "[deploy] [${stack_name}] Changes detected. Triggering Portainer-authoritative redeploy."
+  if [[ "${dry_run}" == "1" || "${dry_run}" == "true" || "${dry_run}" == "yes" ]]; then
+    echo "[deploy] [${stack_name}] DRY_RUN is set. Skipping Portainer redeploy."
+  else
+    if ! trigger_portainer_redeploy "${stack_name}"; then
+      exit 1
+    fi
+    redeployed_any=1
+  fi
+
+  echo "[deploy] [${stack_name}] Verifying container digests..."
+  for s in "${changed_services[@]}"; do
+    cid="$(get_container_id "${s}" "${stack_name}" "${compose_path}" || true)"
+    if [[ -z "${cid}" ]]; then
+      echo "[deploy] [${stack_name}] WARN: service ${s} has no container after deploy" >&2
+      continue
+    fi
+    started="$(docker inspect -f '{{.State.StartedAt}}' "${cid}" 2>/dev/null || true)"
+    image="$(docker inspect -f '{{.Config.Image}}' "${cid}" 2>/dev/null || true)"
+    digest="$(docker inspect -f '{{.Image}}' "${cid}" 2>/dev/null || true)"
+    echo "[deploy] [${stack_name}] ${s}: started=${started} image=${image} digest=${digest}"
+  done
+done
+
+if (( would_redeploy_any == 0 )); then
+  echo "[deploy] No changes detected in any stack. Skipping redeploy to minimize downtime."
   exit 0
 fi
 
-echo "[deploy] Changes detected. Triggering Portainer-authoritative redeploy."
-if ! trigger_portainer_redeploy; then
-  exit 1
+if (( redeployed_any == 0 )) && [[ "${dry_run}" == "1" || "${dry_run}" == "true" || "${dry_run}" == "yes" ]]; then
+  echo "[deploy] DRY_RUN complete (changes were detected, but no redeploy was executed)."
+  exit 0
 fi
 
-echo "[deploy] Verifying container digests..."
-for s in "${changed_services[@]}"; do
-  cid="$(get_container_id "${s}" || true)"
-  if [[ -z "${cid}" ]]; then
-    echo "[deploy] WARN: service ${s} has no container after deploy" >&2
-    continue
-  fi
-  started="$(docker inspect -f '{{.State.StartedAt}}' "${cid}" 2>/dev/null || true)"
-  image="$(docker inspect -f '{{.Config.Image}}' "${cid}" 2>/dev/null || true)"
-  digest="$(docker inspect -f '{{.Image}}' "${cid}" 2>/dev/null || true)"
-  echo "[deploy] ${s}: started=${started} image=${image} digest=${digest}"
-done
-
 echo "[deploy] Health check (best-effort)..."
-# If it exists, check it.
 if curl -fsS "${healthcheck_url}" >/dev/null 2>&1; then
   echo "[deploy] jarvis-backend health OK"
 else
