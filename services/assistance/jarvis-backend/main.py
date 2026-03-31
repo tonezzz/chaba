@@ -157,11 +157,46 @@ def _strip_html_tags(s: str) -> str:
         txt = _html.unescape(txt)
     except Exception:
         pass
+
     try:
         txt = re.sub(r"\s+", " ", txt).strip()
     except Exception:
         txt = txt.strip()
     return txt
+
+
+def _status_lines_for_ws(ws: WebSocket) -> list[str]:
+    last_prog = getattr(ws.state, "last_progress", None)
+    last_ui = getattr(ws.state, "last_ui_action", None)
+
+    lines: list[str] = []
+    if isinstance(last_prog, dict) and str(last_prog.get("message") or "").strip():
+        pmsg = str(last_prog.get("message") or "").strip()
+        ptool = str(last_prog.get("tool") or "").strip()
+        pphase = str(last_prog.get("phase") or "").strip()
+        step = last_prog.get("step")
+        total = last_prog.get("total")
+        step_txt = f" ({step}/{total})" if isinstance(step, int) and isinstance(total, int) and total else ""
+        head = f"progress: {pmsg}{step_txt}"
+        if ptool:
+            head = f"progress[{ptool}/{pphase}]: {pmsg}{step_txt}" if pphase else f"progress[{ptool}]: {pmsg}{step_txt}"
+        lines.append(head)
+
+    if isinstance(last_ui, dict) and str(last_ui.get("tool") or "").strip():
+        label = str(last_ui.get("label") or "").strip()
+        title = str(last_ui.get("title") or "").strip()
+        tool = str(last_ui.get("tool") or "").strip()
+        hint = f"next_action: {tool}"
+        if label and title:
+            hint = f"next_action: {label} ({title})"
+        elif title:
+            hint = f"next_action: {tool} ({title})"
+        lines.append(hint)
+        lines.append("say 'action' to run it")
+
+    if not lines:
+        lines = ["idle", "say what you want to do, or ask for current news"]
+    return lines
 
 
 def _is_low_quality_news_description(*, title: str, description: str) -> bool:
@@ -504,6 +539,12 @@ async def _ws_emit_session_resume(ws: WebSocket) -> None:
         sid = None
     turns = await _recent_dialog_load(str(sid) if sid else None)
     ok = bool(turns)
+
+    try:
+        ws.state.session_resume_ok = bool(ok)
+        ws.state.session_resume_turns = len(turns) if isinstance(turns, list) else 0
+    except Exception:
+        pass
 
     # Keep the resume payload small: omit per-turn trace_id (debug-only).
     safe_turns: list[dict[str, Any]] = []
@@ -18901,6 +18942,22 @@ async def ws_live(ws: WebSocket) -> None:
                     "knowledge_cached": bool(_get_cached_sheet_knowledge()),
                 },
             )
+        except Exception:
+            pass
+
+        # Optional: auto-emit a short status summary after (re)connect.
+        try:
+            if feature_enabled("ui_autostatus_on_connect", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=False):
+                resumed = bool(getattr(ws.state, "session_resume_ok", False))
+                prefix = "reconnected (resumed session)" if resumed else "connected (new session)"
+                await _ws_send_json(
+                    ws,
+                    {
+                        "type": "text",
+                        "text": prefix + "\n" + "\n".join(_status_lines_for_ws(ws)),
+                        "instance_id": INSTANCE_ID,
+                    },
+                )
         except Exception:
             pass
 
