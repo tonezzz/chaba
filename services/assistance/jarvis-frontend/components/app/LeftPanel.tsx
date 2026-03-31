@@ -120,7 +120,7 @@ export function LeftPanel(props: {
   const readinessText = React.useMemo(() => {
     const p = String(readinessPhase || "").trim();
     if (!p) return "";
-    const base = `readiness: ${p}`;
+    const base = `rdy:${p}`;
     const since = Number(readinessSinceMs || 0);
     if (!since) return base;
     const elapsed = Math.max(0, Date.now() - since);
@@ -221,7 +221,10 @@ export function LeftPanel(props: {
           </div>
 
           {!!readinessText && (
-            <div className="mt-2 text-[11px] font-mono text-slate-400 border border-slate-800 rounded-lg bg-slate-950/20 px-2 py-1">
+            <div
+              className="mt-1 text-[10px] leading-4 font-mono text-slate-400 px-1.5 py-0.5 rounded bg-slate-950/20 truncate"
+              title={readinessText}
+            >
               {readinessText}
             </div>
           )}
