@@ -32,7 +32,10 @@ Set these on the Docker host (do not commit):
 export PORTAINER_URL='http://127.0.0.1:9000'
 export PORTAINER_API_KEY='ptr_...'
 export PORTAINER_ENDPOINT_ID='2'
-export PORTAINER_STACK_NAME='idc1-assistance'
+export PORTAINER_STACK_NAMES='idc1-assistance-infra,idc1-assistance-mcp,idc1-assistance-core,idc1-assistance-workers'
+export COMPOSE_FILES='stacks/idc1-assistance-infra/docker-compose.yml,stacks/idc1-assistance-mcp/docker-compose.yml,stacks/idc1-assistance-core/docker-compose.yml,stacks/idc1-assistance-workers/docker-compose.yml'
+export HEALTHCHECK_URL='http://127.0.0.1:18018/health'
+export HEALTHCHECK_CONTAINER_NAME='idc1-assistance-core-jarvis-backend-1'
 ```
 
 Notes:

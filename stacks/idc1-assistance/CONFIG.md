@@ -41,17 +41,23 @@ Notes:
 
 ## Ports (host binds)
 
-From `stacks/idc1-assistance/docker-compose.yml`:
+From split stacks:
 
 - `127.0.0.1:18018` -> `jarvis-backend:8018`
 - `127.0.0.1:18080` -> Jarvis frontend container
 - `127.0.0.1:18030` -> `deep-research-worker:8030`
 - `127.0.0.1:3051` -> `mcp-bundle:3050`
+- `127.0.0.1:3053` -> `mcp-image-pipeline:3050`
+- `127.0.0.1:18182` -> `mcp-ws-gateway:8182`
+- `127.0.0.1:18183` -> `mcp-ws-gateway-portainer:8182`
 
 ## Source-of-truth locations
 
-- Compose:
-  - `stacks/idc1-assistance/docker-compose.yml`
+- Compose (split stacks):
+  - `stacks/idc1-assistance-infra/docker-compose.yml`
+  - `stacks/idc1-assistance-mcp/docker-compose.yml`
+  - `stacks/idc1-assistance-core/docker-compose.yml`
+  - `stacks/idc1-assistance-workers/docker-compose.yml`
 - Env templates:
   - `stacks/idc1-assistance/.env.example`
   - `stacks/idc1-assistance/.env.local` (developer convenience; do not commit secrets)

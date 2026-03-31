@@ -37,13 +37,14 @@ Definition:
 `action pc1` / `action idc1` (hard gates):
 1. **Machine intent must be explicit**
    - Allowed: `action pc1`, `action idc1`.
-2. **Branch must match machine**
-   - `pc1` expects: `work/idc1-assistance/pc1`
-   - `idc1` expects: `work/idc1-assistance/idc1`
+2. **Branch must be explicit (deploy safety)**
+   - If you intend to trigger a deploy (CI publish + Portainer redeploy), you must be on: `idc1-assistance`.
+   - If you intend to do local work only, stay on a `work/...` branch and merge via PR.
 3. **Working tree must be clean**
    - If dirty: stop and choose one: commit+push, stash, or discard.
 4. **Integration branch safety**
    - If on `idc1-assistance`: stop unless you explicitly intend to do deploy-triggering work.
+   - If you are about to redeploy, confirm Portainer stacks reference: `refs/heads/idc1-assistance`.
 
 Once gates pass:
 - **I will run:** the current `TODO.md#Now` item (currently `TODO-NOW-015`).
@@ -148,7 +149,7 @@ Preferred reset commands:
 - `action pc1`
   - Expected branch: `work/idc1-assistance/pc1`
 - `action idc1`
-  - Expected branch: `work/idc1-assistance/idc1`
+  - Expected branch: `work/idc1-assistance/idc1` (or `idc1-assistance` if you are in deploy mode)
 
 When you use a reset command, do this before anything else:
 1. Run the branch sanity check.
@@ -471,11 +472,14 @@ Run this after you `git push`.
   - Backend health: `http://127.0.0.1:18018/health`
   - Frontend UI: `http://127.0.0.1:18080/jarvis/`
   - Deep-research-worker: `http://127.0.0.1:18030/health` (if exposed by the worker)
-- **Host port binds (from `stacks/idc1-assistance/docker-compose.yml`):**
+- **Host port binds (split stacks):**
   - `127.0.0.1:18018` -> `jarvis-backend:8018`
   - `127.0.0.1:18080` -> Jarvis frontend container
   - `127.0.0.1:18030` -> `deep-research-worker:8030`
   - `127.0.0.1:3051` -> `mcp-bundle:3050`
+  - `127.0.0.1:3053` -> `mcp-image-pipeline:3050`
+  - `127.0.0.1:18182` -> `mcp-ws-gateway:8182`
+  - `127.0.0.1:18183` -> `mcp-ws-gateway-portainer:8182`
 - **Key health/version endpoints:**
   - `GET /health` (includes `build.git_sha` / `build.image_tag` when configured)
   - `GET /status` (includes uptime + optional container list)
@@ -525,6 +529,9 @@ Memory write gating:
   - If you say: `action`
     - I will run: **Now (what to do next)**
     - Output: snapshot summary + memo text (and I will append the memo if allowed)
+
+Smoke check:
+- `bash scripts/idc1-assistance-smoke.sh`
 
 ## Guardrails (read first)
 - **WIP limit = 1**
