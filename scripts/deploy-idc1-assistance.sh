@@ -426,7 +426,7 @@ detect_changed_services_for_stack() {
   local stack_name="$1"
   local compose_path="$2"
 
-  echo "[deploy] [${stack_name}] Collecting current running container image IDs..."
+  echo "[deploy] [${stack_name}] Collecting current running container image IDs..." >&2
   mapfile -t services < <(docker compose -f "${compose_path}" config --services)
 
   if (( ${#services[@]} == 0 )); then
@@ -444,10 +444,10 @@ detect_changed_services_for_stack() {
     running_image_by_service["${s}"]="$(docker inspect -f '{{.Image}}' "${cid}" 2>/dev/null || true)"
   done
 
-  echo "[deploy] [${stack_name}] Pulling stack images..."
+  echo "[deploy] [${stack_name}] Pulling stack images..." >&2
   docker compose -f "${compose_path}" pull
 
-  echo "[deploy] [${stack_name}] Determining which services changed..."
+  echo "[deploy] [${stack_name}] Determining which services changed..." >&2
   declare -A image_by_service
   while IFS=$'\t' read -r svc_name img_ref; do
     if [[ -n "${svc_name}" && -n "${img_ref}" ]]; then
@@ -493,21 +493,21 @@ PY
     fi
 
     if [[ -z "${old_image_id}" ]]; then
-      echo "[deploy] [${stack_name}] Service ${s}: not running -> will start/update (image=${image_ref})"
+      echo "[deploy] [${stack_name}] Service ${s}: not running -> will start/update (image=${image_ref})" >&2
       changed_services+=("${s}")
       continue
     fi
 
     if [[ "${new_image_id}" != "${old_image_id}" ]]; then
-      echo "[deploy] [${stack_name}] Service ${s}: CHANGED old=${old_image_id} new=${new_image_id} image=${image_ref}"
+      echo "[deploy] [${stack_name}] Service ${s}: CHANGED old=${old_image_id} new=${new_image_id} image=${image_ref}" >&2
       changed_services+=("${s}")
     else
-      echo "[deploy] [${stack_name}] Service ${s}: unchanged (image=${image_ref})"
+      echo "[deploy] [${stack_name}] Service ${s}: unchanged (image=${image_ref})" >&2
     fi
   done
 
   if [[ "${force_redeploy}" == "1" || "${force_redeploy}" == "true" || "${force_redeploy}" == "yes" ]]; then
-    echo "[deploy] [${stack_name}] FORCE_REDEPLOY is set. Forcing redeploy even if image digests are unchanged."
+    echo "[deploy] [${stack_name}] FORCE_REDEPLOY is set. Forcing redeploy even if image digests are unchanged." >&2
     changed_services=("${services[@]}")
   fi
 
