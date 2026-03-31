@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Default to the dev stack because prod is Git-backed and may require manual UI changes.
+# Default to the 4-stack split compose files.
 # Override via COMPOSE_FILE/PORTAINER_STACK_NAME/HEALTHCHECK_URL when needed.
-compose_file="${COMPOSE_FILE:-stacks/idc1-assistance-dev/docker-compose.yml}"
+compose_file="${COMPOSE_FILE:-stacks/idc1-assistance-core/docker-compose.yml}"
 repo="tonezzz/chaba"
 workflow_name="Publish (idc1-assistance)"
 branch="idc1-assistance"
@@ -18,7 +18,7 @@ branch="idc1-assistance"
 portainer_url="${PORTAINER_URL:-}"
 portainer_api_key="${PORTAINER_API_KEY:-}"
 portainer_endpoint_id="${PORTAINER_ENDPOINT_ID:-2}"
-portainer_stack_name="${PORTAINER_STACK_NAME:-idc1-assistance-dev}"
+portainer_stack_name="${PORTAINER_STACK_NAME:-idc1-assistance-core}"
 portainer_container_name="${PORTAINER_CONTAINER_NAME:-idc1-portainer}"
 
 # Multi-stack mode (comma-separated):
@@ -27,8 +27,17 @@ portainer_container_name="${PORTAINER_CONTAINER_NAME:-idc1-portainer}"
 portainer_stack_names_csv="${PORTAINER_STACK_NAMES:-}"
 compose_files_csv="${COMPOSE_FILES:-}"
 
-healthcheck_url="${HEALTHCHECK_URL:-http://127.0.0.1:28018/health}"
-healthcheck_container_name="${HEALTHCHECK_CONTAINER_NAME:-${portainer_stack_name}-jarvis-backend-1}"
+# If neither multi-stack env vars nor explicit single-stack overrides are set,
+# default to the 4-stack split layout.
+if [[ -z "${portainer_stack_names_csv}" && -z "${compose_files_csv}" ]]; then
+  if [[ -z "${COMPOSE_FILE+x}" && -z "${PORTAINER_STACK_NAME+x}" ]]; then
+    portainer_stack_names_csv="idc1-assistance-infra,idc1-assistance-mcp,idc1-assistance-core,idc1-assistance-workers"
+    compose_files_csv="stacks/idc1-assistance-infra/docker-compose.yml,stacks/idc1-assistance-mcp/docker-compose.yml,stacks/idc1-assistance-core/docker-compose.yml,stacks/idc1-assistance-workers/docker-compose.yml"
+  fi
+fi
+
+healthcheck_url="${HEALTHCHECK_URL:-http://127.0.0.1:18018/health}"
+healthcheck_container_name="${HEALTHCHECK_CONTAINER_NAME:-idc1-assistance-core-jarvis-backend-1}"
 
 # Convenience: allow using the same token used by the local Portainer MCP stack.
 # - `PORTAINER_TOKEN` is treated as an alias of `PORTAINER_API_KEY`.

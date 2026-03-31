@@ -73,8 +73,11 @@ curl -sS -X POST https://assistance.idc1.surf-thailand.com/jarvis/api/jarvis/mem
 
 ## Source-of-truth locations
 
-- Stack compose:
-  - `stacks/idc1-assistance/docker-compose.yml`
+- Stack compose (split stacks):
+  - `stacks/idc1-assistance-infra/docker-compose.yml`
+  - `stacks/idc1-assistance-mcp/docker-compose.yml`
+  - `stacks/idc1-assistance-core/docker-compose.yml`
+  - `stacks/idc1-assistance-workers/docker-compose.yml`
 - Stack env template:
   - `stacks/idc1-assistance/.env.example`
 - Portainer control-plane + MCP config:

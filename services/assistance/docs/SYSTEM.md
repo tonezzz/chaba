@@ -164,7 +164,12 @@ Environment fallbacks:
 Notes:
 
 - `portainer.token` is sent as `X-API-Key` and should be treated as a secret.
-- `portainer.stack_name` should match the compose project / stack namespace label on containers (commonly `idc1-assistance`).
+- `portainer.stack_name` should match the compose project / stack namespace label on containers.
+  - Split-stack deployments commonly use one of:
+    - `idc1-assistance-core`
+    - `idc1-assistance-infra`
+    - `idc1-assistance-mcp`
+    - `idc1-assistance-workers`
 
 ## Backend reload flow (diagram)
 

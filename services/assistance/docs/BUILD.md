@@ -13,7 +13,7 @@ See also:
 
 - Push to branch `idc1-assistance`.
 - Wait for GitHub Actions to publish new GHCR images.
-- In Portainer, redeploy the stack with **pull latest images** enabled.
+- In Portainer, redeploy the split stacks with **pull latest images** enabled.
 - Verify the running container uses a new **IMAGE ID**.
 
 Notes:
@@ -52,7 +52,7 @@ Application code lives under:
 - `services/assistance/mcp-*`
 
 Deployment configuration lives under:
-- `stacks/idc1-assistance/`
+- `stacks/idc1-assistance-*/`
 
 ### 2) Commit + push to `idc1-assistance`
 
@@ -111,8 +111,7 @@ If the build fails:
 On the host (or wherever Docker CLI is available):
 
 ```bash
-docker compose -f stacks/idc1-assistance/docker-compose.yml ps
-docker compose -f stacks/idc1-assistance/docker-compose.yml images
+bash scripts/idc1-assistance-smoke.sh
 ```
 
 You want to see:
@@ -125,20 +124,20 @@ If `idc1-assistance` is deployed as a **Portainer git-backed stack**, treat Port
 - Stack environment variables (secrets like OAuth client IDs)
 
 Common trap:
-- Running `docker compose -f stacks/idc1-assistance/docker-compose.yml up ...` locally can create containers that look identical but do **not** include the Portainer stack env.
-- You can end up with multiple `mcp-bundle` containers (example: `idc1-assistance-mcp-bundle-1` plus a separate `idc1-portainer-mcp-bundle-1`).
+- Running local `docker compose ... up` can create containers that look identical but do **not** include the Portainer stack env.
+- You can end up with multiple `mcp-bundle` containers (example: `idc1-assistance-mcp-mcp-bundle-1` plus a separate `idc1-portainer-mcp-bundle-1`).
 
 When debugging "missing env" (example: `missing_google_tasks_client_id`):
 
 ```bash
 docker ps --format '{{.Names}}' | grep -E 'mcp-bundle' || true
-docker exec -t idc1-assistance-mcp-bundle-1 sh -lc 'echo "GOOGLE_TASKS_CLIENT_ID.len=${#GOOGLE_TASKS_CLIENT_ID}"'
+docker exec -t idc1-assistance-mcp-mcp-bundle-1 sh -lc 'echo "GOOGLE_TASKS_CLIENT_ID.len=${#GOOGLE_TASKS_CLIENT_ID}"'
 ```
 
 To run one-time OAuth bootstrap inside the running `mcp-bundle`:
 
 ```bash
-docker exec -t idc1-assistance-mcp-bundle-1 node /app/mcp-servers/mcp-google-tasks/server.js auth
+docker exec -t idc1-assistance-mcp-mcp-bundle-1 node /app/mcp-servers/mcp-google-tasks/server.js auth
 ```
 
 ### B) Confirm frontend bundle contains the fix you expect
@@ -146,8 +145,8 @@ docker exec -t idc1-assistance-mcp-bundle-1 node /app/mcp-servers/mcp-google-tas
 When debugging “frontend still old”, it’s often easier to grep the served JS bundle than to guess.
 
 ```bash
-docker compose -f stacks/idc1-assistance/docker-compose.yml exec -T jarvis-frontend sh -lc 'ls -1 /usr/share/nginx/html/assets | head'
-docker compose -f stacks/idc1-assistance/docker-compose.yml exec -T jarvis-frontend sh -lc 'grep -R "Do not treat these as transport disconnects" -n /usr/share/nginx/html 2>/dev/null | head'
+docker compose -f stacks/idc1-assistance-core/docker-compose.yml exec -T jarvis-frontend sh -lc 'ls -1 /usr/share/nginx/html/assets | head'
+docker compose -f stacks/idc1-assistance-core/docker-compose.yml exec -T jarvis-frontend sh -lc 'grep -R "Do not treat these as transport disconnects" -n /usr/share/nginx/html 2>/dev/null | head'
 ```
 
 If grep returns nothing:
@@ -157,7 +156,7 @@ If grep returns nothing:
 
 ```bash
 curl -sS http://127.0.0.1:18018/health
-docker compose -f stacks/idc1-assistance/docker-compose.yml logs --tail=200 jarvis-backend
+docker compose -f stacks/idc1-assistance-core/docker-compose.yml logs --tail=200 jarvis-backend
 ```
 
 ### D) Collect debug evidence (recommended)
