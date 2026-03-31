@@ -53,6 +53,7 @@ poll_seconds="${POLL_SECONDS:-10}"
 window_seconds="${HEALTH_WINDOW_SECONDS:-120}"
 force_redeploy="${FORCE_REDEPLOY:-0}"
 dry_run="${DRY_RUN:-0}"
+no_pull="${NO_PULL:-0}"
 
 echo "[deploy] repo=${repo} workflow=${workflow_name} branch=${branch} compose=${compose_file}"
 
@@ -444,8 +445,12 @@ detect_changed_services_for_stack() {
     running_image_by_service["${s}"]="$(docker inspect -f '{{.Image}}' "${cid}" 2>/dev/null || true)"
   done
 
-  echo "[deploy] [${stack_name}] Pulling stack images..." >&2
-  docker compose -f "${compose_path}" pull
+  if [[ "${no_pull}" == "1" || "${no_pull}" == "true" || "${no_pull}" == "yes" ]]; then
+    echo "[deploy] [${stack_name}] NO_PULL is set. Skipping image pull." >&2
+  else
+    echo "[deploy] [${stack_name}] Pulling stack images..." >&2
+    docker compose -f "${compose_path}" pull
+  fi
 
   echo "[deploy] [${stack_name}] Determining which services changed..." >&2
   declare -A image_by_service
