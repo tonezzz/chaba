@@ -19461,8 +19461,11 @@ async def ws_live(ws: WebSocket) -> None:
                         await _emit_live_connect_greeting(ws)
                     except Exception:
                         pass
+                    to_gemini = asyncio.create_task(_ws_to_gemini_loop(ws, session), name="ws_to_gemini")
+                    to_ws = asyncio.create_task(_safe_gemini_to_ws_loop(ws, session), name="gemini_to_ws")
+                    wait_failed: asyncio.Task[bool] | None = None
 
-                    # If enabled, speak the auto-status message on connect once Gemini Live is ready.
+                    # If enabled, speak the connect greeting + auto-status message (after gemini_to_ws is running).
                     try:
                         already = bool(getattr(ws.state, "autostatus_spoken", False))
                     except Exception:
@@ -19475,19 +19478,19 @@ async def ws_live(ws: WebSocket) -> None:
                                 sys_kv=sys_kv if isinstance(sys_kv, dict) else None,
                                 default=False,
                             ):
+                                tz = _get_user_timezone(DEFAULT_USER_ID)
+                                now_local = datetime.now(tz=timezone.utc).astimezone(tz)
+                                lang = str(getattr(ws.state, "user_lang", "") or "").strip() or "th"
+                                greet = _short_greeting_for_now(lang=lang, now_local=now_local)
                                 resumed = bool(getattr(ws.state, "session_resume_ok", False))
                                 prefix = "reconnected (resumed session)" if resumed else "connected (new session)"
-                                await _live_say(ws, prefix + "\n" + "\n".join(_status_lines_for_ws(ws)))
+                                await _live_say(ws, greet + "\n" + prefix + "\n" + "\n".join(_status_lines_for_ws(ws)))
                                 try:
                                     ws.state.autostatus_spoken = True
                                 except Exception:
                                     pass
                         except Exception:
                             pass
-
-                    to_gemini = asyncio.create_task(_ws_to_gemini_loop(ws, session), name="ws_to_gemini")
-                    to_ws = asyncio.create_task(_safe_gemini_to_ws_loop(ws, session), name="gemini_to_ws")
-                    wait_failed: asyncio.Task[bool] | None = None
 
                     try:
                         # Either the client disconnects (ws_to_gemini finishes) or Gemini fails.
