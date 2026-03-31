@@ -35,6 +35,7 @@ export default function App() {
   });
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
   const [showDebugLogs, setShowDebugLogs] = useState(false);
+  const showDebugLogsRef = useRef<boolean>(false);
   const liveService = useRef<LiveService | null>(null);
   const [activeMedia, setActiveMedia] = useState<MessageLog | null>(null);
   const [isTalking, setIsTalking] = useState(false);
