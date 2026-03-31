@@ -544,6 +544,7 @@ export class LiveService {
   public onStateChange: (state: ConnectionState) => void = () => {};
   public onMessage: (msg: MessageLog) => void = () => {};
   public onPendingEvent: (ev: any) => void = () => {};
+  public onReadiness: (ev: { phase: string; detail?: any; ts: number }) => void = () => {};
   public onVolume: (vol: number) => void = () => {};
   public onCarsIngestResult: (ev: CarsIngestResult) => void = () => {};
 
@@ -673,6 +674,7 @@ export class LiveService {
 				}, 25000);
 			} catch {
 			}
+        this.onReadiness({ phase: "ws_open", ts: Date.now() });
         this.onMessage({
           id: `${Date.now()}_ws_open`,
           role: "system",
@@ -714,6 +716,11 @@ export class LiveService {
           }
         }
         this.onStateChange(ConnectionState.DISCONNECTED);
+        try {
+          this.onReadiness({ phase: "ws_closed", detail: { code: ev.code, reason: ev.reason, wasClean: ev.wasClean }, ts: Date.now() });
+        } catch {
+          // ignore
+        }
         if (!quiet) {
           this.onMessage({
             id: `${Date.now()}_ws_close`,
@@ -733,6 +740,11 @@ export class LiveService {
 			}
         console.error(err);
         this.onStateChange(ConnectionState.ERROR);
+        try {
+          this.onReadiness({ phase: "ws_error", ts: Date.now() });
+        } catch {
+          // ignore
+        }
         this.onMessage({
           id: `${Date.now()}_ws_error`,
           role: "system",
@@ -845,6 +857,16 @@ export class LiveService {
       client_tag: message?.client_tag != null ? String(message.client_tag) : undefined,
       client_id: message?.client_id != null ? String(message.client_id) : undefined,
     };
+
+		if (message?.type === "readiness") {
+			try {
+				const phase = message?.phase != null ? String(message.phase) : "";
+				this.onReadiness({ phase, detail: message, ts: Date.now() });
+			} catch {
+				// ignore
+			}
+			return;
+		}
 
     if (message?.type === "session_resume") {
       const ok = message?.ok === true;

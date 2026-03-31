@@ -18418,6 +18418,11 @@ async def _gemini_to_ws_loop(ws: WebSocket, session: Any) -> None:
 async def ws_live(ws: WebSocket) -> None:
     await ws.accept()
 
+    try:
+        await _ws_send_json(ws, {"type": "readiness", "phase": "transport_connected", "instance_id": INSTANCE_ID})
+    except Exception:
+        pass
+
     user_id = DEFAULT_USER_ID
     _ws_by_user.setdefault(user_id, set()).add(ws)
 
@@ -18710,6 +18715,23 @@ async def ws_live(ws: WebSocket) -> None:
         except Exception:
             pass
 
+        try:
+            await _ws_send_json(
+                ws,
+                {
+                    "type": "readiness",
+                    "phase": "bootstrap_ready",
+                    "instance_id": INSTANCE_ID,
+                    "sys_kv_loaded": isinstance(sys_kv, dict) and bool(sys_kv),
+                    "system_sheet_valid": True,
+                    "macros_reloaded": macros_reloaded,
+                    "memory_cached": bool(_get_cached_sheet_memory()),
+                    "knowledge_cached": bool(_get_cached_sheet_knowledge()),
+                },
+            )
+        except Exception:
+            pass
+
         lang = str(getattr(ws.state, "user_lang", "") or "").strip() or _lang_from_ws(ws)
 
         cached = _get_cached_sheet_memory()
@@ -18719,6 +18741,22 @@ async def ws_live(ws: WebSocket) -> None:
         cached_k = _get_cached_sheet_knowledge()
         if isinstance(cached_k, dict):
             _apply_cached_sheet_knowledge_to_ws(ws, cached_k)
+
+        try:
+            mem_items = getattr(ws.state, "memory_items", None)
+            know_items = getattr(ws.state, "knowledge_items", None)
+            await _ws_send_json(
+                ws,
+                {
+                    "type": "readiness",
+                    "phase": "context_cached",
+                    "instance_id": INSTANCE_ID,
+                    "memory_n": len(mem_items) if isinstance(mem_items, list) else 0,
+                    "knowledge_n": len(know_items) if isinstance(know_items, list) else 0,
+                },
+            )
+        except Exception:
+            pass
 
         # Cache-first mode: do not auto-load sheets here. Use `Reload System`.
         # Emit status based on cache only, but suppress duplicates on rapid reconnects.
@@ -19125,6 +19163,19 @@ async def ws_live(ws: WebSocket) -> None:
                         ws.state.local_only = False
                     except Exception:
                         pass
+
+                    try:
+                        await _ws_send_json(
+                            ws,
+                            {
+                                "type": "readiness",
+                                "phase": "model_ready",
+                                "instance_id": INSTANCE_ID,
+                                "model": str(model or ""),
+                            },
+                        )
+                    except Exception:
+                        pass
                     await _ws_send_json(
                         ws,
                         {
@@ -19207,6 +19258,11 @@ async def ws_live(ws: WebSocket) -> None:
                     pass
                 try:
                     ws.state.gemini_disconnected_at_ms = int(time.time() * 1000)
+                except Exception:
+                    pass
+
+                try:
+                    await _ws_send_json(ws, {"type": "readiness", "phase": "model_disconnected", "instance_id": INSTANCE_ID})
                 except Exception:
                     pass
 

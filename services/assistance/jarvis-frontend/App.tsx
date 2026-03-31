@@ -44,6 +44,9 @@ export default function App() {
   const [wsLogText, setWsLogText] = useState<string>("");
   const [wsLogErr, setWsLogErr] = useState<string>("");
 
+  const [readinessPhase, setReadinessPhase] = useState<string>("");
+  const [readinessSinceMs, setReadinessSinceMs] = useState<number>(0);
+
   const [composerText, setComposerText] = useState<string>("");
   const [seqNotes, setSeqNotes] = useState<string>("");
   const [seqCompletedNotes, setSeqCompletedNotes] = useState<string>("");
@@ -295,6 +298,16 @@ export default function App() {
     liveService.current = new LiveService();
     liveService.current.onStateChange = setState;
     liveService.current.onVolume = setVolume;
+    liveService.current.onReadiness = (ev) => {
+      try {
+        const phase = String(ev?.phase || "").trim();
+        if (!phase) return;
+        setReadinessPhase(phase);
+        setReadinessSinceMs((prev) => (prev ? prev : typeof ev?.ts === "number" ? ev.ts : Date.now()));
+      } catch {
+        // ignore
+      }
+    };
     liveService.current.onPendingEvent = (ev) => {
       try {
         const event = String((ev as any)?.event || "").trim();
@@ -390,6 +403,13 @@ export default function App() {
       }
     };
   }, [hasKey, appendUiLogEntry, previewPending, refreshPending, scheduleUiLogFlush]);
+
+  useEffect(() => {
+    if (state !== ConnectionState.CONNECTED) {
+      setReadinessPhase("");
+      setReadinessSinceMs(0);
+    }
+  }, [state]);
 
   useAutoScroll(logScrollRef, logStickToBottomRef, [messages, showDebugLogs]);
   useAutoScroll(outputScrollRef, outputStickToBottomRef, [outputDialog]);
@@ -1239,6 +1259,8 @@ export default function App() {
         setStatusDetailsOpen={setStatusDetailsOpen}
         systemCounts={systemCounts}
         audioStatus={audioStatus}
+        readinessPhase={readinessPhase}
+        readinessSinceMs={readinessSinceMs}
         depsStatusError={depsStatusError}
         depsStatus={depsStatus}
         setDepsStatusRefreshNonce={setDepsStatusRefreshNonce}
