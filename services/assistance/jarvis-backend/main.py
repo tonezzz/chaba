@@ -18943,6 +18943,15 @@ async def ws_live(ws: WebSocket) -> None:
             except Exception:
                 macros_reloaded = False
 
+        try:
+            ui_autostatus_enabled = feature_enabled(
+                "ui_autostatus_on_connect",
+                sys_kv=sys_kv if isinstance(sys_kv, dict) else None,
+                default=False,
+            )
+        except Exception:
+            ui_autostatus_enabled = False
+
         now_utc = datetime.now(tz=timezone.utc).replace(microsecond=0)
         try:
             tz = _get_user_timezone(DEFAULT_USER_ID)
@@ -18968,6 +18977,7 @@ async def ws_live(ws: WebSocket) -> None:
                     "macros_reloaded": macros_reloaded,
                     "memory_cached": bool(_get_cached_sheet_memory()),
                     "knowledge_cached": bool(_get_cached_sheet_knowledge()),
+                    "ui_autostatus_on_connect_enabled": bool(ui_autostatus_enabled),
                 },
             )
         except Exception:
@@ -19478,17 +19488,30 @@ async def ws_live(ws: WebSocket) -> None:
                                 sys_kv=sys_kv if isinstance(sys_kv, dict) else None,
                                 default=False,
                             ):
+                                try:
+                                    await _ws_send_json(
+                                        ws,
+                                        {
+                                            "type": "text",
+                                            "text": "autospeak: triggering",
+                                            "instance_id": INSTANCE_ID,
+                                        },
+                                    )
+                                except Exception:
+                                    pass
                                 tz = _get_user_timezone(DEFAULT_USER_ID)
                                 now_local = datetime.now(tz=timezone.utc).astimezone(tz)
                                 lang = str(getattr(ws.state, "user_lang", "") or "").strip() or "th"
                                 greet = _short_greeting_for_now(lang=lang, now_local=now_local)
                                 resumed = bool(getattr(ws.state, "session_resume_ok", False))
                                 prefix = "reconnected (resumed session)" if resumed else "connected (new session)"
-                                await _live_say(ws, greet + "\n" + prefix + "\n" + "\n".join(_status_lines_for_ws(ws)))
-                                try:
-                                    ws.state.autostatus_spoken = True
-                                except Exception:
-                                    pass
+                                has_session = getattr(ws.state, "gemini_live_session", None) is not None
+                                if has_session:
+                                    await _live_say(ws, greet + "\n" + prefix + "\n" + "\n".join(_status_lines_for_ws(ws)))
+                                    try:
+                                        ws.state.autostatus_spoken = True
+                                    except Exception:
+                                        pass
                         except Exception:
                             pass
 
