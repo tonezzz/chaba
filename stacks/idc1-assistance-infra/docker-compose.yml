@@ -1,0 +1,57 @@
+version: "3.9"
+
+x-default-service: &default-service
+  restart: unless-stopped
+  networks:
+    - idc1-stack-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  redis:
+    <<: *default-service
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - jarvis-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  weaviate:
+    <<: *default-service
+    image: semitechnologies/weaviate:1.24.10
+    environment:
+      QUERY_DEFAULTS_LIMIT: 50
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: "/var/lib/weaviate"
+      DEFAULT_VECTORIZER_MODULE: "none"
+      ENABLE_MODULES: ""
+      CLUSTER_HOSTNAME: "node1"
+    volumes:
+      - weaviate-data:/var/lib/weaviate
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/v1/.well-known/ready >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  idc1-stack-net:
+    driver: bridge
+    external: true
+    name: idc1-stack-net
+
+volumes:
+  jarvis-redis-data:
+    external: true
+    name: ${JARVIS_REDIS_DATA_VOLUME_NAME:-idc1-assistance_jarvis-redis-data}
+
+  weaviate-data:
+    external: true
+    name: ${WEAVIATE_DATA_VOLUME_NAME:-idc1-assistance_weaviate-data}

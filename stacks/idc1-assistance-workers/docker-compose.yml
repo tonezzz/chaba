@@ -1,0 +1,44 @@
+version: "3.9"
+
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - ../idc1-assistance/.env.example
+  networks:
+    - idc1-stack-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  deep-research-worker:
+    <<: *default-service
+    image: ghcr.io/tonezzz/chaba/deep-research-worker:idc1-assistance
+    ports:
+      - "127.0.0.1:18030:8030"
+    environment:
+      PORT: 8030
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      DEEP_RESEARCH_AGENT: ${DEEP_RESEARCH_AGENT:-deep-research-pro-preview-12-2025}
+      DEEP_RESEARCH_DB: ${DEEP_RESEARCH_DB:-/data/deep_research.sqlite}
+      DEEP_RESEARCH_POLL_SECONDS: ${DEEP_RESEARCH_POLL_SECONDS:-10}
+    volumes:
+      - deep-research-worker-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8030/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  idc1-stack-net:
+    driver: bridge
+    external: true
+    name: idc1-stack-net
+
+volumes:
+  deep-research-worker-data:
+    external: true
+    name: ${DEEP_RESEARCH_WORKER_DATA_VOLUME_NAME:-idc1-assistance_deep-research-worker-data}

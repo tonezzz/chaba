@@ -1,0 +1,118 @@
+version: "3.9"
+
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - ../idc1-assistance/.env.example
+  networks:
+    - idc1-stack-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  jarvis-backend:
+    <<: *default-service
+    image: ghcr.io/tonezzz/chaba/jarvis-backend:idc1-assistance
+    ports:
+      - "127.0.0.1:18018:8018"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      PORT: 8018
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_LIVE_MODEL: ${GEMINI_LIVE_MODEL:-gemini-2.5-flash-native-audio-preview-12-2025}
+      JARVIS_PUBLIC_BASE_URL: ${JARVIS_PUBLIC_BASE_URL:-https://assistance.idc1.surf-thailand.com}
+      JARVIS_VERIFY_FRONTEND_BASE_URL: ${JARVIS_VERIFY_FRONTEND_BASE_URL:-}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      JARVIS_RECENT_DIALOG_TTL_SECONDS: ${JARVIS_RECENT_DIALOG_TTL_SECONDS:-86400}
+      JARVIS_RECENT_DIALOG_MAX_TURNS: ${JARVIS_RECENT_DIALOG_MAX_TURNS:-60}
+      JARVIS_RECENT_DIALOG_MAX_CHARS: ${JARVIS_RECENT_DIALOG_MAX_CHARS:-4000}
+      JARVIS_FEATURE_MEMO_ENABLED: "true"
+      JARVIS_FEATURE_MEMORY_ENABLED: "false"
+      JARVIS_FEATURE_KNOWLEDGE_ENABLED: "false"
+      GITHUB_PERSONAL_TOKEN_RO: ${GITHUB_PERSONAL_TOKEN_RO:-}
+      GITHUB_PERSONAL_TOKEN_RW: ${GITHUB_PERSONAL_TOKEN_RW:-}
+      CHABA_SYSTEM_SPREADSHEET_ID: ${CHABA_SYSTEM_SPREADSHEET_ID:-}
+      CHABA_SYSTEM_SHEET_NAME: ${CHABA_SYSTEM_SHEET_NAME:-}
+      JARVIS_SHEETS_LOGS_ENABLED: ${JARVIS_SHEETS_LOGS_ENABLED:-true}
+      JARVIS_SHEETS_LOGS_SHEET_NAME: ${JARVIS_SHEETS_LOGS_SHEET_NAME:-logs}
+      PORTAINER_URL: ${PORTAINER_URL:-http://portainer:9000}
+      PORTAINER_TOKEN: ${PORTAINER_TOKEN:-}
+      PORTAINER_ENDPOINT_ID: ${PORTAINER_ENDPOINT_ID:-2}
+      PORTAINER_STACK_NAME: ${PORTAINER_STACK_NAME:-idc1-assistance}
+      JARVIS_SESSION_DB: ${JARVIS_SESSION_DB:-/data/jarvis_sessions.sqlite}
+      JARVIS_IMAGEN_ASSETS_DIR: ${JARVIS_IMAGEN_ASSETS_DIR:-/app/imagen_assets}
+      JARVIS_CARS_DATA_DIR: ${JARVIS_CARS_DATA_DIR:-/app/assistance_data/cars}
+      JARVIS_IMAGEN_MODEL: ${JARVIS_IMAGEN_MODEL:-imagen-4.0-generate-001}
+      JARVIS_IMAGEN_ALLOWED_MODELS: ${JARVIS_IMAGEN_ALLOWED_MODELS:-imagen-4.0-generate-001,imagen-4.0-ultra-generate-001,imagen-4.0-fast-generate-001}
+      JARVIS_IMAGE_MODEL: ${JARVIS_IMAGE_MODEL:-gemini-3.1-flash-image-preview}
+      JARVIS_IMAGE_ALLOWED_MODELS: ${JARVIS_IMAGE_ALLOWED_MODELS:-gemini-3.1-flash-image-preview}
+      WEB_FETCHER_BASE_URL: ${WEB_FETCHER_BASE_URL:-http://web-fetcher:8028}
+      MCP_BASE_URL: ${MCP_BASE_URL:-http://mcp-bundle-assistance:3050}
+      MCP_PLAYWRIGHT_BASE_URL: ${MCP_PLAYWRIGHT_BASE_URL:-http://mcp-playwright:3050}
+      DEEP_RESEARCH_WORKER_BASE_URL: ${DEEP_RESEARCH_WORKER_BASE_URL:-http://deep-research-worker:8030}
+      WEAVIATE_URL: ${WEAVIATE_URL:-http://weaviate:8080}
+    volumes:
+      - jarvis-imagen-assets:${JARVIS_IMAGEN_ASSETS_DIR:-/app/imagen_assets}
+      - jarvis-session-db:/data
+      - ../../services/assistance_data:/app/assistance_data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8018/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - idc1-stack-net
+      - idc1-portainer_default
+
+  jarvis-frontend:
+    <<: *default-service
+    image: ghcr.io/tonezzz/chaba/jarvis-frontend:idc1-assistance
+    ports:
+      - "127.0.0.1:18080:80"
+
+  web-fetcher:
+    <<: *default-service
+    image: ghcr.io/tonezzz/chaba/web-fetcher:idc1-assistance
+    environment:
+      PORT: 8028
+      WEB_FETCH_MAX_BYTES: ${WEB_FETCH_MAX_BYTES:-2000000}
+      WEB_FETCH_MAX_REDIRECTS: ${WEB_FETCH_MAX_REDIRECTS:-5}
+      WEB_FETCH_CONNECT_TIMEOUT_S: ${WEB_FETCH_CONNECT_TIMEOUT_S:-5}
+      WEB_FETCH_READ_TIMEOUT_S: ${WEB_FETCH_READ_TIMEOUT_S:-15}
+      WEB_FETCH_ALLOWED_CONTENT_TYPES: ${WEB_FETCH_ALLOWED_CONTENT_TYPES:-text/html,text/plain,application/json}
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8028/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  idc1-stack-net:
+    driver: bridge
+    external: true
+    name: idc1-stack-net
+
+  idc1-portainer_default:
+    driver: bridge
+    external: true
+    name: idc1-portainer_default
+
+volumes:
+  jarvis-imagen-assets:
+    external: true
+    name: ${JARVIS_IMAGEN_ASSETS_VOLUME_NAME:-idc1-assistance_jarvis-imagen-assets}
+
+  jarvis-session-db:
+    external: true
+    name: ${JARVIS_SESSION_DB_VOLUME_NAME:-idc1-assistance_jarvis-session-db}
