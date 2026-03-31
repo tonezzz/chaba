@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>chaba01</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 20px; }
+      .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+      button { padding: 10px 14px; font-size: 14px; }
+      input[type="text"] { padding: 10px 12px; font-size: 14px; width: min(720px, 100%); }
+      #log { white-space: pre-wrap; border: 1px solid #ddd; padding: 12px; height: 280px; overflow: auto; margin-top: 12px; }
+      #status { color: #555; }
+      .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid #ddd; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>chaba01</h1>
+
+    <div class="row">
+      <span class="pill" id="status">disconnected</span>
+      <span class="pill" id="source">source: (loading)</span>
+      <button id="refresh">Refresh source</button>
+    </div>
+
+    <div style="height: 10px"></div>
+
+    <div class="row">
+      <button id="ptt" disabled>Hold to talk</button>
+      <button id="connect">Connect</button>
+      <button id="disconnect" disabled>Disconnect</button>
+    </div>
+
+    <div style="height: 10px"></div>
+
+    <div class="row">
+      <input id="text" type="text" placeholder="Type a question and press Enter" />
+    </div>
+
+    <div id="log"></div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

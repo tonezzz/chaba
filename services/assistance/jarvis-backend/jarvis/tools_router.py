@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import time
 from typing import Any, Optional
 
 
@@ -101,6 +103,21 @@ def _set_row_value(row: list[Any], idx: dict[str, int], key: str, value: Any) ->
     if j >= len(row):
         row.extend([""] * (j + 1 - len(row)))
     row[j] = value
+
+
+def _normalize_field_key(k: str) -> str:
+    return str(k or "").strip().lower().replace(" ", "_")
+
+
+def _col_letter(col_idx0: int) -> str:
+    n = int(col_idx0) + 1
+    if n <= 0:
+        return "A"
+    out = ""
+    while n > 0:
+        n, r = divmod(n - 1, 26)
+        out = chr(ord("A") + r) + out
+    return out or "A"
 
 
 async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: dict[str, Any], *, deps: dict[str, Any]) -> Any:
@@ -403,11 +420,35 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         values = parsed.get("values") if isinstance(parsed, dict) else None
         return {"ok": True, "namespace": namespace, "spreadsheet_id": spreadsheet_id, "range": a1_range, "values": values}
 
+    if tool_name in {
+        "projects_instructions_read",
+        "projects_dictionary_read",
+        "projects_schema_registry_read",
+        "projects_entities_read",
+        "projects_relations_read",
+        "projects_proposals_read",
+        "projects_changelog_read",
+    }:
+        alias_to_tab = {
+            "projects_instructions_read": "instructions",
+            "projects_dictionary_read": "dictionary",
+            "projects_schema_registry_read": "schema_registry",
+            "projects_entities_read": "entities",
+            "projects_relations_read": "relations",
+            "projects_proposals_read": "proposals",
+            "projects_changelog_read": "changelog",
+        }
+        tab0 = alias_to_tab.get(tool_name, "")
+        forwarded = dict(args or {})
+        forwarded.setdefault("tab", tab0)
+        return await handle_mcp_tool_call(session_id, "projects_sheet_read", forwarded, deps=deps)
+
     if tool_name == "projects_proposal_start_project":
         session_ws = deps["SESSION_WS"]
         pick_sheets_tool_name = deps["pick_sheets_tool_name"]
         mcp_tools_call = deps["mcp_tools_call"]
         mcp_text_json = deps["mcp_text_json"]
+        create_pending_write = deps.get("create_pending_write")
 
         ws = session_ws.get(str(session_id)) if session_id else None
         if ws is None:
@@ -491,24 +532,829 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             row = ["", "start_project", new_project_title, json.dumps(payload, ensure_ascii=False), "proposed"]
 
         tool_append = pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
-        res = await mcp_tools_call(
-            tool_append,
-            {
+        if not create_pending_write:
+            raise HTTPException(status_code=500, detail="missing_create_pending_write")
+
+        pending_payload = {
+            "mcp_name": tool_append,
+            "arguments": {
                 "spreadsheet_id": spreadsheet_id,
                 "range": "proposals!A:Z",
                 "values": [row],
                 "value_input_option": "USER_ENTERED",
                 "insert_data_option": "INSERT_ROWS",
             },
+            "mcp_base": "",
+            "tool_name": "projects_proposal_start_project",
+        }
+        confirmation_id = create_pending_write(str(session_id), action="mcp_tools_call", payload=pending_payload)
+        await _emit_pending_awaiting_user(
+            session_id0=str(session_id),
+            confirmation_id=confirmation_id,
+            action="mcp_tools_call",
+            payload=pending_payload,
         )
-        parsed = mcp_text_json(res)
+        return {
+            "ok": True,
+            "queued": True,
+            "confirmation_id": confirmation_id,
+            "namespace": namespace,
+            "spreadsheet_id": spreadsheet_id,
+            "proposal": payload,
+        }
+
+    if tool_name == "projects_entities_append_queue":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        session_ws = deps["SESSION_WS"]
+        pick_sheets_tool_name = deps["pick_sheets_tool_name"]
+        mcp_tools_call = deps["mcp_tools_call"]
+        mcp_text_json = deps["mcp_text_json"]
+        create_pending_write = deps.get("create_pending_write")
+        if not create_pending_write:
+            raise HTTPException(status_code=500, detail="missing_create_pending_write")
+
+        ws = session_ws.get(str(session_id)) if session_id else None
+        if ws is None:
+            raise HTTPException(status_code=400, detail="missing_session_ws")
+
+        namespace = str(args.get("namespace") or "").strip()
+        if not namespace:
+            raise HTTPException(status_code=400, detail="missing_namespace")
+
+        spreadsheet_id = str(args.get("spreadsheet_id") or "").strip()
+        project_name = str(args.get("project_name") or args.get("name") or "").strip()
+
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        sys_kv_dict = sys_kv if isinstance(sys_kv, dict) else None
+        if not sys_kv_dict:
+            raise HTTPException(status_code=400, detail="missing_sys_kv")
+
+        if not spreadsheet_id:
+            active_id = str(sys_kv_dict.get(f"projects.{namespace}.active_id") or "").strip()
+            if active_id:
+                spreadsheet_id = active_id
+
+        if not spreadsheet_id and project_name:
+            reg_key = f"projects.{namespace}.projects_json"
+            reg = _normalize_projects_registry(_json_loads_loose(sys_kv_dict.get(reg_key)))
+            hit = _find_registry_match(reg, name=project_name)
+            if hit is not None:
+                spreadsheet_id = str(hit.get("spreadsheet_id") or "").strip()
+
+        if not spreadsheet_id:
+            raise HTTPException(status_code=400, detail="missing_spreadsheet_id")
+
+        fields_in = args.get("fields")
+        entity_in = args.get("entity")
+        if fields_in is None and isinstance(entity_in, dict):
+            fields_in = entity_in
+        if not isinstance(fields_in, dict) or not fields_in:
+            raise HTTPException(status_code=400, detail="missing_fields")
+
+        # Load header from entities tab to map fields -> columns.
+        tool_get = pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+        header_res = await mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": "entities!A1:Z1"})
+        header_parsed = mcp_text_json(header_res)
+        header_values = None
+        if isinstance(header_parsed, dict):
+            header_values = header_parsed.get("values")
+            if header_values is None and isinstance(header_parsed.get("data"), dict):
+                header_values = header_parsed.get("data", {}).get("values")
+        idx = _header_index(header_values)
+        if not idx:
+            raise HTTPException(status_code=400, detail="entities_sheet_missing_header")
+
+        row: list[Any] = [""] * (max(idx.values()) + 1)
+
+        # Common aliases.
+        aliases = {
+            "id": ["id", "entity_id"],
+            "name": ["name", "title", "entity_name"],
+            "type": ["type", "entity_type", "kind"],
+            "notes": ["notes", "note", "description", "desc"],
+            "status": ["status", "state"],
+            "tags": ["tags", "tag"],
+            "source": ["source"],
+            "external_id": ["external_id", "ext_id"],
+            "parent_id": ["parent_id", "parent", "parent_entity_id"],
+        }
+
+        # Apply direct header-matching keys first.
+        for k, v in fields_in.items():
+            kk = _normalize_field_key(str(k))
+            if kk in idx:
+                _set_row_value(row, idx, kk, v)
+
+        # Apply aliases.
+        for _, keys in aliases.items():
+            val: Any = None
+            found_key = ""
+            for k in keys:
+                if k in fields_in and fields_in.get(k) is not None:
+                    val = fields_in.get(k)
+                    found_key = k
+                    break
+                # also check normalized variants
+                for src_k in list(fields_in.keys()):
+                    if _normalize_field_key(str(src_k)) == k and fields_in.get(src_k) is not None:
+                        val = fields_in.get(src_k)
+                        found_key = str(src_k)
+                        break
+                if found_key:
+                    break
+            if found_key and val is not None:
+                for dest in keys:
+                    if dest in idx:
+                        _set_row_value(row, idx, dest, val)
+                        break
+
+        # If the sheet supports payload_json, store the original fields.
+        if "payload_json" in idx and row[idx["payload_json"]] in (None, ""):
+            _set_row_value(row, idx, "payload_json", json.dumps(fields_in, ensure_ascii=False))
+
+        tool_append = pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+        pending_payload = {
+            "mcp_name": tool_append,
+            "arguments": {
+                "spreadsheet_id": spreadsheet_id,
+                "range": "entities!A:Z",
+                "values": [row],
+                "value_input_option": "USER_ENTERED",
+                "insert_data_option": "INSERT_ROWS",
+            },
+            "mcp_base": "",
+            "tool_name": "projects_entities_append_queue",
+        }
+        confirmation_id = create_pending_write(str(session_id), action="mcp_tools_call", payload=pending_payload)
+        await _emit_pending_awaiting_user(
+            session_id0=str(session_id),
+            confirmation_id=confirmation_id,
+            action="mcp_tools_call",
+            payload=pending_payload,
+        )
+        return {
+            "ok": True,
+            "queued": True,
+            "confirmation_id": confirmation_id,
+            "namespace": namespace,
+            "spreadsheet_id": spreadsheet_id,
+            "row": row,
+        }
+
+    if tool_name == "projects_entities_update_by_id_queue":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        session_ws = deps["SESSION_WS"]
+        pick_sheets_tool_name = deps["pick_sheets_tool_name"]
+        mcp_tools_call = deps["mcp_tools_call"]
+        mcp_text_json = deps["mcp_text_json"]
+        create_pending_write = deps.get("create_pending_write")
+        if not create_pending_write:
+            raise HTTPException(status_code=500, detail="missing_create_pending_write")
+
+        ws = session_ws.get(str(session_id)) if session_id else None
+        if ws is None:
+            raise HTTPException(status_code=400, detail="missing_session_ws")
+
+        namespace = str(args.get("namespace") or "").strip()
+        if not namespace:
+            raise HTTPException(status_code=400, detail="missing_namespace")
+
+        spreadsheet_id = str(args.get("spreadsheet_id") or "").strip()
+        project_name = str(args.get("project_name") or args.get("name") or "").strip()
+
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        sys_kv_dict = sys_kv if isinstance(sys_kv, dict) else None
+        if not sys_kv_dict:
+            raise HTTPException(status_code=400, detail="missing_sys_kv")
+
+        if not spreadsheet_id:
+            active_id = str(sys_kv_dict.get(f"projects.{namespace}.active_id") or "").strip()
+            if active_id:
+                spreadsheet_id = active_id
+
+        if not spreadsheet_id and project_name:
+            reg_key = f"projects.{namespace}.projects_json"
+            reg = _normalize_projects_registry(_json_loads_loose(sys_kv_dict.get(reg_key)))
+            hit = _find_registry_match(reg, name=project_name)
+            if hit is not None:
+                spreadsheet_id = str(hit.get("spreadsheet_id") or "").strip()
+
+        if not spreadsheet_id:
+            raise HTTPException(status_code=400, detail="missing_spreadsheet_id")
+
+        entity_id = str(args.get("id") or args.get("entity_id") or "").strip()
+        if not entity_id:
+            raise HTTPException(status_code=400, detail="missing_entity_id")
+
+        fields_in = args.get("fields")
+        entity_in = args.get("entity")
+        if fields_in is None and isinstance(entity_in, dict):
+            fields_in = entity_in
+        if not isinstance(fields_in, dict) or not fields_in:
+            raise HTTPException(status_code=400, detail="missing_fields")
+
+        # Read entities sheet to locate row.
+        tool_get = pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+        max_rows = int(args.get("max_rows") or 0) if str(args.get("max_rows") or "").strip() else 0
+        rng = "entities!A:Z" if max_rows <= 0 else f"entities!A1:Z{max_rows}"
+        res0 = await mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": rng})
+        parsed0 = mcp_text_json(res0)
+        values = None
+        if isinstance(parsed0, dict):
+            values = parsed0.get("values")
+            if values is None and isinstance(parsed0.get("data"), dict):
+                values = parsed0.get("data", {}).get("values")
+        if not isinstance(values, list) or not values:
+            raise HTTPException(status_code=400, detail="entities_sheet_empty")
+
+        idx = _header_index([values[0]] if isinstance(values[0], list) else None)
+        if not idx:
+            raise HTTPException(status_code=400, detail="entities_sheet_missing_header")
+
+        id_col = None
+        if "id" in idx:
+            id_col = idx["id"]
+        elif "entity_id" in idx:
+            id_col = idx["entity_id"]
+        if id_col is None:
+            raise HTTPException(status_code=400, detail="entities_sheet_missing_id_column")
+
+        found_row_num: int | None = None
+        found_row: list[Any] | None = None
+        for i, r in enumerate(values[1:], start=2):
+            if not isinstance(r, list):
+                continue
+            rid = ""
+            if id_col < len(r):
+                rid = str(r[id_col] or "").strip()
+            if rid == entity_id:
+                found_row_num = int(i)
+                found_row = r
+                break
+        if found_row_num is None or found_row is None:
+            raise HTTPException(status_code=404, detail="entity_not_found")
+
+        # Merge updates into existing row.
+        max_col = max(idx.values())
+        row_out: list[Any] = list(found_row) + ([""] * max(0, (max_col + 1) - len(found_row)))
+
+        # Apply direct header-matching keys.
+        for k, v in fields_in.items():
+            kk = _normalize_field_key(str(k))
+            if kk in idx:
+                _set_row_value(row_out, idx, kk, v)
+
+        # Common aliases (same mapping as append).
+        aliases = {
+            "id": ["id", "entity_id"],
+            "name": ["name", "title", "entity_name"],
+            "type": ["type", "entity_type", "kind"],
+            "notes": ["notes", "note", "description", "desc"],
+            "status": ["status", "state"],
+            "tags": ["tags", "tag"],
+            "source": ["source"],
+            "external_id": ["external_id", "ext_id"],
+            "parent_id": ["parent_id", "parent", "parent_entity_id"],
+        }
+        for _, keys in aliases.items():
+            val: Any = None
+            found_key = ""
+            for k in keys:
+                if k in fields_in and fields_in.get(k) is not None:
+                    val = fields_in.get(k)
+                    found_key = k
+                    break
+                for src_k in list(fields_in.keys()):
+                    if _normalize_field_key(str(src_k)) == k and fields_in.get(src_k) is not None:
+                        val = fields_in.get(src_k)
+                        found_key = str(src_k)
+                        break
+                if found_key:
+                    break
+            if found_key and val is not None:
+                for dest in keys:
+                    if dest in idx:
+                        _set_row_value(row_out, idx, dest, val)
+                        break
+
+        # Never allow changing the id via update; enforce it.
+        if "id" in idx:
+            row_out[idx["id"]] = entity_id
+        if "entity_id" in idx:
+            row_out[idx["entity_id"]] = entity_id
+
+        start_col = _col_letter(0)
+        end_col = _col_letter(max_col)
+        tool_update = pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+        pending_payload = {
+            "mcp_name": tool_update,
+            "arguments": {
+                "spreadsheet_id": spreadsheet_id,
+                "range": f"entities!{start_col}{found_row_num}:{end_col}{found_row_num}",
+                "values": [row_out[: (max_col + 1)]],
+                "value_input_option": "USER_ENTERED",
+            },
+            "mcp_base": "",
+            "tool_name": "projects_entities_update_by_id_queue",
+        }
+        confirmation_id = create_pending_write(str(session_id), action="mcp_tools_call", payload=pending_payload)
+        await _emit_pending_awaiting_user(
+            session_id0=str(session_id),
+            confirmation_id=confirmation_id,
+            action="mcp_tools_call",
+            payload=pending_payload,
+        )
+        return {
+            "ok": True,
+            "queued": True,
+            "confirmation_id": confirmation_id,
+            "namespace": namespace,
+            "spreadsheet_id": spreadsheet_id,
+            "row": found_row_num,
+            "entity_id": entity_id,
+            "row_out": row_out[: (max_col + 1)],
+        }
+
+    if tool_name == "projects_relations_append_queue":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        session_ws = deps["SESSION_WS"]
+        pick_sheets_tool_name = deps["pick_sheets_tool_name"]
+        mcp_tools_call = deps["mcp_tools_call"]
+        mcp_text_json = deps["mcp_text_json"]
+        create_pending_write = deps.get("create_pending_write")
+        if not create_pending_write:
+            raise HTTPException(status_code=500, detail="missing_create_pending_write")
+
+        ws = session_ws.get(str(session_id)) if session_id else None
+        if ws is None:
+            raise HTTPException(status_code=400, detail="missing_session_ws")
+
+        namespace = str(args.get("namespace") or "").strip()
+        if not namespace:
+            raise HTTPException(status_code=400, detail="missing_namespace")
+
+        spreadsheet_id = str(args.get("spreadsheet_id") or "").strip()
+        project_name = str(args.get("project_name") or args.get("name") or "").strip()
+
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        sys_kv_dict = sys_kv if isinstance(sys_kv, dict) else None
+        if not sys_kv_dict:
+            raise HTTPException(status_code=400, detail="missing_sys_kv")
+
+        if not spreadsheet_id:
+            active_id = str(sys_kv_dict.get(f"projects.{namespace}.active_id") or "").strip()
+            if active_id:
+                spreadsheet_id = active_id
+
+        if not spreadsheet_id and project_name:
+            reg_key = f"projects.{namespace}.projects_json"
+            reg = _normalize_projects_registry(_json_loads_loose(sys_kv_dict.get(reg_key)))
+            hit = _find_registry_match(reg, name=project_name)
+            if hit is not None:
+                spreadsheet_id = str(hit.get("spreadsheet_id") or "").strip()
+
+        if not spreadsheet_id:
+            raise HTTPException(status_code=400, detail="missing_spreadsheet_id")
+
+        fields_in = args.get("fields")
+        rel_in = args.get("relation")
+        if fields_in is None and isinstance(rel_in, dict):
+            fields_in = rel_in
+        if not isinstance(fields_in, dict) or not fields_in:
+            raise HTTPException(status_code=400, detail="missing_fields")
+
+        tool_get = pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+        header_res = await mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": "relations!A1:Z1"})
+        header_parsed = mcp_text_json(header_res)
+        header_values = None
+        if isinstance(header_parsed, dict):
+            header_values = header_parsed.get("values")
+            if header_values is None and isinstance(header_parsed.get("data"), dict):
+                header_values = header_parsed.get("data", {}).get("values")
+        idx = _header_index(header_values)
+        if not idx:
+            raise HTTPException(status_code=400, detail="relations_sheet_missing_header")
+
+        row: list[Any] = [""] * (max(idx.values()) + 1)
+
+        # Direct header matches.
+        for k, v in fields_in.items():
+            kk = _normalize_field_key(str(k))
+            if kk in idx:
+                _set_row_value(row, idx, kk, v)
+
+        # Common aliases.
+        aliases = {
+            "id": ["id", "relation_id"],
+            "from_id": ["from_id", "src_id", "source_id", "parent_id", "a_id"],
+            "to_id": ["to_id", "dst_id", "target_id", "child_id", "b_id"],
+            "type": ["type", "relation_type", "kind"],
+            "notes": ["notes", "note", "description", "desc"],
+            "status": ["status", "state"],
+            "tags": ["tags", "tag"],
+            "source": ["source"],
+            "external_id": ["external_id", "ext_id"],
+        }
+
+        for _, keys in aliases.items():
+            val: Any = None
+            found_key = ""
+            for k in keys:
+                if k in fields_in and fields_in.get(k) is not None:
+                    val = fields_in.get(k)
+                    found_key = k
+                    break
+                for src_k in list(fields_in.keys()):
+                    if _normalize_field_key(str(src_k)) == k and fields_in.get(src_k) is not None:
+                        val = fields_in.get(src_k)
+                        found_key = str(src_k)
+                        break
+                if found_key:
+                    break
+            if found_key and val is not None:
+                for dest in keys:
+                    if dest in idx:
+                        _set_row_value(row, idx, dest, val)
+                        break
+
+        if "payload_json" in idx and row[idx["payload_json"]] in (None, ""):
+            _set_row_value(row, idx, "payload_json", json.dumps(fields_in, ensure_ascii=False))
+
+        tool_append = pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+        pending_payload = {
+            "mcp_name": tool_append,
+            "arguments": {
+                "spreadsheet_id": spreadsheet_id,
+                "range": "relations!A:Z",
+                "values": [row],
+                "value_input_option": "USER_ENTERED",
+                "insert_data_option": "INSERT_ROWS",
+            },
+            "mcp_base": "",
+            "tool_name": "projects_relations_append_queue",
+        }
+        confirmation_id = create_pending_write(str(session_id), action="mcp_tools_call", payload=pending_payload)
+        await _emit_pending_awaiting_user(
+            session_id0=str(session_id),
+            confirmation_id=confirmation_id,
+            action="mcp_tools_call",
+            payload=pending_payload,
+        )
+        return {
+            "ok": True,
+            "queued": True,
+            "confirmation_id": confirmation_id,
+            "namespace": namespace,
+            "spreadsheet_id": spreadsheet_id,
+            "row": row,
+        }
+
+    if tool_name == "projects_proposals_apply_approved":
+        session_ws = deps["SESSION_WS"]
+        pick_sheets_tool_name = deps["pick_sheets_tool_name"]
+        mcp_tools_call = deps["mcp_tools_call"]
+        mcp_text_json = deps["mcp_text_json"]
+
+        ws = session_ws.get(str(session_id)) if session_id else None
+        if ws is None:
+            raise HTTPException(status_code=400, detail="missing_session_ws")
+
+        namespace = str(args.get("namespace") or "").strip()
+        if not namespace:
+            raise HTTPException(status_code=400, detail="missing_namespace")
+
+        spreadsheet_id = str(args.get("spreadsheet_id") or "").strip()
+        project_name = str(args.get("project_name") or args.get("name") or "").strip()
+
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        sys_kv_dict = sys_kv if isinstance(sys_kv, dict) else None
+        if not sys_kv_dict:
+            raise HTTPException(status_code=400, detail="missing_sys_kv")
+
+        if not spreadsheet_id:
+            active_id = str(sys_kv_dict.get(f"projects.{namespace}.active_id") or "").strip()
+            if active_id:
+                spreadsheet_id = active_id
+
+        if not spreadsheet_id and project_name:
+            reg_key = f"projects.{namespace}.projects_json"
+            reg = _normalize_projects_registry(_json_loads_loose(sys_kv_dict.get(reg_key)))
+            hit = _find_registry_match(reg, name=project_name)
+            if hit is not None:
+                spreadsheet_id = str(hit.get("spreadsheet_id") or "").strip()
+
+        if not spreadsheet_id:
+            raise HTTPException(status_code=400, detail="missing_spreadsheet_id")
+
+        limit = int(args.get("limit") or 20) if str(args.get("limit") or "").strip() else 20
+        limit = max(1, min(50, int(limit)))
+
+        tool_get = pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+        tool_append = pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+        tool_update = pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+
+        # Load proposals rows.
+        res0 = await mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": "proposals!A:Z"})
+        parsed0 = mcp_text_json(res0)
+        values = None
+        if isinstance(parsed0, dict):
+            values = parsed0.get("values")
+            if values is None and isinstance(parsed0.get("data"), dict):
+                values = parsed0.get("data", {}).get("values")
+        if not isinstance(values, list) or not values:
+            return {"ok": True, "applied": 0, "skipped": 0, "message": "proposals_empty"}
+
+        idxp = _header_index([values[0]] if isinstance(values[0], list) else None)
+        if not idxp:
+            raise HTTPException(status_code=400, detail="proposals_sheet_missing_header")
+
+        def _cell(row: list[Any], col: str) -> Any:
+            j = idxp.get(str(col or "").strip().lower())
+            if j is None or j < 0 or j >= len(row):
+                return ""
+            return row[j]
+
+        status_col = "status" if "status" in idxp else ("proposal_status" if "proposal_status" in idxp else "")
+        if not status_col:
+            raise HTTPException(status_code=400, detail="proposals_sheet_missing_status")
+        status_j = idxp[status_col]
+
+        payload_col = "payload_json" if "payload_json" in idxp else ("payload" if "payload" in idxp else "")
+        kind_col = "kind" if "kind" in idxp else ("type" if "type" in idxp else "")
+        title_col = "title" if "title" in idxp else ("project_title" if "project_title" in idxp else "")
+        objective_col = "objective" if "objective" in idxp else ""
+        priority_col = "priority" if "priority" in idxp else ""
+        due_col = "due_date" if "due_date" in idxp else ""
+        applied_at_col = "applied_at" if "applied_at" in idxp else ("applied" if "applied" in idxp else "")
+
+        # Preload entities/relations headers.
+        ent_header_res = await mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": "entities!A1:Z1"})
+        ent_header_parsed = mcp_text_json(ent_header_res)
+        ent_header_values = None
+        if isinstance(ent_header_parsed, dict):
+            ent_header_values = ent_header_parsed.get("values")
+            if ent_header_values is None and isinstance(ent_header_parsed.get("data"), dict):
+                ent_header_values = ent_header_parsed.get("data", {}).get("values")
+        idxe = _header_index(ent_header_values)
+
+        rel_header_res = await mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": "relations!A1:Z1"})
+        rel_header_parsed = mcp_text_json(rel_header_res)
+        rel_header_values = None
+        if isinstance(rel_header_parsed, dict):
+            rel_header_values = rel_header_parsed.get("values")
+            if rel_header_values is None and isinstance(rel_header_parsed.get("data"), dict):
+                rel_header_values = rel_header_parsed.get("data", {}).get("values")
+        idxr = _header_index(rel_header_values)
+
+        if not idxe:
+            raise HTTPException(status_code=400, detail="entities_sheet_missing_header")
+        if not idxr:
+            raise HTTPException(status_code=400, detail="relations_sheet_missing_header")
+
+        def _new_id(prefix: str) -> str:
+            return f"{prefix}_{int(time.time())}_{os.urandom(3).hex()}"
+
+        def _norm_status(v: Any) -> str:
+            return str(v or "").strip().lower()
+
+        applied = 0
+        skipped = 0
+        details: list[dict[str, Any]] = []
+
+        for row_num, r in enumerate(values[1:], start=2):
+            if applied >= limit:
+                break
+            if not isinstance(r, list):
+                continue
+            st = _norm_status(r[status_j] if status_j < len(r) else "")
+            if st != "approved":
+                continue
+
+            payload: dict[str, Any] = {}
+            if payload_col:
+                raw = _cell(r, payload_col)
+                if raw:
+                    parsed = _json_loads_loose(raw)
+                    if isinstance(parsed, dict):
+                        payload = parsed
+
+            action = str(payload.get("action") or "").strip().lower()
+            if not action and kind_col:
+                action = str(_cell(r, kind_col) or "").strip().lower()
+            if action in {"start_project", "start project", "start-project"}:
+                new_project_title = str(payload.get("new_project_title") or payload.get("project_title") or "").strip()
+                if not new_project_title and title_col:
+                    new_project_title = str(_cell(r, title_col) or "").strip()
+                if not new_project_title:
+                    skipped += 1
+                    details.append({"row": row_num, "status": "skipped", "reason": "missing_project_title"})
+                    continue
+
+                objective = str(payload.get("objective") or "").strip()
+                if not objective and objective_col:
+                    objective = str(_cell(r, objective_col) or "").strip()
+                priority = str(payload.get("priority") or "").strip()
+                if not priority and priority_col:
+                    priority = str(_cell(r, priority_col) or "").strip()
+                due_date = str(payload.get("due_date") or "").strip()
+                if not due_date and due_col:
+                    due_date = str(_cell(r, due_col) or "").strip()
+                seed_tasks = payload.get("seed_tasks")
+                if not isinstance(seed_tasks, list):
+                    seed_tasks = []
+                seed_tasks = [str(x or "").strip() for x in seed_tasks if str(x or "").strip()]
+
+                project_id = _new_id("project")
+                entities_rows: list[list[Any]] = []
+
+                def _entity_row(fields: dict[str, Any]) -> list[Any]:
+                    row0: list[Any] = [""] * (max(idxe.values()) + 1)
+                    for k, v in fields.items():
+                        kk = _normalize_field_key(str(k))
+                        if kk in idxe:
+                            _set_row_value(row0, idxe, kk, v)
+                    if "payload_json" in idxe and row0[idxe["payload_json"]] in (None, ""):
+                        _set_row_value(row0, idxe, "payload_json", json.dumps(fields, ensure_ascii=False))
+                    return row0
+
+                entities_rows.append(
+                    _entity_row(
+                        {
+                            "id": project_id,
+                            "type": "project",
+                            "name": new_project_title,
+                            "objective": objective,
+                            "priority": priority,
+                            "due_date": due_date,
+                            "status": "active",
+                        }
+                    )
+                )
+
+                rel_rows: list[list[Any]] = []
+
+                def _rel_row(fields: dict[str, Any]) -> list[Any]:
+                    row0: list[Any] = [""] * (max(idxr.values()) + 1)
+                    for k, v in fields.items():
+                        kk = _normalize_field_key(str(k))
+                        if kk in idxr:
+                            _set_row_value(row0, idxr, kk, v)
+                    if "payload_json" in idxr and row0[idxr["payload_json"]] in (None, ""):
+                        _set_row_value(row0, idxr, "payload_json", json.dumps(fields, ensure_ascii=False))
+                    return row0
+
+                for t in seed_tasks:
+                    task_id = _new_id("task")
+                    entities_rows.append(
+                        _entity_row(
+                            {
+                                "id": task_id,
+                                "type": "task",
+                                "name": t,
+                                "parent_id": project_id,
+                                "status": "todo",
+                            }
+                        )
+                    )
+                    rel_rows.append(
+                        _rel_row(
+                            {
+                                "from_id": project_id,
+                                "to_id": task_id,
+                                "type": "parent_of",
+                                "status": "active",
+                            }
+                        )
+                    )
+
+                # Apply entities + relations.
+                if entities_rows:
+                    await mcp_tools_call(
+                        tool_append,
+                        {
+                            "spreadsheet_id": spreadsheet_id,
+                            "range": "entities!A:Z",
+                            "values": entities_rows,
+                            "value_input_option": "USER_ENTERED",
+                            "insert_data_option": "INSERT_ROWS",
+                        },
+                    )
+                if rel_rows:
+                    await mcp_tools_call(
+                        tool_append,
+                        {
+                            "spreadsheet_id": spreadsheet_id,
+                            "range": "relations!A:Z",
+                            "values": rel_rows,
+                            "value_input_option": "USER_ENTERED",
+                            "insert_data_option": "INSERT_ROWS",
+                        },
+                    )
+
+                # Mark proposal as applied.
+                status_col_letter = _col_letter(status_j)
+                updates: list[dict[str, Any]] = []
+                updates.append(
+                    {
+                        "range": f"proposals!{status_col_letter}{row_num}",
+                        "values": [["applied"]],
+                    }
+                )
+                if applied_at_col:
+                    aj = idxp.get(applied_at_col)
+                    if isinstance(aj, int):
+                        applied_col_letter = _col_letter(aj)
+                        updates.append(
+                            {
+                                "range": f"proposals!{applied_col_letter}{row_num}",
+                                "values": [[int(time.time())]],
+                            }
+                        )
+
+                for u in updates:
+                    await mcp_tools_call(
+                        tool_update,
+                        {
+                            "spreadsheet_id": spreadsheet_id,
+                            "range": u["range"],
+                            "values": u["values"],
+                            "value_input_option": "USER_ENTERED",
+                        },
+                    )
+
+                applied += 1
+                details.append({"row": row_num, "status": "applied", "action": "start_project", "project_id": project_id})
+            else:
+                skipped += 1
+                details.append({"row": row_num, "status": "skipped", "reason": "unsupported_action", "action": action})
+
         return {
             "ok": True,
             "namespace": namespace,
             "spreadsheet_id": spreadsheet_id,
-            "proposal": payload,
-            "append": parsed,
+            "applied": applied,
+            "skipped": skipped,
+            "limit": limit,
+            "details": details,
         }
+
+    if tool_name == "projects_active_get":
+        session_ws = deps["SESSION_WS"]
+        ws = session_ws.get(str(session_id)) if session_id else None
+        if ws is None:
+            raise HTTPException(status_code=400, detail="missing_session_ws")
+
+        namespace = str(args.get("namespace") or "").strip()
+        if not namespace:
+            raise HTTPException(status_code=400, detail="missing_namespace")
+
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        sys_kv_dict = sys_kv if isinstance(sys_kv, dict) else None
+        if not sys_kv_dict:
+            raise HTTPException(status_code=400, detail="missing_sys_kv")
+
+        active_id = str(sys_kv_dict.get(f"projects.{namespace}.active_id") or "").strip() or None
+        return {"ok": True, "namespace": namespace, "active_id": active_id}
+
+    if tool_name == "projects_active_set":
+        session_ws = deps["SESSION_WS"]
+        ws = session_ws.get(str(session_id)) if session_id else None
+        if ws is None:
+            raise HTTPException(status_code=400, detail="missing_session_ws")
+
+        namespace = str(args.get("namespace") or "").strip()
+        if not namespace:
+            raise HTTPException(status_code=400, detail="missing_namespace")
+
+        spreadsheet_id = str(args.get("spreadsheet_id") or "").strip()
+        project_name = str(args.get("project_name") or args.get("name") or "").strip()
+        if not spreadsheet_id and not project_name:
+            raise HTTPException(status_code=400, detail="missing_spreadsheet_id_or_project_name")
+
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        sys_kv_dict = sys_kv if isinstance(sys_kv, dict) else None
+        if not sys_kv_dict:
+            raise HTTPException(status_code=400, detail="missing_sys_kv")
+
+        if not spreadsheet_id and project_name:
+            reg_key = f"projects.{namespace}.projects_json"
+            reg = _normalize_projects_registry(_json_loads_loose(sys_kv_dict.get(reg_key)))
+            hit = _find_registry_match(reg, name=project_name)
+            if hit is not None:
+                spreadsheet_id = str(hit.get("spreadsheet_id") or "").strip()
+        if not spreadsheet_id:
+            raise HTTPException(status_code=400, detail="missing_spreadsheet_id")
+
+        sys_kv_dict[f"projects.{namespace}.active_id"] = spreadsheet_id
+        try:
+            ws.state.sys_kv = sys_kv_dict
+        except Exception:
+            pass
+
+        return {"ok": True, "namespace": namespace, "active_id": spreadsheet_id}
 
     if tool_name == "time_now":
         ZoneInfo = deps["ZoneInfo"]

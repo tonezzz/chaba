@@ -1,0 +1,47 @@
+version: "3.9"
+
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - .env.example
+  networks:
+    - idc1-stack-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  chaba01-app:
+    <<: *default-service
+    build:
+      context: ../../services/gemini-live-app
+    environment:
+      PORT: 8080
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://chaba01.idc1.surf-thailand.com}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_LIVE_MODEL: ${GEMINI_LIVE_MODEL:-gemini-2.5-flash-native-audio-preview-12-2025}
+      SOURCE_URL: ${SOURCE_URL:-}
+      SOURCE_REFRESH_TTL_SECONDS: ${SOURCE_REFRESH_TTL_SECONDS:-86400}
+      LIVE_MAX_SESSION_SECONDS: ${LIVE_MAX_SESSION_SECONDS:-900}
+      LIVE_MAX_SESSIONS_PER_IP: ${LIVE_MAX_SESSIONS_PER_IP:-3}
+      LIVE_MAX_CONCURRENT_SESSIONS: ${LIVE_MAX_CONCURRENT_SESSIONS:-10}
+    expose:
+      - "8080"
+
+  chaba01-caddy:
+    <<: *default-service
+    image: caddy:2
+    ports:
+      - "127.0.0.1:${CHABA01_HTTP_PORT:-18110}:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - chaba01-app
+
+networks:
+  idc1-stack-net:
+    driver: bridge
+    external: true
+    name: idc1-stack-net

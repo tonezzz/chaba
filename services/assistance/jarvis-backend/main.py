@@ -4126,7 +4126,7 @@ async def debug_status() -> dict[str, Any]:
         except Exception:
             sys_kv = None
 
-    if not feature_enabled("debug_status", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=False):
+    if not feature_enabled("debug_status", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
         raise HTTPException(status_code=404, detail={"disabled": True})
 
     # Read-only aggregated dependency status (safe for prod).
@@ -16283,6 +16283,56 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
                 }
             )
 
+        for tool_name, tool_desc in (
+            (
+                "projects_instructions_read",
+                "Read the Project OS instructions tab (alias of projects_sheet_read with tab=instructions).",
+            ),
+            (
+                "projects_dictionary_read",
+                "Read the Project OS dictionary tab (alias of projects_sheet_read with tab=dictionary).",
+            ),
+            (
+                "projects_schema_registry_read",
+                "Read the Project OS schema_registry tab (alias of projects_sheet_read with tab=schema_registry).",
+            ),
+            (
+                "projects_entities_read",
+                "Read the Project OS entities tab (alias of projects_sheet_read with tab=entities).",
+            ),
+            (
+                "projects_relations_read",
+                "Read the Project OS relations tab (alias of projects_sheet_read with tab=relations).",
+            ),
+            (
+                "projects_proposals_read",
+                "Read the Project OS proposals tab (alias of projects_sheet_read with tab=proposals).",
+            ),
+            (
+                "projects_changelog_read",
+                "Read the Project OS changelog tab (alias of projects_sheet_read with tab=changelog).",
+            ),
+        ):
+            ok2, _, _ = _gemini_tool_allowed(name=tool_name, sys_kv=sys_kv, macros_only=macros_only)
+            if ok2:
+                decls.append(
+                    {
+                        "name": tool_name,
+                        "description": tool_desc,
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "namespace": {"type": "string", "description": "Registry namespace (e.g. proman)."},
+                                "spreadsheet_id": {"type": "string", "description": "Target Project OS spreadsheet id (optional if projects.<ns>.active_id is set)."},
+                                "project_name": {"type": "string", "description": "Optional: resolve spreadsheet by name in registry."},
+                                "name": {"type": "string", "description": "Alias for project_name."},
+                                "range": {"type": "string", "description": "Optional A1 range; default is <tab>!A:Z."},
+                            },
+                            "required": ["namespace"],
+                        },
+                    }
+                )
+
         ok, _, _ = _gemini_tool_allowed(name="projects_proposal_start_project", sys_kv=sys_kv, macros_only=macros_only)
         if ok:
             decls.append(
@@ -16305,6 +16355,127 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
                             "seed_tasks": {"type": "array", "items": {"type": "string"}, "description": "Optional list of seed task titles."},
                         },
                         "required": ["namespace", "new_project_title"],
+                    },
+                }
+            )
+
+        ok, _, _ = _gemini_tool_allowed(name="projects_entities_append_queue", sys_kv=sys_kv, macros_only=macros_only)
+        if ok:
+            decls.append(
+                {
+                    "name": "projects_entities_append_queue",
+                    "description": "Queue an append to the Project OS entities tab (confirmation-gated; schema-driven by header row).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "namespace": {"type": "string", "description": "Registry namespace (e.g. proman)."},
+                            "spreadsheet_id": {"type": "string", "description": "Target Project OS spreadsheet id (optional if projects.<ns>.active_id is set)."},
+                            "project_name": {"type": "string", "description": "Optional: resolve spreadsheet by name in registry."},
+                            "name": {"type": "string", "description": "Alias for project_name."},
+                            "fields": {"type": "object", "description": "Entity fields to map into entities tab columns."},
+                            "entity": {"type": "object", "description": "Alias for fields."},
+                        },
+                        "required": ["namespace", "fields"],
+                    },
+                }
+            )
+
+        ok, _, _ = _gemini_tool_allowed(name="projects_entities_update_by_id_queue", sys_kv=sys_kv, macros_only=macros_only)
+        if ok:
+            decls.append(
+                {
+                    "name": "projects_entities_update_by_id_queue",
+                    "description": "Queue an update to the Project OS entities tab row matching entity id (confirmation-gated; schema-driven by header row).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "namespace": {"type": "string", "description": "Registry namespace (e.g. proman)."},
+                            "spreadsheet_id": {"type": "string", "description": "Target Project OS spreadsheet id (optional if projects.<ns>.active_id is set)."},
+                            "project_name": {"type": "string", "description": "Optional: resolve spreadsheet by name in registry."},
+                            "name": {"type": "string", "description": "Alias for project_name."},
+                            "id": {"type": "string", "description": "Entity id to update."},
+                            "entity_id": {"type": "string", "description": "Alias for id."},
+                            "fields": {"type": "object", "description": "Fields to update (only provided keys are applied)."},
+                            "entity": {"type": "object", "description": "Alias for fields."},
+                            "max_rows": {"type": "integer", "description": "Optional performance cap when scanning entities tab."},
+                        },
+                        "required": ["namespace", "id", "fields"],
+                    },
+                }
+            )
+
+        ok, _, _ = _gemini_tool_allowed(name="projects_relations_append_queue", sys_kv=sys_kv, macros_only=macros_only)
+        if ok:
+            decls.append(
+                {
+                    "name": "projects_relations_append_queue",
+                    "description": "Queue an append to the Project OS relations tab (confirmation-gated; schema-driven by header row).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "namespace": {"type": "string", "description": "Registry namespace (e.g. proman)."},
+                            "spreadsheet_id": {"type": "string", "description": "Target Project OS spreadsheet id (optional if projects.<ns>.active_id is set)."},
+                            "project_name": {"type": "string", "description": "Optional: resolve spreadsheet by name in registry."},
+                            "name": {"type": "string", "description": "Alias for project_name."},
+                            "fields": {"type": "object", "description": "Relation fields to map into relations tab columns."},
+                            "relation": {"type": "object", "description": "Alias for fields."},
+                        },
+                        "required": ["namespace", "fields"],
+                    },
+                }
+            )
+
+        ok, _, _ = _gemini_tool_allowed(name="projects_proposals_apply_approved", sys_kv=sys_kv, macros_only=macros_only)
+        if ok:
+            decls.append(
+                {
+                    "name": "projects_proposals_apply_approved",
+                    "description": "Apply approved proposals in a Project OS spreadsheet (A1 flow: scan proposals status=approved, execute, then mark applied).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "namespace": {"type": "string", "description": "Registry namespace (e.g. proman)."},
+                            "spreadsheet_id": {"type": "string", "description": "Target Project OS spreadsheet id (optional if projects.<ns>.active_id is set)."},
+                            "project_name": {"type": "string", "description": "Optional: resolve spreadsheet by name in registry."},
+                            "name": {"type": "string", "description": "Alias for project_name."},
+                            "limit": {"type": "integer", "description": "Max number of approved proposals to apply in one call (default 20, max 50)."},
+                        },
+                        "required": ["namespace"],
+                    },
+                }
+            )
+
+        ok, _, _ = _gemini_tool_allowed(name="projects_active_get", sys_kv=sys_kv, macros_only=macros_only)
+        if ok:
+            decls.append(
+                {
+                    "name": "projects_active_get",
+                    "description": "Get the active Project OS spreadsheet id for a namespace (projects.<ns>.active_id).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "namespace": {"type": "string", "description": "Registry namespace (e.g. proman)."}
+                        },
+                        "required": ["namespace"],
+                    },
+                }
+            )
+
+        ok, _, _ = _gemini_tool_allowed(name="projects_active_set", sys_kv=sys_kv, macros_only=macros_only)
+        if ok:
+            decls.append(
+                {
+                    "name": "projects_active_set",
+                    "description": "Set the active Project OS spreadsheet id for a namespace (updates projects.<ns>.active_id for this session).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "namespace": {"type": "string", "description": "Registry namespace (e.g. proman)."},
+                            "spreadsheet_id": {"type": "string", "description": "Spreadsheet id to set active."},
+                            "project_name": {"type": "string", "description": "Optional: resolve spreadsheet by name in registry."},
+                            "name": {"type": "string", "description": "Alias for project_name."}
+                        },
+                        "required": ["namespace"],
                     },
                 }
             )
