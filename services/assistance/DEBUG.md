@@ -195,6 +195,84 @@ Replay captured inbound text messages through backend dispatch:
 
 - `python3 services/assistance/jarvis-backend/ws_replay.py /tmp/jarvis-ws.jsonl`
 
+## sys_kv_set (system sheet KV writes)
+
+`sys_kv_set` is a deterministic websocket system action that writes a single key/value pair into the **system Google Sheet**.
+
+### Preconditions / safety gate
+
+- Writes are **disabled by default**.
+- The backend requires this key in the system sheet:
+  - `sys_kv.write.enabled=true`
+- If the key is missing or set to falsey, the backend returns a structured error:
+  - `kind=sys_kv_write_disabled`
+
+### Correct ways to trigger
+
+Use one of these (in priority order):
+
+1) UI composer command:
+   - `/sys set <key>=<value>`
+   - Dry-run:
+     - `/sys dry <key>=<value>`
+
+2) Frontend API call (when you have a reference to the LiveService instance):
+   - `sendSysKvSet(key, value, { dry_run })`
+
+### Common mistake: pasting JSON into chat
+
+If you paste JSON into the composer, it is typically sent as a **chat message**:
+
+```json
+{ "type": "text", "text": "{ \"type\": \"system\", ... }" }
+```
+
+That will **not** execute the system action; it is just model input.
+
+To execute a `sys_kv_set`, the outbound websocket frame must be the system envelope itself:
+
+```json
+{ "type": "system", "action": "sys_kv_set", "key": "...", "value": "...", "dry_run": false }
+```
+
+### What “success” looks like
+
+- Backend emits a `type="text"` line like:
+  - `sys_kv_set ok: <key>=<value>`
+- Backend refreshes `sys_kv` in memory (best-effort) so subsequent reads reflect the new value.
+
+If the UI says “ok” but you don’t see the sheet change:
+
+- Verify you’re looking at the same spreadsheet/tab as the running backend:
+  - `CHABA_SYSTEM_SPREADSHEET_ID`
+  - `CHABA_SYSTEM_SHEET_NAME`
+- Confirm there is no competing writer (another instance) overwriting the key.
+- Capture the `trace_id` and pull evidence:
+  - `./scripts/collect-idc1-assistance-evidence.sh <trace_id>`
+
+## Operation Log text chunk grouping (frontend)
+
+Jarvis can receive rapid-fire small text fragments (especially from voice transcription or model streaming). To keep the Operation Log readable, the frontend merges short adjacent chunks.
+
+### Where it happens
+
+- `services/assistance/jarvis-frontend/App.tsx`
+  - In the `liveService.current.onMessage` handler, inside the `setMessages(...)` reducer.
+
+### Current merge heuristic (high level)
+
+- Only considers merging when:
+  - Same role (`model` or `system`)
+  - Messages arrive within ~1 second
+  - Text is short and single-line
+  - Previous chunk doesn’t look like a sentence boundary
+
+If you need to tune the UX, adjust:
+
+- The time window (ms)
+- The “looks like chunk” max length
+- Sentence boundary detection regex
+
 ## Frontend contract tests
 
 The frontend includes a small Vitest contract suite for WS event rendering:

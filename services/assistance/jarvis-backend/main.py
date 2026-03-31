@@ -10054,6 +10054,7 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
                 pass
             await _ws_voice_job_done(ws, tid)
             return True
+
         if action in {"clear_job", "clear", "cancel_job", "cancel"}:
             await _ws_send_json(
                 ws,
@@ -10080,6 +10081,7 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             )
             await _ws_voice_job_done(ws, tid)
             return True
+
         if action in {"sys_kv_set", "syskv_set", "sys_set"}:
             sys_kv = getattr(ws.state, "sys_kv", None)
             enabled_raw = ""
@@ -10155,11 +10157,32 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
                     trace_id=tid,
                 )
                 return True
+
+            try:
+                ss_id = str(result.get("spreadsheet_id") or "").strip()
+                sh = str(result.get("sheet") or "").strip()
+                act = str(result.get("action") or "").strip()
+                rng = str(result.get("range") or "").strip()
+                row = result.get("row")
+                where_parts = []
+                if ss_id:
+                    where_parts.append(f"spreadsheet_id={ss_id}")
+                if sh:
+                    where_parts.append(f"sheet={sh}")
+                if act:
+                    where_parts.append(f"action={act}")
+                if rng:
+                    where_parts.append(f"range={rng}")
+                elif row is not None:
+                    where_parts.append(f"row={row}")
+                where = (" (" + ", ".join(where_parts) + ")") if where_parts else ""
+            except Exception:
+                where = ""
             await _ws_send_json(
                 ws,
                 {
                     "type": "text",
-                    "text": f"sys_kv_set ok: {k}={v}" + (" (dry_run)" if dry_run else ""),
+                    "text": f"sys_kv_set ok: {k}={v}" + (" (dry_run)" if dry_run else "") + where,
                     "instance_id": INSTANCE_ID,
                     "sys_kv_set": result,
                 },
@@ -10182,7 +10205,7 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
                 await _maybe_capture_to_memory(
                     ws,
                     key="runtime.system.sys_kv_set.latest",
-                    value=f"sys_kv_set ok: {k}={v}" + (" (dry_run)" if dry_run else ""),
+                    value=f"sys_kv_set ok: {k}={v}" + (" (dry_run)" if dry_run else "") + where,
                     source="system.sys_kv_set",
                 )
             except Exception:
