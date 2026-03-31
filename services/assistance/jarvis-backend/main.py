@@ -4107,6 +4107,8 @@ def oauth_callback_last() -> dict[str, Any]:
     return {"ok": True, "last": dict(_OAUTH_CALLBACK_LAST)}
 
 
+@app.get("/debug/status")
+@app.get("/jarvis/debug/status")
 @app.get("/api/debug/status")
 @app.get("/jarvis/api/debug/status")
 async def debug_status() -> dict[str, Any]:
