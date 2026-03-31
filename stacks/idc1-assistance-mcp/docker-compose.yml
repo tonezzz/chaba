@@ -1,0 +1,413 @@
+version: "3.9"
+
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - ../idc1-assistance/.env.example
+  networks:
+    - idc1-stack-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  mcp-bundle:
+    <<: *default-service
+    image: ghcr.io/tonezzz/chaba/mcp-bundle:idc1-assistance
+    ports:
+      - "127.0.0.1:3051:3050"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      ONE_MCP_HOST: 0.0.0.0
+      ONE_MCP_PORT: 3050
+      ONE_MCP_EXTERNAL_URL: ${ONE_MCP_EXTERNAL_URL:-https://127.0.0.1:3051}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
+      GOOGLE_SHEETS_REDIRECT_URI: ${GOOGLE_SHEETS_REDIRECT_URI:-}
+      GOOGLE_TASKS_TOKEN_PATH: ${GOOGLE_SHARED_TOKEN_PATH:-/root/.config/1mcp/google.tokens.json}
+      GOOGLE_SHEETS_TOKEN_PATH: ${GOOGLE_SHARED_TOKEN_PATH:-/root/.config/1mcp/google.tokens.json}
+      GOOGLE_CALENDAR_TOKEN_PATH: ${GOOGLE_SHARED_TOKEN_PATH:-/root/.config/1mcp/google.tokens.json}
+      GOOGLE_TASKS_SCOPES: ${GOOGLE_SHARED_SCOPES:-https://www.googleapis.com/auth/tasks,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/spreadsheets}
+      GOOGLE_SHEETS_SCOPES: ${GOOGLE_SHARED_SCOPES:-https://www.googleapis.com/auth/tasks,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/spreadsheets}
+      GOOGLE_CALENDAR_SCOPES: ${GOOGLE_SHARED_SCOPES:-https://www.googleapis.com/auth/tasks,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/spreadsheets}
+    volumes:
+      - mcp-bundle-config:/root/.config/1mcp
+    networks:
+      idc1-stack-net:
+        aliases:
+          - mcp-bundle-assistance
+
+
+  mcp-playwright:
+    <<: *default-service
+    image: mcr.microsoft.com/playwright:v1.58.2-jammy
+    environment:
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+    command:
+      - bash
+      - -lc
+      - |
+        set -e
+        node -v
+        if ! node -e 'require("playwright")' >/dev/null 2>&1; then
+          npm -g i playwright@1.58.2
+        fi
+        if ! node -e 'require("@playwright/mcp")' >/dev/null 2>&1; then
+          npm -g i @playwright/mcp@0.0.68
+        fi
+        CHROMIUM_BIN="$(find /ms-playwright -maxdepth 6 -type f -name chrome -print -quit 2>/dev/null)"
+        if [ -z "$$CHROMIUM_BIN" ]; then
+          echo "missing_chromium_bin"
+          ls -la /ms-playwright 2>/dev/null || true
+          find /ms-playwright -maxdepth 4 -type f -name chrome 2>/dev/null | head -n 20 || true
+          exit 1
+        fi
+        npx @playwright/mcp@0.0.68 --host 0.0.0.0 --port 3050 --no-sandbox --allowed-hosts '*' --allowed-origins '*' --browser chromium --executable-path "$$CHROMIUM_BIN"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sS http://127.0.0.1:3050/ | grep -q 'Invalid request' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-image-pipeline:
+    <<: *default-service
+    image: ghcr.io/tonezzz/chaba/mcp-image-pipeline:idc1-assistance
+    ports:
+      - "127.0.0.1:3053:3050"
+    environment:
+      ONE_MCP_HOST: 0.0.0.0
+      ONE_MCP_PORT: 3050
+      ONE_MCP_EXTERNAL_URL: ${ONE_MCP_IMAGE_PIPELINE_EXTERNAL_URL:-https://127.0.0.1:3053}
+      ONE_MCP_LOG_LEVEL: info
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      IMAGE_PIPELINE_ASSETS_DIR: ${IMAGE_PIPELINE_ASSETS_DIR:-/data/assets}
+      IMAGE_PIPELINE_MODEL: ${IMAGE_PIPELINE_MODEL:-imagen-4.0-generate-001}
+      IMAGE_PIPELINE_ALLOWED_MODELS: ${IMAGE_PIPELINE_ALLOWED_MODELS:-imagen-4.0-generate-001,imagen-4.0-fast-generate-001,imagen-4.0-ultra-generate-001,gemini-3.1-flash-image-preview}
+    volumes:
+      - image-pipeline-assets:${IMAGE_PIPELINE_ASSETS_DIR:-/data/assets}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3050/health >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-ws-gateway:
+    <<: *default-service
+    image: node:20-alpine
+    depends_on:
+      - mcp-bundle
+    ports:
+      - "127.0.0.1:18182:8182"
+    working_dir: /app
+    command:
+      - sh
+      - -lc
+      - |
+        set -e
+
+        cat > /app/index.js <<'EOF'
+        const express = require('express');
+        const http = require('http');
+        const crypto = require('crypto');
+        const WebSocket = require('ws');
+
+        const APP_NAME = 'mcp-ws-gateway';
+        const APP_VERSION = '0.1.0';
+
+        const PORT = Number(process.env.PORT || 8182);
+        const WS_PATH = process.env.WS_PATH || '/ws';
+
+        const OPENAI_GATEWAY_URL = (process.env.OPENAI_GATEWAY_URL || 'http://mcp-openai-gateway:8181').replace(/\/$/, '');
+        const MCP_AGENT_URL = (process.env.MCP_AGENT_URL || 'http://mcp-bundle:3050/mcp?app=windsurf').trim();
+
+        function newId(prefix = 'req') {
+          return String(prefix) + '-' + String(Date.now()) + '-' + String(crypto.randomUUID?.() || Math.random().toString(16).slice(2));
+        }
+
+        function safeJsonParse(s) {
+          try {
+            return JSON.parse(s);
+          } catch {
+            return null;
+          }
+        }
+
+        function parseStreamableJsonResponse(bodyText) {
+          const trimmed = (bodyText || '').trim();
+          if (!trimmed) return null;
+
+          if (trimmed.startsWith('{')) {
+            return safeJsonParse(trimmed);
+          }
+
+          const lines = trimmed.split(/\r?\n/);
+          for (const line of lines) {
+            if (line.startsWith('data:')) {
+              const payload = line.replace(/^data:\s*/, '').trim();
+              const obj = safeJsonParse(payload);
+              if (obj) return obj;
+            }
+          }
+          return null;
+        }
+
+        async function mcpInitialize() {
+          const initPayload = {
+            jsonrpc: '2.0',
+            id: '1',
+            method: 'initialize',
+            params: {
+              protocolVersion: '2024-11-05',
+              capabilities: { tools: {}, resources: {}, prompts: {} },
+              clientInfo: { name: APP_NAME, version: APP_VERSION }
+            }
+          };
+
+          const r = await fetch(MCP_AGENT_URL, {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              accept: 'application/json, text/event-stream'
+            },
+            body: JSON.stringify(initPayload)
+          });
+
+          const sessionId = r.headers.get('mcp-session-id');
+          const text = await r.text();
+          const obj = parseStreamableJsonResponse(text);
+          if (!r.ok) {
+            throw new Error('mcp initialize failed: ' + String(r.status) + ' ' + String(text));
+          }
+          if (obj?.error) {
+            throw new Error('mcp initialize error: ' + String(JSON.stringify(obj.error)));
+          }
+          if (!sessionId) {
+            throw new Error('mcp initialize: missing mcp-session-id header');
+          }
+          return sessionId;
+        }
+
+        async function mcpToolsCall(sessionId, toolName, argumentsObj) {
+          const payload = {
+            jsonrpc: '2.0',
+            id: newId('call'),
+            method: 'tools/call',
+            params: { name: toolName, arguments: argumentsObj || {} }
+          };
+
+          const r = await fetch(MCP_AGENT_URL, {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              accept: 'application/json, text/event-stream',
+              'mcp-session-id': sessionId
+            },
+            body: JSON.stringify(payload)
+          });
+
+          const text = await r.text();
+          const obj = parseStreamableJsonResponse(text);
+          if (!r.ok) {
+            throw new Error('mcp tools/call failed: ' + String(r.status) + ' ' + String(text));
+          }
+          return obj;
+        }
+
+        function send(ws, obj) {
+          if (ws.readyState !== WebSocket.OPEN) return;
+          ws.send(JSON.stringify(obj));
+        }
+
+        const app = express();
+        app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '2mb' }));
+
+        app.get('/health', (_req, res) => {
+          res.json({ ok: true, service: APP_NAME, version: APP_VERSION, wsPath: WS_PATH });
+        });
+
+        const server = http.createServer(app);
+        const wss = new WebSocket.Server({ server, path: WS_PATH });
+
+        wss.on('connection', async (ws) => {
+          const connId = newId('conn');
+          send(ws, { type: 'hello', connId, server: { name: APP_NAME, version: APP_VERSION } });
+
+          const mcpSessionPromise = (async () => {
+            try {
+              const sessionId = await mcpInitialize();
+              send(ws, { type: 'mcp.ready' });
+              return sessionId;
+            } catch (e) {
+              send(ws, { type: 'mcp.error', error: { message: 'MCP init failed: ' + String(e && e.message ? e.message : e) } });
+              return null;
+            }
+          })();
+
+          ws.on('message', async (data) => {
+            const raw = data.toString('utf-8');
+            const msg = safeJsonParse(raw);
+            if (!msg || typeof msg.type !== 'string') {
+              return send(ws, { type: 'error', error: { message: 'Invalid message (expected JSON with type)' } });
+            }
+
+            const requestId = msg.requestId || newId('ws');
+
+            if (msg.type === 'tools.call') {
+              const mcpSessionId = await mcpSessionPromise;
+              if (!mcpSessionId) {
+                return send(ws, { type: 'tools.error', requestId, error: { message: 'MCP not initialized' } });
+              }
+              const toolName = msg.name;
+              if (!toolName) {
+                return send(ws, { type: 'tools.error', requestId, error: { message: 'Missing tool name' } });
+              }
+
+              send(ws, { type: 'tool.start', requestId, name: toolName, arguments: msg.arguments || {} });
+              try {
+                const result = await mcpToolsCall(mcpSessionId, toolName, msg.arguments || {});
+                send(ws, { type: 'tool.done', requestId, name: toolName, result });
+              } catch (e) {
+                send(ws, { type: 'tool.error', requestId, name: toolName, error: { message: e.message } });
+              }
+              return;
+            }
+
+            return send(ws, { type: 'error', requestId, error: { message: 'Unknown message type: ' + String(msg.type) } });
+          });
+        });
+
+        server.listen(PORT, '0.0.0.0', () => {
+          console.log('[' + String(APP_NAME) + '] listening on 0.0.0.0:' + String(PORT));
+        });
+        EOF
+
+        if [ ! -f /app/package.json ]; then
+          npm init -y >/dev/null 2>&1
+        fi
+        if [ ! -d /app/node_modules ]; then
+          npm install --silent express ws
+        fi
+        exec node /app/index.js
+    environment:
+      PORT: 8182
+      WS_PATH: /ws
+      MCP_AGENT_URL: http://mcp-bundle:3050/mcp?app=windsurf
+      OPENAI_GATEWAY_URL: ${OPENAI_GATEWAY_URL:-http://mcp-openai-gateway:8181}
+    volumes:
+      - mcp-ws-gateway-data:/app
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8182/health >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mcp-ws-gateway-portainer:
+    <<: *default-service
+    image: node:20-alpine
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:18183:8182"
+    working_dir: /app
+    command:
+      - sh
+      - -lc
+      - |
+        set -e
+
+        cat > /app/index.js <<'EOF'
+        const express = require('express');
+        const http = require('http');
+        const crypto = require('crypto');
+        const WebSocket = require('ws');
+
+        const APP_NAME = 'mcp-ws-gateway';
+        const APP_VERSION = '0.1.0';
+
+        const PORT = Number(process.env.PORT || 8182);
+        const WS_PATH = process.env.WS_PATH || '/ws';
+
+        function newId(prefix = 'req') {
+          return String(prefix) + '-' + String(Date.now()) + '-' + String(crypto.randomUUID?.() || Math.random().toString(16).slice(2));
+        }
+
+        function safeJsonParse(s) {
+          try {
+            return JSON.parse(s);
+          } catch {
+            return null;
+          }
+        }
+
+        function send(ws, obj) {
+          if (ws.readyState !== WebSocket.OPEN) return;
+          ws.send(JSON.stringify(obj));
+        }
+
+        const app = express();
+        app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '2mb' }));
+
+        app.get('/health', (_req, res) => {
+          res.json({ ok: true, service: APP_NAME, version: APP_VERSION, wsPath: WS_PATH });
+        });
+
+        const server = http.createServer(app);
+        const wss = new WebSocket.Server({ server, path: WS_PATH });
+
+        wss.on('connection', async (ws) => {
+          const connId = newId('conn');
+          send(ws, { type: 'hello', connId, server: { name: APP_NAME, version: APP_VERSION } });
+        });
+
+        server.listen(PORT, '0.0.0.0', () => {
+          console.log('[' + String(APP_NAME) + '] listening on 0.0.0.0:' + String(PORT));
+        });
+        EOF
+
+        if [ ! -f /app/package.json ]; then
+          npm init -y >/dev/null 2>&1
+        fi
+        if [ ! -d /app/node_modules ]; then
+          npm install --silent express ws
+        fi
+        exec node /app/index.js
+    environment:
+      PORT: 8182
+      WS_PATH: /ws
+      MCP_AGENT_URL: http://host.docker.internal:3051/mcp?app=windsurf
+      OPENAI_GATEWAY_URL: ${OPENAI_GATEWAY_URL:-http://mcp-openai-gateway:8181}
+    volumes:
+      - mcp-ws-gateway-portainer-data:/app
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8182/health >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  idc1-stack-net:
+    driver: bridge
+    external: true
+    name: idc1-stack-net
+
+volumes:
+  mcp-bundle-config:
+    external: true
+    name: ${MCP_BUNDLE_CONFIG_VOLUME_NAME:-idc1-assistance_mcp-bundle-config}
+
+  image-pipeline-assets:
+    external: true
+    name: ${IMAGE_PIPELINE_ASSETS_VOLUME_NAME:-idc1-assistance_image-pipeline-assets}
+
+  mcp-ws-gateway-data:
+    external: true
+    name: ${MCP_WS_GATEWAY_DATA_VOLUME_NAME:-idc1-assistance_mcp-ws-gateway-data}
+
+  mcp-ws-gateway-portainer-data:
+    external: true
+    name: ${MCP_WS_GATEWAY_PORTAINER_DATA_VOLUME_NAME:-idc1-assistance_mcp-ws-gateway-portainer-data}

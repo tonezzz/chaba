@@ -113,7 +113,7 @@ services:
     environment:
       ONE_MCP_HOST: 0.0.0.0
       ONE_MCP_PORT: 3050
-      ONE_MCP_EXTERNAL_URL: http://127.0.0.1:3051
+      ONE_MCP_EXTERNAL_URL: ${ONE_MCP_EXTERNAL_URL:-https://127.0.0.1:3051}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
@@ -2233,7 +2233,7 @@ services:
     environment:
       ONE_MCP_HOST: 0.0.0.0
       ONE_MCP_PORT: 3050
-      ONE_MCP_EXTERNAL_URL: http://127.0.0.1:3053
+      ONE_MCP_EXTERNAL_URL: ${ONE_MCP_IMAGE_PIPELINE_EXTERNAL_URL:-https://127.0.0.1:3053}
       ONE_MCP_LOG_LEVEL: info
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       IMAGE_PIPELINE_ASSETS_DIR: ${IMAGE_PIPELINE_ASSETS_DIR:-/data/assets}
@@ -2274,7 +2274,7 @@ services:
         const WS_PATH = process.env.WS_PATH || '/ws';
         
         const OPENAI_GATEWAY_URL = (process.env.OPENAI_GATEWAY_URL || 'http://mcp-openai-gateway:8181').replace(/\/$/, '');
-        const MCP_AGENT_URL = (process.env.MCP_AGENT_URL || 'http://1mcp-agent:3051/mcp?app=windsurf').trim();
+        const MCP_AGENT_URL = (process.env.MCP_AGENT_URL || 'http://mcp-bundle:3050/mcp?app=windsurf').trim();
         
         function newId(prefix = 'req') {
           return String(prefix) + '-' + String(Date.now()) + '-' + String(crypto.randomUUID?.() || Math.random().toString(16).slice(2));
@@ -2589,7 +2589,7 @@ services:
         const WS_PATH = process.env.WS_PATH || '/ws';
         
         const OPENAI_GATEWAY_URL = (process.env.OPENAI_GATEWAY_URL || 'http://mcp-openai-gateway:8181').replace(/\/$/, '');
-        const MCP_AGENT_URL = (process.env.MCP_AGENT_URL || 'http://1mcp-agent:3051/mcp?app=windsurf').trim();
+        const MCP_AGENT_URL = (process.env.MCP_AGENT_URL || 'http://mcp-bundle:3050/mcp?app=windsurf').trim();
         
         function newId(prefix = 'req') {
           return String(prefix) + '-' + String(Date.now()) + '-' + String(crypto.randomUUID?.() || Math.random().toString(16).slice(2));
@@ -2867,7 +2867,7 @@ services:
     environment:
       PORT: 8182
       WS_PATH: /ws
-      MCP_AGENT_URL: http://host.docker.internal:3052/mcp?app=windsurf
+      MCP_AGENT_URL: http://host.docker.internal:3051/mcp?app=windsurf
       OPENAI_GATEWAY_URL: ${OPENAI_GATEWAY_URL:-http://mcp-openai-gateway:8181}
     volumes:
       - mcp-ws-gateway-portainer-data:/app

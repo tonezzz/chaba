@@ -75,7 +75,16 @@ jobs:
             file: ./services/assistance/mcp-bundle/Dockerfile
             build_args: ""
             extra_paths: |
+              services/assistance/mcp-bundle/Dockerfile
+              services/assistance/mcp-bundle/entrypoint.sh
+              services/assistance/mcp-bundle/proxy.js
+              services/assistance/mcp-bundle/mcp-config/mcp.json
+              services/assistance/mcp-bundle/mcp-servers/mcp-google-sheets/server.js
+              services/assistance/mcp-bundle/mcp-servers/mcp-google-tasks/server.js
+              services/assistance/mcp-bundle/mcp-servers/mcp-google-calendar/server.js
               services/assistance/mcp-servers/mcp-google-sheets/server.js
+              services/assistance/mcp-servers/mcp-google-tasks/server.js
+              services/assistance/mcp-servers/mcp-google-calendar/server.js
           - name: mcp-image-pipeline
             image: mcp-image-pipeline
             context: ./services/assistance/mcp-image-pipeline
