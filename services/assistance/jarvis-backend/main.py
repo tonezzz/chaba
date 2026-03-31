@@ -9039,7 +9039,6 @@ async def _handle_system_reload_mode(ws: WebSocket, mode: str, trace_id: str | N
             try:
                 await _load_ws_sheet_memory(ws)
                 lang = str(getattr(ws.state, "user_lang", "") or "").strip() or "en"
-                await _ws_send_json(ws, {"type": "text", "text": _memory_load_status_line(ws, lang), "instance_id": INSTANCE_ID}, trace_id=trace_id)
                 await _ws_send_json(ws, {"type": "text", "text": f"Reload {m}: ok", "instance_id": INSTANCE_ID}, trace_id=trace_id)
                 try:
                     await _maybe_capture_to_memory(ws, key="runtime.system.reload.latest", value=f"Reload {m}: ok", source="system.reload")
@@ -18777,12 +18776,7 @@ async def ws_live(ws: WebSocket) -> None:
 
         if should_emit_sheet_status:
             try:
-                mem_line = _memory_load_status_line(ws, lang)
-                await _ws_send_json(ws, {"type": "text", "text": mem_line, "instance_id": INSTANCE_ID})
-                try:
-                    await _maybe_capture_to_memory(ws, key="runtime.connect.memory_load_status", value=mem_line, source="connect")
-                except Exception:
-                    pass
+                await _ws_emit_sheet_status(ws, include_notes=False)
             except Exception:
                 pass
 
