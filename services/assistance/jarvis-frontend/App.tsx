@@ -802,8 +802,13 @@ export default function App() {
         setContainerStatusError("");
         const joinUrl = (base: string, path: string): string => {
           const b = String(base || "").replace(/\/+$/, "");
-          const p = String(path || "");
+          let p = String(path || "");
           if (!b) return p;
+
+          if (b.endsWith("/api") && p.startsWith("/api/")) p = p.slice("/api".length);
+          if (b.endsWith("/jarvis") && p.startsWith("/jarvis/")) p = p.slice("/jarvis".length);
+          if (b.endsWith("/jarvis/api") && p.startsWith("/jarvis/api/")) p = p.slice("/jarvis/api".length);
+
           return `${b}${p}`;
         };
 
@@ -913,6 +918,43 @@ export default function App() {
       window.clearInterval(t);
     };
   }, [hasKey, statusDetailsOpen, depsStatusRefreshNonce]);
+
+  const getSeqCompletedTasks = useCallback((): Array<{ notes?: string }> => {
+    const raw = String(seqCompletedNotes || "").trim();
+    if (!raw) return [];
+    return [{ notes: raw }];
+  }, [seqCompletedNotes]);
+
+  const applySeqResponse = useCallback(
+    (res: any) => {
+      if (!res || res.ok === false) {
+        setSeqError(String(res?.error || "sequential_failed"));
+        return;
+      }
+      if (typeof res.notes === "string") setSeqNotes(res.notes);
+      setSeqNextText(res.next_step_text != null ? String(res.next_step_text) : null);
+      setSeqNextIndex(res.next_step_index != null ? Number(res.next_step_index) : null);
+      setSeqTemplate(Array.isArray(res.template) ? res.template.map((v: any) => String(v)) : null);
+    },
+    [setSeqError, setSeqNotes, setSeqNextText, setSeqNextIndex, setSeqTemplate]
+  );
+
+  const handleSeqSuggest = useCallback(async () => {
+    setSeqBusy(true);
+    setSeqError("");
+    try {
+      const completed_tasks = getSeqCompletedTasks();
+      const res = await sequentialApplyAndSuggest({ mode: "suggest", notes: seqNotes, completed_tasks });
+      applySeqResponse(res);
+    } catch (e: any) {
+      setSeqError(String(e?.message || e || "suggest_failed"));
+      setSeqNextText(null);
+      setSeqNextIndex(null);
+      setSeqTemplate(null);
+    } finally {
+      setSeqBusy(false);
+    }
+  }, [applySeqResponse, getSeqCompletedTasks, seqNotes]);
 
   const handleSeqApply = async () => {
     if (seqNextIndex == null) return;
