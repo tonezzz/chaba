@@ -220,6 +220,7 @@ export default function App() {
         }
       }
     }
+
     return dialog.slice(-200);
   }, [messages]);
 
@@ -395,6 +396,17 @@ export default function App() {
         // ignore
       }
 
+      try {
+        const txt = String((msg as any)?.text || "").trim();
+        const isAutospeakLine = /\bauto\s*speak\b/i.test(txt) || /\bautospeek\b/i.test(txt);
+        if (isAutospeakLine) {
+          if (!showDebugLogsRef.current) return;
+          if (readinessPhaseRef.current !== "model_ready") return;
+        }
+      } catch {
+        // ignore
+      }
+
       setMessages((prev) => {
         if (msg.id === "sticky_progress") {
           const without = prev.filter((m) => m.id !== "sticky_progress");
@@ -463,6 +475,10 @@ export default function App() {
       // ignore
     }
   }, [statusDetailsOpen]);
+
+  useEffect(() => {
+    showDebugLogsRef.current = !!showDebugLogs;
+  }, [showDebugLogs]);
 
   useEffect(() => {
     if (state !== ConnectionState.CONNECTED && isTalking) {
