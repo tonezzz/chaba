@@ -424,17 +424,24 @@ export default function App() {
           const last = prev.length ? prev[prev.length - 1] : null;
           const nextTs = msg.timestamp instanceof Date ? msg.timestamp.getTime() : Date.now();
           const lastTs = last?.timestamp instanceof Date ? last.timestamp.getTime() : 0;
-          const withinWindow = lastTs > 0 && nextTs - lastTs >= 0 && nextTs - lastTs <= 900;
+          const withinWindow = lastTs > 0 && nextTs - lastTs >= 0 && nextTs - lastTs <= 1600;
           const canMergeRole = last && last.role === msg.role && (msg.role === "model" || msg.role === "system");
-          const looksLikeChunk = nextTrim.length > 0 && nextTrim.length <= 40 && !nextTrim.includes("\n");
+          const isTimeFragment = /^\d{1,2}:\d{2}(?:\s*(?:น\.|am|pm))?\s*$/i.test(nextTrim);
+          const looksLikeChunk = (nextTrim.length > 0 && nextTrim.length <= 40 && !nextTrim.includes("\n")) || isTimeFragment;
           const lastTxt = last ? String(last.text || "") : "";
           const lastTrim = lastTxt.trim();
           const lastLooksLikeChunk = lastTrim.length > 0 && lastTrim.length <= 60 && !lastTrim.includes("\n");
           const lastEndsSentence = /[.!?…。、！？]$/.test(lastTrim);
           const nextStartsNewSentence = /^[A-Z0-9]/.test(nextTrim);
           if (withinWindow && canMergeRole && looksLikeChunk && lastLooksLikeChunk && !lastEndsSentence && !nextStartsNewSentence) {
-            const joiner = /\s$/.test(lastTxt) ? "" : " ";
+            const lastEndsThai = /[\u0E00-\u0E7F]$/.test(lastTrim);
+            const nextStartsThai = /^[\u0E00-\u0E7F]/.test(nextTrim);
+            const isThaiBoundary = lastEndsThai && nextStartsThai;
+            const lastEndsWithThaiTimeCue = /เวลา\s*$/.test(lastTrim);
+            const joiner = isThaiBoundary ? "" : /\s$/.test(lastTxt) ? "" : " ";
+            const joiner2 = lastEndsWithThaiTimeCue && isTimeFragment ? " " : joiner;
             const merged: any = { ...last, text: `${lastTxt}${joiner}${nextTrim}`, timestamp: msg.timestamp };
+            merged.text = `${lastTxt}${joiner2}${nextTrim}`;
             return [...prev.slice(0, -1), merged];
           }
         } catch {
