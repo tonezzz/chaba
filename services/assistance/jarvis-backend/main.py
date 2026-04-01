@@ -11176,7 +11176,23 @@ async def _handle_news_follow_trigger(ws: WebSocket, text: str) -> bool:
         return False
 
     user_id = DEFAULT_USER_ID
-    focus = _get_news_follow_focus(user_id)
+    focus: list[str] = []
+    try:
+        sys_kv = getattr(ws.state, "sys_kv", None)
+    except Exception:
+        sys_kv = None
+    try:
+        topics_cfg = await _load_news_topics_from_sheet(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+        if isinstance(topics_cfg, dict) and topics_cfg:
+            focus = sorted([str(k or "").strip() for k in topics_cfg.keys() if str(k or "").strip()])
+            try:
+                _set_news_follow_focus(user_id, focus)
+            except Exception:
+                pass
+    except Exception:
+        focus = []
+    if not focus:
+        focus = _get_news_follow_focus(user_id)
     summaries = _get_news_follow_summaries(user_id)
 
     if action == "focus_list":
