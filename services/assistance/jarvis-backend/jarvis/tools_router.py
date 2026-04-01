@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import asyncio
 import os
 import time
 from typing import Any, Optional
@@ -177,6 +178,170 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         await _emit_pending_awaiting_user(session_id0=str(session_id), confirmation_id=confirmation_id, action="memo_update", payload=proposed)
         return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "id": int(memo_id)}
 
+    if tool_name == "news_feedback":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        session_ws = deps["SESSION_WS"]
+        feature_enabled = deps["feature_enabled"]
+        record_news_usage_event = deps["record_news_usage_event"]
+
+        ws = session_ws.get(str(session_id)) if session_id else None
+        if ws is None:
+            raise HTTPException(status_code=400, detail="missing_session_ws")
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        if not feature_enabled("current-news", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+            raise HTTPException(status_code=403, detail="feature_disabled:current-news")
+
+        label = str(args.get("label") or "").strip().lower()
+        if label not in {"relevant", "irrelevant", "good_source", "bad_source"}:
+            raise HTTPException(status_code=400, detail="invalid_label")
+
+        payload = {
+            "label": label,
+            "link": str(args.get("link") or "").strip() or None,
+            "title": str(args.get("title") or "").strip() or None,
+            "topic": str(args.get("topic") or "").strip() or None,
+            "source_url": str(args.get("source_url") or "").strip() or None,
+        }
+        ok = bool(record_news_usage_event(str(session_id), "news_feedback", payload))
+        return {"ok": ok, "recorded": ok, "event_type": "news_feedback", "payload": payload}
+
+    if tool_name == "news_tuning_suggest":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        session_ws = deps["SESSION_WS"]
+        feature_enabled = deps["feature_enabled"]
+        list_news_usage_events = deps["list_news_usage_events"]
+        load_news_topics_from_sheet = deps.get("load_news_topics_from_sheet")
+        load_news_sources_from_sheet = deps.get("load_news_sources_from_sheet")
+        create_pending_write = deps["create_pending_write"]
+
+        ws = session_ws.get(str(session_id)) if session_id else None
+        if ws is None:
+            raise HTTPException(status_code=400, detail="missing_session_ws")
+        sys_kv = getattr(ws.state, "sys_kv", None)
+        if not feature_enabled("current-news", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+            raise HTTPException(status_code=403, detail="feature_disabled:current-news")
+
+        limit_events = args.get("limit_events")
+        try:
+            lim = int(limit_events) if limit_events is not None else 200
+        except Exception:
+            lim = 200
+        lim = max(1, min(lim, 2000))
+        events = list_news_usage_events(str(session_id), limit=lim)
+
+        # SSOT: load current sheet config (including disabled) so we can make safe proposals.
+        sheet_topics: dict[str, dict[str, Any]] = {}
+        sheet_sources: list[dict[str, Any]] = []
+        try:
+            if load_news_topics_from_sheet is not None:
+                sheet_topics = await load_news_topics_from_sheet(sys_kv=sys_kv if isinstance(sys_kv, dict) else None, include_disabled=True)
+        except Exception:
+            sheet_topics = {}
+        try:
+            if load_news_sources_from_sheet is not None:
+                sheet_sources = await load_news_sources_from_sheet(sys_kv=sys_kv if isinstance(sys_kv, dict) else None, include_disabled=True)
+        except Exception:
+            sheet_sources = []
+
+        existing_source_urls: set[str] = set()
+        existing_sources_by_url: dict[str, dict[str, Any]] = {}
+        for s in sheet_sources:
+            if not isinstance(s, dict):
+                continue
+            u0 = str(s.get("url") or "").strip()
+            if not u0:
+                continue
+            key = u0.lower()
+            existing_source_urls.add(key)
+            if key not in existing_sources_by_url:
+                existing_sources_by_url[key] = s
+
+        # Heuristics: turn explicit feedback + usage signals into proposed sheet changes.
+        good_sources: set[str] = set()
+        bad_sources: set[str] = set()
+        unknown_topics: dict[str, int] = {}
+        for ev in events:
+            if not isinstance(ev, dict):
+                continue
+
+            et = str(ev.get("event_type") or "").strip()
+            p = ev.get("payload") if isinstance(ev.get("payload"), dict) else {}
+            if et == "news_feedback":
+                label = str(p.get("label") or "").strip().lower()
+                src = str(p.get("source_url") or "").strip()
+                if src:
+                    if label == "good_source":
+                        good_sources.add(src)
+                    if label == "bad_source":
+                        bad_sources.add(src)
+                continue
+
+            if et == "news_usage":
+                tool = str(p.get("tool") or "").strip()
+                if tool == "current_news_details":
+                    found = p.get("found")
+                    topic0 = str(p.get("topic") or "").strip()
+                    if (found is False) and topic0:
+                        unknown_topics[topic0] = int(unknown_topics.get(topic0, 0) or 0) + 1
+
+        proposed_sources: list[dict[str, Any]] = []
+        for u in sorted(good_sources):
+            proposed_sources.append({"url": u, "enabled": True})
+        for u in sorted(bad_sources):
+            key = u.lower()
+            if key in existing_source_urls:
+                # Safe policy: do not attempt to disable existing rows.
+                continue
+            # Safe: append as disabled suggestion only.
+            proposed_sources.append({"url": u, "enabled": False})
+
+        proposed_topics: list[dict[str, Any]] = []
+        # Propose creating missing topics as disabled (safe). Use a conservative keyword set.
+        for raw_topic, count in sorted(unknown_topics.items(), key=lambda it: (-int(it[1] or 0), str(it[0] or ""))):
+            if count <= 0:
+                continue
+            t0 = str(raw_topic or "").strip()
+            if not t0:
+                continue
+
+            # If the user typed an existing topic key but it's disabled, propose enabling it.
+            existing = sheet_topics.get(t0) if isinstance(sheet_topics, dict) else None
+            if isinstance(existing, dict):
+                if existing.get("enabled") is False:
+                    kw0 = existing.get("keywords") if isinstance(existing.get("keywords"), list) else []
+                    proposed_topics.append({"topic": t0, "keywords": [str(x or "").strip() for x in kw0 if str(x or "").strip()], "enabled": True})
+                continue
+
+            # Otherwise: propose a new topic row as disabled.
+            topic_key = "_".join([w for w in re.sub(r"[^a-zA-Z0-9]+", " ", t0).strip().lower().split() if w])
+            if not topic_key:
+                topic_key = re.sub(r"\s+", "_", t0.strip().lower())
+            topic_key = re.sub(r"[^a-z0-9_]+", "_", topic_key).strip("_")
+            if not topic_key:
+                continue
+            if topic_key in sheet_topics:
+                continue
+            proposed_topics.append({"topic": topic_key, "keywords": [t0], "enabled": False})
+
+        proposed: dict[str, Any] = {
+            "topics": proposed_topics,
+            "sources": proposed_sources,
+            "based_on": {
+                "events_considered": len(events),
+                "unknown_topics": [{"topic": k, "count": int(v)} for k, v in sorted(unknown_topics.items(), key=lambda it: (-int(it[1] or 0), str(it[0] or "")))][:50],
+            },
+            "ssot": {
+                "topics_count": len(sheet_topics) if isinstance(sheet_topics, dict) else 0,
+                "sources_count": len(sheet_sources) if isinstance(sheet_sources, list) else 0,
+            },
+        }
+
+        confirmation_id = create_pending_write(str(session_id), "news_tuning_apply", proposed)
+        await _emit_pending_awaiting_user(session_id0=str(session_id), confirmation_id=confirmation_id, action="news_tuning_apply", payload=proposed)
+        return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "proposed": proposed}
+
     if tool_name == "system_skill_upsert_queue":
         if not session_id:
             raise HTTPException(status_code=400, detail="missing_session_id")
@@ -239,6 +404,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             "bundle_publish_macro_reload",
             "bundle_seed_macros",
             "bundle_bootstrap_skills",
+            "bundle_bootstrap_news_skills",
             "google_account_relink",
             "memo_update",
             "skill_upsert",
@@ -260,6 +426,10 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             "bundle_bootstrap_skills": {
                 "payload": {"spreadsheet_id": "...", "sheet_name": "skills", "seed_name": "skill_ping"},
                 "notes": "Creates/initializes skills tab + seed row then reloads.",
+            },
+            "bundle_bootstrap_news_skills": {
+                "payload": {"seed_name": "jarvis-news-skill-smoke-test"},
+                "notes": "Creates/initializes dedicated news skills tab (configured via sys_kv) + seed row then reloads.",
             },
             "google_account_relink": {
                 "payload": {"auth_url": "...", "redirect_uri": "...", "token_path": "...", "scopes": []},
@@ -2271,6 +2441,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         try:
             session_ws = deps["SESSION_WS"]
             feature_enabled = deps["feature_enabled"]
+            record_news_usage_event = deps.get("record_news_usage_event")
             get_news_cache = deps["get_news_cache"]
             set_news_cache = deps["set_news_cache"]
             refresh_current_news_cache = deps["refresh_current_news_cache"]
@@ -2295,6 +2466,20 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             if tool_name == "current_news_refresh":
                 source = args.get("source")
                 enrich_missing = args.get("enrich_missing")
+                try:
+                    if record_news_usage_event is not None:
+                        record_news_usage_event(
+                            str(session_id),
+                            "news_usage",
+                            {
+                                "tool": tool_name,
+                                "action": "refresh",
+                                "source": str(source).strip() if source is not None else None,
+                                "enrich_missing": bool(enrich_missing) if enrich_missing is not None else None,
+                            },
+                        )
+                except Exception:
+                    pass
                 ctx = await refresh_current_news_cache(
                     sys_kv=sys_kv if isinstance(sys_kv, dict) else None,
                     source=str(source) if source is not None else None,
@@ -2312,13 +2497,40 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                 }
 
             if ctx is None:
-                ctx = await refresh_current_news_cache(sys_kv=sys_kv if isinstance(sys_kv, dict) else None, force_fetch=False)
+                # Option 1 (fast UX): do not block on cold cache. Kick refresh in background.
+                async def _bg_refresh() -> None:
+                    try:
+                        ctx2 = await refresh_current_news_cache(sys_kv=sys_kv if isinstance(sys_kv, dict) else None, force_fetch=True)
+                        try:
+                            set_news_cache("current-news", ctx2)
+                        except Exception:
+                            pass
+                    except Exception:
+                        return
+
                 try:
-                    set_news_cache("current-news", ctx)
+                    asyncio.create_task(_bg_refresh())
                 except Exception:
                     pass
 
+                return {
+                    "ok": True,
+                    "brief": "",
+                    "updated_at": None,
+                    "context": None,
+                    "refreshing": True,
+                }
+
             if tool_name == "current_news_sources":
+                try:
+                    if record_news_usage_event is not None:
+                        record_news_usage_event(
+                            str(session_id),
+                            "news_usage",
+                            {"tool": tool_name, "action": "sources"},
+                        )
+                except Exception:
+                    pass
                 return {"ok": True, "sources": ctx.get("sources") or [], "updated_at": ctx.get("updated_at"), "context": ctx}
 
             if tool_name == "current_news_details":
@@ -2352,6 +2564,15 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                 }
                 if not topic:
                     available = sorted([str(k) for k in (topics.keys() if isinstance(topics, dict) else []) if str(k).strip()])
+                    try:
+                        if record_news_usage_event is not None:
+                            record_news_usage_event(
+                                str(session_id),
+                                "news_usage",
+                                {"tool": tool_name, "action": "details", "topic": None, "found": False},
+                            )
+                    except Exception:
+                        pass
                     return {
                         "ok": True,
                         "found": False,
@@ -2362,10 +2583,41 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                         "context": ctx,
                     }
 
+                # SSOT: allow direct lookup by sheet topic key.
+                if isinstance(topics, dict) and isinstance(topics.get(topic), dict):
+                    try:
+                        if record_news_usage_event is not None:
+                            record_news_usage_event(
+                                str(session_id),
+                                "news_usage",
+                                {"tool": tool_name, "action": "details", "topic": topic, "mapped_topic": topic, "found": True},
+                            )
+                    except Exception:
+                        pass
+                    return {"ok": True, "found": True, "topic": topic, "data": topics.get(topic), "updated_at": ctx.get("updated_at"), "context": ctx}
+
                 chosen = key_map.get(topic, "")
                 if chosen and isinstance(topics, dict) and isinstance(topics.get(chosen), dict):
+                    try:
+                        if record_news_usage_event is not None:
+                            record_news_usage_event(
+                                str(session_id),
+                                "news_usage",
+                                {"tool": tool_name, "action": "details", "topic": topic, "mapped_topic": chosen, "found": True},
+                            )
+                    except Exception:
+                        pass
                     return {"ok": True, "found": True, "topic": chosen, "data": topics.get(chosen), "updated_at": ctx.get("updated_at"), "context": ctx}
                 available = sorted([str(k) for k in (topics.keys() if isinstance(topics, dict) else []) if str(k).strip()])
+                try:
+                    if record_news_usage_event is not None:
+                        record_news_usage_event(
+                            str(session_id),
+                            "news_usage",
+                            {"tool": tool_name, "action": "details", "topic": topic, "found": False, "available": available[:30]},
+                        )
+                except Exception:
+                    pass
                 return {
                     "ok": True,
                     "found": False,
@@ -2376,6 +2628,15 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                     "context": ctx,
                 }
 
+            try:
+                if record_news_usage_event is not None:
+                    record_news_usage_event(
+                        str(session_id),
+                        "news_usage",
+                        {"tool": tool_name, "action": "get"},
+                    )
+            except Exception:
+                pass
             brief = render_current_news_brief(ctx, lang=user_lang)
             return {"ok": True, "brief": brief, "updated_at": ctx.get("updated_at"), "context": ctx}
         except HTTPException as e:
@@ -3000,6 +3261,17 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             preview["targets"] = [{"kind": "google_sheet", "action": "skill_upsert", "name": name}]
             preview["summary"] = f"skill_upsert name={name}"
             preview["details"] = {"name": name, "proposed": payload}
+        elif action == "news_tuning_apply" and isinstance(payload, dict):
+            topics = payload.get("topics") if isinstance(payload.get("topics"), list) else []
+            sources = payload.get("sources") if isinstance(payload.get("sources"), list) else []
+            preview["risk"] = "high"
+            preview["writes_count"] = len(topics) + len(sources)
+            preview["targets"] = [
+                {"kind": "google_sheet", "action": "news_topics_upsert", "count": len(topics)},
+                {"kind": "google_sheet", "action": "news_sources_upsert", "count": len(sources)},
+            ]
+            preview["summary"] = f"news_tuning_apply topics={len(topics)} sources={len(sources)}"
+            preview["details"] = {"topics": topics[:50], "sources": sources[:50]}
         else:
             preview["risk"] = "high"
             preview["summary"] = action or "pending"
@@ -3027,6 +3299,8 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         google_calendar_undo_log = deps["google_calendar_undo_log"]
         google_tasks_undo_log = deps["google_tasks_undo_log"]
         set_session_last_item = deps["set_session_last_item"]
+        news_topics_upsert = deps.get("news_topics_upsert")
+        news_sources_upsert = deps.get("news_sources_upsert")
 
         confirmation_id = str(args.get("confirmation_id") or "").strip()
         if not confirmation_id:
@@ -3539,6 +3813,111 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                 "reload_result": reload_result,
             }
 
+        if action == "bundle_bootstrap_news_skills":
+            ws = session_ws.get(str(session_id)) if isinstance(session_ws, dict) else None
+            if ws is None:
+                raise HTTPException(status_code=400, detail="missing_session_ws")
+            if not isinstance(payload, dict):
+                raise HTTPException(status_code=400, detail="invalid_pending_payload")
+
+            system_spreadsheet_id = deps["system_spreadsheet_id"]
+            system_news_skills_sheet_name = deps["system_news_skills_sheet_name"]
+            pick_sheets_tool_name = deps["pick_sheets_tool_name"]
+            mcp_tools_call = deps["mcp_tools_call"]
+            mcp_text_json = deps["mcp_text_json"]
+
+            sys_kv0 = getattr(ws.state, "sys_kv", None)
+            sys_kv_dict0 = sys_kv0 if isinstance(sys_kv0, dict) else None
+            spreadsheet_id = str(system_spreadsheet_id() or "").strip()
+            if not spreadsheet_id:
+                raise HTTPException(status_code=400, detail="missing_system_spreadsheet_id")
+            sheet_name = str(system_news_skills_sheet_name(sys_kv=sys_kv_dict0) or "").strip() or "skills_news"
+            seed_name = str(payload.get("seed_name") or "").strip() or "jarvis-news-skill-smoke-test"
+
+            # Ensure the sheet tab exists.
+            tool_meta = pick_sheets_tool_name("google_sheets_get_spreadsheet", "google_sheets_get_spreadsheet")
+            meta_res = await mcp_tools_call(tool_meta, {"spreadsheet_id": spreadsheet_id})
+            meta_parsed = mcp_text_json(meta_res)
+            meta_data = meta_parsed.get("data") if isinstance(meta_parsed, dict) else None
+            if not isinstance(meta_data, dict):
+                meta_data = meta_parsed if isinstance(meta_parsed, dict) else {}
+            sheets = meta_data.get("sheets") if isinstance(meta_data, dict) else None
+            exists = False
+            if isinstance(sheets, list):
+                for s in sheets:
+                    props = s.get("properties") if isinstance(s, dict) else None
+                    title = str(props.get("title") or "") if isinstance(props, dict) else ""
+                    if title.strip() == sheet_name:
+                        exists = True
+                        break
+
+            create_result: Any = None
+            if not exists:
+                tool_bu = pick_sheets_tool_name("google_sheets_batch_update", "google-sheets_1mcp_google_sheets_batch_update")
+                req = {"addSheet": {"properties": {"title": sheet_name}}}
+                create_result = await mcp_tools_call(tool_bu, {"spreadsheet_id": spreadsheet_id, "requests": [req]})
+
+            # Write header row.
+            tool_upd = pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+            header = [["match_type", "pattern", "handler", "arg_json", "enabled", "notes"]]
+            header_result = await mcp_tools_call(
+                tool_upd,
+                {
+                    "spreadsheet_id": spreadsheet_id,
+                    "range": f"{sheet_name}!A1:F1",
+                    "values": header,
+                    "value_input_option": "RAW",
+                },
+            )
+
+            # Seed one example rule row.
+            tool_append = pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+            seed_row = [["contains", "news tuning", "tool_call", "{\"tool\":\"news_tuning_suggest\",\"args\":{}}", "TRUE", seed_name]]
+            seed_result = await mcp_tools_call(
+                tool_append,
+                {
+                    "spreadsheet_id": spreadsheet_id,
+                    "range": f"{sheet_name}!A:Z",
+                    "values": seed_row,
+                    "value_input_option": "RAW",
+                },
+            )
+
+            # Reload system so routing can take effect immediately.
+            try:
+                await ws.send_json({"type": "text", "text": "reloading system"})
+            except Exception:
+                pass
+            reload_result: Any
+            if system_reload_impl is not None:
+                reload_result = await system_reload_impl(ws)
+            else:
+                sys_kv = await load_ws_system_kv(ws)
+                macros = await macro_tools_force_reload_from_sheet(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+                keys = sorted([str(k or "").strip() for k in (sys_kv or {}).keys()]) if isinstance(sys_kv, dict) else []
+                reload_result = {"ok": True, "sys_kv": sys_kv if isinstance(sys_kv, dict) else None, "sys_kv_keys": keys, "macros_count": len(macros or {})}
+
+            try:
+                lang = str(getattr(getattr(ws, "state", None), "user_lang", "") or "").strip() or "en"
+                done_txt = "system reloaded" if lang != "th" else "รีโหลดระบบสำเร็จ"
+                await ws.send_json({"type": "text", "text": done_txt})
+            except Exception:
+                pass
+
+            return {
+                "ok": True,
+                "bundle": True,
+                "action": "bootstrap_news_skills",
+                "spreadsheet_id": spreadsheet_id,
+                "sheet": sheet_name,
+                "created": (not exists),
+                "create_result": mcp_text_json(create_result) if create_result is not None else None,
+                "header_result": mcp_text_json(header_result),
+                "seed_result": mcp_text_json(seed_result),
+                "seed_name": seed_name,
+                "reload_result": reload_result,
+            }
+
         if action == "google_account_relink":
             if not isinstance(payload, dict):
                 raise HTTPException(status_code=400, detail="invalid_pending_payload")
@@ -3632,8 +4011,141 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
 
             if needs_force:
                 await memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, force=True)
-                header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
-                idx = idx_from_header(header)
+
+        if action == "news_tuning_apply":
+            if not isinstance(payload, dict):
+                raise HTTPException(status_code=400, detail="invalid_pending_payload")
+            if news_topics_upsert is None or news_sources_upsert is None:
+                raise HTTPException(status_code=500, detail="missing_news_upsert_deps")
+
+            topics_in = payload.get("topics") if isinstance(payload.get("topics"), list) else []
+            sources_in = payload.get("sources") if isinstance(payload.get("sources"), list) else []
+
+            ws = session_ws.get(str(session_id)) if isinstance(session_ws, dict) else None
+            if ws is None:
+                raise HTTPException(status_code=400, detail="missing_session_ws")
+            sys_kv0 = getattr(ws.state, "sys_kv", None)
+            sys_kv_dict0 = sys_kv0 if isinstance(sys_kv0, dict) else None
+
+            results: dict[str, Any] = {"topics": [], "sources": []}
+            for it in topics_in[:200]:
+                if not isinstance(it, dict):
+                    continue
+                topic = str(it.get("topic") or it.get("name") or it.get("key") or "").strip()
+                keywords = it.get("keywords") if isinstance(it.get("keywords"), list) else []
+                limit = it.get("limit")
+                headlines = it.get("headlines")
+                enabled = it.get("enabled")
+                res = await news_topics_upsert(
+                    sys_kv=sys_kv_dict0,
+                    topic=topic,
+                    keywords=[str(x or "").strip() for x in keywords if str(x or "").strip()],
+                    limit=int(limit) if limit is not None else None,
+                    headlines=int(headlines) if headlines is not None else None,
+                    enabled=bool(enabled) if enabled is not None else True,
+                )
+                results["topics"].append(res)
+
+            for it in sources_in[:200]:
+                if not isinstance(it, dict):
+                    continue
+                url = str(it.get("url") or "").strip()
+                name = it.get("name")
+                typ = it.get("type")
+                tags = it.get("tags")
+                enabled = it.get("enabled")
+                res = await news_sources_upsert(
+                    sys_kv=sys_kv_dict0,
+                    url=url,
+                    name=str(name).strip() if name is not None else None,
+                    typ=str(typ).strip() if typ is not None else None,
+                    tags=str(tags).strip() if tags is not None else None,
+                    enabled=bool(enabled) if enabled is not None else True,
+                )
+                results["sources"].append(res)
+
+            try:
+                set_session_last_item(str(session_id), "news_tuning_apply", "news_tuning_apply", {"applied": True, "result": results})
+            except Exception:
+                pass
+            return {"ok": True, "applied": True, "result": results}
+
+        if action == "memo_update":
+            if not isinstance(payload, dict):
+                raise HTTPException(status_code=400, detail="invalid_pending_payload")
+
+            ws = session_ws.get(str(session_id)) if isinstance(session_ws, dict) else None
+            if ws is None:
+                raise HTTPException(status_code=400, detail="missing_session_ws")
+
+            feature_enabled = deps["feature_enabled"]
+            sys_kv_bool = deps["sys_kv_bool"]
+            safe_int = deps["safe_int"]
+            memo_sheet_cfg_from_sys_kv = deps["memo_sheet_cfg_from_sys_kv"]
+            sheet_name_to_a1 = deps["sheet_name_to_a1"]
+            sheet_get_header_row = deps["sheet_get_header_row"]
+            idx_from_header = deps["idx_from_header"]
+            memo_ensure_header = deps["memo_ensure_header"]
+            pick_sheets_tool_name = deps["pick_sheets_tool_name"]
+            datetime = deps["datetime"]
+            timezone = deps["timezone"]
+
+            sys_kv = getattr(ws.state, "sys_kv", None)
+            if not feature_enabled("memo", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
+                raise HTTPException(status_code=403, detail="feature_disabled:memo")
+            if not sys_kv_bool(sys_kv, "memo.enabled", False):
+                raise HTTPException(status_code=403, detail="memo_disabled")
+
+            memo_id = safe_int(payload.get("id"), 0)
+            if memo_id <= 0:
+                raise HTTPException(status_code=400, detail="missing_id")
+
+            spreadsheet_id, sheet_name = memo_sheet_cfg_from_sys_kv(sys_kv if isinstance(sys_kv, dict) else None)
+            if not spreadsheet_id:
+                raise HTTPException(status_code=400, detail="missing_memo_ss")
+            if not sheet_name:
+                raise HTTPException(status_code=400, detail="missing_memo_sheet_name")
+            sheet_a1 = sheet_name_to_a1(sheet_name, default="memo")
+
+            header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
+            # If the sheet was converted to a Google Sheets "Table" it may insert non-canonical columns in A:J
+            # (e.g. "Tr"), or shift canonical columns beyond J. In either case, force canonical header.
+            canonical = {
+                "id",
+                "date_time",
+                "active",
+                "status",
+                "group",
+                "subject",
+                "memo",
+                "result",
+                "_created",
+                "_updated",
+            }
+            try:
+                lowered_first = [str(x or "").strip().lower() for x in (header or [])][:10]
+                unknown = [c for c in lowered_first if c and c not in canonical]
+            except Exception:
+                unknown = []
+
+            idx = idx_from_header(header)
+            needs_force = False
+            if unknown:
+                needs_force = True
+            if not idx:
+                needs_force = True
+            else:
+                for k in canonical:
+                    j = idx.get(k)
+                    if j is None or not isinstance(j, int) or j < 0 or j >= 10:
+                        needs_force = True
+                        break
+
+            if needs_force:
+                await memo_ensure_header(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, force=True)
+
+            header = await sheet_get_header_row(spreadsheet_id=spreadsheet_id, sheet_a1=sheet_a1, max_cols="J")
+            idx = idx_from_header(header)
             if not idx:
                 raise HTTPException(status_code=400, detail="memo_sheet_missing_header")
 
