@@ -2280,6 +2280,10 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             if ws is None:
                 raise HTTPException(status_code=400, detail="missing_session_ws")
             sys_kv = getattr(ws.state, "sys_kv", None)
+            try:
+                user_lang = str(getattr(ws.state, "user_lang", "") or "").strip() or "th"
+            except Exception:
+                user_lang = "th"
             if not feature_enabled("current-news", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
                 raise HTTPException(status_code=403, detail="feature_disabled:current-news")
 
@@ -2300,7 +2304,12 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                     set_news_cache("current-news", ctx)
                 except Exception:
                     pass
-                return {"ok": True, "refreshed": True, "context": ctx, "brief": render_current_news_brief(ctx) if isinstance(ctx, dict) else ""}
+                return {
+                    "ok": True,
+                    "refreshed": True,
+                    "context": ctx,
+                    "brief": render_current_news_brief(ctx, lang=user_lang) if isinstance(ctx, dict) else "",
+                }
 
             if ctx is None:
                 ctx = await refresh_current_news_cache(sys_kv=sys_kv if isinstance(sys_kv, dict) else None, force_fetch=False)
@@ -2367,7 +2376,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                     "context": ctx,
                 }
 
-            brief = render_current_news_brief(ctx)
+            brief = render_current_news_brief(ctx, lang=user_lang)
             return {"ok": True, "brief": brief, "updated_at": ctx.get("updated_at"), "context": ctx}
         except HTTPException as e:
             return {"ok": False, "error": "current_news_failed", "status_code": getattr(e, "status_code", None), "detail": getattr(e, "detail", None)}

@@ -78,6 +78,18 @@ async def handle_current_news_trigger(
         topic = str(s.split(" ", 1)[1] if " " in s else "").strip()
         topics = ctx.get("topics") if isinstance(ctx.get("topics"), dict) else {}
         key_map = {
+            "world": "world_headlines",
+            "world headlines": "world_headlines",
+            "global": "world_headlines",
+            "thai": "th_headlines",
+            "thailand": "th_headlines",
+            "thai headlines": "th_headlines",
+            "th": "th_headlines",
+            "thai general": "th_general",
+            "thailand general": "th_general",
+            "tech": "tech",
+            "technology": "tech",
+            "ai": "ai",
             "iran": "iran_war",
             "iran war": "iran_war",
             "war": "iran_war",
@@ -101,7 +113,7 @@ async def handle_current_news_trigger(
                 "type": "current_news_details",
                 "topic": topic,
                 "error": "unknown_topic",
-                "hint": "Try: details iran | details gold | details usd | details oil",
+                "hint": "Try: details world | details thailand | details iran | details oil | details gold | details usd | details baht | details tech | details ai",
             }
             if trace_id:
                 payload["trace_id"] = trace_id

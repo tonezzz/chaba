@@ -17,6 +17,7 @@ import time
 import uuid
 import re
 import urllib.parse
+import email.utils
 from io import BytesIO
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -12797,13 +12798,65 @@ def _build_current_news_context(items: list[dict[str, Any]], topics_cfg: Optiona
         out: list[dict[str, Any]] = []
         for it in items:
             blob = f"{it.get('title','')} {it.get('description','')}"
-            if _topic_match(blob, keywords):
+            if not keywords or _topic_match(blob, keywords):
                 out.append(it)
             if len(out) >= limit:
                 break
         return out
 
     defaults: dict[str, dict[str, Any]] = {
+        "world_headlines": {
+            "keywords": [
+                "u.s.",
+                "us ",
+                "united states",
+                "china",
+                "beijing",
+                "russia",
+                "ukraine",
+                "europe",
+                "nato",
+                "japan",
+                "korea",
+                "asia",
+                "middle east",
+                "gaza",
+                "israel",
+                "iran",
+            ],
+            "limit": 8,
+            "headlines": 6,
+        },
+        "th_headlines": {
+            "keywords": [
+                "thailand",
+                "thai ",
+                "bangkok",
+                "phuket",
+                "chiang mai",
+                "pattaya",
+                "baht",
+                "bank of thailand",
+                "\u0e44\u0e17\u0e22",
+                "\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28\u0e44\u0e17\u0e22",
+                "\u0e01\u0e23\u0e38\u0e07\u0e40\u0e17\u0e1e",
+                "\u0e23\u0e31\u0e10\u0e1a\u0e32\u0e25",
+                "\u0e19\u0e32\u0e22\u0e01\u0e23\u0e31\u0e10\u0e21\u0e19\u0e15\u0e23\u0e35",
+            ],
+            "limit": 8,
+            "headlines": 6,
+        },
+        "th_general": {
+            "keywords": [
+                "thailand",
+                "thai ",
+                "bangkok",
+                "\u0e44\u0e17\u0e22",
+                "\u0e01\u0e23\u0e38\u0e07\u0e40\u0e17\u0e1e",
+            ],
+            "limit": 10,
+            "headlines": 6,
+        },
         "iran_war": {
             "keywords": [
                 "iran",
@@ -12826,6 +12879,40 @@ def _build_current_news_context(items: list[dict[str, Any]], topics_cfg: Optiona
         "usd": {"keywords": ["dollar", "usd", "treasury", "yield", "fed"], "limit": 4, "headlines": 3},
         "oil": {"keywords": ["oil", "crude", "brent", "wti", "opec"], "limit": 4, "headlines": 3},
         "thb": {"keywords": ["thai baht", "baht", "thb", "usd/thb", "thb/usd", "bank of thailand"], "limit": 4, "headlines": 3},
+        "tech": {
+            "keywords": [
+                "technology",
+                "tech",
+                "semiconductor",
+                "chip",
+                "nvidia",
+                "tsmc",
+                "apple",
+                "google",
+                "microsoft",
+                "meta",
+                "tesla",
+            ],
+            "limit": 6,
+            "headlines": 4,
+        },
+        "ai": {
+            "keywords": [
+                "ai",
+                "a.i.",
+                "artificial intelligence",
+                "openai",
+                "chatgpt",
+                "gemini",
+                "anthropic",
+                "claude",
+                "llm",
+                "model",
+                "\u0e1b\u0e31\u0e0d\u0e0d\u0e32\u0e1b\u0e23\u0e30\u0e14\u0e34\u0e29\u0e10\u0e4c",
+            ],
+            "limit": 6,
+            "headlines": 4,
+        },
     }
 
     merged: dict[str, dict[str, Any]] = {k: dict(v) for k, v in defaults.items()}
@@ -12859,7 +12946,7 @@ def _build_current_news_context(items: list[dict[str, Any]], topics_cfg: Optiona
 
     topics_out: dict[str, Any] = {}
     sources: list[str] = []
-    for key in ["iran_war", "gold", "usd", "oil", "thb"]:
+    for key in ["world_headlines", "th_headlines", "iran_war", "oil", "gold", "usd", "thb", "th_general", "tech", "ai"]:
         cfg = merged.get(key) or {}
         kw = cfg.get("keywords") if isinstance(cfg.get("keywords"), list) else []
         lim = int(cfg.get("limit") or 6)
@@ -12880,10 +12967,117 @@ def _build_current_news_context(items: list[dict[str, Any]], topics_cfg: Optiona
     }
 
 
-def _render_current_news_brief(ctx: dict[str, Any]) -> str:
+def _parse_news_pub_ts(it: Any) -> Optional[int]:
+    if not isinstance(it, dict):
+        return None
+
+    raw = (
+        it.get("pubDate")
+        or it.get("pubdate")
+        or it.get("published")
+        or it.get("date")
+        or it.get("updated")
+    )
+    s = str(raw or "").strip()
+    if not s:
+        return None
+
+    # 1) ISO-ish
+    try:
+        ss = s.replace("Z", "+00:00")
+        dt = datetime.fromisoformat(ss)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return int(dt.timestamp())
+    except Exception:
+        pass
+
+    # 2) RFC822-ish
+    try:
+        dt2 = email.utils.parsedate_to_datetime(s)
+        if dt2 is None:
+            return None
+        if dt2.tzinfo is None:
+            dt2 = dt2.replace(tzinfo=timezone.utc)
+        return int(dt2.timestamp())
+    except Exception:
+        return None
+
+
+def _render_current_news_brief(ctx: dict[str, Any], *, lang: Optional[str] = None) -> str:
     topics = ctx.get("topics") if isinstance(ctx, dict) else None
     if not isinstance(topics, dict):
         return "Current news: no cached context available. Say 'current news refresh' to fetch."
+
+    lang0 = str(lang or ctx.get("lang") or "").strip().lower() if isinstance(ctx, dict) else ""
+    if not lang0:
+        lang0 = "th"
+    is_th = lang0.startswith("th")
+
+    title_map_en: dict[str, str] = {
+        "world_headlines": "World headlines",
+        "th_headlines": "Thailand headlines",
+        "th_general": "Thailand (more)",
+        "iran_war": "Iran war",
+        "gold": "Gold",
+        "usd": "Dollar/US rates",
+        "oil": "Oil",
+        "thb": "Thai Baht",
+        "tech": "Technology",
+        "ai": "AI",
+    }
+    title_map_th: dict[str, str] = {
+        "world_headlines": "ข่าวโลก (พาดหัว)",
+        "th_headlines": "ข่าวไทย (พาดหัว)",
+        "th_general": "ข่าวไทย (เพิ่มเติม)",
+        "iran_war": "สงครามอิหร่าน",
+        "gold": "ทองคำ",
+        "usd": "ดอลลาร์/อัตราดอกเบี้ยสหรัฐฯ",
+        "oil": "น้ำมัน",
+        "thb": "ค่าเงินบาท",
+        "tech": "เทคโนโลยี",
+        "ai": "AI",
+    }
+
+    help_line = (
+        "\nคุณสามารถถามได้: 'details iran', 'details oil', 'details baht', 'list sources', หรือ 'refresh current news'."
+        if is_th
+        else "\nYou can ask: 'details iran', 'details oil', 'details baht', 'list sources', or 'refresh current news'."
+    )
+
+    # Freshness rule A: if latest item is from yesterday (local tz), suggest refresh.
+    latest_ts: Optional[int] = None
+    try:
+        for sec in topics.values():
+            if not isinstance(sec, dict):
+                continue
+            items = sec.get("items")
+            if not isinstance(items, list):
+                continue
+            for it in items:
+                ts = _parse_news_pub_ts(it)
+                if ts is None:
+                    continue
+                if latest_ts is None or ts > latest_ts:
+                    latest_ts = ts
+    except Exception:
+        latest_ts = None
+
+    freshness_line = ""
+    try:
+        if latest_ts is not None:
+            tz = _get_user_timezone(DEFAULT_USER_ID)
+            now_local = datetime.now(tz=timezone.utc).astimezone(tz)
+            latest_local = datetime.fromtimestamp(int(latest_ts), tz=timezone.utc).astimezone(tz)
+            if latest_local.date() < now_local.date():
+                latest_str = latest_local.strftime("%Y-%m-%d %H:%M")
+                freshness_line = (
+                    f"ความใหม่ของข่าว: ข่าวล่าสุดเป็นของเมื่อวาน ({latest_str}) แนะนำให้พูด 'refresh current news' เพื่ออัปเดต."
+                    if is_th
+                    else f"Freshness: Latest news item is from yesterday ({latest_str}). Recommend: 'refresh current news'."
+                )
+    except Exception:
+        freshness_line = ""
 
     def block(title: str, key: str, max_lines: int) -> str:
         sec = topics.get(key)
@@ -12897,13 +13091,20 @@ def _render_current_news_brief(ctx: dict[str, Any]) -> str:
                 lines.append(f"- {hh}")
         return "\n".join(lines)
 
+    titles = title_map_th if is_th else title_map_en
     parts = [
-        block("Iran war", "iran_war", 5),
-        block("Gold", "gold", 3),
-        block("Dollar/US rates", "usd", 3),
-        block("Oil", "oil", 3),
-        block("Thai Baht", "thb", 3),
-        "\nYou can ask: 'details iran', 'details oil', 'details baht', 'list sources', or 'refresh current news'.",
+        freshness_line,
+        block(titles.get("world_headlines", "World headlines"), "world_headlines", 6),
+        block(titles.get("th_headlines", "Thailand headlines"), "th_headlines", 6),
+        block(titles.get("iran_war", "Iran war"), "iran_war", 5),
+        block(titles.get("oil", "Oil"), "oil", 3),
+        block(titles.get("gold", "Gold"), "gold", 3),
+        block(titles.get("usd", "Dollar/US rates"), "usd", 3),
+        block(titles.get("thb", "Thai Baht"), "thb", 3),
+        block(titles.get("th_general", "Thailand (more)"), "th_general", 6),
+        block(titles.get("tech", "Technology"), "tech", 4),
+        block(titles.get("ai", "AI"), "ai", 4),
+        help_line,
     ]
     return "\n\n".join([p for p in parts if p.strip()])
 
@@ -13816,12 +14017,19 @@ async def _handle_current_news_trigger(ws: WebSocket, text: str) -> bool:
             force_fetch=bool(force_fetch),
         )
 
+    def _render_brief(ctx: dict[str, Any]) -> str:
+        try:
+            ulang = str(getattr(ws.state, "user_lang", "") or "").strip() or "th"
+        except Exception:
+            ulang = "th"
+        return _render_current_news_brief(ctx, lang=ulang)
+
     return await current_news_skill.handle_current_news_trigger(
         ws,
         text,
         get_cached_ctx=_get_cached_ctx,
         refresh_ctx=_refresh,
-        render_brief=_render_current_news_brief,
+        render_brief=_render_brief,
     )
 
 
