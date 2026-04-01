@@ -2824,6 +2824,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             set_news_follow_focus = deps["set_news_follow_focus"]
             get_news_follow_summaries = deps["get_news_follow_summaries"]
             refresh_news_follow_summaries = deps["refresh_news_follow_summaries"]
+            load_news_topics_from_sheet = deps.get("load_news_topics_from_sheet")
             default_user_id = deps.get("DEFAULT_USER_ID")
 
             ws = session_ws.get(str(session_id)) if session_id else None
@@ -2835,6 +2836,17 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
 
             user_id = str(default_user_id or "").strip() or "default"
             focus = get_news_follow_focus(user_id)
+            try:
+                if load_news_topics_from_sheet is not None:
+                    topics_cfg = await load_news_topics_from_sheet(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+                    if isinstance(topics_cfg, dict) and topics_cfg:
+                        focus = sorted([str(k or "").strip() for k in topics_cfg.keys() if str(k or "").strip()])
+                        try:
+                            set_news_follow_focus(user_id, focus)
+                        except Exception:
+                            pass
+            except Exception:
+                pass
             summaries = get_news_follow_summaries(user_id)
 
             if tool_name == "news_follow_focus_list":
