@@ -4065,7 +4065,15 @@ async def _ws_send_json(ws: WebSocket, payload: dict[str, Any], trace_id: str | 
                 )
     except Exception:
         pass
-    await ws.send_json(payload)
+    try:
+        await ws.send_json(payload)
+    except WebSocketDisconnect:
+        return
+    except RuntimeError as e:
+        # Starlette raises this if the websocket is already closing/closed.
+        if "close message" in str(e).lower() or "already been sent" in str(e).lower():
+            return
+        raise
 
 
 async def tools_api_call(tool_name: str, args: dict[str, Any], session_id: str | None = None) -> Any:
