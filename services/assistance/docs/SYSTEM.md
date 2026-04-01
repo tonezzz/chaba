@@ -43,6 +43,33 @@ Routing can be enabled/disabled by:
 
 Operator procedure (update → reload → verify): `services/assistance/docs/ACTION.md`.
 
+## Adaptive news tuning (SSOT-first)
+
+Goal:
+
+- Keep `news_topics` / `news_sources` as the SSOT for the news system.
+- Allow Jarvis to improve topics/sources based on usage, without silent writes.
+
+Approach:
+
+- Observe usage signals (e.g. `current_news_get`, topic details opens, refresh frequency, explicit feedback phrases).
+- Generate *suggestions* (sheet diffs) for:
+  - `news_topics` keyword tweaks / new topics
+  - `news_sources` enable/disable, weights/throttles
+- Present suggestions as a **Pending confirmation** item.
+- Only write to Sheets after explicit user confirmation.
+
+Skills Sheet integration (minimum hardcode):
+
+- Add skills rows that map natural language like "improve news topics" / "ข่าวนี้ไม่เกี่ยว" to deterministic tool calls:
+  - `news_tuning_suggest` (no writes)
+  - `news_tuning_apply` (writes after confirmation)
+
+Notes:
+
+- Auto-create is allowed, but should be created as *disabled* until confirmed.
+- The sheet remains authoritative; SQLite/runtime state stores only derived metrics (usage stats, cache metadata).
+
 ## System KV keys
 
 ### `system.sheets` (required)

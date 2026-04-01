@@ -358,8 +358,8 @@ The frontend has a voice UX fallback that can auto-trigger deterministic WS tool
 
 This routing is now configurable via sys sheet keys and exposed via HTTP:
 
-- `GET /jarvis/config/voice_commands` (when reverse-proxied under `/jarvis`)
-- `GET /config/voice_commands` (direct backend)
+- Public (recommended): `GET /jarvis/api/config/voice_commands`
+- Direct backend (dev / internal): `GET /config/voice_commands`
 
 Response:
 
@@ -380,10 +380,38 @@ Supported sys kv keys (defaults shown):
 - `voice_cmd.reminders_add.phrases=` (optional)
 - `voice_cmd.gems_list.enabled=true`
 - `voice_cmd.gems_list.phrases=` (optional)
+- `voice_cmd.recent_activity.enabled=true`
+- `voice_cmd.recent_activity.phrases=recent tasks,recent activity,what was i doing,เมื่อกี้ทำอะไร,งานล่าสุด,...`
 
 To apply sys sheet changes:
 
 - Use `system.reload` (or wait for the backend to reload sheet caches).
+
+## WS: readiness phases (backend-driven)
+
+On WS connect the backend emits compact readiness events:
+
+- `type=readiness phase=transport_connected`
+- `type=readiness phase=bootstrap_ready`
+- `type=readiness phase=context_cached`
+- `type=readiness phase=model_ready`
+- `type=readiness phase=model_disconnected`
+
+The frontend uses these phases for:
+
+- header readiness indicator + elapsed time
+- gating autospeak triggers until `model_ready`
+
+## WS: session resume payload
+
+On WS connect the backend emits `type=session_resume` with recent dialog turns.
+
+Resume limits are configurable via env:
+
+- `JARVIS_RESUME_WINDOW_SECONDS` (default `2700` = 45m), anchored to the newest stored turn
+- `JARVIS_RESUME_MAX_TURNS` (default `10`)
+- `JARVIS_RESUME_MAX_CHARS` (default `1200`)
+- `JARVIS_RESUME_FILTER_COMMAND_LIKE` (default `true`)
 
 ### Tool chart: notes.*
 

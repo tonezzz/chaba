@@ -24,7 +24,7 @@ Out of scope:
 
 ```mermaid
 graph TD
-  UI[Jarvis UI] -->|WS /ws/live| BE[jarvis-backend]
+  UI[Jarvis UI] -->|WS /jarvis/ws/live| BE[jarvis-backend]
   UI -->|HTTP /jarvis/api/*| BE
   BE -->|HTTP| MCP[1MCP / MCP gateway]
   BE -->|HTTP| GH[GitHub API]
