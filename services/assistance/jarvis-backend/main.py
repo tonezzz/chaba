@@ -13886,6 +13886,14 @@ async def _refresh_current_news_cache(
         except Exception:
             all_items = []
 
+        # If the cached items tab is empty, prefer loading directly from the sheet
+        # (fast) rather than doing a network fetch from multiple sources (slow).
+        if not all_items:
+            try:
+                all_items = await _load_current_news_items_from_sheet(sys_kv=sys_kv)
+            except Exception:
+                all_items = []
+
     if not all_items:
         try:
             sources_rows = await _load_news_sources_from_sheet(sys_kv=sys_kv)
@@ -13906,20 +13914,59 @@ async def _refresh_current_news_cache(
             sources_rows = filtered
 
         if sources_rows:
-            for src in sources_rows:
+            # Fetch can be slow because it hits multiple RSS/Atom endpoints. Do this
+            # concurrently with caps to reduce tail latency.
+            debug_enabled = _sys_kv_bool(sys_kv, "current_news.debug.enabled", default=False)
+
+            max_sources = 20
+            if isinstance(sys_kv, dict):
                 try:
-                    url = str(src.get("url") or "").strip()
-                    if not url:
-                        continue
-                    all_items.extend(
-                        await _fetch_news_items_from_source(
-                            url,
-                            debug=_sys_kv_bool(sys_kv, "current_news.debug.enabled", default=False),
-                            debug_out=fetch_debug,
-                        )
-                    )
+                    max_sources = int(sys_kv.get("current_news.fetch.max_sources") or 20)
                 except Exception:
+                    max_sources = 20
+            max_sources = max(1, min(max_sources, 80))
+
+            concurrency = 6
+            if isinstance(sys_kv, dict):
+                try:
+                    concurrency = int(sys_kv.get("current_news.fetch.concurrency") or 6)
+                except Exception:
+                    concurrency = 6
+            concurrency = max(1, min(concurrency, 20))
+
+            per_source_timeout_s = 12.0
+            if isinstance(sys_kv, dict):
+                try:
+                    per_source_timeout_s = float(sys_kv.get("current_news.fetch.per_source_timeout_s") or 12.0)
+                except Exception:
+                    per_source_timeout_s = 12.0
+            per_source_timeout_s = max(2.0, min(per_source_timeout_s, 30.0))
+
+            sem = asyncio.Semaphore(concurrency)
+
+            async def _one(src: dict[str, Any]) -> list[dict[str, Any]]:
+                url = str(src.get("url") or "").strip()
+                if not url:
+                    return []
+                async with sem:
+                    try:
+                        return await asyncio.wait_for(
+                            _fetch_news_items_from_source(url, debug=debug_enabled, debug_out=fetch_debug),
+                            timeout=per_source_timeout_s,
+                        )
+                    except Exception:
+                        return []
+
+            tasks: list[asyncio.Task[list[dict[str, Any]]]] = []
+            for src in sources_rows[:max_sources]:
+                if not isinstance(src, dict):
                     continue
+                tasks.append(asyncio.create_task(_one(src)))
+
+            if tasks:
+                for chunk in await asyncio.gather(*tasks, return_exceptions=False):
+                    if isinstance(chunk, list) and chunk:
+                        all_items.extend(chunk)
             try:
                 await _save_current_news_items_to_items_tab(items=all_items, sys_kv=sys_kv)
             except Exception:
