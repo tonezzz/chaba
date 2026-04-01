@@ -9196,6 +9196,13 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
     if not k:
         return {"ok": False, "error": "missing_key"}
 
+    # Sys sheet can have strict validation. Convention: toggle keys should be driven by
+    # the 'enabled' column, not by putting booleans into the 'value' column.
+    is_toggle_key = k.endswith(".enabled") or k.startswith("feature.")
+    toggle_val: Optional[str] = None
+    if is_toggle_key and v.upper() in {"TRUE", "FALSE"}:
+        toggle_val = v.upper()
+
     now_iso = datetime.now(tz=timezone.utc).isoformat().replace("+00:00", "Z")
 
     def _norm_k(s: Any) -> str:
@@ -9331,9 +9338,14 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
         out_row = _ensure_len(base_row, col_count)
 
         out_row[key_col] = _canon_k(k)
-        out_row[val_col] = v
+        if toggle_val is None:
+            out_row[val_col] = v
+        else:
+            # Preserve any existing value for toggle keys; avoid violating value validation.
+            if not row_idx:
+                out_row[val_col] = ""
         if enabled_col is not None:
-            out_row[enabled_col] = "true"
+            out_row[enabled_col] = toggle_val if toggle_val is not None else "TRUE"
         if scope_col is not None:
             prev_scope = str(out_row[scope_col] or "").strip()
             out_row[scope_col] = prev_scope if prev_scope else "global"
@@ -9362,6 +9374,18 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
                 },
             )
             parsed_hu = _mcp_text_json(res_hu)
+            if isinstance(parsed_hu, dict) and (parsed_hu.get("ok") is False or parsed_hu.get("error")):
+                return {
+                    "ok": False,
+                    "error": str(parsed_hu.get("error") or parsed_hu.get("message") or "values_update_failed"),
+                    "spreadsheet_id": spreadsheet_id,
+                    "sheet": sys_sheet,
+                    "action": "update",
+                    "row": row_idx,
+                    "range": rng2,
+                    "duplicates": duplicates,
+                    "response": parsed_hu,
+                }
             return {
                 "ok": True,
                 "spreadsheet_id": spreadsheet_id,
@@ -9384,6 +9408,16 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             },
         )
         parsed_ha = _mcp_text_json(res_ha)
+        if isinstance(parsed_ha, dict) and (parsed_ha.get("ok") is False or parsed_ha.get("error")):
+            return {
+                "ok": False,
+                "error": str(parsed_ha.get("error") or parsed_ha.get("message") or "values_append_failed"),
+                "spreadsheet_id": spreadsheet_id,
+                "sheet": sys_sheet,
+                "action": "append",
+                "duplicates": duplicates,
+                "response": parsed_ha,
+            }
         return {
             "ok": True,
             "spreadsheet_id": spreadsheet_id,
@@ -9409,16 +9443,31 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
         scope = str(existing[3]).strip() if len(existing) > 3 and str(existing[3]).strip() else "global"
         priority = str(existing[4]).strip() if len(existing) > 4 and str(existing[4]).strip() else "0"
 
+        out_value = "" if toggle_val is not None else v
+        out_enabled = toggle_val if toggle_val is not None else "TRUE"
+
         res2 = await _mcp_tools_call(
             tool_upd,
             {
                 "spreadsheet_id": spreadsheet_id,
                 "range": rng,
-                "values": [[_canon_k(k), v, "true", scope, priority]],
+                "values": [[_canon_k(k), out_value, out_enabled, scope, priority]],
                 "value_input_option": "RAW",
             },
         )
         parsed2 = _mcp_text_json(res2)
+        if isinstance(parsed2, dict) and (parsed2.get("ok") is False or parsed2.get("error")):
+            return {
+                "ok": False,
+                "error": str(parsed2.get("error") or parsed2.get("message") or "values_update_failed"),
+                "spreadsheet_id": spreadsheet_id,
+                "sheet": sys_sheet,
+                "action": "update",
+                "row": row_idx,
+                "range": rng,
+                "duplicates": duplicates,
+                "response": parsed2,
+            }
         return {
             "ok": True,
             "spreadsheet_id": spreadsheet_id,
@@ -9431,16 +9480,28 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
         }
 
     tool_app = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+    out_value = "" if toggle_val is not None else v
+    out_enabled = toggle_val if toggle_val is not None else "TRUE"
     res3 = await _mcp_tools_call(
         tool_app,
         {
             "spreadsheet_id": spreadsheet_id,
             "range": f"{sys_sheet}!A:E",
-            "values": [[_canon_k(k), v, "true", "global", "0"]],
+            "values": [[_canon_k(k), out_value, out_enabled, "global", "0"]],
             "value_input_option": "RAW",
         },
     )
     parsed3 = _mcp_text_json(res3)
+    if isinstance(parsed3, dict) and (parsed3.get("ok") is False or parsed3.get("error")):
+        return {
+            "ok": False,
+            "error": str(parsed3.get("error") or parsed3.get("message") or "values_append_failed"),
+            "spreadsheet_id": spreadsheet_id,
+            "sheet": sys_sheet,
+            "action": "append",
+            "duplicates": duplicates,
+            "response": parsed3,
+        }
     return {
         "ok": True,
         "spreadsheet_id": spreadsheet_id,
@@ -10154,13 +10215,27 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
                 )
                 return True
             if not isinstance(result, dict) or not result.get("ok"):
+                try:
+                    if isinstance(result, dict):
+                        err = result.get("error")
+                        if not err:
+                            resp = result.get("response")
+                            if isinstance(resp, dict):
+                                err = resp.get("error") or resp.get("message")
+                        if not err:
+                            err = result
+                        detail = err
+                    else:
+                        detail = result
+                except Exception:
+                    detail = (result or {}) if result is not None else "unknown"
                 await _ws_send_json(
                     ws,
                     {
                         "type": "error",
                         "kind": "sys_kv_set_failed",
                         "message": "sys_kv_set_failed",
-                        "detail": str((result or {}).get("error") or "unknown"),
+                        "detail": detail,
                         "instance_id": INSTANCE_ID,
                     },
                     trace_id=tid,
