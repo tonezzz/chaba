@@ -19969,7 +19969,22 @@ async def ws_live(ws: WebSocket) -> None:
         # so operators can see the error and recover (e.g. re-auth MCP) without
         # the UI constantly disconnecting.
         try:
-            sys_kv = await _load_ws_system_kv(ws)
+            sys_kv = None
+            last_sys_kv_error: Exception | None = None
+            for attempt_i in range(4):
+                try:
+                    sys_kv = await _load_ws_system_kv(ws)
+                    last_sys_kv_error = None
+                    break
+                except Exception as e:
+                    last_sys_kv_error = e
+                    if attempt_i < 3:
+                        try:
+                            await asyncio.sleep(0.5 * (2.0**attempt_i))
+                        except Exception:
+                            pass
+                        continue
+                    raise
         except Exception as e:
             detail = {
                 "error": str(e),
