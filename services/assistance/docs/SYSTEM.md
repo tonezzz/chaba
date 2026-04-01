@@ -70,6 +70,12 @@ Notes:
 - Auto-create is allowed, but should be created as *disabled* until confirmed.
 - The sheet remains authoritative; SQLite/runtime state stores only derived metrics (usage stats, cache metadata).
 
+Operational notes:
+
+- `news_tuning_suggest` only produces suggestions; it does not write sheets.
+- Sheet updates happen only after `pending_confirm` of the queued `news_tuning_apply` action.
+- `current_news_get` may return quickly with `refreshing=true` on cold cache; call again after a moment or use `current_news_refresh`.
+
 ## System KV keys
 
 ### `system.sheets` (required)
@@ -142,6 +148,31 @@ Key:
 - `system.macros.only=true`
 
 When enabled, the backend filters tool declarations so Gemini can only see tools prefixed with `system_*` and `macro_*`.
+
+### Gemini Live response modalities override
+
+Key:
+
+- `gemini.live.response_modalities_json`
+
+Purpose:
+
+- Optional explicit override for Gemini Live `response_modalities`.
+- Example value: `"[\"AUDIO\"]"` or `"[\"AUDIO\",\"TEXT\"]"`.
+
+Notes:
+
+- Some native-audio preview models may reject `TEXT` response modality; the backend may default these models to audio-only unless this key is set.
+
+### Website Sources voice grounding
+
+Key:
+
+- `website_sources.voice_grounding.enabled` (default `false`)
+
+Notes:
+
+- Voice grounding is opt-in and is intentionally conservative to avoid Gemini Live session disconnects.
 
 ### Macro registry injection (NL routing helper)
 

@@ -7,15 +7,18 @@ trigger_phrases: current news, cnn news, iran war, iran conflict, gold price, do
 ---
 
 ## Purpose
-Prepare a cached context brief on the current situation of the Iran war and market moves (gold / dollar / oil), sourced from CNN.
+Prepare a cached context brief from configured news sources and topic definitions.
 
 ## Behavior
-- Fetch latest CNN RSS headlines.
+- Fetch latest items from configured sources.
 - Build a short brief and cache structured context.
-- Answer follow-up requests for more details within the continuation window.
+- Topics are driven by the `news_topics` sheet (SSOT).
+- Answer follow-up requests for more details by topic key.
 
 ## Status Payload Contract
 - `summary`: short text
 - `updated_at`: unix timestamp (seconds)
 - `sources`: list of source URLs
-- `topics`: object with `iran_war`, `gold`, `usd`, `oil`, `thb` sections
+- `topics`: object keyed by topic id (sheet key). Each value contains:
+  - `headlines`: list of strings
+  - `items`: list of item objects
