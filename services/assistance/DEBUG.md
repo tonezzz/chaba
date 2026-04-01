@@ -241,6 +241,13 @@ Backend behavior:
 
 - For toggle keys, the backend accepts `TRUE/FALSE` input and writes lowercase `true/false` into the sheet’s `enabled` column (and avoids writing boolean values into `value`).
 
+Response clarity:
+
+- For toggle keys, the backend includes a `write(...)` summary in the `sys_kv_set ok:` line showing:
+  - `enabled_written=<true|false>`
+  - `value_written='<...>'` (often empty)
+  - `value_input='<...>'` (what you supplied)
+
 ### Common mistake: pasting JSON into chat
 
 If you paste JSON into the composer, it is typically sent as a **chat message**:
