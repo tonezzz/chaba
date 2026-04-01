@@ -56,6 +56,11 @@ Notes:
   - public: `https://assistance.idc1.surf-thailand.com/jarvis/api/...`
   - proxy behavior: `handle_path /jarvis/api/*` -> `http://127.0.0.1:18018` (strip `/jarvis/api`)
 
+WebSocket:
+
+- public: `wss://assistance.idc1.surf-thailand.com/jarvis/ws/live`
+- backend internal: `/ws/live` (edge proxy strips `/jarvis/ws` before proxying)
+
 Public examples (when edge proxy is configured):
 
 ```bash
