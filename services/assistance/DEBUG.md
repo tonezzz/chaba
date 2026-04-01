@@ -239,7 +239,7 @@ Usage:
 
 Backend behavior:
 
-- For toggle keys, the backend writes `TRUE/FALSE` into the sheet’s `enabled` column and avoids writing boolean values into `value`.
+- For toggle keys, the backend accepts `TRUE/FALSE` input and writes lowercase `true/false` into the sheet’s `enabled` column (and avoids writing boolean values into `value`).
 
 ### Common mistake: pasting JSON into chat
 
