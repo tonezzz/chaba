@@ -9200,8 +9200,10 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
     # the 'enabled' column, not by putting booleans into the 'value' column.
     is_toggle_key = k.endswith(".enabled") or k.startswith("feature.")
     toggle_val: Optional[str] = None
-    if is_toggle_key and v.upper() in {"TRUE", "FALSE"}:
-        toggle_val = v.upper()
+    if is_toggle_key:
+        v_u = v.upper()
+        if v_u in {"TRUE", "FALSE"}:
+            toggle_val = "true" if v_u == "TRUE" else "false"
 
     now_iso = datetime.now(tz=timezone.utc).isoformat().replace("+00:00", "Z")
 
@@ -9345,7 +9347,7 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             if not row_idx:
                 out_row[val_col] = ""
         if enabled_col is not None:
-            out_row[enabled_col] = toggle_val if toggle_val is not None else "TRUE"
+            out_row[enabled_col] = toggle_val if toggle_val is not None else "true"
         if scope_col is not None:
             prev_scope = str(out_row[scope_col] or "").strip()
             out_row[scope_col] = prev_scope if prev_scope else "global"
@@ -9444,7 +9446,7 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
         priority = str(existing[4]).strip() if len(existing) > 4 and str(existing[4]).strip() else "0"
 
         out_value = "" if toggle_val is not None else v
-        out_enabled = toggle_val if toggle_val is not None else "TRUE"
+        out_enabled = toggle_val if toggle_val is not None else "true"
 
         res2 = await _mcp_tools_call(
             tool_upd,
@@ -9481,7 +9483,7 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
 
     tool_app = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
     out_value = "" if toggle_val is not None else v
-    out_enabled = toggle_val if toggle_val is not None else "TRUE"
+    out_enabled = toggle_val if toggle_val is not None else "true"
     res3 = await _mcp_tools_call(
         tool_app,
         {
