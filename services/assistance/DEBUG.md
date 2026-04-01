@@ -219,6 +219,28 @@ Use one of these (in priority order):
 2) Frontend API call (when you have a reference to the LiveService instance):
    - `sendSysKvSet(key, value, { dry_run })`
 
+### Sheets validation: toggle keys use the `enabled` column
+
+Some system sheet tabs enforce validation that can reject boolean-looking values in the `value` column (for example, writing `FALSE` may fail even if `TRUE` succeeds).
+
+Convention:
+
+- Toggle keys:
+  - `*.enabled`
+  - `feature.*`
+- Should be driven by the **`enabled` column** (TRUE/FALSE), not by putting booleans into the `value` column.
+
+Usage:
+
+- Enable:
+  - `/sys set some.flag.enabled=TRUE`
+- Disable:
+  - `/sys set some.flag.enabled=FALSE`
+
+Backend behavior:
+
+- For toggle keys, the backend writes `TRUE/FALSE` into the sheet’s `enabled` column and avoids writing boolean values into `value`.
+
 ### Common mistake: pasting JSON into chat
 
 If you paste JSON into the composer, it is typically sent as a **chat message**:
