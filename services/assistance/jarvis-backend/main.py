@@ -11549,10 +11549,19 @@ def _gemini_local_tool_required_feature(name: str) -> str | None:
     return None
 
 
-def _gemini_local_tool_allowed(*, name: str, sys_kv: Optional[dict[str, Any]] = None, macros_only: bool) -> tuple[bool, str, str]:
+def _gemini_local_tool_allowed(name: str, sys_kv: Optional[dict[str, Any]] = None, macros_only: bool = False) -> tuple[bool, str, str]:
     n = str(name or "").strip()
     if not n:
         return False, "invalid_tool", "Missing tool name"
+
+    # Safety: prevent Gemini from bypassing Pending confirmation by calling direct sheet upserts.
+    # Operators can opt-in for advanced workflows, but default should be confirmation-based.
+    if n in {"news_topics_upsert", "news_sources_upsert", "news_items_upsert"}:
+        try:
+            if not _sys_kv_bool(sys_kv, "current_news.direct_upsert.enabled", default=False):
+                return False, "pending_required", "Use news_tuning_suggest (then pending_confirm/news_tuning_apply) instead of direct upsert"
+        except Exception:
+            return False, "pending_required", "Use news_tuning_suggest (then pending_confirm/news_tuning_apply) instead of direct upsert"
     if macros_only:
         return False, "macros_only", "macros_only mode: only macro_* and system_* tools are allowed"
 
@@ -11564,9 +11573,9 @@ def _gemini_local_tool_allowed(*, name: str, sys_kv: Optional[dict[str, Any]] = 
         "time_now",
         "session_last_get",
         "pending_list",
+        "pending_preview",
         "pending_confirm",
         "pending_cancel",
-        "system_reload_queue",
         "memo_add",
         "memo_get",
         "memo_list",
