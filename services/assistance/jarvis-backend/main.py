@@ -9261,6 +9261,18 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
         if v_u in {"TRUE", "FALSE"}:
             toggle_val = "true" if v_u == "TRUE" else "false"
 
+    def _result_writes(*, value_input: str, value_written: str, enabled_written: Optional[str]) -> dict[str, Any]:
+        out: dict[str, Any] = {
+            "key": _canon_k(k),
+            "value": value_input,
+            "value_input": value_input,
+            "value_written": value_written,
+        }
+        if enabled_written is not None:
+            out["enabled_written"] = enabled_written
+            out["is_toggle_key"] = True
+        return out
+
     now_iso = datetime.now(tz=timezone.utc).isoformat().replace("+00:00", "Z")
 
     def _norm_k(s: Any) -> str:
@@ -9383,8 +9395,7 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             "sheet": sys_sheet,
             "action": "update" if row_idx else "append",
             "row": row_idx,
-            "key": _canon_k(k),
-            "value": v,
+            **_result_writes(value_input=v, value_written=v, enabled_written=toggle_val),
             "duplicates": duplicates,
         }
 
@@ -9420,6 +9431,8 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
 
         last_col = _col_letter(col_count)
         if row_idx:
+            wrote_value = str(out_row[val_col] if val_col is not None and val_col < len(out_row) else "")
+            wrote_enabled = str(out_row[enabled_col] if enabled_col is not None and enabled_col < len(out_row) else "") if enabled_col is not None else None
             tool_upd2 = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
             rng2 = f"{sys_sheet}!A{row_idx}:{last_col}{row_idx}"
             res_hu = await _mcp_tools_call(
@@ -9452,9 +9465,12 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
                 "row": row_idx,
                 "range": rng2,
                 "duplicates": duplicates,
+                **_result_writes(value_input=v, value_written=wrote_value, enabled_written=wrote_enabled if toggle_val is not None else None),
                 "response": parsed_hu if isinstance(parsed_hu, dict) else {"raw": parsed_hu},
             }
 
+        wrote_value = str(out_row[val_col] if val_col is not None and val_col < len(out_row) else "")
+        wrote_enabled = str(out_row[enabled_col] if enabled_col is not None and enabled_col < len(out_row) else "") if enabled_col is not None else None
         tool_app2 = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
         res_ha = await _mcp_tools_call(
             tool_app2,
@@ -9484,6 +9500,7 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             "key": _canon_k(k),
             "value": v,
             "duplicates": duplicates,
+            **_result_writes(value_input=v, value_written=wrote_value, enabled_written=wrote_enabled if toggle_val is not None else None),
             "response": parsed_ha if isinstance(parsed_ha, dict) else {"raw": parsed_ha},
         }
 
@@ -9534,6 +9551,7 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
             "row": row_idx,
             "range": rng,
             "duplicates": duplicates,
+            **_result_writes(value_input=v, value_written=out_value, enabled_written=out_enabled if toggle_val is not None else None),
             "response": parsed2 if isinstance(parsed2, dict) else {"raw": parsed2},
         }
 
@@ -9568,6 +9586,7 @@ async def _sys_kv_upsert_sheet(*, key: str, value: str, dry_run: bool = False) -
         "key": _canon_k(k),
         "value": v,
         "duplicates": duplicates,
+        **_result_writes(value_input=v, value_written=out_value, enabled_written=out_enabled if toggle_val is not None else None),
         "response": parsed3 if isinstance(parsed3, dict) else {"raw": parsed3},
     }
 
@@ -10350,7 +10369,23 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             else:
                 verify = " read_back=<dry_run>"
 
-            ok_text = f"sys_kv_set ok: {k}={v}" + (" (dry_run)" if dry_run else "") + where + verify
+            write_summary = ""
+            try:
+                if isinstance(result, dict) and result.get("is_toggle_key"):
+                    ew = str(result.get("enabled_written") or "").strip()
+                    vw = str(result.get("value_written") or "").strip()
+                    vi = str(result.get("value_input") or "").strip()
+                    parts = []
+                    if ew:
+                        parts.append(f"enabled_written={ew}")
+                    if vw or vi:
+                        parts.append(f"value_written={vw!r}")
+                        parts.append(f"value_input={vi!r}")
+                    write_summary = (" write(" + ", ".join(parts) + ")") if parts else ""
+            except Exception:
+                write_summary = ""
+
+            ok_text = f"sys_kv_set ok: {k}={v}" + (" (dry_run)" if dry_run else "") + where + write_summary + verify
             await _ws_send_json(
                 ws,
                 {
