@@ -625,6 +625,7 @@ async def _ws_emit_session_resume(ws: WebSocket) -> None:
         "ok": ok,
         "session_id": str(sid) if sid else None,
         "turns": safe_turns if ok else [],
+        "gemini_live_resumed_ok": bool(getattr(ws.state, "gemini_live_resumed_ok", False)),
         "instance_id": INSTANCE_ID,
     }
     try:
@@ -18937,6 +18938,10 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             try:
                 head = str(text).lstrip()
                 if head.startswith("RESUME_CONTEXT (recent dialog"):
+                    try:
+                        ws.state.pending_resume_context = str(text)
+                    except Exception:
+                        pass
                     continue
             except Exception:
                 pass
@@ -19237,6 +19242,18 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
                         text = grounded
                     except Exception:
                         pass
+
+            # If the frontend provided a RESUME_CONTEXT after reconnect, prepend it once.
+            try:
+                pending_resume = getattr(ws.state, "pending_resume_context", None)
+            except Exception:
+                pending_resume = None
+            if pending_resume:
+                try:
+                    ws.state.pending_resume_context = None
+                except Exception:
+                    pass
+                text = str(pending_resume).strip() + "\n\n" + str(text)
             try:
                 await session.send_client_content(turns={"parts": [{"text": text}]}, turn_complete=True)
             except Exception as e:
@@ -20457,6 +20474,10 @@ async def ws_live(ws: WebSocket) -> None:
         if resume_enabled:
             handle = _gemini_live_get_resumption_handle(session_id)
             base_config["session_resumption"] = {"handle": handle} if handle else {}
+            try:
+                ws.state.gemini_live_resumed_ok = bool(handle)
+            except Exception:
+                pass
             if handle:
                 try:
                     logger.info(
@@ -20466,6 +20487,11 @@ async def ws_live(ws: WebSocket) -> None:
                     )
                 except Exception:
                     pass
+        else:
+            try:
+                ws.state.gemini_live_resumed_ok = False
+            except Exception:
+                pass
 
         try:
             cwc = _gemini_live_context_window_compression_config(sys_kv if isinstance(sys_kv, dict) else None)
