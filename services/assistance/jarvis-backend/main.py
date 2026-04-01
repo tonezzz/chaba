@@ -104,6 +104,11 @@ RECENT_DIALOG_TTL_SECONDS = int(os.getenv("JARVIS_RECENT_DIALOG_TTL_SECONDS") or
 RECENT_DIALOG_MAX_TURNS = int(os.getenv("JARVIS_RECENT_DIALOG_MAX_TURNS") or "40")
 RECENT_DIALOG_MAX_CHARS = int(os.getenv("JARVIS_RECENT_DIALOG_MAX_CHARS") or "4000")
 
+RESUME_CONTEXT_WINDOW_SECONDS = int(os.getenv("JARVIS_RESUME_WINDOW_SECONDS") or "2700")
+RESUME_CONTEXT_MAX_TURNS = int(os.getenv("JARVIS_RESUME_MAX_TURNS") or "10")
+RESUME_CONTEXT_MAX_CHARS = int(os.getenv("JARVIS_RESUME_MAX_CHARS") or "1200")
+RESUME_CONTEXT_FILTER_COMMAND_LIKE = str(os.getenv("JARVIS_RESUME_FILTER_COMMAND_LIKE") or "true").strip().lower() not in {"0", "false", "no"}
+
 _RECENT_DIALOG_MEM: dict[str, list[dict[str, Any]]] = {}
 _RECENT_DIALOG_MEM_LOCK: asyncio.Lock = asyncio.Lock()
 _redis_client: Any = None
@@ -548,8 +553,40 @@ async def _ws_emit_session_resume(ws: WebSocket) -> None:
         pass
 
     # Keep the resume payload small: omit per-turn trace_id (debug-only).
+    def _looks_command_like(s: str) -> bool:
+        t = str(s or "").strip()
+        if not t:
+            return True
+        if len(t) >= 2 and t[0] == "{" and ("\"tool\"" in t or "\"name\"" in t or "\"args\"" in t):
+            return True
+        # snake_case tool-ish commands like current_news_refresh
+        if re.fullmatch(r"[a-z][a-z0-9_]{2,}", t):
+            if "_" in t and not any(ch.isspace() for ch in t):
+                return True
+        if t.startswith("/"):
+            return True
+        return False
+
     safe_turns: list[dict[str, Any]] = []
+    newest_ts_ms = 0
     if ok and isinstance(turns, list):
+        for it in turns:
+            if not isinstance(it, dict):
+                continue
+            ts = it.get("ts")
+            if isinstance(ts, int) and ts > newest_ts_ms:
+                newest_ts_ms = ts
+
+        cutoff_ms = 0
+        try:
+            win_s = max(0, int(RESUME_CONTEXT_WINDOW_SECONDS))
+            if newest_ts_ms > 0 and win_s > 0:
+                cutoff_ms = newest_ts_ms - (win_s * 1000)
+        except Exception:
+            cutoff_ms = 0
+
+        # Keep only within the window (anchored to newest stored turn), and filter low-signal command-like turns.
+        filtered: list[dict[str, Any]] = []
         for it in turns:
             if not isinstance(it, dict):
                 continue
@@ -560,10 +597,28 @@ async def _ws_emit_session_resume(ws: WebSocket) -> None:
                 continue
             if not text:
                 continue
+            if isinstance(ts, int) and cutoff_ms and ts < cutoff_ms:
+                continue
+            if RESUME_CONTEXT_FILTER_COMMAND_LIKE and _looks_command_like(str(text)):
+                continue
+            filtered.append(it)
+
+        # Apply max turns from the end (most recent), then max chars.
+        if isinstance(RESUME_CONTEXT_MAX_TURNS, int) and RESUME_CONTEXT_MAX_TURNS > 0:
+            filtered = filtered[-RESUME_CONTEXT_MAX_TURNS :]
+
+        total_chars = 0
+        for it in filtered:
+            role = it.get("role")
+            text = str(it.get("text") or "")
+            ts = it.get("ts")
             out_it: dict[str, Any] = {"role": role, "text": text}
             if isinstance(ts, int) and ts > 0:
                 out_it["ts"] = ts
             safe_turns.append(out_it)
+            total_chars += len(text)
+            if isinstance(RESUME_CONTEXT_MAX_CHARS, int) and RESUME_CONTEXT_MAX_CHARS > 0 and total_chars >= RESUME_CONTEXT_MAX_CHARS:
+                break
 
     payload = {
         "type": "session_resume",
