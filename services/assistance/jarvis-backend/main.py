@@ -11595,6 +11595,7 @@ def _gemini_local_tool_allowed(name: str, sys_kv: Optional[dict[str, Any]] = Non
         "current_news_refresh",
         "current_news_sources",
         "current_news_details",
+        "news_tuning_suggest",
         "news_topics_upsert",
         "news_sources_upsert",
         "news_items_upsert",
