@@ -20901,8 +20901,14 @@ async def ws_live(ws: WebSocket) -> None:
                     cfg.get("response_modalities"),
                     msg,
                 )
-                await _run_with_config(str(model_used_norm), cfg)
-                return
+                try:
+                    await _run_with_config(str(model_used_norm), cfg)
+                    return
+                except Exception as e:
+                    # Do not let provider-side failures crash the ASGI websocket handler.
+                    # Route through the standard failure path below (which can fall back to local-only).
+                    last_error = e
+                    last_error_classified = _classify_gemini_live_error(e, model_used_norm)
 
             classified = _classify_gemini_live_error(last_error, model_used_norm)
             try:
