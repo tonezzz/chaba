@@ -2825,6 +2825,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             get_news_follow_summaries = deps["get_news_follow_summaries"]
             refresh_news_follow_summaries = deps["refresh_news_follow_summaries"]
             load_news_topics_from_sheet = deps.get("load_news_topics_from_sheet")
+            create_pending_write = deps["create_pending_write"]
             default_user_id = deps.get("DEFAULT_USER_ID")
 
             ws = session_ws.get(str(session_id)) if session_id else None
@@ -2840,7 +2841,13 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                 if load_news_topics_from_sheet is not None:
                     topics_cfg = await load_news_topics_from_sheet(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
                     if isinstance(topics_cfg, dict) and topics_cfg:
-                        focus = sorted([str(k or "").strip() for k in topics_cfg.keys() if str(k or "").strip()])
+                        focus_keys = sorted([str(k or "").strip() for k in topics_cfg.keys() if str(k or "").strip()])
+                        focus_true: list[str] = []
+                        for k in focus_keys:
+                            cfg = topics_cfg.get(k)
+                            if isinstance(cfg, dict) and cfg.get("focus") is True:
+                                focus_true.append(k)
+                        focus = focus_true or focus_keys
                         try:
                             set_news_follow_focus(user_id, focus)
                         except Exception:
@@ -2856,16 +2863,33 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                 item = str(args.get("item") or "").strip()
                 if not item:
                     raise HTTPException(status_code=400, detail="missing_focus_item")
-                set_news_follow_focus(user_id, focus + [item])
-                return {"ok": True, "focus": get_news_follow_focus(user_id)}
+                if not session_id:
+                    raise HTTPException(status_code=400, detail="missing_session_id")
+                payload = {"topic": item, "focus": True}
+                confirmation_id = create_pending_write(str(session_id), "news_topic_focus_set", payload)
+                await _emit_pending_awaiting_user(
+                    session_id0=str(session_id),
+                    confirmation_id=confirmation_id,
+                    action="news_topic_focus_set",
+                    payload=payload,
+                )
+                return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "action": "news_topic_focus_set", "payload": payload}
 
             if tool_name == "news_follow_focus_remove":
                 item = str(args.get("item") or "").strip().lower()
                 if not item:
                     raise HTTPException(status_code=400, detail="missing_focus_item")
-                new_focus = [f for f in focus if str(f or "").strip().lower() != item]
-                set_news_follow_focus(user_id, new_focus)
-                return {"ok": True, "focus": get_news_follow_focus(user_id)}
+                if not session_id:
+                    raise HTTPException(status_code=400, detail="missing_session_id")
+                payload = {"topic": item, "focus": False}
+                confirmation_id = create_pending_write(str(session_id), "news_topic_focus_set", payload)
+                await _emit_pending_awaiting_user(
+                    session_id0=str(session_id),
+                    confirmation_id=confirmation_id,
+                    action="news_topic_focus_set",
+                    payload=payload,
+                )
+                return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "action": "news_topic_focus_set", "payload": payload}
 
             if tool_name == "news_follow_refresh":
                 payload = await refresh_news_follow_summaries(user_id, focus)
@@ -3273,6 +3297,14 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             preview["targets"] = [{"kind": "google_sheet", "action": "skill_upsert", "name": name}]
             preview["summary"] = f"skill_upsert name={name}"
             preview["details"] = {"name": name, "proposed": payload}
+        elif action == "news_topic_focus_set" and isinstance(payload, dict):
+            topic = str(payload.get("topic") or "").strip()
+            focus = bool(payload.get("focus"))
+            preview["risk"] = "high"
+            preview["writes_count"] = 1
+            preview["targets"] = [{"kind": "google_sheet", "action": "news_topic_focus_set", "topic": topic, "focus": focus}]
+            preview["summary"] = f"news_topic_focus_set topic={topic} focus={str(focus).lower()}"
+            preview["details"] = {"topic": topic, "focus": focus, "proposed": payload}
         elif action == "news_tuning_apply" and isinstance(payload, dict):
             topics = payload.get("topics") if isinstance(payload.get("topics"), list) else []
             sources = payload.get("sources") if isinstance(payload.get("sources"), list) else []
@@ -3312,6 +3344,7 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
         google_tasks_undo_log = deps["google_tasks_undo_log"]
         set_session_last_item = deps["set_session_last_item"]
         news_topics_upsert = deps.get("news_topics_upsert")
+        news_topics_focus_set = deps.get("news_topics_focus_set")
         news_sources_upsert = deps.get("news_sources_upsert")
 
         confirmation_id = str(args.get("confirmation_id") or "").strip()
@@ -3401,6 +3434,30 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
             except Exception:
                 pass
             return {"ok": True, "reloaded": True, "mode": mode, "sys_kv_keys": keys2, "macros_count": len(macros2 or {})}
+
+        if action == "news_topic_focus_set":
+            if not isinstance(payload, dict):
+                raise HTTPException(status_code=400, detail="invalid_pending_payload")
+            if news_topics_focus_set is None:
+                raise HTTPException(status_code=500, detail="missing_news_focus_set_deps")
+
+            ws = session_ws.get(str(session_id)) if isinstance(session_ws, dict) else None
+            if ws is None:
+                raise HTTPException(status_code=400, detail="missing_session_ws")
+
+            topic = str(payload.get("topic") or "").strip()
+            if not topic:
+                raise HTTPException(status_code=400, detail="missing_topic")
+            focus = bool(payload.get("focus"))
+
+            sys_kv0 = getattr(ws.state, "sys_kv", None)
+            sys_kv_dict0 = sys_kv0 if isinstance(sys_kv0, dict) else None
+            res = await news_topics_focus_set(sys_kv=sys_kv_dict0, topic=topic, focus=focus)
+            try:
+                set_session_last_item(str(session_id), "news_topic_focus_set", "news_topic_focus_set", {"topic": topic, "focus": focus, "result": res})
+            except Exception:
+                pass
+            return {"ok": True, "applied": True, "result": res}
 
         if action == "bundle_publish_macro_reload":
             ws = session_ws.get(str(session_id)) if isinstance(session_ws, dict) else None
