@@ -2867,6 +2867,18 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                     raise HTTPException(status_code=400, detail="missing_session_id")
                 payload = {"topic": item, "focus": True}
                 confirmation_id = create_pending_write(str(session_id), "news_topic_focus_set", payload)
+                try:
+                    await ws.send_json(
+                        {
+                            "type": "pending_event",
+                            "event": "awaiting_user",
+                            "confirmation_id": str(confirmation_id),
+                            "action": "news_topic_focus_set",
+                            "payload": payload,
+                        }
+                    )
+                except Exception:
+                    pass
                 await _emit_pending_awaiting_user(
                     session_id0=str(session_id),
                     confirmation_id=confirmation_id,
@@ -2883,6 +2895,18 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                     raise HTTPException(status_code=400, detail="missing_session_id")
                 payload = {"topic": item, "focus": False}
                 confirmation_id = create_pending_write(str(session_id), "news_topic_focus_set", payload)
+                try:
+                    await ws.send_json(
+                        {
+                            "type": "pending_event",
+                            "event": "awaiting_user",
+                            "confirmation_id": str(confirmation_id),
+                            "action": "news_topic_focus_set",
+                            "payload": payload,
+                        }
+                    )
+                except Exception:
+                    pass
                 await _emit_pending_awaiting_user(
                     session_id0=str(session_id),
                     confirmation_id=confirmation_id,
