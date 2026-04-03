@@ -13688,7 +13688,7 @@ async def _news_sources_upsert(
 async def _load_news_topics_from_sheet(*, sys_kv: dict[str, Any] | None, include_disabled: bool = False) -> dict[str, dict[str, Any]]:
     spreadsheet_id, sheet_name = _current_news_topics_sheet_cfg_from_sys_kv(sys_kv)
     sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="news_topics")
-    table = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_a1, max_rows=500, max_cols="K")
+    table = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_a1, max_rows=500, max_cols="L")
     if not table:
         return {}
     header = table[0] if isinstance(table[0], list) else []
@@ -13726,6 +13726,12 @@ async def _load_news_topics_from_sheet(*, sys_kv: dict[str, Any] | None, include
         limit_v = _cell_str(r, idx, "limit")
         headlines_v = _cell_str(r, idx, "headlines")
         cfg: dict[str, Any] = {"keywords": keywords, "enabled": bool(enabled)}
+        try:
+            focus_raw = _cell_str(r, idx, "focus")
+            if focus_raw:
+                cfg["focus"] = bool(_parse_bool_cell(focus_raw))
+        except Exception:
+            pass
         if limit_v:
             try:
                 cfg["limit"] = int(float(limit_v))
@@ -13738,6 +13744,147 @@ async def _load_news_topics_from_sheet(*, sys_kv: dict[str, Any] | None, include
                 pass
         out[key] = cfg
     return out
+
+
+async def _news_topics_focus_set(*, sys_kv: dict[str, Any] | None, topic: str, focus: bool) -> dict[str, Any]:
+    t = str(topic or "").strip()
+    if not t:
+        raise HTTPException(status_code=400, detail="missing_topic")
+
+    spreadsheet_id, sheet_name = _current_news_topics_sheet_cfg_from_sys_kv(sys_kv)
+    if not spreadsheet_id:
+        raise HTTPException(status_code=400, detail="missing_spreadsheet_id")
+    sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="news_topics")
+
+    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    tool_update = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+    tool_append = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+
+    res_get = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A1:Z"})
+    parsed_get = _mcp_text_json(res_get)
+    vals = parsed_get.get("values") if isinstance(parsed_get, dict) else None
+    data = parsed_get.get("data") if isinstance(parsed_get, dict) else None
+    if not isinstance(vals, list) and isinstance(data, dict):
+        vals = data.get("values")
+    table = vals if isinstance(vals, list) else []
+    if not table:
+        raise HTTPException(status_code=400, detail="news_topics_missing_header")
+
+    header = table[0] if isinstance(table[0], list) else []
+    idx = _idx_from_header(header)
+    if not idx:
+        raise HTTPException(status_code=400, detail="news_topics_missing_header")
+
+    def _col_letter(col_idx0: int) -> str:
+        n = int(col_idx0) + 1
+        if n <= 0:
+            return "A"
+        out = ""
+        while n > 0:
+            n, r = divmod(n - 1, 26)
+            out = chr(ord("A") + r) + out
+        return out or "A"
+
+    # Ensure focus column exists.
+    focus_col = idx.get("focus")
+    if focus_col is None:
+        header2 = list(header)
+        header2.append("focus")
+        focus_col = len(header2) - 1
+        end_col = _col_letter(int(focus_col))
+        await _mcp_tools_call(
+            tool_update,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": f"{sheet_a1}!A1:{end_col}1",
+                "values": [header2],
+                "value_input_option": "RAW",
+            },
+        )
+        idx = _idx_from_header(header2)
+
+    enabled_col = idx.get("enabled")
+    topic_col = idx.get("topic")
+    if topic_col is None:
+        topic_col = idx.get("key")
+    if topic_col is None:
+        topic_col = idx.get("name")
+    if topic_col is None:
+        raise HTTPException(status_code=400, detail="news_topics_missing_topic_column")
+
+    # Find row.
+    row_num: int | None = None
+    for i, r in enumerate(table[1:], start=2):
+        if not isinstance(r, list):
+            continue
+        cur = str(r[int(topic_col)] if int(topic_col) < len(r) else "").strip()
+        if cur == t:
+            row_num = int(i)
+            break
+
+    focus_cell = "TRUE" if bool(focus) else "FALSE"
+
+    # If adding focus, also enable the topic (SSOT).
+    enable_cell = "TRUE" if bool(focus) else None
+
+    if row_num is not None:
+        # Update focus cell.
+        focus_letter = _col_letter(int(focus_col))
+        rng_focus = f"{sheet_a1}!{focus_letter}{row_num}:{focus_letter}{row_num}"
+        res_focus = await _mcp_tools_call(
+            tool_update,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": rng_focus,
+                "values": [[focus_cell]],
+                "value_input_option": "RAW",
+            },
+        )
+        res_enabled = None
+        if enable_cell is not None and enabled_col is not None:
+            enabled_letter = _col_letter(int(enabled_col))
+            rng_enabled = f"{sheet_a1}!{enabled_letter}{row_num}:{enabled_letter}{row_num}"
+            try:
+                res_enabled = await _mcp_tools_call(
+                    tool_update,
+                    {
+                        "spreadsheet_id": spreadsheet_id,
+                        "range": rng_enabled,
+                        "values": [[enable_cell]],
+                        "value_input_option": "RAW",
+                    },
+                )
+            except Exception:
+                res_enabled = None
+        return {
+            "ok": True,
+            "updated": True,
+            "topic": t,
+            "focus": bool(focus),
+            "row": int(row_num),
+            "focus_range": rng_focus,
+            "enabled_updated": bool(res_enabled is not None),
+            "focus_response": _mcp_text_json(res_focus),
+            "enabled_response": _mcp_text_json(res_enabled) if res_enabled is not None else None,
+        }
+
+    # Not found: append minimal row.
+    row_len = max(int(focus_col), int(topic_col), int(enabled_col) if enabled_col is not None else 0) + 1
+    row_out: list[Any] = [""] * row_len
+    row_out[int(topic_col)] = t
+    row_out[int(focus_col)] = focus_cell
+    if enable_cell is not None and enabled_col is not None:
+        row_out[int(enabled_col)] = enable_cell
+    res_app = await _mcp_tools_call(
+        tool_append,
+        {
+            "spreadsheet_id": spreadsheet_id,
+            "range": f"{sheet_a1}!A:Z",
+            "values": [row_out],
+            "value_input_option": "RAW",
+        },
+    )
+    return {"ok": True, "created": True, "topic": t, "focus": bool(focus), "response": _mcp_text_json(res_app)}
 
 
 async def _news_topics_upsert(
@@ -18827,6 +18974,7 @@ async def _handle_mcp_tool_call(session_id: str, tool_name: str, args: dict[str,
         "get_news_follow_summaries": _get_news_follow_summaries,
         "refresh_news_follow_summaries": _refresh_news_follow_summaries,
         "news_topics_upsert": _news_topics_upsert,
+        "news_topics_focus_set": _news_topics_focus_set,
         "news_sources_upsert": _news_sources_upsert,
         "news_items_upsert": _news_items_upsert,
         "news_sources_list": _news_sources_list,
