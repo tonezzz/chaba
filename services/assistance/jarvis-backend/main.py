@@ -625,6 +625,7 @@ async def _ws_emit_session_resume(ws: WebSocket) -> None:
         "ok": ok,
         "session_id": str(sid) if sid else None,
         "turns": safe_turns if ok else [],
+        "gemini_live_resumed_ok": bool(getattr(ws.state, "gemini_live_resumed_ok", False)),
         "instance_id": INSTANCE_ID,
     }
     try:
@@ -2211,7 +2212,7 @@ async def _load_sheet_gems(*, sys_kv: Optional[dict[str, Any]] = None) -> dict[s
             continue
         enabled_raw = _get_cell(raw, idx, "enabled", default="TRUE")
         enabled = _parse_bool_cell(enabled_raw)
-        if not enabled:
+        if not enabled and (not include_disabled):
             continue
 
         name = str(_get_cell(raw, idx, "name", default="")).strip()
@@ -4065,7 +4066,15 @@ async def _ws_send_json(ws: WebSocket, payload: dict[str, Any], trace_id: str | 
                 )
     except Exception:
         pass
-    await ws.send_json(payload)
+    try:
+        await ws.send_json(payload)
+    except WebSocketDisconnect:
+        return
+    except RuntimeError as e:
+        # Starlette raises this if the websocket is already closing/closed.
+        if "close message" in str(e).lower() or "already been sent" in str(e).lower():
+            return
+        raise
 
 
 async def tools_api_call(tool_name: str, args: dict[str, Any], session_id: str | None = None) -> Any:
@@ -4531,6 +4540,159 @@ def _memo_sheet_cfg_from_sys_kv(sys_kv: dict[str, Any] | None) -> tuple[str, str
     if not spreadsheet_id:
         spreadsheet_id = _system_spreadsheet_id()
     return (spreadsheet_id, sheet_name)
+
+
+def _system_news_skills_sheet_name(*, sys_kv: Optional[dict[str, Any]] = None) -> str:
+    try:
+        if isinstance(sys_kv, dict):
+            v = str(sys_kv.get("system.news_skills.sheet_name") or "").strip()
+            if v:
+                return v
+    except Exception:
+        pass
+    return "skills_news"
+
+
+def _news_skills_routing_enabled(*, sys_kv: Optional[dict[str, Any]] = None) -> bool:
+    try:
+        if isinstance(sys_kv, dict):
+            raw = str(sys_kv.get("system.news_skills.routing.enabled") or "").strip()
+            if raw:
+                return _parse_bool_cell(raw)
+    except Exception:
+        return False
+    return False
+
+
+async def _load_news_skills_from_sheet(*, sys_kv: Optional[dict[str, Any]] = None) -> list[dict[str, Any]]:
+    spreadsheet_id = _system_spreadsheet_id()
+    if not spreadsheet_id:
+        return []
+    sheet_name = _system_news_skills_sheet_name(sys_kv=sys_kv)
+
+    tool = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    res = await _mcp_tools_call(tool, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name}!A:Z"})
+    parsed = _mcp_text_json(res)
+    values = parsed.get("values") if isinstance(parsed, dict) else None
+    data = parsed.get("data") if isinstance(parsed, dict) else None
+    if not isinstance(values, list) and isinstance(data, dict):
+        values = data.get("values")
+    if not isinstance(values, list) or not values:
+        return []
+
+    header = [str(c or "").strip().lower() for c in (values[0] if isinstance(values[0], list) else [])]
+    idx: dict[str, int] = {}
+    for i, col in enumerate(header):
+        if col and col not in idx:
+            idx[col] = int(i)
+
+    def _cell(row: list[Any], col: str) -> Any:
+        j = idx.get(str(col or "").strip().lower())
+        if j is None or j < 0 or j >= len(row):
+            return ""
+        return row[j]
+
+    def _as_bool_cell(v: Any) -> bool:
+        s = str(v or "").strip().lower()
+        return s in {"1", "true", "t", "yes", "y", "on"}
+
+    out: list[dict[str, Any]] = []
+    for i, r in enumerate(values[1:], start=2):
+        if not isinstance(r, list):
+            continue
+        enabled = _as_bool_cell(_cell(r, "enabled") or "true")
+        if not enabled:
+            continue
+        name = str(_cell(r, "name") or "").strip()
+        priority = _safe_int(_cell(r, "priority") or 0, default=0)
+        match_type = str(_cell(r, "match_type") or "").strip().lower() or "none"
+        pattern = str(_cell(r, "pattern") or "").strip()
+        handler = str(_cell(r, "handler") or "").strip().lower() or "tool_call"
+        arg_json = str(_cell(r, "arg_json") or "").strip()
+        out.append(
+            {
+                "row": int(i),
+                "name": name,
+                "enabled": True,
+                "priority": int(priority),
+                "match_type": match_type,
+                "pattern": pattern,
+                "handler": handler,
+                "arg_json": arg_json,
+            }
+        )
+
+    out.sort(key=lambda it: (int(it.get("priority") or 0), str(it.get("name") or ""), int(it.get("row") or 0)))
+    return out
+
+
+def _news_skill_matches(*, text: str, match_type: str, pattern: str) -> bool:
+    s = str(text or "")
+    mt = str(match_type or "").strip().lower() or "none"
+    pat = str(pattern or "")
+    if mt == "none":
+        return False
+    if not pat.strip():
+        return False
+    if mt == "exact":
+        return s.strip().lower() == pat.strip().lower()
+    if mt == "prefix":
+        return s.strip().lower().startswith(pat.strip().lower())
+    if mt == "regex":
+        try:
+            return re.search(pat, s, re.IGNORECASE) is not None
+        except Exception:
+            return False
+    return False
+
+
+async def _dispatch_news_skills(ws: WebSocket, text: str) -> bool:
+    sys_kv = getattr(ws.state, "sys_kv", None)
+    sys_kv_dict = sys_kv if isinstance(sys_kv, dict) else None
+    if not feature_enabled("skills", sys_kv=sys_kv_dict, default=False):
+        return False
+    if not _news_skills_routing_enabled(sys_kv=sys_kv_dict):
+        return False
+    try:
+        rows = await _load_news_skills_from_sheet(sys_kv=sys_kv_dict)
+    except Exception:
+        rows = []
+    if not rows:
+        return False
+
+    session_id = str(getattr(ws.state, "session_id", None) or "").strip() or None
+    if not session_id:
+        return False
+
+    for it in rows:
+        if not isinstance(it, dict):
+            continue
+        mt = str(it.get("match_type") or "").strip().lower()
+        pat = str(it.get("pattern") or "")
+        if not _news_skill_matches(text=text, match_type=mt, pattern=pat):
+            continue
+        handler = str(it.get("handler") or "").strip().lower() or "tool_call"
+        if handler != "tool_call":
+            continue
+        arg_json = str(it.get("arg_json") or "").strip()
+        payload: dict[str, Any] = {}
+        if arg_json:
+            try:
+                parsed = json.loads(arg_json)
+                if isinstance(parsed, dict):
+                    payload = parsed
+            except Exception:
+                payload = {}
+        tool_name = str(payload.get("tool") or "").strip()
+        tool_args = payload.get("args") if isinstance(payload.get("args"), dict) else {}
+        if not tool_name:
+            continue
+        try:
+            await _handle_mcp_tool_call(session_id, tool_name, tool_args)
+            return True
+        except Exception:
+            return True
+    return False
 
 
 def _current_news_sheet_cfg_from_sys_kv(sys_kv: dict[str, Any] | None) -> tuple[str, str]:
@@ -11014,7 +11176,23 @@ async def _handle_news_follow_trigger(ws: WebSocket, text: str) -> bool:
         return False
 
     user_id = DEFAULT_USER_ID
-    focus = _get_news_follow_focus(user_id)
+    focus: list[str] = []
+    try:
+        sys_kv = getattr(ws.state, "sys_kv", None)
+    except Exception:
+        sys_kv = None
+    try:
+        topics_cfg = await _load_news_topics_from_sheet(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
+        if isinstance(topics_cfg, dict) and topics_cfg:
+            focus = sorted([str(k or "").strip() for k in topics_cfg.keys() if str(k or "").strip()])
+            try:
+                _set_news_follow_focus(user_id, focus)
+            except Exception:
+                pass
+    except Exception:
+        focus = []
+    if not focus:
+        focus = _get_news_follow_focus(user_id)
     summaries = _get_news_follow_summaries(user_id)
 
     if action == "focus_list":
@@ -11143,6 +11321,10 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
             return True
 
     sys_kv = getattr(ws.state, "sys_kv", None)
+
+    handled = await _dispatch_news_skills(ws, text)
+    if handled:
+        return True
 
     if feature_enabled("memo", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
         handled = await _handle_thai_memo_commands(ws, text)
@@ -11392,10 +11574,19 @@ def _gemini_local_tool_required_feature(name: str) -> str | None:
     return None
 
 
-def _gemini_local_tool_allowed(*, name: str, sys_kv: Optional[dict[str, Any]] = None, macros_only: bool) -> tuple[bool, str, str]:
+def _gemini_local_tool_allowed(name: str, sys_kv: Optional[dict[str, Any]] = None, macros_only: bool = False) -> tuple[bool, str, str]:
     n = str(name or "").strip()
     if not n:
         return False, "invalid_tool", "Missing tool name"
+
+    # Safety: prevent Gemini from bypassing Pending confirmation by calling direct sheet upserts.
+    # Operators can opt-in for advanced workflows, but default should be confirmation-based.
+    if n in {"news_topics_upsert", "news_sources_upsert", "news_items_upsert"}:
+        try:
+            if not _sys_kv_bool(sys_kv, "current_news.direct_upsert.enabled", default=False):
+                return False, "pending_required", "Use news_tuning_suggest (then pending_confirm/news_tuning_apply) instead of direct upsert"
+        except Exception:
+            return False, "pending_required", "Use news_tuning_suggest (then pending_confirm/news_tuning_apply) instead of direct upsert"
     if macros_only:
         return False, "macros_only", "macros_only mode: only macro_* and system_* tools are allowed"
 
@@ -11407,9 +11598,9 @@ def _gemini_local_tool_allowed(*, name: str, sys_kv: Optional[dict[str, Any]] = 
         "time_now",
         "session_last_get",
         "pending_list",
+        "pending_preview",
         "pending_confirm",
         "pending_cancel",
-        "system_reload_queue",
         "memo_add",
         "memo_get",
         "memo_list",
@@ -11421,6 +11612,7 @@ def _gemini_local_tool_allowed(*, name: str, sys_kv: Optional[dict[str, Any]] = 
         "current_news_refresh",
         "current_news_sources",
         "current_news_details",
+        "news_tuning_suggest",
         "news_topics_upsert",
         "news_sources_upsert",
         "news_items_upsert",
@@ -13036,7 +13228,16 @@ def _build_current_news_context(items: list[dict[str, Any]], topics_cfg: Optiona
 
     topics_out: dict[str, Any] = {}
     sources: list[str] = []
-    for key in ["world_headlines", "th_headlines", "iran_war", "oil", "gold", "usd", "thb", "th_general", "tech", "ai"]:
+
+    # SSOT: if topics_cfg is provided (from news_topics sheet), iterate those keys.
+    # Otherwise, fall back to the default ordering.
+    ordered_keys: list[str] = []
+    if isinstance(topics_cfg, dict) and topics_cfg:
+        ordered_keys = [str(k or "").strip() for k in topics_cfg.keys() if str(k or "").strip()]
+    if not ordered_keys:
+        ordered_keys = ["world_headlines", "th_headlines", "iran_war", "oil", "gold", "usd", "thb", "th_general", "tech", "ai"]
+
+    for key in ordered_keys:
         cfg = merged.get(key) or {}
         kw = cfg.get("keywords") if isinstance(cfg.get("keywords"), list) else []
         lim = int(cfg.get("limit") or 6)
@@ -13182,20 +13383,17 @@ def _render_current_news_brief(ctx: dict[str, Any], *, lang: Optional[str] = Non
         return "\n".join(lines)
 
     titles = title_map_th if is_th else title_map_en
-    parts = [
-        freshness_line,
-        block(titles.get("world_headlines", "World headlines"), "world_headlines", 6),
-        block(titles.get("th_headlines", "Thailand headlines"), "th_headlines", 6),
-        block(titles.get("iran_war", "Iran war"), "iran_war", 5),
-        block(titles.get("oil", "Oil"), "oil", 3),
-        block(titles.get("gold", "Gold"), "gold", 3),
-        block(titles.get("usd", "Dollar/US rates"), "usd", 3),
-        block(titles.get("thb", "Thai Baht"), "thb", 3),
-        block(titles.get("th_general", "Thailand (more)"), "th_general", 6),
-        block(titles.get("tech", "Technology"), "tech", 4),
-        block(titles.get("ai", "AI"), "ai", 4),
-        help_line,
-    ]
+
+    # SSOT: render whatever topics exist in the cached context.
+    # Keep upstream localized labels when available.
+    keys = [str(k) for k in topics.keys() if str(k).strip()]
+    parts: list[str] = []
+    if freshness_line:
+        parts.append(freshness_line)
+    for k in keys:
+        title = titles.get(k) or k.replace("_", " ").strip().title() or k
+        parts.append(block(title, k, 6 if k in {"world_headlines", "th_headlines", "th_general"} else 5))
+    parts.append(help_line)
     return "\n\n".join([p for p in parts if p.strip()])
 
 
@@ -13303,7 +13501,7 @@ async def _it_topic_packs_seed(*, sys_kv: dict[str, Any] | None, pack: str | Non
     return {"ok": True, "seeded": sorted(results.keys()), "results": results}
 
 
-async def _load_news_sources_from_sheet(*, sys_kv: dict[str, Any] | None) -> list[dict[str, Any]]:
+async def _load_news_sources_from_sheet(*, sys_kv: dict[str, Any] | None, include_disabled: bool = False) -> list[dict[str, Any]]:
     spreadsheet_id, sheet_name = _current_news_sources_sheet_cfg_from_sys_kv(sys_kv)
     sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="news_sources")
     table = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_a1, max_rows=500, max_cols="H")
@@ -13333,7 +13531,7 @@ async def _load_news_sources_from_sheet(*, sys_kv: dict[str, Any] | None) -> lis
         name = _cell_str(r, idx, "name") or _cell_str(r, idx, "id")
         typ = _cell_str(r, idx, "type")
         tags = _cell_str(r, idx, "tags")
-        out.append({"name": name, "url": url, "type": typ, "tags": tags, "enabled": True})
+        out.append({"name": name, "url": url, "type": typ, "tags": tags, "enabled": bool(enabled)})
     return out
 
 
@@ -13350,7 +13548,9 @@ async def _news_sources_upsert(
     if not u:
         raise HTTPException(status_code=400, detail="missing_url")
     if enabled is not None and enabled is False:
-        raise HTTPException(status_code=400, detail="safe_upsert_only_enabled_must_be_true")
+        # Safe upsert: allow creating a new row as disabled (for suggestion/confirmation flows),
+        # but do not allow disabling an existing row.
+        enabled = False
 
     spreadsheet_id, sheet_name = _current_news_sources_sheet_cfg_from_sys_kv(sys_kv)
     if not spreadsheet_id:
@@ -13423,6 +13623,8 @@ async def _news_sources_upsert(
         out_row[col] = value
 
     if existing_row_num is not None:
+        if enabled is False:
+            raise HTTPException(status_code=400, detail="safe_upsert_only_enabled_must_be_true")
         row_len = max(len(header), 1)
         out_row: list[Any] = [""] * row_len
         _set_cell(out_row, c_url, u)
@@ -13455,7 +13657,7 @@ async def _news_sources_upsert(
     if c_enabled is not None:
         while len(append_row) <= c_enabled:
             append_row.append("")
-        append_row[c_enabled] = True
+        append_row[c_enabled] = False if enabled is False else True
     if c_name is not None and name is not None and str(name).strip():
         while len(append_row) <= c_name:
             append_row.append("")
@@ -13483,10 +13685,10 @@ async def _news_sources_upsert(
     return {"ok": True, "mode": "append", "url": u, "result": _mcp_text_json(res3)}
 
 
-async def _load_news_topics_from_sheet(*, sys_kv: dict[str, Any] | None) -> dict[str, dict[str, Any]]:
+async def _load_news_topics_from_sheet(*, sys_kv: dict[str, Any] | None, include_disabled: bool = False) -> dict[str, dict[str, Any]]:
     spreadsheet_id, sheet_name = _current_news_topics_sheet_cfg_from_sys_kv(sys_kv)
     sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="news_topics")
-    table = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_a1, max_rows=500, max_cols="K")
+    table = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_a1, max_rows=500, max_cols="L")
     if not table:
         return {}
     header = table[0] if isinstance(table[0], list) else []
@@ -13502,7 +13704,13 @@ async def _load_news_topics_from_sheet(*, sys_kv: dict[str, Any] | None) -> dict
         if not key:
             continue
         enabled_raw = _cell_str(r, idx, "enabled") or _cell_str(r, idx, "active")
-        if enabled_raw and not _parse_bool_cell(enabled_raw):
+        enabled = True
+        if enabled_raw:
+            try:
+                enabled = _parse_bool_cell(enabled_raw)
+            except Exception:
+                enabled = True
+        if (not enabled) and (not include_disabled):
             continue
 
         kw_raw = _cell_str(r, idx, "keywords") or _cell_str(r, idx, "keyword")
@@ -13517,7 +13725,13 @@ async def _load_news_topics_from_sheet(*, sys_kv: dict[str, Any] | None) -> dict
 
         limit_v = _cell_str(r, idx, "limit")
         headlines_v = _cell_str(r, idx, "headlines")
-        cfg: dict[str, Any] = {"keywords": keywords}
+        cfg: dict[str, Any] = {"keywords": keywords, "enabled": bool(enabled)}
+        try:
+            focus_raw = _cell_str(r, idx, "focus")
+            if focus_raw:
+                cfg["focus"] = bool(_parse_bool_cell(focus_raw))
+        except Exception:
+            pass
         if limit_v:
             try:
                 cfg["limit"] = int(float(limit_v))
@@ -13530,6 +13744,147 @@ async def _load_news_topics_from_sheet(*, sys_kv: dict[str, Any] | None) -> dict
                 pass
         out[key] = cfg
     return out
+
+
+async def _news_topics_focus_set(*, sys_kv: dict[str, Any] | None, topic: str, focus: bool) -> dict[str, Any]:
+    t = str(topic or "").strip()
+    if not t:
+        raise HTTPException(status_code=400, detail="missing_topic")
+
+    spreadsheet_id, sheet_name = _current_news_topics_sheet_cfg_from_sys_kv(sys_kv)
+    if not spreadsheet_id:
+        raise HTTPException(status_code=400, detail="missing_spreadsheet_id")
+    sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="news_topics")
+
+    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
+    tool_update = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
+    tool_append = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
+
+    res_get = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A1:Z"})
+    parsed_get = _mcp_text_json(res_get)
+    vals = parsed_get.get("values") if isinstance(parsed_get, dict) else None
+    data = parsed_get.get("data") if isinstance(parsed_get, dict) else None
+    if not isinstance(vals, list) and isinstance(data, dict):
+        vals = data.get("values")
+    table = vals if isinstance(vals, list) else []
+    if not table:
+        raise HTTPException(status_code=400, detail="news_topics_missing_header")
+
+    header = table[0] if isinstance(table[0], list) else []
+    idx = _idx_from_header(header)
+    if not idx:
+        raise HTTPException(status_code=400, detail="news_topics_missing_header")
+
+    def _col_letter(col_idx0: int) -> str:
+        n = int(col_idx0) + 1
+        if n <= 0:
+            return "A"
+        out = ""
+        while n > 0:
+            n, r = divmod(n - 1, 26)
+            out = chr(ord("A") + r) + out
+        return out or "A"
+
+    # Ensure focus column exists.
+    focus_col = idx.get("focus")
+    if focus_col is None:
+        header2 = list(header)
+        header2.append("focus")
+        focus_col = len(header2) - 1
+        end_col = _col_letter(int(focus_col))
+        await _mcp_tools_call(
+            tool_update,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": f"{sheet_a1}!A1:{end_col}1",
+                "values": [header2],
+                "value_input_option": "RAW",
+            },
+        )
+        idx = _idx_from_header(header2)
+
+    enabled_col = idx.get("enabled")
+    topic_col = idx.get("topic")
+    if topic_col is None:
+        topic_col = idx.get("key")
+    if topic_col is None:
+        topic_col = idx.get("name")
+    if topic_col is None:
+        raise HTTPException(status_code=400, detail="news_topics_missing_topic_column")
+
+    # Find row.
+    row_num: int | None = None
+    for i, r in enumerate(table[1:], start=2):
+        if not isinstance(r, list):
+            continue
+        cur = str(r[int(topic_col)] if int(topic_col) < len(r) else "").strip()
+        if cur == t:
+            row_num = int(i)
+            break
+
+    focus_cell = "TRUE" if bool(focus) else "FALSE"
+
+    # If adding focus, also enable the topic (SSOT).
+    enable_cell = "TRUE" if bool(focus) else None
+
+    if row_num is not None:
+        # Update focus cell.
+        focus_letter = _col_letter(int(focus_col))
+        rng_focus = f"{sheet_a1}!{focus_letter}{row_num}:{focus_letter}{row_num}"
+        res_focus = await _mcp_tools_call(
+            tool_update,
+            {
+                "spreadsheet_id": spreadsheet_id,
+                "range": rng_focus,
+                "values": [[focus_cell]],
+                "value_input_option": "RAW",
+            },
+        )
+        res_enabled = None
+        if enable_cell is not None and enabled_col is not None:
+            enabled_letter = _col_letter(int(enabled_col))
+            rng_enabled = f"{sheet_a1}!{enabled_letter}{row_num}:{enabled_letter}{row_num}"
+            try:
+                res_enabled = await _mcp_tools_call(
+                    tool_update,
+                    {
+                        "spreadsheet_id": spreadsheet_id,
+                        "range": rng_enabled,
+                        "values": [[enable_cell]],
+                        "value_input_option": "RAW",
+                    },
+                )
+            except Exception:
+                res_enabled = None
+        return {
+            "ok": True,
+            "updated": True,
+            "topic": t,
+            "focus": bool(focus),
+            "row": int(row_num),
+            "focus_range": rng_focus,
+            "enabled_updated": bool(res_enabled is not None),
+            "focus_response": _mcp_text_json(res_focus),
+            "enabled_response": _mcp_text_json(res_enabled) if res_enabled is not None else None,
+        }
+
+    # Not found: append minimal row.
+    row_len = max(int(focus_col), int(topic_col), int(enabled_col) if enabled_col is not None else 0) + 1
+    row_out: list[Any] = [""] * row_len
+    row_out[int(topic_col)] = t
+    row_out[int(focus_col)] = focus_cell
+    if enable_cell is not None and enabled_col is not None:
+        row_out[int(enabled_col)] = enable_cell
+    res_app = await _mcp_tools_call(
+        tool_append,
+        {
+            "spreadsheet_id": spreadsheet_id,
+            "range": f"{sheet_a1}!A:Z",
+            "values": [row_out],
+            "value_input_option": "RAW",
+        },
+    )
+    return {"ok": True, "created": True, "topic": t, "focus": bool(focus), "response": _mcp_text_json(res_app)}
 
 
 async def _news_topics_upsert(
@@ -13545,7 +13900,9 @@ async def _news_topics_upsert(
     if not t:
         raise HTTPException(status_code=400, detail="missing_topic")
     if enabled is not None and enabled is False:
-        raise HTTPException(status_code=400, detail="safe_upsert_only_enabled_must_be_true")
+        # Safe upsert: allow creating a new row as disabled (for suggestion/confirmation flows),
+        # but do not allow disabling an existing row.
+        enabled = False
 
     kw = [str(x or "").strip() for x in (keywords or []) if str(x or "").strip()]
     if not kw:
@@ -13631,6 +13988,8 @@ async def _news_topics_upsert(
         return out_row
 
     if existing_row_num is not None:
+        if enabled is False:
+            raise HTTPException(status_code=400, detail="safe_upsert_only_enabled_must_be_true")
         out_row = _build_row_for_update()
         last_col = chr(ord("A") + (len(out_row) - 1))
         rng = f"{sheet_a1}!A{existing_row_num}:{last_col}{existing_row_num}"
@@ -13649,7 +14008,7 @@ async def _news_topics_upsert(
     if c_enabled is not None:
         while len(append_row) <= c_enabled:
             append_row.append("")
-        append_row[c_enabled] = True
+        append_row[c_enabled] = False if enabled is False else True
     while len(append_row) <= c_keywords:
         append_row.append("")
     append_row[c_keywords] = kw_cell
@@ -14635,12 +14994,300 @@ def _get_session_last_item(session_id: str, slot: str) -> Optional[dict[str, Any
     return db_session.get_session_last_item(SESSION_DB_PATH, session_id, slot)
 
 
+def _website_sources_list(*, provider: str | None = None, limit: int = 200) -> list[dict[str, Any]]:
+    return db_session.website_sources_list(SESSION_DB_PATH, provider=provider, limit=limit)
+
+
+def _website_source_upsert(*, source_id: str, provider: str, root_url: str, name: str | None, config: Any) -> dict[str, Any]:
+    return db_session.website_source_upsert(
+        SESSION_DB_PATH,
+        source_id=source_id,
+        provider=provider,
+        root_url=root_url,
+        name=name,
+        config=config,
+    )
+
+
+def _website_source_cache_get(*, source_id: str) -> Optional[dict[str, Any]]:
+    return db_session.website_source_cache_get(SESSION_DB_PATH, source_id=source_id)
+
+
+def _website_source_cache_set(*, source_id: str, content: Any) -> None:
+    db_session.website_source_cache_set(SESSION_DB_PATH, source_id=source_id, content=content)
+
+
+def _website_source_id(provider: str, root_url: str) -> str:
+    prov = str(provider or "").strip().lower()
+    u = str(root_url or "").strip()
+    h = hashlib.sha1(f"{prov}|{u}".encode("utf-8")).hexdigest()[:16]
+    return f"{prov}:{h}"
+
+
+def _normalize_http_url(url: str) -> str:
+    u = str(url or "").strip()
+    if not u:
+        raise HTTPException(status_code=400, detail="missing_url")
+    if not (u.startswith("http://") or u.startswith("https://")):
+        raise HTTPException(status_code=400, detail="invalid_url")
+    return u
+
+
+async def _wayback_available(*, url: str, timestamp: str | None = None) -> dict[str, Any]:
+    # Wayback availability API.
+    u = _normalize_http_url(url)
+    ts = str(timestamp or "").strip()
+    params: dict[str, str] = {"url": u}
+    if ts and ts.lower() != "latest":
+        params["timestamp"] = ts
+    api = "https://archive.org/wayback/available"
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        r = await client.get(api, params=params)
+        if r.status_code >= 400:
+            raise HTTPException(status_code=int(r.status_code), detail={"wayback_error": r.text})
+        j = r.json()
+    arch = j.get("archived_snapshots") if isinstance(j, dict) else None
+    closest = arch.get("closest") if isinstance(arch, dict) else None
+    if not isinstance(closest, dict):
+        return {"ok": True, "available": False, "url": u, "timestamp": ts or None}
+    return {
+        "ok": True,
+        "available": bool(closest.get("available")),
+        "status": closest.get("status"),
+        "timestamp": closest.get("timestamp"),
+        "archived_url": closest.get("url"),
+        "url": u,
+    }
+
+
+async def _wayback_fetch_extracted_text(*, archived_url: str, max_chars: int = 120000) -> dict[str, Any]:
+    # Reuse web-fetcher extraction (readable text).
+    u = _normalize_http_url(archived_url)
+    res = await _web_fetcher_post("/fetch", {"url": u, "max_length": int(max_chars)})
+    if not isinstance(res, dict):
+        return {"ok": False, "url": u, "text": "", "meta": {"error": "invalid_fetcher_response"}}
+    text = str(res.get("text") or "")
+    meta = {
+        "status_code": res.get("status_code"),
+        "content_type": res.get("content_type"),
+        "final_url": res.get("final_url"),
+    }
+    return {"ok": True, "url": u, "text": text, "meta": meta}
+
+
+def _text_words(s: str) -> list[str]:
+    t = str(s or "").lower()
+    t = re.sub(r"[^a-z0-9ก-๙]+", " ", t)
+    ws = [w for w in t.split() if w]
+    # De-noise very short tokens
+    return [w for w in ws if len(w) >= 2]
+
+
+def _chunk_text_for_rag(text: str, *, max_chars: int = 900) -> list[dict[str, Any]]:
+    s = str(text or "")
+    if not s.strip():
+        return []
+    paras = [p.strip() for p in re.split(r"\n\s*\n+", s) if p.strip()]
+    out: list[dict[str, Any]] = []
+    buf = ""
+    idx = 0
+    for p in paras:
+        if not buf:
+            buf = p
+            continue
+        if len(buf) + 2 + len(p) <= max_chars:
+            buf = buf + "\n\n" + p
+            continue
+        idx += 1
+        out.append({"chunk_id": f"c{idx}", "text": buf})
+        buf = p
+    if buf:
+        idx += 1
+        out.append({"chunk_id": f"c{idx}", "text": buf})
+    return out
+
+
+def _select_source_excerpts(*, source_text: str, query: str, k: int = 5, excerpt_chars: int = 700) -> list[dict[str, Any]]:
+    chunks = _chunk_text_for_rag(source_text, max_chars=900)
+    if not chunks:
+        return []
+    q_words = set(_text_words(query))
+    if not q_words:
+        # fallback: first k chunks
+        picked = chunks[: max(1, min(k, len(chunks)))]
+    else:
+        scored: list[tuple[int, int, dict[str, Any]]] = []
+        for i, ch in enumerate(chunks):
+            txt = str(ch.get("text") or "")
+            w = set(_text_words(txt))
+            score = len(q_words.intersection(w))
+            scored.append((score, -i, ch))
+        scored.sort(reverse=True)
+        picked = [it[2] for it in scored[: max(1, min(k, len(scored)))]]
+
+    out: list[dict[str, Any]] = []
+    for ch in picked:
+        txt = str(ch.get("text") or "").strip()
+        ex = txt
+        if excerpt_chars > 0 and len(ex) > excerpt_chars:
+            ex = ex[:excerpt_chars]
+        out.append({"chunk_id": ch.get("chunk_id"), "excerpt": ex})
+    return out
+
+
+def _active_website_source_id(ws: WebSocket) -> str | None:
+    try:
+        session_id = getattr(ws.state, "session_id", None)
+    except Exception:
+        session_id = None
+    sid = str(session_id or "").strip()
+    if not sid:
+        return None
+    it = _get_session_last_item(sid, "active_website_source")
+    if not isinstance(it, dict):
+        return None
+    payload = it.get("payload") if isinstance(it.get("payload"), dict) else {}
+    src_id = str((payload or {}).get("source_id") or "").strip()
+    return src_id or None
+
+
+def _build_grounded_website_prompt(*, cache: dict[str, Any], question: str) -> tuple[str, list[dict[str, Any]]]:
+    q = str(question or "").strip()
+    text = ""
+    root_url = ""
+    snap = {}
+    try:
+        content = cache.get("content") if isinstance(cache.get("content"), dict) else {}
+        text = str(content.get("text") or "")
+        root_url = str(content.get("root_url") or "")
+        snap = content.get("snapshot") if isinstance(content.get("snapshot"), dict) else {}
+    except Exception:
+        text = ""
+
+    excerpts = _select_source_excerpts(source_text=text, query=q, k=5, excerpt_chars=700)
+    parts: list[str] = []
+    parts.append(
+        "Answer ONLY using the WEBSITE_SOURCE_CONTEXT below. "
+        "Do not use outside knowledge. "
+        "If the answer is not in the source, say you can't find it in the source."
+    )
+    if root_url:
+        parts.append(f"SOURCE_URL: {root_url}")
+    ts = str(snap.get("resolved_timestamp") or "").strip() if isinstance(snap, dict) else ""
+    if ts:
+        parts.append(f"WAYBACK_TIMESTAMP: {ts}")
+    if excerpts:
+        ctx_lines: list[str] = []
+        for ex in excerpts:
+            ctx_lines.append(f"[{ex.get('chunk_id')}]\n{ex.get('excerpt')}")
+        parts.append("WEBSITE_SOURCE_CONTEXT:\n" + "\n\n".join(ctx_lines))
+    parts.append("USER_QUESTION:\n" + q)
+    return ("\n\n".join([p for p in parts if str(p or "").strip()]), excerpts)
+
+
+@app.get("/jarvis/api/sources")
+async def sources_list(provider: str | None = None, limit: int = 200) -> dict[str, Any]:
+    out = _website_sources_list(provider=provider, limit=limit)
+    return {"ok": True, "sources": out}
+
+
+@app.post("/jarvis/api/sources/wayback")
+async def sources_wayback_create(payload: dict[str, Any]) -> dict[str, Any]:
+    root_url = _normalize_http_url(str(payload.get("url") or ""))
+    name = str(payload.get("name") or "").strip() or None
+    snapshot = str(payload.get("snapshot") or "latest").strip() or "latest"
+    if snapshot.lower() != "latest":
+        if not re.fullmatch(r"\d{14}", snapshot):
+            raise HTTPException(status_code=400, detail="invalid_snapshot")
+    sid = _website_source_id("wayback", root_url)
+    cfg = {"snapshot": snapshot}
+    _website_source_upsert(source_id=sid, provider="wayback", root_url=root_url, name=name, config=cfg)
+    return {"ok": True, "source_id": sid, "provider": "wayback", "root_url": root_url, "config": cfg}
+
+
+@app.post("/jarvis/api/sources/{source_id}/refresh")
+async def sources_refresh(source_id: str) -> dict[str, Any]:
+    sid = str(source_id or "").strip()
+    if not sid:
+        raise HTTPException(status_code=400, detail="missing_source_id")
+    rows = [s for s in _website_sources_list(limit=2000) if str(s.get("source_id") or "") == sid]
+    if not rows:
+        raise HTTPException(status_code=404, detail="source_not_found")
+    src = rows[0]
+    provider = str(src.get("provider") or "").strip().lower()
+    if provider != "wayback":
+        raise HTTPException(status_code=400, detail="unsupported_provider")
+    root_url = str(src.get("root_url") or "").strip()
+    cfg = src.get("config") if isinstance(src.get("config"), dict) else {}
+    snapshot = str((cfg or {}).get("snapshot") or "latest").strip() or "latest"
+
+    avail = await _wayback_available(url=root_url, timestamp=snapshot)
+    if not avail.get("available"):
+        _website_source_cache_set(source_id=sid, content={"ok": False, "available": False, "wayback": avail})
+        return {"ok": True, "refreshed": True, "source_id": sid, "available": False, "wayback": avail}
+
+    archived_url = str(avail.get("archived_url") or "").strip()
+    fetched = await _wayback_fetch_extracted_text(archived_url=archived_url)
+    content = {
+        "ok": bool(fetched.get("ok")),
+        "provider": "wayback",
+        "root_url": root_url,
+        "snapshot": {
+            "requested": snapshot,
+            "resolved_timestamp": avail.get("timestamp"),
+            "archived_url": archived_url,
+            "status": avail.get("status"),
+        },
+        "text": str(fetched.get("text") or ""),
+        "fetch_meta": fetched.get("meta") if isinstance(fetched.get("meta"), dict) else {},
+        "wayback": avail,
+        "updated_at": int(time.time()),
+    }
+    _website_source_cache_set(source_id=sid, content=content)
+    return {"ok": True, "refreshed": True, "source_id": sid, "bytes": len(content.get("text") or ""), "snapshot": content.get("snapshot"), "fetch_meta": content.get("fetch_meta")}
+
+
+@app.post("/jarvis/api/sources/{source_id}/select")
+async def sources_select(source_id: str, session_id: str) -> dict[str, Any]:
+    sid = str(source_id or "").strip()
+    sess = str(session_id or "").strip()
+    if not sid:
+        raise HTTPException(status_code=400, detail="missing_source_id")
+    if not sess:
+        raise HTTPException(status_code=400, detail="missing_session_id")
+    _set_session_last_item(sess, "active_website_source", "website_source", {"source_id": sid})
+    return {"ok": True, "selected": True, "session_id": sess, "source_id": sid}
+
+
+@app.get("/jarvis/api/sources/active")
+async def sources_active(session_id: str) -> dict[str, Any]:
+    sess = str(session_id or "").strip()
+    if not sess:
+        raise HTTPException(status_code=400, detail="missing_session_id")
+    it = _get_session_last_item(sess, "active_website_source")
+    if not it or not isinstance(it.get("payload"), dict):
+        return {"ok": True, "active": None}
+    sid = str((it.get("payload") or {}).get("source_id") or "").strip() or None
+    if not sid:
+        return {"ok": True, "active": None}
+    cached = _website_source_cache_get(source_id=sid)
+    return {"ok": True, "active": {"source_id": sid, "cached": cached}}
+
+
 def _create_pending_write(session_id: str, action: str, payload: Any) -> str:
     return db_session.create_pending_write(SESSION_DB_PATH, session_id, action, payload)
 
 
 def _list_pending_writes(session_id: str) -> list[dict[str, Any]]:
     return db_session.list_pending_writes(SESSION_DB_PATH, session_id)
+
+
+def _record_news_usage_event(session_id: str, event_type: str, payload: Any) -> bool:
+    return db_session.record_news_usage_event(SESSION_DB_PATH, session_id, event_type, payload)
+
+
+def _list_news_usage_events(session_id: str, *, limit: int = 200) -> list[dict[str, Any]]:
+    return db_session.list_news_usage_events(SESSION_DB_PATH, session_id, limit=limit)
 
 
 def _get_pending_write(session_id: str, confirmation_id: str) -> Optional[dict[str, Any]]:
@@ -17379,6 +18026,46 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
                 }
             )
 
+        ok, _, _ = _gemini_tool_allowed(name="news_feedback", sys_kv=sys_kv, macros_only=macros_only)
+        if ok:
+            decls.append(
+                {
+                    "name": "news_feedback",
+                    "description": "Record explicit feedback about a news item/source for adaptive tuning (no sheet writes).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "label": {"type": "string", "description": "Feedback label: relevant|irrelevant|good_source|bad_source."},
+                            "link": {"type": "string", "description": "Optional item link."},
+                            "title": {"type": "string", "description": "Optional item title."},
+                            "topic": {"type": "string", "description": "Optional topic key/name."},
+                            "source_url": {"type": "string", "description": "Optional source/feed url."},
+                        },
+                        "required": ["label"],
+                    },
+                }
+            )
+
+        ok, _, _ = _gemini_tool_allowed(name="news_tuning_suggest", sys_kv=sys_kv, macros_only=macros_only)
+        if ok:
+            decls.append(
+                {
+                    "name": "news_tuning_suggest",
+                    "description": "Suggest sheet changes (topics/sources) based on usage signals and queue as pending confirmation (no writes until confirmed).",
+                    "parameters": {"type": "object", "properties": {"limit_events": {"type": "integer", "description": "Max usage events to consider (default 200)."}}},
+                }
+            )
+
+        ok, _, _ = _gemini_tool_allowed(name="system_news_skills_bootstrap_queue", sys_kv=sys_kv, macros_only=macros_only)
+        if ok:
+            decls.append(
+                {
+                    "name": "system_news_skills_bootstrap_queue",
+                    "description": "Queue creation/initialization of the dedicated News Skills sheet tab (pending_confirm required).",
+                    "parameters": {"type": "object", "properties": {"seed_name": {"type": "string", "description": "Optional seed row name."}}},
+                }
+            )
+
     if (not macros_only) and feature_enabled("follow-news", sys_kv=sys_kv, default=True):
         for tool_name, tool_decl in (
             (
@@ -18186,6 +18873,17 @@ async def _handle_mcp_tool_call(session_id: str, tool_name: str, args: dict[str,
         )
         return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "seed_name": seed_name}
 
+    if n == "system_news_skills_bootstrap_queue":
+        if not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        seed_name = str((args or {}).get("seed_name") or "").strip() or "jarvis-news-skill-smoke-test"
+        confirmation_id = _create_pending_write(
+            str(session_id),
+            "bundle_bootstrap_news_skills",
+            {"seed_name": seed_name},
+        )
+        return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "seed_name": seed_name}
+
     if n == "system_run_macro":
         macro_name = str((args or {}).get("name") or "").strip()
         macro_args = (args or {}).get("args")
@@ -18229,6 +18927,7 @@ async def _handle_mcp_tool_call(session_id: str, tool_name: str, args: dict[str,
         "system_spreadsheet_id": _system_spreadsheet_id,
         "system_macros_sheet_name": _system_macros_sheet_name,
         "system_skills_sheet_name": _system_skills_sheet_name,
+        "system_news_skills_sheet_name": _system_news_skills_sheet_name,
         "memory_sheet_upsert": _memory_sheet_upsert,
         "load_ws_sheet_memory": _load_ws_sheet_memory,
         "memo_sheet_cfg_from_sys_kv": _memo_sheet_cfg_from_sys_kv,
@@ -18252,6 +18951,10 @@ async def _handle_mcp_tool_call(session_id: str, tool_name: str, args: dict[str,
         "pop_pending_write_any_session": _pop_pending_write_any_session,
         "cancel_pending_write_any_session": _cancel_pending_write_any_session,
         "reassign_pending_write": _reassign_pending_write,
+        "record_news_usage_event": _record_news_usage_event,
+        "list_news_usage_events": _list_news_usage_events,
+        "load_news_topics_from_sheet": _load_news_topics_from_sheet,
+        "load_news_sources_from_sheet": _load_news_sources_from_sheet,
         "adapt_aim_tool_args": _adapt_aim_tool_args,
         "aim_mcp_tools_call": _aim_mcp_tools_call,
         "parse_time_from_text": _parse_time_from_text,
@@ -18271,6 +18974,7 @@ async def _handle_mcp_tool_call(session_id: str, tool_name: str, args: dict[str,
         "get_news_follow_summaries": _get_news_follow_summaries,
         "refresh_news_follow_summaries": _refresh_news_follow_summaries,
         "news_topics_upsert": _news_topics_upsert,
+        "news_topics_focus_set": _news_topics_focus_set,
         "news_sources_upsert": _news_sources_upsert,
         "news_items_upsert": _news_items_upsert,
         "news_sources_list": _news_sources_list,
@@ -18398,6 +19102,10 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
             try:
                 head = str(text).lstrip()
                 if head.startswith("RESUME_CONTEXT (recent dialog"):
+                    try:
+                        ws.state.pending_resume_context = str(text)
+                    except Exception:
+                        pass
                     continue
             except Exception:
                 pass
@@ -18668,6 +19376,48 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
                 await _ws_update_contexts_from_text(ws, s, handled=False)
             except Exception:
                 pass
+
+            # If a website source is active for this session, ground the question in it.
+            try:
+                src_id = _active_website_source_id(ws)
+            except Exception:
+                src_id = None
+            if src_id:
+                cache = _website_source_cache_get(source_id=src_id)
+                if isinstance(cache, dict) and isinstance(cache.get("content"), dict):
+                    try:
+                        grounded, excerpts = _build_grounded_website_prompt(cache=cache, question=text)
+                        try:
+                            await _ws_send_json(
+                                ws,
+                                {
+                                    "type": "citations",
+                                    "source_id": src_id,
+                                    "source_url": (cache.get("content") or {}).get("root_url"),
+                                    "snapshot": (cache.get("content") or {}).get("snapshot"),
+                                    "chunks": excerpts,
+                                    "query": text,
+                                    "instance_id": INSTANCE_ID,
+                                },
+                                trace_id=trace_id2,
+                            )
+                        except Exception:
+                            pass
+                        text = grounded
+                    except Exception:
+                        pass
+
+            # If the frontend provided a RESUME_CONTEXT after reconnect, prepend it once.
+            try:
+                pending_resume = getattr(ws.state, "pending_resume_context", None)
+            except Exception:
+                pending_resume = None
+            if pending_resume:
+                try:
+                    ws.state.pending_resume_context = None
+                except Exception:
+                    pass
+                text = str(pending_resume).strip() + "\n\n" + str(text)
             try:
                 await session.send_client_content(turns={"parts": [{"text": text}]}, turn_complete=True)
             except Exception as e:
@@ -18707,6 +19457,49 @@ async def _ws_to_gemini_loop(ws: WebSocket, session: Any) -> None:
                     await _ws_send_json(ws, {"type": "error", "message": "gemini_unavailable", "detail": str(e)}, trace_id=trace_id)
                 except Exception:
                     pass
+
+            # Voice grounding is high-risk at audio_end (Gemini Live can reject extra turns here).
+            # Keep it opt-in and never inject send_client_content in this handler.
+            try:
+                sys_kv = getattr(ws.state, "sys_kv", None)
+            except Exception:
+                sys_kv = None
+            voice_grounding_enabled = False
+            try:
+                voice_grounding_enabled = bool(_sys_kv_bool(sys_kv if isinstance(sys_kv, dict) else None, "website_sources.voice_grounding.enabled", default=False))
+            except Exception:
+                voice_grounding_enabled = False
+
+            if voice_grounding_enabled:
+                try:
+                    src_id = _active_website_source_id(ws)
+                except Exception:
+                    src_id = None
+                if src_id:
+                    last_tr = str(getattr(ws.state, "last_input_transcript", "") or "").strip()
+                    if last_tr:
+                        cache = _website_source_cache_get(source_id=src_id)
+                        if isinstance(cache, dict) and isinstance(cache.get("content"), dict):
+                            try:
+                                _, excerpts = _build_grounded_website_prompt(cache=cache, question=last_tr)
+                                try:
+                                    await _ws_send_json(
+                                        ws,
+                                        {
+                                            "type": "citations",
+                                            "source_id": src_id,
+                                            "source_url": (cache.get("content") or {}).get("root_url"),
+                                            "snapshot": (cache.get("content") or {}).get("snapshot"),
+                                            "chunks": excerpts,
+                                            "query": last_tr,
+                                            "instance_id": INSTANCE_ID,
+                                        },
+                                        trace_id=trace_id2,
+                                    )
+                                except Exception:
+                                    pass
+                            except Exception:
+                                pass
             continue
 
         if msg_type == "close":
@@ -19340,7 +20133,22 @@ async def ws_live(ws: WebSocket) -> None:
         # so operators can see the error and recover (e.g. re-auth MCP) without
         # the UI constantly disconnecting.
         try:
-            sys_kv = await _load_ws_system_kv(ws)
+            sys_kv = None
+            last_sys_kv_error: Exception | None = None
+            for attempt_i in range(4):
+                try:
+                    sys_kv = await _load_ws_system_kv(ws)
+                    last_sys_kv_error = None
+                    break
+                except Exception as e:
+                    last_sys_kv_error = e
+                    if attempt_i < 3:
+                        try:
+                            await asyncio.sleep(0.5 * (2.0**attempt_i))
+                        except Exception:
+                            pass
+                        continue
+                    raise
         except Exception as e:
             detail = {
                 "error": str(e),
@@ -19845,6 +20653,10 @@ async def ws_live(ws: WebSocket) -> None:
         if resume_enabled:
             handle = _gemini_live_get_resumption_handle(session_id)
             base_config["session_resumption"] = {"handle": handle} if handle else {}
+            try:
+                ws.state.gemini_live_resumed_ok = bool(handle)
+            except Exception:
+                pass
             if handle:
                 try:
                     logger.info(
@@ -19854,6 +20666,11 @@ async def ws_live(ws: WebSocket) -> None:
                     )
                 except Exception:
                     pass
+        else:
+            try:
+                ws.state.gemini_live_resumed_ok = False
+            except Exception:
+                pass
 
         try:
             cwc = _gemini_live_context_window_compression_config(sys_kv if isinstance(sys_kv, dict) else None)
@@ -19990,7 +20807,39 @@ async def ws_live(ws: WebSocket) -> None:
             except Exception:
                 pass
             ws.state.gemini_live_model = model
-            session_cm = client.aio.live.connect(model=model, config=cfg)
+
+            # Model-aware safety: native-audio preview models frequently reject TEXT response modality
+            # with 1007 invalid argument. Prefer AUDIO-only unless the operator explicitly overrides.
+            try:
+                cfg2 = dict(cfg or {})
+            except Exception:
+                cfg2 = cfg
+            try:
+                norm_m = _normalize_model_name(str(model or ""))
+            except Exception:
+                norm_m = str(model or "")
+            try:
+                sys_kv2 = getattr(ws.state, "sys_kv", None)
+            except Exception:
+                sys_kv2 = None
+            explicit_modalities_override = False
+            try:
+                if isinstance(sys_kv2, dict):
+                    rm2 = sys_kv2.get("gemini.live.response_modalities_json")
+                    explicit_modalities_override = bool(isinstance(rm2, str) and rm2.strip())
+            except Exception:
+                explicit_modalities_override = False
+            try:
+                is_native_audio = "native-audio" in str(norm_m).lower()
+            except Exception:
+                is_native_audio = False
+            if is_native_audio and (not explicit_modalities_override):
+                try:
+                    cfg2["response_modalities"] = ["AUDIO"]
+                except Exception:
+                    pass
+
+            session_cm = client.aio.live.connect(model=model, config=cfg2)
             try:
                 async with session_cm as session:
                     logger.info("gemini_live_connected model=%s", model)
@@ -20231,8 +21080,14 @@ async def ws_live(ws: WebSocket) -> None:
                     cfg.get("response_modalities"),
                     msg,
                 )
-                await _run_with_config(str(model_used_norm), cfg)
-                return
+                try:
+                    await _run_with_config(str(model_used_norm), cfg)
+                    return
+                except Exception as e:
+                    # Do not let provider-side failures crash the ASGI websocket handler.
+                    # Route through the standard failure path below (which can fall back to local-only).
+                    last_error = e
+                    last_error_classified = _classify_gemini_live_error(e, model_used_norm)
 
             classified = _classify_gemini_live_error(last_error, model_used_norm)
             try:
