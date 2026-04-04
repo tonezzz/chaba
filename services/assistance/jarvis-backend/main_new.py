@@ -15,6 +15,16 @@ from jarvis.skills.news import news_skill
 from jarvis.mcp.router import mcp_router
 from jarvis.memory.cache import memory_cache
 
+# Import API routers
+from jarvis.api.oauth import router as oauth_router
+from jarvis.api.debug import router as debug_router
+from jarvis.api.logs import router as logs_router
+from jarvis.api.memo import router as memo_router
+from jarvis.api.sys_kv import router as sys_kv_router
+from jarvis.api.memory import router as memory_router
+from jarvis.api.imagen import router as imagen_router
+from jarvis.api.reminders import router as reminders_router
+
 # Import existing routers
 from routes.google_tasks import create_router as _create_google_tasks_router
 from routes.google_calendar import create_router as _create_google_calendar_router
@@ -36,6 +46,16 @@ logger = logging.getLogger(__name__)
 
 # Create the FastAPI app
 app = create_app()
+
+# Include modular API routers
+app.include_router(oauth_router, prefix="/jarvis/api", tags=["oauth"])
+app.include_router(debug_router, prefix="/jarvis/api", tags=["debug"])
+app.include_router(logs_router, prefix="/jarvis/api", tags=["logs"])
+app.include_router(memo_router, prefix="/jarvis/api", tags=["memo"])
+app.include_router(sys_kv_router, prefix="/jarvis/api", tags=["sys_kv"])
+app.include_router(memory_router, prefix="/jarvis/api", tags=["memory"])
+app.include_router(imagen_router, prefix="/jarvis/api", tags=["imagen"])
+app.include_router(reminders_router, prefix="/jarvis/api", tags=["reminders"])
 
 # Include existing routers
 app.include_router(
