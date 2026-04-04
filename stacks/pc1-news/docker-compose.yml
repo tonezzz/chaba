@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+  mcp-news:
+    build:
+      context: ../../mcp/mcp-news
+      dockerfile: Dockerfile
+    image: chaba/mcp-news:local
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${MCP_NEWS_HTTP_PORT:-3062}:3050"
+    environment:
+      ONE_MCP_HOST: 0.0.0.0
+      ONE_MCP_PORT: 3050
+      ONE_MCP_EXTERNAL_URL: ${MCP_NEWS_EXTERNAL_URL:-http://127.0.0.1:${MCP_NEWS_HTTP_PORT:-3062}}
+      ONE_MCP_LOG_LEVEL: info
+      NEWS_DATA_DIR: /data/news
+      NEWS_CONFIG_DIR: /data/config
+      NEWS_CONFIG_PATH: /data/config/news_config.json
+      NEWS_DEFAULT_CONFIG_PATH: /app/default_config.json
+    volumes:
+      - mcp-news-data:/data
+
+volumes:
+  mcp-news-data:
