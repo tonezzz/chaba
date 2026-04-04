@@ -39,8 +39,24 @@ from jarvis import memo_sheet
 from jarvis import memo_enrich
 from jarvis import daily_brief
 from jarvis import sheets_utils
-from jarvis import current_news_skill
 from jarvis import tools_router
+from jarvis.cache_helpers.sheet_cache import (
+    get_cached_sheet_memory,
+    set_cached_sheet_memory,
+    clear_sheet_caches,
+    apply_cached_sheet_memory_to_ws,
+    set_cached_sys_kv_only,
+    get_cached_sheet_knowledge,
+    set_cached_sheet_knowledge,
+    apply_cached_sheet_knowledge_to_ws,
+    get_cached_sheet_gems,
+    set_cached_sheet_gems,
+    memory_cache_ttl_seconds,
+    knowledge_cache_ttl_seconds,
+    gems_cache_ttl_seconds,
+)
+from jarvis.cache_helpers.macro_tools_cache import macro_tools_get_cached, macro_tools_cached_snapshot, gemini_embed_text_cached
+from jarvis.cache_helpers.website_cache import website_source_cache_get, website_source_cache_set
 
 from routes.google_tasks import create_router as _create_google_tasks_router
 from routes.google_calendar import create_router as _create_google_calendar_router
@@ -89,15 +105,6 @@ from pydantic import BaseModel, Field
 _OAUTH_CALLBACK_LAST: dict[str, Any] = {}
 
 
-_SHEET_MEMORY_CACHE: dict[str, Any] = {
-    "loaded_at": 0,
-    "created_at": 0,
-    "updated_at": 0,
-    "sys_kv": None,
-    "memory_items": None,
-    "memory_sheet_name": None,
-    "memory_context_text": "",
-}
 
 
 RECENT_DIALOG_TTL_SECONDS = int(os.getenv("JARVIS_RECENT_DIALOG_TTL_SECONDS") or "21600")
@@ -268,22 +275,6 @@ def _action_allowlisted_tool(name: str) -> bool:
         "system_skill_get",
         "system_skills_bootstrap_queue",
         "system_run_macro",
-        "current_news_get",
-        "current_news_refresh",
-        "current_news_sources",
-        "current_news_details",
-        "news_topics_upsert",
-        "news_sources_upsert",
-        "news_items_upsert",
-        "news_sources_list",
-        "gnews_rss_build",
-        "it_topic_packs_seed",
-        "news_follow_list",
-        "news_follow_refresh",
-        "news_follow_report",
-        "news_follow_focus_list",
-        "news_follow_focus_add",
-        "news_follow_focus_remove",
         "google_account_relink_queue",
         "memo_update_queue",
         "system_memo_update_queue",
@@ -435,8 +426,6 @@ def _recent_dialog_should_store(role: str, text: str) -> bool:
 
         # Common internal command prefixes.
         for pfx in (
-            "current_news_",
-            "news_",
             "system_",
             "pending_",
             "macro_",
@@ -559,7 +548,7 @@ async def _ws_emit_session_resume(ws: WebSocket) -> None:
             return True
         if len(t) >= 2 and t[0] == "{" and ("\"tool\"" in t or "\"name\"" in t or "\"args\"" in t):
             return True
-        # snake_case tool-ish commands like current_news_refresh
+        # snake_case tool-ish commands
         if re.fullmatch(r"[a-z][a-z0-9_]{2,}", t):
             if "_" in t and not any(ch.isspace() for ch in t):
                 return True
@@ -633,14 +622,6 @@ async def _ws_emit_session_resume(ws: WebSocket) -> None:
     except Exception:
         pass
 
-_SHEET_KNOWLEDGE_CACHE: dict[str, Any] = {
-    "loaded_at": 0,
-    "created_at": 0,
-    "updated_at": 0,
-    "knowledge_items": None,
-    "knowledge_sheet_name": None,
-    "knowledge_context_text": "",
-}
 
 _SHEET_MEMORY_REFRESHING: bool = False
 _SHEET_MEMORY_LAST_REFRESH_AT: int = 0
@@ -659,135 +640,14 @@ _STARTUP_PREWARM_STATUS: dict[str, Any] = {
 }
 
 
-def _memory_cache_ttl_seconds() -> int:
-    try:
-        return max(5, int(os.getenv("JARVIS_MEMORY_CACHE_TTL_SECONDS") or "60"))
-    except Exception:
-        return 60
 
 
-def _knowledge_cache_ttl_seconds() -> int:
-    try:
-        return max(5, int(os.getenv("JARVIS_KNOWLEDGE_CACHE_TTL_SECONDS") or "120"))
-    except Exception:
-        return 120
 
 
-def _get_cached_sheet_memory() -> Optional[dict[str, Any]]:
-    now = int(time.time())
-    loaded_at = int(_SHEET_MEMORY_CACHE.get("loaded_at") or 0)
-    if loaded_at <= 0:
-        return None
-    if now - loaded_at > _memory_cache_ttl_seconds():
-        return None
-    return dict(_SHEET_MEMORY_CACHE)
 
 
-def _set_cached_sheet_memory(payload: dict[str, Any]) -> None:
-    now = int(time.time())
-    try:
-        if int(_SHEET_MEMORY_CACHE.get("created_at") or 0) <= 0:
-            _SHEET_MEMORY_CACHE["created_at"] = now
-    except Exception:
-        _SHEET_MEMORY_CACHE["created_at"] = now
-    _SHEET_MEMORY_CACHE["updated_at"] = now
-    _SHEET_MEMORY_CACHE["loaded_at"] = now
-    _SHEET_MEMORY_CACHE["sys_kv"] = payload.get("sys_kv")
-    _SHEET_MEMORY_CACHE["memory_items"] = payload.get("memory_items")
-    _SHEET_MEMORY_CACHE["memory_sheet_name"] = payload.get("memory_sheet_name")
-    _SHEET_MEMORY_CACHE["memory_context_text"] = str(payload.get("memory_context_text") or "")
 
 
-def _clear_sheet_caches() -> None:
-    try:
-        _SHEET_MEMORY_CACHE["loaded_at"] = 0
-        _SHEET_MEMORY_CACHE["created_at"] = 0
-        _SHEET_MEMORY_CACHE["updated_at"] = 0
-        _SHEET_MEMORY_CACHE["sys_kv"] = None
-        _SHEET_MEMORY_CACHE["memory_items"] = None
-        _SHEET_MEMORY_CACHE["memory_sheet_name"] = None
-        _SHEET_MEMORY_CACHE["memory_context_text"] = ""
-    except Exception:
-        pass
-    try:
-        _SHEET_KNOWLEDGE_CACHE["loaded_at"] = 0
-        _SHEET_KNOWLEDGE_CACHE["created_at"] = 0
-        _SHEET_KNOWLEDGE_CACHE["updated_at"] = 0
-        _SHEET_KNOWLEDGE_CACHE["knowledge_items"] = None
-        _SHEET_KNOWLEDGE_CACHE["knowledge_sheet_name"] = None
-        _SHEET_KNOWLEDGE_CACHE["knowledge_context_text"] = ""
-    except Exception:
-        pass
-    try:
-        _SHEET_GEMS_CACHE["loaded_at"] = 0
-        _SHEET_GEMS_CACHE["gems"] = None
-        _SHEET_GEMS_CACHE["gem_ids"] = None
-        _SHEET_GEMS_CACHE["source"] = None
-    except Exception:
-        pass
-
-
-def _apply_cached_sheet_memory_to_ws(ws: WebSocket, cached: dict[str, Any]) -> None:
-    try:
-        ws.state.sys_kv = cached.get("sys_kv")
-        ws.state.memory_items = cached.get("memory_items")
-        ws.state.memory_sheet_name = cached.get("memory_sheet_name")
-        ws.state.memory_context_text = cached.get("memory_context_text")
-    except Exception:
-        pass
-
-
-def _set_cached_sys_kv_only(sys_kv: dict[str, str]) -> None:
-    try:
-        now = int(time.time())
-        if _SHEET_MEMORY_CACHE.get("created_at", 0) <= 0:
-            _SHEET_MEMORY_CACHE["created_at"] = now
-        _SHEET_MEMORY_CACHE["updated_at"] = now
-        _SHEET_MEMORY_CACHE["loaded_at"] = now
-        _SHEET_MEMORY_CACHE["sys_kv"] = dict(sys_kv)
-    except Exception:
-        pass
-
-
-def _get_cached_sheet_knowledge() -> Optional[dict[str, Any]]:
-    now = int(time.time())
-    loaded_at = int(_SHEET_KNOWLEDGE_CACHE.get("loaded_at") or 0)
-    if loaded_at <= 0:
-        return None
-    if now - loaded_at > _knowledge_cache_ttl_seconds():
-        return None
-    return dict(_SHEET_KNOWLEDGE_CACHE)
-
-
-def _set_cached_sheet_knowledge(payload: dict[str, Any]) -> None:
-    now = int(time.time())
-    try:
-        if int(_SHEET_KNOWLEDGE_CACHE.get("created_at") or 0) <= 0:
-            _SHEET_KNOWLEDGE_CACHE["created_at"] = now
-    except Exception:
-        _SHEET_KNOWLEDGE_CACHE["created_at"] = now
-    _SHEET_KNOWLEDGE_CACHE["updated_at"] = now
-    _SHEET_KNOWLEDGE_CACHE["loaded_at"] = now
-    _SHEET_KNOWLEDGE_CACHE["knowledge_items"] = payload.get("knowledge_items")
-    _SHEET_KNOWLEDGE_CACHE["knowledge_sheet_name"] = payload.get("knowledge_sheet_name")
-    _SHEET_KNOWLEDGE_CACHE["knowledge_context_text"] = str(payload.get("knowledge_context_text") or "")
-
-
-def _apply_cached_sheet_knowledge_to_ws(ws: WebSocket, cached: dict[str, Any]) -> None:
-    try:
-        ws.state.knowledge_items = cached.get("knowledge_items")
-        ws.state.knowledge_sheet_name = cached.get("knowledge_sheet_name")
-        ws.state.knowledge_context_text = cached.get("knowledge_context_text")
-    except Exception:
-        pass
-
-
-_SHEET_GEMS_CACHE: dict[str, Any] = {
-    "loaded_at": 0,
-    "gems": None,
-    "gem_ids": None,
-    "source": None,
-}
 
 _SHEET_GEMS_REFRESHING: bool = False
 _SHEET_GEMS_LAST_REFRESH_AT: int = 0
@@ -825,32 +685,8 @@ def _gems_drafts_prune() -> None:
         pass
 
 
-def _gems_cache_ttl_seconds() -> int:
-    try:
-        v = int(str(os.getenv("JARVIS_GEMS_CACHE_TTL_SECONDS") or "120").strip())
-        return v if v > 0 else 120
-    except Exception:
-        return 120
 
 
-def _get_cached_sheet_gems() -> Optional[dict[str, Any]]:
-    now = int(time.time())
-    loaded_at = int(_SHEET_GEMS_CACHE.get("loaded_at") or 0)
-    if loaded_at <= 0:
-        return None
-    if now - loaded_at > _gems_cache_ttl_seconds():
-        return None
-    gems = _SHEET_GEMS_CACHE.get("gems")
-    if not isinstance(gems, dict) or not gems:
-        return None
-    return dict(_SHEET_GEMS_CACHE)
-
-
-def _set_cached_sheet_gems(payload: dict[str, Any]) -> None:
-    _SHEET_GEMS_CACHE["loaded_at"] = int(time.time())
-    _SHEET_GEMS_CACHE["gems"] = payload.get("gems")
-    _SHEET_GEMS_CACHE["gem_ids"] = payload.get("gem_ids")
-    _SHEET_GEMS_CACHE["source"] = payload.get("source")
 
 
 def _normalize_gem_id(v: Any) -> str:
@@ -2423,7 +2259,7 @@ async def _refresh_sheet_gems_background(ws: WebSocket, lang: str) -> None:
     try:
         sys_kv = getattr(ws.state, "sys_kv", None)
         payload = await _load_sheet_gems(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
-        _set_cached_sheet_gems(payload)
+        await set_cached_sheet_gems(payload)
     except Exception:
         pass
     finally:
@@ -2434,14 +2270,14 @@ async def _resolve_sheet_gem(gem_name: str, sys_kv: Optional[dict[str, Any]] = N
     gem_id = _normalize_gem_id(gem_name)
     if not gem_id:
         return None
-    cached = _get_cached_sheet_gems()
+    cached = await get_cached_sheet_gems()
     if isinstance(cached, dict):
         gems = cached.get("gems")
         if isinstance(gems, dict) and isinstance(gems.get(gem_id), dict):
             return gems.get(gem_id)
     payload = await _load_sheet_gems(sys_kv=sys_kv)
     try:
-        _set_cached_sheet_gems(payload)
+        await set_cached_sheet_gems(payload)
     except Exception:
         pass
     gems = payload.get("gems") if isinstance(payload, dict) else None
@@ -4227,7 +4063,7 @@ async def debug_status() -> dict[str, Any]:
         sys_kv = None
 
     if sys_kv is None:
-        cached = _get_cached_sheet_memory()
+        cached = await get_cached_sheet_memory()
         try:
             if isinstance(cached, dict) and isinstance(cached.get("sys_kv"), dict):
                 sys_kv = cached.get("sys_kv")
@@ -4288,7 +4124,7 @@ async def debug_status() -> dict[str, Any]:
 @app.get("/api/verify/status")
 @app.get("/jarvis/api/verify/status")
 async def verify_status() -> dict[str, Any]:
-    cached = _get_cached_sheet_memory()
+    cached = await get_cached_sheet_memory()
     sys_kv = None
     try:
         if isinstance(cached, dict) and isinstance(cached.get("sys_kv"), dict):
@@ -4542,252 +4378,9 @@ def _memo_sheet_cfg_from_sys_kv(sys_kv: dict[str, Any] | None) -> tuple[str, str
     return (spreadsheet_id, sheet_name)
 
 
-def _system_news_skills_sheet_name(*, sys_kv: Optional[dict[str, Any]] = None) -> str:
-    try:
-        if isinstance(sys_kv, dict):
-            v = str(sys_kv.get("system.news_skills.sheet_name") or "").strip()
-            if v:
-                return v
-    except Exception:
-        pass
-    return "skills_news"
-
-
-def _news_skills_routing_enabled(*, sys_kv: Optional[dict[str, Any]] = None) -> bool:
-    try:
-        if isinstance(sys_kv, dict):
-            raw = str(sys_kv.get("system.news_skills.routing.enabled") or "").strip()
-            if raw:
-                return _parse_bool_cell(raw)
-    except Exception:
-        return False
-    return False
-
-
-async def _load_news_skills_from_sheet(*, sys_kv: Optional[dict[str, Any]] = None) -> list[dict[str, Any]]:
-    spreadsheet_id = _system_spreadsheet_id()
-    if not spreadsheet_id:
-        return []
-    sheet_name = _system_news_skills_sheet_name(sys_kv=sys_kv)
-
-    tool = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
-    res = await _mcp_tools_call(tool, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_name}!A:Z"})
-    parsed = _mcp_text_json(res)
-    values = parsed.get("values") if isinstance(parsed, dict) else None
-    data = parsed.get("data") if isinstance(parsed, dict) else None
-    if not isinstance(values, list) and isinstance(data, dict):
-        values = data.get("values")
-    if not isinstance(values, list) or not values:
-        return []
-
-    header = [str(c or "").strip().lower() for c in (values[0] if isinstance(values[0], list) else [])]
-    idx: dict[str, int] = {}
-    for i, col in enumerate(header):
-        if col and col not in idx:
-            idx[col] = int(i)
-
-    def _cell(row: list[Any], col: str) -> Any:
-        j = idx.get(str(col or "").strip().lower())
-        if j is None or j < 0 or j >= len(row):
-            return ""
-        return row[j]
-
-    def _as_bool_cell(v: Any) -> bool:
-        s = str(v or "").strip().lower()
-        return s in {"1", "true", "t", "yes", "y", "on"}
-
-    out: list[dict[str, Any]] = []
-    for i, r in enumerate(values[1:], start=2):
-        if not isinstance(r, list):
-            continue
-        enabled = _as_bool_cell(_cell(r, "enabled") or "true")
-        if not enabled:
-            continue
-        name = str(_cell(r, "name") or "").strip()
-        priority = _safe_int(_cell(r, "priority") or 0, default=0)
-        match_type = str(_cell(r, "match_type") or "").strip().lower() or "none"
-        pattern = str(_cell(r, "pattern") or "").strip()
-        handler = str(_cell(r, "handler") or "").strip().lower() or "tool_call"
-        arg_json = str(_cell(r, "arg_json") or "").strip()
-        out.append(
-            {
-                "row": int(i),
-                "name": name,
-                "enabled": True,
-                "priority": int(priority),
-                "match_type": match_type,
-                "pattern": pattern,
-                "handler": handler,
-                "arg_json": arg_json,
-            }
-        )
-
-    out.sort(key=lambda it: (int(it.get("priority") or 0), str(it.get("name") or ""), int(it.get("row") or 0)))
-    return out
-
-
-def _news_skill_matches(*, text: str, match_type: str, pattern: str) -> bool:
-    s = str(text or "")
-    mt = str(match_type or "").strip().lower() or "none"
-    pat = str(pattern or "")
-    if mt == "none":
-        return False
-    if not pat.strip():
-        return False
-    if mt == "exact":
-        return s.strip().lower() == pat.strip().lower()
-    if mt == "prefix":
-        return s.strip().lower().startswith(pat.strip().lower())
-    if mt == "regex":
-        try:
-            return re.search(pat, s, re.IGNORECASE) is not None
-        except Exception:
-            return False
-    return False
-
-
-async def _dispatch_news_skills(ws: WebSocket, text: str) -> bool:
-    sys_kv = getattr(ws.state, "sys_kv", None)
-    sys_kv_dict = sys_kv if isinstance(sys_kv, dict) else None
-    if not feature_enabled("skills", sys_kv=sys_kv_dict, default=False):
-        return False
-    if not _news_skills_routing_enabled(sys_kv=sys_kv_dict):
-        return False
-    try:
-        rows = await _load_news_skills_from_sheet(sys_kv=sys_kv_dict)
-    except Exception:
-        rows = []
-    if not rows:
-        return False
-
-    session_id = str(getattr(ws.state, "session_id", None) or "").strip() or None
-    if not session_id:
-        return False
-
-    for it in rows:
-        if not isinstance(it, dict):
-            continue
-        mt = str(it.get("match_type") or "").strip().lower()
-        pat = str(it.get("pattern") or "")
-        if not _news_skill_matches(text=text, match_type=mt, pattern=pat):
-            continue
-        handler = str(it.get("handler") or "").strip().lower() or "tool_call"
-        if handler != "tool_call":
-            continue
-        arg_json = str(it.get("arg_json") or "").strip()
-        payload: dict[str, Any] = {}
-        if arg_json:
-            try:
-                parsed = json.loads(arg_json)
-                if isinstance(parsed, dict):
-                    payload = parsed
-            except Exception:
-                payload = {}
-        tool_name = str(payload.get("tool") or "").strip()
-        tool_args = payload.get("args") if isinstance(payload.get("args"), dict) else {}
-        if not tool_name:
-            continue
-        try:
-            await _handle_mcp_tool_call(session_id, tool_name, tool_args)
-            return True
-        except Exception:
-            return True
-    return False
-
-
-def _current_news_sheet_cfg_from_sys_kv(sys_kv: dict[str, Any] | None) -> tuple[str, str]:
-    spreadsheet_id = ""
-    sheet_name = ""
-    if isinstance(sys_kv, dict):
-        spreadsheet_id = str(
-            sys_kv.get("current_news.spreadsheet_id")
-            or sys_kv.get("current_news.spreadsheet_name")
-            or sys_kv.get("current_news_ss")
-            or ""
-        ).strip()
-        sheet_name = str(
-            sys_kv.get("current_news.sheet_name")
-            or sys_kv.get("current_news_sheet_name")
-            or sys_kv.get("current_news_sh")
-            or ""
-        ).strip()
-    if not spreadsheet_id:
-        spreadsheet_id = _system_spreadsheet_id()
-    if not sheet_name:
-        sheet_name = "current_news"
-    return (spreadsheet_id, sheet_name)
-
-
-def _current_news_sources_sheet_cfg_from_sys_kv(sys_kv: dict[str, Any] | None) -> tuple[str, str]:
-    spreadsheet_id = ""
-    sheet_name = ""
-    if isinstance(sys_kv, dict):
-        spreadsheet_id = str(
-            sys_kv.get("current_news.sources.spreadsheet_id")
-            or sys_kv.get("current_news.sources.spreadsheet_name")
-            or sys_kv.get("current_news.spreadsheet_id")
-            or sys_kv.get("current_news_ss")
-            or ""
-        ).strip()
-        sheet_name = str(
-            sys_kv.get("current_news.sources.sheet_name")
-            or sys_kv.get("news_sources.sheet_name")
-            or sys_kv.get("news_sources_sh")
-            or ""
-        ).strip()
-    if not spreadsheet_id:
-        spreadsheet_id = _system_spreadsheet_id()
-    if not sheet_name:
-        sheet_name = "news_sources"
-    return (spreadsheet_id, sheet_name)
-
-
-def _current_news_topics_sheet_cfg_from_sys_kv(sys_kv: dict[str, Any] | None) -> tuple[str, str]:
-    spreadsheet_id = ""
-    sheet_name = ""
-    if isinstance(sys_kv, dict):
-        spreadsheet_id = str(
-            sys_kv.get("current_news.topics.spreadsheet_id")
-            or sys_kv.get("current_news.topics.spreadsheet_name")
-            or sys_kv.get("current_news.spreadsheet_id")
-            or sys_kv.get("current_news_ss")
-            or ""
-        ).strip()
-        sheet_name = str(
-            sys_kv.get("current_news.topics.sheet_name")
-            or sys_kv.get("news_topics.sheet_name")
-            or sys_kv.get("news_topics_sh")
-            or ""
-        ).strip()
-    if not spreadsheet_id:
-        spreadsheet_id = _system_spreadsheet_id()
-    if not sheet_name:
-        sheet_name = "news_topics"
-    return (spreadsheet_id, sheet_name)
-
-
-def _current_news_items_sheet_cfg_from_sys_kv(sys_kv: dict[str, Any] | None) -> tuple[str, str]:
-    spreadsheet_id = ""
-    sheet_name = ""
-    if isinstance(sys_kv, dict):
-        spreadsheet_id = str(
-            sys_kv.get("current_news.items.spreadsheet_id")
-            or sys_kv.get("current_news.items.spreadsheet_name")
-            or sys_kv.get("current_news.spreadsheet_id")
-            or sys_kv.get("current_news_ss")
-            or ""
-        ).strip()
-        sheet_name = str(
-            sys_kv.get("current_news.items.sheet_name")
-            or sys_kv.get("news_items.sheet_name")
-            or sys_kv.get("news_items_sh")
-            or ""
-        ).strip()
-    if not spreadsheet_id:
-        spreadsheet_id = _system_spreadsheet_id()
-    if not sheet_name:
-        sheet_name = "news_items"
-    return (spreadsheet_id, sheet_name)
+def _parse_bool_cell(v: Any) -> bool:
+    s = str(v or "").strip().lower()
+    return s in {"1", "true", "t", "yes", "y", "on", "enabled"}
 
 
 async def _sheet_get_header_row(*, spreadsheet_id: str, sheet_a1: str, max_cols: str = "Z") -> list[Any]:
@@ -5324,8 +4917,8 @@ async def memo_add(
 
     # Best-effort semantic index in Weaviate (must never fail the memo append).
     try:
-        if _weaviate_enabled():
-            await _weaviate_upsert_memo_item(
+        if weaviate_enabled():
+            await weaviate_upsert_memo_item(
                 spreadsheet_id=spreadsheet_id,
                 sheet_name=sheet_name,
                 memo_id=int(memo_id),
@@ -5368,7 +4961,7 @@ async def memo_index_backfill(
     x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token"),
 ) -> dict[str, Any]:
     _require_api_token_if_configured(x_api_token)
-    if not _weaviate_enabled():
+    if not weaviate_enabled():
         raise HTTPException(status_code=400, detail="weaviate_not_configured")
 
     sys_kv = _sys_kv_snapshot()
@@ -5420,7 +5013,7 @@ async def memo_index_backfill(
             if mid <= 0:
                 skipped += 1
                 continue
-            await _weaviate_upsert_memo_item(
+            await weaviate_upsert_memo_item(
                 spreadsheet_id=spreadsheet_id,
                 sheet_name=sheet_name,
                 memo_id=mid,
@@ -5461,10 +5054,10 @@ async def memo_related(
     x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token"),
 ) -> dict[str, Any]:
     _require_api_token_if_configured(x_api_token)
-    if not _weaviate_enabled():
+    if not weaviate_enabled():
         raise HTTPException(status_code=400, detail="weaviate_not_configured")
     qq = str(q or "").strip()
-    items = await _weaviate_query_related_memos(q=qq, k=int(k), group=str(group or "").strip() or None)
+    items = await weaviate_query_related_memos(q=qq, k=int(k), group=str(group or "").strip() or None)
     return {"ok": True, "q": qq, "k": int(k), "group": str(group or "").strip() or None, "items": items}
 
 
@@ -5475,14 +5068,14 @@ async def memo_summarize_related(
     x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token"),
 ) -> dict[str, Any]:
     _require_api_token_if_configured(x_api_token)
-    if not _weaviate_enabled():
+    if not weaviate_enabled():
         raise HTTPException(status_code=400, detail="weaviate_not_configured")
     q = str(req.q or "").strip()
     if not q:
         raise HTTPException(status_code=400, detail="missing_q")
     k = max(1, min(int(req.k or 30), 200))
     group = str(req.group or "").strip() or None
-    items = await _weaviate_query_related_memos(q=q, k=k, group=group)
+    items = await weaviate_query_related_memos(q=q, k=k, group=group)
 
     style = str(req.style or "timeline").strip().lower() or "timeline"
     system_instruction = (
@@ -5532,14 +5125,14 @@ async def memo_relate(
     x_api_token: Optional[str] = Header(default=None, alias="X-Api-Token"),
 ) -> dict[str, Any]:
     _require_api_token_if_configured(x_api_token)
-    if not _weaviate_enabled():
+    if not weaviate_enabled():
         raise HTTPException(status_code=400, detail="weaviate_not_configured")
     q = str(req.q or "").strip()
     if not q:
         raise HTTPException(status_code=400, detail="missing_q")
     k = max(1, min(int(req.k or 50), 200))
     group = str(req.group or "").strip() or None
-    items = await _weaviate_query_related_memos(q=q, k=k, group=group)
+    items = await weaviate_query_related_memos(q=q, k=k, group=group)
 
     system_instruction = (
         "You are an operations analyst. "
@@ -5584,7 +5177,7 @@ async def sys_kv_reload(x_api_token: Optional[str] = Header(default=None, alias=
     if not isinstance(fresh, dict) or not fresh:
         return {"ok": False, "error": "sys_kv_reload_failed"}
     try:
-        _set_cached_sys_kv_only({str(k or "").strip(): str(v or "").strip() for k, v in fresh.items() if str(k or "").strip()})
+        await set_cached_sheet_memory({"sys_kv": {str(k or "").strip(): str(v or "").strip() for k, v in fresh.items() if str(k or "").strip()}})
     except Exception:
         pass
     return {"ok": True, "keys": sorted([str(k or "").strip() for k in fresh.keys() if str(k or "").strip()])}
@@ -5759,9 +5352,9 @@ async def memory_set(req: MemorySetRequest, x_api_token: Optional[str] = Header(
 
     ws = _DummyWS2()
     try:
-        cached = _get_cached_sheet_memory()
-        if isinstance(cached, dict):
-            _apply_cached_sheet_memory_to_ws(ws, cached)
+        cached = await get_cached_sheet_memory()
+        if isinstance(cached):
+            await apply_cached_sheet_memory_to_ws(ws, cached)
     except Exception:
         pass
 
@@ -5783,7 +5376,7 @@ async def memory_set(req: MemorySetRequest, x_api_token: Optional[str] = Header(
         raise HTTPException(status_code=500, detail={"error": "memory_set_failed", "detail": result})
 
     try:
-        _clear_sheet_caches()
+        await clear_sheet_caches()
     except Exception:
         pass
 
@@ -6096,7 +5689,7 @@ _agent_defs: dict[str, dict[str, Any]] = {}
 
 _agent_triggers: dict[str, list[str]] = {}
 
-_weaviate_schema_ready: bool = False
+weaviate_schema_ready: bool = False
 
 
 class ImagenGenerateRequest(BaseModel):
@@ -6842,7 +6435,7 @@ async def _handle_cars_ingest_image(ws: WebSocket, msg: dict[str, Any]) -> None:
         observations.append(obs)
         record["observations"] = observations
 
-        _write_json_atomic(json_path, record)
+        await write_json_atomic(json_path, record)
         results.append(
             {
                 "plate": plate,
@@ -6881,7 +6474,7 @@ async def imagen_generate(req: ImagenGenerateRequest) -> ImagenGenerateResponse:
         raise HTTPException(status_code=500, detail="missing_api_key")
     model = _imagen_allowed_model(req.model)
 
-    _ensure_imagen_assets_dir()
+    await ensure_imagen_assets_dir()
     client = genai.Client(api_key=api_key)
     is_imagen = model.startswith("imagen-")
     try:
@@ -6944,7 +6537,7 @@ async def image_generate(req: ImageGenerateRequest) -> ImageGenerateResponse:
         raise HTTPException(status_code=500, detail="missing_api_key")
     model = _image_allowed_model(req.model)
 
-    _ensure_imagen_assets_dir()
+    await ensure_imagen_assets_dir()
     client = genai.Client(api_key=api_key)
     try:
         cfg2: dict[str, Any] = {"imageConfig": {}}
@@ -7042,75 +6635,19 @@ def _init_session_db() -> None:
             """
         )
         conn.execute("CREATE INDEX IF NOT EXISTS idx_agent_status_user_updated ON agent_status(user_id, updated_at)")
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS news_cache (
-              cache_key TEXT PRIMARY KEY,
-              payload_json TEXT NOT NULL,
-              updated_at INTEGER NOT NULL
-            )
-            """
-        )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_news_cache_updated ON news_cache(updated_at)")
         conn.commit()
 
 
-def _get_news_cache(cache_key: str) -> Optional[dict[str, Any]]:
-    _init_session_db()
-    k = str(cache_key or "").strip()
-    if not k:
-        return None
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        cur = conn.execute(
-            "SELECT payload_json, updated_at FROM news_cache WHERE cache_key = ? LIMIT 1",
-            (k,),
-        )
-        row = cur.fetchone()
-    if not row:
-        return None
-    payload_json, updated_at = row
-    try:
-        payload = json.loads(payload_json)
-    except Exception:
-        payload = payload_json
-    if isinstance(payload, dict):
-        payload.setdefault("updated_at", updated_at)
-    return {"cache_key": k, "payload": payload, "updated_at": updated_at}
-
-
-def _set_news_cache(cache_key: str, payload: Any) -> dict[str, Any]:
-    _init_session_db()
-    k = str(cache_key or "").strip()
-    if not k:
-        raise HTTPException(status_code=400, detail="missing_cache_key")
-    now_ts = int(time.time())
-    payload_json = json.dumps(payload, ensure_ascii=False)
-    with sqlite3.connect(SESSION_DB_PATH) as conn:
-        conn.execute(
-            """
-            INSERT INTO news_cache(cache_key, payload_json, updated_at)
-            VALUES(?, ?, ?)
-            ON CONFLICT(cache_key) DO UPDATE SET
-              payload_json=excluded.payload_json,
-              updated_at=excluded.updated_at
-            """,
-            (k, payload_json, now_ts),
-        )
-        conn.commit()
-    return {"ok": True, "cache_key": k, "updated_at": now_ts}
-
-
-def _weaviate_enabled() -> bool:
+def weaviate_enabled() -> bool:
     return bool(WEAVIATE_URL)
 
 
-def _weaviate_object_uuid(external_key: str) -> str:
+def weaviate_object_uuid(external_key: str) -> str:
     # Deterministic UUID for idempotent upserts.
     return str(uuid.uuid5(uuid.NAMESPACE_URL, f"jarvis::{external_key}"))
 
 
-def _memo_weaviate_external_key(*, spreadsheet_id: str, sheet_name: str, memo_id: int) -> str:
+def memo_weaviate_external_key(*, spreadsheet_id: str, sheet_name: str, memo_id: int) -> str:
     ss = str(spreadsheet_id or "").strip()
     sh = str(sheet_name or "").strip()
     mid = int(memo_id or 0)
@@ -7127,14 +6664,14 @@ def _memo_embed_text(*, subject: str, memo: str, result: str) -> str:
     return "\n".join([p for p in parts if p]).strip()
 
 
-_weaviate_memo_schema_ready: bool = False
+weaviate_memo_schema_ready: bool = False
 
 
-async def _weaviate_ensure_memo_schema() -> None:
-    global _weaviate_memo_schema_ready
-    if _weaviate_memo_schema_ready:
+async def weaviate_ensure_memo_schema() -> None:
+    global weaviate_memo_schema_ready
+    if weaviate_memo_schema_ready:
         return
-    if not _weaviate_enabled():
+    if not weaviate_enabled():
         return
 
     schema = {
@@ -7159,17 +6696,17 @@ async def _weaviate_ensure_memo_schema() -> None:
     }
 
     try:
-        await _weaviate_request("GET", "/v1/schema/JarvisMemoItem")
-        _weaviate_memo_schema_ready = True
+        await weaviate_request("GET", "/v1/schema/JarvisMemoItem")
+        weaviate_memo_schema_ready = True
         return
     except Exception:
         pass
 
-    await _weaviate_request("POST", "/v1/schema", schema)
-    _weaviate_memo_schema_ready = True
+    await weaviate_request("POST", "/v1/schema", schema)
+    weaviate_memo_schema_ready = True
 
 
-async def _weaviate_upsert_memo_item(
+async def weaviate_upsert_memo_item(
     *,
     spreadsheet_id: str,
     sheet_name: str,
@@ -7184,16 +6721,16 @@ async def _weaviate_upsert_memo_item(
     created_at: float | None = None,
     updated_at: float | None = None,
 ) -> dict[str, Any]:
-    await _weaviate_ensure_memo_schema()
-    external_key = _memo_weaviate_external_key(spreadsheet_id=spreadsheet_id, sheet_name=sheet_name, memo_id=int(memo_id))
-    obj_id = _weaviate_object_uuid(external_key)
-    text = _memo_embed_text(subject=subject, memo=memo, result=result)
+    await weaviate_ensure_memo_schema()
+    external_key = memo_weaviate_external_key(spreadsheet_id=spreadsheet_id, sheet_name=sheet_name, memo_id=int(memo_id))
+    obj_id = weaviate_object_uuid(external_key)
+    text = memo_embed_text(subject=subject, memo=memo, result=result)
 
     vec: list[float]
     try:
-        vec = await _gemini_embed_text_cached(text)
+        vec = await gemini_embed_text_cached(text)
     except Exception:
-        vec = _pseudo_embed_vector(text, dim=64)
+        vec = pseudo_embed_vector(text, dim=64)
 
     props: dict[str, Any] = {
         "external_key": external_key,
@@ -7223,28 +6760,28 @@ async def _weaviate_upsert_memo_item(
     # Weaviate's PUT /v1/objects/{id} is update-by-id and can fail if the object doesn't exist.
     # Use POST create first (idempotent enough with deterministic UUID), then fall back to PUT replace.
     try:
-        await _weaviate_request("POST", "/v1/objects", payload)
+        await weaviate_request("POST", "/v1/objects", payload)
     except HTTPException as e:
         # If already exists or create fails, attempt replace/update.
         try:
-            await _weaviate_request("PUT", f"/v1/objects/{obj_id}", payload)
+            await weaviate_request("PUT", f"/v1/objects/{obj_id}", payload)
         except Exception:
             raise e
 
     return {"ok": True, "id": obj_id, "external_key": external_key}
 
 
-async def _weaviate_query_related_memos(*, q: str, k: int, group: str | None = None) -> list[dict[str, Any]]:
-    await _weaviate_ensure_memo_schema()
+async def weaviate_query_related_memos(*, q: str, k: int, group: str | None = None) -> list[dict[str, Any]]:
+    await weaviate_ensure_memo_schema()
     qq = str(q or "").strip()
     if not qq:
         raise HTTPException(status_code=400, detail="missing_q")
     lim = max(1, min(int(k or 30), 200))
     vec: list[float]
     try:
-        vec = await _gemini_embed_text_cached(qq)
+        vec = await gemini_embed_text_cached(qq)
     except Exception:
-        vec = _pseudo_embed_vector(qq, dim=64)
+        vec = pseudo_embed_vector(qq, dim=64)
 
     where_group = "" if not str(group or "").strip() else f'where: {{ path: ["group"], operator: Equal, valueText: "{str(group).strip()}" }}'
     query = {
@@ -7273,7 +6810,7 @@ async def _weaviate_query_related_memos(*, q: str, k: int, group: str | None = N
         }}
         """
     }
-    res = await _weaviate_request("POST", "/v1/graphql", query)
+    res = await weaviate_request("POST", "/v1/graphql", query)
     items = (
         res.get("data", {})
         .get("Get", {})
@@ -7289,7 +6826,7 @@ async def _weaviate_query_related_memos(*, q: str, k: int, group: str | None = N
     return out
 
 
-async def _gemini_summarize_text(*, system_instruction: str, prompt: str, model: str | None = None) -> str:
+async def gemini_summarize_text(*, system_instruction: str, prompt: str, model: str | None = None) -> str:
     api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
     if not api_key:
         raise HTTPException(status_code=500, detail="missing_api_key")
@@ -7395,8 +6932,8 @@ async def _gemini_embed_text_cached(text: str) -> list[float]:
     return vec
 
 
-async def _weaviate_request(method: str, path: str, payload: Any = None) -> Any:
-    if not _weaviate_enabled():
+async def weaviate_request(method: str, path: str, payload: Any = None) -> Any:
+    if not weaviate_enabled():
         raise HTTPException(status_code=500, detail="weaviate_not_configured")
     url = f"{WEAVIATE_URL}{path}"
     async with httpx.AsyncClient(timeout=15.0) as client:
@@ -7607,11 +7144,11 @@ async def _deep_research_worker_get(path: str) -> Any:
         return res.json()
 
 
-async def _weaviate_ensure_schema() -> None:
-    global _weaviate_schema_ready
-    if _weaviate_schema_ready:
+async def weaviate_ensure_schema() -> None:
+    global weaviate_schema_ready
+    if weaviate_schema_ready:
         return
-    if not _weaviate_enabled():
+    if not weaviate_enabled():
         return
 
     schema = {
@@ -7634,29 +7171,29 @@ async def _weaviate_ensure_schema() -> None:
     }
 
     try:
-        existing_schema = await _weaviate_request("GET", "/v1/schema/JarvisMemoryItem")
+        existing_schema = await weaviate_request("GET", "/v1/schema/JarvisMemoryItem")
         try:
             props = existing_schema.get("properties") if isinstance(existing_schema, dict) else None
             prop_names = {str(p.get("name")) for p in props} if isinstance(props, list) else set()
             if "hide_until" not in prop_names:
-                await _weaviate_request(
+                await weaviate_request(
                     "POST",
                     "/v1/schema/JarvisMemoryItem/properties",
                     {"name": "hide_until", "dataType": ["number"]},
                 )
         except Exception:
             pass
-        _weaviate_schema_ready = True
+        weaviate_schema_ready = True
         return
     except Exception:
         pass
 
-    await _weaviate_request("POST", "/v1/schema", schema)
-    _weaviate_schema_ready = True
+    await weaviate_request("POST", "/v1/schema", schema)
+    weaviate_schema_ready = True
 
 
-async def _weaviate_query_upcoming_reminders(*, start_ts: int, end_ts: int, limit: int) -> list[dict[str, Any]]:
-    await _weaviate_ensure_schema()
+async def weaviate_query_upcoming_reminders(*, start_ts: int, end_ts: int, limit: int) -> list[dict[str, Any]]:
+    await weaviate_ensure_schema()
     lim = max(1, min(int(limit or 50), 500))
     query = {
         "query": """
@@ -7691,7 +7228,7 @@ async def _weaviate_query_upcoming_reminders(*, start_ts: int, end_ts: int, limi
         .replace("%END%", str(float(int(end_ts))))
         .replace("%LIMIT%", str(int(lim)))
     }
-    res = await _weaviate_request("POST", "/v1/graphql", query)
+    res = await weaviate_request("POST", "/v1/graphql", query)
     items = (
         res.get("data", {})
         .get("Get", {})
@@ -7707,8 +7244,8 @@ async def _weaviate_query_upcoming_reminders(*, start_ts: int, end_ts: int, limi
     return out
 
 
-async def _weaviate_query_reminders(*, status: str, limit: int) -> list[dict[str, Any]]:
-    await _weaviate_ensure_schema()
+async def weaviate_query_reminders(*, status: str, limit: int) -> list[dict[str, Any]]:
+    await weaviate_ensure_schema()
     lim = max(1, min(int(limit or 50), 500))
     status_norm = str(status or "all").strip().lower() or "all"
     if status_norm not in ("all", "pending", "fired", "done"):
@@ -7755,7 +7292,7 @@ async def _weaviate_query_reminders(*, status: str, limit: int) -> list[dict[str
         """
     }
 
-    res = await _weaviate_request("POST", "/v1/graphql", query)
+    res = await weaviate_request("POST", "/v1/graphql", query)
     items = (
         res.get("data", {})
         .get("Get", {})
@@ -7984,7 +7521,7 @@ async def _render_daily_brief(user_id: str) -> dict[str, Any]:
         agents_snapshot=_agents_snapshot,
         get_agent_statuses=_get_agent_statuses,
         weaviate_enabled=_weaviate_enabled,
-        weaviate_query_upcoming_reminders=_weaviate_query_upcoming_reminders,
+        weaviate_query_upcoming_reminders=weaviate_query_upcoming_reminders,
         list_upcoming_pending_reminders=lambda **_: [],
         get_user_timezone=_get_user_timezone,
         now_ts=_now_ts,
@@ -8817,12 +8354,12 @@ async def _handle_pending_reminder_confirm_or_cancel(ws: WebSocket, text: str, *
 
 
 async def _startup_resync_from_weaviate() -> None:
-    if not _weaviate_enabled():
+    if not weaviate_enabled():
         return
     try:
         now_ts = int(time.time())
         # Keep local scheduler warm for the next 7 days.
-        items = await _weaviate_query_upcoming_reminders(
+        items = await weaviate_query_upcoming_reminders(
             start_ts=now_ts,
             end_ts=now_ts + 7 * 24 * 3600,
             limit=500,
@@ -8831,65 +8368,6 @@ async def _startup_resync_from_weaviate() -> None:
             _upsert_local_reminder_from_memory_item(DEFAULT_USER_ID, it)
     except Exception as e:
         logger.warning("weaviate_startup_resync_failed error=%s", e)
-
-
-def _parse_news_follow_command(text: str) -> dict[str, str]:
-    raw = str(text or "").strip()
-    s = " ".join(raw.lower().split())
-    if not s:
-        return {"action": "", "arg": ""}
-
-    # English focus commands
-    if s == "focus list" or s == "list focus":
-        return {"action": "focus_list", "arg": ""}
-    if s.startswith("focus add:") or s.startswith("focus add "):
-        arg = raw.split(":", 1)[1].strip() if ":" in raw else raw.split(" ", 2)[2].strip() if len(raw.split()) >= 3 else ""
-        return {"action": "focus_add", "arg": arg}
-    if s.startswith("focus remove:") or s.startswith("focus remove "):
-        arg = raw.split(":", 1)[1].strip() if ":" in raw else raw.split(" ", 2)[2].strip() if len(raw.split()) >= 3 else ""
-        return {"action": "focus_remove", "arg": arg}
-
-    if s.startswith("โฟกัสข่าว เพิ่ม:") or s.startswith("โฟกัสข่าว เพิ่ม "):
-        arg = raw.split(":", 1)[1].strip() if ":" in raw else raw.split(" ", 2)[2].strip() if len(raw.split()) >= 3 else ""
-        return {"action": "focus_add", "arg": arg}
-    if s.startswith("เพิ่มโฟกัสข่าว:") or s.startswith("เพิ่มโฟกัสข่าว "):
-        arg = raw.split(":", 1)[1].strip() if ":" in raw else raw.split(" ", 1)[1].strip() if len(raw.split()) >= 2 else ""
-        return {"action": "focus_add", "arg": arg}
-
-    if s.startswith("โฟกัสข่าว ลบ:") or s.startswith("โฟกัสข่าว ลบ "):
-        arg = raw.split(":", 1)[1].strip() if ":" in raw else raw.split(" ", 2)[2].strip() if len(raw.split()) >= 3 else ""
-        return {"action": "focus_remove", "arg": arg}
-    if s.startswith("ลบโฟกัสข่าว:") or s.startswith("ลบโฟกัสข่าว "):
-        arg = raw.split(":", 1)[1].strip() if ":" in raw else raw.split(" ", 1)[1].strip() if len(raw.split()) >= 2 else ""
-        return {"action": "focus_remove", "arg": arg}
-
-    if s == "โฟกัสข่าว" or s == "รายการโฟกัสข่าว":
-        return {"action": "focus_list", "arg": ""}
-
-    if s.startswith("รายงานข่าว:") or s.startswith("รายงานข่าว "):
-        arg = raw.split(":", 1)[1].strip() if ":" in raw else raw.split(" ", 1)[1].strip() if len(raw.split()) >= 2 else ""
-        return {"action": "report", "arg": arg}
-
-    if s.startswith("report:") or s.startswith("report "):
-        arg = raw.split(":", 1)[1].strip() if ":" in raw else raw.split(" ", 1)[1].strip() if len(raw.split()) >= 2 else ""
-        return {"action": "report", "arg": arg}
-
-    if "รีเฟรช" in s or "refresh" in s:
-        if "ติดตามข่าว" in s or "follow_news" in s or "follow news" in s or "track news" in s:
-            return {"action": "refresh", "arg": ""}
-
-    if "ติดตามข่าว" in s or "สรุปข่าวติดตาม" in s or "follow_news" in s or "follow news" in s or "news follow" in s or "track news" in s:
-        return {"action": "list", "arg": ""}
-
-    return {"action": "", "arg": ""}
-
-
-def _news_follow_cache_key_focus(user_id: str) -> str:
-    return f"news-follow::{user_id}::focus"
-
-
-def _news_follow_cache_key_summaries(user_id: str) -> str:
-    return f"news-follow::{user_id}::summaries"
 
 
 def _extract_note_text(text: str) -> Optional[str]:
@@ -10101,22 +9579,6 @@ async def _handle_local_tools_message(ws: WebSocket, msg: dict[str, Any], trace_
             "system_skill_get",
             "system_skills_bootstrap_queue",
             "system_run_macro",
-            "current_news_get",
-            "current_news_refresh",
-            "current_news_sources",
-            "current_news_details",
-            "news_topics_upsert",
-            "news_sources_upsert",
-            "news_items_upsert",
-            "news_sources_list",
-            "gnews_rss_build",
-            "it_topic_packs_seed",
-            "news_follow_list",
-            "news_follow_refresh",
-            "news_follow_report",
-            "news_follow_focus_list",
-            "news_follow_focus_add",
-            "news_follow_focus_remove",
             "google_account_relink_queue",
             "memo_update_queue",
             "system_memo_update_queue",
@@ -11063,214 +10525,6 @@ async def _handle_note_followup(ws: WebSocket, text: str) -> bool:
     return await _handle_note_trigger(ws, f"จดบันทึก: {note_text}" if _text_is_thai(note_text) else f"make a note: {note_text}")
 
 
-def _get_news_follow_focus(user_id: str) -> list[str]:
-    cached = _get_news_cache(_news_follow_cache_key_focus(user_id))
-    payload = cached.get("payload") if isinstance(cached, dict) else None
-    focus = payload.get("focus") if isinstance(payload, dict) else None
-    if isinstance(focus, list):
-        out: list[str] = []
-        seen: set[str] = set()
-        for f in focus:
-            t = str(f or "").strip()
-            k = t.lower()
-            if t and k not in seen:
-                seen.add(k)
-                out.append(t)
-        return out
-    return ["Thai Baht", "USD/THB", "gold", "oil", "Iran"]
-
-
-def _set_news_follow_focus(user_id: str, focus: list[str]) -> None:
-    _set_news_cache(_news_follow_cache_key_focus(user_id), {"focus": focus, "updated_at": int(time.time())})
-
-
-def _get_news_follow_summaries(user_id: str) -> list[dict[str, Any]]:
-    cached = _get_news_cache(_news_follow_cache_key_summaries(user_id))
-    payload = cached.get("payload") if isinstance(cached, dict) else None
-    items = payload.get("summaries") if isinstance(payload, dict) else None
-    if isinstance(items, list):
-        out: list[dict[str, Any]] = []
-        for it in items:
-            if isinstance(it, dict):
-                out.append(it)
-        return out
-    return []
-
-
-def _set_news_follow_summaries(user_id: str, summaries: list[dict[str, Any]]) -> None:
-    _set_news_cache(_news_follow_cache_key_summaries(user_id), {"summaries": summaries, "updated_at": int(time.time())})
-
-
-async def _refresh_news_follow_summaries(user_id: str, focus: list[str]) -> dict[str, Any]:
-    feeds = [
-        "https://rss.cnn.com/rss/edition.rss",
-        "https://rss.cnn.com/rss/edition_world.rss",
-        "https://rss.cnn.com/rss/money_latest.rss",
-        "https://feeds.bbci.co.uk/news/world/rss.xml",
-        "https://feeds.bbci.co.uk/news/business/rss.xml",
-    ]
-    all_items: list[dict[str, Any]] = []
-    for url in feeds:
-        xml_text = await _mcp_web_fetch_text(url, max_length=250000)
-        all_items.extend(_parse_rss_items(xml_text))
-
-    seen: set[str] = set()
-    deduped: list[dict[str, Any]] = []
-    for it in all_items:
-        key = str(it.get("link") or "") or str(it.get("title") or "")
-        key = key.strip()
-        if not key or key in seen:
-            continue
-        seen.add(key)
-        deduped.append(it)
-
-    focus_norm = [str(f or "").strip() for f in focus if str(f or "").strip()]
-    matched: list[dict[str, Any]] = []
-    for it in deduped:
-        blob = f"{it.get('title','')} {it.get('description','')}"
-        if _topic_match(blob, focus_norm):
-            matched.append(it)
-
-    sources: list[str] = []
-    lines: list[str] = []
-    for it in matched[:20]:
-        title = str(it.get("title") or "").strip()
-        link = str(it.get("link") or "").strip()
-        if link and link not in sources:
-            sources.append(link)
-        if title:
-            if link:
-                lines.append(f"- {title} ({link})")
-            else:
-                lines.append(f"- {title}")
-
-    summary_text = "\n".join(lines).strip()
-    now_ts = int(time.time())
-    summary_id = f"nf_{uuid.uuid4().hex[:12]}"
-    summary_obj = {
-        "summary_id": summary_id,
-        "title": "ติดตามข่าว: สรุปล่าสุด",
-        "focus": focus_norm,
-        "text": summary_text,
-        "sources": sources,
-        "created_at": now_ts,
-    }
-
-    summaries = _get_news_follow_summaries(user_id)
-    summaries = [summary_obj] + [s for s in summaries if isinstance(s, dict) and str(s.get("summary_id") or "") != summary_id]
-    summaries = summaries[:20]
-    _set_news_follow_summaries(user_id, summaries)
-    payload = {"summary": "news-follow refreshed", "focus": focus_norm, "summaries": summaries, "updated_at": now_ts}
-    _upsert_agent_status(user_id, "follow_news", payload)
-    return payload
-
-
-async def _handle_news_follow_trigger(ws: WebSocket, text: str) -> bool:
-    cmd = _parse_news_follow_command(text)
-    action = cmd.get("action") or ""
-    arg = cmd.get("arg") or ""
-
-    s = " ".join(str(text or "").lower().split())
-    is_trigger = action != "" or ("ติดตามข่าว" in s) or ("โฟกัสข่าว" in s) or ("follow_news" in s) or ("follow news" in s) or ("news follow" in s) or ("track news" in s)
-    if not is_trigger:
-        return False
-
-    user_id = DEFAULT_USER_ID
-    focus: list[str] = []
-    try:
-        sys_kv = getattr(ws.state, "sys_kv", None)
-    except Exception:
-        sys_kv = None
-    try:
-        topics_cfg = await _load_news_topics_from_sheet(sys_kv=sys_kv if isinstance(sys_kv, dict) else None)
-        if isinstance(topics_cfg, dict) and topics_cfg:
-            focus = sorted([str(k or "").strip() for k in topics_cfg.keys() if str(k or "").strip()])
-            try:
-                _set_news_follow_focus(user_id, focus)
-            except Exception:
-                pass
-    except Exception:
-        focus = []
-    if not focus:
-        focus = _get_news_follow_focus(user_id)
-    summaries = _get_news_follow_summaries(user_id)
-
-    if action == "focus_list":
-        await ws.send_json({"type": "news_follow_focus", "focus": focus})
-        return True
-
-    if action == "focus_add":
-        item = str(arg or "").strip()
-        if not item:
-            await ws.send_json({"type": "news_follow_error", "message": "missing_focus_item"})
-            return True
-        new_focus = focus + [item]
-        _set_news_follow_focus(user_id, new_focus)
-        await ws.send_json({"type": "news_follow_focus_updated", "focus": _get_news_follow_focus(user_id)})
-        return True
-
-    if action == "focus_remove":
-        item = str(arg or "").strip().lower()
-        if not item:
-            await ws.send_json({"type": "news_follow_error", "message": "missing_focus_item"})
-            return True
-        new_focus = [f for f in focus if str(f or "").strip().lower() != item]
-        _set_news_follow_focus(user_id, new_focus)
-        await ws.send_json({"type": "news_follow_focus_updated", "focus": _get_news_follow_focus(user_id)})
-        return True
-
-    if action == "refresh":
-        payload = await _refresh_news_follow_summaries(user_id, focus)
-        await ws.send_json({"type": "news_follow_refreshed", "status": payload})
-        return True
-
-    if action == "report":
-        target = str(arg or "").strip()
-        if not target:
-            await ws.send_json({"type": "news_follow_error", "message": "missing_summary_id"})
-            return True
-        chosen: Optional[dict[str, Any]] = None
-        for it in summaries:
-            if isinstance(it, dict) and str(it.get("summary_id") or "").strip() == target:
-                chosen = it
-                break
-        if not chosen:
-            await ws.send_json({"type": "news_follow_error", "message": "summary_not_found", "summary_id": target})
-            return True
-        await ws.send_json({"type": "news_follow_report", "summary": chosen})
-        return True
-
-    if not summaries:
-        await ws.send_json(
-            {
-                "type": "news_follow",
-                "message": "ยังไม่มีสรุปที่เก็บไว้ พิมพ์: ติดตามข่าว รีเฟรช",
-                "focus": focus,
-            }
-        )
-        return True
-
-    available = [
-        {
-            "summary_id": str(it.get("summary_id") or ""),
-            "title": str(it.get("title") or ""),
-            "created_at": it.get("created_at"),
-            "focus": it.get("focus"),
-        }
-        for it in summaries
-        if isinstance(it, dict)
-    ]
-    await ws.send_json(
-        {
-            "type": "news_follow_available",
-            "focus": focus,
-            "summaries": available,
-            "message": "ต้องการให้รายงานอันไหน? พิมพ์: รายงานข่าว: <summary_id> หรือ ติดตามข่าว รีเฟรช",
-        }
-    )
-    return True
-
-
 async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
     # Continuation handling: if a sub-agent is active for this websocket, let it handle followups.
     now_ts = int(time.time())
@@ -11321,10 +10575,6 @@ async def _dispatch_sub_agents(ws: WebSocket, text: str) -> bool:
             return True
 
     sys_kv = getattr(ws.state, "sys_kv", None)
-
-    handled = await _dispatch_news_skills(ws, text)
-    if handled:
-        return True
 
     if feature_enabled("memo", sys_kv=sys_kv if isinstance(sys_kv, dict) else None, default=True):
         handled = await _handle_thai_memo_commands(ws, text)
@@ -11549,28 +10799,6 @@ def _gemini_local_tool_required_feature(name: str) -> str | None:
         return "memo"
     if n in {"memory_search", "memory_list"}:
         return "memory"
-    if n in {
-        "current_news_get",
-        "current_news_refresh",
-        "current_news_sources",
-        "current_news_details",
-        "news_topics_upsert",
-        "news_sources_upsert",
-        "news_items_upsert",
-        "news_sources_list",
-        "gnews_rss_build",
-        "it_topic_packs_seed",
-    }:
-        return "current-news"
-    if n in {
-        "news_follow_list",
-        "news_follow_refresh",
-        "news_follow_report",
-        "news_follow_focus_list",
-        "news_follow_focus_add",
-        "news_follow_focus_remove",
-    }:
-        return "follow-news"
     return None
 
 
@@ -11579,14 +10807,6 @@ def _gemini_local_tool_allowed(name: str, sys_kv: Optional[dict[str, Any]] = Non
     if not n:
         return False, "invalid_tool", "Missing tool name"
 
-    # Safety: prevent Gemini from bypassing Pending confirmation by calling direct sheet upserts.
-    # Operators can opt-in for advanced workflows, but default should be confirmation-based.
-    if n in {"news_topics_upsert", "news_sources_upsert", "news_items_upsert"}:
-        try:
-            if not _sys_kv_bool(sys_kv, "current_news.direct_upsert.enabled", default=False):
-                return False, "pending_required", "Use news_tuning_suggest (then pending_confirm/news_tuning_apply) instead of direct upsert"
-        except Exception:
-            return False, "pending_required", "Use news_tuning_suggest (then pending_confirm/news_tuning_apply) instead of direct upsert"
     if macros_only:
         return False, "macros_only", "macros_only mode: only macro_* and system_* tools are allowed"
 
@@ -11608,23 +10828,6 @@ def _gemini_local_tool_allowed(name: str, sys_kv: Optional[dict[str, Any]] = Non
         "memo_update_queue",
         "memory_search",
         "memory_list",
-        "current_news_get",
-        "current_news_refresh",
-        "current_news_sources",
-        "current_news_details",
-        "news_tuning_suggest",
-        "news_topics_upsert",
-        "news_sources_upsert",
-        "news_items_upsert",
-        "news_sources_list",
-        "gnews_rss_build",
-        "it_topic_packs_seed",
-        "news_follow_list",
-        "news_follow_refresh",
-        "news_follow_report",
-        "news_follow_focus_list",
-        "news_follow_focus_add",
-        "news_follow_focus_remove",
     }
     if n in allowed_local:
         return True, "ok", ""
@@ -12772,1778 +11975,10 @@ async def _mcp_web_fetch_text(
     if start_index is not None:
         payload["start_index"] = int(start_index)
     if raw is not None:
-        payload["raw"] = bool(raw)
+        raw_flag = bool(raw)
+        payload["raw"] = raw_flag
     result = await _mcp_tools_call(mcp_name, payload)
     return _extract_mcp_text(result)
-
-
-def _xml_localname(tag: Any) -> str:
-    try:
-        t = str(tag or "")
-    except Exception:
-        return ""
-    if "}" in t:
-        return t.split("}", 1)[1]
-    return t
-
-
-def _xml_first_child_text_by_localname(el: Any, names: list[str]) -> str:
-    if el is None:
-        return ""
-    wanted = {str(n or "").strip().lower() for n in (names or []) if str(n or "").strip()}
-    if not wanted:
-        return ""
-    try:
-        for child in list(el):
-            ln = _xml_localname(getattr(child, "tag", "")).strip().lower()
-            if ln and ln in wanted:
-                try:
-                    txt = "".join(child.itertext())
-                except Exception:
-                    txt = str(getattr(child, "text", "") or "")
-                return str(txt or "").strip()
-    except Exception:
-        return ""
-    return ""
-
-
-def _extract_html_meta_description(html_text: str) -> str:
-    s = str(html_text or "")
-    if not s.strip():
-        return ""
-
-    # Restrict to <head> first for speed.
-    head = s
-    try:
-        m = re.search(r"<head[^>]*>(.*?)</head>", s, flags=re.IGNORECASE | re.DOTALL)
-        if m and m.group(1):
-            head = m.group(1)
-    except Exception:
-        head = s
-
-    def _pick(pattern: str) -> str:
-        try:
-            mm = re.search(pattern, head, flags=re.IGNORECASE | re.DOTALL)
-            if not mm:
-                return ""
-            val = str(mm.group(1) or "")
-            val = _html.unescape(val)
-            val = re.sub(r"\s+", " ", val).strip()
-            return val
-        except Exception:
-            return ""
-
-    # og:description
-    v = _pick(r"<meta[^>]+property=\"og:description\"[^>]+content=\"([^\"]+)\"")
-    if v:
-        return v
-    v = _pick(r"<meta[^>]+content=\"([^\"]+)\"[^>]+property=\"og:description\"")
-    if v:
-        return v
-
-    # name=description
-    v = _pick(r"<meta[^>]+name=\"description\"[^>]+content=\"([^\"]+)\"")
-    if v:
-        return v
-    v = _pick(r"<meta[^>]+content=\"([^\"]+)\"[^>]+name=\"description\"")
-    if v:
-        return v
-
-    return ""
-
-
-def _extract_html_first_paragraph(html_text: str) -> str:
-    s = str(html_text or "")
-    if not s.strip():
-        return ""
-    try:
-        m = re.search(r"<p[^>]*>(.*?)</p>", s, flags=re.IGNORECASE | re.DOTALL)
-        if not m:
-            return ""
-        body = str(m.group(1) or "")
-        body = re.sub(r"<[^>]+>", " ", body)
-        body = _html.unescape(body)
-        body = re.sub(r"\s+", " ", body).strip()
-        return body
-    except Exception:
-        return ""
-
-
-async def _enrich_news_item_description(
-    item: dict[str, Any],
-    *,
-    debug: bool = False,
-    debug_out: list[dict[str, Any]] | None = None,
-) -> dict[str, Any]:
-    if not isinstance(item, dict):
-        return item
-    desc0 = str(item.get("description") or "").strip()
-    title0 = str(item.get("title") or "").strip()
-    if desc0 and not _is_low_quality_news_description(title=title0, description=desc0):
-        return item
-    url = str(item.get("link") or "").strip()
-    if not url:
-        return item
-
-    meta: dict[str, Any] = {}
-    html_text = ""
-    try:
-        res = await _web_fetcher_post("/fetch", {"url": url, "raw": True})
-        if isinstance(res, dict):
-            html_text = str(res.get("text") or "")
-            meta = {
-                "status_code": res.get("status_code"),
-                "content_type": res.get("content_type"),
-                "final_url": res.get("final_url"),
-            }
-    except Exception as e:
-        meta = {"error": e.__class__.__name__, "message": str(e)}
-
-    picked = _extract_html_meta_description(html_text)
-    if not picked:
-        picked = _extract_html_first_paragraph(html_text)
-    picked = str(picked or "").strip()
-    if picked:
-        item["description"] = picked
-
-    if debug and isinstance(debug_out, list):
-        try:
-            row = {"url": url, "enriched": bool(picked)}
-            if meta:
-                row.update(meta)
-            debug_out.append(row)
-        except Exception:
-            pass
-    return item
-
-
-def _parse_rss_items(xml_text: str) -> list[dict[str, Any]]:
-    s = str(xml_text or "")
-    if not s.strip():
-        return []
-    try:
-        root = ET.fromstring(s)
-    except Exception:
-        return []
-
-    def _degoogle_link(link: str, desc: str) -> tuple[str, str]:
-        lnk = str(link or "").strip()
-        if not lnk:
-            return ("", "")
-        try:
-            u = urllib.parse.urlsplit(lnk)
-            host = str(u.hostname or "").lower()
-            if host != "news.google.com":
-                return (lnk, "")
-
-            q = urllib.parse.parse_qs(u.query)
-            for key in ("url", "u"):
-                vv = q.get(key)
-                if vv and str(vv[0] or "").strip():
-                    orig = str(vv[0]).strip()
-                    return (orig, lnk)
-
-            # Best-effort: sometimes the publisher URL is embedded in the HTML description.
-            try:
-                m = re.search(r"href=\"([^\"]+)\"", str(desc or ""))
-                if m:
-                    cand = str(m.group(1) or "").strip()
-                    if cand:
-                        uu = urllib.parse.urlsplit(cand)
-                        h2 = str(uu.hostname or "").lower()
-                        if h2 and h2 != "news.google.com":
-                            return (cand, lnk)
-            except Exception:
-                pass
-        except Exception:
-            return (lnk, "")
-        return (lnk, "")
-
-    items: list[dict[str, Any]] = []
-    for it in root.findall(".//item"):
-        title = (it.findtext("title") or "").strip()
-        link0 = (it.findtext("link") or "").strip()
-        pub = (it.findtext("pubDate") or "").strip()
-        desc = (it.findtext("description") or "").strip()
-        if not desc:
-            # Common RSS pattern: <content:encoded> contains full HTML content.
-            desc = _xml_first_child_text_by_localname(it, ["encoded", "content"]) or ""
-        if not desc:
-            # Some feeds use <media:description>.
-            desc = _xml_first_child_text_by_localname(it, ["media:description", "description"]) or ""
-        desc = _clean_news_description(title=title, description=str(desc or ""))
-        if not title and not link0:
-            continue
-        link, gnews_link = _degoogle_link(link0, desc)
-        row: dict[str, Any] = {"title": title, "link": link, "pubDate": pub, "description": desc}
-        if gnews_link:
-            row["gnews_link"] = gnews_link
-        items.append(row)
-    return items
-
-
-def _parse_atom_items(xml_text: str) -> list[dict[str, Any]]:
-    s = str(xml_text or "")
-    if not s.strip():
-        return []
-    try:
-        root = ET.fromstring(s)
-    except Exception:
-        return []
-
-    def _degoogle_link(link: str, desc: str) -> tuple[str, str]:
-        lnk = str(link or "").strip()
-        if not lnk:
-            return ("", "")
-        try:
-            u = urllib.parse.urlsplit(lnk)
-            host = str(u.hostname or "").lower()
-            if host != "news.google.com":
-                return (lnk, "")
-            q = urllib.parse.parse_qs(u.query)
-            for key in ("url", "u"):
-                vv = q.get(key)
-                if vv and str(vv[0] or "").strip():
-                    orig = str(vv[0]).strip()
-                    return (orig, lnk)
-
-            try:
-                m = re.search(r"href=\"([^\"]+)\"", str(desc or ""))
-                if m:
-                    cand = str(m.group(1) or "").strip()
-                    if cand:
-                        uu = urllib.parse.urlsplit(cand)
-                        h2 = str(uu.hostname or "").lower()
-                        if h2 and h2 != "news.google.com":
-                            return (cand, lnk)
-            except Exception:
-                pass
-        except Exception:
-            return (lnk, "")
-        return (lnk, "")
-
-    items: list[dict[str, Any]] = []
-    ns = {"atom": "http://www.w3.org/2005/Atom"}
-    for it in root.findall(".//atom:entry", ns) + root.findall(".//entry"):
-        title = (it.findtext("atom:title", default="", namespaces=ns) or it.findtext("title") or "").strip()
-        pub = (it.findtext("atom:updated", default="", namespaces=ns) or it.findtext("updated") or it.findtext("published") or "").strip()
-        link = ""
-        try:
-            ln = it.find("atom:link", ns) or it.find("link")
-            if ln is not None:
-                link = str(ln.get("href") or ln.text or "").strip()
-        except Exception:
-            link = ""
-        desc = (it.findtext("atom:summary", default="", namespaces=ns) or it.findtext("summary") or "").strip()
-        if not desc:
-            # Atom often uses <content>.
-            try:
-                content_el = it.find("atom:content", ns) or it.find("content")
-                if content_el is not None:
-                    desc = str("".join(content_el.itertext()) or "").strip()
-            except Exception:
-                desc = desc
-        desc = _clean_news_description(title=title, description=str(desc or ""))
-        if not title and not link:
-            continue
-        link2, gnews_link = _degoogle_link(link, desc)
-        row: dict[str, Any] = {"title": title, "link": link2, "pubDate": pub, "description": desc}
-        if gnews_link:
-            row["gnews_link"] = gnews_link
-        items.append(row)
-    return items
-
-
-def _topic_match(text: str, keywords: list[str]) -> bool:
-    s = " ".join(str(text or "").lower().split())
-    if not s:
-        return False
-    for k in keywords:
-        kk = str(k or "").strip().lower()
-        if not kk:
-            continue
-        if re.fullmatch(r"[a-z0-9]+", kk) and len(kk) <= 3:
-            try:
-                if re.search(r"\b" + re.escape(kk) + r"\b", s):
-                    return True
-            except Exception:
-                if kk in s:
-                    return True
-            continue
-        if kk in s:
-            return True
-    return False
-
-
-def _build_current_news_context(items: list[dict[str, Any]], topics_cfg: Optional[dict[str, dict[str, Any]]] = None) -> dict[str, Any]:
-    def pick(keywords: list[str], limit: int = 6) -> list[dict[str, Any]]:
-        out: list[dict[str, Any]] = []
-        for it in items:
-            blob = f"{it.get('title','')} {it.get('description','')}"
-            if not keywords or _topic_match(blob, keywords):
-                out.append(it)
-            if len(out) >= limit:
-                break
-        return out
-
-    defaults: dict[str, dict[str, Any]] = {
-        "world_headlines": {
-            "keywords": [
-                "u.s.",
-                "us ",
-                "united states",
-                "china",
-                "beijing",
-                "russia",
-                "ukraine",
-                "europe",
-                "nato",
-                "japan",
-                "korea",
-                "asia",
-                "middle east",
-                "gaza",
-                "israel",
-                "iran",
-            ],
-            "limit": 8,
-            "headlines": 6,
-        },
-        "th_headlines": {
-            "keywords": [
-                "thailand",
-                "thai ",
-                "bangkok",
-                "phuket",
-                "chiang mai",
-                "pattaya",
-                "baht",
-                "bank of thailand",
-                "\u0e44\u0e17\u0e22",
-                "\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28\u0e44\u0e17\u0e22",
-                "\u0e01\u0e23\u0e38\u0e07\u0e40\u0e17\u0e1e",
-                "\u0e23\u0e31\u0e10\u0e1a\u0e32\u0e25",
-                "\u0e19\u0e32\u0e22\u0e01\u0e23\u0e31\u0e10\u0e21\u0e19\u0e15\u0e23\u0e35",
-            ],
-            "limit": 8,
-            "headlines": 6,
-        },
-        "th_general": {
-            "keywords": [
-                "thailand",
-                "thai ",
-                "bangkok",
-                "\u0e44\u0e17\u0e22",
-                "\u0e01\u0e23\u0e38\u0e07\u0e40\u0e17\u0e1e",
-            ],
-            "limit": 10,
-            "headlines": 6,
-        },
-        "iran_war": {
-            "keywords": [
-                "iran",
-                "israel",
-                "tehran",
-                "gaza",
-                "hezbollah",
-                "missile",
-                "drone",
-                "strike",
-                "ceasefire",
-                "u.s.",
-                "us ",
-                "pentagon",
-            ],
-            "limit": 6,
-            "headlines": 5,
-        },
-        "gold": {"keywords": ["gold", "bullion", "xau"], "limit": 4, "headlines": 3},
-        "usd": {"keywords": ["dollar", "usd", "treasury", "yield", "fed"], "limit": 4, "headlines": 3},
-        "oil": {"keywords": ["oil", "crude", "brent", "wti", "opec"], "limit": 4, "headlines": 3},
-        "thb": {"keywords": ["thai baht", "baht", "thb", "usd/thb", "thb/usd", "bank of thailand"], "limit": 4, "headlines": 3},
-        "tech": {
-            "keywords": [
-                "technology",
-                "tech",
-                "semiconductor",
-                "chip",
-                "nvidia",
-                "tsmc",
-                "apple",
-                "google",
-                "microsoft",
-                "meta",
-                "tesla",
-            ],
-            "limit": 6,
-            "headlines": 4,
-        },
-        "ai": {
-            "keywords": [
-                "ai",
-                "a.i.",
-                "artificial intelligence",
-                "openai",
-                "chatgpt",
-                "gemini",
-                "anthropic",
-                "claude",
-                "llm",
-                "model",
-                "\u0e1b\u0e31\u0e0d\u0e0d\u0e32\u0e1b\u0e23\u0e30\u0e14\u0e34\u0e29\u0e10\u0e4c",
-            ],
-            "limit": 6,
-            "headlines": 4,
-        },
-    }
-
-    merged: dict[str, dict[str, Any]] = {k: dict(v) for k, v in defaults.items()}
-    if isinstance(topics_cfg, dict):
-        for k, v in topics_cfg.items():
-            kk = str(k or "").strip()
-            if not kk or not isinstance(v, dict):
-                continue
-            cur = merged.get(kk, {})
-            if isinstance(v.get("keywords"), list):
-                cur["keywords"] = [str(x or "").strip() for x in v.get("keywords") if str(x or "").strip()]
-            if v.get("limit") is not None:
-                try:
-                    cur["limit"] = int(v.get("limit"))
-                except Exception:
-                    pass
-            if v.get("headlines") is not None:
-                try:
-                    cur["headlines"] = int(v.get("headlines"))
-                except Exception:
-                    pass
-            merged[kk] = cur
-
-    def brief_lines(section_items: list[dict[str, Any]], max_lines: int) -> list[str]:
-        lines: list[str] = []
-        for it in section_items[:max_lines]:
-            t = str(it.get("title") or "").strip()
-            if t:
-                lines.append(t)
-        return lines
-
-    topics_out: dict[str, Any] = {}
-    sources: list[str] = []
-
-    # SSOT: if topics_cfg is provided (from news_topics sheet), iterate those keys.
-    # Otherwise, fall back to the default ordering.
-    ordered_keys: list[str] = []
-    if isinstance(topics_cfg, dict) and topics_cfg:
-        ordered_keys = [str(k or "").strip() for k in topics_cfg.keys() if str(k or "").strip()]
-    if not ordered_keys:
-        ordered_keys = ["world_headlines", "th_headlines", "iran_war", "oil", "gold", "usd", "thb", "th_general", "tech", "ai"]
-
-    for key in ordered_keys:
-        cfg = merged.get(key) or {}
-        kw = cfg.get("keywords") if isinstance(cfg.get("keywords"), list) else []
-        lim = int(cfg.get("limit") or 6)
-        hl = int(cfg.get("headlines") or 3)
-        picked = pick([str(x) for x in kw], limit=lim)
-        topics_out[key] = {"headlines": brief_lines(picked, hl), "items": picked}
-        for it in picked:
-            link = str(it.get("link") or "").strip()
-            if link and link not in sources:
-                sources.append(link)
-
-    now_ts = int(time.time())
-    return {
-        "summary": "Current-news context refreshed",
-        "updated_at": now_ts,
-        "sources": sources,
-        "topics": topics_out,
-    }
-
-
-def _parse_news_pub_ts(it: Any) -> Optional[int]:
-    if not isinstance(it, dict):
-        return None
-
-    raw = (
-        it.get("pubDate")
-        or it.get("pubdate")
-        or it.get("published")
-        or it.get("date")
-        or it.get("updated")
-    )
-    s = str(raw or "").strip()
-    if not s:
-        return None
-
-    # 1) ISO-ish
-    try:
-        ss = s.replace("Z", "+00:00")
-        dt = datetime.fromisoformat(ss)
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        return int(dt.timestamp())
-    except Exception:
-        pass
-
-    # 2) RFC822-ish
-    try:
-        dt2 = email.utils.parsedate_to_datetime(s)
-        if dt2 is None:
-            return None
-        if dt2.tzinfo is None:
-            dt2 = dt2.replace(tzinfo=timezone.utc)
-        return int(dt2.timestamp())
-    except Exception:
-        return None
-
-
-def _render_current_news_brief(ctx: dict[str, Any], *, lang: Optional[str] = None) -> str:
-    topics = ctx.get("topics") if isinstance(ctx, dict) else None
-    if not isinstance(topics, dict):
-        return "Current news: no cached context available. Say 'current news refresh' to fetch."
-
-    lang0 = str(lang or ctx.get("lang") or "").strip().lower() if isinstance(ctx, dict) else ""
-    if not lang0:
-        lang0 = "th"
-    is_th = lang0.startswith("th")
-
-    title_map_en: dict[str, str] = {
-        "world_headlines": "World headlines",
-        "th_headlines": "Thailand headlines",
-        "th_general": "Thailand (more)",
-        "iran_war": "Iran war",
-        "gold": "Gold",
-        "usd": "Dollar/US rates",
-        "oil": "Oil",
-        "thb": "Thai Baht",
-        "tech": "Technology",
-        "ai": "AI",
-    }
-    title_map_th: dict[str, str] = {
-        "world_headlines": "ข่าวโลก (พาดหัว)",
-        "th_headlines": "ข่าวไทย (พาดหัว)",
-        "th_general": "ข่าวไทย (เพิ่มเติม)",
-        "iran_war": "สงครามอิหร่าน",
-        "gold": "ทองคำ",
-        "usd": "ดอลลาร์/อัตราดอกเบี้ยสหรัฐฯ",
-        "oil": "น้ำมัน",
-        "thb": "ค่าเงินบาท",
-        "tech": "เทคโนโลยี",
-        "ai": "AI",
-    }
-
-    help_line = (
-        "\nคุณสามารถถามได้: 'details iran', 'details oil', 'details baht', 'list sources', หรือ 'refresh current news'."
-        if is_th
-        else "\nYou can ask: 'details iran', 'details oil', 'details baht', 'list sources', or 'refresh current news'."
-    )
-
-    # Freshness rule A: if latest item is from yesterday (local tz), suggest refresh.
-    latest_ts: Optional[int] = None
-    try:
-        for sec in topics.values():
-            if not isinstance(sec, dict):
-                continue
-            items = sec.get("items")
-            if not isinstance(items, list):
-                continue
-            for it in items:
-                ts = _parse_news_pub_ts(it)
-                if ts is None:
-                    continue
-                if latest_ts is None or ts > latest_ts:
-                    latest_ts = ts
-    except Exception:
-        latest_ts = None
-
-    freshness_line = ""
-    try:
-        if latest_ts is not None:
-            tz = _get_user_timezone(DEFAULT_USER_ID)
-            now_local = datetime.now(tz=timezone.utc).astimezone(tz)
-            latest_local = datetime.fromtimestamp(int(latest_ts), tz=timezone.utc).astimezone(tz)
-            if latest_local.date() < now_local.date():
-                latest_str = latest_local.strftime("%Y-%m-%d %H:%M")
-                freshness_line = (
-                    f"ความใหม่ของข่าว: ข่าวล่าสุดเป็นของเมื่อวาน ({latest_str}) แนะนำให้พูด 'refresh current news' เพื่ออัปเดต."
-                    if is_th
-                    else f"Freshness: Latest news item is from yesterday ({latest_str}). Recommend: 'refresh current news'."
-                )
-    except Exception:
-        freshness_line = ""
-
-    def block(title: str, key: str, max_lines: int) -> str:
-        sec = topics.get(key)
-        headlines = sec.get("headlines") if isinstance(sec, dict) else None
-        if not isinstance(headlines, list) or not headlines:
-            return f"{title}: (no recent headlines found)"
-        lines = [f"{title}:"]
-        for h in headlines[:max_lines]:
-            hh = str(h or "").strip()
-            if hh:
-                lines.append(f"- {hh}")
-        return "\n".join(lines)
-
-    titles = title_map_th if is_th else title_map_en
-
-    # SSOT: render whatever topics exist in the cached context.
-    # Keep upstream localized labels when available.
-    keys = [str(k) for k in topics.keys() if str(k).strip()]
-    parts: list[str] = []
-    if freshness_line:
-        parts.append(freshness_line)
-    for k in keys:
-        title = titles.get(k) or k.replace("_", " ").strip().title() or k
-        parts.append(block(title, k, 6 if k in {"world_headlines", "th_headlines", "th_general"} else 5))
-    parts.append(help_line)
-    return "\n\n".join([p for p in parts if p.strip()])
-
-
-def _cell_str(row: list[Any], idx: dict[str, int], key: str) -> str:
-    j = idx.get(str(key or "").strip().lower())
-    if j is None:
-        return ""
-    try:
-        return str(row[j] if j < len(row) else "").strip()
-    except Exception:
-        return ""
-
-
-async def _news_sources_list(*, sys_kv: dict[str, Any] | None, include_disabled: bool = False) -> dict[str, Any]:
-    spreadsheet_id, sheet_name = _current_news_sources_sheet_cfg_from_sys_kv(sys_kv)
-    sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="news_sources")
-    table = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_a1, max_rows=800, max_cols="H")
-    if not table:
-        return {"ok": True, "sources": []}
-    header = table[0] if isinstance(table[0], list) else []
-    idx = _idx_from_header(header)
-    if not idx:
-        return {"ok": True, "sources": []}
-
-    out: list[dict[str, Any]] = []
-    for r in table[1:]:
-        if not isinstance(r, list):
-            continue
-        url = _cell_str(r, idx, "url") or _cell_str(r, idx, "link")
-        if not url:
-            continue
-        enabled_raw = _cell_str(r, idx, "enabled") or _cell_str(r, idx, "active")
-        enabled = True
-        if enabled_raw:
-            try:
-                enabled = _parse_bool_cell(enabled_raw)
-            except Exception:
-                enabled = True
-        if (not include_disabled) and (not enabled):
-            continue
-        name = _cell_str(r, idx, "name") or _cell_str(r, idx, "id")
-        typ = _cell_str(r, idx, "type")
-        tags = _cell_str(r, idx, "tags")
-        out.append({"name": name, "url": str(url).strip(), "type": typ, "tags": tags, "enabled": bool(enabled)})
-
-    out.sort(key=lambda x: (0 if x.get("enabled") else 1, str(x.get("name") or ""), str(x.get("url") or "")))
-    return {"ok": True, "sources": out}
-
-
-def _gnews_rss_build(*, query: str, hl: str | None = None, gl: str | None = None, ceid: str | None = None) -> dict[str, Any]:
-    q = str(query or "").strip()
-    if not q:
-        raise HTTPException(status_code=400, detail="missing_query")
-    hl_v = (str(hl or "").strip() or "th")
-    gl_v = (str(gl or "").strip() or "TH")
-    ceid_v = (str(ceid or "").strip() or f"{gl_v}:{hl_v}")
-    q_enc = urllib.parse.quote_plus(q)
-    hl_enc = urllib.parse.quote_plus(hl_v)
-    gl_enc = urllib.parse.quote_plus(gl_v)
-    ceid_enc = urllib.parse.quote_plus(ceid_v)
-    url = f"https://news.google.com/rss/search?q={q_enc}&hl={hl_enc}&gl={gl_enc}&ceid={ceid_enc}"
-    return {"ok": True, "url": url, "query": q, "hl": hl_v, "gl": gl_v, "ceid": ceid_v}
-
-
-async def _it_topic_packs_seed(*, sys_kv: dict[str, Any] | None, pack: str | None = None) -> dict[str, Any]:
-    want = str(pack or "").strip().lower()
-    packs: dict[str, dict[str, Any]] = {
-        "it_security": {
-            "keywords": ["security", "vulnerability", "cve", "zero-day", "exploit", "patch", "ransomware", "malware", "breach", "microsoft", "windows", "linux"],
-            "limit": 10,
-            "headlines": 6,
-        },
-        "it_ai": {
-            "keywords": ["ai", "llm", "openai", "gemini", "claude", "model", "inference", "gpu", "nvidia"],
-            "limit": 10,
-            "headlines": 6,
-        },
-        "it_cloud": {
-            "keywords": ["aws", "gcp", "azure", "cloud", "kubernetes", "k8s", "docker", "terraform", "serverless"],
-            "limit": 10,
-            "headlines": 6,
-        },
-        "it_dev": {
-            "keywords": ["python", "javascript", "typescript", "node", "react", "rust", "go", "postgres", "redis"],
-            "limit": 10,
-            "headlines": 6,
-        },
-    }
-
-    keys = [want] if want else sorted(packs.keys())
-    results: dict[str, Any] = {}
-    for k in keys:
-        cfg = packs.get(k)
-        if not isinstance(cfg, dict):
-            continue
-        res = await _news_topics_upsert(
-            sys_kv=sys_kv,
-            topic=k,
-            keywords=list(cfg.get("keywords") or []),
-            limit=cfg.get("limit"),
-            headlines=cfg.get("headlines"),
-            enabled=True,
-        )
-        results[k] = res
-    return {"ok": True, "seeded": sorted(results.keys()), "results": results}
-
-
-async def _load_news_sources_from_sheet(*, sys_kv: dict[str, Any] | None, include_disabled: bool = False) -> list[dict[str, Any]]:
-    spreadsheet_id, sheet_name = _current_news_sources_sheet_cfg_from_sys_kv(sys_kv)
-    sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="news_sources")
-    table = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_a1, max_rows=500, max_cols="H")
-    if not table:
-        return []
-    header = table[0] if isinstance(table[0], list) else []
-    idx = _idx_from_header(header)
-    if not idx:
-        return []
-
-    out: list[dict[str, Any]] = []
-    for r in table[1:]:
-        if not isinstance(r, list):
-            continue
-        url = _cell_str(r, idx, "url") or _cell_str(r, idx, "link")
-        if not url:
-            continue
-        enabled_raw = _cell_str(r, idx, "enabled") or _cell_str(r, idx, "active")
-        enabled = True
-        if enabled_raw:
-            try:
-                enabled = _parse_bool_cell(enabled_raw)
-            except Exception:
-                enabled = True
-        if not enabled:
-            continue
-        name = _cell_str(r, idx, "name") or _cell_str(r, idx, "id")
-        typ = _cell_str(r, idx, "type")
-        tags = _cell_str(r, idx, "tags")
-        out.append({"name": name, "url": url, "type": typ, "tags": tags, "enabled": bool(enabled)})
-    return out
-
-
-async def _news_sources_upsert(
-    *,
-    sys_kv: dict[str, Any] | None,
-    url: str,
-    name: str | None = None,
-    typ: str | None = None,
-    tags: str | None = None,
-    enabled: bool | None = None,
-) -> dict[str, Any]:
-    u = str(url or "").strip()
-    if not u:
-        raise HTTPException(status_code=400, detail="missing_url")
-    if enabled is not None and enabled is False:
-        # Safe upsert: allow creating a new row as disabled (for suggestion/confirmation flows),
-        # but do not allow disabling an existing row.
-        enabled = False
-
-    spreadsheet_id, sheet_name = _current_news_sources_sheet_cfg_from_sys_kv(sys_kv)
-    if not spreadsheet_id:
-        raise HTTPException(status_code=400, detail="missing_spreadsheet_id")
-    sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="news_sources")
-
-    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
-    tool_update = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
-    tool_append = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
-
-    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A1:H"})
-    parsed = _mcp_text_json(res)
-    vals = parsed.get("values") if isinstance(parsed, dict) else None
-    data = parsed.get("data") if isinstance(parsed, dict) else None
-    if not isinstance(vals, list) and isinstance(data, dict):
-        vals = data.get("values")
-    table = vals if isinstance(vals, list) else []
-    if not table:
-        raise HTTPException(status_code=400, detail="news_sources_missing_header")
-
-    header = table[0] if isinstance(table[0], list) else []
-    idx = _idx_from_header(header)
-    if not idx:
-        raise HTTPException(status_code=400, detail="news_sources_missing_header")
-
-    def _norm_col_name(v: Any) -> str:
-        s = str(v or "").strip().lower()
-        if not s:
-            return ""
-        return re.sub(r"[^a-z0-9]+", "", s)
-
-    idx_norm: dict[str, int] = {}
-    for k, v in idx.items():
-        nk = _norm_col_name(k)
-        if nk and nk not in idx_norm:
-            idx_norm[nk] = v
-
-    def _col_any(*names: str) -> int | None:
-        for n in names:
-            key_raw = str(n or "").strip().lower()
-            if key_raw and key_raw in idx:
-                return idx[key_raw]
-            key_norm = _norm_col_name(n)
-            if key_norm and key_norm in idx_norm:
-                return idx_norm[key_norm]
-        return None
-
-    c_url = _col_any("url", "link")
-    c_enabled = _col_any("enabled", "active", "is_enabled", "isenabled")
-    c_name = _col_any("name")
-    c_type = _col_any("type")
-    c_tags = _col_any("tags", "tag")
-    if c_url is None:
-        raise HTTPException(status_code=400, detail="news_sources_missing_required_columns")
-
-    existing_row_num: int | None = None
-    for i, r in enumerate(table[1:], start=2):
-        if not isinstance(r, list):
-            continue
-        cur = str(r[c_url] if c_url < len(r) else "").strip()
-        if cur and cur.strip().lower() == u.lower():
-            existing_row_num = i
-            break
-
-    def _set_cell(out_row: list[Any], col: int | None, value: Any) -> None:
-        if col is None:
-            return
-        if col >= len(out_row):
-            out_row.extend([""] * (col - len(out_row) + 1))
-        out_row[col] = value
-
-    if existing_row_num is not None:
-        if enabled is False:
-            raise HTTPException(status_code=400, detail="safe_upsert_only_enabled_must_be_true")
-        row_len = max(len(header), 1)
-        out_row: list[Any] = [""] * row_len
-        _set_cell(out_row, c_url, u)
-        if c_enabled is not None:
-            _set_cell(out_row, c_enabled, True)
-        if name is not None and str(name).strip() and c_name is not None:
-            _set_cell(out_row, c_name, str(name).strip())
-        if typ is not None and str(typ).strip() and c_type is not None:
-            _set_cell(out_row, c_type, str(typ).strip())
-        if tags is not None and str(tags).strip() and c_tags is not None:
-            _set_cell(out_row, c_tags, str(tags).strip())
-        last_col = chr(ord("A") + (len(out_row) - 1))
-        rng = f"{sheet_a1}!A{existing_row_num}:{last_col}{existing_row_num}"
-        res2 = await _mcp_tools_call(
-            tool_update,
-            {
-                "spreadsheet_id": spreadsheet_id,
-                "range": rng,
-                "values": [out_row],
-                "value_input_option": "USER_ENTERED",
-            },
-        )
-        return {"ok": True, "mode": "update", "url": u, "row_number": existing_row_num, "result": _mcp_text_json(res2)}
-
-    append_row: list[Any] = []
-    if c_url is not None:
-        while len(append_row) <= c_url:
-            append_row.append("")
-        append_row[c_url] = u
-    if c_enabled is not None:
-        while len(append_row) <= c_enabled:
-            append_row.append("")
-        append_row[c_enabled] = False if enabled is False else True
-    if c_name is not None and name is not None and str(name).strip():
-        while len(append_row) <= c_name:
-            append_row.append("")
-        append_row[c_name] = str(name).strip()
-    if c_type is not None and typ is not None and str(typ).strip():
-        while len(append_row) <= c_type:
-            append_row.append("")
-        append_row[c_type] = str(typ).strip()
-    if c_tags is not None and tags is not None and str(tags).strip():
-        while len(append_row) <= c_tags:
-            append_row.append("")
-        append_row[c_tags] = str(tags).strip()
-
-    last_col = chr(ord("A") + max(0, len(append_row) - 1))
-    res3 = await _mcp_tools_call(
-        tool_append,
-        {
-            "spreadsheet_id": spreadsheet_id,
-            "range": f"{sheet_a1}!A:{last_col}",
-            "values": [append_row],
-            "value_input_option": "USER_ENTERED",
-            "insert_data_option": "INSERT_ROWS",
-        },
-    )
-    return {"ok": True, "mode": "append", "url": u, "result": _mcp_text_json(res3)}
-
-
-async def _load_news_topics_from_sheet(*, sys_kv: dict[str, Any] | None, include_disabled: bool = False) -> dict[str, dict[str, Any]]:
-    spreadsheet_id, sheet_name = _current_news_topics_sheet_cfg_from_sys_kv(sys_kv)
-    sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="news_topics")
-    table = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_a1, max_rows=500, max_cols="L")
-    if not table:
-        return {}
-    header = table[0] if isinstance(table[0], list) else []
-    idx = _idx_from_header(header)
-    if not idx:
-        return {}
-
-    out: dict[str, dict[str, Any]] = {}
-    for r in table[1:]:
-        if not isinstance(r, list):
-            continue
-        key = (_cell_str(r, idx, "topic") or _cell_str(r, idx, "key") or _cell_str(r, idx, "name")).strip()
-        if not key:
-            continue
-        enabled_raw = _cell_str(r, idx, "enabled") or _cell_str(r, idx, "active")
-        enabled = True
-        if enabled_raw:
-            try:
-                enabled = _parse_bool_cell(enabled_raw)
-            except Exception:
-                enabled = True
-        if (not enabled) and (not include_disabled):
-            continue
-
-        kw_raw = _cell_str(r, idx, "keywords") or _cell_str(r, idx, "keyword")
-        keywords: list[str] = []
-        if kw_raw:
-            try:
-                parsed = json.loads(kw_raw)
-                if isinstance(parsed, list):
-                    keywords = [str(x or "").strip() for x in parsed if str(x or "").strip()]
-            except Exception:
-                keywords = [x.strip() for x in kw_raw.split(",") if x.strip()]
-
-        limit_v = _cell_str(r, idx, "limit")
-        headlines_v = _cell_str(r, idx, "headlines")
-        cfg: dict[str, Any] = {"keywords": keywords, "enabled": bool(enabled)}
-        try:
-            focus_raw = _cell_str(r, idx, "focus")
-            if focus_raw:
-                cfg["focus"] = bool(_parse_bool_cell(focus_raw))
-        except Exception:
-            pass
-        if limit_v:
-            try:
-                cfg["limit"] = int(float(limit_v))
-            except Exception:
-                pass
-        if headlines_v:
-            try:
-                cfg["headlines"] = int(float(headlines_v))
-            except Exception:
-                pass
-        out[key] = cfg
-    return out
-
-
-async def _news_topics_focus_set(*, sys_kv: dict[str, Any] | None, topic: str, focus: bool) -> dict[str, Any]:
-    t = str(topic or "").strip()
-    if not t:
-        raise HTTPException(status_code=400, detail="missing_topic")
-
-    spreadsheet_id, sheet_name = _current_news_topics_sheet_cfg_from_sys_kv(sys_kv)
-    if not spreadsheet_id:
-        raise HTTPException(status_code=400, detail="missing_spreadsheet_id")
-    sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="news_topics")
-
-    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
-    tool_update = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
-    tool_append = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
-
-    res_get = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A1:Z"})
-    parsed_get = _mcp_text_json(res_get)
-    vals = parsed_get.get("values") if isinstance(parsed_get, dict) else None
-    data = parsed_get.get("data") if isinstance(parsed_get, dict) else None
-    if not isinstance(vals, list) and isinstance(data, dict):
-        vals = data.get("values")
-    table = vals if isinstance(vals, list) else []
-    if not table:
-        raise HTTPException(status_code=400, detail="news_topics_missing_header")
-
-    header = table[0] if isinstance(table[0], list) else []
-    idx = _idx_from_header(header)
-    if not idx:
-        raise HTTPException(status_code=400, detail="news_topics_missing_header")
-
-    def _col_letter(col_idx0: int) -> str:
-        n = int(col_idx0) + 1
-        if n <= 0:
-            return "A"
-        out = ""
-        while n > 0:
-            n, r = divmod(n - 1, 26)
-            out = chr(ord("A") + r) + out
-        return out or "A"
-
-    # Ensure focus column exists.
-    focus_col = idx.get("focus")
-    if focus_col is None:
-        header2 = list(header)
-        header2.append("focus")
-        focus_col = len(header2) - 1
-        end_col = _col_letter(int(focus_col))
-        await _mcp_tools_call(
-            tool_update,
-            {
-                "spreadsheet_id": spreadsheet_id,
-                "range": f"{sheet_a1}!A1:{end_col}1",
-                "values": [header2],
-                "value_input_option": "RAW",
-            },
-        )
-        idx = _idx_from_header(header2)
-
-    enabled_col = idx.get("enabled")
-    topic_col = idx.get("topic")
-    if topic_col is None:
-        topic_col = idx.get("key")
-    if topic_col is None:
-        topic_col = idx.get("name")
-    if topic_col is None:
-        raise HTTPException(status_code=400, detail="news_topics_missing_topic_column")
-
-    # Find row.
-    row_num: int | None = None
-    for i, r in enumerate(table[1:], start=2):
-        if not isinstance(r, list):
-            continue
-        cur = str(r[int(topic_col)] if int(topic_col) < len(r) else "").strip()
-        if cur == t:
-            row_num = int(i)
-            break
-
-    focus_cell = "TRUE" if bool(focus) else "FALSE"
-
-    # If adding focus, also enable the topic (SSOT).
-    enable_cell = "TRUE" if bool(focus) else None
-
-    if row_num is not None:
-        # Update focus cell.
-        focus_letter = _col_letter(int(focus_col))
-        rng_focus = f"{sheet_a1}!{focus_letter}{row_num}:{focus_letter}{row_num}"
-        res_focus = await _mcp_tools_call(
-            tool_update,
-            {
-                "spreadsheet_id": spreadsheet_id,
-                "range": rng_focus,
-                "values": [[focus_cell]],
-                "value_input_option": "RAW",
-            },
-        )
-        res_enabled = None
-        if enable_cell is not None and enabled_col is not None:
-            enabled_letter = _col_letter(int(enabled_col))
-            rng_enabled = f"{sheet_a1}!{enabled_letter}{row_num}:{enabled_letter}{row_num}"
-            try:
-                res_enabled = await _mcp_tools_call(
-                    tool_update,
-                    {
-                        "spreadsheet_id": spreadsheet_id,
-                        "range": rng_enabled,
-                        "values": [[enable_cell]],
-                        "value_input_option": "RAW",
-                    },
-                )
-            except Exception:
-                res_enabled = None
-        return {
-            "ok": True,
-            "updated": True,
-            "topic": t,
-            "focus": bool(focus),
-            "row": int(row_num),
-            "focus_range": rng_focus,
-            "enabled_updated": bool(res_enabled is not None),
-            "focus_response": _mcp_text_json(res_focus),
-            "enabled_response": _mcp_text_json(res_enabled) if res_enabled is not None else None,
-        }
-
-    # Not found: append minimal row.
-    row_len = max(int(focus_col), int(topic_col), int(enabled_col) if enabled_col is not None else 0) + 1
-    row_out: list[Any] = [""] * row_len
-    row_out[int(topic_col)] = t
-    row_out[int(focus_col)] = focus_cell
-    if enable_cell is not None and enabled_col is not None:
-        row_out[int(enabled_col)] = enable_cell
-    res_app = await _mcp_tools_call(
-        tool_append,
-        {
-            "spreadsheet_id": spreadsheet_id,
-            "range": f"{sheet_a1}!A:Z",
-            "values": [row_out],
-            "value_input_option": "RAW",
-        },
-    )
-    return {"ok": True, "created": True, "topic": t, "focus": bool(focus), "response": _mcp_text_json(res_app)}
-
-
-async def _news_topics_upsert(
-    *,
-    sys_kv: dict[str, Any] | None,
-    topic: str,
-    keywords: list[str],
-    limit: int | None = None,
-    headlines: int | None = None,
-    enabled: bool | None = None,
-) -> dict[str, Any]:
-    t = str(topic or "").strip()
-    if not t:
-        raise HTTPException(status_code=400, detail="missing_topic")
-    if enabled is not None and enabled is False:
-        # Safe upsert: allow creating a new row as disabled (for suggestion/confirmation flows),
-        # but do not allow disabling an existing row.
-        enabled = False
-
-    kw = [str(x or "").strip() for x in (keywords or []) if str(x or "").strip()]
-    if not kw:
-        raise HTTPException(status_code=400, detail="missing_keywords")
-
-    spreadsheet_id, sheet_name = _current_news_topics_sheet_cfg_from_sys_kv(sys_kv)
-    if not spreadsheet_id:
-        raise HTTPException(status_code=400, detail="missing_spreadsheet_id")
-    sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="news_topics")
-
-    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
-    tool_update = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
-    tool_append = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
-
-    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A1:K"})
-    parsed = _mcp_text_json(res)
-    vals = parsed.get("values") if isinstance(parsed, dict) else None
-    data = parsed.get("data") if isinstance(parsed, dict) else None
-    if not isinstance(vals, list) and isinstance(data, dict):
-        vals = data.get("values")
-    table = vals if isinstance(vals, list) else []
-    if not table:
-        raise HTTPException(status_code=400, detail="news_topics_missing_header")
-
-    header = table[0] if isinstance(table[0], list) else []
-    idx = _idx_from_header(header)
-    if not idx:
-        raise HTTPException(status_code=400, detail="news_topics_missing_header")
-
-    def _norm_col_name(v: Any) -> str:
-        s = str(v or "").strip().lower()
-        if not s:
-            return ""
-        return re.sub(r"[^a-z0-9]+", "", s)
-
-    idx_norm: dict[str, int] = {}
-    for k, v in idx.items():
-        nk = _norm_col_name(k)
-        if nk and nk not in idx_norm:
-            idx_norm[nk] = v
-
-    def _col_any(*names: str) -> int | None:
-        for n in names:
-            key_raw = str(n or "").strip().lower()
-            if key_raw and key_raw in idx:
-                return idx[key_raw]
-            key_norm = _norm_col_name(n)
-            if key_norm and key_norm in idx_norm:
-                return idx_norm[key_norm]
-        return None
-
-    c_topic = _col_any("topic", "key", "name", "topic_key", "topic id", "topicid", "id")
-    c_enabled = _col_any("enabled", "active", "is_enabled", "isenabled", "is_active", "isactive")
-    c_keywords = _col_any("keywords", "keyword", "match_terms", "match terms", "terms", "keywords_json", "keywords json")
-    c_limit = _col_any("limit", "max_items", "max items", "max")
-    c_headlines = _col_any("headlines", "max_headlines", "max headlines")
-
-    if c_topic is None or c_keywords is None:
-        raise HTTPException(status_code=400, detail="news_topics_missing_required_columns")
-
-    existing_row_num: int | None = None
-    for i, r in enumerate(table[1:], start=2):
-        if not isinstance(r, list):
-            continue
-        cur = str(r[c_topic] if c_topic < len(r) else "").strip()
-        if cur.lower() == t.lower():
-            existing_row_num = i
-            break
-
-    kw_cell = json.dumps(kw, ensure_ascii=False)
-
-    def _build_row_for_update() -> list[Any]:
-        row_len = max(len(header), 1)
-        out_row: list[Any] = [""] * row_len
-        out_row[c_topic] = t
-        if c_enabled is not None:
-            out_row[c_enabled] = True
-        out_row[c_keywords] = kw_cell
-        if c_limit is not None and limit is not None:
-            out_row[c_limit] = int(limit)
-        if c_headlines is not None and headlines is not None:
-            out_row[c_headlines] = int(headlines)
-        return out_row
-
-    if existing_row_num is not None:
-        if enabled is False:
-            raise HTTPException(status_code=400, detail="safe_upsert_only_enabled_must_be_true")
-        out_row = _build_row_for_update()
-        last_col = chr(ord("A") + (len(out_row) - 1))
-        rng = f"{sheet_a1}!A{existing_row_num}:{last_col}{existing_row_num}"
-        res2 = await _mcp_tools_call(
-            tool_update,
-            {
-                "spreadsheet_id": spreadsheet_id,
-                "range": rng,
-                "values": [out_row],
-                "value_input_option": "USER_ENTERED",
-            },
-        )
-        return {"ok": True, "mode": "update", "topic": t, "row_number": existing_row_num, "result": _mcp_text_json(res2)}
-
-    append_row: list[Any] = [t]
-    if c_enabled is not None:
-        while len(append_row) <= c_enabled:
-            append_row.append("")
-        append_row[c_enabled] = False if enabled is False else True
-    while len(append_row) <= c_keywords:
-        append_row.append("")
-    append_row[c_keywords] = kw_cell
-    if c_limit is not None and limit is not None:
-        while len(append_row) <= c_limit:
-            append_row.append("")
-        append_row[c_limit] = int(limit)
-    if c_headlines is not None and headlines is not None:
-        while len(append_row) <= c_headlines:
-            append_row.append("")
-        append_row[c_headlines] = int(headlines)
-
-    last_col = chr(ord("A") + max(0, len(append_row) - 1))
-    res3 = await _mcp_tools_call(
-        tool_append,
-        {
-            "spreadsheet_id": spreadsheet_id,
-            "range": f"{sheet_a1}!A:{last_col}",
-            "values": [append_row],
-            "value_input_option": "USER_ENTERED",
-            "insert_data_option": "INSERT_ROWS",
-        },
-    )
-    return {"ok": True, "mode": "append", "topic": t, "result": _mcp_text_json(res3)}
-
-
-async def _fetch_news_items_from_source(
-    url: str,
-    *,
-    debug: bool = False,
-    debug_out: list[dict[str, Any]] | None = None,
-) -> list[dict[str, Any]]:
-    fetch_meta: dict[str, Any] = {}
-    text = ""
-    try:
-        res = await _web_fetcher_post("/fetch", {"url": url})
-        if isinstance(res, dict):
-            text = str(res.get("text") or "")
-            fetch_meta = {
-                "status_code": res.get("status_code"),
-                "content_type": res.get("content_type"),
-                "final_url": res.get("final_url"),
-            }
-        else:
-            text = ""
-    except HTTPException as e:
-        text = ""
-        try:
-            fetch_meta = {"status_code": e.status_code, "detail": e.detail}
-        except Exception:
-            fetch_meta = {"status_code": getattr(e, "status_code", None)}
-    except Exception as e:
-        text = ""
-        fetch_meta = {"error": e.__class__.__name__, "message": str(e)}
-
-    if debug and isinstance(debug_out, list):
-        try:
-            preview = str(text or "")[:240]
-            row: dict[str, Any] = {"url": url, "len": len(str(text or "")), "preview": preview}
-            if isinstance(fetch_meta, dict) and fetch_meta:
-                row.update(fetch_meta)
-            debug_out.append(row)
-        except Exception:
-            pass
-
-    items = _parse_rss_items(text)
-    if items:
-        return items
-    items2 = _parse_atom_items(text)
-    if items2:
-        return items2
-    return []
-
-
-async def _load_current_news_items_from_sheet(*, sys_kv: dict[str, Any] | None) -> list[dict[str, Any]]:
-    spreadsheet_id, sheet_name = _current_news_sheet_cfg_from_sys_kv(sys_kv)
-    if not spreadsheet_id:
-        raise RuntimeError("current_news_missing_spreadsheet_id")
-
-    sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="current_news")
-    table = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_a1, max_rows=500, max_cols="H")
-    if not table:
-        return []
-    header = table[0] if isinstance(table[0], list) else []
-    idx = _idx_from_header(header)
-    if not idx:
-        return []
-
-    out: list[dict[str, Any]] = []
-    for r in table[1:]:
-        if not isinstance(r, list):
-            continue
-        title = _cell_str(r, idx, "title")
-        link = _cell_str(r, idx, "link") or _cell_str(r, idx, "url")
-        desc = _cell_str(r, idx, "description")
-        pub = _cell_str(r, idx, "pubdate") or _cell_str(r, idx, "published")
-        if not title and not link:
-            continue
-        out.append({"title": title, "link": link, "pubDate": pub, "description": desc})
-    return out
-
-
-async def _load_current_news_items_from_items_tab(*, sys_kv: dict[str, Any] | None) -> list[dict[str, Any]]:
-    spreadsheet_id, sheet_name = _current_news_items_sheet_cfg_from_sys_kv(sys_kv)
-    if not spreadsheet_id:
-        raise RuntimeError("current_news_missing_spreadsheet_id")
-    sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="news_items")
-
-    table = await _load_sheet_table(spreadsheet_id=spreadsheet_id, sheet_name=sheet_a1, max_rows=800, max_cols="H")
-    if not table:
-        return []
-    header = table[0] if isinstance(table[0], list) else []
-    idx = _idx_from_header(header)
-    if not idx:
-        return []
-
-    out: list[dict[str, Any]] = []
-    for r in table[1:]:
-        if not isinstance(r, list):
-            continue
-        title = _cell_str(r, idx, "title")
-        link = _cell_str(r, idx, "link") or _cell_str(r, idx, "url")
-        desc = _cell_str(r, idx, "description")
-        pub = _cell_str(r, idx, "pubdate") or _cell_str(r, idx, "published")
-        if not title and not link:
-            continue
-        out.append({"title": title, "link": link, "pubDate": pub, "description": desc})
-    return out
-
-
-async def _save_current_news_items_to_items_tab(*, items: list[dict[str, Any]], sys_kv: dict[str, Any] | None) -> None:
-    spreadsheet_id, sheet_name = _current_news_items_sheet_cfg_from_sys_kv(sys_kv)
-    if not spreadsheet_id:
-        return
-    sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="news_items")
-
-    max_rows = 500
-    if isinstance(sys_kv, dict):
-        try:
-            max_rows = int(sys_kv.get("current_news.items.max_rows") or 500)
-        except Exception:
-            max_rows = 500
-    max_rows = max(10, min(max_rows, 2000))
-
-    rows: list[list[Any]] = [["title", "link", "pubDate", "description"]]
-    for it in (items or [])[:max_rows]:
-        if not isinstance(it, dict):
-            continue
-        rows.append([
-            str(it.get("title") or ""),
-            str(it.get("link") or ""),
-            str(it.get("pubDate") or ""),
-            str(it.get("description") or ""),
-        ])
-
-    tool_update = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
-    rng = f"{sheet_a1}!A1:D{len(rows)}"
-    await _mcp_tools_call(
-        tool_update,
-        {
-            "spreadsheet_id": spreadsheet_id,
-            "range": rng,
-            "values": rows,
-            "value_input_option": "RAW",
-        },
-    )
-
-
-async def _news_items_upsert(
-    *,
-    sys_kv: dict[str, Any] | None,
-    link: str,
-    title: str | None = None,
-    pubDate: str | None = None,
-    description: str | None = None,
-) -> dict[str, Any]:
-    lnk = str(link or "").strip()
-    if not lnk:
-        raise HTTPException(status_code=400, detail="missing_link")
-
-    spreadsheet_id, sheet_name = _current_news_items_sheet_cfg_from_sys_kv(sys_kv)
-    if not spreadsheet_id:
-        raise HTTPException(status_code=400, detail="missing_spreadsheet_id")
-    sheet_a1 = sheets_utils.sheet_name_to_a1(sheet_name, default="news_items")
-
-    tool_get = _pick_sheets_tool_name("google_sheets_values_get", "google_sheets_values_get")
-    tool_update = _pick_sheets_tool_name("google_sheets_values_update", "google_sheets_values_update")
-    tool_append = _pick_sheets_tool_name("google_sheets_values_append", "google_sheets_values_append")
-
-    res = await _mcp_tools_call(tool_get, {"spreadsheet_id": spreadsheet_id, "range": f"{sheet_a1}!A1:H"})
-    parsed = _mcp_text_json(res)
-    vals = parsed.get("values") if isinstance(parsed, dict) else None
-    data = parsed.get("data") if isinstance(parsed, dict) else None
-    if not isinstance(vals, list) and isinstance(data, dict):
-        vals = data.get("values")
-    table = vals if isinstance(vals, list) else []
-    if not table:
-        raise HTTPException(status_code=400, detail="news_items_missing_header")
-
-    header = table[0] if isinstance(table[0], list) else []
-    idx = _idx_from_header(header)
-    if not idx:
-        raise HTTPException(status_code=400, detail="news_items_missing_header")
-
-    def _norm_col_name(v: Any) -> str:
-        s = str(v or "").strip().lower()
-        if not s:
-            return ""
-        return re.sub(r"[^a-z0-9]+", "", s)
-
-    idx_norm: dict[str, int] = {}
-    for k, v in idx.items():
-        nk = _norm_col_name(k)
-        if nk and nk not in idx_norm:
-            idx_norm[nk] = v
-
-    def _col_any(*names: str) -> int | None:
-        for n in names:
-            key_raw = str(n or "").strip().lower()
-            if key_raw and key_raw in idx:
-                return idx[key_raw]
-            key_norm = _norm_col_name(n)
-            if key_norm and key_norm in idx_norm:
-                return idx_norm[key_norm]
-        return None
-
-    c_title = _col_any("title")
-    c_link = _col_any("link", "url")
-    c_pub = _col_any("pubdate", "pubDate", "published", "date")
-    c_desc = _col_any("description", "desc", "summary")
-    if c_link is None:
-        raise HTTPException(status_code=400, detail="news_items_missing_required_columns")
-
-    existing_row_num: int | None = None
-    for i, r in enumerate(table[1:], start=2):
-        if not isinstance(r, list):
-            continue
-        cur = str(r[c_link] if c_link < len(r) else "").strip()
-        if cur and cur.lower() == lnk.lower():
-            existing_row_num = i
-            break
-
-    def _set_cell(out_row: list[Any], col: int | None, value: Any) -> None:
-        if col is None:
-            return
-        if col >= len(out_row):
-            out_row.extend([""] * (col - len(out_row) + 1))
-        out_row[col] = value
-
-    if existing_row_num is not None:
-        row_len = max(len(header), 1)
-        out_row: list[Any] = [""] * row_len
-        _set_cell(out_row, c_link, lnk)
-        if c_title is not None and title is not None and str(title).strip():
-            _set_cell(out_row, c_title, str(title).strip())
-        if c_pub is not None and pubDate is not None and str(pubDate).strip():
-            _set_cell(out_row, c_pub, str(pubDate).strip())
-        if c_desc is not None and description is not None and str(description).strip():
-            _set_cell(out_row, c_desc, str(description).strip())
-        last_col = chr(ord("A") + (len(out_row) - 1))
-        rng = f"{sheet_a1}!A{existing_row_num}:{last_col}{existing_row_num}"
-        res2 = await _mcp_tools_call(
-            tool_update,
-            {
-                "spreadsheet_id": spreadsheet_id,
-                "range": rng,
-                "values": [out_row],
-                "value_input_option": "USER_ENTERED",
-            },
-        )
-        return {"ok": True, "mode": "update", "link": lnk, "row_number": existing_row_num, "result": _mcp_text_json(res2)}
-
-    append_row: list[Any] = []
-    while len(append_row) <= c_link:
-        append_row.append("")
-    append_row[c_link] = lnk
-    if c_title is not None and title is not None and str(title).strip():
-        while len(append_row) <= c_title:
-            append_row.append("")
-        append_row[c_title] = str(title).strip()
-    if c_pub is not None and pubDate is not None and str(pubDate).strip():
-        while len(append_row) <= c_pub:
-            append_row.append("")
-        append_row[c_pub] = str(pubDate).strip()
-    if c_desc is not None and description is not None and str(description).strip():
-        while len(append_row) <= c_desc:
-            append_row.append("")
-        append_row[c_desc] = str(description).strip()
-
-    last_col = chr(ord("A") + max(0, len(append_row) - 1))
-    res3 = await _mcp_tools_call(
-        tool_append,
-        {
-            "spreadsheet_id": spreadsheet_id,
-            "range": f"{sheet_a1}!A:{last_col}",
-            "values": [append_row],
-            "value_input_option": "USER_ENTERED",
-            "insert_data_option": "INSERT_ROWS",
-        },
-    )
-    return {"ok": True, "mode": "append", "link": lnk, "result": _mcp_text_json(res3)}
-
-
-async def _refresh_current_news_cache(
-    *,
-    sys_kv: dict[str, Any] | None = None,
-    force_fetch: bool = True,
-    source: str | None = None,
-    enrich_missing: bool | None = None,
-) -> dict[str, Any]:
-    sources_rows: list[dict[str, Any]] = []
-    topics_cfg: dict[str, dict[str, Any]] = {}
-    all_items: list[dict[str, Any]] = []
-    fetch_debug: list[dict[str, Any]] = []
-
-    try:
-        topics_cfg = await _load_news_topics_from_sheet(sys_kv=sys_kv)
-    except Exception:
-        topics_cfg = {}
-
-    if not force_fetch:
-        try:
-            all_items = await _load_current_news_items_from_items_tab(sys_kv=sys_kv)
-        except Exception:
-            all_items = []
-
-        # If the cached items tab is empty, prefer loading directly from the sheet
-        # (fast) rather than doing a network fetch from multiple sources (slow).
-        if not all_items:
-            try:
-                all_items = await _load_current_news_items_from_sheet(sys_kv=sys_kv)
-            except Exception:
-                all_items = []
-
-    if not all_items:
-        try:
-            sources_rows = await _load_news_sources_from_sheet(sys_kv=sys_kv)
-        except Exception:
-            sources_rows = []
-
-        source_filter = str(source or "").strip().lower()
-        if source_filter and sources_rows:
-            filtered: list[dict[str, Any]] = []
-            for s in sources_rows:
-                if not isinstance(s, dict):
-                    continue
-                url0 = str(s.get("url") or "").strip()
-                name0 = str(s.get("name") or "").strip()
-                hay = f"{name0} {url0}".lower()
-                if source_filter in hay:
-                    filtered.append(s)
-            sources_rows = filtered
-
-        if sources_rows:
-            # Fetch can be slow because it hits multiple RSS/Atom endpoints. Do this
-            # concurrently with caps to reduce tail latency.
-            debug_enabled = _sys_kv_bool(sys_kv, "current_news.debug.enabled", default=False)
-
-            max_sources = 20
-            if isinstance(sys_kv, dict):
-                try:
-                    max_sources = int(sys_kv.get("current_news.fetch.max_sources") or 20)
-                except Exception:
-                    max_sources = 20
-            max_sources = max(1, min(max_sources, 80))
-
-            concurrency = 6
-            if isinstance(sys_kv, dict):
-                try:
-                    concurrency = int(sys_kv.get("current_news.fetch.concurrency") or 6)
-                except Exception:
-                    concurrency = 6
-            concurrency = max(1, min(concurrency, 20))
-
-            per_source_timeout_s = 12.0
-            if isinstance(sys_kv, dict):
-                try:
-                    per_source_timeout_s = float(sys_kv.get("current_news.fetch.per_source_timeout_s") or 12.0)
-                except Exception:
-                    per_source_timeout_s = 12.0
-            per_source_timeout_s = max(2.0, min(per_source_timeout_s, 30.0))
-
-            sem = asyncio.Semaphore(concurrency)
-
-            async def _one(src: dict[str, Any]) -> list[dict[str, Any]]:
-                url = str(src.get("url") or "").strip()
-                if not url:
-                    return []
-                async with sem:
-                    try:
-                        return await asyncio.wait_for(
-                            _fetch_news_items_from_source(url, debug=debug_enabled, debug_out=fetch_debug),
-                            timeout=per_source_timeout_s,
-                        )
-                    except Exception:
-                        return []
-
-            tasks: list[asyncio.Task[list[dict[str, Any]]]] = []
-            for src in sources_rows[:max_sources]:
-                if not isinstance(src, dict):
-                    continue
-                tasks.append(asyncio.create_task(_one(src)))
-
-            if tasks:
-                for chunk in await asyncio.gather(*tasks, return_exceptions=False):
-                    if isinstance(chunk, list) and chunk:
-                        all_items.extend(chunk)
-            try:
-                await _save_current_news_items_to_items_tab(items=all_items, sys_kv=sys_kv)
-            except Exception:
-                pass
-        else:
-            try:
-                all_items = await _load_current_news_items_from_sheet(sys_kv=sys_kv)
-            except Exception:
-                all_items = []
-            try:
-                await _save_current_news_items_to_items_tab(items=all_items, sys_kv=sys_kv)
-            except Exception:
-                pass
-
-    seen: set[str] = set()
-    deduped: list[dict[str, Any]] = []
-    for it in all_items:
-        key = str(it.get("link") or "") or str(it.get("title") or "")
-        key = key.strip()
-        if not key or key in seen:
-            continue
-        seen.add(key)
-        deduped.append(it)
-
-    do_enrich = False
-    if enrich_missing is not None:
-        do_enrich = bool(enrich_missing)
-    else:
-        do_enrich = _sys_kv_bool(sys_kv, "current_news.enrich_missing.enabled", default=False)
-
-    enriched_count = 0
-    if do_enrich and deduped:
-        try:
-            max_items = 20
-            if isinstance(sys_kv, dict):
-                try:
-                    max_items = int(sys_kv.get("current_news.enrich_missing.max_items") or 20)
-                except Exception:
-                    max_items = 20
-            max_items = max(1, min(max_items, 80))
-
-            debug_enabled = _sys_kv_bool(sys_kv, "current_news.debug.enabled", default=False)
-
-            for it in deduped:
-                if enriched_count >= max_items:
-                    break
-                if not isinstance(it, dict):
-                    continue
-                if str(it.get("description") or "").strip():
-                    continue
-                await _enrich_news_item_description(it, debug=bool(debug_enabled), debug_out=fetch_debug if debug_enabled else None)
-                if str(it.get("description") or "").strip():
-                    enriched_count += 1
-        except Exception:
-            pass
-
-        if enriched_count > 0:
-            try:
-                await _save_current_news_items_to_items_tab(items=deduped, sys_kv=sys_kv)
-            except Exception:
-                pass
-
-    ctx = _build_current_news_context(deduped, topics_cfg=topics_cfg if isinstance(topics_cfg, dict) else None)
-    if _sys_kv_bool(sys_kv, "current_news.debug.enabled", default=False):
-        try:
-            ctx["_debug"] = {
-                "items_loaded": len(all_items),
-                "items_deduped": len(deduped),
-                "sources_count": len(sources_rows),
-                "sources": [str(s.get("url") or "").strip() for s in sources_rows[:10] if isinstance(s, dict)],
-                "source_filter": str(source or "").strip(),
-                "enriched_count": int(enriched_count),
-                "enrich_missing": bool(do_enrich),
-                "topics_cfg_keys": sorted([str(k) for k in (topics_cfg.keys() if isinstance(topics_cfg, dict) else [])]),
-                "fetch": fetch_debug[:10],
-            }
-        except Exception:
-            pass
-    _set_news_cache("current-news", ctx)
-    _upsert_agent_status(DEFAULT_USER_ID, "current-news", ctx)
-    return ctx
-
-
-async def _handle_current_news_trigger(ws: WebSocket, text: str) -> bool:
-    def _get_cached_ctx() -> Optional[dict[str, Any]]:
-        cached = _get_news_cache("current-news")
-        if cached and isinstance(cached.get("payload"), dict):
-            return cached["payload"]
-        return None
-
-    async def _refresh(force_fetch: bool) -> dict[str, Any]:
-        sys_kv = getattr(ws.state, "sys_kv", None)
-        return await _refresh_current_news_cache(
-            sys_kv=sys_kv if isinstance(sys_kv, dict) else None,
-            force_fetch=bool(force_fetch),
-        )
-
-    def _render_brief(ctx: dict[str, Any]) -> str:
-        try:
-            ulang = str(getattr(ws.state, "user_lang", "") or "").strip() or "th"
-        except Exception:
-            ulang = "th"
-        return _render_current_news_brief(ctx, lang=ulang)
-
-    return await current_news_skill.handle_current_news_trigger(
-        ws,
-        text,
-        get_cached_ctx=_get_cached_ctx,
-        refresh_ctx=_refresh,
-        render_brief=_render_brief,
-    )
-
-
-def _current_news_router() -> Any:
-    def _get_cached_ctx() -> Optional[dict[str, Any]]:
-        cached = _get_news_cache("current-news")
-        if cached and isinstance(cached.get("payload"), dict):
-            return cached["payload"]
-        return None
-
-    async def _refresh(force_fetch: bool) -> dict[str, Any]:
-        return await _refresh_current_news_cache(force_fetch=bool(force_fetch))
-
-    return current_news_skill.create_router(
-        get_cached_ctx=_get_cached_ctx,
-        refresh_ctx=_refresh,
-        render_brief=_render_current_news_brief,
-    )
 
 
 def _parse_deep_research_command(text: str) -> dict[str, str]:
@@ -14804,14 +12239,14 @@ def _reminder_dedupe_key(title: str, due_at_ts: Optional[int], schedule_type: st
     return f"{t}|{d}|{s}"[:512]
 
 
-async def _weaviate_get_memory_item_by_external_key(external_key: str) -> Optional[dict[str, Any]]:
-    await _weaviate_ensure_schema()
+async def weaviate_get_memory_item_by_external_key(external_key: str) -> Optional[dict[str, Any]]:
+    await weaviate_ensure_schema()
     ek = str(external_key or "").strip()
     if not ek:
         return None
-    obj_id = _weaviate_object_uuid(ek)
+    obj_id = weaviate_object_uuid(ek)
     try:
-        existing = await _weaviate_request("GET", f"/v1/objects/{obj_id}")
+        existing = await weaviate_request("GET", f"/v1/objects/{obj_id}")
     except Exception:
         return None
     if not isinstance(existing, dict):
@@ -15280,14 +12715,6 @@ def _create_pending_write(session_id: str, action: str, payload: Any) -> str:
 
 def _list_pending_writes(session_id: str) -> list[dict[str, Any]]:
     return db_session.list_pending_writes(SESSION_DB_PATH, session_id)
-
-
-def _record_news_usage_event(session_id: str, event_type: str, payload: Any) -> bool:
-    return db_session.record_news_usage_event(SESSION_DB_PATH, session_id, event_type, payload)
-
-
-def _list_news_usage_events(session_id: str, *, limit: int = 200) -> list[dict[str, Any]]:
-    return db_session.list_news_usage_events(SESSION_DB_PATH, session_id, limit=limit)
 
 
 def _get_pending_write(session_id: str, confirmation_id: str) -> Optional[dict[str, Any]]:
@@ -17336,9 +14763,6 @@ app.include_router(
 )
 
 
-app.include_router(_current_news_router())
-
-
 def _mcp_tool_declarations() -> list[dict[str, Any]]:
     sys_kv = _sys_kv_snapshot()
     decls: list[dict[str, Any]] = []
@@ -17868,271 +15292,6 @@ def _mcp_tool_declarations() -> list[dict[str, Any]]:
                 }
             )
 
-    if (not macros_only) and feature_enabled("current-news", sys_kv=sys_kv, default=True):
-        ok, _, _ = _gemini_tool_allowed(name="current_news_get", sys_kv=sys_kv, macros_only=macros_only)
-        if ok:
-            decls.append(
-                {
-                    "name": "current_news_get",
-                    "description": "Get the current news brief and cached context (refreshes automatically if missing).",
-                    "parameters": {"type": "object", "properties": {}},
-                }
-            )
-        ok, _, _ = _gemini_tool_allowed(name="current_news_refresh", sys_kv=sys_kv, macros_only=macros_only)
-        if ok:
-            decls.append(
-                {
-                    "name": "current_news_refresh",
-                    "description": "Refresh current news cache from RSS feeds and return updated context + brief.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "source": {
-                                "type": "string",
-                                "description": "Optional: filter to a specific source by name/url substring (debugging).",
-                            }
-                        },
-                    },
-                }
-            )
-        ok, _, _ = _gemini_tool_allowed(name="current_news_sources", sys_kv=sys_kv, macros_only=macros_only)
-        if ok:
-            decls.append(
-                {
-                    "name": "current_news_sources",
-                    "description": "List source links for the current-news cache.",
-                    "parameters": {"type": "object", "properties": {}},
-                }
-            )
-        ok, _, _ = _gemini_tool_allowed(name="current_news_details", sys_kv=sys_kv, macros_only=macros_only)
-        if ok:
-            decls.append(
-                {
-                    "name": "current_news_details",
-                    "description": "Get details for a current-news topic (iran|gold|usd|oil|baht).",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {"topic": {"type": "string", "description": "Topic key or alias."}},
-                        "required": ["topic"],
-                    },
-                }
-            )
-
-        ok, _, _ = _gemini_tool_allowed(name="news_topics_upsert", sys_kv=sys_kv, macros_only=macros_only)
-        if ok:
-            decls.append(
-                {
-                    "name": "news_topics_upsert",
-                    "description": "Upsert one row in the news_topics sheet (safe: create/update only; no disable/delete).",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "topic": {"type": "string", "description": "Topic key (e.g. thb, oil, usd)."},
-                            "keywords": {"type": "array", "items": {"type": "string"}, "description": "List of keywords/synonyms."},
-                            "limit": {"type": "integer", "description": "Max items to keep in this topic section."},
-                            "headlines": {"type": "integer", "description": "Max headlines to show in brief."},
-                            "enabled": {"type": "boolean", "description": "Must be true (tool is safe upsert-only)."},
-                        },
-                        "required": ["topic", "keywords"],
-                    },
-                }
-            )
-
-        ok, _, _ = _gemini_tool_allowed(name="news_sources_upsert", sys_kv=sys_kv, macros_only=macros_only)
-        if ok:
-            decls.append(
-                {
-                    "name": "news_sources_upsert",
-                    "description": "Upsert one row in the news_sources sheet (safe: create/update only; no disable/delete).",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "url": {"type": "string", "description": "RSS/Atom feed URL."},
-                            "name": {"type": "string", "description": "Display name for the source."},
-                            "type": {"type": "string", "description": "Source type (e.g. rss)."},
-                            "tags": {"type": "string", "description": "Comma-separated tags."},
-                            "enabled": {"type": "boolean", "description": "Must be true (tool is safe upsert-only)."},
-                        },
-                        "required": ["url"],
-                    },
-                }
-            )
-
-        ok, _, _ = _gemini_tool_allowed(name="news_items_upsert", sys_kv=sys_kv, macros_only=macros_only)
-        if ok:
-            decls.append(
-                {
-                    "name": "news_items_upsert",
-                    "description": "Upsert one row in the news_items sheet by link (safe: create/update only; no delete).",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "link": {"type": "string", "description": "Item link (unique key)."},
-                            "title": {"type": "string", "description": "Item title."},
-                            "pubDate": {"type": "string", "description": "Published date/time string."},
-                            "description": {"type": "string", "description": "Item description/summary."},
-                        },
-                        "required": ["link"],
-                    },
-                }
-            )
-
-        ok, _, _ = _gemini_tool_allowed(name="news_sources_list", sys_kv=sys_kv, macros_only=macros_only)
-        if ok:
-            decls.append(
-                {
-                    "name": "news_sources_list",
-                    "description": "List sources from the news_sources sheet.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "include_disabled": {"type": "boolean", "description": "Include disabled sources (default false)."},
-                        },
-                    },
-                }
-            )
-
-        ok, _, _ = _gemini_tool_allowed(name="gnews_rss_build", sys_kv=sys_kv, macros_only=macros_only)
-        if ok:
-            decls.append(
-                {
-                    "name": "gnews_rss_build",
-                    "description": "Build a Google News RSS search URL from a query.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {"type": "string", "description": "Google News query (supports operators like site:)."},
-                            "hl": {"type": "string", "description": "Language (default th)."},
-                            "gl": {"type": "string", "description": "Country (default TH)."},
-                            "ceid": {"type": "string", "description": "Edition id (default GL:HL)."},
-                        },
-                        "required": ["query"],
-                    },
-                }
-            )
-
-        ok, _, _ = _gemini_tool_allowed(name="it_topic_packs_seed", sys_kv=sys_kv, macros_only=macros_only)
-        if ok:
-            decls.append(
-                {
-                    "name": "it_topic_packs_seed",
-                    "description": "Seed preset IT topic configs into the news_topics sheet (via safe upsert).",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "pack": {"type": "string", "description": "Optional: one of it_security|it_ai|it_cloud|it_dev. If omitted, seeds all."},
-                        },
-                    },
-                }
-            )
-
-        ok, _, _ = _gemini_tool_allowed(name="news_feedback", sys_kv=sys_kv, macros_only=macros_only)
-        if ok:
-            decls.append(
-                {
-                    "name": "news_feedback",
-                    "description": "Record explicit feedback about a news item/source for adaptive tuning (no sheet writes).",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "label": {"type": "string", "description": "Feedback label: relevant|irrelevant|good_source|bad_source."},
-                            "link": {"type": "string", "description": "Optional item link."},
-                            "title": {"type": "string", "description": "Optional item title."},
-                            "topic": {"type": "string", "description": "Optional topic key/name."},
-                            "source_url": {"type": "string", "description": "Optional source/feed url."},
-                        },
-                        "required": ["label"],
-                    },
-                }
-            )
-
-        ok, _, _ = _gemini_tool_allowed(name="news_tuning_suggest", sys_kv=sys_kv, macros_only=macros_only)
-        if ok:
-            decls.append(
-                {
-                    "name": "news_tuning_suggest",
-                    "description": "Suggest sheet changes (topics/sources) based on usage signals and queue as pending confirmation (no writes until confirmed).",
-                    "parameters": {"type": "object", "properties": {"limit_events": {"type": "integer", "description": "Max usage events to consider (default 200)."}}},
-                }
-            )
-
-        ok, _, _ = _gemini_tool_allowed(name="system_news_skills_bootstrap_queue", sys_kv=sys_kv, macros_only=macros_only)
-        if ok:
-            decls.append(
-                {
-                    "name": "system_news_skills_bootstrap_queue",
-                    "description": "Queue creation/initialization of the dedicated News Skills sheet tab (pending_confirm required).",
-                    "parameters": {"type": "object", "properties": {"seed_name": {"type": "string", "description": "Optional seed row name."}}},
-                }
-            )
-
-    if (not macros_only) and feature_enabled("follow-news", sys_kv=sys_kv, default=True):
-        for tool_name, tool_decl in (
-            (
-                "news_follow_list",
-                {
-                    "name": "news_follow_list",
-                    "description": "List cached follow-news summaries (and current focus).",
-                    "parameters": {"type": "object", "properties": {}},
-                },
-            ),
-            (
-                "news_follow_refresh",
-                {
-                    "name": "news_follow_refresh",
-                    "description": "Refresh follow-news summaries using current focus list.",
-                    "parameters": {"type": "object", "properties": {}},
-                },
-            ),
-            (
-                "news_follow_report",
-                {
-                    "name": "news_follow_report",
-                    "description": "Return the stored follow-news report by summary_id.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {"summary_id": {"type": "string", "description": "Summary id from news_follow_list."}},
-                        "required": ["summary_id"],
-                    },
-                },
-            ),
-            (
-                "news_follow_focus_list",
-                {
-                    "name": "news_follow_focus_list",
-                    "description": "List follow-news focus keywords.",
-                    "parameters": {"type": "object", "properties": {}},
-                },
-            ),
-            (
-                "news_follow_focus_add",
-                {
-                    "name": "news_follow_focus_add",
-                    "description": "Add a keyword to the follow-news focus list.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {"item": {"type": "string", "description": "Keyword/topic to add."}},
-                        "required": ["item"],
-                    },
-                },
-            ),
-            (
-                "news_follow_focus_remove",
-                {
-                    "name": "news_follow_focus_remove",
-                    "description": "Remove a keyword from the follow-news focus list.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {"item": {"type": "string", "description": "Keyword/topic to remove."}},
-                        "required": ["item"],
-                    },
-                },
-            ),
-        ):
-            ok, _, _ = _gemini_tool_allowed(name=tool_name, sys_kv=sys_kv, macros_only=macros_only)
-            if ok:
-                decls.append(tool_decl)
-
     if (not macros_only) and feature_enabled("memory", sys_kv=sys_kv, default=True):
         decls.append(
             {
@@ -18582,12 +15741,6 @@ async def _handle_mcp_tool_call(session_id: str, tool_name: str, args: dict[str,
             "pending_preview",
             "pending_confirm",
             "pending_cancel",
-            "news_sources_upsert",
-            "news_topics_upsert",
-            "news_items_upsert",
-            "news_sources_list",
-            "gnews_rss_build",
-            "it_topic_packs_seed",
         }
         out_steps: list[dict[str, Any]] = []
         max_steps = 10
@@ -18873,17 +16026,6 @@ async def _handle_mcp_tool_call(session_id: str, tool_name: str, args: dict[str,
         )
         return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "seed_name": seed_name}
 
-    if n == "system_news_skills_bootstrap_queue":
-        if not session_id:
-            raise HTTPException(status_code=400, detail="missing_session_id")
-        seed_name = str((args or {}).get("seed_name") or "").strip() or "jarvis-news-skill-smoke-test"
-        confirmation_id = _create_pending_write(
-            str(session_id),
-            "bundle_bootstrap_news_skills",
-            {"seed_name": seed_name},
-        )
-        return {"ok": True, "queued": True, "confirmation_id": confirmation_id, "seed_name": seed_name}
-
     if n == "system_run_macro":
         macro_name = str((args or {}).get("name") or "").strip()
         macro_args = (args or {}).get("args")
@@ -18927,7 +16069,6 @@ async def _handle_mcp_tool_call(session_id: str, tool_name: str, args: dict[str,
         "system_spreadsheet_id": _system_spreadsheet_id,
         "system_macros_sheet_name": _system_macros_sheet_name,
         "system_skills_sheet_name": _system_skills_sheet_name,
-        "system_news_skills_sheet_name": _system_news_skills_sheet_name,
         "memory_sheet_upsert": _memory_sheet_upsert,
         "load_ws_sheet_memory": _load_ws_sheet_memory,
         "memo_sheet_cfg_from_sys_kv": _memo_sheet_cfg_from_sys_kv,
@@ -18951,10 +16092,6 @@ async def _handle_mcp_tool_call(session_id: str, tool_name: str, args: dict[str,
         "pop_pending_write_any_session": _pop_pending_write_any_session,
         "cancel_pending_write_any_session": _cancel_pending_write_any_session,
         "reassign_pending_write": _reassign_pending_write,
-        "record_news_usage_event": _record_news_usage_event,
-        "list_news_usage_events": _list_news_usage_events,
-        "load_news_topics_from_sheet": _load_news_topics_from_sheet,
-        "load_news_sources_from_sheet": _load_news_sources_from_sheet,
         "adapt_aim_tool_args": _adapt_aim_tool_args,
         "aim_mcp_tools_call": _aim_mcp_tools_call,
         "parse_time_from_text": _parse_time_from_text,
@@ -18965,21 +16102,6 @@ async def _handle_mcp_tool_call(session_id: str, tool_name: str, args: dict[str,
         "google_calendar_undo_log": _google_calendar_undo_log,
         "google_tasks_undo_log": _google_tasks_undo_log,
         "adapt_playwright_tool_args": _adapt_playwright_tool_args,
-        "get_news_cache": _get_news_cache,
-        "set_news_cache": _set_news_cache,
-        "refresh_current_news_cache": _refresh_current_news_cache,
-        "render_current_news_brief": _render_current_news_brief,
-        "get_news_follow_focus": _get_news_follow_focus,
-        "set_news_follow_focus": _set_news_follow_focus,
-        "get_news_follow_summaries": _get_news_follow_summaries,
-        "refresh_news_follow_summaries": _refresh_news_follow_summaries,
-        "news_topics_upsert": _news_topics_upsert,
-        "news_topics_focus_set": _news_topics_focus_set,
-        "news_sources_upsert": _news_sources_upsert,
-        "news_items_upsert": _news_items_upsert,
-        "news_sources_list": _news_sources_list,
-        "gnews_rss_build": _gnews_rss_build,
-        "it_topic_packs_seed": _it_topic_packs_seed,
         "oauth_callback_last": _OAUTH_CALLBACK_LAST,
     }
     return await tools_router.handle_mcp_tool_call(session_id, tool_name, args, deps=deps)

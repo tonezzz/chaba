@@ -55,17 +55,6 @@ def init_session_db(db_path: str) -> None:
         )
         conn.execute(
             """
-            CREATE TABLE IF NOT EXISTS news_usage_events (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              session_id TEXT NOT NULL,
-              event_type TEXT NOT NULL,
-              payload_json TEXT NOT NULL,
-              created_at INTEGER NOT NULL
-            )
-            """
-        )
-        conn.execute(
-            """
             CREATE TABLE IF NOT EXISTS google_tasks_undo (
               undo_id TEXT PRIMARY KEY,
               created_at INTEGER NOT NULL,
@@ -218,56 +207,6 @@ def website_source_cache_get(db_path: str, *, source_id: str) -> Optional[dict[s
     except Exception:
         content = content_json
     return {"source_id": sid, "content": content, "updated_at": int(updated_at or 0)}
-
-
-def record_news_usage_event(db_path: str, session_id: str, event_type: str, payload: Any) -> bool:
-    init_session_db(db_path)
-    sid = str(session_id or "").strip()
-    et = str(event_type or "").strip()
-    if not sid or not et:
-        return False
-    created_at = int(time.time())
-    payload_json = json.dumps(payload, ensure_ascii=False)
-    with sqlite3.connect(db_path) as conn:
-        conn.execute(
-            "INSERT INTO news_usage_events(session_id, event_type, payload_json, created_at) VALUES(?, ?, ?, ?)",
-            (sid, et, payload_json, created_at),
-        )
-        conn.commit()
-    return True
-
-
-def list_news_usage_events(db_path: str, session_id: str, *, limit: int = 200) -> list[dict[str, Any]]:
-    init_session_db(db_path)
-    sid = str(session_id or "").strip()
-    if not sid:
-        return []
-    try:
-        lim = int(limit)
-    except Exception:
-        lim = 200
-    lim = max(1, min(lim, 2000))
-    with sqlite3.connect(db_path) as conn:
-        cur = conn.execute(
-            "SELECT id, event_type, payload_json, created_at FROM news_usage_events WHERE session_id = ? ORDER BY id DESC LIMIT ?",
-            (sid, lim),
-        )
-        rows = cur.fetchall() or []
-    out: list[dict[str, Any]] = []
-    for row_id, event_type, payload_json, created_at in rows:
-        try:
-            payload = json.loads(payload_json)
-        except Exception:
-            payload = payload_json
-        out.append(
-            {
-                "id": int(row_id or 0),
-                "event_type": str(event_type or ""),
-                "payload": payload,
-                "created_at": int(created_at or 0),
-            }
-        )
-    return out
 
 
 def list_pending_writes(db_path: str, session_id: str) -> list[dict[str, Any]]:
