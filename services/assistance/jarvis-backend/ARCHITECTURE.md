@@ -84,8 +84,7 @@ Note:
 - Implement the handler routing in `main.py`.
 
 Examples:
-- `agents/current-news.md` -> handler in `main.py`
-- `agents/follow_news.md` -> handler in `main.py`
+- `agents/agent-name.md` -> handler in `main.py`
 
 ## Debugging wiring
 - Confirm the agent is discovered:

@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  webtops-router:
+    image: nginx:alpine
+    ports:
+      - "${WEBTOPS_ROUTER_PORT:-3001}:80"
+    volumes:
+      - ${WEBTOPS_ROUTER_STATE_DIR:-./data/webtops-router}:/data
+    networks:
+      - webtops-net
+    restart: unless-stopped
+
+  webtops-cp:
+    image: nginx:alpine
+    ports:
+      - "${WEBTOPS_CP_PORT:-3005}:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${WEBTOPS_SNAPSHOT_HOST_DIR:-./data/mcp-webtops/snapshots}:/app/snapshots
+      - ${WEBTOPS_STATE_HOST_DIR:-./data/mcp-webtops/state}:/app/state
+    networks:
+      - webtops-net
+    restart: unless-stopped
+
+networks:
+  webtops-net:
+    driver: bridge
+
+volumes:
+  webtops_workspaces:
+    external: true
+  webtops_windsurf_cache:
+    external: true
