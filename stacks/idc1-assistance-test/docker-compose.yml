@@ -1,0 +1,44 @@
+version: "3.9"
+
+x-default-service: &default-service
+  restart: unless-stopped
+  networks:
+    - idc1-stack-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  mcp-bundle-test:
+    <<: *default-service
+    image: ghcr.io/tonezzz/chaba/mcp-bundle:idc1-assistance
+    ports:
+      - "127.0.0.1:${IDCI_ASSISTANCE_TEST_MCP_PORT:-3151}:3050"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      ONE_MCP_HOST: 0.0.0.0
+      ONE_MCP_PORT: 3050
+      ONE_MCP_EXTERNAL_URL: ${ONE_MCP_EXTERNAL_URL:-https://127.0.0.1:${IDCI_ASSISTANCE_TEST_MCP_PORT:-3151}}
+      ONE_MCP_HTTP_JSON_LIMIT: ${ONE_MCP_HTTP_JSON_LIMIT:-5mb}
+    volumes:
+      - mcp-bundle-test-config:/root/.config/1mcp
+      - ./mcp-config/mcp.json:/app/mcp-config/mcp.json:ro
+      - ../../mcp/mcp-news:/app/mcp-servers/mcp-news:ro
+      - mcp-news-test-data:/data/mcp-news
+    networks:
+      idc1-stack-net:
+        aliases:
+          - mcp-bundle-assistance-test
+
+networks:
+  idc1-stack-net:
+    driver: bridge
+    external: true
+    name: idc1-stack-net
+
+volumes:
+  mcp-bundle-test-config:
+  mcp-news-test-data:

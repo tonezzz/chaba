@@ -1,0 +1,31 @@
+{
+  "$schema": "https://docs.1mcp.app/schemas/v1.0.0/mcp-config.json",
+  "mcpServers": {
+    "fetch": {
+      "command": "/opt/venv/bin/python",
+      "args": ["-m", "mcp_server_fetch"],
+      "tags": ["fetch", "web"],
+      "disabled": false
+    },
+    "server-sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "tags": ["thinking"],
+      "disabled": false
+    },
+    "mcp-news": {
+      "command": "node",
+      "args": ["/app/mcp-servers/mcp-news/dist/index.js"],
+      "env": {
+        "NEWS_DATA_DIR": "/data/mcp-news/.data",
+        "NEWS_CONFIG_DIR": "/data/mcp-news/.config",
+        "NEWS_CONFIG_PATH": "/data/mcp-news/.config/news_config.json",
+        "NEWS_DEFAULT_CONFIG_PATH": "/app/mcp-servers/mcp-news/default_config.json",
+        "NEWS_FETCH_TIMEOUT_MS": "30000",
+        "NEWS_FETCH_MAX_ATTEMPTS": "5"
+      },
+      "tags": ["news", "rss"],
+      "disabled": false
+    }
+  }
+}
