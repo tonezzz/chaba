@@ -5,6 +5,8 @@ from typing import Any, Dict, Optional
 
 from fastapi import WebSocket
 
+from jarvis.mcp.router import mcp_router
+
 logger = logging.getLogger(__name__)
 
 
@@ -18,12 +20,25 @@ class NewsSkill:
     async def handle_current_news(self, ws: WebSocket, text: str, trace_id: str) -> bool:
         """Handle current news request"""
         try:
-            # Send progress
             await self._send_progress(ws, "Fetching current news...", trace_id)
             
-            # This would integrate with mcp-news when available
-            # For now, return a placeholder response
-            await self._send_text(ws, "News skill is being integrated. Please check back later.", trace_id)
+            # Call mcp-news tools via MCP router
+            result = await mcp_router.call_tool_with_progress(
+                ws, "news_run", 
+                {"start_at": "fetch", "stop_after": "render"},
+                trace_id
+            )
+            
+            if "error" in result:
+                await self._send_text(ws, f"News fetch failed: {result['error']}", trace_id)
+                return False
+            
+            # Extract and return the brief
+            brief = result.get("brief", "")
+            if brief:
+                await self._send_text(ws, brief, trace_id)
+            else:
+                await self._send_text(ws, "News fetched but no brief generated", trace_id)
             
             return True
             
@@ -35,11 +50,10 @@ class NewsSkill:
     async def handle_follow_news(self, ws: WebSocket, text: str, trace_id: str) -> bool:
         """Handle follow news request"""
         try:
-            # Send progress
             await self._send_progress(ws, "Setting up news following...", trace_id)
             
-            # Implementation would set up news following preferences
-            await self._send_text(ws, "News following feature is being integrated.", trace_id)
+            # For now, just return a message about follow-up
+            await self._send_text(ws, "News following feature is being integrated. You can ask for current news updates.", trace_id)
             
             return True
             
@@ -51,7 +65,6 @@ class NewsSkill:
     async def _send_progress(self, ws: WebSocket, message: str, trace_id: str) -> None:
         """Send progress message"""
         try:
-            # This would use the WebSocket session's progress method
             await ws.send_json({
                 "type": "progress",
                 "text": message,

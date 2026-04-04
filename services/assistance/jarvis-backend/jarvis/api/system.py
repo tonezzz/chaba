@@ -7,6 +7,8 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, HTTPException
 
+from jarvis.mcp.router import mcp_router
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -16,12 +18,15 @@ router = APIRouter()
 async def get_system_status() -> dict[str, Any]:
     """Get system status"""
     try:
+        mcp_health = await mcp_router.check_mcp_news_health()
+        
         return {
             "ok": True,
             "timestamp": int(time.time()),
             "environment": os.getenv("JARVIS_ENV", "development"),
             "version": "0.1.0",
-            "uptime_seconds": int(time.time() - int(os.getenv("PROCESS_START_TS", "0")))
+            "uptime_seconds": int(time.time() - int(os.getenv("PROCESS_START_TS", "0"))),
+            "mcp_news": mcp_health
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get system status: {str(e)}")

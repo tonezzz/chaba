@@ -12,7 +12,6 @@ from jarvis.core.app import create_app
 from jarvis.websocket.session import websocket_manager
 from jarvis.agents.dispatch import agent_dispatcher
 from jarvis.skills.news import news_skill
-from jarvis.mcp.router import mcp_router
 from jarvis.memory.cache import memory_cache
 
 # Import API routers
@@ -51,12 +50,23 @@ MCP_TOOL_MAP = os.getenv("MCP_TOOL_MAP", "{}")
 WEAVIATE_URL = os.getenv("WEAVIATE_URL", "").strip()
 JARVIS_SESSION_DB = os.getenv("JARVIS_SESSION_DB", "/data/jarvis_sessions.sqlite").strip()
 
+# Determine MCP base URL based on environment
+MCP_ENV = os.getenv("JARVIS_ENV", "development")
+if MCP_ENV == "test":
+    MCP_BASE_URL = "http://mcp-bundle-assistance-test:3151"
+else:
+    MCP_BASE_URL = "http://mcp-bundle-assistance:3050"
+
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Create the FastAPI app
 app = create_app()
+
+# Initialize MCP router with environment-specific URL
+from jarvis.mcp.router import MCPRouter
+mcp_router = MCPRouter(base_url=MCP_BASE_URL)
 
 # Include modular API routers
 app.include_router(oauth_router, prefix="/jarvis/api", tags=["oauth"])
