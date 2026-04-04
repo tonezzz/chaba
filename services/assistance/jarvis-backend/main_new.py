@@ -24,6 +24,17 @@ from jarvis.api.sys_kv import router as sys_kv_router
 from jarvis.api.memory import router as memory_router
 from jarvis.api.imagen import router as imagen_router
 from jarvis.api.reminders import router as reminders_router
+from jarvis.api.sheets import router as sheets_router
+from jarvis.api.dialog import router as dialog_router
+from jarvis.api.system import router as system_router
+
+# Import business logic modules
+from jarvis.dialog.history import recent_dialog_load, format_recent_dialog_for_context
+from jarvis.reminders.scheduler import reminder_scheduler
+from jarvis.sheets.operations import load_sheet_table, load_sheet_kv5
+from jarvis.gemini.client import gemini_client
+from jarvis.utils.text import strip_html_tags, normalize_simple_cmd
+from jarvis.utils.formatting import format_timestamp, format_duration_ms
 
 # Import existing routers
 from routes.google_tasks import create_router as _create_google_tasks_router
@@ -56,6 +67,9 @@ app.include_router(sys_kv_router, prefix="/jarvis/api", tags=["sys_kv"])
 app.include_router(memory_router, prefix="/jarvis/api", tags=["memory"])
 app.include_router(imagen_router, prefix="/jarvis/api", tags=["imagen"])
 app.include_router(reminders_router, prefix="/jarvis/api", tags=["reminders"])
+app.include_router(sheets_router, prefix="/jarvis/api", tags=["sheets"])
+app.include_router(dialog_router, prefix="/jarvis/api", tags=["dialog"])
+app.include_router(system_router, prefix="/jarvis/api", tags=["system"])
 
 # Include existing routers
 app.include_router(
