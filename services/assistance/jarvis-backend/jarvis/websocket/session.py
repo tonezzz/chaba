@@ -94,11 +94,12 @@ class WebSocketSession:
         # Configure session
         self.config = {
             "temperature": 0.7,
-            "response_modalities": ["AUDIO", "TEXT"],
         }
         
         # Start Gemini session
         model_name = os.getenv("GEMINI_LIVE_MODEL", "gemini-2.0-flash-exp")
+        # Force use a simpler model for testing
+        model_name = "gemini-2.0-flash-exp"
         # Remove "models/" prefix if present
         if model_name.startswith("models/"):
             model_name = model_name[7:]
