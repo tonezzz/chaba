@@ -23,6 +23,7 @@ def create_router(
     *,
     mcp_tool_map: dict[str, dict[str, Any]],
     mcp_tools_call: Callable[[str, dict[str, Any]], Awaitable[Any]],
+    mcp_tools_call_with_progress: Optional[Callable[[Any, str, dict[str, Any], str], Awaitable[Any]]] = None,
     mcp_text_json: Callable[[Any], Any],
     require_confirmation: Callable[[bool, str, Any], None],
     resolve_tasklist: Callable[[Optional[str], Optional[str]], Awaitable[tuple[Optional[str], str]]],
