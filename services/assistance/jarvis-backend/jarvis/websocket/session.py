@@ -88,7 +88,7 @@ class WebSocketSession:
         # Initialize Gemini client
         self.client = genai.Client(
             api_key=os.getenv("GEMINI_API_KEY", ""),
-            http_options={"api_version": "v1"}
+            http_options={"api_version": "v1alpha"}
         )
         
         # Configure session
@@ -98,18 +98,24 @@ class WebSocketSession:
         }
         
         # Start Gemini session
-        model_name = os.getenv("GEMINI_LIVE_MODEL", "gemini-2.5-flash-native-audio-preview-12-2025")
-        # Remove "models/" prefix if present
-        if model_name.startswith("models/"):
-            model_name = model_name[7:]
-        
-        print(f"Using model: {model_name}")
-        print(f"Config: {self.config}")
-        
-        self.session = self.client.aio.live.connect(
-            model=model_name,
-            config=self.config,
-        )
+        try:
+            model_name = os.getenv("GEMINI_LIVE_MODEL", "gemini-2.5-flash-native-audio-preview-12-2025")
+            # Remove "models/" prefix if present
+            if model_name.startswith("models/"):
+                model_name = model_name[7:]
+            
+            print(f"Using model: {model_name}")
+            print(f"Config: {self.config}")
+            
+            self.session = self.client.aio.live.connect(
+                model=model_name,
+                config=self.config,
+            )
+            print("Gemini Live session connected successfully")
+        except Exception as e:
+            print(f"Failed to connect to Gemini Live API: {e}")
+            print("Using fallback echo mode")
+            self.session = None
         
         # Load session state
         await self._load_session_state()
@@ -222,6 +228,11 @@ class WebSocketManager:
     
     async def _handle_gemini_session(self, session: WebSocketSession) -> None:
         """Handle Gemini session and WebSocket communication"""
+        if session.session is None:
+            # Fallback echo mode
+            await self._handle_echo_mode(session)
+            return
+            
         try:
             async with session.session as gemini_session:
                 # Create tasks for concurrent communication
@@ -248,6 +259,26 @@ class WebSocketManager:
                         
         except Exception as e:
             logger.error(f"Gemini session error: {e}")
+    
+    async def _handle_echo_mode(self, session: WebSocketSession) -> None:
+        """Fallback echo mode when Gemini Live API is not available"""
+        try:
+            logger.info("Using echo mode - WebSocket connected but Gemini Live API unavailable")
+            
+            while True:
+                data = await session.ws.receive_text()
+                message = json.loads(data)
+                
+                # Echo back the message
+                await session.send_json({
+                    "type": "echo",
+                    "text": f"Echo: {message.get('text', 'No text')}",
+                    "instance_id": INSTANCE_ID,
+                    "mode": "echo"
+                })
+                
+        except Exception as e:
+            logger.error(f"Echo mode error: {e}")
     
     async def _ws_to_gemini_with_session(self, session: WebSocketSession, gemini_session) -> None:
         """Forward WebSocket messages to Gemini with active session"""
