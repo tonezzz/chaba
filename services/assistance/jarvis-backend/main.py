@@ -478,6 +478,7 @@ def tasks_sequential_apply_and_suggest(req: SequentialApplyAndSuggestRequest) ->
 
 
 @app.websocket("/ws/live")
+@app.websocket("/jarvis/ws/live")
 async def ws_live(ws: WebSocket) -> None:
     """Main WebSocket endpoint - now uses modular session manager"""
     await websocket_manager.handle_connection(ws)
