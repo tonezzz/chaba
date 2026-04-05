@@ -93,13 +93,9 @@ class WebSocketSession:
         
         # Configure session
         self.config = {
-            "generation_config": {
-                "response_modalities": ["AUDIO", "TEXT"],
-                "temperature": 0.7,
-            },
-            "system_instruction": {
-                "parts": [{"text": self._get_system_instruction()}],
-            },
+            "temperature": 0.7,
+            "response_modalities": ["AUDIO", "TEXT"],
+            "system_instruction": self._get_system_instruction(),
         }
         
         # Start Gemini session
