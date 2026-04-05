@@ -122,7 +122,7 @@ class WebSocketSession:
             
             # Try different configurations
             configs_to_try = [
-                # Config 1: Text only
+                # Config 1: Text only (no audio)
                 types.LiveConnectConfig(
                     temperature=0.7,
                     response_modalities=["TEXT"],
@@ -131,11 +131,11 @@ class WebSocketSession:
                         temperature=0.7,
                     )
                 ),
-                # Config 2: Minimal config
+                # Config 2: Minimal config (no modalities specified)
                 types.LiveConnectConfig(
                     temperature=0.7,
                 ),
-                # Config 3: With audio (if supported)
+                # Config 3: Audio + Text (if text-only fails)
                 types.LiveConnectConfig(
                     temperature=0.7,
                     response_modalities=["AUDIO", "TEXT"],
@@ -485,8 +485,8 @@ class WebSocketManager:
     async def _get_gemini_response(self, user_text: str, api_key: str) -> str:
         """Get response from Gemini API via HTTP"""
         try:
-            # Use the Gemini Pro API via HTTP
-            url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
+            # Use the Gemini Pro API via HTTP with correct model name
+            url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
             headers = {
                 "Content-Type": "application/json",
                 "x-goog-api-key": api_key
