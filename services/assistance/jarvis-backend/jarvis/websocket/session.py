@@ -344,21 +344,12 @@ class WebSocketManager:
         try:
             logger.info("Using smart fallback mode - Regular Gemini API for intelligent responses")
             
-            # Check if Gemini API is available
-            if not GENAI_AVAILABLE:
-                logger.warning("Google Generative AI library not available, falling back to echo mode")
-                await self._handle_echo_mode(session)
-                return
-            
             # Initialize regular Gemini client
             api_key = os.getenv("GEMINI_API_KEY", "")
             if not api_key:
                 logger.warning("No GEMINI_API_KEY found, falling back to echo mode")
                 await self._handle_echo_mode(session)
                 return
-            
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
             
             # Send welcome message
             await session.send_json({
@@ -381,12 +372,9 @@ class WebSocketManager:
                         
                         logger.info(f"Processing message with Gemini: {user_text[:50]}...")
                         
-                        # Get intelligent response from Gemini
+                        # Get intelligent response from Gemini via HTTP API
                         try:
-                            response = await asyncio.get_event_loop().run_in_executor(
-                                None, lambda: model.generate_content(user_text)
-                            )
-                            response_text = response.text
+                            response_text = await self._get_gemini_response(user_text, api_key)
                             
                             await session.send_json({
                                 "type": "text",
@@ -427,6 +415,42 @@ class WebSocketManager:
             logger.error(f"Failed to initialize smart fallback mode: {e}")
             # Final fallback to echo mode
             await self._handle_echo_mode(session)
+    
+    async def _get_gemini_response(self, user_text: str, api_key: str) -> str:
+        """Get response from Gemini API via HTTP"""
+        try:
+            # Use the Gemini Pro API via HTTP
+            url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
+            headers = {
+                "Content-Type": "application/json",
+                "x-goog-api-key": api_key
+            }
+            
+            payload = {
+                "contents": [{
+                    "parts": [{
+                        "text": user_text
+                    }]
+                }],
+                "generationConfig": {
+                    "temperature": 0.7,
+                    "maxOutputTokens": 1024
+                }
+            }
+            
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(url, json=payload, headers=headers)
+                response.raise_for_status()
+                
+                result = response.json()
+                if "candidates" in result and len(result["candidates"]) > 0:
+                    return result["candidates"][0]["content"]["parts"][0]["text"]
+                else:
+                    return "I'm not sure how to respond to that. Could you try asking differently?"
+                    
+        except Exception as e:
+            logger.error(f"Error calling Gemini API: {e}")
+            return "I'm having trouble connecting to my brain right now. Please try again in a moment."
     
     async def _handle_echo_mode(self, session: WebSocketSession) -> None:
         """Fallback echo mode when Gemini Live API is not available"""
