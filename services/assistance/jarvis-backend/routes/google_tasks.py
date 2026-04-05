@@ -44,7 +44,7 @@ def create_router(
     ) -> GoogleTasksSequentialSummaryResponse:
         auth_meta = mcp_tool_map.get("google_tasks_auth_status") if isinstance(mcp_tool_map, dict) else None
         list_tasklists_meta = mcp_tool_map.get("google_tasks_list_tasklists") if isinstance(mcp_tool_map, dict) else None
-        list_tasks_meta = mcp_tool_map.get("google_tasks_list_tasks") if isinstance(mpc_tool_map, dict) else None
+        list_tasks_meta = mcp_tool_map.get("google_tasks_list_tasks") if isinstance(mcp_tool_map, dict) else None
 
         if not isinstance(auth_meta, dict) or not isinstance(list_tasklists_meta, dict) or not isinstance(list_tasks_meta, dict):
             raise HTTPException(status_code=500, detail="google_tasks_tools_not_configured")
