@@ -96,7 +96,7 @@ class WebSocketSession:
             "generation_config": {
                 "response_modalities": ["AUDIO", "TEXT"],
                 "speech_config": {
-                    "voice_config": {"prebuilt_voice_id": "Puck"},
+                    # prebuilt_voice_id is not supported in current API version
                 },
                 "temperature": 0.7,
             },
@@ -175,8 +175,7 @@ Be concise, helpful, and accurate. If you're unsure about something, admit it.
     async def close(self) -> None:
         """Close the session"""
         try:
-            if self.session:
-                await self.session.close()
+            # Session is automatically closed by async context manager in _handle_gemini_session
             if self._redis_client:
                 await self._redis_client.close()
         except Exception as e:
