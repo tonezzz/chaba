@@ -9,6 +9,7 @@ import uuid
 from typing import Any, Optional
 
 import httpx
+import google.generativeai as genai
 from fastapi import WebSocket
 from starlette.websockets import WebSocketDisconnect
 
@@ -297,8 +298,8 @@ class WebSocketManager:
     async def _handle_gemini_session(self, session: WebSocketSession) -> None:
         """Handle Gemini session and WebSocket communication"""
         if session.session is None:
-            # Fallback echo mode
-            await self._handle_echo_mode(session)
+            # Try smart fallback with regular Gemini API
+            await self._handle_smart_fallback_mode(session)
             return
             
         try:
@@ -328,8 +329,90 @@ class WebSocketManager:
                         
         except Exception as e:
             logger.error(f"Gemini session error: {e}")
-            # If there's an error with the Gemini session, fall back to echo mode
-            logger.info("Falling back to echo mode due to Gemini session error")
+            # Fall back to smart mode if Live API fails during session
+            await self._handle_smart_fallback_mode(session)
+    
+    async def _handle_smart_fallback_mode(self, session: WebSocketSession) -> None:
+        """Smart fallback mode using regular Gemini API for intelligent responses"""
+        try:
+            logger.info("Using smart fallback mode - Regular Gemini API for intelligent responses")
+            
+            # Initialize regular Gemini client
+            api_key = os.getenv("GEMINI_API_KEY", "")
+            if not api_key:
+                logger.warning("No GEMINI_API_KEY found, falling back to echo mode")
+                await self._handle_echo_mode(session)
+                return
+            
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            
+            # Send welcome message
+            await session.send_json({
+                "type": "text",
+                "text": "Jarvis here! I'm ready to help you with intelligent responses. What can I do for you?",
+                "instance_id": INSTANCE_ID,
+                "mode": "smart_fallback"
+            })
+            
+            # Handle messages with intelligent responses
+            while True:
+                try:
+                    data = await asyncio.wait_for(session.ws.receive_text(), timeout=30.0)
+                    message = json.loads(data)
+                    
+                    if message.get("type") == "text":
+                        user_text = message.get("text", "").strip()
+                        if not user_text:
+                            continue
+                        
+                        logger.info(f"Processing message with Gemini: {user_text[:50]}...")
+                        
+                        # Get intelligent response from Gemini
+                        try:
+                            response = await asyncio.get_event_loop().run_in_executor(
+                                None, lambda: model.generate_content(user_text)
+                            )
+                            response_text = response.text
+                            
+                            await session.send_json({
+                                "type": "text",
+                                "text": response_text,
+                                "instance_id": INSTANCE_ID,
+                                "mode": "smart_fallback"
+                            })
+                            
+                            logger.info(f"Sent intelligent response: {response_text[:50]}...")
+                            
+                        except Exception as gemini_error:
+                            logger.error(f"Gemini API error: {gemini_error}")
+                            await session.send_json({
+                                "type": "text",
+                                "text": "I'm having trouble thinking right now. Could you try again?",
+                                "instance_id": INSTANCE_ID,
+                                "mode": "smart_fallback"
+                            })
+                    
+                except asyncio.TimeoutError:
+                    # Send periodic ping
+                    await session.send_json({
+                        "type": "text",
+                        "text": "Still here and ready to help! Send me a message.",
+                        "instance_id": INSTANCE_ID,
+                        "mode": "smart_fallback"
+                    })
+                    
+                except WebSocketDisconnect:
+                    logger.info("WebSocket disconnected in smart fallback mode")
+                    break
+                    
+                except Exception as e:
+                    logger.error(f"Error in smart fallback mode: {e}")
+                    break
+                    
+        except Exception as e:
+            logger.error(f"Failed to initialize smart fallback mode: {e}")
+            # Final fallback to echo mode
             await self._handle_echo_mode(session)
     
     async def _handle_echo_mode(self, session: WebSocketSession) -> None:
