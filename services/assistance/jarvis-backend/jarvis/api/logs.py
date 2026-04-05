@@ -11,7 +11,6 @@ router = APIRouter()
 
 
 @router.post("/logs/ui/append")
-@router.post("/jarvis/logs/ui/append")
 async def logs_ui_append(req: dict[str, Any]) -> dict[str, Any]:
     """Append UI logs"""
     try:
@@ -22,8 +21,6 @@ async def logs_ui_append(req: dict[str, Any]) -> dict[str, Any]:
 
 
 @router.get("/logs/sheets/status")
-@router.get("/jarvis/api/logs/sheets/status")
-@router.get("/jarvis/logs/sheets/status")
 def logs_sheets_status() -> dict[str, Any]:
     """Get sheets logs status"""
     try:
@@ -34,7 +31,6 @@ def logs_sheets_status() -> dict[str, Any]:
 
 
 @router.get("/logs/ui/today")
-@router.get("/jarvis/logs/ui/today")
 def logs_ui_today(max_bytes: int = 200000, max_lines: Optional[int] = None) -> dict[str, Any]:
     """Get today's UI logs"""
     try:
@@ -45,7 +41,6 @@ def logs_ui_today(max_bytes: int = 200000, max_lines: Optional[int] = None) -> d
 
 
 @router.get("/logs/ws/today")
-@router.get("/jarvis/logs/ws/today")
 def logs_ws_today(max_bytes: int = 200000, max_lines: Optional[int] = None) -> dict[str, Any]:
     """Get today's WebSocket logs"""
     try:
