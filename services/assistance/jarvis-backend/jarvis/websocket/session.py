@@ -282,7 +282,7 @@ class WebSocketManager:
             
             # Send a welcome message to confirm the connection is working
             await session.send_json({
-                "type": "echo",
+                "type": "text",
                 "text": "Echo mode active! Send me a message and I'll echo it back.",
                 "instance_id": INSTANCE_ID,
                 "mode": "echo"
@@ -301,7 +301,7 @@ class WebSocketManager:
                         
                         # Echo back the message
                         echo_response = {
-                            "type": "echo",
+                            "type": "text",
                             "text": f"Echo: {message.get('text', 'No text')}",
                             "instance_id": INSTANCE_ID,
                             "mode": "echo"
@@ -315,7 +315,7 @@ class WebSocketManager:
                         logger.error(f"Failed to parse JSON message: {e}")
                         # Send error response
                         await session.send_json({
-                            "type": "error",
+                            "type": "text",
                             "text": f"Invalid JSON: {str(e)}",
                             "instance_id": INSTANCE_ID,
                             "mode": "echo"
@@ -324,7 +324,7 @@ class WebSocketManager:
                 except asyncio.TimeoutError:
                     logger.info("No message received for 30 seconds, sending ping")
                     await session.send_json({
-                        "type": "ping",
+                        "type": "text",
                         "text": "Still here! Send me a message.",
                         "instance_id": INSTANCE_ID,
                         "mode": "echo"
