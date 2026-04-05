@@ -252,6 +252,9 @@ class WebSocketManager:
     async def _ws_to_gemini_with_session(self, session: WebSocketSession, gemini_session) -> None:
         """Forward WebSocket messages to Gemini with active session"""
         try:
+            logger.info(f"gemini_session type: {type(gemini_session)}")
+            logger.info(f"gemini_session methods: {[attr for attr in dir(gemini_session) if not attr.startswith('_')]}")
+            
             while True:
                 data = await session.ws.receive_text()
                 message = json.loads(data)
