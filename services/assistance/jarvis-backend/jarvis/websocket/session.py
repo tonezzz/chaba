@@ -9,11 +9,18 @@ import uuid
 from typing import Any, Optional
 
 import httpx
-import google.generativeai as genai
 from fastapi import WebSocket
 from starlette.websockets import WebSocketDisconnect
 
 from jarvis.feature_flags import feature_enabled
+
+# Conditional import for Gemini API
+try:
+    import google.generativeai as genai
+    GENAI_AVAILABLE = True
+except ImportError:
+    genai = None
+    GENAI_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -336,6 +343,12 @@ class WebSocketManager:
         """Smart fallback mode using regular Gemini API for intelligent responses"""
         try:
             logger.info("Using smart fallback mode - Regular Gemini API for intelligent responses")
+            
+            # Check if Gemini API is available
+            if not GENAI_AVAILABLE:
+                logger.warning("Google Generative AI library not available, falling back to echo mode")
+                await self._handle_echo_mode(session)
+                return
             
             # Initialize regular Gemini client
             api_key = os.getenv("GEMINI_API_KEY", "")
