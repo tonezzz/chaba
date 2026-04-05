@@ -89,7 +89,7 @@ class WebSocketSession:
         # Initialize Gemini client
         self.client = genai.Client(
             api_key=os.getenv("GEMINI_API_KEY", ""),
-            http_options={"api_version": "v1"}
+            http_options={"api_version": "v1alpha"}
         )
         
         # Configure session
@@ -99,8 +99,8 @@ class WebSocketSession:
         
         # Start Gemini session
         try:
-            # Try a simpler model first to isolate the issue
-            model_name = "gemini-1.5-flash"
+            # Try experimental model that might support Live API
+            model_name = "gemini-2.0-flash-exp"
             # Remove "models/" prefix if present
             if model_name.startswith("models/"):
                 model_name = model_name[7:]
