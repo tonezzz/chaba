@@ -108,6 +108,7 @@ class WebSocketSession:
             print(f"Using model: {model_name}")
             print(f"Config: {self.config}")
             
+            # Store the async context manager
             self.session = self.client.aio.live.connect(
                 model=model_name,
                 config=self.config,
@@ -243,6 +244,7 @@ class WebSocketManager:
             return
             
         try:
+            # session.session is the async context manager from live.connect()
             async with session.session as gemini_session:
                 # Create tasks for concurrent communication
                 ws_to_gemini_task = asyncio.create_task(
@@ -268,6 +270,9 @@ class WebSocketManager:
                         
         except Exception as e:
             logger.error(f"Gemini session error: {e}")
+            # If there's an error with the Gemini session, fall back to echo mode
+            logger.info("Falling back to echo mode due to Gemini session error")
+            await self._handle_echo_mode(session)
     
     async def _handle_echo_mode(self, session: WebSocketSession) -> None:
         """Fallback echo mode when Gemini Live API is not available"""
