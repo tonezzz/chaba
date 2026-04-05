@@ -280,7 +280,7 @@ mcp_router = MCPRouter(base_url=MCP_BASE_URL)
 # Include modular API routers
 app.include_router(oauth_router, prefix="/jarvis/api", tags=["oauth"])
 app.include_router(debug_router, prefix="/jarvis/api", tags=["debug"])
-app.include_router(logs_router, prefix="/jarvis/api", tags=["logs"])
+app.include_router(logs_router, tags=["logs"])
 app.include_router(memo_router, prefix="/jarvis/api", tags=["memo"])
 app.include_router(sys_kv_router, prefix="/jarvis/api", tags=["sys_kv"])
 app.include_router(memory_router, prefix="/jarvis/api", tags=["memory"])
