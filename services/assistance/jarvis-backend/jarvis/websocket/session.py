@@ -198,18 +198,33 @@ Be concise, helpful, and accurate. If you're unsure about something, admit it.
 
 
 class WebSocketManager:
-    """Manages multiple WebSocket sessions"""
+    """Manages single WebSocket session per user"""
     
     def __init__(self):
-        self.active_sessions: dict[str, WebSocketSession] = {}
+        self.active_session: Optional[WebSocketSession] = None
+        self.active_session_id: Optional[str] = None
         
     async def handle_connection(self, ws: WebSocket) -> None:
-        """Handle new WebSocket connection"""
+        """Handle new WebSocket connection with single-session constraint"""
         session = WebSocketSession(ws)
         
         try:
             await session.initialize()
-            self.active_sessions[session.session_id] = session
+            
+            # Check if there's an existing session for the same user
+            # Extract user identifier from session or client parameters
+            user_id = self._extract_user_id(session)
+            
+            # If there's an existing session for this user, disconnect it
+            if self.active_session and self.active_session_id == user_id:
+                logger.info(f"Disconnecting existing session for user {user_id}")
+                await self._disconnect_existing_session()
+            
+            # Set this as the active session
+            self.active_session = session
+            self.active_session_id = user_id
+            
+            logger.info(f"New session established for user {user_id}: {session.session_id}")
             
             # Handle the WebSocket communication
             await self._handle_websocket_loop(session)
@@ -218,7 +233,47 @@ class WebSocketManager:
             logger.error(f"WebSocket session error: {e}")
         finally:
             await session.close()
-            self.active_sessions.pop(session.session_id, None)
+            # Clear active session if this was the active one
+            if self.active_session and self.active_session.session_id == session.session_id:
+                self.active_session = None
+                self.active_session_id = None
+                logger.info(f"Session cleared for user: {user_id}")
+    
+    def _extract_user_id(self, session: WebSocketSession) -> str:
+        """Extract user identifier from session parameters"""
+        # For now, use session_id as user identifier, but this could be enhanced
+        # to use actual user authentication tokens or client IDs
+        try:
+            # Try to get client_id from query params
+            client_id = session.ws.query_params.get("client_id", "")
+            if client_id:
+                return str(client_id)
+        except Exception:
+            pass
+        
+        # Fallback to session_id if no client_id
+        return session.session_id
+    
+    async def _disconnect_existing_session(self) -> None:
+        """Disconnect the existing active session"""
+        if self.active_session:
+            try:
+                # Send a session takeover message
+                await self.active_session.send_json({
+                    "type": "system",
+                    "text": "Session connected from another device",
+                    "instance_id": INSTANCE_ID
+                })
+                
+                # Close the existing WebSocket with a specific code
+                await self.active_session.ws.close(code=4000, reason="session_taken_over")
+                logger.info(f"Disconnected existing session: {self.active_session.session_id}")
+                
+            except Exception as e:
+                logger.warning(f"Error disconnecting existing session: {e}")
+            finally:
+                self.active_session = None
+                self.active_session_id = None
     
     async def _handle_websocket_loop(self, session: WebSocketSession) -> None:
         """Main WebSocket communication loop"""
@@ -371,12 +426,15 @@ class WebSocketManager:
             logger.error(f"gemini_to_ws error: {e}")
     
     async def broadcast_to_all(self, message: dict[str, Any]) -> None:
-        """Broadcast message to all active sessions"""
-        for session in self.active_sessions.values():
+        """Broadcast message to the active session (single-session model)"""
+        if self.active_session:
             try:
-                await session.send_json(message)
+                await self.active_session.send_json(message)
+                logger.info(f"Broadcasted message to active session: {self.active_session.session_id}")
             except Exception as e:
-                logger.warning(f"Failed to broadcast to session {session.session_id}: {e}")
+                logger.warning(f"Failed to broadcast to active session {self.active_session.session_id}: {e}")
+        else:
+            logger.info("No active session to broadcast to")
 
 
 # Global manager instance
