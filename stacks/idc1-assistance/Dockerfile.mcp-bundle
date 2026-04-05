@@ -1,0 +1,49 @@
+# Multi-stage build for MCP Bundle
+FROM node:20-alpine AS builder
+
+# Install dependencies
+RUN apk add --no-cache curl
+
+# Copy scripts and templates
+COPY scripts/ /app/scripts/
+COPY templates/ /app/templates/
+
+# Make scripts executable
+RUN chmod +x /app/scripts/*.sh
+
+# Final stage
+FROM ghcr.io/tonezzz/chaba/mcp-bundle:idc1-assistance
+
+# Install additional dependencies if needed
+USER root
+RUN apk add --no-cache curl
+
+# Copy built artifacts
+COPY --from=builder /app/ /app/
+
+# Make scripts executable
+RUN chmod +x /app/scripts/*.sh
+
+# Create entrypoint wrapper
+RUN cat > /app/entrypoint-wrapper.sh <<'EOF'
+#!/bin/sh
+set -e
+
+echo "Starting MCP Bundle setup..."
+
+# Run setup scripts
+/app/scripts/setup-mcp-servers.sh
+
+# Validate setup
+/app/scripts/validate-setup.sh
+
+echo "MCP Bundle setup completed. Starting service..."
+
+# Start the original entrypoint
+exec /app/entrypoint.sh
+EOF
+
+RUN chmod +x /app/entrypoint-wrapper.sh
+
+# Set new entrypoint
+ENTRYPOINT ["/app/entrypoint-wrapper.sh"]

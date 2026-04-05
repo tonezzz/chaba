@@ -1,0 +1,386 @@
+# Improved Docker Compose Configuration
+# Phase 1-3: Extracted commands, template-based config, multi-stage builds
+
+x-default-service: &default-service
+  restart: unless-stopped
+  env_file:
+    - .env.example
+    - .env.local
+  networks:
+    - idc1-stack-net
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+x-backend-service: &backend-service
+  <<: *default-service
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+
+x-database-service: &database-service
+  <<: *default-service
+  # Database-specific defaults
+
+services:
+  jarvis-backend:
+    <<: *backend-service
+    image: ghcr.io/tonezzz/chaba/jarvis-backend:idc1-assistance
+    ports:
+      - "${JARVIS_BACKEND_PORT:-127.0.0.1:18018}:8018"
+    environment:
+      PORT: 8018
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_LIVE_MODEL: ${GEMINI_LIVE_MODEL:-gemini-2.5-flash-native-audio-preview-12-2025}
+      JARVIS_PUBLIC_BASE_URL: ${JARVIS_PUBLIC_BASE_URL:-https://assistance.idc1.surf-thailand.com}
+      JARVIS_VERIFY_FRONTEND_BASE_URL: ${JARVIS_VERIFY_FRONTEND_BASE_URL:-}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      JARVIS_RECENT_DIALOG_TTL_SECONDS: ${JARVIS_RECENT_DIALOG_TTL_SECONDS:-86400}
+      JARVIS_RECENT_DIALOG_MAX_TURNS: ${JARVIS_RECENT_DIALOG_MAX_TURNS:-60}
+      JARVIS_RECENT_DIALOG_MAX_CHARS: ${JARVIS_RECENT_DIALOG_MAX_CHARS:-4000}
+      JARVIS_FEATURE_MEMO_ENABLED: "true"
+      JARVIS_FEATURE_MEMORY_ENABLED: "false"
+      JARVIS_FEATURE_KNOWLEDGE_ENABLED: "false"
+      GITHUB_PERSONAL_TOKEN_RO: ${GITHUB_PERSONAL_TOKEN_RO:-}
+      GITHUB_PERSONAL_TOKEN_RW: ${GITHUB_PERSONAL_TOKEN_RW:-}
+      CHABA_SYSTEM_SPREADSHEET_ID: ${CHABA_SYSTEM_SPREADSHEET_ID:-}
+      CHABA_SYSTEM_SHEET_NAME: ${CHABA_SYSTEM_SHEET_NAME:-}
+      JARVIS_SHEETS_LOGS_ENABLED: ${JARVIS_SHEETS_LOGS_ENABLED:-true}
+      JARVIS_SHEETS_LOGS_SHEET_NAME: ${JARVIS_SHEETS_LOGS_SHEET_NAME:-logs}
+      PORTAINER_URL: ${PORTAINER_URL:-http://portainer:9000}
+      PORTAINER_TOKEN: ${PORTAINER_TOKEN:-}
+      PORTAINER_ENDPOINT_ID: ${PORTAINER_ENDPOINT_ID:-2}
+      PORTAINER_STACK_NAME: ${PORTAINER_STACK_NAME:-idc1-assistance}
+      JARVIS_SESSION_DB: ${JARVIS_SESSION_DB:-/data/jarvis_sessions.sqlite}
+      JARVIS_IMAGEN_ASSETS_DIR: ${JARVIS_IMAGEN_ASSETS_DIR:-/app/imagen_assets}
+      JARVIS_CARS_DATA_DIR: ${JARVIS_CARS_DATA_DIR:-/app/assistance_data/cars}
+      JARVIS_IMAGEN_MODEL: ${JARVIS_IMAGEN_MODEL:-imagen-4.0-generate-001}
+      JARVIS_IMAGEN_ALLOWED_MODELS: ${JARVIS_IMAGEN_ALLOWED_MODELS:-imagen-4.0-generate-001,imagen-4.0-ultra-generate-001,imagen-4.0-fast-generate-001}
+      JARVIS_IMAGE_MODEL: ${JARVIS_IMAGE_MODEL:-gemini-3.1-flash-image-preview}
+      JARVIS_IMAGE_ALLOWED_MODELS: ${JARVIS_IMAGE_ALLOWED_MODELS:-gemini-3.1-flash-image-preview}
+      WEB_FETCHER_BASE_URL: ${WEB_FETCHER_BASE_URL:-http://web-fetcher:8028}
+      MCP_BASE_URL: ${MCP_BASE_URL:-http://mcp-bundle-assistance:3050}
+      MCP_PLAYWRIGHT_BASE_URL: ${MCP_PLAYWRIGHT_BASE_URL:-http://mcp-playwright:3050}
+      DEEP_RESEARCH_WORKER_BASE_URL: ${DEEP_RESEARCH_WORKER_BASE_URL:-http://deep-research-worker:8030}
+      WEAVIATE_URL: ${WEAVIATE_URL:-http://weaviate:8080}
+    volumes:
+      - jarvis-imagen-assets:${JARVIS_IMAGEN_ASSETS_DIR:-/app/imagen_assets}
+      - jarvis-session-db:/data
+      - ../../services/assistance_data:/app/assistance_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8018/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - idc1-stack-net
+      - idc1-portainer_default
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    labels:
+      monitoring: "prometheus"
+      service: "jarvis-backend"
+
+  redis:
+    <<: *database-service
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - jarvis-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  deep-research-worker:
+    <<: *backend-service
+    image: ghcr.io/tonezzz/chaba/deep-research-worker:idc1-assistance
+    ports:
+      - "${DEEP_RESEARCH_WORKER_PORT:-127.0.0.1:18030}:8030"
+    environment:
+      PORT: 8030
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      DEEP_RESEARCH_AGENT: ${DEEP_RESEARCH_AGENT:-deep-research-pro-preview-12-2025}
+      DEEP_RESEARCH_DB: ${DEEP_RESEARCH_DB:-/data/deep_research.sqlite}
+      DEEP_RESEARCH_POLL_SECONDS: ${DEEP_RESEARCH_POLL_SECONDS:-10}
+    volumes:
+      - deep-research-worker-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8030/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # IMPROVED: MCP Bundle with extracted setup
+  mcp-bundle:
+    <<: *backend-service
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp-bundle
+      cache_from:
+        - ghcr.io/tonezzz/chaba/mcp-bundle:idc1-assistance
+    image: ghcr.io/tonezzz/chaba/mcp-bundle:idc1-assistance-improved
+    ports:
+      - "${MCP_BUNDLE_PORT:-127.0.0.1:3051}:3050"
+    environment:
+      ONE_MCP_HOST: 0.0.0.0
+      ONE_MCP_PORT: 3050
+      ONE_MCP_EXTERNAL_URL: ${ONE_MCP_EXTERNAL_URL:-https://127.0.0.1:3051}
+      
+      # Google OAuth Configuration
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
+      GOOGLE_SHEETS_REDIRECT_URI: ${GOOGLE_SHEETS_REDIRECT_URI:-}
+      
+      # Token Management
+      GOOGLE_SHARED_TOKEN_PATH: ${GOOGLE_SHARED_TOKEN_PATH:-/root/.config/1mcp/google.tokens.json}
+      GOOGLE_TASKS_TOKEN_PATH: ${GOOGLE_SHARED_TOKEN_PATH:-/root/.config/1mcp/google.tokens.json}
+      GOOGLE_SHEETS_TOKEN_PATH: ${GOOGLE_SHARED_TOKEN_PATH:-/root/.config/1mcp/google.tokens.json}
+      GOOGLE_CALENDAR_TOKEN_PATH: ${GOOGLE_SHARED_TOKEN_PATH:-/root/.config/1mcp/google.tokens.json}
+      
+      # Scopes Configuration
+      GOOGLE_SHARED_SCOPES: ${GOOGLE_SHARED_SCOPES:-https://www.googleapis.com/auth/tasks,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/spreadsheets}
+      GOOGLE_TASKS_SCOPES: ${GOOGLE_SHARED_SCOPES:-https://www.googleapis.com/auth/tasks,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/spreadsheets}
+      GOOGLE_SHEETS_SCOPES: ${GOOGLE_SHARED_SCOPES:-https://www.googleapis.com/auth/tasks,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/spreadsheets}
+      GOOGLE_CALENDAR_SCOPES: ${GOOGLE_SHARED_SCOPES:-https://www.googleapis.com/auth/tasks,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/spreadsheets}
+      
+      # Server Configuration
+      MCP_SERVERS: "google-tasks,google-sheets,google-calendar,fetch,sequential-thinking"
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+    volumes:
+      - mcp-bundle-config:/root/.config/1mcp
+      - ./templates:/app/templates:ro
+      - ./scripts:/app/scripts:ro
+    networks:
+      idc1-stack-net:
+        aliases:
+          - mcp-bundle-assistance
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:3050/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      monitoring: "prometheus"
+      service: "mcp-bundle"
+
+  # Additional services (keeping existing configurations for brevity)
+  jarvis-frontend:
+    <<: *backend-service
+    image: ghcr.io/tonezzz/chaba/jarvis-frontend:idc1-assistance
+    ports:
+      - "${JARVIS_FRONTEND_PORT:-127.0.0.1:18080}:80"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      VITE_API_BASE_URL: ${JARVIS_PUBLIC_BASE_URL:-https://assistance.idc1.surf-thailand.com}
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+  web-fetcher:
+    <<: *backend-service
+    image: ghcr.io/tonezzz/chaba/web-fetcher:idc1-assistance
+    environment:
+      PORT: 8028
+      FETCH_TIMEOUT_MS: ${FETCH_TIMEOUT_MS:-30000}
+      MAX_CONCURRENT_REQUESTS: ${MAX_CONCURRENT_REQUESTS:-10}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8028/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+  weaviate:
+    <<: *database-service
+    image: semitechnologies/weaviate:1.24.10
+    environment:
+      QUERY_DEFAULTS_LIMIT: ${WEAVIATE_QUERY_LIMIT:-25}
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+      PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
+      DEFAULT_VECTORIZER_MODULE: 'none'
+      ENABLE_MODULES: ''
+      CLUSTER_HOSTNAME: 'node1'
+    volumes:
+      - weaviate-data:/var/lib/weaviate
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/v1/.well-known/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  # MCP Playwright and other services remain the same...
+  mcp-playwright:
+    <<: *backend-service
+    image: mcr.microsoft.com/playwright:v1.58.2-jammy
+    environment:
+      NODE_ENV: production
+    volumes:
+      - mcp-playwright-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:3050/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  # Additional MCP services...
+  mcp-image-pipeline:
+    <<: *backend-service
+    image: ghcr.io/tonezzz/chaba/mcp-image-pipeline:idc1-assistance
+    ports:
+      - "${MCP_IMAGE_PIPELINE_PORT:-127.0.0.1:3053}:3050"
+    environment:
+      PORT: 3050
+      IMAGEN_API_KEY: ${IMAGEN_API_KEY:-${GEMINI_API_KEY}}
+      IMAGEN_MODEL: ${IMAGEN_MODEL:-imagen-4.0-generate-001}
+      MAX_IMAGE_SIZE: ${MAX_IMAGE_SIZE:-2048}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:3050/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  mcp-ws-gateway:
+    <<: *backend-service
+    image: node:20-alpine
+    environment:
+      PORT: 8181
+      WS_TARGET_URL: ${MCP_BASE_URL:-http://mcp-bundle-assistance:3050}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8181/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+  mcp-ws-gateway-portainer:
+    <<: *backend-service
+    image: node:20-alpine
+    ports:
+      - "${MCP_WS_GATEWAY_PORTAINER_PORT:-127.0.0.1:18183}:8182"
+    environment:
+      PORT: 8182
+      WS_TARGET_URL: ${PORTAINER_URL:-http://portainer:9000}
+      PORTAINER_TOKEN: ${PORTAINER_TOKEN:-}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8182/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+networks:
+  idc1-stack-net:
+    driver: bridge
+    external: true
+    name: idc1-stack-net
+  idc1-portainer_default:
+    external: true
+
+volumes:
+  jarvis-imagen-assets:
+  jarvis-session-db:
+  jarvis-redis-data:
+  deep-research-worker-data:
+  mcp-bundle-config:
+  weaviate-data:
+  mcp-playwright-data:
+  mcp-image-pipeline-data:
