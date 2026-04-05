@@ -107,14 +107,17 @@ class WebSocketSession:
         
         # Start Gemini session
         try:
-            # Try different models that might support Live API
+            # Try models that are known to support Live API
             models_to_try = [
-                "gemini-2.5-flash",
-                "gemini-2.0-flash", 
-                "gemini-1.5-flash",
-                "gemini-2.5-flash-exp",
-                "gemini-2.0-flash-exp",
-                "gemini-1.5-flash-exp"
+                "gemini-2.5-flash-native-audio-preview-12-2025",  # Original audio model
+                "gemini-2.0-flash-exp",                          # Experimental model
+                "gemini-1.5-pro",                                # Pro model
+                "gemini-1.5-flash",                              # Flash model
+                "gemini-2.5-flash",                              # Latest flash
+                "gemini-2.0-flash",                              # Previous version
+                "gemini-2.5-pro",                                # Latest pro
+                "gemini-2.5-flash-exp",                          # Experimental flash
+                "gemini-2.0-flash-exp",                          # Experimental flash 2.0
             ]
             
             # Try different configurations
@@ -180,9 +183,20 @@ class WebSocketSession:
                 logger.info("Model not found error - trying to list available models")
                 try:
                     models = self.client.models.list()
-                    logger.info(f"Available models: {[model.name for model in models]}")
+                    available_models = [model.name for model in models]
+                    logger.info(f"Available models: {available_models}")
+                    
+                    # Try to find models that might support Live API
+                    live_candidates = [m for m in available_models if any(keyword in m.lower() for keyword in ['flash', 'pro', 'exp', 'audio', 'live'])]
+                    if live_candidates:
+                        logger.info(f"Potential Live API models: {live_candidates}")
                 except Exception as list_error:
                     logger.error(f"Could not list models: {list_error}")
+            elif "invalid argument" in str(e).lower():
+                logger.info("Invalid argument error - trying different configuration")
+            else:
+                logger.error(f"Unexpected Gemini Live API error: {e}")
+                
             logger.info("Using fallback smart mode")
             self.session = None
         
