@@ -4,7 +4,7 @@ import os
 import uuid
 from typing import Any, Optional
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import modular components
@@ -289,12 +289,30 @@ class SequentialApplyAndSuggestRequest(BaseModel):
     mode: Optional[str] = Field(default="suggest")
     notes: str = Field(default="")
     step_index: Optional[int] = Field(default=None, ge=0)
+    step_text: str = Field(default="")
+    step_index_hint: Optional[int] = Field(default=None, ge=0)
+    completed_tasks: Optional[list[dict[str, Any]]] = None
+
+class SequentialSuggestRequest(BaseModel):
+    task: dict[str, Any] = Field(default_factory=dict)
+    completed_tasks: Optional[list[dict[str, Any]]] = None
+
+class SequentialSuggestResponse(BaseModel):
+    ok: bool = True
+    next_step_text: Optional[str] = None
+    next_step_index: Optional[int] = None
+    template: Optional[list[str]] = None
 
 class SequentialApplyAndSuggestResponse(BaseModel):
     ok: bool
-    changed: bool
+    mode: str
     notes: str
-    suggestions: Optional[list[str]] = None
+    changed: bool
+    changed_count: Optional[int] = None
+    matched_step_index: Optional[int] = None
+    next_step_text: Optional[str] = None
+    next_step_index: Optional[int] = None
+    template: Optional[list[str]] = None
 
 @app.post("/tasks/sequential/apply", response_model=SequentialApplyResponse)
 def tasks_sequential_apply(req: SequentialApplyRequest) -> SequentialApplyResponse:
@@ -311,23 +329,81 @@ def tasks_sequential_apply_all(req: SequentialApplyAllRequest) -> SequentialAppl
     updated, changed, changed_count = mark_all_checklist_steps_done(req.notes)
     return SequentialApplyAllResponse(ok=True, changed=changed, changed_count=changed_count, notes=updated)
 
+@app.post("/tasks/sequential/suggest", response_model=SequentialSuggestResponse)
+def tasks_sequential_suggest(req: SequentialSuggestRequest) -> SequentialSuggestResponse:
+    task = req.task if isinstance(req.task, dict) else {}
+    suggestion = suggest_next_step_from_task(task)
+    
+    template: Optional[list[str]] = None
+    if req.completed_tasks is not None:
+        template = suggest_template_from_completed_tasks(req.completed_tasks)
+    
+    return SequentialSuggestResponse(
+        ok=True,
+        next_step_text=suggestion.next_step_text,
+        next_step_index=suggestion.next_step_index,
+        template=template,
+    )
+
 @app.post("/tasks/sequential/apply_and_suggest", response_model=SequentialApplyAndSuggestResponse)
 def tasks_sequential_apply_and_suggest(req: SequentialApplyAndSuggestRequest) -> SequentialApplyAndSuggestResponse:
     mode = str(req.mode or "suggest")
     notes_in = str(req.notes or "")
-    
-    # Simple implementation for now
+
+    updated_notes = notes_in
+    changed = False
+    changed_count: Optional[int] = None
+    matched_step_index: Optional[int] = None
+
     if mode == "suggest":
-        try:
-            # suggest_next_step_from_task expects a dict with 'notes' key
-            suggestions = suggest_next_step_from_task({"notes": notes_in}) if notes_in else []
-        except Exception as e:
-            logger.warning(f"suggest_next_step_from_task failed: {e}")
-            suggestions = []
+        pass
+    elif mode == "index":
+        if req.step_index is None:
+            raise HTTPException(status_code=400, detail="missing_step_index")
+        updated_notes, changed = mark_checklist_step_done(updated_notes, int(req.step_index))
+    elif mode == "text":
+        step_text = str(req.step_text or "").strip()
+        if not step_text:
+            raise HTTPException(status_code=400, detail="missing_step_text")
+        matches = find_checklist_step_indices_by_text(updated_notes, step_text)
+        if len(matches) >= 2:
+            hint = req.step_index_hint
+            if hint is not None and int(hint) in matches:
+                matched_step_index = int(hint)
+                updated_notes, changed = mark_checklist_step_done(updated_notes, matched_step_index)
+            else:
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "ambiguous_step_text": True,
+                        "step_text": step_text,
+                        "match_indices": matches,
+                    },
+                )
+        else:
+            updated_notes, changed, matched_step_index = mark_checklist_step_done_by_text(updated_notes, step_text)
+    elif mode == "all":
+        updated_notes, changed, cnt = mark_all_checklist_steps_done(updated_notes)
+        changed_count = cnt
     else:
-        suggestions = []
-    
-    return SequentialApplyAndSuggestResponse(ok=True, changed=False, notes=notes_in, suggestions=suggestions)
+        raise HTTPException(status_code=400, detail="invalid_mode")
+
+    suggestion = suggest_next_step_from_task({"notes": updated_notes})
+    template: Optional[list[str]] = None
+    if req.completed_tasks is not None:
+        template = suggest_template_from_completed_tasks(req.completed_tasks)
+
+    return SequentialApplyAndSuggestResponse(
+        ok=True,
+        mode=mode,
+        notes=updated_notes,
+        changed=changed,
+        changed_count=changed_count,
+        matched_step_index=matched_step_index,
+        next_step_text=suggestion.next_step_text,
+        next_step_index=suggestion.next_step_index,
+        template=template,
+    )
 
 
 @app.websocket("/ws/live")
