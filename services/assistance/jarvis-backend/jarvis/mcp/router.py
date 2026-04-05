@@ -2,6 +2,7 @@
 MCP Router for integrating with Model Context Protocol servers.
 """
 
+import json
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -48,10 +49,60 @@ class MCPRouter:
     async def list_tools(self) -> List[Dict[str, Any]]:
         """List available tools from MCP server."""
         try:
-            response = await self.client.get(f"{self.base_url}/tools")
+            # Initialize MCP session first
+            init_payload = {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {"tools": {}},
+                    "clientInfo": {"name": "jarvis-backend", "version": "1.0.0"}
+                }
+            }
+            
+            response = await self.client.post(
+                f"{self.base_url}/mcp?app=windsurf",
+                json=init_payload,
+                headers={"Accept": "application/json, text/event-stream"}
+            )
             response.raise_for_status()
-            data = response.json()
-            return data.get("tools", [])
+            
+            # Parse Server-Sent Events response
+            content = response.text
+            for line in content.split('\n'):
+                if line.startswith('data: '):
+                    try:
+                        data = json.loads(line[6:])
+                        if data.get("result"):
+                            # Now list tools
+                            tools_payload = {
+                                "jsonrpc": "2.0",
+                                "id": 2,
+                                "method": "tools/list",
+                                "params": {}
+                            }
+                            
+                            tools_response = await self.client.post(
+                                f"{self.base_url}/mcp?app=windsurf",
+                                json=tools_payload,
+                                headers={"Accept": "application/json, text/event-stream"}
+                            )
+                            tools_response.raise_for_status()
+                            
+                            tools_content = tools_response.text
+                            for tools_line in tools_content.split('\n'):
+                                if tools_line.startswith('data: '):
+                                    try:
+                                        tools_data = json.loads(tools_line[6:])
+                                        if tools_data.get("result"):
+                                            return tools_data["result"].get("tools", [])
+                                    except json.JSONDecodeError:
+                                        continue
+                    except json.JSONDecodeError:
+                        continue
+            
+            return []
         except Exception as e:
             logger.error(f"Failed to list MCP tools: {e}")
             raise HTTPException(status_code=500, detail=f"Failed to list tools: {e}")
@@ -117,25 +168,58 @@ class MCPRouter:
             Tool call result
         """
         try:
-            payload = {
-                "name": tool_name,
-                "arguments": arguments
+            # Initialize MCP session first
+            init_payload = {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {"tools": {}},
+                    "clientInfo": {"name": "jarvis-backend", "version": "1.0.0"}
+                }
             }
             
             response = await self.client.post(
-                f"{self.base_url}/tools/call",
-                json=payload
+                f"{self.base_url}/mcp?app=windsurf",
+                json=init_payload,
+                headers={"Accept": "application/json, text/event-stream"}
             )
             response.raise_for_status()
             
-            data = response.json()
+            # Call the tool
+            call_payload = {
+                "jsonrpc": "2.0",
+                "id": 2,
+                "method": "tools/call",
+                "params": {
+                    "name": tool_name,
+                    "arguments": arguments
+                }
+            }
             
-            # Extract content from MCP response
-            if "result" in data and "content" in data["result"]:
-                return data["result"]
-            else:
-                return data
-                
+            call_response = await self.client.post(
+                f"{self.base_url}/mcp?app=windsurf",
+                json=call_payload,
+                headers={"Accept": "application/json, text/event-stream"}
+            )
+            call_response.raise_for_status()
+            
+            # Parse Server-Sent Events response
+            content = call_response.text
+            for line in content.split('\n'):
+                if line.startswith('data: '):
+                    try:
+                        data = json.loads(line[6:])
+                        if data.get("result"):
+                            return data["result"]
+                        elif data.get("error"):
+                            return {"error": data["error"]}
+                    except json.JSONDecodeError:
+                        continue
+            
+            return {"error": "No valid response received"}
+            
         except Exception as e:
             logger.error(f"Failed to call MCP tool {tool_name}: {e}")
             raise HTTPException(status_code=500, detail=f"Tool call failed: {e}")

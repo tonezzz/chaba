@@ -12,11 +12,14 @@ services:
     restart: unless-stopped
 
   webtops-cp:
-    image: nginx:alpine
+    build:
+      context: ../../mcp/webtops-cp
+      dockerfile: Dockerfile
     ports:
-      - "${WEBTOPS_CP_PORT:-3005}:80"
+      - "${WEBTOPS_CP_PORT:-3005}:3000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker
       - ${WEBTOPS_SNAPSHOT_HOST_DIR:-./data/mcp-webtops/snapshots}:/app/snapshots
       - ${WEBTOPS_STATE_HOST_DIR:-./data/mcp-webtops/state}:/app/state
     networks:

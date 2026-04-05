@@ -107,8 +107,44 @@ def _current_news_router():
     
     @router.get("/current-news")
     async def get_current_news():
-        """Get current news endpoint."""
-        return {"status": "ok", "message": "Current news endpoint placeholder"}
+        """Get current news"""
+        try:
+            # Use the working MCP client functions
+            from mcp_client import mcp_tools_call
+            
+            # Call MCP news_run tool
+            result = await mcp_tools_call(MCP_BASE_URL, "news_1mcp_news_run", {
+                "start_at": "fetch", 
+                "stop_after": "render"
+            })
+            
+            if "error" in result:
+                return {
+                    "status": "error", 
+                    "message": f"News fetch failed: {result['error']}"
+                }
+            
+            # Extract and return the brief
+            brief = result.get("brief", "")
+            if brief:
+                return {
+                    "status": "ok",
+                    "brief": brief,
+                    "full_result": result
+                }
+            else:
+                return {
+                    "status": "ok", 
+                    "message": "News fetched but no brief generated",
+                    "result": result
+                }
+                
+        except Exception as e:
+            logger.error(f"Error in current news endpoint: {e}")
+            return {
+                "status": "error",
+                "message": f"Sorry, I encountered an error fetching news: {str(e)}"
+            }
     
     return router
 
@@ -445,19 +481,25 @@ async def _mcp_tools_call_with_progress(ws: WebSocket, name: str, arguments: dic
     return await mcp_router.call_tool_with_progress(ws, name, arguments, trace_id)
 
 
-# Current news router (simplified placeholder)
-def _current_news_router():
-    """Create current news router"""
-    from fastapi import APIRouter
-    router = APIRouter()
-    
-    @router.get("/current-news")
-    async def get_current_news():
-        """Get current news"""
-        return {"ok": True, "message": "Current news endpoint - to be implemented"}
-    
-    return router
-
+# Test MCP endpoint
+@app.get("/jarvis/api/test-mcp")
+async def test_mcp():
+    """Test MCP connection"""
+    try:
+        # Test through the MCP router which handles session management
+        tools = await mcp_router.list_tools()
+        return {
+            "status": "ok",
+            "mcp_base_url": MCP_BASE_URL,
+            "tools_count": len(tools),
+            "tools": tools[:5]  # First 5 tools
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e),
+            "mcp_base_url": MCP_BASE_URL
+        }
 
 # Legacy endpoints (would be moved to appropriate modules)
 @app.get("/jarvis/debug/status")
