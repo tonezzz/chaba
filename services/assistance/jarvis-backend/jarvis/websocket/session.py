@@ -104,6 +104,10 @@ class WebSocketSession:
         
         # Start Gemini session
         model_name = os.getenv("GEMINI_LIVE_MODEL", "gemini-2.5-flash-native-audio-preview-12-2025")
+        # Remove "models/" prefix if present
+        if model_name.startswith("models/"):
+            model_name = model_name[7:]
+        
         self.session = self.client.aio.live.connect(
             model=model_name,
             config=self.config,
