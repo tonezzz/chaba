@@ -281,18 +281,39 @@ class WebSocketManager:
             
             while True:
                 data = await session.ws.receive_text()
-                message = json.loads(data)
+                logger.info(f"Received WebSocket message: {data}")
                 
-                # Echo back the message
-                await session.send_json({
-                    "type": "echo",
-                    "text": f"Echo: {message.get('text', 'No text')}",
-                    "instance_id": INSTANCE_ID,
-                    "mode": "echo"
-                })
+                try:
+                    message = json.loads(data)
+                    logger.info(f"Parsed message: {message}")
+                    
+                    # Echo back the message
+                    echo_response = {
+                        "type": "echo",
+                        "text": f"Echo: {message.get('text', 'No text')}",
+                        "instance_id": INSTANCE_ID,
+                        "mode": "echo"
+                    }
+                    logger.info(f"Sending echo response: {echo_response}")
+                    
+                    await session.send_json(echo_response)
+                    logger.info("Echo response sent successfully")
+                    
+                except json.JSONDecodeError as e:
+                    logger.error(f"Failed to parse JSON message: {e}")
+                    # Send error response
+                    await session.send_json({
+                        "type": "error",
+                        "text": f"Invalid JSON: {str(e)}",
+                        "instance_id": INSTANCE_ID,
+                        "mode": "echo"
+                    })
                 
         except Exception as e:
             logger.error(f"Echo mode error: {e}")
+            logger.error(f"Echo mode error type: {type(e)}")
+            import traceback
+            logger.error(f"Echo mode traceback: {traceback.format_exc()}")
     
     async def _ws_to_gemini_with_session(self, session: WebSocketSession, gemini_session) -> None:
         """Forward WebSocket messages to Gemini with active session"""
