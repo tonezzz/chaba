@@ -94,6 +94,7 @@ class WebSocketSession:
         # Configure session
         self.config = {
             "generation_config": {
+                "response_modalities": ["AUDIO", "TEXT"],
                 "temperature": 0.7,
             },
             "system_instruction": {
