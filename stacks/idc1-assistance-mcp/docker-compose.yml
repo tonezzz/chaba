@@ -36,8 +36,8 @@ services:
       GOOGLE_CALENDAR_SCOPES: ${GOOGLE_SHARED_SCOPES:-https://www.googleapis.com/auth/tasks,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/spreadsheets}
     volumes:
       - mcp-bundle-config:/root/.config/1mcp
-      - ../../services/assistance/mcp-bundle/mcp-config:/app/mcp-config:ro
-      - ../../services/assistance/mcp-bundle/mcp-servers/mcp-news:/app/mcp-servers/mcp-news:ro
+      - /home/chaba/chaba/services/assistance/mcp-bundle/mcp-config:/app/mcp-config:ro
+      - /home/chaba/chaba/services/assistance/mcp-bundle/mcp-servers/mcp-news:/app/mcp-servers/mcp-news:ro
     networks:
       idc1-stack-net:
         aliases:

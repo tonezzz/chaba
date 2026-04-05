@@ -5,8 +5,6 @@ from typing import Any, Dict, Optional
 
 from fastapi import WebSocket
 
-from jarvis.mcp.router import mcp_router
-
 logger = logging.getLogger(__name__)
 
 
@@ -22,12 +20,14 @@ class NewsSkill:
         try:
             await self._send_progress(ws, "Fetching current news...", trace_id)
             
-            # Call mcp-news tools via MCP router
-            result = await mcp_router.call_tool_with_progress(
-                ws, "news_run", 
-                {"start_at": "fetch", "stop_after": "render"},
-                trace_id
-            )
+            # Use the working MCP client functions
+            from mcp_client import mcp_tools_call
+            from main import MCP_BASE_URL
+            
+            # Call MCP news_run tool with correct tool name format
+            result = await mcp_tools_call(MCP_BASE_URL, "news_1mcp_news_run", {
+                "start_at": "fetch", "stop_after": "render"
+            })
             
             if "error" in result:
                 await self._send_text(ws, f"News fetch failed: {result['error']}", trace_id)
