@@ -92,10 +92,10 @@ class WebSocketSession:
         )
         
         # Configure session
-        self.config = {
-            "temperature": 0.7,
-            "response_modalities": ["AUDIO", "TEXT"],
-        }
+        self.config = types.LiveConnectConfig(
+            temperature=0.7,
+            response_modalities=["AUDIO", "TEXT"],
+        )
         
         # Start Gemini session
         try:
