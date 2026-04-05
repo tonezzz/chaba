@@ -107,15 +107,16 @@ class WebSocketSession:
         
         # Start Gemini session
         try:
-            # Try models that are known to support Live API (prioritize text models)
+            # Try models that are known to support Live API (prioritize working models)
             models_to_try = [
-                "gemini-2.0-flash-exp",                          # Experimental model (text-first)
-                "gemini-2.5-flash-exp",                          # Experimental flash
+                # Focus on models most likely to work with text-based Live API
+                "gemini-2.0-flash-exp",                          # Experimental model (connected successfully)
                 "gemini-1.5-pro",                                # Pro model
                 "gemini-1.5-flash",                              # Flash model
                 "gemini-2.5-flash",                              # Latest flash
                 "gemini-2.0-flash",                              # Previous version
                 "gemini-2.5-pro",                                # Latest pro
+                "gemini-2.5-flash-exp",                          # Experimental flash
                 "gemini-2.5-flash-native-audio-preview-12-2025",  # Audio model (last resort)
             ]
             
