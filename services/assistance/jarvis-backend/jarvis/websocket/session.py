@@ -94,10 +94,6 @@ class WebSocketSession:
         # Configure session
         self.config = {
             "generation_config": {
-                "response_modalities": ["AUDIO", "TEXT"],
-                "speech_config": {
-                    # prebuilt_voice_id is not supported in current API version
-                },
                 "temperature": 0.7,
             },
             "system_instruction": {
