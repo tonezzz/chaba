@@ -94,12 +94,12 @@ class WebSocketSession:
         # Configure session
         self.config = types.LiveConnectConfig(
             temperature=0.7,
-            response_modalities=["AUDIO", "TEXT"],
         )
         
         # Start Gemini session
         try:
-            model_name = os.getenv("GEMINI_LIVE_MODEL", "gemini-2.5-flash-native-audio-preview-12-2025")
+            # Try a different model that might be more compatible
+            model_name = "gemini-2.0-flash-exp"
             # Remove "models/" prefix if present
             if model_name.startswith("models/"):
                 model_name = model_name[7:]
