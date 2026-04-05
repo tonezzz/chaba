@@ -215,10 +215,14 @@ class WebSocketManager:
             # Extract user identifier from session or client parameters
             user_id = self._extract_user_id(session)
             
+            logger.info(f"Connection attempt for user {user_id}, current active session: {self.active_session_id}")
+            
             # If there's an existing session for this user, disconnect it
             if self.active_session and self.active_session_id == user_id:
                 logger.info(f"Disconnecting existing session for user {user_id}")
                 await self._disconnect_existing_session()
+            else:
+                logger.info(f"No existing session for user {user_id} or different user")
             
             # Set this as the active session
             self.active_session = session
