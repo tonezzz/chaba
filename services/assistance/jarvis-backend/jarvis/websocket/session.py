@@ -94,12 +94,13 @@ class WebSocketSession:
         # Configure session
         self.config = types.LiveConnectConfig(
             temperature=0.7,
+            response_modalities=["AUDIO", "TEXT"],
         )
         
         # Start Gemini session
         try:
-            # Try a different model that might be more compatible
-            model_name = "gemini-2.0-flash-exp"
+            # Use the original audio model from environment
+            model_name = os.getenv("GEMINI_LIVE_MODEL", "gemini-2.5-flash-native-audio-preview-12-2025")
             # Remove "models/" prefix if present
             if model_name.startswith("models/"):
                 model_name = model_name[7:]
@@ -114,6 +115,14 @@ class WebSocketSession:
             print("Gemini Live session connected successfully")
         except Exception as e:
             print(f"Failed to connect to Gemini Live API: {e}")
+            # Try to get more specific error information
+            if "1008" in str(e):
+                print("Model not found error - trying to list available models")
+                try:
+                    models = self.client.models.list()
+                    print(f"Available models: {[model.name for model in models]}")
+                except Exception as list_error:
+                    print(f"Could not list models: {list_error}")
             print("Using fallback echo mode")
             self.session = None
         
