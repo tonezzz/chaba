@@ -213,20 +213,45 @@ class WebSocketManager:
         # Send session resume data
         await self._emit_session_resume(session)
         
-        # Start concurrent loops
-        await asyncio.gather(
-            self._ws_to_gemini(session),
-            self._gemini_to_ws(session),
-            return_exceptions=True
-        )
+        # Handle WebSocket communication with proper session management
+        await self._handle_gemini_session(session)
     
     async def _emit_session_resume(self, session: WebSocketSession) -> None:
         """Emit session resume data"""
         # Implementation would load recent dialog and send to client
         pass
     
-    async def _ws_to_gemini(self, session: WebSocketSession) -> None:
-        """Forward WebSocket messages to Gemini"""
+    async def _handle_gemini_session(self, session: WebSocketSession) -> None:
+        """Handle Gemini session and WebSocket communication"""
+        try:
+            async with session.session as gemini_session:
+                # Create tasks for concurrent communication
+                ws_to_gemini_task = asyncio.create_task(
+                    self._ws_to_gemini_with_session(session, gemini_session)
+                )
+                gemini_to_ws_task = asyncio.create_task(
+                    self._gemini_to_ws_with_session(session, gemini_session)
+                )
+                
+                # Wait for either task to complete (error or disconnect)
+                done, pending = await asyncio.wait(
+                    [ws_to_gemini_task, gemini_to_ws_task],
+                    return_when=asyncio.FIRST_COMPLETED
+                )
+                
+                # Cancel pending tasks
+                for task in pending:
+                    task.cancel()
+                    try:
+                        await task
+                    except asyncio.CancelledError:
+                        pass
+                        
+        except Exception as e:
+            logger.error(f"Gemini session error: {e}")
+    
+    async def _ws_to_gemini_with_session(self, session: WebSocketSession, gemini_session) -> None:
+        """Forward WebSocket messages to Gemini with active session"""
         try:
             while True:
                 data = await session.ws.receive_text()
@@ -234,7 +259,7 @@ class WebSocketManager:
                 
                 # Handle different message types
                 if message.get("type") == "text":
-                    await session.session.send(message.get("text", ""))
+                    await gemini_session.send(message.get("text", ""))
                 elif message.get("type") == "audio":
                     # Handle audio data
                     pass
@@ -242,10 +267,10 @@ class WebSocketManager:
         except Exception as e:
             logger.error(f"ws_to_gemini error: {e}")
     
-    async def _gemini_to_ws(self, session: WebSocketSession) -> None:
-        """Forward Gemini responses to WebSocket"""
+    async def _gemini_to_ws_with_session(self, session: WebSocketSession, gemini_session) -> None:
+        """Forward Gemini responses to WebSocket with active session"""
         try:
-            async for response in session.session.receive():
+            async for response in gemini_session.receive():
                 if response.text:
                     await session.send_json({
                         "type": "text",
