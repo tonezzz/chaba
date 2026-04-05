@@ -10,6 +10,7 @@ from typing import Any, Optional
 
 import httpx
 from fastapi import WebSocket
+from starlette.websockets import WebSocketDisconnect
 
 from jarvis.feature_flags import feature_enabled
 
@@ -279,36 +280,58 @@ class WebSocketManager:
         try:
             logger.info("Using echo mode - WebSocket connected but Gemini Live API unavailable")
             
+            # Send a welcome message to confirm the connection is working
+            await session.send_json({
+                "type": "echo",
+                "text": "Echo mode active! Send me a message and I'll echo it back.",
+                "instance_id": INSTANCE_ID,
+                "mode": "echo"
+            })
+            logger.info("Welcome message sent")
+            
             while True:
-                data = await session.ws.receive_text()
-                logger.info(f"Received WebSocket message: {data}")
-                
                 try:
-                    message = json.loads(data)
-                    logger.info(f"Parsed message: {message}")
+                    # Add timeout to prevent hanging
+                    data = await asyncio.wait_for(session.ws.receive_text(), timeout=30.0)
+                    logger.info(f"Received WebSocket message: {data}")
                     
-                    # Echo back the message
-                    echo_response = {
-                        "type": "echo",
-                        "text": f"Echo: {message.get('text', 'No text')}",
-                        "instance_id": INSTANCE_ID,
-                        "mode": "echo"
-                    }
-                    logger.info(f"Sending echo response: {echo_response}")
-                    
-                    await session.send_json(echo_response)
-                    logger.info("Echo response sent successfully")
-                    
-                except json.JSONDecodeError as e:
-                    logger.error(f"Failed to parse JSON message: {e}")
-                    # Send error response
+                    try:
+                        message = json.loads(data)
+                        logger.info(f"Parsed message: {message}")
+                        
+                        # Echo back the message
+                        echo_response = {
+                            "type": "echo",
+                            "text": f"Echo: {message.get('text', 'No text')}",
+                            "instance_id": INSTANCE_ID,
+                            "mode": "echo"
+                        }
+                        logger.info(f"Sending echo response: {echo_response}")
+                        
+                        await session.send_json(echo_response)
+                        logger.info("Echo response sent successfully")
+                        
+                    except json.JSONDecodeError as e:
+                        logger.error(f"Failed to parse JSON message: {e}")
+                        # Send error response
+                        await session.send_json({
+                            "type": "error",
+                            "text": f"Invalid JSON: {str(e)}",
+                            "instance_id": INSTANCE_ID,
+                            "mode": "echo"
+                        })
+                        
+                except asyncio.TimeoutError:
+                    logger.info("No message received for 30 seconds, sending ping")
                     await session.send_json({
-                        "type": "error",
-                        "text": f"Invalid JSON: {str(e)}",
+                        "type": "ping",
+                        "text": "Still here! Send me a message.",
                         "instance_id": INSTANCE_ID,
                         "mode": "echo"
                     })
-                
+                    
+        except WebSocketDisconnect as e:
+            logger.info(f"WebSocket disconnected gracefully: {e}")
         except Exception as e:
             logger.error(f"Echo mode error: {e}")
             logger.error(f"Echo mode error type: {type(e)}")
