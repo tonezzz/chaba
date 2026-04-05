@@ -100,29 +100,6 @@ def _google_tasks_fetch_task(tasklist_id: str, task_id: str) -> Optional[dict[st
         logger.error(f"Failed to fetch task {task_id}: {e}")
         return None
 
-def _google_tasks_undo_log(action: str, tasklist_id: Optional[str], task_id: Optional[str], before: Any, after: Any) -> str:
-    """Log an undo action for Google Tasks."""
-    import uuid
-    undo_id = str(uuid.uuid4())
-    # In a real implementation, this would store the undo log
-    logger.info(f"Undo log: {action} - {undo_id}")
-    return undo_id
-
-def _undo_sheet_append(entry: dict[str, Any]) -> None:
-    """Append entry to undo sheet."""
-    # In a real implementation, this would append to the Google Sheet
-    logger.info(f"Undo sheet append: {entry}")
-
-def _google_tasks_undo_list(limit: int) -> list[dict[str, Any]]:
-    """Get list of undo actions."""
-    # In a real implementation, this would fetch from storage
-    return []
-
-def _google_tasks_undo_pop_last(limit: int) -> list[dict[str, Any]]:
-    """Pop last undo actions."""
-    # In a real implementation, this would remove from storage
-    return []
-
 def _current_news_router():
     """Create current news router"""
     from fastapi import APIRouter
@@ -254,10 +231,6 @@ app.include_router(
             tasklist_id=tasklist_id, tasklist_title=tasklist_title
         ),
         fetch_task=lambda tasklist_id, task_id: _google_tasks_fetch_task(tasklist_id=tasklist_id, task_id=task_id),
-        undo_log=_google_tasks_undo_log,
-        undo_sheet_append=lambda entry: _undo_sheet_append(entry),
-        undo_list=_google_tasks_undo_list,
-        undo_pop_last=_google_tasks_undo_pop_last,
         parse_checklist_steps=parse_checklist_steps,
         next_actionable_step=next_actionable_step,
         suggest_template_from_completed_tasks=suggest_template_from_completed_tasks,
@@ -270,12 +243,8 @@ app.include_router(
     _create_google_calendar_router(
         mcp_tool_map=MCP_TOOL_MAP,
         mcp_tools_call=lambda name, arguments: mcp_router.call_tool(name, arguments),
-        mcp_tools_call_with_progress=lambda ws, name, arguments, trace_id: mcp_router.call_tool_with_progress(ws, name, arguments, trace_id),
         mcp_text_json=mcp_text_json,
         require_confirmation=_require_confirmation,
-        undo_sheet_append=lambda entry: _undo_sheet_append(entry),
-        undo_list=_google_tasks_undo_list,
-        undo_pop_last=_google_tasks_undo_pop_last,
     ),
     prefix="/jarvis/api",
     tags=["google-calendar"]
@@ -283,6 +252,82 @@ app.include_router(
 
 # Include current news router
 app.include_router(_current_news_router(), prefix="/jarvis/api", tags=["current-news"])
+
+# Add missing sequential tasks endpoints
+from pydantic import BaseModel, Field
+from typing import Optional
+
+class SequentialApplyRequest(BaseModel):
+    notes: str = Field(default="")
+    step_index: int = Field(ge=0)
+
+class SequentialApplyResponse(BaseModel):
+    ok: bool
+    changed: bool
+    notes: str
+
+class SequentialApplyByTextRequest(BaseModel):
+    notes: str = Field(default="")
+    step_text: str = Field(default="")
+
+class SequentialApplyByTextResponse(BaseModel):
+    ok: bool
+    changed: bool
+    notes: str
+    matched_step_index: Optional[int] = None
+
+class SequentialApplyAllRequest(BaseModel):
+    notes: str = Field(default="")
+
+class SequentialApplyAllResponse(BaseModel):
+    ok: bool
+    changed: bool
+    changed_count: int
+    notes: str
+
+class SequentialApplyAndSuggestRequest(BaseModel):
+    mode: Optional[str] = Field(default="suggest")
+    notes: str = Field(default="")
+    step_index: Optional[int] = Field(default=None, ge=0)
+
+class SequentialApplyAndSuggestResponse(BaseModel):
+    ok: bool
+    changed: bool
+    notes: str
+    suggestions: Optional[list[str]] = None
+
+@app.post("/tasks/sequential/apply", response_model=SequentialApplyResponse)
+def tasks_sequential_apply(req: SequentialApplyRequest) -> SequentialApplyResponse:
+    updated, changed = mark_checklist_step_done(req.notes, req.step_index)
+    return SequentialApplyResponse(ok=True, changed=changed, notes=updated)
+
+@app.post("/tasks/sequential/apply_by_text", response_model=SequentialApplyByTextResponse)
+def tasks_sequential_apply_by_text(req: SequentialApplyByTextRequest) -> SequentialApplyByTextResponse:
+    updated, changed, matched_idx = mark_checklist_step_done_by_text(req.notes, req.step_text)
+    return SequentialApplyByTextResponse(ok=True, changed=changed, notes=updated, matched_step_index=matched_idx)
+
+@app.post("/tasks/sequential/apply_all", response_model=SequentialApplyAllResponse)
+def tasks_sequential_apply_all(req: SequentialApplyAllRequest) -> SequentialApplyAllResponse:
+    updated, changed, changed_count = mark_all_checklist_steps_done(req.notes)
+    return SequentialApplyAllResponse(ok=True, changed=changed, changed_count=changed_count, notes=updated)
+
+@app.post("/tasks/sequential/apply_and_suggest", response_model=SequentialApplyAndSuggestResponse)
+def tasks_sequential_apply_and_suggest(req: SequentialApplyAndSuggestRequest) -> SequentialApplyAndSuggestResponse:
+    mode = str(req.mode or "suggest")
+    notes_in = str(req.notes or "")
+    
+    # Simple implementation for now
+    if mode == "suggest":
+        try:
+            # suggest_next_step_from_task expects a dict with 'notes' key
+            suggestions = suggest_next_step_from_task({"notes": notes_in}) if notes_in else []
+        except Exception as e:
+            logger.warning(f"suggest_next_step_from_task failed: {e}")
+            suggestions = []
+    else:
+        suggestions = []
+    
+    return SequentialApplyAndSuggestResponse(ok=True, changed=False, notes=notes_in, suggestions=suggestions)
 
 
 @app.websocket("/ws/live")
