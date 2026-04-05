@@ -107,17 +107,16 @@ class WebSocketSession:
         
         # Start Gemini session
         try:
-            # Try models that are known to support Live API
+            # Try models that are known to support Live API (prioritize text models)
             models_to_try = [
-                "gemini-2.5-flash-native-audio-preview-12-2025",  # Original audio model
-                "gemini-2.0-flash-exp",                          # Experimental model
+                "gemini-2.0-flash-exp",                          # Experimental model (text-first)
+                "gemini-2.5-flash-exp",                          # Experimental flash
                 "gemini-1.5-pro",                                # Pro model
                 "gemini-1.5-flash",                              # Flash model
                 "gemini-2.5-flash",                              # Latest flash
                 "gemini-2.0-flash",                              # Previous version
                 "gemini-2.5-pro",                                # Latest pro
-                "gemini-2.5-flash-exp",                          # Experimental flash
-                "gemini-2.0-flash-exp",                          # Experimental flash 2.0
+                "gemini-2.5-flash-native-audio-preview-12-2025",  # Audio model (last resort)
             ]
             
             # Try different configurations
@@ -168,6 +167,12 @@ class WebSocketSession:
                         
                     except Exception as model_error:
                         logger.warning(f"❌ Model {clean_model_name} with config {config_idx + 1} failed: {model_error}")
+                        
+                        # If it's an audio-specific error, skip trying other configs for this model
+                        if "Cannot extract voices from a non-audio request" in str(model_error):
+                            logger.info(f"Skipping remaining configs for {clean_model_name} - audio-only model")
+                            break
+                            
                         if model_name == models_to_try[-1] and config_idx == len(configs_to_try) - 1:
                             # Last model and last config tried
                             raise model_error
