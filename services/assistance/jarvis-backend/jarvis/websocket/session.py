@@ -107,31 +107,83 @@ class WebSocketSession:
         
         # Start Gemini session
         try:
-            # Try experimental model that might support Live API
-            model_name = "gemini-2.0-flash-exp"
-            # Remove "models/" prefix if present
-            if model_name.startswith("models/"):
-                model_name = model_name[7:]
+            # Try different models that might support Live API
+            models_to_try = [
+                "gemini-2.5-flash",
+                "gemini-2.0-flash", 
+                "gemini-1.5-flash",
+                "gemini-2.5-flash-exp",
+                "gemini-2.0-flash-exp",
+                "gemini-1.5-flash-exp"
+            ]
             
-            print(f"Using model: {model_name}")
-            print(f"Config: {self.config}")
+            # Try different configurations
+            configs_to_try = [
+                # Config 1: Text only
+                types.LiveConnectConfig(
+                    temperature=0.7,
+                    response_modalities=["TEXT"],
+                    generation_config=types.GenerationConfig(
+                        max_output_tokens=1024,
+                        temperature=0.7,
+                    )
+                ),
+                # Config 2: Minimal config
+                types.LiveConnectConfig(
+                    temperature=0.7,
+                ),
+                # Config 3: With audio (if supported)
+                types.LiveConnectConfig(
+                    temperature=0.7,
+                    response_modalities=["AUDIO", "TEXT"],
+                    generation_config=types.GenerationConfig(
+                        max_output_tokens=1024,
+                        temperature=0.7,
+                    )
+                )
+            ]
             
-            self.session = self.client.aio.live.connect(
-                model=model_name,
-                config=self.config,
-            )
-            print("Gemini Live session connected successfully")
+            for model_name in models_to_try:
+                for config_idx, config in enumerate(configs_to_try):
+                    try:
+                        # Remove "models/" prefix if present
+                        clean_model_name = model_name
+                        if clean_model_name.startswith("models/"):
+                            clean_model_name = clean_model_name[7:]
+                        
+                        logger.info(f"Trying model: {clean_model_name} with config {config_idx + 1}")
+                        
+                        self.config = config
+                        
+                        self.session = self.client.aio.live.connect(
+                            model=clean_model_name,
+                            config=self.config,
+                        )
+                        
+                        logger.info(f"✅ Gemini Live session connected successfully with model: {clean_model_name}, config {config_idx + 1}")
+                        break
+                        
+                    except Exception as model_error:
+                        logger.warning(f"❌ Model {clean_model_name} with config {config_idx + 1} failed: {model_error}")
+                        if model_name == models_to_try[-1] and config_idx == len(configs_to_try) - 1:
+                            # Last model and last config tried
+                            raise model_error
+                        continue
+                
+                if self.session is not None:
+                    break  # Found working configuration
+            
         except Exception as e:
-            print(f"Failed to connect to Gemini Live API: {e}")
+            logger.error(f"Failed to connect to Gemini Live API: {e}")
             # Try to get more specific error information
             if "1008" in str(e):
-                print("Model not found error - trying to list available models")
+                logger.info("Model not found error - trying to list available models")
                 try:
                     models = self.client.models.list()
-                    print(f"Available models: {[model.name for model in models]}")
+                    logger.info(f"Available models: {[model.name for model in models]}")
                 except Exception as list_error:
-                    print(f"Could not list models: {list_error}")
-            print("Using fallback echo mode")
+                    logger.error(f"Could not list models: {list_error}")
+            logger.info("Using fallback smart mode")
             self.session = None
         
         # Load session state
