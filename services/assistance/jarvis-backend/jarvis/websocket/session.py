@@ -57,6 +57,7 @@ except Exception:
     redis_async = None
 
 _LIVE_WORKING_MODEL_AND_CONFIG: Optional[tuple[str, "types.LiveConnectConfig"]] = None
+_LIVE_LISTED_MODELS_ONCE: bool = False
 
 class WebSocketSession:
     """Manages a WebSocket session with Jarvis"""
@@ -269,6 +270,7 @@ class WebSocketManager:
     async def _handle_gemini_session(self, session: WebSocketSession) -> None:
         """Handle Gemini session and WebSocket communication"""
         global _LIVE_WORKING_MODEL_AND_CONFIG
+        global _LIVE_LISTED_MODELS_ONCE
 
         # Prefer cached working model/config if we have one.
         models_to_try: list[str] = []
@@ -359,6 +361,15 @@ class WebSocketManager:
                     # If cached model/config fails, invalidate cache and continue probing.
                     if _LIVE_WORKING_MODEL_AND_CONFIG is not None and _LIVE_WORKING_MODEL_AND_CONFIG[0] == clean_model_name:
                         _LIVE_WORKING_MODEL_AND_CONFIG = None
+
+                    if (not _LIVE_LISTED_MODELS_ONCE) and ("1008" in str(e)):
+                        _LIVE_LISTED_MODELS_ONCE = True
+                        try:
+                            models = session.client.models.list()
+                            available_models = [m.name for m in models]
+                            logger.info(f"Live model listing (one-time): {available_models}")
+                        except Exception as list_err:
+                            logger.warning(f"Failed to list models (one-time): {list_err}")
 
                     logger.warning(
                         f"❌ Live model failed model={clean_model_name} config={config_idx + 1}: {e}"
