@@ -614,6 +614,7 @@ class WebSocketManager:
 
             out_tr = getattr(content, "output_transcription", None)
             if out_tr and getattr(out_tr, "text", None):
+                logger.info("Live transcript (output) received")
                 await session.send_json(
                     {
                         "type": "transcript",
@@ -628,17 +629,35 @@ class WebSocketManager:
             parts = getattr(model_turn, "parts", None) if model_turn else None
             if parts:
                 for part in parts:
+                    # Some models may emit text parts in model_turn.
+                    ptxt = getattr(part, "text", None)
+                    if ptxt:
+                        await session.send_json(
+                            {
+                                "type": "text",
+                                "text": str(ptxt),
+                                "instance_id": INSTANCE_ID,
+                            }
+                        )
+
                     inline = getattr(part, "inline_data", None)
                     if not inline:
                         continue
-                    audio_bytes = getattr(inline, "data", None)
-                    if not audio_bytes:
+                    audio_data = getattr(inline, "data", None)
+                    if not audio_data:
                         continue
                     try:
-                        b64 = base64.b64encode(audio_bytes).decode("ascii")
+                        if isinstance(audio_data, str):
+                            # Some SDK versions may provide base64-encoded strings already.
+                            b64 = audio_data
+                        else:
+                            if isinstance(audio_data, memoryview):
+                                audio_data = audio_data.tobytes()
+                            b64 = base64.b64encode(bytes(audio_data)).decode("ascii")
                     except Exception:
                         continue
 
+                    logger.info("Live audio chunk forwarded")
                     await session.send_json(
                         {
                             "type": "audio",
