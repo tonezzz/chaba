@@ -61,6 +61,41 @@ _LIVE_LISTED_MODELS_ONCE: bool = False
 _LIVE_CACHE_PATH = os.getenv("JARVIS_LIVE_MODEL_CACHE_PATH", "/data/jarvis_live_model_cache.json").strip()
 _LIVE_PROBE_ON_CONNECT = str(os.getenv("JARVIS_LIVE_PROBE_ON_CONNECT", "false")).strip().lower() == "true"
 
+
+def _live_is_native_audio_model(model: str) -> bool:
+    m = str(model or "").lower()
+    return "native-audio" in m
+
+
+def _live_configs_for_model() -> tuple[list["types.LiveConnectConfig"], list["types.LiveConnectConfig"]]:
+    text_cfgs: list[types.LiveConnectConfig] = [
+        types.LiveConnectConfig(
+            response_modalities=["TEXT"],
+        ),
+        types.LiveConnectConfig(
+            temperature=0.7,
+            response_modalities=["TEXT"],
+            generation_config=types.GenerationConfig(
+                max_output_tokens=1024,
+                temperature=0.7,
+            ),
+        ),
+    ]
+    audio_cfgs: list[types.LiveConnectConfig] = [
+        types.LiveConnectConfig(
+            response_modalities=["AUDIO"],
+        ),
+        types.LiveConnectConfig(
+            temperature=0.7,
+            response_modalities=["AUDIO"],
+            generation_config=types.GenerationConfig(
+                max_output_tokens=1024,
+                temperature=0.7,
+            ),
+        ),
+    ]
+    return text_cfgs, audio_cfgs
+
 try:
     if _LIVE_CACHE_PATH:
         with open(_LIVE_CACHE_PATH, "r", encoding="utf-8") as f:
@@ -333,44 +368,26 @@ class WebSocketManager:
             if m not in models_to_try:
                 models_to_try.append(m)
 
-        if not configs_to_try:
-            # Start with the smallest possible config. Some Live preview models appear to
-            # error (1011) when given unsupported fields/modalities.
-            configs_to_try = [
-                types.LiveConnectConfig(),
-                types.LiveConnectConfig(temperature=0.7),
-                types.LiveConnectConfig(
-                    response_modalities=["TEXT"],
-                ),
-                types.LiveConnectConfig(
-                    temperature=0.7,
-                    response_modalities=["TEXT"],
-                ),
-                types.LiveConnectConfig(
-                    temperature=0.7,
-                    response_modalities=["TEXT"],
-                    generation_config=types.GenerationConfig(
-                        max_output_tokens=1024,
-                        temperature=0.7,
-                    ),
-                ),
-                types.LiveConnectConfig(
-                    temperature=0.7,
-                    response_modalities=["AUDIO", "TEXT"],
-                    generation_config=types.GenerationConfig(
-                        max_output_tokens=1024,
-                        temperature=0.7,
-                    ),
-                ),
-            ]
-
-        if cached_config_idx is not None and 0 <= cached_config_idx < len(configs_to_try):
-            configs_to_try = [configs_to_try[cached_config_idx]] + [
-                c for i, c in enumerate(configs_to_try) if i != cached_config_idx
-            ]
+        text_cfgs, audio_cfgs = _live_configs_for_model()
 
         for model_name in models_to_try:
             clean_model_name = model_name[7:] if model_name.startswith("models/") else model_name
+            # Live best-practice: one modality per session.
+            # - For native-audio models, only try AUDIO configs.
+            # - For live preview, default to TEXT configs.
+            configs_to_try = audio_cfgs if _live_is_native_audio_model(clean_model_name) else text_cfgs
+
+            # If cached config exists and applies to this model, try it first.
+            if (
+                cached_config_idx is not None
+                and cached_model_and_idx is not None
+                and clean_model_name == cached_model_and_idx[0]
+                and 0 <= cached_config_idx < len(configs_to_try)
+            ):
+                configs_to_try = [configs_to_try[cached_config_idx]] + [
+                    c for i, c in enumerate(configs_to_try) if i != cached_config_idx
+                ]
+
             for config_idx, config in enumerate(configs_to_try):
                 try:
                     logger.info(f"Trying Live model: {clean_model_name} with config {config_idx + 1}")
@@ -450,7 +467,7 @@ class WebSocketManager:
                         f"❌ Live model failed model={clean_model_name} config={config_idx + 1}: {e}"
                     )
                     if "Cannot extract voices from a non-audio request" in str(e):
-                        # Audio-only model for a text client; don't try other configs.
+                        # Audio-only model invoked with a non-audio config; don't try other configs.
                         break
                     continue
 
