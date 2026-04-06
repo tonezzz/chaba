@@ -10,7 +10,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # Import modular components
 from jarvis.core.app import create_app
-from jarvis.websocket.session import websocket_manager
+from jarvis.websocket.session import (
+    websocket_manager,
+    gemini_list_models,
+    gemini_live_probe_and_cache,
+    gemini_live_cache_status,
+)
 from jarvis.agents.dispatch import agent_dispatcher
 from jarvis.skills.news import news_skill
 from jarvis.memory.cache import memory_cache
@@ -553,7 +558,7 @@ async def status() -> dict[str, Any]:
         pid = int(os.getpid())
     except Exception:
         pid = None
-    out = {
+    out: dict[str, Any] = {
         "ok": True,
         "service": "jarvis-backend",
         "instance_id": INSTANCE_ID,
@@ -591,6 +596,23 @@ async def status() -> dict[str, Any]:
         out["mcp_connection_error"] = str(e)
 
     return out
+
+
+@app.get("/jarvis/api/gemini/models")
+async def gemini_models() -> dict[str, Any]:
+    models = gemini_list_models()
+    return {"ok": True, "count": len(models), "models": models}
+
+
+@app.get("/jarvis/api/gemini/live/cache")
+async def gemini_live_cache() -> dict[str, Any]:
+    return {"ok": True, **gemini_live_cache_status()}
+
+
+@app.post("/jarvis/api/gemini/live/probe")
+async def gemini_live_probe() -> dict[str, Any]:
+    result = await gemini_live_probe_and_cache()
+    return result
 
 
 def _parse_bool_cell(v: Any) -> bool:
