@@ -81,7 +81,8 @@ export function useUiLog(args: { backendCandidates: () => string[] }) {
     const entries = batch.map((b) => b.entry);
     for (const base of backendCandidates()) {
       try {
-        const res = await fetch(`${base}/logs/ui/append`, {
+        const effectiveBase = base ? base : "/jarvis/api";
+        const res = await fetch(`${effectiveBase}/logs/ui/append`, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ entries }),

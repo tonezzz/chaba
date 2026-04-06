@@ -158,7 +158,8 @@ export default function App() {
     setWsLogErr("");
     for (const base of backendCandidates()) {
       try {
-        const res = await fetch(`${base}/logs/ws/today?max_bytes=200000`, { method: "GET" });
+        const effectiveBase = base ? base : "/jarvis/api";
+        const res = await fetch(`${effectiveBase}/logs/ws/today?max_bytes=200000`, { method: "GET" });
         if (!res.ok) continue;
         const j = await res.json();
         const txt = j?.text != null ? String(j.text) : "";
