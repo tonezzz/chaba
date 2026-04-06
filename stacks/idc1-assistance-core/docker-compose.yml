@@ -98,6 +98,28 @@ services:
       timeout: 5s
       retries: 3
 
+  google-drive-mcp:
+    <<: *default-service
+    image: node:20-alpine
+    command: >
+      sh -c "
+        apk add --no-cache curl &&
+        npx -y @piotr-agier/google-drive-mcp --http
+      "
+    ports:
+      - "127.0.0.1:18032:8032"
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /app/creds/service-account.json
+      # Optional: override port if needed (default is 8032 for HTTP mode)
+      # GOOGLE_DRIVE_MCP_PORT: 8032
+    volumes:
+      - google-drive-mcp-creds:/app/creds:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8032/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
 networks:
   idc1-stack-net:
     driver: bridge
@@ -117,3 +139,7 @@ volumes:
   jarvis-session-db:
     external: true
     name: ${JARVIS_SESSION_DB_VOLUME_NAME:-idc1-assistance_jarvis-session-db}
+
+  google-drive-mcp-creds:
+    external: true
+    name: ${GOOGLE_DRIVE_MCP_CREDS_VOLUME_NAME:-idc1-assistance_google-drive-mcp-creds}

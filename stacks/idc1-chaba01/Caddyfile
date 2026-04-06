@@ -1,4 +1,50 @@
+{
+  auto_https off
+}
+
 :80 {
   bind 127.0.0.1
   reverse_proxy chaba01-app:8080
+}
+
+assistance.idc1.surf-thailand.com:80 {
+  # WebSocket endpoint to backend
+  handle_path /jarvis/ws/* {
+    reverse_proxy 127.0.0.1:18018
+  }
+
+  # Backend HTTP (single contract: /jarvis/api/*)
+  handle_path /jarvis/api/* {
+    reverse_proxy 127.0.0.1:18018
+  }
+
+  # All other /jarvis paths go to the SPA frontend
+  handle_path /jarvis/* {
+    reverse_proxy 127.0.0.1:18080
+  }
+  
+  # Handle root and other paths
+  reverse_proxy 127.0.0.1:18080
+}
+
+assistance.idc1.surf-thailand.com:443 {
+  # WebSocket endpoint to backend
+  handle_path /jarvis/ws/* {
+    reverse_proxy 127.0.0.1:18018
+  }
+
+  # Backend HTTP (single contract: /jarvis/api/*)
+  handle_path /jarvis/api/* {
+    reverse_proxy 127.0.0.1:18018
+  }
+
+  # All other /jarvis paths go to the SPA frontend
+  handle_path /jarvis/* {
+    reverse_proxy 127.0.0.1:18080
+  }
+  
+  # Handle root and other paths
+  reverse_proxy 127.0.0.1:18080
+  
+  tls internal
 }
