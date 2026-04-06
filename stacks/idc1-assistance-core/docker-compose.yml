@@ -104,14 +104,12 @@ services:
     command: >
       sh -c "
         apk add --no-cache curl &&
-        npx -y @piotr-agier/google-drive-mcp --http
+        npx -y @piotr-agier/google-drive-mcp start --transport http --host 0.0.0.0 --port 8032
       "
     ports:
       - "127.0.0.1:18032:8032"
     environment:
       GOOGLE_APPLICATION_CREDENTIALS: /app/creds/service-account.json
-      # Optional: override port if needed (default is 8032 for HTTP mode)
-      # GOOGLE_DRIVE_MCP_PORT: 8032
     volumes:
       - google-drive-mcp-creds:/app/creds:ro
     healthcheck:

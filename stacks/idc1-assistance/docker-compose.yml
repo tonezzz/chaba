@@ -53,6 +53,9 @@ services:
       MCP_PLAYWRIGHT_BASE_URL: ${MCP_PLAYWRIGHT_BASE_URL:-http://mcp-playwright:3050}
       DEEP_RESEARCH_WORKER_BASE_URL: ${DEEP_RESEARCH_WORKER_BASE_URL:-http://deep-research-worker:8030}
       WEAVIATE_URL: ${WEAVIATE_URL:-http://weaviate:8080}
+      USE_GOOGLE_DRIVE_MCP: ${USE_GOOGLE_DRIVE_MCP:-false}
+      GOOGLE_DRIVE_MCP_BASE_URL: ${GOOGLE_DRIVE_MCP_BASE_URL:-http://google-drive-mcp:8032}
+      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-}
     volumes:
       - jarvis-imagen-assets:${JARVIS_IMAGEN_ASSETS_DIR:-/app/imagen_assets}
       - jarvis-session-db:/data
@@ -122,8 +125,10 @@ services:
       GOOGLE_TASKS_SCOPES: ${GOOGLE_SHARED_SCOPES:-https://www.googleapis.com/auth/tasks,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/spreadsheets}
       GOOGLE_SHEETS_SCOPES: ${GOOGLE_SHARED_SCOPES:-https://www.googleapis.com/auth/tasks,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/spreadsheets}
       GOOGLE_CALENDAR_SCOPES: ${GOOGLE_SHARED_SCOPES:-https://www.googleapis.com/auth/tasks,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/spreadsheets}
+      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-}
     volumes:
       - mcp-bundle-config:/root/.config/1mcp
+      - google-drive-mcp-creds:/app/creds
     networks:
       idc1-stack-net:
         aliases:
@@ -2190,6 +2195,32 @@ services:
 
         exec node /app/proxy.js
 
+  google-drive-mcp:
+    <<: *default-service
+    image: node:20-alpine
+    environment:
+      MCP_TRANSPORT: http
+      MCP_HTTP_PORT: 8032
+      MCP_HTTP_HOST: 0.0.0.0
+      GOOGLE_APPLICATION_CREDENTIALS: /app/creds/service-account.json
+    volumes:
+      - google-drive-mcp-creds:/app/creds
+    networks:
+      - idc1-stack-net
+    command:
+      - sh
+      - -lc
+      - |
+        set -e
+        apk add --no-cache curl
+        npx -y @piotr-agier/google-drive-mcp start
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8032/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   mcp-playwright:
     <<: *default-service
     image: mcr.microsoft.com/playwright:v1.58.2-jammy
@@ -2945,3 +2976,4 @@ volumes:
   jarvis-redis-data:
   image-pipeline-assets:
   deep-research-worker-data:
+  google-drive-mcp-creds:
