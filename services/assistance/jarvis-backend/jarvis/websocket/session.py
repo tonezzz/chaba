@@ -283,14 +283,25 @@ class WebSocketManager:
 
         # Extend with probe set (only if cache missing or cache fails)
         probe_models = [
-            "gemini-2.0-flash-exp",
-            "gemini-1.5-pro",
-            "gemini-1.5-flash",
-            "gemini-2.5-flash",
-            "gemini-2.0-flash",
-            "gemini-2.5-pro",
-            "gemini-2.5-flash-exp",
+            # Prefer models that are actually present in models.list() output and likely
+            # to support Live bidirectional streaming.
+            "gemini-3.1-flash-live-preview",
+
+            # Audio/live-adjacent models (may require audio input depending on client behavior)
+            "gemini-2.5-flash-native-audio-latest",
             "gemini-2.5-flash-native-audio-preview-12-2025",
+            "lyria-realtime-exp",
+
+            # General text models (may not support bidiGenerateContent but keep for coverage)
+            "gemini-2.5-flash",
+            "gemini-2.5-pro",
+            "gemini-2.0-flash",
+            "gemini-2.0-flash-001",
+            "gemini-2.0-flash-lite",
+            "gemini-2.0-flash-lite-001",
+            "gemini-flash-latest",
+            "gemini-flash-lite-latest",
+            "gemini-pro-latest",
         ]
         for m in probe_models:
             if m not in models_to_try:
