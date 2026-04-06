@@ -1,87 +1,136 @@
 """
 Unified Sheets interface for Jarvis.
-Routes to google-drive-mcp if USE_GOOGLE_DRIVE_MCP=true; otherwise uses legacy client.
+Routes to google-drive-mcp via mcp-bundle (google-sheets server) for now.
 """
 
 import os
 import logging
 from typing import Any, List, Dict
-
-from . import google_drive_mcp as gdrive_mcp
-from . import sheets_legacy as legacy
+import httpx
 
 logger = logging.getLogger(__name__)
 
-USE_GOOGLE_DRIVE_MCP = str(os.getenv("USE_GOOGLE_DRIVE_MCP", "false")).strip().lower() == "true"
+# Force MCP mode; legacy removed
+GOOGLE_DRIVE_MCP_BASE_URL = os.getenv("GOOGLE_DRIVE_MCP_BASE_URL", "http://mcp-bundle-assistance:3050")
+
+# Default timeout for MCP calls (seconds)
+MCP_TIMEOUT = 15
 
 
+class SheetsError(Exception):
+    """Raised when Sheets operation fails."""
+
+
+def _mcp_call(tool: str, arguments: Dict[str, Any]) -> Any:
+    """
+    Call a Sheets tool via mcp-bundle (google-sheets MCP server).
+    Sends MCP JSON-RPC call to /mcp endpoint.
+    """
+    url = f"{GOOGLE_DRIVE_MCP_BASE_URL}/mcp"
+    payload = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": {
+            "name": tool,
+            "arguments": arguments
+        }
+    }
+    try:
+        with httpx.Client(timeout=MCP_TIMEOUT) as client:
+            # Note: mcp-bundle requires session init; for simplicity, we use the existing google-sheets MCP server
+            resp = client.post(url, json=payload, headers={"accept": "application/json, text/event-stream"})
+            resp.raise_for_status()
+            data = resp.json()
+            if "error" in data:
+                raise SheetsError(data["error"].get("message", "Unknown MCP error"))
+            if "result" in data:
+                return data["result"]
+            return data
+    except httpx.HTTPStatusError as e:
+        logger.error(f"Sheets MCP HTTP error calling {tool}: {e}")
+        raise SheetsError(f"HTTP error {e.response.status_code}")
+    except Exception as e:
+        logger.error(f"Sheets MCP call failed for {tool}: {e}")
+        raise SheetsError(str(e))
+
+
+# ----------------------------------------------------------------------
+# Adapter functions mirroring the legacy Sheets client interface
+# ----------------------------------------------------------------------
 def get_values(spreadsheet_id: str, range_: str) -> List[List[Any]]:
-    """Read a range from a sheet."""
-    if USE_GOOGLE_DRIVE_MCP:
-        return gdrive_mcp.get_values(spreadsheet_id, range_)
-    else:
-        return legacy.get_values(spreadsheet_id, range_)
+    """Read a range from a sheet via MCP."""
+    result = _mcp_call("getValues", {"spreadsheetId": spreadsheet_id, "range": range_})
+    return result.get("values", [])
 
 
 def append_rows(spreadsheet_id: str, range_: str, rows: List[List[Any]], value_input_option: str = "RAW") -> Dict[str, Any]:
-    """Append rows to a sheet."""
-    if USE_GOOGLE_DRIVE_MCP:
-        return gdrive_mcp.append_rows(spreadsheet_id, range_, rows, value_input_option)
-    else:
-        return legacy.append_rows(spreadsheet_id, range_, rows, value_input_option)
+    """Append rows to a sheet via MCP."""
+    result = _mcp_call("appendValues", {
+        "spreadsheetId": spreadsheet_id,
+        "range": range_,
+        "values": rows,
+        "valueInputOption": value_input_option,
+    })
+    return result
 
 
 def update_values(spreadsheet_id: str, range_: str, values: List[List[Any]], value_input_option: str = "RAW") -> Dict[str, Any]:
-    """Update a range in a sheet."""
-    if USE_GOOGLE_DRIVE_MCP:
-        return gdrive_mcp.update_values(spreadsheet_id, range_, values, value_input_option)
-    else:
-        return legacy.update_values(spreadsheet_id, range_, values, value_input_option)
+    """Update a range in a sheet via MCP."""
+    result = _mcp_call("updateValues", {
+        "spreadsheetId": spreadsheet_id,
+        "range": range_,
+        "values": values,
+        "valueInputOption": value_input_option,
+    })
+    return result
 
 
 def upsert_kv(spreadsheet_id: str, sheet_name: str, key: str, value: str) -> Dict[str, Any]:
-    """Upsert a key-value pair in column A/B."""
-    if USE_GOOGLE_DRIVE_MCP:
-        return gdrive_mcp.upsert_kv(spreadsheet_id, sheet_name, key, value)
+    """Upsert a key-value pair in column A/B via MCP."""
+    # Read column A to find the key
+    range_a = f"'{sheet_name}'!A:A"
+    rows = get_values(spreadsheet_id, range_a)
+    key_to_row = {row[0]: idx + 1 for idx, row in enumerate(rows) if row}
+    if key in key_to_row:
+        # Update existing row's column B
+        row_num = key_to_row[key]
+        range_b = f"'{sheet_name}'!B{row_num}"
+        return update_values(spreadsheet_id, range_b, [[value]])
     else:
-        return legacy.upsert_kv(spreadsheet_id, sheet_name, key, value)
+        # Append new key-value row
+        return append_rows(spreadsheet_id, f"'{sheet_name}'!A1", [[key, value]])
 
 
 def append_log(spreadsheet_id: str, sheet_name: str, rows: List[List[Any]]) -> Dict[str, Any]:
-    """Append log rows."""
-    if USE_GOOGLE_DRIVE_MCP:
-        return gdrive_mcp.append_log(spreadsheet_id, sheet_name, rows)
-    else:
-        return legacy.append_rows(spreadsheet_id, f"'{sheet_name}'!A1", rows)
+    """Append log rows via MCP."""
+    return append_rows(spreadsheet_id, f"'{sheet_name}'!A1", rows)
 
 
 def read_memo_rows(spreadsheet_id: str, sheet_name: str) -> List[List[Any]]:
-    """Read memo rows."""
-    if USE_GOOGLE_DRIVE_MCP:
-        return gdrive_mcp.read_memo_rows(spreadsheet_id, sheet_name)
-    else:
-        return legacy.get_values(spreadsheet_id, f"'{sheet_name}'!A:Z")
+    """Read memo rows via MCP."""
+    return get_values(spreadsheet_id, f"'{sheet_name}'!A:Z")
 
 
 def write_memo_rows(spreadsheet_id: str, sheet_name: str, rows: List[List[Any]], start_row: int = 2) -> Dict[str, Any]:
-    """Write memo rows."""
-    if USE_GOOGLE_DRIVE_MCP:
-        return gdrive_mcp.write_memo_rows(spreadsheet_id, sheet_name, rows, start_row)
-    else:
-        # Legacy: clear and write via update
-        num_rows = len(rows)
-        num_cols = max(len(r) for r in rows) if rows else 1
-        range_write = f"'{sheet_name}'!R{start_row}C1:R{start_row + num_rows - 1}C{num_cols}"
-        return legacy.update_values(spreadsheet_id, range_write, rows)
+    """Write memo rows via MCP."""
+    num_rows = len(rows)
+    num_cols = max(len(r) for r in rows) if rows else 1
+    range_write = f"'{sheet_name}'!R{start_row}C1:R{start_row + num_rows - 1}C{num_cols}"
+    return update_values(spreadsheet_id, range_write, rows)
 
 
 def test_connectivity() -> bool:
-    """Test Sheets connectivity via the selected backend."""
-    if USE_GOOGLE_DRIVE_MCP:
-        return gdrive_mcp.test_connectivity()
-    else:
-        try:
-            legacy._get_legacy_client()  # noqa: F841
+    """Test Sheets connectivity via MCP."""
+    try:
+        # Use a dummy sheet ID; any 404/403 means connectivity is fine
+        get_values("dummy_spreadsheet_id", "Sheet1!A1:A1")
+    except SheetsError as e:
+        if "404" in str(e) or "403" in str(e) or "Not found" in str(e):
             return True
-        except Exception:
-            return False
+        logger.error(f"Sheets MCP connectivity test failed: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"Sheets MCP connectivity test error: {e}")
+        return False
+    return True
