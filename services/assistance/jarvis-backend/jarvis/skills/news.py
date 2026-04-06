@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import time
 from typing import Any, Dict, Optional, Tuple
 
@@ -44,14 +45,22 @@ class NewsSkill:
 
     async def handle_news_status(self, ws: WebSocket, trace_id: str) -> bool:
         st = self.get_status(ws)
-        if st.get("running"):
-            await self._send_text(
-                ws,
-                f"News status: {st.get('phase')} - {st.get('message')}",
-                trace_id,
-            )
-        else:
-            await self._send_text(ws, "News status: idle", trace_id)
+        phase = str(st.get("phase") or "idle")
+        msg = str(st.get("message") or "")
+        running = bool(st.get("running"))
+        updated_at = float(st.get("updated_at") or 0.0)
+        age_s = max(0.0, time.time() - updated_at) if updated_at else 0.0
+
+        if running:
+            await self._send_text(ws, f"News status: {phase} - {msg}", trace_id)
+            return True
+
+        if phase in ("done", "error"):
+            suffix = f" ({age_s:.0f}s ago)" if updated_at else ""
+            await self._send_text(ws, f"News status: {phase} - {msg}{suffix}", trace_id)
+            return True
+
+        await self._send_text(ws, "News status: idle", trace_id)
         return True
     
     async def handle_current_news(self, ws: WebSocket, text: str, trace_id: str) -> bool:
@@ -69,6 +78,10 @@ class NewsSkill:
             self._set_state(ws, "start", "starting", True)
             await self._send_progress(ws, "Step 1/3: Fetching current news...", trace_id)
             self._set_state(ws, "fetch", "fetching", True)
+
+            step_delay_s = float(str(os.getenv("JARVIS_NEWS_STEP_DELAY_S") or "0").strip() or "0")
+            if step_delay_s > 0:
+                await asyncio.sleep(step_delay_s)
             
             # Use the working MCP client functions
             from mcp_client import mcp_tools_call
@@ -79,10 +92,14 @@ class NewsSkill:
 
             await self._send_progress(ws, "Step 2/3: Processing news...", trace_id)
             self._set_state(ws, "process", "processing", True)
+            if step_delay_s > 0:
+                await asyncio.sleep(step_delay_s)
             await mcp_tools_call(MCP_BASE_URL, "news_1mcp_news_run", {"start_at": "process", "stop_after": "process"})
 
             await self._send_progress(ws, "Step 3/3: Rendering brief...", trace_id)
             self._set_state(ws, "render", "rendering", True)
+            if step_delay_s > 0:
+                await asyncio.sleep(step_delay_s)
             result = await mcp_tools_call(MCP_BASE_URL, "news_1mcp_news_run", {"start_at": "render", "stop_after": "render"})
             
             if "error" in result:
