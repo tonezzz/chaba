@@ -42,13 +42,6 @@ from jarvis.utils.text import strip_html_tags, normalize_simple_cmd
 from jarvis.utils.formatting import format_timestamp, format_duration_ms
 from jarvis.mcp.mcp_client import mcp_text_json
 
-# Import existing routers
-from routes.google_tasks import create_router as _create_google_tasks_router
-from routes.google_calendar import create_router as _create_google_calendar_router
-
-# Import existing modules
-import db_session
-import google_common
 from jarvis.feature_flags import feature_enabled
 from jarvis import memo_sheet, memo_enrich, daily_brief, sheets_utils, current_news_skill, tools_router
 
@@ -87,33 +80,13 @@ else:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Helper functions for Google Tasks integration
+# Helper functions
 def _require_confirmation(require: bool, message: str, data: Any) -> None:
     """Helper function for requiring confirmation."""
     if require:
         logger.info(f"Confirmation required: {message}")
         # In a real implementation, this would prompt the user
         # For now, we'll just log it
-
-def _resolve_google_tasks_tasklist(tasklist_id: Optional[str], tasklist_title: Optional[str]) -> tuple[Optional[str], str]:
-    """Resolve Google Tasks tasklist ID and title."""
-    if tasklist_id:
-        return tasklist_id, tasklist_title or ""
-    elif tasklist_title:
-        # In a real implementation, this would look up the tasklist by title
-        return None, tasklist_title
-    else:
-        return None, ""
-
-def _google_tasks_fetch_task(tasklist_id: str, task_id: str) -> Optional[dict[str, Any]]:
-    """Fetch a specific Google Task."""
-    try:
-        # This would call the MCP server to fetch the task
-        # For now, return None as placeholder
-        return None
-    except Exception as e:
-        logger.error(f"Failed to fetch task {task_id}: {e}")
-        return None
 
 def _current_news_router():
     """Create current news router"""
@@ -294,37 +267,6 @@ app.include_router(reminders_router, prefix="/jarvis/api", tags=["reminders"])
 app.include_router(sheets_router, prefix="/jarvis/api", tags=["sheets"])
 app.include_router(dialog_router, prefix="/jarvis/api", tags=["dialog"])
 app.include_router(system_router, prefix="/jarvis/api", tags=["system"])
-
-# Include existing routers
-app.include_router(
-    _create_google_tasks_router(
-        mcp_tool_map=MCP_TOOL_MAP,
-        mcp_tools_call=lambda name, arguments: mcp_router.call_tool(name, arguments),
-        mcp_tools_call_with_progress=lambda ws, name, arguments, trace_id: mcp_router.call_tool_with_progress(ws, name, arguments, trace_id),
-        mcp_text_json=mcp_text_json,
-        require_confirmation=_require_confirmation,
-        resolve_tasklist=lambda tasklist_id, tasklist_title: _resolve_google_tasks_tasklist(
-            tasklist_id=tasklist_id, tasklist_title=tasklist_title
-        ),
-        fetch_task=lambda tasklist_id, task_id: _google_tasks_fetch_task(tasklist_id=tasklist_id, task_id=task_id),
-        parse_checklist_steps=parse_checklist_steps,
-        next_actionable_step=next_actionable_step,
-        suggest_template_from_completed_tasks=suggest_template_from_completed_tasks,
-    ),
-    prefix="/jarvis/api",
-    tags=["google-tasks"]
-)
-
-app.include_router(
-    _create_google_calendar_router(
-        mcp_tool_map=MCP_TOOL_MAP,
-        mcp_tools_call=lambda name, arguments: mcp_router.call_tool(name, arguments),
-        mcp_text_json=mcp_text_json,
-        require_confirmation=_require_confirmation,
-    ),
-    prefix="/jarvis/api",
-    tags=["google-calendar"]
-)
 
 # Include current news router
 app.include_router(_current_news_router(), prefix="/jarvis/api", tags=["current-news"])

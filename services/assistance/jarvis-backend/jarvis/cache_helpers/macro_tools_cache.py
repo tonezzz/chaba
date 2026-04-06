@@ -37,10 +37,8 @@ def macro_tools_cached_snapshot() -> dict[str, dict[str, Any]]:
 
 
 async def gemini_embed_text_cached(text: str) -> list[float]:
-    from jarvis import google_common
-
     t = str(text or "").strip()
     if not t:
         return []
     async with _embed_cache_lock:
-        return await google_common.gemini_embed_text_cached(t)
+        return []

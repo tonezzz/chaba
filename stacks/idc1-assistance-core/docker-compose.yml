@@ -114,7 +114,7 @@ services:
     volumes:
       - google-drive-mcp-creds:/app/creds:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8032/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS -X POST http://127.0.0.1:8032/mcp -H 'accept: application/json, text/event-stream' -H 'content-type: application/json' --data '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"healthcheck\",\"version\":\"0\"}}}' >/dev/null || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

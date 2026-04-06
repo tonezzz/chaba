@@ -1,12 +1,11 @@
 # Google Drive MCP Migration Guide
 
 ## Overview
-Jarvis now supports Google Sheets operations via the `google-drive-mcp` server instead of the legacy Sheets API client. This is controlled by the `USE_GOOGLE_DRIVE_MCP` feature flag.
+Jarvis now supports Google Sheets operations via the `google-drive-mcp` server instead of the legacy Sheets API client.
 
 ## Architecture
-- **Legacy path**: Direct Google Sheets API (OAuth refresh token).
-- **New path**: `google-drive-mcp` (service account, HTTP transport).
-- **Adapter**: `jarvis/integrations/sheets.py` routes calls based on the flag.
+- **Sheets backend**: `google-drive-mcp` (service account, MCP-over-HTTP).
+- **Adapter**: `jarvis/integrations/sheets.py`.
 
 ## Services
 - `google-drive-mcp` runs in the stack at `http://google-drive-mcp:8032` (internal only).
@@ -14,13 +13,8 @@ Jarvis now supports Google Sheets operations via the `google-drive-mcp` server i
 
 ## Environment variables
 ```bash
-# Feature flag
-USE_GOOGLE_DRIVE_MCP=false  # Set to true to cut over
-
 # MCP client config
 GOOGLE_DRIVE_MCP_BASE_URL=http://google-drive-mcp:8032
-# Optional: override port
-# GOOGLE_DRIVE_MCP_PORT=8032
 ```
 
 ## Stack wiring
@@ -44,9 +38,7 @@ All existing Sheets functions are now available via `jarvis.integrations.sheets`
 2. **Store the service account JSON** in Portainer as a secret/volume.
 3. **Deploy the updated stack** with `google-drive-mcp` added.
 4. **Test connectivity** via the adapter (`test_connectivity`).
-5. **Flip the flag**: set `USE_GOOGLE_DRIVE_MCP=true` in Portainer env and redeploy.
-6. **Verify** logs, system KV, and memos work via Drive MCP.
-7. **Cleanup**: remove legacy Sheets client code and env vars (see Phase 5).
+5. **Verify** logs, system KV, and memos work via Drive MCP.
 
 ## Cleanup (post-migration)
 - Remove `jarvis/integrations/sheets_legacy.py`.
