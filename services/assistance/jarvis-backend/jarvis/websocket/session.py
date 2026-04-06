@@ -322,7 +322,18 @@ class WebSocketManager:
                 models_to_try.append(m)
 
         if not configs_to_try:
+            # Start with the smallest possible config. Some Live preview models appear to
+            # error (1011) when given unsupported fields/modalities.
             configs_to_try = [
+                types.LiveConnectConfig(),
+                types.LiveConnectConfig(temperature=0.7),
+                types.LiveConnectConfig(
+                    response_modalities=["TEXT"],
+                ),
+                types.LiveConnectConfig(
+                    temperature=0.7,
+                    response_modalities=["TEXT"],
+                ),
                 types.LiveConnectConfig(
                     temperature=0.7,
                     response_modalities=["TEXT"],
@@ -331,7 +342,6 @@ class WebSocketManager:
                         temperature=0.7,
                     ),
                 ),
-                types.LiveConnectConfig(temperature=0.7),
                 types.LiveConnectConfig(
                     temperature=0.7,
                     response_modalities=["AUDIO", "TEXT"],

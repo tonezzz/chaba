@@ -604,8 +604,19 @@ async def gemini_models() -> dict[str, Any]:
     return {"ok": True, "count": len(models), "models": models}
 
 
+@app.get("/gemini/models")
+async def gemini_models_unprefixed() -> dict[str, Any]:
+    models = gemini_list_models()
+    return {"ok": True, "count": len(models), "models": models}
+
+
 @app.get("/jarvis/api/gemini/live/cache")
 async def gemini_live_cache() -> dict[str, Any]:
+    return {"ok": True, **gemini_live_cache_status()}
+
+
+@app.get("/gemini/live/cache")
+async def gemini_live_cache_unprefixed() -> dict[str, Any]:
     return {"ok": True, **gemini_live_cache_status()}
 
 
@@ -613,6 +624,33 @@ async def gemini_live_cache() -> dict[str, Any]:
 async def gemini_live_probe() -> dict[str, Any]:
     result = await gemini_live_probe_and_cache()
     return result
+
+
+@app.post("/gemini/live/probe")
+async def gemini_live_probe_unprefixed() -> dict[str, Any]:
+    result = await gemini_live_probe_and_cache()
+    return result
+
+
+@app.get("/jarvis/api/gemini/live/recommend")
+async def gemini_live_recommend() -> dict[str, Any]:
+    models = gemini_list_models()
+    # Recommend models based on list output (keep deterministic ordering)
+    ranked = [
+        m for m in models
+        if any(k in m.lower() for k in ["live", "realtime", "native-audio"]) or "bidi" in m.lower()
+    ]
+    return {"ok": True, "count": len(ranked), "models": ranked}
+
+
+@app.get("/gemini/live/recommend")
+async def gemini_live_recommend_unprefixed() -> dict[str, Any]:
+    models = gemini_list_models()
+    ranked = [
+        m for m in models
+        if any(k in m.lower() for k in ["live", "realtime", "native-audio"]) or "bidi" in m.lower()
+    ]
+    return {"ok": True, "count": len(ranked), "models": ranked}
 
 
 def _parse_bool_cell(v: Any) -> bool:
