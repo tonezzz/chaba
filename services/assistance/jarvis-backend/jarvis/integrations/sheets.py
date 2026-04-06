@@ -13,6 +13,9 @@ logger = logging.getLogger(__name__)
 # Force MCP mode; legacy removed
 GOOGLE_DRIVE_MCP_BASE_URL = os.getenv("GOOGLE_DRIVE_MCP_BASE_URL", "http://mcp-bundle-assistance:3050")
 
+# Session state for mcp-bundle
+_mcp_session = None
+
 # Default timeout for MCP calls (seconds)
 MCP_TIMEOUT = 15
 
@@ -21,11 +24,38 @@ class SheetsError(Exception):
     """Raised when Sheets operation fails."""
 
 
+def _ensure_mcp_session():
+    """Initialize mcp-bundle session if not already done."""
+    global _mcp_session
+    if _mcp_session:
+        return
+    url = f"{GOOGLE_DRIVE_MCP_BASE_URL}/mcp"
+    payload = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+            "protocolVersion": "2024-11-05",
+            "capabilities": {},
+            "clientInfo": {"name": "jarvis-backend", "version": "1.0.0"}
+        }
+    }
+    try:
+        with httpx.Client(timeout=MCP_TIMEOUT) as client:
+            resp = client.post(url, json=payload, headers={"accept": "application/json, text/event-stream"})
+            resp.raise_for_status()
+            _mcp_session = True  # Mark as initialized
+    except Exception as e:
+        logger.error(f"Failed to initialize MCP session: {e}")
+        raise SheetsError("MCP session initialization failed")
+
+
 def _mcp_call(tool: str, arguments: Dict[str, Any]) -> Any:
     """
     Call a Sheets tool via mcp-bundle (google-sheets MCP server).
     Sends MCP JSON-RPC call to /mcp endpoint.
     """
+    _ensure_mcp_session()
     url = f"{GOOGLE_DRIVE_MCP_BASE_URL}/mcp"
     payload = {
         "jsonrpc": "2.0",
@@ -38,7 +68,6 @@ def _mcp_call(tool: str, arguments: Dict[str, Any]) -> Any:
     }
     try:
         with httpx.Client(timeout=MCP_TIMEOUT) as client:
-            # Note: mcp-bundle requires session init; for simplicity, we use the existing google-sheets MCP server
             resp = client.post(url, json=payload, headers={"accept": "application/json, text/event-stream"})
             resp.raise_for_status()
             data = resp.json()
@@ -60,13 +89,13 @@ def _mcp_call(tool: str, arguments: Dict[str, Any]) -> Any:
 # ----------------------------------------------------------------------
 def get_values(spreadsheet_id: str, range_: str) -> List[List[Any]]:
     """Read a range from a sheet via MCP."""
-    result = _mcp_call("getValues", {"spreadsheetId": spreadsheet_id, "range": range_})
+    result = _mcp_call("getGoogleSheetContent", {"spreadsheetId": spreadsheet_id, "range": range_})
     return result.get("values", [])
 
 
 def append_rows(spreadsheet_id: str, range_: str, rows: List[List[Any]], value_input_option: str = "RAW") -> Dict[str, Any]:
     """Append rows to a sheet via MCP."""
-    result = _mcp_call("appendValues", {
+    result = _mcp_call("appendSpreadsheetRows", {
         "spreadsheetId": spreadsheet_id,
         "range": range_,
         "values": rows,
@@ -77,10 +106,10 @@ def append_rows(spreadsheet_id: str, range_: str, rows: List[List[Any]], value_i
 
 def update_values(spreadsheet_id: str, range_: str, values: List[List[Any]], value_input_option: str = "RAW") -> Dict[str, Any]:
     """Update a range in a sheet via MCP."""
-    result = _mcp_call("updateValues", {
+    result = _mcp_call("updateGoogleSheet", {
         "spreadsheetId": spreadsheet_id,
         "range": range_,
-        "values": values,
+        "data": values,
         "valueInputOption": value_input_option,
     })
     return result
