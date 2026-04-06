@@ -380,8 +380,8 @@ class WebSocketManager:
             # If cached config exists and applies to this model, try it first.
             if (
                 cached_config_idx is not None
-                and cached_model_and_idx is not None
-                and clean_model_name == cached_model_and_idx[0]
+                and _LIVE_WORKING_MODEL_AND_CONFIG is not None
+                and clean_model_name == _LIVE_WORKING_MODEL_AND_CONFIG[0]
                 and 0 <= cached_config_idx < len(configs_to_try)
             ):
                 configs_to_try = [configs_to_try[cached_config_idx]] + [
