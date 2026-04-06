@@ -17,33 +17,23 @@ from jarvis.websocket.session import (
     gemini_live_cache_status,
 )
 from jarvis.agents.dispatch import agent_dispatcher
-from jarvis.skills.news import news_skill
 from jarvis.memory.cache import memory_cache
 
 # Import API routers
 from jarvis.api.oauth import router as oauth_router
-from jarvis.api.debug import router as debug_router
 from jarvis.api.logs import router as logs_router
-from jarvis.api.memo import router as memo_router
 from jarvis.api.sys_kv import router as sys_kv_router
-from jarvis.api.memory import router as memory_router
-from jarvis.api.imagen import router as imagen_router
-from jarvis.api.reminders import router as reminders_router
-from jarvis.api.sheets import router as sheets_router
 from jarvis.api.dialog import router as dialog_router
 from jarvis.api.system import router as system_router
 
 # Import business logic modules
-from jarvis.dialog.history import recent_dialog_load, format_recent_dialog_for_context
-from jarvis.reminders.scheduler import reminder_scheduler
-from jarvis.sheets.operations import load_sheet_table, load_sheet_kv5
 from jarvis.gemini.client import gemini_client
 from jarvis.utils.text import strip_html_tags, normalize_simple_cmd
 from jarvis.utils.formatting import format_timestamp, format_duration_ms
 from jarvis.mcp.mcp_client import mcp_text_json
 
 from jarvis.feature_flags import feature_enabled
-from jarvis import memo_sheet, memo_enrich, daily_brief, sheets_utils, current_news_skill, tools_router
+from jarvis import tools_router
 
 # Import helper modules for Google Tasks
 from tasks_sequential_v0 import suggest_next_step_from_task, suggest_template_from_completed_tasks
@@ -257,19 +247,10 @@ mcp_router = MCPRouter(base_url=MCP_BASE_URL)
 
 # Include modular API routers
 app.include_router(oauth_router, prefix="/jarvis/api", tags=["oauth"])
-app.include_router(debug_router, prefix="/jarvis/api", tags=["debug"])
-app.include_router(logs_router, tags=["logs"])
-app.include_router(memo_router, prefix="/jarvis/api", tags=["memo"])
+app.include_router(logs_router, prefix="/jarvis/api", tags=["logs"])
 app.include_router(sys_kv_router, prefix="/jarvis/api", tags=["sys_kv"])
-app.include_router(memory_router, prefix="/jarvis/api", tags=["memory"])
-app.include_router(imagen_router, prefix="/jarvis/api", tags=["imagen"])
-app.include_router(reminders_router, prefix="/jarvis/api", tags=["reminders"])
-app.include_router(sheets_router, prefix="/jarvis/api", tags=["sheets"])
 app.include_router(dialog_router, prefix="/jarvis/api", tags=["dialog"])
 app.include_router(system_router, prefix="/jarvis/api", tags=["system"])
-
-# Include current news router
-app.include_router(_current_news_router(), prefix="/jarvis/api", tags=["current-news"])
 
 # Add missing sequential tasks endpoints
 from pydantic import BaseModel, Field

@@ -11,7 +11,6 @@ router = APIRouter()
 
 
 @router.post("/logs/ui/append")
-@router.post("/jarvis/api/logs/ui/append")
 async def logs_ui_append(req: dict[str, Any]) -> dict[str, Any]:
     """Append UI logs"""
     try:
