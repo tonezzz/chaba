@@ -468,6 +468,16 @@ class WebSocketManager:
                         _LIVE_WORKING_MODEL_AND_CONFIG = None
 
                         if not _LIVE_PROBE_ON_CONNECT:
+                            # If the client already disconnected, don't try to start fallback.
+                            try:
+                                disconnected = session.ws.client_state.name.lower() != "connected"
+                            except Exception:
+                                disconnected = False
+
+                            if disconnected:
+                                logger.info("Cached Live model failed but WS is already disconnected; skipping fallback")
+                                return
+
                             logger.info("Cached Live model failed and probing is disabled; using smart fallback mode")
                             await self._handle_smart_fallback_mode(session)
                             return
@@ -496,39 +506,70 @@ class WebSocketManager:
         """Forward WS client input (text/audio) into an active Gemini Live session."""
         from google.genai import types
 
-        while True:
-            data = await session.ws.receive_text()
-            try:
-                msg = json.loads(data)
-            except Exception:
-                continue
+        logger.info("Live WS->Gemini loop started")
 
-            mtype = str(msg.get("type") or "").strip().lower()
-            if mtype in ("ping", "pong"):
-                continue
-
-            if mtype == "text":
-                text = str(msg.get("text") or "").strip()
-                if not text:
-                    continue
-                await gemini_session.send_realtime_input(text=text)
-                continue
-
-            if mtype == "audio":
-                b64 = msg.get("data")
-                if not b64:
-                    continue
+        try:
+            while True:
+                data = await session.ws.receive_text()
                 try:
-                    pcm = base64.b64decode(str(b64))
+                    msg = json.loads(data)
                 except Exception:
                     continue
 
-                mime = str(msg.get("mimeType") or msg.get("mime_type") or "audio/pcm;rate=16000").strip()
-                await gemini_session.send_realtime_input(audio=types.Blob(data=pcm, mime_type=mime))
-                continue
+                mtype = str(msg.get("type") or "").strip().lower()
+                if mtype in ("ping", "pong"):
+                    continue
 
-            if mtype == "close":
-                return
+                if mtype == "text":
+                    text = str(msg.get("text") or "").strip()
+                    if not text:
+                        continue
+
+                    # Server-side shortcut: route news requests to MCP-News instead of relying on Gemini tool calls.
+                    t = text.lower()
+                    if (
+                        "current news" in t
+                        or "news today" in t
+                        or "latest news" in t
+                        or "ข่าวล่าสุด" in t
+                        or "ข่าววันนี้" in t
+                        or "ข่าวตอนนี้" in t
+                        or ("ข่าว" in t and len(t) <= 40)
+                        or (t.strip() == "news")
+                    ):
+                        try:
+                            from jarvis.skills.news import news_skill
+
+                            trace_id = str(msg.get("trace_id") or "news")
+                            ok = await news_skill.handle_current_news(session.ws, text, trace_id)
+                            if ok:
+                                continue
+                        except Exception as ne:
+                            logger.warning(f"News shortcut failed: {ne}")
+
+                    await gemini_session.send_realtime_input(text=text)
+                    continue
+
+                if mtype == "audio":
+                    b64 = msg.get("data")
+                    if not b64:
+                        continue
+                    try:
+                        pcm = base64.b64decode(str(b64))
+                    except Exception:
+                        continue
+
+                    mime = str(msg.get("mimeType") or msg.get("mime_type") or "audio/pcm;rate=16000").strip()
+                    await gemini_session.send_realtime_input(audio=types.Blob(data=pcm, mime_type=mime))
+                    continue
+
+                if mtype == "close":
+                    return
+        except WebSocketDisconnect:
+            logger.info("WS disconnected (Live WS->Gemini loop)")
+            return
+        finally:
+            logger.info("Live WS->Gemini loop exiting")
 
     async def _gemini_to_ws_with_session(self, session: WebSocketSession, gemini_session: Any) -> None:
         """Forward Gemini Live server events back to the WS client."""
@@ -622,6 +663,28 @@ class WebSocketManager:
                         user_text = message.get("text", "").strip()
                         if not user_text:
                             continue
+
+                        # Server-side shortcut: route news requests to MCP-News.
+                        t = user_text.lower()
+                        if (
+                            "current news" in t
+                            or "news today" in t
+                            or "latest news" in t
+                            or "ข่าวล่าสุด" in t
+                            or "ข่าววันนี้" in t
+                            or "ข่าวตอนนี้" in t
+                            or ("ข่าว" in t and len(t) <= 40)
+                            or (t.strip() == "news")
+                        ):
+                            try:
+                                from jarvis.skills.news import news_skill
+
+                                trace_id = str(message.get("trace_id") or "news")
+                                ok = await news_skill.handle_current_news(session.ws, user_text, trace_id)
+                                if ok:
+                                    continue
+                            except Exception as ne:
+                                logger.warning(f"News shortcut failed (fallback): {ne}")
                         
                         logger.info(f"Processing message with Gemini: {user_text[:50]}...")
                         
