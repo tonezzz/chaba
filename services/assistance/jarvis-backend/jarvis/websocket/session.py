@@ -14,14 +14,6 @@ from starlette.websockets import WebSocketDisconnect
 
 from jarvis.feature_flags import feature_enabled
 
-# Conditional import for Gemini API
-try:
-    import google.generativeai as genai
-    GENAI_AVAILABLE = True
-except ImportError:
-    genai = None
-    GENAI_AVAILABLE = False
-
 logger = logging.getLogger(__name__)
 
 INSTANCE_ID = str(uuid.uuid4())
@@ -64,6 +56,7 @@ try:
 except Exception:
     redis_async = None
 
+_LIVE_WORKING_MODEL_AND_CONFIG: Optional[tuple[str, "types.LiveConnectConfig"]] = None
 
 class WebSocketSession:
     """Manages a WebSocket session with Jarvis"""
@@ -100,111 +93,10 @@ class WebSocketSession:
             http_options={"api_version": "v1alpha"}
         )
         
-        # Configure session
-        self.config = types.LiveConnectConfig(
-            temperature=0.7,
-        )
-        
-        # Start Gemini session
-        try:
-            # Try models that are known to support Live API (prioritize working models)
-            models_to_try = [
-                # Focus on models most likely to work with text-based Live API
-                "gemini-2.0-flash-exp",                          # Experimental model (connected successfully)
-                "gemini-1.5-pro",                                # Pro model
-                "gemini-1.5-flash",                              # Flash model
-                "gemini-2.5-flash",                              # Latest flash
-                "gemini-2.0-flash",                              # Previous version
-                "gemini-2.5-pro",                                # Latest pro
-                "gemini-2.5-flash-exp",                          # Experimental flash
-                "gemini-2.5-flash-native-audio-preview-12-2025",  # Audio model (last resort)
-            ]
-            
-            # Try different configurations
-            configs_to_try = [
-                # Config 1: Text only (no audio)
-                types.LiveConnectConfig(
-                    temperature=0.7,
-                    response_modalities=["TEXT"],
-                    generation_config=types.GenerationConfig(
-                        max_output_tokens=1024,
-                        temperature=0.7,
-                    )
-                ),
-                # Config 2: Minimal config (no modalities specified)
-                types.LiveConnectConfig(
-                    temperature=0.7,
-                ),
-                # Config 3: Audio + Text (if text-only fails)
-                types.LiveConnectConfig(
-                    temperature=0.7,
-                    response_modalities=["AUDIO", "TEXT"],
-                    generation_config=types.GenerationConfig(
-                        max_output_tokens=1024,
-                        temperature=0.7,
-                    )
-                )
-            ]
-            
-            for model_name in models_to_try:
-                for config_idx, config in enumerate(configs_to_try):
-                    try:
-                        # Remove "models/" prefix if present
-                        clean_model_name = model_name
-                        if clean_model_name.startswith("models/"):
-                            clean_model_name = clean_model_name[7:]
-                        
-                        logger.info(f"Trying model: {clean_model_name} with config {config_idx + 1}")
-                        
-                        self.config = config
-                        
-                        self.session = self.client.aio.live.connect(
-                            model=clean_model_name,
-                            config=self.config,
-                        )
-                        
-                        logger.info(f"✅ Gemini Live session connected successfully with model: {clean_model_name}, config {config_idx + 1}")
-                        break
-                        
-                    except Exception as model_error:
-                        logger.warning(f"❌ Model {clean_model_name} with config {config_idx + 1} failed: {model_error}")
-                        
-                        # If it's an audio-specific error, skip trying other configs for this model
-                        if "Cannot extract voices from a non-audio request" in str(model_error):
-                            logger.info(f"Skipping remaining configs for {clean_model_name} - audio-only model")
-                            break
-                            
-                        if model_name == models_to_try[-1] and config_idx == len(configs_to_try) - 1:
-                            # Last model and last config tried
-                            raise model_error
-                        continue
-                
-                if self.session is not None:
-                    break  # Found working configuration
-            
-        except Exception as e:
-            logger.error(f"Failed to connect to Gemini Live API: {e}")
-            # Try to get more specific error information
-            if "1008" in str(e):
-                logger.info("Model not found error - trying to list available models")
-                try:
-                    models = self.client.models.list()
-                    available_models = [model.name for model in models]
-                    logger.info(f"Available models: {available_models}")
-                    
-                    # Try to find models that might support Live API
-                    live_candidates = [m for m in available_models if any(keyword in m.lower() for keyword in ['flash', 'pro', 'exp', 'audio', 'live'])]
-                    if live_candidates:
-                        logger.info(f"Potential Live API models: {live_candidates}")
-                except Exception as list_error:
-                    logger.error(f"Could not list models: {list_error}")
-            elif "invalid argument" in str(e).lower():
-                logger.info("Invalid argument error - trying different configuration")
-            else:
-                logger.error(f"Unexpected Gemini Live API error: {e}")
-                
-            logger.info("Using fallback smart mode")
-            self.session = None
+        # Live session is established later (after WebSocket accept) so we don't do heavy
+        # work before the handshake and so we only log success once the session is usable.
+        self.session = None
+        self.config = None
         
         # Load session state
         await self._load_session_state()
@@ -289,6 +181,8 @@ class WebSocketManager:
         session = WebSocketSession(ws)
         
         try:
+            # Accept early so clients connect reliably even if Gemini initialization fails.
+            await session.ws.accept()
             await session.initialize()
             
             # Check if there's an existing session for the same user
@@ -361,8 +255,6 @@ class WebSocketManager:
     
     async def _handle_websocket_loop(self, session: WebSocketSession) -> None:
         """Main WebSocket communication loop"""
-        await session.ws.accept()
-        
         # Send session resume data
         await self._emit_session_resume(session)
         
@@ -376,40 +268,108 @@ class WebSocketManager:
     
     async def _handle_gemini_session(self, session: WebSocketSession) -> None:
         """Handle Gemini session and WebSocket communication"""
-        if session.session is None:
-            # Try smart fallback with regular Gemini API
-            await self._handle_smart_fallback_mode(session)
-            return
-            
-        try:
-            # session.session is the async context manager from live.connect()
-            async with session.session as gemini_session:
-                # Create tasks for concurrent communication
-                ws_to_gemini_task = asyncio.create_task(
-                    self._ws_to_gemini_with_session(session, gemini_session)
-                )
-                gemini_to_ws_task = asyncio.create_task(
-                    self._gemini_to_ws_with_session(session, gemini_session)
-                )
-                
-                # Wait for either task to complete (error or disconnect)
-                done, pending = await asyncio.wait(
-                    [ws_to_gemini_task, gemini_to_ws_task],
-                    return_when=asyncio.FIRST_COMPLETED
-                )
-                
-                # Cancel pending tasks
-                for task in pending:
-                    task.cancel()
-                    try:
-                        await task
-                    except asyncio.CancelledError:
-                        pass
-                        
-        except Exception as e:
-            logger.error(f"Gemini session error: {e}")
-            # Fall back to smart mode if Live API fails during session
-            await self._handle_smart_fallback_mode(session)
+        global _LIVE_WORKING_MODEL_AND_CONFIG
+
+        # Prefer cached working model/config if we have one.
+        models_to_try: list[str] = []
+        configs_to_try: list[types.LiveConnectConfig] = []
+
+        if _LIVE_WORKING_MODEL_AND_CONFIG is not None:
+            cached_model, cached_config = _LIVE_WORKING_MODEL_AND_CONFIG
+            models_to_try.append(cached_model)
+            configs_to_try.append(cached_config)
+
+        # Extend with probe set (only if cache missing or cache fails)
+        probe_models = [
+            "gemini-2.0-flash-exp",
+            "gemini-1.5-pro",
+            "gemini-1.5-flash",
+            "gemini-2.5-flash",
+            "gemini-2.0-flash",
+            "gemini-2.5-pro",
+            "gemini-2.5-flash-exp",
+            "gemini-2.5-flash-native-audio-preview-12-2025",
+        ]
+        for m in probe_models:
+            if m not in models_to_try:
+                models_to_try.append(m)
+
+        if not configs_to_try:
+            configs_to_try = [
+                types.LiveConnectConfig(
+                    temperature=0.7,
+                    response_modalities=["TEXT"],
+                    generation_config=types.GenerationConfig(
+                        max_output_tokens=1024,
+                        temperature=0.7,
+                    ),
+                ),
+                types.LiveConnectConfig(temperature=0.7),
+                types.LiveConnectConfig(
+                    temperature=0.7,
+                    response_modalities=["AUDIO", "TEXT"],
+                    generation_config=types.GenerationConfig(
+                        max_output_tokens=1024,
+                        temperature=0.7,
+                    ),
+                ),
+            ]
+
+        for model_name in models_to_try:
+            clean_model_name = model_name[7:] if model_name.startswith("models/") else model_name
+            for config_idx, config in enumerate(configs_to_try):
+                try:
+                    logger.info(f"Trying Live model: {clean_model_name} with config {config_idx + 1}")
+
+                    # Only consider Live usable if we successfully enter the context.
+                    async with session.client.aio.live.connect(
+                        model=clean_model_name,
+                        config=config,
+                    ) as gemini_session:
+                        logger.info(
+                            f"✅ Gemini Live session established (validated) model={clean_model_name} config={config_idx + 1}"
+                        )
+
+                        # Cache for future connections.
+                        _LIVE_WORKING_MODEL_AND_CONFIG = (clean_model_name, config)
+
+                        ws_to_gemini_task = asyncio.create_task(
+                            self._ws_to_gemini_with_session(session, gemini_session)
+                        )
+                        gemini_to_ws_task = asyncio.create_task(
+                            self._gemini_to_ws_with_session(session, gemini_session)
+                        )
+
+                        done, pending = await asyncio.wait(
+                            [ws_to_gemini_task, gemini_to_ws_task],
+                            return_when=asyncio.FIRST_COMPLETED,
+                        )
+
+                        for task in pending:
+                            task.cancel()
+                            try:
+                                await task
+                            except asyncio.CancelledError:
+                                pass
+
+                        # If we get here, the live session loop ended (disconnect or task completion).
+                        return
+
+                except Exception as e:
+                    # If cached model/config fails, invalidate cache and continue probing.
+                    if _LIVE_WORKING_MODEL_AND_CONFIG is not None and _LIVE_WORKING_MODEL_AND_CONFIG[0] == clean_model_name:
+                        _LIVE_WORKING_MODEL_AND_CONFIG = None
+
+                    logger.warning(
+                        f"❌ Live model failed model={clean_model_name} config={config_idx + 1}: {e}"
+                    )
+                    if "Cannot extract voices from a non-audio request" in str(e):
+                        # Audio-only model for a text client; don't try other configs.
+                        break
+                    continue
+
+        logger.info("Live API unavailable; using smart fallback mode")
+        await self._handle_smart_fallback_mode(session)
     
     async def _handle_smart_fallback_mode(self, session: WebSocketSession) -> None:
         """Smart fallback mode using regular Gemini API for intelligent responses"""
