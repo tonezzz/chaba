@@ -27,6 +27,7 @@ export class LiveService {
   private processor: ScriptProcessorNode | null = null;
   private nextStartTime: number = 0;
   private isStreamingAudio: boolean = false;
+  private audioInitError: string | null = null;
   private sessionId: string | null = null;
   private clientId: string | null = null;
   private clientTag: string | null = null;
@@ -552,12 +553,49 @@ export class LiveService {
 
   public startStreaming() {
     this.isStreamingAudio = true;
+    void this.ensureAudioInput();
   }
 
   public stopStreaming() {
     this.isStreamingAudio = false;
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
 			this.wsSend({ type: "audio_stream_end", trace_id: this.createTraceId("audio_end") });
+    }
+  }
+
+  private async ensureAudioInput(): Promise<void> {
+    // Must be triggered by a user gesture on most browsers (Talk button) to avoid NotAllowedError.
+    try {
+      if (!this.inputAudioContext) {
+        this.inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+      }
+      if (!this.outputAudioContext) {
+        this.outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+      }
+      if (!this.inputStream) {
+        this.audioInitError = null;
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        this.inputStream = stream;
+      }
+      if (this.inputStream) {
+        this.setupAudioInput(this.inputStream);
+      }
+    } catch (audioErr: any) {
+      this.inputStream = null;
+      this.isStreamingAudio = false;
+      const name = String(audioErr?.name || "unknown");
+      const msg = String(audioErr?.message || audioErr || "unknown");
+      this.audioInitError = `${name}: ${msg}`;
+      try {
+        this.onMessage({
+          id: `${Date.now()}_audio_unavailable`,
+          role: "system",
+          text: `audio_unavailable: ${this.audioInitError}`,
+          timestamp: new Date(),
+        });
+      } catch {
+        // ignore
+      }
     }
   }
 
@@ -608,25 +646,12 @@ export class LiveService {
       const mySeq = ++this.wsSeq;
       // Always try to establish the WebSocket connection even if audio init fails.
       // This enables text-only mode (useful on servers/browsers where mic access is unavailable).
-      let stream: MediaStream | null = null;
       try {
+        // Create audio contexts here, but request mic permission only on user gesture (Talk).
         this.inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
         this.outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        this.inputStream = stream;
-      } catch (audioErr: any) {
-        this.inputStream = null;
-        this.isStreamingAudio = false;
-        try {
-          this.onMessage({
-            id: `${Date.now()}_audio_unavailable`,
-            role: "system",
-            text: `audio_unavailable: ${String(audioErr?.name || audioErr || "unknown")}`,
-            timestamp: new Date(),
-          });
-        } catch {
-          // ignore
-        }
+      } catch {
+        // ignore
       }
 
       const backendUrl = (import.meta as any).env?.VITE_JARVIS_WS_URL as string | undefined;
