@@ -477,6 +477,8 @@ class WebSocketManager:
                 "mode": "smart_fallback"
             })
             
+            previous_interaction_id: Optional[str] = None
+
             # Handle messages with intelligent responses
             while True:
                 try:
@@ -492,7 +494,11 @@ class WebSocketManager:
                         
                         # Get intelligent response from Gemini via HTTP API
                         try:
-                            response_text = await self._get_gemini_response(user_text, api_key)
+                            response_text, previous_interaction_id = await self._get_gemini_response(
+                                user_text,
+                                api_key,
+                                previous_interaction_id,
+                            )
                             
                             await session.send_json({
                                 "type": "text",
@@ -534,25 +540,43 @@ class WebSocketManager:
             # Final fallback to echo mode
             await self._handle_echo_mode(session)
     
-    async def _get_gemini_response(self, user_text: str, api_key: str) -> str:
+    async def _get_gemini_response(
+        self,
+        user_text: str,
+        api_key: str,
+        previous_interaction_id: Optional[str],
+    ) -> tuple[str, Optional[str]]:
         """Get response from Gemini API via HTTP"""
         try:
-            from jarvis.gemini.client import gemini_client
+            from google import genai
 
-            model = str(os.getenv("GEMINI_TEXT_MODEL") or "").strip() or None
-            resp = await gemini_client.generate_content(
-                contents=user_text,
-                model=model,
+            model_name = str(os.getenv("GEMINI_TEXT_MODEL") or "gemini-2.0-flash").strip()
+            if model_name.startswith("models/"):
+                model_name = model_name[len("models/") :]
+
+            client = genai.Client(api_key=api_key)
+            interaction = await client.aio.interactions.create(
+                model=model_name,
+                input=user_text,
+                previous_interaction_id=previous_interaction_id,
             )
-            txt = getattr(resp, "text", None)
-            if txt is None:
-                txt = str(resp)
-            txt = str(txt or "").strip()
-            return txt or "I'm not sure how to respond to that. Could you try asking differently?"
+
+            outputs = getattr(interaction, "outputs", None)
+            txt: str = ""
+            if isinstance(outputs, list) and outputs:
+                last = outputs[-1]
+                txt = str(getattr(last, "text", "") or "").strip()
+            if not txt:
+                txt = str(getattr(interaction, "text", "") or "").strip()
+            if not txt:
+                txt = "I'm not sure how to respond to that. Could you try asking differently?"
+
+            new_id = getattr(interaction, "id", None)
+            return txt, str(new_id) if new_id else previous_interaction_id
                     
         except Exception as e:
             logger.error(f"Error calling Gemini API: {e}")
-            return "I'm having trouble connecting to my brain right now. Please try again in a moment."
+            return "I'm having trouble connecting to my brain right now. Please try again in a moment.", previous_interaction_id
     
     async def _handle_echo_mode(self, session: WebSocketSession) -> None:
         """Fallback echo mode when Gemini Live API is not available"""
