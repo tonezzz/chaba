@@ -602,55 +602,99 @@ class WebSocketManager:
             logger.info(f"WebSocket disconnected gracefully: {e}")
         except Exception as e:
             logger.error(f"Echo mode error: {e}")
-            logger.error(f"Echo mode error type: {type(e)}")
-            import traceback
-            logger.error(f"Echo mode traceback: {traceback.format_exc()}")
-    
-    async def _ws_to_gemini_with_session(self, session: WebSocketSession, gemini_session) -> None:
-        """Forward WebSocket messages to Gemini with active session"""
-        try:
-            while True:
-                data = await session.ws.receive_text()
-                message = json.loads(data)
-                
-                # Handle different message types
-                if message.get("type") == "text":
-                    await gemini_session.send(message.get("text", ""))
-                elif message.get("type") == "audio":
-                    # Handle audio data
-                    pass
-                    
-        except Exception as e:
-            logger.error(f"ws_to_gemini error: {e}")
-    
-    async def _gemini_to_ws_with_session(self, session: WebSocketSession, gemini_session) -> None:
-        """Forward Gemini responses to WebSocket with active session"""
-        try:
-            async for response in gemini_session.receive():
-                if response.text:
-                    await session.send_json({
-                        "type": "text",
-                        "text": response.text,
-                        "instance_id": INSTANCE_ID
-                    })
-                elif response.data:
-                    # Handle audio/data responses
-                    pass
-                    
-        except Exception as e:
-            logger.error(f"gemini_to_ws error: {e}")
-    
-    async def broadcast_to_all(self, message: dict[str, Any]) -> None:
-        """Broadcast message to the active session (single-session model)"""
-        if self.active_session:
-            try:
-                await self.active_session.send_json(message)
-                logger.info(f"Broadcasted message to active session: {self.active_session.session_id}")
-            except Exception as e:
-                logger.warning(f"Failed to broadcast to active session {self.active_session.session_id}: {e}")
-        else:
-            logger.info("No active session to broadcast to")
 
 
-# Global manager instance
+
 websocket_manager = WebSocketManager()
+
+
+def gemini_list_models() -> list[str]:
+    api_key = os.getenv("GEMINI_API_KEY", "")
+    if not api_key:
+        raise RuntimeError("missing_gemini_api_key")
+    client = genai.Client(api_key=api_key, http_options={"api_version": "v1alpha"})
+    return [m.name for m in client.models.list()]
+
+
+def gemini_live_cache_status() -> dict[str, Any]:
+    return {
+        "cache_path": _LIVE_CACHE_PATH,
+        "cached": _LIVE_WORKING_MODEL_AND_CONFIG,
+    }
+
+
+async def gemini_live_probe_and_cache() -> dict[str, Any]:
+    api_key = os.getenv("GEMINI_API_KEY", "")
+    if not api_key:
+        raise RuntimeError("missing_gemini_api_key")
+
+    client = genai.Client(api_key=api_key, http_options={"api_version": "v1alpha"})
+
+    probe_models = [
+        "gemini-3.1-flash-live-preview",
+        "gemini-2.5-flash-native-audio-latest",
+        "gemini-2.5-flash-native-audio-preview-12-2025",
+        "lyria-realtime-exp",
+        "gemini-2.5-flash",
+        "gemini-2.5-pro",
+        "gemini-2.0-flash",
+        "gemini-2.0-flash-001",
+        "gemini-2.0-flash-lite",
+        "gemini-2.0-flash-lite-001",
+        "gemini-flash-latest",
+        "gemini-flash-lite-latest",
+        "gemini-pro-latest",
+    ]
+
+    configs: list[types.LiveConnectConfig] = [
+        types.LiveConnectConfig(
+            temperature=0.7,
+            response_modalities=["TEXT"],
+            generation_config=types.GenerationConfig(
+                max_output_tokens=1024,
+                temperature=0.7,
+            ),
+        ),
+        types.LiveConnectConfig(temperature=0.7),
+        types.LiveConnectConfig(
+            temperature=0.7,
+            response_modalities=["AUDIO", "TEXT"],
+            generation_config=types.GenerationConfig(
+                max_output_tokens=1024,
+                temperature=0.7,
+            ),
+        ),
+    ]
+
+    attempts: list[dict[str, Any]] = []
+
+    for model in probe_models:
+        clean_model = model[7:] if model.startswith("models/") else model
+        for cfg_idx, cfg in enumerate(configs):
+            try:
+                async with client.aio.live.connect(model=clean_model, config=cfg):
+                    global _LIVE_WORKING_MODEL_AND_CONFIG
+                    _LIVE_WORKING_MODEL_AND_CONFIG = (clean_model, cfg_idx)
+                    try:
+                        if _LIVE_CACHE_PATH:
+                            os.makedirs(os.path.dirname(_LIVE_CACHE_PATH), exist_ok=True)
+                            with open(_LIVE_CACHE_PATH, "w", encoding="utf-8") as f:
+                                json.dump({"model": clean_model, "config_idx": cfg_idx}, f)
+                    except Exception:
+                        pass
+
+                    return {
+                        "ok": True,
+                        "model": clean_model,
+                        "config_idx": cfg_idx,
+                        "cache_path": _LIVE_CACHE_PATH,
+                        "attempts": attempts,
+                    }
+            except Exception as e:
+                attempts.append({"model": clean_model, "config_idx": cfg_idx, "error": str(e)})
+
+    return {
+        "ok": False,
+        "cache_path": _LIVE_CACHE_PATH,
+        "attempts": attempts,
+    }
