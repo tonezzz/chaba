@@ -342,10 +342,14 @@ class WebSocketManager:
             probe_models: list[str] = []
         else:
             # Extend with probe set (only if cache missing or cache fails)
+            preferred_live_model = str(os.getenv("GEMINI_LIVE_MODEL") or "").strip()
+            try_text_live_preview = str(os.getenv("JARVIS_LIVE_TRY_TEXT_PREVIEW") or "false").strip().lower() == "true"
             probe_models = [
-                # Prefer models that are actually present in models.list() output and likely
-                # to support Live bidirectional streaming.
-                "gemini-3.1-flash-live-preview",
+                # If operator configured a preferred Live model, try it first.
+                preferred_live_model,
+                # Text-live preview is opt-in. Some deployments see 1011 errors; keep it out
+                # of the default probe path unless explicitly requested.
+                "gemini-3.1-flash-live-preview" if (preferred_live_model == "gemini-3.1-flash-live-preview" or try_text_live_preview) else "",
 
                 # Audio/live-adjacent models (may require audio input depending on client behavior)
                 "gemini-2.5-flash-native-audio-latest",
@@ -363,6 +367,8 @@ class WebSocketManager:
                 "gemini-flash-lite-latest",
                 "gemini-pro-latest",
             ]
+
+            probe_models = [m for m in probe_models if m]
 
         for m in probe_models:
             if m not in models_to_try:
@@ -682,17 +688,30 @@ class WebSocketManager:
                 model_name = model_name[len("models/") :]
 
             client = genai.Client(api_key=api_key)
-            interaction = await client.aio.interactions.create(
-                model=model_name,
-                input=user_text,
-                previous_interaction_id=previous_interaction_id,
-            )
+            try:
+                interaction = await client.aio.interactions.create(
+                    model=model_name,
+                    input=user_text,
+                    previous_interaction_id=previous_interaction_id,
+                )
+            except Exception as ie:
+                # If Interactions is not supported for this model/key, fall back to stateless
+                # generate_content so smart fallback still works.
+                if "invalid_request" in str(ie) or "not supported" in str(ie) or "Model family" in str(ie):
+                    resp = await client.aio.models.generate_content(model=model_name, contents=user_text)
+                    txt = (getattr(resp, "text", None) or "").strip()
+                    if not txt:
+                        txt = str(resp)
+                    return txt, previous_interaction_id
+                raise
 
-            outputs = getattr(interaction, "outputs", None)
             txt: str = ""
-            if isinstance(outputs, list) and outputs:
+            outputs = getattr(interaction, "output", None)
+            if outputs:
                 last = outputs[-1]
-                txt = str(getattr(last, "text", "") or "").strip()
+                content = getattr(last, "content", None)
+                if content:
+                    txt = str(getattr(content, "text", "") or "").strip()
             if not txt:
                 txt = str(getattr(interaction, "text", "") or "").strip()
             if not txt:

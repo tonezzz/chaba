@@ -33,7 +33,7 @@ class GeminiClient:
     
     def __init__(self):
         self.api_key = str(os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
-        self.default_model = str(os.getenv("GEMINI_TEXT_MODEL") or "gemini-2.0-flash").strip()
+        self.default_model = str(os.getenv("GEMINI_TEXT_MODEL") or "gemini-3-flash-preview").strip()
     
     def get_client(self) -> Any:
         """Get Gemini client instance"""
