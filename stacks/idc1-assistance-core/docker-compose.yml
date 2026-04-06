@@ -28,7 +28,7 @@ services:
       JARVIS_PUBLIC_BASE_URL: ${JARVIS_PUBLIC_BASE_URL:-https://assistance.idc1.surf-thailand.com}
       JARVIS_VERIFY_FRONTEND_BASE_URL: ${JARVIS_VERIFY_FRONTEND_BASE_URL:-}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
-      GOOGLE_DRIVE_MCP_BASE_URL: http://mcp-bundle-assistance:3050
+      GOOGLE_DRIVE_MCP_BASE_URL: http://google-drive-mcp:8032
       JARVIS_RECENT_DIALOG_TTL_SECONDS: ${JARVIS_RECENT_DIALOG_TTL_SECONDS:-86400}
       JARVIS_RECENT_DIALOG_MAX_TURNS: ${JARVIS_RECENT_DIALOG_MAX_TURNS:-60}
       JARVIS_RECENT_DIALOG_MAX_CHARS: ${JARVIS_RECENT_DIALOG_MAX_CHARS:-4000}
@@ -99,6 +99,26 @@ services:
       timeout: 5s
       retries: 3
 
+  google-drive-mcp:
+    <<: *default-service
+    image: node:20-alpine
+    command: >
+      sh -c "
+        apk add --no-cache curl &&
+        npx -y @piotr-agier/google-drive-mcp start --transport http --host 0.0.0.0 --port 8032
+      "
+    ports:
+      - "127.0.0.1:18032:8032"
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /app/creds/service-account.json
+    volumes:
+      - google-drive-mcp-creds:/app/creds:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8032/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
 networks:
   idc1-stack-net:
     external: true
@@ -114,3 +134,7 @@ volumes:
   jarvis-session-db:
     external: true
     name: ${JARVIS_SESSION_DB_VOLUME_NAME:-idc1-assistance_jarvis-session-db}
+
+  google-drive-mcp-creds:
+    external: true
+    name: ${GOOGLE_DRIVE_MCP_CREDS_VOLUME_NAME:-idc1-assistance_google-drive-mcp-creds}

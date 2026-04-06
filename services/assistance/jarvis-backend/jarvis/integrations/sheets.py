@@ -1,20 +1,21 @@
 """
 Unified Sheets interface for Jarvis.
-Routes to google-drive-mcp via mcp-bundle (google-sheets server) for now.
+Routes to google-drive-mcp via MCP-over-HTTP (streamable HTTP).
 """
 
 import os
 import logging
+import json
 from typing import Any, List, Dict
 import httpx
 
 logger = logging.getLogger(__name__)
 
 # Force MCP mode; legacy removed
-GOOGLE_DRIVE_MCP_BASE_URL = os.getenv("GOOGLE_DRIVE_MCP_BASE_URL", "http://mcp-bundle-assistance:3050")
+GOOGLE_DRIVE_MCP_BASE_URL = os.getenv("GOOGLE_DRIVE_MCP_BASE_URL", "http://google-drive-mcp:8032")
 
-# Session state for mcp-bundle
-_mcp_session = None
+# Session state for MCP-over-HTTP
+_mcp_session_id: str | None = None
 
 # Default timeout for MCP calls (seconds)
 MCP_TIMEOUT = 15
@@ -24,10 +25,24 @@ class SheetsError(Exception):
     """Raised when Sheets operation fails."""
 
 
+def _extract_first_sse_json(text: str) -> Dict[str, Any]:
+    """Parse the first JSON object from an SSE response body."""
+    # SSE format is lines like: "event: message" and "data: {...json...}"
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line.startswith("data:"):
+            continue
+        data_str = line[len("data:") :].strip()
+        if not data_str:
+            continue
+        return json.loads(data_str)
+    raise SheetsError("Invalid MCP SSE response: missing data")
+
+
 def _ensure_mcp_session():
-    """Initialize mcp-bundle session if not already done."""
-    global _mcp_session
-    if _mcp_session:
+    """Initialize google-drive-mcp streamable HTTP session if not already done."""
+    global _mcp_session_id
+    if _mcp_session_id:
         return
     url = f"{GOOGLE_DRIVE_MCP_BASE_URL}/mcp"
     payload = {
@@ -42,9 +57,20 @@ def _ensure_mcp_session():
     }
     try:
         with httpx.Client(timeout=MCP_TIMEOUT) as client:
-            resp = client.post(url, json=payload, headers={"accept": "application/json, text/event-stream"})
+            resp = client.post(
+                url,
+                json=payload,
+                headers={"accept": "application/json, text/event-stream"},
+            )
             resp.raise_for_status()
-            _mcp_session = True  # Mark as initialized
+            # Session id is provided as a response header.
+            session_id = resp.headers.get("mcp-session-id")
+            if not session_id:
+                raise SheetsError("MCP initialize missing mcp-session-id header")
+            _mcp_session_id = session_id
+
+            # Best-effort: verify body is valid SSE w/ JSON payload
+            _ = _extract_first_sse_json(resp.text)
     except Exception as e:
         logger.error(f"Failed to initialize MCP session: {e}")
         raise SheetsError("MCP session initialization failed")
@@ -52,11 +78,15 @@ def _ensure_mcp_session():
 
 def _mcp_call(tool: str, arguments: Dict[str, Any]) -> Any:
     """
-    Call a Sheets tool via mcp-bundle (google-sheets MCP server).
+    Call a Sheets tool via google-drive-mcp MCP-over-HTTP.
     Sends MCP JSON-RPC call to /mcp endpoint.
     """
     _ensure_mcp_session()
     url = f"{GOOGLE_DRIVE_MCP_BASE_URL}/mcp"
+    headers = {
+        "accept": "application/json, text/event-stream",
+        "mcp-session-id": str(_mcp_session_id),
+    }
     payload = {
         "jsonrpc": "2.0",
         "id": 1,
@@ -68,9 +98,10 @@ def _mcp_call(tool: str, arguments: Dict[str, Any]) -> Any:
     }
     try:
         with httpx.Client(timeout=MCP_TIMEOUT) as client:
-            resp = client.post(url, json=payload, headers={"accept": "application/json, text/event-stream"})
+            resp = client.post(url, json=payload, headers=headers)
             resp.raise_for_status()
-            data = resp.json()
+            # google-drive-mcp returns SSE
+            data = _extract_first_sse_json(resp.text)
             if "error" in data:
                 raise SheetsError(data["error"].get("message", "Unknown MCP error"))
             if "result" in data:
