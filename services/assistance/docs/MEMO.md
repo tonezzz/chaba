@@ -11,10 +11,11 @@ API SSOT:
 ## Overview
 The memo system provides a lightweight, append-only log into a Google Sheet tab (default: `memo`).
 
-It supports two entry points:
+It supports one entry point:
 
-- Voice/text commands over the Live WebSocket (`/ws/live`) routed through the memo trigger.
-- Direct HTTP API call to `POST /jarvis/memo/add` (also exposed as `POST /memo/add`).
+- Voice/text commands over the Live WebSocket (`/jarvis/ws/live`) routed through the memo trigger.
+
+(HTTP memo endpoint removed)
 
 ## System sheet (sys_kv) configuration
 The memo system is controlled by keys in the *system sheet* KV (`sys_kv`).
@@ -56,15 +57,13 @@ Rows are appended via Google Sheets `values.append`.
 Notes:
 
 - The backend normalizer rewrites `A1:J1` and best-effort clears `K1` (and beyond) to prevent stray manual header columns.
-- Debug and maintenance endpoints treat the canonical header as `A:J`:
-  - `GET /jarvis/api/debug/memo` returns `header` read from `A1:J1`.
-  - `POST /jarvis/memo/header/normalize` returns `before`/`after` read from `A1:J1`.
+
 
 ## Flow diagram
 
 ```mermaid
 flowchart TD
-  U[User voice/text] -->|STT transcript| WS[/ws/live/]
+  U[User voice/text] -->|STT transcript| WS[/jarvis/ws/live/]
 
   WS --> D[_dispatch_sub_agents]
   D -->|memo intent anywhere| MT[_handle_memo_trigger]
@@ -77,10 +76,7 @@ flowchart TD
   HDR --> APP[google_sheets_values_append]
   APP --> OK["Memo saved."]
 
-  H[POST /jarvis/memo/add] -->|API token check| API[memo_add]
-  API --> CFG
-  API --> HDR
-  API --> APP
+
 ```
 
 ## Voice/text memo commands
@@ -116,7 +112,7 @@ If a memo is missing `subject`/`group` or is too short, Jarvis asks follow-ups a
 
 Endpoint:
 
-- `POST /jarvis/memo/add` (alias: `POST /memo/add`)
+(removed)
 
 Request JSON:
 
@@ -160,11 +156,6 @@ Check:
 - The Sheets credentials/service account has edit access.
 - The sheet/tab is not protected in a way that blocks writing A1.
 
-### Verify via curl
+### Verify
 
-```bash
-curl -sS -X POST https://assistance.idc1.surf-thailand.com/jarvis/api/jarvis/memo/add \
-  -H 'content-type: application/json' \
-  -H 'X-Api-Token: <TOKEN_IF_REQUIRED>' \
-  -d '{"group":"ops","subject":"memo/test","memo":"hello"}'
-```
+(removed)

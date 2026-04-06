@@ -351,70 +351,6 @@ Notes (from `stacks/idc1-assistance/CONFIG.md`):
 - Backend serves WS internally at `/ws/live` (edge proxy must strip `/jarvis`).
 - Hitting a WS URL as plain HTTP GET may return `404`; use a WS client.
 
-### Google tools gating verification (deployed)
-#### Goal
-- Prove granular Google gates are enforced by the backend (HTTP `403`) while Sheets remains enabled.
-
-#### Checks
-1. **Verify cached gates**
-   - `GET /sys_kv/snapshot`
-     - Confirm `google_gates.google.sheets.enabled=true`
-     - Confirm `google_gates.google.calendar.enabled=false`
-     - Confirm `google_gates.google.tasks.enabled=false`
-2. **Tasks gate**
-   - `GET /google-tasks/sequential/summary?max_results=1`
-     - Expect: `403` with `required_sys_kv_key=google.tasks.enabled`
-3. **Calendar gate**
-   - `GET /google-calendar/auth/status`
-     - Expect: `403` with `required_sys_kv_key=google.calendar.enabled`
-
-### Operator smoke checklist (Calendar cutover)
-#### Preconditions
-- You can reach the deployed backend base URL.
-- You have valid Google credentials configured for the backend.
-
-#### Checklist
-1. **Create a Calendar reminder**
-   - Use the helper (recommended):
-     - `python scripts/ws_smoke_test.py --url wss://assistance.idc1.surf-thailand.com/jarvis/ws/live --timeout 25 --send-json '{"type":"reminders","action":"create","text":"smoke-<date> test reminder tomorrow 09:00"}' --expect-type planning_item_created`
-   - Or send directly over WS:
-     - `{"type":"reminders","action":"create","text":"smoke-<date> test reminder tomorrow 09:00"}`
-2. **Confirm the event exists**
-   - Confirm the event appears in the `Jarvis Reminders` calendar.
-3. **Confirm legacy reminders are removed**
-   - Confirm the backend no longer supports legacy reminders actions (SQLite scheduler / list / done / later / delete).
-
-### Legacy reminders removal (breaking)
-#### What changed
-- Legacy SQLite reminders are no longer part of the backend runtime:
-  - No SQLite `reminders` table creation/migrations.
-  - No reminder scheduler loop/task.
-  - No legacy reminder text helper commands.
-- Reminder creation remains supported via the Calendar cutover path:
-  - Reminders with an explicit time => Google Calendar event (Jarvis Reminders calendar).
-  - Reminders without an explicit time => Google Task.
-
-#### Behavioral notes
-- WebSocket `type=reminders` only supports `action=add|create`.
-  - Other legacy actions return an error kind `reminders_legacy_removed`.
-- Daily brief no longer falls back to local SQLite reminders.
-
-#### Post-deploy verification checklist
-1. **Backend starts cleanly**
-   - Confirm `jarvis-backend` starts without attempting to create/migrate a `reminders` SQLite table.
-2. **Create a timed reminder**
-   - Via UI voice/text or WS `type=reminders action=create`, create a reminder with a time.
-   - Confirm a Calendar event is created in `Jarvis Reminders`.
-3. **Create a no-time reminder**
-   - Via UI voice/text or WS `type=reminders action=create`, create a reminder without a time.
-   - Confirm a Google Task is created.
-4. **Confirm legacy reminder actions are rejected**
-   - Use the helper (recommended):
-     - `python scripts/ws_smoke_test.py --url wss://assistance.idc1.surf-thailand.com/jarvis/ws/live --timeout 20 --send-json '{"type":"reminders","action":"list"}' --expect-type error`
-   - Or send directly over WS:
-     - `{"type":"reminders","action":"list"}`
-   - Confirm it returns `reminders_legacy_removed`.
-
 ## Preflight: confirm you’re using the latest ACTION.md
 Run this before taking actions if you had multiple chats open or you suspect drift.
 
@@ -555,13 +491,8 @@ Use this anytime you have multiple chats/agents editing the repo.
   - but must **not** apply patches/commits
 
 ### Lightweight lock (recommended)
-- Before editing, write a memo “lock” so other chats can see it:
-  - `POST /jarvis/memo/add` with:
-    - `subject=repo-lock`
-    - `group=ops`
-    - `memo="lock repo=chaba branch=idc1-assistance owner=<name> ts=<iso> expires_in_min=30"`
-- After push, append an “unlock” memo:
-  - `memo="unlock repo=chaba branch=idc1-assistance ts=<iso>"`
+
+(removed)
 
 ### Conflict prevention checklist (before you edit)
 1. `git status -sb` (must be clean or intentionally dirty)
@@ -591,46 +522,11 @@ Local verification (jarvis-backend):
 - `services/assistance/jarvis-backend/.venv/bin/pip install -r services/assistance/jarvis-backend/requirements.txt`
 - `services/assistance/jarvis-backend/.venv/bin/python -m pytest -q services/assistance/jarvis-backend`
 
-### Memo (does memo append work?)
-Format SSOT:
-- See: `MEMO.md` (canonical sheet header/order, sys_kv keys, and normalize behavior)
-
-1. **Check effective memo config**
-   - `GET /jarvis/api/debug/memo`
-   - Success looks like:
-     - `feature_enabled=true`
-     - `memo_enabled=true`
-     - non-empty `spreadsheet_id` and `sheet_name`
-     - `header_error=null`
-2. **If `memo_enabled=false` but you believe sys_kv is set**
-   - `/jarvis/api/debug/memo` reads from a cached `sys_kv` snapshot.
-   - Force a refresh by calling:
-     - `POST /jarvis/memo/header/normalize`
-   - Then re-check:
-     - `GET /jarvis/api/debug/memo`
-3. **Append a test memo**
-   - `POST /jarvis/memo/add`
-   - Success looks like:
-     - response contains `ok=true` and `appended=1`
-4. **If you still can’t “see it”**
-   - Confirm you are looking at the correct Google Sheet tab (`sheet_name` from debug output).
-   - If you use a UI that reads memo, it may be cached; refresh/reload.
-
-### Sheets logs (is the log writer actually flushing?)
-1. **Check sheets logs status**
-   - `GET /jarvis/logs/sheets/status`
-   - Watch these fields:
-     - `enabled`
-     - `sheet_name` (must be non-empty)
-     - `queue_len` (should go down after appends)
-     - `server_enabled` (if false, queue may not flush)
-2. **If `queue_len` increases or stays > 0**
-   - Treat as config drift: logs are enabled but background flusher isn’t running.
-   - Fix by making the running container’s env effective (redeploy if needed):
-     - `JARVIS_SHEETS_LOGS_ENABLED=true`
-     - `JARVIS_SHEETS_LOGS_SHEET_NAME=<tab>`
-     - `JARVIS_SHEETS_LOGS_SPREADSHEET_ID=<id>` (if required by your deployment)
-   - Then re-check `/jarvis/logs/sheets/status` until `queue_len` drains.
+### Logs (UI/WS)
+1. **UI log**
+   - `GET /jarvis/api/logs/ui/today`
+2. **WS log**
+   - `GET /jarvis/api/logs/ws/today`
 
 ## Verify counts: memo rows + memory items loaded
 Use this when Jarvis says things like: “I have **7 memory items loaded**” or when you want to confirm memo actually appended.
@@ -671,10 +567,6 @@ Goal: a single, stable way to answer “how many items are in sheet X?” withou
   1. **Memory count (backend prewarm)**
      - `GET /status`
      - Use: `startup_prewarm.memory_n` (this is the last prewarm load count; may be 0 if prewarm is disabled or didn’t load memory).
-  2. **Memo “count” confirmation (append evidence)**
-     - `POST /jarvis/memo/add`
-     - Confirm the response contains `ok=true` and an `updatedRange` like `memo!A27:K27`.
-       - The row number (e.g. `27`) is a quick proxy for “memo rows exist and are increasing”.
 
 ### Interpret
 - **If `memory.count` is lower than expected**

@@ -94,7 +94,6 @@ Current selective-build rules (high level):
 - `mcp-image-pipeline` rebuilds on changes under `services/assistance/mcp-image-pipeline/`
 - `mcp-bundle` rebuilds on changes under:
   - `services/assistance/mcp-bundle/`
-  - `services/assistance/mcp-servers/mcp-google-sheets/server.js`
 
 ### 3) Wait for GitHub Actions
 
@@ -127,18 +126,12 @@ Common trap:
 - Running local `docker compose ... up` can create containers that look identical but do **not** include the Portainer stack env.
 - You can end up with multiple `mcp-bundle` containers (example: `idc1-assistance-mcp-mcp-bundle-1` plus a separate `idc1-portainer-mcp-bundle-1`).
 
-When debugging "missing env" (example: `missing_google_tasks_client_id`):
+When debugging "missing env":
 
 ```bash
 docker ps --format '{{.Names}}' | grep -E 'mcp-bundle' || true
-docker exec -t idc1-assistance-mcp-mcp-bundle-1 sh -lc 'echo "GOOGLE_TASKS_CLIENT_ID.len=${#GOOGLE_TASKS_CLIENT_ID}"'
 ```
 
-To run one-time OAuth bootstrap inside the running `mcp-bundle`:
-
-```bash
-docker exec -t idc1-assistance-mcp-mcp-bundle-1 node /app/mcp-servers/mcp-google-tasks/server.js auth
-```
 
 ### B) Confirm frontend bundle contains the fix you expect
 

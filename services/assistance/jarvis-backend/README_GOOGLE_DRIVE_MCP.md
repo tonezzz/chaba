@@ -20,7 +20,7 @@ GOOGLE_DRIVE_MCP_BASE_URL=http://google-drive-mcp:8032
 ## Stack wiring
 - Service added to `stacks/idc1-assistance-core/docker-compose.yml`.
 - Volume `google-drive-mcp-creds` holds the service account JSON.
-- Healthcheck hits `/health` on the MCP server.
+- Healthcheck uses MCP `initialize` on `/mcp`.
 
 ## Adapter functions
 All existing Sheets functions are now available via `jarvis.integrations.sheets`:
@@ -53,4 +53,3 @@ All existing Sheets functions are now available via `jarvis.integrations.sheets`
 
 ## Notes
 - The MCP adapter mirrors the legacy Sheets client signatures to minimize code changes.
-- All operations are synchronous; if you need async, wrap the calls.

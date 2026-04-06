@@ -27,29 +27,12 @@
 
 - TODO-NEXT-013: README/docs audit
   - SSOT: GitHub Issue `#96`
-- Re-enable Google tools gate (when Jarvis is stable)
-  - Google MCP tools are currently gated by sys_kv keys: `google.sheets.enabled`, `google.calendar.enabled`, `google.tasks.enabled`, `gmail.enabled`
-  - Goal: add a safe rollout checklist + explicit enable/disable procedure
-
 ## Later
 
 ## General
 - assess README.md before proceeding with any new features
 - Improve this file & other docs accordingly.
 
-## Reminders: Google Calendar cutover follow-ups
-
-- Canonical procedures + verification live in `services/assistance/docs/ACTION.md`:
-  - `Runbooks -> Operator smoke checklist (Calendar cutover)`
-  - `Runbooks -> Legacy reminders removal (breaking)`
-
-## Reminders: Calendar UX / features
-
-- Add mapping/traceability fields on Calendar events
-  - Store stable identifiers in `extendedProperties.private` (e.g. `jarvis_source`, `trace_id`, `jarvis_user_id`)
-  - Consider adding a short event prefix or emoji for scanability (if desired)
-- Improve reminders_minutes policy
-  - Allow multiple overrides (e.g. 10m + 0m)
   - Make default configurable
 - Add support for recurring reminders end-to-end
   - Propagate RRULE from user intent through tools and agent flows

@@ -139,15 +139,7 @@ This is distinct from the KV5 “Memory sheet” described above:
 
 Endpoint:
 
-- `POST /jarvis/memo/add` (alias: `POST /memo/add`)
-
-Local (typical):
-
-- `http://127.0.0.1:18018/jarvis/memo/add`
-
-Public (when edge proxy routes `/jarvis/api/*` to backend):
-
-- `https://assistance.idc1.surf-thailand.com/jarvis/api/jarvis/memo/add`
+(removed)
 
 Requirements (system KV):
 

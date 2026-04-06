@@ -7,14 +7,13 @@ flowchart TB
   subgraph Deterministic Tools (Mode B)
     BE --> SYS[system.*]
     BE --> NOTES[notes.*]
-    BE --> REM[reminders.*]
     BE --> GEMS[gems.*]
   end
 
   BE -- audio/text --> GL[Gemini Live]
   GL -- tool_call --> BE
-  BE -- MCP JSON-RPC --> MCP[mcp-bundle / 1MCP servers]
-  MCP -- results --> BE
+  BE -- MCP-over-HTTP --> GDMCP[google-drive-mcp]
+  GDMCP -- results --> BE
   BE -- FunctionResponse --> GL
 
   BE -- WS events --> UI
@@ -41,8 +40,6 @@ Inbound (client -> backend) message types:
 | `cars_ingest_image` | Send an image for car/plate ingest | `data` (base64), `mimeType`, `request_id` | Backend only |
 | `system` | Deterministic backend system tools | `action`, `mode` | Backend only (never forwarded to Gemini) |
 | `notes` | Deterministic backend notes tools | `action`, `text` | Backend only (never forwarded to Gemini) |
-| `reminders` | Deterministic backend reminders tools | `action`, `text`, `reminder_id`, `when` | Backend only (never forwarded to Gemini) |
-| `memory` | Deterministic backend memory tools (authoritative sheet write/read) | `action`, `key`, `value`, `scope`, `priority`, `query` | Backend only (never forwarded to Gemini) |
 
 Outbound (backend -> client) message types (selected):
 
@@ -98,7 +95,7 @@ flowchart TB
     BE --> PX[pending_cancel]
   end
   BE -->|FunctionResponse| GL
-  BE -->|MCP JSON-RPC (Sheets/Calendar/Tasks/etc.)| MCP[MCP servers]
+  BE -->|MCP-over-HTTP (Sheets/Drive)| GDMCP[google-drive-mcp]
 ```
 
 ## Macros-only mode (tool surface restriction)
@@ -155,7 +152,7 @@ Signature:
 
 ### Tool: `memo_add`
 
-Purpose: append a memo row to the memo Google Sheet (same data model as `POST /jarvis/memo/add`).
+Purpose: append a memo row to the memo Google Sheet.
 
 Gates (sys sheet KV):
 
@@ -376,8 +373,6 @@ Supported sys kv keys (defaults shown):
 - `voice_cmd.reload.keywords.gems=gems,gem,models,model,เจม,โมเดล`
 - `voice_cmd.reload.keywords.knowledge=knowledge,kb,know,ความรู้`
 - `voice_cmd.reload.keywords.memory=memory,mem,เมม,เมมโม`
-- `voice_cmd.reminders_add.enabled=true`
-- `voice_cmd.reminders_add.phrases=` (optional)
 - `voice_cmd.gems_list.enabled=true`
 - `voice_cmd.gems_list.phrases=` (optional)
 - `voice_cmd.recent_activity.enabled=true`
@@ -422,17 +417,6 @@ flowchart LR
   FE -->|{"type":"notes","action":"add","text":"..."}| BE
   BE -->|note_created| FE
   BE -->|note_prompt (needs followup)| FE
-```
-
-### Tool chart: reminders.*
-
-```mermaid
-flowchart LR
-  FE[Frontend] -->|{"type":"reminders","action":"add","text":"..."}| BE[Backend]
-  BE -->|planning_item_created| FE
-  FE -->|reminders.list/done/delete/later/reschedule/details| BE
-  BE -->|reminders_* events / reminder_detail| FE
-  BE -->|error(kind=invalid_reminders_action/...)| FE
 ```
 
 ### Tool chart: gems.*
@@ -492,29 +476,6 @@ Examples (typed/voice phrases):
 | `reload knowledge` | `{"type":"system","action":"reload","mode":"knowledge"}` |
 | `reload gems` | `{"type":"system","action":"reload","mode":"gems"}` |
 
-### Mapping: reminders.add
-
-When the typed composer text or voice transcript matches a reminder-create phrase, the frontend sends:
-
-```json
-{"type":"reminders","action":"add","text":"<user intent>"}
-```
-
-Examples (typed/voice phrases):
-
-| User phrase | Extracted `text` |
-|---|---|
-| `remind me to pay rent tomorrow 9am` | `pay rent tomorrow 9am` |
-| `set a reminder: call mom` | `call mom` |
-| `reminder add: submit report` | `submit report` |
-| `เตือนฉันจ่ายค่าไฟพรุ่งนี้ 9 โมง` | `จ่ายค่าไฟพรุ่งนี้ 9 โมง` |
-| `อย่าลืมส่งเอกสาร` | `ส่งเอกสาร` |
-
-Notes:
-
-- Voice mapping is debounced to avoid repeated triggers from STT.
-- If the frontend does not match a phrase, it sends a normal `type=text` message to Gemini Live.
-
 ### Mapping: gems.*
 
 The frontend supports a lightweight smart mapping for **listing** gems/models. For add/update/remove it supports a JSON-based command form.
@@ -570,24 +531,6 @@ Request schema:
 | check | `{"type":"notes","action":"check"}` | `text` summary + `Next:` line |
 | next | `{"type":"notes","action":"next"}` | `text` single next-step line |
 | add | `{"type":"notes","action":"add","text":"..."}` | `note_created` + confirmation |
-
-### Reminders tools
-
-Request schema (selected):
-
-| Action | Request | Result |
-|---|---|---|
-| add | `{"type":"reminders","action":"add","text":"..."}` | `planning_item_created` (calendar event or task) |
-| list | `{"type":"reminders","action":"list","status":"pending"}` | `reminders_list` with `items` |
-| done | `{"type":"reminders","action":"done","reminder_id":"..."}` | `reminders_done` |
-| delete | `{"type":"reminders","action":"delete","reminder_id":"..."}` | `reminders_deleted` |
-| later | `{"type":"reminders","action":"later","reminder_id":"...","days":2}` | `reminders_later` |
-| reschedule | `{"type":"reminders","action":"reschedule","reminder_id":"...","when":"tomorrow 09:00"}` | `reminders_rescheduled` |
-| details | `{"type":"reminders","action":"details","reminder_id":"..."}` | `reminder_detail` |
-
-Notes:
-
-- Frontend can do **smart mapping** (typed/voice) for phrases like `remind me ...`, `set a reminder ...`, `เตือน...`, `อย่าลืม...` -> `reminders.add`.
 
 ### Gems tools
 

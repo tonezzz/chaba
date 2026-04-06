@@ -62,17 +62,13 @@
   - Service startup logs.
   - One golden-path request.
 
-### 3) Weaviate + reminders triage
+### 3) Weaviate triage
 
 - **Checklist**
   - Weaviate container up/healthy.
   - Backend has correct `WEAVIATE_URL`.
   - Backend errors classify:
     - Weaviate unreachable vs schema vs embedding provider failure.
-- **Golden path**
-  - Create reminder.
-  - List reminders.
-  - Confirm persistence after restart.
 
 ### 4) Config sanity check (ports, URLs, env)
 
@@ -139,8 +135,6 @@ Suggested workflows:
   - Update stack or restart, then verify.
 - **`/run-deploy-idc1-assistance-script`**
   - True hands-off deploy loop on the Docker host (CI wait + pull + redeploy-only-if-changed + verify).
-- **`/triage-reminders-weaviate`**
-  - Collect backend + weaviate logs and run golden-path checks.
 - **`/validate-portainer-mcp`**
   - Confirm `listLocalStacks` and (if enabled) one write operation.
 
@@ -161,10 +155,3 @@ Only persist stable facts:
 - Read tools always available.
 - Write tools enabled only when intended (e.g. `PORTAINER_READ_ONLY=0`).
 - Redeploy workflow documented and repeatable.
-
-### Reminders
-
-- Creating a reminder succeeds.
-- Listing reminders returns expected results.
-- No Weaviate 5xx under normal load.
-- Restart/redeploy does not lose reminders.

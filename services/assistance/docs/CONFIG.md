@@ -22,32 +22,19 @@ API SSOT:
   - `http://127.0.0.1:18080/jarvis/`
 - Jarvis backend health:
   - `http://127.0.0.1:18018/health`
-- Reminders API:
-  - `http://127.0.0.1:18018/reminders`
 - Weaviate (internal to stack network):
   - `http://weaviate:8080`
 
-## Memo (Google Sheets) append endpoint
+## Logs endpoints
 
-Jarvis backend supports appending memo items via HTTP:
+Jarvis backend accepts best-effort UI log appends and serves daily UI/WS logs via HTTP.
 
-- Endpoint:
-  - `POST http://127.0.0.1:18018/jarvis/memo/add`
-- Requirements:
-  - system KV: `memo.enabled = TRUE`
-  - system KV: `memo.sheet_name` (and optionally `memo.spreadsheet_name`)
-- Optional auth:
-  - If `jarvis.api_token` (sys_kv) or `JARVIS_API_TOKEN` (env) is set, requests must include header `X-Api-Token: <token>`.
-
-Example:
-
-```bash
-curl -fsS http://127.0.0.1:18018/health
-
-curl -sS -X POST http://127.0.0.1:18018/jarvis/memo/add \
-  -H 'content-type: application/json' \
-  -d '{"memo":"hello from curl","group":"ops","subject":"test","status":"new"}'
-```
+- UI log append:
+  - `POST http://127.0.0.1:18018/jarvis/api/logs/ui/append`
+- Read UI log:
+  - `GET http://127.0.0.1:18018/jarvis/api/logs/ui/today`
+- Read WS log:
+  - `GET http://127.0.0.1:18018/jarvis/api/logs/ws/today`
 
 Notes:
 
@@ -66,9 +53,7 @@ Public examples (when edge proxy is configured):
 ```bash
 curl -fsS https://assistance.idc1.surf-thailand.com/jarvis/api/health
 
-curl -sS -X POST https://assistance.idc1.surf-thailand.com/jarvis/api/jarvis/memo/add \
-  -H 'content-type: application/json' \
-  -d '{"memo":"hello from public curl","group":"ops","subject":"test","status":"new"}'
+curl -fsS https://assistance.idc1.surf-thailand.com/jarvis/api/logs/ui/today
 ```
 
 ## Ports (host binds)
@@ -99,9 +84,7 @@ These are set via compose defaults and/or Portainer stack env:
 
 Reminders:
 
-- `JARVIS_LEGACY_REMINDER_NOTIFICATIONS_ENABLED`
-  - when set to `1`/`true`, enables the legacy local reminder scheduler loop (SQLite due-check + WS broadcast)
-  - default is disabled (`0`) to avoid double notifications after the Google Calendar cutover
+(removed)
 
 Debugging:
 
@@ -114,7 +97,7 @@ Debugging:
 Notes:
 
 - Gemini model IDs may appear with or without a `models/` prefix. For Gemini Live, prefer unprefixed model IDs (some endpoints reject `models/<id>`).
-- On successful `/ws/live` connection the backend emits a short day/date/time greeting as a normal `text` message (language matched).
+- On successful `/jarvis/ws/live` connection the backend emits a short day/date/time greeting as a normal `text` message (language matched).
 
 ## Speech-to-text (STT) + transcripts
 

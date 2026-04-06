@@ -28,8 +28,8 @@ flowchart TB
   end
 
   subgraph BE[Jarvis Backend]
-    WS[/WebSocket: /ws/live/]
-    Logs["HTTP logs:<br/>/logs/ui/*, /logs/ws/*/"]
+    WS[/WebSocket: /jarvis/ws/live/]
+    Logs["HTTP logs:<br/>/jarvis/api/logs/ui/*, /jarvis/api/logs/ws/*/"]
   end
 
   U --> App
@@ -69,8 +69,8 @@ flowchart TB
   - `CarsPanel`: shows results from `cars_ingest_image` / `cars_ingest_result`.
 
 - **Logs tabs (`ui_log` / `ws_log`)**
-  - `ui_log` is persisted locally (localStorage) and also flushed to the backend (`/logs/ui/append`) as best-effort.
-  - `ws_log` is fetched from the backend (`/logs/ws/today`).
+  - `ui_log` is persisted locally (localStorage) and also flushed to the backend (`/jarvis/api/logs/ui/append`) as best-effort.
+  - `ws_log` is fetched from the backend (`/jarvis/api/logs/ws/today`).
 
 ## Invariants
 

@@ -15,10 +15,7 @@ Inputs/outputs:
 - Output: `None` (raises on failure)
 
 Dependencies / injection points:
-- Google Sheets MCP tools:
-  - `google_sheets_values_update`
-  - `google_sheets_get_spreadsheet`
-  - `google_sheets_batch_update` (best-effort for checkbox validation)
+
 
 Invariants / safety notes:
 - Header reads/writes are capped to the known schema width.
@@ -26,8 +23,8 @@ Invariants / safety notes:
 - Best-effort checkbox validation for `active`; skipped if MCP server lacks batchUpdate.
 
 Smoke test:
-- `POST /jarvis/memo/header/normalize`
-- Then `GET /jarvis/api/debug/memo` to confirm header matches expected schema.
+
+(removed)
 
 
 ## jarvis/sheets_utils.py
@@ -48,7 +45,8 @@ Invariants / safety notes:
 - Header reads can be limited via `max_cols` to avoid pulling stale legacy columns.
 
 Smoke test:
-- Any memo add flow that triggers header reads (e.g. `POST /jarvis/memo/add`).
+
+(removed)
 
 
 ## jarvis/memo_enrich.py
@@ -92,7 +90,7 @@ Smoke test:
 ## jarvis/daily_brief.py
 
 Purpose:
-Render a daily brief string summarizing key state (agents, reminders, etc.) while keeping the rendering logic isolated from the web/server runtime.
+Render a daily brief string summarizing key state (agents, etc.) while keeping the rendering logic isolated from the web/server runtime.
 
 Key entrypoint:
 - `jarvis.daily_brief.render_daily_brief(...)`

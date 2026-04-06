@@ -23,7 +23,7 @@ Relevant backend pieces:
 
 - **Watcher loop**: `services/assistance/jarvis-backend/main.py::_github_watch_loop`
 - **Broadcast**: `main.py::_broadcast_to_user` (WebSocket only)
-- **Persisted UI log**: `main.py::_append_ui_log_entries` and endpoint `GET /logs/ui/today`
+- **Persisted UI log**: `main.py::_append_ui_log_entries` and endpoint `GET /jarvis/api/logs/ui/today`
 
 Event kinds written to UI log:
 
@@ -49,7 +49,7 @@ sequenceDiagram
     BE->>BE: _handle_github_watch_voice()
     BE->>BE: github_actions_watch(...)
   else REST
-    User->>BE: POST /github/actions/watch/start
+    User->>BE: POST /jarvis/api/github/actions/watch/start
     BE->>BE: asyncio.create_task(_github_watch_loop)
   end
 
@@ -76,6 +76,6 @@ sequenceDiagram
 
 ## Quick checks
 
-- **Watcher running**: `GET /github/actions/watch/list`
-- **Latest run**: `GET /github/actions/latest`
-- **Persisted events**: `GET /logs/ui/today` then search for `"type": "github_actions"`
+- **Watcher running**: `GET /jarvis/api/github/actions/watch/list`
+- **Latest run**: `GET /jarvis/api/github/actions/latest`
+- **Persisted events**: `GET /jarvis/api/logs/ui/today` then search for `"type": "github_actions"`

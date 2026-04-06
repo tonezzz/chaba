@@ -31,7 +31,7 @@ flowchart LR
   U[User]
   FE[Jarvis Frontend]
   BE[Jarvis Backend]
-  MCP[mcp-bundle :3050]
+  GDMCP[google-drive-mcp :8032]
 
   subgraph GSS[Google Sheets (Authoritative SSoT)]
     SYS[sys\n(key/value/enabled/scope/priority)]
@@ -51,14 +51,14 @@ flowchart LR
   end
 
   U <-->|WebSocket audio/text| FE
-  FE -->|/ws/live| BE
+  FE -->|/jarvis/ws/live| BE
 
-  BE -->|tools/call| MCP
-  MCP -->|values_get| SYS
-  MCP -->|values_get| MEM
-  MCP -->|values_get| KNOW
-  MCP -->|values_append / values_update| NOTES
-  MCP -->|values_get| GEMS
+  BE -->|tools/call (MCP-over-HTTP)| GDMCP
+  GDMCP -->|getGoogleSheetContent| SYS
+  GDMCP -->|getGoogleSheetContent| MEM
+  GDMCP -->|getGoogleSheetContent| KNOW
+  GDMCP -->|appendSpreadsheetRows / updateGoogleSheet| NOTES
+  GDMCP -->|getGoogleSheetContent| GEMS
 
   SYS -->|pointers: notes_ss/notes_sh, memory.sheet_name, knowledge.sheet_name, gems_*| BE
   BE --> SYSKV
@@ -96,17 +96,6 @@ flowchart LR
   BE -->|note_created / note_prompt| FE
 ```
 
-### 6.6.3) reminders.*
-
-```mermaid
-flowchart LR
-  FE[Jarvis Frontend] -->|{"type":"reminders","action":"add","text":"..."}| BE[Jarvis Backend]
-  BE -->|planning_item_created| FE
-  FE -->|reminders.list/done/delete/later/reschedule/details| BE
-  BE -->|reminders_* events / reminder_detail| FE
-  BE -->|error(kind=invalid_reminders_action/...)| FE
-```
-
 ### 6.6.4) gems.*
 
 ```mermaid
@@ -140,7 +129,7 @@ flowchart LR
   GL -->|transcript source=input| FE
 
   FE -->|match => WS tools
-  system.* / notes.* / reminders.* / gems.*| BE
+  system.* / notes.* / gems.*| BE
   FE -->|no match => WS text| BE
   BE -->|forward text/audio| GL
 ```
@@ -150,16 +139,15 @@ flowchart LR
 ```mermaid
 flowchart LR
   U[User] <-->|WebSocket audio/text| FE[Jarvis Frontend]
-  FE -->|WS /ws/live| BE[Jarvis Backend]
+  FE -->|WS /jarvis/ws/live| BE[Jarvis Backend]
 
-  BE -->|tools/call| MCP[mcp-bundle :3050]
+  BE -->|tools/call (MCP-over-HTTP)| GDMCP[google-drive-mcp :8032]
+  BE -->|tools/call (MCP JSON-RPC)| MCP[mcp-bundle :3050]
   BE -->|memory read/write| WV[weaviate :8080]
   BE -->|writes/reads| DB[(jarvis_sessions.sqlite)]
 
   BE -->|jobs| DR[deep-research-worker :8030]
   DR -->|persists| DRDB[(deep_research.sqlite)]
-
-  DB -->|due reminders| BE
   BE -->|structured events| FE
 ```
 
@@ -180,7 +168,7 @@ flowchart LR
   MCP --> MCPS
 ```
 
-## 3) Weaviate reminder fields
+## 3) Weaviate fields
 
 ```mermaid
 flowchart TB
@@ -216,81 +204,26 @@ flowchart LR
   CARS -->|car crops| CROPS[cars/]
 ```
 
-## 5) Reminders (authoritative store + cache + lifecycle)
-
-```mermaid
-flowchart LR
-  FE[Jarvis Frontend]
-  BE[Jarvis Backend]
-  DB[(SQLite: jarvis_sessions.sqlite)]
-  WV[(Weaviate: JarvisMemoryItem)]
-
-  FE -->|WS tools: reminders.*| BE
-  BE -->|create/update| DB
-  BE -->|write-through (if enabled)| WV
-
-  BE -->|list reminders (prefers Weaviate)| WV
-  BE -->|fallback list on error| DB
-
-  DB -->|scheduler loop: due check| BE
-  BE -->|WS event: reminder_*| FE
-
-  subgraph Lifecycle
-    P[pending]
-    H[hidden]
-    D[done]
-    P -->|later: hide_until| H
-    H -->|hide_until passes| P
-    P -->|done| D
-    P -->|reschedule: notify_at| P
-  end
-```
-
-## 6) Google Tasks (MCP proxy flow)
-
-```mermaid
-flowchart LR
-  FE[Jarvis Frontend]
-  BE[Jarvis Backend]
-  MCP[1MCP Gateway (mcp-bundle)]
-  GT[mcp-google-tasks (stdio subprocess)]
-  TOK[(Token store: /root/.config/1mcp/google-tasks.tokens.json)]
-  GAPI[Google Tasks API]
-
-  FE -->|WS text| BE
-  BE -->|tools/call via MCP_TOOL_MAP| MCP
-  MCP -->|spawn + stdio JSON-RPC| GT
-  GT -->|read/refresh| TOK
-  GT -->|HTTPS REST| GAPI
-  GAPI -->|JSON| GT
-  GT -->|tool result| MCP
-  MCP -->|tool result| BE
-  BE -->|WS text + pending_confirm UX| FE
-```
-
 ## 7) WebSocket contract (high-level)
 
 ```mermaid
 flowchart TB
-  subgraph Inbound[Client -> Backend (/ws/live)]
+  subgraph Inbound[Client -> Backend (/jarvis/ws/live)]
     IN_TEXT["text: {text}"]
     IN_AUDIO["audio: {data,sampleRate}"]
     IN_CLOSE["close"]
     IN_SYSTEM["system: {action,mode}"]
     IN_NOTES["notes: {action,text}"]
-    IN_REM["reminders: {action,...}"]
     IN_GEMS["gems: {action,...}"]
   end
 
-  subgraph Outbound[Backend -> Client (/ws/live)]
+  subgraph Outbound[Backend -> Client (/jarvis/ws/live)]
     OUT_STATE["state: connected"]
     OUT_ERR["error: gemini_* or other"]
     OUT_TR_IN["transcript (input)"]
     OUT_TR_OUT["transcript (output)"]
     OUT_TXT["text"]
     OUT_AUDIO["audio"]
-    OUT_REM["reminder / reminder_* events (draft/setup/helper/modified/detail)"]
-    OUT_PLAN["planning_item_created (calendar_event/task)"]
     OUT_GEMS["gems_list / gems_upserted / gems_removed"]
     OUT_NOTES["note_created / note_prompt"]
   end
@@ -304,6 +237,7 @@ flowchart LR
   PUB[Public HTTPS Ingress]
   FE[Jarvis Frontend (/jarvis/)]
   BE[Jarvis Backend (:8018)]
+  GDMCP[google-drive-mcp :8032]
 
   subgraph DockerNet[Docker network: idc1-stack-net]
     MCP[mcp-bundle :3050]
@@ -316,6 +250,7 @@ flowchart LR
   FE -->|wss /jarvis/ws/live| BE
 
   BE --> MCP
+  BE --> GDMCP
   BE --> WV
   BE --> DR
 ```
@@ -340,7 +275,6 @@ flowchart TB
   JB --> JB_MAIN[main.py]
 
   DOCS --> DOCS_BUILD[BUILD.md]
-  DOCS --> DOCS_REM[REMINDERS.md]
   DOCS --> DOCS_CHARTS[CHARTS.md]
 
   ST --> ST_COMPOSE[docker-compose.yml]
