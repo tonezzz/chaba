@@ -525,8 +525,25 @@ class WebSocketManager:
                     if not text:
                         continue
 
-                    # Server-side shortcut: route news requests to MCP-News instead of relying on Gemini tool calls.
+                    # Status query: report news job progress if a news job is running.
                     t = text.lower()
+                    if (
+                        t.strip() in ("news status", "status news")
+                        or "news status" in t
+                        or "ข่าวถึงไหน" in t
+                        or "สถานะข่าว" in t
+                    ):
+                        try:
+                            from jarvis.skills.news import news_skill
+
+                            trace_id = str(msg.get("trace_id") or "news_status")
+                            ok = await news_skill.handle_news_status(session.ws, trace_id)
+                            if ok:
+                                continue
+                        except Exception as ne:
+                            logger.warning(f"News status shortcut failed: {ne}")
+
+                    # Server-side shortcut: route news requests to MCP-News instead of relying on Gemini tool calls.
                     if (
                         "current news" in t
                         or "news today" in t
@@ -664,8 +681,25 @@ class WebSocketManager:
                         if not user_text:
                             continue
 
-                        # Server-side shortcut: route news requests to MCP-News.
+                        # Status query: report news job progress if a news job is running.
                         t = user_text.lower()
+                        if (
+                            t.strip() in ("news status", "status news")
+                            or "news status" in t
+                            or "ข่าวถึงไหน" in t
+                            or "สถานะข่าว" in t
+                        ):
+                            try:
+                                from jarvis.skills.news import news_skill
+
+                                trace_id = str(message.get("trace_id") or "news_status")
+                                ok = await news_skill.handle_news_status(session.ws, trace_id)
+                                if ok:
+                                    continue
+                            except Exception as ne:
+                                logger.warning(f"News status shortcut failed (fallback): {ne}")
+
+                        # Server-side shortcut: route news requests to MCP-News.
                         if (
                             "current news" in t
                             or "news today" in t
