@@ -537,34 +537,18 @@ class WebSocketManager:
     async def _get_gemini_response(self, user_text: str, api_key: str) -> str:
         """Get response from Gemini API via HTTP"""
         try:
-            # Use the Gemini Pro API via HTTP with correct model name
-            url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
-            headers = {
-                "Content-Type": "application/json",
-                "x-goog-api-key": api_key
-            }
-            
-            payload = {
-                "contents": [{
-                    "parts": [{
-                        "text": user_text
-                    }]
-                }],
-                "generationConfig": {
-                    "temperature": 0.7,
-                    "maxOutputTokens": 1024
-                }
-            }
-            
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.post(url, json=payload, headers=headers)
-                response.raise_for_status()
-                
-                result = response.json()
-                if "candidates" in result and len(result["candidates"]) > 0:
-                    return result["candidates"][0]["content"]["parts"][0]["text"]
-                else:
-                    return "I'm not sure how to respond to that. Could you try asking differently?"
+            from jarvis.gemini.client import gemini_client
+
+            model = str(os.getenv("GEMINI_TEXT_MODEL") or "").strip() or None
+            resp = await gemini_client.generate_content(
+                contents=user_text,
+                model=model,
+            )
+            txt = getattr(resp, "text", None)
+            if txt is None:
+                txt = str(resp)
+            txt = str(txt or "").strip()
+            return txt or "I'm not sure how to respond to that. Could you try asking differently?"
                     
         except Exception as e:
             logger.error(f"Error calling Gemini API: {e}")
