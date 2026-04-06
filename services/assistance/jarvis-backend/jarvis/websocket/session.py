@@ -421,17 +421,29 @@ class WebSocketManager:
                                     self._gemini_to_ws_with_session(session, gemini_session)
                                 )
 
-                                done, pending = await asyncio.wait(
-                                    [ws_to_gemini_task, gemini_to_ws_task],
-                                    return_when=asyncio.FIRST_COMPLETED,
-                                )
-
-                                for task in pending:
-                                    task.cancel()
-                                    try:
-                                        await task
-                                    except asyncio.CancelledError:
-                                        pass
+                                # Keep the Live session open as long as the WS is open.
+                                # gemini_to_ws can legitimately complete early if the model emits no events.
+                                try:
+                                    await ws_to_gemini_task
+                                    logger.info(
+                                        f"Live WS->Gemini loop ended model={clean_model_name} config={config_idx + 1}"
+                                    )
+                                finally:
+                                    if not gemini_to_ws_task.done():
+                                        gemini_to_ws_task.cancel()
+                                        try:
+                                            await gemini_to_ws_task
+                                        except asyncio.CancelledError:
+                                            pass
+                                    else:
+                                        try:
+                                            exc = gemini_to_ws_task.exception()
+                                        except Exception:
+                                            exc = None
+                                        if exc is not None:
+                                            logger.warning(
+                                                f"Live Gemini->WS loop exited with error model={clean_model_name}: {exc}"
+                                            )
 
                                 return
                         except Exception as ie:
