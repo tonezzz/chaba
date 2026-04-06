@@ -59,6 +59,7 @@ except Exception:
 _LIVE_WORKING_MODEL_AND_CONFIG: Optional[tuple[str, "types.LiveConnectConfig"]] = None
 _LIVE_LISTED_MODELS_ONCE: bool = False
 _LIVE_CACHE_PATH = os.getenv("JARVIS_LIVE_MODEL_CACHE_PATH", "/data/jarvis_live_model_cache.json").strip()
+_LIVE_PROBE_ON_CONNECT = str(os.getenv("JARVIS_LIVE_PROBE_ON_CONNECT", "false")).strip().lower() == "true"
 
 try:
     if _LIVE_CACHE_PATH:
@@ -284,7 +285,13 @@ class WebSocketManager:
         global _LIVE_WORKING_MODEL_AND_CONFIG
         global _LIVE_LISTED_MODELS_ONCE
 
-        # Prefer cached working model/config if we have one.
+        # B3 behavior: Do NOT probe models/configs on every WS connect.
+        # Only try the cached model/config if we have one; otherwise fall back immediately.
+        if (not _LIVE_PROBE_ON_CONNECT) and (_LIVE_WORKING_MODEL_AND_CONFIG is None):
+            logger.info("Live probing disabled on connect and no cached Live model; using smart fallback mode")
+            await self._handle_smart_fallback_mode(session)
+            return
+
         models_to_try: list[str] = []
         configs_to_try: list[types.LiveConnectConfig] = []
         cached_config_idx: Optional[int] = None
@@ -295,28 +302,33 @@ class WebSocketManager:
             if isinstance(cached_cfg, int):
                 cached_config_idx = cached_cfg
 
-        # Extend with probe set (only if cache missing or cache fails)
-        probe_models = [
-            # Prefer models that are actually present in models.list() output and likely
-            # to support Live bidirectional streaming.
-            "gemini-3.1-flash-live-preview",
+        if (not _LIVE_PROBE_ON_CONNECT) and (_LIVE_WORKING_MODEL_AND_CONFIG is not None):
+            # Only attempt the cached model; do not extend probe list.
+            probe_models: list[str] = []
+        else:
+            # Extend with probe set (only if cache missing or cache fails)
+            probe_models = [
+                # Prefer models that are actually present in models.list() output and likely
+                # to support Live bidirectional streaming.
+                "gemini-3.1-flash-live-preview",
 
-            # Audio/live-adjacent models (may require audio input depending on client behavior)
-            "gemini-2.5-flash-native-audio-latest",
-            "gemini-2.5-flash-native-audio-preview-12-2025",
-            "lyria-realtime-exp",
+                # Audio/live-adjacent models (may require audio input depending on client behavior)
+                "gemini-2.5-flash-native-audio-latest",
+                "gemini-2.5-flash-native-audio-preview-12-2025",
+                "lyria-realtime-exp",
 
-            # General text models (may not support bidiGenerateContent but keep for coverage)
-            "gemini-2.5-flash",
-            "gemini-2.5-pro",
-            "gemini-2.0-flash",
-            "gemini-2.0-flash-001",
-            "gemini-2.0-flash-lite",
-            "gemini-2.0-flash-lite-001",
-            "gemini-flash-latest",
-            "gemini-flash-lite-latest",
-            "gemini-pro-latest",
-        ]
+                # General text models (may not support bidiGenerateContent but keep for coverage)
+                "gemini-2.5-flash",
+                "gemini-2.5-pro",
+                "gemini-2.0-flash",
+                "gemini-2.0-flash-001",
+                "gemini-2.0-flash-lite",
+                "gemini-2.0-flash-lite-001",
+                "gemini-flash-latest",
+                "gemini-flash-lite-latest",
+                "gemini-pro-latest",
+            ]
+
         for m in probe_models:
             if m not in models_to_try:
                 models_to_try.append(m)
@@ -419,6 +431,11 @@ class WebSocketManager:
                     # If cached model/config fails, invalidate cache and continue probing.
                     if _LIVE_WORKING_MODEL_AND_CONFIG is not None and _LIVE_WORKING_MODEL_AND_CONFIG[0] == clean_model_name:
                         _LIVE_WORKING_MODEL_AND_CONFIG = None
+
+                        if not _LIVE_PROBE_ON_CONNECT:
+                            logger.info("Cached Live model failed and probing is disabled; using smart fallback mode")
+                            await self._handle_smart_fallback_mode(session)
+                            return
 
                     if (not _LIVE_LISTED_MODELS_ONCE) and ("1008" in str(e)):
                         _LIVE_LISTED_MODELS_ONCE = True
