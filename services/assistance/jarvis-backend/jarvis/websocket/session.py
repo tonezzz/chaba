@@ -58,6 +58,18 @@ except Exception:
 
 _LIVE_WORKING_MODEL_AND_CONFIG: Optional[tuple[str, "types.LiveConnectConfig"]] = None
 _LIVE_LISTED_MODELS_ONCE: bool = False
+_LIVE_CACHE_PATH = os.getenv("JARVIS_LIVE_MODEL_CACHE_PATH", "/data/jarvis_live_model_cache.json").strip()
+
+try:
+    if _LIVE_CACHE_PATH:
+        with open(_LIVE_CACHE_PATH, "r", encoding="utf-8") as f:
+            cached = json.load(f)
+        cached_model = str(cached.get("model") or "").strip()
+        cached_config_idx = cached.get("config_idx")
+        if cached_model and isinstance(cached_config_idx, int):
+            _LIVE_WORKING_MODEL_AND_CONFIG = (cached_model, cached_config_idx)
+except Exception:
+    pass
 
 class WebSocketSession:
     """Manages a WebSocket session with Jarvis"""
@@ -275,11 +287,13 @@ class WebSocketManager:
         # Prefer cached working model/config if we have one.
         models_to_try: list[str] = []
         configs_to_try: list[types.LiveConnectConfig] = []
+        cached_config_idx: Optional[int] = None
 
         if _LIVE_WORKING_MODEL_AND_CONFIG is not None:
-            cached_model, cached_config = _LIVE_WORKING_MODEL_AND_CONFIG
+            cached_model, cached_cfg = _LIVE_WORKING_MODEL_AND_CONFIG
             models_to_try.append(cached_model)
-            configs_to_try.append(cached_config)
+            if isinstance(cached_cfg, int):
+                cached_config_idx = cached_cfg
 
         # Extend with probe set (only if cache missing or cache fails)
         probe_models = [
@@ -328,6 +342,11 @@ class WebSocketManager:
                 ),
             ]
 
+        if cached_config_idx is not None and 0 <= cached_config_idx < len(configs_to_try):
+            configs_to_try = [configs_to_try[cached_config_idx]] + [
+                c for i, c in enumerate(configs_to_try) if i != cached_config_idx
+            ]
+
         for model_name in models_to_try:
             clean_model_name = model_name[7:] if model_name.startswith("models/") else model_name
             for config_idx, config in enumerate(configs_to_try):
@@ -335,38 +354,56 @@ class WebSocketManager:
                     logger.info(f"Trying Live model: {clean_model_name} with config {config_idx + 1}")
 
                     # Only consider Live usable if we successfully enter the context.
-                    async with session.client.aio.live.connect(
-                        model=clean_model_name,
-                        config=config,
-                    ) as gemini_session:
-                        logger.info(
-                            f"✅ Gemini Live session established (validated) model={clean_model_name} config={config_idx + 1}"
-                        )
+                    connect_attempts = 2
+                    last_exc: Optional[Exception] = None
+                    for attempt in range(connect_attempts):
+                        try:
+                            async with session.client.aio.live.connect(
+                                model=clean_model_name,
+                                config=config,
+                            ) as gemini_session:
+                                logger.info(
+                                    f"✅ Gemini Live session established (validated) model={clean_model_name} config={config_idx + 1}"
+                                )
 
-                        # Cache for future connections.
-                        _LIVE_WORKING_MODEL_AND_CONFIG = (clean_model_name, config)
+                                _LIVE_WORKING_MODEL_AND_CONFIG = (clean_model_name, config_idx)
+                                try:
+                                    if _LIVE_CACHE_PATH:
+                                        os.makedirs(os.path.dirname(_LIVE_CACHE_PATH), exist_ok=True)
+                                        with open(_LIVE_CACHE_PATH, "w", encoding="utf-8") as f:
+                                            json.dump({"model": clean_model_name, "config_idx": config_idx}, f)
+                                except Exception:
+                                    pass
 
-                        ws_to_gemini_task = asyncio.create_task(
-                            self._ws_to_gemini_with_session(session, gemini_session)
-                        )
-                        gemini_to_ws_task = asyncio.create_task(
-                            self._gemini_to_ws_with_session(session, gemini_session)
-                        )
+                                ws_to_gemini_task = asyncio.create_task(
+                                    self._ws_to_gemini_with_session(session, gemini_session)
+                                )
+                                gemini_to_ws_task = asyncio.create_task(
+                                    self._gemini_to_ws_with_session(session, gemini_session)
+                                )
 
-                        done, pending = await asyncio.wait(
-                            [ws_to_gemini_task, gemini_to_ws_task],
-                            return_when=asyncio.FIRST_COMPLETED,
-                        )
+                                done, pending = await asyncio.wait(
+                                    [ws_to_gemini_task, gemini_to_ws_task],
+                                    return_when=asyncio.FIRST_COMPLETED,
+                                )
 
-                        for task in pending:
-                            task.cancel()
-                            try:
-                                await task
-                            except asyncio.CancelledError:
-                                pass
+                                for task in pending:
+                                    task.cancel()
+                                    try:
+                                        await task
+                                    except asyncio.CancelledError:
+                                        pass
 
-                        # If we get here, the live session loop ended (disconnect or task completion).
-                        return
+                                return
+                        except Exception as ie:
+                            last_exc = ie
+                            if "1011" in str(ie):
+                                await asyncio.sleep(0.5)
+                                continue
+                            raise
+
+                    if last_exc is not None:
+                        raise last_exc
 
                 except Exception as e:
                     # If cached model/config fails, invalidate cache and continue probing.
