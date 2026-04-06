@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import logging
 import os
-import time
 import uuid
 from typing import Any, Optional
 
@@ -473,6 +473,104 @@ class WebSocketManager:
 
         logger.info("Live API unavailable; using smart fallback mode")
         await self._handle_smart_fallback_mode(session)
+
+    async def _ws_to_gemini_with_session(self, session: WebSocketSession, gemini_session: Any) -> None:
+        """Forward WS client input (text/audio) into an active Gemini Live session."""
+        from google.genai import types
+
+        while True:
+            data = await session.ws.receive_text()
+            try:
+                msg = json.loads(data)
+            except Exception:
+                continue
+
+            mtype = str(msg.get("type") or "").strip().lower()
+            if mtype in ("ping", "pong"):
+                continue
+
+            if mtype == "text":
+                text = str(msg.get("text") or "").strip()
+                if not text:
+                    continue
+                await gemini_session.send_realtime_input(text=text)
+                continue
+
+            if mtype == "audio":
+                b64 = msg.get("data")
+                if not b64:
+                    continue
+                try:
+                    pcm = base64.b64decode(str(b64))
+                except Exception:
+                    continue
+
+                mime = str(msg.get("mimeType") or msg.get("mime_type") or "audio/pcm;rate=16000").strip()
+                await gemini_session.send_realtime_input(audio=types.Blob(data=pcm, mime_type=mime))
+                continue
+
+            if mtype == "close":
+                return
+
+    async def _gemini_to_ws_with_session(self, session: WebSocketSession, gemini_session: Any) -> None:
+        """Forward Gemini Live server events back to the WS client."""
+        # Frontend expects:
+        # - {type:'transcript', text:'...', source:'input'|'output'}
+        # - {type:'audio', data:'<base64>', sampleRate?:number}
+        await session.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
+
+        async for response in gemini_session.receive():
+            content = getattr(response, "server_content", None)
+            if not content:
+                continue
+
+            # Transcripts
+            in_tr = getattr(content, "input_transcription", None)
+            if in_tr and getattr(in_tr, "text", None):
+                await session.send_json(
+                    {
+                        "type": "transcript",
+                        "text": str(in_tr.text),
+                        "source": "input",
+                        "instance_id": INSTANCE_ID,
+                    }
+                )
+
+            out_tr = getattr(content, "output_transcription", None)
+            if out_tr and getattr(out_tr, "text", None):
+                await session.send_json(
+                    {
+                        "type": "transcript",
+                        "text": str(out_tr.text),
+                        "source": "output",
+                        "instance_id": INSTANCE_ID,
+                    }
+                )
+
+            # Model turn parts (audio)
+            model_turn = getattr(content, "model_turn", None)
+            parts = getattr(model_turn, "parts", None) if model_turn else None
+            if parts:
+                for part in parts:
+                    inline = getattr(part, "inline_data", None)
+                    if not inline:
+                        continue
+                    audio_bytes = getattr(inline, "data", None)
+                    if not audio_bytes:
+                        continue
+                    try:
+                        b64 = base64.b64encode(audio_bytes).decode("ascii")
+                    except Exception:
+                        continue
+
+                    await session.send_json(
+                        {
+                            "type": "audio",
+                            "data": b64,
+                            "sampleRate": 24000,
+                            "instance_id": INSTANCE_ID,
+                        }
+                    )
     
     async def _handle_smart_fallback_mode(self, session: WebSocketSession) -> None:
         """Smart fallback mode using regular Gemini API for intelligent responses"""
@@ -567,7 +665,7 @@ class WebSocketManager:
         try:
             from google import genai
 
-            model_name = str(os.getenv("GEMINI_TEXT_MODEL") or "gemini-2.0-flash").strip()
+            model_name = str(os.getenv("GEMINI_TEXT_MODEL") or "gemini-3-flash-preview").strip()
             if model_name.startswith("models/"):
                 model_name = model_name[len("models/") :]
 
