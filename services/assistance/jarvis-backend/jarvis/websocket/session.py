@@ -609,6 +609,9 @@ class WebSocketManager:
                     if transcriber is not None:
                         try:
                             transcriber.ingest_pcm16(pcm)
+                            # Kick transcription immediately (best-effort) so short utterances
+                            # don't have to wait for the periodic timer.
+                            transcriber.kick()
                         except Exception:
                             pass
 
@@ -982,6 +985,15 @@ class _StreamingSidecarTranscriber:
         if self._task is None:
             self._task = asyncio.create_task(self._run())
 
+    def kick(self) -> None:
+        # Best-effort scheduling; no-op if already stopped.
+        if self._stopped.is_set():
+            return
+        try:
+            asyncio.create_task(self._transcribe_available(final_flush=False))
+        except Exception:
+            pass
+
     def ingest_pcm16(self, pcm16: bytes) -> None:
         if not pcm16 or self._stopped.is_set():
             return
@@ -1056,16 +1068,37 @@ class _StreamingSidecarTranscriber:
 
         buf_len = len(self._buf)
         if buf_len <= self._read_offset:
+            if final_flush:
+                logger.info(
+                    "Sidecar STT skip (no new audio) buf_len=%s read_offset=%s",
+                    str(buf_len),
+                    str(self._read_offset),
+                )
             return
 
         available = buf_len - self._read_offset
         if not final_flush and available < self._chunk_bytes:
             return
 
+        if final_flush and available <= 0:
+            logger.info(
+                "Sidecar STT skip (final but empty) buf_len=%s read_offset=%s",
+                str(buf_len),
+                str(self._read_offset),
+            )
+            return
+
         start = max(0, self._read_offset - self._overlap_bytes)
         end = min(buf_len, self._read_offset + self._chunk_bytes)
         pcm_chunk = bytes(self._buf[start:end])
         if not pcm_chunk:
+            if final_flush:
+                logger.info(
+                    "Sidecar STT skip (empty chunk) start=%s end=%s buf_len=%s",
+                    str(start),
+                    str(end),
+                    str(buf_len),
+                )
             return
 
         self._read_offset = end
