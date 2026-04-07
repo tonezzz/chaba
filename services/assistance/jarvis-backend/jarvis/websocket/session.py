@@ -965,8 +965,8 @@ class _StreamingSidecarTranscriber:
         self._last_emitted: str = ""
 
         self._sample_rate = 16000
-        self._chunk_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_CHUNK_S") or "1.0").strip() or "1.0")
-        self._interval_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_INTERVAL_S") or "1.0").strip() or "1.0")
+        self._chunk_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_CHUNK_S") or "0.5").strip() or "0.5")
+        self._interval_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_INTERVAL_S") or "0.5").strip() or "0.5")
         self._overlap_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_OVERLAP_S") or "0.5").strip() or "0.5")
 
         self._chunk_bytes = max(1, int(self._sample_rate * self._chunk_seconds) * 2)
