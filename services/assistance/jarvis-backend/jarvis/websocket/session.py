@@ -1246,7 +1246,7 @@ class _StreamingSidecarTranscriber:
             wav_bytes = self._pcm16le_to_wav(pcm_chunk)
             lang_hint = f" The language is {self._language}." if self._language else ""
             prompt = (
-                "Transcribe the audio." + lang_hint + " Return only the spoken words. "
+                "Transcribe the audio." + lang_hint + " The speaker may switch languages. Preserve the original language of each word/phrase. Return only the spoken words. "
                 "Do not add commentary, timestamps, or punctuation unless spoken."
             )
 
