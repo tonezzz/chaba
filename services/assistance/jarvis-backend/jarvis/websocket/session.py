@@ -1051,6 +1051,8 @@ class _StreamingSidecarTranscriber:
         self._interval_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_INTERVAL_S") or "1.0").strip() or "1.0")
         self._overlap_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_OVERLAP_S") or "0.5").strip() or "0.5")
         self._final_max_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_FINAL_MAX_S") or "12.0").strip() or "12.0")
+        self._timeout_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_TIMEOUT_S") or "20.0").strip() or "20.0")
+        self._final_timeout_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_FINAL_TIMEOUT_S") or "45.0").strip() or "45.0")
         self._language = str(os.getenv("JARVIS_SIDECAR_STT_LANGUAGE") or "").strip()
         self._enable_partials = str(os.getenv("JARVIS_SIDECAR_STT_ENABLE_PARTIALS") or "0").strip().lower() in (
             "1",
@@ -1153,7 +1155,7 @@ class _StreamingSidecarTranscriber:
             return True
         return False
 
-    async def _call_stt_with_model(self, model: str, prompt: str, wav_bytes: bytes) -> str:
+    async def _call_stt_with_model(self, model: str, prompt: str, wav_bytes: bytes, timeout_s: float) -> str:
         from google.genai import types
 
         resp0 = await asyncio.wait_for(
@@ -1167,7 +1169,7 @@ class _StreamingSidecarTranscriber:
                     "system_instruction": "You are a speech-to-text transcription engine.",
                 },
             ),
-            timeout=20.0,
+            timeout=max(1.0, float(timeout_s)),
         )
         return str(getattr(resp0, "text", "") or "").strip()
 
@@ -1277,17 +1279,22 @@ class _StreamingSidecarTranscriber:
                 "Do not add commentary, timestamps, or punctuation unless spoken."
             )
 
+            timeout_s = self._final_timeout_seconds if final_flush else self._timeout_seconds
             try:
                 logger.info(
                     "Sidecar STT transcribing bytes=%s final=%s",
                     str(len(wav_bytes)),
                     "true" if final_flush else "false",
                 )
-                text = await self._call_stt_with_model(self._model, prompt, wav_bytes)
+                text = await self._call_stt_with_model(self._model, prompt, wav_bytes, timeout_s=timeout_s)
+            except asyncio.CancelledError:
+                return
             except Exception as e:
                 retry_after = self._retry_after_seconds_from_error(e)
                 if retry_after is None and self._is_transient_unavailable(e):
                     retry_after = 2.0
+                if retry_after is None and isinstance(e, TimeoutError):
+                    retry_after = 1.0
                 if retry_after is not None:
                     self._next_allowed_ts = asyncio.get_running_loop().time() + max(
                         retry_after,
@@ -1297,7 +1304,9 @@ class _StreamingSidecarTranscriber:
                     if final_flush and retry_after > 0:
                         try:
                             await asyncio.sleep(min(retry_after, 2.0))
-                            text = await self._call_stt_with_model(self._model, prompt, wav_bytes)
+                            text = await self._call_stt_with_model(self._model, prompt, wav_bytes, timeout_s=timeout_s)
+                        except asyncio.CancelledError:
+                            return
                         except Exception as e2:
                             # If the model is temporarily unavailable, try a lighter sibling once.
                             if self._is_transient_unavailable(e2) and str(self._model).strip() == "gemini-flash-latest":
@@ -1307,6 +1316,7 @@ class _StreamingSidecarTranscriber:
                                         "gemini-flash-lite-latest",
                                         prompt,
                                         wav_bytes,
+                                        timeout_s=timeout_s,
                                     )
                                 except Exception as e3:
                                     logger.exception(
