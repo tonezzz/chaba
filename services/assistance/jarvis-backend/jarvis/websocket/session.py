@@ -79,15 +79,21 @@ def sidecar_stt_set_working_model(model: str) -> None:
 
 
 def sidecar_stt_get_model(fallback: str) -> str:
+    model, _source = sidecar_stt_resolve_model(fallback)
+    return model
+
+
+def sidecar_stt_resolve_model(fallback: str) -> tuple[str, str]:
     explicit = str(os.getenv("JARVIS_SIDECAR_STT_MODEL") or "").strip()
     if explicit:
-        return explicit
+        return explicit, "env:JARVIS_SIDECAR_STT_MODEL"
 
     cached = _sidecar_stt_load_cached_model()
     if cached:
-        return cached
+        return cached, "cache"
 
-    return str(fallback or "").strip() or "gemini-flash-latest"
+    fb = str(fallback or "").strip() or "gemini-flash-latest"
+    return fb, "fallback"
 
 INSTANCE_ID = str(uuid.uuid4())
 WEAVIATE_URL = os.getenv("WEAVIATE_URL", "").strip()
@@ -592,9 +598,10 @@ class WebSocketManager:
                 transcriber = _StreamingSidecarTranscriber(session=session)
                 transcriber.start()
                 logger.info(
-                    "Sidecar STT started model=%s stt_model=%s interval_s=%s chunk_s=%s overlap_s=%s",
+                    "Sidecar STT started model=%s stt_model=%s stt_model_source=%s interval_s=%s chunk_s=%s overlap_s=%s",
                     str(live_model_name),
                     str(transcriber._model),
+                    str(getattr(transcriber, "_model_source", "unknown")),
                     str(transcriber._interval_seconds),
                     str(transcriber._chunk_seconds),
                     str(transcriber._overlap_seconds),
@@ -1056,11 +1063,9 @@ class _StreamingSidecarTranscriber:
         self._overlap_bytes = max(0, int(self._sample_rate * self._overlap_seconds) * 2)
         self._read_offset = 0
 
-        self._model = str(
-            os.getenv("JARVIS_SIDECAR_STT_MODEL")
-            or os.getenv("GEMINI_TEXT_MODEL")
-            or "gemini-2.5-flash"
-        ).strip()
+        self._model, self._model_source = sidecar_stt_resolve_model(
+            str(os.getenv("GEMINI_TEXT_MODEL") or "").strip() or "gemini-flash-latest"
+        )
 
     def start(self) -> None:
         if self._task is None:
