@@ -1141,7 +1141,9 @@ class _StreamingSidecarTranscriber:
                 # On utterance end, transcribe the entire remaining audio for better quality.
                 max_bytes = int(self._final_max_seconds * self._sample_rate) * 2
                 end = buf_len
-                if max_bytes > 0 and (end - start) > max_bytes:
+                # Ignore read_offset here: partial transcriptions advance read_offset, but on
+                # final flush we want the full utterance (up to the cap) not just the tail.
+                if max_bytes > 0:
                     start = max(0, end - max_bytes)
             else:
                 end = min(buf_len, self._read_offset + self._chunk_bytes)
@@ -1200,15 +1202,19 @@ class _StreamingSidecarTranscriber:
         if not text:
             return
 
-        emit = text
-        if self._last_emitted and emit.startswith(self._last_emitted):
-            suffix = emit[len(self._last_emitted) :].strip()
-            if suffix:
-                emit = suffix
-            else:
-                return
+        if final_flush:
+            emit = text
+            self._last_emitted = text
+        else:
+            emit = text
+            if self._last_emitted and emit.startswith(self._last_emitted):
+                suffix = emit[len(self._last_emitted) :].strip()
+                if suffix:
+                    emit = suffix
+                else:
+                    return
 
-        self._last_emitted = (self._last_emitted + " " + emit).strip() if self._last_emitted else text
+            self._last_emitted = (self._last_emitted + " " + emit).strip() if self._last_emitted else text
 
         try:
             await self._session.send_json(
@@ -1216,7 +1222,7 @@ class _StreamingSidecarTranscriber:
                     "type": "transcript",
                     "text": emit,
                     "source": "input",
-                    "partial": True,
+                    "partial": False if final_flush else True,
                     "instance_id": INSTANCE_ID,
                 }
             )
