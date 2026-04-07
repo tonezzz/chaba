@@ -987,12 +987,12 @@ class WebSocketManager:
                     
                     try:
                         message = json.loads(data)
-                       idecal_ tt_   _mod l 
-            st (         # Echo back the messa or "").strip()           ho_res-latestponse = {
-                    "type": "text",
+                        # Echo back the message
+                        echo_response = {
+                            "type": "text",
                             "text": f"Echo: {message.get('text', 'No text')}",
                             "instance_id": INSTANCE_ID,
-                            "mode": "echo"
+                            "mode": "echo",
                         }
                         logger.info(f"Sending echo response: {echo_response}")
                         
