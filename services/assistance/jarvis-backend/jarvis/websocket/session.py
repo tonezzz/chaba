@@ -87,7 +87,7 @@ def _live_configs_for_model() -> tuple[list["types.LiveConnectConfig"], list["ty
         ),
         types.LiveConnectConfig(
             temperature=0.7,
-            response_modalities=["AUDIO"],
+            response_modalities=["AUDIO", "TEXT"],
             generation_config=types.GenerationConfig(
                 max_output_tokens=1024,
                 temperature=0.7,
