@@ -953,46 +953,22 @@ async def gemini_live_probe_and_cache() -> dict[str, Any]:
         "gemini-pro-latest",
     ]
 
-    configs: list[types.LiveConnectConfig] = [
-        types.LiveConnectConfig(
-            temperature=0.7,
-            response_modalities=["TEXT"],
-            generation_config=types.GenerationConfig(
-                max_output_tokens=1024,
-                temperature=0.7,
-            ),
-        ),
-        types.LiveConnectConfig(temperature=0.7),
-        types.LiveConnectConfig(
-            temperature=0.7,
-            response_modalities=["AUDIO", "TEXT"],
-            generation_config=types.GenerationConfig(
-                max_output_tokens=1024,
-                temperature=0.7,
-            ),
-        ),
-    ]
+    # Use the same configs as the runtime websocket Live connect logic so the cached
+    # config_idx maps correctly.
+    text_cfgs, audio_cfgs = _live_configs_for_model()
 
     attempts: list[dict[str, Any]] = []
-
-    def _probe_needs_audio(model_name: str, cfg: Any) -> bool:
-        try:
-            rm = getattr(cfg, "response_modalities", None)
-            if isinstance(rm, (list, tuple)) and any(str(x).upper() == "AUDIO" for x in rm):
-                return True
-        except Exception:
-            pass
-        return "native-audio" in str(model_name or "").lower()
 
     # ~200ms of silence at 16kHz, signed 16-bit little-endian PCM.
     _probe_silence_pcm16 = b"\x00\x00" * int(16000 * 0.2)
 
     for model in probe_models:
         clean_model = model[7:] if model.startswith("models/") else model
-        for cfg_idx, cfg in enumerate(configs):
+        cfgs_to_try = audio_cfgs if _live_is_native_audio_model(clean_model) else text_cfgs
+        for cfg_idx, cfg in enumerate(cfgs_to_try):
             try:
                 async with client.aio.live.connect(model=clean_model, config=cfg) as live_session:
-                    if _probe_needs_audio(clean_model, cfg):
+                    if _live_is_native_audio_model(clean_model):
                         await live_session.send_realtime_input(
                             audio=types.Blob(
                                 data=_probe_silence_pcm16,
