@@ -1041,6 +1041,8 @@ class WebSocketManager:
                         pass
                     utterance = transcriber.consume_last_final_transcript()
                     if not utterance:
+                        logger.info("Voice fallback: no final transcript after flush")
+                    if not utterance:
                         continue
 
                     try:
@@ -1478,6 +1480,15 @@ class _StreamingSidecarTranscriber:
                     "true" if final_flush else "false",
                 )
                 text = await self._call_stt_with_model(self._model, prompt, wav_bytes, timeout_s=timeout_s)
+                try:
+                    logger.info(
+                        "Sidecar STT result final=%s len=%s preview=%r",
+                        "true" if final_flush else "false",
+                        str(len(text or "")),
+                        (text or "")[:120],
+                    )
+                except Exception:
+                    pass
             except asyncio.CancelledError:
                 return
             except Exception as e:
