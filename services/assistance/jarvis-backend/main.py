@@ -16,6 +16,8 @@ from jarvis.websocket.session import (
     gemini_list_models,
     gemini_live_probe_and_cache,
     gemini_live_cache_status,
+    sidecar_stt_cache_status,
+    sidecar_stt_set_working_model,
 )
 from jarvis.agents.dispatch import agent_dispatcher
 from jarvis.memory.cache import memory_cache
@@ -705,8 +707,25 @@ async def _gemini_sidecar_stt_probe(payload: dict[str, Any] | None) -> dict[str,
         except Exception as e:
             attempts.append({"model": clean_model, "ok": False, "error": str(e)})
 
+    chosen: str | None = None
+    for a in attempts:
+        try:
+            if a.get("ok") is True and a.get("model"):
+                chosen = str(a.get("model")).strip() or None
+                break
+        except Exception:
+            continue
+
+    if chosen:
+        try:
+            sidecar_stt_set_working_model(chosen)
+        except Exception:
+            pass
+
     return {
         "ok": any(a.get("ok") for a in attempts),
+        "model": chosen,
+        **sidecar_stt_cache_status(),
         "attempts": attempts,
         "elapsed_ms": int((time.time() - started) * 1000),
     }
@@ -726,6 +745,16 @@ async def gemini_sidecar_stt_probe_unprefixed(
     _: None = Depends(_require_admin),
 ) -> dict[str, Any]:
     return await _gemini_sidecar_stt_probe(payload)
+
+
+@app.get("/jarvis/api/gemini/sidecar_stt/cache")
+async def gemini_sidecar_stt_cache(_: None = Depends(_require_admin)) -> dict[str, Any]:
+    return {"ok": True, **sidecar_stt_cache_status()}
+
+
+@app.get("/gemini/sidecar_stt/cache")
+async def gemini_sidecar_stt_cache_unprefixed(_: None = Depends(_require_admin)) -> dict[str, Any]:
+    return {"ok": True, **sidecar_stt_cache_status()}
 
 
 def _parse_bool_cell(v: Any) -> bool:

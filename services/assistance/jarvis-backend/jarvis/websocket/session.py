@@ -18,6 +18,74 @@ from jarvis.feature_flags import feature_enabled
 
 logger = logging.getLogger(__name__)
 
+
+_SIDECAR_STT_CACHE_PATH = str(
+    os.getenv("JARVIS_SIDECAR_STT_CACHE_PATH")
+    or os.getenv("JARVIS_LIVE_MODEL_CACHE_PATH")
+    or "/data/jarvis_sidecar_stt_model_cache.json"
+).strip()
+
+_SIDECAR_STT_WORKING_MODEL: str | None = None
+
+
+def sidecar_stt_cache_status() -> dict[str, Any]:
+    return {
+        "cache_path": _SIDECAR_STT_CACHE_PATH,
+        "cached": _SIDECAR_STT_WORKING_MODEL,
+    }
+
+
+def _sidecar_stt_load_cached_model() -> str | None:
+    global _SIDECAR_STT_WORKING_MODEL
+
+    if _SIDECAR_STT_WORKING_MODEL:
+        return _SIDECAR_STT_WORKING_MODEL
+
+    if not _SIDECAR_STT_CACHE_PATH:
+        return None
+
+    try:
+        if not os.path.exists(_SIDECAR_STT_CACHE_PATH):
+            return None
+        with open(_SIDECAR_STT_CACHE_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        model = str((data or {}).get("model") or "").strip()
+        if model:
+            _SIDECAR_STT_WORKING_MODEL = model
+            return model
+    except Exception:
+        return None
+    return None
+
+
+def sidecar_stt_set_working_model(model: str) -> None:
+    global _SIDECAR_STT_WORKING_MODEL
+
+    m = str(model or "").strip()
+    if not m:
+        return
+    _SIDECAR_STT_WORKING_MODEL = m
+    if not _SIDECAR_STT_CACHE_PATH:
+        return
+    try:
+        os.makedirs(os.path.dirname(_SIDECAR_STT_CACHE_PATH), exist_ok=True)
+        with open(_SIDECAR_STT_CACHE_PATH, "w", encoding="utf-8") as f:
+            json.dump({"model": m}, f)
+    except Exception:
+        return
+
+
+def sidecar_stt_get_model(fallback: str) -> str:
+    explicit = str(os.getenv("JARVIS_SIDECAR_STT_MODEL") or "").strip()
+    if explicit:
+        return explicit
+
+    cached = _sidecar_stt_load_cached_model()
+    if cached:
+        return cached
+
+    return str(fallback or "").strip() or "gemini-flash-latest"
+
 INSTANCE_ID = str(uuid.uuid4())
 WEAVIATE_URL = os.getenv("WEAVIATE_URL", "").strip()
 JARVIS_SESSION_DB = os.getenv("JARVIS_SESSION_DB", "/data/jarvis_sessions.sqlite").strip()
@@ -919,11 +987,9 @@ class WebSocketManager:
                     
                     try:
                         message = json.loads(data)
-                        logger.info(f"Parsed message: {message}")
-                        
-                        # Echo back the message
-                        echo_response = {
-                            "type": "text",
+                       idecal_ tt_   _mod l 
+            st (         # Echo back the messa or "").strip()           ho_res-latestponse = {
+                    "type": "text",
                             "text": f"Echo: {message.get('text', 'No text')}",
                             "instance_id": INSTANCE_ID,
                             "mode": "echo"
