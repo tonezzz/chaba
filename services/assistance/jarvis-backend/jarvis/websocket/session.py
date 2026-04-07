@@ -976,6 +976,12 @@ class _StreamingSidecarTranscriber:
         self._overlap_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_OVERLAP_S") or "0.5").strip() or "0.5")
         self._final_max_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_FINAL_MAX_S") or "12.0").strip() or "12.0")
         self._language = str(os.getenv("JARVIS_SIDECAR_STT_LANGUAGE") or "").strip()
+        self._enable_partials = str(os.getenv("JARVIS_SIDECAR_STT_ENABLE_PARTIALS") or "0").strip().lower() in (
+            "1",
+            "true",
+            "yes",
+            "on",
+        )
 
         self._chunk_bytes = max(1, int(self._sample_rate * self._chunk_seconds) * 2)
         self._overlap_bytes = max(0, int(self._sample_rate * self._overlap_seconds) * 2)
@@ -1057,6 +1063,9 @@ class _StreamingSidecarTranscriber:
             m = re.search(r"retry in\s+([0-9.]+)s", msg, re.IGNORECASE)
             if m:
                 return float(m.group(1))
+            m_ms = re.search(r"retry in\s+([0-9.]+)ms", msg, re.IGNORECASE)
+            if m_ms:
+                return float(m_ms.group(1)) / 1000.0
         except Exception:
             return None
         return None
@@ -1096,6 +1105,8 @@ class _StreamingSidecarTranscriber:
 
         if final_flush:
             logger.info("Sidecar STT final flush requested")
+        elif not self._enable_partials:
+            return
 
         # If a partial transcription is already in-flight, we skip additional partials.
         # But for final_flush (audio_stream_end), we should wait and then flush remaining
@@ -1165,13 +1176,8 @@ class _StreamingSidecarTranscriber:
                 "Do not add commentary, timestamps, or punctuation unless spoken."
             )
 
-            try:
-                logger.info(
-                    "Sidecar STT transcribing bytes=%s final=%s",
-                    str(len(wav_bytes)),
-                    "true" if final_flush else "false",
-                )
-                resp = await asyncio.wait_for(
+            async def _call_stt() -> str:
+                resp0 = await asyncio.wait_for(
                     self._session.client.aio.models.generate_content(
                         model=self._model,
                         contents=[
@@ -1184,7 +1190,15 @@ class _StreamingSidecarTranscriber:
                     ),
                     timeout=20.0,
                 )
-                text = str(getattr(resp, "text", "") or "").strip()
+                return str(getattr(resp0, "text", "") or "").strip()
+
+            try:
+                logger.info(
+                    "Sidecar STT transcribing bytes=%s final=%s",
+                    str(len(wav_bytes)),
+                    "true" if final_flush else "false",
+                )
+                text = await _call_stt()
             except Exception as e:
                 retry_after = self._retry_after_seconds_from_error(e)
                 if retry_after is not None:
@@ -1192,6 +1206,14 @@ class _StreamingSidecarTranscriber:
                         retry_after,
                         float(self._interval_seconds),
                     )
+                    # For final flush, retry once after the server-provided delay.
+                    if final_flush and retry_after > 0:
+                        try:
+                            await asyncio.sleep(min(retry_after, 2.0))
+                            text = await _call_stt()
+                        except Exception:
+                            logger.warning("Sidecar STT error: %s", str(e))
+                            return
                 logger.warning("Sidecar STT error: %s", str(e))
                 return
 
