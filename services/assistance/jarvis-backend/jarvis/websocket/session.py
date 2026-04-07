@@ -1132,6 +1132,7 @@ class _StreamingSidecarTranscriber:
             return
 
     def _retry_after_seconds_from_error(self, err: Exception) -> float | None:
+        """Parse RetryInfo or 'Please retry in Xs.' from Gemini API errors."""
         try:
             msg = str(err)
             m = re.search(r"retry in\s+([0-9.]+)s", msg, re.IGNORECASE)
@@ -1143,6 +1144,32 @@ class _StreamingSidecarTranscriber:
         except Exception:
             return None
         return None
+
+    def _is_transient_unavailable(self, err: Exception) -> bool:
+        s = str(err or "")
+        if "503" in s and "UNAVAILABLE" in s:
+            return True
+        if "high demand" in s.lower():
+            return True
+        return False
+
+    async def _call_stt_with_model(self, model: str, prompt: str, wav_bytes: bytes) -> str:
+        from google.genai import types
+
+        resp0 = await asyncio.wait_for(
+            self._session.client.aio.models.generate_content(
+                model=model,
+                contents=[
+                    prompt,
+                    types.Part.from_bytes(data=wav_bytes, mime_type="audio/wav"),
+                ],
+                config={
+                    "system_instruction": "You are a speech-to-text transcription engine.",
+                },
+            ),
+            timeout=20.0,
+        )
+        return str(getattr(resp0, "text", "") or "").strip()
 
     def _pcm16le_to_wav(self, pcm16le: bytes) -> bytes:
         num_channels = 1
@@ -1250,31 +1277,17 @@ class _StreamingSidecarTranscriber:
                 "Do not add commentary, timestamps, or punctuation unless spoken."
             )
 
-            async def _call_stt() -> str:
-                resp0 = await asyncio.wait_for(
-                    self._session.client.aio.models.generate_content(
-                        model=self._model,
-                        contents=[
-                            prompt,
-                            types.Part.from_bytes(data=wav_bytes, mime_type="audio/wav"),
-                        ],
-                        config={
-                            "system_instruction": "You are a speech-to-text transcription engine.",
-                        },
-                    ),
-                    timeout=20.0,
-                )
-                return str(getattr(resp0, "text", "") or "").strip()
-
             try:
                 logger.info(
                     "Sidecar STT transcribing bytes=%s final=%s",
                     str(len(wav_bytes)),
                     "true" if final_flush else "false",
                 )
-                text = await _call_stt()
+                text = await self._call_stt_with_model(self._model, prompt, wav_bytes)
             except Exception as e:
                 retry_after = self._retry_after_seconds_from_error(e)
+                if retry_after is None and self._is_transient_unavailable(e):
+                    retry_after = 2.0
                 if retry_after is not None:
                     self._next_allowed_ts = asyncio.get_running_loop().time() + max(
                         retry_after,
@@ -1284,16 +1297,42 @@ class _StreamingSidecarTranscriber:
                     if final_flush and retry_after > 0:
                         try:
                             await asyncio.sleep(min(retry_after, 2.0))
-                            text = await _call_stt()
+                            text = await self._call_stt_with_model(self._model, prompt, wav_bytes)
                         except Exception as e2:
-                            logger.exception(
-                                "Sidecar STT error (retry) model=%s source=%s err_type=%s err=%r",
-                                str(self._model),
-                                str(getattr(self, "_model_source", "unknown")),
-                                type(e2).__name__,
-                                e2,
-                            )
-                            return
+                            # If the model is temporarily unavailable, try a lighter sibling once.
+                            if self._is_transient_unavailable(e2) and str(self._model).strip() == "gemini-flash-latest":
+                                try:
+                                    await asyncio.sleep(0.5)
+                                    text = await self._call_stt_with_model(
+                                        "gemini-flash-lite-latest",
+                                        prompt,
+                                        wav_bytes,
+                                    )
+                                except Exception as e3:
+                                    logger.exception(
+                                        "Sidecar STT error (fallback) model=%s source=%s err_type=%s err=%r",
+                                        "gemini-flash-lite-latest",
+                                        str(getattr(self, "_model_source", "unknown")),
+                                        type(e3).__name__,
+                                        e3,
+                                    )
+                                    return
+                                else:
+                                    self._model = "gemini-flash-lite-latest"
+                                    self._model_source = "fallback_on_503"
+                                    logger.warning("Sidecar STT switched model to gemini-flash-lite-latest due to 503")
+                                    # Success on fallback.
+                                    pass
+                            else:
+                                logger.exception(
+                                    "Sidecar STT error (retry) model=%s source=%s err_type=%s err=%r",
+                                    str(self._model),
+                                    str(getattr(self, "_model_source", "unknown")),
+                                    type(e2).__name__,
+                                    e2,
+                                )
+                                return
+                    return
                 logger.exception(
                     "Sidecar STT error model=%s source=%s err_type=%s err=%r",
                     str(self._model),
