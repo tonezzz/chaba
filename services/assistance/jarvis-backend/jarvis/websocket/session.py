@@ -19,6 +19,49 @@ from jarvis.feature_flags import feature_enabled
 logger = logging.getLogger(__name__)
 
 
+_JARVIS_DISABLE_GEMINI_LIVE = str(os.getenv("JARVIS_DISABLE_GEMINI_LIVE") or "").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
+
+
+async def _google_tts_synthesize_linear16(
+    *,
+    text: str,
+    sample_rate_hz: int = 24000,
+) -> bytes:
+    api_key = str(os.getenv("GOOGLE_TTS_API_KEY") or "").strip()
+    if not api_key:
+        raise RuntimeError("missing_google_tts_api_key")
+
+    language_code = str(os.getenv("JARVIS_GOOGLE_TTS_LANGUAGE") or "en-US").strip() or "en-US"
+    voice_name = str(os.getenv("JARVIS_GOOGLE_TTS_VOICE") or "").strip()
+
+    payload: dict[str, Any] = {
+        "input": {"text": text},
+        "voice": {"languageCode": language_code},
+        "audioConfig": {
+            "audioEncoding": "LINEAR16",
+            "sampleRateHertz": int(sample_rate_hz),
+        },
+    }
+    if voice_name:
+        payload["voice"]["name"] = voice_name
+
+    url = f"https://texttospeech.googleapis.com/v1/text:synthesize?key={api_key}"
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        r = await client.post(url, json=payload)
+        r.raise_for_status()
+        data = r.json()
+
+    b64 = str((data or {}).get("audioContent") or "").strip()
+    if not b64:
+        raise RuntimeError("google_tts_empty_audio")
+    return base64.b64decode(b64)
+
+
 _SIDECAR_STT_CACHE_PATH = str(
     os.getenv("JARVIS_SIDECAR_STT_CACHE_PATH")
     or os.getenv("JARVIS_LIVE_MODEL_CACHE_PATH")
@@ -394,6 +437,11 @@ class WebSocketManager:
         """Handle Gemini session and WebSocket communication"""
         global _LIVE_WORKING_MODEL_AND_CONFIG
         global _LIVE_LISTED_MODELS_ONCE
+
+        if _JARVIS_DISABLE_GEMINI_LIVE:
+            logger.info("Gemini Live disabled; using voice fallback mode")
+            await self._handle_voice_fallback_mode(session)
+            return
 
         # B3 behavior: Do NOT probe models/configs on every WS connect.
         # Only try the cached model/config if we have one; otherwise fall back immediately.
@@ -923,6 +971,141 @@ class WebSocketManager:
             logger.error(f"Failed to initialize smart fallback mode: {e}")
             # Final fallback to echo mode
             await self._handle_echo_mode(session)
+
+    async def _handle_voice_fallback_mode(self, session: WebSocketSession) -> None:
+        """Voice fallback mode: WS audio -> sidecar STT -> Gemini generateContent -> Google TTS audio."""
+        transcriber: _StreamingSidecarTranscriber | None = None
+        try:
+            api_key = os.getenv("GEMINI_API_KEY", "")
+            if not api_key:
+                await self._handle_echo_mode(session)
+                return
+
+            await session.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
+
+            transcriber = _StreamingSidecarTranscriber(session=session)
+            transcriber.start()
+            logger.info(
+                "Voice fallback started stt_model=%s source=%s",
+                str(transcriber._model),
+                str(getattr(transcriber, "_model_source", "unknown")),
+            )
+
+            previous_interaction_id: Optional[str] = None
+
+            async def _speak(text: str) -> None:
+                pcm = await _google_tts_synthesize_linear16(text=text, sample_rate_hz=24000)
+                chunk_size = int(24000 * 2 * 0.4)  # ~400ms
+                for i in range(0, len(pcm), chunk_size):
+                    b64 = base64.b64encode(pcm[i : i + chunk_size]).decode("ascii")
+                    await session.send_json(
+                        {
+                            "type": "audio",
+                            "data": b64,
+                            "sampleRate": 24000,
+                            "instance_id": INSTANCE_ID,
+                        }
+                    )
+
+            while True:
+                data = await session.ws.receive_text()
+                try:
+                    msg = json.loads(data)
+                except Exception:
+                    continue
+
+                mtype = str(msg.get("type") or "").strip().lower()
+                if mtype in ("ping", "pong"):
+                    continue
+
+                if mtype == "audio":
+                    b64 = msg.get("data")
+                    if not b64:
+                        continue
+                    try:
+                        pcm16 = base64.b64decode(str(b64))
+                    except Exception:
+                        continue
+                    try:
+                        transcriber.ingest_pcm16(pcm16)
+                        transcriber.kick()
+                    except Exception:
+                        pass
+                    continue
+
+                if mtype == "audio_stream_end":
+                    logger.info("Voice fallback audio_stream_end")
+                    try:
+                        await transcriber.flush_and_reset()
+                    except Exception:
+                        pass
+                    utterance = transcriber.consume_last_final_transcript()
+                    if not utterance:
+                        continue
+
+                    try:
+                        response_text, previous_interaction_id = await self._get_gemini_response(
+                            utterance,
+                            api_key,
+                            previous_interaction_id,
+                        )
+                    except Exception:
+                        response_text = "I'm having trouble responding right now. Please try again."
+
+                    await session.send_json(
+                        {
+                            "type": "transcript",
+                            "text": str(response_text),
+                            "source": "output",
+                            "instance_id": INSTANCE_ID,
+                        }
+                    )
+                    await session.send_json(
+                        {
+                            "type": "text",
+                            "text": str(response_text),
+                            "instance_id": INSTANCE_ID,
+                        }
+                    )
+                    try:
+                        await _speak(str(response_text))
+                    except Exception as te:
+                        logger.warning("Voice fallback TTS failed: %s", str(te))
+                    continue
+
+                if mtype == "text":
+                    user_text = str(msg.get("text") or "").strip()
+                    if not user_text:
+                        continue
+                    response_text, previous_interaction_id = await self._get_gemini_response(
+                        user_text,
+                        api_key,
+                        previous_interaction_id,
+                    )
+                    await session.send_json(
+                        {
+                            "type": "text",
+                            "text": str(response_text),
+                            "instance_id": INSTANCE_ID,
+                        }
+                    )
+                    try:
+                        await _speak(str(response_text))
+                    except Exception as te:
+                        logger.warning("Voice fallback TTS failed: %s", str(te))
+                    continue
+
+                if mtype == "close":
+                    return
+
+        except WebSocketDisconnect:
+            return
+        finally:
+            if transcriber is not None:
+                try:
+                    await transcriber.stop()
+                except Exception:
+                    pass
     
     async def _get_gemini_response(
         self,
@@ -1072,6 +1255,14 @@ class _StreamingSidecarTranscriber:
     def start(self) -> None:
         if self._task is None:
             self._task = asyncio.create_task(self._run())
+
+    def consume_last_final_transcript(self) -> str:
+        try:
+            t = str(getattr(self, "_last_final_transcript", "") or "").strip()
+            self._last_final_transcript = ""
+            return t
+        except Exception:
+            return ""
 
     def kick(self) -> None:
         # Best-effort scheduling; no-op if already stopped.
@@ -1362,6 +1553,10 @@ class _StreamingSidecarTranscriber:
         if final_flush:
             emit = text
             self._last_emitted = text
+            try:
+                self._last_final_transcript = emit
+            except Exception:
+                pass
         else:
             emit = text
             if self._last_emitted and emit.startswith(self._last_emitted):
