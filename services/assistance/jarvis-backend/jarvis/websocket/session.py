@@ -1094,20 +1094,25 @@ class _StreamingSidecarTranscriber:
         if self._stopped.is_set():
             return
 
+        if final_flush:
+            logger.info("Sidecar STT final flush requested")
+
         # If a partial transcription is already in-flight, we skip additional partials.
         # But for final_flush (audio_stream_end), we should wait and then flush remaining
         # audio so the utterance isn't truncated.
         if self._lock.locked() and not final_flush:
             return
 
-        now = asyncio.get_running_loop().time()
-        if now < self._next_allowed_ts:
-            return
-
-        async with self._lock:
+        if not final_flush:
             now = asyncio.get_running_loop().time()
             if now < self._next_allowed_ts:
                 return
+
+        async with self._lock:
+            if not final_flush:
+                now = asyncio.get_running_loop().time()
+                if now < self._next_allowed_ts:
+                    return
 
             buf_len = len(self._buf)
             if buf_len <= self._read_offset:
