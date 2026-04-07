@@ -619,10 +619,9 @@ class WebSocketManager:
                     logger.info("Live audio_stream_end received")
                     if transcriber is not None:
                         try:
-                            await transcriber.flush_and_stop()
+                            await transcriber.flush_and_reset()
                         except Exception:
                             pass
-                        transcriber = None
                     continue
 
                 if mtype == "close":
@@ -991,6 +990,14 @@ class _StreamingSidecarTranscriber:
     async def flush_and_stop(self) -> None:
         await self._transcribe_available(final_flush=True)
         await self.stop()
+
+    async def flush_and_reset(self) -> None:
+        # Flush any remaining audio for this utterance, then reset state so we can
+        # transcribe the next utterance within the same Live connection.
+        await self._transcribe_available(final_flush=True)
+        self._buf.clear()
+        self._read_offset = 0
+        self._last_emitted = ""
 
     async def stop(self) -> None:
         if self._stopped.is_set():
