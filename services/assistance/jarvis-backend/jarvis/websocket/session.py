@@ -964,8 +964,15 @@ async def gemini_live_probe_and_cache() -> dict[str, Any]:
 
     for model in probe_models:
         clean_model = model[7:] if model.startswith("models/") else model
-        cfgs_to_try = audio_cfgs if _live_is_native_audio_model(clean_model) else text_cfgs
-        for cfg_idx, cfg in enumerate(cfgs_to_try):
+        if _live_is_native_audio_model(clean_model):
+            # Prefer AUDIO+TEXT (idx=1) first for native-audio models so we can get
+            # input/output transcriptions when supported.
+            cfg_indices = [1, 0] if len(audio_cfgs) >= 2 else list(range(len(audio_cfgs)))
+            cfgs_to_try = [(i, audio_cfgs[i]) for i in cfg_indices if i < len(audio_cfgs)]
+        else:
+            cfgs_to_try = list(enumerate(text_cfgs))
+
+        for cfg_idx, cfg in cfgs_to_try:
             try:
                 async with client.aio.live.connect(model=clean_model, config=cfg) as live_session:
                     if _live_is_native_audio_model(clean_model):
