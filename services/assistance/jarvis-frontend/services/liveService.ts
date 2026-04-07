@@ -40,6 +40,8 @@ export class LiveService {
   private lastVoiceCommandName: string | null = null;
   private lastVoiceCommandAt: number = 0;
   private lastSysKvSetAt: number = 0;
+  private lastSentUtteranceText: string | null = null;
+  private lastSentUtteranceAt: number = 0;
   private voiceCmdCfg: any | null = null;
   private voiceCmdCfgLoadedAt: number = 0;
   private toolPending: Map<
@@ -1354,6 +1356,25 @@ export class LiveService {
 			if (src === "output" && this.lastVoiceCommandName === "reload_system" && Date.now() - this.lastVoiceCommandAt < 8_000) {
 				const t = String(message.text || "").trim().toLowerCase();
 				if ((t.includes("reload") || t.includes("reload system")) && t.includes("ambig")) return;
+			}
+			// If this is a finalized input transcript from sidecar STT, forward it back as a
+			// text message so Jarvis can respond conversationally.
+			if (src === "input" && message?.partial === false) {
+				const utterance = String(message.text || "").trim();
+				if (utterance) {
+					const now = Date.now();
+					const sameAsLast = this.lastSentUtteranceText && utterance === this.lastSentUtteranceText;
+					const recentlySent = now - this.lastSentUtteranceAt < 3_000;
+					if (!(sameAsLast && recentlySent)) {
+						this.lastSentUtteranceText = utterance;
+						this.lastSentUtteranceAt = now;
+						try {
+							this.wsSend({ type: "text", text: utterance, trace_id: this.createTraceId("stt_text") });
+						} catch {
+							// ignore
+						}
+					}
+				}
 			}
       // Voice UX fallback: auto-trigger local commands from input transcripts.
       // This helps when Gemini doesn't emit a tool call for simple control commands.
