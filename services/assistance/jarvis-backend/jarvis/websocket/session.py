@@ -1094,7 +1094,10 @@ class _StreamingSidecarTranscriber:
         if self._stopped.is_set():
             return
 
-        if self._lock.locked():
+        # If a partial transcription is already in-flight, we skip additional partials.
+        # But for final_flush (audio_stream_end), we should wait and then flush remaining
+        # audio so the utterance isn't truncated.
+        if self._lock.locked() and not final_flush:
             return
 
         now = asyncio.get_running_loop().time()
