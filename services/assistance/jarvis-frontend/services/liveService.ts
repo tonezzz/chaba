@@ -1359,7 +1359,7 @@ export class LiveService {
 			}
 			// If this is a finalized input transcript from sidecar STT, forward it back as a
 			// text message so Jarvis can respond conversationally.
-			if (src === "input" && message?.partial === false) {
+			if (src === "input" && message?.partial !== true) {
 				const utterance = String(message.text || "").trim();
 				if (utterance) {
 					const now = Date.now();
