@@ -971,9 +971,11 @@ class _StreamingSidecarTranscriber:
         self._last_emitted: str = ""
 
         self._sample_rate = 16000
-        self._chunk_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_CHUNK_S") or "0.5").strip() or "0.5")
-        self._interval_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_INTERVAL_S") or "0.5").strip() or "0.5")
+        self._chunk_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_CHUNK_S") or "1.5").strip() or "1.5")
+        self._interval_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_INTERVAL_S") or "1.0").strip() or "1.0")
         self._overlap_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_OVERLAP_S") or "0.5").strip() or "0.5")
+        self._final_max_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_FINAL_MAX_S") or "12.0").strip() or "12.0")
+        self._language = str(os.getenv("JARVIS_SIDECAR_STT_LANGUAGE") or "").strip()
 
         self._chunk_bytes = max(1, int(self._sample_rate * self._chunk_seconds) * 2)
         self._overlap_bytes = max(0, int(self._sample_rate * self._overlap_seconds) * 2)
@@ -1127,7 +1129,14 @@ class _StreamingSidecarTranscriber:
                 return
 
             start = max(0, self._read_offset - self._overlap_bytes)
-            end = min(buf_len, self._read_offset + self._chunk_bytes)
+            if final_flush:
+                # On utterance end, transcribe the entire remaining audio for better quality.
+                max_bytes = int(self._final_max_seconds * self._sample_rate) * 2
+                end = buf_len
+                if max_bytes > 0 and (end - start) > max_bytes:
+                    start = max(0, end - max_bytes)
+            else:
+                end = min(buf_len, self._read_offset + self._chunk_bytes)
             pcm_chunk = bytes(self._buf[start:end])
             if not pcm_chunk:
                 if final_flush:
@@ -1140,8 +1149,9 @@ class _StreamingSidecarTranscriber:
                 return
 
             wav_bytes = self._pcm16le_to_wav(pcm_chunk)
+            lang_hint = f" The language is {self._language}." if self._language else ""
             prompt = (
-                "Transcribe the audio. Return only the spoken words. "
+                "Transcribe the audio." + lang_hint + " Return only the spoken words. "
                 "Do not add commentary, timestamps, or punctuation unless spoken."
             )
 
