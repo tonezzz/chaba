@@ -1285,10 +1285,22 @@ class _StreamingSidecarTranscriber:
                         try:
                             await asyncio.sleep(min(retry_after, 2.0))
                             text = await _call_stt()
-                        except Exception:
-                            logger.warning("Sidecar STT error: %s", str(e))
+                        except Exception as e2:
+                            logger.exception(
+                                "Sidecar STT error (retry) model=%s source=%s err_type=%s err=%r",
+                                str(self._model),
+                                str(getattr(self, "_model_source", "unknown")),
+                                type(e2).__name__,
+                                e2,
+                            )
                             return
-                logger.warning("Sidecar STT error: %s", str(e))
+                logger.exception(
+                    "Sidecar STT error model=%s source=%s err_type=%s err=%r",
+                    str(self._model),
+                    str(getattr(self, "_model_source", "unknown")),
+                    type(e).__name__,
+                    e,
+                )
                 return
 
             # Only advance once we successfully called the STT model.
