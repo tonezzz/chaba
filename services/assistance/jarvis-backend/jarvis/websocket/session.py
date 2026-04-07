@@ -417,7 +417,11 @@ class WebSocketManager:
                                     pass
 
                                 ws_to_gemini_task = asyncio.create_task(
-                                    self._ws_to_gemini_with_session(session, gemini_session)
+                                    self._ws_to_gemini_with_session(
+                                        session,
+                                        gemini_session,
+                                        clean_model_name,
+                                    )
                                 )
                                 gemini_to_ws_task = asyncio.create_task(
                                     self._gemini_to_ws_with_session(session, gemini_session)
@@ -499,7 +503,9 @@ class WebSocketManager:
         await self._handle_smart_fallback_mode(session)
         return
 
-    async def _ws_to_gemini_with_session(self, session: WebSocketSession, gemini_session: Any) -> None:
+    async def _ws_to_gemini_with_session(
+        self, session: WebSocketSession, gemini_session: Any, live_model_name: str
+    ) -> None:
         """Forward WS client input (text/audio) into an active Gemini Live session."""
         from google.genai import types
 
@@ -509,11 +515,7 @@ class WebSocketManager:
         try:
             # Sidecar transcription: native-audio models often can't enable AUDIO+TEXT at
             # Live connect time, so we stream partial transcripts via separate calls.
-            if session.client and getattr(session, "config", None) is not None:
-                model_name = str(getattr(session, "config", None) or "")
-            else:
-                model_name = ""
-            if _live_is_native_audio_model(model_name):
+            if _live_is_native_audio_model(live_model_name):
                 transcriber = _StreamingSidecarTranscriber(session=session)
                 transcriber.start()
         except Exception:
