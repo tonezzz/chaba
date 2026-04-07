@@ -5,7 +5,7 @@ import time
 import uuid
 from typing import Any, Optional
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import Depends, FastAPI, Header, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import modular components
@@ -240,6 +240,22 @@ def _is_note_trigger(text: str) -> bool:
 
 # Create the FastAPI app
 app = create_app()
+
+
+def _require_admin(auth: str | None = Header(default=None, alias="Authorization")) -> None:
+    token = str(os.getenv("JARVIS_ADMIN_TOKEN") or "").strip()
+    if not token:
+        raise HTTPException(status_code=503, detail="admin_token_not_configured")
+
+    if not auth:
+        raise HTTPException(status_code=401, detail="missing_authorization")
+
+    if not auth.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="invalid_authorization")
+
+    presented = auth.split(" ", 1)[1].strip()
+    if presented != token:
+        raise HTTPException(status_code=403, detail="forbidden")
 
 # Initialize MCP router with environment-specific URL
 from jarvis.mcp.router import MCPRouter
@@ -535,25 +551,35 @@ async def gemini_models_unprefixed() -> dict[str, Any]:
 
 
 @app.get("/jarvis/api/gemini/live/cache")
-async def gemini_live_cache() -> dict[str, Any]:
+async def gemini_live_cache(_: None = Depends(_require_admin)) -> dict[str, Any]:
     return {"ok": True, **gemini_live_cache_status()}
 
 
 @app.get("/gemini/live/cache")
-async def gemini_live_cache_unprefixed() -> dict[str, Any]:
+async def gemini_live_cache_unprefixed(_: None = Depends(_require_admin)) -> dict[str, Any]:
     return {"ok": True, **gemini_live_cache_status()}
 
 
 @app.post("/jarvis/api/gemini/live/probe")
-async def gemini_live_probe() -> dict[str, Any]:
+async def gemini_live_probe(_: None = Depends(_require_admin)) -> dict[str, Any]:
     result = await gemini_live_probe_and_cache()
     return result
 
 
 @app.post("/gemini/live/probe")
-async def gemini_live_probe_unprefixed() -> dict[str, Any]:
+async def gemini_live_probe_unprefixed(_: None = Depends(_require_admin)) -> dict[str, Any]:
     result = await gemini_live_probe_and_cache()
     return result
+
+
+@app.get("/jarvis/api/live/cache_status")
+async def live_cache_status(_: None = Depends(_require_admin)) -> dict[str, Any]:
+    return {"ok": True, **gemini_live_cache_status()}
+
+
+@app.post("/jarvis/api/live/probe")
+async def live_probe(_: None = Depends(_require_admin)) -> dict[str, Any]:
+    return await gemini_live_probe_and_cache()
 
 
 @app.get("/jarvis/api/gemini/live/recommend")
