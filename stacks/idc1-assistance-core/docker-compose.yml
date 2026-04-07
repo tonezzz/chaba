@@ -24,6 +24,7 @@ services:
       PORT: 8018
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_LIVE_MODEL: ${GEMINI_LIVE_MODEL:-gemini-2.5-flash-native-audio-preview-12-2025}
+      JARVIS_DISABLE_GEMINI_LIVE: ${JARVIS_DISABLE_GEMINI_LIVE:-false}
       JARVIS_LIVE_PROBE_ON_CONNECT: ${JARVIS_LIVE_PROBE_ON_CONNECT:-false}
       JARVIS_PUBLIC_BASE_URL: ${JARVIS_PUBLIC_BASE_URL:-https://assistance.idc1.surf-thailand.com}
       JARVIS_VERIFY_FRONTEND_BASE_URL: ${JARVIS_VERIFY_FRONTEND_BASE_URL:-}
@@ -57,6 +58,9 @@ services:
       MCP_PLAYWRIGHT_BASE_URL: ${MCP_PLAYWRIGHT_BASE_URL:-http://mcp-playwright:3050}
       DEEP_RESEARCH_WORKER_BASE_URL: ${DEEP_RESEARCH_WORKER_BASE_URL:-http://deep-research-worker:8030}
       WEAVIATE_URL: ${WEAVIATE_URL:-http://weaviate:8080}
+      GOOGLE_TTS_API_KEY: ${GOOGLE_TTS_API_KEY:-}
+      JARVIS_GOOGLE_TTS_LANGUAGE: ${JARVIS_GOOGLE_TTS_LANGUAGE:-}
+      JARVIS_GOOGLE_TTS_VOICE: ${JARVIS_GOOGLE_TTS_VOICE:-}
     volumes:
       - jarvis-imagen-assets:${JARVIS_IMAGEN_ASSETS_DIR:-/app/imagen_assets}
       - jarvis-session-db:/data
