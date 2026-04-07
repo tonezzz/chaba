@@ -577,8 +577,18 @@ async def live_cache_status(_: None = Depends(_require_admin)) -> dict[str, Any]
     return {"ok": True, **gemini_live_cache_status()}
 
 
+@app.get("/live/cache_status")
+async def live_cache_status_unprefixed(_: None = Depends(_require_admin)) -> dict[str, Any]:
+    return {"ok": True, **gemini_live_cache_status()}
+
+
 @app.post("/jarvis/api/live/probe")
 async def live_probe(_: None = Depends(_require_admin)) -> dict[str, Any]:
+    return await gemini_live_probe_and_cache()
+
+
+@app.post("/live/probe")
+async def live_probe_unprefixed(_: None = Depends(_require_admin)) -> dict[str, Any]:
     return await gemini_live_probe_and_cache()
 
 
