@@ -501,6 +501,7 @@ class WebSocketManager:
 
         logger.info("Live API unavailable; using smart fallback mode")
         await self._handle_smart_fallback_mode(session)
+        return
 
     async def _ws_to_gemini_with_session(self, session: WebSocketSession, gemini_session: Any) -> None:
         """Forward WS client input (text/audio) into an active Gemini Live session."""
@@ -572,12 +573,20 @@ class WebSocketManager:
                     if not b64:
                         continue
                     try:
+                        mime_type = str(msg.get("mimeType") or msg.get("mime_type") or "audio/pcm;rate=16000").strip()
+                        logger.info(
+                            "Live audio received from client mime=%s b64_len=%s",
+                            mime_type,
+                            str(len(b64) if isinstance(b64, str) else "?"),
+                        )
+                    except Exception:
+                        mime_type = str(msg.get("mimeType") or msg.get("mime_type") or "audio/pcm;rate=16000").strip()
+                    try:
                         pcm = base64.b64decode(str(b64))
                     except Exception:
                         continue
 
-                    mime = str(msg.get("mimeType") or msg.get("mime_type") or "audio/pcm;rate=16000").strip()
-                    await gemini_session.send_realtime_input(audio=types.Blob(data=pcm, mime_type=mime))
+                    await gemini_session.send_realtime_input(audio=types.Blob(data=pcm, mime_type=mime_type))
                     continue
 
                 if mtype == "close":
@@ -603,6 +612,7 @@ class WebSocketManager:
             # Transcripts
             in_tr = getattr(content, "input_transcription", None)
             if in_tr and getattr(in_tr, "text", None):
+                logger.info("Live transcript (input) received")
                 await session.send_json(
                     {
                         "type": "transcript",
