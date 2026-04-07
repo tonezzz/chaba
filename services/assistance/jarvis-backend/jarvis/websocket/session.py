@@ -5,6 +5,7 @@ import base64
 import json
 import logging
 import os
+import re
 import struct
 import uuid
 from typing import Any, Optional
@@ -963,6 +964,8 @@ class _StreamingSidecarTranscriber:
         self._session = session
         self._buf = bytearray()
         self._lock = asyncio.Lock()
+        self._kick_event = asyncio.Event()
+        self._next_allowed_ts = 0.0
         self._task: asyncio.Task[None] | None = None
         self._stopped = asyncio.Event()
         self._last_emitted: str = ""
@@ -991,7 +994,7 @@ class _StreamingSidecarTranscriber:
         if self._stopped.is_set():
             return
         try:
-            asyncio.create_task(self._transcribe_available(final_flush=False))
+            self._kick_event.set()
         except Exception:
             pass
 
@@ -1029,10 +1032,32 @@ class _StreamingSidecarTranscriber:
     async def _run(self) -> None:
         try:
             while not self._stopped.is_set():
-                await asyncio.sleep(self._interval_seconds)
+                try:
+                    await asyncio.wait_for(
+                        self._kick_event.wait(),
+                        timeout=self._interval_seconds,
+                    )
+                except asyncio.TimeoutError:
+                    pass
+
+                try:
+                    self._kick_event.clear()
+                except Exception:
+                    pass
+
                 await self._transcribe_available(final_flush=False)
         except Exception:
             return
+
+    def _retry_after_seconds_from_error(self, err: Exception) -> float | None:
+        try:
+            msg = str(err)
+            m = re.search(r"retry in\s+([0-9.]+)s", msg, re.IGNORECASE)
+            if m:
+                return float(m.group(1))
+        except Exception:
+            return None
+        return None
 
     def _pcm16le_to_wav(self, pcm16le: bytes) -> bytes:
         num_channels = 1
@@ -1067,72 +1092,92 @@ class _StreamingSidecarTranscriber:
         if self._stopped.is_set():
             return
 
-        buf_len = len(self._buf)
-        if buf_len <= self._read_offset:
-            if final_flush:
+        if self._lock.locked():
+            return
+
+        now = asyncio.get_running_loop().time()
+        if now < self._next_allowed_ts:
+            return
+
+        async with self._lock:
+            now = asyncio.get_running_loop().time()
+            if now < self._next_allowed_ts:
+                return
+
+            buf_len = len(self._buf)
+            if buf_len <= self._read_offset:
+                if final_flush:
+                    logger.info(
+                        "Sidecar STT skip (no new audio) buf_len=%s read_offset=%s",
+                        str(buf_len),
+                        str(self._read_offset),
+                    )
+                return
+
+            available = buf_len - self._read_offset
+            if not final_flush and available < self._chunk_bytes:
+                return
+
+            if final_flush and available <= 0:
                 logger.info(
-                    "Sidecar STT skip (no new audio) buf_len=%s read_offset=%s",
+                    "Sidecar STT skip (final but empty) buf_len=%s read_offset=%s",
                     str(buf_len),
                     str(self._read_offset),
                 )
-            return
+                return
 
-        available = buf_len - self._read_offset
-        if not final_flush and available < self._chunk_bytes:
-            return
+            start = max(0, self._read_offset - self._overlap_bytes)
+            end = min(buf_len, self._read_offset + self._chunk_bytes)
+            pcm_chunk = bytes(self._buf[start:end])
+            if not pcm_chunk:
+                if final_flush:
+                    logger.info(
+                        "Sidecar STT skip (empty chunk) start=%s end=%s buf_len=%s",
+                        str(start),
+                        str(end),
+                        str(buf_len),
+                    )
+                return
 
-        if final_flush and available <= 0:
-            logger.info(
-                "Sidecar STT skip (final but empty) buf_len=%s read_offset=%s",
-                str(buf_len),
-                str(self._read_offset),
+            wav_bytes = self._pcm16le_to_wav(pcm_chunk)
+            prompt = (
+                "Transcribe the audio. Return only the spoken words. "
+                "Do not add commentary, timestamps, or punctuation unless spoken."
             )
-            return
 
-        start = max(0, self._read_offset - self._overlap_bytes)
-        end = min(buf_len, self._read_offset + self._chunk_bytes)
-        pcm_chunk = bytes(self._buf[start:end])
-        if not pcm_chunk:
-            if final_flush:
+            try:
                 logger.info(
-                    "Sidecar STT skip (empty chunk) start=%s end=%s buf_len=%s",
-                    str(start),
-                    str(end),
-                    str(buf_len),
+                    "Sidecar STT transcribing bytes=%s final=%s",
+                    str(len(wav_bytes)),
+                    "true" if final_flush else "false",
                 )
-            return
+                resp = await asyncio.wait_for(
+                    self._session.client.aio.models.generate_content(
+                        model=self._model,
+                        contents=[
+                            prompt,
+                            types.Part.from_bytes(data=wav_bytes, mime_type="audio/wav"),
+                        ],
+                        config={
+                            "system_instruction": "You are a speech-to-text transcription engine.",
+                        },
+                    ),
+                    timeout=20.0,
+                )
+                text = str(getattr(resp, "text", "") or "").strip()
+            except Exception as e:
+                retry_after = self._retry_after_seconds_from_error(e)
+                if retry_after is not None:
+                    self._next_allowed_ts = asyncio.get_running_loop().time() + max(
+                        retry_after,
+                        float(self._interval_seconds),
+                    )
+                logger.warning("Sidecar STT error: %s", str(e))
+                return
 
-        self._read_offset = end
-
-        wav_bytes = self._pcm16le_to_wav(pcm_chunk)
-        prompt = (
-            "Transcribe the audio. Return only the spoken words. "
-            "Do not add commentary, timestamps, or punctuation unless spoken."
-        )
-
-        try:
-            logger.info(
-                "Sidecar STT transcribing bytes=%s final=%s",
-                str(len(wav_bytes)),
-                "true" if final_flush else "false",
-            )
-            resp = await asyncio.wait_for(
-                self._session.client.aio.models.generate_content(
-                    model=self._model,
-                    contents=[
-                        prompt,
-                        types.Part.from_bytes(data=wav_bytes, mime_type="audio/wav"),
-                    ],
-                    config={
-                        "system_instruction": "You are a speech-to-text transcription engine.",
-                    },
-                ),
-                timeout=20.0,
-            )
-            text = str(getattr(resp, "text", "") or "").strip()
-        except Exception as e:
-            logger.warning("Sidecar STT error: %s", str(e))
-            return
+            # Only advance once we successfully called the STT model.
+            self._read_offset = end
+            self._next_allowed_ts = asyncio.get_running_loop().time() + float(self._interval_seconds)
 
         if not text:
             return
