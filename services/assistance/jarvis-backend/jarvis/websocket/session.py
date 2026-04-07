@@ -1491,48 +1491,44 @@ class _StreamingSidecarTranscriber:
                         retry_after,
                         float(self._interval_seconds),
                     )
-                    # For final flush, retry once after the server-provided delay.
+                    # For final flush, do a bounded retry sequence so we don't drop the utterance.
                     if final_flush and retry_after > 0:
-                        try:
-                            await asyncio.sleep(min(retry_after, 2.0))
-                            text = await self._call_stt_with_model(self._model, prompt, wav_bytes, timeout_s=timeout_s)
-                        except asyncio.CancelledError:
-                            return
-                        except Exception as e2:
-                            # If the model is temporarily unavailable, try a lighter sibling once.
-                            if self._is_transient_unavailable(e2) and str(self._model).strip() == "gemini-flash-latest":
-                                try:
-                                    await asyncio.sleep(0.5)
-                                    text = await self._call_stt_with_model(
-                                        "gemini-flash-lite-latest",
-                                        prompt,
-                                        wav_bytes,
-                                        timeout_s=timeout_s,
-                                    )
-                                except Exception as e3:
-                                    logger.exception(
-                                        "Sidecar STT error (fallback) model=%s source=%s err_type=%s err=%r",
-                                        "gemini-flash-lite-latest",
-                                        str(getattr(self, "_model_source", "unknown")),
-                                        type(e3).__name__,
-                                        e3,
-                                    )
-                                    return
-                                else:
-                                    self._model = "gemini-flash-lite-latest"
-                                    self._model_source = "fallback_on_503"
-                                    logger.warning("Sidecar STT switched model to gemini-flash-lite-latest due to 503")
-                                    # Success on fallback.
-                                    pass
-                            else:
+                        base_sleep = min(float(retry_after), 2.0)
+                        attempts: list[str] = [str(self._model).strip()]
+                        # If the failure looks like transient 503/high demand, try a lighter model as a fallback
+                        # regardless of which model we started with.
+                        if self._is_transient_unavailable(e):
+                            if "gemini-flash-lite-latest" not in attempts:
+                                attempts.append("gemini-flash-lite-latest")
+
+                        last_err: Exception | None = None
+                        for idx, m in enumerate(attempts):
+                            try:
+                                await asyncio.sleep(base_sleep * (1.0 + 0.5 * idx))
+                                text = await self._call_stt_with_model(m, prompt, wav_bytes, timeout_s=timeout_s)
+                                if text:
+                                    if m != str(self._model).strip():
+                                        self._model = m
+                                        self._model_source = "fallback_on_transient"
+                                        logger.warning("Sidecar STT switched model to %s due to transient errors", m)
+                                    break
+                            except asyncio.CancelledError:
+                                return
+                            except Exception as e2:
+                                last_err = e2
+                                continue
+
+                        if not text:
+                            if last_err is not None:
                                 logger.exception(
-                                    "Sidecar STT error (retry) model=%s source=%s err_type=%s err=%r",
+                                    "Sidecar STT error (retry/fallback exhausted) model=%s source=%s err_type=%s err=%r",
                                     str(self._model),
                                     str(getattr(self, "_model_source", "unknown")),
-                                    type(e2).__name__,
-                                    e2,
+                                    type(last_err).__name__,
+                                    last_err,
                                 )
-                                return
+                            return
+
                     return
                 logger.exception(
                     "Sidecar STT error model=%s source=%s err_type=%s err=%r",
