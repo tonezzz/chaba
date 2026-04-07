@@ -518,6 +518,14 @@ class WebSocketManager:
             if _live_is_native_audio_model(live_model_name):
                 transcriber = _StreamingSidecarTranscriber(session=session)
                 transcriber.start()
+                logger.info(
+                    "Sidecar STT started model=%s stt_model=%s interval_s=%s chunk_s=%s overlap_s=%s",
+                    str(live_model_name),
+                    str(transcriber._model),
+                    str(transcriber._interval_seconds),
+                    str(transcriber._chunk_seconds),
+                    str(transcriber._overlap_seconds),
+                )
         except Exception:
             transcriber = None
 
@@ -608,6 +616,7 @@ class WebSocketManager:
                     continue
 
                 if mtype == "audio_stream_end":
+                    logger.info("Live audio_stream_end received")
                     if transcriber is not None:
                         try:
                             await transcriber.flush_and_stop()
@@ -627,6 +636,7 @@ class WebSocketManager:
                     await transcriber.stop()
                 except Exception:
                     pass
+                logger.info("Sidecar STT stopped")
             logger.info("Live WS->Gemini loop exiting")
 
 
@@ -955,8 +965,8 @@ class _StreamingSidecarTranscriber:
         self._last_emitted: str = ""
 
         self._sample_rate = 16000
-        self._chunk_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_CHUNK_S") or "2.0").strip() or "2.0")
-        self._interval_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_INTERVAL_S") or "2.0").strip() or "2.0")
+        self._chunk_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_CHUNK_S") or "1.0").strip() or "1.0")
+        self._interval_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_INTERVAL_S") or "1.0").strip() or "1.0")
         self._overlap_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_OVERLAP_S") or "0.5").strip() or "0.5")
 
         self._chunk_bytes = max(1, int(self._sample_rate * self._chunk_seconds) * 2)
@@ -1060,15 +1070,23 @@ class _StreamingSidecarTranscriber:
         )
 
         try:
-            resp = await self._session.client.aio.models.generate_content(
-                model=self._model,
-                contents=[
-                    prompt,
-                    types.Part.from_bytes(data=wav_bytes, mime_type="audio/wav"),
-                ],
-                config={
-                    "system_instruction": "You are a speech-to-text transcription engine.",
-                },
+            logger.info(
+                "Sidecar STT transcribing bytes=%s final=%s",
+                str(len(wav_bytes)),
+                "true" if final_flush else "false",
+            )
+            resp = await asyncio.wait_for(
+                self._session.client.aio.models.generate_content(
+                    model=self._model,
+                    contents=[
+                        prompt,
+                        types.Part.from_bytes(data=wav_bytes, mime_type="audio/wav"),
+                    ],
+                    config={
+                        "system_instruction": "You are a speech-to-text transcription engine.",
+                    },
+                ),
+                timeout=20.0,
             )
             text = str(getattr(resp, "text", "") or "").strip()
         except Exception as e:
@@ -1098,6 +1116,7 @@ class _StreamingSidecarTranscriber:
                     "instance_id": INSTANCE_ID,
                 }
             )
+            logger.info("Sidecar STT emitted chars=%s", str(len(emit)))
         except Exception:
             return
 
