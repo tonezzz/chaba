@@ -29,6 +29,7 @@ _SIDECAR_STT_WORKING_MODEL: str | None = None
 
 
 def sidecar_stt_cache_status() -> dict[str, Any]:
+    _sidecar_stt_load_cached_model()
     return {
         "cache_path": _SIDECAR_STT_CACHE_PATH,
         "cached": _SIDECAR_STT_WORKING_MODEL,
@@ -68,7 +69,9 @@ def sidecar_stt_set_working_model(model: str) -> None:
     if not _SIDECAR_STT_CACHE_PATH:
         return
     try:
-        os.makedirs(os.path.dirname(_SIDECAR_STT_CACHE_PATH), exist_ok=True)
+        d = os.path.dirname(_SIDECAR_STT_CACHE_PATH)
+        if d:
+            os.makedirs(d, exist_ok=True)
         with open(_SIDECAR_STT_CACHE_PATH, "w", encoding="utf-8") as f:
             json.dump({"model": m}, f)
     except Exception:

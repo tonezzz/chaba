@@ -708,13 +708,24 @@ async def _gemini_sidecar_stt_probe(payload: dict[str, Any] | None) -> dict[str,
             attempts.append({"model": clean_model, "ok": False, "error": str(e)})
 
     chosen: str | None = None
+    preferred = [
+        "gemini-flash-latest",
+        "gemini-flash-lite-latest",
+    ]
+    ok_models: list[str] = []
     for a in attempts:
         try:
             if a.get("ok") is True and a.get("model"):
-                chosen = str(a.get("model")).strip() or None
-                break
+                ok_models.append(str(a.get("model")).strip())
         except Exception:
             continue
+
+    for p0 in preferred:
+        if p0 in ok_models:
+            chosen = p0
+            break
+    if not chosen and ok_models:
+        chosen = ok_models[0]
 
     if chosen:
         try:
