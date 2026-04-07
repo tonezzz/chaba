@@ -505,6 +505,20 @@ class WebSocketManager:
 
         logger.info("Live WS->Gemini loop started")
 
+        transcriber: _StreamingSidecarTranscriber | None = None
+        try:
+            # Sidecar transcription: native-audio models often can't enable AUDIO+TEXT at
+            # Live connect time, so we stream partial transcripts via separate calls.
+            if session.client and getattr(session, "config", None) is not None:
+                model_name = str(getattr(session, "config", None) or "")
+            else:
+                model_name = ""
+            if _live_is_native_audio_model(model_name):
+                transcriber = _StreamingSidecarTranscriber(session=session)
+                transcriber.start()
+        except Exception:
+            transcriber = None
+
         try:
             while True:
                 data = await session.ws.receive_text()
@@ -582,7 +596,22 @@ class WebSocketManager:
                     except Exception:
                         continue
 
+                    if transcriber is not None:
+                        try:
+                            transcriber.ingest_pcm16(pcm)
+                        except Exception:
+                            pass
+
                     await gemini_session.send_realtime_input(audio=types.Blob(data=pcm, mime_type=mime_type))
+                    continue
+
+                if mtype == "audio_stream_end":
+                    if transcriber is not None:
+                        try:
+                            await transcriber.flush_and_stop()
+                        except Exception:
+                            pass
+                        transcriber = None
                     continue
 
                 if mtype == "close":
@@ -591,7 +620,13 @@ class WebSocketManager:
             logger.info("WS disconnected (Live WS->Gemini loop)")
             return
         finally:
+            if transcriber is not None:
+                try:
+                    await transcriber.stop()
+                except Exception:
+                    pass
             logger.info("Live WS->Gemini loop exiting")
+
 
     async def _gemini_to_ws_with_session(self, session: WebSocketSession, gemini_session: Any) -> None:
         """Forward Gemini Live server events back to the WS client."""
@@ -906,6 +941,163 @@ class WebSocketManager:
         except Exception as e:
             logger.error(f"Echo mode error: {e}")
 
+
+
+class _StreamingSidecarTranscriber:
+    def __init__(self, session: WebSocketSession):
+        self._session = session
+        self._buf = bytearray()
+        self._lock = asyncio.Lock()
+        self._task: asyncio.Task[None] | None = None
+        self._stopped = asyncio.Event()
+        self._last_emitted: str = ""
+
+        self._sample_rate = 16000
+        self._chunk_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_CHUNK_S") or "2.0").strip() or "2.0")
+        self._interval_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_INTERVAL_S") or "2.0").strip() or "2.0")
+        self._overlap_seconds = float(str(os.getenv("JARVIS_SIDECAR_STT_OVERLAP_S") or "0.5").strip() or "0.5")
+
+        self._chunk_bytes = max(1, int(self._sample_rate * self._chunk_seconds) * 2)
+        self._overlap_bytes = max(0, int(self._sample_rate * self._overlap_seconds) * 2)
+        self._read_offset = 0
+
+        self._model = str(
+            os.getenv("JARVIS_SIDECAR_STT_MODEL")
+            or os.getenv("GEMINI_TEXT_MODEL")
+            or "gemini-2.5-flash"
+        ).strip()
+
+    def start(self) -> None:
+        if self._task is None:
+            self._task = asyncio.create_task(self._run())
+
+    def ingest_pcm16(self, pcm16: bytes) -> None:
+        if not pcm16 or self._stopped.is_set():
+            return
+        self._buf.extend(pcm16)
+
+    async def flush_and_stop(self) -> None:
+        await self._transcribe_available(final_flush=True)
+        await self.stop()
+
+    async def stop(self) -> None:
+        if self._stopped.is_set():
+            return
+        self._stopped.set()
+        if self._task is not None:
+            try:
+                await asyncio.wait_for(self._task, timeout=2.0)
+            except Exception:
+                try:
+                    self._task.cancel()
+                except Exception:
+                    pass
+        self._task = None
+
+    async def _run(self) -> None:
+        try:
+            while not self._stopped.is_set():
+                await asyncio.sleep(self._interval_seconds)
+                await self._transcribe_available(final_flush=False)
+        except Exception:
+            return
+
+    def _pcm16le_to_wav(self, pcm16le: bytes) -> bytes:
+        num_channels = 1
+        bits_per_sample = 16
+        byte_rate = self._sample_rate * num_channels * (bits_per_sample // 8)
+        block_align = num_channels * (bits_per_sample // 8)
+        data_size = len(pcm16le)
+        riff_size = 36 + data_size
+
+        return b"".join(
+            [
+                b"RIFF",
+                struct.pack("<I", riff_size),
+                b"WAVE",
+                b"fmt ",
+                struct.pack("<I", 16),
+                struct.pack("<H", 1),
+                struct.pack("<H", num_channels),
+                struct.pack("<I", self._sample_rate),
+                struct.pack("<I", byte_rate),
+                struct.pack("<H", block_align),
+                struct.pack("<H", bits_per_sample),
+                b"data",
+                struct.pack("<I", data_size),
+                pcm16le,
+            ]
+        )
+
+    async def _transcribe_available(self, final_flush: bool) -> None:
+        from google.genai import types
+
+        if self._stopped.is_set():
+            return
+
+        buf_len = len(self._buf)
+        if buf_len <= self._read_offset:
+            return
+
+        available = buf_len - self._read_offset
+        if not final_flush and available < self._chunk_bytes:
+            return
+
+        start = max(0, self._read_offset - self._overlap_bytes)
+        end = min(buf_len, self._read_offset + self._chunk_bytes)
+        pcm_chunk = bytes(self._buf[start:end])
+        if not pcm_chunk:
+            return
+
+        self._read_offset = end
+
+        wav_bytes = self._pcm16le_to_wav(pcm_chunk)
+        prompt = (
+            "Transcribe the audio. Return only the spoken words. "
+            "Do not add commentary, timestamps, or punctuation unless spoken."
+        )
+
+        try:
+            resp = await self._session.client.aio.models.generate_content(
+                model=self._model,
+                contents=[
+                    prompt,
+                    types.Part.from_bytes(data=wav_bytes, mime_type="audio/wav"),
+                ],
+                config={
+                    "system_instruction": "You are a speech-to-text transcription engine.",
+                },
+            )
+            text = str(getattr(resp, "text", "") or "").strip()
+        except Exception as e:
+            logger.warning("Sidecar STT error: %s", str(e))
+            return
+
+        if not text:
+            return
+
+        emit = text
+        if self._last_emitted and emit.startswith(self._last_emitted):
+            suffix = emit[len(self._last_emitted) :].strip()
+            if suffix:
+                emit = suffix
+            else:
+                return
+
+        self._last_emitted = (self._last_emitted + " " + emit).strip() if self._last_emitted else text
+
+        try:
+            await self._session.send_json(
+                {
+                    "type": "transcript",
+                    "text": emit,
+                    "source": "input",
+                    "partial": True,
+                    "instance_id": INSTANCE_ID,
+                }
+            )
+        except Exception:
+            return
 
 
 websocket_manager = WebSocketManager()
