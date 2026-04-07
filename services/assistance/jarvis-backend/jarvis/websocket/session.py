@@ -999,6 +999,12 @@ async def gemini_live_probe_and_cache() -> dict[str, Any]:
                                 mime_type="audio/pcm;rate=16000",
                             )
                         )
+                        # Keep the session alive long enough for the server to process the audio.
+                        # Otherwise some models/configs return 1007 when the session closes "without audio".
+                        try:
+                            await asyncio.wait_for(live_session.receive().__anext__(), timeout=1.5)
+                        except Exception:
+                            pass
                     global _LIVE_WORKING_MODEL_AND_CONFIG
                     _LIVE_WORKING_MODEL_AND_CONFIG = (clean_model, cfg_idx)
                     try:
