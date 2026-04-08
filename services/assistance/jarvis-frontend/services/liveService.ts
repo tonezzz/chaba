@@ -319,7 +319,13 @@ export class LiveService {
 
 			const mySeq = ++this.wsSeq;
 			const am = this.audio;
-			// AudioContexts are created lazily in ensureAudioInput() after user gesture
+			// Create AudioContexts eagerly to ensure they're ready for streaming
+			if (!am.inputAudioContext) {
+				am.inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+			}
+			if (!am.outputAudioContext) {
+				am.outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+			}
 
 			const backendUrl = (import.meta as any).env?.VITE_JARVIS_WS_URL as string | undefined;
 			const proto = location.protocol === "https:" ? "wss" : "ws";
