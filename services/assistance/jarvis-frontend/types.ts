@@ -41,3 +41,51 @@ export interface MessageLog {
 export interface AudioConfig {
   sampleRate: number;
 }
+
+export interface VoiceCmdModeKeywords {
+  gems?: string[];
+  knowledge?: string[];
+  memory?: string[];
+}
+
+export interface VoiceCmdReloadCfg {
+  enabled?: boolean;
+  phrases?: string[];
+  mode_keywords?: VoiceCmdModeKeywords;
+}
+
+export interface VoiceCmdFeatureCfg {
+  enabled?: boolean;
+  phrases?: string[];
+}
+
+export interface VoiceCmdConfig {
+  enabled?: boolean;
+  debounce_ms?: number;
+  reload?: VoiceCmdReloadCfg;
+  reminders_add?: VoiceCmdFeatureCfg;
+  gems_list?: VoiceCmdFeatureCfg;
+}
+
+export interface ToolPendingEntry {
+  resolve: (v: unknown) => void;
+  reject: (e: unknown) => void;
+  name: string;
+  createdAt: number;
+  timeoutId: number;
+}
+
+export interface WsReadinessEvent {
+  phase: string;
+  detail?: unknown;
+  ts: number;
+}
+
+export interface PendingEventMessage {
+  type: "pending_event";
+  event?: string;
+  action?: string;
+  confirmation_id?: string;
+  payload?: unknown;
+  trace_id?: string;
+}
