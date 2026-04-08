@@ -147,7 +147,7 @@ export function isGemsListPhrase(text: string): boolean {
 
 export function extractSystemReloadMode(
 	text: string,
-	cfg: VoiceCmdConfig,
+	cfg?: VoiceCmdConfig,
 ): "full" | "memory" | "knowledge" | "sys" | "gems" | null {
 	const compact = compactVoiceText(text);
 	if (!compact) return null;

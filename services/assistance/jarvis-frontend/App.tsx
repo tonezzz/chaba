@@ -1,33 +1,32 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { LiveService } from './services/liveService';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { sequentialApplyAndSuggest } from './services/sequentialService';
-import { ConnectionState, MessageLog } from './types';
+import { ConnectionState, MessageLog, WsReadinessEvent } from './types';
 import { useFullscreenEscape } from './hooks/useFullscreenEscape';
-
 import { useAutoScroll } from './hooks/useAutoScroll';
 import { useUiLog } from './hooks/useUiLog';
 import { usePending } from './hooks/usePending';
+import { useMessageLog } from './hooks/useMessageLog';
+import { useLiveService } from './hooks/useLiveService';
+import { useSystemCounts } from './hooks/useSystemCounts';
+import { useAudioStatus } from './hooks/useAudioStatus';
+import { useOutputDialog } from './hooks/useOutputDialog';
+import { useComposer } from './hooks/useComposer';
 
 import Visualizer from './components/Visualizer';
 import CameraFeed from './components/CameraFeed';
-import CarsPanel from './components/CarsPanel';
 import { LeftPanel } from './components/app/LeftPanel';
 import { OutputPanel } from './components/app/OutputPanel';
-import { Play, Mic, MicOff, Search, Image as ImageIcon, Camera, Activity, Lock, ChevronRight, Paperclip, Send, X, Link2Off, Copy, CheckCircle2, AlertTriangle, XCircle, HeartPulse, Maximize2, Minimize2 } from 'lucide-react';
-
-import { extractReminderAddText, normalizeComposerText, parseJsonToolRequest, parseSysDedupe, parseSysSet, parseToolInvoke, splitSentences } from './lib/appHelpers';
+import { Lock, ChevronRight, HeartPulse, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 
 export default function App() {
   const [hasKey, setHasKey] = useState(false);
   const [state, setState] = useState<ConnectionState>(ConnectionState.DISCONNECTED);
   const [volume, setVolume] = useState(0);
 
-  const [messages, setMessages] = useState<MessageLog[]>([]);
-  const resumeHydratedRef = useRef<boolean>(false);
+  // UI state
   const [statusDetailsOpen, setStatusDetailsOpen] = useState<boolean>(() => {
     try {
       const raw = String(window.localStorage.getItem("jarvis_status_details_open") || "").trim();
-      if (!raw) return false;
       return raw === "1" || raw.toLowerCase() === "true";
     } catch {
       return false;
@@ -36,23 +35,11 @@ export default function App() {
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
   const [showDebugLogs, setShowDebugLogs] = useState(false);
   const showDebugLogsRef = useRef<boolean>(false);
-  const prevConnStateRef = useRef<ConnectionState>(ConnectionState.DISCONNECTED);
-  const lastActivityTextRef = useRef<string>("");
-  const lastActivityTsRef = useRef<number>(0);
-  const liveService = useRef<LiveService | null>(null);
-  const [activeMedia, setActiveMedia] = useState<MessageLog | null>(null);
-  const [isTalking, setIsTalking] = useState(false);
   const [leftFullscreen, setLeftFullscreen] = useState(false);
   const [activeRightPanel, setActiveRightPanel] = useState<"output" | "cars" | "checklist">("output");
   const [activeOutputTab, setActiveOutputTab] = useState<"dialog" | "ui_log" | "ws_log" | "pending">("dialog");
-  const [wsLogText, setWsLogText] = useState<string>("");
-  const [wsLogErr, setWsLogErr] = useState<string>("");
 
-  const [readinessPhase, setReadinessPhase] = useState<string>("");
-  const [readinessSinceMs, setReadinessSinceMs] = useState<number>(0);
-  const readinessPhaseRef = useRef<string>("");
-
-  const [composerText, setComposerText] = useState<string>("");
+  // Sequential task state
   const [seqNotes, setSeqNotes] = useState<string>("");
   const [seqCompletedNotes, setSeqCompletedNotes] = useState<string>("");
   const [seqNextText, setSeqNextText] = useState<string | null>(null);
@@ -60,58 +47,29 @@ export default function App() {
   const [seqTemplate, setSeqTemplate] = useState<string[] | null>(null);
   const [seqError, setSeqError] = useState<string>("");
   const [seqBusy, setSeqBusy] = useState<boolean>(false);
-  const [attachments, setAttachments] = useState<
-    Array<{
-      id: string;
-      name: string;
-      size: number;
-      kind: "image" | "pdf" | "text";
-      text?: string;
-    }>
-  >([]);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Readiness state
+  const [readinessPhase, setReadinessPhase] = useState<string>("");
+  const [readinessSinceMs, setReadinessSinceMs] = useState<number>(0);
+  const readinessPhaseRef = useRef<string>("");
+
+  // Container status state
+  const [containerStatus, setContainerStatus] = useState<any>(null);
+  const [containerStatusError, setContainerStatusError] = useState<string>("");
+  const [depsStatus, setDepsStatus] = useState<any>(null);
+  const [depsStatusError, setDepsStatusError] = useState<string>("");
+  const [depsStatusRefreshNonce, setDepsStatusRefreshNonce] = useState<number>(0);
+
+  // UI card input state
+  const [uiCardInputByMsgId, setUiCardInputByMsgId] = useState<Record<string, string>>({});
+
+  // Refs for scrolling
   const logScrollRef = useRef<HTMLDivElement | null>(null);
   const logStickToBottomRef = useRef<boolean>(true);
   const outputScrollRef = useRef<HTMLDivElement | null>(null);
   const outputStickToBottomRef = useRef<boolean>(true);
 
-  const systemCounts = useMemo(() => {
-    const out = { memory: 0, knowledge: 0, ok: false };
-    const rxOk = /\bmemory\s*=\s*(\d+)\b[^\d]+\bknowledge\s*=\s*(\d+)\b/i;
-    const rxMemKnowParen = /\bmemory\s*\(\s*(\d+)\s*:\s*(\d+)\s*\)[\s\S]*?\bknowledge\s*\(\s*(\d+)\s*:\s*(\d+)\s*\)/i;
-    const rxLoadedEn = /\bloaded\s+memory\b[\s\S]*?\b(\d+)\b[\s\S]*?\bknowledge\b[\s\S]*?\b(\d+)\b/i;
-    const rxLoadedTh = /โหลด\s*memory[\s\S]*?(\d+)[\s\S]*?knowledge[\s\S]*?(\d+)/i;
-    for (const m of messages) {
-      const t = String(m.text || "");
-      let mm: RegExpMatchArray | null = null;
-      mm = t.match(rxOk);
-      if (!mm) {
-        const mm2 = t.match(rxMemKnowParen);
-        if (mm2) {
-          const memLoaded = Number(mm2[2] || 0);
-          const knowLoaded = Number(mm2[4] || 0);
-          if (Number.isFinite(memLoaded) && Number.isFinite(knowLoaded)) {
-            out.memory = memLoaded;
-            out.knowledge = knowLoaded;
-            out.ok = true;
-            break;
-          }
-        }
-      }
-      if (!mm) mm = t.match(rxLoadedEn);
-      if (!mm) mm = t.match(rxLoadedTh);
-      if (!mm) continue;
-      const mem = Number(mm[1] || 0);
-      const know = Number(mm[2] || 0);
-      if (!Number.isFinite(mem) || !Number.isFinite(know)) continue;
-      out.memory = mem;
-      out.knowledge = know;
-      out.ok = true;
-      break;
-    }
-    return out;
-  }, [messages]);
-
+  // Backend candidates helper
   const backendCandidates = useCallback((): string[] => {
     const override = String((import.meta as any).env?.VITE_JARVIS_HTTP_URL as string | undefined || "").trim();
     let normOverride = override ? override.trim().replace(/\/+$/, "").replace(/^\s+|\s+$/g, "") : "";
@@ -128,10 +86,15 @@ export default function App() {
     });
   }, []);
 
+  // UI Log hook
   const { uiLogText, setUiLogText, loadUiLogFromLocalStorage, appendUiLogEntry, scheduleUiLogFlush } = useUiLog({
     backendCandidates,
   });
 
+  // LiveService ref (declared early for usePending)
+  const liveServiceRef = useRef<import("./services/liveService").LiveService | null>(null);
+
+  // Pending actions hook
   const {
     pendingItems,
     pendingSelectedId,
@@ -149,174 +112,52 @@ export default function App() {
     cancelPending,
     queueBundlePublishReload,
   } = usePending({
-    liveService,
+    liveService: liveServiceRef,
     setActiveRightPanel,
     setActiveOutputTab,
   });
 
-  const refreshWsLog = useCallback(async () => {
-    setWsLogErr("");
-    for (const base of backendCandidates()) {
-      try {
-        const effectiveBase = base ? base : "/jarvis/api";
-        const res = await fetch(`${effectiveBase}/logs/ws/today?max_bytes=200000`, { method: "GET" });
-        if (!res.ok) continue;
-        const j = await res.json();
-        const txt = j?.text != null ? String(j.text) : "";
-        setWsLogText(txt);
-        return;
-      } catch {
-        // try next
-      }
-    }
-    setWsLogErr("failed_to_fetch_ws_log");
-  }, [backendCandidates]);
-
-  const audioStatus = useMemo(() => {
-    let lastConn = 0;
-    let lastAudioUnavailable = 0;
-
-    for (const m of messages) {
-      const id = String(m.id || "");
-      const txt = String(m.text || "").toLowerCase();
-      const ts = m.timestamp?.getTime?.() ? m.timestamp.getTime() : 0;
-      if (id.endsWith("_state") && txt === "connected") lastConn = Math.max(lastConn, ts);
-      if (id.includes("_audio_unavailable") || txt.startsWith("audio_unavailable")) {
-        lastAudioUnavailable = Math.max(lastAudioUnavailable, ts);
-      }
-    }
-    const ok = state === ConnectionState.CONNECTED && (!lastAudioUnavailable || lastAudioUnavailable < lastConn);
-    return { ok, lastConn, lastAudioUnavailable };
-  }, [messages, state]);
-
-  const outputDialog = useMemo(() => {
-    const ordered = messages
-      .filter((m) => {
-        if (m.role !== "model") return false;
-        const src = String(m.metadata?.source || "");
-        const sev = String(m.metadata?.severity || "info");
-        const cat = String(m.metadata?.category || "");
-        // Include explicit output transcripts and normal assistant text. Exclude debug.
-        if (sev === "debug") return false;
-        if (src === "output") return true;
-        if (cat === "live") return true;
-        return false;
-      })
-      .slice()
-      .sort((a, b) => {
-        const ta = a.timestamp?.getTime?.() ? a.timestamp.getTime() : 0;
-        const tb = b.timestamp?.getTime?.() ? b.timestamp.getTime() : 0;
-        if (ta !== tb) return ta - tb;
-        return String(a.id || "").localeCompare(String(b.id || ""));
-      });
-
-    const dialog: Array<{ id: string; text: string }> = [];
-    for (const m of ordered) {
-      const sents = splitSentences(String(m.text || ""));
-      for (let i = 0; i < sents.length; i++) {
-        const sent = sents[i];
-        const isLast = i === sents.length - 1;
-        const id = `${m.id}_s${i}`;
-        if (isLast && !sent.complete && dialog.length) {
-          // Update the last line (merge partials) so live streaming doesn't spam.
-          dialog[dialog.length - 1] = { ...dialog[dialog.length - 1], text: sent.t };
-        } else {
-          dialog.push({ id, text: sent.t });
-        }
-      }
-    }
-
-    return dialog.slice(-200);
-  }, [messages]);
-
-  const outputChat = useMemo(() => {
-    const ordered = messages
-      .filter((m) => {
-        const t = String(m.text || "").trim();
-
-        if (!t) return false;
-        if (m.role === "user" || m.role === "model") return true;
-        if (m.role === "system") return true;
-        return false;
-      })
-      .slice()
-      .sort((a, b) => {
-        const ta = a.timestamp?.getTime?.() ? a.timestamp.getTime() : 0;
-        const tb = b.timestamp?.getTime?.() ? b.timestamp.getTime() : 0;
-        if (ta !== tb) return ta - tb;
-        return String(a.id || "").localeCompare(String(b.id || ""));
-      });
-    return ordered.slice(-200);
-  }, [messages]);
-
-  const copyText = useCallback(async (text: string) => {
-    const t = String(text || "");
-    if (!t) return;
+  // Readiness handler
+  const handleReadiness = useCallback((ev: WsReadinessEvent) => {
     try {
-      if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-        await navigator.clipboard.writeText(t);
-        return;
-      }
+      const phase = String(ev?.phase || "").trim();
+      if (!phase) return;
+      readinessPhaseRef.current = phase;
+      setReadinessPhase(phase);
+      setReadinessSinceMs((prev) => (prev ? prev : typeof ev?.ts === "number" ? ev.ts : Date.now()));
     } catch {
-    }
-    try {
-      const ta = document.createElement("textarea");
-      ta.value = t;
-      ta.setAttribute("readonly", "true");
-      ta.style.position = "fixed";
-      ta.style.opacity = "0";
-      ta.style.left = "-9999px";
-      ta.style.top = "0";
-      document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-    } catch {
+      // ignore
     }
   }, []);
 
-  const clientLabelForMsg = useCallback((m: MessageLog): string => {
-    const tag = String((m.metadata as any)?.ws?.client_tag || "").trim();
-    const id = String((m.metadata as any)?.ws?.client_id || "").trim();
-    const suffix = id ? id.slice(-6) : "";
-    if (tag && suffix) return `${tag}:${suffix}`;
-    if (tag) return tag;
-    if (suffix) return suffix;
-    return "";
-  }, []);
+  // Message log hook
+  const {
+    messages,
+    setMessages,
+    resumeHydratedRef,
+    lastActivityTextRef,
+    lastActivityTsRef,
+    activeMedia,
+    setActiveMedia,
+    handleMessage,
+  } = useMessageLog({
+    appendUiLogEntry,
+    scheduleUiLogFlush,
+    readinessPhaseRef,
+    showDebugLogsRef,
+  });
 
-  useEffect(() => {
-    const checkKey = async () => {
-      try {
-        if ((window as any).aistudio && (await (window as any).aistudio.hasSelectedApiKey())) {
-          setHasKey(true);
-        }
-      } catch {
-        // ignore
-      }
-    };
-    void checkKey();
-  }, []);
+  // Derived state hooks
+  const systemCounts = useSystemCounts(messages);
+  const audioStatus = useAudioStatus(messages, state);
+  const { outputDialog, outputChat } = useOutputDialog(messages);
 
-  useEffect(() => {
-    if (!hasKey) return;
-
-    liveService.current = new LiveService();
-    liveService.current.onStateChange = setState;
-    liveService.current.onVolume = setVolume;
-    liveService.current.onReadiness = (ev) => {
-      try {
-        const phase = String(ev?.phase || "").trim();
-        if (!phase) return;
-        readinessPhaseRef.current = phase;
-        setReadinessPhase(phase);
-        setReadinessSinceMs((prev) => (prev ? prev : typeof ev?.ts === "number" ? ev.ts : Date.now()));
-      } catch {
-        // ignore
-      }
-    };
-    liveService.current.onPendingEvent = (ev) => {
+  // LiveService hook
+  const { liveService, handleConnect } = useLiveService({
+    hasKey,
+    onMessage: handleMessage,
+    onReadiness: handleReadiness,
+    onPendingEvent: useCallback((ev) => {
       try {
         const event = String((ev as any)?.event || "").trim();
         const cid = String((ev as any)?.confirmation_id || "").trim();
@@ -337,8 +178,8 @@ export default function App() {
       } catch {
         // ignore
       }
-    };
-    liveService.current.onCarsIngestResult = (ev) => {
+    }, [refreshPending, previewPending]),
+    onCarsIngestResult: useCallback((ev) => {
       setMessages((prev) => [
         ...prev,
         {
@@ -349,141 +190,114 @@ export default function App() {
         },
       ]);
       setActiveRightPanel("cars");
-    };
+    }, [setMessages]),
+    setState,
+    setVolume,
+    setActiveRightPanel,
+    setActiveOutputTab,
+    refreshPending,
+    previewPending,
+  });
 
-    liveService.current.onMessage = (msg) => {
-      try {
-        appendUiLogEntry(msg);
-        scheduleUiLogFlush();
-      } catch {
-        // ignore
+
+  // Composer hook
+  const [attachments, setAttachments] = useState<
+    Array<{ id: string; name: string; size: number; kind: "image" | "pdf" | "text"; text?: string }>
+  >([]);
+
+  const {
+    composerText,
+    setComposerText,
+    handleSendComposer,
+    handlePickFiles,
+    handleFilesSelected,
+    handleRemoveAttachment,
+    fileInputRef,
+  } = useComposer({
+    liveService,
+    state,
+    setMessages,
+    setAttachments,
+    attachments,
+    setActiveRightPanel,
+    setActiveOutputTab,
+    refreshPending,
+  });
+
+  // Talking state
+  const [isTalking, setIsTalking] = useState(false);
+  const handleToggleTalk = useCallback(() => {
+    if (state !== ConnectionState.CONNECTED) return;
+    if (!isTalking) {
+      liveService.current?.startStreaming();
+      setIsTalking(true);
+    } else {
+      liveService.current?.stopStreaming();
+      setIsTalking(false);
+    }
+  }, [state, isTalking, liveService]);
+
+  // Camera frame handler
+  const handleFrame = useCallback((base64: string) => {
+    liveService.current?.updateCameraFrame(base64);
+  }, [liveService]);
+
+  // Copy text helper
+  const copyText = useCallback(async (text: string) => {
+    const t = String(text || "");
+    if (!t) return;
+    try {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+        await navigator.clipboard.writeText(t);
+        return;
       }
+    } catch {
+      // ignore
+    }
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = t;
+      ta.setAttribute("readonly", "true");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      ta.style.left = "-9999px";
+      ta.style.top = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    } catch {
+      // ignore
+    }
+  }, []);
 
-      // Track what Jarvis was doing, so if we disconnect we can show context.
+  // Client label helper
+  const clientLabelForMsg = useCallback((m: MessageLog): string => {
+    const tag = String((m.metadata as any)?.ws?.client_tag || "").trim();
+    const id = String((m.metadata as any)?.ws?.client_id || "").trim();
+    const suffix = id ? id.slice(-6) : "";
+    if (tag && suffix) return `${tag}:${suffix}`;
+    if (tag) return tag;
+    if (suffix) return suffix;
+    return "";
+  }, []);
+
+  // Check API key on mount
+  useEffect(() => {
+    const checkKey = async () => {
       try {
-        const txt = String((msg as any)?.text || "").trim();
-        const sev = String((msg as any)?.metadata?.severity || "").trim();
-        const cat = String((msg as any)?.metadata?.category || "").trim();
-        const ts = msg.timestamp instanceof Date ? msg.timestamp.getTime() : Date.now();
-        const isActivity = msg.id === "sticky_progress" || (msg.role === "system" && !!txt && (cat === "ws" || cat === "live") && sev !== "debug");
-        if (isActivity) {
-          lastActivityTextRef.current = txt;
-          lastActivityTsRef.current = ts;
+        if ((window as any).aistudio && (await (window as any).aistudio.hasSelectedApiKey())) {
+          setHasKey(true);
         }
-      } catch {
-        // ignore
-      }
-
-      // Policy (3): suppress autospeak triggers until the backend model is ready.
-      // This avoids the confusing "autospeak: triggering" followed by seconds of silence.
-      try {
-        const txt = String((msg as any)?.text || "").trim();
-        if (txt.toLowerCase().startsWith("autospeak:")) {
-          if (readinessPhaseRef.current !== "model_ready") {
-            return;
-          }
-        }
-      } catch {
-        // ignore
-      }
-
-      try {
-        const resume = (msg as any)?.metadata?.resume;
-        const ok = resume?.ok === true;
-        const turns = Array.isArray(resume?.turns) ? resume.turns : [];
-        if (ok && turns.length && !resumeHydratedRef.current) {
-          resumeHydratedRef.current = true;
-          const resumed: MessageLog[] = turns
-            .map((t: any, i: number) => {
-              const role = String(t?.role || "").trim() === "user" ? "user" : "model";
-              const text = String(t?.text || "");
-              const ts = typeof t?.ts === "number" ? t.ts : Date.now();
-              return {
-                id: `resume_${i}_${ts}`,
-                role: role as any,
-                text,
-                timestamp: new Date(ts),
-              };
-            })
-            .filter((m) => String(m.text || "").trim());
-
-          setMessages((prev) => {
-            const keepSystem = prev.filter((m) => m.role === "system");
-            return [...keepSystem, ...resumed];
-          });
-        }
-      } catch {
-        // ignore
-      }
-
-      try {
-        const txt = String((msg as any)?.text || "").trim();
-        const isAutospeakLine = /\bauto\s*speak\b/i.test(txt) || /\bautospeek\b/i.test(txt);
-        if (isAutospeakLine) {
-          if (!showDebugLogsRef.current) return;
-          if (readinessPhaseRef.current !== "model_ready") return;
-        }
-      } catch {
-        // ignore
-      }
-
-      setMessages((prev) => {
-        if (msg.id === "sticky_progress") {
-          const without = prev.filter((m) => m.id !== "sticky_progress");
-          const txt = String(msg.text || "").trim();
-          if (!txt) return without;
-          return [...without, msg];
-        }
-
-        // Group rapid-fire short text chunks into a single line for a cleaner Operation Log,
-        // especially for Thai STT fragments.
-        try {
-          const nextTxt = String(msg.text || "");
-          const nextTrim = nextTxt.trim();
-          const last = prev.length ? prev[prev.length - 1] : null;
-          const nextTs = msg.timestamp instanceof Date ? msg.timestamp.getTime() : Date.now();
-          const lastTs = last?.timestamp instanceof Date ? last.timestamp.getTime() : 0;
-          const withinWindow = lastTs > 0 && nextTs - lastTs >= 0 && nextTs - lastTs <= 1600;
-          const canMergeRole = last && last.role === msg.role && (msg.role === "model" || msg.role === "system");
-          const isTimeFragment = /^\d{1,2}:\d{2}(?:\s*(?:น\.|am|pm))?\s*$/i.test(nextTrim);
-          const looksLikeChunk = (nextTrim.length > 0 && nextTrim.length <= 40 && !nextTrim.includes("\n")) || isTimeFragment;
-          const lastTxt = last ? String(last.text || "") : "";
-          const lastTrim = lastTxt.trim();
-          const lastLooksLikeChunk = lastTrim.length > 0 && lastTrim.length <= 60 && !lastTrim.includes("\n");
-          const lastEndsSentence = /[.!?…。、！？]$/.test(lastTrim);
-          const nextStartsNewSentence = /^[A-Z0-9]/.test(nextTrim);
-          if (withinWindow && canMergeRole && looksLikeChunk && lastLooksLikeChunk && !lastEndsSentence && !nextStartsNewSentence) {
-            const lastEndsThai = /[\u0E00-\u0E7F]$/.test(lastTrim);
-            const nextStartsThai = /^[\u0E00-\u0E7F]/.test(nextTrim);
-            const isThaiBoundary = lastEndsThai && nextStartsThai;
-            const lastEndsWithThaiTimeCue = /เวลา\s*$/.test(lastTrim);
-            const joiner = isThaiBoundary ? "" : /\s$/.test(lastTxt) ? "" : " ";
-            const joiner2 = lastEndsWithThaiTimeCue && isTimeFragment ? " " : joiner;
-            const merged: any = { ...last, text: `${lastTxt}${joiner}${nextTrim}`, timestamp: msg.timestamp };
-            merged.text = `${lastTxt}${joiner2}${nextTrim}`;
-            return [...prev.slice(0, -1), merged];
-          }
-        } catch {
-          // ignore
-        }
-
-        return [...prev, msg];
-      });
-
-      if (msg.metadata) {
-        setActiveMedia(msg);
-      }
-    };
-
-    return () => {
-      try {
-        void liveService.current?.disconnect();
       } catch {
         // ignore
       }
     };
-  }, [hasKey, appendUiLogEntry, previewPending, refreshPending, scheduleUiLogFlush]);
+    void checkKey();
+  }, []);
 
+  // Reset readiness on disconnect
   useEffect(() => {
     if (state !== ConnectionState.CONNECTED) {
       readinessPhaseRef.current = "";
@@ -492,6 +306,8 @@ export default function App() {
     }
   }, [state]);
 
+  // Show disconnect context
+  const prevConnStateRef = useRef<ConnectionState>(ConnectionState.DISCONNECTED);
   useEffect(() => {
     const prev = prevConnStateRef.current;
     prevConnStateRef.current = state;
@@ -515,11 +331,13 @@ export default function App() {
     } catch {
       // ignore
     }
-  }, [state]);
+  }, [state, setMessages]);
 
+  // Auto scroll
   useAutoScroll(logScrollRef, logStickToBottomRef, [messages, showDebugLogs]);
   useAutoScroll(outputScrollRef, outputStickToBottomRef, [outputDialog]);
 
+  // Persist status details open
   useEffect(() => {
     try {
       window.localStorage.setItem("jarvis_status_details_open", statusDetailsOpen ? "1" : "0");
@@ -528,527 +346,22 @@ export default function App() {
     }
   }, [statusDetailsOpen]);
 
+  // Update showDebugLogs ref
   useEffect(() => {
     showDebugLogsRef.current = !!showDebugLogs;
   }, [showDebugLogs]);
 
+  // Reset talking state on disconnect
   useEffect(() => {
     if (state !== ConnectionState.CONNECTED && isTalking) {
       setIsTalking(false);
     }
   }, [state, isTalking]);
 
-  const handleConnect = () => {
-    if (state === ConnectionState.DISCONNECTED || state === ConnectionState.ERROR) {
-      liveService.current?.connect();
-    } else {
-      liveService.current?.stopStreaming();
-      setIsTalking(false);
-      liveService.current?.disconnect();
-    }
-  };
+  // Fullscreen escape
+  useFullscreenEscape(leftFullscreen, setLeftFullscreen);
 
-  const handlePickFiles = () => {
-    if (state !== ConnectionState.CONNECTED) return;
-    fileInputRef.current?.click();
-  };
-
-  const handleFilesSelected = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    const next: Array<{
-      id: string;
-      name: string;
-      size: number;
-      kind: "image" | "pdf" | "text";
-      text?: string;
-    }> = [];
-    for (const f of Array.from(files)) {
-      const name = String(f.name || "file");
-      const size = Number(f.size || 0);
-      const type = String(f.type || "");
-      const isPdf = type === "application/pdf" || name.toLowerCase().endsWith(".pdf");
-      const isImage = type.startsWith("image/");
-      const isText = type.startsWith("text/") || name.toLowerCase().endsWith(".md") || name.toLowerCase().endsWith(".json");
-      if (!isPdf && !isImage && !isText) {
-        setMessages((prev) => [
-          {
-            id: `${Date.now()}_attach_err_${Math.random().toString(16).slice(2)}`,
-            role: "system",
-            text: `unsupported_file_type: ${name}`,
-            timestamp: new Date(),
-          },
-          ...prev,
-        ]);
-        continue;
-      }
-      if (isImage && size > 5 * 1024 * 1024) {
-        setMessages((prev) => [
-          {
-            id: `${Date.now()}_attach_err_${Math.random().toString(16).slice(2)}`,
-            role: "system",
-            text: `image_too_large(5MB): ${name}`,
-            timestamp: new Date(),
-          },
-          ...prev,
-        ]);
-        continue;
-      }
-      if (isPdf && size > 10 * 1024 * 1024) {
-        setMessages((prev) => [
-          {
-            id: `${Date.now()}_attach_err_${Math.random().toString(16).slice(2)}`,
-            role: "system",
-            text: `pdf_too_large(10MB): ${name}`,
-            timestamp: new Date(),
-          },
-          ...prev,
-        ]);
-        continue;
-      }
-      let text: string | undefined = undefined;
-      let kind: "image" | "pdf" | "text" = isPdf ? "pdf" : isImage ? "image" : "text";
-      if (kind === "text") {
-        try {
-          text = await f.text();
-        } catch {
-          text = "";
-        }
-      }
-      next.push({
-        id: `${Date.now()}_${Math.random().toString(16).slice(2)}`,
-        name,
-        size,
-        kind,
-        text,
-      });
-    }
-    if (next.length) setAttachments((prev) => [...next, ...prev]);
-  };
-
-  const handleRemoveAttachment = (id: string) => {
-    setAttachments((prev) => prev.filter((a) => a.id !== id));
-  };
-
-  const handleSendComposer = () => {
-    if (state !== ConnectionState.CONNECTED) return;
-    const base = composerText.trim();
-    const normalized = normalizeComposerText(base);
-
-    const sysSet = parseSysSet(normalized);
-    if (sysSet) {
-      liveService.current?.sendSysKvSet(sysSet.key, sysSet.value, { dry_run: sysSet.dryRun });
-      setComposerText("");
-      setAttachments([]);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `${Date.now()}_sys_set_ui`,
-          role: "system",
-          text: `${sysSet.dryRun ? "sys_kv_set (dry_run)" : "sys_kv_set"}: ${sysSet.key}=${sysSet.value}`,
-          timestamp: new Date(),
-          metadata: { severity: "info", category: "ws" },
-        },
-        {
-          id: `${Date.now()}_sys_set_hint`,
-          role: "system",
-          text: "Hint: run 'reload system' to apply sys changes.",
-          timestamp: new Date(),
-          metadata: { severity: "debug", category: "ws" },
-        },
-      ]);
-      return;
-    }
-
-    const sysDedupe = parseSysDedupe(normalized);
-    if (sysDedupe) {
-      liveService.current?.sendSysKvDedupe({ dry_run: sysDedupe.dryRun, sort: sysDedupe.sort });
-      setComposerText("");
-      setAttachments([]);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `${Date.now()}_sys_dedupe_ui`,
-          role: "system",
-          text: `${sysDedupe.dryRun ? "sys_kv_dedupe (dry_run)" : "sys_kv_dedupe"}${sysDedupe.sort ? " (sort)" : ""}`,
-          timestamp: new Date(),
-          metadata: { severity: "info", category: "ws" },
-        },
-      ]);
-      return;
-    }
-
-    if (normalized.toLowerCase() === "system clear job" || normalized.toLowerCase() === "sys clear job") {
-      liveService.current?.sendSystemClearJob();
-      setComposerText("");
-      setAttachments([]);
-      return;
-    }
-
-    const jsonToolReq = parseJsonToolRequest(base);
-    if (jsonToolReq) {
-      setComposerText("");
-      setAttachments([]);
-      const toolName = String(jsonToolReq.name || "").trim();
-      const args = jsonToolReq.args && typeof jsonToolReq.args === "object" ? jsonToolReq.args : {};
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `${Date.now()}_ui_json_tool_${Math.random().toString(16).slice(2)}`,
-          role: "system",
-          text: `ui: tool ${toolName}`,
-          timestamp: new Date(),
-          metadata: {
-            severity: "info",
-            category: "ws",
-            raw: {
-              type: "ui",
-              kind: "tool",
-              title: toolName,
-              body: (() => {
-                try {
-                  return JSON.stringify(args, null, 2);
-                } catch {
-                  return String(args);
-                }
-              })(),
-              risk: "low",
-              primary: { label: "Run", tool: toolName, args },
-            },
-          },
-        },
-      ]);
-      return;
-    }
-
-    const toolInvoke = parseToolInvoke(normalized);
-    if (toolInvoke) {
-      setComposerText("");
-      setAttachments([]);
-
-      if ((toolInvoke.args as any)?.__invalid_tool_prefix) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `${Date.now()}_tool_invalid_prefix`,
-            role: "system",
-            text: `tool rejected (prefix): ${toolInvoke.name}`,
-            timestamp: new Date(),
-            metadata: { severity: "warn", category: "ws" },
-          },
-        ]);
-        return;
-      }
-      if ((toolInvoke.args as any)?.__invalid_tool_args) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `${Date.now()}_tool_invalid_args`,
-            role: "system",
-            text: `tool args must be a JSON object: ${toolInvoke.name}`,
-            timestamp: new Date(),
-            metadata: { severity: "warn", category: "ws" },
-          },
-        ]);
-        return;
-      }
-      try {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `${Date.now()}_tool_ui`,
-            role: "system",
-            text: `tool: ${toolInvoke.name}`,
-            timestamp: new Date(),
-            metadata: { severity: "info", category: "ws" },
-          },
-        ]);
-        void liveService.current
-          ?.invokeTool(toolInvoke.name, toolInvoke.args)
-          .catch((e: any) => {
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: `${Date.now()}_tool_send_err`,
-                role: "system",
-                text: `tool failed: ${toolInvoke.name} (${String(e?.message || e || "tool_failed")})`,
-                timestamp: new Date(),
-                metadata: { severity: "error", category: "ws" },
-              },
-            ]);
-          });
-      } catch (e: any) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `${Date.now()}_tool_send_throw`,
-            role: "system",
-            text: `tool failed: ${toolInvoke.name} (${String(e?.message || e || "tool_failed")})`,
-            timestamp: new Date(),
-            metadata: { severity: "error", category: "ws" },
-          },
-        ]);
-      }
-      return;
-    }
-
-    const isReloadSystemPhrase = (text: string): boolean => {
-      const s = String(text || "").trim().toLowerCase();
-      if (!s) return false;
-
-      const compact = s.replace(/[^a-z0-9\u0E00-\u0E7F]+/g, " ").trim().replace(/\s+/g, " ");
-      if (!compact) return false;
-      // Keep permissive matching (voice + typed).
-      if (compact === "reload" || compact === "reset" || compact === "restart" || compact === "reboot") return true;
-      if (compact.includes("reload system") || compact.includes("reload sheets")) return true;
-      if ((compact.includes("reload") || compact.includes("reset") || compact.includes("restart") || compact.includes("reboot")) && (compact.includes("system") || compact.includes("sheets") || compact.includes("sheet") || compact.includes("sys"))) {
-        return true;
-      }
-      // Thai triggers.
-      if (compact.includes("รีโหลด") || compact.includes("โหลดใหม่") || compact.includes("รีเซ็ต") || compact.includes("เริ่มใหม่")) {
-        if (compact.includes("ระบบ") || compact.includes("ชีต") || compact.includes("ชีท") || compact.includes("sheet") || compact.includes("sheets")) return true;
-      }
-      return false;
-    };
-
-    const extractSystemReloadMode = (text: string): "full" | "memory" | "knowledge" | "sys" => {
-      const s = String(text || "").trim().toLowerCase();
-      const compact = s.replace(/[^a-z0-9\u0E00-\u0E7F]+/g, " ").trim().replace(/\s+/g, " ");
-      const has = (w: string) => compact.includes(w);
-      if (has("knowledge") || has("kb") || has("know") || has("ความรู้")) return "knowledge";
-      if (has("memory") || has("mem") || has("เมม") || has("เมมโม")) return "memory";
-      return "full";
-    };
-
-    if (base && isReloadSystemPhrase(base)) {
-      const mode = extractSystemReloadMode(base);
-      try {
-        const svc = liveService.current as any;
-        if (svc?.invokeTool) {
-          void svc.invokeTool("system_reload_queue", { mode }).then(
-            () => {
-              setActiveRightPanel("output");
-              setActiveOutputTab("pending");
-              void refreshPending();
-            },
-            () => {
-              liveService.current?.sendSystemReload(mode);
-            }
-          );
-        } else {
-          liveService.current?.sendSystemReload(mode);
-        }
-      } catch {
-        liveService.current?.sendSystemReload(mode);
-      }
-      setComposerText("");
-      setAttachments([]);
-      return;
-    }
-
-    const reminderText = base ? extractReminderAddText(base) : null;
-    if (reminderText) {
-      liveService.current?.sendRemindersAdd(reminderText);
-      setComposerText("");
-      setAttachments([]);
-      return;
-    }
-
-    const textAttachments = attachments.filter((a) => a.kind === "text" && typeof a.text === "string");
-    const pendingAttachments = attachments.filter((a) => a.kind !== "text");
-    const blocks: string[] = [];
-
-    if (base) blocks.push(base);
-    for (const a of textAttachments) {
-      const body = String(a.text || "");
-      blocks.push(`Attached file: ${a.name}\n\n\`\`\`\n${body}\n\`\`\``);
-    }
-
-    if (pendingAttachments.length) {
-      const summary = pendingAttachments
-        .map((a) => `${a.name} (${a.kind}, ${Math.round(a.size / 1024)}KB)`)
-        .join(", ");
-      blocks.push(`Attachments pending (not extracted yet): ${summary}`);
-    }
-    const finalText = blocks.join("\n\n").trim();
-    if (!finalText) return;
-    const traceId = liveService.current?.sendText(finalText) || undefined;
-    setComposerText("");
-    setAttachments([]);
-    setMessages((prev) => [
-      {
-        id: `${Date.now()}_user_text`,
-        role: "user",
-        text: base || "(sent attachments)",
-        timestamp: new Date(),
-        metadata: {
-          trace_id: traceId,
-          ws: { type: "text" },
-          raw: { type: "text", text: finalText, trace_id: traceId },
-        },
-      },
-      ...prev,
-    ]);
-  };
-
-  const handleToggleTalk = () => {
-    if (state !== ConnectionState.CONNECTED) return;
-    if (!isTalking) {
-      liveService.current?.startStreaming();
-      setIsTalking(true);
-    } else {
-      liveService.current?.stopStreaming();
-      setIsTalking(false);
-    }
-  };
-
-  const handleFrame = useCallback((base64: string) => {
-    liveService.current?.updateCameraFrame(base64);
-  }, []);
-
-  const handleSelectKey = async () => {
-    if ((window as any).aistudio) {
-      try {
-        await (window as any).aistudio.openSelectKey();
-      } catch (e) {
-        console.error("Key selection failed", e);
-      }
-    }
-    setHasKey(true);
-  };
-
-  const [containerStatus, setContainerStatus] = useState<any>(null);
-  const [containerStatusError, setContainerStatusError] = useState<string>("");
-  const [uiCardInputByMsgId, setUiCardInputByMsgId] = useState<Record<string, string>>({});
-
-  const [depsStatus, setDepsStatus] = useState<any>(null);
-  const [depsStatusError, setDepsStatusError] = useState<string>("");
-  const [depsStatusRefreshNonce, setDepsStatusRefreshNonce] = useState<number>(0);
-
-  useEffect(() => {
-    if (hasKey) return;
-    let cancelled = false;
-    const fetchOnce = async () => {
-      try {
-        setContainerStatusError("");
-        const joinUrl = (base: string, path: string): string => {
-          const b = String(base || "").replace(/\/+$/, "");
-          let p = String(path || "");
-          if (!b) return p;
-
-          if (b.endsWith("/api") && p.startsWith("/api/")) p = p.slice("/api".length);
-          if (b.endsWith("/jarvis") && p.startsWith("/jarvis/")) p = p.slice("/jarvis".length);
-          if (b.endsWith("/jarvis/api") && p.startsWith("/jarvis/api/")) p = p.slice("/jarvis/api".length);
-
-          return `${b}${p}`;
-        };
-
-        const pathsToTry = ["/api/status", "/status", "/jarvis/api/status", "/jarvis/status", "/status"];
-        let lastErr = "status_fetch_failed";
-        let okJson: any = null;
-
-        outer: for (const base of backendCandidates()) {
-          for (const p of pathsToTry) {
-            try {
-              const attempt = await fetch(joinUrl(base, p), { cache: "no-store" });
-              if (!attempt || !attempt.ok) {
-                if (attempt) lastErr = `status_fetch_failed (http ${attempt.status})`;
-                continue;
-              }
-
-              // If the server returns HTML (e.g. /jarvis/ index), do NOT accept it.
-              const ct = String(attempt.headers.get("content-type") || "").toLowerCase();
-              const bodyText = await attempt.text();
-              const trimmed = String(bodyText || "").trim();
-              if (!trimmed) {
-                lastErr = `status_error: empty response (http ${attempt.status})`;
-                continue;
-              }
-
-              // Prefer explicit JSON content-type, but also allow valid JSON even if content-type is wrong.
-              if (ct && !ct.includes("json") && (trimmed.startsWith("<!doctype") || trimmed.startsWith("<html") || trimmed.startsWith("<"))) {
-                const preview = trimmed.length > 220 ? trimmed.slice(0, 220) + "…" : trimmed;
-                lastErr = `status_error: non_json_response (http ${attempt.status}) preview=${preview}`;
-                continue;
-              }
-
-              try {
-                okJson = JSON.parse(trimmed);
-                break outer;
-              } catch {
-                const preview = trimmed.length > 220 ? trimmed.slice(0, 220) + "…" : trimmed;
-                lastErr = `status_error: invalid json (http ${attempt.status}) preview=${preview}`;
-                continue;
-              }
-            } catch (e: any) {
-              lastErr = String(e?.message || e || "status_fetch_failed");
-              continue;
-            }
-          }
-        }
-
-        if (okJson == null) throw new Error(lastErr);
-        if (!cancelled) setContainerStatus(okJson);
-      } catch (e: any) {
-        if (!cancelled) {
-          setContainerStatus(null);
-          setContainerStatusError(String(e?.message || e || "status_fetch_failed"));
-        }
-      }
-    };
-    void fetchOnce();
-    const t = window.setInterval(fetchOnce, 5000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(t);
-    };
-  }, [hasKey, backendCandidates]);
-
-  useEffect(() => {
-    if (!hasKey) return;
-    if (!statusDetailsOpen) return;
-    let cancelled = false;
-    const fetchOnce = async () => {
-      try {
-        setDepsStatusError("");
-        let res: Response | null = null;
-        try {
-          res = await fetch("/jarvis/api/debug/status", { cache: "no-store" });
-        } catch {
-          res = null;
-        }
-
-        if (!res || !res.ok) {
-          throw new Error(`status_http_${res ? res.status : "fetch_failed"}`);
-        }
-
-        const bodyText = await res.text();
-        const trimmed = String(bodyText || "").trim();
-        if (!trimmed) {
-          throw new Error(`deps_status_error: empty response (http ${res.status})`);
-        }
-        let js: any = null;
-        try {
-          js = JSON.parse(trimmed);
-        } catch {
-          const preview = trimmed.length > 220 ? trimmed.slice(0, 220) + "…" : trimmed;
-          throw new Error(`deps_status_error: invalid json (http ${res.status}) preview=${preview}`);
-        }
-        if (!cancelled) setDepsStatus(js);
-      } catch (e: any) {
-        if (!cancelled) {
-          setDepsStatus(null);
-          setDepsStatusError(String(e?.message || e || "deps_status_fetch_failed"));
-        }
-      }
-    };
-    void fetchOnce();
-    const t = window.setInterval(fetchOnce, 60000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(t);
-    };
-  }, [hasKey, statusDetailsOpen, depsStatusRefreshNonce]);
-
+  // Sequential task handlers
   const getSeqCompletedTasks = useCallback((): Array<{ notes?: string }> => {
     const raw = String(seqCompletedNotes || "").trim();
     if (!raw) return [];
@@ -1086,13 +399,12 @@ export default function App() {
     }
   }, [applySeqResponse, getSeqCompletedTasks, seqNotes]);
 
-  const handleSeqApply = async () => {
+  const handleSeqApply = useCallback(async () => {
     if (seqNextIndex == null) return;
     setSeqBusy(true);
     setSeqError("");
     try {
       const completed_tasks = getSeqCompletedTasks();
-
       const res = await sequentialApplyAndSuggest({
         mode: "index",
         notes: seqNotes,
@@ -1105,16 +417,15 @@ export default function App() {
     } finally {
       setSeqBusy(false);
     }
-  };
+  }, [applySeqResponse, getSeqCompletedTasks, seqNotes, seqNextIndex]);
 
-  const handleSeqApplyByText = async () => {
+  const handleSeqApplyByText = useCallback(async () => {
     const stepText = String(seqNextText || "").trim();
     if (!stepText) return;
     setSeqBusy(true);
     setSeqError("");
     try {
       const completed_tasks = getSeqCompletedTasks();
-
       const res = await sequentialApplyAndSuggest({
         mode: "text",
         notes: seqNotes,
@@ -1127,9 +438,9 @@ export default function App() {
     } finally {
       setSeqBusy(false);
     }
-  };
+  }, [applySeqResponse, getSeqCompletedTasks, seqNotes, seqNextText]);
 
-  const handleSeqApplyAll = async () => {
+  const handleSeqApplyAll = useCallback(async () => {
     setSeqBusy(true);
     setSeqError("");
     try {
@@ -1141,11 +452,162 @@ export default function App() {
     } finally {
       setSeqBusy(false);
     }
-  };
+  }, [applySeqResponse, getSeqCompletedTasks, seqNotes]);
 
-  useFullscreenEscape(leftFullscreen, setLeftFullscreen);
+  // WS Log fetch
+  const [wsLogText, setWsLogText] = useState<string>("");
+  const [wsLogErr, setWsLogErr] = useState<string>("");
+  const refreshWsLog = useCallback(async () => {
+    setWsLogErr("");
+    for (const base of backendCandidates()) {
+      try {
+        const effectiveBase = base ? base : "/jarvis/api";
+        const res = await fetch(`${effectiveBase}/logs/ws/today?max_bytes=200000`, { method: "GET" });
+        if (!res.ok) continue;
+        const j = await res.json();
+        const txt = j?.text != null ? String(j.text) : "";
+        setWsLogText(txt);
+        return;
+      } catch {
+        // try next
+      }
+    }
+    setWsLogErr("failed_to_fetch_ws_log");
+  }, [backendCandidates]);
 
+  // Container status fetch
+  useEffect(() => {
+    if (hasKey) return;
+    let cancelled = false;
+    const fetchOnce = async () => {
+      try {
+        setContainerStatusError("");
+        const joinUrl = (base: string, path: string): string => {
+          const b = String(base || "").replace(/\/+$/, "");
+          let p = String(path || "");
+          if (!b) return p;
+          if (b.endsWith("/api") && p.startsWith("/api/")) p = p.slice("/api".length);
+          if (b.endsWith("/jarvis") && p.startsWith("/jarvis/")) p = p.slice("/jarvis".length);
+          if (b.endsWith("/jarvis/api") && p.startsWith("/jarvis/api/")) p = p.slice("/jarvis/api".length);
+          return `${b}${p}`;
+        };
+
+        const pathsToTry = ["/api/status", "/status", "/jarvis/api/status", "/jarvis/status", "/status"];
+        let lastErr = "status_fetch_failed";
+        let okJson: any = null;
+
+        outer: for (const base of backendCandidates()) {
+          for (const p of pathsToTry) {
+            try {
+              const attempt = await fetch(joinUrl(base, p), { cache: "no-store" });
+              if (!attempt || !attempt.ok) {
+                if (attempt) lastErr = `status_fetch_failed (http ${attempt.status})`;
+                continue;
+              }
+              const ct = String(attempt.headers.get("content-type") || "").toLowerCase();
+              const bodyText = await attempt.text();
+              const trimmed = String(bodyText || "").trim();
+              if (!trimmed) {
+                lastErr = `status_error: empty response (http ${attempt.status})`;
+                continue;
+              }
+              if (ct && !ct.includes("json") && (trimmed.startsWith("<!doctype") || trimmed.startsWith("<html") || trimmed.startsWith("<"))) {
+                const preview = trimmed.length > 220 ? trimmed.slice(0, 220) + "…" : trimmed;
+                lastErr = `status_error: non_json_response (http ${attempt.status}) preview=${preview}`;
+                continue;
+              }
+              try {
+                okJson = JSON.parse(trimmed);
+                break outer;
+              } catch {
+                const preview = trimmed.length > 220 ? trimmed.slice(0, 220) + "…" : trimmed;
+                lastErr = `status_error: invalid json (http ${attempt.status}) preview=${preview}`;
+                continue;
+              }
+            } catch (e: any) {
+              lastErr = String(e?.message || e || "status_fetch_failed");
+              continue;
+            }
+          }
+        }
+
+        if (okJson == null) throw new Error(lastErr);
+        if (!cancelled) setContainerStatus(okJson);
+      } catch (e: any) {
+        if (!cancelled) {
+          setContainerStatus(null);
+          setContainerStatusError(String(e?.message || e || "status_fetch_failed"));
+        }
+      }
+    };
+    void fetchOnce();
+    const t = window.setInterval(fetchOnce, 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(t);
+    };
+  }, [hasKey, backendCandidates]);
+
+  // Deps status fetch
+  useEffect(() => {
+    if (!hasKey) return;
+    if (!statusDetailsOpen) return;
+    let cancelled = false;
+    const fetchOnce = async () => {
+      try {
+        setDepsStatusError("");
+        let res: Response | null = null;
+        try {
+          res = await fetch("/jarvis/api/debug/status", { cache: "no-store" });
+        } catch {
+          res = null;
+        }
+        if (!res || !res.ok) {
+          throw new Error(`status_http_${res ? res.status : "fetch_failed"}`);
+        }
+        const bodyText = await res.text();
+        const trimmed = String(bodyText || "").trim();
+        if (!trimmed) {
+          throw new Error(`deps_status_error: empty response (http ${res.status})`);
+        }
+        let js: any = null;
+        try {
+          js = JSON.parse(trimmed);
+        } catch {
+          const preview = trimmed.length > 220 ? trimmed.slice(0, 220) + "…" : trimmed;
+          throw new Error(`deps_status_error: invalid json (http ${res.status}) preview=${preview}`);
+        }
+        if (!cancelled) setDepsStatus(js);
+      } catch (e: any) {
+        if (!cancelled) {
+          setDepsStatus(null);
+          setDepsStatusError(String(e?.message || e || "deps_status_fetch_failed"));
+        }
+      }
+    };
+    void fetchOnce();
+    const t = window.setInterval(fetchOnce, 60000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(t);
+    };
+  }, [hasKey, statusDetailsOpen, depsStatusRefreshNonce]);
+
+  // Select key handler
+  const handleSelectKey = useCallback(async () => {
+    if ((window as any).aistudio) {
+      try {
+        await (window as any).aistudio.openSelectKey();
+      } catch (e) {
+        console.error("Key selection failed", e);
+      }
+    }
+    setHasKey(true);
+  }, []);
+
+  // Auth gate
   if (!hasKey) {
+    // Status icon helpers
     const renderHealthIcon = (healthRaw: any) => {
       const h = String(healthRaw || "").trim().toLowerCase();
       if (!h) return <HeartPulse className="w-3.5 h-3.5 text-slate-500" />;
@@ -1164,7 +626,6 @@ export default function App() {
 
     const deriveRows = (): Array<{ name: string; status: string; health: string; detail?: string }> => {
       const out: Array<{ name: string; status: string; health: string; detail?: string }> = [];
-
       const js = containerStatus;
       const arr = js && Array.isArray(js.containers) ? js.containers : null;
       if (arr) {
@@ -1179,8 +640,6 @@ export default function App() {
         }
         return out;
       }
-
-      // Fallback: current backend /status only reports jarvis-backend process status.
       if (js && typeof js === "object") {
         const name = String(js.service || "jarvis-backend").trim() || "jarvis-backend";
         const status = js.ok ? "running" : "error";
@@ -1193,7 +652,6 @@ export default function App() {
         }
         out.push({ name, status, health, detail: detail || undefined });
       }
-
       return out;
     };
 

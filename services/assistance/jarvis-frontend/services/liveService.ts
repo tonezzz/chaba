@@ -4,6 +4,16 @@ import { AudioManager, makeAudioManager, setupAudioInput, teardownAudio } from "
 import { buildDefaultVoiceCmdCfg, mergeVoiceCmdCfg, loadVoiceCmdCfg } from "./liveVoiceCmd";
 import { handleBackendMessage, HandlerContext } from "./liveMessageHandlers";
 
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const TOOL_TIMEOUT_MS = 20_000;
+const VOICE_CMD_CFG_CACHE_MS = 60_000;
+const KEEPALIVE_INTERVAL_MS = 25_000;
+const RECONNECT_BASE_DELAY_MS = 300;
+const RECONNECT_JITTER_MS = 500;
+
 export type CarsIngestResult = {
   type: "cars_ingest_result";
   request_id: string;
@@ -135,7 +145,7 @@ export class LiveService {
 				if (!cur) return;
 				this.toolPending.delete(traceId);
 				reject(new Error("tool_timeout"));
-			}, 20_000);
+			}, TOOL_TIMEOUT_MS);
 			this.toolPending.set(traceId, { resolve, reject, name: toolName, createdAt: Date.now(), timeoutId });
 			this.wsSend({ type: "tool", name: toolName, args: payloadArgs, trace_id: traceId });
 		});
@@ -143,7 +153,7 @@ export class LiveService {
 
 	private async ensureVoiceCmdCfgLoaded(force?: boolean): Promise<void> {
 		const now = Date.now();
-		if (!force && this.voiceCmdCfg && now - this.voiceCmdCfgLoadedAt < 60_000) return;
+		if (!force && this.voiceCmdCfg && now - this.voiceCmdCfgLoadedAt < VOICE_CMD_CFG_CACHE_MS) return;
 		this.voiceCmdCfg = await loadVoiceCmdCfg();
 		this.voiceCmdCfgLoadedAt = now;
 	}
@@ -306,10 +316,7 @@ export class LiveService {
 
 			const mySeq = ++this.wsSeq;
 			const am = this.audio;
-			try {
-				am.inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-				am.outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-			} catch { }
+			// AudioContexts are created lazily in ensureAudioInput() after user gesture
 
 			const backendUrl = (import.meta as any).env?.VITE_JARVIS_WS_URL as string | undefined;
 			const proto = location.protocol === "https:" ? "wss" : "ws";
@@ -343,7 +350,7 @@ export class LiveService {
 					if (this.keepaliveTimer != null) { window.clearInterval(this.keepaliveTimer); this.keepaliveTimer = null; }
 					this.keepaliveTimer = window.setInterval(() => {
 						try { if (this.ws && this.ws.readyState === WebSocket.OPEN) this.wsSend({ type: "ping", trace_id: this.createTraceId("ping") }); } catch { }
-					}, 25_000);
+					}, KEEPALIVE_INTERVAL_MS);
 				} catch { }
 				this.onReadiness({ phase: "ws_open", ts: Date.now() });
 				this.onMessage({
@@ -430,6 +437,12 @@ export class LiveService {
 		this.onStateChange(ConnectionState.DISCONNECTED);
 	}
 
+	private async reconnectWithBackoff(): Promise<void> {
+		try { await this.disconnect(); } catch { }
+		await new Promise((r) => setTimeout(r, RECONNECT_BASE_DELAY_MS + Math.floor(Math.random() * RECONNECT_JITTER_MS)));
+		await this.connect();
+	}
+
 	private makeHandlerCtx(): HandlerContext {
 		return {
 			ws: this.ws,
@@ -453,11 +466,7 @@ export class LiveService {
 			 * Bounded reconnect with jitter to prevent recursion storms.
 			 * Single attempt with 300ms + random 0-500ms delay.
 			 */
-			reconnectWithBackoff: async () => {
-				try { await this.disconnect(); } catch { }
-				await new Promise((r) => setTimeout(r, 300 + Math.floor(Math.random() * 500)));
-				await this.connect();
-			},
+			reconnectWithBackoff: () => this.reconnectWithBackoff(),
 		};
 	}
 }

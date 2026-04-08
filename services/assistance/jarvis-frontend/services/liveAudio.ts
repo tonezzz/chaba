@@ -66,47 +66,6 @@ export async function setupAudioInput(
 	am.inputWorkletNode.connect(am.inputAudioContext.destination);
 }
 
-export async function ensureAudioInput(
-	am: AudioManager,
-	stream: MediaStream,
-	createTraceId: (p: string) => string,
-	send: AudioSendFn,
-	onVolume: (v: number) => void,
-	onMessage: (msg: { id: string; role: string; text: string; timestamp: Date }) => void,
-): Promise<void> {
-	try {
-		if (!am.inputAudioContext) {
-			am.inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-		}
-		if (!am.outputAudioContext) {
-			am.outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-		}
-		if (!am.inputStream) {
-			am.audioInitError = null;
-			am.inputStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-		}
-		if (am.inputStream) {
-			await setupAudioInput(am, am.inputStream, createTraceId, send, onVolume);
-		}
-	} catch (audioErr: any) {
-		am.inputStream = null;
-		am.isStreamingAudio = false;
-		const name = String(audioErr?.name || "unknown");
-		const msg = String(audioErr?.message || audioErr || "unknown");
-		am.audioInitError = `${name}: ${msg}`;
-		try {
-			onMessage({
-				id: `${Date.now()}_audio_unavailable`,
-				role: "system",
-				text: `audio_unavailable: ${am.audioInitError}`,
-				timestamp: new Date(),
-			});
-		} catch {
-			// ignore
-		}
-	}
-}
-
 export async function teardownAudio(am: AudioManager): Promise<void> {
 	// Remove message handler first to prevent callbacks during teardown
 	if (am.inputWorkletNode) {

@@ -16,6 +16,15 @@ import {
 import { VoiceCmdConfig } from "../types";
 
 // ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const SYS_KV_QUIET_WINDOW_MS = 8_000;
+const SYS_KV_SET_QUIET_WINDOW_MS = 6_000;
+const UTTERANCE_DEDUP_WINDOW_MS = 3_000;
+const DEFAULT_VOICE_CMD_DEBOUNCE_MS = 10_000;
+
+// ---------------------------------------------------------------------------
 // Shared context passed into every handler
 // ---------------------------------------------------------------------------
 
@@ -86,8 +95,8 @@ export function shouldSuppressOutputMessage(
 		if (isTextMsg && t.startsWith("sys_kv_set ok")) return false;
 		return true;
 	}
-	if (ctx.lastSysKvSetAt && Date.now() - ctx.lastSysKvSetAt < 8_000 && t.includes("syskvs")) return true;
-	if (ctx.lastVoiceCommandName === "reload_system" && Date.now() - ctx.lastVoiceCommandAt < 8_000) {
+	if (ctx.lastSysKvSetAt && Date.now() - ctx.lastSysKvSetAt < SYS_KV_QUIET_WINDOW_MS && t.includes("syskvs")) return true;
+	if (ctx.lastVoiceCommandName === "reload_system" && Date.now() - ctx.lastVoiceCommandAt < SYS_KV_QUIET_WINDOW_MS) {
 		if ((t.includes("reload") || t.includes("reload system")) && t.includes("ambig")) return true;
 	}
 	return false;
@@ -113,7 +122,7 @@ function shouldAutoTriggerVoiceCommand(ctx: HandlerContext, key: string, debounc
 
 export async function handleBackendMessage(ctx: HandlerContext, message: any): Promise<void> {
 	const traceId = message?.trace_id != null ? String(message.trace_id) : undefined;
-	const quietAfterSysKvSet = ctx.lastSysKvSetAt && Date.now() - ctx.lastSysKvSetAt < 6_000;
+	const quietAfterSysKvSet = ctx.lastSysKvSetAt && Date.now() - ctx.lastSysKvSetAt < SYS_KV_SET_QUIET_WINDOW_MS;
 	const wsMeta = {
 		type: message?.type != null ? String(message.type) : undefined,
 		instance_id: message?.instance_id != null ? String(message.instance_id) : undefined,
@@ -412,7 +421,7 @@ export async function handleBackendMessage(ctx: HandlerContext, message: any): P
 			if (utterance) {
 				const now = Date.now();
 				const sameAsLast = ctx.lastSentUtteranceText && utterance === ctx.lastSentUtteranceText;
-				const recentlySent = now - ctx.lastSentUtteranceAt < 3_000;
+				const recentlySent = now - ctx.lastSentUtteranceAt < UTTERANCE_DEDUP_WINDOW_MS;
 				if (!(sameAsLast && recentlySent)) {
 					ctx.lastSentUtteranceText = utterance;
 					ctx.lastSentUtteranceAt = now;
@@ -425,7 +434,7 @@ export async function handleBackendMessage(ctx: HandlerContext, message: any): P
 		if (src === "input") {
 			const trText = String(message.text);
 			const cfg = ctx.voiceCmdCfg || buildDefaultVoiceCmdCfg();
-			const debounce = typeof cfg?.debounce_ms === "number" ? cfg.debounce_ms : 10_000;
+			const debounce = typeof cfg?.debounce_ms === "number" ? cfg.debounce_ms : DEFAULT_VOICE_CMD_DEBOUNCE_MS;
 			if (cfg?.enabled ?? true) {
 				const reloadMode = extractSystemReloadMode(trText, cfg);
 				if (reloadMode && shouldAutoTriggerVoiceCommand(ctx, "reload_system", debounce)) {
@@ -445,23 +454,23 @@ export async function handleBackendMessage(ctx: HandlerContext, message: any): P
 				}
 			}
 			const gemRemoveId = extractGemsRemoveId(trText);
-			if (gemRemoveId && shouldAutoTriggerVoiceCommand(ctx, "gems_remove", debounce ?? 10_000)) {
+			if (gemRemoveId && shouldAutoTriggerVoiceCommand(ctx, "gems_remove", debounce ?? DEFAULT_VOICE_CMD_DEBOUNCE_MS)) {
 				ctx.wsSend({ type: "gems", action: "remove", gem_id: gemRemoveId, id: gemRemoveId, trace_id: ctx.createTraceId("voice_gems_rm") });
 			}
 			const gemUpsert = extractGemsUpsertJson(trText);
-			if (gemUpsert && shouldAutoTriggerVoiceCommand(ctx, "gems_upsert", debounce ?? 10_000)) {
+			if (gemUpsert && shouldAutoTriggerVoiceCommand(ctx, "gems_upsert", debounce ?? DEFAULT_VOICE_CMD_DEBOUNCE_MS)) {
 				ctx.wsSend({ type: "gems", action: "upsert", gem: gemUpsert, trace_id: ctx.createTraceId("voice_gems_upsert") });
 			}
 			const gemCreateId = extractGemsCreateId(trText);
-			if (gemCreateId && shouldAutoTriggerVoiceCommand(ctx, "gems_create", debounce ?? 10_000)) {
+			if (gemCreateId && shouldAutoTriggerVoiceCommand(ctx, "gems_create", debounce ?? DEFAULT_VOICE_CMD_DEBOUNCE_MS)) {
 				ctx.wsSend({ type: "gems", action: "upsert", gem: { id: gemCreateId, name: gemCreateId }, trace_id: ctx.createTraceId("voice_gems_create") });
 			}
 			const analyze = extractGemsAnalyze(trText);
-			if (analyze && shouldAutoTriggerVoiceCommand(ctx, "gems_analyze", debounce ?? 10_000)) {
+			if (analyze && shouldAutoTriggerVoiceCommand(ctx, "gems_analyze", debounce ?? DEFAULT_VOICE_CMD_DEBOUNCE_MS)) {
 				ctx.wsSend({ type: "gems", action: "analyze", gem_id: analyze.gem_id, id: analyze.gem_id, criteria: analyze.criteria, trace_id: ctx.createTraceId("voice_gems_analyze") });
 			}
 			const draftAct = extractGemsDraftAction(trText);
-			if (draftAct && shouldAutoTriggerVoiceCommand(ctx, "gems_draft_action", debounce ?? 10_000)) {
+			if (draftAct && shouldAutoTriggerVoiceCommand(ctx, "gems_draft_action", debounce ?? DEFAULT_VOICE_CMD_DEBOUNCE_MS)) {
 				if (draftAct.action === "apply") {
 					ctx.wsSend({ type: "gems", action: "draft_apply", draft_id: draftAct.draft_id, trace_id: ctx.createTraceId("voice_gems_apply") });
 				} else {

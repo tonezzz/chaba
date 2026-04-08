@@ -89,3 +89,8 @@ export interface PendingEventMessage {
   payload?: unknown;
   trace_id?: string;
 }
+
+export interface CarsIngestResult {
+  ok: boolean;
+  items?: unknown[];
+}
