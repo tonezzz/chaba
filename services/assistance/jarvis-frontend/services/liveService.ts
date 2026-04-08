@@ -203,6 +203,9 @@ export class LiveService {
 			if (!am.outputAudioContext) {
 				am.outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
 			}
+			// Resume AudioContexts if suspended (required after user gesture)
+			if (am.inputAudioContext.state === "suspended") await am.inputAudioContext.resume();
+			if (am.outputAudioContext.state === "suspended") await am.outputAudioContext.resume();
 			if (!am.inputStream) {
 				am.audioInitError = null;
 				am.inputStream = await navigator.mediaDevices.getUserMedia({ audio: true });
