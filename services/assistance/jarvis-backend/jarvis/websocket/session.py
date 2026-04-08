@@ -713,6 +713,7 @@ class WebSocketManager:
                         except Exception as ne:
                             logger.warning(f"News shortcut failed: {ne}")
 
+                    logger.info("Live sending text to Gemini: %r", text[:80])
                     await gemini_session.send_realtime_input(text=text)
                     continue
 
@@ -1523,10 +1524,10 @@ class _StreamingSidecarTranscriber:
                 text = await self._call_stt_with_model(self._model, prompt, wav_bytes, timeout_s=timeout_s)
                 try:
                     logger.info(
-                        "Sidecar STT result final=%s len=%s preview=%r",
+                        "Sidecar STT result final=%s len=%s text=%r",
                         "true" if final_flush else "false",
                         str(len(text or "")),
-                        (text or "")[:120],
+                        (text or "")[:80],
                     )
                 except Exception:
                     pass
@@ -1617,6 +1618,7 @@ class _StreamingSidecarTranscriber:
             self._last_emitted = (self._last_emitted + " " + emit).strip() if self._last_emitted else text
 
         try:
+            logger.info("Sidecar STT emitting transcript=%r final=%s", emit[:80], final_flush)
             await self._session.send_json(
                 {
                     "type": "transcript",
