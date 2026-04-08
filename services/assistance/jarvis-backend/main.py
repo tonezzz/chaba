@@ -4,7 +4,7 @@ import time
 import uuid
 from typing import Any
 
-from fastapi import Header, HTTPException
+from fastapi import Header, HTTPException, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import modular components
