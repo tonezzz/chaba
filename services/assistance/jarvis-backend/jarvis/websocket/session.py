@@ -778,9 +778,26 @@ class WebSocketManager:
         await session.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
 
         async for response in gemini_session.receive():
+            # Debug: log what we receive to diagnose missing audio
+            try:
+                resp_type = type(response).__name__
+                has_server_content = hasattr(response, "server_content")
+                logger.debug("Live response received type=%s has_server_content=%s", resp_type, has_server_content)
+            except Exception:
+                pass
+
             content = getattr(response, "server_content", None)
             if not content:
                 continue
+
+            # Debug: log available content attributes when output_transcription is present (model is responding)
+            try:
+                out_tr = getattr(content, "output_transcription", None)
+                if out_tr and getattr(out_tr, "text", None):
+                    attrs = [a for a in dir(content) if not a.startswith("_") and not callable(getattr(content, a, None))]
+                    logger.info("Live content attributes when responding: %s", attrs)
+            except Exception:
+                pass
 
             # Transcripts
             in_tr = getattr(content, "input_transcription", None)
@@ -807,7 +824,31 @@ class WebSocketManager:
                     }
                 )
 
-            # Model turn parts (audio)
+            # Direct output_audio on server_content (newer SDK versions)
+            output_audio = getattr(content, "output_audio", None)
+            if output_audio:
+                audio_data = getattr(output_audio, "data", None)
+                if audio_data:
+                    try:
+                        if isinstance(audio_data, str):
+                            b64 = audio_data
+                        else:
+                            if isinstance(audio_data, memoryview):
+                                audio_data = audio_data.tobytes()
+                            b64 = base64.b64encode(bytes(audio_data)).decode("ascii")
+                        logger.info("Live output_audio chunk forwarded")
+                        await session.send_json(
+                            {
+                                "type": "audio",
+                                "data": b64,
+                                "sampleRate": 24000,
+                                "instance_id": INSTANCE_ID,
+                            }
+                        )
+                    except Exception:
+                        pass
+
+            # Model turn parts (audio) - older SDK format
             model_turn = getattr(content, "model_turn", None)
             parts = getattr(model_turn, "parts", None) if model_turn else None
             if parts:
