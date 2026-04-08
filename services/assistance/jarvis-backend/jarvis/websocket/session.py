@@ -782,7 +782,7 @@ class WebSocketManager:
             try:
                 resp_type = type(response).__name__
                 has_server_content = hasattr(response, "server_content")
-                logger.debug("Live response received type=%s has_server_content=%s", resp_type, has_server_content)
+                logger.info("Live response received type=%s has_server_content=%s", resp_type, has_server_content)
             except Exception:
                 pass
 
