@@ -183,11 +183,13 @@ export class LiveService {
 	constructor() {}
 
 	public startStreaming(): void {
+		console.log("[LiveService] startStreaming called");
 		this.audio.isStreamingAudio = true;
 		void this.ensureAudioInput();
 	}
 
 	public stopStreaming(): void {
+		console.log("[LiveService] stopStreaming called, framesSent:", (this as any)._framesSent || 0);
 		this.audio.isStreamingAudio = false;
 		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
 			this.wsSend({ type: "audio_stream_end", trace_id: this.createTraceId("audio_end") });
@@ -195,25 +197,38 @@ export class LiveService {
 	}
 
 	private async ensureAudioInput(): Promise<void> {
+		console.log("[LiveService] ensureAudioInput called");
 		const am = this.audio;
 		try {
 			if (!am.inputAudioContext) {
+				console.log("[LiveService] Creating inputAudioContext");
 				am.inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
 			}
 			if (!am.outputAudioContext) {
+				console.log("[LiveService] Creating outputAudioContext");
 				am.outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
 			}
 			// Resume AudioContexts if suspended (required after user gesture)
-			if (am.inputAudioContext.state === "suspended") await am.inputAudioContext.resume();
-			if (am.outputAudioContext.state === "suspended") await am.outputAudioContext.resume();
+			if (am.inputAudioContext.state === "suspended") {
+				console.log("[LiveService] Resuming inputAudioContext");
+				await am.inputAudioContext.resume();
+			}
+			if (am.outputAudioContext.state === "suspended") {
+				await am.outputAudioContext.resume();
+			}
 			if (!am.inputStream) {
+				console.log("[LiveService] Getting microphone permission");
 				am.audioInitError = null;
 				am.inputStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+				console.log("[LiveService] Microphone stream obtained");
 			}
 			if (am.inputStream) {
-				await setupAudioInput(am, am.inputStream, (p) => this.createTraceId(p), (pl) => this.wsSend(pl), (v) => this.onVolume(v));
+				console.log("[LiveService] Setting up audio input worklet");
+				await setupAudioInput(am, am.inputStream, (p) => this.createTraceId(p), (pl) => this._wsSendAudio(pl), (v) => this.onVolume(v));
+				console.log("[LiveService] Audio worklet setup complete");
 			}
 		} catch (audioErr: any) {
+			console.error("[LiveService] ensureAudioInput error:", audioErr);
 			am.inputStream = null;
 			am.isStreamingAudio = false;
 			const name = String(audioErr?.name || "unknown");
@@ -225,6 +240,15 @@ export class LiveService {
 				// ignore
 			}
 		}
+	}
+
+	private _framesSent = 0;
+	private _wsSendAudio(pl: unknown): boolean {
+		this._framesSent++;
+		if (this._framesSent <= 5 || this._framesSent % 30 === 0) {
+			console.log(`[LiveService] Sending audio frame #${this._framesSent}`);
+		}
+		return this.wsSend(pl);
 	}
 
 	public sendText(text: string): string | null {
