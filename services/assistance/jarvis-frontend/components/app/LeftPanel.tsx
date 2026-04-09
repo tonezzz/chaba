@@ -868,19 +868,22 @@ export function LeftPanel(props: {
           <div className="flex items-center gap-2 mb-2">
             <button
               onClick={() => {
-                if (isTalking) handleToggleTalk(); // Stop voice if switching to text
                 setInputMode("text");
+                if (isTalking) handleToggleTalk();
               }}
               className={`flex-1 py-2 rounded-lg font-mono text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 ${
                 inputMode === "text"
-                  ? "bg-cyan-950/30 text-cyan-200 border border-cyan-500/40"
+                  ? "bg-slate-950/60 text-cyan-200 border border-cyan-500/40"
                   : "bg-slate-950/40 text-slate-500 border border-slate-800 hover:text-slate-300"
               }`}
             >
               <Keyboard className="w-3.5 h-3.5" /> Type
             </button>
             <button
-              onClick={() => setInputMode("voice")}
+              onClick={() => {
+                setInputMode("voice");
+                if (!isTalking) handleToggleTalk();
+              }}
               className={`flex-1 py-2 rounded-lg font-mono text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 ${
                 inputMode === "voice"
                   ? "bg-cyan-950/30 text-cyan-200 border border-cyan-500/40"
@@ -935,29 +938,17 @@ export function LeftPanel(props: {
               </button>
             </div>
           ) : (
-            <button
-              onClick={handleToggleTalk}
-              disabled={state !== ConnectionState.CONNECTED}
+            <div
               className={`
                 w-full py-4 rounded-xl font-hud text-sm tracking-widest uppercase transition-all duration-300 shadow-lg
-                flex items-center justify-center gap-3
+                flex items-center justify-center gap-3 select-none
                 ${state !== ConnectionState.CONNECTED
-                  ? "bg-slate-800/50 text-slate-500 border border-slate-700 cursor-not-allowed"
-                  : isTalking
-                    ? "bg-yellow-500/10 text-yellow-300 border border-yellow-500/50 hover:bg-yellow-500/20 shadow-yellow-500/20"
-                    : "bg-cyan-950/30 text-cyan-200 border border-cyan-500/40 hover:bg-cyan-950/50 shadow-cyan-500/20"}
+                  ? "bg-slate-800/50 text-slate-500 border border-slate-700"
+                  : "bg-yellow-500/10 text-yellow-300 border border-yellow-500/50 shadow-yellow-500/20"}
               `}
             >
-              {isTalking ? (
-                <>
-                  <MicOff className="w-5 h-5" /> Listening... (Click to Stop)
-                </>
-              ) : (
-                <>
-                  <Mic className="w-5 h-5" /> Hold to Talk
-                </>
-              )}
-            </button>
+              <Mic className="w-5 h-5" /> Listening...
+            </div>
           )}
         </div>
       </div>
