@@ -199,8 +199,13 @@ _LIVE_PROBE_ON_CONNECT = str(os.getenv("JARVIS_LIVE_PROBE_ON_CONNECT", "false"))
 
 
 def _live_is_native_audio_model(model: str) -> bool:
+    """Check if model supports audio input in Live mode.
+    
+    Native-audio models support audio input AND output.
+    gemini-3.1-flash-lite supports audio input (transcription) but TEXT output only.
+    """
     m = str(model or "").lower()
-    return "native-audio" in m
+    return "native-audio" in m or "3.1-flash-lite" in m
 
 
 def _live_configs_for_model() -> tuple[list["types.LiveConnectConfig"], list["types.LiveConnectConfig"]]:
@@ -530,9 +535,23 @@ class WebSocketManager:
         for model_name in models_to_try:
             clean_model_name = model_name[7:] if model_name.startswith("models/") else model_name
             # Live best-practice: one modality per session.
-            # - For native-audio models, only try AUDIO configs.
-            # - For live preview, default to TEXT configs.
-            configs_to_try = audio_cfgs if _live_is_native_audio_model(clean_model_name) else text_cfgs
+            # - For native-audio models: audio input + audio output (AUDIO configs)
+            # - For 3.1-flash-lite: audio input + text output (TEXT configs, but still send audio)
+            # - For live preview/text models: text only (TEXT configs)
+            is_native_audio = _live_is_native_audio_model(clean_model_name)
+            is_flash_lite = "3.1-flash-lite" in clean_model_name.lower()
+            
+            if is_native_audio and not is_flash_lite:
+                # Full native audio: input + output
+                configs_to_try = audio_cfgs
+                logger.info(f"Using AUDIO configs for native-audio model: {clean_model_name}")
+            elif is_flash_lite:
+                # 3.1 Flash-Lite: audio input, text output
+                configs_to_try = text_cfgs
+                logger.info(f"Using TEXT configs for 3.1-flash-lite (audio input, text output): {clean_model_name}")
+            else:
+                # Text-only models
+                configs_to_try = text_cfgs
 
             # If cached config exists and applies to this model, try it first.
             if (

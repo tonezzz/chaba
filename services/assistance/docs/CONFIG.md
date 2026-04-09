@@ -81,19 +81,21 @@ These are set via compose defaults and/or Portainer stack env:
   - example: `http://weaviate:8080`
 - `GEMINI_LIVE_MODEL`
   - example: `gemini-2.5-flash-native-audio-preview-12-2025`
-  - **For voice/audio support**: Must use native-audio models (names containing `native-audio`)
+  - **For full voice (audio in + audio out)**: Use native-audio models
+  - **For voice input with text output**: Use `gemini-3.1-flash-lite`
   - **For text-only Live mode**: Can use any Gemini model
-  - **Available native-audio models**:
-    - `gemini-2.5-flash-native-audio-latest` (recommended)
-    - `gemini-2.5-flash-native-audio-preview-12-2025`
-    - `lyria-realtime-exp`
+  - **Available models for voice input**:
+    - `gemini-3.1-flash-lite` - Audio input, TEXT output (uses TTS for responses)
+    - `gemini-2.5-flash-native-audio-latest` - Audio input + output (recommended)
+    - `gemini-2.5-flash-native-audio-preview-12-2025` - Audio input + output
+    - `lyria-realtime-exp` - Audio input + output
 
 Reminders:
 
 - **Voice vs Text in Live Mode**: 
-  - Native-audio models: Support both voice input (microphone) and audio output
-  - Non-native models (e.g., `gemini-2.5-flash`, `gemini-2.5-pro`): Only support text input in Live mode
-  - If you send audio to a non-native model, it will not respond (use smart fallback for voice with non-native models)
+  - `gemini-3.1-flash-lite`: Audio input (STT), TEXT output (backend TTS speaks responses)
+  - Native-audio models (e.g., `gemini-2.5-flash-native-audio-latest`): Audio input AND audio output (model speaks directly)
+  - Non-audio models (e.g., `gemini-2.5-flash`, `gemini-2.5-pro`): Text input only in Live mode
 
 Debugging:
 
