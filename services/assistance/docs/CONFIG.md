@@ -101,7 +101,7 @@ Notes:
 
 ## Speech-to-text (STT) + transcripts
 
-Jarvis does **not** run a separate STT engine in the backend.
+### Primary STT (Gemini Live)
 
 - **Where STT happens**
   - STT is performed by **Gemini Live** based on the microphone audio stream sent from the frontend.
@@ -116,6 +116,35 @@ Jarvis does **not** run a separate STT engine in the backend.
 - **Voice commands (e.g. Reload System)**
   - The backend listens for **input transcripts** and dispatches local command handlers (sub-agents) before the text is treated as normal chat.
   - This is how voice phrases like `Reload System` can trigger backend actions even if the model would otherwise reply conversationally.
+
+### Sidecar STT (for native-audio models)
+
+When using **native-audio models** (e.g., `gemini-2.5-flash-native-audio-preview`), Gemini Live receives audio directly and performs STT internally. However, for logging and comparison purposes, Jarvis runs a **sidecar STT** that transcribes the same audio stream via a separate Gemini API call.
+
+**Behavior:**
+- Sidecar STT runs only for native-audio models
+- Transcripts are displayed in the UI for comparison/logging
+- **When Live is working, sidecar transcripts are NOT forwarded to Gemini** (`forward_to_gemini: false`)
+- This prevents duplicate input while still showing the STT quality for debugging
+
+**Circuit Breaker:**
+- After 5 consecutive STT errors, sidecar pauses for 30 seconds
+- This preserves API quota and session stability
+- Errors are isolated - they never crash the main Live session
+- Circuit resets on successful transcription
+
+**Environment variables:**
+
+- `JARVIS_SIDECAR_STT_MODEL` - Model used for sidecar transcription
+  - default: `gemini-flash-lite-latest` (higher rate limits than flash-latest)
+- `JARVIS_SIDECAR_STT_CHUNK_S` - Audio chunk size in seconds (default: 1.5)
+- `JARVIS_SIDECAR_STT_INTERVAL_S` - Transcription interval (default: 1.0)
+- `JARVIS_SIDECAR_STT_OVERLAP_S` - Overlap between chunks (default: 0.5)
+- `JARVIS_SIDECAR_STT_FINAL_MAX_S` - Max seconds for final flush (default: 12.0)
+- `JARVIS_SIDECAR_STT_TIMEOUT_S` - Per-call timeout (default: 20.0)
+- `JARVIS_SIDECAR_STT_FINAL_TIMEOUT_S` - Final flush timeout (default: 45.0)
+- `JARVIS_SIDECAR_STT_LANGUAGE` - Language hint (optional)
+- `JARVIS_SIDECAR_STT_ENABLE_PARTIALS` - Enable partial transcripts (default: false)
 
 Secrets (must be provided via Portainer stack env or host env, never committed):
 
