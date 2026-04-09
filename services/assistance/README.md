@@ -168,11 +168,45 @@ Healthcheck note:
 
 ## Deployment
 - Stack configuration lives under:
-  - `/stacks/idc1-assistance/`
+  - `/stacks/idc1-assistance-*` (4-stack split: infra, mcp, core, workers)
 
 Operational note:
-- `idc1-assistance` is typically deployed as a **Portainer git-backed stack**.
-- Treat Portainer as authoritative for:
-  - the stack file content it deploys
-  - stack environment variables (secrets like OAuth client IDs)
-- If you run `docker compose -f stacks/idc1-assistance/docker-compose.yml ...` locally, you can create containers that look correct but do not include Portainer stack env, leading to confusing auth failures (example: `missing_google_tasks_client_id`).
+- `idc1-assistance` is deployed as **Portainer git-backed stacks** (4 separate stacks).
+- **Portainer is authoritative for:**
+  - Stack file content it deploys
+  - Stack environment variables (secrets like OAuth client IDs)
+- **Git is authoritative for:**
+  - Compose structure and service definitions
+  - Default env var values (via `env:` in compose)
+
+### Deploy Commands
+
+**Full hands-off deploy (recommended):**
+```bash
+./scripts/deploy-idc1-assistance.sh
+```
+
+**Check env drift only:**
+```bash
+./scripts/deploy-idc1-assistance.sh --check-env
+```
+
+**Manual redeploy with Portainer env:**
+```bash
+# Export Portainer env vars first
+eval $(curl -s "http://127.0.0.1:9000/api/stacks/80" \
+  -H "X-API-Key: $PORTAINER_TOKEN" | \
+  jq -r '.Env[] | "export \(.name)=\(.value|@sh)"' | \
+  grep -vE "SECRET|TOKEN|API_KEY|CLIENT_SECRET")
+
+# Then redeploy
+docker compose -f stacks/idc1-assistance-core/docker-compose.yml up -d
+```
+
+### Common Trap
+Running `docker compose ... up` locally without exporting Portainer env first creates containers that **look** correct but **do not include** Portainer stack env (secrets, feature flags). This leads to confusing failures like:
+- `missing_google_tasks_client_id`
+- Agents loading when `JARVIS_SKIP_AGENTS=1` was set in Portainer
+- Wrong STT model being used
+
+Always use the deploy script or export Portainer env first.

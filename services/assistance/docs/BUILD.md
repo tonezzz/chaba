@@ -13,12 +13,15 @@ See also:
 
 - Push to branch `idc1-assistance`.
 - Wait for GitHub Actions to publish new GHCR images.
-- In Portainer, redeploy the split stacks with **pull latest images** enabled.
+- Run `./scripts/deploy-idc1-assistance.sh` (handles Portainer redeploy automatically).
 - Verify the running container uses a new **IMAGE ID**.
 
 Notes:
 
 - GitHub Actions publishes images **selectively** (only the images whose inputs changed).
+- **Portainer is authoritative** for stack environment variables (secrets, runtime config).
+- **Git** controls compose structure and default values.
+- The deploy script syncs: `git` → Portainer API → containers (preserving Portainer env).
 
 ## Copy/paste message template (improved)
 
@@ -132,6 +135,33 @@ When debugging "missing env":
 docker ps --format '{{.Names}}' | grep -E 'mcp-bundle' || true
 ```
 
+### A.2) Managing Environment Variable Drift
+
+**Problem:** Portainer stack env and git `.env.example` can drift, causing confusion when:
+- Local `docker compose up` uses different env than Portainer
+- New env vars are added to code but not Portainer
+- Secrets exist in Portainer but are missing from documentation
+
+**Solution - Check drift:**
+
+```bash
+# List all env vars currently in Portainer stack
+curl -s "http://127.0.0.1:9000/api/stacks/<stack_id>" \
+  -H "X-API-Key: $PORTAINER_TOKEN" | \
+  jq -r '.Env[] | "\(.name)"' | sort
+
+# Compare with .env.example
+diff <(curl -s ... | jq -r ...) <(cat stacks/idc1-assistance/.env.example | grep -E "^[A-Z]" | cut -d= -f1 | sort)
+```
+
+**Current drift status (as of last update):**
+
+| Category | Variables |
+|----------|-----------|
+| **In Portainer only** (secrets/config) | `GEMINI_API_KEY`, `GITHUB_*`, `GOOGLE_CLIENT_*`, `JARVIS_ADMIN_TOKEN`, `PORTAINER_TOKEN`, `_GEMINI_LIVE_MODEL` |
+| **In .env.example only** (structure) | `GOOGLE_DRIVE_MCP_BASE_URL`, `JARVIS_RECENT_DIALOG_*`, `REDIS_URL` |
+
+**Action:** If variables are missing in Portainer, add them via Portainer UI → Stacks → `idc1-assistance-core` → Editor → Environment Variables.
 
 ### B) Confirm frontend bundle contains the fix you expect
 
@@ -152,7 +182,36 @@ curl -sS http://127.0.0.1:18018/health
 docker compose -f stacks/idc1-assistance-core/docker-compose.yml logs --tail=200 jarvis-backend
 ```
 
-### D) Collect debug evidence (recommended)
+### D) Manual redeploy with Portainer env (when not using deploy script)
+
+If you need to redeploy manually and want to use Portainer's env vars (not shell env):
+
+```bash
+# Export Portainer stack env vars first
+export PORTAINER_TOKEN="ptr_..."
+export PORTAINER_STACK_NAME="idc1-assistance-core"
+
+# Get stack ID
+stack_id=$(curl -s "http://127.0.0.1:9000/api/stacks" \
+  -H "X-API-Key: $PORTAINER_TOKEN" | \
+  jq -r ".[] | select(.Name==\"$PORTAINER_STACK_NAME\") | .Id")
+
+# Export all Portainer env vars (excluding secrets)
+eval $(curl -s "http://127.0.0.1:9000/api/stacks/$stack_id" \
+  -H "X-API-Key: $PORTAINER_TOKEN" | \
+  jq -r '.Env[] | "export \(.name)=\(.value|@sh)"' | \
+  grep -vE "(SECRET|PASSWORD|TOKEN|API_KEY|CLIENT_SECRET)")
+
+# Now redeploy with correct env
+docker compose -f stacks/idc1-assistance-core/docker-compose.yml up -d --force-recreate jarvis-backend
+```
+
+**Better alternative:** Use the deploy script which handles this automatically:
+```bash
+./scripts/deploy-idc1-assistance.sh
+```
+
+### E) Collect debug evidence (recommended)
 
 After reproducing a bug, collect a single snapshot (health, container IDs/digests, and logs):
 
