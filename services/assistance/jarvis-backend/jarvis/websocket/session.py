@@ -38,17 +38,31 @@ async def _google_tts_synthesize_linear16(
 
     language_code = str(os.getenv("JARVIS_GOOGLE_TTS_LANGUAGE") or "en-US").strip() or "en-US"
     voice_name = str(os.getenv("JARVIS_GOOGLE_TTS_VOICE") or "").strip()
+    
+    # Default to Chirp3 HD voices if no voice specified
+    if not voice_name:
+        # Map language codes to Chirp3 HD voices
+        chirp3_hd_voices = {
+            "th-TH": "th-TH-Chirp3-HD-Aoede",
+            "en-US": "en-US-Chirp3-HD-Aoede",
+            "en-GB": "en-GB-Chirp3-HD-Aoede",
+            "ja-JP": "ja-JP-Chirp3-HD-Aoede",
+            "ko-KR": "ko-KR-Chirp3-HD-Aoede",
+            "cmn-CN": "cmn-CN-Chirp3-HD-Aoede",
+            "vi-VN": "vi-VN-Chirp3-HD-Aoede",
+            "id-ID": "id-ID-Chirp3-HD-Aoede",
+        }
+        voice_name = chirp3_hd_voices.get(language_code, f"{language_code}-Chirp3-HD-Aoede")
+        logger.info(f"Using Chirp3 HD voice: {voice_name}")
 
     payload: dict[str, Any] = {
         "input": {"text": text},
-        "voice": {"languageCode": language_code},
+        "voice": {"languageCode": language_code, "name": voice_name},
         "audioConfig": {
             "audioEncoding": "LINEAR16",
             "sampleRateHertz": int(sample_rate_hz),
         },
     }
-    if voice_name:
-        payload["voice"]["name"] = voice_name
 
     url = f"https://texttospeech.googleapis.com/v1/text:synthesize?key={api_key}"
     async with httpx.AsyncClient(timeout=30.0) as client:
