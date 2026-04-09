@@ -2,8 +2,7 @@ version: "3.9"
 
 x-default-service: &default-service
   restart: unless-stopped
-  env_file:
-    - ../idc1-assistance/.env.example
+  # Note: Portainer stack env is authoritative; no env_file to avoid drift
   networks:
     - idc1-stack-net
   logging:
