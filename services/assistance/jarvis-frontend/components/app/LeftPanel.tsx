@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Copy,
   Image as ImageIcon,
+  Keyboard,
   Link2Off,
   Maximize2,
   Mic,
@@ -131,6 +132,9 @@ export function LeftPanel(props: {
   const [uiCardActionByMsgId, setUiCardActionByMsgId] = React.useState<
     Record<string, { busy: boolean; status: "idle" | "ok" | "error"; message?: string }>
   >({});
+
+  // Input mode toggle: 'text' | 'voice'
+  const [inputMode, setInputMode] = React.useState<"text" | "voice">("text");
 
   return (
     <div
@@ -860,73 +864,101 @@ export function LeftPanel(props: {
               ))}
             </div>
           )}
-          <div className="flex items-center gap-2 min-w-0">
+          {/* Mode Toggle */}
+          <div className="flex items-center gap-2 mb-2">
             <button
-              onClick={handlePickFiles}
-              disabled={state !== ConnectionState.CONNECTED}
-              className="shrink-0 w-10 h-10 rounded-xl border border-slate-700 bg-slate-950/40 text-slate-200 hover:bg-slate-800/60 disabled:opacity-50"
-              aria-label="Attach files"
+              onClick={() => {
+                if (isTalking) handleToggleTalk(); // Stop voice if switching to text
+                setInputMode("text");
+              }}
+              className={`flex-1 py-2 rounded-lg font-mono text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 ${
+                inputMode === "text"
+                  ? "bg-cyan-950/30 text-cyan-200 border border-cyan-500/40"
+                  : "bg-slate-950/40 text-slate-500 border border-slate-800 hover:text-slate-300"
+              }`}
             >
-              <Paperclip className="w-4 h-4" />
+              <Keyboard className="w-3.5 h-3.5" /> Type
             </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              className="hidden"
-              accept="image/*,application/pdf,text/plain,text/markdown,application/json,.md,.txt,.json,.pdf"
-              onChange={(e) => {
-                void handleFilesSelected(e.target.files);
-                e.currentTarget.value = "";
-              }}
-            />
-            <input
-              value={composerText}
-              onChange={(e) => setComposerText(e.target.value)}
-              placeholder="Type a message..."
-              disabled={state !== ConnectionState.CONNECTED}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendComposer();
-                }
-              }}
-              className="flex-1 min-w-0 px-3 py-2 rounded-xl text-sm font-mono bg-slate-950 border border-slate-800 text-slate-200 placeholder:text-slate-600 disabled:opacity-50"
-            />
             <button
-              onClick={handleSendComposer}
-              disabled={state !== ConnectionState.CONNECTED}
-              className="shrink-0 w-10 h-10 rounded-xl border border-cyan-500/40 bg-cyan-950/20 text-cyan-200 hover:bg-cyan-950/40 disabled:opacity-50 disabled:hover:bg-cyan-950/20 flex items-center justify-center"
-              aria-label="Send"
+              onClick={() => setInputMode("voice")}
+              className={`flex-1 py-2 rounded-lg font-mono text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 ${
+                inputMode === "voice"
+                  ? "bg-cyan-950/30 text-cyan-200 border border-cyan-500/40"
+                  : "bg-slate-950/40 text-slate-500 border border-slate-800 hover:text-slate-300"
+              }`}
             >
-              <Send className="w-4 h-4" />
+              <Mic className="w-3.5 h-3.5" /> Voice
             </button>
           </div>
-        </div>
 
-        <button
-          onClick={handleToggleTalk}
-          disabled={state !== ConnectionState.CONNECTED}
-          className={`
-              w-full py-3 mt-3 rounded-xl font-hud text-sm tracking-widest uppercase transition-all duration-300 shadow-lg
-              flex items-center justify-center gap-3
-              ${state !== ConnectionState.CONNECTED
-                ? "bg-slate-800/50 text-slate-500 border border-slate-700 cursor-not-allowed"
-                : isTalking
-                  ? "bg-yellow-500/10 text-yellow-300 border border-yellow-500/50 hover:bg-yellow-500/20 shadow-yellow-500/20"
-                  : "bg-slate-900/50 text-cyan-200 border border-cyan-500/30 hover:bg-slate-900/70 shadow-cyan-500/10"}
-            `}
-        >
-          {isTalking ? (
-            <>
-              <MicOff className="w-4 h-4" /> Stop
-            </>
+          {inputMode === "text" ? (
+            <div className="flex items-center gap-2 min-w-0">
+              <button
+                onClick={handlePickFiles}
+                disabled={state !== ConnectionState.CONNECTED}
+                className="shrink-0 w-10 h-10 rounded-xl border border-slate-700 bg-slate-950/40 text-slate-200 hover:bg-slate-800/60 disabled:opacity-50"
+                aria-label="Attach files"
+              >
+                <Paperclip className="w-4 h-4" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                accept="image/*,application/pdf,text/plain,text/markdown,application/json,.md,.txt,.json,.pdf"
+                onChange={(e) => {
+                  void handleFilesSelected(e.target.files);
+                  e.currentTarget.value = "";
+                }}
+              />
+              <input
+                value={composerText}
+                onChange={(e) => setComposerText(e.target.value)}
+                placeholder="Type a message..."
+                disabled={state !== ConnectionState.CONNECTED}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendComposer();
+                  }
+                }}
+                className="flex-1 min-w-0 px-3 py-2 rounded-xl text-sm font-mono bg-slate-950 border border-slate-800 text-slate-200 placeholder:text-slate-600 disabled:opacity-50"
+              />
+              <button
+                onClick={handleSendComposer}
+                disabled={state !== ConnectionState.CONNECTED}
+                className="shrink-0 w-10 h-10 rounded-xl border border-cyan-500/40 bg-cyan-950/20 text-cyan-200 hover:bg-cyan-950/40 disabled:opacity-50 disabled:hover:bg-cyan-950/20 flex items-center justify-center"
+                aria-label="Send"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
           ) : (
-            <>
-              <Mic className="w-4 h-4" /> Talk
-            </>
+            <button
+              onClick={handleToggleTalk}
+              disabled={state !== ConnectionState.CONNECTED}
+              className={`
+                w-full py-4 rounded-xl font-hud text-sm tracking-widest uppercase transition-all duration-300 shadow-lg
+                flex items-center justify-center gap-3
+                ${state !== ConnectionState.CONNECTED
+                  ? "bg-slate-800/50 text-slate-500 border border-slate-700 cursor-not-allowed"
+                  : isTalking
+                    ? "bg-yellow-500/10 text-yellow-300 border border-yellow-500/50 hover:bg-yellow-500/20 shadow-yellow-500/20"
+                    : "bg-cyan-950/30 text-cyan-200 border border-cyan-500/40 hover:bg-cyan-950/50 shadow-cyan-500/20"}
+              `}
+            >
+              {isTalking ? (
+                <>
+                  <MicOff className="w-5 h-5" /> Listening... (Click to Stop)
+                </>
+              ) : (
+                <>
+                  <Mic className="w-5 h-5" /> Hold to Talk
+                </>
+              )}
+            </button>
           )}
-        </button>
       </div>
     </div>
   );
