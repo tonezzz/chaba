@@ -266,22 +266,22 @@ export class LiveService {
 		// Reserved for future vision support; no-op until backend protocol is defined.
 	}
 
-	public sendSystemReload(mode: "full" | "memory" | "knowledge" | "sys" | "gems" = "full"): void {
-		this.wsSend({ type: "system", action: "reload", mode, trace_id: this.createTraceId("sys_reload") });
+	public sendSystemReload(mode = "full"): void {
+		this.wsSend({ type: "system", action: "reload", mode: String(mode || "full"), trace_id: this.createTraceId("sys_reload") });
 	}
 
 	public sendSystemClearJob(): void {
-		this.wsSend({ type: "system", action: "clear_job", trace_id: this.createTraceId("sys_clear_job") });
+		this.wsSend({ type: "system", action: "clear_job", trace_id: this.createTraceId("sys_clear") });
 	}
 
-	public sendSysKvSet(key: string, value: string, opts?: { dry_run?: boolean }): void {
+	public sendSysKvSet(key: string, value: string, opts?: { expires_in_s?: number }): void {
 		const k = String(key || "").trim();
-		const v = String(value ?? "");
+		const v = String(value);
 		if (!k) return;
-		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-			this.lastSysKvSetAt = Date.now();
-			this.wsSend({ type: "system", action: "sys_kv_set", key: k, value: v, dry_run: Boolean(opts?.dry_run), trace_id: this.createTraceId("sys_kv_set") });
-		}
+		const now = Date.now();
+		const expires_at = opts?.expires_in_s ? now + opts.expires_in_s * 1000 : undefined;
+		this.wsSend({ type: "system", action: "sys_kv_set", key: k, value: v, expires_at, trace_id: this.createTraceId("sys_kv_set") });
+		this.lastSysKvSetAt = now;
 	}
 
 	public sendSysKvDedupe(opts?: { dry_run?: boolean; sort?: boolean }): void {
@@ -292,40 +292,6 @@ export class LiveService {
 		const body = String(text || "").trim();
 		if (!body) return;
 		this.wsSend({ type: "reminders", action: "add", text: body, trace_id: this.createTraceId("rem_add") });
-	}
-
-	public sendGemsList(): void {
-		this.wsSend({ type: "gems", action: "list", trace_id: this.createTraceId("gems_ls") });
-	}
-
-	public sendGemsUpsert(gem: unknown): void {
-		if (!gem || typeof gem !== "object") return;
-		this.wsSend({ type: "gems", action: "upsert", gem, trace_id: this.createTraceId("gems_upsert") });
-	}
-
-	public sendGemsRemove(id: string): void {
-		const gem_id = String(id || "").trim();
-		if (!gem_id) return;
-		this.wsSend({ type: "gems", action: "remove", gem_id, id: gem_id, trace_id: this.createTraceId("gems_rm") });
-	}
-
-	public sendGemsAnalyze(gemId: string, criteria?: string): void {
-		const gem_id = String(gemId || "").trim();
-		const crit = String(criteria || "").trim();
-		if (!gem_id) return;
-		this.wsSend({ type: "gems", action: "analyze", gem_id, id: gem_id, criteria: crit, trace_id: this.createTraceId("gems_analyze") });
-	}
-
-	public sendGemsDraftApply(draftId: string): void {
-		const draft_id = String(draftId || "").trim();
-		if (!draft_id) return;
-		this.wsSend({ type: "gems", action: "draft_apply", draft_id, trace_id: this.createTraceId("gems_apply") });
-	}
-
-	public sendGemsDraftDiscard(draftId: string): void {
-		const draft_id = String(draftId || "").trim();
-		if (!draft_id) return;
-		this.wsSend({ type: "gems", action: "draft_discard", draft_id, trace_id: this.createTraceId("gems_discard") });
 	}
 
 	public async connect(): Promise<void> {
