@@ -926,8 +926,13 @@ export function LeftPanel(props: {
             </button>
             <button
               onClick={() => {
-                setInputMode("voice");
-                if (!isTalking) handleToggleTalk();
+                if (inputMode === "voice") {
+                  setInputMode("text");
+                  if (isTalking) handleToggleTalk();
+                } else {
+                  setInputMode("voice");
+                  if (!isTalking) handleToggleTalk();
+                }
               }}
               className={`flex-1 py-2 rounded-lg font-mono text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 ${
                 inputMode === "voice"
