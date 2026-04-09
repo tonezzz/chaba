@@ -567,12 +567,16 @@ class WebSocketManager:
                     last_exc: Optional[Exception] = None
                     for attempt in range(connect_attempts):
                         try:
+                            is_native = _live_is_native_audio_model(clean_model_name)
+                            logger.info(
+                                f"🎵 Live connecting: model={clean_model_name} is_native_audio={is_native} config_idx={config_idx}"
+                            )
                             async with session.client.aio.live.connect(
                                 model=clean_model_name,
                                 config=config,
                             ) as gemini_session:
                                 logger.info(
-                                    f"✅ Gemini Live session established (validated) model={clean_model_name} config={config_idx + 1}"
+                                    f"✅ Gemini Live session established (validated) model={clean_model_name} config={config_idx + 1} is_native_audio={is_native}"
                                 )
 
                                 _LIVE_WORKING_MODEL_AND_CONFIG = (clean_model_name, config_idx)
@@ -786,7 +790,8 @@ class WebSocketManager:
                         except Exception:
                             pass
 
-                    logger.info("Live sending audio to Gemini pcm_bytes=%s", str(len(pcm)))
+                    is_native = _live_is_native_audio_model(live_model_name)
+                    logger.info("Live sending audio to Gemini pcm_bytes=%s is_native_audio_model=%s model=%s", str(len(pcm)), str(is_native), str(live_model_name))
                     await gemini_session.send_realtime_input(audio=types.Blob(data=pcm, mime_type=mime_type))
                     continue
 
