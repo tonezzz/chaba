@@ -203,13 +203,31 @@ def _live_configs_for_model() -> tuple[list["types.LiveConnectConfig"], list["ty
             ),
         ),
     ]
+    # For native audio models, explicitly enable AUDIO input/output
     audio_cfgs: list[types.LiveConnectConfig] = [
         types.LiveConnectConfig(
             response_modalities=["AUDIO"],
+            input_modalities=["AUDIO"],
         ),
         types.LiveConnectConfig(
             temperature=0.7,
             response_modalities=["AUDIO", "TEXT"],
+            input_modalities=["AUDIO"],
+        ),
+        types.LiveConnectConfig(
+            temperature=0.7,
+            response_modalities=["AUDIO"],
+            input_modalities=["AUDIO"],
+            generation_config=types.GenerationConfig(
+                max_output_tokens=2048,
+                temperature=0.7,
+                # Enable automatic input transcription for debugging
+                speech_config=types.SpeechConfig(
+                    voice_config=types.VoiceConfig(
+                        prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Aoede")
+                    )
+                ),
+            ),
         ),
     ]
     return text_cfgs, audio_cfgs
@@ -519,7 +537,19 @@ class WebSocketManager:
 
             for config_idx, config in enumerate(configs_to_try):
                 try:
-                    logger.info(f"Trying Live model: {clean_model_name} with config {config_idx + 1}")
+                    # Log config details for debugging
+                    try:
+                        cfg_resp_mod = getattr(config, "response_modalities", None)
+                        cfg_input_mod = getattr(config, "input_modalities", None)
+                        cfg_gen = getattr(config, "generation_config", None)
+                        cfg_temp = getattr(config, "temperature", None)
+                        logger.info(
+                            f"Trying Live model={clean_model_name} config_idx={config_idx} "
+                            f"resp_modalities={cfg_resp_mod} input_modalities={cfg_input_mod} "
+                            f"temperature={cfg_temp} has_gen_config={cfg_gen is not None}"
+                        )
+                    except Exception:
+                        logger.info(f"Trying Live model: {clean_model_name} with config {config_idx + 1}")
 
                     # Only consider Live usable if we successfully enter the context.
                     connect_attempts = 2
@@ -915,12 +945,51 @@ class WebSocketManager:
             })
             
             previous_interaction_id: Optional[str] = None
+            
+            # Start sidecar STT for voice input in smart fallback mode
+            transcriber: _StreamingSidecarTranscriber | None = None
+            try:
+                transcriber = _StreamingSidecarTranscriber(session=session, native_audio_mode=False)
+                transcriber.start()
+                logger.info("Smart fallback: Sidecar STT started for voice input")
+            except Exception:
+                transcriber = None
 
             # Handle messages with intelligent responses
             while True:
                 try:
                     data = await asyncio.wait_for(session.ws.receive_text(), timeout=30.0)
                     message = json.loads(data)
+                    
+                    # Handle audio input for voice
+                    if message.get("type") == "audio":
+                        b64 = message.get("data")
+                        if b64 and transcriber is not None:
+                            try:
+                                pcm = base64.b64decode(str(b64))
+                                transcriber.ingest_pcm16(pcm)
+                                transcriber.kick()
+                                logger.info("Smart fallback: Audio ingested for STT pcm_bytes=%s", str(len(pcm)))
+                            except Exception:
+                                pass
+                        continue
+                    
+                    # Handle audio stream end - flush STT
+                    if message.get("type") == "audio_stream_end":
+                        if transcriber is not None:
+                            try:
+                                await transcriber.flush_and_reset()
+                                final_text = transcriber.consume_last_final_transcript()
+                                if final_text:
+                                    logger.info("Smart fallback: STT final text='%s'", final_text[:50])
+                                    # Process the transcribed text as user input
+                                    message = {"type": "text", "text": final_text}
+                                else:
+                                    continue
+                            except Exception:
+                                continue
+                        else:
+                            continue
                     
                     if message.get("type") == "text":
                         user_text = message.get("text", "").strip()
@@ -1015,6 +1084,14 @@ class WebSocketManager:
             logger.error(f"Failed to initialize smart fallback mode: {e}")
             # Final fallback to echo mode
             await self._handle_echo_mode(session)
+        finally:
+            # Cleanup transcriber
+            if transcriber is not None:
+                try:
+                    await transcriber.stop()
+                    logger.info("Smart fallback: Sidecar STT stopped")
+                except Exception:
+                    pass
 
     async def _handle_voice_fallback_mode(self, session: WebSocketSession) -> None:
         """Voice fallback mode: WS audio -> sidecar STT -> Gemini generateContent -> Google TTS audio."""
