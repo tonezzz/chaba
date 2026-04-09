@@ -954,6 +954,23 @@ class WebSocketManager:
                 logger.info("Smart fallback: Sidecar STT started for voice input")
             except Exception:
                 transcriber = None
+            
+            # TTS helper for smart fallback
+            async def _speak_fallback(text: str) -> None:
+                try:
+                    pcm = await _google_tts_synthesize_linear16(text=text, sample_rate_hz=24000)
+                    chunk_size = int(24000 * 2 * 0.4)  # ~400ms chunks
+                    for i in range(0, len(pcm), chunk_size):
+                        b64 = base64.b64encode(pcm[i : i + chunk_size]).decode("ascii")
+                        await session.send_json({
+                            "type": "audio",
+                            "data": b64,
+                            "sampleRate": 24000,
+                            "instance_id": INSTANCE_ID,
+                        })
+                        await asyncio.sleep(0.05)  # Small delay between chunks
+                except Exception as tts_err:
+                    logger.warning(f"Smart fallback TTS failed: {tts_err}")
 
             # Handle messages with intelligent responses
             while True:
@@ -1037,31 +1054,45 @@ class WebSocketManager:
                         
                         logger.info(f"Processing message with Gemini: {user_text[:50]}...")
                         
-                        # Get intelligent response from Gemini via HTTP API
-                        try:
-                            response_text, previous_interaction_id = await self._get_gemini_response(
-                                user_text,
-                                api_key,
-                                previous_interaction_id,
-                            )
-                            
-                            await session.send_json({
-                                "type": "text",
-                                "text": response_text,
-                                "instance_id": INSTANCE_ID,
-                                "mode": "smart_fallback"
-                            })
-                            
-                            logger.info(f"Sent intelligent response: {response_text[:50]}...")
-                            
-                        except Exception as gemini_error:
-                            logger.error(f"Gemini API error: {gemini_error}")
-                            await session.send_json({
-                                "type": "text",
-                                "text": "I'm having trouble thinking right now. Could you try again?",
-                                "instance_id": INSTANCE_ID,
-                                "mode": "smart_fallback"
-                            })
+                        # Get intelligent response from Gemini via HTTP API with retry for rate limits
+                        response_text = None
+                        max_retries = 3
+                        for attempt in range(max_retries):
+                            try:
+                                response_text, previous_interaction_id = await self._get_gemini_response(
+                                    user_text,
+                                    api_key,
+                                    previous_interaction_id,
+                                )
+                                break  # Success, exit retry loop
+                            except Exception as gemini_error:
+                                err_str = str(gemini_error)
+                                if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "rate limit" in err_str.lower():
+                                    if attempt < max_retries - 1:
+                                        wait_time = min(2 ** attempt, 8)  # Exponential backoff: 1, 2, 4, max 8s
+                                        logger.warning(f"Gemini rate limit hit, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})")
+                                        await asyncio.sleep(wait_time)
+                                        continue
+                                # Non-retryable error or exhausted retries
+                                logger.error(f"Gemini API error: {gemini_error}")
+                                response_text = "I'm having trouble thinking right now. Could you try again?"
+                                break
+                        
+                        # Ensure we have a response
+                        if not response_text:
+                            response_text = "I'm having trouble connecting. Please try again."
+                        
+                        await session.send_json({
+                            "type": "text",
+                            "text": response_text,
+                            "instance_id": INSTANCE_ID,
+                            "mode": "smart_fallback"
+                        })
+                        
+                        logger.info(f"Sent intelligent response: {response_text[:50]}...")
+                        
+                        # Also send TTS audio
+                        await _speak_fallback(response_text)
                     
                 except asyncio.TimeoutError:
                     # Send periodic ping
