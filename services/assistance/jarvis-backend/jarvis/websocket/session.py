@@ -821,17 +821,55 @@ class WebSocketManager:
         # - {type:'audio', data:'<base64>', sampleRate?:number}
         await session.send_json({"type": "state", "state": "connected", "instance_id": INSTANCE_ID})
 
+        response_count = 0
         async for response in gemini_session.receive():
+            response_count += 1
             # Debug: log what we receive to diagnose missing audio
             try:
                 resp_type = type(response).__name__
                 has_server_content = hasattr(response, "server_content")
-                logger.info("Live response received type=%s has_server_content=%s", resp_type, has_server_content)
-            except Exception:
+                server_content = getattr(response, "server_content", None)
+                
+                # Detailed content inspection
+                content_attrs = []
+                has_output_audio = False
+                has_output_transcription = False
+                has_input_transcription = False
+                audio_data_len = 0
+                
+                if server_content:
+                    content_attrs = [a for a in dir(server_content) if not a.startswith("_") and not callable(getattr(server_content, a, None))]
+                    out_audio = getattr(server_content, "output_audio", None)
+                    if out_audio:
+                        has_output_audio = True
+                        audio_data = getattr(out_audio, "data", None)
+                        if audio_data:
+                            audio_data_len = len(audio_data) if hasattr(audio_data, "__len__") else 0
+                    out_tr = getattr(server_content, "output_transcription", None)
+                    if out_tr and getattr(out_tr, "text", None):
+                        has_output_transcription = True
+                    in_tr = getattr(server_content, "input_transcription", None)
+                    if in_tr and getattr(in_tr, "text", None):
+                        has_input_transcription = True
+                
+                logger.info(
+                    "Live response #%s type=%s has_server_content=%s attrs=%s output_audio=%s(audio_bytes=%s) output_transcription=%s input_transcription=%s",
+                    response_count,
+                    resp_type,
+                    has_server_content,
+                    content_attrs,
+                    has_output_audio,
+                    audio_data_len,
+                    has_output_transcription,
+                    has_input_transcription,
+                )
+            except Exception as log_err:
+                logger.warning("Live response logging error: %s", log_err)
                 pass
 
             content = getattr(response, "server_content", None)
             if not content:
+                logger.debug("Live response #%s has no server_content, skipping", response_count)
                 continue
 
             # Debug: log available content attributes when output_transcription is present (model is responding)
