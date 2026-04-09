@@ -745,6 +745,7 @@ class WebSocketManager:
                         except Exception:
                             pass
 
+                    logger.info("Live sending audio to Gemini pcm_bytes=%s", str(len(pcm)))
                     await gemini_session.send_realtime_input(audio=types.Blob(data=pcm, mime_type=mime_type))
                     continue
 
