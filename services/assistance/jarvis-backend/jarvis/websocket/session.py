@@ -508,6 +508,7 @@ class WebSocketManager:
 
                 # NATIVE AUDIO MODELS - These support audio input/output in Live mode
                 # Required for voice conversations
+                "gemini-3.1-flash-lite",
                 "gemini-2.5-flash-native-audio-latest",
                 "gemini-2.5-flash-native-audio-preview-12-2025",
                 "lyria-realtime-exp",
@@ -1885,6 +1886,7 @@ async def gemini_live_probe_and_cache() -> dict[str, Any]:
 
     probe_models = [
         "gemini-3.1-flash-live-preview",
+        "gemini-3.1-flash-lite",
         "gemini-2.5-flash-native-audio-latest",
         "gemini-2.5-flash-native-audio-preview-12-2025",
         "lyria-realtime-exp",
