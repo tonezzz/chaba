@@ -864,37 +864,7 @@ export function LeftPanel(props: {
               ))}
             </div>
           )}
-          {/* Mode Toggle */}
-          <div className="flex items-center gap-2 mb-2">
-            <button
-              onClick={() => {
-                setInputMode("text");
-                if (isTalking) handleToggleTalk();
-              }}
-              className={`flex-1 py-2 rounded-lg font-mono text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 ${
-                inputMode === "text"
-                  ? "bg-slate-950/60 text-cyan-200 border border-cyan-500/40"
-                  : "bg-slate-950/40 text-slate-500 border border-slate-800 hover:text-slate-300"
-              }`}
-            >
-              <Keyboard className="w-3.5 h-3.5" /> Type
-            </button>
-            <button
-              onClick={() => {
-                setInputMode("voice");
-                if (!isTalking) handleToggleTalk();
-              }}
-              className={`flex-1 py-2 rounded-lg font-mono text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 ${
-                inputMode === "voice"
-                  ? "bg-cyan-950/30 text-cyan-200 border border-cyan-500/40"
-                  : "bg-slate-950/40 text-slate-500 border border-slate-800 hover:text-slate-300"
-              }`}
-            >
-              <Mic className="w-3.5 h-3.5" /> Voice
-            </button>
-          </div>
-
-          {inputMode === "text" ? (
+          {inputMode === "text" && (
             <div className="flex items-center gap-2 min-w-0">
               <button
                 onClick={handlePickFiles}
@@ -937,19 +907,37 @@ export function LeftPanel(props: {
                 <Send className="w-4 h-4" />
               </button>
             </div>
-          ) : (
-            <div
-              className={`
-                w-full py-4 rounded-xl font-hud text-sm tracking-widest uppercase transition-all duration-300 shadow-lg
-                flex items-center justify-center gap-3 select-none
-                ${state !== ConnectionState.CONNECTED
-                  ? "bg-slate-800/50 text-slate-500 border border-slate-700"
-                  : "bg-yellow-500/10 text-yellow-300 border border-yellow-500/50 shadow-yellow-500/20"}
-              `}
-            >
-              <Mic className="w-5 h-5" /> Listening...
-            </div>
           )}
+
+          {/* Mode Toggle */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setInputMode("text");
+                if (isTalking) handleToggleTalk();
+              }}
+              className={`flex-1 py-2 rounded-lg font-mono text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 ${
+                inputMode === "text"
+                  ? "bg-slate-950/60 text-cyan-200 border border-cyan-500/40"
+                  : "bg-slate-950/40 text-slate-500 border border-slate-800 hover:text-slate-300"
+              }`}
+            >
+              <Keyboard className="w-3.5 h-3.5" /> Type
+            </button>
+            <button
+              onClick={() => {
+                setInputMode("voice");
+                if (!isTalking) handleToggleTalk();
+              }}
+              className={`flex-1 py-2 rounded-lg font-mono text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 ${
+                inputMode === "voice"
+                  ? "bg-cyan-950/30 text-cyan-200 border border-cyan-500/40"
+                  : "bg-slate-950/40 text-slate-500 border border-slate-800 hover:text-slate-300"
+              }`}
+            >
+              <Mic className="w-3.5 h-3.5" /> {inputMode === "voice" && isTalking ? "Listening" : "Voice"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
