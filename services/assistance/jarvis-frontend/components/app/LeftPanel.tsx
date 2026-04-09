@@ -959,6 +959,7 @@ export function LeftPanel(props: {
               )}
             </button>
           )}
+        </div>
       </div>
     </div>
   );
