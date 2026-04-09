@@ -15,6 +15,10 @@ logger = logging.getLogger(__name__)
 
 MCP_BASE_URL = os.getenv("MCP_BASE_URL", "http://mcp-bundle-assistance:3050").strip()
 
+# Feature flags for faster startup
+JARVIS_SKIP_AGENTS = os.getenv("JARVIS_SKIP_AGENTS", "").lower() in ("1", "true", "yes", "on")
+JARVIS_SKIP_MEMORY_CACHE = os.getenv("JARVIS_SKIP_MEMORY_CACHE", "").lower() in ("1", "true", "yes", "on")
+
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application"""
@@ -38,12 +42,18 @@ def create_app() -> FastAPI:
         """Initialize application on startup"""
         logger.info("Jarvis backend starting up...")
         
-        # Load agents
-        agent_dispatcher.load_agents()
-        logger.info(f"Loaded {len(agent_dispatcher.agents)} agents")
+        # Load agents (optional for faster startup)
+        if JARVIS_SKIP_AGENTS:
+            logger.info("Agents loading skipped (JARVIS_SKIP_AGENTS=1)")
+        else:
+            agent_dispatcher.load_agents()
+            logger.info(f"Loaded {len(agent_dispatcher.agents)} agents")
         
-        # Initialize memory cache (could preload from storage here)
-        logger.info("Memory cache initialized")
+        # Initialize memory cache (optional for faster startup)
+        if JARVIS_SKIP_MEMORY_CACHE:
+            logger.info("Memory cache initialization skipped (JARVIS_SKIP_MEMORY_CACHE=1)")
+        else:
+            logger.info("Memory cache initialized")
         
         logger.info("Jarvis backend startup complete")
     
@@ -53,8 +63,9 @@ def create_app() -> FastAPI:
         """Cleanup on shutdown"""
         logger.info("Jarvis backend shutting down...")
         
-        # Cleanup memory cache
-        memory_cache.prune_gems_drafts()
+        # Cleanup memory cache (only if not skipped)
+        if not JARVIS_SKIP_MEMORY_CACHE:
+            memory_cache.prune_gems_drafts()
         
         logger.info("Jarvis backend shutdown complete")
     
@@ -62,10 +73,13 @@ def create_app() -> FastAPI:
     @app.get("/health")
     async def health_check():
         """Health check endpoint"""
+        agents_count = len(agent_dispatcher.agents) if not JARVIS_SKIP_AGENTS else 0
         return {
             "status": "healthy",
             "version": "0.1.0",
-            "agents_loaded": len(agent_dispatcher.agents),
+            "agents_loaded": agents_count,
+            "agents_skipped": JARVIS_SKIP_AGENTS,
+            "memory_cache_skipped": JARVIS_SKIP_MEMORY_CACHE,
             "mcp_base_url": MCP_BASE_URL
         }
     
