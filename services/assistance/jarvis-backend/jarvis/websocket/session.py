@@ -1236,50 +1236,70 @@ class WebSocketManager:
         api_key: str,
         previous_interaction_id: Optional[str],
     ) -> tuple[str, Optional[str]]:
-        """Get response from Gemini API via HTTP"""
+        """Get response from Gemini API via HTTP using generate_content with system prompt"""
         try:
             from google import genai
+            from google.genai import types
 
-            model_name = str(os.getenv("GEMINI_TEXT_MODEL") or "gemini-3-flash-preview").strip()
+            model_name = str(os.getenv("GEMINI_TEXT_MODEL") or "gemini-2.5-flash").strip()
             if model_name.startswith("models/"):
                 model_name = model_name[len("models/") :]
 
             client = genai.Client(api_key=api_key)
+            
+            # Use generate_content with system instruction for better conversational responses
+            system_prompt = (
+                "You are Jarvis, a helpful AI assistant. Respond naturally and conversationally. "
+                "Keep responses concise but friendly. If the user greets you, greet them back warmly. "
+                "Answer questions helpfully and directly."
+            )
+            
             try:
-                interaction = await client.aio.interactions.create(
+                resp = await client.aio.models.generate_content(
                     model=model_name,
-                    input=user_text,
-                    previous_interaction_id=previous_interaction_id,
+                    contents=user_text,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_prompt,
+                        max_output_tokens=1024,
+                        temperature=0.7,
+                    )
                 )
-            except Exception as ie:
-                # If Interactions is not supported for this model/key, fall back to stateless
-                # generate_content so smart fallback still works.
-                if "invalid_request" in str(ie) or "not supported" in str(ie) or "Model family" in str(ie):
-                    resp = await client.aio.models.generate_content(model=model_name, contents=user_text)
-                    txt = (getattr(resp, "text", None) or "").strip()
-                    if not txt:
-                        txt = str(resp)
-                    return txt, previous_interaction_id
-                raise
-
-            txt: str = ""
-            outputs = getattr(interaction, "output", None)
-            if outputs:
-                last = outputs[-1]
-                content = getattr(last, "content", None)
-                if content:
-                    txt = str(getattr(content, "text", "") or "").strip()
-            if not txt:
-                txt = str(getattr(interaction, "text", "") or "").strip()
-            if not txt:
-                txt = "I'm not sure how to respond to that. Could you try asking differently?"
-
-            new_id = getattr(interaction, "id", None)
-            return txt, str(new_id) if new_id else previous_interaction_id
+                txt = (getattr(resp, "text", None) or "").strip()
+                if not txt:
+                    # Try to extract from candidates
+                    candidates = getattr(resp, "candidates", None)
+                    if candidates:
+                        for c in candidates:
+                            content = getattr(c, "content", None)
+                            if content:
+                                parts = getattr(content, "parts", None)
+                                if parts:
+                                    for p in parts:
+                                        t = getattr(p, "text", None)
+                                        if t:
+                                            txt = str(t).strip()
+                                            break
+                            if txt:
+                                break
+                
+                if not txt:
+                    txt = "I'm thinking about that. Can you tell me more?"
+                
+                logger.info(f"Gemini response: {txt[:80]}...")
+                return txt, None  # No interaction ID for generate_content
+                
+            except Exception as gen_err:
+                logger.warning(f"generate_content failed: {gen_err}, trying fallback")
+                # Last resort: simple generate without config
+                resp = await client.aio.models.generate_content(model=model_name, contents=user_text)
+                txt = (getattr(resp, "text", None) or "").strip()
+                if not txt:
+                    txt = "I'm having trouble understanding. Could you rephrase that?"
+                return txt, None
                     
         except Exception as e:
             logger.error(f"Error calling Gemini API: {e}")
-            return "I'm having trouble connecting to my brain right now. Please try again in a moment.", previous_interaction_id
+            return "I'm having trouble connecting right now. Please try again in a moment.", None
     
     async def _handle_echo_mode(self, session: WebSocketSession) -> None:
         """Fallback echo mode when Gemini Live API is not available"""
