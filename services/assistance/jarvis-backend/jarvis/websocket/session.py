@@ -1296,6 +1296,12 @@ class _StreamingSidecarTranscriber:
             str(os.getenv("GEMINI_TEXT_MODEL") or "").strip() or "gemini-flash-latest"
         )
 
+        # Circuit breaker: track consecutive failures to back off and preserve session
+        self._consecutive_errors = 0
+        self._max_consecutive_errors = 5
+        self._circuit_open_until: float = 0.0
+        self._circuit_backoff_seconds = 30.0
+
     def start(self) -> None:
         if self._task is None:
             self._task = asyncio.create_task(self._run())
@@ -1349,6 +1355,7 @@ class _StreamingSidecarTranscriber:
         self._task = None
 
     async def _run(self) -> None:
+        """Run the sidecar transcription loop. Errors are isolated to not affect the main session."""
         try:
             while not self._stopped.is_set():
                 try:
@@ -1364,8 +1371,33 @@ class _StreamingSidecarTranscriber:
                 except Exception:
                     pass
 
-                await self._transcribe_available(final_flush=False)
+                # Circuit breaker: if too many errors, back off to preserve API quota and session stability
+                now = asyncio.get_running_loop().time()
+                if now < self._circuit_open_until:
+                    # Skip transcription during circuit cooldown
+                    continue
+
+                try:
+                    await self._transcribe_available(final_flush=False)
+                except asyncio.CancelledError:
+                    return
+                except Exception as e:
+                    # Isolate errors: never let STT failures crash the session
+                    self._consecutive_errors += 1
+                    if self._consecutive_errors >= self._max_consecutive_errors:
+                        self._circuit_open_until = now + self._circuit_backoff_seconds
+                        logger.warning(
+                            "Sidecar STT circuit breaker opened: too many consecutive errors (%s). "
+                            "Pausing STT for %ss to preserve session stability.",
+                            self._consecutive_errors,
+                            self._circuit_backoff_seconds,
+                        )
+                        self._consecutive_errors = 0
+                    else:
+                        logger.debug("Sidecar STT error in _run (isolated): %s", e)
+                    # Continue loop - session stays alive even if STT is failing
         except Exception:
+            # Final safety: never propagate exceptions to parent session
             return
 
     def _retry_after_seconds_from_error(self, err: Exception) -> float | None:
@@ -1534,6 +1566,9 @@ class _StreamingSidecarTranscriber:
             except asyncio.CancelledError:
                 return
             except Exception as e:
+                # Count error for circuit breaker, but don't let it crash the session
+                self._consecutive_errors += 1
+
                 retry_after = self._retry_after_seconds_from_error(e)
                 if retry_after is None and self._is_transient_unavailable(e):
                     retry_after = 2.0
@@ -1595,6 +1630,10 @@ class _StreamingSidecarTranscriber:
             # Only advance once we successfully called the STT model.
             self._read_offset = end
             self._next_allowed_ts = asyncio.get_running_loop().time() + float(self._interval_seconds)
+
+            # Reset consecutive errors on success - circuit breaker only triggers on sustained failures
+            if self._consecutive_errors > 0:
+                self._consecutive_errors = 0
 
         if not text:
             return
