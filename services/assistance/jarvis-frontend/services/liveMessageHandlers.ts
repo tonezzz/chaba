@@ -416,7 +416,9 @@ export async function handleBackendMessage(ctx: HandlerContext, message: any): P
 		if (src === "output" && shouldSuppressOutputMessage(ctx, String(message.text || ""), quietAfterSysKvSet)) return;
 
 		// Finalized input transcript → forward as text to Jarvis.
-		if (src === "input" && message?.partial !== true) {
+		// IMPORTANT: When forward_to_gemini is false (native audio mode), sidecar is for logging only.
+		// Gemini Live receives audio directly; don't forward sidecar text to avoid duplicate input.
+		if (src === "input" && message?.partial !== true && message?.forward_to_gemini !== false) {
 			const utterance = String(message.text || "").trim();
 			if (utterance) {
 				const now = Date.now();

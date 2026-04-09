@@ -643,16 +643,17 @@ class WebSocketManager:
             # Sidecar transcription: native-audio models often can't enable AUDIO+TEXT at
             # Live connect time, so we stream partial transcripts via separate calls.
             if _live_is_native_audio_model(live_model_name):
-                transcriber = _StreamingSidecarTranscriber(session=session)
+                transcriber = _StreamingSidecarTranscriber(session=session, native_audio_mode=True)
                 transcriber.start()
                 logger.info(
-                    "Sidecar STT started model=%s stt_model=%s stt_model_source=%s interval_s=%s chunk_s=%s overlap_s=%s",
+                    "Sidecar STT started model=%s stt_model=%s stt_model_source=%s interval_s=%s chunk_s=%s overlap_s=%s native_audio=%s",
                     str(live_model_name),
                     str(transcriber._model),
                     str(getattr(transcriber, "_model_source", "unknown")),
                     str(transcriber._interval_seconds),
                     str(transcriber._chunk_seconds),
                     str(transcriber._overlap_seconds),
+                    "true",
                 )
         except Exception:
             transcriber = None
@@ -1263,8 +1264,9 @@ class WebSocketManager:
 
 
 class _StreamingSidecarTranscriber:
-    def __init__(self, session: WebSocketSession):
+    def __init__(self, session: WebSocketSession, native_audio_mode: bool = False):
         self._session = session
+        self._native_audio_mode = native_audio_mode  # When True, sidecar is for logging only; Gemini Live handles audio natively
         self._buf = bytearray()
         self._lock = asyncio.Lock()
         self._kick_event = asyncio.Event()
@@ -1657,7 +1659,7 @@ class _StreamingSidecarTranscriber:
             self._last_emitted = (self._last_emitted + " " + emit).strip() if self._last_emitted else text
 
         try:
-            logger.info("Sidecar STT emitting transcript=%r final=%s", emit[:80], final_flush)
+            logger.info("Sidecar STT emitting transcript=%r final=%s native_audio=%s", emit[:80], final_flush, self._native_audio_mode)
             await self._session.send_json(
                 {
                     "type": "transcript",
@@ -1665,6 +1667,9 @@ class _StreamingSidecarTranscriber:
                     "source": "input",
                     "partial": False if final_flush else True,
                     "instance_id": INSTANCE_ID,
+                    # When native audio mode is active, sidecar is for display/logging only.
+                    # Gemini Live receives audio directly; don't forward sidecar text to Gemini.
+                    "forward_to_gemini": not self._native_audio_mode,
                 }
             )
             logger.info("Sidecar STT emitted chars=%s", str(len(emit)))
