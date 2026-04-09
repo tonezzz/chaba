@@ -63,6 +63,105 @@ window_seconds="${HEALTH_WINDOW_SECONDS:-120}"
 force_redeploy="${FORCE_REDEPLOY:-0}"
 dry_run="${DRY_RUN:-0}"
 no_pull="${NO_PULL:-0}"
+check_env="${CHECK_ENV:-0}"
+
+# Parse CLI flags
+for arg in "$@"; do
+  case "$arg" in
+    --check-env) check_env=1 ;;
+    --dry-run) dry_run=1 ;;
+    --force) force_redeploy=1 ;;
+    --no-pull) no_pull=1 ;;
+  esac
+done
+
+# -----------------------------------------------------------------------------
+# Environment Variable Drift Check
+# -----------------------------------------------------------------------------
+check_env_drift() {
+  if [[ -z "${portainer_api_key}" ]]; then
+    echo "[check-env] ERROR: PORTAINER_API_KEY is not set" >&2
+    return 1
+  fi
+
+  if [[ -z "${portainer_url}" ]]; then
+    portainer_url="http://127.0.0.1:9000"
+  fi
+  base="${portainer_url%/}"
+
+  echo "[check-env] Fetching Portainer stack env for ${portainer_stack_name}..."
+
+  # Get stack ID
+  stack_id="$(curl -sS -k --max-time 10 -H "X-API-Key: ${portainer_api_key}" \
+    "${base}/api/stacks" 2>/dev/null | \
+    python3 -c "import json,sys,os; d=json.load(sys.stdin); name=os.environ.get('PORTAINER_STACK_NAME','idc1-assistance-core'); ep=int(os.environ.get('PORTAINER_ENDPOINT_ID','2')); print([s.get('Id') for s in d if s.get('Name')==name and s.get('EndpointId')==ep][0] if isinstance(d,list) else '')" 2>/dev/null)"
+
+  if [[ -z "${stack_id}" ]]; then
+    echo "[check-env] ERROR: Could not find stack ${portainer_stack_name}" >&2
+    return 1
+  fi
+
+  # Get stack env
+  curl -sS -k --max-time 10 -H "X-API-Key: ${portainer_api_key}" \
+    "${base}/api/stacks/${stack_id}" -o /tmp/portainer_stack_env.json 2>/dev/null
+
+  echo ""
+  echo "=== Environment Variable Drift Check ==="
+  echo ""
+
+  # Extract Portainer env vars
+  echo "[check-env] Portainer stack env vars:"
+  jq -r '.Env[] | "  \(.name)"' /tmp/portainer_stack_env.json 2>/dev/null | sort
+
+  echo ""
+
+  # Check for critical missing vars
+  local portainer_vars
+  portainer_vars="$(jq -r '.Env[] | .name' /tmp/portainer_stack_env.json 2>/dev/null | sort)"
+
+  local required_vars="GEMINI_API_KEY JARVIS_PUBLIC_BASE_URL JARVIS_ADMIN_TOKEN"
+  local missing_vars=""
+
+  for var in $required_vars; do
+    if ! echo "$portainer_vars" | grep -q "^${var}$"; then
+      missing_vars="${missing_vars} ${var}"
+    fi
+  done
+
+  if [[ -n "$missing_vars" ]]; then
+    echo "[check-env] WARNING: Potentially missing critical vars:${missing_vars}"
+    echo ""
+  fi
+
+  # Check for fast-startup flags
+  if echo "$portainer_vars" | grep -q "^JARVIS_SKIP_AGENTS$"; then
+    local skip_val
+    skip_val="$(jq -r '.Env[] | select(.name=="JARVIS_SKIP_AGENTS") | .value' /tmp/portainer_stack_env.json)"
+    echo "[check-env] Fast startup: JARVIS_SKIP_AGENTS=${skip_val}"
+  else
+    echo "[check-env] Note: JARVIS_SKIP_AGENTS not set (agents will load)"
+  fi
+
+  if echo "$portainer_vars" | grep -q "^JARVIS_SIDECAR_STT_MODEL$"; then
+    local stt_model
+    stt_model="$(jq -r '.Env[] | select(.name=="JARVIS_SIDECAR_STT_MODEL") | .value' /tmp/portainer_stack_env.json)"
+    echo "[check-env] STT model: JARVIS_SIDECAR_STT_MODEL=${stt_model}"
+  else
+    echo "[check-env] Note: JARVIS_SIDECAR_STT_MODEL not set (will use default)"
+  fi
+
+  echo ""
+  echo "[check-env] To see values (secrets redacted):"
+  echo "  jq '.Env[] | select(.name | test(\"API_KEY|SECRET|TOKEN|PASSWORD\") | not) | \"\\(.name)=\\(.value)\"' /tmp/portainer_stack_env.json"
+  echo ""
+
+  return 0
+}
+
+if [[ "${check_env}" == "1" ]]; then
+  check_env_drift
+  exit 0
+fi
 
 echo "[deploy] repo=${repo} workflow=${workflow_name} branch=${branch} compose=${compose_file}"
 
