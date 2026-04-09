@@ -15,9 +15,13 @@ logger = logging.getLogger(__name__)
 
 MCP_BASE_URL = os.getenv("MCP_BASE_URL", "http://mcp-bundle-assistance:3050").strip()
 
-# Feature flags for faster startup
-JARVIS_SKIP_AGENTS = os.getenv("JARVIS_SKIP_AGENTS", "").lower() in ("1", "true", "yes", "on")
-JARVIS_SKIP_MEMORY_CACHE = os.getenv("JARVIS_SKIP_MEMORY_CACHE", "").lower() in ("1", "true", "yes", "on")
+# Feature flags for faster startup (treat any non-empty value as skip)
+def _is_enabled(env_var: str) -> bool:
+    val = os.getenv(env_var, "").strip().lower()
+    return val and val not in ("0", "false", "no", "off", "")
+
+JARVIS_SKIP_AGENTS = _is_enabled("JARVIS_SKIP_AGENTS")
+JARVIS_SKIP_MEMORY_CACHE = _is_enabled("JARVIS_SKIP_MEMORY_CACHE")
 
 
 def create_app() -> FastAPI:
