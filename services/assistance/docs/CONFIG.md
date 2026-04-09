@@ -81,10 +81,19 @@ These are set via compose defaults and/or Portainer stack env:
   - example: `http://weaviate:8080`
 - `GEMINI_LIVE_MODEL`
   - example: `gemini-2.5-flash-native-audio-preview-12-2025`
+  - **For voice/audio support**: Must use native-audio models (names containing `native-audio`)
+  - **For text-only Live mode**: Can use any Gemini model
+  - **Available native-audio models**:
+    - `gemini-2.5-flash-native-audio-latest` (recommended)
+    - `gemini-2.5-flash-native-audio-preview-12-2025`
+    - `lyria-realtime-exp`
 
 Reminders:
 
-(removed)
+- **Voice vs Text in Live Mode**: 
+  - Native-audio models: Support both voice input (microphone) and audio output
+  - Non-native models (e.g., `gemini-2.5-flash`, `gemini-2.5-pro`): Only support text input in Live mode
+  - If you send audio to a non-native model, it will not respond (use smart fallback for voice with non-native models)
 
 Debugging:
 

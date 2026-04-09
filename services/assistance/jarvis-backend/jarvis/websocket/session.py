@@ -496,6 +496,9 @@ class WebSocketManager:
             # Extend with probe set (only if cache missing or cache fails)
             preferred_live_model = str(os.getenv("GEMINI_LIVE_MODEL") or "").strip()
             try_text_live_preview = str(os.getenv("JARVIS_LIVE_TRY_TEXT_PREVIEW") or "false").strip().lower() == "true"
+            
+            # IMPORTANT: For voice/audio support, ONLY native-audio models work.
+            # Non-native models (gemini-2.5-flash, gemini-2.5-pro, etc.) only support TEXT in Live mode.
             probe_models = [
                 # If operator configured a preferred Live model, try it first.
                 preferred_live_model,
@@ -503,21 +506,16 @@ class WebSocketManager:
                 # of the default probe path unless explicitly requested.
                 "gemini-3.1-flash-live-preview" if (preferred_live_model == "gemini-3.1-flash-live-preview" or try_text_live_preview) else "",
 
-                # Audio/live-adjacent models (may require audio input depending on client behavior)
+                # NATIVE AUDIO MODELS - These support audio input/output in Live mode
+                # Required for voice conversations
                 "gemini-2.5-flash-native-audio-latest",
                 "gemini-2.5-flash-native-audio-preview-12-2025",
                 "lyria-realtime-exp",
 
-                # General text models (may not support bidiGenerateContent but keep for coverage)
-                "gemini-2.5-flash",
-                "gemini-2.5-pro",
-                "gemini-2.0-flash",
-                "gemini-2.0-flash-001",
-                "gemini-2.0-flash-lite",
-                "gemini-2.0-flash-lite-001",
-                "gemini-flash-latest",
-                "gemini-flash-lite-latest",
-                "gemini-pro-latest",
+                # NON-NATIVE MODELS - Text-only in Live mode (no audio input support)
+                # Included as fallbacks for text-only Live mode
+                # "gemini-2.5-flash",
+                # "gemini-2.5-pro",
             ]
 
             probe_models = [m for m in probe_models if m]
