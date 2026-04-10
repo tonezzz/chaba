@@ -1,60 +1,21 @@
 services:
-  # PostgreSQL - Primary database
-  postgres:
-    image: postgres:15-alpine
-    container_name: idc1-postgres
+  # SQLite Web - Browser-based SQLite management
+  sqlite-web:
+    image: coleifer/sqlite-web:latest
+    container_name: idc1-sqlite-web
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-chaba}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-      POSTGRES_DB: ${POSTGRES_DB:-chaba}
-      PGDATA: /var/lib/postgresql/data/pgdata
+      SQLITE_DATABASE: /data/chaba.db
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./init:/docker-entrypoint-initdb.d
+      - sqlite-data:/data
     ports:
-      - "5432:5432"
+      - "8080:8080"
     restart: unless-stopped
+    command: sqlite_web -H 0.0.0.0 -p 8080 /data/chaba.db
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-chaba}"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Redis - Cache and session store
-  redis:
-    image: redis:7-alpine
-    container_name: idc1-redis
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-changeme}
-    volumes:
-      - redis-data:/data
-    ports:
-      - "6379:6379"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-
-  # pgAdmin - PostgreSQL management (optional)
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: idc1-pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@chaba.local}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-changeme}
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-    volumes:
-      - pgadmin-data:/var/lib/pgadmin
-    ports:
-      - "5050:80"
-    restart: unless-stopped
-    depends_on:
-      - postgres
-    profiles:
-      - admin
-
 volumes:
-  postgres-data:
-  redis-data:
-  pgadmin-data:
+  sqlite-data:

@@ -1,90 +1,81 @@
 # idc1-db Stack
 
-Database services for idc1 host: PostgreSQL + Redis + optional pgAdmin.
+Lightweight SQLite database for idc1 host with web-based management interface.
 
 ## Services
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| PostgreSQL | 5432 | Primary relational database |
-| Redis | 6379 | Cache, sessions, pub/sub |
-| pgAdmin | 5050 | Database management UI (optional) |
+| sqlite-web | 8080 | SQLite database with web UI |
 
 ## Quick Start
 
-### 1. Configure Environment
+### 1. Start the Service
 
 ```bash
-cp .env.example .env
-# Edit .env with your secure passwords
+docker-compose up -d sqlite-web
 ```
 
-### 2. Start Core Services
+### 2. Access Web UI
 
-```bash
-docker-compose up -d postgres redis
-```
+Open http://idc1.surf-thailand.com:8080 in your browser.
 
-### 3. (Optional) Start pgAdmin
+## Features
 
-```bash
-docker-compose --profile admin up -d pgadmin
-```
+- **Web-based SQLite browser** - Create tables, run queries, export data
+- **Persistent storage** - Database survives container restarts
+- **Zero configuration** - SQLite is serverless, no credentials needed
+- **Lightweight** - Perfect for small to medium applications
 
-## Access
+## Database Location
 
-### PostgreSQL
-```
-Host: idc1.surf-thailand.com:5432
-User: chaba (from .env)
-Password: (from .env)
-Database: chaba
-```
-
-### Redis
-```
-Host: idc1.surf-thailand.com:6379
-Password: (from .env)
-```
-
-### pgAdmin (if enabled)
-- URL: http://idc1.surf-thailand.com:5050
-- Login: email/password from .env
+- **Container path**: `/data/chaba.db`
+- **Docker volume**: `idc1-db_sqlite-data`
+- **Host backup path**: `/var/lib/docker/volumes/idc1-db_sqlite-data/_data/chaba.db`
 
 ## Portainer Deployment (idc1)
 
-1. SSH to idc1: `ssh chaba@idc1.surf-thailand.com`
-2. Ensure stack is on `idc1-db` branch and pushed to origin
-3. In Portainer:
+1. **SSH to idc1**: `ssh chaba@idc1.surf-thailand.com`
+2. **Ensure branch pushed**: `idc1-db` branch should be on origin
+3. **In Portainer**:
    - Go to **Stacks** → **Add stack**
-   - Name: `idc1-db`
-   - Build method: **Git repository**
-   - URL: `https://github.com/tonezzz/chaba`
-   - Branch: `idc1-db`
-   - Compose path: `stacks/idc1-db/docker-compose.yml`
-   - Environment variables: Add from .env file
-   - Deploy
+   - **Name**: `idc1-db`
+   - **Build method**: Git repository
+   - **Repository URL**: `https://github.com/tonezzz/chaba`
+   - **Branch**: `idc1-db`
+   - **Compose path**: `stacks/idc1-db/docker-compose.yml`
+   - Click **Deploy**
 
-## Backup Strategy
+## Connecting from Applications
 
-PostgreSQL dumps and Redis persistence are stored in named volumes. For backup:
-
-```bash
-# PostgreSQL dump
-docker exec idc1-postgres pg_dump -U chaba chaba > backup.sql
-
-# Redis backup (if appendonly enabled)
-docker exec idc1-redis redis-cli BGSAVE
+### Python
+```python
+import sqlite3
+conn = sqlite3.connect('/data/chaba.db')  # Same container/volume
 ```
 
-## Health Checks
+### Node.js (better-sqlite3)
+```javascript
+const Database = require('better-sqlite3');
+const db = new Database('/data/chaba.db');
+```
 
-All services include healthchecks:
+## Backup
+
 ```bash
-# Check status
+# Backup the SQLite file directly
+docker exec idc1-sqlite-web cat /data/chaba.db > backup_$(date +%Y%m%d).db
+
+# Or copy from volume
+cp /var/lib/docker/volumes/idc1-db_sqlite-data/_data/chaba.db backup.db
+```
+
+## Health Check
+
+```bash
+# Check container status
 docker-compose ps
 
 # View logs
-docker-compose logs -f postgres
-docker-compose logs -f redis
+docker-compose logs -f sqlite-web
 ```
