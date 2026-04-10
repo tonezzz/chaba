@@ -1,0 +1,51 @@
+# Example: Using GhostRoute Discovery in Other Stacks
+#
+# This shows how idc1-assistance or other stacks can consume
+# the GhostRoute discovery from autoagent-test.
+
+version: "3.9"
+
+services:
+  # Example service that uses GhostRoute discovery
+  assistance-backend:
+    image: chaba/assistance-backend:latest
+    environment:
+      # Default model (can be overridden by discovery)
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-anthropic/claude-3.5-sonnet}
+    volumes:
+      # Mount discovery as read-only reference
+      - type: volume
+        source: ghostroute-discovery
+        target: /discovery/ghostroute
+        read_only: true
+    # Entrypoint can load discovery config
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        # Load GhostRoute config if available
+        if [ -f /discovery/ghostroute/latest/recommended_config.json ]; then
+          MODEL=$$(cat /discovery/ghostroute/latest/recommended_config.json | grep '"AUTOAGENT_MODEL"' | cut -d'"' -f4)
+          if [ -n "$$MODEL" ]; then
+            export OPENROUTER_MODEL="$$MODEL"
+            echo "Loaded model from GhostRoute: $$MODEL"
+          fi
+        fi
+        exec /app/start.sh
+
+  # Alternative: MCP-aware service
+  mcp-client:
+    image: chaba/mcp-client:latest
+    environment:
+      MCP_SERVERS: '[
+        {
+          "name": "ghostroute-discovery",
+          "command": ["docker", "exec", "autoagent-test", "python", "/app/mcp-query.py"],
+          "tools": ["best", "fallbacks", "config", "list"]
+        }
+      ]'
+
+volumes:
+  ghostroute-discovery:
+    # External volume from autoagent-test
+    external: true
+    name: autoagent-test_autoagent-workspace

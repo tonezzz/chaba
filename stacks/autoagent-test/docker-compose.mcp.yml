@@ -1,0 +1,50 @@
+# MCP GhostRoute Server Extension
+# 
+# Add this to the main docker-compose.yml or run separately:
+#   docker-compose -f docker-compose.yml -f docker-compose.mcp.yml up -d
+
+version: "3.9"
+
+services:
+  mcp-ghostroute:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: chaba/autoagent-test:local
+    container_name: mcp-ghostroute
+    restart: unless-stopped
+    command: >
+      bash -c "pip install mcp>=1.0.0 aiohttp>=3.8.0 &&
+               python /app/mcp/mcp-ghostroute/server.py 
+               --transport http 
+               --port 8056 
+               --host 0.0.0.0"
+    ports:
+      - "127.0.0.1:${MCP_GHOSTROUTE_PORT:-8056}:8056"
+    environment:
+      GHOSTROUTE_DISCOVERY_DIR: /workspace/discovery/ghostroute
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+    volumes:
+      - autoagent-workspace:/workspace
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8056/health", "||", "true"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Alternative: stdio mode for local MCP clients
+  # This runs in the same container as autoagent
+  # Just add the MCP server config to your Claude Desktop / Windsurf
+  
+  autoagent:
+    # Main autoagent service - extended with MCP server files
+    volumes:
+      - autoagent-workspace:/workspace
+      - ./mcp:/app/mcp:ro
+      - ./discovery:/app/discovery:ro
+
+volumes:
+  autoagent-workspace:
+    external: true
+    name: autoagent-test_autoagent-workspace

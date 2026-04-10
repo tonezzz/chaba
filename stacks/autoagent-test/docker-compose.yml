@@ -1,0 +1,60 @@
+version: "3.9"
+
+services:
+  autoagent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: chaba/autoagent-test:local
+    container_name: autoagent-test
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${AUTOAGENT_HTTP_PORT:-8095}:8080"
+      # GhostRoute MCP Server
+      - "127.0.0.1:${MCP_GHOSTROUTE_PORT:-8058}:8056"
+      # AutoAgent Control Panel
+      - "127.0.0.1:${AUTOAGENT_CONTROL_PORT:-8059}:8080"
+    environment:
+      # AutoAgent Configuration
+      COMPLETION_MODEL: ${AUTOAGENT_MODEL:-claude-3-5-sonnet-20241022}
+      DEBUG: ${AUTOAGENT_DEBUG:-false}
+      API_BASE_URL: ${AUTOAGENT_API_BASE_URL:-}
+      FN_CALL: ${AUTOAGENT_FN_CALL:-}
+      
+      # LLM API Keys
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      XAI_API_KEY: ${XAI_API_KEY:-}
+      HUGGINGFACE_API_KEY: ${HUGGINGFACE_API_KEY:-}
+      
+      # Workspace Configuration
+      WORKSPACE_DIR: /workspace
+      DOCKER_WORKPLACE_NAME: autoagent-workspace
+      
+      # PostgreSQL Database (idc1-db)
+      POSTGRES_HOST: ${POSTGRES_HOST:-idc1.surf-thailand.com}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_DB: ${POSTGRES_DB:-chaba}
+      POSTGRES_USER: ${POSTGRES_USER:-chaba}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://chaba:changeme@idc1.surf-thailand.com:5432/chaba}
+      
+    volumes:
+      - autoagent-workspace:/workspace
+      - wiki-data:/data
+      - ./entrypoint.sh:/entrypoint.sh:ro
+      - ./control-server.py:/app/control-server.py:ro
+    
+    working_dir: /app
+    stdin_open: true
+    tty: true
+
+volumes:
+  autoagent-workspace:
+    driver: local
+  wiki-data:
+    external: true
