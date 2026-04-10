@@ -12,6 +12,8 @@ import httpx
 from fastapi import WebSocket
 
 from jarvis.feature_flags import feature_enabled
+from jarvis.providers.smart import get_smart_provider, SmartProvider
+from jarvis.models import seed_all_models, get_model_registry_summary
 
 logger = logging.getLogger(__name__)
 
@@ -78,12 +80,15 @@ class WebSocketSession:
             return str(uuid.uuid4())
     
     async def initialize(self) -> None:
-        """Initialize the session"""
+        """Initialize the session with smart model selection."""
         # Store session_id on WebSocket state
         self.ws.state.session_id = self.session_id
         
         # Initialize Redis if available
         self._redis_client = await self._get_redis_client()
+        
+        # Get smart provider for model selection
+        self.smart_provider = get_smart_provider()
         
         # Initialize Gemini client
         self.client = genai.Client(
@@ -105,14 +110,50 @@ class WebSocketSession:
             },
         }
         
+        # Select model based on default chat task (can be re-selected later)
+        model_id, provider, task = self.smart_provider.select_model(
+            "Hello",  # Default greeting to classify as chat
+            has_attachment=False,
+        )
+        
+        # Map to Gemini model (for now, only Gemini Live is supported)
+        # Future: route to different providers based on selection
+        gemini_model = self._map_to_gemini_model(model_id)
+        
+        logger.info(
+            "Session %s: selected model=%s (task=%s, provider=%s)",
+            self.session_id[:8],
+            model_id,
+            task.primary_type.value,
+            provider
+        )
+        
         # Start Gemini session
         self.session = self.client.aio.live.connect(
-            model="models/gemini-2.0-flash-exp",
+            model=gemini_model,
             config=self.config,
         )
         
+        # Store selected model info
+        self.selected_model = model_id
+        self.selected_provider = provider
+        
         # Load session state
         await self._load_session_state()
+    
+    def _map_to_gemini_model(self, model_id: str) -> str:
+        """Map selected model to Gemini Live-compatible model."""
+        # For now, we only support Gemini Live models
+        # Future: route to OpenRouter/Anthropic via HTTP mode
+        
+        gemini_models = {
+            "gemini-2.5-flash": "models/gemini-2.5-flash-preview-tts",
+            "gemini-2.5-flash-lite-preview": "models/gemini-2.5-flash-lite-preview",
+            "gemini-2.0-flash-exp": "models/gemini-2.0-flash-exp",
+        }
+        
+        # Default to flash-exp for Live API compatibility
+        return gemini_models.get(model_id, "models/gemini-2.0-flash-exp")
         
     async def _get_redis_client(self) -> Any:
         """Get Redis client if available"""
@@ -127,8 +168,16 @@ class WebSocketSession:
     
     def _get_system_instruction(self) -> str:
         """Get system instruction for Gemini"""
-        return """
-You are Jarvis, a helpful AI assistant. You have access to various tools and capabilities.
+        # Get available models for reference
+        models_summary = get_model_registry_summary()
+        free_models = [m for m in models_summary if m["cost_input"] == "0"]
+        
+        return f"""\
+You are Jarvis, a helpful AI assistant.
+
+Available AI providers: Gemini, OpenRouter (free models), Anthropic, OpenAI.
+Free models available: {len(free_models)} (Claude 3.5 Sonnet, Gemini 2.0 Flash, Llama 3.3, etc.)
+
 Be concise, helpful, and accurate. If you're unsure about something, admit it.
         """.strip()
     
