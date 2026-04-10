@@ -1,21 +1,43 @@
 services:
-  # SQLite Web - Browser-based SQLite management
-  sqlite-web:
-    image: coleifer/sqlite-web:latest
-    container_name: idc1-sqlite-web
+  # PostgreSQL - Primary database
+  postgres:
+    image: postgres:15-alpine
+    container_name: idc1-postgres
     environment:
-      SQLITE_DATABASE: /data/chaba.db
+      POSTGRES_USER: ${POSTGRES_USER:-chaba}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-chaba}
+      PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
-      - sqlite-data:/data
+      - postgres-data:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d
     ports:
-      - "8080:8080"
+      - "5432:5432"
     restart: unless-stopped
-    command: sqlite_web -H 0.0.0.0 -p 8080 /data/chaba.db
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-chaba}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # MCP PostgreSQL Server - Official Anthropic MCP server
+  mcp-postgres:
+    image: mcp/postgres:latest
+    build:
+      context: https://github.com/modelcontextprotocol/servers.git#main
+      dockerfile: src/postgres/Dockerfile
+    container_name: idc1-mcp-postgres
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-chaba}
+      POSTGRES_USER: ${POSTGRES_USER:-chaba}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - mcp
+
 volumes:
-  sqlite-data:
+  postgres-data:
