@@ -1,13 +1,17 @@
 # idc1-db Stack
 
-PostgreSQL database for idc1 host with official MCP PostgreSQL server for AI agent integration.
+Centralized database and AI services for idc1 host. Includes PostgreSQL, pgAdmin, MCP Wiki, and AutoAgent - all sharing the same database.
 
 ## Services
 
-| Service | Port | Purpose |
-|---------|------|---------|
-| postgres | 5432 | Primary PostgreSQL database |
-| mcp-postgres | - | MCP server for AI agent database access |
+| Service | Port | Purpose | Access |
+|---------|------|---------|--------|
+| postgres | 5432 | Primary PostgreSQL database | `psql -h idc1.surf-thailand.com -p 5432` |
+| pgadmin | 5050 | PostgreSQL management UI | `http://idc1.surf-thailand.com:5050` |
+| mcp-wiki | 3008 | Knowledge base | `http://idc1.surf-thailand.com:3008` |
+| autoagent | 8059 | AI agent control panel | `http://idc1.surf-thailand.com:8059` |
+| autoagent-mcp | 8058 | GhostRoute MCP server | `http://idc1.surf-thailand.com:8058` |
+| mcp-postgres | - | MCP server for AI database access | (stdio via MCP clients) |
 
 ## Quick Start
 
@@ -15,20 +19,21 @@ PostgreSQL database for idc1 host with official MCP PostgreSQL server for AI age
 
 ```bash
 cp .env.example .env
-# Edit .env with secure passwords
+# Edit .env with secure passwords and API keys
 ```
 
-### 2. Start PostgreSQL
+### 2. Deploy All Services
 
 ```bash
-docker-compose up -d postgres
+docker-compose up -d
 ```
 
-### 3. (Optional) Start MCP PostgreSQL Server
+### 3. Access Services
 
-```bash
-docker-compose --profile mcp up -d mcp-postgres
-```
+- **pgAdmin**: http://idc1.surf-thailand.com:5050 (login with PGADMIN_EMAIL/PGADMIN_PASSWORD)
+- **MCP Wiki**: http://idc1.surf-thailand.com:3008
+- **AutoAgent**: http://idc1.surf-thailand.com:8059
+- **PostgreSQL**: `psql -h idc1.surf-thailand.com -U chaba -d chaba`
 
 ## Features
 
