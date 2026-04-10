@@ -26,7 +26,7 @@ services:
       GEMINI_LIVE_MODEL: ${GEMINI_LIVE_MODEL:-gemini-2.5-flash-native-audio-preview-12-2025}
       JARVIS_PUBLIC_BASE_URL: ${JARVIS_PUBLIC_BASE_URL:-https://assistance.idc1.surf-thailand.com}
       JARVIS_VERIFY_FRONTEND_BASE_URL: ${JARVIS_VERIFY_FRONTEND_BASE_URL:-}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      REDIS_URL: ${REDIS_URL:-redis://idc1-redis:6379/0}
       JARVIS_RECENT_DIALOG_TTL_SECONDS: ${JARVIS_RECENT_DIALOG_TTL_SECONDS:-86400}
       JARVIS_RECENT_DIALOG_MAX_TURNS: ${JARVIS_RECENT_DIALOG_MAX_TURNS:-60}
       JARVIS_RECENT_DIALOG_MAX_CHARS: ${JARVIS_RECENT_DIALOG_MAX_CHARS:-4000}
@@ -54,7 +54,7 @@ services:
       MCP_BASE_URL: ${MCP_BASE_URL:-http://mcp-bundle-assistance:3050}
       MCP_PLAYWRIGHT_BASE_URL: ${MCP_PLAYWRIGHT_BASE_URL:-http://mcp-playwright:3050}
       DEEP_RESEARCH_WORKER_BASE_URL: ${DEEP_RESEARCH_WORKER_BASE_URL:-http://deep-research-worker:8030}
-      WEAVIATE_URL: ${WEAVIATE_URL:-http://weaviate:8080}
+      WEAVIATE_URL: ${WEAVIATE_URL:-http://idc1-weaviate:8080}
     volumes:
       - jarvis-imagen-assets:${JARVIS_IMAGEN_ASSETS_DIR:-/app/imagen_assets}
       - jarvis-session-db:/data
@@ -67,6 +67,7 @@ services:
     networks:
       - idc1-stack-net
       - idc1-portainer_default
+      - idc1-db-network
 
   jarvis-frontend:
     <<: *default-service
@@ -107,6 +108,11 @@ networks:
     driver: bridge
     external: true
     name: idc1-portainer_default
+
+  idc1-db-network:
+    driver: bridge
+    external: true
+    name: idc1-db-network
 
 volumes:
   jarvis-imagen-assets:

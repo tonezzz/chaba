@@ -72,6 +72,49 @@ services:
     depends_on:
       - postgres
 
+  # Redis - Session and cache storage
+  redis:
+    image: redis:7-alpine
+    container_name: idc1-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - idc1-db-network
+
+  # Weaviate - Vector database for RAG
+  weaviate:
+    image: semitechnologies/weaviate:1.25.0
+    container_name: idc1-weaviate
+    ports:
+      - "8082:8080"
+      - "50051:50051"
+    volumes:
+      - weaviate-data:/var/lib/weaviate
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+      PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
+      DEFAULT_VECTORIZER_MODULE: 'none'
+      ENABLE_MODULES: ''
+      CLUSTER_HOSTNAME: 'node1'
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/v1/.well-known/ready"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - idc1-db-network
+
   # AutoAgent - AI agent platform
   autoagent:
     image: ghcr.io/tonezzz/autoagent:latest
@@ -111,3 +154,11 @@ volumes:
   postgres-data:
   pgadmin-data:
   autoagent-workspace:
+  redis-data:
+  weaviate-data:
+
+networks:
+  idc1-db-network:
+    driver: bridge
+    name: idc1-db-network
+    attachable: true

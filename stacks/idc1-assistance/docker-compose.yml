@@ -24,7 +24,7 @@ services:
       GEMINI_LIVE_MODEL: ${GEMINI_LIVE_MODEL:-gemini-2.5-flash-native-audio-preview-12-2025}
       JARVIS_PUBLIC_BASE_URL: ${JARVIS_PUBLIC_BASE_URL:-https://assistance.idc1.surf-thailand.com}
       JARVIS_VERIFY_FRONTEND_BASE_URL: ${JARVIS_VERIFY_FRONTEND_BASE_URL:-}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      REDIS_URL: ${REDIS_URL:-redis://idc1-redis:6379/0}
       JARVIS_RECENT_DIALOG_TTL_SECONDS: ${JARVIS_RECENT_DIALOG_TTL_SECONDS:-86400}
       JARVIS_RECENT_DIALOG_MAX_TURNS: ${JARVIS_RECENT_DIALOG_MAX_TURNS:-60}
       JARVIS_RECENT_DIALOG_MAX_CHARS: ${JARVIS_RECENT_DIALOG_MAX_CHARS:-4000}
@@ -66,21 +66,6 @@ services:
     networks:
       - idc1-stack-net
       - idc1-portainer_default
-
-    depends_on:
-      - redis
-
-  redis:
-    <<: *default-service
-    image: redis:7-alpine
-    command: ["redis-server", "--appendonly", "yes"]
-    volumes:
-      - jarvis-redis-data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 10
 
   deep-research-worker:
     <<: *default-service
@@ -2933,6 +2918,11 @@ networks:
     external: true
     name: idc1-portainer_default
 
+  idc1-db-network:
+    driver: bridge
+    external: true
+    name: idc1-db-network
+
 volumes:
   mcp-bundle-data:
   mcp-bundle-cache:
@@ -2942,6 +2932,5 @@ volumes:
   weaviate-data:
   jarvis-imagen-assets:
   jarvis-session-db:
-  jarvis-redis-data:
   image-pipeline-assets:
   deep-research-worker-data:
