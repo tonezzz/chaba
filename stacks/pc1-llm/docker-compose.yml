@@ -1,0 +1,58 @@
+services:
+  # vLLM - OpenAI-compatible API for Gemma and other models
+  vllm:
+    image: vllm/vllm-openai:latest
+    container_name: pc1-vllm
+    command: >
+      --model google/gemma-4b-it
+      --dtype float16
+      --max-model-len 4096
+      --gpu-memory-utilization 0.8
+      --port 8000
+    volumes:
+      - vllm-cache:/root/.cache/huggingface
+      - vllm-models:/models
+    ports:
+      - "8000:8000"
+    environment:
+      - HUGGING_FACE_HUB_TOKEN=${HUGGINGFACE_API_KEY:-}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  # Ollama - Alternative for easy model management
+  ollama:
+    image: ollama/ollama:latest
+    container_name: pc1-ollama
+    volumes:
+      - ollama-data:/root/.ollama
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_DEBUG=1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    profiles:
+      - ollama
+
+volumes:
+  vllm-cache:
+  vllm-models:
+  ollama-data:
