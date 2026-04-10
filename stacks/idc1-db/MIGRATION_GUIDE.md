@@ -195,7 +195,11 @@ wg show
 
 After successful migration:
 
-1. **Update documentation** in wiki about shared database
+1. **Update documentation** in wiki about shared database:
+   ```bash
+   # On idc1
+   python scripts/save-idc1-db-docs-to-wiki.py
+   ```
 2. **Backup strategy** - PostgreSQL dumps from idc1
 3. **Monitor connections** - Watch for VPN issues
 4. **Consider failover** - Local SQLite as backup mode

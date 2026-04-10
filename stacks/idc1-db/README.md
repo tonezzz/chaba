@@ -146,3 +146,20 @@ docker-compose ps
 docker-compose logs -f postgres
 docker-compose logs -f mcp-postgres
 ```
+
+## Wiki Documentation
+
+Save stack documentation to the MCP Wiki:
+
+```bash
+# From repo root
+python scripts/save-idc1-db-docs-to-wiki.py
+
+# Preview without saving
+python scripts/save-idc1-db-docs-to-wiki.py --dry-run
+```
+
+This creates/updates:
+- **IDC1-DB Service Endpoints Reference** - All service URLs and connection details
+- **IDC1-DB Stack README** - This documentation
+- **IDC1-DB Migration Guide** - Migration instructions from SQLite to PostgreSQL
