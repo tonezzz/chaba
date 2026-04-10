@@ -9,9 +9,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from jarvis.api.agents import router as agents_router
 from jarvis.api.models import router as models_router
+from jarvis.api.providers import router as providers_router
 from jarvis.agents.dispatch import agent_dispatcher
 from jarvis.memory.cache import memory_cache
 from jarvis.models import seed_all_models, get_model_registry_summary
+from jarvis.providers import get_provider_router
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +36,7 @@ def create_app() -> FastAPI:
     # Include routers
     app.include_router(agents_router, prefix="/jarvis/api", tags=["agents"])
     app.include_router(models_router, prefix="/jarvis/api", tags=["models"])
+    app.include_router(providers_router, prefix="/jarvis/api", tags=["providers"])
     
     # Register startup events
     @app.on_event("startup")
@@ -56,6 +59,11 @@ def create_app() -> FastAPI:
         for m in models[:5]:  # Log first 5
             logger.info("  - %s (%s): %s ctx, tools=%s", m["id"], m["provider"], m["context_window"], m["supports_tools"])
         
+        # Initialize providers
+        router = get_provider_router()
+        healthy = router.get_healthy_providers()
+        logger.info("Providers initialized: %s", healthy)
+        
         logger.info("Jarvis backend startup complete")
     
     # Register shutdown events
@@ -74,6 +82,7 @@ def create_app() -> FastAPI:
     async def health_check():
         """Health check endpoint"""
         models = get_model_registry_summary()
+        router = get_provider_router()
         return {
             "status": "healthy",
             "version": "0.1.0",
@@ -81,6 +90,7 @@ def create_app() -> FastAPI:
             "mcp_base_url": MCP_BASE_URL,
             "models_registered": len(models),
             "free_models_available": sum(1 for m in models if m["cost_input"] == "0"),
+            "providers": router.get_provider_status(),
         }
     
     return app

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from typing import Optional
 
 from jarvis.models import (
@@ -12,6 +13,8 @@ from jarvis.models import (
     seed_all_models,
 )
 from jarvis.models.registry import update_model_metrics
+from .base import Message, ProviderResponse
+from .router import get_provider_router
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +111,100 @@ class SmartProvider:
     ) -> None:
         """Record metrics for feedback loop."""
         update_model_metrics(model_id, latency_ms, success)
+
+    async def generate(
+        self,
+        user_text: str,
+        history: list[Message] | None = None,
+        has_attachment: bool = False,
+        tools: list[dict] | None = None,
+    ) -> ProviderResponse:
+        """End-to-end: classify, select model, generate response.
+
+        This is the main interface for non-streaming chat.
+        """
+        start_time = time.time()
+
+        # 1. Select model
+        model_id, provider_name, task = self.select_model(
+            user_text,
+            has_attachment=has_attachment,
+        )
+
+        logger.info(
+            "Smart generate: task=%s, model=%s, provider=%s",
+            task.primary_type.value,
+            model_id,
+            provider_name,
+        )
+
+        # 2. Build messages
+        messages: list[Message] = []
+        if history:
+            messages.extend(history)
+
+        # Add system message with task hint
+        system_prompt = self.build_system_prompt(task)
+        messages.insert(0, Message(role="system", content=system_prompt))
+
+        # Add user message
+        messages.append(Message(role="user", content=user_text))
+
+        # 3. Route to appropriate provider
+        router = get_provider_router()
+
+        try:
+            response = await router.generate(
+                messages=messages,
+                model_id=model_id,
+                preferred_provider=provider_name,
+                temperature=self.get_temperature(task),
+                tools=tools,
+            )
+
+            # Record success for metrics
+            latency_ms = int((time.time() - start_time) * 1000)
+            self.record_result(response.model_id, latency_ms, success=True)
+
+            return response
+
+        except Exception as e:
+            latency_ms = int((time.time() - start_time) * 1000)
+            self.record_result(model_id, latency_ms, success=False)
+            raise
+
+    async def generate_stream(
+        self,
+        user_text: str,
+        history: list[Message] | None = None,
+        has_attachment: bool = False,
+        tools: list[dict] | None = None,
+    ):
+        """End-to-end streaming generation."""
+
+        model_id, provider_name, task = self.select_model(
+            user_text,
+            has_attachment=has_attachment,
+        )
+
+        messages: list[Message] = []
+        if history:
+            messages.extend(history)
+
+        system_prompt = self.build_system_prompt(task)
+        messages.insert(0, Message(role="system", content=system_prompt))
+        messages.append(Message(role="user", content=user_text))
+
+        router = get_provider_router()
+
+        async for chunk in router.generate_stream(
+            messages=messages,
+            model_id=model_id,
+            preferred_provider=provider_name,
+            temperature=self.get_temperature(task),
+            tools=tools,
+        ):
+            yield chunk
 
 
 # Global singleton
