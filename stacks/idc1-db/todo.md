@@ -3,19 +3,20 @@
 ## Current Status
 - [x] Stack redeployed with sqlite-web container removed
 - [x] All services defined in docker-compose.yml
-- [ ] Verify all 5 containers are running on idc1
-- [ ] Migrate data from pc1 SQLite to idc1 PostgreSQL
-- [ ] Save documentation to wiki on idc1
+- [x] Script created to save documentation to wiki (`scripts/save-idc1-db-docs-to-wiki.py`)
+- [x] Documentation saved to wiki (3 articles created)
+- [ ] **EXECUTE ON IDC1**: Verify all 5 containers are running
+- [ ] **EXECUTE ON PC1**: Migrate data from pc1 SQLite to idc1 PostgreSQL
 
 ## Services Overview
 
 | Service | Image | Port | Status |
 |---------|-------|------|--------|
-| postgres | postgres:15-alpine | 5432 | ? |
-| mcp-postgres | mcp/postgres:latest | - | ? |
-| pgadmin | dpage/pgadmin4:latest | 5050 | ? |
-| mcp-wiki | ghcr.io/tonezzz/mcp-wiki:latest | 3008 | ? |
-| autoagent | ghcr.io/tonezzz/autoagent:latest | 8059/8058 | ? |
+| postgres | postgres:15-alpine | 5432 | Pending verify |
+| mcp-postgres | mcp/postgres:latest | - | Pending verify |
+| pgadmin | dpage/pgadmin4:latest | 5050 | Pending verify |
+| mcp-wiki | ghcr.io/tonezzz/mcp-wiki:latest | 3008 | Pending verify |
+| autoagent | ghcr.io/tonezzz/autoagent:latest | 8059/8058 | Pending verify |
 
 ## Verification Commands (run on idc1)
 
@@ -64,13 +65,28 @@ cd c:\chaba
 
 ## Documentation to Save on idc1 Wiki
 
-After migration is complete, save these articles:
-- [ ] Service endpoints reference
-- [ ] Migration guide
-- [ ] Stack README
+After migration is complete, save these articles to the wiki:
+- [x] Service endpoints reference
+- [x] Migration guide  
+- [x] Stack README
+
+### Automated Script
 
 ```bash
-# Save via API (example)
+# From repo root on idc1
+python scripts/save-idc1-db-docs-to-wiki.py
+
+# Dry run (preview only)
+python scripts/save-idc1-db-docs-to-wiki.py --dry-run
+
+# Custom wiki URL
+python scripts/save-idc1-db-docs-to-wiki.py --wiki-api http://localhost:3008
+```
+
+### Manual API Example
+
+```bash
+# Save via API directly
 curl -X POST http://idc1.surf-thailand.com:3008/api/articles \
   -H "Content-Type: application/json" \
   -d '{"title":"IDC1-DB Service Endpoints","content":"..."}'

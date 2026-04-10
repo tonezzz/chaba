@@ -580,7 +580,7 @@ app.get('/', async (req, res) => {
         <li>
           <div>
             <a href="/article/${encodeURIComponent(a.title)}">${escapeHtml(a.title)}</a>
-            ${a.tags ? a.tags.split(',').map(t => `<span class="tags">${escapeHtml(t.trim())}</span>`).join('') : ''}
+            ${a.tags ? (Array.isArray(a.tags) ? a.tags : a.tags.split(',')).map(t => `<span class="tags">${escapeHtml(t.trim())}</span>`).join('') : ''}
           </div>
           <span class="meta">${a.updated_at}</span>
         </li>
@@ -609,7 +609,7 @@ app.get('/search', async (req, res) => {
         <li>
           <div>
             <a href="/article/${encodeURIComponent(a.title)}">${escapeHtml(a.title)}</a>
-            ${a.tags ? a.tags.split(',').map(t => `<span class="tags">${escapeHtml(t.trim())}</span>`).join('') : ''}
+            ${a.tags ? (Array.isArray(a.tags) ? a.tags : a.tags.split(',')).map(t => `<span class="tags">${escapeHtml(t.trim())}</span>`).join('') : ''}
           </div>
           <span class="meta">${a.updated_at}</span>
         </li>
@@ -632,9 +632,12 @@ app.get('/article/:title', async (req, res) => {
       `));
     }
     
+    const tagsDisplay = article.tags 
+      ? (Array.isArray(article.tags) ? article.tags.join(', ') : article.tags)
+      : 'none';
     const content = `
       <h1>${escapeHtml(article.title)}</h1>
-      <p class="meta">Updated: ${article.updated_at} | Tags: ${article.tags || 'none'}</p>
+      <p class="meta">Updated: ${article.updated_at} | Tags: ${escapeHtml(tagsDisplay)}</p>
       <div class="article-content">${renderArticleContent(article.content)}</div>
       <div class="actions">
         <a href="/edit/${encodeURIComponent(article.title)}" class="edit">Edit</a>
@@ -704,7 +707,7 @@ app.get('/edit/:title', async (req, res) => {
         </div>
         <div class="form-group">
           <label>Tags (comma-separated)</label>
-          <input type="text" name="tags" value="${escapeHtml(article.tags || '')}">
+          <input type="text" name="tags" value="${escapeHtml(Array.isArray(article.tags) ? article.tags.join(', ') : (article.tags || ''))}">
         </div>
         <button type="submit">Update Article</button>
       </form>
