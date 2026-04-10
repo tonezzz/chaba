@@ -52,9 +52,19 @@ services:
     working_dir: /app
     stdin_open: true
     tty: true
+    # Enable VPN access to idc1-db PostgreSQL
+    networks:
+      - default
+      - vpn
 
 volumes:
   autoagent-workspace:
     driver: local
   wiki-data:
     external: true
+
+# VPN network for accessing idc1 services
+networks:
+  vpn:
+    external: true
+    name: idc1-stack_vpn  # Adjust based on your VPN stack

@@ -1,0 +1,31 @@
+services:
+  mcp-wiki:
+    build: ../../mcp/mcp-wiki
+    container_name: mcp-wiki
+    environment:
+      # SQLite mode (default - local file)
+      WIKI_DB_PATH: /data/wiki.db
+      WIKI_HTTP_PORT: 8080
+      MCP_STDIO: '0'  # HTTP-only mode for now
+      # PostgreSQL mode (optional - uncomment to use idc1-db)
+      # WIKI_USE_POSTGRES: '1'
+      # DATABASE_URL: postgresql://chaba:changeme@idc1.surf-thailand.com:5432/chaba
+    ports:
+      - "3008:8080"
+    volumes:
+      - wiki-data:/data
+    restart: unless-stopped
+    # Enable VPN access to idc1 for PostgreSQL mode
+    networks:
+      - default
+      - vpn
+
+volumes:
+  wiki-data:
+    external: true
+
+# Optional: Add VPN network if not already defined in parent compose
+networks:
+  vpn:
+    external: true
+    name: idc1-stack_vpn  # Adjust based on your VPN stack name
