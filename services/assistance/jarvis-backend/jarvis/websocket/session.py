@@ -198,14 +198,39 @@ _LIVE_CACHE_PATH = os.getenv("JARVIS_LIVE_MODEL_CACHE_PATH", "/data/jarvis_live_
 _LIVE_PROBE_ON_CONNECT = str(os.getenv("JARVIS_LIVE_PROBE_ON_CONNECT", "false")).strip().lower() == "true"
 
 
+class LiveCapabilities:
+    """Capabilities of a Live model for the 4 scenarios."""
+    def __init__(self, model: str):
+        m = str(model or "").lower()
+        self.has_audio_input = "native-audio" in m or "3.1-flash-lite" in m
+        self.has_audio_output = "native-audio" in m
+        self.has_text_input = True  # All models support text
+        self.has_text_output = True  # All models support text
+        
+    @property
+    def supports_voice_input(self) -> bool:
+        """Can receive voice/audio input (Scenario 3 & 4)."""
+        return self.has_audio_input
+        
+    @property
+    def supports_voice_output(self) -> bool:
+        """Can generate audio output (Scenario 4 only)."""
+        return self.has_audio_output
+        
+    @property
+    def scenario(self) -> str:
+        """Return scenario name for logging."""
+        if self.has_audio_input and self.has_audio_output:
+            return "live-full-voice"  # Scenario 4
+        elif self.has_audio_input:
+            return "live-voice-in-text-out"  # Scenario 3
+        else:
+            return "live-text-only"  # Scenario 2
+
+
 def _live_is_native_audio_model(model: str) -> bool:
-    """Check if model supports audio input in Live mode.
-    
-    Native-audio models support audio input AND output.
-    gemini-3.1-flash-lite supports audio input (transcription) but TEXT output only.
-    """
-    m = str(model or "").lower()
-    return "native-audio" in m or "3.1-flash-lite" in m
+    """Legacy: Check if model supports audio input in Live mode."""
+    return LiveCapabilities(model).supports_voice_input
 
 
 def _live_configs_for_model() -> tuple[list["types.LiveConnectConfig"], list["types.LiveConnectConfig"]]:
@@ -326,6 +351,29 @@ Be concise, helpful, and accurate. If you're unsure about something, admit it.
         cached = self._get_cached_sheet_memory()
         if cached:
             self._apply_cached_sheet_memory_to_ws(cached)
+    
+    async def _speak_live_response(self, session: "WebSocketSession", text: str) -> None:
+        """TTS helper for Scenario 3: Live with voice input but text output.
+        
+        This speaks the Live model's text response using Google TTS.
+        """
+        try:
+            logger.info("TTS for Live response: %s...", text[:60])
+            pcm = await _google_tts_synthesize_linear16(text=text, sample_rate_hz=24000)
+            chunk_size = int(24000 * 2 * 0.4)  # ~400ms chunks
+            for i in range(0, len(pcm), chunk_size):
+                chunk = pcm[i : i + chunk_size]
+                b64 = base64.b64encode(chunk).decode("ascii")
+                await session.send_json({
+                    "type": "audio",
+                    "data": b64,
+                    "sampleRate": 24000,
+                    "instance_id": INSTANCE_ID,
+                })
+                await asyncio.sleep(0.35)
+            logger.info("TTS for Live response completed")
+        except Exception as e:
+            logger.warning("TTS for Live response failed: %s", e)
     
     def _get_cached_sheet_memory(self) -> Optional[dict[str, Any]]:
         """Get cached sheet memory (placeholder)"""
@@ -534,24 +582,24 @@ class WebSocketManager:
 
         for model_name in models_to_try:
             clean_model_name = model_name[7:] if model_name.startswith("models/") else model_name
-            # Live best-practice: one modality per session.
-            # - For native-audio models: audio input + audio output (AUDIO configs)
-            # - For 3.1-flash-lite: audio input + text output (TEXT configs, but still send audio)
-            # - For live preview/text models: text only (TEXT configs)
-            is_native_audio = _live_is_native_audio_model(clean_model_name)
-            is_flash_lite = "3.1-flash-lite" in clean_model_name.lower()
+            caps = LiveCapabilities(clean_model_name)
             
-            if is_native_audio and not is_flash_lite:
-                # Full native audio: input + output
+            # Select configs based on capabilities
+            # - Full voice (audio in + out): AUDIO configs
+            # - Voice in + text out: TEXT configs (but still send audio)
+            # - Text only: TEXT configs
+            if caps.supports_voice_output:
+                # Full native audio: input + output (Scenario 4)
                 configs_to_try = audio_cfgs
-                logger.info(f"Using AUDIO configs for native-audio model: {clean_model_name}")
-            elif is_flash_lite:
-                # 3.1 Flash-Lite: audio input, text output
+                logger.info(f"[{caps.scenario}] Using AUDIO configs for {clean_model_name}")
+            elif caps.supports_voice_input:
+                # Voice input, text output: TEXT configs (Scenario 3)
                 configs_to_try = text_cfgs
-                logger.info(f"Using TEXT configs for 3.1-flash-lite (audio input, text output): {clean_model_name}")
+                logger.info(f"[{caps.scenario}] Using TEXT configs for {clean_model_name} (needs TTS for output)")
             else:
-                # Text-only models
+                # Text-only (Scenario 2)
                 configs_to_try = text_cfgs
+                logger.info(f"[{caps.scenario}] Using TEXT configs for {clean_model_name}")
 
             # If cached config exists and applies to this model, try it first.
             if (
@@ -569,32 +617,31 @@ class WebSocketManager:
                     # Log config details for debugging
                     try:
                         cfg_resp_mod = getattr(config, "response_modalities", None)
-                        cfg_input_mod = getattr(config, "input_modalities", None)
                         cfg_gen = getattr(config, "generation_config", None)
                         cfg_temp = getattr(config, "temperature", None)
                         logger.info(
-                            f"Trying Live model={clean_model_name} config_idx={config_idx} "
-                            f"resp_modalities={cfg_resp_mod} input_modalities={cfg_input_mod} "
-                            f"temperature={cfg_temp} has_gen_config={cfg_gen is not None}"
+                            f"Trying Live model={clean_model_name} scenario={caps.scenario} config_idx={config_idx} "
+                            f"resp_modalities={cfg_resp_mod} temperature={cfg_temp} has_gen_config={cfg_gen is not None}"
                         )
                     except Exception:
-                        logger.info(f"Trying Live model: {clean_model_name} with config {config_idx + 1}")
+                        logger.info(f"Trying Live model: {clean_model_name} scenario={caps.scenario} config {config_idx + 1}")
 
                     # Only consider Live usable if we successfully enter the context.
                     connect_attempts = 2
                     last_exc: Optional[Exception] = None
                     for attempt in range(connect_attempts):
                         try:
-                            is_native = _live_is_native_audio_model(clean_model_name)
                             logger.info(
-                                f"🎵 Live connecting: model={clean_model_name} is_native_audio={is_native} config_idx={config_idx}"
+                                f"🎵 Live connecting: model={clean_model_name} scenario={caps.scenario} "
+                                f"voice_in={caps.supports_voice_input} voice_out={caps.supports_voice_output} config_idx={config_idx}"
                             )
                             async with session.client.aio.live.connect(
                                 model=clean_model_name,
                                 config=config,
                             ) as gemini_session:
                                 logger.info(
-                                    f"✅ Gemini Live session established (validated) model={clean_model_name} config={config_idx + 1} is_native_audio={is_native}"
+                                    f"✅ Gemini Live session established (validated) model={clean_model_name} "
+                                    f"scenario={caps.scenario} config={config_idx + 1}"
                                 )
 
                                 _LIVE_WORKING_MODEL_AND_CONFIG = (clean_model_name, config_idx)
@@ -614,7 +661,7 @@ class WebSocketManager:
                                     )
                                 )
                                 gemini_to_ws_task = asyncio.create_task(
-                                    self._gemini_to_ws_with_session(session, gemini_session)
+                                    self._gemini_to_ws_with_session(session, gemini_session, clean_model_name)
                                 )
 
                                 # Keep the Live session open as long as the WS is open.
@@ -808,8 +855,12 @@ class WebSocketManager:
                         except Exception:
                             pass
 
-                    is_native = _live_is_native_audio_model(live_model_name)
-                    logger.info("Live sending audio to Gemini pcm_bytes=%s is_native_audio_model=%s model=%s", str(len(pcm)), str(is_native), str(live_model_name))
+                    live_caps = LiveCapabilities(live_model_name)
+                    logger.info(
+                        "Live sending audio pcm_bytes=%s model=%s scenario=%s voice_in=%s voice_out=%s",
+                        str(len(pcm)), str(live_model_name), live_caps.scenario,
+                        str(live_caps.supports_voice_input), str(live_caps.supports_voice_output)
+                    )
                     await gemini_session.send_realtime_input(audio=types.Blob(data=pcm, mime_type=mime_type))
                     continue
 
@@ -837,8 +888,12 @@ class WebSocketManager:
             logger.info("Live WS->Gemini loop exiting")
 
 
-    async def _gemini_to_ws_with_session(self, session: WebSocketSession, gemini_session: Any) -> None:
-        """Forward Gemini Live server events back to the WS client."""
+    async def _gemini_to_ws_with_session(self, session: WebSocketSession, gemini_session: Any, model_name: str = "") -> None:
+        """Forward Gemini Live server events back to the WS client.
+        
+        For Scenario 3 (voice-in, text-out), TTS is used to speak the text responses.
+        """
+        live_caps = LiveCapabilities(model_name)
         # Frontend expects:
         # - {type:'transcript', text:'...', source:'input'|'output'}
         # - {type:'audio', data:'<base64>', sampleRate?:number}
@@ -918,16 +973,22 @@ class WebSocketManager:
                 )
 
             out_tr = getattr(content, "output_transcription", None)
-            if out_tr and getattr(out_tr, "text", None):
-                logger.info("Live transcript (output) received")
+            out_tr_text = str(getattr(out_tr, "text", "") or "") if out_tr else ""
+            if out_tr_text:
+                logger.info("Live transcript (output) received: %s...", out_tr_text[:60])
                 await session.send_json(
                     {
                         "type": "transcript",
-                        "text": str(out_tr.text),
+                        "text": out_tr_text,
                         "source": "output",
                         "instance_id": INSTANCE_ID,
                     }
                 )
+                
+                # Scenario 3: Voice input, text output → use TTS to speak the response
+                if live_caps.supports_voice_input and not live_caps.supports_voice_output:
+                    logger.info("Scenario 3 detected (voice-in, text-out): triggering TTS for Live response")
+                    asyncio.create_task(self._speak_live_response(session, out_tr_text))
 
             # Direct output_audio on server_content (newer SDK versions)
             output_audio = getattr(content, "output_audio", None)
