@@ -58,7 +58,7 @@ services:
 
   # MCP Wiki - Knowledge base on idc1
   mcp-wiki:
-    build: ../../mcp/mcp-wiki
+    image: ghcr.io/tonezzz/mcp-wiki:latest
     container_name: idc1-mcp-wiki
     environment:
       # Use PostgreSQL mode (shared database)
@@ -74,7 +74,7 @@ services:
 
   # AutoAgent - AI agent platform
   autoagent:
-    build: ../../stacks/autoagent-test
+    image: ghcr.io/tonezzz/autoagent:latest
     container_name: idc1-autoagent
     environment:
       COMPLETION_MODEL: ${AUTOAGENT_MODEL:-openai/gpt-4o-mini}
