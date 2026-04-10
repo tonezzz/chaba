@@ -80,22 +80,13 @@ These are set via compose defaults and/or Portainer stack env:
 - `WEAVIATE_URL`
   - example: `http://weaviate:8080`
 - `GEMINI_LIVE_MODEL`
-  - example: `gemini-2.5-flash-native-audio-preview-12-2025`
-  - **For full voice (audio in + audio out)**: Use native-audio models
-  - **For voice input with text output**: Use `gemini-3.1-flash-lite`
-  - **For text-only Live mode**: Can use any Gemini model
-  - **Available models for voice input**:
-    - `gemini-3.1-flash-lite` - Audio input, TEXT output (uses TTS for responses)
-    - `gemini-2.5-flash-native-audio-latest` - Audio input + output (recommended)
-    - `gemini-2.5-flash-native-audio-preview-12-2025` - Audio input + output
-    - `lyria-realtime-exp` - Audio input + output
+  - example: `gemini-2.5-flash-native-audio-latest`
+  - Preferred Live model to use
+  - **See [SCENARIOS.md](./SCENARIOS.md)** for detailed model capability matrix and scenario selection
 
 Reminders:
 
-- **Voice vs Text in Live Mode**: 
-  - `gemini-3.1-flash-lite`: Audio input (STT), TEXT output (backend TTS speaks responses)
-  - Native-audio models (e.g., `gemini-2.5-flash-native-audio-latest`): Audio input AND audio output (model speaks directly)
-  - Non-audio models (e.g., `gemini-2.5-flash`, `gemini-2.5-pro`): Text input only in Live mode
+- **Model Selection**: See [SCENARIOS.md](./SCENARIOS.md) for the 4 operation scenarios and which models support each
 
 Debugging:
 

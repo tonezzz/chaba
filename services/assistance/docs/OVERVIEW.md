@@ -37,10 +37,12 @@ graph TD
 
 ## Links
 
+- **Operation Scenarios (SSOT)**: `services/assistance/docs/SCENARIOS.md` - The 4 Jarvis scenarios (Smart Fallback, Live Text-Only, Live Voice-In/Text-Out, Live Full Voice)
 - Operator playbook (SSOT): `services/assistance/docs/ACTION.md`
 - Build/deploy (SSOT): `services/assistance/docs/BUILD.md`
 - System notes: `services/assistance/docs/SYSTEM.md`
 - WS protocol/tools: `services/assistance/docs/TOOLS.md`
+- Configuration: `services/assistance/docs/CONFIG.md`
 - Skills Sheet SSOT routing: `services/assistance/docs/SYSTEM.md`
 
 ## Conventions
