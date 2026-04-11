@@ -4,19 +4,22 @@
 - [x] Stack redeployed with sqlite-web container removed
 - [x] All services defined in docker-compose.yml
 - [x] Script created to save documentation to wiki (`scripts/save-idc1-db-docs-to-wiki.py`)
-- [x] Documentation saved to wiki (3 articles created)
-- [ ] **EXECUTE ON IDC1**: Verify all 5 containers are running
-- [ ] **EXECUTE ON PC1**: Migrate data from pc1 SQLite to idc1 PostgreSQL
+- [x] Documentation saved to wiki (15 articles total)
+- [x] **EXECUTE ON IDC1**: Data migrated from pc1 SQLite to idc1 PostgreSQL (12 articles)
+- [x] **EXECUTE ON IDC1**: Fix pgadmin container (email validation issue)
+- [x] **EXECUTE ON IDC1**: Verify all containers running
 
 ## Services Overview
 
 | Service | Image | Port | Status |
 |---------|-------|------|--------|
-| postgres | postgres:15-alpine | 5432 | Pending verify |
-| mcp-postgres | mcp/postgres:latest | - | Pending verify |
-| pgadmin | dpage/pgadmin4:latest | 5050 | Pending verify |
-| mcp-wiki | ghcr.io/tonezzz/mcp-wiki:latest | 3008 | Pending verify |
-| autoagent | ghcr.io/tonezzz/autoagent:latest | 8059/8058 | Pending verify |
+| postgres | postgres:15-alpine | 5432 | ✅ Up (healthy) |
+| mcp-wiki | ghcr.io/tonezzz/mcp-wiki:latest | 3008 | ✅ Up |
+| autoagent | ghcr.io/tonezzz/autoagent:latest | 8059/8058 | ✅ Up |
+| pgadmin | dpage/pgadmin4:latest | 5050 | ✅ Up |
+| mcp-postgres | mcp/postgres:latest | - | ⏸️ Not deployed (profile) |
+| redis | redis:7-alpine | 6379 | ⏸️ Not deployed |
+| weaviate | semitechnologies/weaviate:1.25.0 | 8082 | ⏸️ Not deployed |
 
 ## Verification Commands (run on idc1)
 
