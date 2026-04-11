@@ -337,7 +337,8 @@ async def handle_runner(request):
                 <b>LLM-powered KB search first.</b> Classifies queries, finds similar articles, combines cached + fresh research.
             </p>
             <div>
-                <span class="preset" onclick='setFreeCommand("python /workspace/smart-research.py ")' style="background: #e3f2fd; color: #1565c0; border: 2px solid #1565c0;">� Smart Research</span>
+                <span class="preset" onclick='setFreeCommand("python /workspace/smart-research.py ")' style="background: #e3f2fd; color: #1565c0; border: 2px solid #1565c0;">🧠 Smart Research (Free)</span>
+                <span class="preset" onclick='setFreeCommand("python /workspace/smart-research.py --plan paid ")' style="background: #fff3e0; color: #e65100; border: 2px solid #e65100;">🧠 Smart Research (Paid)</span>
                 <span class="preset" onclick='setCommand("python /workspace/smart-research.py")' style="background: #f3e5f5; color: #7b1fa2;">📊 KB Stats</span>
                 <span class="preset" onclick='setCommand("python /workspace/wiki-knowledge.py")' style="background: #fff3e0; color: #e65100;">� Browse Wiki</span>
             </div>
