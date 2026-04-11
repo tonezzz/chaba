@@ -53,6 +53,7 @@ jobs:
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.REPO_OWNER }}/${{ matrix.image }}:latest
+            ${{ env.REGISTRY }}/${{ env.REPO_OWNER }}/${{ matrix.image }}:${{ github.ref_name }}
             ${{ env.REGISTRY }}/${{ env.REPO_OWNER }}/${{ matrix.image }}:${{ github.sha }}
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,scope=${{ matrix.name }},mode=min
