@@ -143,6 +143,10 @@ services:
       - autoagent-workspace:/workspace
       - ./entrypoint.sh:/entrypoint.sh:ro
       - ./control-server.py:/app/control-server.py:ro
+      - ./free-research.py:/workspace/free-research.py:ro
+      - ./smart-research.py:/workspace/smart-research.py:ro
+      - ./wiki-knowledge.py:/workspace/wiki-knowledge.py:ro
+      - ./postgres_kb.py:/workspace/postgres_kb.py:ro
     ports:
       - "8059:8080"  # Control Panel
       - "8058:8056"  # GhostRoute MCP
