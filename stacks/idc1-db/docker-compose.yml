@@ -141,14 +141,16 @@ services:
       DOCKER_WORKPLACE_NAME: autoagent-workspace
     volumes:
       - autoagent-workspace:/workspace
+      - ./entrypoint.sh:/entrypoint.sh:ro
+      - ./control-server.py:/app/control-server.py:ro
     ports:
       - "8059:8080"  # Control Panel
       - "8058:8056"  # GhostRoute MCP
     restart: unless-stopped
     depends_on:
       - postgres
-    # Note: AutoAgent image is CLI-only, no HTTP server mode
-    # Use: docker exec -it idc1-autoagent auto <command>
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
+    # Control panel available at http://idc1.surf-thailand.com:8059/
 
   # GhostRoute Test - OpenRouter model discovery
   ghostroute-test:
