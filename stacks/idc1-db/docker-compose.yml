@@ -147,8 +147,27 @@ services:
     restart: unless-stopped
     depends_on:
       - postgres
-    stdin_open: true
-    tty: true
+    # Note: AutoAgent image is CLI-only, no HTTP server mode
+    # Use: docker exec -it idc1-autoagent auto <command>
+
+  # GhostRoute Test - OpenRouter model discovery
+  ghostroute-test:
+    image: python:3.11-alpine
+    container_name: idc1-ghostroute-test
+    environment:
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      GHOSTROUTE_FREE_ONLY: "true"
+      GHOSTROUTE_TIMEOUT: "30"
+      GHOSTROUTE_MAX_TOKENS: "100"
+    volumes:
+      - ../../stacks/autoagent-test/discovery/ghostroute:/app:ro
+    working_dir: /app
+    command: >
+      sh -c "pip install requests --quiet &&
+             python test-ghostroute.py"
+    restart: "no"
+    networks:
+      - idc1-db-network
 
 volumes:
   postgres-data:
