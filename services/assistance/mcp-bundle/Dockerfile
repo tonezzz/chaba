@@ -1,4 +1,4 @@
-FROM ghcr.io/1mcp-app/agent:lite
+FROM node:20-alpine
 
 RUN apk add --no-cache python3 py3-pip ca-certificates curl \
     && python3 -m venv /opt/venv \
@@ -17,4 +17,6 @@ RUN chmod +x /app/entrypoint.sh
 
 ENV PATH="/opt/venv/bin:${PATH}"
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+WORKDIR /app
+
+CMD ["/app/entrypoint.sh"]

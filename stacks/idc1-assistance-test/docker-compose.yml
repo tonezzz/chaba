@@ -13,7 +13,10 @@ x-default-service: &default-service
 services:
   mcp-bundle-test:
     <<: *default-service
-    image: ghcr.io/tonezzz/chaba/mcp-bundle:idc1-assistance
+    build:
+      context: ../../services/assistance/mcp-bundle
+      dockerfile: Dockerfile
+    image: mcp-bundle-test:local
     ports:
       - "127.0.0.1:${IDCI_ASSISTANCE_TEST_MCP_PORT:-3151}:3050"
     extra_hosts:

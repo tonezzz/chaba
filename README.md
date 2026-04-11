@@ -2,6 +2,15 @@
 
 This repo contains multiple projects. Current focus is **Jarvis / Chaba Assistance**.
 
+## 📚 Documentation
+
+> **New Policy:** All documentation lives in the [MCP Wiki](http://localhost:3008)  
+> See: [`docs/WIKI_DOCUMENTATION_POLICY.md`](docs/WIKI_DOCUMENTATION_POLICY.md)
+
+- 🌐 **Wiki (Primary):** http://localhost:3008
+- 🤖 **Auto-Research:** `python /workspace/smart-research.py "[topic]"`
+- 📝 **Policy:** [`docs/WIKI_DOCUMENTATION_POLICY.md`](docs/WIKI_DOCUMENTATION_POLICY.md)
+
 ## Start here
 
 - Primary overview: `services/assistance/README.md`
