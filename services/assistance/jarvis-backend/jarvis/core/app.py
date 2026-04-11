@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from jarvis.api.agents import router as agents_router
+from jarvis.api.dialog import router as dialog_router
 from jarvis.api.models import router as models_router
 from jarvis.api.providers import router as providers_router
 from jarvis.agents.dispatch import agent_dispatcher
@@ -35,6 +36,7 @@ def create_app() -> FastAPI:
     
     # Include routers
     app.include_router(agents_router, prefix="/jarvis/api", tags=["agents"])
+    app.include_router(dialog_router, prefix="/jarvis/api", tags=["dialog"])
     app.include_router(models_router, prefix="/jarvis/api", tags=["models"])
     app.include_router(providers_router, prefix="/jarvis/api", tags=["providers"])
     
