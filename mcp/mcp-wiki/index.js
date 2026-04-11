@@ -40,8 +40,24 @@ async function initDatabase() {
         tags TEXT[],
         entities JSONB,
         classification VARCHAR(100),
+        metadata JSONB DEFAULT '{}',
+        embedding vector(1536),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // AI enhancement queue
+    await pgPool.query(`
+      CREATE TABLE IF NOT EXISTS article_ai_queue (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        article_id INTEGER REFERENCES articles(id) ON DELETE CASCADE,
+        action VARCHAR(50) NOT NULL,
+        status VARCHAR(20) DEFAULT 'pending',
+        result JSONB,
+        error TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        processed_at TIMESTAMP
       )
     `);
     
@@ -70,6 +86,7 @@ async function initDatabase() {
           title TEXT UNIQUE NOT NULL,
           content TEXT NOT NULL,
           tags TEXT,
+          metadata TEXT DEFAULT '{}',
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -794,6 +811,146 @@ app.get('/api/search', async (req, res) => {
     if (!query) return res.json([]);
     const articles = await searchArticles(query, limit);
     res.json(articles);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// AI Enhancement Endpoints
+app.post('/api/articles/:id/enhance', async (req, res) => {
+  try {
+    const articleId = parseInt(req.params.id);
+    const { actions = ['classify'] } = req.body;
+    
+    // Validate actions
+    const validActions = ['classify', 'summarize', 'suggest-links', 'embed'];
+    const requestedActions = actions.filter(a => validActions.includes(a));
+    
+    if (requestedActions.length === 0) {
+      return res.status(400).json({ error: 'No valid actions specified' });
+    }
+    
+    // Queue jobs
+    const jobs = [];
+    for (const action of requestedActions) {
+      const result = await pgPool.query(
+        `INSERT INTO article_ai_queue (article_id, action, status) 
+         VALUES ($1, $2, 'pending') 
+         RETURNING id, action, status, created_at`,
+        [articleId, action]
+      );
+      jobs.push(result.rows[0]);
+    }
+    
+    res.json({ 
+      message: 'Enhancement jobs queued',
+      article_id: articleId,
+      jobs: jobs
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/articles/:id/enhance-status/:jobId', async (req, res) => {
+  try {
+    const result = await pgPool.query(
+      `SELECT id, article_id, action, status, result, error, created_at, processed_at 
+       FROM article_ai_queue WHERE id = $1 AND article_id = $2`,
+      [req.params.jobId, req.params.id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/articles/:id/suggestions', async (req, res) => {
+  try {
+    const articleId = parseInt(req.params.id);
+    
+    // Get article metadata
+    const articleResult = await pgPool.query(
+      'SELECT metadata FROM articles WHERE id = $1',
+      [articleId]
+    );
+    
+    if (articleResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+    
+    const metadata = articleResult.rows[0].metadata || {};
+    
+    res.json({
+      article_id: articleId,
+      suggested_tags: metadata.suggested_tags || [],
+      classification: metadata.classification || null,
+      tldr: metadata.tldr || null,
+      related_articles: metadata.related_articles || [],
+      missing_links: metadata.missing_links || [],
+      quality_score: metadata.quality_score || null
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/articles/:id/tldr', async (req, res) => {
+  try {
+    const articleId = parseInt(req.params.id);
+    
+    const result = await pgPool.query(
+      'SELECT metadata->>\'tldr\' as tldr FROM articles WHERE id = $1',
+      [articleId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+    
+    res.json({
+      article_id: articleId,
+      tldr: result.rows[0].tldr || 'No summary available. Queue an enhancement job.'
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/admin/article-health', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    
+    const result = await pgPool.query(`
+      SELECT 
+        a.id,
+        a.title,
+        a.updated_at,
+        EXTRACT(DAY FROM (NOW() - a.updated_at)) as staleness_days,
+        LENGTH(a.content) as word_count,
+        a.metadata->>'quality_score' as quality_score,
+        a.metadata->>'classification' as classification,
+        CASE 
+          WHEN a.metadata IS NULL OR a.metadata = '{}' THEN false
+          ELSE true
+        END as has_metadata
+      FROM articles a
+      ORDER BY a.updated_at DESC
+      LIMIT $1
+    `, [limit]);
+    
+    res.json({
+      total: result.rows.length,
+      articles: result.rows.map(row => ({
+        ...row,
+        needs_attention: !row.has_metadata || row.staleness_days > 90 || row.word_count < 200
+      }))
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
