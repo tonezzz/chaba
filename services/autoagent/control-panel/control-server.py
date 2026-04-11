@@ -376,6 +376,7 @@ async def handle_runner(request):
         <button class="btn" onclick="runCommand()">▶ Run</button>
         <button class="btn btn-secondary" onclick="stopCommand()">⏹ Stop</button>
         <button class="btn btn-secondary" onclick="clearOutput()">🗑 Clear</button>
+        <button class="btn btn-secondary" onclick="copyOutput()">📋 Copy</button>
     </div>
     
     <div class="card">
@@ -520,6 +521,29 @@ async def handle_runner(request):
         
         function clearOutput() {
             document.getElementById('output').textContent = '';
+        }
+        
+        function copyOutput() {
+            const outputDiv = document.getElementById('output');
+            const text = outputDiv.innerText || outputDiv.textContent;
+            
+            if (!text || text === 'Loading... (if this doesn\'t change, JavaScript may be disabled)' || 
+                text.includes('Ready! Click a preset')) {
+                alert('No output to copy');
+                return;
+            }
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('button[onclick="copyOutput()"]');
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy to clipboard');
+            });
         }
         
         // Debug logging
