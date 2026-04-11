@@ -9,10 +9,13 @@ RUN pip install --no-cache-dir aiohttp
 # Copy control panel files
 COPY control-server.py /app/control-server.py
 COPY entrypoint.sh /entrypoint.sh
-COPY free-research.py /workspace/free-research.py
-COPY smart-research.py /workspace/smart-research.py
-COPY wiki-knowledge.py /workspace/wiki-knowledge.py
-COPY postgres_kb.py /workspace/postgres_kb.py
+
+# Copy research scripts to /app/ (entrypoint copies them to /workspace/ on startup)
+# This handles the volume shadowing issue where named volumes mount over build-time files
+COPY free-research.py /app/free-research.py
+COPY smart-research.py /app/smart-research.py
+COPY wiki-knowledge.py /app/wiki-knowledge.py
+COPY postgres_kb.py /app/postgres_kb.py
 
 # Make scripts executable
 RUN chmod +x /entrypoint.sh

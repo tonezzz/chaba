@@ -1,6 +1,18 @@
 #!/bin/bash
 set -e
 
+# Copy research scripts to workspace if they don't exist (volume mounts shadow build-time copies)
+if [ -f /workspace/free-research.py ]; then
+    echo "📁 Research scripts already in workspace"
+else
+    echo "📁 Initializing workspace with research scripts..."
+    cp /app/free-research.py /workspace/ 2>/dev/null || true
+    cp /app/smart-research.py /workspace/ 2>/dev/null || true
+    cp /app/wiki-knowledge.py /workspace/ 2>/dev/null || true
+    cp /app/postgres_kb.py /workspace/ 2>/dev/null || true
+    echo "✅ Research scripts copied to workspace"
+fi
+
 # Start control server automatically in background
 if [ -f /app/control-server.py ]; then
     echo "🚀 Starting AutoAgent Control Server..."
