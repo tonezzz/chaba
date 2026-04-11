@@ -115,9 +115,9 @@ services:
     networks:
       - idc1-db-network
 
-  # AutoAgent - AI agent platform
+  # AutoAgent Control Panel - Web UI for AutoAgent
   autoagent:
-    image: ghcr.io/tonezzz/autoagent:latest
+    image: ghcr.io/tonezzz/autoagent-control-panel:idc1-db
     container_name: idc1-autoagent
     environment:
       COMPLETION_MODEL: ${AUTOAGENT_MODEL:-openai/gpt-4o-mini}
@@ -141,19 +141,12 @@ services:
       DOCKER_WORKPLACE_NAME: autoagent-workspace
     volumes:
       - autoagent-workspace:/workspace
-      - ./entrypoint.sh:/entrypoint.sh:ro
-      - ./control-server.py:/app/control-server.py:ro
-      - ./free-research.py:/workspace/free-research.py:ro
-      - ./smart-research.py:/workspace/smart-research.py:ro
-      - ./wiki-knowledge.py:/workspace/wiki-knowledge.py:ro
-      - ./postgres_kb.py:/workspace/postgres_kb.py:ro
     ports:
       - "8059:8080"  # Control Panel
       - "8058:8056"  # GhostRoute MCP
     restart: unless-stopped
     depends_on:
       - postgres
-    entrypoint: ["/bin/bash", "/entrypoint.sh"]
     # Control panel available at http://idc1.surf-thailand.com:8059/
 
   # GhostRoute Test - OpenRouter model discovery

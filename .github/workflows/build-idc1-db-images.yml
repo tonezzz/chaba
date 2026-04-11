@@ -5,7 +5,7 @@ on:
     branches: [idc1-db]
     paths:
       - 'mcp/mcp-wiki/**'
-      - 'stacks/autoagent-test/**'
+      - 'services/autoagent/**'
       - '.github/workflows/build-idc1-db-images.yml'
   workflow_dispatch:
 
@@ -29,9 +29,9 @@ jobs:
           - name: mcp-wiki
             context: ./mcp/mcp-wiki
             image: mcp-wiki
-          - name: autoagent
-            context: ./stacks/autoagent-test
-            image: autoagent
+          - name: autoagent-control-panel
+            context: ./services/autoagent/control-panel
+            image: autoagent-control-panel
     steps:
       - name: Checkout
         uses: actions/checkout@v4
