@@ -1,6 +1,7 @@
 # PC1 LLM Stack - Local GPU LLM Testing
 
-Quick proof of concept for running Gemma 4B on local GPU.
+Quick proof of concept for running local LLMs on PC1 GPU (GTX 1650).
+Currently using Qwen 0.5B (public model). Gemma requires HuggingFace auth.
 
 ## Phase 1: Python POC (Immediate)
 
@@ -17,11 +18,31 @@ python test_gemma.py
 
 This will:
 - Check CUDA/GPU availability
-- Download `google/gemma-4b-it` (~8GB)
+- Download `Qwen/Qwen2.5-0.5B-Instruct` (~1GB)
 - Run 3 test generations
 - Show tokens/second performance
 
-## Phase 2: vLLM API (Production)
+## Phase 2: Ollama (Alternative)
+
+```bash
+# Start Ollama
+docker-compose --profile ollama up -d
+
+# Pull Qwen model (one time)
+docker exec pc1-ollama ollama pull qwen2.5:0.5b
+
+# Test
+docker exec pc1-ollama ollama run qwen2.5:0.5b "Say hello in 5 words"
+
+# Or use API
+curl http://localhost:11434/api/generate -d '{
+  "model": "qwen2.5:0.5b",
+  "prompt": "Hello!",
+  "stream": false
+}'
+```
+
+## Phase 3: vLLM API (Production)
 
 ### Start vLLM
 ```bash
