@@ -121,7 +121,19 @@ class PostgresKnowledgeBase:
                 """, (content, tags or [], json.dumps(entities) if entities else None, classification, title))
                 row = cur.fetchone()
                 return dict(row) if row else None
-    
+
+    def save_article(self, title: str, content: str, tags: List[str] = None,
+                     entities: List[str] = None, classification: str = None) -> Dict:
+        """Create or update article (convenience method matching WikiKnowledgeBase interface)"""
+        # Convert entities list to dict if needed
+        entities_dict = {"entities": entities} if entities else None
+
+        # Try update first, if fails create new
+        result = self.update_article(title, content, tags, entities_dict, classification)
+        if result:
+            return result
+        return self.create_article(title, content, tags, entities_dict, classification)
+
     def list_articles(self, limit: int = 20, offset: int = 0) -> List[Dict]:
         """List recent articles"""
         with self._get_connection() as conn:
