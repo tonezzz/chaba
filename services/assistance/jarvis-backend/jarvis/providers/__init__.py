@@ -1,10 +1,26 @@
 """Provider abstraction layer for multi-AI support."""
 from __future__ import annotations
 
+import logging
+
 from .base import AIProvider, ProviderResponse, ProviderStreamChunk
-from .gemini import GeminiProvider
-from .openrouter import OpenRouterProvider
-from .router import ProviderRouter
+
+logger = logging.getLogger(__name__)
+
+# Import optional providers with graceful fallback
+GeminiProvider = None
+try:
+    from .gemini import GeminiProvider
+except ImportError as e:
+    logger.warning(f"GeminiProvider not available: {e}")
+
+OpenRouterProvider = None
+try:
+    from .openrouter import OpenRouterProvider
+except ImportError as e:
+    logger.warning(f"OpenRouterProvider not available: {e}")
+
+from .router import ProviderRouter, get_provider_router
 from .smart import SmartProvider, get_smart_provider
 
 __all__ = [
@@ -16,4 +32,5 @@ __all__ = [
     "ProviderRouter",
     "SmartProvider",
     "get_smart_provider",
+    "get_provider_router",
 ]

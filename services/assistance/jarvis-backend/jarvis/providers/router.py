@@ -6,8 +6,9 @@ import os
 from typing import Optional
 
 from .base import AIProvider, Message, ProviderResponse, ProviderStreamChunk
-from .gemini import GeminiProvider
-from .openrouter import OpenRouterProvider
+
+# Import optional providers - may be None if dependencies not available
+from . import GeminiProvider, OpenRouterProvider
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ class ProviderRouter:
 
         # Gemini
         gemini_key = os.getenv("GEMINI_API_KEY", "")
-        if gemini_key:
+        if gemini_key and GeminiProvider is not None:
             try:
                 self.providers["gemini"] = GeminiProvider(api_key=gemini_key)
                 logger.info("Gemini provider initialized")
@@ -33,7 +34,7 @@ class ProviderRouter:
 
         # OpenRouter
         openrouter_key = os.getenv("OPENROUTER_API_KEY", "")
-        if openrouter_key:
+        if openrouter_key and OpenRouterProvider is not None:
             try:
                 ghostroute_path = os.getenv(
                     "GHOSTROUTE_CONFIG_PATH",
