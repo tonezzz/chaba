@@ -471,6 +471,13 @@ async def debug_status():
     }
 
 
+@app.get("/status")
+@app.get("/jarvis/status")
+async def simple_status():
+    """Simple status endpoint for infrastructure healthchecks"""
+    return {"ok": True, "service": "jarvis-backend"}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
