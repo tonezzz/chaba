@@ -166,6 +166,19 @@ class PostgresKnowledgeBase:
                 """, (tag, limit))
                 return [dict(row) for row in cur.fetchall()]
 
+    def log_session(self, query: str, model: str, article: str, cached: bool):
+        """Log research session to local file (decoupled from DB)"""
+        log_file = os.path.expanduser("~/.smart_research.log")
+        entry = {
+            "timestamp": datetime.now().isoformat(),
+            "query": query,
+            "model": model,
+            "article": article,
+            "cached": cached
+        }
+        with open(log_file, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+
 
 # Backward compatibility - same interface as WikiKnowledgeBase
 KnowledgeBase = PostgresKnowledgeBase
