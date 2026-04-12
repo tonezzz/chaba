@@ -128,11 +128,12 @@ class WebSocketSession:
             provider
         )
         
-        # Start Gemini session
-        self.session = self.client.aio.live.connect(
+        # Start Gemini session (store context manager, actual session entered in loop)
+        self._session_cm = self.client.aio.live.connect(
             model=gemini_model,
             config=self.config,
         )
+        self.session = None
         
         # Store selected model info
         self.selected_model = model_id
@@ -224,8 +225,8 @@ Be concise, helpful, and accurate. If you're unsure about something, admit it.
     async def close(self) -> None:
         """Close the session"""
         try:
-            if self.session:
-                await self.session.close()
+            if self._session_cm:
+                await self._session_cm.__aexit__(None, None, None)
             if self._redis_client:
                 await self._redis_client.close()
         except Exception as e:
@@ -259,15 +260,19 @@ class WebSocketManager:
         """Main WebSocket communication loop"""
         await session.ws.accept()
         
-        # Send session resume data
-        await self._emit_session_resume(session)
-        
-        # Start concurrent loops
-        await asyncio.gather(
-            self._ws_to_gemini(session),
-            self._gemini_to_ws(session),
-            return_exceptions=True
-        )
+        # Enter Gemini session context
+        async with session._session_cm as live_session:
+            session.session = live_session
+            
+            # Send session resume data
+            await self._emit_session_resume(session)
+            
+            # Start concurrent loops
+            await asyncio.gather(
+                self._ws_to_gemini(session),
+                self._gemini_to_ws(session),
+                return_exceptions=True
+            )
     
     async def _emit_session_resume(self, session: WebSocketSession) -> None:
         """Emit session resume data"""
