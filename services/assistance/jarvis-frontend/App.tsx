@@ -42,6 +42,7 @@ export default function App() {
   const liveService = useRef<LiveService | null>(null);
   const [activeMedia, setActiveMedia] = useState<MessageLog | null>(null);
   const [isTalking, setIsTalking] = useState(false);
+  const [inputMode, setInputMode] = useState<"text" | "voice">("text");
   const [leftFullscreen, setLeftFullscreen] = useState(false);
   const [activeRightPanel, setActiveRightPanel] = useState<"output" | "cars" | "checklist">("output");
   const [activeOutputTab, setActiveOutputTab] = useState<"dialog" | "ui_log" | "ws_log" | "pending">("dialog");
@@ -1396,6 +1397,8 @@ export default function App() {
         handleRemoveAttachment={handleRemoveAttachment}
         isTalking={isTalking}
         handleToggleTalk={handleToggleTalk}
+        inputMode={inputMode}
+        setInputMode={setInputMode}
       />
 
       <OutputPanel

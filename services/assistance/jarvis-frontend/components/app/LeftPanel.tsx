@@ -7,7 +7,7 @@ import {
   ChevronRight,
   Copy,
   Image as ImageIcon,
-  Link2Off,
+  Keyboard,
   Maximize2,
   Mic,
   MicOff,
@@ -77,6 +77,8 @@ export function LeftPanel(props: {
 
   isTalking: boolean;
   handleToggleTalk: () => void;
+  inputMode: "text" | "voice";
+  setInputMode: React.Dispatch<React.SetStateAction<"text" | "voice">>;
 }) {
   const {
     leftFullscreen,
@@ -115,6 +117,8 @@ export function LeftPanel(props: {
     handleRemoveAttachment,
     isTalking,
     handleToggleTalk,
+    inputMode,
+    setInputMode,
   } = props;
 
   const readinessText = React.useMemo(() => {
@@ -189,6 +193,17 @@ export function LeftPanel(props: {
               </span>
             </div>
 
+            {state === ConnectionState.CONNECTED && (
+              <button
+                onClick={handleConnect}
+                title="Disconnect"
+                className="shrink-0 ml-1 w-6 h-6 rounded border border-slate-700 bg-slate-950/30 text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 flex items-center justify-center"
+                aria-label="Disconnect"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+
             <button
               onClick={() => setStatusDetailsOpen((v) => !v)}
               className="shrink-0 ml-2 w-8 h-8 rounded-lg border border-slate-700 bg-slate-950/30 text-slate-200 hover:bg-slate-800/40 flex items-center justify-center"
@@ -199,25 +214,6 @@ export function LeftPanel(props: {
                 className={`w-4 h-4 text-slate-500 transition-transform ${statusDetailsOpen ? "rotate-90" : ""}`}
               />
             </button>
-
-            {state === ConnectionState.CONNECTED ? (
-              <button
-                onClick={handleConnect}
-                title="Disconnect"
-                className="px-2 py-1.5 rounded-lg border border-slate-700 bg-slate-950/30 text-slate-200 hover:bg-slate-800/40 text-xs font-mono"
-                aria-label="Disconnect"
-              >
-                <Link2Off className="w-4 h-4" />
-              </button>
-            ) : (
-              <button
-                onClick={handleConnect}
-                disabled={state === ConnectionState.CONNECTING}
-                className="px-3 py-1.5 rounded-lg border border-cyan-500/40 bg-cyan-950/20 text-cyan-200 hover:bg-cyan-950/40 disabled:opacity-50"
-              >
-                {state === ConnectionState.CONNECTING ? "Connecting..." : "Connect"}
-              </button>
-            )}
           </div>
 
           {!!readinessText && (
@@ -904,29 +900,39 @@ export function LeftPanel(props: {
           </div>
         </div>
 
-        <button
-          onClick={handleToggleTalk}
-          disabled={state !== ConnectionState.CONNECTED}
-          className={`
-              w-full py-3 mt-3 rounded-xl font-hud text-sm tracking-widest uppercase transition-all duration-300 shadow-lg
-              flex items-center justify-center gap-3
-              ${state !== ConnectionState.CONNECTED
-                ? "bg-slate-800/50 text-slate-500 border border-slate-700 cursor-not-allowed"
-                : isTalking
-                  ? "bg-yellow-500/10 text-yellow-300 border border-yellow-500/50 hover:bg-yellow-500/20 shadow-yellow-500/20"
-                  : "bg-slate-900/50 text-cyan-200 border border-cyan-500/30 hover:bg-slate-900/70 shadow-cyan-500/10"}
-            `}
-        >
-          {isTalking ? (
-            <>
-              <MicOff className="w-4 h-4" /> Stop
-            </>
-          ) : (
-            <>
-              <Mic className="w-4 h-4" /> Talk
-            </>
-          )}
-        </button>
+        {/* Connect / Voice/Text Toggle */}
+        {state === ConnectionState.CONNECTED ? (
+          <button
+            onClick={() => {
+              if (inputMode === "text") {
+                setInputMode("voice");
+                if (!isTalking) handleToggleTalk();
+              } else {
+                setInputMode("text");
+                if (isTalking) handleToggleTalk();
+              }
+            }}
+            className={`w-full py-2 rounded-lg font-mono text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 border ${
+              inputMode === "voice"
+                ? "bg-cyan-950/30 text-cyan-200 border-cyan-500/40"
+                : "bg-slate-950/60 text-cyan-200 border-cyan-500/40 hover:bg-slate-950/80"
+            }`}
+          >
+            {inputMode === "text" ? (
+              <><Mic className="w-3.5 h-3.5" /> Voice</>
+            ) : (
+              <><Keyboard className="w-3.5 h-3.5" /> Text</>
+            )}
+          </button>
+        ) : (
+          <button
+            onClick={handleConnect}
+            disabled={state === ConnectionState.CONNECTING}
+            className="w-full py-2 rounded-lg font-mono text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 border border-cyan-500/40 bg-cyan-950/20 text-cyan-200 hover:bg-cyan-950/40 disabled:opacity-50"
+          >
+            {state === ConnectionState.CONNECTING ? "Connecting..." : "Connect"}
+          </button>
+        )}
       </div>
     </div>
   );
