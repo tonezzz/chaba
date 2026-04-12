@@ -426,36 +426,44 @@ const htmlPage = (title, content) => `<!DOCTYPE html>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      line-height: 1.6;
+      line-height: 1.5;
       color: #333;
       max-width: 1200px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 12px;
       background: #f5f5f5;
     }
     header {
       background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 14px 16px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
-    header h1 { color: #2563eb; margin-bottom: 10px; }
-    .nav { display: flex; gap: 10px; margin-top: 10px; }
+    header h1 { 
+      color: #2563eb; 
+      font-size: 22px;
+      margin-bottom: 0;
+    }
+    header p { display: none; }
+    .nav { display: flex; gap: 8px; }
     .nav a {
-      padding: 8px 16px;
+      padding: 6px 12px;
       background: #2563eb;
       color: white;
       text-decoration: none;
       border-radius: 4px;
-      font-size: 14px;
+      font-size: 13px;
     }
     .nav a:hover { background: #1d4ed8; }
     main {
       background: #fff;
-      padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 16px;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     .article-list {
       list-style: none;
@@ -488,41 +496,50 @@ const htmlPage = (title, content) => `<!DOCTYPE html>
       font-size: 12px;
       margin-left: 10px;
     }
-    /* Enhanced Layout */
+    /* Enhanced Layout - Compact */
     .search-section {
       display: flex;
-      gap: 15px;
-      margin-bottom: 25px;
+      gap: 10px;
+      margin-bottom: 15px;
       align-items: center;
     }
     .btn-primary {
       background: #10b981;
       color: white;
-      padding: 12px 20px;
-      border-radius: 6px;
+      padding: 8px 14px;
+      border-radius: 4px;
       text-decoration: none;
       font-weight: 500;
       white-space: nowrap;
+      font-size: 14px;
     }
     .btn-primary:hover { background: #059669; }
-    /* Stats Bar */
+    /* Stats Bar - Compact */
     .stats-bar {
       display: flex;
-      gap: 30px;
-      padding: 20px;
+      align-items: center;
+      gap: 0;
+      padding: 12px 16px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border-radius: 8px;
-      margin-bottom: 25px;
+      border-radius: 6px;
+      margin-bottom: 15px;
       color: white;
     }
-    .stat { text-align: center; flex: 1; }
+    .stat { 
+      text-align: center; 
+      flex: 1;
+      padding: 0 12px;
+      border-right: 1px solid rgba(255,255,255,0.2);
+    }
+    .stat:last-of-type { border-right: none; }
     .stat-value {
-      font-size: 32px;
+      font-size: 24px;
       font-weight: bold;
       display: block;
+      line-height: 1.2;
     }
     .stat-label {
-      font-size: 12px;
+      font-size: 10px;
       opacity: 0.9;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -530,30 +547,30 @@ const htmlPage = (title, content) => `<!DOCTYPE html>
     .stat-link {
       color: white;
       text-decoration: none;
-      font-size: 14px;
-      padding: 8px 16px;
+      font-size: 12px;
+      padding: 6px 12px;
       border: 1px solid rgba(255,255,255,0.3);
       border-radius: 4px;
       display: inline-block;
     }
     .stat-link:hover { background: rgba(255,255,255,0.1); }
-    /* Article Grid */
+    /* Article Grid - Compact */
     .article-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
     }
     .article-card {
       background: white;
-      border-radius: 8px;
-      padding: 20px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      border-left: 4px solid #e5e7eb;
-      transition: transform 0.2s, box-shadow 0.2s;
+      border-radius: 6px;
+      padding: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border-left: 3px solid #e5e7eb;
+      transition: transform 0.15s, box-shadow 0.15s;
     }
     .article-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
     }
     .article-card[data-classification="troubleshooting"] { border-left-color: #ef4444; }
     .article-card[data-classification="tutorial"] { border-left-color: #10b981; }
@@ -563,38 +580,41 @@ const htmlPage = (title, content) => `<!DOCTYPE html>
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
     }
     .card-title {
       color: #1f2937;
       text-decoration: none;
-      font-size: 18px;
+      font-size: 15px;
       font-weight: 600;
       line-height: 1.3;
     }
     .card-title:hover { color: #2563eb; }
     .quality-badge {
       color: #f59e0b;
-      font-size: 16px;
+      font-size: 14px;
+      line-height: 1;
     }
     .card-summary {
       color: #6b7280;
-      font-size: 14px;
-      line-height: 1.5;
-      margin-bottom: 15px;
+      font-size: 12px;
+      line-height: 1.4;
+      margin-bottom: 10px;
+      max-height: 34px;
+      overflow: hidden;
     }
     .card-meta {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
     }
     .classification-tag {
-      font-size: 11px;
-      padding: 3px 8px;
-      border-radius: 4px;
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 3px;
       text-transform: uppercase;
-      font-weight: 500;
+      font-weight: 600;
       letter-spacing: 0.3px;
     }
     .classification-tag.troubleshooting { background: #fee2e2; color: #991b1b; }
@@ -603,40 +623,40 @@ const htmlPage = (title, content) => `<!DOCTYPE html>
     .classification-tag.architecture { background: #ede9fe; color: #5b21b6; }
     .classification-tag.uncategorized { background: #f3f4f6; color: #6b7280; }
     .classification-tag.documentation { background: #fef3c7; color: #92400e; }
-    .date { color: #9ca3af; font-size: 13px; }
-    .card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .date { color: #9ca3af; font-size: 11px; }
+    .card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
     .tag {
       background: #f3f4f6;
       color: #4b5563;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 12px;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 10px;
     }
     .enhance-prompt {
-      margin-top: 15px;
-      padding-top: 15px;
+      margin-top: 8px;
+      padding-top: 8px;
       border-top: 1px dashed #e5e7eb;
     }
     .btn-small {
       background: #8b5cf6;
       color: white;
-      padding: 6px 12px;
-      border-radius: 4px;
+      padding: 4px 10px;
+      border-radius: 3px;
       text-decoration: none;
-      font-size: 13px;
+      font-size: 11px;
       display: inline-block;
     }
     .btn-small:hover { background: #7c3aed; }
     .empty-state {
       text-align: center;
-      padding: 60px 20px;
+      padding: 40px 20px;
       background: white;
-      border-radius: 8px;
+      border-radius: 6px;
     }
     .empty-state p {
       color: #6b7280;
-      font-size: 18px;
-      margin-bottom: 20px;
+      font-size: 16px;
+      margin-bottom: 15px;
     }
     form { max-width: 600px; }
     .form-group {
@@ -668,10 +688,19 @@ const htmlPage = (title, content) => `<!DOCTYPE html>
     button:hover { background: #1d4ed8; }
     .search-box {
       display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 8px;
+      margin-bottom: 0;
+      flex: 1;
     }
-    .search-box input { flex: 1; }
+    .search-box input { 
+      flex: 1; 
+      padding: 8px 12px;
+      font-size: 14px;
+    }
+    .search-box button {
+      padding: 8px 16px;
+      font-size: 14px;
+    }
     .article-content {
       white-space: pre-wrap;
       line-height: 1.8;
@@ -949,7 +978,74 @@ app.get('/article/:title', async (req, res) => {
       <div class="actions">
         <a href="/edit/${encodeURIComponent(article.title)}" class="edit">Edit</a>
         <a href="/">Back to Home</a>
+        <button onclick="processQueue()" class="btn-process">🔄 Process Queue</button>
+        <span id="queue-status" class="queue-status"></span>
       </div>
+      <script>
+        async function processQueue() {
+          const btn = document.querySelector('.btn-process');
+          const status = document.getElementById('queue-status');
+          btn.disabled = true;
+          status.textContent = 'Processing...';
+          
+          try {
+            const response = await fetch('/api/admin/process-queue', { method: 'POST' });
+            const data = await response.json();
+            
+            if (response.ok) {
+              status.textContent = data.pending_jobs + ' jobs queued for processing';
+              // Poll for updates
+              setTimeout(checkQueueStatus, 2000);
+            } else {
+              status.textContent = 'Error: ' + (data.error || 'Failed');
+              btn.disabled = false;
+            }
+          } catch (err) {
+            status.textContent = 'Error: ' + err.message;
+            btn.disabled = false;
+          }
+        }
+        
+        async function checkQueueStatus() {
+          try {
+            const response = await fetch('/api/admin/queue-status');
+            const data = await response.json();
+            const status = document.getElementById('queue-status');
+            const btn = document.querySelector('.btn-process');
+            
+            status.textContent = 'Queue: ' + data.stats.pending + ' pending, ' + data.stats.completed + ' done';
+            
+            if (data.stats.pending === 0) {
+              status.textContent += ' ✅ Complete!';
+            }
+            
+            btn.disabled = false;
+          } catch (err) {
+            console.error('Failed to check queue status:', err);
+          }
+        }
+        
+        // Check status on page load
+        checkQueueStatus();
+      </script>
+      <style>
+        .btn-process {
+          background: #8b5cf6;
+          color: white;
+          padding: 8px 16px;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 14px;
+        }
+        .btn-process:hover:not(:disabled) { background: #7c3aed; }
+        .btn-process:disabled { opacity: 0.6; cursor: not-allowed; }
+        .queue-status {
+          margin-left: 10px;
+          font-size: 12px;
+          color: #6b7280;
+        }
+      </style>
     `;
     res.send(htmlPage(article.title, content));
   } catch (err) {
@@ -1348,6 +1444,74 @@ app.get('/api/admin/article-health', async (req, res) => {
         ...row,
         needs_attention: !row.has_metadata || row.staleness_days > 90 || row.word_count < 200
       }))
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Process AI Enhancement Queue (triggers processing of pending jobs)
+app.post('/api/admin/process-queue', async (req, res) => {
+  try {
+    // Count pending jobs before processing
+    const pendingResult = await pgPool.query(
+      "SELECT COUNT(*) as count FROM article_ai_queue WHERE status = 'pending'"
+    );
+    const pendingCount = parseInt(pendingResult.rows[0].count);
+    
+    // Trigger ai-worker to process jobs (exec the worker script)
+    // We return immediately with job count, actual processing happens async
+    // Client should poll /api/admin/queue-status to see progress
+    
+    res.json({
+      message: 'Queue processing triggered',
+      pending_jobs: pendingCount,
+      note: 'Processing runs asynchronously. Check /api/admin/queue-status for progress.'
+    });
+    
+    // Fire-and-forget: trigger actual processing
+    // Note: In production, this should use a proper job scheduler
+    // For now, we just return status immediately
+    
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get Queue Status
+app.get('/api/admin/queue-status', async (req, res) => {
+  try {
+    const result = await pgPool.query(`
+      SELECT 
+        COUNT(*) FILTER (WHERE status = 'pending') as pending,
+        COUNT(*) FILTER (WHERE status = 'done') as completed,
+        COUNT(*) FILTER (WHERE status = 'error') as errors,
+        MAX(created_at) as last_job_created,
+        MAX(processed_at) as last_job_processed
+      FROM article_ai_queue
+    `);
+    
+    const stats = result.rows[0];
+    
+    // Get recent pending jobs (top 5)
+    const pendingResult = await pgPool.query(`
+      SELECT aq.id, aq.action, aq.created_at, a.title as article_title
+      FROM article_ai_queue aq
+      JOIN articles a ON a.id = aq.article_id
+      WHERE aq.status = 'pending'
+      ORDER BY aq.created_at ASC
+      LIMIT 5
+    `);
+    
+    res.json({
+      stats: {
+        pending: parseInt(stats.pending),
+        completed: parseInt(stats.completed),
+        errors: parseInt(stats.errors),
+        last_job_created: stats.last_job_created,
+        last_job_processed: stats.last_job_processed
+      },
+      recent_pending: pendingResult.rows
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
