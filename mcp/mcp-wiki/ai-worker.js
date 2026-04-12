@@ -932,4 +932,18 @@ async function main() {
   }
 }
 
+// Export validation functions for MCP server
+export {
+  validateContent,
+  calculateQualityScore,
+  classifyArticle,
+  extractTags,
+  generateSummary,
+  validateMarkdownSyntax,
+  validateMermaidDiagrams,
+  validateCodeBlocks,
+  checkSpelling,
+  validateLinks
+};
+
 main();

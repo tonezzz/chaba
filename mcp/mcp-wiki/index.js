@@ -12,6 +12,13 @@ import fs from 'fs';
 import path from 'path';
 import express from 'express';
 import { spawn } from 'child_process';
+import {
+  validateContent,
+  calculateQualityScore,
+  classifyArticle,
+  extractTags,
+  generateSummary
+} from './ai-worker.js';
 
 const { Pool } = pg;
 
@@ -133,6 +140,29 @@ const ListArticlesSchema = z.object({
   offset: z.number().optional().default(0)
 });
 
+const DeleteArticleSchema = z.object({
+  title: z.string()
+});
+
+const ValidateContentSchema = z.object({
+  content: z.string(),
+  title: z.string().optional()
+});
+
+const ExplainArticleSchema = z.object({
+  title: z.string()
+});
+
+const EnhanceArticleSchema = z.object({
+  title: z.string(),
+  actions: z.array(z.enum(['classify', 'summarize', 'suggest-links', 'validate'])).optional().default(['validate'])
+});
+
+const SuggestTagsSchema = z.object({
+  content: z.string(),
+  title: z.string().optional()
+});
+
 // Database helpers - support both SQLite and PostgreSQL
 async function searchArticles(query, limit) {
   if (USE_POSTGRES) {
@@ -230,7 +260,7 @@ async function createArticle(title, content, tags, entities, classification) {
 async function updateArticle(title, content, tags) {
   if (USE_POSTGRES) {
     const result = await pgPool.query(
-      `UPDATE articles SET content = $1, tags = $2, updated_at = CURRENT_TIMESTAMP 
+      `UPDATE articles SET content = $1, tags = $2, updated_at = CURRENT_TIMESTAMP
        WHERE title = $3 RETURNING title`,
       [content, tags || [], title]
     );
@@ -251,6 +281,59 @@ async function updateArticle(title, content, tags) {
           else resolve({ title, updated: true });
         }
       );
+    });
+  }
+}
+
+async function deleteArticle(title) {
+  if (USE_POSTGRES) {
+    const result = await pgPool.query(
+      'DELETE FROM articles WHERE title = $1 RETURNING id',
+      [title]
+    );
+    if (result.rowCount === 0) {
+      throw new Error(`Article "${title}" not found`);
+    }
+    return { deleted: true, id: result.rows[0].id };
+  } else {
+    // SQLite
+    return new Promise((resolve, reject) => {
+      db.run(
+        'DELETE FROM articles WHERE title = ?',
+        [title],
+        function(err) {
+          if (err) reject(err);
+          else if (this.changes === 0) reject(new Error(`Article "${title}" not found`));
+          else resolve({ deleted: true, title });
+        }
+      );
+    });
+  }
+}
+
+async function updateArticleMetadata(articleId, metadata) {
+  if (USE_POSTGRES) {
+    await pgPool.query(
+      `UPDATE articles SET metadata = COALESCE(metadata, '{}') || $1::jsonb WHERE id = $2`,
+      [JSON.stringify(metadata), articleId]
+    );
+    return { updated: true };
+  } else {
+    // SQLite - get current metadata and merge
+    return new Promise((resolve, reject) => {
+      db.get('SELECT metadata FROM articles WHERE id = ?', [articleId], (err, row) => {
+        if (err) return reject(err);
+        const current = row?.metadata ? JSON.parse(row.metadata) : {};
+        const merged = { ...current, ...metadata };
+        db.run(
+          'UPDATE articles SET metadata = ? WHERE id = ?',
+          [JSON.stringify(merged), articleId],
+          function(err) {
+            if (err) reject(err);
+            else resolve({ updated: true });
+          }
+        );
+      });
     });
   }
 }
@@ -307,28 +390,53 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
     {
       name: 'wiki_search',
-      description: 'Search articles by title or content',
+      description: 'Search articles by title or content. Returns matching articles with metadata.',
       inputSchema: zodToJsonSchema(SearchArticlesSchema)
     },
     {
       name: 'wiki_get',
-      description: 'Get article content by title',
+      description: 'Get article content by title. Returns full article with metadata.',
       inputSchema: zodToJsonSchema(GetArticleSchema)
     },
     {
       name: 'wiki_create',
-      description: 'Create new article',
+      description: 'Create new article with title, content, and optional tags. Validates content before creation.',
       inputSchema: zodToJsonSchema(CreateArticleSchema)
     },
     {
       name: 'wiki_update',
-      description: 'Update existing article',
+      description: 'Update existing article. Preserves metadata unless explicitly changed.',
       inputSchema: zodToJsonSchema(UpdateArticleSchema)
     },
     {
+      name: 'wiki_delete',
+      description: 'Delete article by title. Use with caution.',
+      inputSchema: zodToJsonSchema(DeleteArticleSchema)
+    },
+    {
       name: 'wiki_list',
-      description: 'List recent articles',
+      description: 'List recent articles with pagination. Returns titles and update dates.',
       inputSchema: zodToJsonSchema(ListArticlesSchema)
+    },
+    {
+      name: 'wiki_validate',
+      description: 'Validate content without saving. Checks spelling, markdown syntax, mermaid diagrams, code blocks, and links. Returns errors, warnings, and quality score.',
+      inputSchema: zodToJsonSchema(ValidateContentSchema)
+    },
+    {
+      name: 'wiki_explain',
+      description: 'Get detailed explanation of an article including: quality score, validation status, classification, word count, structure analysis, and suggested improvements. Use before editing to understand article state.',
+      inputSchema: zodToJsonSchema(ExplainArticleSchema)
+    },
+    {
+      name: 'wiki_enhance',
+      description: 'Trigger AI enhancement for an article (classify, summarize, suggest-links, validate). Returns enhancement results.',
+      inputSchema: zodToJsonSchema(EnhanceArticleSchema)
+    },
+    {
+      name: 'wiki_suggest_tags',
+      description: 'Get AI-suggested tags for content based on tech terms and content analysis.',
+      inputSchema: zodToJsonSchema(SuggestTagsSchema)
     }
   ]
 }));
@@ -392,7 +500,170 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           }]
         };
       }
-      
+
+      case 'wiki_delete': {
+        const { title } = DeleteArticleSchema.parse(args);
+        const article = await getArticle(title);
+        if (!article) {
+          return {
+            content: [{ type: 'text', text: `Article "${title}" not found` }],
+            isError: true
+          };
+        }
+        await deleteArticle(title);
+        return {
+          content: [{ type: 'text', text: `Deleted article "${title}"` }]
+        };
+      }
+
+      case 'wiki_validate': {
+        const { content, title } = ValidateContentSchema.parse(args);
+        const validation = validateContent(content, title || 'Untitled');
+        const qualityScore = calculateQualityScore(content, [], validation);
+
+        const summary = validation.is_valid
+          ? `✅ Valid! Quality score: ${qualityScore.toFixed(2)}/1.0\n${validation.warning_count > 0 ? `⚠️ ${validation.warning_count} warning(s) to consider` : 'No warnings'}`
+          : `❌ Has errors! Quality score: ${qualityScore.toFixed(2)}/1.0\n${validation.error_count} error(s), ${validation.warning_count} warning(s)`;
+
+        const details = validation.errors.map(e => `❌ [${e.type}] ${e.message}${e.fix ? `\n   Fix: ${e.fix}` : ''}`).join('\n\n');
+        const warnings = validation.warnings.map(w => `⚠️ [${w.type}] ${w.message}${w.fix ? `\n   Suggestion: ${w.fix}` : ''}`).join('\n\n');
+
+        return {
+          content: [{
+            type: 'text',
+            text: `${summary}\n\n## Errors (${validation.error_count}):\n${details || 'None'}\n\n## Warnings (${validation.warning_count}):\n${warnings || 'None'}`
+          }]
+        };
+      }
+
+      case 'wiki_explain': {
+        const { title } = ExplainArticleSchema.parse(args);
+        const article = await getArticle(title);
+        if (!article) {
+          return {
+            content: [{ type: 'text', text: `Article "${title}" not found` }],
+            isError: true
+          };
+        }
+
+        const metadata = article.metadata || {};
+        const wordCount = article.content.split(/\s+/).length;
+        const validation = validateContent(article.content, article.title);
+        const qualityScore = metadata.quality_score || calculateQualityScore(article.content, article.tags, validation);
+
+        // Structure analysis
+        const headers = (article.content.match(/^#{1,6}\s/mg) || []).length;
+        const codeBlocks = (article.content.match(/```/g) || []).length / 2;
+        const images = (article.content.match(/!\[.*?\]\(.*?\)/g) || []).length;
+        const links = (article.content.match(/\[.*?\]\(https?:\/\/.*?\)/g) || []).length;
+        const mermaid = (article.content.match(/```mermaid/g) || []).length;
+
+        // Suggestions
+        const suggestions = [];
+        if (wordCount < 100) suggestions.push('Article is short. Consider adding more detail.');
+        if (headers === 0 && wordCount > 300) suggestions.push('Add headers to structure the content.');
+        if (codeBlocks === 0 && article.content.includes('code')) suggestions.push('Consider adding code blocks for technical content.');
+        if (article.tags.length === 0) suggestions.push('Add tags for better discoverability.');
+        if (validation.errors.length > 0) suggestions.push(`Fix ${validation.errors.length} validation error(s).`);
+        if (validation.warnings.length > 0) suggestions.push(`Review ${validation.warnings.length} warning(s).`);
+
+        const explanation = `# 📊 Article Analysis: "${article.title}"
+
+## Quality Metrics
+- **Quality Score:** ${qualityScore.toFixed(2)}/1.0
+- **Word Count:** ${wordCount}
+- **Classification:** ${metadata.classification || 'Not classified'}
+- **Complexity:** ${metadata.complexity || 'Unknown'}
+- **Validation:** ${validation.is_valid ? '✅ Valid' : `❌ ${validation.error_count} error(s)`}
+
+## Structure
+- **Headers:** ${headers}
+- **Code Blocks:** ${Math.floor(codeBlocks)}
+- **Images:** ${images}
+- **External Links:** ${links}
+- **Mermaid Diagrams:** ${mermaid}
+
+## Tags
+${article.tags?.length > 0 ? article.tags.map(t => `- ${t}`).join('\n') : 'None'}
+
+## Metadata
+- **Created:** ${article.created_at}
+- **Updated:** ${article.updated_at}
+- **TL;DR:** ${metadata.tldr || 'Not generated'}
+
+## 💡 Suggestions
+${suggestions.length > 0 ? suggestions.map(s => `- ${s}`).join('\n') : 'No suggestions - article looks good!'}
+
+## Validation Details
+${validation.errors.length > 0 ? `Errors:\n${validation.errors.slice(0, 3).map(e => `- [${e.type}] ${e.message}`).join('\n')}` : 'No validation errors.'}
+${validation.warnings.length > 0 ? `\nWarnings:\n${validation.warnings.slice(0, 3).map(w => `- [${w.type}] ${w.message}`).join('\n')}` : ''}`;
+
+        return {
+          content: [{ type: 'text', text: explanation }]
+        };
+      }
+
+      case 'wiki_enhance': {
+        const { title, actions } = EnhanceArticleSchema.parse(args);
+        const article = await getArticle(title);
+        if (!article) {
+          return {
+            content: [{ type: 'text', text: `Article "${title}" not found` }],
+            isError: true
+          };
+        }
+
+        // Run enhancement synchronously for MCP
+        const results = {};
+
+        if (actions.includes('validate')) {
+          const validation = validateContent(article.content, article.title);
+          results.validation = {
+            is_valid: validation.is_valid,
+            errors: validation.error_count,
+            warnings: validation.warning_count,
+            quality_score: calculateQualityScore(article.content, article.tags, validation)
+          };
+        }
+
+        if (actions.includes('classify')) {
+          const classification = await classifyArticle(article.content);
+          const suggestedTags = await extractTags(article.content, article.title);
+          results.classification = classification;
+          results.suggested_tags = suggestedTags;
+        }
+
+        if (actions.includes('summarize')) {
+          const tldr = await generateSummary(article.content);
+          results.summary = tldr;
+        }
+
+        // Update metadata
+        const metadataUpdate = {
+          ...results,
+          last_enhanced: new Date().toISOString()
+        };
+        await updateArticleMetadata(article.id, metadataUpdate);
+
+        return {
+          content: [{
+            type: 'text',
+            text: `Enhanced "${title}" with actions: ${actions.join(', ')}\n\nResults:\n${JSON.stringify(results, null, 2)}`
+          }]
+        };
+      }
+
+      case 'wiki_suggest_tags': {
+        const { content, title } = SuggestTagsSchema.parse(args);
+        const tags = await extractTags(content, title || 'Untitled');
+        return {
+          content: [{
+            type: 'text',
+            text: `Suggested tags:\n${tags.map(t => `- ${t}`).join('\n')}\n\nUse these tags when creating the article.`
+          }]
+        };
+      }
+
       default:
         return {
           content: [{ type: 'text', text: `Unknown tool: ${name}` }],
