@@ -1,5 +1,6 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -2646,12 +2647,32 @@ function renderArticleContent(text) {
 async function start() {
   // Initialize database (SQLite or PostgreSQL)
   await initDatabase();
-  
+
+  // MCP HTTP SSE transport endpoint
+  // Windsurf and other MCP clients can connect via http://host:3008/mcp/sse
+  app.get('/mcp/sse', async (req, res) => {
+    const transport = new SSEServerTransport('/mcp/message', res);
+    await server.connect(transport);
+    console.error('mcp-wiki: MCP SSE client connected');
+
+    // Handle disconnect
+    req.on('close', () => {
+      console.error('mcp-wiki: MCP SSE client disconnected');
+    });
+  });
+
+  app.post('/mcp/message', async (req, res) => {
+    // This endpoint handles messages from MCP clients
+    // The SSE transport sets up the handler internally
+    res.status(404).send('Not found');
+  });
+
   // Start HTTP server
   app.listen(HTTP_PORT, () => {
     console.error(`mcp-wiki: HTTP server started on port ${HTTP_PORT}`);
+    console.error(`mcp-wiki: MCP SSE endpoint available at http://localhost:${HTTP_PORT}/mcp/sse`);
   });
-  
+
   // MCP stdio transport (optional - only if stdin is piped)
   // This runs after HTTP server starts, allowing dual-mode operation
   const isStdioMode = !process.stdin.isTTY || process.env.MCP_STDIO === '1';
@@ -2665,6 +2686,7 @@ async function start() {
   } else {
     console.error('mcp-wiki: Running in HTTP-only mode (no MCP stdio client detected)');
     console.error(`mcp-wiki: Visit http://localhost:${HTTP_PORT}/ to use the wiki`);
+    console.error(`mcp-wiki: MCP tools available via SSE at /mcp/sse`);
   }
 }
 
