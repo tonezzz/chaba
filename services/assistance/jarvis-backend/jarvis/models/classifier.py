@@ -48,7 +48,7 @@ class TaskClassifier:
             r"\btime now|current time|what time|what day|what date|today's date\b",
             r"\b(add memo|save memo|remember this|write that down|take a note)\b",
             r"\b(search|look up|find information|get data|fetch|retrieve)\b",
-            r"\bcheck status|get status|is it working|health check)\b",
+            r"\b(check status|get status|is it working|health check)\b",
         ],
         TaskType.MEMORY: [
             r"\b(remember|recall|what did|what was|you said earlier|previous conversation)\b",
