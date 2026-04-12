@@ -12,13 +12,6 @@ import fs from 'fs';
 import path from 'path';
 import express from 'express';
 import { spawn } from 'child_process';
-import {
-  validateContent,
-  calculateQualityScore,
-  classifyArticle,
-  extractTags,
-  generateSummary
-} from './ai-worker.js';
 
 const { Pool } = pg;
 
@@ -379,6 +372,608 @@ async function listArticles(limit, offset) {
       );
     });
   }
+}
+
+// ============ VALIDATION FUNCTIONS (from ai-worker.js) ============
+
+// Common tech terms for spell checking
+const TECH_TERMS = new Set([
+  'api', 'http', 'https', 'json', 'xml', 'yaml', 'url', 'uri',
+  'docker', 'kubernetes', 'k8s', 'container', 'pod', 'deployment',
+  'postgres', 'postgresql', 'mysql', 'mongodb', 'redis', 'sqlite',
+  'javascript', 'typescript', 'python', 'nodejs', 'react', 'vue',
+  'github', 'gitlab', 'git', 'ci/cd', 'cicd', 'pipeline',
+  'auth', 'oauth', 'jwt', 'ssl', 'tls', 'encryption',
+  'microservice', 'serverless', 'lambda', 'function',
+  'websocket', 'grpc', 'graphql', 'rest',
+  'mermaid', 'flowchart', 'sequenceDiagram', 'classDiagram',
+  'idc1', 'chaba', 'autoagent', 'jarvis', 'portainer'
+]);
+
+// Common spelling mistakes to catch
+const COMMON_MISSPELLINGS = {
+  'recieve': 'receive', 'seperate': 'separate', 'occured': 'occurred',
+  'definately': 'definitely', 'occurence': 'occurrence', 'independant': 'independent',
+  'enviroment': 'environment', 'accomodate': 'accommodate', 'commited': 'committed',
+  'occurance': 'occurrence', 'reccomend': 'recommend', 'successfull': 'successful',
+  'untill': 'until', 'occured': 'occurred', 'accross': 'across',
+  'begining': 'beginning', 'beleive': 'believe', 'definately': 'definitely',
+  'definitly': 'definitely', 'immediatly': 'immediately', 'neccessary': 'necessary',
+  'occassion': 'occasion', 'occured': 'occurred', 'peice': 'piece',
+  'priviledge': 'privilege', 'publically': 'publicly', 'recieve': 'receive',
+  'seperate': 'separate', 'supercede': 'supersede', 'tommorow': 'tomorrow',
+  'truely': 'truly', 'untill': 'until', 'wierd': 'weird',
+  'acheive': 'achieve', 'apparant': 'apparent', 'appearence': 'appearance',
+  'arguement': 'argument', 'becomming': 'becoming', 'begining': 'beginning',
+  'beleive': 'believe', 'beleived': 'believed', 'beleives': 'believes',
+  'beleiving': 'believing', 'benifit': 'benefit', 'benifits': 'benefits',
+  'buisness': 'business', 'calender': 'calendar', 'catagory': 'category',
+  'cemetary': 'cemetery', 'changable': 'changeable', 'comming': 'coming',
+  'commited': 'committed', 'comittee': 'committee', 'completly': 'completely',
+  'concious': 'conscious', 'curiousity': 'curiosity', 'definate': 'definite',
+  'definately': 'definitely', 'definit': 'definite', 'definitly': 'definitely',
+  'develope': 'develop', 'develoment': 'development', 'dieing': 'dying',
+  'diffrent': 'different', 'dilema': 'dilemma', 'dissapoint': 'disappoint',
+  'ecstacy': 'ecstasy', 'embarass': 'embarrass', 'enviroment': 'environment',
+  'equiped': 'equipped', 'existance': 'existence', 'experiance': 'experience',
+  'farenheit': 'fahrenheit', 'finaly': 'finally', 'foriegn': 'foreign',
+  'freind': 'friend', 'fullfill': 'fulfill', 'goverment': 'government',
+  'grammer': 'grammar', 'greatful': 'grateful', 'griefing': 'grieving',
+  'harrass': 'harass', 'heighth': 'height', 'hipocrit': 'hypocrite',
+  'humerous': 'humorous', 'immediatly': 'immediately', 'independant': 'independent',
+  'indespensable': 'indispensable', 'inovative': 'innovative', 'knowlege': 'knowledge',
+  'liason': 'liaison', 'libary': 'library', 'looseing': 'losing',
+  'maintainance': 'maintenance', 'managable': 'manageable', 'millenium': 'millennium',
+  'miniture': 'miniature', 'mischevious': 'mischievous', 'misspell': 'misspell',
+  'neccessary': 'necessary', 'necesary': 'necessary', 'neice': 'niece',
+  'nieghbor': 'neighbor', 'noticable': 'noticeable', 'noticably': 'noticeably',
+  'occassion': 'occasion', 'occured': 'occurred', 'occurance': 'occurrence',
+  'occurence': 'occurrence', 'paralell': 'parallel', 'pasttime': 'pastime',
+  'peice': 'piece', 'percieve': 'perceive', 'persistant': 'persistent',
+  'personell': 'personnel', 'plagerize': 'plagiarize', 'playright': 'playwright',
+  'posession': 'possession', 'prefered': 'preferred', 'presance': 'presence',
+  'procede': 'proceed', 'pronounciation': 'pronunciation', 'propoganda': 'propaganda',
+  'publically': 'publicly', 'recieve': 'receive', 'recoginze': 'recognize',
+  'reccomend': 'recommend', 'refering': 'referring', 'relevent': 'relevant',
+  'religous': 'religious', 'repetion': 'repetition', 'restaraunt': 'restaurant',
+  'rythm': 'rhythm', 'seige': 'siege', 'sence': 'sense',
+  'seperate': 'separate', 'sieze': 'seize', 'similiar': 'similar',
+  'sophmore': 'sophomore', 'speach': 'speech', 'stratagy': 'strategy',
+  'sucessful': 'successful', 'supercede': 'supersede', 'suprise': 'surprise',
+  'surpress': 'suppress', 'temperment': 'temperament', 'tommorow': 'tomorrow',
+  'truely': 'truly', 'tyrany': 'tyranny', 'underate': 'underrate',
+  'untill': 'until', 'usefull': 'useful', 'usualy': 'usually',
+  'vacumme': 'vacuum', 'vegatarian': 'vegetarian', 'vehical': 'vehicle',
+  'visious': 'vicious', 'wierd': 'weird', 'writting': 'writing'
+};
+
+// Validate content for spelling, syntax, and diagram errors
+function validateContent(content, title) {
+  const errors = [];
+  const warnings = [];
+
+  // 1. Markdown Syntax Validation
+  const markdownErrors = validateMarkdownSyntax(content);
+  errors.push(...markdownErrors.errors);
+  warnings.push(...markdownErrors.warnings);
+
+  // 2. Mermaid Diagram Validation
+  const mermaidErrors = validateMermaidDiagrams(content);
+  errors.push(...mermaidErrors.errors);
+  warnings.push(...mermaidErrors.warnings);
+
+  // 3. Code Block Validation
+  const codeErrors = validateCodeBlocks(content);
+  errors.push(...codeErrors.errors);
+  warnings.push(...codeErrors.warnings);
+
+  // 4. Spelling Check (basic patterns)
+  const spellingErrors = checkSpelling(content);
+  errors.push(...spellingErrors.errors);
+  warnings.push(...spellingErrors.warnings);
+
+  // 5. Link Validation
+  const linkErrors = validateLinks(content);
+  errors.push(...linkErrors.errors);
+  warnings.push(...linkErrors.warnings);
+
+  return {
+    error_count: errors.length,
+    warning_count: warnings.length,
+    errors: errors.slice(0, 10),
+    warnings: warnings.slice(0, 10),
+    has_critical_errors: errors.some(e => e.severity === 'critical'),
+    is_valid: errors.length === 0
+  };
+}
+
+function validateMarkdownSyntax(content) {
+  const errors = [];
+  const warnings = [];
+
+  // Check for unclosed code blocks
+  const codeFenceMatches = content.match(/```/g) || [];
+  if (codeFenceMatches.length % 2 !== 0) {
+    errors.push({
+      type: 'markdown',
+      severity: 'critical',
+      message: `Unclosed code block: ${codeFenceMatches.length} fence(s) found (must be even)`,
+      fix: 'Add closing ``` to complete the code block'
+    });
+  }
+
+  // Check for unclosed inline code
+  const backtickMatches = content.match(/`[^`]*$/gm) || [];
+  if (backtickMatches.length > 0) {
+    errors.push({
+      type: 'markdown',
+      severity: 'error',
+      message: `Unclosed inline code: ${backtickMatches.length} instance(s)`,
+      fix: 'Close with matching ` backtick'
+    });
+  }
+
+  // Check for broken markdown links [text](url with spaces)
+  const brokenLinks = content.match(/\[([^\]]+)\]\(([^)]+\s[^)]+)\)/g) || [];
+  brokenLinks.forEach(link => {
+    errors.push({
+      type: 'markdown',
+      severity: 'error',
+      message: `Broken markdown link with spaces: ${link.substring(0, 50)}...`,
+      fix: 'URL encode spaces with %20 or replace with - or _'
+    });
+  });
+
+  // Check for missing alt text in images
+  const imagesWithoutAlt = content.match(/!\[\]\([^)]+\)/g) || [];
+  if (imagesWithoutAlt.length > 0) {
+    warnings.push({
+      type: 'markdown',
+      severity: 'warning',
+      message: `${imagesWithoutAlt.length} image(s) without alt text`,
+      fix: 'Add descriptive alt text: ![description](url)'
+    });
+  }
+
+  // Check for headers without space after #
+  const badHeaders = content.match(/^#{1,6}[^\s#]/gm) || [];
+  if (badHeaders.length > 0) {
+    errors.push({
+      type: 'markdown',
+      severity: 'error',
+      message: `${badHeaders.length} header(s) missing space after #`,
+      fix: 'Add space: ## Header not ##Header'
+    });
+  }
+
+  // Check for inconsistent list indentation
+  const listLines = content.match(/^[\s]*[-*+][\s]/gm) || [];
+  const indentations = listLines.map(l => l.match(/^[\s]*/)[0].length);
+  const uniqueIndents = [...new Set(indentations)];
+  if (uniqueIndents.length > 2) {
+    warnings.push({
+      type: 'markdown',
+      severity: 'warning',
+      message: `Inconsistent list indentation (${uniqueIndents.length} levels)`,
+      fix: 'Use 2 or 4 spaces consistently'
+    });
+  }
+
+  return { errors, warnings };
+}
+
+function validateMermaidDiagrams(content) {
+  const errors = [];
+  const warnings = [];
+
+  // Extract mermaid blocks
+  const mermaidBlocks = content.match(/```mermaid\n([\s\S]*?)```/g) || [];
+
+  mermaidBlocks.forEach((block, index) => {
+    const diagramContent = block.replace(/```mermaid\n?/, '').replace(/```$/, '');
+    const lines = diagramContent.split('\n').map(l => l.trim()).filter(l => l);
+
+    if (lines.length === 0) {
+      errors.push({
+        type: 'mermaid',
+        severity: 'error',
+        message: `Diagram #${index + 1}: Empty diagram`,
+        fix: 'Add diagram content'
+      });
+      return;
+    }
+
+    const firstLine = lines[0].toLowerCase();
+
+    // Check for valid diagram type
+    const validTypes = ['flowchart', 'sequencediagram', 'classdiagram', 'statediagram',
+                       'erdiagram', 'gantt', 'pie', 'gitgraph', 'mindmap', 'timeline',
+                       'journey', 'requirementdiagram', 'c4context', 'c4container'];
+    const hasValidType = validTypes.some(type => firstLine.includes(type.toLowerCase()));
+
+    if (!hasValidType && !firstLine.includes('graph ')) {
+      warnings.push({
+        type: 'mermaid',
+        severity: 'warning',
+        message: `Diagram #${index + 1}: Unrecognized diagram type "${firstLine.substring(0, 30)}"`,
+        fix: `Use one of: ${validTypes.slice(0, 5).join(', ')}...`
+      });
+    }
+
+    // Check for excessive diagram size
+    if (lines.length > 50) {
+      warnings.push({
+        type: 'mermaid',
+        severity: 'warning',
+        message: `Diagram #${index + 1}: Very large diagram (${lines.length} lines)`,
+        fix: 'Consider breaking into smaller diagrams or using subgraphs'
+      });
+    }
+  });
+
+  // Check for mermaid syntax mentioned but not in code block
+  const mermaidKeywords = ['flowchart', 'sequencediagram', 'classdiagram', 'graph TD', 'graph LR'];
+  const hasMermaidKeyword = mermaidKeywords.some(kw => content.toLowerCase().includes(kw.toLowerCase()));
+  const hasMermaidBlock = content.includes('```mermaid');
+
+  if (hasMermaidKeyword && !hasMermaidBlock) {
+    errors.push({
+      type: 'mermaid',
+      severity: 'critical',
+      message: 'Mermaid diagram syntax found but not wrapped in ```mermaid code block',
+      fix: 'Wrap diagram with:\n```mermaid\n...\n```'
+    });
+  }
+
+  return { errors, warnings };
+}
+
+function validateCodeBlocks(content) {
+  const errors = [];
+  const warnings = [];
+
+  // Extract all code blocks
+  const codeBlocks = content.match(/```(\w*)\n([\s\S]*?)```/g) || [];
+
+  codeBlocks.forEach((block, index) => {
+    const langMatch = block.match(/```(\w*)/);
+    const lang = langMatch ? langMatch[1] : '';
+    const code = block.replace(/```\w*\n?/, '').replace(/```$/, '');
+
+    if (!lang) {
+      warnings.push({
+        type: 'code',
+        severity: 'warning',
+        message: `Code block #${index + 1}: No language specified`,
+        fix: 'Add language: ```javascript, ```python, ```bash, etc.'
+      });
+    }
+
+    // Language-specific checks
+    if (lang === 'javascript' || lang === 'js' || lang === 'typescript' || lang === 'ts') {
+      const unclosedParens = (code.match(/\(/g) || []).length !== (code.match(/\)/g) || []).length;
+      const unclosedBraces = (code.match(/\{/g) || []).length !== (code.match(/\}/g) || []).length;
+      const unclosedBrackets = (code.match(/\[/g) || []).length !== (code.match(/\]/g) || []).length;
+
+      if (unclosedParens) {
+        errors.push({
+          type: 'code',
+          severity: 'error',
+          language: lang,
+          message: `JS code block #${index + 1}: Unclosed parentheses`,
+          fix: 'Ensure all ( and ) are matched'
+        });
+      }
+      if (unclosedBraces) {
+        errors.push({
+          type: 'code',
+          severity: 'error',
+          language: lang,
+          message: `JS code block #${index + 1}: Unclosed braces`,
+          fix: 'Ensure all { and } are matched'
+        });
+      }
+      if (unclosedBrackets) {
+        errors.push({
+          type: 'code',
+          severity: 'error',
+          language: lang,
+          message: `JS code block #${index + 1}: Unclosed brackets`,
+          fix: 'Ensure all [ and ] are matched'
+        });
+      }
+    }
+
+    if (lang === 'python' || lang === 'py') {
+      // Check for Python 2 vs 3 syntax
+      if (code.includes('print ') && !code.includes('print(')) {
+        errors.push({
+          type: 'code',
+          severity: 'error',
+          language: lang,
+          message: `Python code block #${index + 1}: Python 2 print syntax detected`,
+          fix: 'Use Python 3 syntax: print("message")'
+        });
+      }
+    }
+
+    if (lang === 'bash' || lang === 'sh' || lang === 'shell') {
+      // Check for common bash mistakes
+      if (code.includes('rm -rf /') || code.includes('rm -rf /*')) {
+        errors.push({
+          type: 'code',
+          severity: 'critical',
+          language: lang,
+          message: `Bash code block #${index + 1}: DANGEROUS rm -rf command detected`,
+          fix: 'DO NOT include destructive commands without warnings'
+        });
+      }
+    }
+
+    // Check for very long lines
+    const longLines = code.split('\n').filter(l => l.length > 100);
+    if (longLines.length > 3) {
+      warnings.push({
+        type: 'code',
+        severity: 'warning',
+        message: `Code block #${index + 1}: ${longLines.length} lines exceed 100 characters`,
+        fix: 'Break long lines for readability'
+      });
+    }
+  });
+
+  return { errors, warnings };
+}
+
+function checkSpelling(content) {
+  const errors = [];
+  const warnings = [];
+
+  // Get text content (exclude code blocks)
+  const textContent = content.replace(/```[\s\S]*?```/g, ' ');
+  const words = textContent.toLowerCase().split(/[^a-z]+/).filter(w => w.length > 3);
+
+  // Check for common misspellings
+  for (const [wrong, correct] of Object.entries(COMMON_MISSPELLINGS)) {
+    const regex = new RegExp(`\\b${wrong}\\b`, 'gi');
+    const matches = textContent.match(regex);
+    if (matches) {
+      errors.push({
+        type: 'spelling',
+        severity: 'error',
+        message: `Spelling error: "${matches[0]}" should be "${correct}"`,
+        count: matches.length,
+        fix: `Replace with: ${correct}`
+      });
+    }
+  }
+
+  // Check for tech terms misspellings
+  const techMisspellings = {
+    'postgressql': 'postgresql', 'postgress': 'postgresql',
+    'javscript': 'javascript', 'javascipt': 'javascript',
+    'typescriptt': 'typescript', 'typscript': 'typescript',
+    'dockerr': 'docker', 'docer': 'docker',
+    'kuberntes': 'kubernetes', 'kubernets': 'kubernetes',
+    'reddis': 'redis', 'rediss': 'redis',
+    'graphqll': 'graphql', 'grpahql': 'graphql'
+  };
+
+  for (const [wrong, correct] of Object.entries(techMisspellings)) {
+    const regex = new RegExp(`\\b${wrong}\\b`, 'gi');
+    const matches = textContent.match(regex);
+    if (matches) {
+      errors.push({
+        type: 'spelling',
+        severity: 'error',
+        category: 'tech-term',
+        message: `Tech term misspelled: "${matches[0]}" should be "${correct}"`,
+        count: matches.length,
+        fix: `Replace with: ${correct}`
+      });
+    }
+  }
+
+  // Check for repeated words
+  const repeatedPattern = /\b(\w+)\s+\1\b/gi;
+  const repeated = textContent.match(repeatedPattern) || [];
+  repeated.forEach(match => {
+    warnings.push({
+      type: 'spelling',
+      severity: 'warning',
+      message: `Repeated word: "${match}"`,
+      fix: 'Remove duplicate word'
+    });
+  });
+
+  return { errors, warnings };
+}
+
+function validateLinks(content) {
+  const errors = [];
+  const warnings = [];
+
+  // Extract markdown links
+  const links = content.match(/\[([^\]]+)\]\(([^)]+)\)/g) || [];
+
+  links.forEach(link => {
+    const urlMatch = link.match(/\]\(([^)]+)\)/);
+    if (!urlMatch) return;
+
+    const url = urlMatch[1];
+
+    // Check for empty URLs
+    if (!url || url.trim() === '') {
+      errors.push({
+        type: 'link',
+        severity: 'error',
+        message: `Empty link URL: ${link.substring(0, 30)}...`,
+        fix: 'Add a valid URL'
+      });
+    }
+
+    // Check for spaces in URLs
+    if (url.includes(' ')) {
+      errors.push({
+        type: 'link',
+        severity: 'error',
+        message: `URL contains spaces: ${url.substring(0, 40)}`,
+        fix: 'Replace spaces with %20 or -'
+      });
+    }
+
+    // Check for relative links that might be broken
+    if (url.startsWith('./') || url.startsWith('../')) {
+      warnings.push({
+        type: 'link',
+        severity: 'warning',
+        message: `Relative link (verify target exists): ${url}`,
+        fix: 'Ensure linked file exists in correct location'
+      });
+    }
+
+    // Check for placeholder URLs
+    const placeholders = ['example.com', 'localhost', '127.0.0.1', 'your-domain', 'placeholder'];
+    if (placeholders.some(p => url.includes(p))) {
+      warnings.push({
+        type: 'link',
+        severity: 'warning',
+        message: `Possible placeholder URL: ${url.substring(0, 40)}`,
+        fix: 'Replace with actual URL'
+      });
+    }
+  });
+
+  // Check for bare URLs (not in markdown format)
+  const bareUrls = content.match(/(?<!\]\()https?:\/\/[^\s<>"\])]+/g) || [];
+  if (bareUrls.length > 0) {
+    warnings.push({
+      type: 'link',
+      severity: 'warning',
+      message: `${bareUrls.length} bare URL(s) found (not in markdown format)`,
+      fix: 'Convert to [description](url) format for better readability'
+    });
+  }
+
+  return { errors, warnings };
+}
+
+// Calculate quality score with validation penalties
+function calculateQualityScore(content, tags, validationResult = null) {
+  let score = 0.5;
+
+  // Length score (max 0.15)
+  const wordCount = content.split(/\s+/).length;
+  if (wordCount > 100) score += 0.05;
+  if (wordCount > 300) score += 0.05;
+  if (wordCount > 800) score += 0.05;
+
+  // Structure score (max 0.20)
+  const headerCount = (content.match(/^#{1,6}\s/mg) || []).length;
+  if (headerCount > 0) score += Math.min(headerCount * 0.02, 0.10);
+  if (content.includes('```')) score += 0.05;
+  if (content.includes('|')) score += 0.03;
+  if (content.includes('> ')) score += 0.02;
+
+  // Rich Media (max 0.15)
+  const images = (content.match(/!\[.*?\]\(.*?\)/g) || []).length;
+  const links = (content.match(/\[.*?\]\(https?:\/\/.*?\)/g) || []).length;
+  const mermaid = (content.match(/```mermaid/g) || []).length;
+  score += Math.min(images * 0.03, 0.09);
+  score += Math.min(links * 0.01, 0.05);
+  score += Math.min(mermaid * 0.05, 0.10);
+
+  // Metadata (max 0.10)
+  if (tags?.length > 0) score += Math.min(tags.length * 0.02, 0.06);
+
+  // === VALIDATION PENALTIES ===
+  if (validationResult) {
+    const criticalErrors = validationResult.errors.filter(e => e.severity === 'critical').length;
+    score -= Math.min(criticalErrors * 0.15, 0.45);
+
+    const regularErrors = validationResult.errors.filter(e => e.severity === 'error').length;
+    score -= Math.min(regularErrors * 0.08, 0.24);
+
+    score -= Math.min(validationResult.warning_count * 0.03, 0.15);
+  }
+
+  // Broken markdown structure penalty
+  const codeFenceCount = (content.match(/```/g) || []).length;
+  if (codeFenceCount % 2 !== 0) score -= 0.10;
+
+  // Excessive length without structure penalty
+  if (wordCount > 1500 && headerCount < 3) score -= 0.05;
+
+  return Math.max(0, Math.min(Math.round(score * 100) / 100, 1.0));
+}
+
+// Simple classification based on content analysis
+async function classifyArticle(content) {
+  const lower = content.toLowerCase();
+
+  // Heuristic classification
+  const hasCode = lower.includes('```') || lower.includes('function') || lower.includes('const ') || lower.includes('import ');
+  const hasTutorial = lower.includes('step') || lower.includes('how to') || lower.includes('tutorial') || lower.includes('guide');
+  const hasTroubleshooting = lower.includes('error') || lower.includes('fix') || lower.includes('issue') || lower.includes('problem') || lower.includes('troubleshoot');
+  const hasReference = lower.includes('api') || lower.includes('reference') || lower.includes('documentation') || lower.includes('list of');
+
+  let type = 'note';
+  if (hasTutorial) type = 'tutorial';
+  else if (hasTroubleshooting) type = 'troubleshooting';
+  else if (hasReference) type = 'reference';
+  else if (hasCode) type = 'code-example';
+
+  // Complexity assessment
+  const wordCount = content.split(/\s+/).length;
+  const headerCount = (content.match(/^#{1,6}\s/mg) || []).length;
+  let complexity = 'simple';
+  if (wordCount > 500 && headerCount > 3) complexity = 'complex';
+  else if (wordCount > 200 || headerCount > 1) complexity = 'moderate';
+
+  return { type, complexity, indicators: { hasCode, hasTutorial, hasTroubleshooting, hasReference } };
+}
+
+// Extract tags from content
+async function extractTags(content, title) {
+  const tags = new Set();
+  const lower = content.toLowerCase();
+
+  // Extract from tech terms
+  for (const term of TECH_TERMS) {
+    if (lower.includes(term.toLowerCase())) {
+      tags.add(term);
+    }
+  }
+
+  // Additional patterns
+  if (lower.includes('docker') || lower.includes('container')) tags.add('docker');
+  if (lower.includes('kubernetes') || lower.includes('k8s')) tags.add('kubernetes');
+  if (lower.includes('database') || lower.includes('sql')) tags.add('database');
+  if (lower.includes('api') || lower.includes('rest')) tags.add('api');
+  if (lower.includes('error') || lower.includes('debug')) tags.add('troubleshooting');
+  if (lower.includes('install') || lower.includes('setup')) tags.add('setup');
+  if (lower.includes('deploy') || lower.includes('deployment')) tags.add('deployment');
+  if (lower.includes('security') || lower.includes('auth')) tags.add('security');
+  if (lower.includes('performance') || lower.includes('optimize')) tags.add('performance');
+
+  return Array.from(tags).slice(0, 8);
+}
+
+// Generate TL;DR summary
+async function generateSummary(content) {
+  // Simple summary: first 2-3 sentences or first 200 chars
+  const sentences = content.match(/[^.!?]+[.!?]+/g) || [];
+  let summary = sentences.slice(0, 2).join(' ').trim();
+
+  if (summary.length > 300) {
+    summary = summary.substring(0, 300) + '...';
+  }
+
+  if (!summary || summary.length < 50) {
+    summary = content.substring(0, 200).replace(/\n/g, ' ') + '...';
+  }
+
+  return summary;
 }
 
 // MCP Server
