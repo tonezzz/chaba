@@ -11,6 +11,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import fs from 'fs';
 import path from 'path';
 import express from 'express';
+import { spawn } from 'child_process';
 
 const { Pool } = pg;
 
