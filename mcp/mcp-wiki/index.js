@@ -1280,8 +1280,6 @@ ${validation.warnings.length > 0 ? `\nWarnings:\n${validation.warnings.slice(0, 
 
 // HTTP Server for Web UI
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // HTML template helper
 const htmlPage = (title, content) => `<!DOCTYPE html>
@@ -2678,18 +2676,41 @@ async function start() {
     }
   });
 
-  app.post('/mcp/message', async (req, res) => {
-    // Delegate to the appropriate transport based on session ID
-    const sessionId = req.query.sessionId;
-    const transport = mcpTransports.get(sessionId);
+  // MCP message endpoint - needs raw body stream
+  // Use raw body parser and create readable stream for transport
+  import('stream').then(({ Readable }) => {
+    app.post('/mcp/message', express.raw({ type: 'application/json' }), async (req, res) => {
+      const sessionId = req.query.sessionId;
+      const transport = mcpTransports.get(sessionId);
 
-    if (!transport) {
-      res.status(400).send('Unknown session');
-      return;
-    }
+      if (!transport) {
+        res.status(400).send('Unknown session');
+        return;
+      }
 
-    await transport.handlePostMessage(req, res);
+      try {
+        // Create readable stream from buffer for transport
+        const stream = Readable.from([req.body]);
+        stream.headers = req.headers;
+        stream.method = req.method;
+        stream.url = req.url;
+        stream.httpVersion = req.httpVersion;
+        stream.httpVersionMajor = req.httpVersionMajor;
+        stream.httpVersionMinor = req.httpVersionMinor;
+
+        await transport.handlePostMessage(stream, res);
+      } catch (err) {
+        console.error('mcp-wiki: MCP message handling error:', err.message);
+        if (!res.headersSent) {
+          res.status(400).json({ error: err.message });
+        }
+      }
+    });
   });
+
+  // Body parsers for other routes (added AFTER MCP routes)
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
 
   // Start HTTP server
   app.listen(HTTP_PORT, () => {
