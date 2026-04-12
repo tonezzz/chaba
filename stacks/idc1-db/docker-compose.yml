@@ -58,14 +58,16 @@ services:
 
   # MCP Wiki - Knowledge base on idc1
   mcp-wiki:
-    image: ghcr.io/tonezzz/mcp-wiki:latest
+    build:
+      context: ../../mcp/mcp-wiki
+      dockerfile: Dockerfile
     container_name: idc1-mcp-wiki
     environment:
       # Use PostgreSQL mode (shared database)
       WIKI_USE_POSTGRES: '1'
       DATABASE_URL: postgresql://${POSTGRES_USER:-chaba}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-chaba}
       WIKI_HTTP_PORT: 8080
-      MCP_STDIO: '0'
+      # MCP_STDIO: '1'  # Enable for Windsurf MCP stdio transport (HTTP mode for now)
     ports:
       - "3008:8080"
     restart: unless-stopped
