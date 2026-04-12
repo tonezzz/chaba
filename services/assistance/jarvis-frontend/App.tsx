@@ -115,8 +115,7 @@ export default function App() {
   const backendCandidates = useCallback((): string[] => {
     const override = String((import.meta as any).env?.VITE_JARVIS_HTTP_URL as string | undefined || "").trim();
     let normOverride = override ? override.trim().replace(/\/+$/, "").replace(/^\s+|\s+$/g, "") : "";
-    const isJarvisSubpath = location.pathname.startsWith("/jarvis");
-    const defaults = isJarvisSubpath ? ["/jarvis/api"] : ["", "/jarvis/api", "/jarvis"];
+    const defaults = ["/jarvis/api"];
     const out = normOverride ? [normOverride, ...defaults] : defaults;
 
     const seen = new Set<string>();
