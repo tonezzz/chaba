@@ -645,8 +645,33 @@ const htmlPage = (title, content) => `<!DOCTYPE html>
       text-decoration: none;
       font-size: 11px;
       display: inline-block;
+      border: none;
+      cursor: pointer;
     }
     .btn-small:hover { background: #7c3aed; }
+    .enhance-select {
+      padding: 4px 8px;
+      font-size: 11px;
+      border: 1px solid #d1d5db;
+      border-radius: 3px;
+      background: white;
+      color: #374151;
+      flex: 1;
+      min-width: 0;
+    }
+    .enhance-form {
+      margin-top: 8px;
+    }
+    .enhance-form-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .ai-controls {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(139, 92, 246, 0.2);
+    }
     .empty-state {
       text-align: center;
       padding: 40px 20px;
@@ -895,7 +920,18 @@ app.get('/', async (req, res) => {
                 <span class="date">${formatDate(a.updated_at)}</span>
               </div>
               ${a.tags ? `<div class="card-tags">${(Array.isArray(a.tags) ? a.tags : a.tags.split(',')).slice(0, 3).map(t => `<span class="tag">${escapeHtml(t.trim())}</span>`).join('')}</div>` : ''}
-              ${!metadata.classification ? `<div class="enhance-prompt"><a href="/enhance/${a.id}" class="btn-small">✨ Enhance</a></div>` : ''}
+              <div class="enhance-form">
+                <form action="/enhance/${a.id}" method="GET" style="display:flex;gap:4px;align-items:center;">
+                  <select name="actions" class="enhance-select">
+                    <option value="classify,summarize">Quick (Classify+Summary)</option>
+                    <option value="classify">Classify Only</option>
+                    <option value="summarize">Summary Only</option>
+                    <option value="classify,summarize,suggest-links">Full (+Links)</option>
+                    <option value="embed">Generate Embedding</option>
+                  </select>
+                  <button type="submit" class="btn-small">${metadata.classification ? '↻ Re-enhance' : '✨ Enhance'}</button>
+                </form>
+              </div>
             </article>
           `;
         }).join('') + '</div>';
@@ -952,21 +988,28 @@ app.get('/article/:title', async (req, res) => {
       : 'none';
     const hasEnhancement = metadata.classification || metadata.tldr;
     
-    const aiSection = hasEnhancement ? `
+    const aiSection = `
       <div class="ai-metadata">
         <div class="ai-header">
-          <span class="ai-badge">✨ AI Enhanced</span>
+          <span class="ai-badge">${hasEnhancement ? '✨ AI Enhanced' : '⚠ Not Enhanced'}</span>
           ${metadata.quality_score ? `<span class="quality-score">Quality: ${metadata.quality_score.toFixed(2)}/1.0</span>` : ''}
         </div>
         ${metadata.tldr ? `<div class="ai-tldr"><strong>TL;DR:</strong> ${escapeHtml(metadata.tldr)}</div>` : ''}
         <div class="ai-tags">
           ${metadata.classification ? `<span class="classification-tag ${metadata.classification}">${metadata.classification}</span>` : ''}
         </div>
-      </div>
-    ` : `
-      <div class="ai-prompt">
-        <p>This article hasn't been enhanced with AI yet.</p>
-        <a href="/enhance/${article.id}" class="btn-small">✨ Enhance with AI</a>
+        <div class="ai-controls">
+          <form action="/enhance/${article.id}" method="GET" class="enhance-form-row">
+            <select name="actions" class="enhance-select">
+              <option value="classify,summarize">Quick Enhance (Classify + Summary)</option>
+              <option value="classify">Classify Only</option>
+              <option value="summarize">Summary Only</option>
+              <option value="classify,summarize,suggest-links">Full Enhance (+ Link Suggestions)</option>
+              <option value="embed">Generate Embedding Only</option>
+            </select>
+            <button type="submit" class="btn-small">${hasEnhancement ? '↻ Re-enhance' : '✨ Enhance'}</button>
+          </form>
+        </div>
       </div>
     `;
     
@@ -1057,6 +1100,12 @@ app.get('/article/:title', async (req, res) => {
 app.get('/enhance/:id', async (req, res) => {
   try {
     const articleId = parseInt(req.params.id);
+    const actionsParam = req.query.actions || 'classify,summarize';
+    const actions = actionsParam.split(',').filter(a => ['classify', 'summarize', 'suggest-links', 'embed'].includes(a));
+    
+    if (actions.length === 0) {
+      actions.push('classify', 'summarize');
+    }
     
     const result = await pgPool.query(
       'SELECT title FROM articles WHERE id = $1',
@@ -1069,20 +1118,31 @@ app.get('/enhance/:id', async (req, res) => {
     
     const title = result.rows[0].title;
     
-    await pgPool.query(
-      `INSERT INTO article_ai_queue (article_id, action, status) 
-       VALUES ($1, 'classify', 'pending'), ($1, 'summarize', 'pending')`,
-      [articleId]
-    );
+    // Queue selected actions
+    for (const action of actions) {
+      await pgPool.query(
+        `INSERT INTO article_ai_queue (article_id, action, status) VALUES ($1, $2, 'pending')`,
+        [articleId, action]
+      );
+    }
+    
+    const actionLabels = {
+      'classify': 'Classification',
+      'summarize': 'Summary',
+      'suggest-links': 'Link Suggestions',
+      'embed': 'Embedding'
+    };
     
     const content = `
       <div class="success">
         <h2>✨ Enhancement Queued</h2>
-        <p>AI enhancement jobs have been queued for "${escapeHtml(title)}".</p>
-        <p>Classification and summary generation are in progress.</p>
+        <p>AI enhancement jobs queued for "${escapeHtml(title)}".</p>
+        <p><strong>Actions:</strong> ${actions.map(a => actionLabels[a] || a).join(', ')}</p>
+        <p>Jobs are being processed by the AI worker.</p>
       </div>
       <div class="actions">
         <a href="/article/${encodeURIComponent(title)}">View Article</a>
+        <a href="/admin">View Dashboard</a>
         <a href="/">Back to Home</a>
       </div>
     `;
@@ -1137,9 +1197,41 @@ app.get('/admin', async (req, res) => {
       `;
     }).join('');
     
+    const processButton = parseInt(jobs.pending) > 0 ? `
+      <div class="process-section" style="margin: 20px 0;">
+        <button onclick="processQueueAdmin()" class="btn-process-admin">🔄 Process ${jobs.pending} Pending Jobs</button>
+        <span id="admin-queue-status" class="queue-status"></span>
+      </div>
+      <script>
+        async function processQueueAdmin() {
+          const btn = document.querySelector('.btn-process-admin');
+          const status = document.getElementById('admin-queue-status');
+          btn.disabled = true;
+          status.textContent = 'Processing...';
+          
+          try {
+            const response = await fetch('/api/admin/process-queue', { method: 'POST' });
+            const data = await response.json();
+            
+            if (response.ok) {
+              status.textContent = data.pending_jobs + ' jobs queued';
+              setTimeout(() => location.reload(), 2000);
+            } else {
+              status.textContent = 'Error: ' + (data.error || 'Failed');
+              btn.disabled = false;
+            }
+          } catch (err) {
+            status.textContent = 'Error: ' + err.message;
+            btn.disabled = false;
+          }
+        }
+      </script>
+    ` : '<p style="color: #16a34a; margin: 20px 0;">✅ All jobs processed! Queue is empty.</p>';
+    
     const content = `
       <h1>Wiki Health Dashboard</h1>
       ${stats}
+      ${processButton}
       <table class="admin-table">
         <thead>
           <tr><th>Title</th><th>Classification</th><th>Quality</th><th>Updated</th><th>Action</th></tr>
@@ -1153,6 +1245,18 @@ app.get('/admin', async (req, res) => {
         .admin-table tr:hover { background: #f9fafb; }
         .admin-table tr.needs-attention { background: #fef2f2; }
         .badge-pending { background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .btn-process-admin {
+          background: #8b5cf6;
+          color: white;
+          padding: 10px 20px;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 500;
+        }
+        .btn-process-admin:hover:not(:disabled) { background: #7c3aed; }
+        .btn-process-admin:disabled { opacity: 0.6; cursor: not-allowed; }
       </style>
     `;
     res.send(htmlPage('Admin Dashboard', content));
