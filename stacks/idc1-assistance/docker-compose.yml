@@ -3048,8 +3048,16 @@ volumes:
   jarvis-session-db:
   image-pipeline-assets:
   deep-research-worker-data:
-  # Volumes from merged idc1-db stack
+  # Volumes from merged idc1-db stack (marked external to preserve data)
   postgres-data:
+    external: true
+    name: idc1-db_postgres-data
   pgadmin-data:
+    external: true
+    name: idc1-db_pgadmin-data
   autoagent-workspace:
+    external: true
+    name: idc1-db_autoagent-workspace
   redis-data:
+    external: true
+    name: idc1-db_redis-data
