@@ -254,10 +254,34 @@ async function updateArticle(title, content, tags) {
   }
 }
 
+// Format date to Bangkok time (UTC+7), short format
+function formatDate(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 1) return 'just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) return 'yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  
+  return date.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
+  }) + ' BKK';
+}
+
 async function listArticles(limit, offset) {
   if (USE_POSTGRES) {
     const result = await pgPool.query(
-      `SELECT title, tags, created_at, updated_at 
+      `SELECT id, title, tags, metadata, created_at, updated_at 
        FROM articles ORDER BY updated_at DESC LIMIT $1 OFFSET $2`,
       [limit, offset]
     );
@@ -266,7 +290,7 @@ async function listArticles(limit, offset) {
     // SQLite
     return new Promise((resolve, reject) => {
       db.all(
-        `SELECT title, tags, created_at, updated_at FROM articles ORDER BY updated_at DESC LIMIT ? OFFSET ?`,
+        `SELECT id, title, tags, metadata, created_at, updated_at FROM articles ORDER BY updated_at DESC LIMIT ? OFFSET ?`,
         [limit, offset],
         (err, rows) => {
           if (err) reject(err);
@@ -464,6 +488,156 @@ const htmlPage = (title, content) => `<!DOCTYPE html>
       font-size: 12px;
       margin-left: 10px;
     }
+    /* Enhanced Layout */
+    .search-section {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 25px;
+      align-items: center;
+    }
+    .btn-primary {
+      background: #10b981;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .btn-primary:hover { background: #059669; }
+    /* Stats Bar */
+    .stats-bar {
+      display: flex;
+      gap: 30px;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 8px;
+      margin-bottom: 25px;
+      color: white;
+    }
+    .stat { text-align: center; flex: 1; }
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      display: block;
+    }
+    .stat-label {
+      font-size: 12px;
+      opacity: 0.9;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .stat-link {
+      color: white;
+      text-decoration: none;
+      font-size: 14px;
+      padding: 8px 16px;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 4px;
+      display: inline-block;
+    }
+    .stat-link:hover { background: rgba(255,255,255,0.1); }
+    /* Article Grid */
+    .article-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .article-card {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      border-left: 4px solid #e5e7eb;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .article-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .article-card[data-classification="troubleshooting"] { border-left-color: #ef4444; }
+    .article-card[data-classification="tutorial"] { border-left-color: #10b981; }
+    .article-card[data-classification="reference"] { border-left-color: #3b82f6; }
+    .article-card[data-classification="architecture"] { border-left-color: #8b5cf6; }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    .card-title {
+      color: #1f2937;
+      text-decoration: none;
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    .card-title:hover { color: #2563eb; }
+    .quality-badge {
+      color: #f59e0b;
+      font-size: 16px;
+    }
+    .card-summary {
+      color: #6b7280;
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 15px;
+    }
+    .card-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .classification-tag {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+    .classification-tag.troubleshooting { background: #fee2e2; color: #991b1b; }
+    .classification-tag.tutorial { background: #d1fae5; color: #065f46; }
+    .classification-tag.reference { background: #dbeafe; color: #1e40af; }
+    .classification-tag.architecture { background: #ede9fe; color: #5b21b6; }
+    .classification-tag.uncategorized { background: #f3f4f6; color: #6b7280; }
+    .classification-tag.documentation { background: #fef3c7; color: #92400e; }
+    .date { color: #9ca3af; font-size: 13px; }
+    .card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .tag {
+      background: #f3f4f6;
+      color: #4b5563;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .enhance-prompt {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px dashed #e5e7eb;
+    }
+    .btn-small {
+      background: #8b5cf6;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      text-decoration: none;
+      font-size: 13px;
+      display: inline-block;
+    }
+    .btn-small:hover { background: #7c3aed; }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      background: white;
+      border-radius: 8px;
+    }
+    .empty-state p {
+      color: #6b7280;
+      font-size: 18px;
+      margin-bottom: 20px;
+    }
     form { max-width: 600px; }
     .form-group {
       margin-bottom: 20px;
@@ -553,6 +727,57 @@ const htmlPage = (title, content) => `<!DOCTYPE html>
     pre code.language-mermaid {
       display: none; /* Hide raw mermaid code, let mermaid render SVG */
     }
+    /* AI Metadata Section */
+    .ai-metadata {
+      background: linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%);
+      border-radius: 8px;
+      padding: 15px 20px;
+      margin-bottom: 20px;
+      border-left: 4px solid #8b5cf6;
+    }
+    .ai-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .ai-badge {
+      background: #8b5cf6;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .quality-score {
+      color: #6b7280;
+      font-size: 13px;
+    }
+    .ai-tldr {
+      background: white;
+      padding: 12px 15px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #374151;
+    }
+    .ai-tags {
+      display: flex;
+      gap: 8px;
+    }
+    .ai-prompt {
+      background: #fef3c7;
+      border: 2px dashed #f59e0b;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .ai-prompt p {
+      color: #92400e;
+      margin-bottom: 12px;
+    }
   </style>
 </head>
 <body>
@@ -585,25 +810,68 @@ app.get('/health', (req, res) => {
 app.get('/', async (req, res) => {
   try {
     const articles = await listArticles(50, 0);
-    const searchForm = `
-      <form action="/search" method="GET" class="search-box">
-        <input type="text" name="q" placeholder="Search articles..." required>
-        <button type="submit">Search</button>
-      </form>
-    `;
-    const list = articles.length === 0 
-      ? '<p>No articles yet. <a href="/new">Create one</a></p>'
-      : '<ul class="article-list">' + articles.map(a => `
-        <li>
-          <div>
-            <a href="/article/${encodeURIComponent(a.title)}">${escapeHtml(a.title)}</a>
-            ${a.tags ? (Array.isArray(a.tags) ? a.tags : a.tags.split(',')).map(t => `<span class="tags">${escapeHtml(t.trim())}</span>`).join('') : ''}
-          </div>
-          <span class="meta">${a.updated_at}</span>
-        </li>
-      `).join('') + '</ul>';
     
-    res.send(htmlPage('Home', searchForm + list));
+    const enhancedCount = articles.filter(a => a.metadata && a.metadata.classification).length;
+    const avgQuality = articles.length > 0 
+      ? (articles.reduce((sum, a) => sum + (a.metadata?.quality_score || 0), 0) / articles.length).toFixed(2)
+      : 0;
+    
+    const searchForm = `
+      <div class="search-section">
+        <form action="/search" method="GET" class="search-box">
+          <input type="text" name="q" placeholder="Search articles..." required>
+          <button type="submit">Search</button>
+        </form>
+        <a href="/new" class="btn-primary">+ New Article</a>
+      </div>
+    `;
+    
+    const statsBar = articles.length > 0 ? `
+      <div class="stats-bar">
+        <div class="stat">
+          <span class="stat-value">${articles.length}</span>
+          <span class="stat-label">Articles</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">${enhancedCount}</span>
+          <span class="stat-label">AI Enhanced</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">${avgQuality}</span>
+          <span class="stat-label">Avg Quality</span>
+        </div>
+        <div class="stat">
+          <a href="/admin" class="stat-link">View Health →</a>
+        </div>
+      </div>
+    ` : '';
+    
+    const list = articles.length === 0 
+      ? '<div class="empty-state"><p>No articles yet.</p><a href="/new" class="btn-primary">Create First Article</a></div>'
+      : '<div class="article-grid">' + articles.map(a => {
+          const metadata = a.metadata || {};
+          const qualityScore = metadata.quality_score || 0;
+          const classification = metadata.classification || 'uncategorized';
+          const hasTLDR = metadata.tldr && metadata.tldr.length > 10;
+          
+          return `
+            <article class="article-card" data-classification="${classification}">
+              <div class="card-header">
+                <a href="/article/${encodeURIComponent(a.title)}" class="card-title">${escapeHtml(a.title)}</a>
+                <span class="quality-badge" title="Quality: ${qualityScore.toFixed(2)}">${qualityScore >= 0.8 ? '★' : qualityScore >= 0.6 ? '◆' : '◇'}</span>
+              </div>
+              ${hasTLDR ? `<p class="card-summary">${escapeHtml(metadata.tldr.substring(0, 100))}...</p>` : ''}
+              <div class="card-meta">
+                <span class="classification-tag ${classification}">${classification}</span>
+                <span class="date">${formatDate(a.updated_at)}</span>
+              </div>
+              ${a.tags ? `<div class="card-tags">${(Array.isArray(a.tags) ? a.tags : a.tags.split(',')).slice(0, 3).map(t => `<span class="tag">${escapeHtml(t.trim())}</span>`).join('')}</div>` : ''}
+              ${!metadata.classification ? `<div class="enhance-prompt"><a href="/enhance/${a.id}" class="btn-small">✨ Enhance</a></div>` : ''}
+            </article>
+          `;
+        }).join('') + '</div>';
+    
+    res.send(htmlPage('Home', searchForm + statsBar + list));
   } catch (err) {
     res.send(htmlPage('Error', `<div class="error">${escapeHtml(err.message)}</div>`));
   }
@@ -649,19 +917,149 @@ app.get('/article/:title', async (req, res) => {
       `));
     }
     
+    const metadata = article.metadata || {};
     const tagsDisplay = article.tags 
       ? (Array.isArray(article.tags) ? article.tags.join(', ') : article.tags)
       : 'none';
+    const hasEnhancement = metadata.classification || metadata.tldr;
+    
+    const aiSection = hasEnhancement ? `
+      <div class="ai-metadata">
+        <div class="ai-header">
+          <span class="ai-badge">✨ AI Enhanced</span>
+          ${metadata.quality_score ? `<span class="quality-score">Quality: ${metadata.quality_score.toFixed(2)}/1.0</span>` : ''}
+        </div>
+        ${metadata.tldr ? `<div class="ai-tldr"><strong>TL;DR:</strong> ${escapeHtml(metadata.tldr)}</div>` : ''}
+        <div class="ai-tags">
+          ${metadata.classification ? `<span class="classification-tag ${metadata.classification}">${metadata.classification}</span>` : ''}
+        </div>
+      </div>
+    ` : `
+      <div class="ai-prompt">
+        <p>This article hasn't been enhanced with AI yet.</p>
+        <a href="/enhance/${article.id}" class="btn-small">✨ Enhance with AI</a>
+      </div>
+    `;
+    
     const content = `
       <h1>${escapeHtml(article.title)}</h1>
-      <p class="meta">Updated: ${article.updated_at} | Tags: ${escapeHtml(tagsDisplay)}</p>
+      ${aiSection}
+      <p class="meta">Updated ${formatDate(article.updated_at)} · ${Math.round(article.content.length / 5)} words · Tags: ${escapeHtml(tagsDisplay)}</p>
       <div class="article-content">${renderArticleContent(article.content)}</div>
       <div class="actions">
         <a href="/edit/${encodeURIComponent(article.title)}" class="edit">Edit</a>
-        <a href="/">Back</a>
+        <a href="/">Back to Home</a>
       </div>
     `;
     res.send(htmlPage(article.title, content));
+  } catch (err) {
+    res.send(htmlPage('Error', `<div class="error">${escapeHtml(err.message)}</div>`));
+  }
+});
+
+// Web UI: Enhance Article
+app.get('/enhance/:id', async (req, res) => {
+  try {
+    const articleId = parseInt(req.params.id);
+    
+    const result = await pgPool.query(
+      'SELECT title FROM articles WHERE id = $1',
+      [articleId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).send(htmlPage('Not Found', '<p>Article not found.</p>'));
+    }
+    
+    const title = result.rows[0].title;
+    
+    await pgPool.query(
+      `INSERT INTO article_ai_queue (article_id, action, status) 
+       VALUES ($1, 'classify', 'pending'), ($1, 'summarize', 'pending')`,
+      [articleId]
+    );
+    
+    const content = `
+      <div class="success">
+        <h2>✨ Enhancement Queued</h2>
+        <p>AI enhancement jobs have been queued for "${escapeHtml(title)}".</p>
+        <p>Classification and summary generation are in progress.</p>
+      </div>
+      <div class="actions">
+        <a href="/article/${encodeURIComponent(title)}">View Article</a>
+        <a href="/">Back to Home</a>
+      </div>
+    `;
+    res.send(htmlPage('Enhancement Queued', content));
+  } catch (err) {
+    res.send(htmlPage('Error', `<div class="error">${escapeHtml(err.message)}</div>`));
+  }
+});
+
+// Web UI: Admin Dashboard
+app.get('/admin', async (req, res) => {
+  try {
+    const articlesResult = await pgPool.query(`
+      SELECT id, title, updated_at, metadata,
+             LENGTH(content) as char_count,
+             metadata->>'classification' as classification,
+             metadata->>'quality_score' as quality_score
+      FROM articles ORDER BY updated_at DESC
+    `);
+    
+    const jobsResult = await pgPool.query(`
+      SELECT COUNT(*) FILTER (WHERE status = 'pending') as pending,
+             COUNT(*) FILTER (WHERE status = 'completed') as completed,
+             COUNT(*) FILTER (WHERE status = 'failed') as failed
+      FROM article_ai_queue
+    `);
+    
+    const articles = articlesResult.rows;
+    const jobs = jobsResult.rows[0];
+    const enhancedCount = articles.filter(a => a.classification).length;
+    
+    const stats = `
+      <div class="stats-bar">
+        <div class="stat"><span class="stat-value">${articles.length}</span><span class="stat-label">Total</span></div>
+        <div class="stat"><span class="stat-value">${enhancedCount}</span><span class="stat-label">Enhanced</span></div>
+        <div class="stat"><span class="stat-value">${jobs.pending}</span><span class="stat-label">Pending Jobs</span></div>
+        <div class="stat"><span class="stat-value">${jobs.completed}</span><span class="stat-label">Completed Jobs</span></div>
+      </div>
+    `;
+    
+    const articleList = articles.map(a => {
+      const score = a.quality_score ? parseFloat(a.quality_score) : 0;
+      const needsAttention = !a.classification || score < 0.5;
+      return `
+        <tr class="${needsAttention ? 'needs-attention' : ''}">
+          <td><a href="/article/${encodeURIComponent(a.title)}">${escapeHtml(a.title.substring(0, 50))}</a></td>
+          <td>${a.classification || '<span class="badge-pending">pending</span>'}</td>
+          <td>${score ? score.toFixed(2) : '-'}</td>
+          <td>${formatDate(a.updated_at)}</td>
+          <td>${!a.classification ? `<a href="/enhance/${a.id}" class="btn-small">Enhance</a>` : '✓'}</td>
+        </tr>
+      `;
+    }).join('');
+    
+    const content = `
+      <h1>Wiki Health Dashboard</h1>
+      ${stats}
+      <table class="admin-table">
+        <thead>
+          <tr><th>Title</th><th>Classification</th><th>Quality</th><th>Updated</th><th>Action</th></tr>
+        </thead>
+        <tbody>${articleList}</tbody>
+      </table>
+      <style>
+        .admin-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .admin-table th, .admin-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        .admin-table th { background: #f9fafb; font-weight: 600; }
+        .admin-table tr:hover { background: #f9fafb; }
+        .admin-table tr.needs-attention { background: #fef2f2; }
+        .badge-pending { background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+      </style>
+    `;
+    res.send(htmlPage('Admin Dashboard', content));
   } catch (err) {
     res.send(htmlPage('Error', `<div class="error">${escapeHtml(err.message)}</div>`));
   }
