@@ -829,6 +829,38 @@ const htmlPage = (title, content) => `<!DOCTYPE html>
       color: #92400e;
       margin-bottom: 12px;
     }
+    /* Validation Status */
+    .validation-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin: 10px 0;
+      font-size: 13px;
+    }
+    .validation-status.valid {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #10b981;
+    }
+    .validation-status.has-issues {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #ef4444;
+    }
+    .validation-badge {
+      font-weight: 600;
+    }
+    .validation-details {
+      opacity: 0.9;
+    }
+    .validation-hint {
+      font-size: 11px;
+      opacity: 0.7;
+      font-style: italic;
+      margin-left: auto;
+    }
   </style>
 </head>
 <body>
@@ -924,6 +956,7 @@ app.get('/', async (req, res) => {
                     <option value="classify">Classify Only</option>
                     <option value="summarize">Summary Only</option>
                     <option value="classify,summarize,suggest-links">Full (+Links)</option>
+                    <option value="validate">Validate Only</option>
                     <option value="embed">Generate Embedding</option>
                   </select>
                   <button type="submit" class="btn-small">${metadata.classification ? '↻ Re-enhance' : '✨ Enhance'}</button>
@@ -985,6 +1018,11 @@ app.get('/article/:title', async (req, res) => {
       : 'none';
     const hasEnhancement = metadata.classification || metadata.tldr;
     
+    const validationStatus = metadata.validation_status;
+    const validationErrors = metadata.validation_errors || 0;
+    const validationWarnings = metadata.validation_warnings || 0;
+    const hasValidationIssues = validationErrors > 0 || validationWarnings > 0;
+
     const aiSection = `
       <div class="ai-metadata">
         <div class="ai-header">
@@ -995,6 +1033,13 @@ app.get('/article/:title', async (req, res) => {
         <div class="ai-tags">
           ${metadata.classification ? `<span class="classification-tag ${metadata.classification}">${metadata.classification}</span>` : ''}
         </div>
+        ${validationStatus ? `
+        <div class="validation-status ${hasValidationIssues ? 'has-issues' : 'valid'}">
+          <span class="validation-badge">${validationErrors > 0 ? '❌' : validationWarnings > 0 ? '⚠️' : '✓'} Validation</span>
+          <span class="validation-details">${validationErrors} error${validationErrors !== 1 ? 's' : ''}, ${validationWarnings} warning${validationWarnings !== 1 ? 's' : ''}</span>
+          ${validationErrors > 0 ? '<span class="validation-hint">Run "Validate Only" to see details</span>' : ''}
+        </div>
+        ` : ''}
         <div class="ai-controls">
           <form action="/enhance/${article.id}" method="GET" class="enhance-form-row">
             <select name="actions" class="enhance-select">
@@ -1002,6 +1047,7 @@ app.get('/article/:title', async (req, res) => {
               <option value="classify">Classify Only</option>
               <option value="summarize">Summary Only</option>
               <option value="classify,summarize,suggest-links">Full Enhance (+ Link Suggestions)</option>
+              <option value="validate">Validate Only</option>
               <option value="embed">Generate Embedding Only</option>
             </select>
             <button type="submit" class="btn-small">${hasEnhancement ? '↻ Re-enhance' : '✨ Enhance'}</button>
@@ -1098,7 +1144,7 @@ app.get('/enhance/:id', async (req, res) => {
   try {
     const articleId = parseInt(req.params.id);
     const actionsParam = req.query.actions || 'classify,summarize';
-    const actions = actionsParam.split(',').filter(a => ['classify', 'summarize', 'suggest-links', 'embed'].includes(a));
+    const actions = actionsParam.split(',').filter(a => ['classify', 'summarize', 'suggest-links', 'embed', 'validate'].includes(a));
     
     if (actions.length === 0) {
       actions.push('classify', 'summarize');
@@ -1135,6 +1181,7 @@ app.get('/enhance/:id', async (req, res) => {
       'classify': 'Classification',
       'summarize': 'Summary',
       'suggest-links': 'Link Suggestions',
+      'validate': 'Validation',
       'embed': 'Embedding'
     };
     
@@ -1170,7 +1217,10 @@ app.get('/admin', async (req, res) => {
       SELECT id, title, updated_at, metadata,
              LENGTH(content) as char_count,
              metadata->>'classification' as classification,
-             metadata->>'quality_score' as quality_score
+             metadata->>'quality_score' as quality_score,
+             metadata->>'validation_status' as validation_status,
+             metadata->>'validation_errors' as validation_errors,
+             metadata->>'validation_warnings' as validation_warnings
       FROM articles ORDER BY updated_at DESC
     `);
     
@@ -1196,12 +1246,24 @@ app.get('/admin', async (req, res) => {
     
     const articleList = articles.map(a => {
       const score = a.quality_score ? parseFloat(a.quality_score) : 0;
-      const needsAttention = !a.classification || score < 0.5;
+      const valErrors = parseInt(a.validation_errors) || 0;
+      const valWarnings = parseInt(a.validation_warnings) || 0;
+      const hasValErrors = valErrors > 0;
+      const hasValWarnings = valWarnings > 0 && !hasValErrors;
+      const needsAttention = !a.classification || score < 0.5 || hasValErrors;
+
+      const validationBadge = a.validation_status
+        ? hasValErrors ? `<span style="color:#dc2626">❌ ${valErrors}E/${valWarnings}W</span>`
+          : hasValWarnings ? `<span style="color:#f59e0b">⚠️ ${valWarnings}W</span>`
+          : '<span style="color:#10b981">✓</span>'
+        : '<span style="color:#9ca3af">-</span>';
+
       return `
         <tr class="${needsAttention ? 'needs-attention' : ''}">
           <td><a href="/article/${encodeURIComponent(a.title)}">${escapeHtml(a.title.substring(0, 50))}</a></td>
           <td>${a.classification || '<span class="badge-pending">pending</span>'}</td>
           <td>${score ? score.toFixed(2) : '-'}</td>
+          <td>${validationBadge}</td>
           <td>${formatDate(a.updated_at)}</td>
           <td>${!a.classification ? `<a href="/enhance/${a.id}" class="btn-small">Enhance</a>` : '✓'}</td>
         </tr>
@@ -1245,7 +1307,7 @@ app.get('/admin', async (req, res) => {
       ${processButton}
       <table class="admin-table">
         <thead>
-          <tr><th>Title</th><th>Classification</th><th>Quality</th><th>Updated</th><th>Action</th></tr>
+          <tr><th>Title</th><th>Classification</th><th>Quality</th><th>Validation</th><th>Updated</th><th>Action</th></tr>
         </thead>
         <tbody>${articleList}</tbody>
       </table>
@@ -1432,7 +1494,7 @@ app.post('/api/articles/:id/enhance', async (req, res) => {
     const { actions = ['classify'] } = req.body;
     
     // Validate actions
-    const validActions = ['classify', 'summarize', 'suggest-links', 'embed'];
+    const validActions = ['classify', 'summarize', 'suggest-links', 'embed', 'validate'];
     const requestedActions = actions.filter(a => validActions.includes(a));
     
     if (requestedActions.length === 0) {
