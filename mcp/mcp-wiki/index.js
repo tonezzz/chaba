@@ -2676,10 +2676,14 @@ async function start() {
     }
   });
 
-  // MCP message endpoint - needs raw body stream
-  // Use raw body parser and create readable stream for transport
-  import('stream').then(({ Readable }) => {
-    app.post('/mcp/message', express.raw({ type: 'application/json' }), async (req, res) => {
+  // MCP message endpoint - disable body parsing and pass directly to transport
+  app.post('/mcp/message',
+    (req, res, next) => {
+      // Disable body parsing for this route
+      req.headers['content-type'] = req.headers['content-type'] || 'application/json';
+      next();
+    },
+    async (req, res) => {
       const sessionId = req.query.sessionId;
       const transport = mcpTransports.get(sessionId);
 
@@ -2689,24 +2693,16 @@ async function start() {
       }
 
       try {
-        // Create readable stream from buffer for transport
-        const stream = Readable.from([req.body]);
-        stream.headers = req.headers;
-        stream.method = req.method;
-        stream.url = req.url;
-        stream.httpVersion = req.httpVersion;
-        stream.httpVersionMajor = req.httpVersionMajor;
-        stream.httpVersionMinor = req.httpVersionMinor;
-
-        await transport.handlePostMessage(stream, res);
+        // Pass request/response directly to transport
+        await transport.handlePostMessage(req, res);
       } catch (err) {
         console.error('mcp-wiki: MCP message handling error:', err.message);
         if (!res.headersSent) {
-          res.status(400).json({ error: err.message });
+          res.status(500).json({ error: err.message });
         }
       }
-    });
-  });
+    }
+  );
 
   // Body parsers for other routes (added AFTER MCP routes)
   app.use(express.json());
