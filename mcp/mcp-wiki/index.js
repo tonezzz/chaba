@@ -254,7 +254,7 @@ async function updateArticle(title, content, tags) {
   }
 }
 
-// Format date to Bangkok time (UTC+7), short format
+// Format date to short relative format
 function formatDate(dateString) {
   if (!dateString) return '';
   const date = new Date(dateString);
@@ -264,18 +264,14 @@ function formatDate(dateString) {
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
   
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays === 1) return 'yesterday';
-  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffMins < 1) return 'now';
+  if (diffMins < 60) return `${diffMins}m`;
+  if (diffHours < 24) return `${diffHours}h`;
+  if (diffDays === 1) return '1d';
+  if (diffDays < 7) return `${diffDays}d`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w`;
   
-  return date.toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit'
-  }) + ' BKK';
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
 async function listArticles(limit, offset) {
@@ -1126,6 +1122,14 @@ app.get('/enhance/:id', async (req, res) => {
       );
     }
     
+    // Auto-trigger AI worker to process jobs
+    const workerPath = path.join(process.cwd(), 'ai-worker.js');
+    const worker = spawn('node', [workerPath], {
+      detached: true,
+      stdio: 'ignore'
+    });
+    worker.unref();
+    
     const actionLabels = {
       'classify': 'Classification',
       'summarize': 'Summary',
@@ -1135,18 +1139,24 @@ app.get('/enhance/:id', async (req, res) => {
     
     const content = `
       <div class="success">
-        <h2>✨ Enhancement Queued</h2>
-        <p>AI enhancement jobs queued for "${escapeHtml(title)}".</p>
+        <h2>✨ Enhancement Started</h2>
+        <p>AI enhancement jobs queued and processing for "${escapeHtml(title)}".</p>
         <p><strong>Actions:</strong> ${actions.map(a => actionLabels[a] || a).join(', ')}</p>
-        <p>Jobs are being processed by the AI worker.</p>
+        <p>⏳ Processing in progress... Check back in a few seconds.</p>
       </div>
       <div class="actions">
         <a href="/article/${encodeURIComponent(title)}">View Article</a>
         <a href="/admin">View Dashboard</a>
         <a href="/">Back to Home</a>
       </div>
+      <script>
+        // Auto-refresh article view after 3 seconds
+        setTimeout(() => {
+          window.location.href = '/article/${encodeURIComponent(title)}';
+        }, 3000);
+      </script>
     `;
-    res.send(htmlPage('Enhancement Queued', content));
+    res.send(htmlPage('Enhancement Started', content));
   } catch (err) {
     res.send(htmlPage('Error', `<div class="error">${escapeHtml(err.message)}</div>`));
   }
@@ -1563,19 +1573,27 @@ app.post('/api/admin/process-queue', async (req, res) => {
     );
     const pendingCount = parseInt(pendingResult.rows[0].count);
     
-    // Trigger ai-worker to process jobs (exec the worker script)
-    // We return immediately with job count, actual processing happens async
-    // Client should poll /api/admin/queue-status to see progress
+    if (pendingCount === 0) {
+      return res.json({
+        message: 'No pending jobs',
+        pending_jobs: 0,
+        processed: 0
+      });
+    }
     
     res.json({
-      message: 'Queue processing triggered',
+      message: 'Queue processing started',
       pending_jobs: pendingCount,
-      note: 'Processing runs asynchronously. Check /api/admin/queue-status for progress.'
+      note: 'AI worker is processing jobs asynchronously'
     });
     
     // Fire-and-forget: trigger actual processing
-    // Note: In production, this should use a proper job scheduler
-    // For now, we just return status immediately
+    const workerPath = path.join(process.cwd(), 'ai-worker.js');
+    const worker = spawn('node', [workerPath], {
+      detached: true,
+      stdio: 'ignore'
+    });
+    worker.unref();
     
   } catch (err) {
     res.status(500).json({ error: err.message });
