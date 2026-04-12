@@ -977,35 +977,36 @@ async function generateSummary(content) {
   return summary;
 }
 
-// MCP Server
-const server = new Server({ name: 'mcp-wiki', version: '1.0.0' }, {
-  capabilities: { tools: {} }
-});
+// MCP Server Factory - creates new server instance per connection
+function createMcpServer() {
+  const server = new Server({ name: 'mcp-wiki', version: '1.0.0' }, {
+    capabilities: { tools: {} }
+  });
 
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [
-    {
-      name: 'wiki_search',
-      description: 'Search articles by title or content. Returns matching articles with metadata.',
-      inputSchema: zodToJsonSchema(SearchArticlesSchema)
-    },
-    {
-      name: 'wiki_get',
-      description: 'Get article content by title. Returns full article with metadata.',
-      inputSchema: zodToJsonSchema(GetArticleSchema)
-    },
-    {
-      name: 'wiki_create',
-      description: 'Create new article with title, content, and optional tags. Validates content before creation.',
-      inputSchema: zodToJsonSchema(CreateArticleSchema)
-    },
-    {
-      name: 'wiki_update',
-      description: 'Update existing article. Preserves metadata unless explicitly changed.',
-      inputSchema: zodToJsonSchema(UpdateArticleSchema)
-    },
-    {
-      name: 'wiki_delete',
+  server.setRequestHandler(ListToolsRequestSchema, async () => ({
+    tools: [
+      {
+        name: 'wiki_search',
+        description: 'Search articles by title or content. Returns matching articles with metadata.',
+        inputSchema: zodToJsonSchema(SearchArticlesSchema)
+      },
+      {
+        name: 'wiki_get',
+        description: 'Get article content by title. Returns full article with metadata.',
+        inputSchema: zodToJsonSchema(GetArticleSchema)
+      },
+      {
+        name: 'wiki_create',
+        description: 'Create new article with title, content, and optional tags. Validates content before creation.',
+        inputSchema: zodToJsonSchema(CreateArticleSchema)
+      },
+      {
+        name: 'wiki_update',
+        description: 'Update existing article. Preserves metadata unless explicitly changed.',
+        inputSchema: zodToJsonSchema(UpdateArticleSchema)
+      },
+      {
+        name: 'wiki_delete',
       description: 'Delete article by title. Use with caution.',
       inputSchema: zodToJsonSchema(DeleteArticleSchema)
     },
@@ -1273,6 +1274,9 @@ ${validation.warnings.length > 0 ? `\nWarnings:\n${validation.warnings.slice(0, 
     };
   }
 });
+
+  return server;
+}
 
 // HTTP Server for Web UI
 const app = express();
@@ -2651,14 +2655,20 @@ async function start() {
   // MCP HTTP SSE transport endpoint
   // Windsurf and other MCP clients can connect via http://host:3008/mcp/sse
   app.get('/mcp/sse', async (req, res) => {
-    const transport = new SSEServerTransport('/mcp/message', res);
-    await server.connect(transport);
-    console.error('mcp-wiki: MCP SSE client connected');
+    try {
+      const server = createMcpServer(); // New server instance per connection
+      const transport = new SSEServerTransport('/mcp/message', res);
+      await server.connect(transport);
+      console.error('mcp-wiki: MCP SSE client connected');
 
-    // Handle disconnect
-    req.on('close', () => {
-      console.error('mcp-wiki: MCP SSE client disconnected');
-    });
+      // Handle disconnect
+      req.on('close', () => {
+        console.error('mcp-wiki: MCP SSE client disconnected');
+      });
+    } catch (err) {
+      console.error('mcp-wiki: MCP SSE connection failed:', err.message);
+      res.status(500).end();
+    }
   });
 
   app.post('/mcp/message', async (req, res) => {
@@ -2677,6 +2687,7 @@ async function start() {
   // This runs after HTTP server starts, allowing dual-mode operation
   const isStdioMode = !process.stdin.isTTY || process.env.MCP_STDIO === '1';
   if (isStdioMode) {
+    const server = createMcpServer(); // New server instance for stdio
     const transport = new StdioServerTransport();
     server.connect(transport).then(() => {
       console.error('mcp-wiki: MCP stdio transport connected');
