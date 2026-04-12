@@ -47,3 +47,12 @@ async def verify_status() -> dict[str, Any]:
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Verify status error: {str(e)}")
+
+
+@router.get("/status")
+@router.get("/jarvis/status")
+@router.get("/api/status")
+@router.get("/jarvis/api/status")
+async def simple_status() -> dict[str, Any]:
+    """Simple status endpoint for healthchecks"""
+    return {"ok": True, "service": "jarvis-backend"}
