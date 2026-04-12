@@ -2654,17 +2654,24 @@ async function start() {
 
   // MCP HTTP SSE transport endpoint
   // Windsurf and other MCP clients can connect via http://host:3008/mcp/sse
+  const mcpTransports = new Map(); // Store transports by session ID
+
   app.get('/mcp/sse', async (req, res) => {
     try {
       const server = createMcpServer(); // New server instance per connection
       const transport = new SSEServerTransport('/mcp/message', res);
-      await server.connect(transport);
-      console.error('mcp-wiki: MCP SSE client connected');
 
-      // Handle disconnect
+      // Store transport for POST handler to use
+      mcpTransports.set(transport.sessionId, transport);
+
+      // Clean up on disconnect
       req.on('close', () => {
-        console.error('mcp-wiki: MCP SSE client disconnected');
+        mcpTransports.delete(transport.sessionId);
+        console.error(`mcp-wiki: MCP SSE client ${transport.sessionId} disconnected`);
       });
+
+      await server.connect(transport);
+      console.error(`mcp-wiki: MCP SSE client ${transport.sessionId} connected`);
     } catch (err) {
       console.error('mcp-wiki: MCP SSE connection failed:', err.message);
       res.status(500).end();
@@ -2672,9 +2679,16 @@ async function start() {
   });
 
   app.post('/mcp/message', async (req, res) => {
-    // This endpoint handles messages from MCP clients
-    // The SSE transport sets up the handler internally
-    res.status(404).send('Not found');
+    // Delegate to the appropriate transport based on session ID
+    const sessionId = req.query.sessionId;
+    const transport = mcpTransports.get(sessionId);
+
+    if (!transport) {
+      res.status(400).send('Unknown session');
+      return;
+    }
+
+    await transport.handlePostMessage(req, res);
   });
 
   // Start HTTP server
