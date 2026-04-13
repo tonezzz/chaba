@@ -1635,14 +1635,27 @@ const htmlPage = (title, content) => `<!DOCTYPE html>
       background: #8b5cf6;
       color: white;
       padding: 4px 10px;
-      border-radius: 3px;
+      border-radius: 4px;
       text-decoration: none;
       font-size: 11px;
       display: inline-block;
+      margin: 0 2px;
       border: none;
       cursor: pointer;
     }
     .btn-small:hover { background: #7c3aed; }
+    .btn-rerun {
+      background: #dc2626;
+    }
+    .btn-rerun:hover {
+      background: #b91c1c;
+    }
+    .btn-merge {
+      background: #059669;
+    }
+    .btn-merge:hover {
+      background: #047857;
+    }
     .enhance-select {
       padding: 4px 8px;
       font-size: 11px;
@@ -2240,6 +2253,64 @@ app.get('/enhance/:id', async (req, res) => {
   }
 });
 
+// Web UI: Re-run/Merge Research
+app.get('/research/:id', async (req, res) => {
+  try {
+    const articleId = parseInt(req.params.id);
+    const mode = req.query.mode || 'rerun'; // 'rerun' or 'merge'
+    
+    const result = await pgPool.query(
+      'SELECT id, title, content, tags, metadata FROM articles WHERE id = $1',
+      [articleId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).send(htmlPage('Not Found', '<p>Article not found.</p>'));
+    }
+    
+    const article = result.rows[0];
+    const title = article.title;
+    
+    // Queue research job
+    await pgPool.query(
+      `INSERT INTO article_ai_queue (article_id, action, status, result) 
+       VALUES ($1, 'research', 'pending', $2)`,
+      [articleId, JSON.stringify({ mode, original_content: mode === 'merge' ? article.content : null })]
+    );
+    
+    // Auto-trigger AI worker
+    const workerPath = path.join(process.cwd(), 'ai-worker.js');
+    const worker = spawn('node', [workerPath], {
+      detached: true,
+      stdio: 'ignore'
+    });
+    worker.unref();
+    
+    const modeLabel = mode === 'merge' ? 'Merge Research' : 'Re-run Research';
+    
+    const content = `
+      <div class="success">
+        <h2>🔬 ${modeLabel} Started</h2>
+        <p>Research job queued for "${escapeHtml(title)}".</p>
+        <p><strong>Mode:</strong> ${mode === 'merge' ? 'Merge new research with existing content' : 'Replace with new research'}</p>
+        <p>⏳ Processing in progress... The AI will research the topic and update the article.</p>
+      </div>
+      <div class="actions">
+        <a href="/article/${encodeURIComponent(title)}">View Article</a>
+        <a href="/admin">Back to Dashboard</a>
+      </div>
+      <script>
+        setTimeout(() => {
+          window.location.href = '/article/${encodeURIComponent(title)}';
+        }, 5000);
+      </script>
+    `;
+    res.send(htmlPage(`${modeLabel} Started`, content));
+  } catch (err) {
+    res.send(htmlPage('Error', `<div class="error">${escapeHtml(err.message)}</div>`));
+  }
+});
+
 // Web UI: Admin Dashboard
 app.get('/admin', async (req, res) => {
   try {
@@ -2280,7 +2351,11 @@ app.get('/admin', async (req, res) => {
       const valWarnings = parseInt(a.validation_warnings) || 0;
       const hasValErrors = valErrors > 0;
       const hasValWarnings = valWarnings > 0 && !hasValErrors;
-      const needsAttention = !a.classification || score < 0.5 || hasValErrors;
+      // Detect research errors in content
+      const hasResearchError = a.char_count && a.char_count > 0 && 
+        (a.metadata?.tldr?.includes('Research error:') || 
+         a.content?.substring(0, 200).includes('Research error:'));
+      const needsAttention = !a.classification || score < 0.5 || hasValErrors || hasResearchError;
 
       const validationBadge = a.validation_status
         ? hasValErrors ? `<span style="color:#dc2626">❌ ${valErrors}E/${valWarnings}W</span>`
@@ -2288,14 +2363,27 @@ app.get('/admin', async (req, res) => {
           : '<span style="color:#10b981">✓</span>'
         : '<span style="color:#9ca3af">-</span>';
 
+      // Build action buttons
+      let actionButtons = '';
+      if (hasResearchError) {
+        actionButtons = `
+          <a href="/research/${a.id}?mode=rerun" class="btn-small btn-rerun" title="Re-run research">🔄 Re-run</a>
+          <a href="/research/${a.id}?mode=merge" class="btn-small btn-merge" title="Merge new research">➕ Merge</a>
+        `;
+      } else if (!a.classification) {
+        actionButtons = `<a href="/enhance/${a.id}" class="btn-small">Enhance</a>`;
+      } else {
+        actionButtons = '✓';
+      }
+
       return `
         <tr class="${needsAttention ? 'needs-attention' : ''}">
           <td><a href="/article/${encodeURIComponent(a.title)}">${escapeHtml(a.title.substring(0, 50))}</a></td>
-          <td>${a.classification || '<span class="badge-pending">pending</span>'}</td>
+          <td>${a.classification || '<span class="badge-pending">pending</span>'}${hasResearchError ? ' <span style="color:#dc2626" title="Research failed">⚠️</span>' : ''}</td>
           <td>${score ? score.toFixed(2) : '-'}</td>
           <td>${validationBadge}</td>
           <td>${formatDate(a.updated_at)}</td>
-          <td>${!a.classification ? `<a href="/enhance/${a.id}" class="btn-small">Enhance</a>` : '✓'}</td>
+          <td>${actionButtons}</td>
         </tr>
       `;
     }).join('');
@@ -2903,15 +2991,21 @@ async function start() {
     }
   );
 
-  // Start HTTP server
-  app.listen(HTTP_PORT, () => {
-    console.error(`mcp-wiki: HTTP server started on port ${HTTP_PORT}`);
-    console.error(`mcp-wiki: MCP SSE endpoint available at http://localhost:${HTTP_PORT}/mcp/sse`);
-  });
-
   // MCP stdio transport (optional - only if stdin is piped)
   // This runs after HTTP server starts, allowing dual-mode operation
   const isStdioMode = !process.stdin.isTTY || process.env.MCP_STDIO === '1';
+  const isHttpDisabled = process.env.WIKI_HTTP_DISABLED === '1' || process.env.WIKI_HTTP_DISABLED === 'true';
+
+  // Start HTTP server unless disabled (for stdio-only docker exec mode)
+  if (!isHttpDisabled) {
+    app.listen(HTTP_PORT, () => {
+      console.error(`mcp-wiki: HTTP server started on port ${HTTP_PORT}`);
+      console.error(`mcp-wiki: MCP SSE endpoint available at http://localhost:${HTTP_PORT}/mcp/sse`);
+    });
+  } else {
+    console.error('mcp-wiki: HTTP server disabled (WIKI_HTTP_DISABLED=1)');
+  }
+
   if (isStdioMode) {
     const server = createMcpServer(); // New server instance for stdio
     const transport = new StdioServerTransport();
@@ -2920,7 +3014,7 @@ async function start() {
     }).catch(err => {
       console.error('mcp-wiki: MCP stdio connection failed:', err.message);
     });
-  } else {
+  } else if (!isHttpDisabled) {
     console.error('mcp-wiki: Running in HTTP-only mode (no MCP stdio client detected)');
     console.error(`mcp-wiki: Visit http://localhost:${HTTP_PORT}/ to use the wiki`);
     console.error(`mcp-wiki: MCP tools available via SSE at /mcp/sse`);

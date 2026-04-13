@@ -29,12 +29,15 @@ Add to your Windsurf MCP settings:
         "node", "index.js"
       ],
       "env": {
-        "MCP_STDIO": "1"
+        "MCP_STDIO": "1",
+        "WIKI_HTTP_DISABLED": "1"
       }
     }
   }
 }
 ```
+
+**Note:** `WIKI_HTTP_DISABLED=1` is required when using `docker exec` to prevent port conflicts with the already-running HTTP server in the container.
 
 ## Example Workflows
 
