@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Skill Creator - Thai + Workflow Demo</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: #f5f7fa; 
+        }
+        h1 { 
+            color: #1a73e8; 
+            border-bottom: 3px solid #1a73e8; 
+            padding-bottom: 10px; 
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .card { 
+            background: white; 
+            border-radius: 12px; 
+            padding: 24px; 
+            margin: 20px 0; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+        }
+        .input-section {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .text-input { 
+            flex: 1;
+            padding: 14px 18px; 
+            font-size: 16px; 
+            border: 2px solid #e0e0e0; 
+            border-radius: 8px; 
+            transition: border-color 0.2s;
+        }
+        .text-input:focus {
+            outline: none;
+            border-color: #1a73e8;
+        }
+        .btn { 
+            background: #1a73e8; 
+            color: white; 
+            padding: 14px 28px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: #1557b0; }
+        .btn:disabled { 
+            background: #ccc; 
+            cursor: not-allowed; 
+        }
+        .btn-secondary { 
+            background: #5f6368; 
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+        .btn-secondary:hover { background: #3c4043; }
+        .output { 
+            background: #1e1e1e; 
+            color: #d4d4d4; 
+            padding: 20px; 
+            border-radius: 8px; 
+            font-family: 'SF Mono', 'Courier New', monospace; 
+            font-size: 13px; 
+            white-space: pre-wrap; 
+            min-height: 200px;
+            line-height: 1.6;
+        }
+        .back { 
+            float: right; 
+            color: #1a73e8; 
+            text-decoration: none; 
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .back:hover { text-decoration: underline; }
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .status.ready { background: #e6f4ea; color: #1e8e3e; }
+        .status.processing { 
+            background: #e3f2fd; 
+            color: #1565c0; 
+        }
+        .preview-box {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .preview-box h3 {
+            margin-top: 0;
+            color: #5f6368;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .config-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        .config-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .config-table td:first-child {
+            color: #5f6368;
+            font-weight: 500;
+            width: 120px;
+        }
+        .revision-section {
+            display: none;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px dashed #e0e0e0;
+        }
+        .revision-section.active {
+            display: block;
+        }
+        .example-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 10px 0;
+        }
+        .pill {
+            background: #e8f0fe;
+            color: #1a73e8;
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .pill:hover {
+            background: #1a73e8;
+            color: white;
+        }
+        .error { color: #ea4335; }
+        .success { color: #1e8e3e; }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            background: #e0e0e0;
+            color: #666;
+            transition: all 0.3s;
+        }
+        .status-badge.active {
+            transform: scale(1.05);
+        }
+        .status-badge.draft.active { background: #e3f2fd; color: #1565c0; }
+        .status-badge.review.active { background: #fff3e0; color: #e65100; }
+        .status-badge.approved.active { background: #e8f5e9; color: #2e7d32; }
+        .status-badge.ready.active { background: #f3e5f5; color: #7b1fa2; }
+    </style>
+</head>
+<body>
+    <h1>
+        🛠️ Skill Creator
+        <span id="status" class="status ready">Ready</span>
+        <a href="#" class="back">← Back to Control Panel</a>
+    </h1>
+    
+    <div class="card">
+        <p style="color: #5f6368; margin-bottom: 20px;">
+            Describe what you want the skill to do in natural language. 
+            The system will interpret your intent and generate a skill draft.
+        </p>
+        
+        <div class="example-pills">
+            <span class="pill" onclick="setExample('check the weather when I ask what\'s the weather')">☁️ Weather check</span>
+            <span class="pill" onclick="setExample('remind me about tasks when I say don\'t forget')">⏰ Reminder</span>
+            <span class="pill" onclick="setExample('search wiki articles when I ask find docs')">🔍 Wiki search</span>
+            <span class="pill" onclick="setExample('tell me news headlines when I say news')">📰 News brief</span>
+            <span class="pill" onclick="setExample('analyze code when I paste a snippet')">💻 Code analysis</span>
+        </div>
+        
+        <div style="margin-top: 15px; padding: 12px; background: #fff8e1; border-radius: 8px; border-left: 4px solid #ffc107;">
+            <strong>🇹🇭 Thai Language Templates:</strong>
+            <div class="example-pills" style="margin-top: 8px;">
+                <span class="pill" onclick="setExample('ตรวจสอบสภาพอากาศเมื่อถามว่าอากาศเป็นอย่างไร')">☁️ ตรวจสอบอากาศ</span>
+                <span class="pill" onclick="setExample('เตือนฉันเกี่ยวกับงานเมื่อพูดว่าอย่าลืม')">⏰ เตือนความจำ</span>
+                <span class="pill" onclick="setExample('ค้นหาเอกสารเมื่อถามหาข้อมูล')">🔍 ค้นหา</span>
+                <span class="pill" onclick="setExample('แปลภาษาไทยเป็นอังกฤษ')">🌐 แปลภาษา</span>
+                <span class="pill" onclick="setExample('บอกข่าวสารล่าสุด')">📰 ข่าวสาร</span>
+            </div>
+        </div>
+        
+        <div class="input-section">
+            <input 
+                type="text" 
+                id="skillInput" 
+                class="text-input" 
+                placeholder="Describe your skill... (e.g., 'check weather when I ask about temperature')"
+                onkeypress="if(event.key==='Enter')createSkill()"
+            >
+            <button id="createBtn" class="btn" onclick="createSkill()">Create Skill</button>
+        </div>
+        
+        <div id="previewBox" class="preview-box" style="display: none;">
+            <h3>📊 Interpreted Intent</h3>
+            <table class="config-table" id="configTable"></table>
+            
+            <h3>📄 Generated Skill (Preview)</h3>
+            <div id="markdownPreview" class="output"></div>
+            
+            <div class="action-buttons">
+                <button class="btn" onclick="saveToWiki()">💾 Save to Wiki</button>
+                <button class="btn btn-secondary" onclick="showRevision()">🔧 Revise</button>
+                <button class="btn btn-secondary" onclick="reset()">✕ Clear</button>
+            </div>
+            
+            <div id="revisionSection" class="revision-section">
+                <h3>🔧 Steer Development</h3>
+                <p style="color: #5f6368; font-size: 14px; margin-bottom: 12px;">
+                    Describe what to change: add triggers, change priority, add Thai support, etc.
+                </p>
+                <div class="input-section">
+                    <input 
+                        type="text" 
+                        id="revisionInput" 
+                        class="text-input" 
+                        placeholder="e.g., 'add Thai language support' or 'change priority to 20'"
+                        onkeypress="if(event.key==='Enter')reviseSkill()"
+                    >
+                    <button class="btn" onclick="reviseSkill()">Apply Revision</button>
+                </div>
+                <div class="example-pills">
+                    <span class="pill" onclick="setRevision('add Thai language support')">🇹🇭 Add Thai</span>
+                    <span class="pill" onclick="setRevision('set priority to 20')">⚡ High priority</span>
+                    <span class="pill" onclick="setRevision('add trigger weather today')">➕ Add trigger</span>
+                    <span class="pill" onclick="setRevision('change handler to ws_message')">🔌 Change handler</span>
+                </div>
+            </div>
+            
+            <div id="resultMessage" style="margin-top: 15px; font-weight: 500;"></div>
+            
+            <!-- Review/Approval Workflow -->
+            <div id="workflowSection" style="display: none; margin-top: 30px; padding-top: 20px; border-top: 3px solid #e0e0e0;">
+                <h3>📋 Review & Approval Workflow</h3>
+                
+                <div style="display: flex; align-items: center; gap: 20px; margin: 15px 0; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                    <div id="workflowStatus" style="display: flex; gap: 10px;">
+                        <span class="status-badge draft active" data-status="draft">📝 Draft</span>
+                        <span style="color: #999;">→</span>
+                        <span class="status-badge review" data-status="review">👀 Review</span>
+                        <span style="color: #999;">→</span>
+                        <span class="status-badge approved" data-status="approved">✅ Approved</span>
+                        <span style="color: #999;">→</span>
+                        <span class="status-badge ready" data-status="ready">🚀 Ready</span>
+                    </div>
+                </div>
+                
+                <div id="workflowActions" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn btn-secondary" onclick="updateStatus('review')" id="btnReview" style="display: none;">👀 Submit for Review</button>
+                    <button class="btn" style="background: #34a853;" onclick="updateStatus('approved')" id="btnApprove" style="display: none;">✅ Approve</button>
+                    <button class="btn" style="background: #ea4335;" onclick="updateStatus('draft')" id="btnReject" style="display: none;">❌ Reject (Back to Draft)</button>
+                    <button class="btn" style="background: #1a73e8;" onclick="updateStatus('ready')" id="btnReady" style="display: none;">🚀 Mark Ready</button>
+                </div>
+                
+                <div id="workflowHistory" style="margin-top: 15px; padding: 10px; background: #fafafa; border-radius: 6px; font-size: 13px; color: #666;">
+                    <strong>History:</strong> <span id="historyText">Created as draft</span>
+                </div>
+            </div>
+            
+            <!-- Thai Language Support Panel -->
+            <div id="thaiPanel" style="display: none; margin-top: 20px; padding: 15px; background: #fff8e1; border-radius: 8px; border: 1px solid #ffecb3;">
+                <h4 style="margin-top: 0; color: #f57c00;">🇹🇭 Thai Language Configuration</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                    <div>
+                        <label style="font-size: 12px; color: #666;">Thai Skill Name:</label>
+                        <input type="text" id="thaiName" class="text-input" style="font-size: 14px; padding: 8px;" placeholder="ชื่อทักษะภาษาไทย">
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: #666;">Thai Trigger Phrases (comma separated):</label>
+                        <input type="text" id="thaiTriggers" class="text-input" style="font-size: 14px; padding: 8px;" placeholder="ตัวอย่าง: ตรวจสอบอากาศ, สภาพอากาศวันนี้">
+                    </div>
+                </div>
+                <button class="btn" style="margin-top: 10px; background: #ff9800;" onclick="applyThaiConfig()">🇹🇭 Apply Thai Configuration</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentSkill = null;
+        let currentMarkdown = '';
+        let currentStatus = 'draft';
+        let workflowHistory = ['Created as draft'];
+        
+        function setExample(text) {
+            document.getElementById('skillInput').value = text;
+            document.getElementById('skillInput').focus();
+        }
+        
+        function setRevision(text) {
+            document.getElementById('revisionInput').value = text;
+            document.getElementById('revisionInput').focus();
+        }
+        
+        function setStatus(status, text) {
+            const el = document.getElementById('status');
+            el.className = 'status ' + status;
+            el.textContent = text;
+        }
+        
+        // Mock skill creation (would call API in real implementation)
+        function createSkill() {
+            const input = document.getElementById('skillInput').value.trim();
+            if (!input) return;
+            
+            setStatus('processing', 'Interpreting...');
+            document.getElementById('createBtn').disabled = true;
+            
+            // Simulate processing
+            setTimeout(() => {
+                // Generate mock skill
+                const isThai = /[\u0E00-\u0E7F]/.test(input);
+                const name = isThai ? 'thai_' + input.substring(0, 15).replace(/\s+/g, '_') : input.substring(0, 20).replace(/\s+/g, '_');
+                
+                currentSkill = {
+                    skill_name: name,
+                    category: isThai ? 'utility' : 'info',
+                    handler_type: 'tool_call',
+                    trigger_phrases: [input],
+                    priority: 10,
+                    languages: isThai ? ['th'] : ['en']
+                };
+                
+                currentMarkdown = `# Skill: ${name}
+
+## Metadata
+- **Name**: ${name}
+- **Status**: draft
+- **Version**: 1.0.0
+- **Author**: text-input
+- **Tags**: skill-draft, skill-category-${currentSkill.category}
+- **Source Input**: "${input}"
+- **Languages**: ${isThai ? 'th' : 'en'}
+
+## Purpose
+${input}
+
+## Trigger Definition
+- **Match Type**: prefix
+- **Patterns**:
+- "${input}"
+- **Priority**: 10
+
+## Handler Configuration
+- **Type**: tool_call
+- **Target**: ${name}_tool
+
+## Development Notes
+- Created from: "${input}"
+- Need to: Define tool arguments, test patterns
+
+## Testing Checklist
+- [ ] Pattern matches trigger phrases
+- [ ] Handler exists
+- [ ] Args schema defined
+
+## Changelog
+- v1.0.0 - Draft created via text input
+`;
+                
+                // Show config
+                document.getElementById('configTable').innerHTML = `
+                    <tr><td>Name</td><td><code>${name}</code></td></tr>
+                    <tr><td>Category</td><td>${currentSkill.category}</td></tr>
+                    <tr><td>Handler</td><td>${currentSkill.handler_type}</td></tr>
+                    <tr><td>Triggers</td><td><code>${input}</code></td></tr>
+                    <tr><td>Languages</td><td>${isThai ? '🇹🇭 Thai' : '🇺🇸 English'}</td></tr>
+                    <tr><td>Priority</td><td>${currentSkill.priority}</td></tr>
+                `;
+                
+                document.getElementById('markdownPreview').textContent = currentMarkdown;
+                document.getElementById('previewBox').style.display = 'block';
+                
+                setStatus('ready', 'Ready');
+                document.getElementById('createBtn').disabled = false;
+                
+                // Auto-show Thai panel if Thai input detected
+                if (isThai) {
+                    document.getElementById('thaiPanel').style.display = 'block';
+                    document.getElementById('revisionSection').classList.add('active');
+                }
+            }, 500);
+        }
+        
+        function showRevision() {
+            document.getElementById('revisionSection').classList.add('active');
+            document.getElementById('thaiPanel').style.display = 'block';
+            document.getElementById('revisionInput').focus();
+        }
+        
+        function reviseSkill() {
+            const revision = document.getElementById('revisionInput').value.trim();
+            if (!revision) return;
+            
+            // Simulate revision
+            const timestamp = new Date().toLocaleString();
+            const revisionNote = `\n\n## Revision (${timestamp})\n- Request: ${revision}\n`;
+            
+            if (revision.toLowerCase().includes('thai')) {
+                currentMarkdown = currentMarkdown.replace('- **Languages**: en', '- **Languages**: en, th\n- **Thai Support**: Configured');
+            }
+            
+            currentMarkdown += revisionNote;
+            document.getElementById('markdownPreview').textContent = currentMarkdown;
+            
+            document.getElementById('resultMessage').innerHTML = 
+                `<span class="success">✅ Applied: ${revision}</span>`;
+        }
+        
+        function saveToWiki() {
+            document.getElementById('resultMessage').innerHTML = 
+                '<span class="success">✅ Saved to Wiki (mock)</span>';
+            
+            // Show workflow
+            document.getElementById('workflowSection').style.display = 'block';
+            updateWorkflowUI('draft');
+        }
+        
+        function reset() {
+            currentSkill = null;
+            currentMarkdown = '';
+            currentStatus = 'draft';
+            workflowHistory = ['Created as draft'];
+            document.getElementById('skillInput').value = '';
+            document.getElementById('revisionInput').value = '';
+            document.getElementById('previewBox').style.display = 'none';
+            document.getElementById('revisionSection').classList.remove('active');
+            document.getElementById('workflowSection').style.display = 'none';
+            document.getElementById('thaiPanel').style.display = 'none';
+            document.getElementById('resultMessage').textContent = '';
+            setStatus('ready', 'Ready');
+        }
+        
+        // Workflow Functions
+        function updateStatus(newStatus) {
+            const timestamp = new Date().toLocaleString();
+            let actionText = '';
+            
+            switch(newStatus) {
+                case 'review':
+                    actionText = 'Submitted for review';
+                    break;
+                case 'approved':
+                    actionText = 'Approved for deployment';
+                    break;
+                case 'draft':
+                    actionText = 'Rejected - back to draft';
+                    break;
+                case 'ready':
+                    actionText = 'Marked ready for production';
+                    break;
+            }
+            
+            currentStatus = newStatus;
+            workflowHistory.push(`${actionText} at ${timestamp}`);
+            
+            const statusNote = `\n\n## Workflow Update (${timestamp})\n- Status: **${newStatus.toUpperCase()}**\n- Action: ${actionText}\n`;
+            currentMarkdown += statusNote;
+            document.getElementById('markdownPreview').textContent = currentMarkdown;
+            
+            updateWorkflowUI(newStatus);
+            
+            document.getElementById('resultMessage').innerHTML = 
+                `<span class="success">✅ Status updated: ${newStatus.toUpperCase()}</span>`;
+        }
+        
+        function updateWorkflowUI(status) {
+            document.querySelectorAll('.status-badge').forEach(badge => {
+                badge.classList.remove('active');
+                if (badge.dataset.status === status) {
+                    badge.classList.add('active');
+                }
+            });
+            
+            document.getElementById('btnReview').style.display = 
+                (status === 'draft') ? 'inline-block' : 'none';
+            document.getElementById('btnApprove').style.display = 
+                (status === 'review') ? 'inline-block' : 'none';
+            document.getElementById('btnReject').style.display = 
+                (status === 'review') ? 'inline-block' : 'none';
+            document.getElementById('btnReady').style.display = 
+                (status === 'approved') ? 'inline-block' : 'none';
+            
+            document.getElementById('historyText').textContent = workflowHistory.join(' → ');
+        }
+        
+        // Thai Configuration
+        function applyThaiConfig() {
+            const thaiName = document.getElementById('thaiName').value.trim();
+            const thaiTriggers = document.getElementById('thaiTriggers').value.trim();
+            
+            if (!thaiName && !thaiTriggers) {
+                alert('Please enter Thai name or trigger phrases');
+                return;
+            }
+            
+            let thaiSection = '\n\n## Thai Language Support\n';
+            if (thaiName) {
+                thaiSection += `- **Thai Name**: ${thaiName}\n`;
+            }
+            if (thaiTriggers) {
+                const triggers = thaiTriggers.split(',').map(t => t.trim()).filter(t => t);
+                thaiSection += `- **Thai Triggers**:\n${triggers.map(t => `  - "${t}"`).join('\n')}\n`;
+            }
+            
+            currentMarkdown += thaiSection;
+            document.getElementById('markdownPreview').textContent = currentMarkdown;
+            
+            document.getElementById('resultMessage').innerHTML = 
+                '<span class="success">✅ Thai configuration applied</span>';
+        }
+    </script>
+</body>
+</html>

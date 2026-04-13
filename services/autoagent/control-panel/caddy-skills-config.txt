@@ -1,0 +1,17 @@
+# Caddy configuration for Skill Creator UI
+# Add this inside the assistance.idc1.surf-thailand.com site block
+
+# Skill Creator UI - API endpoints
+handle_path /api/skills/* {
+    reverse_proxy 127.0.0.1:8090
+}
+
+# Skill Creator UI - main page and assets
+handle_path /skills/* {
+    reverse_proxy 127.0.0.1:8090
+}
+
+# Redirect /skills to /skills/
+handle /skills {
+    redir /skills/ 308
+}

@@ -1,0 +1,30 @@
+services:
+  skill-creator:
+    build:
+      context: ../../services/autoagent/control-panel
+      dockerfile: Dockerfile
+    container_name: skill-creator
+    env_file:
+      - .env
+    environment:
+      WIKI_API_URL: http://mcp-wiki:8080
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      # Control panel configuration (same as autoagent base image)
+      AUTOAGENT_CONTROL_PORT: 8080
+      AUTOAGENT_CONTROL_HOST: 0.0.0.0  # Allow external access
+    ports:
+      - "${SKILL_CREATOR_HOST_PORT:-8090}:${SKILL_CREATOR_CONTAINER_PORT:-8080}"
+    volumes:
+      - skill-creator-logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - default
+      - vpn
+
+volumes:
+  skill-creator-logs:
+    driver: local
+
+networks:
+  vpn:
+    name: idc1-skill-creator-network
