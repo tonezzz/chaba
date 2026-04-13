@@ -1,4 +1,5 @@
 # Jarvis Frontend Services
+<!-- rebuild: 2026-04-13 -->
 
 Modular WebSocket and audio services for the Jarvis voice assistant.
 
