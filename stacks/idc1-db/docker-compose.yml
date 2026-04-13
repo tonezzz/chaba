@@ -19,6 +19,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - idc1-db-network
 
   # MCP PostgreSQL Server - Official Anthropic MCP server
   mcp-postgres:
@@ -67,12 +69,35 @@ services:
       WIKI_USE_POSTGRES: '1'
       DATABASE_URL: postgresql://${POSTGRES_USER:-chaba}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-chaba}
       WIKI_HTTP_PORT: 8080
+      WEAVIATE_URL: http://weaviate:8080
       # MCP_STDIO: '1'  # Enable for Windsurf MCP stdio transport (HTTP mode for now)
     ports:
       - "3008:8080"
     restart: unless-stopped
     depends_on:
       - postgres
+      - weaviate
+
+  # Wiki Sync Listener - Real-time PostgreSQL to Weaviate sync
+  wiki-sync-listener:
+    image: python:3.11-slim
+    container_name: idc1-wiki-sync-listener
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-chaba}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-chaba}
+      WEAVIATE_URL: http://weaviate:8080
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      POLL_INTERVAL: '2.0'
+    volumes:
+      - ../../scripts:/app/scripts:ro
+      - ./wiki-sync-entrypoint.sh:/entrypoint.sh:ro
+    working_dir: /app
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - weaviate
+    networks:
+      - idc1-db-network
 
   # Redis - Session and cache storage
   redis:

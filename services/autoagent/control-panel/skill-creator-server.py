@@ -223,8 +223,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         </p>
         
         <div class="example-pills">
-            <span class="pill" onclick="setExample('check the weather when I ask what\'s the weather')">☁️ Weather check</span>
-            <span class="pill" onclick="setExample('remind me about tasks when I say don\'t forget')">⏰ Reminder</span>
+            <span class="pill" onclick='setExample("check the weather when I ask what\'s the weather")'>☁️ Weather check</span>
+            <span class="pill" onclick='setExample("remind me about tasks when I say don\'t forget")'>⏰ Reminder</span>
             <span class="pill" onclick="setExample('search wiki articles when I ask find docs')">🔍 Wiki search</span>
             <span class="pill" onclick="setExample('tell me news headlines when I say news')">📰 News brief</span>
         </div>
