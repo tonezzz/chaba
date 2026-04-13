@@ -77,8 +77,6 @@ export function LeftPanel(props: {
 
   isTalking: boolean;
   handleToggleTalk: () => void;
-  inputMode: "text" | "voice";
-  setInputMode: React.Dispatch<React.SetStateAction<"text" | "voice">>;
 }) {
   const {
     leftFullscreen,
@@ -117,8 +115,6 @@ export function LeftPanel(props: {
     handleRemoveAttachment,
     isTalking,
     handleToggleTalk,
-    inputMode,
-    setInputMode,
   } = props;
 
   const readinessText = React.useMemo(() => {
@@ -135,6 +131,9 @@ export function LeftPanel(props: {
   const [uiCardActionByMsgId, setUiCardActionByMsgId] = React.useState<
     Record<string, { busy: boolean; status: "idle" | "ok" | "error"; message?: string }>
   >({});
+
+  // Input mode toggle: 'text' | 'voice'
+  const [inputMode, setInputMode] = React.useState<"text" | "voice">("text");
 
   return (
     <div
@@ -214,6 +213,7 @@ export function LeftPanel(props: {
                 className={`w-4 h-4 text-slate-500 transition-transform ${statusDetailsOpen ? "rotate-90" : ""}`}
               />
             </button>
+
           </div>
 
           {!!readinessText && (
@@ -856,83 +856,85 @@ export function LeftPanel(props: {
               ))}
             </div>
           )}
-          <div className="flex items-center gap-2 min-w-0">
+          {inputMode === "text" && (
+            <div className="flex items-center gap-2 min-w-0">
+              <button
+                onClick={handlePickFiles}
+                disabled={state !== ConnectionState.CONNECTED}
+                className="shrink-0 w-10 h-10 rounded-xl border border-slate-700 bg-slate-950/40 text-slate-200 hover:bg-slate-800/60 disabled:opacity-50"
+                aria-label="Attach files"
+              >
+                <Paperclip className="w-4 h-4" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                accept="image/*,application/pdf,text/plain,text/markdown,application/json,.md,.txt,.json,.pdf"
+                onChange={(e) => {
+                  void handleFilesSelected(e.target.files);
+                  e.currentTarget.value = "";
+                }}
+              />
+              <input
+                value={composerText}
+                onChange={(e) => setComposerText(e.target.value)}
+                placeholder="Type a message..."
+                disabled={state !== ConnectionState.CONNECTED}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendComposer();
+                  }
+                }}
+                className="flex-1 min-w-0 px-3 py-2 rounded-xl text-sm font-mono bg-slate-950 border border-slate-800 text-slate-200 placeholder:text-slate-600 disabled:opacity-50"
+              />
+              <button
+                onClick={handleSendComposer}
+                disabled={state !== ConnectionState.CONNECTED}
+                className="shrink-0 w-10 h-10 rounded-xl border border-cyan-500/40 bg-cyan-950/20 text-cyan-200 hover:bg-cyan-950/40 disabled:opacity-50 disabled:hover:bg-cyan-950/20 flex items-center justify-center"
+                aria-label="Send"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* Connect / Mode Toggle */}
+          {state === ConnectionState.CONNECTED ? (
             <button
-              onClick={handlePickFiles}
-              disabled={state !== ConnectionState.CONNECTED}
-              className="shrink-0 w-10 h-10 rounded-xl border border-slate-700 bg-slate-950/40 text-slate-200 hover:bg-slate-800/60 disabled:opacity-50"
-              aria-label="Attach files"
-            >
-              <Paperclip className="w-4 h-4" />
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              className="hidden"
-              accept="image/*,application/pdf,text/plain,text/markdown,application/json,.md,.txt,.json,.pdf"
-              onChange={(e) => {
-                void handleFilesSelected(e.target.files);
-                e.currentTarget.value = "";
-              }}
-            />
-            <input
-              value={composerText}
-              onChange={(e) => setComposerText(e.target.value)}
-              placeholder="Type a message..."
-              disabled={state !== ConnectionState.CONNECTED}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendComposer();
+              onClick={() => {
+                if (inputMode === "text") {
+                  setInputMode("voice");
+                  if (!isTalking) handleToggleTalk();
+                } else {
+                  setInputMode("text");
+                  if (isTalking) handleToggleTalk();
                 }
               }}
-              className="flex-1 min-w-0 px-3 py-2 rounded-xl text-sm font-mono bg-slate-950 border border-slate-800 text-slate-200 placeholder:text-slate-600 disabled:opacity-50"
-            />
-            <button
-              onClick={handleSendComposer}
-              disabled={state !== ConnectionState.CONNECTED}
-              className="shrink-0 w-10 h-10 rounded-xl border border-cyan-500/40 bg-cyan-950/20 text-cyan-200 hover:bg-cyan-950/40 disabled:opacity-50 disabled:hover:bg-cyan-950/20 flex items-center justify-center"
-              aria-label="Send"
+              className={`w-full py-2 rounded-lg font-mono text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 border ${
+                inputMode === "voice"
+                  ? "bg-cyan-950/30 text-cyan-200 border-cyan-500/40"
+                  : "bg-slate-950/60 text-cyan-200 border-cyan-500/40 hover:bg-slate-950/80"
+              }`}
             >
-              <Send className="w-4 h-4" />
+              {inputMode === "text" ? (
+                <><Mic className="w-3.5 h-3.5" /> Voice</>
+              ) : (
+                <><Keyboard className="w-3.5 h-3.5" /> Text</>
+              )}
             </button>
-          </div>
+          ) : (
+            <button
+              onClick={handleConnect}
+              disabled={state === ConnectionState.CONNECTING}
+              className="w-full py-2 rounded-lg font-mono text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 border border-cyan-500/40 bg-cyan-950/20 text-cyan-200 hover:bg-cyan-950/40 disabled:opacity-50"
+            >
+              {state === ConnectionState.CONNECTING ? "Connecting..." : "Connect"}
+            </button>
+          )}
         </div>
-
-        {/* Connect / Voice/Text Toggle */}
-        {state === ConnectionState.CONNECTED ? (
-          <button
-            onClick={() => {
-              if (inputMode === "text") {
-                setInputMode("voice");
-                if (!isTalking) handleToggleTalk();
-              } else {
-                setInputMode("text");
-                if (isTalking) handleToggleTalk();
-              }
-            }}
-            className={`w-full py-2 rounded-lg font-mono text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 border ${
-              inputMode === "voice"
-                ? "bg-cyan-950/30 text-cyan-200 border-cyan-500/40"
-                : "bg-slate-950/60 text-cyan-200 border-cyan-500/40 hover:bg-slate-950/80"
-            }`}
-          >
-            {inputMode === "text" ? (
-              <><Mic className="w-3.5 h-3.5" /> Voice</>
-            ) : (
-              <><Keyboard className="w-3.5 h-3.5" /> Text</>
-            )}
-          </button>
-        ) : (
-          <button
-            onClick={handleConnect}
-            disabled={state === ConnectionState.CONNECTING}
-            className="w-full py-2 rounded-lg font-mono text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 border border-cyan-500/40 bg-cyan-950/20 text-cyan-200 hover:bg-cyan-950/40 disabled:opacity-50"
-          >
-            {state === ConnectionState.CONNECTING ? "Connecting..." : "Connect"}
-          </button>
-        )}
       </div>
     </div>
   );

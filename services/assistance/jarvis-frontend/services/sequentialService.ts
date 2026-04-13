@@ -69,7 +69,13 @@ export type SequentialApplyAndSuggestResponse = {
 function getBackendHttpBaseUrl(): string {
   const envUrl = (import.meta as any).env?.VITE_JARVIS_HTTP_URL as string | undefined;
   if (envUrl && String(envUrl).trim()) return String(envUrl).trim().replace(/\/+$/, "");
-  return `${location.origin}/jarvis/api`;
+
+  const isJarvisSubpath = location.pathname.startsWith("/jarvis");
+  if (isJarvisSubpath) {
+    return `${location.origin}/jarvis/api`;
+  }
+
+  return `${location.protocol}//${location.hostname}:8018`;
 }
 
 export async function sequentialSuggest(req: SequentialSuggestRequest): Promise<SequentialSuggestResponse> {
