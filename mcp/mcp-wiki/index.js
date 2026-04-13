@@ -2290,6 +2290,10 @@ app.post('/update', async (req, res) => {
   }
 });
 
+// Body parsers for API endpoints (must be before routes that need req.body)
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // API Endpoints (JSON)
 app.get('/api/articles', async (req, res) => {
   try {
@@ -2703,10 +2707,6 @@ async function start() {
       }
     }
   );
-
-  // Body parsers for other routes (added AFTER MCP routes)
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
 
   // Start HTTP server
   app.listen(HTTP_PORT, () => {
