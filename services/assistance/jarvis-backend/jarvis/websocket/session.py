@@ -196,6 +196,7 @@ _LIVE_WORKING_MODEL_AND_CONFIG: Optional[tuple[str, "types.LiveConnectConfig"]] 
 _LIVE_LISTED_MODELS_ONCE: bool = False
 _LIVE_CACHE_PATH = os.getenv("JARVIS_LIVE_MODEL_CACHE_PATH", "/data/jarvis_live_model_cache.json").strip()
 _LIVE_PROBE_ON_CONNECT = str(os.getenv("JARVIS_LIVE_PROBE_ON_CONNECT", "false")).strip().lower() == "true"
+_LIVE_FORCE_TEXT_ONLY = str(os.getenv("JARVIS_LIVE_FORCE_TEXT_ONLY", "false")).strip().lower() == "true"
 
 
 class LiveCapabilities:
@@ -237,6 +238,7 @@ def _live_configs_for_model() -> tuple[list["types.LiveConnectConfig"], list["ty
     text_cfgs: list[types.LiveConnectConfig] = [
         types.LiveConnectConfig(
             response_modalities=["TEXT"],
+            input_audio_transcription=types.AudioTranscriptionConfig(),
         ),
         types.LiveConnectConfig(
             temperature=0.7,
@@ -245,6 +247,7 @@ def _live_configs_for_model() -> tuple[list["types.LiveConnectConfig"], list["ty
                 max_output_tokens=1024,
                 temperature=0.7,
             ),
+            input_audio_transcription=types.AudioTranscriptionConfig(),
         ),
     ]
     # For native audio models, enable AUDIO responses (input is implicit with send_realtime_input)
@@ -584,7 +587,11 @@ class WebSocketManager:
             # - Full voice (audio in + out): AUDIO configs
             # - Voice in + text out: TEXT configs (but still send audio)
             # - Text only: TEXT configs
-            if caps.supports_voice_output:
+            # - Force text only via env var for testing/debugging
+            if _LIVE_FORCE_TEXT_ONLY:
+                configs_to_try = text_cfgs
+                logger.info(f"[{caps.scenario}] JARVIS_LIVE_FORCE_TEXT_ONLY enabled - using TEXT configs for {clean_model_name}")
+            elif caps.supports_voice_output:
                 # Full native audio: input + output (Scenario 4)
                 configs_to_try = audio_cfgs
                 logger.info(f"[{caps.scenario}] Using AUDIO configs for {clean_model_name}")
