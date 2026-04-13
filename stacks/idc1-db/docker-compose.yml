@@ -78,6 +78,8 @@ services:
     depends_on:
       - postgres
       - weaviate
+    networks:
+      - idc1-db-network
 
   # Wiki Sync Listener - Real-time PostgreSQL to Weaviate sync
   wiki-sync-listener:
@@ -173,8 +175,8 @@ services:
       - "8059:8080"  # Control Panel
       - "8058:8056"  # GhostRoute MCP
     restart: unless-stopped
-    depends_on:
-      - postgres
+    #depends_on:
+    #  - postgres
     # Control panel available at http://idc1.surf-thailand.com:8059/
 
   # GhostRoute Test - OpenRouter model discovery
