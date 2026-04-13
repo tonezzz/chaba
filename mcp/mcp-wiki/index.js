@@ -22,6 +22,7 @@ const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://chaba:changeme@id
 const DB_PATH = process.env.WIKI_DB_PATH || '/data/wiki.db';
 const DATA_DIR = path.dirname(DB_PATH);
 const HTTP_PORT = process.env.WIKI_HTTP_PORT || 8080;
+const API_KEY = process.env.WIKI_API_KEY;
 
 let db;
 let pgPool;
@@ -1281,6 +1282,34 @@ ${validation.warnings.length > 0 ? `\nWarnings:\n${validation.warnings.slice(0, 
 // HTTP Server for Web UI
 const app = express();
 
+// Authentication middleware for write operations
+function requireAuth(req, res, next) {
+  // Skip auth for read-only GET requests
+  if (req.method === 'GET') {
+    return next();
+  }
+  
+  // Skip auth if no API key is configured (development mode)
+  if (!API_KEY) {
+    return next();
+  }
+  
+  const authHeader = req.headers.authorization;
+  const apiKeyFromHeader = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  const apiKeyFromQuery = req.query.api_key;
+  
+  const providedKey = apiKeyFromHeader || apiKeyFromQuery;
+  
+  if (!providedKey || providedKey !== API_KEY) {
+    return res.status(401).json({ error: 'Unauthorized: Invalid or missing API key' });
+  }
+  
+  next();
+}
+
+// Apply authentication middleware
+app.use(requireAuth);
+
 // HTML template helper
 const htmlPage = (title, content) => `<!DOCTYPE html>
 <html lang="en">
@@ -1754,8 +1783,41 @@ const htmlPage = (title, content) => `<!DOCTYPE html>
 </html>`;
 
 // Routes
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', db: DB_PATH, articles: null });
+app.get('/health', async (req, res) => {
+  const health = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    database: {
+      type: USE_POSTGRES ? 'postgresql' : 'sqlite',
+      connected: false
+    },
+    articles: null
+  };
+  
+  try {
+    if (USE_POSTGRES && pgPool) {
+      // Test PostgreSQL connectivity
+      const result = await pgPool.query('SELECT COUNT(*) as count FROM articles');
+      health.database.connected = true;
+      health.database.article_count = parseInt(result.rows[0].count);
+    } else if (db) {
+      // Test SQLite connectivity
+      const count = await new Promise((resolve, reject) => {
+        db.get('SELECT COUNT(*) as count FROM articles', (err, row) => {
+          if (err) reject(err);
+          else resolve(row.count);
+        });
+      });
+      health.database.connected = true;
+      health.database.article_count = count;
+    }
+    
+    res.json(health);
+  } catch (err) {
+    health.status = 'error';
+    health.error = err.message;
+    res.status(503).json(health);
+  }
 });
 
 // Home / List
@@ -2290,9 +2352,12 @@ app.post('/update', async (req, res) => {
   }
 });
 
-// Body parsers for API endpoints (must be before routes that need req.body)
+// Body parsers for API endpoints
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Re-apply auth middleware after body parsers (order matters)
+app.use(requireAuth);
 
 // API Endpoints (JSON)
 app.get('/api/articles', async (req, res) => {
