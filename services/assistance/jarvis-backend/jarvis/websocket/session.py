@@ -1073,7 +1073,11 @@ class WebSocketManager:
                     except Exception:
                         continue
 
-                    logger.info("Live audio chunk forwarded")
+                    logger.info(
+                        "Live audio chunk forwarded bytes=%s mime=%s",
+                        len(b64) if isinstance(b64, str) else "?",
+                        getattr(inline, "mime_type", "?"),
+                    )
                     await session.send_json(
                         {
                             "type": "audio",
