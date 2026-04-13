@@ -1,0 +1,41 @@
+services:
+  # WireGuard Dashboard - Web UI for WireGuard management
+  wgdashboard:
+    image: ghcr.io/wgdashboard/wgdashboard:latest
+    container_name: idc1-wgdashboard
+    environment:
+      - TZ=Asia/Bangkok
+    volumes:
+      - wgdashboard-data:/data
+      - /etc/wireguard:/etc/wireguard
+    network_mode: host
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:10086/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # CoreDNS - DNS server for VPN clients (port 5300 to avoid systemd-resolve conflict)
+  wg-dns:
+    image: coredns/coredns:latest
+    container_name: idc1-wg-dns
+    # network_mode: host  # DISABLED - using bridge to avoid port 53 conflict
+    ports:
+      - "5300:53/udp"    # Changed from 53:53/udp (conflicts with systemd-resolve)
+    volumes:
+      - ./config/coredns/Corefile:/etc/coredns/Corefile:ro
+      - ./config/coredns/zones:/etc/coredns/zones:ro
+    command: -conf /etc/coredns/Corefile
+    restart: unless-stopped
+    networks:
+      - idc1-vpn-network  # Using bridge network instead of host
+    depends_on:
+      - wgdashboard
+
+volumes:
+  wgdashboard-data:
+
+networks:
+  idc1-vpn-network:
+    driver: bridge
