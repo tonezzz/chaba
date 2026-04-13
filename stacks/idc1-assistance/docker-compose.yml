@@ -2950,28 +2950,6 @@ services:
       - idc1-stack-net
       - idc1-db-network
 
-  # MCP Wiki - Knowledge base (merged from idc1-db)
-  mcp-wiki:
-    <<: *default-service
-    image: ghcr.io/tonezzz/mcp-wiki:latest
-    container_name: idc1-mcp-wiki
-    environment:
-      WIKI_USE_POSTGRES: '1'
-      # DATABASE_URL can be set in Portainer env vars to override
-      # Use external host (idc1.surf-thailand.com) if not on same network as postgres
-      DATABASE_URL: ${DATABASE_URL:-postgresql://chaba:changeme@idc1.surf-thailand.com:5432/chaba}
-      WIKI_HTTP_PORT: 8080
-      MCP_STDIO: '0'
-      WIKI_API_KEY: ${WIKI_API_KEY:-}
-      # AI API Keys for article enhancement
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-    ports:
-      - "3008:8080"
-    networks:
-      - idc1-stack-net
-      - idc1-db-network
-
   # pgAdmin - PostgreSQL management UI (merged from idc1-db)
   pgadmin:
     <<: *default-service
