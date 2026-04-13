@@ -1,7 +1,17 @@
+# =============================================================================
+# idc1-assistance Stack
+# =============================================================================
+# IMPORTANT: For Portainer git-backed stacks, environment variables must be
+# set in the Portainer UI (Stack > Environment Variables). The env_file
+# reference below is for local development only and is not loaded by Portainer.
+# Required env vars: OPENROUTER_API_KEY, GEMINI_API_KEY, POSTGRES_PASSWORD, etc.
+# See .env.example for the full list.
+# =============================================================================
+
 x-default-service: &default-service
   restart: unless-stopped
   env_file:
-    - .env.example
+    - .env.example  # Used for local dev; Portainer uses UI env vars
   networks:
     - idc1-stack-net
   logging:
