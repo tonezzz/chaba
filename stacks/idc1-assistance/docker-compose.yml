@@ -2957,14 +2957,14 @@ services:
     container_name: idc1-mcp-wiki
     environment:
       WIKI_USE_POSTGRES: '1'
-      DATABASE_URL: postgresql://${POSTGRES_USER:-chaba}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-chaba}
+      # DATABASE_URL can be set in Portainer env vars to override
+      # Use external host (idc1.surf-thailand.com) if not on same network as postgres
+      DATABASE_URL: ${DATABASE_URL:-postgresql://chaba:changeme@idc1.surf-thailand.com:5432/chaba}
       WIKI_HTTP_PORT: 8080
       MCP_STDIO: '0'
+      WIKI_API_KEY: ${WIKI_API_KEY:-}
     ports:
       - "3008:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
     networks:
       - idc1-stack-net
       - idc1-db-network
