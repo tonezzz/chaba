@@ -291,13 +291,10 @@ class SmartResearcher:
     """Main smart research orchestrator"""
     
     def __init__(self):
-        # Use PostgreSQL KB if available, otherwise fall back to HTTP API
-        if KB_CLASS and os.getenv("USE_POSTGRES", "1") == "1":
-            self.kb = KB_CLASS(DATABASE_URL)
-            print(f"   📚 Using PostgreSQL knowledge base ({KB_TYPE})")
-        else:
-            self.kb = WikiKnowledgeBase()
-            print(f"   📚 Using HTTP API knowledge base ({KB_TYPE})")
+        # Use HTTP API (WikiKnowledgeBase) to save articles to mcp-wiki
+        # PostgresKnowledgeBase saves to kb_articles which is separate from wiki
+        self.kb = WikiKnowledgeBase()
+        print(f"   📚 Using HTTP API knowledge base (wiki)")
         self.analyzer = LLMAnalyzer()
     
     def _do_research(self, query: str, model: str) -> str:
