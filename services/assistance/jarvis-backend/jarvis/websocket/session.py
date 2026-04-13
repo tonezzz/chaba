@@ -248,26 +248,22 @@ def _live_configs_for_model() -> tuple[list["types.LiveConnectConfig"], list["ty
         ),
     ]
     # For native audio models, enable AUDIO responses (input is implicit with send_realtime_input)
+    # speech_config is REQUIRED for the model to produce audio output.
     audio_cfgs: list[types.LiveConnectConfig] = [
         types.LiveConnectConfig(
             response_modalities=["AUDIO"],
+            speech_config=types.SpeechConfig(
+                voice_config=types.VoiceConfig(
+                    prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Aoede")
+                )
+            ),
         ),
         types.LiveConnectConfig(
-            temperature=0.7,
             response_modalities=["AUDIO", "TEXT"],
-        ),
-        types.LiveConnectConfig(
-            temperature=0.7,
-            response_modalities=["AUDIO"],
-            generation_config=types.GenerationConfig(
-                max_output_tokens=2048,
-                temperature=0.7,
-                # Enable automatic input transcription for debugging
-                speech_config=types.SpeechConfig(
-                    voice_config=types.VoiceConfig(
-                        prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Aoede")
-                    )
-                ),
+            speech_config=types.SpeechConfig(
+                voice_config=types.VoiceConfig(
+                    prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Aoede")
+                )
             ),
         ),
     ]
