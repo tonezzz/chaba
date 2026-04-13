@@ -482,11 +482,14 @@ Format with clear headers and bullet points."""
 - Tags: {', '.join(tags)}
 """
         
-        self.kb.save_article(title, content, tags, metadata["entities"], metadata["classification"])
+        save_result = self.kb.save_article(title, content, tags, metadata["entities"], metadata["classification"])
         metadata["article_title"] = title
         self.kb.log_session(query, model, title, False)
         
-        print(f"✅ Saved to wiki: {title}")
+        if save_result:
+            print(f"✅ Saved to wiki: {title}")
+        else:
+            print(f"❌ Failed to save to wiki: {title}")
         if related:
             print(f"   Cross-referenced: {', '.join(related[:3])}")
         
