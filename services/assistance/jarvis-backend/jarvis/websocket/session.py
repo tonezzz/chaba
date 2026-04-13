@@ -745,24 +745,11 @@ class WebSocketManager:
         logger.info("Live WS->Gemini loop started")
 
         transcriber: _StreamingSidecarTranscriber | None = None
-        try:
-            # Sidecar transcription: native-audio models often can't enable AUDIO+TEXT at
-            # Live connect time, so we stream partial transcripts via separate calls.
-            if _live_is_native_audio_model(live_model_name):
-                transcriber = _StreamingSidecarTranscriber(session=session, native_audio_mode=True)
-                transcriber.start()
-                logger.info(
-                    "Sidecar STT started model=%s stt_model=%s stt_model_source=%s interval_s=%s chunk_s=%s overlap_s=%s native_audio=%s",
-                    str(live_model_name),
-                    str(transcriber._model),
-                    str(getattr(transcriber, "_model_source", "unknown")),
-                    str(transcriber._interval_seconds),
-                    str(transcriber._chunk_seconds),
-                    str(transcriber._overlap_seconds),
-                    "true",
-                )
-        except Exception:
-            transcriber = None
+        # NOTE: Sidecar STT disabled for native audio models.
+        # Gemini Live now supports native audio output + transcription.
+        # The sidecar was producing gibberish due to audio format issues.
+        # If transcripts are needed, enable output_audio_transcription in LiveConnectConfig.
+        logger.info("Sidecar STT disabled for native audio model=%s - using Gemini native audio only", live_model_name)
 
         try:
             while True:
@@ -842,15 +829,6 @@ class WebSocketManager:
                     except Exception:
                         continue
 
-                    if transcriber is not None:
-                        try:
-                            transcriber.ingest_pcm16(pcm)
-                            # Kick transcription immediately (best-effort) so short utterances
-                            # don't have to wait for the periodic timer.
-                            transcriber.kick()
-                        except Exception:
-                            pass
-
                     live_caps = LiveCapabilities(live_model_name)
                     logger.info(
                         "Live sending audio pcm_bytes=%s model=%s scenario=%s voice_in=%s voice_out=%s",
@@ -862,11 +840,6 @@ class WebSocketManager:
 
                 if mtype == "audio_stream_end":
                     logger.info("Live audio_stream_end received")
-                    if transcriber is not None:
-                        try:
-                            await transcriber.flush_and_reset()
-                        except Exception:
-                            pass
                     continue
 
                 if mtype == "close":
@@ -875,12 +848,6 @@ class WebSocketManager:
             logger.info("WS disconnected (Live WS->Gemini loop)")
             return
         finally:
-            if transcriber is not None:
-                try:
-                    await transcriber.stop()
-                except Exception:
-                    pass
-                logger.info("Sidecar STT stopped")
             logger.info("Live WS->Gemini loop exiting")
 
 
