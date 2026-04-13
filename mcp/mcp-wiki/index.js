@@ -191,6 +191,100 @@ async function searchArticles(query, limit) {
   }
 }
 
+// Semantic search using Weaviate
+const WEAVIATE_URL = process.env.WEAVIATE_URL || 'http://localhost:8080';
+
+async function semanticSearch(query, limit = 10, certainty = 0.7) {
+  try {
+    const response = await fetch(`${WEAVIATE_URL}/v1/graphql`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: `
+          {
+            Get {
+              WikiArticle(
+                nearText: {
+                  concepts: ["${query}"]
+                  certainty: ${certainty}
+                }
+                limit: ${limit}
+              ) {
+                title
+                content
+                tags
+                wikidb_id
+                updated_at
+                _additional {
+                  certainty
+                }
+              }
+            }
+          }
+        `
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.errors) {
+      console.error('Weaviate error:', data.errors);
+      return [];
+    }
+    
+    const articles = data.data?.Get?.WikiArticle || [];
+    return articles.map(a => ({
+      title: a.title,
+      content: a.content,
+      tags: a.tags,
+      wikidb_id: a.wikidb_id,
+      updated_at: a.updated_at,
+      _additional: a._additional
+    }));
+  } catch (err) {
+    console.error('Semantic search error:', err);
+    return [];
+  }
+}
+
+// Hybrid search combining keyword and semantic
+async function hybridSearch(query, limit = 10) {
+  try {
+    // Get keyword results
+    const keywordResults = await searchArticles(query, limit);
+    
+    // Get semantic results
+    const semanticResults = await semanticSearch(query, limit, 0.6);
+    
+    // Merge and deduplicate
+    const seen = new Set();
+    const results = [];
+    
+    // Add keyword results first (marked as 'keyword')
+    for (const article of keywordResults) {
+      if (!seen.has(article.title)) {
+        seen.add(article.title);
+        results.push({ ...article, match_type: 'keyword' });
+      }
+    }
+    
+    // Add semantic results (marked as 'semantic')
+    for (const article of semanticResults) {
+      if (!seen.has(article.title)) {
+        seen.add(article.title);
+        results.push({ ...article, match_type: 'semantic' });
+      }
+    }
+    
+    return results.slice(0, limit);
+  } catch (err) {
+    console.error('Hybrid search error:', err);
+    // Fallback to keyword search
+    const keywordResults = await searchArticles(query, limit);
+    return keywordResults.map(a => ({ ...a, match_type: 'keyword' }));
+  }
+}
+
 async function getArticle(title) {
   if (USE_POSTGRES) {
     const result = await pgPool.query(
@@ -1284,6 +1378,11 @@ const app = express();
 
 // Authentication middleware for write operations
 function requireAuth(req, res, next) {
+  // Skip auth for MCP protocol endpoints (SSE transport)
+  if (req.path === '/mcp/sse' || req.path === '/mcp/message') {
+    return next();
+  }
+  
   // Skip auth for read-only GET requests
   if (req.method === 'GET') {
     return next();
@@ -2419,6 +2518,37 @@ app.get('/api/search', async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     if (!query) return res.json([]);
     const articles = await searchArticles(query, limit);
+    res.json(articles);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Semantic Search via Weaviate
+app.get('/api/semantic-search', async (req, res) => {
+  try {
+    const query = req.query.q || '';
+    const limit = parseInt(req.query.limit) || 10;
+    const certainty = parseFloat(req.query.certainty) || 0.7;
+    
+    if (!query) return res.json([]);
+    
+    const articles = await semanticSearch(query, limit, certainty);
+    res.json(articles);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Hybrid Search (keyword + semantic)
+app.get('/api/hybrid-search', async (req, res) => {
+  try {
+    const query = req.query.q || '';
+    const limit = parseInt(req.query.limit) || 10;
+    
+    if (!query) return res.json([]);
+    
+    const articles = await hybridSearch(query, limit);
     res.json(articles);
   } catch (err) {
     res.status(500).json({ error: err.message });
