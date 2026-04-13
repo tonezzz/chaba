@@ -26,6 +26,7 @@ from jarvis.api.reminders import router as reminders_router
 from jarvis.api.sheets import router as sheets_router
 from jarvis.api.dialog import router as dialog_router
 from jarvis.api.system import router as system_router
+from jarvis.api.config import router as config_router
 
 # Import business logic modules
 from jarvis.dialog.history import recent_dialog_load, format_recent_dialog_for_context
@@ -218,6 +219,7 @@ app.include_router(reminders_router, prefix="/jarvis/api", tags=["reminders"])
 app.include_router(sheets_router, prefix="/jarvis/api", tags=["sheets"])
 app.include_router(dialog_router, prefix="/jarvis/api", tags=["dialog"])
 app.include_router(system_router, prefix="/jarvis/api", tags=["system"])
+app.include_router(config_router, prefix="/jarvis/api", tags=["config"])
 
 # Include existing routers
 app.include_router(

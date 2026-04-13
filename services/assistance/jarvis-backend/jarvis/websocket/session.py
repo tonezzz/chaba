@@ -101,7 +101,7 @@ class WebSocketSession:
             "generation_config": {
                 "response_modalities": ["AUDIO", "TEXT"],
                 "speech_config": {
-                    "voice_config": {"prebuilt_voice_id": "Puck"},
+                    "voice": "Puck",
                 },
                 "temperature": 0.7,
             },
