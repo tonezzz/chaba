@@ -953,17 +953,37 @@ class WebSocketManager:
 
             content = getattr(response, "server_content", None)
             if not content:
-                logger.debug("Live response #%s has no server_content, skipping", response_count)
+                # Check for other top-level response attributes
+                resp_attrs = [a for a in dir(response) if not a.startswith("_")]
+                logger.info("Live response #%s has no server_content, attrs=%s", response_count, resp_attrs)
                 continue
 
-            # Debug: log available content attributes when output_transcription is present (model is responding)
+            # Debug: always log content details for first few responses and periodically
             try:
-                out_tr = getattr(content, "output_transcription", None)
-                if out_tr and getattr(out_tr, "text", None):
-                    attrs = [a for a in dir(content) if not a.startswith("_") and not callable(getattr(content, a, None))]
-                    logger.info("Live content attributes when responding: %s", attrs)
-            except Exception:
-                pass
+                model_turn = getattr(content, "model_turn", None)
+                mt_parts = getattr(model_turn, "parts", None) if model_turn else None
+                mt_parts_count = len(mt_parts) if mt_parts else 0
+                mt_parts_types = []
+                if mt_parts:
+                    for p in mt_parts:
+                        if getattr(p, "text", None):
+                            mt_parts_types.append(f"text({len(p.text)})")
+                        elif getattr(p, "inline_data", None):
+                            idata = p.inline_data
+                            dlen = len(getattr(idata, "data", b"") or b"") if idata else 0
+                            mt_parts_types.append(f"inline_data(mime={getattr(idata, 'mime_type', '?')},len={dlen})")
+                        else:
+                            mt_parts_types.append(f"other({[a for a in dir(p) if not a.startswith('_')][:5]})")
+                turn_complete = getattr(content, "turn_complete", None)
+                interrupted = getattr(content, "interrupted", None)
+                if response_count <= 5 or response_count % 10 == 0 or mt_parts_count > 0 or turn_complete or interrupted:
+                    logger.info(
+                        "Live content #%s model_turn=%s parts=%s part_types=%s turn_complete=%s interrupted=%s",
+                        response_count, model_turn is not None, mt_parts_count, mt_parts_types,
+                        turn_complete, interrupted,
+                    )
+            except Exception as dbg_err:
+                logger.warning("Live content debug error: %s", dbg_err)
 
             # Transcripts
             in_tr = getattr(content, "input_transcription", None)
