@@ -2943,6 +2943,15 @@ async function start() {
 
   app.get('/mcp/sse', async (req, res) => {
     try {
+      // Set SSE headers required for streaming
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering if present
+      
+      // Ensure response is flushable
+      res.flushHeaders();
+      
       const server = createMcpServer(); // New server instance per connection
       const transport = new SSEServerTransport('/mcp/message', res);
 
@@ -2959,7 +2968,9 @@ async function start() {
       console.error(`mcp-wiki: MCP SSE client ${transport.sessionId} connected`);
     } catch (err) {
       console.error('mcp-wiki: MCP SSE connection failed:', err.message);
-      res.status(500).end();
+      if (!res.headersSent) {
+        res.status(500).end();
+      }
     }
   });
 
