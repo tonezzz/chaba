@@ -2539,12 +2539,26 @@ app.post('/update', async (req, res) => {
   }
 });
 
-// Body parsers for API endpoints
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// MCP HTTP SSE transport endpoint (defined BEFORE body parsers)
+// This ensures body parsing doesn't interfere with the SSE stream
+let mcpTransports;
 
 // Re-apply auth middleware after body parsers (order matters)
 app.use(requireAuth);
+
+// Body parsers for API endpoints (skip /mcp/message)
+app.use((req, res, next) => {
+  if (req.path === '/mcp/message') {
+    return next();
+  }
+  express.json()(req, res, next);
+});
+app.use((req, res, next) => {
+  if (req.path === '/mcp/message') {
+    return next();
+  }
+  express.urlencoded({ extended: true })(req, res, next);
+});
 
 // API Endpoints (JSON)
 app.get('/api/articles', async (req, res) => {
@@ -2937,9 +2951,8 @@ async function start() {
   // Initialize database (SQLite or PostgreSQL)
   await initDatabase();
 
-  // MCP HTTP SSE transport endpoint
-  // Windsurf and other MCP clients can connect via http://host:3008/mcp/sse
-  const mcpTransports = new Map(); // Store transports by session ID
+  // Initialize MCP transports map
+  mcpTransports = new Map(); // Store transports by session ID
 
   app.get('/mcp/sse', async (req, res) => {
     try {
@@ -2969,14 +2982,8 @@ async function start() {
     }
   });
 
-  // MCP message endpoint - disable body parsing and pass directly to transport
-  app.post('/mcp/message',
-    (req, res, next) => {
-      // Disable body parsing for this route
-      req.headers['content-type'] = req.headers['content-type'] || 'application/json';
-      next();
-    },
-    async (req, res) => {
+  // MCP message endpoint - body parsing is disabled in global middleware
+  app.post('/mcp/message', async (req, res) => {
       const sessionId = req.query.sessionId;
       const transport = mcpTransports.get(sessionId);
 
