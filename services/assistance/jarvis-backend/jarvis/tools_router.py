@@ -141,8 +141,8 @@ async def handle_mcp_tool_call(session_id: Optional[str], tool_name: str, args: 
                     "payload": payload,
                 }
             )
-        except Exception:
-            return
+        except Exception as e:
+            logger.warning(f"Failed to emit pending awaiting user event: {e}")
 
     if tool_name in {"memo_update_queue", "system_memo_update_queue"}:
         if not session_id:

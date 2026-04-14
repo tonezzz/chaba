@@ -223,8 +223,8 @@ async def _gemini_sidecar_stt_probe(payload: dict[str, Any] | None) -> dict[str,
     if chosen:
         try:
             sidecar_stt_set_working_model(chosen)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to set sidecar STT working model: {e}")
 
     return {
         "ok": any(a.get("ok") for a in attempts),

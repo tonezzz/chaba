@@ -12,6 +12,7 @@ JARVIS_MEMORY_CACHE_TTL_SECONDS = int(os.getenv("JARVIS_MEMORY_CACHE_TTL_SECONDS
 JARVIS_KNOWLEDGE_CACHE_TTL_SECONDS = int(os.getenv("JARVIS_KNOWLEDGE_CACHE_TTL_SECONDS", "120"))
 JARVIS_GEMS_DRAFT_TTL_SECONDS = int(os.getenv("JARVIS_GEMS_DRAFT_TTL_SECONDS", "3600"))
 JARVIS_GEMS_CACHE_TTL_SECONDS = int(os.getenv("JARVIS_GEMS_CACHE_TTL_SECONDS", "120"))
+JARVIS_GEMS_DRAFT_MAX_ENTRIES = int(os.getenv("JARVIS_GEMS_DRAFT_MAX_ENTRIES", "1000"))  # Prevent unbounded growth
 
 
 # In-memory caches (these would be Redis in production)
@@ -146,8 +147,23 @@ class MemoryCache:
     
     @staticmethod
     def set_gems_draft(draft_id: str, draft_data: Dict[str, Any]) -> None:
-        """Set gems draft"""
+        """Set gems draft with LRU eviction if over max entries"""
         try:
+            # Enforce max entries limit with LRU eviction
+            max_entries = JARVIS_GEMS_DRAFT_MAX_ENTRIES
+            if len(_GEMS_DRAFTS) >= max_entries:
+                # Find and remove oldest entry
+                oldest_key = None
+                oldest_time = float('inf')
+                for key, draft in _GEMS_DRAFTS.items():
+                    updated = int(draft.get("updated_at") or 0)
+                    if updated < oldest_time:
+                        oldest_time = updated
+                        oldest_key = key
+                if oldest_key:
+                    del _GEMS_DRAFTS[oldest_key]
+                    logger.info(f"Evicted oldest gems draft: {oldest_key}")
+            
             draft_data["updated_at"] = int(time.time())
             _GEMS_DRAFTS[draft_id] = draft_data
         except Exception as e:

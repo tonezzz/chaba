@@ -264,6 +264,7 @@ JARVIS_GEMS_CACHE_TTL_SECONDS = int(os.getenv("JARVIS_GEMS_CACHE_TTL_SECONDS", "
 JARVIS_RECENT_DIALOG_TTL_HOURS = int(os.getenv("JARVIS_RECENT_DIALOG_TTL_HOURS", "24"))
 JARVIS_RECENT_DIALOG_MAX_TURNS = int(os.getenv("JARVIS_RECENT_DIALOG_MAX_TURNS", "200"))
 JARVIS_RECENT_DIALOG_MAX_TOKENS = int(os.getenv("JARVIS_RECENT_DIALOG_MAX_TOKENS", "8000"))
+JARVIS_WS_RECEIVE_TIMEOUT_SECONDS = float(os.getenv("JARVIS_WS_RECEIVE_TIMEOUT_SECONDS", "30.0"))
 
 try:
     from google import genai
@@ -554,10 +555,12 @@ class WebSocketManager:
     def __init__(self):
         self.active_session: Optional[WebSocketSession] = None
         self.active_session_id: Optional[str] = None
+        self._lock = asyncio.Lock()  # Protects concurrent access to session state
         
     async def handle_connection(self, ws: WebSocket) -> None:
         """Handle new WebSocket connection with single-session constraint"""
         session = WebSocketSession(ws)
+        user_id = "unknown"  # Initialize early for finally block visibility
         
         try:
             # Accept early so clients connect reliably even if Gemini initialization fails.
@@ -568,18 +571,19 @@ class WebSocketManager:
             # Extract user identifier from session or client parameters
             user_id = self._extract_user_id(session)
             
-            logger.info(f"Connection attempt for user {user_id}, current active session: {self.active_session_id}")
-            
-            # If there's an existing session for this user, disconnect it
-            if self.active_session and self.active_session_id == user_id:
-                logger.info(f"Disconnecting existing session for user {user_id}")
-                await self._disconnect_existing_session()
-            else:
-                logger.info(f"No existing session for user {user_id} or different user")
-            
-            # Set this as the active session
-            self.active_session = session
-            self.active_session_id = user_id
+            async with self._lock:
+                logger.info(f"Connection attempt for user {user_id}, current active session: {self.active_session_id}")
+                
+                # If there's an existing session for this user, disconnect it
+                if self.active_session and self.active_session_id == user_id:
+                    logger.info(f"Disconnecting existing session for user {user_id}")
+                    await self._disconnect_existing_session()
+                else:
+                    logger.info(f"No existing session for user {user_id} or different user")
+                
+                # Set this as the active session
+                self.active_session = session
+                self.active_session_id = user_id
             
             logger.info(f"New session established for user {user_id}: {session.session_id}")
             
@@ -590,11 +594,12 @@ class WebSocketManager:
             logger.error(f"WebSocket session error: {e}")
         finally:
             await session.close()
-            # Clear active session if this was the active one
-            if self.active_session and self.active_session.session_id == session.session_id:
-                self.active_session = None
-                self.active_session_id = None
-                logger.info(f"Session cleared for user: {user_id}")
+            # Clear active session if this was the active one (under lock)
+            async with self._lock:
+                if self.active_session and self.active_session.session_id == session.session_id:
+                    self.active_session = None
+                    self.active_session_id = None
+                    logger.info(f"Session cleared for user: {user_id}")
     
     def _extract_user_id(self, session: WebSocketSession) -> str:
         """Extract user identifier from session parameters"""
@@ -1294,7 +1299,7 @@ class WebSocketManager:
             # Handle messages with intelligent responses
             while True:
                 try:
-                    data = await asyncio.wait_for(session.ws.receive_text(), timeout=30.0)
+                    data = await asyncio.wait_for(session.ws.receive_text(), timeout=JARVIS_WS_RECEIVE_TIMEOUT_SECONDS)
                     message = json.loads(data)
                     
                     # Handle audio input for voice
@@ -1306,8 +1311,8 @@ class WebSocketManager:
                                 transcriber.ingest_pcm16(pcm)
                                 transcriber.kick()
                                 logger.info("Smart fallback: Audio ingested for STT pcm_bytes=%s", str(len(pcm)))
-                            except Exception:
-                                pass
+                            except Exception as e:
+                                logger.warning(f"Smart fallback: Failed to ingest audio for STT: {e}")
                         continue
                     
                     # Handle audio stream end - flush STT
@@ -1322,7 +1327,8 @@ class WebSocketManager:
                                     message = {"type": "text", "text": final_text}
                                 else:
                                     continue
-                            except Exception:
+                            except Exception as e:
+                                logger.warning(f"Smart fallback: Failed to flush STT transcriber: {e}")
                                 continue
                         else:
                             continue
@@ -1440,8 +1446,8 @@ class WebSocketManager:
                 try:
                     await transcriber.stop()
                     logger.info("Smart fallback: Sidecar STT stopped")
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(f"Smart fallback: Failed to stop sidecar STT transcriber: {e}")
 
     async def _handle_voice_fallback_mode(self, session: WebSocketSession) -> None:
         """Voice fallback mode: WS audio -> sidecar STT -> Gemini generateContent -> Google TTS audio."""
@@ -1495,21 +1501,22 @@ class WebSocketManager:
                         continue
                     try:
                         pcm16 = base64.b64decode(str(b64))
-                    except Exception:
+                    except Exception as e:
+                        logger.warning(f"Voice fallback: Failed to decode audio: {e}")
                         continue
                     try:
                         transcriber.ingest_pcm16(pcm16)
                         transcriber.kick()
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.warning(f"Voice fallback: Failed to ingest audio: {e}")
                     continue
 
                 if mtype == "audio_stream_end":
                     logger.info("Voice fallback audio_stream_end")
                     try:
                         await transcriber.flush_and_reset()
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.warning(f"Voice fallback: Failed to flush transcriber: {e}")
                     utterance = transcriber.consume_last_final_transcript()
                     if not utterance:
                         logger.info("Voice fallback: no final transcript after flush")
@@ -1522,7 +1529,8 @@ class WebSocketManager:
                             api_key,
                             previous_interaction_id,
                         )
-                    except Exception:
+                    except Exception as e:
+                        logger.warning(f"Voice fallback: Failed to get Gemini response: {e}")
                         response_text = "I'm having trouble responding right now. Please try again."
 
                     await session.send_json(
@@ -1577,8 +1585,8 @@ class WebSocketManager:
             if transcriber is not None:
                 try:
                     await transcriber.stop()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(f"Voice fallback: Failed to stop transcriber: {e}")
     
     async def _get_gemini_response(
         self,
@@ -1668,7 +1676,7 @@ class WebSocketManager:
             while True:
                 try:
                     # Add timeout to prevent hanging
-                    data = await asyncio.wait_for(session.ws.receive_text(), timeout=30.0)
+                    data = await asyncio.wait_for(session.ws.receive_text(), timeout=JARVIS_WS_RECEIVE_TIMEOUT_SECONDS)
                     logger.info(f"Received WebSocket message: {data}")
                     
                     try:
@@ -1696,7 +1704,7 @@ class WebSocketManager:
                         })
                         
                 except asyncio.TimeoutError:
-                    logger.info("No message received for 30 seconds, sending ping")
+                    logger.info(f"No message received for {JARVIS_WS_RECEIVE_TIMEOUT_SECONDS}s, sending ping")
                     await session.send_json({
                         "type": "text",
                         "text": "Still here! Send me a message.",

@@ -97,7 +97,8 @@ async def logs_ui_append(req: dict[str, Any]) -> dict[str, Any]:
                     f.write(json.dumps(e, ensure_ascii=False))
                     f.write("\n")
                     appended += 1
-                except Exception:
+                except Exception as err:
+                    logger.warning(f"Failed to write log entry: {err}")
                     continue
 
         return {"ok": True, "path": path, "appended": appended}

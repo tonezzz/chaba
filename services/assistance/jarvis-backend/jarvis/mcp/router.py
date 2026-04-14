@@ -70,10 +70,20 @@ class MCPRouter:
             
             # Parse Server-Sent Events response
             content = response.text
+            if not content or not content.strip():
+                logger.error("MCP list_tools: Empty response from server")
+                raise HTTPException(status_code=502, detail="MCP server returned empty response")
+            
             for line in content.split('\n'):
                 if line.startswith('data: '):
                     try:
                         data = json.loads(line[6:])
+                        if not isinstance(data, dict):
+                            logger.warning(f"MCP list_tools: Invalid data format (not dict): {type(data)}")
+                            continue
+                        if data.get("error"):
+                            logger.error(f"MCP list_tools: Server error: {data.get('error')}")
+                            raise HTTPException(status_code=502, detail=f"MCP server error: {data.get('error')}")
                         if data.get("result"):
                             # Now list tools
                             tools_payload = {
@@ -91,12 +101,26 @@ class MCPRouter:
                             tools_response.raise_for_status()
                             
                             tools_content = tools_response.text
+                            if not tools_content or not tools_content.strip():
+                                logger.error("MCP list_tools: Empty tools response")
+                                raise HTTPException(status_code=502, detail="MCP server returned empty tools response")
+                            
                             for tools_line in tools_content.split('\n'):
                                 if tools_line.startswith('data: '):
                                     try:
                                         tools_data = json.loads(tools_line[6:])
+                                        if not isinstance(tools_data, dict):
+                                            logger.warning(f"MCP list_tools: Invalid tools data format: {type(tools_data)}")
+                                            continue
+                                        if tools_data.get("error"):
+                                            logger.error(f"MCP list_tools: Server error in tools response: {tools_data.get('error')}")
+                                            raise HTTPException(status_code=502, detail=f"MCP tools error: {tools_data.get('error')}")
                                         if tools_data.get("result"):
-                                            return tools_data["result"].get("tools", [])
+                                            tools_list = tools_data["result"].get("tools", [])
+                                            if not isinstance(tools_list, list):
+                                                logger.warning(f"MCP list_tools: tools is not a list: {type(tools_list)}")
+                                                return []
+                                            return tools_list
                                     except json.JSONDecodeError:
                                         continue
                     except json.JSONDecodeError:
@@ -207,14 +231,27 @@ class MCPRouter:
             
             # Parse Server-Sent Events response
             content = call_response.text
+            if not content or not content.strip():
+                logger.error(f"MCP call_tool {tool_name}: Empty response from server")
+                raise HTTPException(status_code=502, detail="MCP server returned empty response")
+            
             for line in content.split('\n'):
                 if line.startswith('data: '):
                     try:
                         data = json.loads(line[6:])
+                        if not isinstance(data, dict):
+                            logger.warning(f"MCP call_tool {tool_name}: Invalid data format: {type(data)}")
+                            continue
                         if data.get("result"):
-                            return data["result"]
+                            result = data["result"]
+                            if not isinstance(result, dict):
+                                logger.warning(f"MCP call_tool {tool_name}: result is not dict: {type(result)}")
+                                return {"result": result}
+                            return result
                         elif data.get("error"):
-                            return {"error": data["error"]}
+                            error_data = data["error"]
+                            logger.error(f"MCP call_tool {tool_name}: Server error: {error_data}")
+                            return {"error": error_data}
                     except json.JSONDecodeError:
                         continue
             
