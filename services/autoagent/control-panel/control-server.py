@@ -527,7 +527,7 @@ async def handle_runner(request):
             const outputDiv = document.getElementById('output');
             const text = outputDiv.innerText || outputDiv.textContent;
             
-            if (!text || text === 'Loading... (if this doesn\'t change, JavaScript may be disabled)' || 
+            if (!text || text === "Loading... (if this doesn't change, JavaScript may be disabled)" || 
                 text.includes('Ready! Click a preset')) {
                 alert('No output to copy');
                 return;

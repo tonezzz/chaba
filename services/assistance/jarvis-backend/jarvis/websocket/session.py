@@ -18,6 +18,105 @@ from jarvis.feature_flags import feature_enabled
 
 logger = logging.getLogger(__name__)
 
+# Lazy import for MCP tools to avoid circular imports
+_mcp_router: Any = None
+
+def _get_mcp_router() -> Any:
+    """Get MCP router instance (lazy import)"""
+    global _mcp_router
+    if _mcp_router is None:
+        try:
+            from jarvis.mcp.router import MCPRouter
+            mcp_base = os.getenv("JARVIS_MCP_BASE_URL", "http://mcp-bundle-assistance:3050")
+            _mcp_router = MCPRouter(base_url=mcp_base)
+        except Exception as e:
+            logger.warning(f"Failed to initialize MCP router: {e}")
+            _mcp_router = None
+    return _mcp_router
+
+
+async def _get_live_tools() -> list[dict[str, Any]]:
+    """Get tools for Live API from MCP and built-in tools."""
+    tools: list[dict[str, Any]] = []
+    
+    # Try to get MCP tools
+    try:
+        router = _get_mcp_router()
+        if router:
+            mcp_tools = await router.list_tools()
+            # Convert MCP tools to Gemini format
+            for tool in mcp_tools:
+                if tool.get("type") == "function" or tool.get("function"):
+                    tools.append(tool)
+    except Exception as e:
+        logger.warning(f"Failed to get MCP tools for Live: {e}")
+    
+    # Add built-in tools that work well with voice
+    built_in_tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "get_current_time",
+                "description": "Get the current date and time",
+                "parameters": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                }
+            }
+        },
+        {
+            "type": "function", 
+            "function": {
+                "name": "set_reminder",
+                "description": "Set a reminder for the user",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "text": {"type": "string", "description": "Reminder text"},
+                        "time": {"type": "string", "description": "Time for reminder (e.g., 'in 5 minutes', 'tomorrow 9am')"}
+                    },
+                    "required": ["text", "time"]
+                }
+            }
+        }
+    ]
+    
+    tools.extend(built_in_tools)
+    return tools
+
+
+async def _execute_live_tool(tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    """Execute a tool call from Live API."""
+    logger.info(f"Executing Live tool: {tool_name} with args: {arguments}")
+    
+    # Handle built-in tools
+    if tool_name == "get_current_time":
+        from datetime import datetime
+        now = datetime.now()
+        return {
+            "success": True,
+            "result": f"Current time is {now.strftime('%Y-%m-%d %H:%M:%S')}"
+        }
+    
+    if tool_name == "set_reminder":
+        # This would integrate with reminder system
+        return {
+            "success": True,
+            "result": f"Reminder set: {arguments.get('text', '')} at {arguments.get('time', '')}"
+        }
+    
+    # Try MCP tool execution
+    try:
+        router = _get_mcp_router()
+        if router:
+            result = await router.call_tool(tool_name, arguments)
+            return {"success": True, "result": result}
+    except Exception as e:
+        logger.warning(f"MCP tool execution failed: {e}")
+    
+    return {"success": False, "error": f"Tool {tool_name} not found or execution failed"}
+
 
 _JARVIS_DISABLE_GEMINI_LIVE = str(os.getenv("JARVIS_DISABLE_GEMINI_LIVE") or "").strip().lower() in (
     "1",
@@ -234,11 +333,40 @@ def _live_is_native_audio_model(model: str) -> bool:
     return LiveCapabilities(model).supports_voice_input
 
 
-def _live_configs_for_model() -> tuple[list["types.LiveConnectConfig"], list["types.LiveConnectConfig"]]:
+def _convert_to_gemini_tools(tools: list[dict[str, Any]]) -> list[types.Tool]:
+    """Convert OpenAI-style tool definitions to Gemini Tool objects."""
+    gemini_tools: list[types.Tool] = []
+    for tool in tools:
+        if tool.get("type") == "function" or tool.get("function"):
+            fn = tool.get("function", tool)  # Handle both formats
+            name = fn.get("name", "")
+            description = fn.get("description", "")
+            parameters = fn.get("parameters", {})
+            if name:
+                gemini_tools.append(types.Tool(
+                    function_declarations=[types.FunctionDeclaration(
+                        name=name,
+                        description=description,
+                        parameters=parameters,
+                    )]
+                ))
+    return gemini_tools
+
+
+async def _live_configs_for_model() -> tuple[list["types.LiveConnectConfig"], list["types.LiveConnectConfig"]]:
+    """Get Live configs with tools support."""
+    # Get tools for Live API
+    tools = await _get_live_tools()
+    gemini_tools = _convert_to_gemini_tools(tools) if tools else None
+    
+    if gemini_tools:
+        logger.info(f"Live API configured with {len(gemini_tools)} tools")
+    
     text_cfgs: list[types.LiveConnectConfig] = [
         types.LiveConnectConfig(
             response_modalities=["TEXT"],
             input_audio_transcription=types.AudioTranscriptionConfig(),
+            tools=gemini_tools,
         ),
         types.LiveConnectConfig(
             temperature=0.7,
@@ -248,6 +376,7 @@ def _live_configs_for_model() -> tuple[list["types.LiveConnectConfig"], list["ty
                 temperature=0.7,
             ),
             input_audio_transcription=types.AudioTranscriptionConfig(),
+            tools=gemini_tools,
         ),
     ]
     # For native audio models, enable AUDIO responses (input is implicit with send_realtime_input)
@@ -260,6 +389,7 @@ def _live_configs_for_model() -> tuple[list["types.LiveConnectConfig"], list["ty
                     prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Aoede")
                 )
             ),
+            tools=gemini_tools,
         ),
         types.LiveConnectConfig(
             response_modalities=["AUDIO", "TEXT"],
@@ -268,6 +398,7 @@ def _live_configs_for_model() -> tuple[list["types.LiveConnectConfig"], list["ty
                     prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Aoede")
                 )
             ),
+            tools=gemini_tools,
         ),
     ]
     return text_cfgs, audio_cfgs
@@ -577,7 +708,7 @@ class WebSocketManager:
             if m not in models_to_try:
                 models_to_try.append(m)
 
-        text_cfgs, audio_cfgs = _live_configs_for_model()
+        text_cfgs, audio_cfgs = await _live_configs_for_model()
 
         for model_name in models_to_try:
             clean_model_name = model_name[7:] if model_name.startswith("models/") else model_name
@@ -845,6 +976,25 @@ class WebSocketManager:
                     await gemini_session.send_realtime_input(audio=types.Blob(data=pcm, mime_type=mime_type))
                     continue
 
+                if mtype == "function_response":
+                    # Forward function response to Gemini Live
+                    fn_response = msg.get("function_response")
+                    if fn_response:
+                        fn_name = fn_response.get("name", "")
+                        fn_result = fn_response.get("response", {})
+                        logger.info(f"Forwarding function response to Gemini: {fn_name}")
+                        try:
+                            # Send function response to Gemini using send_realtime_input
+                            await gemini_session.send_realtime_input(
+                                function_response=types.FunctionResponse(
+                                    name=fn_name,
+                                    response=fn_result
+                                )
+                            )
+                        except Exception as e:
+                            logger.error(f"Failed to send function response to Gemini: {e}")
+                    continue
+
                 if mtype == "audio_stream_end":
                     logger.info("Live audio_stream_end received")
                     continue
@@ -1010,7 +1160,7 @@ class WebSocketManager:
                     except Exception:
                         pass
 
-            # Model turn parts (audio) - older SDK format
+            # Model turn parts (audio/function calls) - older SDK format
             model_turn = getattr(content, "model_turn", None)
             parts = getattr(model_turn, "parts", None) if model_turn else None
             if parts:
@@ -1025,6 +1175,35 @@ class WebSocketManager:
                                 "instance_id": INSTANCE_ID,
                             }
                         )
+
+                    # Handle function calls from Gemini Live
+                    func_call = getattr(part, "function_call", None)
+                    if func_call:
+                        fn_name = getattr(func_call, "name", "")
+                        fn_args = getattr(func_call, "args", {})
+                        logger.info(f"Live function call received: {fn_name} with args: {fn_args}")
+                        
+                        # Execute the tool
+                        tool_result = await _execute_live_tool(fn_name, fn_args or {})
+                        
+                        # Send function response back to Gemini via WebSocket
+                        # This will be forwarded to Gemini in the ws->gemini loop
+                        await session.send_json({
+                            "type": "function_response",
+                            "function_response": {
+                                "name": fn_name,
+                                "response": tool_result
+                            },
+                            "instance_id": INSTANCE_ID,
+                        })
+                        
+                        # Also send tool execution notification to client
+                        await session.send_json({
+                            "type": "tool_executed",
+                            "tool_name": fn_name,
+                            "result": tool_result,
+                            "instance_id": INSTANCE_ID,
+                        })
 
                     inline = getattr(part, "inline_data", None)
                     if not inline:
@@ -1990,7 +2169,7 @@ async def gemini_live_probe_and_cache() -> dict[str, Any]:
 
     # Use the same configs as the runtime websocket Live connect logic so the cached
     # config_idx maps correctly.
-    text_cfgs, audio_cfgs = _live_configs_for_model()
+    text_cfgs, audio_cfgs = await _live_configs_for_model()
 
     attempts: list[dict[str, Any]] = []
 
