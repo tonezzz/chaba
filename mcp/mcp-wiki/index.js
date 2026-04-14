@@ -158,6 +158,17 @@ const SuggestTagsSchema = z.object({
   title: z.string().optional()
 });
 
+const SemanticSearchSchema = z.object({
+  query: z.string(),
+  limit: z.number().optional().default(10)
+});
+
+const HybridSearchSchema = z.object({
+  query: z.string(),
+  limit: z.number().optional().default(10),
+  alpha: z.number().optional().default(0.5)
+});
+
 // Database helpers - support both SQLite and PostgreSQL
 async function searchArticles(query, limit) {
   if (USE_POSTGRES) {
@@ -248,13 +259,15 @@ async function semanticSearch(query, limit = 10, certainty = 0.7) {
 }
 
 // Hybrid search combining keyword and semantic
-async function hybridSearch(query, limit = 10) {
+async function hybridSearch(query, limit = 10, alpha = 0.5) {
   try {
     // Get keyword results
     const keywordResults = await searchArticles(query, limit);
     
-    // Get semantic results
-    const semanticResults = await semanticSearch(query, limit, 0.6);
+    // Get semantic results - adjust certainty based on alpha
+    // Higher alpha = higher certainty threshold for semantic results
+    const certainty = 0.6 + (alpha * 0.2);
+    const semanticResults = await semanticSearch(query, limit, certainty);
     
     // Merge and deduplicate
     const seen = new Set();
@@ -1102,36 +1115,51 @@ function createMcpServer() {
       },
       {
         name: 'wiki_delete',
-      description: 'Delete article by title. Use with caution.',
-      inputSchema: zodToJsonSchema(DeleteArticleSchema)
-    },
-    {
-      name: 'wiki_list',
-      description: 'List recent articles with pagination. Returns titles and update dates.',
-      inputSchema: zodToJsonSchema(ListArticlesSchema)
-    },
-    {
-      name: 'wiki_validate',
-      description: 'Validate content without saving. Checks spelling, markdown syntax, mermaid diagrams, code blocks, and links. Returns errors, warnings, and quality score.',
-      inputSchema: zodToJsonSchema(ValidateContentSchema)
-    },
-    {
-      name: 'wiki_explain',
-      description: 'Get detailed explanation of an article including: quality score, validation status, classification, word count, structure analysis, and suggested improvements. Use before editing to understand article state.',
-      inputSchema: zodToJsonSchema(ExplainArticleSchema)
-    },
-    {
-      name: 'wiki_enhance',
-      description: 'Trigger AI enhancement for an article (classify, summarize, suggest-links, validate). Returns enhancement results.',
-      inputSchema: zodToJsonSchema(EnhanceArticleSchema)
-    },
-    {
-      name: 'wiki_suggest_tags',
-      description: 'Get AI-suggested tags for content based on tech terms and content analysis.',
-      inputSchema: zodToJsonSchema(SuggestTagsSchema)
-    }
-  ]
-}));
+        description: 'Delete article by title. Use with caution.',
+        inputSchema: zodToJsonSchema(DeleteArticleSchema)
+      },
+      {
+        name: 'wiki_list',
+        description: 'List recent articles with pagination. Returns titles and update dates.',
+        inputSchema: zodToJsonSchema(ListArticlesSchema)
+      },
+      {
+        name: 'wiki_validate',
+        description: 'Validate content without saving. Checks spelling, markdown syntax, mermaid diagrams, code blocks, and links. Returns errors, warnings, and quality score.',
+        inputSchema: zodToJsonSchema(ValidateContentSchema)
+      },
+      {
+        name: 'wiki_explain',
+        description: 'Get detailed explanation of an article including: quality score, validation status, classification, word count, structure analysis, and suggested improvements. Use before editing to understand article state.',
+        inputSchema: zodToJsonSchema(ExplainArticleSchema)
+      },
+      {
+        name: 'wiki_enhance',
+        description: 'Trigger AI enhancement for an article (classify, summarize, suggest-links, validate). Returns enhancement results.',
+        inputSchema: zodToJsonSchema(EnhanceArticleSchema)
+      },
+      {
+        name: 'wiki_suggest_tags',
+        description: 'Get AI-suggested tags for content based on tech terms and content analysis.',
+        inputSchema: zodToJsonSchema(SuggestTagsSchema)
+      },
+      {
+        name: 'wiki_smart_research',
+        description: 'Smart article lookup using query analysis with semantic caching',
+        inputSchema: zodToJsonSchema(SearchArticlesSchema)
+      },
+      {
+        name: 'wiki_semantic_search',
+        description: 'Semantic search using vector embeddings (Weaviate). Finds articles by meaning, not just keywords.',
+        inputSchema: zodToJsonSchema(SemanticSearchSchema)
+      },
+      {
+        name: 'wiki_hybrid_search',
+        description: 'Hybrid search combining keyword and semantic search. Alpha 0=keyword, 1=semantic, 0.5=balanced.',
+        inputSchema: zodToJsonSchema(HybridSearchSchema)
+      }
+    ]
+  }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
@@ -1141,6 +1169,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'wiki_search': {
         const { query, limit } = SearchArticlesSchema.parse(args);
         const results = await searchArticles(query, limit);
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(results, null, 2) || 'No results found'
+          }]
+        };
+      }
+
+      case 'wiki_semantic_search': {
+        const { query, limit } = SemanticSearchSchema.parse(args);
+        const results = await semanticSearch(query, limit);
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(results, null, 2) || 'No results found'
+          }]
+        };
+      }
+
+      case 'wiki_hybrid_search': {
+        const { query, limit, alpha } = HybridSearchSchema.parse(args);
+        const results = await hybridSearch(query, limit, alpha);
         return {
           content: [{
             type: 'text',
