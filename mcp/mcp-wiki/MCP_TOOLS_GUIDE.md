@@ -5,6 +5,8 @@
 | Tool | Purpose | Use Case |
 |------|---------|----------|
 | `wiki_search` | Find existing articles | Check if topic exists before writing |
+| `wiki_semantic_search` | Semantic search by meaning | Find conceptually related articles |
+| `wiki_hybrid_search` | Combined keyword + semantic | Best of both search methods |
 | `wiki_get` | Read article content | Get full article with metadata |
 | `wiki_create` | Create new article | Save documentation from editor |
 | `wiki_update` | Edit existing article | Update outdated content |
@@ -39,6 +41,22 @@ Add to your Windsurf MCP settings:
 
 **Note:** `WIKI_HTTP_DISABLED=1` is required when using `docker exec` to prevent port conflicts with the already-running HTTP server in the container.
 
+### HTTP SSE Configuration (Preferred)
+
+For remote connections or when not using docker exec:
+
+```json
+{
+  "mcpServers": {
+    "wiki": {
+      "url": "http://idc1.surf-thailand.com:3008/mcp/sse"
+    }
+  }
+}
+```
+
+**No API key required** for SSE transport - auth is handled at the HTTP level.
+
 ## Example Workflows
 
 ### 1. Save Current File as Wiki Article
@@ -70,6 +88,33 @@ Add to your Windsurf MCP settings:
 → wiki_search (query: "deployment")
 → Shows: matching articles with snippets
 ```
+
+### 5. Semantic Search (Conceptual Matching)
+```
+"Find articles about container orchestration even if they don't use those exact words"
+→ wiki_semantic_search (query: "container orchestration", limit: 5)
+→ Finds: Docker, Kubernetes, containerization articles by meaning
+```
+
+### 6. Hybrid Search (Best Results)
+```
+"Search for deployment guides with both keyword and semantic matching"
+→ wiki_hybrid_search (query: "deployment", limit: 10, alpha: 0.5)
+→ Combines keyword matches with semantic similarity for best results
+```
+
+## Search Comparison
+
+| Method | Best For | Speed | Accuracy |
+|--------|----------|-------|----------|
+| `wiki_search` | Exact keyword matching | Fast | Good for known terms |
+| `wiki_semantic_search` | Conceptual queries | Medium | Finds related concepts |
+| `wiki_hybrid_search` | Balanced results | Medium | Best overall quality |
+
+**Alpha parameter (hybrid):**
+- `0.0` = Keyword only
+- `0.5` = Balanced (default)
+- `1.0` = Semantic only
 
 ## Tool Details
 
