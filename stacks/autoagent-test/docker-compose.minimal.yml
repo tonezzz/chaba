@@ -1,0 +1,79 @@
+version: "3.9"
+
+# Minimal Docker Compose for AutoAgent Testing
+# 
+# This is a lightweight version that:
+# - Does NOT require VPN connectivity to idc1
+# - Does NOT require PostgreSQL database
+# - Uses minimal mock/test environment
+# - Starts quickly for CI/testing
+#
+# Usage:
+#   docker-compose -f docker-compose.minimal.yml up -d --build
+#   docker-compose -f docker-compose.minimal.yml exec autoagent python /app/test-mocked.py
+#   ./test-minimal.sh
+
+services:
+  autoagent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: chaba/autoagent-test:local
+    container_name: autoagent-test-minimal
+    restart: "no"  # Don't restart on failure (faster CI feedback)
+    ports:
+      # Hardcoded ports to avoid conflicts with .env settings
+      - "127.0.0.1:8096:8080"    # HTTP port
+      - "127.0.0.1:8097:8056"    # GhostRoute port  
+      - "127.0.0.1:8098:8080"    # Control panel (duplicate of 8080 in container)
+    environment:
+      # Minimal model config (mock-friendly)
+      COMPLETION_MODEL: ${AUTOAGENT_MODEL:-openai/gpt-4o-mini}
+      DEBUG: "true"
+      API_BASE_URL: ${AUTOAGENT_API_BASE_URL:-https://openrouter.ai/api/v1}
+      FN_CALL: "fn_call"
+      
+      # Minimal API keys (tests use mocks)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-sk-or-test-key}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      XAI_API_KEY: ${XAI_API_KEY:-}
+      HUGGINGFACE_API_KEY: ${HUGGINGFACE_API_KEY:-}
+      
+      # Workspace Configuration
+      WORKSPACE_DIR: /workspace
+      DOCKER_WORKPLACE_NAME: autoagent-workspace
+      
+      # Skip PostgreSQL - use local SQLite for minimal tests
+      # (Tests should mock DB calls or use SQLite)
+      POSTGRES_HOST: ""
+      POSTGRES_PORT: ""
+      POSTGRES_DB: ""
+      POSTGRES_USER: ""
+      POSTGRES_PASSWORD: ""
+      DATABASE_URL: ""
+      
+    volumes:
+      - autoagent-workspace-minimal:/workspace
+      - ./entrypoint.sh:/entrypoint.sh:ro
+      - ./control-server.py:/app/control-server.py:ro
+      - ./test-mocked.py:/app/test-mocked.py:ro
+      - ./test-minimal.sh:/app/test-minimal.sh:ro
+    
+    working_dir: /app
+    stdin_open: true
+    tty: true
+    # No external networks needed for minimal tests
+    networks:
+      - default
+
+volumes:
+  autoagent-workspace-minimal:
+    driver: local
+
+networks:
+  default:
+    # Isolated network - no VPN required

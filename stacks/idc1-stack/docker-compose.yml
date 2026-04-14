@@ -1,0 +1,81 @@
+version: "3.9"
+
+services:
+  mcp0:
+    build:
+      context: ${MCP0_BUILD_CONTEXT:-../../mcp/mcp0}
+      dockerfile: Dockerfile
+    image: chaba/mcp0:local
+    container_name: idc1-mcp0
+    restart: unless-stopped
+    ports:
+      - "${MCP0_PORT:-8355}:8080"
+    environment:
+      - APP_NAME=${MCP0_APP_NAME:-idc1-mcp0}
+      - ADMIN_TOKEN=${MCP0_ADMIN_TOKEN:-}
+      - PROVIDERS=${MCP0_PROVIDERS:-}
+      - ALLOW_ORIGINS=${MCP0_ALLOW_ORIGINS:-}
+      - DEBUG=${MCP0_DEBUG:-false}
+    networks:
+      - idc1-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # MCP Docker - container management for idc1
+  mcp-docker:
+    build:
+      context: ${MCP_DOCKER_BUILD_CONTEXT:-../../mcp/mcp-docker}
+      dockerfile: Dockerfile
+    image: chaba/mcp-docker:local
+    container_name: idc1-mcp-docker
+    restart: unless-stopped
+    ports:
+      - "${MCP_DOCKER_PORT:-8340}:8080"
+    environment:
+      - PORT=8080
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${HOST_STACKS_DIR:-/home/chaba/chaba/stacks}:/stacks:ro
+    networks:
+      - idc1-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Existing services...
+  mcp-agents:
+    build:
+      context: ${MCP_AGENTS_BUILD_CONTEXT:-../../mcp/mcp-agents}
+      dockerfile: Dockerfile
+    image: chaba/mcp-agents:local
+    container_name: idc1-mcp-agents
+    restart: unless-stopped
+    ports:
+      - "${MCP_AGENTS_PORT:-8446}:8080"
+    environment:
+      - PORT=8080
+      - API_BASE=${AGENTS_API_BASE:-https://test.idc1.surf-thailand.com/agents/api}
+      - DEFAULT_USER=${AGENTS_DEFAULT_USER:-default}
+      - DEFAULT_LIMIT=${AGENTS_DEFAULT_LIMIT:-12}
+      - JSON_LIMIT=${AGENTS_JSON_LIMIT:-2mb}
+    volumes:
+      - ${MCP_AGENTS_DATA_DIR:-./data/mcp-agents}:/data
+    networks:
+      - idc1-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  idc1-network:
+    driver: bridge

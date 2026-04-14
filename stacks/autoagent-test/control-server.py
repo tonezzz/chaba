@@ -194,12 +194,58 @@ async def handle_control(request):
 
 
 async def handle_api_health(request):
-    """JSON health endpoint."""
+    """JSON health endpoint with comprehensive diagnostics."""
+    import sys
+    
+    # Check Python imports
+    imports_ok = {}
+    for module in ["autoagent", "constant", "loop_utils", "evaluation"]:
+        try:
+            __import__(module)
+            imports_ok[module] = True
+        except Exception as e:
+            imports_ok[module] = str(e)
+    
+    # Check CLI availability
+    cli_available = False
+    try:
+        result = subprocess.run(["which", "auto"], capture_output=True, text=True, timeout=5)
+        cli_available = result.returncode == 0
+    except:
+        pass
+    
+    # Check API keys
+    api_keys = {
+        "openai": bool(os.getenv("OPENAI_API_KEY")),
+        "anthropic": bool(os.getenv("ANTHROPIC_API_KEY")),
+        "gemini": bool(os.getenv("GEMINI_API_KEY")),
+        "openrouter": bool(os.getenv("OPENROUTER_API_KEY")),
+    }
+    any_key_configured = any(api_keys.values())
+    
+    # Get environment
+    env_info = {
+        "model": os.getenv("COMPLETION_MODEL", "default"),
+        "api_base": os.getenv("API_BASE_URL", ""),
+        "debug": os.getenv("DEBUG", "false").lower() == "true"
+    }
+    
+    # Check workspace
+    workspace_ok = WORKSPACE_DIR.exists() and os.access(WORKSPACE_DIR, os.W_OK)
+    
     return web.json_response({
-        "status": "healthy",
+        "status": "healthy" if all(imports_ok.values()) and cli_available else "degraded",
         "container": "autoagent-test",
         "workspace": str(WORKSPACE_DIR),
-        "discovery_available": get_discovery_info() is not None
+        "workspace_writable": workspace_ok,
+        "imports": imports_ok,
+        "cli_available": cli_available,
+        "api_keys_configured": api_keys,
+        "any_api_key": any_key_configured,
+        "environment": env_info,
+        "discovery_available": get_discovery_info() is not None,
+        "python_version": sys.version,
+        "timestamp": asyncio.get_event_loop().time()
     })
 
 

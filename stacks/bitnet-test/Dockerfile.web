@@ -1,0 +1,14 @@
+# BitNet with simple web UI
+FROM bitnet:fixed
+
+# Install Flask
+RUN pip install flask
+
+# Copy web server
+COPY web_server.py /workspace/web_server.py
+
+# Expose port
+EXPOSE 8080
+
+# Start web server
+CMD ["python", "web_server.py"]

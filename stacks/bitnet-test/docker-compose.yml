@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  bitnet-cpu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+    image: bitnet:test
+    container_name: bitnet-cpu-test
+    environment:
+      - CUDA_VISIBLE_DEVICES=""  # Disable GPU for CPU-only test
+    command: >
+      bash -c "
+        python run_inference.py
+        -m models/bitnet-b1.58-2B-4T/ggml-model-i2_s.gguf
+        -p 'Explain quantum computing'
+        -n 100 -t 4 -temp 0.8
+      "
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+
+  bitnet-gpu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+    image: bitnet:test
+    container_name: bitnet-gpu-test
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    command: >
+      bash -c "
+        cd gpu &&
+        python generate.py ./checkpoints/
+        --prompt 'Explain quantum computing'
+        --max_tokens 100 --temperature 0.8
+      "
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  bitnet-compare:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+    image: bitnet:test
+    container_name: bitnet-compare
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    volumes:
+      - ./results:/workspace/results
+    command: python compare.py
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

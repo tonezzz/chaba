@@ -1,0 +1,51 @@
+# BitNet GPU Test for PC1
+# NOTE: GPU kernels only work with BitNet-b1.58-2B-4T model which requires ARM64
+# This will build but may fail on x86_64 systems during model setup
+
+FROM nvidia/cuda:12.2.0-devel-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    python3 python3-pip python3-venv \
+    git wget curl \
+    clang-15 cmake build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Use clang-15
+RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-15 100 && \
+    update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-15 100
+
+WORKDIR /workspace
+
+# Clone BitNet
+RUN git clone --recursive --depth 1 https://github.com/microsoft/BitNet.git .
+
+# Setup Python environment
+RUN python3 -m venv /workspace/.venv
+ENV PATH="/workspace/.venv/bin:$PATH"
+RUN pip install --upgrade pip
+
+# Install base requirements
+RUN pip install -r requirements.txt
+
+# Setup GPU environment
+WORKDIR /workspace/gpu
+RUN pip install -r requirements.txt
+
+# Build GPU kernels
+RUN cd bitnet_kernels && bash compile.sh && cd ..
+
+# Download and convert 2B model (ARM64 only - will fail on x86_64)
+# Uncomment if running on ARM64 hardware:
+# RUN huggingface-cli download microsoft/bitnet-b1.58-2B-4T-bf16 --local-dir ./checkpoints/bitnet-b1.58-2B-4T-bf16
+# RUN python ./convert_safetensors.py --safetensors_file ./checkpoints/bitnet-b1.58-2B-4T-bf16/model.safetensors --output checkpoints/model_state.pt --model_name 2B
+# RUN python ./convert_checkpoint.py --input ./checkpoints/model_state.pt
+# RUN rm ./checkpoints/model_state.pt
+
+WORKDIR /workspace
+
+# Default shell for debugging
+CMD ["/bin/bash"]

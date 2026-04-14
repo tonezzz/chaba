@@ -127,6 +127,66 @@ docker-compose logs -f autoagent
 docker exec -it autoagent-test bash
 ```
 
+## Minimal Testing (No External Dependencies)
+
+For fast CI/testing without VPN or API keys:
+
+### Quick Smoke Test
+
+```bash
+# Fast container build + basic checks
+./test-minimal.sh
+```
+
+This tests:
+- Container builds and starts
+- Python imports (`autoagent`, `constant`, `loop_utils`, `evaluation`)
+- CLI availability (`auto --help`)
+- Control server health endpoint
+
+### Mocked Unit Tests
+
+```bash
+# Run inside container (no API calls)
+docker exec autoagent-test python /app/test-mocked.py
+```
+
+Tests include:
+- GhostRoute ranking algorithm
+- Environment config parsing
+- Command validation
+- Model/provider inference logic
+- Control server paths
+
+### Minimal Compose (No VPN/Postgres)
+
+```bash
+# Start lightweight version
+docker-compose -f docker-compose.minimal.yml up -d --build
+
+# Run mocked tests
+docker-compose -f docker-compose.minimal.yml exec autoagent python /app/test-mocked.py
+
+# Cleanup
+docker-compose -f docker-compose.minimal.yml down -v
+```
+
+### Health Endpoint
+
+```bash
+# Full stack
+curl http://localhost:8059/api/health
+
+# Minimal stack (different ports)
+curl http://localhost:8096/api/health
+```
+
+Returns JSON with:
+- Import status for all modules
+- CLI availability
+- API key configuration
+- Workspace writable status
+
 ## Next Steps
 
 1. Configure API keys and test basic functionality
