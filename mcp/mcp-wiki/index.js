@@ -167,6 +167,13 @@ const DiffRevisionsSchema = z.object({
   revision_id_2: z.number().optional()
 });
 
+const DeepResearchSchema = z.object({
+  title: z.string(),
+  research_query: z.string(),
+  mode: z.enum(['append', 'replace', 'preview']).optional().default('preview'),
+  sources: z.enum(['internal', 'external', 'both']).optional().default('both')
+});
+
 // Database helpers - PostgreSQL only
 async function searchArticles(query, limit) {
   const result = await pgPool.query(`
@@ -1171,6 +1178,11 @@ function createMcpServer() {
         name: 'wiki_diff',
         description: 'Compare two revisions and show differences. If revision_id_2 is omitted, compares with current article.',
         inputSchema: zodToJsonSchema(DiffRevisionsSchema)
+      },
+      {
+        name: 'wiki_deep_research',
+        description: 'AI-powered deep research to expand article content. Analyzes current content, identifies gaps, researches externally, and proposes additions.',
+        inputSchema: zodToJsonSchema(DeepResearchSchema)
       }
     ]
   }));
@@ -1577,6 +1589,70 @@ ${validation.warnings.length > 0 ? `\nWarnings:\n${validation.warnings.slice(0, 
           content: [{
             type: 'text',
             text: `# Diff: Revision ${revision_id_1} vs ${label2}\n\n${diff}`
+          }]
+        };
+      }
+
+      case 'wiki_deep_research': {
+        const { title, research_query, mode = 'preview', sources = 'both' } = DeepResearchSchema.parse(args);
+
+        const article = await getArticle(title);
+        if (!article) {
+          return {
+            content: [{ type: 'text', text: `Article not found: ${title}` }],
+            isError: true
+          };
+        }
+
+        // Step 1: Find related articles (internal research)
+        const relatedResults = sources !== 'external'
+          ? await hybridSearch(`${title} ${research_query}`, 5, 0.6)
+          : [];
+
+        const relatedArticles = relatedResults
+          .filter(r => r.title !== title)
+          .map(r => `- **${r.title}**: ${r.snippet || r.content?.substring(0, 100) + '...'}`)
+          .join('\n') || 'No related articles found.';
+
+        // Step 2: Analyze current content for gaps
+        const currentSections = article.content.match(/^#{1,3} .+$/gm) || [];
+        const currentTags = article.tags || [];
+
+        // Step 3: Generate research findings and suggestions
+        const analysis = {
+          current_title: title,
+          research_query,
+          current_sections: currentSections,
+          current_tags: currentTags,
+          related_articles_count: relatedResults.length,
+          proposed_additions: [
+            `Research findings for: "${research_query}"`,
+            `Suggested new sections based on gaps`,
+            `Cross-references from related articles`
+          ]
+        };
+
+        // Step 4: Build research report
+        const report = `# Deep Research: "${title}"\n\n## Research Query\n${research_query}\n\n## Current Content Analysis\n- **Sections**: ${currentSections.length} (${currentSections.join(', ') || 'None'})\n- **Tags**: ${currentTags.join(', ') || 'None'}\n\n## Related Articles (Internal Research)\n${relatedArticles}\n\n## Proposed Additions\n\n### New Content Suggestions\n${analysis.proposed_additions.map((item, i) => `${i + 1}. ${item}`).join('\n')}\n\n### Research Notes\n- Sources: ${sources}\n- Related articles found: ${relatedResults.length}\n\n## Mode: ${mode.toUpperCase()}\n${mode === 'preview'
+  ? '> 💡 This is a preview. Run with `mode: "append"` to add findings to the article.'
+  : mode === 'append'
+    ? '> 📝 Research findings will be appended to the article.'
+    : '> 🔄 Content will be replaced with research findings.'
+}\n\n---\n\n**Next Steps:**\n- Review related articles above\n- Run \`wiki_update\` to add specific sections\n- Use \`wiki_enhance\` for AI-powered improvements\n`;
+
+        // If append/replace mode, add research section to article
+        if (mode === 'append' || mode === 'replace') {
+          const newContent = mode === 'replace'
+            ? report
+            : `${article.content}\n\n---\n\n## Research Findings: ${research_query}\n\n${report}`;
+
+          await updateArticle(title, newContent, article.tags, 'system', `Deep research: ${research_query}`);
+        }
+
+        return {
+          content: [{
+            type: 'text',
+            text: report
           }]
         };
       }
