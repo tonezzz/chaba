@@ -2398,7 +2398,13 @@ app.get('/article/:title', async (req, res) => {
     const validationStatus = metadata.validation_status;
     const validationErrors = metadata.validation_errors || 0;
     const validationWarnings = metadata.validation_warnings || 0;
+    const validationDetails = metadata.validation_details;
     const hasValidationIssues = validationErrors > 0 || validationWarnings > 0;
+
+    const formatValidationErrors = (details) => {
+      if (!details || !details.errors || details.errors.length === 0) return '';
+      return details.errors.map(e => `<li><strong>${escapeHtml(e.type)}:</strong> ${escapeHtml(e.message)} ${e.fix ? `<em>(${escapeHtml(e.fix)})</em>` : ''}</li>`).join('');
+    };
 
     const aiSection = `
       <div class="ai-metadata">
@@ -2414,8 +2420,15 @@ app.get('/article/:title', async (req, res) => {
         <div class="validation-status ${hasValidationIssues ? 'has-issues' : 'valid'}">
           <span class="validation-badge">${validationErrors > 0 ? '❌' : validationWarnings > 0 ? '⚠️' : '✓'} Validation</span>
           <span class="validation-details">${validationErrors} error${validationErrors !== 1 ? 's' : ''}, ${validationWarnings} warning${validationWarnings !== 1 ? 's' : ''}</span>
-          ${validationErrors > 0 ? '<span class="validation-hint">Run "Validate Only" to see details</span>' : ''}
+          ${validationErrors > 0 ? `<a href="/enhance/${article.id}?actions=validate" class="validation-hint">🔍 Run "Validate Only" to see details</a>` : ''}
         </div>
+        ${validationErrors > 0 && validationDetails ? `
+        <div class="validation-error-list">
+          <ul style="margin: 8px 0; padding-left: 20px; font-size: 12px; color: #991b1b;">
+            ${formatValidationErrors(validationDetails)}
+          </ul>
+        </div>
+        ` : ''}
         ` : ''}
         <div class="ai-controls">
           <form action="/enhance/${article.id}" method="GET" class="enhance-form-row">
