@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import express from 'express';
 import { spawn } from 'child_process';
+import path from 'path';
 
 const { Pool } = pg;
 
