@@ -7,6 +7,7 @@
 | `wiki_search` | Find existing articles | Check if topic exists before writing |
 | `wiki_semantic_search` | Semantic search by meaning | Find conceptually related articles |
 | `wiki_hybrid_search` | Combined keyword + semantic | Best of both search methods |
+| `wiki_smart_research` | Smart research with query analysis | Intent-based article lookup |
 | `wiki_get` | Read article content | Get full article with metadata |
 | `wiki_create` | Create new article | Save documentation from editor |
 | `wiki_update` | Edit existing article | Update outdated content |
@@ -16,6 +17,9 @@
 | `wiki_explain` | Get article analysis | Understand article structure & issues |
 | `wiki_enhance` | Run AI enhancement | Auto-classify, summarize, validate |
 | `wiki_suggest_tags` | Get tag recommendations | Auto-tag new articles |
+| `wiki_get_history` | Get revision history | Track article changes |
+| `wiki_revert` | Revert to revision | Rollback changes |
+| `wiki_diff` | Compare revisions | See what changed |
 
 ## Windsurf Configuration
 

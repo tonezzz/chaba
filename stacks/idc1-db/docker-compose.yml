@@ -1,63 +1,7 @@
+# NOTE: PostgreSQL and pgAdmin have been moved to idc1-assistance-infra stack
+# This stack now uses external postgres service via idc1-db-network
+
 services:
-  # PostgreSQL - Primary database
-  postgres:
-    image: postgres:15-alpine
-    container_name: idc1-postgres
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-chaba}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-      POSTGRES_DB: ${POSTGRES_DB:-chaba}
-      PGDATA: /var/lib/postgresql/data/pgdata
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./init:/docker-entrypoint-initdb.d
-    ports:
-      - "127.0.0.1:5432:5432"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-chaba}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - idc1-db-network
-
-  # MCP PostgreSQL Server - Official Anthropic MCP server
-  mcp-postgres:
-    image: mcp/postgres:latest
-    build:
-      context: https://github.com/modelcontextprotocol/servers.git#main
-      dockerfile: src/postgres/Dockerfile
-    container_name: idc1-mcp-postgres
-    environment:
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: ${POSTGRES_DB:-chaba}
-      POSTGRES_USER: ${POSTGRES_USER:-chaba}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    profiles:
-      - mcp
-
-  # pgAdmin - PostgreSQL management UI
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: idc1-pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@chaba.com}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-changeme}
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
-    volumes:
-      - pgadmin-data:/var/lib/pgadmin
-    ports:
-      - "5050:80"
-    restart: unless-stopped
-    depends_on:
-      - postgres
-
   # MCP Wiki - Knowledge base on idc1
   mcp-wiki:
     build:
@@ -79,10 +23,16 @@ services:
       - "3008:8080"
     restart: unless-stopped
     depends_on:
-      - postgres
       - weaviate
+    # Note: postgres is external (idc1-assistance-infra stack)
     networks:
       - idc1-db-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/health >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   # Wiki Sync Listener - Real-time PostgreSQL to Weaviate sync
   wiki-sync-listener:
@@ -100,8 +50,8 @@ services:
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     restart: unless-stopped
     depends_on:
-      - postgres
       - weaviate
+    # Note: postgres is external (idc1-assistance-infra stack)
     networks:
       - idc1-db-network
 
@@ -148,39 +98,7 @@ services:
     networks:
       - idc1-db-network
 
-  # AutoAgent Control Panel - Web UI for AutoAgent
-  autoagent:
-    image: ghcr.io/tonezzz/autoagent-control-panel:idc1-assistance
-    container_name: idc1-autoagent
-    environment:
-      COMPLETION_MODEL: ${AUTOAGENT_MODEL:-openai/gpt-4o-mini}
-      DEBUG: ${AUTOAGENT_DEBUG:-false}
-      API_BASE_URL: ${AUTOAGENT_API_BASE_URL:-https://openrouter.ai/api/v1}
-      FN_CALL: ${AUTOAGENT_FN_CALL:-true}
-      # LLM API Keys
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
-      GROQ_API_KEY: ${GROQ_API_KEY:-}
-      XAI_API_KEY: ${XAI_API_KEY:-}
-      HUGGINGFACE_API_KEY: ${HUGGINGFACE_API_KEY:-}
-      # PostgreSQL Database
-      DATABASE_URL: postgresql://${POSTGRES_USER:-chaba}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-chaba}
-      USE_POSTGRES: '1'
-      # Workspace
-      WORKSPACE_DIR: /workspace
-      DOCKER_WORKPLACE_NAME: autoagent-workspace
-    volumes:
-      - autoagent-workspace:/workspace
-    ports:
-      - "8059:8080"  # Control Panel
-      - "8058:8056"  # GhostRoute MCP
-    restart: unless-stopped
-    #depends_on:
-    #  - postgres
-    # Control panel available at http://idc1.surf-thailand.com:8059/
+  # NOTE: AutoAgent Control Panel moved to idc1-assistance-infra stack
 
   # GhostRoute Test - OpenRouter model discovery
   ghostroute-test:
@@ -202,8 +120,8 @@ services:
       - idc1-db-network
 
 volumes:
-  postgres-data:
-  pgadmin-data:
+  # NOTE: postgres-data and pgadmin-data volumes are managed by idc1-assistance-infra
+  # They remain as external volumes for data persistence
   autoagent-workspace:
   redis-data:
   weaviate-data:

@@ -5,107 +5,88 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import sqlite3 from 'sqlite3';
 import pg from 'pg';
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import fs from 'fs';
-import path from 'path';
 import express from 'express';
 import { spawn } from 'child_process';
 
 const { Pool } = pg;
 
-// Database configuration
-const USE_POSTGRES = process.env.WIKI_USE_POSTGRES === '1' || process.env.DATABASE_URL !== undefined;
+// Database configuration - PostgreSQL only
 const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://chaba:changeme@idc1.surf-thailand.com:5432/chaba';
-const DB_PATH = process.env.WIKI_DB_PATH || '/data/wiki.db';
-const DATA_DIR = path.dirname(DB_PATH);
 const HTTP_PORT = process.env.WIKI_HTTP_PORT || 8080;
 const API_KEY = process.env.WIKI_API_KEY;
 
-let db;
 let pgPool;
 
 async function initDatabase() {
-  if (USE_POSTGRES) {
-    // PostgreSQL mode
-    pgPool = new Pool({
-      connectionString: DATABASE_URL,
-    });
-    
-    // Initialize PostgreSQL tables
-    await pgPool.query(`
-      CREATE TABLE IF NOT EXISTS articles (
-        id SERIAL PRIMARY KEY,
-        title VARCHAR(255) UNIQUE NOT NULL,
-        content TEXT NOT NULL,
-        tags TEXT[],
-        entities JSONB,
-        classification VARCHAR(100),
-        metadata JSONB DEFAULT '{}',
-        embedding vector(1536),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    
-    // AI enhancement queue
-    await pgPool.query(`
-      CREATE TABLE IF NOT EXISTS article_ai_queue (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        article_id INTEGER REFERENCES articles(id) ON DELETE CASCADE,
-        action VARCHAR(50) NOT NULL,
-        status VARCHAR(20) DEFAULT 'pending',
-        result JSONB,
-        error TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        processed_at TIMESTAMP
-      )
-    `);
-    
-    await pgPool.query(`
-      CREATE INDEX IF NOT EXISTS idx_articles_title ON articles USING gin(to_tsvector('english', title))
-    `);
-    
-    await pgPool.query(`
-      CREATE INDEX IF NOT EXISTS idx_articles_content ON articles USING gin(to_tsvector('english', content))
-    `);
-    
-    console.error('mcp-wiki: Using PostgreSQL database');
-  } else {
-    // SQLite mode
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-    
-    db = new sqlite3.Database(DB_PATH);
-    
-    // Create tables
-    db.serialize(() => {
-      db.run(`
-        CREATE TABLE IF NOT EXISTS articles (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          title TEXT UNIQUE NOT NULL,
-          content TEXT NOT NULL,
-          tags TEXT,
-          metadata TEXT DEFAULT '{}',
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-      
-      db.run(`
-        CREATE INDEX IF NOT EXISTS idx_articles_title ON articles(title)
-      `);
-      
-      db.run(`
-        CREATE INDEX IF NOT EXISTS idx_articles_tags ON articles(tags)
-      `);
-    });
-    
-    console.error('mcp-wiki: Using SQLite database at', DB_PATH);
-  }
+  // PostgreSQL mode only
+  pgPool = new Pool({
+    connectionString: DATABASE_URL,
+  });
+
+  // Initialize PostgreSQL tables
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS articles (
+      id SERIAL PRIMARY KEY,
+      title VARCHAR(255) UNIQUE NOT NULL,
+      content TEXT NOT NULL,
+      tags TEXT[],
+      entities JSONB,
+      classification VARCHAR(100),
+      metadata JSONB DEFAULT '{}',
+      embedding vector(1536),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // AI enhancement queue
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS article_ai_queue (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      article_id INTEGER REFERENCES articles(id) ON DELETE CASCADE,
+      action VARCHAR(50) NOT NULL,
+      status VARCHAR(20) DEFAULT 'pending',
+      result JSONB,
+      error TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      processed_at TIMESTAMP
+    )
+  `);
+
+  // Revision history
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS revisions (
+      id SERIAL PRIMARY KEY,
+      article_id INTEGER REFERENCES articles(id) ON DELETE CASCADE,
+      article_title VARCHAR(255) NOT NULL,
+      content TEXT NOT NULL,
+      tags TEXT[],
+      editor TEXT,
+      change_summary TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await pgPool.query(`
+    CREATE INDEX IF NOT EXISTS idx_revisions_article_id ON revisions(article_id)
+  `);
+
+  await pgPool.query(`
+    CREATE INDEX IF NOT EXISTS idx_revisions_article_title ON revisions(article_title)
+  `);
+
+  await pgPool.query(`
+    CREATE INDEX IF NOT EXISTS idx_articles_title ON articles USING gin(to_tsvector('english', title))
+  `);
+
+  await pgPool.query(`
+    CREATE INDEX IF NOT EXISTS idx_articles_content ON articles USING gin(to_tsvector('english', content))
+  `);
+
+  console.error('mcp-wiki: PostgreSQL database initialized');
 }
 
 // Schema definitions
@@ -169,37 +150,34 @@ const HybridSearchSchema = z.object({
   alpha: z.number().optional().default(0.5)
 });
 
-// Database helpers - support both SQLite and PostgreSQL
+const GetHistorySchema = z.object({
+  title: z.string(),
+  limit: z.number().optional().default(10)
+});
+
+const RevertArticleSchema = z.object({
+  title: z.string(),
+  revision_id: z.number()
+});
+
+const DiffRevisionsSchema = z.object({
+  title: z.string(),
+  revision_id_1: z.number(),
+  revision_id_2: z.number().optional()
+});
+
+// Database helpers - PostgreSQL only
 async function searchArticles(query, limit) {
-  if (USE_POSTGRES) {
-    const result = await pgPool.query(`
-      SELECT title, tags, created_at, updated_at,
-             left(content, 200) as snippet
-      FROM articles
-      WHERE to_tsvector('english', title || ' ' || content) @@ plainto_tsquery('english', $1)
-      ORDER BY ts_rank(to_tsvector('english', title || ' ' || content), plainto_tsquery('english', $1)) DESC,
-               updated_at DESC
-      LIMIT $2
-    `, [query, limit]);
-    return result.rows;
-  } else {
-    // SQLite fallback
-    return new Promise((resolve, reject) => {
-      const fallbackSql = `
-        SELECT title, tags, created_at, updated_at,
-               substr(content, 1, 200) as snippet
-        FROM articles
-        WHERE title LIKE ? OR content LIKE ?
-        ORDER BY updated_at DESC
-        LIMIT ?
-      `;
-      const pattern = `%${query}%`;
-      db.all(fallbackSql, [pattern, pattern, limit], (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    });
-  }
+  const result = await pgPool.query(`
+    SELECT title, tags, created_at, updated_at,
+           left(content, 200) as snippet
+    FROM articles
+    WHERE to_tsvector('english', title || ' ' || content) @@ plainto_tsquery('english', $1)
+    ORDER BY ts_rank(to_tsvector('english', title || ' ' || content), plainto_tsquery('english', $1)) DESC,
+             updated_at DESC
+    LIMIT $2
+  `, [query, limit]);
+  return result.rows;
 }
 
 // Semantic search using Weaviate
@@ -299,145 +277,105 @@ async function hybridSearch(query, limit = 10, alpha = 0.5) {
 }
 
 async function getArticle(title) {
-  if (USE_POSTGRES) {
-    const result = await pgPool.query(
-      'SELECT * FROM articles WHERE title = $1',
-      [title]
-    );
-    return result.rows[0] || null;
-  } else {
-    // SQLite
-    return new Promise((resolve, reject) => {
-      db.get(
-        'SELECT * FROM articles WHERE title = ?',
-        [title],
-        (err, row) => {
-          if (err) reject(err);
-          else resolve(row || null);
-        }
-      );
-    });
-  }
+  const result = await pgPool.query(
+    'SELECT * FROM articles WHERE title = $1',
+    [title]
+  );
+  return result.rows[0] || null;
 }
 
 async function createArticle(title, content, tags, entities, classification) {
-  if (USE_POSTGRES) {
-    try {
-      const result = await pgPool.query(
-        `INSERT INTO articles (title, content, tags, entities, classification) 
-         VALUES ($1, $2, $3, $4, $5) RETURNING id, title`,
-        [title, content, tags || [], entities ? JSON.stringify(entities) : null, classification || null]
-      );
-      return result.rows[0];
-    } catch (err) {
-      if (err.code === '23505') { // unique_violation
-        throw new Error(`Article "${title}" already exists`);
-      }
-      throw err;
+  try {
+    const result = await pgPool.query(
+      `INSERT INTO articles (title, content, tags, entities, classification)
+       VALUES ($1, $2, $3, $4, $5) RETURNING id, title`,
+      [title, content, tags || [], entities ? JSON.stringify(entities) : null, classification || null]
+    );
+    return result.rows[0];
+  } catch (err) {
+    if (err.code === '23505') { // unique_violation
+      throw new Error(`Article "${title}" already exists`);
     }
-  } else {
-    // SQLite
-    return new Promise((resolve, reject) => {
-      const tagsStr = tags ? tags.join(',') : null;
-      const entitiesStr = entities ? (Array.isArray(entities) ? entities.join(',') : entities) : null;
-      db.run(
-        `INSERT INTO articles (title, content, tags) VALUES (?, ?, ?)`,
-        [title, content, tagsStr],
-        function(err) {
-          if (err) {
-            if (err.message.includes('UNIQUE constraint failed')) {
-              reject(new Error(`Article "${title}" already exists`));
-            } else {
-              reject(err);
-            }
-          } else {
-            resolve({ id: this.lastID, title });
-          }
-        }
-      );
-    });
+    throw err;
   }
 }
 
-async function updateArticle(title, content, tags) {
-  if (USE_POSTGRES) {
-    const result = await pgPool.query(
-      `UPDATE articles SET content = $1, tags = $2, updated_at = CURRENT_TIMESTAMP
-       WHERE title = $3 RETURNING title`,
-      [content, tags || [], title]
-    );
-    if (result.rowCount === 0) {
-      throw new Error(`Article "${title}" not found`);
-    }
-    return { title: result.rows[0].title, updated: true };
-  } else {
-    // SQLite
-    return new Promise((resolve, reject) => {
-      const tagsStr = tags ? tags.join(',') : null;
-      db.run(
-        `UPDATE articles SET content = ?, tags = ?, updated_at = CURRENT_TIMESTAMP WHERE title = ?`,
-        [content, tagsStr, title],
-        function(err) {
-          if (err) reject(err);
-          else if (this.changes === 0) reject(new Error(`Article "${title}" not found`));
-          else resolve({ title, updated: true });
-        }
-      );
-    });
+async function updateArticle(title, content, tags, editor = 'system', changeSummary = '') {
+  // First get the current article to save as revision
+  const currentArticle = await getArticle(title);
+  if (!currentArticle) {
+    throw new Error(`Article "${title}" not found`);
   }
+
+  // Save revision of the current state before updating
+  await createRevision(
+    currentArticle.id,
+    title,
+    currentArticle.content,
+    currentArticle.tags,
+    editor,
+    changeSummary || 'Manual update'
+  );
+
+  const result = await pgPool.query(
+    `UPDATE articles SET content = $1, tags = $2, updated_at = CURRENT_TIMESTAMP
+     WHERE title = $3 RETURNING title`,
+    [content, tags || [], title]
+  );
+  if (result.rowCount === 0) {
+    throw new Error(`Article "${title}" not found`);
+  }
+  return { title: result.rows[0].title, updated: true };
 }
 
 async function deleteArticle(title) {
-  if (USE_POSTGRES) {
-    const result = await pgPool.query(
-      'DELETE FROM articles WHERE title = $1 RETURNING id',
-      [title]
-    );
-    if (result.rowCount === 0) {
-      throw new Error(`Article "${title}" not found`);
-    }
-    return { deleted: true, id: result.rows[0].id };
-  } else {
-    // SQLite
-    return new Promise((resolve, reject) => {
-      db.run(
-        'DELETE FROM articles WHERE title = ?',
-        [title],
-        function(err) {
-          if (err) reject(err);
-          else if (this.changes === 0) reject(new Error(`Article "${title}" not found`));
-          else resolve({ deleted: true, title });
-        }
-      );
-    });
+  const result = await pgPool.query(
+    'DELETE FROM articles WHERE title = $1 RETURNING id',
+    [title]
+  );
+  if (result.rowCount === 0) {
+    throw new Error(`Article "${title}" not found`);
   }
+  return { deleted: true, id: result.rows[0].id };
 }
 
 async function updateArticleMetadata(articleId, metadata) {
-  if (USE_POSTGRES) {
-    await pgPool.query(
-      `UPDATE articles SET metadata = COALESCE(metadata, '{}') || $1::jsonb WHERE id = $2`,
-      [JSON.stringify(metadata), articleId]
-    );
-    return { updated: true };
-  } else {
-    // SQLite - get current metadata and merge
-    return new Promise((resolve, reject) => {
-      db.get('SELECT metadata FROM articles WHERE id = ?', [articleId], (err, row) => {
-        if (err) return reject(err);
-        const current = row?.metadata ? JSON.parse(row.metadata) : {};
-        const merged = { ...current, ...metadata };
-        db.run(
-          'UPDATE articles SET metadata = ? WHERE id = ?',
-          [JSON.stringify(merged), articleId],
-          function(err) {
-            if (err) reject(err);
-            else resolve({ updated: true });
-          }
-        );
-      });
-    });
-  }
+  await pgPool.query(
+    `UPDATE articles SET metadata = COALESCE(metadata, '{}') || $1::jsonb WHERE id = $2`,
+    [JSON.stringify(metadata), articleId]
+  );
+  return { updated: true };
+}
+
+// Revision database helpers
+async function createRevision(articleId, articleTitle, content, tags, editor = 'system', changeSummary = '') {
+  const result = await pgPool.query(
+    `INSERT INTO revisions (article_id, article_title, content, tags, editor, change_summary)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+    [articleId, articleTitle, content, tags || [], editor, changeSummary]
+  );
+  return result.rows[0].id;
+}
+
+async function getArticleRevisions(title, limit = 10) {
+  const result = await pgPool.query(
+    `SELECT id, content, tags, editor, change_summary, created_at
+     FROM revisions
+     WHERE article_title = $1
+     ORDER BY created_at DESC
+     LIMIT $2`,
+    [title, limit]
+  );
+  return result.rows;
+}
+
+async function getRevision(revisionId) {
+  const result = await pgPool.query(
+    `SELECT id, article_id, article_title, content, tags, editor, change_summary, created_at
+     FROM revisions WHERE id = $1`,
+    [revisionId]
+  );
+  return result.rows[0] || null;
 }
 
 // Format date to short relative format
@@ -535,26 +473,12 @@ function generateGroupMenu(articles, activeGroup = null) {
 }
 
 async function listArticles(limit, offset) {
-  if (USE_POSTGRES) {
-    const result = await pgPool.query(
-      `SELECT id, title, tags, metadata, created_at, updated_at 
-       FROM articles ORDER BY updated_at DESC LIMIT $1 OFFSET $2`,
-      [limit, offset]
-    );
-    return result.rows;
-  } else {
-    // SQLite
-    return new Promise((resolve, reject) => {
-      db.all(
-        `SELECT id, title, tags, metadata, created_at, updated_at FROM articles ORDER BY updated_at DESC LIMIT ? OFFSET ?`,
-        [limit, offset],
-        (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows);
-        }
-      );
-    });
-  }
+  const result = await pgPool.query(
+    `SELECT id, title, tags, metadata, created_at, updated_at
+     FROM articles ORDER BY updated_at DESC LIMIT $1 OFFSET $2`,
+    [limit, offset]
+  );
+  return result.rows;
 }
 
 // ============ VALIDATION FUNCTIONS (from ai-worker.js) ============
@@ -563,14 +487,14 @@ async function listArticles(limit, offset) {
 const TECH_TERMS = new Set([
   'api', 'http', 'https', 'json', 'xml', 'yaml', 'url', 'uri',
   'docker', 'kubernetes', 'k8s', 'container', 'pod', 'deployment',
-  'postgres', 'postgresql', 'mysql', 'mongodb', 'redis', 'sqlite',
+  'postgres', 'postgresql', 'mysql', 'mongodb', 'redis',
   'javascript', 'typescript', 'python', 'nodejs', 'react', 'vue',
   'github', 'gitlab', 'git', 'ci/cd', 'cicd', 'pipeline',
   'auth', 'oauth', 'jwt', 'ssl', 'tls', 'encryption',
   'microservice', 'serverless', 'lambda', 'function',
   'websocket', 'grpc', 'graphql', 'rest',
   'mermaid', 'flowchart', 'sequenceDiagram', 'classDiagram',
-  'idc1', 'chaba', 'autoagent', 'jarvis', 'portainer'
+  'idc1', 'chaba', 'autoagent', 'jarvis', 'portainer', 'mcp'
 ]);
 
 // Common spelling mistakes to catch
@@ -1231,6 +1155,21 @@ function createMcpServer() {
         name: 'wiki_hybrid_search',
         description: 'Hybrid search combining keyword and semantic search. Alpha 0=keyword, 1=semantic, 0.5=balanced.',
         inputSchema: zodToJsonSchema(HybridSearchSchema)
+      },
+      {
+        name: 'wiki_get_history',
+        description: 'Get revision history for an article. Returns list of previous versions with timestamps.',
+        inputSchema: zodToJsonSchema(GetHistorySchema)
+      },
+      {
+        name: 'wiki_revert',
+        description: 'Revert article to a specific revision. Creates a new revision with the old content.',
+        inputSchema: zodToJsonSchema(RevertArticleSchema)
+      },
+      {
+        name: 'wiki_diff',
+        description: 'Compare two revisions and show differences. If revision_id_2 is omitted, compares with current article.',
+        inputSchema: zodToJsonSchema(DiffRevisionsSchema)
       }
     ]
   }));
@@ -1476,6 +1415,167 @@ ${validation.warnings.length > 0 ? `\nWarnings:\n${validation.warnings.slice(0, 
           content: [{
             type: 'text',
             text: `Suggested tags:\n${tags.map(t => `- ${t}`).join('\n')}\n\nUse these tags when creating the article.`
+          }]
+        };
+      }
+
+      case 'wiki_smart_research': {
+        const { query, limit } = SearchArticlesSchema.parse(args);
+
+        // Step 1: Analyze query intent
+        const queryAnalysis = {
+          query,
+          intent: 'research',
+          keywords: query.toLowerCase().split(/\s+/).filter(w => w.length > 3),
+          timestamp: new Date().toISOString()
+        };
+
+        // Step 2: Try exact match first
+        const exactMatch = await getArticle(query);
+        if (exactMatch) {
+          return {
+            content: [{
+              type: 'text',
+              text: `# Exact Match Found: "${exactMatch.title}"\n\n**Tags:** ${exactMatch.tags?.join(', ') || 'none'}\n**Updated:** ${exactMatch.updated_at}\n\n${exactMatch.content.substring(0, 2000)}${exactMatch.content.length > 2000 ? '\n\n...(truncated)' : ''}`
+            }]
+          };
+        }
+
+        // Step 3: Hybrid search for related content
+        const results = await hybridSearch(query, limit, 0.5);
+
+        if (results.length === 0) {
+          return {
+            content: [{
+              type: 'text',
+              text: `No articles found for "${query}".\n\nQuery Analysis:\n- Keywords: ${queryAnalysis.keywords.join(', ')}\n- Suggestion: Try creating a new article with wiki_create`
+            }]
+          };
+        }
+
+        // Step 4: Analyze and synthesize results
+        const synthesized = results.map(r => ({
+          title: r.title,
+          relevance: r.match_type === 'semantic' ? 'high (semantic)' : 'medium (keyword)',
+          snippet: r.content?.substring(0, 300) || r.snippet || 'No preview',
+          tags: r.tags,
+          updated: r.updated_at
+        }));
+
+        const output = `# Smart Research Results: "${query}"\n\n## Query Analysis\n- **Intent:** Research/Information gathering\n- **Keywords:** ${queryAnalysis.keywords.join(', ')}\n- **Results:** ${results.length} articles found\n\n## Top Results\n\n${synthesized.map((r, i) => `### ${i + 1}. ${r.title}\n- **Relevance:** ${r.relevance}\n- **Updated:** ${r.updated}\n- **Tags:** ${Array.isArray(r.tags) ? r.tags.join(', ') : r.tags || 'none'}\n\n${r.snippet}...\n`).join('\n---\n\n')}\n\n## Recommendations\n${results.length > 0 ? '- Found relevant existing knowledge' : '- Consider creating a new article'}\n${results.some(r => r.match_type === 'semantic') ? '- Semantic matches suggest conceptual relevance' : '- Try semantic search for broader matches'}`;
+
+        return {
+          content: [{
+            type: 'text',
+            text: output
+          }]
+        };
+      }
+
+      case 'wiki_get_history': {
+        const { title, limit } = GetHistorySchema.parse(args);
+        const revisions = await getArticleRevisions(title, limit);
+        if (revisions.length === 0) {
+          return {
+            content: [{ type: 'text', text: `No revision history found for "${title}". Article may not exist or has no saved revisions.` }],
+            isError: true
+          };
+        }
+        const history = revisions.map((rev, index) =>
+          `## Revision ${revisions.length - index} (ID: ${rev.id})\n- **Date:** ${rev.created_at}\n- **Editor:** ${rev.editor || 'unknown'}\n- **Summary:** ${rev.change_summary || 'No summary'}\n- **Preview:** ${rev.content?.substring(0, 100).replace(/\n/g, ' ')}...`
+        ).join('\n\n');
+        return {
+          content: [{
+            type: 'text',
+            text: `# Revision History for "${title}"\n\n${history}`
+          }]
+        };
+      }
+
+      case 'wiki_revert': {
+        const { title, revision_id } = RevertArticleSchema.parse(args);
+        const article = await getArticle(title);
+        if (!article) {
+          return {
+            content: [{ type: 'text', text: `Article "${title}" not found` }],
+            isError: true
+          };
+        }
+        const revision = await getRevision(revision_id);
+        if (!revision) {
+          return {
+            content: [{ type: 'text', text: `Revision ${revision_id} not found` }],
+            isError: true
+          };
+        }
+        if (revision.article_title !== title) {
+          return {
+            content: [{ type: 'text', text: `Revision ${revision_id} does not belong to article "${title}"` }],
+            isError: true
+          };
+        }
+        // Revert by updating with the revision's content
+        const tags = Array.isArray(revision.tags) ? revision.tags : (revision.tags ? revision.tags.split(',').map(t => t.trim()).filter(Boolean) : []);
+        await updateArticle(title, revision.content, tags, 'system', `Reverted to revision ${revision_id}`);
+        return {
+          content: [{
+            type: 'text',
+            text: `✅ Reverted "${title}" to revision ${revision_id} from ${revision.created_at}`
+          }]
+        };
+      }
+
+      case 'wiki_diff': {
+        const { title, revision_id_1, revision_id_2 } = DiffRevisionsSchema.parse(args);
+        const revision1 = await getRevision(revision_id_1);
+        if (!revision1) {
+          return {
+            content: [{ type: 'text', text: `Revision ${revision_id_1} not found` }],
+            isError: true
+          };
+        }
+        let content2;
+        let label2;
+        if (revision_id_2) {
+          const revision2 = await getRevision(revision_id_2);
+          if (!revision2) {
+            return {
+              content: [{ type: 'text', text: `Revision ${revision_id_2} not found` }],
+              isError: true
+            };
+          }
+          content2 = revision2.content;
+          label2 = `Revision ${revision_id_2}`;
+        } else {
+          const article = await getArticle(title);
+          if (!article) {
+            return {
+              content: [{ type: 'text', text: `Article "${title}" not found` }],
+              isError: true
+            };
+          }
+          content2 = article.content;
+          label2 = 'Current Version';
+        }
+        // Simple diff: show lines that changed
+        const lines1 = revision1.content.split('\n');
+        const lines2 = content2.split('\n');
+        const maxLines = Math.max(lines1.length, lines2.length);
+        let diff = '';
+        for (let i = 0; i < maxLines; i++) {
+          const line1 = lines1[i] || '';
+          const line2 = lines2[i] || '';
+          if (line1 !== line2) {
+            diff += `Line ${i + 1}:\n- ${line1}\n+ ${line2}\n\n`;
+          }
+        }
+        if (!diff) {
+          diff = 'No differences found - content is identical.';
+        }
+        return {
+          content: [{
+            type: 'text',
+            text: `# Diff: Revision ${revision_id_1} vs ${label2}\n\n${diff}`
           }]
         };
       }
@@ -2117,30 +2217,19 @@ app.get('/health', async (req, res) => {
     status: 'ok',
     timestamp: new Date().toISOString(),
     database: {
-      type: USE_POSTGRES ? 'postgresql' : 'sqlite',
+      type: 'postgresql',
       connected: false
     },
     articles: null
   };
-  
+
   try {
-    if (USE_POSTGRES && pgPool) {
-      // Test PostgreSQL connectivity
+    if (pgPool) {
       const result = await pgPool.query('SELECT COUNT(*) as count FROM articles');
       health.database.connected = true;
       health.database.article_count = parseInt(result.rows[0].count);
-    } else if (db) {
-      // Test SQLite connectivity
-      const count = await new Promise((resolve, reject) => {
-        db.get('SELECT COUNT(*) as count FROM articles', (err, row) => {
-          if (err) reject(err);
-          else resolve(row.count);
-        });
-      });
-      health.database.connected = true;
-      health.database.article_count = count;
     }
-    
+
     res.json(health);
   } catch (err) {
     health.status = 'error';
@@ -2342,6 +2431,7 @@ app.get('/article/:title', async (req, res) => {
       <div class="article-content">${renderArticleContent(article.content)}</div>
       <div class="actions">
         <a href="/edit/${encodeURIComponent(article.title)}" class="edit">Edit</a>
+        <a href="/history/${encodeURIComponent(article.title)}">📜 History</a>
         <a href="/">Back to Home</a>
         <button onclick="processQueue()" class="btn-process">🔄 Process Queue</button>
         <span id="queue-status" class="queue-status"></span>
@@ -2775,6 +2865,286 @@ app.post('/update', async (req, res) => {
   }
 });
 
+// View Revision History
+app.get('/history/:title', async (req, res) => {
+  try {
+    const article = await getArticle(req.params.title);
+    if (!article) {
+      return res.status(404).send(htmlPage('Not Found', '<p>Article not found.</p>'));
+    }
+
+    const revisions = await getArticleRevisions(req.params.title, 20);
+
+    const revisionList = revisions.length === 0
+      ? '<p>No revision history yet. History is created when articles are updated.</p>'
+      : '<div class="revision-list">' + revisions.map((rev, index) => `
+        <div class="revision-card">
+          <div class="revision-header">
+            <span class="revision-number">#${revisions.length - index}</span>
+            <span class="revision-date">${formatDate(rev.created_at)}</span>
+            <span class="revision-editor">by ${escapeHtml(rev.editor || 'unknown')}</span>
+          </div>
+          <div class="revision-summary">${escapeHtml(rev.change_summary || 'No summary')}</div>
+          <div class="revision-actions">
+            <a href="/revision/${rev.id}" class="btn-small">View</a>
+            <a href="/revert/${req.params.title}/${rev.id}" class="btn-small btn-revert">Revert</a>
+          </div>
+        </div>
+      `).join('') + '</div>';
+
+    const content = `
+      <h1>Revision History: ${escapeHtml(article.title)}</h1>
+      <p class="meta">Current version updated ${formatDate(article.updated_at)}</p>
+      ${revisionList}
+      <div class="actions">
+        <a href="/article/${encodeURIComponent(article.title)}">Back to Article</a>
+        <a href="/edit/${encodeURIComponent(article.title)}">Edit Current</a>
+      </div>
+      <style>
+        .revision-list { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; }
+        .revision-card {
+          background: #f9fafb;
+          border-radius: 8px;
+          padding: 16px;
+          border-left: 4px solid #8b5cf6;
+        }
+        .revision-header {
+          display: flex;
+          gap: 12px;
+          align-items: center;
+          margin-bottom: 8px;
+          font-size: 14px;
+        }
+        .revision-number {
+          background: #8b5cf6;
+          color: white;
+          padding: 2px 8px;
+          border-radius: 4px;
+          font-weight: 600;
+        }
+        .revision-date {
+          color: #374151;
+          font-weight: 500;
+        }
+        .revision-editor {
+          color: #6b7280;
+        }
+        .revision-summary {
+          color: #4b5563;
+          font-style: italic;
+          margin-bottom: 12px;
+        }
+        .revision-actions {
+          display: flex;
+          gap: 8px;
+        }
+        .btn-revert {
+          background: #f59e0b;
+        }
+        .btn-revert:hover {
+          background: #d97706;
+        }
+      </style>
+    `;
+    res.send(htmlPage(`History: ${article.title}`, content));
+  } catch (err) {
+    res.send(htmlPage('Error', `<div class="error">${escapeHtml(err.message)}</div>`));
+  }
+});
+
+// View Single Revision
+app.get('/revision/:id', async (req, res) => {
+  try {
+    const revision = await getRevision(parseInt(req.params.id));
+    if (!revision) {
+      return res.status(404).send(htmlPage('Not Found', '<p>Revision not found.</p>'));
+    }
+
+    const tagsDisplay = revision.tags
+      ? (Array.isArray(revision.tags) ? revision.tags.join(', ') : revision.tags)
+      : 'none';
+
+    const content = `
+      <h1>Revision #${revision.id}: ${escapeHtml(revision.article_title)}</h1>
+      <div class="revision-meta">
+        <p><strong>Created:</strong> ${revision.created_at}</p>
+        <p><strong>Editor:</strong> ${escapeHtml(revision.editor || 'unknown')}</p>
+        <p><strong>Summary:</strong> ${escapeHtml(revision.change_summary || 'No summary')}</p>
+        <p><strong>Tags:</strong> ${escapeHtml(tagsDisplay)}</p>
+      </div>
+      <div class="revision-content">
+        <h3>Content:</h3>
+        <pre><code>${escapeHtml(revision.content)}</code></pre>
+      </div>
+      <div class="actions">
+        <a href="/history/${encodeURIComponent(revision.article_title)}">Back to History</a>
+        <a href="/revert/${encodeURIComponent(revision.article_title)}/${revision.id}" class="btn-revert">Revert to This Version</a>
+      </div>
+      <style>
+        .revision-meta {
+          background: #f3f4f6;
+          padding: 16px;
+          border-radius: 8px;
+          margin: 16px 0;
+        }
+        .revision-meta p {
+          margin: 4px 0;
+        }
+        .revision-content {
+          margin: 20px 0;
+        }
+        .revision-content pre {
+          background: #1f2937;
+          color: #e5e7eb;
+          padding: 16px;
+          border-radius: 8px;
+          overflow-x: auto;
+          max-height: 500px;
+          overflow-y: auto;
+        }
+        .btn-revert {
+          background: #f59e0b;
+          color: white;
+          padding: 8px 16px;
+          border-radius: 4px;
+          text-decoration: none;
+          display: inline-block;
+          margin-left: 12px;
+        }
+        .btn-revert:hover {
+          background: #d97706;
+        }
+      </style>
+    `;
+    res.send(htmlPage(`Revision ${revision.id}`, content));
+  } catch (err) {
+    res.send(htmlPage('Error', `<div class="error">${escapeHtml(err.message)}</div>`));
+  }
+});
+
+// Revert Confirmation Page
+app.get('/revert/:title/:revision_id', async (req, res) => {
+  try {
+    const article = await getArticle(req.params.title);
+    if (!article) {
+      return res.status(404).send(htmlPage('Not Found', '<p>Article not found.</p>'));
+    }
+
+    const revision = await getRevision(parseInt(req.params.revision_id));
+    if (!revision) {
+      return res.status(404).send(htmlPage('Not Found', '<p>Revision not found.</p>'));
+    }
+
+    if (revision.article_title !== req.params.title) {
+      return res.status(400).send(htmlPage('Error', '<p>Revision does not belong to this article.</p>'));
+    }
+
+    const content = `
+      <h1>Revert Article</h1>
+      <div class="revert-confirm">
+        <p>You are about to revert <strong>${escapeHtml(req.params.title)}</strong> to revision #${revision.id} from ${formatDate(revision.created_at)}.</p>
+        <p class="warning">⚠️ This will create a new revision with the old content. The current version will be preserved in history.</p>
+        <form action="/revert/${encodeURIComponent(req.params.title)}/${revision.id}" method="POST">
+          <button type="submit" class="btn-revert-confirm">Yes, Revert to This Version</button>
+          <a href="/history/${encodeURIComponent(req.params.title)}" class="btn-cancel">Cancel</a>
+        </form>
+      </div>
+      <style>
+        .revert-confirm {
+          background: #fef3c7;
+          border: 2px solid #f59e0b;
+          border-radius: 8px;
+          padding: 24px;
+          margin: 20px 0;
+        }
+        .revert-confirm p {
+          margin: 12px 0;
+          font-size: 16px;
+        }
+        .warning {
+          color: #92400e;
+          font-weight: 500;
+        }
+        .btn-revert-confirm {
+          background: #dc2626;
+          color: white;
+          padding: 12px 24px;
+          border: none;
+          border-radius: 6px;
+          font-size: 16px;
+          cursor: pointer;
+          margin-right: 12px;
+        }
+        .btn-revert-confirm:hover {
+          background: #b91c1c;
+        }
+        .btn-cancel {
+          background: #6b7280;
+          color: white;
+          padding: 12px 24px;
+          border-radius: 6px;
+          text-decoration: none;
+          display: inline-block;
+        }
+        .btn-cancel:hover {
+          background: #4b5563;
+        }
+      </style>
+    `;
+    res.send(htmlPage('Confirm Revert', content));
+  } catch (err) {
+    res.send(htmlPage('Error', `<div class="error">${escapeHtml(err.message)}</div>`));
+  }
+});
+
+// Revert Action
+app.post('/revert/:title/:revision_id', async (req, res) => {
+  try {
+    const article = await getArticle(req.params.title);
+    if (!article) {
+      return res.status(404).send(htmlPage('Not Found', '<p>Article not found.</p>'));
+    }
+
+    const revision = await getRevision(parseInt(req.params.revision_id));
+    if (!revision) {
+      return res.status(404).send(htmlPage('Not Found', '<p>Revision not found.</p>'));
+    }
+
+    const tags = Array.isArray(revision.tags) ? revision.tags : (revision.tags ? revision.tags.split(',').map(t => t.trim()).filter(Boolean) : []);
+    await updateArticle(req.params.title, revision.content, tags, 'web', `Reverted to revision ${req.params.revision_id}`);
+
+    const content = `
+      <div class="success">
+        <h2>✅ Article Reverted</h2>
+        <p><strong>${escapeHtml(req.params.title)}</strong> has been reverted to revision #${req.params.revision_id}.</p>
+      </div>
+      <div class="actions">
+        <a href="/article/${encodeURIComponent(req.params.title)}">View Article</a>
+        <a href="/history/${encodeURIComponent(req.params.title)}">View History</a>
+      </div>
+      <style>
+        .success {
+          background: #d1fae5;
+          border: 2px solid #10b981;
+          border-radius: 8px;
+          padding: 24px;
+          margin: 20px 0;
+        }
+        .success h2 {
+          color: #065f46;
+          margin-bottom: 12px;
+        }
+        .success p {
+          color: #047857;
+        }
+      </style>
+    `;
+    res.send(htmlPage('Revert Successful', content));
+  } catch (err) {
+    res.send(htmlPage('Error', `<div class="error">${escapeHtml(err.message)}</div>`));
+  }
+});
+
 // MCP HTTP SSE transport endpoint
 let mcpTransports;
 
@@ -2865,11 +3235,57 @@ app.get('/api/hybrid-search', async (req, res) => {
   try {
     const query = req.query.q || '';
     const limit = parseInt(req.query.limit) || 10;
-    
+
     if (!query) return res.json([]);
-    
+
     const articles = await hybridSearch(query, limit);
     res.json(articles);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Revision Management Endpoints
+app.get('/api/articles/:title/revisions', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const revisions = await getArticleRevisions(req.params.title, limit);
+    res.json(revisions);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/revisions/:id', async (req, res) => {
+  try {
+    const revision = await getRevision(parseInt(req.params.id));
+    if (!revision) return res.status(404).json({ error: 'Revision not found' });
+    res.json(revision);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/articles/:title/revert', async (req, res) => {
+  try {
+    const { revision_id } = req.body;
+    if (!revision_id) {
+      return res.status(400).json({ error: 'revision_id is required' });
+    }
+    const article = await getArticle(req.params.title);
+    if (!article) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+    const revision = await getRevision(revision_id);
+    if (!revision) {
+      return res.status(404).json({ error: 'Revision not found' });
+    }
+    if (revision.article_title !== req.params.title) {
+      return res.status(400).json({ error: 'Revision does not belong to this article' });
+    }
+    const tags = Array.isArray(revision.tags) ? revision.tags : (revision.tags ? revision.tags.split(',').map(t => t.trim()).filter(Boolean) : []);
+    const result = await updateArticle(req.params.title, revision.content, tags, 'api', `Reverted to revision ${revision_id}`);
+    res.json({ success: true, message: `Reverted to revision ${revision_id}`, result });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

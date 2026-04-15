@@ -9,10 +9,7 @@ RUN npm install
 # Copy source
 COPY . .
 
-# Data volume for SQLite
-VOLUME ["/data"]
-
-# HTTP port for web UI
+# HTTP port for web UI and MCP SSE
 EXPOSE 8080
 
 CMD ["node", "index.js"]
