@@ -460,6 +460,80 @@ function formatDate(dateString) {
   return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
+// Parse path from article title (e.g., "assistance/deployment/guide" -> ["assistance", "deployment", "guide"])
+function parsePath(title) {
+  if (!title || !title.includes('/')) return { path: [], name: title };
+  const parts = title.split('/');
+  return {
+    path: parts.slice(0, -1),
+    name: parts[parts.length - 1]
+  };
+}
+
+// Get path prefix for grouping (e.g., "assistance/deployment/guide" -> "assistance/deployment")
+function getPathPrefix(title) {
+  if (!title || !title.includes('/')) return null;
+  const parts = title.split('/');
+  return parts.slice(0, -1).join('/');
+}
+
+// Get top-level group (e.g., "assistance/deployment/guide" -> "assistance")
+function getTopGroup(title) {
+  if (!title || !title.includes('/')) return 'uncategorized';
+  return title.split('/')[0];
+}
+
+// Generate breadcrumb HTML for a path
+function generateBreadcrumb(title, currentOnly = false) {
+  const { path, name } = parsePath(title);
+  if (path.length === 0) {
+    return `<div class="breadcrumb"><a href="/">Home</a><span class="sep">/</span><span class="current">${escapeHtml(name)}</span></div>`;
+  }
+
+  let html = '<div class="breadcrumb"><a href="/">Home</a>';
+  let buildPath = '';
+
+  for (let i = 0; i < path.length; i++) {
+    buildPath += (i > 0 ? '/' : '') + path[i];
+    html += `<span class="sep">/</span><a href="/?group=${encodeURIComponent(buildPath)}">${escapeHtml(path[i])}</a>`;
+  }
+
+  html += `<span class="sep">/</span><span class="current">${escapeHtml(currentOnly ? name : title)}</span></div>`;
+  return html;
+}
+
+// Count articles by group prefix
+function countByGroup(articles) {
+  const counts = {};
+  for (const article of articles) {
+    const group = getTopGroup(article.title);
+    counts[group] = (counts[group] || 0) + 1;
+  }
+  return counts;
+}
+
+// Generate group menu HTML
+function generateGroupMenu(articles, activeGroup = null) {
+  const counts = countByGroup(articles);
+  const groups = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+  let html = '<div class="group-menu"><h3>Browse by Group</h3><div class="group-grid">';
+
+  // All articles button
+  const allCount = articles.length;
+  const allActive = !activeGroup ? 'active' : '';
+  html += `<a href="/" class="group-btn ${allActive}">All<span class="count">${allCount}</span></a>`;
+
+  // Group buttons
+  for (const [group, count] of groups) {
+    const active = activeGroup === group ? 'active' : '';
+    html += `<a href="/?group=${encodeURIComponent(group)}" class="group-btn ${active}">${escapeHtml(group)}<span class="count">${count}</span></a>`;
+  }
+
+  html += '</div></div>';
+  return html;
+}
+
 async function listArticles(limit, offset) {
   if (USE_POSTGRES) {
     const result = await pgPool.query(
@@ -1428,13 +1502,13 @@ const app = express();
 
 // Authentication middleware for write operations
 function requireAuth(req, res, next) {
-  // Skip auth for MCP protocol endpoints (SSE transport)
-  if (req.path === '/mcp/sse' || req.path === '/mcp/message') {
+  // Skip auth for MCP protocol endpoints (SSE transport) and health check
+  if (req.path === '/mcp/sse' || req.path === '/mcp/message' || req.path === '/health') {
     return next();
   }
   
-  // Skip auth for read-only GET requests
-  if (req.method === 'GET') {
+  // Skip auth for read-only GET requests, but NOT for /new (article creation form)
+  if (req.method === 'GET' && req.path !== '/new') {
     return next();
   }
   
@@ -1458,6 +1532,22 @@ function requireAuth(req, res, next) {
 
 // Apply authentication middleware
 app.use(requireAuth);
+
+// Body parsers for API endpoints (must be before routes)
+// Skip body parsing for MCP message endpoint - SSEServerTransport needs raw body stream
+app.use((req, res, next) => {
+  if (req.path === '/mcp/message') return next();
+  express.json()(req, res, next);
+});
+app.use((req, res, next) => {
+  if (req.path === '/mcp/message') return next();
+  express.urlencoded({ extended: true })(req, res, next);
+});
+
+// Health check endpoint for container orchestration
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', service: 'mcp-wiki', timestamp: new Date().toISOString() });
+});
 
 // HTML template helper
 const htmlPage = (title, content) => `<!DOCTYPE html>
@@ -1503,6 +1593,83 @@ const htmlPage = (title, content) => `<!DOCTYPE html>
       font-size: 13px;
     }
     .nav a:hover { background: #1d4ed8; }
+    /* Breadcrumb Navigation */
+    .breadcrumb {
+      background: #fff;
+      padding: 10px 16px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .breadcrumb a {
+      color: #2563eb;
+      text-decoration: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .breadcrumb a:hover {
+      background: #e0e7ff;
+    }
+    .breadcrumb .sep {
+      color: #9ca3af;
+    }
+    .breadcrumb .current {
+      color: #374151;
+      font-weight: 500;
+      padding: 4px 8px;
+    }
+    /* Group Selection Menu */
+    .group-menu {
+      background: #fff;
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .group-menu h3 {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #6b7280;
+      margin-bottom: 10px;
+    }
+    .group-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .group-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: #f3f4f6;
+      color: #374151;
+      text-decoration: none;
+      border-radius: 20px;
+      font-size: 13px;
+      transition: all 0.15s;
+    }
+    .group-btn:hover {
+      background: #e5e7eb;
+    }
+    .group-btn.active {
+      background: #2563eb;
+      color: white;
+    }
+    .group-btn .count {
+      background: rgba(0,0,0,0.1);
+      color: inherit;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+    }
     main {
       background: #fff;
       padding: 16px;
@@ -1985,13 +2152,19 @@ app.get('/health', async (req, res) => {
 // Home / List
 app.get('/', async (req, res) => {
   try {
-    const articles = await listArticles(50, 0);
-    
+    const groupFilter = req.query.group || null;
+    const allArticles = await listArticles(200, 0);
+
+    // Filter articles by group if specified
+    const articles = groupFilter
+      ? allArticles.filter(a => a.title.startsWith(groupFilter + '/') || a.title === groupFilter)
+      : allArticles;
+
     const enhancedCount = articles.filter(a => a.metadata && a.metadata.classification).length;
-    const avgQuality = articles.length > 0 
+    const avgQuality = articles.length > 0
       ? (articles.reduce((sum, a) => sum + (a.metadata?.quality_score || 0), 0) / articles.length).toFixed(2)
       : 0;
-    
+
     const searchForm = `
       <div class="search-section">
         <form action="/search" method="GET" class="search-box">
@@ -2001,7 +2174,16 @@ app.get('/', async (req, res) => {
         <a href="/new" class="btn-primary">+ New Article</a>
       </div>
     `;
-    
+
+    // Generate breadcrumb for group filter
+    let breadcrumb = '';
+    if (groupFilter) {
+      breadcrumb = generateBreadcrumb(groupFilter, true);
+    }
+
+    // Generate group menu
+    const groupMenu = generateGroupMenu(allArticles, groupFilter);
+
     const statsBar = articles.length > 0 ? `
       <div class="stats-bar">
         <div class="stat">
@@ -2021,15 +2203,15 @@ app.get('/', async (req, res) => {
         </div>
       </div>
     ` : '';
-    
-    const list = articles.length === 0 
-      ? '<div class="empty-state"><p>No articles yet.</p><a href="/new" class="btn-primary">Create First Article</a></div>'
+
+    const list = articles.length === 0
+      ? `<div class="empty-state"><p>No articles ${groupFilter ? 'in group "' + escapeHtml(groupFilter) + '"' : 'yet'}.</p><a href="/new" class="btn-primary">Create First Article</a></div>`
       : '<div class="article-grid">' + articles.map(a => {
           const metadata = a.metadata || {};
           const qualityScore = metadata.quality_score || 0;
           const classification = metadata.classification || 'uncategorized';
           const hasTLDR = metadata.tldr && metadata.tldr.length > 10;
-          
+
           return `
             <article class="article-card" data-classification="${classification}">
               <div class="card-header">
@@ -2058,8 +2240,8 @@ app.get('/', async (req, res) => {
             </article>
           `;
         }).join('') + '</div>';
-    
-    res.send(htmlPage('Home', searchForm + statsBar + list));
+
+    res.send(htmlPage(groupFilter ? `Group: ${groupFilter}` : 'Home', searchForm + breadcrumb + groupMenu + statsBar + list));
   } catch (err) {
     res.send(htmlPage('Error', `<div class="error">${escapeHtml(err.message)}</div>`));
   }
@@ -2149,7 +2331,11 @@ app.get('/article/:title', async (req, res) => {
       </div>
     `;
     
+    // Generate breadcrumb for article
+    const breadcrumb = generateBreadcrumb(article.title);
+
     const content = `
+      ${breadcrumb}
       <h1>${escapeHtml(article.title)}</h1>
       ${aiSection}
       <p class="meta">Updated ${formatDate(article.updated_at)} · ${Math.round(article.content.length / 5)} words · Tags: ${escapeHtml(tagsDisplay)}</p>
@@ -2589,26 +2775,8 @@ app.post('/update', async (req, res) => {
   }
 });
 
-// MCP HTTP SSE transport endpoint (defined BEFORE body parsers)
-// This ensures body parsing doesn't interfere with the SSE stream
+// MCP HTTP SSE transport endpoint
 let mcpTransports;
-
-// Re-apply auth middleware after body parsers (order matters)
-app.use(requireAuth);
-
-// Body parsers for API endpoints (skip /mcp/message)
-app.use((req, res, next) => {
-  if (req.path === '/mcp/message') {
-    return next();
-  }
-  express.json()(req, res, next);
-});
-app.use((req, res, next) => {
-  if (req.path === '/mcp/message') {
-    return next();
-  }
-  express.urlencoded({ extended: true })(req, res, next);
-});
 
 // API Endpoints (JSON)
 app.get('/api/articles', async (req, res) => {
