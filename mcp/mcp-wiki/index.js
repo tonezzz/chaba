@@ -1677,10 +1677,16 @@ const htmlPage = (title, content) => `<!DOCTYPE html>
       justify-content: space-between;
       align-items: center;
     }
-    header h1 { 
-      color: #2563eb; 
-      font-size: 22px;
-      margin-bottom: 0;
+    .container h1 {
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 8px;
+      margin: 0 0 12px;
+      font-size: 28px;
+    }
+    .container .meta {
+      color: #6b7280;
+      font-size: 13px;
+      margin: 8px 0 12px;
     }
     header p { display: none; }
     .nav { display: flex; gap: 8px; }
@@ -2052,13 +2058,17 @@ const htmlPage = (title, content) => `<!DOCTYPE html>
     }
     .article-content {
       white-space: pre-wrap;
-      line-height: 1.8;
-      font-size: 16px;
+      line-height: 1.6;
+      font-size: 15px;
     }
-    .article-content h1, .article-content h2, .article-content h3 {
-      margin: 20px 0 10px;
-    }
-    .article-content p { margin-bottom: 15px; }
+    .article-content h1 { margin: 24px 0 12px; }
+    .article-content h2 { margin: 20px 0 10px; }
+    .article-content h3 { margin: 16px 0 8px; }
+    .article-content h4, .article-content h5, .article-content h6 { margin: 14px 0 6px; }
+    .article-content p { margin-bottom: 12px; }
+    .article-content ul, .article-content ol { margin: 8px 0; padding-left: 24px; }
+    .article-content li { margin: 4px 0; }
+    .article-content pre { margin: 12px 0; }
     .actions {
       display: flex;
       gap: 10px;
@@ -2092,15 +2102,15 @@ const htmlPage = (title, content) => `<!DOCTYPE html>
     .mermaid {
       background: #fafafa;
       border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      padding: 20px;
-      margin: 20px 0;
+      border-radius: 6px;
+      padding: 12px;
+      margin: 12px 0;
       text-align: center;
     }
     pre:has(code.language-mermaid) {
       background: transparent;
       padding: 0;
-      margin: 20px 0;
+      margin: 12px 0;
     }
     pre code.language-mermaid {
       display: none; /* Hide raw mermaid code, let mermaid render SVG */
@@ -2108,16 +2118,16 @@ const htmlPage = (title, content) => `<!DOCTYPE html>
     /* AI Metadata Section */
     .ai-metadata {
       background: linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%);
-      border-radius: 8px;
-      padding: 15px 20px;
-      margin-bottom: 20px;
-      border-left: 4px solid #8b5cf6;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      border-left: 3px solid #8b5cf6;
     }
     .ai-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
     }
     .ai-badge {
       background: #8b5cf6;
@@ -2133,38 +2143,40 @@ const htmlPage = (title, content) => `<!DOCTYPE html>
     }
     .ai-tldr {
       background: white;
-      padding: 12px 15px;
-      border-radius: 6px;
-      margin-bottom: 10px;
-      font-size: 14px;
-      line-height: 1.6;
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      line-height: 1.5;
       color: #374151;
     }
     .ai-tags {
       display: flex;
-      gap: 8px;
+      flex-wrap: wrap;
+      gap: 6px;
     }
     .ai-prompt {
       background: #fef3c7;
       border: 2px dashed #f59e0b;
-      border-radius: 8px;
-      padding: 20px;
+      border-radius: 6px;
+      padding: 14px;
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 14px;
     }
     .ai-prompt p {
       color: #92400e;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
+      font-size: 14px;
     }
     /* Validation Status */
     .validation-status {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 8px 12px;
-      border-radius: 6px;
-      margin: 10px 0;
-      font-size: 13px;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 4px;
+      margin: 8px 0 0;
+      font-size: 12px;
     }
     .validation-status.valid {
       background: #d1fae5;
