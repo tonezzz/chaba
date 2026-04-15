@@ -1173,13 +1173,19 @@ class WebSocketManager:
                     # Some models may emit text parts in model_turn.
                     ptxt = getattr(part, "text", None)
                     if ptxt:
-                        await session.send_json(
-                            {
-                                "type": "text",
-                                "text": str(ptxt),
-                                "instance_id": INSTANCE_ID,
-                            }
-                        )
+                        try:
+                            text_str = str(ptxt)
+                            logger.info(f"Live sending text to client: {text_str[:80]}...")
+                            await session.send_json(
+                                {
+                                    "type": "text",
+                                    "text": text_str,
+                                    "instance_id": INSTANCE_ID,
+                                }
+                            )
+                            logger.info("Live text sent successfully")
+                        except Exception as send_err:
+                            logger.error(f"Live failed to send text to client: {send_err}")
 
                     # Handle function calls from Gemini Live
                     func_call = getattr(part, "function_call", None)
