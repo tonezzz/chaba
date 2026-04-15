@@ -2534,6 +2534,7 @@ app.get('/article/:title', async (req, res) => {
       <div class="actions">
         <a href="/edit/${encodeURIComponent(article.title)}" class="edit">Edit</a>
         <a href="/history/${encodeURIComponent(article.title)}">📜 History</a>
+        <a href="/deep-research/${article.id}">🔍 Deep Research</a>
         <a href="/">Back to Home</a>
         <button onclick="processQueue()" class="btn-process">🔄 Process Queue</button>
         <span id="queue-status" class="queue-status"></span>
@@ -2736,6 +2737,207 @@ app.get('/research/:id', async (req, res) => {
     res.send(htmlPage(`${modeLabel} Started`, content));
   } catch (err) {
     res.send(htmlPage('Error', `<div class="error">${escapeHtml(err.message)}</div>`));
+  }
+});
+
+// Web UI: Deep Research Form & Results
+app.get('/deep-research/:id', async (req, res) => {
+  try {
+    const articleId = parseInt(req.params.id);
+    const article = await getArticleById(articleId);
+    if (!article) {
+      return res.status(404).send(`<html><body><h2>Article not found</h2><a href="/">← Back</a></body></html>`);
+    }
+
+    const researchQuery = req.query.query || '';
+    const mode = req.query.mode || 'preview';
+    const sources = req.query.sources || 'both';
+
+    let resultHtml = '';
+
+    if (researchQuery) {
+      // Run deep research
+      const relatedResults = sources !== 'external'
+        ? await hybridSearch(`${article.title} ${researchQuery}`, 5, 0.6)
+        : [];
+
+      const relatedArticles = relatedResults
+        .filter(r => r.title !== article.title)
+        .map(r => `<li><a href="/article/${encodeURIComponent(r.title)}">${escapeHtml(r.title)}</a>: ${escapeHtml(r.snippet || r.content?.substring(0, 100) + '...')}</li>`)
+        .join('') || '<li>No related articles found.</li>';
+
+      const currentSections = article.content.match(/^#{1,3} .+$/gm) || [];
+      const currentTags = article.tags || [];
+
+      const proposedAdditions = [
+        `Research findings for: "${researchQuery}"`,
+        `Suggested new sections based on gaps`,
+        `Cross-references from related articles`
+      ];
+
+      const report = `# Deep Research: "${article.title}"
+
+## Research Query
+${researchQuery}
+
+## Current Content Analysis
+- **Sections**: ${currentSections.length} (${currentSections.join(', ') || 'None'})
+- **Tags**: ${currentTags.join(', ') || 'None'}
+
+## Related Articles (Internal Research)
+${relatedResults.filter(r => r.title !== article.title).map(r => `- **${r.title}**: ${r.snippet || r.content?.substring(0, 100) + '...'}`).join('\n') || 'No related articles found.'}
+
+## Proposed Additions
+
+### New Content Suggestions
+${proposedAdditions.map((item, i) => `${i + 1}. ${item}`).join('\n')}
+
+### Research Notes
+- Sources: ${sources}
+- Related articles found: ${relatedResults.length}
+
+## Mode: ${mode.toUpperCase()}
+${mode === 'preview'
+  ? '> 💡 This is a preview. Click "Apply to Article" to add findings.'
+  : mode === 'append'
+    ? '> 📝 Research findings will be appended to the article.'
+    : '> 🔄 Content will be replaced with research findings.'
+}
+
+---
+
+**Next Steps:**
+- Review related articles above
+- Edit the article to add specific sections
+- Use AI Enhancement for quality improvements
+`;
+
+      resultHtml = `
+        <div class="research-result">
+          <h3>🔍 Research Results</h3>
+          <div class="research-content" style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0; max-height: 500px; overflow-y: auto;">
+            <pre style="white-space: pre-wrap; font-family: inherit; line-height: 1.6;">${escapeHtml(report)}</pre>
+          </div>
+          ${mode === 'preview' ? `
+            <div class="research-actions" style="display: flex; gap: 10px; margin: 20px 0;">
+              <form method="get" action="/deep-research/${articleId}" style="display: inline;">
+                <input type="hidden" name="query" value="${escapeHtml(researchQuery)}">
+                <input type="hidden" name="mode" value="append">
+                <input type="hidden" name="sources" value="${sources}">
+                <button type="submit" class="edit" style="background: #10b981;">📝 Append to Article</button>
+              </form>
+              <form method="get" action="/deep-research/${articleId}" style="display: inline;">
+                <input type="hidden" name="query" value="${escapeHtml(researchQuery)}">
+                <input type="hidden" name="mode" value="replace">
+                <input type="hidden" name="sources" value="${sources}">
+                <button type="submit" style="background: #f59e0b;">🔄 Replace Article</button>
+              </form>
+              <a href="/article/${encodeURIComponent(article.title)}" class="btn" style="background: #6b7280; padding: 12px 24px; color: white; text-decoration: none; border-radius: 4px;">Cancel</a>
+            </div>
+          ` : `
+            <div class="success" style="margin: 20px 0;">
+              ✅ Research findings ${mode === 'append' ? 'appended to' : 'replaced in'} article!
+              <br><a href="/article/${encodeURIComponent(article.title)}">View Updated Article →</a>
+            </div>
+          `}
+        </div>
+      `;
+
+      // If append/replace mode, update the article
+      if (mode === 'append' || mode === 'replace') {
+        const newContent = mode === 'replace'
+          ? report
+          : `${article.content}\n\n---\n\n## Research Findings: ${researchQuery}\n\n${report}`;
+
+        await updateArticle(article.title, newContent, article.tags, 'web', `Deep research: ${researchQuery}`);
+      }
+    }
+
+    res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deep Research: ${escapeHtml(article.title)}</title>
+  <style>
+    ${COMMON_CSS}
+    .research-form {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    .form-group input[type="text"], .form-group select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    .form-row {
+      display: flex;
+      gap: 15px;
+    }
+    .form-row .form-group {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🔍 Deep Research</h1>
+      <div class="nav">
+        <a href="/article/${encodeURIComponent(article.title)}">← Back to Article</a>
+        <a href="/">Home</a>
+      </div>
+    </header>
+
+    <div class="research-form">
+      <h2>Research: ${escapeHtml(article.title)}</h2>
+      <form method="get">
+        <div class="form-group">
+          <label for="query">Research Query (what to research/add):</label>
+          <input type="text" id="query" name="query" value="${escapeHtml(researchQuery)}" placeholder="e.g., Add performance benchmarks, latest 2024 updates, security best practices" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="mode">Mode:</label>
+            <select id="mode" name="mode">
+              <option value="preview" ${mode === 'preview' ? 'selected' : ''}>🔍 Preview Only</option>
+              <option value="append" ${mode === 'append' ? 'selected' : ''}>📝 Append to Article</option>
+              <option value="replace" ${mode === 'replace' ? 'selected' : ''}>🔄 Replace Article</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="sources">Sources:</label>
+            <select id="sources" name="sources">
+              <option value="both" ${sources === 'both' ? 'selected' : ''}>Internal + External</option>
+              <option value="internal" ${sources === 'internal' ? 'selected' : ''}>Internal Wiki Only</option>
+              <option value="external" ${sources === 'external' ? 'selected' : ''}>External Sources</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="edit">Run Deep Research</button>
+      </form>
+    </div>
+
+    ${resultHtml}
+  </div>
+</body>
+</html>`);
+  } catch (err) {
+    console.error('Deep research error:', err);
+    res.status(500).send(`<html><body><h2>Error</h2><p>${escapeHtml(err.message)}</p><a href="/">← Back</a></body></html>`);
   }
 });
 
