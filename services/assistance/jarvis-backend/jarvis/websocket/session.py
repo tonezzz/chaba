@@ -1019,6 +1019,7 @@ class WebSocketManager:
         For Scenario 3 (voice-in, text-out), TTS is used to speak the text responses.
         """
         live_caps = LiveCapabilities(model_name)
+        logger.info(f"Live Gemini->WS loop starting model={model_name} scenario={live_caps.scenario} voice_in={live_caps.supports_voice_input} voice_out={live_caps.supports_voice_output}")
         # Frontend expects:
         # - {type:'transcript', text:'...', source:'input'|'output'}
         # - {type:'audio', data:'<base64>', sampleRate?:number}
@@ -1097,6 +1098,25 @@ class WebSocketManager:
                             idata = p.inline_data
                             dlen = len(getattr(idata, "data", b"") or b"") if idata else 0
                             mt_parts_types.append(f"inline_data(mime={getattr(idata, 'mime_type', '?')},len={dlen})")
+                            # Send inline audio data to WebSocket
+                            try:
+                                audio_bytes = getattr(idata, "data", None)
+                                mime_type = str(getattr(idata, "mime_type", "audio/pcm;rate=24000"))
+                                if audio_bytes:
+                                    if isinstance(audio_bytes, memoryview):
+                                        audio_bytes = audio_bytes.tobytes()
+                                    b64_audio = base64.b64encode(bytes(audio_bytes)).decode("ascii")
+                                    logger.info(f"Live inline_data audio forwarded bytes={len(audio_bytes)} mime={mime_type}")
+                                    await session.send_json(
+                                        {
+                                            "type": "audio",
+                                            "data": b64_audio,
+                                            "sampleRate": 24000,
+                                            "instance_id": INSTANCE_ID,
+                                        }
+                                    )
+                            except Exception as audio_err:
+                                logger.error(f"Live failed to forward inline_data audio: {audio_err}")
                         else:
                             mt_parts_types.append(f"other({[a for a in dir(p) if not a.startswith('_')][:5]})")
                 turn_complete = getattr(content, "turn_complete", None)
