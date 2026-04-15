@@ -60,6 +60,7 @@ mcp_router = MCPRouter(base_url=MCP_BASE_URL)
 
 # Include modular API routers
 app.include_router(oauth_router, prefix="/jarvis/api", tags=["oauth"])
+app.include_router(logs_router, tags=["logs"])  # Caddy strips /jarvis/api before proxying
 app.include_router(logs_router, prefix="/jarvis/api", tags=["logs"])
 app.include_router(sys_kv_router, prefix="/jarvis/api", tags=["sys_kv"])
 app.include_router(dialog_router, prefix="/jarvis/api", tags=["dialog"])
