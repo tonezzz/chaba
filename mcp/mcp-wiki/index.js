@@ -292,6 +292,14 @@ async function getArticle(title) {
   return result.rows[0] || null;
 }
 
+async function getArticleById(id) {
+  const result = await pgPool.query(
+    'SELECT * FROM articles WHERE id = $1',
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
 async function createArticle(title, content, tags, entities, classification) {
   try {
     const result = await pgPool.query(
