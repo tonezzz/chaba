@@ -1734,6 +1734,64 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'mcp-wiki', timestamp: new Date().toISOString() });
 });
 
+// Common CSS styles shared across pages
+const COMMON_CSS = `
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.5;
+      color: #333;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 12px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    header {
+      background: #fff;
+      padding: 14px 16px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .nav { display: flex; gap: 8px; }
+    .nav a {
+      padding: 6px 12px;
+      background: #2563eb;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .nav a:hover { background: #1d4ed8; }
+    h1, h2, h3 { color: #111; margin: 20px 0 10px; }
+    h1 { font-size: 28px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
+    button, .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      text-decoration: none;
+      display: inline-block;
+    }
+    button:hover, .btn:hover { opacity: 0.9; }
+    .edit { background: #2563eb; color: white; }
+    .delete { background: #dc2626; color: white; }
+    .error { background: #fee2e2; color: #991b1b; padding: 10px; border-radius: 4px; }
+    .success { background: #d1fae5; color: #065f46; padding: 10px; border-radius: 4px; }
+    a { color: #2563eb; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+`;
+
 // HTML template helper
 const htmlPage = (title, content) => `<!DOCTYPE html>
 <html lang="en">
