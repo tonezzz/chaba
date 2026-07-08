@@ -1,0 +1,131 @@
+version: "3.9"
+
+# ── Shared GPU deploy config ──────────────────────────────────────────────────
+x-gpu: &gpu
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: all
+            capabilities: [gpu]
+
+# ── Shared volumes ────────────────────────────────────────────────────────────
+x-volumes: &shared-volumes
+  - ./data:/data          # Input datasets & captured scenes
+  - ./outputs:/outputs    # Training outputs, checkpoints, .ply files
+
+# ── Shared env ────────────────────────────────────────────────────────────────
+x-env: &shared-env
+  - NVIDIA_VISIBLE_DEVICES=all
+  - NVIDIA_DRIVER_CAPABILITIES=all
+
+services:
+
+  # ── Base image (build only, not run directly) ───────────────────────────────
+  base:
+    build:
+      context: docker/base
+      dockerfile: Dockerfile
+    image: gaussian-splatting-base:latest
+    profiles: ["build"]  # Only used during build phase
+
+  # ── COLMAP: Structure-from-Motion preprocessing ─────────────────────────────
+  colmap:
+    build:
+      context: docker/colmap
+      dockerfile: Dockerfile
+    image: gaussian-splatting-colmap:latest
+    <<: *gpu
+    environment: *shared-env
+    volumes: *shared-volumes
+    ipc: host
+    stdin_open: true
+    tty: true
+
+  # ── Original 3DGS (graphdeco-inria) ─────────────────────────────────────────
+  3dgs:
+    build:
+      context: docker/3dgs
+      dockerfile: Dockerfile
+    image: gaussian-splatting-3dgs:latest
+    <<: *gpu
+    environment: *shared-env
+    volumes:
+      - ./data:/data
+      - ./outputs:/outputs
+      - ./src/gaussian-splatting:/workspace/gaussian-splatting  # Dev mount (optional)
+    ipc: host
+    stdin_open: true
+    tty: true
+    # X11 forwarding for SIBR viewer (optional)
+    # environment:
+    #   - DISPLAY=${DISPLAY}
+    # volumes:
+    #   - /tmp/.X11-unix:/tmp/.X11-unix
+
+  # ── Nerfstudio + gsplat ──────────────────────────────────────────────────────
+  nerfstudio:
+    build:
+      context: docker/nerfstudio
+      dockerfile: Dockerfile
+    image: gaussian-splatting-nerfstudio:latest
+    <<: *gpu
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - METHOD=splatfacto  # Override: splatfacto | splatfacto-big
+    ports:
+      - "7007:7007"  # Nerfstudio web viewer
+    volumes: *shared-volumes
+    ipc: host
+    stdin_open: true
+    tty: true
+
+  # ── Variants: 2DGS | Mip-Splatting | GOF ────────────────────────────────────
+  variants:
+    build:
+      context: docker/variants
+      dockerfile: Dockerfile
+    image: gaussian-splatting-variants:latest
+    <<: *gpu
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - VARIANT=2dgs  # Override: 2dgs | mip | gof
+    volumes: *shared-volumes
+    ipc: host
+    stdin_open: true
+    tty: true
+
+  # ── John the Ripper (Jumbo) ──────────────────────────────────────────────────
+  john:
+    build:
+      context: docker/john
+      dockerfile: Dockerfile
+    image: gaussian-splatting-john:latest
+    volumes:
+      - ./data:/data
+      - ./outputs:/outputs
+    stdin_open: true
+    tty: true
+
+  # ── Jupyter Lab (research / notebook experiments) ────────────────────────────
+  jupyter:
+    image: gaussian-splatting-base:latest
+    <<: *gpu
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./data:/data
+      - ./outputs:/outputs
+      - ./notebooks:/workspace/notebooks
+    command: >
+      bash -c "pip install jupyterlab -q &&
+               jupyter lab --ip=0.0.0.0 --port=8888 --no-browser
+               --NotebookApp.token='' --NotebookApp.password=''
+               --notebook-dir=/workspace/notebooks"
+    ipc: host
