@@ -9,7 +9,7 @@ graph TB
         Outputs[./outputs]
         Notebooks[./notebooks]
         Src[./src/gaussian-splatting]
-        X11[/tmp/.X11-unix]
+        X11[X11 Socket<br/>/tmp/.X11-unix]
     end
 
     %% Docker Services
