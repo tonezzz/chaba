@@ -27,7 +27,7 @@ graph TB
         Nerfstudio[nerfstudio<br/> gaussian-splatting-nerfstudio:latest<br/>Nerfstudio + gsplat<br/>Port: 7007]
         
         %% Variants Service
-        Variants[variants<br/> gaussian-splatting-variants:latest<br/>2DGS | Mip-Splatting | GOF]
+        Variants[variants<br/> gaussian-splatting-variants:latest<br/>2DGS or Mip-Splatting or GOF]
         
         %% John Service
         John[john<br/> gaussian-splatting-john:latest<br/>John the Ripper]
