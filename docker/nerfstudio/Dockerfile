@@ -4,9 +4,7 @@
 FROM gaussian-splatting-base:latest
 
 # Install nerfstudio and gsplat
-RUN pip install \
-    nerfstudio==1.1.4 \
-    gsplat==1.3.0
+RUN pip install nerfstudio==1.1.4
 
 # Install nerfstudio CLI completion and tiny-cuda-nn (optional but speeds up training)
 RUN pip install \

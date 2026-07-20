@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  frigate:
+    container_name: frigate
+    # Use stable tag. Append hardware variant if needed, e.g.
+    #   - :stable-tensorrt   for NVIDIA TensorRT
+    #   - :stable-openvino   for Intel OpenVINO
+    #   - :stable-rknn       for Rockchip NPU
+    image: ghcr.io/blakeblackshear/frigate:stable
+    privileged: true
+    restart: unless-stopped
+    shm_size: "256mb"  # Increase if you have many cameras
+    devices:
+      # Coral USB TPU
+      - /dev/bus/usb:/dev/bus/usb
+      # Intel / AMD VAAPI devices (uncomment if using GPU via VAAPI)
+      # - /dev/dri:/dev/dri
+      # NVIDIA GPU handled below by runtime
+    environment:
+      - TZ=UTC
+      # - FRIGATE_RTSP_PASSWORD=your_camera_password
+    volumes:
+      - ./config.yml:/config/config.yml
+      - ./storage:/media/frigate
+      - ./db:/db
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "5000:5000"     # Web UI
+      - "8554:8554"     # RTSP restream
+      - "8555:8555/tcp" # WebRTC
+      - "8555:8555/udp"
+    # Uncomment for NVIDIA GPU support
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]

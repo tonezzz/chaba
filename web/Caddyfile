@@ -1,0 +1,12 @@
+:8080 {
+	root * /srv/public
+	file_server
+
+	# Pretty URLs: /cameras → /cameras.json
+	rewrite /cameras /cameras.json
+
+	# Future: reverse proxy to API apps
+	# handle /api/* {
+	#     reverse_proxy app-name:3000
+	# }
+}

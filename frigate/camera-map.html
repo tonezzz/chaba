@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frigate Camera Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+    <script src="https://unpkg.com/leaflet-rotatedmarker@0.2.0/leaflet.rotatedMarker.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, sans-serif; background: #1a1a2e; color: #eee; overflow: hidden; }
+        #map { width: 100vw; height: 100vh; }
+        .camera-popup { min-width: 340px; }
+        .camera-popup h3 { margin-bottom: 6px; font-size: 14px; }
+        .camera-popup .meta { font-size: 12px; color: #888; margin-bottom: 8px; }
+        .camera-popup .video-container {
+            position: relative; width: 320px; height: 180px;
+            background: #000; border-radius: 6px; overflow: hidden; margin-bottom: 8px;
+        }
+        .camera-popup video { width: 100%; height: 100%; object-fit: cover; }
+        .camera-popup .snapshot-img { width: 320px; height: 180px; object-fit: cover; border-radius: 6px; margin-bottom: 8px; background: #000; }
+        .camera-popup .loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #888; font-size: 13px; }
+        .camera-popup .stream { font-size: 11px; word-break: break-all; background: #f0f0f0; padding: 4px 6px; border-radius: 4px; margin-bottom: 8px; }
+        .camera-popup a { display: inline-block; padding: 4px 12px; background: #0a84ff; color: #fff; text-decoration: none; border-radius: 4px; font-size: 12px; }
+        .camera-popup a:hover { background: #0066cc; }
+        .camera-popup .pin-btn {
+            display: inline-block; padding: 4px 12px; background: #2ecc71;
+            color: #fff; border: none; border-radius: 4px; font-size: 12px;
+            cursor: pointer; margin-left: 6px;
+        }
+        .camera-popup .pin-btn:hover { background: #27ae60; }
+        .fs-btn {
+            position: absolute; top: 6px; right: 6px; z-index: 10;
+            background: rgba(0,0,0,0.55); border: none; color: #fff;
+            cursor: pointer; font-size: 14px; padding: 3px 6px; border-radius: 4px;
+        }
+        .fs-btn:hover { background: rgba(0,0,0,0.85); }
+        .legend {
+            position: absolute; bottom: 20px; left: 20px; z-index: 1000;
+            background: rgba(26,26,46,0.95); padding: 12px 16px; border-radius: 8px;
+            font-size: 13px; line-height: 1.8;
+        }
+        .legend .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; }
+        .legend .local { background: #e74c3c; }
+        .legend .doh { background: #f39c12; }
+        .legend .bangna { background: #3498db; }
+        .legend .chonburi { background: #9b59b6; }
+
+        /* Pinned video panels */
+        .pinned-panel {
+            position: fixed; z-index: 2000;
+            background: #1a1a2e; border: 1px solid #333; border-radius: 8px;
+            overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+            transition: box-shadow 0.2s;
+        }
+        .pinned-panel:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.8); }
+        .pinned-panel.dragging { box-shadow: 0 16px 48px rgba(0,0,0,0.9); cursor: grabbing; }
+        .pin-connector {
+            position: fixed; z-index: 1999; pointer-events: none;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+        }
+        .pinned-panel .panel-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 6px 10px; background: #16213e; cursor: grab;
+            border-bottom: 1px solid #333; user-select: none;
+        }
+        .pinned-panel .panel-header:active { cursor: grabbing; }
+        .pinned-panel .panel-title { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px; }
+        .pinned-panel .panel-controls { display: flex; gap: 4px; flex-shrink: 0; }
+        .pinned-panel .panel-btn {
+            background: none; border: none; color: #888; cursor: pointer;
+            font-size: 16px; line-height: 1; padding: 0 2px; border-radius: 4px;
+        }
+        .pinned-panel .panel-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        .pinned-panel .panel-btn.close:hover { color: #e74c3c; }
+        .pinned-panel .panel-video-wrap {
+            position: relative; width: 320px; height: 180px; background: #000;
+        }
+        .pinned-panel .panel-video-wrap video { width: 100%; height: 100%; object-fit: cover; }
+        .pinned-panel .panel-video-wrap img { width: 100%; height: 100%; object-fit: cover; }
+        .pinned-panel .panel-loading {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #888; font-size: 13px; pointer-events: none;
+        }
+        .pinned-panel .status-dot {
+            display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+            margin-right: 6px; flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="legend">
+        <div><span class="dot local"></span> Coffee</div>
+        <div><span class="dot doh"></span> Traffic</div>
+        <div><span class="dot bangna"></span> ทางพิเศษบูรพาวิถี</div>
+        <div><span class="dot chonburi"></span> ชลบุรี</div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let activeHls = null;
+        let snapshotTimer = null;
+        const pinnedPanels = new Map();
+        let topZIndex = 2000;
+        let cascadeOffset = 0;
+
+        function stopAllPlayers() {
+            if (activeHls) { activeHls.destroy(); activeHls = null; }
+            if (snapshotTimer) { clearInterval(snapshotTimer); snapshotTimer = null; }
+        }
+
+        function startHls(videoEl, url) {
+            if (Hls.isSupported()) {
+                activeHls = new Hls({ liveDurationInfinity: true, liveBackBufferLength: 0 });
+                activeHls.loadSource(url);
+                activeHls.attachMedia(videoEl);
+                activeHls.on(Hls.Events.MANIFEST_PARSED, () => videoEl.play().catch(() => {}));
+                activeHls.on(Hls.Events.ERROR, (_, data) => {
+                    if (data.fatal) {
+                        const loading = videoEl.parentElement.querySelector('.loading');
+                        if (loading) loading.textContent = 'Stream unavailable';
+                    }
+                });
+            } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+                videoEl.src = url;
+                videoEl.play().catch(() => {});
+            }
+        }
+
+        function startSnapshot(imgEl, camName) {
+            const url = `http://192.168.1.45:5000/api/${camName}/latest.jpg?h=180&cache=` + Date.now();
+            imgEl.src = url;
+            snapshotTimer = setInterval(() => {
+                imgEl.src = `http://192.168.1.45:5000/api/${camName}/latest.jpg?h=180&cache=` + Date.now();
+            }, 2000);
+        }
+
+        function createHlsForPanel(videoEl, url, loadingEl) {
+            let hls = null;
+            if (Hls.isSupported()) {
+                hls = new Hls({ liveDurationInfinity: true, liveBackBufferLength: 0 });
+                hls.loadSource(url);
+                hls.attachMedia(videoEl);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => { if (loadingEl) loadingEl.style.display = 'none'; videoEl.play().catch(() => {}); });
+                hls.on(Hls.Events.ERROR, (_, data) => {
+                    if (data.fatal && loadingEl) loadingEl.textContent = 'Stream unavailable';
+                });
+            } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+                videoEl.src = url;
+                videoEl.play().catch(() => {});
+                if (loadingEl) loadingEl.style.display = 'none';
+            }
+            return hls;
+        }
+
+        function createSnapshotTimerForPanel(imgEl, camName) {
+            const update = () => { imgEl.src = `http://192.168.1.45:5000/api/${camName}/latest.jpg?h=180&cache=` + Date.now(); };
+            update();
+            return setInterval(update, 2000);
+        }
+
+        function updateConnector(camName) {
+            const entry = pinnedPanels.get(camName);
+            if (!entry || !entry.connector) return;
+            const cam = cameras.find(c => c.name === camName);
+            if (!cam) return;
+            const mapPoint = map.latLngToContainerPoint([cam.lat, cam.lon]);
+            const panelLeft = parseInt(entry.el.style.left);
+            const panelTop = parseInt(entry.el.style.top);
+            const panelW = entry.el.offsetWidth;
+            const panelH = entry.el.offsetHeight;
+            const anchorX = panelLeft + panelW / 2;
+            const anchorY = panelTop + panelH;
+            const line = entry.connector.querySelector('line');
+            line.setAttribute('x1', anchorX);
+            line.setAttribute('y1', anchorY);
+            line.setAttribute('x2', mapPoint.x);
+            line.setAttribute('y2', mapPoint.y);
+        }
+
+        function updateAllConnectors() {
+            pinnedPanels.forEach((_, name) => updateConnector(name));
+        }
+
+        function updatePanelPositions() {
+            const container = map.getSize();
+            pinnedPanels.forEach((entry, name) => {
+                if (entry.dragging) return;
+                const cam = cameras.find(c => c.name === name);
+                if (!cam) return;
+                const mapPoint = map.latLngToContainerPoint([cam.lat, cam.lon]);
+                const panelW = entry.el.offsetWidth || 320;
+                const panelH = entry.el.offsetHeight || 230;
+                let x = mapPoint.x + entry.offsetX;
+                let y = mapPoint.y + entry.offsetY;
+
+                // Check if panel is completely off-screen
+                const offScreen = x + panelW < 0 || x > container.x || y + panelH < 0 || y > container.y;
+                if (offScreen) {
+                    entry.el.style.display = 'none';
+                    if (entry.connector) entry.connector.style.display = 'none';
+                    return;
+                }
+                entry.el.style.display = '';
+                if (entry.connector) entry.connector.style.display = '';
+                entry.el.style.left = x + 'px';
+                entry.el.style.top = y + 'px';
+            });
+        }
+
+        function pinCamera(cam) {
+            if (pinnedPanels.has(cam.name)) {
+                const existing = pinnedPanels.get(cam.name);
+                existing.el.style.zIndex = ++topZIndex;
+                return;
+            }
+
+            const panel = document.createElement('div');
+            panel.className = 'pinned-panel';
+            const color = groupColors[cam.group];
+
+            const videoInner = cam.hls
+                ? `<video muted autoplay playsinline></video>`
+                : `<img src="" alt="Loading...">`;
+
+            panel.innerHTML = `
+                <div class="panel-header">
+                    <div class="panel-title"><span class="status-dot" style="background:${color}"></span>${cam.title}</div>
+                    <div class="panel-controls">
+                        <button class="panel-btn fs" title="Full screen">⛶</button>
+                        <button class="panel-btn close" title="Close">&times;</button>
+                    </div>
+                </div>
+                <div class="panel-video-wrap">
+                    ${videoInner}
+                    <div class="panel-loading">Loading...</div>
+                </div>
+            `;
+
+            const mapPoint = map.latLngToContainerPoint([cam.lat, cam.lon]);
+            const panelW = 320, panelH = 230;
+            let x = mapPoint.x - panelW / 2;
+            let y = mapPoint.y - panelH - 35;
+            x = Math.max(4, Math.min(window.innerWidth - panelW - 4, x));
+            y = Math.max(4, Math.min(window.innerHeight - panelH - 4, y));
+            panel.style.left = x + 'px';
+            panel.style.top = y + 'px';
+            panel.style.zIndex = ++topZIndex;
+            const offsetX = x - mapPoint.x;
+            const offsetY = y - mapPoint.y;
+
+            const connector = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            connector.classList.add('pin-connector');
+            connector.innerHTML = `<line x1="0" y1="0" x2="0" y2="0" stroke="${color}" stroke-width="2" stroke-dasharray="4 3" opacity="0.7"/>`;
+            document.body.appendChild(connector);
+
+            document.body.appendChild(panel);
+
+            const loadingEl = panel.querySelector('.panel-loading');
+            let hls = null;
+            let snapTimer = null;
+
+            if (cam.hls) {
+                const videoEl = panel.querySelector('video');
+                hls = createHlsForPanel(videoEl, cam.hls, loadingEl);
+            } else {
+                const imgEl = panel.querySelector('img');
+                snapTimer = createSnapshotTimerForPanel(imgEl, cam.name);
+                loadingEl.style.display = 'none';
+            }
+
+            makeDraggable(panel, panel.querySelector('.panel-header'), cam.name);
+
+            panel.querySelector('.close').addEventListener('click', () => {
+                unpinCamera(cam.name);
+            });
+
+            panel.querySelector('.fs').addEventListener('click', () => {
+                const video = panel.querySelector('video');
+                const img = panel.querySelector('img');
+                const target = video || img;
+                if (target && target.requestFullscreen) target.requestFullscreen();
+            });
+
+            panel.addEventListener('mousedown', () => {
+                panel.style.zIndex = ++topZIndex;
+            });
+
+            pinnedPanels.set(cam.name, { el: panel, hls, snapTimer, connector, offsetX, offsetY, dragging: false });
+            updateConnector(cam.name);
+        }
+
+        function unpinCamera(camName) {
+            const entry = pinnedPanels.get(camName);
+            if (!entry) return;
+            if (entry.hls) entry.hls.destroy();
+            if (entry.snapTimer) clearInterval(entry.snapTimer);
+            if (entry.connector) entry.connector.remove();
+            entry.el.remove();
+            pinnedPanels.delete(camName);
+        }
+
+        function makeDraggable(panel, handle, camName) {
+            let isDragging = false;
+            let startX, startY, initialLeft, initialTop;
+
+            handle.addEventListener('mousedown', (e) => {
+                if (e.target.classList.contains('panel-btn')) return;
+                isDragging = true;
+                const entry = pinnedPanels.get(camName);
+                if (entry) entry.dragging = true;
+                panel.classList.add('dragging');
+                panel.style.zIndex = ++topZIndex;
+                startX = e.clientX;
+                startY = e.clientY;
+                initialLeft = parseInt(panel.style.left);
+                initialTop = parseInt(panel.style.top);
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                let newLeft = initialLeft + e.clientX - startX;
+                let newTop = initialTop + e.clientY - startY;
+                newLeft = Math.max(0, Math.min(window.innerWidth - panel.offsetWidth, newLeft));
+                newTop = Math.max(0, Math.min(window.innerHeight - panel.offsetHeight, newTop));
+                panel.style.left = newLeft + 'px';
+                panel.style.top = newTop + 'px';
+                updateConnector(camName);
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    panel.classList.remove('dragging');
+                    const entry = pinnedPanels.get(camName);
+                    if (entry) {
+                        entry.dragging = false;
+                        const cam = cameras.find(c => c.name === camName);
+                        if (cam) {
+                            const mapPoint = map.latLngToContainerPoint([cam.lat, cam.lon]);
+                            entry.offsetX = parseInt(panel.style.left) - mapPoint.x;
+                            entry.offsetY = parseInt(panel.style.top) - mapPoint.y;
+                        }
+                    }
+                }
+            });
+        }
+
+        const cameras = [
+            {
+                name: "vstarcam",
+                title: "VSTARCAM IP Camera (Coffee shop)",
+                lat: 13.7469, lon: 100.5346,
+                group: "local",
+                hls: null,
+                heading: null,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "doh_vibhavadi",
+                title: "DOH \u2014 Vibhavadi Rangsit, Don Mueang inbound",
+                lat: 13.9277, lon: 100.6058,
+                group: "doh",
+                hls: "https://camerai1.iticfoundation.org/pass/180.180.242.207:1935/Phase3/PER_3_008_IN.stream/playlist.m3u8",
+                heading: 0,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "doh_minburi",
+                title: "DOH \u2014 Min Buri, Bangkok inbound (Hwy 304)",
+                lat: 13.8117, lon: 100.7872,
+                group: "doh",
+                hls: "https://camerai1.iticfoundation.org/pass/180.180.242.207:1935/Phase9/PER_9_027_IN.stream/playlist.m3u8",
+                heading: 270,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "itic_pracha",
+                title: "iTIC \u2014 Pracha Niwet intersection (Bangkok)",
+                lat: 13.8399, lon: 100.5412,
+                group: "doh",
+                hls: "https://camerai1.iticfoundation.org/hls/charlie-new5.m3u8",
+                heading: null,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "itic_pracha_uthit",
+                title: "iTIC \u2014 Pracha Uthit / Pracha Nivet (Bangkok)",
+                lat: 13.6305, lon: 100.5392,
+                group: "doh",
+                hls: "https://camerai1.iticfoundation.org/hls/cl211-d.m3u8",
+                heading: null,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "burapha_km0_east",
+                title: "\u0e17\u0e32\u0e07\u0e1e\u0e34\u0e40\u0e28\u0e29\u0e1a\u0e39\u0e23\u0e1e\u0e32\u0e27\u0e34\u0e16\u0e35 \u2014 Bangna-Trat km 0 (East)",
+                lat: 13.6689, lon: 100.6292,
+                group: "bangna",
+                hls: "https://camera1.iticfoundation.org/hls/10.8.0.21_8002.m3u8",
+                heading: 90,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "burapha_km0_west",
+                title: "\u0e17\u0e32\u0e07\u0e1e\u0e34\u0e40\u0e28\u0e29\u0e1a\u0e39\u0e23\u0e1e\u0e32\u0e27\u0e34\u0e16\u0e35 \u2014 Bangna-Trat km 0 (West)",
+                lat: 13.6666, lon: 100.641,
+                group: "bangna",
+                hls: "https://camera1.iticfoundation.org/hls/10.8.0.21_8001.m3u8",
+                heading: 270,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "burapha_km6_in",
+                title: "\u0e17\u0e32\u0e07\u0e1e\u0e34\u0e40\u0e28\u0e29\u0e1a\u0e39\u0e23\u0e1e\u0e32\u0e27\u0e34\u0e16\u0e35 \u2014 Bangna-Bangpakong km 6 inbound",
+                lat: 13.6612, lon: 100.6617,
+                group: "bangna",
+                hls: "http://180.180.242.207:1935/Phase3/PER_3_009_IN.stream/playlist.m3u8",
+                heading: 270,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "burapha_km6_out",
+                title: "\u0e17\u0e32\u0e07\u0e1e\u0e34\u0e40\u0e28\u0e29\u0e1a\u0e39\u0e23\u0e1e\u0e32\u0e27\u0e34\u0e16\u0e35 \u2014 Bangna-Bangpakong km 6 outbound",
+                lat: 13.6614, lon: 100.6617,
+                group: "bangna",
+                hls: "http://180.180.242.207:1935/Phase3/PER_3_009_OUT.stream/playlist.m3u8",
+                heading: 90,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "burapha_minburi_out",
+                title: "\u0e17\u0e32\u0e07\u0e1e\u0e34\u0e40\u0e28\u0e29\u0e1a\u0e39\u0e23\u0e1e\u0e32\u0e27\u0e34\u0e16\u0e35 \u2014 Hwy 304, Min Buri outbound",
+                lat: 13.8119, lon: 100.7872,
+                group: "bangna",
+                hls: "http://180.180.242.207:1935/Phase9/PER_9_027_OUT.stream/playlist.m3u8",
+                heading: 90,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "bangna_huanoin_n",
+                title: "\u0e17\u0e32\u0e07\u0e1e\u0e34\u0e40\u0e28\u0e29\u0e1a\u0e39\u0e23\u0e1e\u0e32\u0e27\u0e34\u0e16\u0e35 \u2014 Hua Noin interchange (North)",
+                lat: 13.6207, lon: 101.031,
+                group: "bangna",
+                hls: "https://camera1.iticfoundation.org/hls/10.8.0.24_8554.m3u8",
+                heading: 0,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "bangna_huanoin_e",
+                title: "\u0e17\u0e32\u0e07\u0e1e\u0e34\u0e40\u0e28\u0e29\u0e1a\u0e39\u0e23\u0e1e\u0e32\u0e27\u0e34\u0e16\u0e35 \u2014 Hua Noin interchange (East)",
+                lat: 13.6202, lon: 101.031,
+                group: "bangna",
+                hls: "https://camera1.iticfoundation.org/hls/10.8.0.24_8555.m3u8",
+                heading: 90,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "bangna_huanoin_s",
+                title: "\u0e17\u0e32\u0e07\u0e1e\u0e34\u0e40\u0e28\u0e29\u0e1a\u0e39\u0e23\u0e1e\u0e32\u0e27\u0e34\u0e16\u0e35 \u2014 Hua Noin interchange (South)",
+                lat: 13.6199, lon: 101.0304,
+                group: "bangna",
+                hls: "https://camera1.iticfoundation.org/hls/10.8.0.24_8556.m3u8",
+                heading: 180,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "bangna_thepratch_n",
+                title: "\u0e17\u0e32\u0e07\u0e1e\u0e34\u0e40\u0e28\u0e29\u0e1a\u0e39\u0e23\u0e1e\u0e32\u0e27\u0e34\u0e16\u0e35 \u2014 Thep Ratch interchange (North)",
+                lat: 13.631, lon: 101.0366,
+                group: "bangna",
+                hls: "https://camera1.iticfoundation.org/hls/10.8.0.23_8556.m3u8",
+                heading: 0,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "bangna_thepratch_s",
+                title: "\u0e17\u0e32\u0e07\u0e1e\u0e34\u0e40\u0e28\u0e29\u0e1a\u0e39\u0e23\u0e1e\u0e32\u0e27\u0e34\u0e16\u0e35 \u2014 Thep Ratch interchange (South)",
+                lat: 13.6305, lon: 101.0361,
+                group: "bangna",
+                hls: "https://camera1.iticfoundation.org/hls/10.8.0.23_8554.m3u8",
+                heading: 180,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "bangna_thepratch_w",
+                title: "\u0e17\u0e32\u0e07\u0e1e\u0e34\u0e40\u0e28\u0e29\u0e1a\u0e39\u0e23\u0e1e\u0e32\u0e27\u0e34\u0e16\u0e35 \u2014 Thep Ratch interchange (West)",
+                lat: 13.6308, lon: 101.0361,
+                group: "bangna",
+                hls: "https://camera1.iticfoundation.org/hls/10.8.0.23_8555.m3u8",
+                heading: 270,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "chonburi_hwy3_in",
+                title: "\u0e0a\u0e25\u0e1a\u0e38\u0e23\u0e35 \u2014 Hwy 3, Muang Chonburi inbound",
+                lat: 13.2964, lon: 100.9455,
+                group: "chonburi",
+                hls: "http://180.180.242.208:1935/Phase11/PER_11_028_IN.stream/playlist.m3u8",
+                heading: 0,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "chonburi_hwy361_out",
+                title: "\u0e0a\u0e25\u0e1a\u0e38\u0e23\u0e35 \u2014 Hwy 361, Sukhumvit outbound",
+                lat: 13.3756, lon: 101.0199,
+                group: "chonburi",
+                hls: "http://180.180.242.208:1935/Phase11/PER_11_027_OUT.stream/playlist.m3u8",
+                heading: 180,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "chonburi_hwy331",
+                title: "\u0e0a\u0e25\u0e1a\u0e38\u0e23\u0e35 \u2014 Hwy 331, Bang Lamung",
+                lat: 12.8416, lon: 101.0115,
+                group: "chonburi",
+                hls: "http://180.180.242.208:1935/Phase11/PER_11_030.stream/playlist.m3u8",
+                heading: null,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "chonburi_hwy36",
+                title: "\u0e0a\u0e25\u0e1a\u0e38\u0e23\u0e35 \u2014 Hwy 36, Ban Pong - Makham Khu",
+                lat: 12.9202, lon: 101.0189,
+                group: "chonburi",
+                hls: "http://180.180.242.208:1935/Phase12/PER_12_022.stream/playlist.m3u8",
+                heading: null,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "chonburi_hwy34_in",
+                title: "\u0e0a\u0e25\u0e1a\u0e38\u0e23\u0e35 \u2014 Hwy 34, Bang Wua - Bang Pakong inbound",
+                lat: 13.4807, lon: 101.0015,
+                group: "chonburi",
+                hls: "http://180.180.242.208:1935/Phase12/PER_12_026_IN.stream/playlist.m3u8",
+                heading: 270,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "chonburi_hwy34_out",
+                title: "\u0e0a\u0e25\u0e1a\u0e38\u0e23\u0e35 \u2014 Hwy 34, Bang Wua - Bang Pakong outbound",
+                lat: 13.4809, lon: 101.0015,
+                group: "chonburi",
+                hls: "http://180.180.242.208:1935/Phase12/PER_12_026_OUT.stream/playlist.m3u8",
+                heading: 90,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "chonburi_hwy314",
+                title: "\u0e0a\u0e25\u0e1a\u0e38\u0e23\u0e35 \u2014 Hwy 314, Saen Phu Dat (Si Sothon Rd)",
+                lat: 13.5757, lon: 101.0046,
+                group: "chonburi",
+                hls: "http://180.180.242.207:1935/Phase10/PER_10_026.stream/playlist.m3u8",
+                heading: null,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "chonburi_khlongdan",
+                title: "\u0e0a\u0e25\u0e1a\u0e38\u0e23\u0e35 \u2014 Sukhumvit Rd, Khlong Dan (Hwy 3)",
+                lat: 13.497, lon: 100.8493,
+                group: "chonburi",
+                hls: "http://180.180.242.208:1935/P16/PER_16_012.stream/playlist.m3u8",
+                heading: null,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "chonburi_suwinthawong",
+                title: "\u0e0a\u0e25\u0e1a\u0e38\u0e23\u0e35 \u2014 Suwinthawong Rd, Chachoengsao outbound",
+                lat: 13.723, lon: 101.041,
+                group: "chonburi",
+                hls: "http://180.180.242.208:1935/Phase14/PER_14_002_OUT.stream/playlist.m3u8",
+                heading: 90,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "chonburi_phanthong",
+                title: "\u0e0a\u0e25\u0e1a\u0e38\u0e23\u0e35 \u2014 Hwy 3466, Phan Thong (Ban Kao Rd)",
+                lat: 13.4592, lon: 101.0696,
+                group: "chonburi",
+                hls: "http://180.180.242.208:1935/Phase-17/PER_17_018.stream/playlist.m3u8",
+                heading: null,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "chonburi_hwy331_south",
+                title: "\u0e0a\u0e25\u0e1a\u0e38\u0e23\u0e35 \u2014 Hwy 331, Nong Phai Kaeo (AH19)",
+                lat: 13.278, lon: 101.2543,
+                group: "chonburi",
+                hls: "http://180.180.242.207:1935/Phase7/PER_7_037.stream/playlist.m3u8",
+                heading: 180,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "doh_per_12_015_in",
+                title: "DOH \u2014 Hwy 303, Ratsadon Burana - Phra Samut Chedi inbound",
+                lat: 13.6006, lon: 100.5592,
+                group: "doh",
+                hls: "http://180.180.242.208:1935/Phase12/PER_12_015_IN.stream/playlist.m3u8",
+                heading: 0,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "doh_per_12_015_out",
+                title: "DOH \u2014 Hwy 303, Ratsadon Burana - Phra Samut Chedi outbound",
+                lat: 13.6008, lon: 100.5592,
+                group: "doh",
+                hls: "http://180.180.242.208:1935/Phase12/PER_12_015_OUT.stream/playlist.m3u8",
+                heading: 180,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "doh_bangpu_sukhumvit_out",
+                title: "DOH \u2014 Bang Pu, Sukhumvit Road outbound",
+                lat: 13.5484, lon: 100.6171,
+                group: "doh",
+                hls: "http://180.180.242.207:1935/Phase9/PER_9_022_OUT.stream/playlist.m3u8",
+                heading: 180,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "itic_rama4_expressway",
+                title: "iTIC \u2014 Expressway, Rama 4 interchange",
+                lat: 13.7226, lon: 100.5533,
+                group: "doh",
+                hls: "https://camera1.iticfoundation.org/hls/10.8.0.14_8003.m3u8",
+                heading: null,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "itic_rama4_road",
+                title: "iTIC \u2014 Rama 4 Rd, Expressway interchange",
+                lat: 13.7234, lon: 100.5517,
+                group: "doh",
+                hls: "https://camera1.iticfoundation.org/hls/10.8.0.14_8001.m3u8",
+                heading: null,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "itic_rama4_expressway2",
+                title: "iTIC \u2014 Expressway, Rama 4 (cam 2)",
+                lat: 13.7223, lon: 100.5526,
+                group: "doh",
+                hls: "https://camera1.iticfoundation.org/hls/10.8.0.14_8554.m3u8",
+                heading: null,
+                frigate: "http://192.168.1.45:5000"
+            },
+            {
+                name: "itic_rama4_road2",
+                title: "iTIC \u2014 Rama 4 Rd, Expressway (cam 2)",
+                lat: 13.7231, lon: 100.5522,
+                group: "doh",
+                hls: "https://camera1.iticfoundation.org/hls/10.8.0.14_8002.m3u8",
+                heading: null,
+                frigate: "http://192.168.1.45:5000"
+            }
+        ];
+
+        const groupColors = {
+            local: '#e74c3c',
+            doh: '#f39c12',
+            bangna: '#3498db',
+            chonburi: '#9b59b6'
+        };
+
+        const groupIcons = {
+            local: '🏠',
+            doh: '🛣️',
+            bangna: '🛣️',
+            chonburi: '📍'
+        };
+
+        const map = L.map('map').setView([13.7, 100.7], 10);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 18
+        }).addTo(map);
+
+        const markers = [];
+
+        cameras.forEach(cam => {
+            const color = groupColors[cam.group];
+            let icon, markerOpts;
+
+            if (cam.heading !== null && cam.heading !== undefined) {
+                // Arrow marker rotated to camera heading
+                icon = L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:20px solid ${color};filter:drop-shadow(0 0 3px rgba(0,0,0,0.6));transform:rotate(${cam.heading}deg);transform-origin:50% 60%;"></div>`,
+                    iconSize: [20, 24],
+                    iconAnchor: [10, 14]
+                });
+                markerOpts = { icon, rotationAngle: 0 };
+            } else {
+                // Fallback: emoji icon for cameras without heading
+                icon = L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div style="font-size: 24px; filter: drop-shadow(0 0 3px ${color});">${groupIcons[cam.group]}</div>`,
+                    iconSize: [28, 28],
+                    iconAnchor: [14, 14]
+                });
+                markerOpts = { icon };
+            }
+
+            const videoHtml = cam.hls
+                ? `<div class="video-container"><button class="fs-btn" title="Full screen" onclick="document.getElementById('vid_${cam.name}').requestFullscreen()">⛶</button><video id="vid_${cam.name}" muted autoplay playsinline></video><div class="loading">Loading stream...</div></div>`
+                : `<img class="snapshot-img" id="snap_${cam.name}" src="" alt="Loading snapshot...">`;
+
+            const popupHtml = `
+                <div class="camera-popup">
+                    <h3>${cam.title}</h3>
+                    ${videoHtml}
+                    <div class="meta">
+                        Frigate: <b>${cam.name}</b> | GPS: ${cam.lat.toFixed(4)}, ${cam.lon.toFixed(4)}
+                    </div>
+                    <a href="${cam.frigate}" target="_blank">Open Frigate</a>
+                    <button class="pin-btn" onclick="pinCamera(cameras.find(c => c.name === '${cam.name}')); map.closePopup();">📌 Pin Video</button>
+                </div>
+            `;
+
+            const marker = L.marker([cam.lat, cam.lon], markerOpts)
+                .bindPopup(popupHtml)
+                .addTo(map);
+
+            marker.on('popupopen', () => {
+                stopAllPlayers();
+                if (cam.hls) {
+                    const videoEl = document.getElementById(`vid_${cam.name}`);
+                    if (videoEl) startHls(videoEl, cam.hls);
+                } else {
+                    const imgEl = document.getElementById(`snap_${cam.name}`);
+                    if (imgEl) startSnapshot(imgEl, cam.name);
+                }
+            });
+
+            marker.on('popupclose', stopAllPlayers);
+
+            markers.push(marker);
+        });
+
+        map.on('popupclose', stopAllPlayers);
+        map.on('move zoom', () => {
+            updatePanelPositions();
+            updateAllConnectors();
+        });
+
+        // Draw a line connecting Bangna-Trad cameras in order
+        const bangnaPoints = cameras
+            .filter(c => c.group === 'bangna')
+            .sort((a, b) => a.lon - b.lon)
+            .map(c => [c.lat, c.lon]);
+
+        // Hua Noin and Thep Ratch are close — draw a route line
+        if (bangnaPoints.length >= 2) {
+            L.polyline(bangnaPoints, {
+                color: '#3498db',
+                weight: 3,
+                opacity: 0.6,
+                dashArray: '8, 6'
+            }).addTo(map);
+        }
+
+        // Fit bounds to show all cameras
+        const bounds = L.latLngBounds(cameras.map(c => [c.lat, c.lon]));
+        map.fitBounds(bounds, { padding: [50, 50] });
+    </script>
+</body>
+</html>

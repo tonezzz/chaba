@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infrastructure — gaussian-splatting-docker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { bg: '#1a1a2e', card: '#16213e', accent: '#0a84ff' } } }
+        }
+    </script>
+    <style>body { font-family: system-ui, sans-serif; }</style>
+</head>
+<body class="bg-bg text-gray-200 min-h-screen">
+    <nav class="bg-card border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
+            <span class="text-lg font-bold text-white">🏠 HomeLab</span>
+            <div class="flex gap-4 text-sm">
+                <a href="index.html" class="text-gray-400 hover:text-white transition">Dashboard</a>
+                <a href="cameras.html" class="text-gray-400 hover:text-white transition">Cameras</a>
+                <a href="infrastructure.html" class="text-accent font-semibold">Infrastructure</a>
+                <a href="decisions.html" class="text-gray-400 hover:text-white transition">Decisions</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-white mb-2">Infrastructure</h1>
+        <p class="text-gray-400 mb-8">Network, ports, and device reference</p>
+
+        <!-- Host -->
+        <h2 class="text-xl font-semibold text-white mb-4">Host</h2>
+        <div class="bg-card rounded-xl p-5 border border-gray-700 mb-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div><span class="text-gray-500">OS</span><br><span class="text-white">Linux (Ubuntu/Debian)</span></div>
+                <div><span class="text-gray-500">IP</span><br><span class="text-white font-mono">192.168.1.45</span></div>
+                <div><span class="text-gray-500">GPU</span><br><span class="text-white">NVIDIA (CUDA 11.8+)</span></div>
+                <div><span class="text-gray-500">Docker</span><br><span class="text-white">24+ with NVIDIA Toolkit</span></div>
+            </div>
+        </div>
+
+        <!-- LAN Devices -->
+        <h2 class="text-xl font-semibold text-white mb-4">LAN Devices</h2>
+        <div class="bg-card rounded-xl border border-gray-700 mb-8 overflow-hidden">
+            <table class="w-full text-sm">
+                <thead class="bg-black/20 text-gray-400">
+                    <tr><th class="text-left px-4 py-3">Device</th><th class="text-left px-4 py-3">IP</th><th class="text-left px-4 py-3">Notes</th></tr>
+                </thead>
+                <tbody>
+                    <tr class="border-t border-gray-700"><td class="px-4 py-3 text-white">Host server</td><td class="px-4 py-3 font-mono text-accent">192.168.1.45</td><td class="px-4 py-3 text-gray-400">Docker host</td></tr>
+                    <tr class="border-t border-gray-700"><td class="px-4 py-3 text-white">VSTARCAM IP camera</td><td class="px-4 py-3 font-mono text-accent">192.168.1.41</td><td class="px-4 py-3 text-gray-400">RTSP port 10554 (non-standard)</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Port Allocation -->
+        <h2 class="text-xl font-semibold text-white mb-4">Port Allocation</h2>
+        <div class="space-y-4 mb-8">
+            <div class="bg-card rounded-xl border border-gray-700 overflow-hidden">
+                <div class="px-4 py-2 bg-black/20 text-gray-400 text-xs font-semibold">Main Stack (docker-compose.yml)</div>
+                <table class="w-full text-sm">
+                    <thead class="text-gray-500"><tr><th class="text-left px-4 py-2">Port</th><th class="text-left px-4 py-2">Service</th><th class="text-left px-4 py-2">Protocol</th><th class="text-left px-4 py-2">Notes</th></tr></thead>
+                    <tbody>
+                        <tr class="border-t border-gray-700"><td class="px-4 py-2 font-mono text-accent">7007</td><td class="px-4 py-2 text-white">nerfstudio</td><td class="px-4 py-2 text-gray-400">TCP</td><td class="px-4 py-2 text-gray-400">Web viewer</td></tr>
+                        <tr class="border-t border-gray-700"><td class="px-4 py-2 font-mono text-accent">8888</td><td class="px-4 py-2 text-white">jupyter</td><td class="px-4 py-2 text-gray-400">TCP</td><td class="px-4 py-2 text-gray-400">JupyterLab</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="bg-card rounded-xl border border-gray-700 overflow-hidden">
+                <div class="px-4 py-2 bg-black/20 text-gray-400 text-xs font-semibold">Frigate Stack (frigate/docker-compose.yml)</div>
+                <table class="w-full text-sm">
+                    <thead class="text-gray-500"><tr><th class="text-left px-4 py-2">Port</th><th class="text-left px-4 py-2">Service</th><th class="text-left px-4 py-2">Protocol</th><th class="text-left px-4 py-2">Notes</th></tr></thead>
+                    <tbody>
+                        <tr class="border-t border-gray-700"><td class="px-4 py-2 font-mono text-accent">5000</td><td class="px-4 py-2 text-white">frigate</td><td class="px-4 py-2 text-gray-400">TCP</td><td class="px-4 py-2 text-gray-400">Web UI</td></tr>
+                        <tr class="border-t border-gray-700"><td class="px-4 py-2 font-mono text-accent">8554</td><td class="px-4 py-2 text-white">frigate</td><td class="px-4 py-2 text-gray-400">TCP</td><td class="px-4 py-2 text-gray-400">RTSP restream</td></tr>
+                        <tr class="border-t border-gray-700"><td class="px-4 py-2 font-mono text-accent">8555</td><td class="px-4 py-2 text-white">frigate</td><td class="px-4 py-2 text-gray-400">TCP+UDP</td><td class="px-4 py-2 text-gray-400">WebRTC</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="bg-card rounded-xl border border-gray-700 overflow-hidden">
+                <div class="px-4 py-2 bg-black/20 text-gray-400 text-xs font-semibold">Web Stack (web/docker-compose.yml)</div>
+                <table class="w-full text-sm">
+                    <thead class="text-gray-500"><tr><th class="text-left px-4 py-2">Port</th><th class="text-left px-4 py-2">Service</th><th class="text-left px-4 py-2">Protocol</th><th class="text-left px-4 py-2">Notes</th></tr></thead>
+                    <tbody>
+                        <tr class="border-t border-gray-700"><td class="px-4 py-2 font-mono text-accent">8080</td><td class="px-4 py-2 text-white">web (Caddy)</td><td class="px-4 py-2 text-gray-400">TCP</td><td class="px-4 py-2 text-gray-400">Static files + reverse proxy</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="bg-card rounded-xl border border-gray-700 overflow-hidden">
+                <div class="px-4 py-2 bg-black/20 text-gray-400 text-xs font-semibold">Available for Future Apps</div>
+                <table class="w-full text-sm">
+                    <tbody>
+                        <tr class="border-t border-gray-700"><td class="px-4 py-2 font-mono text-gray-400">3000</td><td class="px-4 py-2 text-gray-400">Next app / Node.js</td></tr>
+                        <tr class="border-t border-gray-700"><td class="px-4 py-2 font-mono text-gray-400">4000</td><td class="px-4 py-2 text-gray-400">Reserved</td></tr>
+                        <tr class="border-t border-gray-700"><td class="px-4 py-2 font-mono text-gray-400">8090</td><td class="px-4 py-2 text-gray-400">Additional web app</td></tr>
+                        <tr class="border-t border-gray-700"><td class="px-4 py-2 font-mono text-gray-400">9000</td><td class="px-4 py-2 text-gray-400">Reserved</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- External Streaming Servers -->
+        <h2 class="text-xl font-semibold text-white mb-4">External Streaming Servers</h2>
+        <div class="bg-card rounded-xl border border-gray-700 mb-8 overflow-hidden">
+            <table class="w-full text-sm">
+                <thead class="bg-black/20 text-gray-400"><tr><th class="text-left px-4 py-3">Server</th><th class="text-left px-4 py-3">IP</th><th class="text-left px-4 py-3">Domain</th><th class="text-left px-4 py-3">Notes</th></tr></thead>
+                <tbody>
+                    <tr class="border-t border-gray-700"><td class="px-4 py-3 text-white">DOH Wowza 1</td><td class="px-4 py-3 font-mono text-accent">180.180.242.207</td><td class="px-4 py-3 font-mono text-gray-400">streaming1.highwaytraffic.go.th</td><td class="px-4 py-3 text-gray-400">Direct IP works, domain fails (TLS/SNI)</td></tr>
+                    <tr class="border-t border-gray-700"><td class="px-4 py-3 text-white">DOH Wowza 2</td><td class="px-4 py-3 font-mono text-accent">180.180.242.208</td><td class="px-4 py-3 font-mono text-gray-400">streaming2.highwaytraffic.go.th</td><td class="px-4 py-3 text-gray-400">Direct IP works, domain fails (TLS/SNI)</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Docker Networks -->
+        <h2 class="text-xl font-semibold text-white mb-4">Docker Networks</h2>
+        <div class="bg-card rounded-xl p-5 border border-gray-700 mb-8">
+            <ul class="space-y-2 text-sm">
+                <li class="flex items-center gap-3"><span class="w-2 h-2 rounded-full bg-accent"></span><span class="text-white">web_default</span><span class="text-gray-500">— Caddy container network</span></li>
+                <li class="flex items-center gap-3"><span class="w-2 h-2 rounded-full bg-gray-600"></span><span class="text-gray-400">Frigate — default compose network</span></li>
+                <li class="flex items-center gap-3"><span class="w-2 h-2 rounded-full bg-gray-600"></span><span class="text-gray-400">Main stack — default compose network</span></li>
+            </ul>
+            <p class="text-xs text-gray-500 mt-4">No custom networks defined yet — all default bridge. All ports bound to 0.0.0.0 (LAN accessible). No HTTPS yet — Caddy ready for auto-cert when domain is configured.</p>
+        </div>
+    </div>
+</body>
+</html>

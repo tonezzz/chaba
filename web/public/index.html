@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — gaussian-splatting-docker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bg: '#1a1a2e',
+                        card: '#16213e',
+                        accent: '#0a84ff',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: system-ui, sans-serif; }
+        .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+        .status-online { background: rgba(46,204,113,0.15); color: #2ecc71; }
+        .status-offline { background: rgba(231,76,60,0.15); color: #e74c3c; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .status-online .status-dot { background: #2ecc71; box-shadow: 0 0 6px #2ecc71; }
+        .status-offline .status-dot { background: #e74c3c; }
+    </style>
+</head>
+<body class="bg-bg text-gray-200 min-h-screen">
+    <!-- Nav -->
+    <nav class="bg-card border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
+            <span class="text-lg font-bold text-white">🏠 HomeLab</span>
+            <div class="flex gap-4 text-sm">
+                <a href="index.html" class="text-accent font-semibold">Dashboard</a>
+                <a href="cameras.html" class="text-gray-400 hover:text-white transition">Cameras</a>
+                <a href="infrastructure.html" class="text-gray-400 hover:text-white transition">Infrastructure</a>
+                <a href="decisions.html" class="text-gray-400 hover:text-white transition">Decisions</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-white mb-2">Dashboard</h1>
+            <p class="text-gray-400">Multi-container Docker workspace — 3D Gaussian Splatting research + traffic camera surveillance + web apps</p>
+        </div>
+
+        <!-- Service Status -->
+        <h2 class="text-xl font-semibold text-white mb-4">Services</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10" id="services-grid">
+            <div class="bg-card rounded-xl p-5 border border-gray-700">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm text-gray-400">Web Server</span>
+                    <span class="status-badge status-online" id="status-web"><span class="status-dot"></span>Online</span>
+                </div>
+                <h3 class="text-white font-semibold mb-1">Caddy</h3>
+                <p class="text-xs text-gray-500 mb-3">Static files + reverse proxy</p>
+                <a href="http://192.168.1.45:8080" class="text-accent text-sm hover:underline">:8080 →</a>
+            </div>
+
+            <div class="bg-card rounded-xl p-5 border border-gray-700">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm text-gray-400">NVR</span>
+                    <span class="status-badge" id="status-frigate"><span class="status-dot"></span>Checking...</span>
+                </div>
+                <h3 class="text-white font-semibold mb-1">Frigate</h3>
+                <p class="text-xs text-gray-500 mb-3">AI-powered camera surveillance</p>
+                <a href="http://192.168.1.45:5000" class="text-accent text-sm hover:underline">:5000 →</a>
+            </div>
+
+            <div class="bg-card rounded-xl p-5 border border-gray-700">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm text-gray-400">Research</span>
+                    <span class="status-badge" id="status-jupyter"><span class="status-dot"></span>Checking...</span>
+                </div>
+                <h3 class="text-white font-semibold mb-1">JupyterLab</h3>
+                <p class="text-xs text-gray-500 mb-3">Notebooks & experiments</p>
+                <a href="http://192.168.1.45:8888" class="text-accent text-sm hover:underline">:8888 →</a>
+            </div>
+        </div>
+
+        <!-- Quick Links -->
+        <h2 class="text-xl font-semibold text-white mb-4">Quick Links</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
+            <a href="cameras.html" class="bg-card rounded-lg p-4 border border-gray-700 hover:border-accent transition text-center">
+                <div class="text-2xl mb-2">📷</div>
+                <div class="text-sm text-white font-semibold">Camera Map</div>
+                <div class="text-xs text-gray-500">28 cameras</div>
+            </a>
+            <a href="infrastructure.html" class="bg-card rounded-lg p-4 border border-gray-700 hover:border-accent transition text-center">
+                <div class="text-2xl mb-2">🔌</div>
+                <div class="text-sm text-white font-semibold">Infrastructure</div>
+                <div class="text-xs text-gray-500">Ports & networks</div>
+            </a>
+            <a href="decisions.html" class="bg-card rounded-lg p-4 border border-gray-700 hover:border-accent transition text-center">
+                <div class="text-2xl mb-2">📋</div>
+                <div class="text-sm text-white font-semibold">Decisions</div>
+                <div class="text-xs text-gray-500">Architecture log</div>
+            </a>
+            <a href="http://192.168.1.45:5000" class="bg-card rounded-lg p-4 border border-gray-700 hover:border-accent transition text-center">
+                <div class="text-2xl mb-2">🎥</div>
+                <div class="text-sm text-white font-semibold">Frigate UI</div>
+                <div class="text-xs text-gray-500">NVR interface</div>
+            </a>
+        </div>
+
+        <!-- Stack Summary -->
+        <h2 class="text-xl font-semibold text-white mb-4">Docker Stacks</h2>
+        <div class="space-y-3">
+            <div class="bg-card rounded-lg p-4 border border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-white font-semibold">Main Stack</span>
+                        <span class="text-xs text-gray-500 ml-2">docker-compose.yml</span>
+                    </div>
+                    <span class="text-xs text-gray-400">GPU · On-demand</span>
+                </div>
+                <div class="flex gap-2 mt-2 flex-wrap">
+                    <span class="text-xs bg-gray-700 px-2 py-1 rounded">3dgs</span>
+                    <span class="text-xs bg-gray-700 px-2 py-1 rounded">nerfstudio</span>
+                    <span class="text-xs bg-gray-700 px-2 py-1 rounded">variants</span>
+                    <span class="text-xs bg-gray-700 px-2 py-1 rounded">colmap</span>
+                    <span class="text-xs bg-gray-700 px-2 py-1 rounded">jupyter</span>
+                    <span class="text-xs bg-gray-700 px-2 py-1 rounded">john</span>
+                </div>
+            </div>
+            <div class="bg-card rounded-lg p-4 border border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-white font-semibold">Frigate Stack</span>
+                        <span class="text-xs text-gray-500 ml-2">frigate/docker-compose.yml</span>
+                    </div>
+                    <span class="text-xs text-gray-400">24/7</span>
+                </div>
+                <div class="flex gap-2 mt-2">
+                    <span class="text-xs bg-gray-700 px-2 py-1 rounded">frigate</span>
+                </div>
+            </div>
+            <div class="bg-card rounded-lg p-4 border border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-white font-semibold">Web Stack</span>
+                        <span class="text-xs text-gray-500 ml-2">web/docker-compose.yml</span>
+                    </div>
+                    <span class="text-xs text-gray-400">24/7</span>
+                </div>
+                <div class="flex gap-2 mt-2">
+                    <span class="text-xs bg-gray-700 px-2 py-1 rounded">caddy</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function checkService(url, elementId) {
+            const el = document.getElementById(elementId);
+            try {
+                const res = await fetch(url, { mode: 'no-cors', signal: AbortSignal.timeout(3000) });
+                el.className = 'status-badge status-online';
+                el.innerHTML = '<span class="status-dot"></span>Online';
+            } catch {
+                el.className = 'status-badge status-offline';
+                el.innerHTML = '<span class="status-dot"></span>Offline';
+            }
+        }
+        checkService('http://192.168.1.45:8080', 'status-web');
+        checkService('http://192.168.1.45:5000', 'status-frigate');
+        checkService('http://192.168.1.45:8888', 'status-jupyter');
+    </script>
+</body>
+</html>

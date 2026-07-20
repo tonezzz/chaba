@@ -1,0 +1,1333 @@
+# Frigate configuration template
+# Docs: https://docs.frigate.video/configuration/
+
+mqtt:
+  enabled: false
+  # host: mqtt.your.network
+  # user: mqtt_user
+  # password: mqtt_password
+
+detectors:
+  # CPU detector (default, slow but works everywhere)
+  cpu:
+    type: cpu
+    num_threads: 2
+
+  # Example: Coral EdgeTPU
+  # coral:
+  #   type: edgetpu
+  #   device: usb
+
+  # Example: NVIDIA GPU via TensorRT
+  # tensorrt:
+  #   type: tensorrt
+
+  # Example: Intel via OpenVINO
+  # openvino:
+  #   type: openvino
+cameras:
+
+  # --- Coffee ---
+  # VSTARCAM IP Camera (Coffee shop)
+  # lat=13.7469, lon=100.5346
+  vstarcam:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v libx264 -preset ultrafast -crf 28
+      inputs:
+        - path: rtsp://admin:tonytony@192.168.1.41:10554/tcp/av0_0
+          input_args: -rtsp_transport tcp -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+        - path: rtsp://admin:tonytony@192.168.1.41:10554/tcp/av0_1
+          input_args: -rtsp_transport tcp -analyzeduration 5000000 -probesize 5000000
+          roles:
+            - detect
+    detect:
+      width: 640
+      height: 360
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 14
+      detections:
+        retain:
+          days: 14
+      continuous:
+        days: 0
+      motion:
+        days: 7
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - person
+        - car
+        - animal
+        - package
+
+
+  # --- Traffic ---
+  # DOH — Bang Pu, Sukhumvit Road outbound
+  # lat=13.5484, lon=100.6171
+  doh_bangpu_sukhumvit_out:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: http://180.180.242.207:1935/Phase9/PER_9_022_OUT.stream/playlist.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # DOH — Min Buri, Bangkok inbound (Hwy 304)
+  # lat=13.8117, lon=100.7872
+  doh_minburi:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: https://camerai1.iticfoundation.org/pass/180.180.242.207:1935/Phase9/PER_9_027_IN.stream/playlist.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # DOH — Hwy 303, Ratsadon Burana - Phra Samut Chedi inbound
+  # lat=13.6006, lon=100.5592
+  doh_per_12_015_in:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: http://180.180.242.208:1935/Phase12/PER_12_015_IN.stream/playlist.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # DOH — Hwy 303, Ratsadon Burana - Phra Samut Chedi outbound
+  # lat=13.6008, lon=100.5592
+  doh_per_12_015_out:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: http://180.180.242.208:1935/Phase12/PER_12_015_OUT.stream/playlist.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # DOH — Vibhavadi Rangsit, Don Mueang inbound
+  # lat=13.9277, lon=100.6058
+  doh_vibhavadi:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: https://camerai1.iticfoundation.org/pass/180.180.242.207:1935/Phase3/PER_3_008_IN.stream/playlist.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # iTIC — Pracha Niwet intersection (Bangkok)
+  # lat=13.8399, lon=100.5412
+  itic_pracha:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: https://camerai1.iticfoundation.org/hls/charlie-new5.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # iTIC — Pracha Uthit / Pracha Nivet (Bangkok)
+  # lat=13.6305, lon=100.5392
+  itic_pracha_uthit:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: https://camerai1.iticfoundation.org/hls/cl211-d.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # iTIC — Expressway, Rama 4 interchange
+  # lat=13.7226, lon=100.5533
+  itic_rama4_expressway:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: https://camera1.iticfoundation.org/hls/10.8.0.14_8003.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # iTIC — Expressway, Rama 4 (cam 2)
+  # lat=13.7223, lon=100.5526
+  itic_rama4_expressway2:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: https://camera1.iticfoundation.org/hls/10.8.0.14_8554.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # iTIC — Rama 4 Rd, Expressway interchange
+  # lat=13.7234, lon=100.5517
+  itic_rama4_road:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: https://camera1.iticfoundation.org/hls/10.8.0.14_8001.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # iTIC — Rama 4 Rd, Expressway (cam 2)
+  # lat=13.7231, lon=100.5522
+  itic_rama4_road2:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: https://camera1.iticfoundation.org/hls/10.8.0.14_8002.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+
+  # --- ทางพิเศษบูรพาวิถี ---
+  # ทางพิเศษบูรพาวิถี — Hua Noin interchange (East)
+  # lat=13.6202, lon=101.031
+  bangna_huanoin_e:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: https://camera1.iticfoundation.org/hls/10.8.0.24_8555.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # ทางพิเศษบูรพาวิถี — Hua Noin interchange (North)
+  # lat=13.6207, lon=101.031
+  bangna_huanoin_n:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: https://camera1.iticfoundation.org/hls/10.8.0.24_8554.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # ทางพิเศษบูรพาวิถี — Hua Noin interchange (South)
+  # lat=13.6199, lon=101.0304
+  bangna_huanoin_s:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: https://camera1.iticfoundation.org/hls/10.8.0.24_8556.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # ทางพิเศษบูรพาวิถี — Thep Ratch interchange (North)
+  # lat=13.631, lon=101.0366
+  bangna_thepratch_n:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: https://camera1.iticfoundation.org/hls/10.8.0.23_8556.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # ทางพิเศษบูรพาวิถี — Thep Ratch interchange (South)
+  # lat=13.6305, lon=101.0361
+  bangna_thepratch_s:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: https://camera1.iticfoundation.org/hls/10.8.0.23_8554.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # ทางพิเศษบูรพาวิถี — Thep Ratch interchange (West)
+  # lat=13.6308, lon=101.0361
+  bangna_thepratch_w:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: https://camera1.iticfoundation.org/hls/10.8.0.23_8555.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # ทางพิเศษบูรพาวิถี — Bangna-Trat km 0 (East)
+  # lat=13.6689, lon=100.6292
+  burapha_km0_east:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: https://camera1.iticfoundation.org/hls/10.8.0.21_8002.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # ทางพิเศษบูรพาวิถี — Bangna-Trat km 0 (West)
+  # lat=13.6666, lon=100.641
+  burapha_km0_west:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: https://camera1.iticfoundation.org/hls/10.8.0.21_8001.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # ทางพิเศษบูรพาวิถี — Bangna-Bangpakong km 6 inbound
+  # lat=13.6612, lon=100.6617
+  burapha_km6_in:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: http://180.180.242.207:1935/Phase3/PER_3_009_IN.stream/playlist.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # ทางพิเศษบูรพาวิถี — Bangna-Bangpakong km 6 outbound
+  # lat=13.6614, lon=100.6617
+  burapha_km6_out:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: http://180.180.242.207:1935/Phase3/PER_3_009_OUT.stream/playlist.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # ทางพิเศษบูรพาวิถี — Hwy 304, Min Buri outbound
+  # lat=13.8119, lon=100.7872
+  burapha_minburi_out:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: http://180.180.242.207:1935/Phase9/PER_9_027_OUT.stream/playlist.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+
+  # --- ชลบุรี ---
+  # ชลบุรี — Hwy 314, Saen Phu Dat (Si Sothon Rd)
+  # lat=13.5757, lon=101.0046
+  chonburi_hwy314:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: http://180.180.242.207:1935/Phase10/PER_10_026.stream/playlist.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # ชลบุรี — Hwy 331, Bang Lamung
+  # lat=12.8416, lon=101.0115
+  chonburi_hwy331:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: http://180.180.242.208:1935/Phase11/PER_11_030.stream/playlist.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # ชลบุรี — Hwy 331, Nong Phai Kaeo (AH19)
+  # lat=13.278, lon=101.2543
+  chonburi_hwy331_south:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: http://180.180.242.207:1935/Phase7/PER_7_037.stream/playlist.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # ชลบุรี — Hwy 34, Bang Wua - Bang Pakong inbound
+  # lat=13.4807, lon=101.0015
+  chonburi_hwy34_in:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: http://180.180.242.208:1935/Phase12/PER_12_026_IN.stream/playlist.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # ชลบุรี — Hwy 34, Bang Wua - Bang Pakong outbound
+  # lat=13.4809, lon=101.0015
+  chonburi_hwy34_out:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: http://180.180.242.208:1935/Phase12/PER_12_026_OUT.stream/playlist.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # ชลบุรี — Hwy 36, Ban Pong - Makham Khu
+  # lat=12.9202, lon=101.0189
+  chonburi_hwy36:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: http://180.180.242.208:1935/Phase12/PER_12_022.stream/playlist.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # ชลบุรี — Hwy 361, Sukhumvit outbound
+  # lat=13.3756, lon=101.0199
+  chonburi_hwy361_out:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: http://180.180.242.208:1935/Phase11/PER_11_027_OUT.stream/playlist.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # ชลบุรี — Hwy 3, Muang Chonburi inbound
+  # lat=13.2964, lon=100.9455
+  chonburi_hwy3_in:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: http://180.180.242.208:1935/Phase11/PER_11_028_IN.stream/playlist.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # ชลบุรี — Sukhumvit Rd, Khlong Dan (Hwy 3)
+  # lat=13.497, lon=100.8493
+  chonburi_khlongdan:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: http://180.180.242.208:1935/P16/PER_16_012.stream/playlist.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # ชลบุรี — Hwy 3466, Phan Thong (Ban Kao Rd)
+  # lat=13.4592, lon=101.0696
+  chonburi_phanthong:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: http://180.180.242.208:1935/Phase-17/PER_17_018.stream/playlist.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+  # ชลบุรี — Suwinthawong Rd, Chachoengsao outbound
+  # lat=13.723, lon=101.041
+  chonburi_suwinthawong:
+    enabled: true
+    ffmpeg:
+      output_args:
+        record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v copy
+      inputs:
+        - path: http://180.180.242.208:1935/Phase14/PER_14_002_OUT.stream/playlist.m3u8
+          input_args: -analyzeduration 10000000 -probesize 10000000
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 3
+      detections:
+        retain:
+          days: 3
+      continuous:
+        days: 0
+      motion:
+        days: 1
+    snapshots:
+      enabled: true
+    objects:
+      track:
+        - car
+        - person
+        - motorcycle
+
+camera_groups:
+  Coffee:
+    order: 1
+    icon: LuAirplay
+    cameras: vstarcam
+  Traffic:
+    order: 2
+    icon: LuCamera
+    cameras: doh_bangpu_sukhumvit_out,doh_minburi,doh_per_12_015_in,doh_per_12_015_out,doh_vibhavadi,itic_pracha,itic_pracha_uthit,itic_rama4_expressway,itic_rama4_expressway2,itic_rama4_road,itic_rama4_road2
+  ทางพิเศษบูรพาวิถี:
+    order: 3
+    icon: LuRoad
+    cameras: bangna_huanoin_e,bangna_huanoin_n,bangna_huanoin_s,bangna_thepratch_n,bangna_thepratch_s,bangna_thepratch_w,burapha_km0_east,burapha_km0_west,burapha_km6_in,burapha_km6_out,burapha_minburi_out
+  ชลบุรี:
+    order: 4
+    icon: LuMapPin
+    cameras: chonburi_hwy314,chonburi_hwy331,chonburi_hwy331_south,chonburi_hwy34_in,chonburi_hwy34_out,chonburi_hwy36,chonburi_hwy361_out,chonburi_hwy3_in,chonburi_khlongdan,chonburi_phanthong,chonburi_suwinthawong
+
+# Optional: mask/zone definitions
+# zones:
+#   driveway:
+#     coordinates: ...
+
+# Optional: go2rtc for restreaming
+# go2rtc:
+#   streams:
+#     your_camera_name:
+#       - rtsp://user:password@camera_ip:554/stream1
+
+# Logging
+logger:
+  default: info
+  logs:
+    frigate.event: debug
+version: 0.17-0

@@ -14,6 +14,7 @@ A multi-container Docker environment for experimenting with **3D Gaussian Splatt
 | `colmap` | COLMAP SfM preprocessing | — |
 | `john` | John the Ripper (Jumbo) | openwall/john |
 | `jupyter` | JupyterLab research notebook | — |
+| `frigate` | Frigate NVR (AI-powered surveillance) | blakeblackshear/frigate |
 
 ---
 
@@ -119,6 +120,58 @@ docker compose run nerfstudio train --data /data/my_scene
 docker compose run nerfstudio export --load-config /outputs/nerfstudio/.../config.yml
 ```
 
+### 10. Google Drive integration
+
+Run `scripts/setup_gdrive.sh` once on the Docker host. It installs `rclone`,
+creates a Google Drive remote, and either mounts or syncs a Drive folder into
+`./data/gdrive`. Every container already bind-mounts `./data:/data`, so the files
+are visible inside at `/data/gdrive`.
+
+```bash
+# Interactive setup (creates rclone remote named 'gdrive')
+chmod +x scripts/setup_gdrive.sh
+./scripts/setup_gdrive.sh            # foreground mount at ./data/gdrive
+
+# Or sync a specific Drive folder to ./data/gdrive
+GDRIVE_SYNC_DIR=MyScene ./scripts/setup_gdrive.sh
+```
+
+Variables in `.env`:
+
+- `GDRIVE_REMOTE_NAME` — rclone remote name (default: `gdrive`)
+- `GDRIVE_MOUNT_POINT` — local mount target for the host script (default: `./data/gdrive`)
+- `GDRIVE_SYNC_DIR` — optional remote folder to sync instead of live-mounting
+
+### 11. Frigate NVR (IP Camera Surveillance)
+
+Frigate runs as a separate Docker Compose stack in `frigate/` with local AI object detection.
+
+```bash
+cd frigate
+docker compose up -d
+# Open: http://localhost:5000
+```
+
+**Current camera:** VSTARCAM at `192.168.1.41` (H.265, port 10554)
+
+| Stream | URL | Resolution | Role |
+|--------|-----|-----------|------|
+| Main | `rtsp://admin:tonytony@192.168.1.41:10554/tcp/av0_0` | 2304x1296 @ 15fps | record |
+| Sub | `rtsp://admin:tonytony@192.168.1.41:10554/tcp/av0_1` | 640x360 @ 20fps | detect |
+
+> **Note:** VSTARCAM uses non-standard RTSP paths (`/tcp/av0_0`, not `/stream1`).
+> The main stream's H.265 bitstream has a non-standard VPS, so recording transcodes
+> to H.264 with `libx264`. Audio (PCM A-law) is dropped (`-an`) as it's unsupported in MP4.
+
+Config files:
+- `frigate/docker-compose.yml` — container definition
+- `frigate/config.yml` — Frigate configuration (cameras, detection, recording)
+
+Ports:
+- `5000` — Web UI
+- `8554` — RTSP restream
+- `8555` — WebRTC (TCP/UDP)
+
 ---
 
 ## Research / Development
@@ -154,17 +207,26 @@ gaussian-splatting-docker/
 │   ├── nerfstudio/     # Nerfstudio + gsplat image
 │   ├── variants/       # 2DGS + Mip-Splatting + GOF image
 │   └── colmap/         # COLMAP SfM preprocessing image
-├── docker-compose.yml
-├── .env                # Default environment variables
-├── data/               # Input scenes (bind-mounted)
-├── outputs/            # Training results (bind-mounted)
-├── notebooks/          # JupyterLab notebooks
-├── src/                # Source code mounts for dev (gitignored)
-└── scripts/
-    ├── build_all.sh        # Build all images
-    ├── prepare_scene.sh    # COLMAP pipeline helper
-    ├── train_all.sh        # Train all variants on one scene
-    └── benchmark.sh        # Compute PSNR/SSIM/LPIPS
+├── docker-compose.yml      # Main 3DGS stack
+├── docker-compose-diagram.md
+├── .env                    # Default environment variables
+├── data/                   # Input scenes (bind-mounted)
+├── outputs/                # Training results (bind-mounted)
+├── notebooks/              # JupyterLab notebooks
+├── src/                    # Source code mounts for dev (gitignored)
+├── scripts/
+│   ├── build_all.sh        # Build all images
+│   ├── prepare_scene.sh    # COLMAP pipeline helper
+│   ├── train_all.sh        # Train all variants on one scene
+│   ├── benchmark.sh        # Compute PSNR/SSIM/LPIPS
+│   └── setup_gdrive.sh     # Google Drive / rclone setup helper
+├── frigate/                # Frigate NVR (separate compose stack)
+│   ├── docker-compose.yml  # Frigate container definition
+│   ├── config.yml          # Camera + detection + recording config
+│   ├── db/                 # Frigate database
+│   └── storage/            # Recordings, clips, exports
+└── docs/
+    └── plan-brief.md       # Frigate setup plan & camera details
 ```
 
 ---

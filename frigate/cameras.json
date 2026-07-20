@@ -1,0 +1,584 @@
+{
+  "_comment": "Single source of truth for all cameras. Edit this file, then run: python3 generate_config.py",
+  "frigate_url": "http://192.168.1.45:5000",
+  "sources": {
+    "longdo": {
+      "url": "https://camera.longdo.com/feed/?command=json"
+    },
+    "windy": {
+      "api_key": "OmXxL9YGvX8yx32hVhE5ljWRPo5bxRuO",
+      "endpoint": "https://api.windy.com/webcams/api/v3/webcams"
+    }
+  },
+  "groups": {
+    "Coffee": {
+      "order": 1,
+      "icon": "LuAirplay",
+      "color": "#e74c3c",
+      "map_icon": "🏠",
+      "map_group": "local"
+    },
+    "Traffic": {
+      "order": 2,
+      "icon": "LuCamera",
+      "color": "#f39c12",
+      "map_icon": "🛣️",
+      "map_group": "doh"
+    },
+    "ทางพิเศษบูรพาวิถี": {
+      "order": 3,
+      "icon": "LuRoad",
+      "color": "#3498db",
+      "map_icon": "🛣️",
+      "map_group": "bangna"
+    },
+    "ชลบุรี": {
+      "order": 4,
+      "icon": "LuMapPin",
+      "color": "#9b59b6",
+      "map_icon": "📍",
+      "map_group": "chonburi"
+    }
+  },
+  "cameras": [
+    {
+      "name": "vstarcam",
+      "title": "VSTARCAM IP Camera (Coffee shop)",
+      "group": "Coffee",
+      "lat": 13.7469,
+      "lon": 100.5346,
+      "source": "local",
+      "stream_type": "rtsp",
+      "enabled": true,
+      "hls_url": null,
+      "frigate_overrides": {
+        "ffmpeg_output_record": "-f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -an -c:v libx264 -preset ultrafast -crf 28",
+        "ffmpeg_inputs": [
+          {
+            "path": "rtsp://admin:tonytony@192.168.1.41:10554/tcp/av0_0",
+            "input_args": "-rtsp_transport tcp -analyzeduration 10000000 -probesize 10000000",
+            "roles": [
+              "record"
+            ]
+          },
+          {
+            "path": "rtsp://admin:tonytony@192.168.1.41:10554/tcp/av0_1",
+            "input_args": "-rtsp_transport tcp -analyzeduration 5000000 -probesize 5000000",
+            "roles": [
+              "detect"
+            ]
+          }
+        ],
+        "detect": {
+          "width": 640,
+          "height": 360,
+          "fps": 5
+        },
+        "objects": [
+          "person",
+          "car",
+          "animal",
+          "package"
+        ],
+        "record_retain": {
+          "alerts_days": 14,
+          "detections_days": 14,
+          "continuous_days": 0,
+          "motion_days": 7
+        }
+      },
+      "heading": null
+    },
+    {
+      "name": "doh_vibhavadi",
+      "title": "DOH — Vibhavadi Rangsit, Don Mueang inbound",
+      "group": "Traffic",
+      "lat": 13.9277,
+      "lon": 100.6058,
+      "source": "doh",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "https://camerai1.iticfoundation.org/pass/180.180.242.207:1935/Phase3/PER_3_008_IN.stream/playlist.m3u8",
+      "alt_urls": [
+        "http://180.180.242.207:1935/Phase3/PER_3_008_IN.stream/playlist.m3u8"
+      ],
+      "camid": "DOH-PER-3-008",
+      "heading": 0
+    },
+    {
+      "name": "doh_minburi",
+      "title": "DOH — Min Buri, Bangkok inbound (Hwy 304)",
+      "group": "Traffic",
+      "lat": 13.8117,
+      "lon": 100.7872,
+      "source": "doh",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "https://camerai1.iticfoundation.org/pass/180.180.242.207:1935/Phase9/PER_9_027_IN.stream/playlist.m3u8",
+      "alt_urls": [
+        "http://180.180.242.207:1935/Phase9/PER_9_027_IN.stream/playlist.m3u8"
+      ],
+      "camid": "DOH-PER-9-027",
+      "heading": 270
+    },
+    {
+      "name": "itic_pracha",
+      "title": "iTIC — Pracha Niwet intersection (Bangkok)",
+      "group": "Traffic",
+      "lat": 13.8399,
+      "lon": 100.5412,
+      "source": "itic_bangkok",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "https://camerai1.iticfoundation.org/hls/charlie-new5.m3u8",
+      "camid": "ITICM_BMAMI0209",
+      "heading": null
+    },
+    {
+      "name": "itic_pracha_uthit",
+      "title": "iTIC — Pracha Uthit / Pracha Nivet (Bangkok)",
+      "group": "Traffic",
+      "lat": 13.6305,
+      "lon": 100.5392,
+      "source": "itic_bangkok",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "https://camerai1.iticfoundation.org/hls/cl211-d.m3u8",
+      "camid": "ITICM_BMAMI0296",
+      "heading": null
+    },
+    {
+      "name": "burapha_km0_east",
+      "title": "ทางพิเศษบูรพาวิถี — Bangna-Trat km 0 (East)",
+      "group": "ทางพิเศษบูรพาวิถี",
+      "lat": 13.6689,
+      "lon": 100.6292,
+      "source": "itic_provincial",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "https://camera1.iticfoundation.org/hls/10.8.0.21_8002.m3u8",
+      "camid": "ITICM_BMAMI0209",
+      "heading": 90
+    },
+    {
+      "name": "burapha_km0_west",
+      "title": "ทางพิเศษบูรพาวิถี — Bangna-Trat km 0 (West)",
+      "group": "ทางพิเศษบูรพาวิถี",
+      "lat": 13.6666,
+      "lon": 100.641,
+      "source": "itic_provincial",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "https://camera1.iticfoundation.org/hls/10.8.0.21_8001.m3u8",
+      "camid": "ITICM_BMAMI0208",
+      "heading": 270
+    },
+    {
+      "name": "burapha_km6_in",
+      "title": "ทางพิเศษบูรพาวิถี — Bangna-Bangpakong km 6 inbound",
+      "group": "ทางพิเศษบูรพาวิถี",
+      "lat": 13.6612,
+      "lon": 100.6617,
+      "source": "doh",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "http://180.180.242.207:1935/Phase3/PER_3_009_IN.stream/playlist.m3u8",
+      "alt_urls": [
+        "https://camerai1.iticfoundation.org/pass/180.180.242.207:1935/Phase3/PER_3_009_IN.stream/playlist.m3u8"
+      ],
+      "camid": "DOH-PER-3-009",
+      "heading": 270
+    },
+    {
+      "name": "burapha_km6_out",
+      "title": "ทางพิเศษบูรพาวิถี — Bangna-Bangpakong km 6 outbound",
+      "group": "ทางพิเศษบูรพาวิถี",
+      "lat": 13.6614,
+      "lon": 100.6617,
+      "source": "doh",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "http://180.180.242.207:1935/Phase3/PER_3_009_OUT.stream/playlist.m3u8",
+      "alt_urls": [
+        "https://camerai1.iticfoundation.org/pass/180.180.242.207:1935/Phase3/PER_3_009_OUT.stream/playlist.m3u8"
+      ],
+      "camid": "DOH-PER-3-009-out",
+      "heading": 90
+    },
+    {
+      "name": "burapha_minburi_out",
+      "title": "ทางพิเศษบูรพาวิถี — Hwy 304, Min Buri outbound",
+      "group": "ทางพิเศษบูรพาวิถี",
+      "lat": 13.8119,
+      "lon": 100.7872,
+      "source": "doh",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "http://180.180.242.207:1935/Phase9/PER_9_027_OUT.stream/playlist.m3u8",
+      "alt_urls": [
+        "https://camerai1.iticfoundation.org/pass/180.180.242.207:1935/Phase9/PER_9_027_OUT.stream/playlist.m3u8"
+      ],
+      "camid": "DOH-PER-9-027-out",
+      "heading": 90
+    },
+    {
+      "name": "bangna_huanoin_n",
+      "title": "ทางพิเศษบูรพาวิถี — Hua Noin interchange (North)",
+      "group": "ทางพิเศษบูรพาวิถี",
+      "lat": 13.6207,
+      "lon": 101.031,
+      "source": "itic_provincial",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "https://camera1.iticfoundation.org/hls/10.8.0.24_8554.m3u8",
+      "camid": "ITICM_BMAMI0297",
+      "heading": 0
+    },
+    {
+      "name": "bangna_huanoin_e",
+      "title": "ทางพิเศษบูรพาวิถี — Hua Noin interchange (East)",
+      "group": "ทางพิเศษบูรพาวิถี",
+      "lat": 13.6202,
+      "lon": 101.031,
+      "source": "itic_provincial",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "https://camera1.iticfoundation.org/hls/10.8.0.24_8555.m3u8",
+      "camid": "ITICM_BMAMI0298",
+      "heading": 90
+    },
+    {
+      "name": "bangna_huanoin_s",
+      "title": "ทางพิเศษบูรพาวิถี — Hua Noin interchange (South)",
+      "group": "ทางพิเศษบูรพาวิถี",
+      "lat": 13.6199,
+      "lon": 101.0304,
+      "source": "itic_provincial",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "https://camera1.iticfoundation.org/hls/10.8.0.24_8556.m3u8",
+      "camid": "ITICM_BMAMI0299",
+      "heading": 180
+    },
+    {
+      "name": "bangna_thepratch_n",
+      "title": "ทางพิเศษบูรพาวิถี — Thep Ratch interchange (North)",
+      "group": "ทางพิเศษบูรพาวิถี",
+      "lat": 13.631,
+      "lon": 101.0366,
+      "source": "itic_provincial",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "https://camera1.iticfoundation.org/hls/10.8.0.23_8556.m3u8",
+      "camid": "ITICM_BMAMI0295",
+      "heading": 0
+    },
+    {
+      "name": "bangna_thepratch_s",
+      "title": "ทางพิเศษบูรพาวิถี — Thep Ratch interchange (South)",
+      "group": "ทางพิเศษบูรพาวิถี",
+      "lat": 13.6305,
+      "lon": 101.0361,
+      "source": "itic_provincial",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "https://camera1.iticfoundation.org/hls/10.8.0.23_8554.m3u8",
+      "camid": "ITICM_BMAMI0296",
+      "heading": 180
+    },
+    {
+      "name": "bangna_thepratch_w",
+      "title": "ทางพิเศษบูรพาวิถี — Thep Ratch interchange (West)",
+      "group": "ทางพิเศษบูรพาวิถี",
+      "lat": 13.6308,
+      "lon": 101.0361,
+      "source": "itic_provincial",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "https://camera1.iticfoundation.org/hls/10.8.0.23_8555.m3u8",
+      "camid": "ITICM_BMAMI0294",
+      "heading": 270
+    },
+    {
+      "name": "chonburi_hwy3_in",
+      "title": "ชลบุรี — Hwy 3, Muang Chonburi inbound",
+      "group": "ชลบุรี",
+      "lat": 13.2964,
+      "lon": 100.9455,
+      "source": "doh",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "http://180.180.242.208:1935/Phase11/PER_11_028_IN.stream/playlist.m3u8",
+      "alt_urls": [
+        "https://camerai1.iticfoundation.org/pass/180.180.242.208:1935/Phase11/PER_11_028_IN.stream/playlist.m3u8"
+      ],
+      "camid": "DOH-PER-11-028",
+      "windy_id": 1302885704,
+      "heading": 0
+    },
+    {
+      "name": "chonburi_hwy361_out",
+      "title": "ชลบุรี — Hwy 361, Sukhumvit outbound",
+      "group": "ชลบุรี",
+      "lat": 13.3756,
+      "lon": 101.0199,
+      "source": "doh",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "http://180.180.242.208:1935/Phase11/PER_11_027_OUT.stream/playlist.m3u8",
+      "alt_urls": [
+        "https://camerai1.iticfoundation.org/pass/180.180.242.208:1935/Phase11/PER_11_027_OUT.stream/playlist.m3u8"
+      ],
+      "camid": "DOH-PER-11-027-out",
+      "heading": 180
+    },
+    {
+      "name": "chonburi_hwy331",
+      "title": "ชลบุรี — Hwy 331, Bang Lamung",
+      "group": "ชลบุรี",
+      "lat": 12.8416,
+      "lon": 101.0115,
+      "source": "doh",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "http://180.180.242.208:1935/Phase11/PER_11_030.stream/playlist.m3u8",
+      "alt_urls": [
+        "https://camerai1.iticfoundation.org/pass/180.180.242.208:1935/Phase11/PER_11_030.stream/playlist.m3u8"
+      ],
+      "camid": "DOH-PER-11-030",
+      "heading": null
+    },
+    {
+      "name": "chonburi_hwy36",
+      "title": "ชลบุรี — Hwy 36, Ban Pong - Makham Khu",
+      "group": "ชลบุรี",
+      "lat": 12.9202,
+      "lon": 101.0189,
+      "source": "doh",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "http://180.180.242.208:1935/Phase12/PER_12_022.stream/playlist.m3u8",
+      "alt_urls": [
+        "https://camerai1.iticfoundation.org/pass/180.180.242.208:1935/Phase12/PER_12_022.stream/playlist.m3u8"
+      ],
+      "camid": "DOH-PER-12-022",
+      "heading": null
+    },
+    {
+      "name": "chonburi_hwy34_in",
+      "title": "ชลบุรี — Hwy 34, Bang Wua - Bang Pakong inbound",
+      "group": "ชลบุรี",
+      "lat": 13.4807,
+      "lon": 101.0015,
+      "source": "doh",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "http://180.180.242.208:1935/Phase12/PER_12_026_IN.stream/playlist.m3u8",
+      "alt_urls": [
+        "https://camerai1.iticfoundation.org/pass/180.180.242.208:1935/Phase12/PER_12_026_IN.stream/playlist.m3u8"
+      ],
+      "camid": "DOH-PER-12-026",
+      "windy_id": 1682779385,
+      "heading": 270
+    },
+    {
+      "name": "chonburi_hwy34_out",
+      "title": "ชลบุรี — Hwy 34, Bang Wua - Bang Pakong outbound",
+      "group": "ชลบุรี",
+      "lat": 13.4809,
+      "lon": 101.0015,
+      "source": "doh",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "http://180.180.242.208:1935/Phase12/PER_12_026_OUT.stream/playlist.m3u8",
+      "alt_urls": [
+        "https://camerai1.iticfoundation.org/pass/180.180.242.208:1935/Phase12/PER_12_026_OUT.stream/playlist.m3u8"
+      ],
+      "camid": "DOH-PER-12-026-out",
+      "windy_id": 1748000162,
+      "heading": 90
+    },
+    {
+      "name": "chonburi_hwy314",
+      "title": "ชลบุรี — Hwy 314, Saen Phu Dat (Si Sothon Rd)",
+      "group": "ชลบุรี",
+      "lat": 13.5757,
+      "lon": 101.0046,
+      "source": "doh",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "http://180.180.242.207:1935/Phase10/PER_10_026.stream/playlist.m3u8",
+      "alt_urls": [
+        "https://streaming1.highwaytraffic.go.th/Phase10/PER_10_026.stream/playlist.m3u8"
+      ],
+      "camid": "DOH-PER-10-026",
+      "windy_id": 1723096115,
+      "heading": null
+    },
+    {
+      "name": "chonburi_khlongdan",
+      "title": "ชลบุรี — Sukhumvit Rd, Khlong Dan (Hwy 3)",
+      "group": "ชลบุรี",
+      "lat": 13.497,
+      "lon": 100.8493,
+      "source": "doh",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "http://180.180.242.208:1935/P16/PER_16_012.stream/playlist.m3u8",
+      "alt_urls": [
+        "https://streaming2.highwaytraffic.go.th/P16/PER_16_012.stream/playlist.m3u8"
+      ],
+      "camid": "DOH-PER-16-012",
+      "windy_id": 1733323640,
+      "heading": null
+    },
+    {
+      "name": "chonburi_suwinthawong",
+      "title": "ชลบุรี — Suwinthawong Rd, Chachoengsao outbound",
+      "group": "ชลบุรี",
+      "lat": 13.723,
+      "lon": 101.041,
+      "source": "doh",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "http://180.180.242.208:1935/Phase14/PER_14_002_OUT.stream/playlist.m3u8",
+      "alt_urls": [
+        "https://streaming2.highwaytraffic.go.th/Phase14/PER_14_002_OUT.stream/playlist.m3u8"
+      ],
+      "camid": "DOH-PER-14-002-out",
+      "windy_id": 1717758587,
+      "heading": 90
+    },
+    {
+      "name": "chonburi_phanthong",
+      "title": "ชลบุรี — Hwy 3466, Phan Thong (Ban Kao Rd)",
+      "group": "ชลบุรี",
+      "lat": 13.4592,
+      "lon": 101.0696,
+      "source": "doh",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "http://180.180.242.208:1935/Phase-17/PER_17_018.stream/playlist.m3u8",
+      "alt_urls": [
+        "https://streaming2.highwaytraffic.go.th/Phase-17/PER_17_018.stream/playlist.m3u8"
+      ],
+      "camid": "DOH-PER-17-018",
+      "windy_id": 1734115655,
+      "heading": null
+    },
+    {
+      "name": "chonburi_hwy331_south",
+      "title": "ชลบุรี — Hwy 331, Nong Phai Kaeo (AH19)",
+      "group": "ชลบุรี",
+      "lat": 13.278,
+      "lon": 101.2543,
+      "source": "doh",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "http://180.180.242.207:1935/Phase7/PER_7_037.stream/playlist.m3u8",
+      "camid": "DOH-PER-7-037",
+      "windy_id": 1747917947,
+      "heading": 180
+    },
+    {
+      "name": "doh_per_12_015_in",
+      "title": "DOH — Hwy 303, Ratsadon Burana - Phra Samut Chedi inbound",
+      "group": "Traffic",
+      "lat": 13.6006,
+      "lon": 100.5592,
+      "source": "doh",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "http://180.180.242.208:1935/Phase12/PER_12_015_IN.stream/playlist.m3u8",
+      "alt_urls": [
+        "https://camerai1.iticfoundation.org/pass/180.180.242.208:1935/Phase12/PER_12_015_IN.stream/playlist.m3u8"
+      ],
+      "camid": "DOH-PER-12-015",
+      "heading": 0
+    },
+    {
+      "name": "doh_per_12_015_out",
+      "title": "DOH — Hwy 303, Ratsadon Burana - Phra Samut Chedi outbound",
+      "group": "Traffic",
+      "lat": 13.6008,
+      "lon": 100.5592,
+      "source": "doh",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "http://180.180.242.208:1935/Phase12/PER_12_015_OUT.stream/playlist.m3u8",
+      "alt_urls": [
+        "https://camerai1.iticfoundation.org/pass/180.180.242.208:1935/Phase12/PER_12_015_OUT.stream/playlist.m3u8"
+      ],
+      "camid": "DOH-PER-12-015-out",
+      "heading": 180
+    },
+    {
+      "name": "doh_bangpu_sukhumvit_out",
+      "title": "DOH — Bang Pu, Sukhumvit Road outbound",
+      "group": "Traffic",
+      "lat": 13.5484,
+      "lon": 100.6171,
+      "source": "doh",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "http://180.180.242.207:1935/Phase9/PER_9_022_OUT.stream/playlist.m3u8",
+      "alt_urls": [
+        "https://camerai1.iticfoundation.org/pass/180.180.242.207:1935/Phase9/PER_9_022_OUT.stream/playlist.m3u8"
+      ],
+      "camid": "DOH-PER-9-022-out",
+      "heading": 180
+    },
+    {
+      "name": "itic_rama4_expressway",
+      "title": "iTIC — Expressway, Rama 4 interchange",
+      "group": "Traffic",
+      "lat": 13.7226,
+      "lon": 100.5533,
+      "source": "itic_bangkok",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "https://camera1.iticfoundation.org/hls/10.8.0.14_8003.m3u8",
+      "camid": "ITICM_BMAMI0072",
+      "heading": null
+    },
+    {
+      "name": "itic_rama4_road",
+      "title": "iTIC — Rama 4 Rd, Expressway interchange",
+      "group": "Traffic",
+      "lat": 13.7234,
+      "lon": 100.5517,
+      "source": "itic_bangkok",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "https://camera1.iticfoundation.org/hls/10.8.0.14_8001.m3u8",
+      "camid": "ITICM_BMAMI0074",
+      "heading": null
+    },
+    {
+      "name": "itic_rama4_expressway2",
+      "title": "iTIC — Expressway, Rama 4 (cam 2)",
+      "group": "Traffic",
+      "lat": 13.7223,
+      "lon": 100.5526,
+      "source": "itic_bangkok",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "https://camera1.iticfoundation.org/hls/10.8.0.14_8554.m3u8",
+      "camid": "ITICM_BMAMI0102",
+      "heading": null
+    },
+    {
+      "name": "itic_rama4_road2",
+      "title": "iTIC — Rama 4 Rd, Expressway (cam 2)",
+      "group": "Traffic",
+      "lat": 13.7231,
+      "lon": 100.5522,
+      "source": "itic_bangkok",
+      "stream_type": "hls",
+      "enabled": true,
+      "hls_url": "https://camera1.iticfoundation.org/hls/10.8.0.14_8002.m3u8",
+      "camid": "ITICM_BMAMI0071",
+      "heading": null
+    }
+  ]
+}
