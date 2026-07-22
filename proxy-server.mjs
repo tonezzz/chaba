@@ -84,6 +84,8 @@ const server = createServer(async (request, response) => {
       const statuses = loadStatuses();
       const idx = statuses.findIndex((s) => s.name === report.name);
       const record = { name: report.name, status: report.status, reportedAt: Date.now() };
+      if (report.temp !== undefined) record.temp = report.temp;
+      if (report.fan !== undefined) record.fan = report.fan;
       if (idx === -1) statuses.push(record); else statuses[idx] = record;
       writeFileSync(statusFile, JSON.stringify(statuses, null, 2));
       response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -124,7 +126,21 @@ const server = createServer(async (request, response) => {
     return;
   }
 
-  const requestedPath = pathname === '/' ? 'index.html' : pathname === '/hosts' || pathname === '/hosts/' ? 'hosts/index.html' : pathname.slice(1);
+  if (pathname.startsWith('/api/status/')) {
+    const name = decodeURIComponent(pathname.slice('/api/status/'.length));
+    const statuses = loadStatuses();
+    const rec = statuses.find((s) => s.name === name);
+    if (!rec) {
+      response.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
+      response.end(JSON.stringify({ error: 'not found' }));
+      return;
+    }
+    response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    response.end(JSON.stringify(rec));
+    return;
+  }
+
+  const requestedPath = pathname === '/' ? 'index.html' : pathname === '/hosts' || pathname === '/hosts/' ? 'hosts/index.html' : pathname === '/tony-omen' || pathname === '/tony-omen/' ? 'tony-omen/index.html' : pathname.slice(1);
   const filePath = normalize(join(publicDirectory, requestedPath));
 
   if (!filePath.startsWith(publicDirectory)) {
