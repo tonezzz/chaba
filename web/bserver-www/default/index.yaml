@@ -1,0 +1,371 @@
+title:
+  - text: "Dashboard — gaussian-splatting-docker"
+
+main:
+  - raw: |
+      <div class="max-w-6xl mx-auto px-4 py-8">
+        <div class="mb-8">
+          <h1 class="text-3xl font-bold text-white mb-2">Dashboard</h1>
+          <p class="text-gray-400">Multi-container Docker workspace — 3D Gaussian Splatting research + traffic camera surveillance + web apps</p>
+        </div>
+
+        <h2 class="text-xl font-semibold text-white mb-4">Known Hosts</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+          <div class="bg-card rounded-xl p-5 border border-gray-700 cursor-pointer hover:border-accent transition" onclick="openHost('tony-omen')">
+            <div class="flex items-center justify-between mb-1">
+              <h3 class="text-white font-semibold mb-1">tony-omen</h3>
+              <span class="host-temp text-xs text-gray-500 cursor-pointer hover:text-white" data-host="tony-omen" onclick="openTempDetail('tony-omen'); event.stopPropagation();">--°C</span>
+            </div>
+            <p class="text-xs text-gray-500 mb-3">Docker host server</p>
+            <span class="text-accent text-sm">192.168.1.48</span>
+            <p class="text-xs text-gray-600 mt-2">Click for details</p>
+          </div>
+          <div class="bg-card rounded-xl p-5 border border-gray-700 cursor-pointer hover:border-accent transition" onclick="openHost('tony-dell')">
+            <div class="flex items-center justify-between mb-1">
+              <h3 class="text-white font-semibold mb-1">tony-dell</h3>
+              <span class="host-temp text-xs text-gray-500 cursor-pointer hover:text-white" data-host="tony-dell" onclick="openTempDetail('tony-dell'); event.stopPropagation();">--°C</span>
+            </div>
+            <p class="text-xs text-gray-500 mb-3">Secondary workstation</p>
+            <span class="text-accent text-sm">192.168.1.42</span>
+            <p class="text-xs text-gray-600 mt-2">Click for details</p>
+          </div>
+          <div class="bg-card rounded-xl p-5 border border-gray-700 cursor-pointer hover:border-accent transition" onclick="openHost('vstarcam')">
+            <div class="flex items-center justify-between mb-1">
+              <h3 class="text-white font-semibold mb-1">VSTARCAM</h3>
+              <span class="host-temp text-xs text-gray-500 cursor-pointer hover:text-white" data-host="vstarcam" onclick="openTempDetail('vstarcam'); event.stopPropagation();">--°C</span>
+            </div>
+            <p class="text-xs text-gray-500 mb-3">IP camera RTSP source</p>
+            <span class="text-accent text-sm font-mono">192.168.1.41:10554</span>
+            <p class="text-xs text-gray-600 mt-2">Click for details</p>
+          </div>
+        </div>
+
+        <h2 class="text-xl font-semibold text-white mb-4">Services</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10" id="services-grid">
+          <div class="bg-card rounded-xl p-5 border border-gray-700">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-sm text-gray-400">Web Server</span>
+              <span class="status-badge status-online" id="status-web"><span class="status-dot"></span>Online</span>
+            </div>
+            <h3 class="text-white font-semibold mb-1">Caddy</h3>
+            <p class="text-xs text-gray-500 mb-3">Static files + reverse proxy</p>
+            <a href="http://192.168.1.48:8080" class="text-accent text-sm hover:underline">:8080 →</a>
+          </div>
+
+          <div class="bg-card rounded-xl p-5 border border-gray-700">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-sm text-gray-400">NVR</span>
+              <span class="status-badge" id="status-frigate"><span class="status-dot"></span>Checking...</span>
+            </div>
+            <h3 class="text-white font-semibold mb-1">Frigate</h3>
+            <p class="text-xs text-gray-500 mb-3">AI-powered camera surveillance</p>
+            <a href="http://192.168.1.48:5000" class="text-accent text-sm hover:underline">:5000 →</a>
+          </div>
+
+          <div class="bg-card rounded-xl p-5 border border-gray-700">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-sm text-gray-400">Research</span>
+              <span class="status-badge" id="status-jupyter"><span class="status-dot"></span>Checking...</span>
+            </div>
+            <h3 class="text-white font-semibold mb-1">JupyterLab</h3>
+            <p class="text-xs text-gray-500 mb-3">Notebooks &amp; experiments</p>
+            <a href="http://192.168.1.48:8888" class="text-accent text-sm hover:underline">:8888 →</a>
+          </div>
+        </div>
+
+        <h2 class="text-xl font-semibold text-white mb-4">Quick Links</h2>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-10">
+          <a href="/apps/cams/" class="bg-card rounded-lg p-4 border border-gray-700 hover:border-accent transition text-center">
+            <div class="text-2xl mb-2">📷</div>
+            <div class="text-sm text-white font-semibold">Camera Map</div>
+            <div class="text-xs text-gray-500">34 cameras</div>
+          </a>
+          <a href="/infrastructure" class="bg-card rounded-lg p-4 border border-gray-700 hover:border-accent transition text-center">
+            <div class="text-2xl mb-2">🔌</div>
+            <div class="text-sm text-white font-semibold">Infrastructure</div>
+            <div class="text-xs text-gray-500">Ports &amp; networks</div>
+          </a>
+          <a href="/decisions" class="bg-card rounded-lg p-4 border border-gray-700 hover:border-accent transition text-center">
+            <div class="text-2xl mb-2">📋</div>
+            <div class="text-sm text-white font-semibold">Decisions</div>
+            <div class="text-xs text-gray-500">Architecture log</div>
+          </a>
+          <a href="http://192.168.1.48:5000" class="bg-card rounded-lg p-4 border border-gray-700 hover:border-accent transition text-center">
+            <div class="text-2xl mb-2">🎥</div>
+            <div class="text-sm text-white font-semibold">Frigate UI</div>
+            <div class="text-xs text-gray-500">NVR interface</div>
+          </a>
+          <a href="http://192.168.1.48:8090/" class="bg-card rounded-lg p-4 border border-gray-700 hover:border-accent transition text-center">
+            <div class="text-2xl mb-2">⚙️</div>
+            <div class="text-sm text-white font-semibold">Camera Control</div>
+            <div class="text-xs text-gray-500">tony-omen · detection</div>
+          </a>
+          <a href="http://tony-dell.local:8090/" class="bg-card rounded-lg p-4 border border-gray-700 hover:border-accent transition text-center">
+            <div class="text-2xl mb-2">🖥️</div>
+            <div class="text-sm text-white font-semibold">Camera Control</div>
+            <div class="text-xs text-gray-500">tony-dell · detection</div>
+          </a>
+        </div>
+
+        <h2 class="text-xl font-semibold text-white mb-4">Temperature Detection</h2>
+        <div id="temp-section" class="bg-card rounded-xl p-5 border border-gray-700 mb-8">
+          <p class="text-sm text-gray-400">Loading temperature sensors...</p>
+        </div>
+
+        <h2 class="text-xl font-semibold text-white mb-4">Docker Stacks</h2>
+        <div class="space-y-3">
+          <div class="bg-card rounded-lg p-4 border border-gray-700">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-white font-semibold">Main Stack</span>
+                <span class="text-xs text-gray-500 ml-2">docker-compose.yml</span>
+              </div>
+              <span class="text-xs text-gray-400">GPU · On-demand</span>
+            </div>
+            <div class="flex gap-2 mt-2 flex-wrap">
+              <span class="text-xs bg-gray-700 px-2 py-1 rounded">3dgs</span>
+              <span class="text-xs bg-gray-700 px-2 py-1 rounded">nerfstudio</span>
+              <span class="text-xs bg-gray-700 px-2 py-1 rounded">variants</span>
+              <span class="text-xs bg-gray-700 px-2 py-1 rounded">colmap</span>
+              <span class="text-xs bg-gray-700 px-2 py-1 rounded">jupyter</span>
+              <span class="text-xs bg-gray-700 px-2 py-1 rounded">john</span>
+            </div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border border-gray-700">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-white font-semibold">Frigate Stack</span>
+                <span class="text-xs text-gray-500 ml-2">frigate/docker-compose.yml</span>
+              </div>
+              <span class="text-xs text-gray-400">24/7</span>
+            </div>
+            <div class="flex gap-2 mt-2">
+              <span class="text-xs bg-gray-700 px-2 py-1 rounded">frigate</span>
+            </div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border border-gray-700">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-white font-semibold">Web Stack</span>
+                <span class="text-xs text-gray-500 ml-2">web/docker-compose.yml</span>
+              </div>
+              <span class="text-xs text-gray-400">24/7</span>
+            </div>
+            <div class="flex gap-2 mt-2">
+              <span class="text-xs bg-gray-700 px-2 py-1 rounded">caddy</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="host-modal" class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center" onclick="if(event.target===this) closeHost()">
+        <div class="bg-card rounded-xl border border-gray-700 max-w-md w-full p-6 m-4 relative">
+          <button onclick="closeHost()" class="absolute top-3 right-3 text-gray-400 hover:text-white text-lg">✕</button>
+          <h3 id="modal-title" class="text-xl font-bold text-white mb-2"></h3>
+          <div id="modal-body" class="text-sm text-gray-300 space-y-2"></div>
+          <div class="mt-4 flex items-center gap-3">
+            <button id="modal-check" onclick="checkHostStatus()" class="bg-accent text-white px-4 py-2 rounded hover:bg-blue-600">Check status</button>
+            <span id="modal-status" class="text-xs"></span>
+          </div>
+        </div>
+      </div>
+
+      <div id="temp-modal" class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center" onclick="if(event.target===this) closeTempDetail()">
+        <div class="bg-card rounded-xl border border-gray-700 max-w-lg w-full p-6 m-4 relative">
+          <button onclick="closeTempDetail()" class="absolute top-3 right-3 text-gray-400 hover:text-white text-lg">✕</button>
+          <h3 id="temp-modal-title" class="text-xl font-bold text-white mb-4">Temperature Details</h3>
+          <div id="temp-modal-body" class="text-sm text-gray-300"></div>
+        </div>
+      </div>
+
+      <script>
+        const hosts = {
+          'tony-omen': {
+            name: 'tony-omen',
+            ip: '192.168.1.48',
+            role: 'Docker host',
+            checkUrl: 'http://192.168.1.48:8080',
+            services: ['Caddy :8080', 'Frigate :5000', 'Jupyter :8888', 'Camera Control :8090']
+          },
+          'tony-dell': {
+            name: 'tony-dell',
+            ip: '192.168.1.42',
+            role: 'Secondary workstation',
+            checkUrl: 'http://tony-dell.local:8090/',
+            services: ['Camera Control :8090']
+          },
+          'vstarcam': {
+            name: 'VSTARCAM',
+            ip: '192.168.1.41',
+            port: '10554',
+            role: 'IP camera RTSP source',
+            services: ['RTSP stream on port 10554']
+          }
+        };
+        let currentHost = null;
+
+        function openHost(id) {
+          currentHost = hosts[id];
+          if (!currentHost) return;
+          document.getElementById('modal-title').textContent = currentHost.name;
+          const portInfo = currentHost.port ? ':' + currentHost.port : '';
+          let html = '<p><strong>IP:</strong> ' + currentHost.ip + portInfo + '</p>';
+          html += '<p><strong>Role:</strong> ' + currentHost.role + '</p>';
+          html += '<p class="text-gray-400 mt-2">Services:</p><ul class="list-disc list-inside text-gray-300">';
+          currentHost.services.forEach(function(s) { html += '<li>' + s + '</li>'; });
+          html += '</ul>';
+          document.getElementById('modal-body').innerHTML = html;
+          document.getElementById('modal-status').textContent = '';
+          const btn = document.getElementById('modal-check');
+          if (currentHost.checkUrl) {
+            btn.style.display = 'inline-block';
+          } else {
+            btn.style.display = 'none';
+          }
+          document.getElementById('host-modal').classList.remove('hidden');
+        }
+
+        function closeHost() {
+          currentHost = null;
+          document.getElementById('host-modal').classList.add('hidden');
+        }
+
+        async function checkHostStatus() {
+          if (!currentHost || !currentHost.checkUrl) return;
+          const statusEl = document.getElementById('modal-status');
+          statusEl.textContent = 'Checking...';
+          try {
+            await fetch(currentHost.checkUrl, { mode: 'no-cors', signal: AbortSignal.timeout(3000) });
+            statusEl.className = 'text-xs text-green-400';
+            statusEl.textContent = 'Online';
+          } catch (e) {
+            statusEl.className = 'text-xs text-red-400';
+            statusEl.textContent = 'Offline / unreachable';
+          }
+        }
+      </script>
+
+      <script>
+        async function checkService(url, elementId) {
+          const el = document.getElementById(elementId);
+          try {
+            const res = await fetch(url, { mode: 'no-cors', signal: AbortSignal.timeout(3000) });
+            el.className = 'status-badge status-online';
+            el.innerHTML = '<span class="status-dot"></span>Online';
+          } catch {
+            el.className = 'status-badge status-offline';
+            el.innerHTML = '<span class="status-dot"></span>Offline';
+          }
+        }
+        checkService('http://192.168.1.48:8080', 'status-web');
+        checkService('http://192.168.1.48:5000', 'status-frigate');
+        checkService('http://192.168.1.48:8888', 'status-jupyter');
+      </script>
+
+      <script>
+        let latestTemps = null;
+
+        function findPackageTemp(temps) {
+          if (!temps || !temps.coretemp) return null;
+          const pkg = temps.coretemp.find(function (e) { return e.label === 'Package id 0'; });
+          return pkg ? pkg.current : null;
+        }
+
+        async function openTempDetail(host) {
+          const titleEl = document.getElementById('temp-modal-title');
+          const bodyEl = document.getElementById('temp-modal-body');
+          if (host === 'tony-omen') {
+            titleEl.textContent = 'tony-omen — Temperature Details';
+            try {
+              const res = await fetch('/api/status', { signal: AbortSignal.timeout(5000) });
+              if (!res.ok) throw new Error('HTTP ' + res.status);
+              const data = await res.json();
+              const temps = data.host && data.host.temperatures ? data.host.temperatures : {};
+              if (!temps.coretemp || temps.coretemp.length === 0) {
+                bodyEl.innerHTML = '<p class="text-gray-400">No temperature sensors available.</p>';
+              } else {
+                let html = '<div class="space-y-2">';
+                temps.coretemp.forEach(function (entry) {
+                  const temp = entry.current;
+                  let colorClass = 'text-green-400';
+                  if (temp >= 70) colorClass = 'text-yellow-400';
+                  if (temp >= 85) colorClass = 'text-red-400';
+                  html += '<div class="flex items-center justify-between bg-black/20 rounded p-2">';
+                  html += '<span class="text-gray-300">' + (entry.label || 'Sensor') + '</span>';
+                  html += '<span class="font-mono font-semibold ' + colorClass + '">' + temp.toFixed(1) + '°C</span>';
+                  html += '</div>';
+                });
+                html += '</div>';
+                bodyEl.innerHTML = html;
+              }
+            } catch (e) {
+              bodyEl.innerHTML = '<p class="text-red-400">Unable to load temperature details: ' + e.message + '</p>';
+            }
+          } else if (host === 'tony-dell') {
+            titleEl.textContent = 'tony-dell — Temperature Details';
+            bodyEl.innerHTML = '<p class="text-gray-400">No temperature endpoint configured for tony-dell.</p>';
+          } else {
+            titleEl.textContent = host + ' — Temperature Details';
+            bodyEl.innerHTML = '<p class="text-gray-400">No temperature data available for this host.</p>';
+          }
+          document.getElementById('temp-modal').classList.remove('hidden');
+        }
+
+        function closeTempDetail() {
+          document.getElementById('temp-modal').classList.add('hidden');
+        }
+
+        function updateHostTemps(temps) {
+          const temp = findPackageTemp(temps);
+          document.querySelectorAll('.host-temp').forEach(function (el) {
+            const host = el.getAttribute('data-host');
+            if (host !== 'tony-omen' || temp === null) {
+              el.textContent = '--°C';
+              el.className = 'host-temp text-xs text-gray-500';
+            } else {
+              el.textContent = temp.toFixed(1) + '°C';
+              let colorClass = 'text-green-400';
+              if (temp >= 70) colorClass = 'text-yellow-400';
+              if (temp >= 85) colorClass = 'text-red-400';
+              el.className = 'host-temp text-xs ' + colorClass;
+            }
+          });
+        }
+
+        async function loadTemperatures() {
+          const section = document.getElementById('temp-section');
+          try {
+            const res = await fetch('/api/status', { signal: AbortSignal.timeout(5000) });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            const temps = data.host && data.host.temperatures ? data.host.temperatures : {};
+            updateHostTemps(temps);
+            const sensors = Object.keys(temps);
+            if (sensors.length === 0) {
+              section.innerHTML = '<p class="text-sm text-gray-400">No temperature sensors detected.</p>';
+              return;
+            }
+            let html = '<div class="grid grid-cols-1 md:grid-cols-3 gap-4">';
+            sensors.forEach(function (name) {
+              const entries = temps[name];
+              entries.forEach(function (entry) {
+                const temp = entry.current;
+                let colorClass = 'text-green-400';
+                if (temp >= 70) colorClass = 'text-yellow-400';
+                if (temp >= 85) colorClass = 'text-red-400';
+                html += '<div class="bg-black/20 rounded-lg p-4">';
+                html += '<div class="text-xs text-gray-400 uppercase tracking-wide">' + (entry.label || name) + '</div>';
+                html += '<div class="text-2xl font-mono font-semibold ' + colorClass + '">' + temp.toFixed(1) + '°C</div>';
+                html += '</div>';
+              });
+            });
+            html += '</div>';
+            section.innerHTML = html;
+          } catch (e) {
+            section.innerHTML = '<p class="text-sm text-red-400">Temperature data unavailable: ' + e.message + '</p>';
+            updateHostTemps(null);
+          }
+        }
+        loadTemperatures();
+        setInterval(loadTemperatures, 30000);
+      </script>

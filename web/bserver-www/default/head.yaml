@@ -1,0 +1,47 @@
+head:
+  - raw: '<meta charset="UTF-8">'
+  - raw: '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
+  - title
+  - raw: '<script src="https://cdn.tailwindcss.com"></script><script>tailwind.config={theme:{extend:{colors:{bg:"#1a1a2e",card:"#16213e",accent:"#0a84ff"}}}}</script>'
+  - raw: |
+      <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          var path = location.pathname.replace(/\/$/, "");
+          document.querySelectorAll("nav a").forEach(function (a) {
+            var href = (a.getAttribute("href") || "").replace(/\/$/, "");
+            if (href === path) {
+              a.className = "text-accent font-semibold";
+            } else if (!a.classList.contains("text-accent")) {
+              a.className = "text-gray-400 hover:text-white transition";
+            }
+          });
+        });
+      </script>
+  - style
+
+style:
+  body:
+    font-family: system-ui, sans-serif
+  .status-badge:
+    display: inline-flex
+    align-items: center
+    gap: 6px
+    padding: 2px 10px
+    border-radius: 999px
+    font-size: 12px
+    font-weight: 600
+  .status-online:
+    background: rgba(46,204,113,0.15)
+    color: "#2ecc71"
+  .status-offline:
+    background: rgba(231,76,60,0.15)
+    color: "#e74c3c"
+  .status-dot:
+    width: 8px
+    height: 8px
+    border-radius: 50%
+  .status-online .status-dot:
+    background: "#2ecc71"
+    box-shadow: "0 0 6px #2ecc71"
+  .status-offline .status-dot:
+    background: "#e74c3c"
