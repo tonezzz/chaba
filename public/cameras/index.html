@@ -19,18 +19,38 @@
       <a href="/apps/cams/index.html" class="text-sm text-sky-400 hover:underline">Open Map →</a>
     </div>
 
-    <div id="summary" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    <div id="summary" class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
       <div class="bg-slate-900 border border-slate-700 rounded-xl p-4">
-        <div class="text-xs text-slate-400 uppercase tracking-wide">Cameras</div>
+        <div class="text-xs text-slate-400 uppercase tracking-wide">Total</div>
         <div id="total" class="text-2xl font-bold text-white">-</div>
       </div>
       <div class="bg-slate-900 border border-slate-700 rounded-xl p-4">
-        <div class="text-xs text-slate-400 uppercase tracking-wide">Reachable</div>
+        <div class="text-xs text-slate-400 uppercase tracking-wide">Online</div>
         <div id="online" class="text-2xl font-bold text-emerald-400">-</div>
+      </div>
+      <div class="bg-slate-900 border border-slate-700 rounded-xl p-4">
+        <div class="text-xs text-slate-400 uppercase tracking-wide">Filtered</div>
+        <div id="filtered" class="text-2xl font-bold text-sky-400">-</div>
       </div>
       <div class="bg-slate-900 border border-slate-700 rounded-xl p-4">
         <div class="text-xs text-slate-400 uppercase tracking-wide">Last checked</div>
         <div id="checked" class="text-sm font-mono text-slate-300 mt-2">-</div>
+      </div>
+    </div>
+
+    <div class="flex flex-col xl:flex-row gap-3 mb-6 bg-slate-900 border border-slate-700 rounded-xl p-4">
+      <input id="search" type="text" placeholder="Search name, group, source..." class="flex-1 min-w-[200px] bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500">
+      <select id="groupFilter" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500"><option value="">All groups</option></select>
+      <select id="sourceFilter" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500"><option value="">All sources</option></select>
+      <select id="statusFilter" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500">
+        <option value="">All statuses</option>
+        <option value="online">Online</option>
+        <option value="offline">Offline</option>
+      </select>
+      <div class="flex gap-2">
+        <button id="refreshBtn" class="bg-sky-600 hover:bg-sky-500 text-white text-sm font-medium rounded-lg px-4 py-2">Refresh</button>
+        <button id="autoBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium rounded-lg px-4 py-2">Auto: on</button>
+        <button id="resetBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium rounded-lg px-4 py-2">Reset</button>
       </div>
     </div>
 
@@ -51,39 +71,110 @@
   </main>
 
   <script>
+    let cameras = [];
+    let autoTimer = null;
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function populateFilters() {
+      const groupSet = new Set();
+      const sourceSet = new Set();
+      cameras.forEach(c => { if (c.group) groupSet.add(c.group); if (c.source) sourceSet.add(c.source); });
+      const selectedGroup = document.getElementById('groupFilter').value;
+      const selectedSource = document.getElementById('sourceFilter').value;
+      document.getElementById('groupFilter').innerHTML = '<option value="">All groups</option>' + [...groupSet].sort().map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
+      document.getElementById('sourceFilter').innerHTML = '<option value="">All sources</option>' + [...sourceSet].sort().map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+      document.getElementById('groupFilter').value = selectedGroup;
+      document.getElementById('sourceFilter').value = selectedSource;
+    }
+
+    function filterCameras() {
+      const q = document.getElementById('search').value.trim().toLowerCase();
+      const g = document.getElementById('groupFilter').value;
+      const s = document.getElementById('sourceFilter').value;
+      const st = document.getElementById('statusFilter').value;
+      return cameras.filter(c => {
+        if (g && c.group !== g) return false;
+        if (s && c.source !== s) return false;
+        if (st === 'online' && !c.reachable) return false;
+        if (st === 'offline' && c.reachable) return false;
+        if (!q) return true;
+        const hay = [c.title, c.name, c.group, c.source].filter(Boolean).join(' ').toLowerCase();
+        return hay.includes(q);
+      });
+    }
+
+    function render() {
+      const filtered = filterCameras();
+      document.getElementById('filtered').textContent = String(filtered.length);
+      const tbody = document.getElementById('list');
+      if (!filtered.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-slate-500 text-center">No cameras match the current filters.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = filtered.map(c => `
+        <tr>
+          <td class="p-4">
+            <div class="font-semibold text-white">${escapeHtml(c.title)}</div>
+            <div class="text-xs text-slate-500 font-mono">${escapeHtml(c.name)}</div>
+          </td>
+          <td class="p-4">${escapeHtml(c.group)}</td>
+          <td class="p-4">${escapeHtml(c.source || '-')}</td>
+          <td class="p-4">
+            <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-semibold ${c.reachable ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}">
+              <span class="w-1.5 h-1.5 rounded-full ${c.reachable ? 'bg-emerald-400' : 'bg-rose-400'}"></span>
+              ${c.reachable ? 'Online' : 'Offline'}
+            </span>
+          </td>
+          <td class="p-4 break-all text-xs text-slate-400 font-mono">${c.playUrl ? `<a href="${escapeHtml(c.playUrl)}" target="_blank" class="text-sky-400 hover:underline">${escapeHtml(c.playUrl)}</a>` : '<span class="text-slate-600">none</span>'}</td>
+        </tr>
+      `).join('');
+    }
+
     async function load() {
       try {
         const res = await fetch('/api/cameras', { credentials: 'include' });
         if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
         const data = await res.json();
-        const cams = data.cameras || [];
-        document.getElementById('total').textContent = String(cams.length);
-        document.getElementById('online').textContent = String(cams.filter(c => c.reachable).length);
+        cameras = data.cameras || [];
+        document.getElementById('total').textContent = String(cameras.length);
+        document.getElementById('online').textContent = String(cameras.filter(c => c.reachable).length);
         document.getElementById('checked').textContent = data.refreshedAt ? new Date(data.refreshedAt).toLocaleString() : 'never';
-        const tbody = document.getElementById('list');
-        tbody.innerHTML = cams.map(c => `
-          <tr>
-            <td class="p-4">
-              <div class="font-semibold text-white">${c.title}</div>
-              <div class="text-xs text-slate-500 font-mono">${c.name}</div>
-            </td>
-            <td class="p-4">${c.group}</td>
-            <td class="p-4">${c.source || '-'}</td>
-            <td class="p-4">
-              <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-semibold ${c.reachable ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}">
-                <span class="w-1.5 h-1.5 rounded-full ${c.reachable ? 'bg-emerald-400' : 'bg-rose-400'}"></span>
-                ${c.reachable ? 'Online' : 'Offline'}
-              </span>
-            </td>
-            <td class="p-4 break-all text-xs text-slate-400 font-mono">${c.playUrl ? c.playUrl : '<span class="text-slate-600">none</span>'}</td>
-          </tr>
-        `).join('');
+        populateFilters();
+        render();
       } catch (e) {
-        document.getElementById('list').innerHTML = `<tr><td colspan="5" class="p-4 text-rose-400">Failed to load cameras: ${e.message}</td></tr>`;
+        document.getElementById('list').innerHTML = `<tr><td colspan="5" class="p-4 text-rose-400">Failed to load cameras: ${escapeHtml(e.message)}</td></tr>`;
       }
     }
+
+    function setAuto(enabled) {
+      if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+      if (enabled) { autoTimer = setInterval(load, 60000); }
+      const btn = document.getElementById('autoBtn');
+      btn.textContent = `Auto: ${enabled ? 'on' : 'off'}`;
+      btn.className = `text-sm font-medium rounded-lg px-4 py-2 ${enabled ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`;
+    }
+
+    function resetFilters() {
+      document.getElementById('search').value = '';
+      document.getElementById('groupFilter').value = '';
+      document.getElementById('sourceFilter').value = '';
+      document.getElementById('statusFilter').value = '';
+      render();
+    }
+
+    document.getElementById('search').addEventListener('input', render);
+    document.getElementById('groupFilter').addEventListener('change', render);
+    document.getElementById('sourceFilter').addEventListener('change', render);
+    document.getElementById('statusFilter').addEventListener('change', render);
+    document.getElementById('refreshBtn').addEventListener('click', load);
+    document.getElementById('autoBtn').addEventListener('click', () => setAuto(!autoTimer));
+    document.getElementById('resetBtn').addEventListener('click', resetFilters);
+
     load();
-    setInterval(load, 60000);
+    setAuto(true);
   </script>
 </body>
 </html>
