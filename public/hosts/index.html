@@ -34,6 +34,10 @@
     .location { color: #bfcee0; font-size: .88rem; }
     .status { justify-self: end; display: inline-flex; align-items: center; gap: .45rem; color: #b7c5d6; font-size: .8rem; font-weight: 750; }
     .status::before { width: .55rem; height: .55rem; border-radius: 50%; background: #94a3b8; box-shadow: 0 0 .7rem rgb(148 163 184 / 38%); content: ''; }
+    .status.online { color: #7af1d7; }
+    .status.online::before { background: #2ecc71; box-shadow: 0 0 .7rem rgb(46 204 113 / 38%); }
+    .status.offline { color: #f87171; }
+    .status.offline::before { background: #ef4444; box-shadow: 0 0 .7rem rgb(239 68 68 / 38%); }
     .notice { display: flex; gap: .8rem; margin-top: 1.6rem; padding: 1rem 1.1rem; border: 1px solid #29435d; border-radius: .9rem; color: #9eb5ce; background: rgb(16 35 57 / 60%); font-size: .88rem; line-height: 1.55; }
     .notice strong { color: #d6e7f9; }
     .notice-mark { color: #7dd3fc; font-weight: 900; }
@@ -53,9 +57,9 @@
     <p class="lead">A private inventory of the systems behind chaba.h3. Live probes and last-known status will appear here once monitoring is connected.</p>
 
     <section class="summary" aria-label="Host summary">
-      <div class="metric"><strong>3</strong><span>Known hosts</span></div>
-      <div class="metric"><strong>0</strong><span>Live checks configured</span></div>
-      <div class="metric"><strong>Pending</strong><span>Monitoring rollout</span></div>
+      <div class="metric"><strong id="metric-known">3</strong><span>Known hosts</span></div>
+      <div class="metric"><strong id="metric-configured">0</strong><span>Live checks configured</span></div>
+      <div class="metric"><strong id="metric-rollout">Pending</strong><span>Monitoring rollout</span></div>
     </section>
 
     <section aria-labelledby="hosts-heading">
@@ -64,17 +68,17 @@
         <p>Last reviewed Jul 2026</p>
       </div>
       <div class="hosts">
-        <article class="host">
+        <article class="host" data-name="Tony Dell">
           <div class="host-title"><span class="host-icon">D</span><div><h3>Tony Dell</h3><small>Dell OptiPlex workstation</small></div></div>
           <div class="location">Local network</div>
           <span class="status">Not monitored</span>
         </article>
-        <article class="host">
+        <article class="host" data-name="Tony Omen">
           <div class="host-title"><span class="host-icon">O</span><div><h3>Tony Omen</h3><small>HP Omen laptop</small></div></div>
           <div class="location">Local network</div>
           <span class="status">Not monitored</span>
         </article>
-        <article class="host">
+        <article class="host" data-name="Android TV Box">
           <div class="host-title"><span class="host-icon">A</span><div><h3>Android TV Box</h3><small>Sailfish / rk3328_box</small></div></div>
           <div class="location">Local network</div>
           <span class="status">Not monitored</span>
@@ -85,5 +89,31 @@
     <aside class="notice"><span class="notice-mark">i</span><div><strong>Privacy first.</strong> Host addresses, credentials, and internal health details are intentionally not displayed. Enable server-side monitoring before exposing live availability.</div></aside>
     <footer>chaba.h3 host inventory</footer>
   </main>
+  <script>
+    async function loadHosts() {
+      try {
+        const res = await fetch('/api/hosts');
+        const data = await res.json();
+        const known = document.querySelectorAll('article[data-name]').length;
+        let online = 0;
+        for (const host of data) {
+          const el = document.querySelector('article[data-name="' + host.name + '"] .status');
+          if (!el) continue;
+          el.textContent = host.status === 'online' ? 'Online' : 'Offline';
+          el.classList.toggle('online', host.status === 'online');
+          el.classList.toggle('offline', host.status !== 'online');
+          if (host.status === 'online') online++;
+        }
+        const total = data.length;
+        document.getElementById('metric-known').textContent = String(known);
+        document.getElementById('metric-configured').textContent = String(total);
+        document.getElementById('metric-rollout').textContent = total ? online + '/' + total + ' online' : 'Pending';
+      } catch (e) {
+        console.error('Host status load failed', e);
+      }
+    }
+    loadHosts();
+    setInterval(loadHosts, 30000);
+  </script>
 </body>
 </html>

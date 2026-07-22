@@ -1,4 +1,4 @@
-import { createReadStream } from 'node:fs';
+import { createReadStream, readFileSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -69,6 +69,33 @@ const server = createServer(async (request, response) => {
       'WWW-Authenticate': 'Basic realm="chaba.h3", charset="UTF-8"'
     });
     response.end('Authentication required');
+    return;
+  }
+
+  if (pathname === '/api/hosts') {
+    let hosts = [];
+    try {
+      const envHosts = process.env.CHABA_HOSTS;
+      if (envHosts) {
+        hosts = JSON.parse(envHosts);
+      } else {
+        const hostsFile = process.env.CHABA_HOSTS_FILE ?? normalize(join(publicDirectory, '..', 'hosts.json'));
+        hosts = JSON.parse(readFileSync(hostsFile, 'utf8'));
+      }
+    } catch {}
+
+    const probes = await Promise.all(hosts.map(async (host) => {
+      const start = Date.now();
+      try {
+        await fetch(host.url, { signal: AbortSignal.timeout(5000) });
+        return { name: host.name, status: 'online', response_ms: Date.now() - start };
+      } catch {
+        return { name: host.name, status: 'offline' };
+      }
+    }));
+
+    response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    response.end(JSON.stringify(probes));
     return;
   }
 
