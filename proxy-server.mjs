@@ -1,4 +1,4 @@
-import { createReadStream, readFileSync } from 'node:fs';
+import { createReadStream, readFileSync, writeFileSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -74,13 +74,33 @@ const server = createServer(async (request, response) => {
   }
 
   if (pathname === '/api/hosts') {
+    const hostsFile = process.env.CHABA_HOSTS_FILE ?? normalize(join(publicDirectory, '..', 'hosts.json'));
+
+    if (request.method === 'POST') {
+      const chunks = [];
+      for await (const chunk of request) chunks.push(chunk);
+      const body = Buffer.concat(chunks).toString('utf8');
+      try {
+        const hosts = JSON.parse(body);
+        if (!Array.isArray(hosts) || !hosts.every((h) => typeof h.name === 'string' && typeof h.url === 'string')) {
+          throw new Error('Invalid hosts.json format');
+        }
+        writeFileSync(hostsFile, JSON.stringify(hosts, null, 2));
+        response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        response.end(JSON.stringify({ ok: true, count: hosts.length }));
+      } catch (err) {
+        response.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        response.end(JSON.stringify({ error: err.message }));
+      }
+      return;
+    }
+
     let hosts = [];
     try {
       const envHosts = process.env.CHABA_HOSTS;
       if (envHosts) {
         hosts = JSON.parse(envHosts);
       } else {
-        const hostsFile = process.env.CHABA_HOSTS_FILE ?? normalize(join(publicDirectory, '..', 'hosts.json'));
         hosts = JSON.parse(readFileSync(hostsFile, 'utf8'));
       }
     } catch {}
