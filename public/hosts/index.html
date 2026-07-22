@@ -92,7 +92,7 @@
   <script>
     async function loadHosts() {
       try {
-        const res = await fetch('/api/hosts');
+        const res = await fetch('/api/hosts', { credentials: 'include' });
         const data = await res.json();
         const known = document.querySelectorAll('article[data-name]').length;
         let online = 0;
