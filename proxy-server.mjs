@@ -1,4 +1,4 @@
-import { createReadStream, readFileSync } from 'node:fs';
+import { createReadStream, readFileSync, writeFileSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,12 +10,13 @@ const port = Number.parseInt(process.env.PORT ?? '8080', 10);
 const basicAuthUser = process.env.BASIC_AUTH_USER;
 const basicAuthPassword = process.env.BASIC_AUTH_PASSWORD;
 const publicDirectory = fileURLToPath(new URL('./public/', import.meta.url));
-const hostsFile = process.env.CHABA_HOSTS_FILE ?? normalize(join(publicDirectory, '..', 'hosts.json'));
-let configuredHosts = [];
-try {
-  const envHosts = process.env.CHABA_HOSTS;
-  configuredHosts = envHosts ? JSON.parse(envHosts) : JSON.parse(readFileSync(hostsFile, 'utf8'));
-} catch {}
+const statusFile = process.env.STATUS_FILE ?? normalize(join(publicDirectory, '..', 'status.json'));
+const reportToken = process.env.REPORT_TOKEN;
+const knownHostNames = ['Tony Dell', 'Tony Omen', 'Android TV Box'];
+const reportStaleMs = Number.parseInt(process.env.REPORT_STALE_MS ?? '120000', 10);
+function loadStatuses() {
+  try { return JSON.parse(readFileSync(statusFile, 'utf8')); } catch { return []; }
+}
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
   '.html': 'text/html; charset=utf-8',
@@ -64,6 +65,36 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  if (pathname === '/api/report' && request.method === 'POST') {
+    const providedToken = new URL(request.url, 'http://localhost').searchParams.get('token') ?? request.headers['x-report-token'];
+    if (reportToken && providedToken !== reportToken) {
+      response.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+      response.end('Forbidden');
+      return;
+    }
+
+    const chunks = [];
+    for await (const chunk of request) chunks.push(chunk);
+    const body = Buffer.concat(chunks).toString('utf8');
+    try {
+      const report = JSON.parse(body);
+      if (typeof report.name !== 'string' || typeof report.status !== 'string') {
+        throw new Error('name and status are required');
+      }
+      const statuses = loadStatuses();
+      const idx = statuses.findIndex((s) => s.name === report.name);
+      const record = { name: report.name, status: report.status, reportedAt: Date.now() };
+      if (idx === -1) statuses.push(record); else statuses[idx] = record;
+      writeFileSync(statusFile, JSON.stringify(statuses, null, 2));
+      response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      response.end(JSON.stringify({ ok: true }));
+    } catch (err) {
+      response.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+      response.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
   if (!basicAuthUser || !basicAuthPassword) {
     response.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' });
     response.end('Authentication is not configured');
@@ -80,15 +111,13 @@ const server = createServer(async (request, response) => {
   }
 
   if (pathname === '/api/hosts') {
-    const probes = await Promise.all(configuredHosts.map(async (host) => {
-      const start = Date.now();
-      try {
-        await fetch(host.url, { signal: AbortSignal.timeout(5000) });
-        return { name: host.name, status: 'online', response_ms: Date.now() - start };
-      } catch {
-        return { name: host.name, status: 'offline' };
-      }
-    }));
+    const statuses = loadStatuses();
+    const now = Date.now();
+    const probes = knownHostNames.map((name) => {
+      const rec = statuses.find((s) => s.name === name);
+      const online = rec && rec.status === 'online' && (now - rec.reportedAt) < reportStaleMs;
+      return { name, status: online ? 'online' : 'offline' };
+    });
 
     response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     response.end(JSON.stringify(probes));
