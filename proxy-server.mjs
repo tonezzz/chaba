@@ -59,6 +59,11 @@ const server = createServer(async (request, response) => {
 
   const pathname = decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname);
 
+  if ((request.headers.upgrade || '').toLowerCase() === 'websocket' && (pathname === '/tunnel' || pathname === '/connect')) {
+    server.emit('upgrade', request, request.socket, Buffer.alloc(0));
+    return;
+  }
+
   if (pathname === '/health') {
     response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     response.end(JSON.stringify({ status: 'ok' }));
