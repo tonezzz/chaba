@@ -1,4 +1,4 @@
-import { createReadStream, readFileSync, writeFileSync } from 'node:fs';
+import { createReadStream, readFileSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,6 +10,12 @@ const port = Number.parseInt(process.env.PORT ?? '8080', 10);
 const basicAuthUser = process.env.BASIC_AUTH_USER;
 const basicAuthPassword = process.env.BASIC_AUTH_PASSWORD;
 const publicDirectory = fileURLToPath(new URL('./public/', import.meta.url));
+const hostsFile = process.env.CHABA_HOSTS_FILE ?? normalize(join(publicDirectory, '..', 'hosts.json'));
+let configuredHosts = [];
+try {
+  const envHosts = process.env.CHABA_HOSTS;
+  configuredHosts = envHosts ? JSON.parse(envHosts) : JSON.parse(readFileSync(hostsFile, 'utf8'));
+} catch {}
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
   '.html': 'text/html; charset=utf-8',
@@ -74,38 +80,7 @@ const server = createServer(async (request, response) => {
   }
 
   if (pathname === '/api/hosts') {
-    const hostsFile = process.env.CHABA_HOSTS_FILE ?? normalize(join(publicDirectory, '..', 'hosts.json'));
-
-    if (request.method === 'POST') {
-      const chunks = [];
-      for await (const chunk of request) chunks.push(chunk);
-      const body = Buffer.concat(chunks).toString('utf8');
-      try {
-        const hosts = JSON.parse(body);
-        if (!Array.isArray(hosts) || !hosts.every((h) => typeof h.name === 'string' && typeof h.url === 'string')) {
-          throw new Error('Invalid hosts.json format');
-        }
-        writeFileSync(hostsFile, JSON.stringify(hosts, null, 2));
-        response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        response.end(JSON.stringify({ ok: true, count: hosts.length }));
-      } catch (err) {
-        response.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-        response.end(JSON.stringify({ error: err.message }));
-      }
-      return;
-    }
-
-    let hosts = [];
-    try {
-      const envHosts = process.env.CHABA_HOSTS;
-      if (envHosts) {
-        hosts = JSON.parse(envHosts);
-      } else {
-        hosts = JSON.parse(readFileSync(hostsFile, 'utf8'));
-      }
-    } catch {}
-
-    const probes = await Promise.all(hosts.map(async (host) => {
+    const probes = await Promise.all(configuredHosts.map(async (host) => {
       const start = Date.now();
       try {
         await fetch(host.url, { signal: AbortSignal.timeout(5000) });
