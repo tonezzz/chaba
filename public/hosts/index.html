@@ -42,6 +42,7 @@
     .upload-btn { padding: .35rem .7rem; border: 1px solid #2f8e81; border-radius: .5rem; color: #7af1d7; background: #0b292d; font-size: .75rem; font-weight: 700; cursor: pointer; }
     .upload-btn:hover { background: #143e45; }
     .upload-status { font-size: .75rem; color: #7af1d7; }
+    .upload-text { width: 16rem; padding: .4rem .6rem; border: 1px solid #2f8e81; border-radius: .5rem; color: #e6edf7; background: rgb(12 26 44 / 82%); font-family: ui-monospace, SFMono-Regular, monospace; font-size: .75rem; resize: vertical; }
     .notice { display: flex; gap: .8rem; margin-top: 1.6rem; padding: 1rem 1.1rem; border: 1px solid #29435d; border-radius: .9rem; color: #9eb5ce; background: rgb(16 35 57 / 60%); font-size: .88rem; line-height: 1.55; }
     .notice strong { color: #d6e7f9; }
     .notice-mark { color: #7dd3fc; font-weight: 900; }
@@ -70,8 +71,8 @@
       <div class="section-heading">
         <h2 id="hosts-heading">Host inventory</h2>
         <div class="upload">
-          <input type="file" id="hosts-json" accept=".json" hidden>
-          <button class="upload-btn" type="button" onclick="document.getElementById('hosts-json').click()">Upload hosts.json</button>
+          <textarea id="hosts-json-text" class="upload-text" rows="2" placeholder="Paste hosts.json JSON..."></textarea>
+          <button class="upload-btn" type="button" id="save-hosts">Save</button>
           <span id="upload-status" class="upload-status"></span>
         </div>
         <p>Last reviewed Jul 2026</p>
@@ -124,15 +125,15 @@
     loadHosts();
     setInterval(loadHosts, 30000);
 
-    const hostsJsonInput = document.getElementById('hosts-json');
+    const hostsJsonText = document.getElementById('hosts-json-text');
+    const saveHostsBtn = document.getElementById('save-hosts');
     const uploadStatus = document.getElementById('upload-status');
-    if (hostsJsonInput) {
-      hostsJsonInput.addEventListener('change', async (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-        uploadStatus.textContent = 'Uploading...';
+    if (saveHostsBtn) {
+      saveHostsBtn.addEventListener('click', async () => {
+        const text = hostsJsonText.value.trim();
+        if (!text) return;
+        uploadStatus.textContent = 'Saving...';
         try {
-          const text = await file.text();
           const hosts = JSON.parse(text);
           const res = await fetch('/api/hosts', {
             method: 'POST',
@@ -141,14 +142,13 @@
             body: JSON.stringify(hosts)
           });
           const result = await res.json();
-          if (!res.ok) throw new Error(result.error || 'Upload failed');
+          if (!res.ok) throw new Error(result.error || 'Save failed');
           uploadStatus.textContent = 'Saved (' + result.count + ')';
+          hostsJsonText.value = '';
           await loadHosts();
           setTimeout(() => { uploadStatus.textContent = ''; }, 3000);
         } catch (err) {
           uploadStatus.textContent = 'Error: ' + err.message;
-        } finally {
-          hostsJsonInput.value = '';
         }
       });
     }
