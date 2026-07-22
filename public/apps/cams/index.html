@@ -38,7 +38,7 @@
             <a href="/" class="text-lg font-bold text-white">HomeLab</a>
             <div class="flex gap-4 text-sm">
                 <a href="/" class="text-gray-400 hover:text-white transition">Dashboard</a>
-                <a href="/apps/cams/" class="text-accent font-semibold">Cameras</a>
+                <a href="/apps/cams/index.html" class="text-accent font-semibold">Cameras</a>
                 <a href="/infrastructure.html" class="text-gray-400 hover:text-white transition">Infrastructure</a>
                 <a href="/decisions.html" class="text-gray-400 hover:text-white transition">Decisions</a>
             </div>
@@ -180,7 +180,7 @@
 
         async function load() {
             try {
-                const res = await fetch('../../cameras.json');
+                const res = await fetch('/cameras.json');
                 if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
                 const data = await res.json();
                 groups = data.groups || {};
