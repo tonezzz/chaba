@@ -1,0 +1,152 @@
+title:
+  - text: "Decisions — gaussian-splatting-docker"
+
+main:
+  - raw: |
+      <div class="max-w-4xl mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-white mb-2">Decisions Log</h1>
+        <p class="text-gray-400 mb-8">Key architectural choices and their reasoning</p>
+
+        <div class="space-y-6">
+          <div class="bg-card rounded-xl p-6 border border-gray-700">
+            <div class="flex items-center gap-3 mb-3">
+              <span class="text-xs font-mono text-gray-500 bg-black/30 px-2 py-1 rounded">2026-07-17</span>
+              <h2 class="text-lg font-semibold text-white">Caddy over Nginx for Web Server</h2>
+            </div>
+            <p class="text-sm text-gray-300 mb-3">Use Caddy (<code class="text-accent">caddy:2-alpine</code>) instead of Nginx for the web server container.</p>
+            <div class="text-sm space-y-1 mb-3">
+              <p class="text-gray-400 font-semibold">Reasoning:</p>
+              <ul class="text-gray-400 list-disc list-inside space-y-1 ml-2">
+                <li>Zero-config HTTPS via automatic Let's Encrypt</li>
+                <li>Caddyfile is far simpler than nginx.conf</li>
+                <li>Built-in reverse proxy for future API apps</li>
+                <li>Hot-reload config without container restart</li>
+                <li>Smaller image (~40MB vs ~140MB)</li>
+              </ul>
+            </div>
+            <p class="text-xs text-gray-500">Alternatives: Nginx (more boilerplate), Traefik (overkill), Python http.server (not production-ready)</p>
+          </div>
+
+          <div class="bg-card rounded-xl p-6 border border-gray-700">
+            <div class="flex items-center gap-3 mb-3">
+              <span class="text-xs font-mono text-gray-500 bg-black/30 px-2 py-1 rounded">Camera setup</span>
+              <h2 class="text-lg font-semibold text-white">DOH Cameras: Direct IP over Domain Names</h2>
+            </div>
+            <p class="text-sm text-gray-300 mb-3">Use direct IP addresses (<code class="text-accent">180.180.242.207/208</code>) instead of domain names for DOH camera streams.</p>
+            <div class="text-sm space-y-1 mb-3">
+              <p class="text-gray-400 font-semibold">Reasoning:</p>
+              <ul class="text-gray-400 list-disc list-inside space-y-1 ml-2">
+                <li>Domain names fail due to TLS/SNI mismatch on Wowza servers</li>
+                <li>Direct IP works perfectly for HLS streaming</li>
+                <li>iTIC proxy frequently down (returns 200 but empty manifest)</li>
+              </ul>
+              <p class="text-gray-400 font-semibold mt-2">Trade-off:</p>
+              <p class="text-gray-400 ml-2">IP addresses could change if DOH redeploys, but have been stable</p>
+            </div>
+          </div>
+
+          <div class="bg-card rounded-xl p-6 border border-gray-700">
+            <div class="flex items-center gap-3 mb-3">
+              <span class="text-xs font-mono text-gray-500 bg-black/30 px-2 py-1 rounded">Frigate setup</span>
+              <h2 class="text-lg font-semibold text-white">VSTARCAM: Transcode to H.264</h2>
+            </div>
+            <p class="text-sm text-gray-300 mb-3">Transcode VSTARCAM main stream to H.264 with <code class="text-accent">libx264</code> instead of stream-copying H.265.</p>
+            <div class="text-sm space-y-1 mb-3">
+              <p class="text-gray-400 font-semibold">Reasoning:</p>
+              <ul class="text-gray-400 list-disc list-inside space-y-1 ml-2">
+                <li>H.265 bitstream has non-standard VPS that breaks MP4 remuxing</li>
+                <li>Stream copy (<code>-c:v copy</code>) produces corrupt MP4 files</li>
+                <li>Audio (PCM A-law) dropped (<code>-an</code>) — unsupported in MP4</li>
+              </ul>
+              <p class="text-gray-400 font-semibold mt-2">Trade-off:</p>
+              <p class="text-gray-400 ml-2">Higher CPU usage from transcoding, but reliable recordings</p>
+            </div>
+          </div>
+
+          <div class="bg-card rounded-xl p-6 border border-gray-700">
+            <div class="flex items-center gap-3 mb-3">
+              <span class="text-xs font-mono text-gray-500 bg-black/30 px-2 py-1 rounded">Project inception</span>
+              <h2 class="text-lg font-semibold text-white">Separate Docker Compose Files per Stack</h2>
+            </div>
+            <p class="text-sm text-gray-300 mb-3">Separate compose files for main GPU stack, Frigate, and web server rather than a single monolithic compose.</p>
+            <div class="text-sm space-y-1 mb-3">
+              <p class="text-gray-400 font-semibold">Reasoning:</p>
+              <ul class="text-gray-400 list-disc list-inside space-y-1 ml-2">
+                <li>Independent lifecycles: Frigate 24/7, GPU on-demand, web 24/7</li>
+                <li>GPU containers need NVIDIA runtime config that others don't</li>
+                <li>Easier to manage and isolate port conflicts</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="bg-card rounded-xl p-6 border border-gray-700">
+            <div class="flex items-center gap-3 mb-3">
+              <span class="text-xs font-mono text-gray-500 bg-black/30 px-2 py-1 rounded">Camera map dev</span>
+              <h2 class="text-lg font-semibold text-white">Camera Data Embedded Inline in HTML</h2>
+            </div>
+            <p class="text-sm text-gray-300 mb-3">Embed camera array data directly in <code class="text-accent">camera-map.html</code> rather than fetching from <code>cameras.json</code>.</p>
+            <div class="text-sm space-y-1 mb-3">
+              <p class="text-gray-400 font-semibold">Reasoning:</p>
+              <ul class="text-gray-400 list-disc list-inside space-y-1 ml-2">
+                <li>Eliminates CORS issues when serving from different origins</li>
+                <li>No dependency on external file loading</li>
+                <li>Single self-contained HTML file is easy to share/deploy</li>
+              </ul>
+              <p class="text-gray-400 font-semibold mt-2">Trade-off:</p>
+              <p class="text-gray-400 ml-2">Must edit HTML to add/remove cameras, but cameras.json exists as reference</p>
+            </div>
+          </div>
+
+          <div class="bg-card rounded-xl p-6 border border-gray-700">
+            <div class="flex items-center gap-3 mb-3">
+              <span class="text-xs font-mono text-gray-500 bg-black/30 px-2 py-1 rounded">2026-07-17</span>
+              <h2 class="text-lg font-semibold text-white">Caddy on Port 8080 (not 80/443)</h2>
+            </div>
+            <p class="text-sm text-gray-300 mb-3">Bind Caddy to port 8080 instead of standard 80/443.</p>
+            <div class="text-sm space-y-1 mb-3">
+              <p class="text-gray-400 font-semibold">Reasoning:</p>
+              <ul class="text-gray-400 list-disc list-inside space-y-1 ml-2">
+                <li>Avoids needing root/sudo for ports below 1024</li>
+                <li>Backward compatible with previous Python http.server URL</li>
+                <li>No domain name yet — HTTPS not needed until remote access</li>
+              </ul>
+              <p class="text-gray-400 font-semibold mt-2">Future:</p>
+              <p class="text-gray-400 ml-2">Switch to domain + ports 80/443 for auto-HTTPS when ready</p>
+            </div>
+          </div>
+          <div class="bg-card rounded-xl p-6 border border-gray-700">
+            <div class="flex items-center gap-3 mb-3">
+              <span class="text-xs font-mono text-gray-500 bg-black/30 px-2 py-1 rounded">2026-07-22</span>
+              <h2 class="text-lg font-semibold text-white">Live Host Monitoring on Infrastructure Page</h2>
+            </div>
+            <p class="text-sm text-gray-300 mb-3">Add client-side live reachability badges for each host on the infrastructure reference page.</p>
+            <div class="text-sm space-y-1 mb-3">
+              <p class="text-gray-400 font-semibold">Reasoning:</p>
+              <ul class="text-gray-400 list-disc list-inside space-y-1 ml-2">
+                <li>One-glance network health without leaving the page</li>
+                <li>Uses existing no-cors fetch pattern already in the dashboard</li>
+                <li>Runs in browser, no extra backend polling required</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="bg-card rounded-xl p-6 border border-gray-700">
+            <div class="flex items-center gap-3 mb-3">
+              <span class="text-xs font-mono text-gray-500 bg-black/30 px-2 py-1 rounded">2026-07-22</span>
+              <h2 class="text-lg font-semibold text-white">Push-Based Host Status Reporting</h2>
+            </div>
+            <p class="text-sm text-gray-300 mb-3">Each host reports its own status to <code class="text-accent">chaba.h3</code> via <code class="text-accent">POST /api/report</code> instead of the server polling hosts.</p>
+            <div class="text-sm space-y-1 mb-3">
+              <p class="text-gray-400 font-semibold">Reasoning:</p>
+              <ul class="text-gray-400 list-disc list-inside space-y-1 ml-2">
+                <li>No need to know each host's current IP or expose inbound ports</li>
+                <li>Works for laptops and mobile/Android devices behind NAT</li>
+                <li>Hosts can optionally include extra metrics later (CPU, temperature, docker state)</li>
+                <li>A shared <code class="text-accent">REPORT_TOKEN</code> keeps the endpoint simple for scripts</li>
+              </ul>
+              <p class="text-gray-400 font-semibold mt-2">Trade-off:</p>
+              <p class="text-gray-400 ml-2">Each host needs a small agent/cron or scheduled task to POST heartbeats; stale reports become offline after a configurable timeout</p>
+            </div>
+          </div>
+        </div>
+      </div>
