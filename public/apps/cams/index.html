@@ -99,6 +99,11 @@
             return `http://${window.location.hostname}:5000/cameras/${camName}`;
         }
 
+        function pickPlayUrl(cam) {
+            const candidates = [cam.hls_url, ...(cam.alt_urls || [])].filter(Boolean);
+            return candidates.find(u => u.startsWith('https://')) || cam.hls_url || null;
+        }
+
         function renderLegend() {
             const legend = document.getElementById('legend');
             const items = Object.entries(groups).sort((a, b) => (a[1].order || 0) - (b[1].order || 0));
@@ -121,9 +126,10 @@
 
             const icon = L.divIcon({ className: 'custom-marker', html: iconHtml, iconSize, iconAnchor });
 
-            const videoHtml = cam.hls_url
+            const noStreamHtml = `<div class="video-container"><div class="loading">No live stream on chaba.h3</div></div>`;
+            const videoHtml = cam.play_url
                 ? `<div class="video-container"><video id="vid_${cam.name}" muted autoplay playsinline></video><div class="loading" id="load_${cam.name}">Loading stream...</div></div>`
-                : `<img class="snapshot-img" id="snap_${cam.name}" src="" alt="Loading snapshot...">`;
+                : noStreamHtml;
 
             const coverage = cam.view && cam.view.coverage ? cam.view.coverage.map(x => `<span class="coverage-tag">${escapeHtml(x)}</span>`).join(' ') : '';
             const location = cam.location ? `<div class="meta">${[cam.location.road, cam.location.km != null ? 'km ' + cam.location.km : '', cam.location.side, cam.location.area].filter(Boolean).join(' · ')}</div>` : '';
@@ -146,12 +152,9 @@
 
             marker.on('popupopen', () => {
                 stopAllPlayers();
-                if (cam.hls_url) {
+                if (cam.play_url) {
                     const videoEl = document.getElementById(`vid_${cam.name}`);
-                    if (videoEl) startHls(videoEl, cam.hls_url);
-                } else {
-                    const imgEl = document.getElementById(`snap_${cam.name}`);
-                    if (imgEl) startSnapshot(imgEl, cam.name);
+                    if (videoEl) startHls(videoEl, cam.play_url);
                 }
             });
             marker.on('popupclose', stopAllPlayers);
@@ -184,7 +187,7 @@
                 if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
                 const data = await res.json();
                 groups = data.groups || {};
-                cameras = (data.cameras || []).filter(c => c.enabled !== false);
+                cameras = (data.cameras || []).filter(c => c.enabled !== false).map(cam => ({ ...cam, play_url: pickPlayUrl(cam) }));
                 renderLegend();
                 initMap();
             } catch (e) {
