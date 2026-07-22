@@ -30,6 +30,14 @@
         .camera-popup a:hover { background: #0066cc; }
         .legend { position: absolute; bottom: 20px; left: 20px; z-index: 1000; background: rgba(26,26,46,0.95); padding: 12px 16px; border-radius: 8px; font-size: 13px; line-height: 1.8; color: #eee; }
         .legend .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; }
+        .controls { position: absolute; top: 12px; right: 12px; z-index: 1000; background: rgba(22,33,62,0.95); padding: 12px; border-radius: 8px; width: 260px; display: flex; flex-direction: column; gap: 8px; color: #eee; }
+        .control-input, .control-select { width: 100%; padding: 6px 8px; border-radius: 4px; border: 1px solid #334155; background: #0f172a; color: #eee; font-size: 13px; }
+        .control-row { display: flex; gap: 8px; align-items: center; }
+        .control-btn { flex: 1; padding: 6px 8px; border-radius: 4px; border: none; background: #1e293b; color: #eee; font-size: 13px; cursor: pointer; }
+        .control-btn:hover { background: #334155; }
+        .control-btn-primary { background: #0a84ff; }
+        .control-btn-primary:hover { background: #0066cc; }
+        .page-info { font-size: 13px; text-align: center; min-width: 60px; }
     </style>
 </head>
 <body class="bg-bg text-gray-200">
@@ -47,6 +55,23 @@
 
     <div class="relative">
         <div id="map"></div>
+
+        <div class="controls" id="controls">
+            <input type="text" id="search" placeholder="Search cameras..." class="control-input" />
+            <select id="groupFilter" class="control-select"><option value="">All groups</option></select>
+            <select id="sourceFilter" class="control-select"><option value="">All sources</option></select>
+            <div class="control-row">
+                <button id="fitBtn" class="control-btn" title="Fit all visible">Fit all</button>
+                <button id="resetBtn" class="control-btn" title="Clear filters">Reset</button>
+            </div>
+            <div class="control-row">
+                <button id="prevBtn" class="control-btn" title="Previous camera">&#9664;</button>
+                <span id="pageInfo" class="page-info">0 / 0</span>
+                <button id="nextBtn" class="control-btn" title="Next camera">&#9654;</button>
+            </div>
+            <button id="autoBtn" class="control-btn control-btn-primary" title="Auto-discover cameras">&#9654; Discover</button>
+        </div>
+
         <div class="legend" id="legend">Loading cameras...</div>
     </div>
 
@@ -57,9 +82,22 @@
         let snapshotTimer = null;
         let cameras = [];
         let groups = {};
+        let map = null;
+        let markers = [];
+        let filtered = [];
+        let currentIndex = 0;
+        let autoTimer = null;
 
         function escapeHtml(str) {
             return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        function escapeJs(str) {
+            return String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+        }
+
+        function safeId(str) {
+            return String(str || '').replace(/[^a-zA-Z0-9_-]/g, '_');
         }
 
         function stopAllPlayers() {
@@ -68,6 +106,7 @@
         }
 
         function startHls(videoEl, url) {
+            if (activeHls) { activeHls.destroy(); activeHls = null; }
             const loading = videoEl.parentElement.querySelector('.loading');
             if (Hls.isSupported()) {
                 activeHls = new Hls({ liveDurationInfinity: true, liveBackBufferLength: 0 });
@@ -90,13 +129,13 @@
         }
 
         function startSnapshot(imgEl, camName) {
-            const update = () => { imgEl.src = `/frigate/api/${camName}/latest.jpg?h=180&cache=` + Date.now(); };
+            const update = () => { imgEl.src = `/frigate/api/${encodeURIComponent(camName)}/latest.jpg?h=180&cache=` + Date.now(); };
             update();
             snapshotTimer = setInterval(update, 2000);
         }
 
         function frigateUiUrl(camName) {
-            return `http://${window.location.hostname}:5000/cameras/${camName}`;
+            return `http://${window.location.hostname}:5000/cameras/${encodeURIComponent(camName)}`;
         }
 
         function pickPlayUrl(cam) {
@@ -104,18 +143,27 @@
             return candidates.find(u => u.startsWith('https://')) || cam.hls_url || null;
         }
 
-        function renderLegend() {
+        function renderLegend(list) {
             const legend = document.getElementById('legend');
+            if (!list) { legend.textContent = 'Loading cameras...'; return; }
+            const counts = {};
+            list.forEach(c => { counts[c.group] = (counts[c.group] || 0) + 1; });
             const items = Object.entries(groups).sort((a, b) => (a[1].order || 0) - (b[1].order || 0));
-            legend.innerHTML = items.map(([name, info]) =>
-                `<div><span class="dot" style="background:${escapeHtml(info.color || '#0a84ff')}"></span>${escapeHtml(name)}</div>`
-            ).join('');
+            legend.innerHTML = items.map(([name, info]) => {
+                const color = /^#[0-9a-fA-F]{6}$/.test(info.color) ? info.color : '#0a84ff';
+                const count = counts[name] || 0;
+                return `<div><span class="dot" style="background:${color}"></span>${escapeHtml(name)} ${count ? '(' + count + ')' : ''}</div>`;
+            }).join('');
         }
 
-        function createMarker(map, cam, color) {
+        function createMarker(map, cam, rawColor) {
+            const color = /^#[0-9a-fA-F]{6}$/.test(rawColor) ? rawColor : '#0a84ff';
+            const safeName = safeId(cam.name);
+            const headingVal = Number(cam.heading);
+            const hasHeading = !isNaN(headingVal) && cam.heading !== null && cam.heading !== undefined;
             let iconHtml, iconSize, iconAnchor;
-            if (cam.heading !== null && cam.heading !== undefined) {
-                iconHtml = `<div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:20px solid ${color};filter:drop-shadow(0 0 3px rgba(0,0,0,0.6));transform:rotate(${cam.heading}deg);transform-origin:50% 60%;"></div>`;
+            if (hasHeading) {
+                iconHtml = `<div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:20px solid ${color};filter:drop-shadow(0 0 3px rgba(0,0,0,0.6));transform:rotate(${headingVal}deg);transform-origin:50% 60%;"></div>`;
                 iconSize = [20, 24];
                 iconAnchor = [10, 14];
             } else {
@@ -128,11 +176,11 @@
 
             const noStreamHtml = `<div class="video-container"><div class="loading">No live stream on chaba.h3</div></div>`;
             const videoHtml = cam.play_url
-                ? `<div class="video-container"><video id="vid_${cam.name}" muted autoplay playsinline></video><div class="loading" id="load_${cam.name}">Loading stream...</div></div>`
+                ? `<div class="video-container"><video id="vid_${safeName}" muted autoplay playsinline></video><div class="loading" id="load_${safeName}">Loading stream...</div></div>`
                 : noStreamHtml;
 
             const coverage = cam.view && cam.view.coverage ? cam.view.coverage.map(x => `<span class="coverage-tag">${escapeHtml(x)}</span>`).join(' ') : '';
-            const location = cam.location ? `<div class="meta">${[cam.location.road, cam.location.km != null ? 'km ' + cam.location.km : '', cam.location.side, cam.location.area].filter(Boolean).join(' · ')}</div>` : '';
+            const location = cam.location ? `<div class="meta">${[cam.location.road, cam.location.km != null ? 'km ' + cam.location.km : '', cam.location.side, cam.location.area].filter(Boolean).map(escapeHtml).join(' · ')}</div>` : '';
             const perspective = cam.perspective ? `<div class="meta">Perspective: ${escapeHtml(cam.perspective)}</div>` : '';
             const viewDesc = cam.view && cam.view.heading_description ? `<div class="meta">Facing: ${escapeHtml(cam.view.heading_description)}</div>` : '';
             const desc = cam.description ? `<div class="meta">${escapeHtml(cam.description)}</div>` : '';
@@ -144,39 +192,139 @@
                     ${videoHtml}
                     <div class="meta"><b>${escapeHtml(cam.group)}</b> · ${escapeHtml(cam.source)}${status ? ' · ' + escapeHtml(status) : ''}</div>
                     ${location}${perspective}${viewDesc}${coverage ? '<div class="meta">Coverage: ' + coverage + '</div>' : ''}${desc}
-                    <a href="#" onclick="window.open(frigateUiUrl('${cam.name}'), '_blank'); return false;">Open in Frigate</a>
+                    <a href="#" onclick="window.open(frigateUiUrl('${escapeHtml(escapeJs(cam.name))}'), '_blank'); return false;">Open in Frigate</a>
                 </div>
             `;
 
             const marker = L.marker([cam.lat, cam.lon], { icon }).bindPopup(popupHtml).addTo(map);
+            marker.cam = cam;
 
             marker.on('popupopen', () => {
                 stopAllPlayers();
                 if (cam.play_url) {
-                    const videoEl = document.getElementById(`vid_${cam.name}`);
+                    const videoEl = document.getElementById(`vid_${safeName}`);
                     if (videoEl) startHls(videoEl, cam.play_url);
                 }
             });
-            marker.on('popupclose', stopAllPlayers);
             return marker;
         }
 
+        function populateFilters() {
+            const groupSelect = document.getElementById('groupFilter');
+            const sourceSelect = document.getElementById('sourceFilter');
+            const groupSet = new Set();
+            const sourceSet = new Set();
+            cameras.forEach(c => { if (c.group) groupSet.add(c.group); if (c.source) sourceSet.add(c.source); });
+            groupSelect.innerHTML = '<option value="">All groups</option>' + [...groupSet].sort().map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
+            sourceSelect.innerHTML = '<option value="">All sources</option>' + [...sourceSet].sort().map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+        }
+
+        function filterCameras() {
+            const q = document.getElementById('search').value.trim().toLowerCase();
+            const g = document.getElementById('groupFilter').value;
+            const s = document.getElementById('sourceFilter').value;
+            return cameras.filter(cam => {
+                if (g && cam.group !== g) return false;
+                if (s && cam.source !== s) return false;
+                if (!q) return true;
+                const hay = [
+                    cam.title, cam.name, cam.camid, cam.group, cam.source,
+                    cam.description, cam.perspective,
+                    cam.location && cam.location.road,
+                    cam.location && cam.location.area,
+                    cam.view && cam.view.heading_description,
+                    ...(cam.view && cam.view.coverage || [])
+                ].filter(Boolean).join(' ').toLowerCase();
+                return hay.includes(q);
+            });
+        }
+
+        function updateMarkers() {
+            markers.forEach(m => {
+                if (filtered.includes(m.cam)) map.addLayer(m);
+                else map.removeLayer(m);
+            });
+        }
+
+        function fitAll() {
+            const visible = markers.filter(m => filtered.includes(m.cam));
+            if (visible.length) {
+                const bounds = L.latLngBounds(visible.map(m => m.getLatLng()));
+                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+            }
+        }
+
+        function openCamera(i) {
+            if (!filtered.length) return;
+            currentIndex = ((i % filtered.length) + filtered.length) % filtered.length;
+            const cam = filtered[currentIndex];
+            const marker = markers.find(m => m.cam === cam);
+            if (!marker) return;
+            stopAllPlayers();
+            map.flyTo([cam.lat, cam.lon], 16, { duration: 0.6 });
+            marker.openPopup();
+            document.getElementById('pageInfo').textContent = `${currentIndex + 1} / ${filtered.length}`;
+        }
+
+        function applyFilters() {
+            filtered = filterCameras();
+            currentIndex = 0;
+            updateMarkers();
+            renderLegend(filtered);
+            if (filtered.length) {
+                document.getElementById('pageInfo').textContent = `1 / ${filtered.length}`;
+                fitAll();
+            } else {
+                document.getElementById('pageInfo').textContent = '0 / 0';
+            }
+        }
+
+        function stopAuto() {
+            if (autoTimer) {
+                clearInterval(autoTimer);
+                autoTimer = null;
+                document.getElementById('autoBtn').textContent = '▶ Discover';
+            }
+        }
+
+        function toggleAuto() {
+            if (autoTimer) { stopAuto(); return; }
+            if (!filtered.length) return;
+            openCamera(currentIndex);
+            autoTimer = setInterval(() => { currentIndex = (currentIndex + 1) % filtered.length; openCamera(currentIndex); }, 5000);
+            document.getElementById('autoBtn').textContent = '⏸ Pause';
+        }
+
+        function setupControls() {
+            document.getElementById('search').addEventListener('input', () => { stopAuto(); applyFilters(); });
+            document.getElementById('groupFilter').addEventListener('change', () => { stopAuto(); applyFilters(); });
+            document.getElementById('sourceFilter').addEventListener('change', () => { stopAuto(); applyFilters(); });
+            document.getElementById('fitBtn').addEventListener('click', fitAll);
+            document.getElementById('resetBtn').addEventListener('click', () => {
+                stopAuto();
+                document.getElementById('search').value = '';
+                document.getElementById('groupFilter').value = '';
+                document.getElementById('sourceFilter').value = '';
+                applyFilters();
+            });
+            document.getElementById('prevBtn').addEventListener('click', () => { stopAuto(); openCamera(currentIndex - 1); });
+            document.getElementById('nextBtn').addEventListener('click', () => { stopAuto(); openCamera(currentIndex + 1); });
+            document.getElementById('autoBtn').addEventListener('click', toggleAuto);
+        }
+
         function initMap() {
-            const map = L.map('map').setView([13.7, 100.7], 10);
+            map = L.map('map').setView([13.7, 100.7], 10);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap contributors',
                 maxZoom: 18
             }).addTo(map);
 
+            markers = [];
             cameras.forEach(cam => {
                 const color = (groups[cam.group] && groups[cam.group].color) || '#0a84ff';
-                createMarker(map, cam, color);
+                const marker = createMarker(map, cam, color);
+                markers.push(marker);
             });
-
-            if (cameras.length) {
-                const bounds = L.latLngBounds(cameras.map(c => [c.lat, c.lon]));
-                map.fitBounds(bounds, { padding: [50, 50] });
-            }
 
             map.on('popupclose', stopAllPlayers);
         }
@@ -190,6 +338,9 @@
                 cameras = (data.cameras || []).filter(c => c.enabled !== false).map(cam => ({ ...cam, play_url: pickPlayUrl(cam) }));
                 renderLegend();
                 initMap();
+                populateFilters();
+                setupControls();
+                applyFilters();
             } catch (e) {
                 document.getElementById('legend').textContent = 'Failed to load cameras: ' + e.message;
             }
