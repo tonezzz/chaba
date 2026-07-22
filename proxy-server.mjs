@@ -4,6 +4,7 @@ import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
+import { WebSocketServer, WebSocket } from 'ws';
 
 const port = Number.parseInt(process.env.PORT ?? '8080', 10);
 const basicAuthUser = process.env.BASIC_AUTH_USER;
@@ -120,6 +121,70 @@ const server = createServer(async (request, response) => {
   } catch {
     response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
     response.end('Not found');
+  }
+});
+
+// WebSocket tunnel endpoints
+const tunnelToken = process.env.TUNNEL_TOKEN;
+const wssClient = new WebSocketServer({ noServer: true });
+const wssUser = new WebSocketServer({ noServer: true });
+let tunnelClient = null;
+let tunnelUser = null;
+
+function checkTunnelToken(request) {
+  if (!tunnelToken) return true;
+  const token = new URL(request.url, 'http://localhost').searchParams.get('token');
+  return token === tunnelToken;
+}
+
+wssClient.on('connection', (ws) => {
+  tunnelClient = ws;
+  ws.on('message', (data) => {
+    if (tunnelUser && tunnelUser.readyState === WebSocket.OPEN) {
+      tunnelUser.send(data);
+    }
+  });
+  ws.on('close', () => {
+    tunnelClient = null;
+    if (tunnelUser) tunnelUser.close();
+  });
+  ws.on('error', (err) => console.error('tunnel client error', err.message));
+});
+
+wssUser.on('connection', (ws) => {
+  if (!tunnelClient || tunnelClient.readyState !== WebSocket.OPEN) {
+    ws.close();
+    return;
+  }
+  if (tunnelUser) tunnelUser.close();
+  tunnelUser = ws;
+  ws.on('message', (data) => {
+    if (tunnelClient && tunnelClient.readyState === WebSocket.OPEN) {
+      tunnelClient.send(data);
+    }
+  });
+  ws.on('close', () => {
+    tunnelUser = null;
+  });
+  ws.on('error', (err) => console.error('tunnel user error', err.message));
+});
+
+server.on('upgrade', (request, socket, head) => {
+  if (!checkTunnelToken(request)) {
+    socket.destroy();
+    return;
+  }
+  const pathname = new URL(request.url, 'http://localhost').pathname;
+  if (pathname === '/tunnel') {
+    wssClient.handleUpgrade(request, socket, head, (ws) => {
+      wssClient.emit('connection', ws, request);
+    });
+  } else if (pathname === '/connect') {
+    wssUser.handleUpgrade(request, socket, head, (ws) => {
+      wssUser.emit('connection', ws, request);
+    });
+  } else {
+    socket.destroy();
   }
 });
 
