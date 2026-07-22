@@ -17,6 +17,64 @@ const reportStaleMs = Number.parseInt(process.env.REPORT_STALE_MS ?? '120000', 1
 function loadStatuses() {
   try { return JSON.parse(readFileSync(statusFile, 'utf8')); } catch { return []; }
 }
+
+const camerasFile = normalize(join(publicDirectory, 'cameras.json'));
+let cameraCache = [];
+let cameraCacheRefreshedAt = null;
+
+function pickPlayUrl(cam) {
+  const candidates = [cam.hls_url, ...(cam.alt_urls || [])].filter(Boolean);
+  return candidates.find(u => u.startsWith('https://')) || cam.hls_url || null;
+}
+
+function loadCamerasData() {
+  try {
+    const data = JSON.parse(readFileSync(camerasFile, 'utf8'));
+    cameraCache = (data.cameras || []).filter(c => c.enabled !== false).map(cam => ({
+      name: cam.name,
+      title: cam.title,
+      group: cam.group,
+      lat: cam.lat,
+      lon: cam.lon,
+      source: cam.source,
+      stream_type: cam.stream_type,
+      stream_status: cam.stream_status,
+      description: cam.description,
+      perspective: cam.perspective,
+      location: cam.location,
+      view: cam.view,
+      playUrl: pickPlayUrl(cam),
+      reachable: false,
+      checkedAt: null
+    }));
+  } catch {
+    cameraCache = [];
+  }
+}
+
+async function refreshCameras() {
+  loadCamerasData();
+  if (!cameraCache.length) return;
+  await Promise.all(cameraCache.map(async cam => {
+    if (!cam.playUrl || !cam.playUrl.startsWith('https://')) {
+      cam.reachable = false;
+      cam.checkedAt = new Date().toISOString();
+      return;
+    }
+    try {
+      const res = await fetch(cam.playUrl, { method: 'HEAD', signal: AbortSignal.timeout(8000) });
+      cam.reachable = res.ok;
+    } catch {
+      cam.reachable = false;
+    }
+    cam.checkedAt = new Date().toISOString();
+  }));
+  cameraCacheRefreshedAt = new Date().toISOString();
+}
+
+loadCamerasData();
+refreshCameras();
+setInterval(refreshCameras, 60000);
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
   '.html': 'text/html; charset=utf-8',
@@ -145,7 +203,27 @@ const server = createServer(async (request, response) => {
     return;
   }
 
-  const requestedPath = pathname === '/' ? 'index.html' : pathname === '/hosts' || pathname === '/hosts/' ? 'hosts/index.html' : pathname === '/tony-omen' || pathname === '/tony-omen/' ? 'tony-omen/index.html' : pathname === '/apps/cams' || pathname === '/apps/cams/' ? 'apps/cams/index.html' : pathname.slice(1);
+  if (pathname === '/api/cameras') {
+    response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    response.end(JSON.stringify({ cameras: cameraCache, refreshedAt: cameraCacheRefreshedAt }));
+    return;
+  }
+
+  const nameMatch = pathname.match(/^\/api\/cameras\/([^/]+)\/?$/);
+  if (nameMatch) {
+    const name = decodeURIComponent(nameMatch[1]);
+    const cam = cameraCache.find(c => c.name === name);
+    if (!cam) {
+      response.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
+      response.end(JSON.stringify({ error: 'not found' }));
+      return;
+    }
+    response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    response.end(JSON.stringify(cam));
+    return;
+  }
+
+  const requestedPath = pathname === '/' ? 'index.html' : pathname === '/hosts' || pathname === '/hosts/' ? 'hosts/index.html' : pathname === '/tony-omen' || pathname === '/tony-omen/' ? 'tony-omen/index.html' : pathname === '/cameras' || pathname === '/cameras/' ? 'cameras/index.html' : pathname === '/apps/cams' || pathname === '/apps/cams/' ? 'apps/cams/index.html' : pathname.slice(1);
   const filePath = normalize(join(publicDirectory, requestedPath));
 
   if (!filePath.startsWith(publicDirectory)) {

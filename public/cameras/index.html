@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Camera Discovery · chaba.h3</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-200 min-h-screen p-6">
+  <main class="max-w-5xl mx-auto">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-white">Camera Discovery</h1>
+        <p class="text-slate-400 mt-1">Live camera inventory and reachability.</p>
+      </div>
+      <a href="/apps/cams/index.html" class="text-sm text-sky-400 hover:underline">Open Map →</a>
+    </div>
+
+    <div id="summary" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div class="bg-slate-900 border border-slate-700 rounded-xl p-4">
+        <div class="text-xs text-slate-400 uppercase tracking-wide">Cameras</div>
+        <div id="total" class="text-2xl font-bold text-white">-</div>
+      </div>
+      <div class="bg-slate-900 border border-slate-700 rounded-xl p-4">
+        <div class="text-xs text-slate-400 uppercase tracking-wide">Reachable</div>
+        <div id="online" class="text-2xl font-bold text-emerald-400">-</div>
+      </div>
+      <div class="bg-slate-900 border border-slate-700 rounded-xl p-4">
+        <div class="text-xs text-slate-400 uppercase tracking-wide">Last checked</div>
+        <div id="checked" class="text-sm font-mono text-slate-300 mt-2">-</div>
+      </div>
+    </div>
+
+    <div class="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-slate-800 text-slate-300">
+          <tr>
+            <th class="p-4 font-medium">Camera</th>
+            <th class="p-4 font-medium">Group</th>
+            <th class="p-4 font-medium">Source</th>
+            <th class="p-4 font-medium">Status</th>
+            <th class="p-4 font-medium">Play URL</th>
+          </tr>
+        </thead>
+        <tbody id="list" class="divide-y divide-slate-700"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    async function load() {
+      try {
+        const res = await fetch('/api/cameras', { credentials: 'include' });
+        if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
+        const data = await res.json();
+        const cams = data.cameras || [];
+        document.getElementById('total').textContent = String(cams.length);
+        document.getElementById('online').textContent = String(cams.filter(c => c.reachable).length);
+        document.getElementById('checked').textContent = data.refreshedAt ? new Date(data.refreshedAt).toLocaleString() : 'never';
+        const tbody = document.getElementById('list');
+        tbody.innerHTML = cams.map(c => `
+          <tr>
+            <td class="p-4">
+              <div class="font-semibold text-white">${c.title}</div>
+              <div class="text-xs text-slate-500 font-mono">${c.name}</div>
+            </td>
+            <td class="p-4">${c.group}</td>
+            <td class="p-4">${c.source || '-'}</td>
+            <td class="p-4">
+              <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-semibold ${c.reachable ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}">
+                <span class="w-1.5 h-1.5 rounded-full ${c.reachable ? 'bg-emerald-400' : 'bg-rose-400'}"></span>
+                ${c.reachable ? 'Online' : 'Offline'}
+              </span>
+            </td>
+            <td class="p-4 break-all text-xs text-slate-400 font-mono">${c.playUrl ? c.playUrl : '<span class="text-slate-600">none</span>'}</td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        document.getElementById('list').innerHTML = `<tr><td colspan="5" class="p-4 text-rose-400">Failed to load cameras: ${e.message}</td></tr>`;
+      }
+    }
+    load();
+    setInterval(load, 60000);
+  </script>
+</body>
+</html>
