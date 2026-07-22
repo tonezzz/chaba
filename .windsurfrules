@@ -1,0 +1,39 @@
+# Workspace Rules
+
+Distilled from https://github.com/detailobsessed/awesome-devin
+
+TODO: Revisit this repo later to harvest more rules and prompts (memories/, tips, official links).
+
+## Coding Principles
+- Favor clarity and maintainability over brevity or cleverness.
+- Respect language idioms; use descriptive, consistent naming and formatting.
+- Keep functions small and single-responsibility; keep components loosely coupled.
+- Encapsulate complexity behind clear interfaces; apply DRY.
+- Validate inputs; fail fast with clear, actionable error messages.
+- Write tests early and run them frequently; separate pure logic from side effects.
+- Profile before optimizing; manage resources properly (with, finally, RAII).
+
+## Cascade Workflow
+- Use the project's configured tooling and scripts for linting, formatting, and checks instead of manual edits.
+- Verify facts before stating them; double-check changes before committing or creating PRs.
+- Update PRs/issues as work progresses; read comments for context and updates.
+- For larger tasks, suggest creating a GitHub issue to track progress.
+- If Cascade ignores instructions, ask it to "check your guidelines and revise."
+- Reload the window if Cascade behavior degrades after long sessions.
+
+## Commit Messages
+Write a short English commit message (one sentence max) and format it as a code block:
+
+```
+prefix: short description
+```
+
+Allowed prefixes: feat, fix, tweak, style, refactor, perf, test, docs, chore, ci, build, revert, hotfix, init, merge, wip, release
+
+## chaba.h3 Web Pages
+
+When adding or editing pages for `chaba.h3.gizmo-thailand.com`, follow `.windsurf/workflows/add-h3-page.md` and `docs/kb-h3-pages.md`. Key reminders:
+- Work in `/home/tony/CascadeProjects/chaba-h3` and push to the `chaba.h3` branch.
+- Place files under `chaba-h3/public/`; the `web/public/` path from the main branch is not served.
+- Link to explicit `/foo/index.html` URLs unless `proxy-server.mjs` has a directory special case.
+- Use absolute fetch paths such as `/data.json` inside pages.
