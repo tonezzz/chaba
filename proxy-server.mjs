@@ -66,7 +66,7 @@ const server = createServer(async (request, response) => {
   if (!isAuthorized(request)) {
     response.writeHead(401, {
       'Content-Type': 'text/plain; charset=utf-8',
-      'WWW-Authenticate': 'Basic realm="Chaba", charset="UTF-8"'
+      'WWW-Authenticate': 'Basic realm="chaba.h3", charset="UTF-8"'
     });
     response.end('Authentication required');
     return;
@@ -97,5 +97,5 @@ const server = createServer(async (request, response) => {
 });
 
 server.listen(port, '0.0.0.0', () => {
-  process.stdout.write(`Chaba test site listening on port ${port}\n`);
+  process.stdout.write(`chaba.h3 listening on port ${port}\n`);
 });

@@ -1,6 +1,6 @@
-# Chaba Node Test
+# Chaba.h3
 
-Minimal dependency-free Node.js test website for Plesk.
+Minimal dependency-free Node.js website/app for Plesk.
 
 ## Local test
 
