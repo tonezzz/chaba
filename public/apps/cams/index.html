@@ -38,6 +38,15 @@
         .control-btn-primary { background: #0a84ff; }
         .control-btn-primary:hover { background: #0066cc; }
         .page-info { font-size: 13px; text-align: center; min-width: 60px; }
+        .list-view { position: absolute; top: 0; left: 0; width: 100%; height: calc(100vh - 48px); background: #1a1a2e; overflow: auto; padding: 16px; }
+        .list-table { width: 100%; border-collapse: collapse; font-size: 13px; color: #eee; }
+        .list-table th, .list-table td { padding: 8px 12px; border-bottom: 1px solid #334155; text-align: left; }
+        .list-table th { background: #16213e; position: sticky; top: 0; }
+        .list-table tr:hover { background: #1e293b; cursor: pointer; }
+        .detail-drawer { position: fixed; top: 48px; right: 0; bottom: 0; width: 360px; background: rgba(22,33,62,0.98); border-left: 1px solid #334155; padding: 16px; overflow: auto; z-index: 1100; }
+        .detail-close { float: right; background: transparent; border: none; color: #eee; font-size: 20px; cursor: pointer; }
+        .tab-row .control-btn.active { background: #0a84ff; }
+        .map-only.hidden { display: none !important; }
     </style>
 </head>
 <body class="bg-bg text-gray-200">
@@ -57,22 +66,43 @@
         <div id="map"></div>
 
         <div class="controls" id="controls">
+            <div class="control-row tab-row">
+                <button id="tabMap" class="control-btn active">Map</button>
+                <button id="tabList" class="control-btn">List</button>
+            </div>
             <input type="text" id="search" placeholder="Search cameras..." class="control-input" />
             <select id="groupFilter" class="control-select"><option value="">All groups</option></select>
             <select id="sourceFilter" class="control-select"><option value="">All sources</option></select>
             <div class="control-row">
-                <button id="fitBtn" class="control-btn" title="Fit all visible">Fit all</button>
                 <button id="resetBtn" class="control-btn" title="Clear filters">Reset</button>
+                <button id="fitBtn" class="control-btn map-only" title="Fit all visible">Fit all</button>
             </div>
-            <div class="control-row">
+            <div class="control-row map-only">
                 <button id="prevBtn" class="control-btn" title="Previous camera">&#9664;</button>
                 <span id="pageInfo" class="page-info">0 / 0</span>
                 <button id="nextBtn" class="control-btn" title="Next camera">&#9654;</button>
             </div>
-            <button id="autoBtn" class="control-btn control-btn-primary" title="Auto-discover cameras">&#9654; Discover</button>
+            <button id="autoBtn" class="control-btn control-btn-primary map-only" title="Auto-discover cameras">&#9654; Discover</button>
         </div>
 
-        <div class="legend" id="legend">Loading cameras...</div>
+        <div class="legend map-only" id="legend">Loading cameras...</div>
+
+        <div id="listView" class="list-view hidden">
+            <table class="list-table">
+                <thead>
+                    <tr><th>Name</th><th>Title</th><th>Group</th><th>Source</th><th>Type</th><th>Enabled</th><th>Lat</th><th>Lon</th><th>Heading</th><th></th></tr>
+                </thead>
+                <tbody id="listBody"></tbody>
+            </table>
+        </div>
+
+        <div id="detailDrawer" class="detail-drawer hidden">
+            <button id="detailClose" class="detail-close">&times;</button>
+            <h2 id="detailTitle" style="font-size:16px;margin-bottom:12px;"></h2>
+            <div id="detailVideoContainer"></div>
+            <div id="detailMeta" style="margin-top:12px;"></div>
+            <div style="margin-top:12px;"><a id="detailFrigate" href="#" target="_blank" class="control-btn control-btn-primary" style="display:inline-block;text-decoration:none;">Open in Frigate</a></div>
+        </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -87,6 +117,8 @@
         let filtered = [];
         let currentIndex = 0;
         let autoTimer = null;
+        let selectedCam = null;
+        let currentView = 'map';
 
         function escapeHtml(str) {
             return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -209,6 +241,71 @@
             return marker;
         }
 
+        function renderList() {
+            const tbody = document.getElementById('listBody');
+            if (currentView !== 'list') return;
+            tbody.innerHTML = filtered.map((cam, i) => `
+                <tr data-idx="${i}">
+                    <td>${escapeHtml(cam.name)}</td>
+                    <td>${escapeHtml(cam.title || '')}</td>
+                    <td>${escapeHtml(cam.group || '')}</td>
+                    <td>${escapeHtml(cam.source || '')}</td>
+                    <td>${escapeHtml(cam.stream_type || '')}</td>
+                    <td>${cam.enabled !== false ? 'Yes' : 'No'}</td>
+                    <td>${cam.lat}</td>
+                    <td>${cam.lon}</td>
+                    <td>${cam.heading != null ? cam.heading : ''}</td>
+                    <td><button class="control-btn" data-idx="${i}">View</button></td>
+                </tr>
+            `).join('');
+        }
+
+        function switchView(view) {
+            currentView = view;
+            document.getElementById('tabMap').classList.toggle('active', view === 'map');
+            document.getElementById('tabList').classList.toggle('active', view === 'list');
+            document.getElementById('map').classList.toggle('hidden', view !== 'map');
+            document.getElementById('listView').classList.toggle('hidden', view !== 'list');
+            document.querySelectorAll('.map-only').forEach(el => el.classList.toggle('hidden', view !== 'map'));
+            if (view === 'list') { map.closePopup(); stopAllPlayers(); renderList(); }
+            else { stopAllPlayers(); }
+        }
+
+        function openDetail(cam) {
+            stopAllPlayers();
+            selectedCam = cam;
+            const safeName = safeId(cam.name);
+            const container = document.getElementById('detailVideoContainer');
+            container.innerHTML = cam.play_url
+                ? `<div class="video-container"><video id="vid_detail_${safeName}" muted autoplay playsinline controls></video><div class="loading" id="load_detail_${safeName}">Loading stream...</div></div>`
+                : `<div class="video-container"><div class="loading">No live stream on chaba.h3</div></div>`;
+            if (cam.play_url) {
+                const videoEl = document.getElementById(`vid_detail_${safeName}`);
+                if (videoEl) startHls(videoEl, cam.play_url);
+            }
+            document.getElementById('detailTitle').textContent = cam.title || cam.name;
+            const coverage = cam.view && cam.view.coverage ? cam.view.coverage.map(x => `<span class="coverage-tag">${escapeHtml(x)}</span>`).join(' ') : '';
+            const location = cam.location ? `<div class="meta">${[cam.location.road, cam.location.km != null ? 'km ' + cam.location.km : '', cam.location.side, cam.location.area].filter(Boolean).map(escapeHtml).join(' · ')}</div>` : '';
+            document.getElementById('detailMeta').innerHTML = `
+                <div class="meta"><b>${escapeHtml(cam.group || '')}</b> · ${escapeHtml(cam.source || '')} · ${escapeHtml(cam.stream_type || '')}</div>
+                ${location}
+                <div class="meta">Lat: ${cam.lat}, Lon: ${cam.lon}${cam.heading != null ? ', Heading: ' + cam.heading : ''}</div>
+                ${cam.perspective ? '<div class="meta">Perspective: ' + escapeHtml(cam.perspective) + '</div>' : ''}
+                ${cam.view && cam.view.heading_description ? '<div class="meta">Facing: ' + escapeHtml(cam.view.heading_description) + '</div>' : ''}
+                ${coverage ? '<div class="meta">Coverage: ' + coverage + '</div>' : ''}
+                ${cam.description ? '<div class="meta">' + escapeHtml(cam.description) + '</div>' : ''}
+            `;
+            document.getElementById('detailFrigate').href = frigateUiUrl(cam.name);
+            document.getElementById('detailDrawer').classList.remove('hidden');
+        }
+
+        function closeDetail() {
+            stopAllPlayers();
+            selectedCam = null;
+            document.getElementById('detailDrawer').classList.add('hidden');
+            document.getElementById('detailVideoContainer').innerHTML = '';
+        }
+
         function populateFilters() {
             const groupSelect = document.getElementById('groupFilter');
             const sourceSelect = document.getElementById('sourceFilter');
@@ -270,6 +367,7 @@
             filtered = filterCameras();
             currentIndex = 0;
             updateMarkers();
+            renderList();
             renderLegend(filtered);
             if (filtered.length) {
                 document.getElementById('pageInfo').textContent = `1 / ${filtered.length}`;
@@ -310,6 +408,16 @@
             document.getElementById('prevBtn').addEventListener('click', () => { stopAuto(); openCamera(currentIndex - 1); });
             document.getElementById('nextBtn').addEventListener('click', () => { stopAuto(); openCamera(currentIndex + 1); });
             document.getElementById('autoBtn').addEventListener('click', toggleAuto);
+            document.getElementById('tabMap').addEventListener('click', () => switchView('map'));
+            document.getElementById('tabList').addEventListener('click', () => switchView('list'));
+            document.getElementById('detailClose').addEventListener('click', closeDetail);
+            document.getElementById('listBody').addEventListener('click', e => {
+                const row = e.target.closest('tr');
+                if (row && row.dataset.idx != null) {
+                    const idx = parseInt(row.dataset.idx, 10);
+                    if (filtered[idx]) openDetail(filtered[idx]);
+                }
+            });
         }
 
         function initMap() {
