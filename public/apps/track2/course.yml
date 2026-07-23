@@ -1,0 +1,53 @@
+start_line:
+  - name: Start Port
+    lat: 13.24480
+    lon: 100.92750
+  - name: Start Starboard
+    lat: 13.24320
+    lon: 100.92750
+finish_line:
+  - name: Finish Port
+    lat: 13.24480
+    lon: 100.92780
+  - name: Finish Starboard
+    lat: 13.24320
+    lon: 100.92780
+wind:
+  direction: 90
+  speed_kts: 12
+buoys:
+  - id: w1
+    name: Windward
+    lat: 13.24400
+    lon: 100.92400
+    color: '#fbbf24'
+    type: round
+  - id: l1
+    name: Leeward
+    lat: 13.24400
+    lon: 100.92900
+    color: '#22c55e'
+    type: round
+  - id: g1
+    name: Gate
+    lat: 13.24580
+    lon: 100.92650
+    color: '#a855f7'
+    type: gate
+  - id: g2
+    name: Gate
+    lat: 13.24220
+    lon: 100.92850
+    color: '#a855f7'
+    type: gate
+course:
+  description: Windward-leeward twice around
+  legs:
+    - type: upwind
+      target: w1
+    - type: downwind
+      target: l1
+    - type: upwind
+      target: w1
+    - type: downwind
+      target: finish

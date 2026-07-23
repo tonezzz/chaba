@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Track2 Race</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: { bg: '#1a1a2e', card: '#16213e', accent: '#0a84ff' } } }
+    }
+  </script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; overflow: hidden; }
+    #map { width: 100%; height: calc(100vh - 48px); background: #0b1021; }
+    .racer-icon { display: flex; align-items: center; justify-content: center; width: 28px !important; height: 28px !important; margin-left: -14px !important; margin-top: -14px !important; filter: drop-shadow(0 0 3px rgba(0,0,0,0.7)); }
+    .racer-icon svg { width: 18px; height: 18px; }
+    .boui-icon { display: flex; align-items: center; justify-content: center; width: 22px !important; height: 22px !important; margin-left: -11px !important; margin-top: -11px !important; }
+    .boui-icon span { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.7); }
+    .leaflet-popup-content { font-size: 13px; color: #111; }
+    .race-panel { position: absolute; top: 60px; right: 12px; z-index: 1000; max-height: calc(100vh - 80px); overflow-y: auto; }
+  </style>
+</head>
+<body class="bg-bg text-gray-200">
+  <div id="app-nav"></div>
+
+  <div class="relative">
+    <div id="map"></div>
+    <div class="race-panel bg-card/95 border border-gray-700 rounded-lg p-4 shadow-lg w-80 text-sm">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold text-white">Windsurf Race</h2>
+        <span id="race-status" class="bg-gray-700 px-2 py-0.5 rounded text-xs">Ready</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <button id="btn-start" class="bg-accent hover:bg-blue-600 text-white rounded px-3 py-1.5 font-medium">Start</button>
+        <button id="btn-pause" class="bg-slate-700 hover:bg-slate-600 rounded px-3 py-1.5 font-medium" disabled>Pause</button>
+      </div>
+      <button id="btn-reset" class="w-full bg-slate-700 hover:bg-slate-600 rounded px-3 py-1.5 mb-3">Reset</button>
+
+      <div class="mb-3 space-y-2">
+        <div class="flex items-center justify-between">
+          <label class="text-gray-400 text-xs">Wind</label>
+          <span id="wind-readout" class="text-xs">--</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-gray-500 text-xs">Dir</label>
+            <input id="wind-dir" type="number" value="90" min="0" max="359" class="w-full bg-slate-800 border border-gray-600 rounded px-2 py-1 text-xs">
+          </div>
+          <div>
+            <label class="text-gray-500 text-xs">kts</label>
+            <input id="wind-kts" type="number" value="12" min="0" max="50" class="w-full bg-slate-800 border border-gray-600 rounded px-2 py-1 text-xs">
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="block text-gray-400 text-xs mb-1">Speed <span id="speed-label">1.0x</span></label>
+        <input id="speed" type="range" min="0.5" max="10" step="0.5" value="1" class="w-full accent-accent">
+      </div>
+      <div class="flex items-center gap-2 mb-3">
+        <input id="trails" type="checkbox" checked class="accent-accent">
+        <label for="trails" class="text-gray-300">Show trails</label>
+      </div>
+
+      <div class="flex items-center justify-between border-t border-gray-700 pt-2">
+        <span class="text-gray-400 text-xs">Elapsed</span>
+        <span id="timer" class="font-mono text-white">0:00.0</span>
+      </div>
+
+      <div class="mt-4 border-t border-gray-700 pt-3">
+        <h3 class="font-semibold text-white mb-2">Leaderboard</h3>
+        <div id="leaderboard" class="space-y-1 text-xs">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const CENTER = [13.24400, 100.92650];
+    const KTS_TO_MS = 0.514444;
+    const MS_TO_KMH = 3.6;
+    const ROUND_DIST = 25;
+
+    const map = L.map('map').setView(CENTER, 15);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd', maxZoom: 19
+    }).addTo(map);
+
+    function toRad(d) { return d * Math.PI / 180; }
+    function toDeg(r) { return r * 180 / Math.PI; }
+    function haversine([lat1, lon1], [lat2, lon2]) {
+      const R = 6371000;
+      const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+      return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+    function bearing([lat1, lon1], [lat2, lon2]) {
+      const p1 = toRad(lat1), p2 = toRad(lat2), dLon = toRad(lon2 - lon1);
+      const x = Math.sin(dLon) * Math.cos(p2);
+      const y = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dLon);
+      return (toDeg(Math.atan2(x, y)) + 360) % 360;
+    }
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    function interp([lat1, lon1], [lat2, lon2], t) { return [lerp(lat1, lat2, t), lerp(lon1, lon2, t)]; }
+    function moveToward(from, to, distM) {
+      const d = haversine(from, to);
+      if (d < 0.1) return { pos: [...to], reached: true, remaining: distM };
+      if (distM >= d) return { pos: [...to], reached: true, remaining: distM - d };
+      const f = distM / d;
+      return { pos: [lerp(from[0], to[0], f), lerp(from[1], to[1], f)], reached: false, remaining: 0 };
+    }
+    function windSpeedFactor(heading, windDir) {
+      const rel = (heading - windDir + 360) % 360;
+      return Math.min(1, Math.max(0.25, 0.5 + 0.5 * Math.sin(rel * Math.PI / 180)));
+    }
+
+    function sailIcon(color, heading) {
+      return L.divIcon({
+        className: 'racer-icon',
+        html: `<svg viewBox="0 0 24 24" fill="${color}" style="transform: rotate(${heading}deg)"><path d="M12 2l6 18H6z"/><rect x="9" y="18" width="6" height="4" rx="1" fill="#1f2937"/></svg>`,
+        iconSize: [28, 28], iconAnchor: [14, 14]
+      });
+    }
+
+    let course = null, racers = [], wind = { direction: 90, speed: 12 };
+    let status = 'ready';
+    let raceStartTime = 0, elapsedTime = 0;
+    let speedMultiplier = 1;
+    let lastTime = performance.now();
+    let lastLeaderboard = 0;
+
+    function courseTarget(index) {
+      if (index >= course.legs.length) return finishMid();
+      const leg = course.legs[index];
+      if (leg.target === 'finish') return finishMid();
+      const b = course.buoys.find(b => b.id === leg.target);
+      return [b.lat, b.lon];
+    }
+    function startMid() { return interp(course.start_line[0], course.start_line[1], 0.5); }
+    function finishMid() { return interp(course.finish_line[0], course.finish_line[1], 0.5); }
+
+    function resetRacers() {
+      for (let i = 0; i < racers.length; i++) {
+        const t = i / Math.max(1, racers.length - 1);
+        const r = racers[i];
+        r.pos = interp(course.start_line[0], course.start_line[1], t);
+        r.leg = 0;
+        r.heading = bearing(r.pos, courseTarget(0));
+        r.finished = false;
+        r.finishTime = null;
+        r.speedKmh = 0;
+        r.trail.setLatLngs([]);
+        r.marker.setLatLng(r.pos);
+        r.marker.setIcon(sailIcon(r.color, r.heading));
+        r.marker.setPopupContent(r.name);
+      }
+      status = 'ready';
+      raceStartTime = 0;
+      elapsedTime = 0;
+      updateUI();
+    }
+
+    function updateRace(dt) {
+      if (status !== 'running') return;
+      elapsedTime += dt;
+      const showTrails = document.getElementById('trails').checked;
+      for (const r of racers) {
+        if (r.finished) continue;
+        let remaining = dt * speedMultiplier;
+        while (remaining > 1e-4 && !r.finished) {
+          const target = courseTarget(r.leg);
+          r.heading = bearing(r.pos, target);
+          const factor = windSpeedFactor(r.heading, wind.direction);
+          const gust = 0.95 + Math.random() * 0.1;
+          const speedMs = r.baseSpeedKts * KTS_TO_MS * factor * gust * r.handling;
+          const step = moveToward(r.pos, target, Math.max(0, speedMs * remaining));
+          r.pos = step.pos;
+          r.speedKmh = speedMs * MS_TO_KMH;
+          remaining = step.remaining;
+          if (showTrails) {
+            const pts = r.trail.getLatLngs();
+            pts.push([...r.pos]);
+            if (pts.length > 120) pts.shift();
+            r.trail.setLatLngs(pts);
+          }
+          if (step.reached) {
+            r.leg++;
+            if (r.leg >= course.legs.length) {
+              r.finished = true;
+              r.finishTime = elapsedTime;
+            }
+          }
+        }
+        r.marker.setLatLng(r.pos);
+        r.marker.setIcon(sailIcon(r.color, r.heading));
+        r.marker.setPopupContent(`${r.name}<br>${r.speedKmh.toFixed(1)} km/h<br>Leg ${r.leg + 1}/${course.legs.length}`);
+      }
+      if (racers.every(r => r.finished)) {
+        status = 'finished';
+      }
+    }
+
+    function formatTime(s) {
+      const m = Math.floor(s / 60);
+      const sec = s % 60;
+      return `${m}:${sec.toFixed(1).padStart(4, '0')}`;
+    }
+
+    function updateLeaderboard() {
+      const board = racers.map(r => {
+        if (r.finished) return { r, sort: -1, rankKey: r.finishTime };
+        const target = courseTarget(r.leg);
+        const d = haversine(r.pos, target);
+        return { r, sort: r.leg * 1000000 - d, rankKey: null };
+      });
+      board.sort((a, b) => {
+        if (a.sort === -1 && b.sort === -1) return a.rankKey - b.rankKey;
+        if (a.sort === -1) return -1;
+        if (b.sort === -1) return 1;
+        return b.sort - a.sort;
+      });
+      const html = board.map((b, i) => {
+        const r = b.r;
+        const state = r.finished ? formatTime(r.finishTime) : `Leg ${r.leg + 1} / ${r.speedKmh.toFixed(1)} km/h`;
+        return `<div class="flex items-center gap-2 p-1 rounded hover:bg-slate-800">
+          <span class="font-mono w-4 text-right">${i + 1}</span>
+          <span class="w-3 h-3 rounded-full" style="background:${r.color}"></span>
+          <span class="flex-1 truncate">${r.name}</span>
+          <span class="text-gray-400">${state}</span>
+        </div>`;
+      }).join('');
+      document.getElementById('leaderboard').innerHTML = html;
+    }
+
+    function updateUI() {
+      const badge = document.getElementById('race-status');
+      badge.textContent = status[0].toUpperCase() + status.slice(1);
+      badge.className = status === 'running' ? 'bg-green-600 px-2 py-0.5 rounded text-xs' : status === 'finished' ? 'bg-accent px-2 py-0.5 rounded text-xs' : 'bg-gray-700 px-2 py-0.5 rounded text-xs';
+      document.getElementById('timer').textContent = formatTime(elapsedTime);
+      document.getElementById('wind-readout').textContent = `${wind.direction}° @ ${wind.speed} kts`;
+      document.getElementById('btn-start').textContent = status === 'finished' ? 'Restart' : (status === 'running' ? 'Running' : 'Start');
+      document.getElementById('btn-start').disabled = status === 'running';
+      document.getElementById('btn-pause').disabled = status !== 'running' && status !== 'paused';
+      document.getElementById('btn-pause').textContent = status === 'paused' ? 'Resume' : 'Pause';
+    }
+
+    function loop(now) {
+      const dt = Math.min((now - lastTime) / 1000, 0.5);
+      lastTime = now;
+      updateRace(dt);
+      updateUI();
+      if (now - lastLeaderboard > 250) { updateLeaderboard(); lastLeaderboard = now; }
+      requestAnimationFrame(loop);
+    }
+
+    function renderCourse() {
+      const sl = course.start_line.map(p => [p.lat, p.lon]);
+      const fl = course.finish_line.map(p => [p.lat, p.lon]);
+      L.polyline(sl, { color: '#22c55e', weight: 4 }).addTo(map).bindPopup('Start line');
+      L.polyline(fl, { color: '#ef4444', weight: 4, dashArray: '8,6' }).addTo(map).bindPopup('Finish line');
+
+      for (const b of course.buoys) {
+        const icon = L.divIcon({ className: 'boui-icon', html: `<span style="background:${b.color}">${b.label || 'B'}</span>`, iconSize: [22, 22], iconAnchor: [11, 11] });
+        L.marker([b.lat, b.lon], { icon }).addTo(map).bindPopup(`<b>${b.name}</b> (${b.id})`);
+      }
+
+      const track = [startMid()];
+      for (let i = 0; i < course.legs.length; i++) track.push(courseTarget(i));
+      L.polyline(track, { color: '#64748b', weight: 2, dashArray: '4,6', opacity: 0.6 }).addTo(map);
+    }
+
+    function initRacers(raw) {
+      racers = raw.map(rr => {
+        const marker = L.marker([0, 0], { icon: sailIcon(rr.color, 0) }).addTo(map);
+        marker.bindPopup(rr.name);
+        const trail = L.polyline([], { color: rr.color, opacity: 0.45, weight: 2 }).addTo(map);
+        return { ...rr, baseSpeedKts: rr.base_speed_kts, pos: [0, 0], leg: 0, heading: 0, finished: false, finishTime: null, speedKmh: 0, marker, trail };
+      });
+    }
+
+    function renderNav(items) {
+      const path = window.location.pathname;
+      const isActive = (href) => href && href !== '#' && (path === href || path.startsWith(href));
+      return `<nav class="bg-card border-b border-gray-700 sticky top-0 z-50 h-12">
+        <div class="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
+          <a href="/" class="text-lg font-bold text-white">HomeLab</a>
+          <div class="hidden md:flex gap-4 text-sm h-full items-center">
+            ${items.map(i => `<a href="${i.href}" class="${isActive(i.href) ? 'text-accent font-semibold' : i.placeholder ? 'text-gray-500 cursor-not-allowed' : 'text-gray-400 hover:text-white transition'}">${i.label}</a>`).join('')}
+          </div>
+        </div>
+      </nav>`;
+    }
+
+    document.getElementById('btn-start').addEventListener('click', () => {
+      if (status === 'finished' || status === 'running') return;
+      if (status === 'ready') { raceStartTime = performance.now(); elapsedTime = 0; }
+      status = 'running';
+      lastTime = performance.now();
+      updateUI();
+    });
+    document.getElementById('btn-pause').addEventListener('click', () => {
+      status = status === 'running' ? 'paused' : (status === 'paused' ? 'running' : status);
+      lastTime = performance.now();
+      updateUI();
+    });
+    document.getElementById('btn-reset').addEventListener('click', resetRacers);
+    document.getElementById('speed').addEventListener('input', (e) => {
+      speedMultiplier = parseFloat(e.target.value);
+      document.getElementById('speed-label').textContent = speedMultiplier.toFixed(1) + 'x';
+    });
+    document.getElementById('wind-dir').addEventListener('input', (e) => { wind.direction = (parseInt(e.target.value, 10) || 0) % 360; updateUI(); });
+    document.getElementById('wind-kts').addEventListener('input', (e) => { wind.speed = parseFloat(e.target.value) || 0; updateUI(); });
+
+    Promise.all([fetch('/apps/apps.yml'), fetch('/apps/track2/course.yml'), fetch('/apps/track2/racers.yml')])
+      .then(rs => Promise.all(rs.map(r => r.text())))
+      .then(([appsText, courseText, racerText]) => {
+        const appData = jsyaml.load(appsText);
+        course = jsyaml.load(courseText);
+        const racerData = jsyaml.load(racerText);
+        document.getElementById('app-nav').innerHTML = renderNav(appData.nav);
+        wind.direction = course.wind.direction;
+        wind.speed = course.wind.speed_kts;
+        document.getElementById('wind-dir').value = wind.direction;
+        document.getElementById('wind-kts').value = wind.speed;
+        renderCourse();
+        initRacers(racerData.racers);
+        resetRacers();
+        requestAnimationFrame(loop);
+      })
+      .catch(err => {
+        console.error('failed to load race data', err);
+        document.getElementById('leaderboard').textContent = 'Race data unavailable';
+      });
+  </script>
+</body>
+</html>
