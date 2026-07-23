@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Menu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { bg: '#1a1a2e', card: '#16213e', accent: '#0a84ff' }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { font-family: system-ui, sans-serif; }
+        #map { width: 100%; height: calc(100vh - 48px); }
+        .camera-popup { min-width: 320px; }
+        .camera-popup h3 { margin-bottom: 6px; font-size: 14px; font-weight: 600; color: #111; }
+        .camera-popup .meta { font-size: 12px; color: #555; margin-bottom: 6px; }
+        .camera-popup .coverage-tag { display: inline-block; background: #eee; color: #333; padding: 1px 6px; border-radius: 4px; margin-right: 4px; font-size: 11px; }
+        .camera-popup .video-container { position: relative; width: 300px; height: 170px; background: #000; border-radius: 6px; overflow: hidden; margin-bottom: 8px; }
+        .camera-popup video { width: 100%; height: 100%; object-fit: cover; }
+        .camera-popup .snapshot-img { width: 300px; height: 170px; object-fit: cover; border-radius: 6px; margin-bottom: 8px; background: #000; }
+        .camera-popup .loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #aaa; font-size: 13px; pointer-events: none; }
+        .camera-popup a { display: inline-block; padding: 4px 12px; background: #0a84ff; color: #fff; text-decoration: none; border-radius: 4px; font-size: 12px; }
+        .camera-popup a:hover { background: #0066cc; }
+        .legend { position: absolute; bottom: 20px; left: 20px; z-index: 1000; background: rgba(26,26,46,0.95); padding: 12px 16px; border-radius: 8px; font-size: 13px; line-height: 1.8; color: #eee; }
+        .legend .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; }
+        .controls { position: absolute; top: 12px; right: 12px; z-index: 1000; background: rgba(22,33,62,0.95); padding: 12px; border-radius: 8px; width: 260px; display: flex; flex-direction: column; gap: 8px; color: #eee; }
+        .control-input, .control-select { width: 100%; padding: 6px 8px; border-radius: 4px; border: 1px solid #334155; background: #0f172a; color: #eee; font-size: 13px; }
+        .control-row { display: flex; gap: 8px; align-items: center; }
+        .control-btn { flex: 1; padding: 6px 8px; border-radius: 4px; border: none; background: #1e293b; color: #eee; font-size: 13px; cursor: pointer; }
+        .control-btn:hover { background: #334155; }
+        .control-btn-primary { background: #0a84ff; }
+        .control-btn-primary:hover { background: #0066cc; }
+        .page-info { font-size: 13px; text-align: center; min-width: 60px; }
+        .list-view { position: absolute; top: 0; left: 0; width: 100%; height: calc(100vh - 48px); background: #1a1a2e; overflow: auto; padding: 16px; }
+        .list-table { width: 100%; border-collapse: collapse; font-size: 13px; color: #eee; }
+        .list-table th, .list-table td { padding: 8px 12px; border-bottom: 1px solid #334155; text-align: left; }
+        .list-table th { background: #16213e; position: sticky; top: 0; }
+        .list-table tr:hover { background: #1e293b; cursor: pointer; }
+        .detail-drawer { position: fixed; top: 48px; right: 0; bottom: 0; width: 360px; background: rgba(22,33,62,0.98); border-left: 1px solid #334155; padding: 16px; overflow: auto; z-index: 1100; }
+        .detail-close { float: right; background: transparent; border: none; color: #eee; font-size: 20px; cursor: pointer; }
+        .tab-row .control-btn.active { background: #0a84ff; }
+        .map-only.hidden { display: none !important; }
+    </style>
+</head>
+<body class="bg-bg text-gray-200">
+    <nav class="bg-card border-b border-gray-700 sticky top-0 z-50 h-12">
+        <div class="max-w-6xl mx-auto px-4 h-full flex items-center justify-between">
+            <a href="/" class="flex items-center gap-2 text-lg font-bold text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+                <span>CamLab</span><span id="version" class="text-xs text-gray-500 font-mono ml-2"></span>
+            </a>
+            <div class="flex items-center gap-4 text-sm">
+                <a href="/" class="text-accent font-semibold">Live Map</a>
+                <a href="#" class="text-gray-400 hover:text-white transition">Cameras</a>
+                <a href="#" class="text-gray-400 hover:text-white transition">Recordings</a>
+                <a href="#" class="text-gray-400 hover:text-white transition">Snapshots</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="relative">
+        <div id="map"></div>
+
+        <div class="controls" id="controls">
+            <div class="control-row tab-row">
+                <button id="tabMap" class="control-btn active">Map</button>
+                <button id="tabList" class="control-btn">List</button>
+            </div>
+            <input type="text" id="search" placeholder="Search cameras..." class="control-input" />
+            <select id="groupFilter" class="control-select"><option value="">All groups</option></select>
+            <select id="sourceFilter" class="control-select"><option value="">All sources</option></select>
+            <div class="control-row">
+                <button id="resetBtn" class="control-btn" title="Clear filters">Reset</button>
+                <button id="fitBtn" class="control-btn map-only" title="Fit all visible">Fit all</button>
+            </div>
+            <div class="control-row map-only">
+                <button id="prevBtn" class="control-btn" title="Previous camera">&#9664;</button>
+                <span id="pageInfo" class="page-info">0 / 0</span>
+                <button id="nextBtn" class="control-btn" title="Next camera">&#9654;</button>
+            </div>
+            <button id="autoBtn" class="control-btn control-btn-primary map-only" title="Auto-discover cameras">&#9654; Discover</button>
+        </div>
+
+        <div class="legend map-only" id="legend">Loading cameras...</div>
+
+        <div id="listView" class="list-view hidden">
+            <table class="list-table">
+                <thead>
+                    <tr><th>Name</th><th>Title</th><th>Group</th><th>Source</th><th>Type</th><th>Enabled</th><th>Lat</th><th>Lon</th><th>Heading</th><th></th></tr>
+                </thead>
+                <tbody id="listBody"></tbody>
+            </table>
+        </div>
+
+        <div id="detailDrawer" class="detail-drawer hidden">
+            <button id="detailClose" class="detail-close">&times;</button>
+            <h2 id="detailTitle" style="font-size:16px;margin-bottom:12px;"></h2>
+            <div id="detailVideoContainer"></div>
+            <div id="detailMeta" style="margin-top:12px;"></div>
+            <div style="margin-top:12px;"><a id="detailFrigate" href="#" target="_blank" class="control-btn control-btn-primary" style="display:inline-block;text-decoration:none;">Open in Frigate</a></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+    <script>
+        let activeHls = null;
+        let snapshotTimer = null;
+        let cameras = [];
+        let groups = {};
+        let map = null;
+        let markers = [];
+        let filtered = [];
+        let currentIndex = 0;
+        let autoTimer = null;
+        let selectedCam = null;
+        let currentView = 'map';
+
+        function escapeHtml(str) {
+            return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        function escapeJs(str) {
+            return String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+        }
+
+        function safeId(str) {
+            return String(str || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+        }
+
+        function stopAllPlayers() {
+            if (activeHls) { activeHls.destroy(); activeHls = null; }
+            if (snapshotTimer) { clearInterval(snapshotTimer); snapshotTimer = null; }
+        }
+
+        function startHls(videoEl, url) {
+            if (activeHls) { activeHls.destroy(); activeHls = null; }
+            const loading = videoEl.parentElement.querySelector('.loading');
+            if (Hls.isSupported()) {
+                activeHls = new Hls({ liveDurationInfinity: true, liveBackBufferLength: 0 });
+                activeHls.loadSource(url);
+                activeHls.attachMedia(videoEl);
+                activeHls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    if (loading) loading.style.display = 'none';
+                    videoEl.play().catch(() => {});
+                });
+                activeHls.on(Hls.Events.ERROR, (_, data) => {
+                    if (data.fatal && loading) loading.textContent = 'Stream unavailable';
+                });
+            } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+                videoEl.src = url;
+                videoEl.play().catch(() => {});
+                if (loading) loading.style.display = 'none';
+            } else if (loading) {
+                loading.textContent = 'HLS not supported';
+            }
+        }
+
+        function startSnapshot(imgEl, camName) {
+            const update = () => { imgEl.src = `/frigate/api/${encodeURIComponent(camName)}/latest.jpg?h=180&cache=` + Date.now(); };
+            update();
+            snapshotTimer = setInterval(update, 2000);
+        }
+
+        function frigateUiUrl(camName) {
+            return `http://${window.location.hostname}:5000/cameras/${encodeURIComponent(camName)}`;
+        }
+
+        function pickPlayUrl(cam) {
+            const candidates = [cam.hls_url, ...(cam.alt_urls || [])].filter(Boolean);
+            return candidates.find(u => u.startsWith('https://')) || cam.hls_url || null;
+        }
+
+        function renderLegend(list) {
+            const legend = document.getElementById('legend');
+            if (!list) { legend.textContent = 'Loading cameras...'; return; }
+            const counts = {};
+            list.forEach(c => { counts[c.group] = (counts[c.group] || 0) + 1; });
+            const items = Object.entries(groups).sort((a, b) => (a[1].order || 0) - (b[1].order || 0));
+            legend.innerHTML = items.map(([name, info]) => {
+                const color = /^#[0-9a-fA-F]{6}$/.test(info.color) ? info.color : '#0a84ff';
+                const count = counts[name] || 0;
+                return `<div><span class="dot" style="background:${color}"></span>${escapeHtml(name)} ${count ? '(' + count + ')' : ''}</div>`;
+            }).join('');
+        }
+
+        function createMarker(map, cam, rawColor) {
+            const color = /^#[0-9a-fA-F]{6}$/.test(rawColor) ? rawColor : '#0a84ff';
+            const safeName = safeId(cam.name);
+            const headingVal = Number(cam.heading);
+            const hasHeading = !isNaN(headingVal) && cam.heading !== null && cam.heading !== undefined;
+            let iconHtml, iconSize, iconAnchor;
+            if (hasHeading) {
+                iconHtml = `<div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:20px solid ${color};filter:drop-shadow(0 0 3px rgba(0,0,0,0.6));transform:rotate(${headingVal}deg);transform-origin:50% 60%;"></div>`;
+                iconSize = [20, 24];
+                iconAnchor = [10, 14];
+            } else {
+                iconHtml = `<div style="width:16px;height:16px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 0 4px rgba(0,0,0,0.5);"></div>`;
+                iconSize = [20, 20];
+                iconAnchor = [10, 10];
+            }
+
+            const icon = L.divIcon({ className: 'custom-marker', html: iconHtml, iconSize, iconAnchor });
+
+            const noStreamHtml = `<div class="video-container"><div class="loading">No live stream on chaba.h3</div></div>`;
+            const videoHtml = cam.play_url
+                ? `<div class="video-container"><video id="vid_${safeName}" muted autoplay playsinline></video><div class="loading" id="load_${safeName}">Loading stream...</div></div>`
+                : noStreamHtml;
+
+            const coverage = cam.view && cam.view.coverage ? cam.view.coverage.map(x => `<span class="coverage-tag">${escapeHtml(x)}</span>`).join(' ') : '';
+            const location = cam.location ? `<div class="meta">${[cam.location.road, cam.location.km != null ? 'km ' + cam.location.km : '', cam.location.side, cam.location.area].filter(Boolean).map(escapeHtml).join(' · ')}</div>` : '';
+            const perspective = cam.perspective ? `<div class="meta">Perspective: ${escapeHtml(cam.perspective)}</div>` : '';
+            const viewDesc = cam.view && cam.view.heading_description ? `<div class="meta">Facing: ${escapeHtml(cam.view.heading_description)}</div>` : '';
+            const desc = cam.description ? `<div class="meta">${escapeHtml(cam.description)}</div>` : '';
+            const status = cam.stream_status || cam.stream_type || '';
+
+            const popupHtml = `
+                <div class="camera-popup">
+                    <h3>${escapeHtml(cam.title)}</h3>
+                    ${videoHtml}
+                    <div class="meta"><b>${escapeHtml(cam.group)}</b> · ${escapeHtml(cam.source)}${status ? ' · ' + escapeHtml(status) : ''}</div>
+                    ${location}${perspective}${viewDesc}${coverage ? '<div class="meta">Coverage: ' + coverage + '</div>' : ''}${desc}
+                    <a href="#" onclick="window.open(frigateUiUrl('${escapeHtml(escapeJs(cam.name))}'), '_blank'); return false;">Open in Frigate</a>
+                </div>
+            `;
+
+            const marker = L.marker([cam.lat, cam.lon], { icon }).bindPopup(popupHtml).addTo(map);
+            marker.cam = cam;
+
+            marker.on('popupopen', () => {
+                stopAllPlayers();
+                if (cam.play_url) {
+                    const videoEl = document.getElementById(`vid_${safeName}`);
+                    if (videoEl) startHls(videoEl, cam.play_url);
+                }
+            });
+            return marker;
+        }
+
+        function renderList() {
+            const tbody = document.getElementById('listBody');
+            if (currentView !== 'list') return;
+            tbody.innerHTML = filtered.map((cam, i) => `
+                <tr data-idx="${i}">
+                    <td>${escapeHtml(cam.name)}</td>
+                    <td>${escapeHtml(cam.title || '')}</td>
+                    <td>${escapeHtml(cam.group || '')}</td>
+                    <td>${escapeHtml(cam.source || '')}</td>
+                    <td>${escapeHtml(cam.stream_type || '')}</td>
+                    <td>${cam.enabled !== false ? 'Yes' : 'No'}</td>
+                    <td>${cam.lat}</td>
+                    <td>${cam.lon}</td>
+                    <td>${cam.heading != null ? cam.heading : ''}</td>
+                    <td><button class="control-btn" data-idx="${i}">View</button></td>
+                </tr>
+            `).join('');
+        }
+
+        function switchView(view) {
+            currentView = view;
+            document.getElementById('tabMap').classList.toggle('active', view === 'map');
+            document.getElementById('tabList').classList.toggle('active', view === 'list');
+            document.getElementById('map').classList.toggle('hidden', view !== 'map');
+            document.getElementById('listView').classList.toggle('hidden', view !== 'list');
+            document.querySelectorAll('.map-only').forEach(el => el.classList.toggle('hidden', view !== 'map'));
+            if (view === 'list') { map.closePopup(); stopAllPlayers(); renderList(); }
+            else { stopAllPlayers(); }
+        }
+
+        function openDetail(cam) {
+            stopAllPlayers();
+            selectedCam = cam;
+            const safeName = safeId(cam.name);
+            const container = document.getElementById('detailVideoContainer');
+            container.innerHTML = cam.play_url
+                ? `<div class="video-container"><video id="vid_detail_${safeName}" muted autoplay playsinline controls></video><div class="loading" id="load_detail_${safeName}">Loading stream...</div></div>`
+                : `<div class="video-container"><div class="loading">No live stream on chaba.h3</div></div>`;
+            if (cam.play_url) {
+                const videoEl = document.getElementById(`vid_detail_${safeName}`);
+                if (videoEl) startHls(videoEl, cam.play_url);
+            }
+            document.getElementById('detailTitle').textContent = cam.title || cam.name;
+            const coverage = cam.view && cam.view.coverage ? cam.view.coverage.map(x => `<span class="coverage-tag">${escapeHtml(x)}</span>`).join(' ') : '';
+            const location = cam.location ? `<div class="meta">${[cam.location.road, cam.location.km != null ? 'km ' + cam.location.km : '', cam.location.side, cam.location.area].filter(Boolean).map(escapeHtml).join(' · ')}</div>` : '';
+            document.getElementById('detailMeta').innerHTML = `
+                <div class="meta"><b>${escapeHtml(cam.group || '')}</b> · ${escapeHtml(cam.source || '')} · ${escapeHtml(cam.stream_type || '')}</div>
+                ${location}
+                <div class="meta">Lat: ${cam.lat}, Lon: ${cam.lon}${cam.heading != null ? ', Heading: ' + cam.heading : ''}</div>
+                ${cam.perspective ? '<div class="meta">Perspective: ' + escapeHtml(cam.perspective) + '</div>' : ''}
+                ${cam.view && cam.view.heading_description ? '<div class="meta">Facing: ' + escapeHtml(cam.view.heading_description) + '</div>' : ''}
+                ${coverage ? '<div class="meta">Coverage: ' + coverage + '</div>' : ''}
+                ${cam.description ? '<div class="meta">' + escapeHtml(cam.description) + '</div>' : ''}
+            `;
+            document.getElementById('detailFrigate').href = frigateUiUrl(cam.name);
+            document.getElementById('detailDrawer').classList.remove('hidden');
+        }
+
+        function closeDetail() {
+            stopAllPlayers();
+            selectedCam = null;
+            document.getElementById('detailDrawer').classList.add('hidden');
+            document.getElementById('detailVideoContainer').innerHTML = '';
+        }
+
+        function populateFilters() {
+            const groupSelect = document.getElementById('groupFilter');
+            const sourceSelect = document.getElementById('sourceFilter');
+            const groupSet = new Set();
+            const sourceSet = new Set();
+            cameras.forEach(c => { if (c.group) groupSet.add(c.group); if (c.source) sourceSet.add(c.source); });
+            groupSelect.innerHTML = '<option value="">All groups</option>' + [...groupSet].sort().map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
+            sourceSelect.innerHTML = '<option value="">All sources</option>' + [...sourceSet].sort().map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+        }
+
+        function filterCameras() {
+            const q = document.getElementById('search').value.trim().toLowerCase();
+            const g = document.getElementById('groupFilter').value;
+            const s = document.getElementById('sourceFilter').value;
+            return cameras.filter(cam => {
+                if (g && cam.group !== g) return false;
+                if (s && cam.source !== s) return false;
+                if (!q) return true;
+                const hay = [
+                    cam.title, cam.name, cam.camid, cam.group, cam.source,
+                    cam.description, cam.perspective,
+                    cam.location && cam.location.road,
+                    cam.location && cam.location.area,
+                    cam.view && cam.view.heading_description,
+                    ...(cam.view && cam.view.coverage || [])
+                ].filter(Boolean).join(' ').toLowerCase();
+                return hay.includes(q);
+            });
+        }
+
+        function updateMarkers() {
+            markers.forEach(m => {
+                if (filtered.includes(m.cam)) map.addLayer(m);
+                else map.removeLayer(m);
+            });
+        }
+
+        function fitAll() {
+            const visible = markers.filter(m => filtered.includes(m.cam));
+            if (visible.length) {
+                const bounds = L.latLngBounds(visible.map(m => m.getLatLng()));
+                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+            }
+        }
+
+        function openCamera(i) {
+            if (!filtered.length) return;
+            currentIndex = ((i % filtered.length) + filtered.length) % filtered.length;
+            const cam = filtered[currentIndex];
+            const marker = markers.find(m => m.cam === cam);
+            if (!marker) return;
+            stopAllPlayers();
+            map.flyTo([cam.lat, cam.lon], 16, { duration: 0.6 });
+            marker.openPopup();
+            document.getElementById('pageInfo').textContent = `${currentIndex + 1} / ${filtered.length}`;
+        }
+
+        function applyFilters() {
+            filtered = filterCameras();
+            currentIndex = 0;
+            updateMarkers();
+            renderList();
+            renderLegend(filtered);
+            if (filtered.length) {
+                document.getElementById('pageInfo').textContent = `1 / ${filtered.length}`;
+                fitAll();
+            } else {
+                document.getElementById('pageInfo').textContent = '0 / 0';
+            }
+        }
+
+        function stopAuto() {
+            if (autoTimer) {
+                clearInterval(autoTimer);
+                autoTimer = null;
+                document.getElementById('autoBtn').textContent = '▶ Discover';
+            }
+        }
+
+        function toggleAuto() {
+            if (autoTimer) { stopAuto(); return; }
+            if (!filtered.length) return;
+            openCamera(currentIndex);
+            autoTimer = setInterval(() => { currentIndex = (currentIndex + 1) % filtered.length; openCamera(currentIndex); }, 5000);
+            document.getElementById('autoBtn').textContent = '⏸ Pause';
+        }
+
+        function setupControls() {
+            document.getElementById('search').addEventListener('input', () => { stopAuto(); applyFilters(); });
+            document.getElementById('groupFilter').addEventListener('change', () => { stopAuto(); applyFilters(); });
+            document.getElementById('sourceFilter').addEventListener('change', () => { stopAuto(); applyFilters(); });
+            document.getElementById('fitBtn').addEventListener('click', fitAll);
+            document.getElementById('resetBtn').addEventListener('click', () => {
+                stopAuto();
+                document.getElementById('search').value = '';
+                document.getElementById('groupFilter').value = '';
+                document.getElementById('sourceFilter').value = '';
+                applyFilters();
+            });
+            document.getElementById('prevBtn').addEventListener('click', () => { stopAuto(); openCamera(currentIndex - 1); });
+            document.getElementById('nextBtn').addEventListener('click', () => { stopAuto(); openCamera(currentIndex + 1); });
+            document.getElementById('autoBtn').addEventListener('click', toggleAuto);
+            document.getElementById('tabMap').addEventListener('click', () => switchView('map'));
+            document.getElementById('tabList').addEventListener('click', () => switchView('list'));
+            document.getElementById('detailClose').addEventListener('click', closeDetail);
+            document.getElementById('listBody').addEventListener('click', e => {
+                const row = e.target.closest('tr');
+                if (row && row.dataset.idx != null) {
+                    const idx = parseInt(row.dataset.idx, 10);
+                    if (filtered[idx]) openDetail(filtered[idx]);
+                }
+            });
+        }
+
+        function initMap() {
+            map = L.map('map').setView([13.7, 100.7], 10);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors',
+                maxZoom: 18
+            }).addTo(map);
+
+            markers = [];
+            cameras.forEach(cam => {
+                const color = (groups[cam.group] && groups[cam.group].color) || '#0a84ff';
+                const marker = createMarker(map, cam, color);
+                markers.push(marker);
+            });
+
+            map.on('popupclose', stopAllPlayers);
+        }
+
+        async function load() {
+            try {
+                const res = await fetch('/cameras.json');
+                if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
+                const data = await res.json();
+                groups = data.groups || {};
+                cameras = (data.cameras || []).filter(c => c.enabled !== false).map(cam => ({ ...cam, play_url: pickPlayUrl(cam) }));
+                renderLegend();
+                initMap();
+                populateFilters();
+                setupControls();
+                applyFilters();
+            } catch (e) {
+                document.getElementById('legend').textContent = 'Failed to load cameras: ' + e.message;
+            }
+        }
+
+        async function showVersion() {
+            try {
+                const res = await fetch('/api/version');
+                if (!res.ok) return;
+                const data = await res.json();
+                const el = document.getElementById('version');
+                if (el && data.commit) el.textContent = data.commit;
+            } catch {}
+        }
+        showVersion();
+        load();
+    </script>
+</body>
+</html>
