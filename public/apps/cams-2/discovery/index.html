@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <title>Discovery · CamLab</title>
+  <script src='https://cdn.tailwindcss.com'></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { bg: '#1a1a2e', card: '#16213e', accent: '#0a84ff' }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: system-ui, sans-serif; }
+    h1 { font-size: 1.5em; font-weight: 600; }
+    h2 { font-size: 1.2em; margin-top: 24px; font-weight: 600; }
+    .controls button { margin: 0 6px 8px 0; padding: 6px 12px; cursor: pointer; background: #1e293b; color: #e5e7eb; border: 1px solid #334155; border-radius: 4px; }
+    .controls button:hover { background: #334155; }
+    table { width: 100%; border-collapse: collapse; background: #16213e; font-size: 13px; color: #e5e7eb; }
+    th, td { border: 1px solid #334155; padding: 6px; text-align: left; vertical-align: top; }
+    th { background: #0f172a; position: sticky; top: 0; }
+    td.url { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    select, input { background: #0f172a; color: #e5e7eb; border: 1px solid #334155; border-radius: 4px; padding: 4px; }
+    .status-live, .status-online { color: #2ecc71; font-weight: bold; }
+    .status-error, .status-http_404 { color: #ef4444; }
+    .status-empty { color: #f59e0b; }
+    #log { width: 100%; height: 220px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: #0f172a; color: #e5e7eb; border: 1px solid #334155; padding: 6px; }
+    #jobs { margin: 8px 0; font-weight: 500; }
+    .tabs { border-bottom: 2px solid #334155; margin: 16px 0 0; }
+    .tab-button { background: #16213e; border: none; padding: 8px 16px; cursor: pointer; font-size: 14px; color: #e5e7eb; }
+    .tab-button.active { background: #0f172a; border-bottom: 2px solid #0a84ff; margin-bottom: -2px; }
+    .tab-content { display: none; padding: 8px 0; }
+    .tab-content.active { display: block; }
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
+    .modal.active { display: flex; }
+    .modal-content { background: #16213e; border-radius: 6px; width: 90%; max-width: 720px; max-height: 90vh; overflow: auto; padding: 16px; border: 1px solid #334155; color: #e5e7eb; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .modal-title { font-weight: 600; font-size: 16px; }
+    .modal-close { background: #1e293b; color: #e5e7eb; border: 1px solid #334155; border-radius: 4px; padding: 4px 12px; cursor: pointer; }
+    .modal-close:hover { background: #334155; }
+    .modal-video { width: 100%; height: auto; background: #000; }
+    .modal-error { color: #ef4444; padding: 20px; text-align: center; }
+    .view-btn { padding: 2px 8px; cursor: pointer; background: #1e293b; color: #e5e7eb; border: 1px solid #334155; border-radius: 4px; }
+    .view-btn:hover { background: #334155; }
+  </style>
+</head>
+<body class='bg-bg text-gray-200 min-h-screen'>
+  <nav class='bg-card border-b border-gray-700 sticky top-0 z-50 h-12'>
+    <div class='max-w-6xl mx-auto px-4 h-full flex items-center justify-between'>
+      <a href='/apps/cams-2/index.html' class='flex items-center gap-2 text-lg font-bold text-white'>
+        <svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='text-accent'><path d='M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z'/><circle cx='12' cy='13' r='3'/></svg>
+        <span>CamLab</span>
+      </a>
+      <div class='flex items-center gap-4 text-sm'>
+        <a href='/apps/cams-2/index.html' class='text-gray-400 hover:text-white transition'>Live Map</a>
+        <a href='/apps/cams-2/discovery' class='text-accent font-semibold'>Discovery</a>
+        <a href='#' class='text-gray-400 hover:text-white transition'>Recordings</a>
+        <a href='#' class='text-gray-400 hover:text-white transition'>Snapshots</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class='max-w-6xl mx-auto p-4'>
+    <h1 class='text-2xl font-bold text-white mb-4'>Discovery</h1>
+
+    <div class='controls'>
+      <button onclick='run("discover")'>Discover</button>
+      <button onclick='run("rtsp")'>Scan Local RTSP</button>
+      <button onclick='run("enixma")'>Scan Enixma</button>
+      <button onclick='run("itic")'>Scan iTIC</button>
+      <button onclick='run("check")'>Check Streams</button>
+      <button onclick='run("generate")'>Generate Config</button>
+      <button onclick='run("sync")'>Sync Web Map</button>
+    </div>
+
+    <div class='tabs'>
+      <button class='tab-button active' data-tab='cameras' onclick='showTab("cameras")'>Cameras</button>
+      <button class='tab-button' data-tab='jobs' onclick='showTab("jobs")'>Jobs</button>
+      <button class='tab-button' data-tab='map' onclick='showTab("map")'>Map</button>
+    </div>
+
+    <div id='tab-cameras' class='tab-content active'>
+      <div id='summary' style='margin:8px 0;font-size:14px;'></div>
+      <div style='margin:8px 0;'>
+        <input type='text' id='filter' placeholder='Filter name / title / source / group' style='padding:4px;width:280px;'>
+        <select id='perPage' style='padding:4px;'>
+          <option value='25'>25 / page</option>
+          <option value='50'>50 / page</option>
+          <option value='100'>100 / page</option>
+          <option value='9999'>All</option>
+        </select>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Title</th>
+            <th>Group</th>
+            <th>Source</th>
+            <th>Lat</th>
+            <th>Lon</th>
+            <th>HLS URL</th>
+            <th>Status</th>
+            <th>View</th>
+            <th>Enabled</th>
+          </tr>
+        </thead>
+        <tbody id='cameras'></tbody>
+      </table>
+      <div id='pagination' style='margin:8px 0;'></div>
+    </div>
+
+    <div id='tab-jobs' class='tab-content'>
+      <div id='jobs'>Idle</div>
+      <textarea id='log' readonly></textarea>
+    </div>
+
+    <div id='tab-map' class='tab-content'>
+      <iframe id='map-frame' src='http://192.168.1.48:8090/map' style='width:100%; height:70vh; border:none; display:block;'></iframe>
+    </div>
+
+    <div id='video-modal' class='modal' onclick='closeModal(event)'>
+      <div class='modal-content' onclick='event.stopPropagation()'>
+        <div class='modal-header'>
+          <span class='modal-title' id='modal-title'>Camera</span>
+          <button class='modal-close' onclick='closeModal()'>Close</button>
+        </div>
+        <div id='modal-body'>
+          <video id='modal-video' class='modal-video' controls autoplay muted></video>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src='https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js'></script>
+  <script>
+    let modalHls = null;
+    const API_BASE = 'http://192.168.1.48:8090';
+
+    function closeModal(e) {
+      if (e && e.target !== document.getElementById('video-modal')) return;
+      document.getElementById('video-modal').classList.remove('active');
+      if (modalHls) { modalHls.destroy(); modalHls = null; }
+      const video = document.getElementById('modal-video');
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+    }
+
+    function openModal(name, title, hlsUrl) {
+      const modal = document.getElementById('video-modal');
+      document.getElementById('modal-title').textContent = title || name;
+      const video = document.getElementById('modal-video');
+      const body = document.getElementById('modal-body');
+      if (modalHls) { modalHls.destroy(); modalHls = null; }
+      video.pause(); video.removeAttribute('src'); video.load();
+      let streamUrl = null;
+      if (hlsUrl) {
+        if (hlsUrl.startsWith('http://') || hlsUrl.startsWith('https://')) streamUrl = hlsUrl;
+        else streamUrl = API_BASE + (hlsUrl.startsWith('/') ? '' : '/') + hlsUrl;
+      }
+      if (!streamUrl) {
+        body.innerHTML = `<div class='modal-error'>No HLS stream available for ${escapeHtml(name)}.</div>`;
+        modal.classList.add('active');
+        return;
+      }
+      body.innerHTML = `<video id='modal-video' class='modal-video' controls autoplay muted></video>`;
+      const freshVideo = document.getElementById('modal-video');
+      if (Hls.isSupported()) {
+        modalHls = new Hls({ enableWorker: false });
+        modalHls.loadSource(streamUrl);
+        modalHls.attachMedia(freshVideo);
+      } else if (freshVideo.canPlayType('application/vnd.apple.mpegurl')) {
+        freshVideo.src = streamUrl;
+      } else {
+        body.innerHTML = `<div class='modal-error'>HLS playback not supported in this browser.</div>`;
+      }
+      modal.classList.add('active');
+    }
+
+    async function api(url, opts = {}) {
+      const r = await fetch(API_BASE + url, { method: 'GET', headers: { 'Accept': 'application/json' }, ...opts });
+      if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+      return r.json();
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    const state = { filter: '', perPage: 25, page: 1, data: null };
+
+    function matches(cam, q) {
+      if (!q) return true;
+      const text = [cam.name, cam.title, cam.source, cam.group, cam.hls_url, cam.stream_status].join(' ').toLowerCase();
+      return text.includes(q.toLowerCase());
+    }
+
+    function renderSummary() {
+      const cams = state.data.cameras;
+      const total = cams.length;
+      const enabled = cams.filter(c => c.enabled).length;
+      const bySource = {};
+      cams.forEach(c => { const s = c.source || 'unknown'; bySource[s] = (bySource[s] || 0) + 1; });
+      const src = Object.entries(bySource).sort().map(([k, v]) => k + ': ' + v).join(', ');
+      document.getElementById('summary').textContent = 'Cameras: ' + total + ' total, ' + enabled + ' enabled, ' + (total - enabled) + ' disabled | Source: ' + src;
+    }
+
+    function renderPagination(total) {
+      const pages = Math.ceil(total / state.perPage) || 1;
+      state.page = Math.min(state.page, pages);
+      const html = `<button onclick='changePage(-1)' ${state.page === 1 ? 'disabled' : ''}>&lt;</button> <span>Page ${state.page} of ${pages} (${total} cameras)</span> <button onclick='changePage(1)' ${state.page === pages ? 'disabled' : ''}>&gt;</button>`;
+      document.getElementById('pagination').innerHTML = html;
+    }
+
+    function changePage(delta) {
+      state.page = Math.max(1, state.page + delta);
+      renderTable();
+    }
+
+    function renderTable() {
+      const q = state.filter.trim();
+      const filtered = state.data.cameras.filter(c => matches(c, q));
+      renderSummary();
+      renderPagination(filtered.length);
+      const start = (state.page - 1) * state.perPage;
+      const pageCams = filtered.slice(start, start + state.perPage);
+      const groupKeys = Object.keys(state.data.groups).sort((a, b) => state.data.groups[a].order - state.data.groups[b].order);
+      groupKeys.unshift('');
+      const tbody = document.getElementById('cameras');
+      tbody.innerHTML = '';
+      for (const cam of pageCams) {
+        const status = (cam.stream_status || 'unknown').toLowerCase().replace(/[^a-z0-9]/g, '-');
+        const groupOptions = groupKeys.map(g => `<option value='${escapeHtml(g)}' ${(cam.group || '') === g ? 'selected' : ''}>${escapeHtml(g || '(none)')}</option>`).join('');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escapeHtml(cam.name)}</td>
+          <td>${escapeHtml(cam.title || '')}</td>
+          <td><select class='group-sel'>${groupOptions}</select></td>
+          <td>${escapeHtml(cam.source || '')}</td>
+          <td>${cam.lat !== null && cam.lat !== undefined ? cam.lat.toFixed(4) : ''}</td>
+          <td>${cam.lon !== null && cam.lon !== undefined ? cam.lon.toFixed(4) : ''}</td>
+          <td class='url' title='${escapeHtml(cam.hls_url || '')}'>${escapeHtml(cam.hls_url || '')}</td>
+          <td class='status-${status}'>${escapeHtml(cam.stream_status || '')}</td>
+          <td><button class='view-btn' data-name='${escapeHtml(cam.name)}' data-title='${escapeHtml(cam.title || cam.name)}' data-hls='${escapeHtml(cam.hls_url || '')}'>View</button></td>
+          <td><input type='checkbox' class='enabler' ${cam.enabled ? 'checked' : ''}></td>
+        `;
+        const sel = tr.querySelector('.group-sel');
+        if (sel) sel.addEventListener('change', e => setGroup(cam.name, e.target.value));
+        const cb = tr.querySelector('.enabler');
+        if (cb) cb.addEventListener('change', () => toggle(cam.name));
+        const viewBtn = tr.querySelector('.view-btn');
+        if (viewBtn) viewBtn.addEventListener('click', () => openModal(viewBtn.dataset.name, viewBtn.dataset.title, viewBtn.dataset.hls));
+        tbody.appendChild(tr);
+      }
+    }
+
+    async function load() {
+      state.data = await api('/api/registry');
+      state.page = 1;
+      renderTable();
+    }
+
+    async function toggle(name) {
+      await api('/api/toggle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+      await load();
+    }
+
+    async function setGroup(name, group) {
+      await api('/api/group', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, group }) });
+      await load();
+    }
+
+    async function run(action) {
+      const jobBox = document.getElementById('jobs');
+      jobBox.textContent = `${action}: starting...`;
+      try {
+        const data = await api('/api/' + action, { method: 'POST' });
+        if (data.job_id) {
+          await pollJob(action, data.job_id);
+        } else {
+          jobBox.textContent = `${action}: ${JSON.stringify(data)}`;
+          await load();
+        }
+      } catch (e) {
+        jobBox.textContent = `${action}: error: ${e.message}`;
+      }
+    }
+
+    async function pollJob(action, jobId) {
+      const jobBox = document.getElementById('jobs');
+      const logBox = document.getElementById('log');
+      let status = 'running';
+      while (status === 'running') {
+        await new Promise(r => setTimeout(r, 1500));
+        const job = await api('/api/jobs/' + jobId);
+        status = job.status;
+        jobBox.textContent = `${action}: ${status}`;
+        logBox.value = job.output;
+      }
+      await load();
+    }
+
+    function showTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-button').forEach(el => el.classList.remove('active'));
+      document.getElementById('tab-' + tabId).classList.add('active');
+      document.querySelector('button[data-tab=' + tabId + ']').classList.add('active');
+    }
+
+    document.getElementById('filter').addEventListener('input', () => { state.filter = document.getElementById('filter').value; state.page = 1; renderTable(); });
+    document.getElementById('perPage').addEventListener('change', () => { state.perPage = parseInt(document.getElementById('perPage').value, 10); state.page = 1; renderTable(); });
+    load();
+    setInterval(load, 30000);
+  </script>
+</body>
+</html>
