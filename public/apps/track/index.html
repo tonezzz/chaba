@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Track</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { bg: '#1a1a2e', card: '#16213e', accent: '#0a84ff' }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; overflow: hidden; }
+    #map { width: 100%; height: calc(100vh - 48px); background: #0b1021; }
+    .vehicle-icon { display: flex; align-items: center; justify-content: center; width: 22px !important; height: 22px !important; margin-left: -11px !important; margin-top: -11px !important; filter: drop-shadow(0 0 3px rgba(0,0,0,0.7)); }
+    .vehicle-icon svg { width: 14px; height: 14px; }
+    .leaflet-popup-content { font-size: 13px; color: #111; }
+    .control-panel { position: absolute; top: 60px; right: 12px; z-index: 1000; }
+  </style>
+</head>
+<body class="bg-bg text-gray-200">
+  <nav class="bg-card border-b border-gray-700 sticky top-0 z-50 h-12">
+    <div class="max-w-6xl mx-auto px-4 h-full flex items-center gap-6">
+      <a href="/" class="text-lg font-bold text-white">HomeLab</a>
+      <div class="flex gap-4 text-sm">
+        <a href="/" class="text-gray-400 hover:text-white transition">Dashboard</a>
+        <a href="/apps/cams/index.html" class="text-gray-400 hover:text-white transition">Cameras</a>
+        <a href="/apps/track/index.html" class="text-accent font-semibold">Track</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="relative">
+    <div id="map"></div>
+    <div class="control-panel bg-card/95 border border-gray-700 rounded-lg p-4 shadow-lg w-64 text-sm">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold text-white">Live Objects</h2>
+        <span id="count" class="bg-accent/20 text-accent px-2 py-0.5 rounded text-xs">0</span>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <button id="playPause" class="w-full bg-accent hover:bg-blue-600 text-white rounded px-3 py-1.5 font-medium">Pause</button>
+        </div>
+        <div>
+          <label class="block text-gray-400 text-xs mb-1">Speed <span id="speedLabel">1x</span></label>
+          <input id="speed" type="range" min="0.25" max="5" step="0.25" value="1" class="w-full accent-accent">
+        </div>
+        <div class="flex items-center gap-2">
+          <input id="trails" type="checkbox" checked class="accent-accent">
+          <label for="trails" class="text-gray-300">Show trails</label>
+        </div>
+        <div class="flex gap-2">
+          <button id="addVehicle" class="flex-1 bg-slate-700 hover:bg-slate-600 rounded px-2 py-1.5 text-xs">Add</button>
+          <button id="reset" class="flex-1 bg-slate-700 hover:bg-slate-600 rounded px-2 py-1.5 text-xs">Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const CENTER = [13.7563, 100.5018];
+    const COLORS = ['#ef4444', '#0a84ff', '#22c55e', '#f97316', '#a855f7'];
+    const ROUTES = [
+      [[13.7563, 100.5018], [13.7663, 100.5018], [13.7663, 100.5118], [13.7563, 100.5118], [13.7563, 100.5018]],
+      [[13.7463, 100.4918], [13.7363, 100.4918], [13.7363, 100.5118], [13.7463, 100.5118], [13.7463, 100.4918]],
+      [[13.7613, 100.4868], [13.7713, 100.4918], [13.7663, 100.5068], [13.7513, 100.4968], [13.7613, 100.4868]],
+      [[13.7413, 100.5068], [13.7313, 100.5168], [13.7363, 100.5268], [13.7463, 100.5218], [13.7413, 100.5068]],
+      [[13.7513, 100.4818], [13.7613, 100.4768], [13.7663, 100.4868], [13.7563, 100.4918], [13.7513, 100.4818]]
+    ];
+
+    const map = L.map('map').setView(CENTER, 13);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 19
+    }).addTo(map);
+
+    function toRad(deg) { return deg * Math.PI / 180; }
+    function toDeg(rad) { return rad * 180 / Math.PI; }
+    function haversine([lat1, lon1], [lat2, lon2]) {
+      const R = 6371000;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+      return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+    function bearing([lat1, lon1], [lat2, lon2]) {
+      const p1 = toRad(lat1), p2 = toRad(lat2), dLon = toRad(lon2 - lon1);
+      const x = Math.sin(dLon) * Math.cos(p2);
+      const y = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dLon);
+      return (toDeg(Math.atan2(x, y)) + 360) % 360;
+    }
+    function interpolate(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; }
+
+    function buildSegments(route) {
+      const segs = [];
+      for (let i = 0; i < route.length - 1; i++) {
+        const from = route[i], to = route[i+1];
+        segs.push({ from, to, distance: haversine(from, to), heading: bearing(from, to) });
+      }
+      return segs;
+    }
+    const segments = ROUTES.map(buildSegments);
+
+    const vehicles = [];
+    let running = true;
+    let speedMultiplier = 1;
+    let lastTime = performance.now();
+
+    function createIcon(color, heading) {
+      return L.divIcon({
+        className: 'vehicle-icon',
+        html: `<svg viewBox="0 0 24 24" fill="${color}" style="transform: rotate(${heading}deg)"><path d="M12 2l8 20H4z"/></svg>`,
+        iconSize: [22, 22], iconAnchor: [11, 11]
+      });
+    }
+
+    function spawn(routeIndex, offset = 0) {
+      const route = segments[routeIndex];
+      const color = COLORS[routeIndex % COLORS.length];
+      const id = `V-${Math.floor(Math.random() * 9999)}`;
+      const speed = 8 + Math.random() * 12; // m/s
+      const marker = L.marker(route[0].from, { icon: createIcon(color, route[0].heading) }).addTo(map);
+      marker.bindPopup(`<b>${id}</b><br>Route ${routeIndex + 1}<br>Speed: ${(speed * 3.6).toFixed(0)} km/h`);
+      const trail = L.polyline([], { color, opacity: 0.5, weight: 2 }).addTo(map);
+      vehicles.push({ id, routeIndex, segIndex: 0, distance: offset, speed, color, marker, trail, lastTrail: 0 });
+      updateCount();
+    }
+
+    function updateCount() { document.getElementById('count').textContent = vehicles.length; }
+
+    function updateVehicle(v, dt) {
+      const route = segments[v.routeIndex];
+      let move = v.speed * dt * speedMultiplier;
+      v.distance += move;
+      while (v.segIndex < route.length && v.distance > route[v.segIndex].distance) {
+        v.distance -= route[v.segIndex].distance;
+        v.segIndex++;
+        if (v.segIndex >= route.length) v.segIndex = 0;
+      }
+      const seg = route[v.segIndex];
+      const len = seg.distance || 1;
+      const t = Math.min(1, Math.max(0, v.distance / len));
+      const pos = interpolate(seg.from, seg.to, t);
+      v.marker.setLatLng(pos);
+      const arrow = v.marker.getElement()?.querySelector('svg');
+      if (arrow) arrow.style.transform = `rotate(${seg.heading}deg)`;
+      v.marker.setPopupContent(`<b>${v.id}</b><br>Route ${v.routeIndex + 1}<br>Speed: ${(v.speed * 3.6).toFixed(0)} km/h`);
+
+      const showTrails = document.getElementById('trails').checked;
+      if (!showTrails) { v.trail.setLatLngs([]); return; }
+      v.lastTrail += dt;
+      if (v.lastTrail >= 0.25) {
+        const pts = v.trail.getLatLngs();
+        pts.push(pos);
+        if (pts.length > 80) pts.shift();
+        v.trail.setLatLngs(pts);
+        v.lastTrail = 0;
+      }
+    }
+
+    function loop(now) {
+      if (running) {
+        const dt = Math.min((now - lastTime) / 1000, 0.2);
+        for (const v of vehicles) updateVehicle(v, dt);
+      }
+      lastTime = now;
+      requestAnimationFrame(loop);
+    }
+
+    for (let i = 0; i < ROUTES.length; i++) {
+      spawn(i, 0);
+      spawn(i, segments[i][0].distance * 0.4);
+    }
+
+    const playBtn = document.getElementById('playPause');
+    playBtn.addEventListener('click', () => {
+      running = !running;
+      playBtn.textContent = running ? 'Pause' : 'Play';
+      lastTime = performance.now();
+    });
+    document.getElementById('speed').addEventListener('input', (e) => {
+      speedMultiplier = parseFloat(e.target.value);
+      document.getElementById('speedLabel').textContent = speedMultiplier.toFixed(2) + 'x';
+    });
+    document.getElementById('reset').addEventListener('click', () => {
+      for (const v of vehicles) {
+        v.segIndex = 0; v.distance = 0;
+        v.trail.setLatLngs([]);
+      }
+    });
+    document.getElementById('addVehicle').addEventListener('click', () => {
+      const i = Math.floor(Math.random() * ROUTES.length);
+      spawn(i, Math.random() * segments[i][0].distance);
+    });
+
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
