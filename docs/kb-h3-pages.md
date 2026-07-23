@@ -64,3 +64,49 @@ You can preview `chaba-h3/public` apps on the main `chaba` Caddy stack before pu
 - `stacks/web/Caddyfile`: add `:8081 { root * /srv/public/chaba-h3 file_server }` site
 - Access: `http://192.168.1.48:8081/apps/<app>/`
 - This mirrors Plesk root behavior; absolute fetches work as long as the corresponding backend routes are available.
+
+## YAML data files
+
+`chaba.h3` pages are data-driven where possible. Shared content lives in YAML next to the HTML and is parsed with `js-yaml` at runtime.
+
+### `public/apps/apps.yml`
+
+Defines the page title, top nav, and app cards for `public/apps/index.html`. Other app pages (e.g. `/apps/track/`) load `../apps.yml` to render the same nav.
+
+```yaml
+title: Apps
+nav:
+  - label: Apps
+    href: /apps/
+  - label: Track
+    href: /apps/track/
+apps:
+  - id: track
+    title: Track
+    description: Simulate moving objects on a live Leaflet map.
+    href: /apps/track/
+```
+
+- Add `placeholder: true` to grey out a nav item or app card and keep the link disabled.
+
+### `public/apps/track/objects.yml`
+
+Holds static objects (bouys, markers, etc.) for `/apps/track/`.
+
+```yaml
+bouis:
+  - id: boui-1
+    name: BOUI-1
+    lat: 13.243858067632821
+    lon: 100.92870143484448
+    color: '#fbbf24'
+```
+
+- The track page fetches `objects.yml`, draws a `L.circleMarker` for each entry, and lists them in the control panel with visibility toggles.
+
+## Track page (`/apps/track/`)
+
+- The map is centered via a `CENTER` constant and uses dark Carto tiles.
+- Simulated vehicles are kept in a `vehicleLayer`; the control panel toggles the whole group.
+- BOUI markers are added to a `bouiLayer`; each one can be toggled independently.
+- The top nav and object list are rendered from YAML after the page loads.
