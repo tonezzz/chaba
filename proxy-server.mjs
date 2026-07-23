@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
 import { WebSocketServer, WebSocket } from 'ws';
+import { execSync } from 'node:child_process';
 
 const port = Number.parseInt(process.env.PORT ?? '8080', 10);
 const basicAuthUser = process.env.BASIC_AUTH_USER;
@@ -14,6 +15,12 @@ const statusFile = process.env.STATUS_FILE ?? normalize(join(publicDirectory, '.
 const reportToken = process.env.REPORT_TOKEN;
 const knownHostNames = ['Tony Dell', 'Tony Omen', 'Android TV Box'];
 const reportStaleMs = Number.parseInt(process.env.REPORT_STALE_MS ?? '120000', 10);
+const appRoot = fileURLToPath(new URL('.', import.meta.url));
+let versionCommit = process.env.COMMIT_SHA?.trim() ?? '';
+if (!versionCommit) {
+  try { versionCommit = execSync('git rev-parse --short HEAD', { cwd: appRoot, encoding: 'utf8' }).trim(); } catch { versionCommit = 'unknown'; }
+}
+const versionBuiltAt = new Date().toISOString();
 function loadStatuses() {
   try { return JSON.parse(readFileSync(statusFile, 'utf8')); } catch { return []; }
 }
@@ -128,6 +135,12 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  if (pathname === '/api/version') {
+    response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    response.end(JSON.stringify({ commit: versionCommit, builtAt: versionBuiltAt }));
+    return;
+  }
+
   if (pathname === '/api/report' && request.method === 'POST') {
     const providedToken = new URL(request.url, 'http://localhost').searchParams.get('token') ?? request.headers['x-report-token'];
     if (reportToken && providedToken !== reportToken) {
@@ -223,8 +236,8 @@ const server = createServer(async (request, response) => {
     return;
   }
 
-  const requestedPath = pathname === '/' ? 'index.html' : pathname === '/hosts' || pathname === '/hosts/' ? 'hosts/index.html' : pathname === '/tony-omen' || pathname === '/tony-omen/' ? 'tony-omen/index.html' : pathname === '/cameras' || pathname === '/cameras/' ? 'cameras/index.html' : pathname === '/apps/cams' || pathname === '/apps/cams/' ? 'apps/cams/index.html' : pathname.slice(1);
-  const filePath = normalize(join(publicDirectory, requestedPath));
+  const requestedPath = pathname === '/' ? 'index.html' : pathname.slice(1);
+  let filePath = normalize(join(publicDirectory, requestedPath));
 
   if (!filePath.startsWith(publicDirectory)) {
     response.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
@@ -233,7 +246,11 @@ const server = createServer(async (request, response) => {
   }
 
   try {
-    const file = await stat(filePath);
+    let file = await stat(filePath);
+    if (file.isDirectory()) {
+      filePath = normalize(join(filePath, 'index.html'));
+      file = await stat(filePath);
+    }
     if (!file.isFile()) throw new Error('Not a file');
 
     response.writeHead(200, {

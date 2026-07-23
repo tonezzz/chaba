@@ -52,15 +52,15 @@
 <body class="bg-bg text-gray-200">
     <nav class="bg-card border-b border-gray-700 sticky top-0 z-50 h-12">
         <div class="max-w-6xl mx-auto px-4 h-full flex items-center justify-between">
-            <a href="/" class="flex items-center gap-2 text-lg font-bold text-white">
+            <a href="/apps/cams-2/index.html" class="flex items-center gap-2 text-lg font-bold text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-                <span>HomeLab</span>
+                <span>CamLab</span><span id="version" class="text-xs text-gray-500 font-mono ml-2"></span>
             </a>
             <div class="flex items-center gap-4 text-sm">
-                <a href="/" class="text-gray-400 hover:text-white transition">Dashboard</a>
-                <a href="/apps/cams-2/index.html" class="text-accent font-semibold">Cameras</a>
-                <a href="/infrastructure.html" class="text-gray-400 hover:text-white transition">Infrastructure</a>
-                <a href="/decisions.html" class="text-gray-400 hover:text-white transition">Decisions</a>
+                <a href="/apps/cams-2/index.html" class="text-accent font-semibold">Live Map</a>
+                <a href="#" class="text-gray-400 hover:text-white transition">Cameras</a>
+                <a href="#" class="text-gray-400 hover:text-white transition">Recordings</a>
+                <a href="#" class="text-gray-400 hover:text-white transition">Snapshots</a>
             </div>
         </div>
     </nav>
@@ -457,6 +457,16 @@
             }
         }
 
+        async function showVersion() {
+            try {
+                const res = await fetch('/api/version');
+                if (!res.ok) return;
+                const data = await res.json();
+                const el = document.getElementById('version');
+                if (el && data.commit) el.textContent = data.commit;
+            } catch {}
+        }
+        showVersion();
         load();
     </script>
 </body>
