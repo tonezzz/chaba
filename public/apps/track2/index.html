@@ -108,6 +108,7 @@
     }
     function lerp(a, b, t) { return a + (b - a) * t; }
     function interp([lat1, lon1], [lat2, lon2], t) { return [lerp(lat1, lat2, t), lerp(lon1, lon2, t)]; }
+    function linePos(line, t) { return interp([line[0].lat, line[0].lon], [line[1].lat, line[1].lon], t); }
     function moveToward(from, to, distM) {
       const d = haversine(from, to);
       if (d < 0.1) return { pos: [...to], reached: true, remaining: distM };
@@ -142,14 +143,14 @@
       const b = course.buoys.find(b => b.id === leg.target);
       return [b.lat, b.lon];
     }
-    function startMid() { return interp(course.start_line[0], course.start_line[1], 0.5); }
-    function finishMid() { return interp(course.finish_line[0], course.finish_line[1], 0.5); }
+    function startMid() { return linePos(course.start_line, 0.5); }
+    function finishMid() { return linePos(course.finish_line, 0.5); }
 
     function resetRacers() {
       for (let i = 0; i < racers.length; i++) {
         const t = i / Math.max(1, racers.length - 1);
         const r = racers[i];
-        r.pos = interp(course.start_line[0], course.start_line[1], t);
+        r.pos = linePos(course.start_line, t);
         r.leg = 0;
         r.heading = bearing(r.pos, courseTarget(0));
         r.finished = false;
