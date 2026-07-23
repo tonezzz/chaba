@@ -1,0 +1,93 @@
+:8080 {
+	root * /srv/public
+	file_server
+
+	# Pretty URLs: /cameras → /cameras.json
+	rewrite /cameras /cameras.json
+
+	handle /chaba-h3 {
+		redir /chaba-h3/ 308
+	}
+
+	handle_path /chaba-h3/* {
+		root * /srv/public/chaba-h3
+		file_server
+	}
+
+	@root path /
+	handle @root {
+		reverse_proxy bserver:8092 {
+			header_up Host bserver.local
+		}
+	}
+
+	handle /new {
+		redir /new/ 308
+	}
+
+	handle_path /new/* {
+		reverse_proxy bserver:8092 {
+			header_up Host bserver.local
+		}
+	}
+
+	handle /decisions {
+		reverse_proxy bserver:8092 {
+			header_up Host bserver.local
+		}
+	}
+
+	handle /decisions/* {
+		reverse_proxy bserver:8092 {
+			header_up Host bserver.local
+		}
+	}
+
+	handle /infrastructure {
+		reverse_proxy bserver:8092 {
+			header_up Host bserver.local
+		}
+	}
+
+	handle /infrastructure/* {
+		reverse_proxy bserver:8092 {
+			header_up Host bserver.local
+		}
+	}
+
+	handle /apps/map {
+		redir /apps/map/ 308
+	}
+
+	handle /apps/map/* {
+		file_server
+	}
+
+	handle /api/* {
+		reverse_proxy status-api:8000
+	}
+
+	handle /frigate/* {
+		uri strip_prefix /frigate
+		reverse_proxy frigate:5000
+	}
+
+	handle /tony-omen/apps/imagen/api/* {
+		uri strip_prefix /tony-omen/apps/imagen/api
+		reverse_proxy imagen-inference:8000
+	}
+
+	handle /tony-omen/apps/imagen {
+		redir /tony-omen/apps/imagen/ 308
+	}
+
+	handle /tony-omen/apps/imagen/* {
+		file_server
+	}
+}
+
+# chaba.h3 local dev root
+:8081 {
+	root * /srv/public/chaba-h3
+	file_server
+}

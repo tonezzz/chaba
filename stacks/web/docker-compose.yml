@@ -1,0 +1,77 @@
+services:
+  web:
+    container_name: web
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./public:/srv/public
+      - /home/tony/CascadeProjects/chaba-h3/public/apps/imagen:/srv/public/tony-omen/apps/imagen
+      - /home/tony/CascadeProjects/chaba-h3/public:/srv/public/chaba-h3
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - default
+      - frigate_default
+      - chaba-h3_default
+
+  status-api:
+    container_name: status-api
+    build:
+      context: ./status-api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - REPO_PATH=/repo
+      - FRIGATE_URL=http://frigate:5000
+    volumes:
+      - ../..:/repo
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys/class/thermal:/sys/class/thermal:ro
+      - /sys/class/hwmon:/sys/class/hwmon:ro
+      - /sys/devices/platform/hp-wmi:/sys/devices/platform/hp-wmi:rw
+      - /sys/devices/system/cpu/intel_pstate:/sys/devices/system/cpu/intel_pstate:rw
+      - ./status-api/main.py:/app/main.py:ro
+    privileged: true
+    networks:
+      - default
+      - frigate_default
+
+  camera-control:
+    container_name: camera-control
+    build:
+      context: ./camera-control
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    volumes:
+      - ../..:/repo
+    networks:
+      - default
+
+  bserver:
+    container_name: bserver
+    build:
+      context: ./bserver
+      dockerfile: Dockerfile
+      network: host
+    restart: unless-stopped
+    volumes:
+      - ./bserver-www/_config.yaml:/srv/www/_config.yaml:ro
+      - ./bserver-www/default:/srv/www/default
+    networks:
+      - default
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  frigate_default:
+    external: true
+  chaba-h3_default:
+    external: true
