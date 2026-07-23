@@ -57,9 +57,9 @@
       </a>
       <div class='flex items-center gap-4 text-sm'>
         <a href='/apps/cams-2/index.html' class='text-gray-400 hover:text-white transition'>Live Map</a>
-        <a href='/apps/cams-2/discovery' class='text-accent font-semibold'>Discovery</a>
-        <a href='#' class='text-gray-400 hover:text-white transition'>Recordings</a>
-        <a href='#' class='text-gray-400 hover:text-white transition'>Snapshots</a>
+        <a href='/apps/cams-2/discovery/' class='text-accent font-semibold'>Discovery</a>
+        <span class='text-gray-500 cursor-not-allowed'>Recordings</span>
+        <span class='text-gray-500 cursor-not-allowed'>Snapshots</span>
       </div>
     </div>
   </nav>
@@ -139,7 +139,7 @@
   <script src='https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js'></script>
   <script>
     let modalHls = null;
-    const API_BASE = 'http://192.168.1.48:8090';
+    const API_BASE = '/api/camera-control';
 
     function closeModal(e) {
       if (e && e.target !== document.getElementById('video-modal')) return;

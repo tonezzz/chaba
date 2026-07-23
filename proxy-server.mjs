@@ -1,10 +1,11 @@
-import { createReadStream, readFileSync, writeFileSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'node:http';
+import { createServer, request as httpRequest } from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
 import { WebSocketServer, WebSocket } from 'ws';
+import { Client as SshClient } from 'ssh2';
 import { execSync } from 'node:child_process';
 
 const port = Number.parseInt(process.env.PORT ?? '8080', 10);
@@ -21,6 +22,24 @@ if (!versionCommit) {
   try { versionCommit = execSync('git rev-parse --short HEAD', { cwd: appRoot, encoding: 'utf8' }).trim(); } catch { versionCommit = 'unknown'; }
 }
 const versionBuiltAt = new Date().toISOString();
+const sshHost = process.env.SSH_TONYDELL_HOST || '127.0.0.1';
+const sshPort = Number.parseInt(process.env.SSH_TONYDELL_PORT || '7022', 10);
+const sshUser = process.env.SSH_TONYDELL_USER || '';
+
+function loadSshPrivateKey() {
+  const env = process.env.SSH_TONYDELL_PRIVATE_KEY;
+  if (env) {
+    const v = env.trim();
+    if (v.includes('BEGIN OPENSSH PRIVATE KEY') || v.includes('BEGIN RSA PRIVATE KEY')) {
+      return Buffer.from(v);
+    }
+    if (existsSync(v)) return readFileSync(v);
+  }
+  const path = process.env.SSH_TONYDELL_PRIVATE_KEY_PATH;
+  if (path && existsSync(path)) return readFileSync(path);
+  return undefined;
+}
+
 function loadStatuses() {
   try { return JSON.parse(readFileSync(statusFile, 'utf8')); } catch { return []; }
 }
@@ -188,6 +207,27 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  if (pathname.startsWith('/tony-omen/apps/imagen/api/')) {
+    const apiPath = pathname.slice('/tony-omen/apps/imagen/api/'.length);
+    const search = new URL(request.url, 'http://localhost').search;
+    const proxyReq = httpRequest(`http://127.0.0.1:8000/${apiPath}${search}`, {
+      method: request.method,
+      headers: { ...request.headers, host: '127.0.0.1:8000' }
+    }, (proxyRes) => {
+      response.writeHead(proxyRes.statusCode, proxyRes.headers);
+      proxyRes.pipe(response);
+    });
+    proxyReq.on('error', (err) => {
+      console.error('imagen proxy error', err.message);
+      if (!response.headersSent) {
+        response.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' });
+        response.end('Bad gateway: ' + err.message);
+      }
+    });
+    request.pipe(proxyReq);
+    return;
+  }
+
   if (pathname === '/api/hosts') {
     const statuses = loadStatuses();
     const now = Date.now();
@@ -236,7 +276,29 @@ const server = createServer(async (request, response) => {
     return;
   }
 
-  const requestedPath = pathname === '/' ? 'index.html' : pathname.slice(1);
+  if (pathname.startsWith('/api/camera-control/')) {
+    const apiPath = pathname.slice('/api/camera-control/'.length);
+    const search = new URL(request.url, 'http://localhost').search;
+    const proxyReq = httpRequest(`http://192.168.1.48:8090/${apiPath}${search}`, {
+      method: request.method,
+      headers: { ...request.headers, host: '192.168.1.48:8090' }
+    }, (proxyRes) => {
+      response.writeHead(proxyRes.statusCode, proxyRes.headers);
+      proxyRes.pipe(response);
+    });
+    proxyReq.on('error', (err) => {
+      console.error('camera control proxy error', err.message);
+      if (!response.headersSent) {
+        response.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' });
+        response.end('Bad gateway: ' + err.message);
+      }
+    });
+    request.pipe(proxyReq);
+    return;
+  }
+
+  const adjustedPathname = pathname.startsWith('/tony-omen/') ? pathname.slice('/tony-omen'.length) : pathname;
+  const requestedPath = adjustedPathname === '/' ? 'index.html' : adjustedPathname.slice(1);
   let filePath = normalize(join(publicDirectory, requestedPath));
 
   if (!filePath.startsWith(publicDirectory)) {
@@ -309,12 +371,90 @@ wssUser.on('connection', (ws) => {
   ws.on('error', (err) => console.error('tunnel user error', err.message));
 });
 
+const wssSsh = new WebSocketServer({ noServer: true });
+wssSsh.on('connection', (ws) => {
+  if (!sshUser) {
+    ws.close(1011, 'SSH user not configured');
+    return;
+  }
+  const key = loadSshPrivateKey();
+  if (!key && !process.env.SSH_TONYDELL_PASSWORD) {
+    ws.close(1011, 'SSH credentials not configured');
+    return;
+  }
+  const conn = new SshClient();
+  let stream = null;
+  ws.on('message', (buf) => {
+    if (!stream) return;
+    try {
+      const text = buf.toString('utf8');
+      const msg = JSON.parse(text);
+      if (msg && msg.type === 'resize') {
+        stream.setWindow(msg.rows, msg.cols, 0, 0);
+        return;
+      }
+    } catch {
+      // not a resize command; forward raw bytes
+    }
+    stream.write(buf);
+  });
+  ws.on('close', () => {
+    if (stream) stream.close();
+    conn.end();
+  });
+  conn.on('ready', () => {
+    conn.shell({ term: 'xterm-256color', cols: 80, rows: 24 }, (err, s) => {
+      if (err) {
+        ws.close(1011, err.message);
+        conn.end();
+        return;
+      }
+      stream = s;
+      stream.on('data', (data) => {
+        if (ws.readyState === WebSocket.OPEN) ws.send(data);
+      });
+      stream.on('close', () => {
+        conn.end();
+        ws.close();
+      });
+      stream.on('error', (err) => console.error('ssh stream error', err.message));
+    });
+  });
+  conn.on('error', (err) => {
+    console.error('ssh2 error', err.message);
+    ws.close();
+  });
+  conn.on('end', () => {
+    if (ws.readyState === WebSocket.OPEN) ws.close();
+  });
+  conn.connect({
+    host: sshHost,
+    port: sshPort,
+    username: sshUser,
+    privateKey: key,
+    password: process.env.SSH_TONYDELL_PASSWORD || undefined,
+    readyTimeout: 20000,
+    keepaliveInterval: 10000
+  });
+});
+
 server.on('upgrade', (request, socket, head) => {
+  const pathname = new URL(request.url, 'http://localhost').pathname;
+  if (pathname === '/ws/ssh') {
+    if (!isAuthorized(request)) {
+      socket.write('HTTP/1.1 401 Unauthorized\r\nWWW-Authenticate: Basic realm="chaba.h3"\r\n\r\n');
+      socket.destroy();
+      return;
+    }
+    wssSsh.handleUpgrade(request, socket, head, (ws) => {
+      wssSsh.emit('connection', ws, request);
+    });
+    return;
+  }
   if (!checkTunnelToken(request)) {
     socket.destroy();
     return;
   }
-  const pathname = new URL(request.url, 'http://localhost').pathname;
   if (pathname === '/tunnel') {
     wssClient.handleUpgrade(request, socket, head, (ws) => {
       wssClient.emit('connection', ws, request);
