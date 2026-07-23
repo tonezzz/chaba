@@ -16,6 +16,7 @@
     }
   </script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
   <style>
     body { font-family: system-ui, sans-serif; margin: 0; overflow: hidden; }
     #map { width: 100%; height: calc(100vh - 48px); background: #0b1021; }
@@ -52,6 +53,10 @@
           <button id="reset" class="flex-1 bg-slate-700 hover:bg-slate-600 rounded px-2 py-1.5 text-xs">Reset</button>
         </div>
       </div>
+      <div class="mt-4 border-t border-gray-700 pt-3">
+        <h3 class="font-semibold text-white mb-2">Objects</h3>
+        <div id="objectList" class="space-y-1 text-xs text-gray-300">Loading...</div>
+      </div>
     </div>
   </div>
 
@@ -68,6 +73,7 @@
     ];
 
     const map = L.map('map').setView(CENTER, 13);
+    const vehicleLayer = L.layerGroup().addTo(map);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
       subdomains: 'abcd',
@@ -119,9 +125,9 @@
       const color = COLORS[routeIndex % COLORS.length];
       const id = `V-${Math.floor(Math.random() * 9999)}`;
       const speed = 8 + Math.random() * 12; // m/s
-      const marker = L.marker(route[0].from, { icon: createIcon(color, route[0].heading) }).addTo(map);
+      const marker = L.marker(route[0].from, { icon: createIcon(color, route[0].heading) }).addTo(vehicleLayer);
       marker.bindPopup(`<b>${id}</b><br>Route ${routeIndex + 1}<br>Speed: ${(speed * 3.6).toFixed(0)} km/h`);
-      const trail = L.polyline([], { color, opacity: 0.5, weight: 2 }).addTo(map);
+      const trail = L.polyline([], { color, opacity: 0.5, weight: 2 }).addTo(vehicleLayer);
       vehicles.push({ id, routeIndex, segIndex: 0, distance: offset, speed, color, marker, trail, lastTrail: 0 });
       updateCount();
     }
@@ -194,13 +200,35 @@
     });
 
     requestAnimationFrame(loop);
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
-  <script>
-    fetch('../apps.yml').then(r => r.text()).then(text => {
-      const data = jsyaml.load(text);
-      document.getElementById('app-nav').innerHTML = renderNav(data.nav);
-    });
+
+    const bouiLayer = L.layerGroup().addTo(map);
+    const bouis = [];
+    function setBouiVisible(id, show) {
+      const b = bouis.find(x => x.id === id);
+      if (b) b.marker.setStyle({ opacity: show ? 1 : 0, fillOpacity: show ? 0.8 : 0 });
+    }
+    function renderObjectList() {
+      const list = document.getElementById('objectList');
+      if (!list) return;
+      list.innerHTML = `
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="toggle-vehicles" checked class="accent-accent">
+          <span>Vehicles (${vehicles.length})</span>
+        </label>
+        ${bouis.map(b => `
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="toggle-${b.id}" checked class="accent-accent">
+            <span style="color:${b.color}">${b.name}</span>
+          </label>
+        `).join('')}
+      `;
+      document.getElementById('toggle-vehicles').addEventListener('change', e => {
+        if (e.target.checked) vehicleLayer.addTo(map); else map.removeLayer(vehicleLayer);
+      });
+      bouis.forEach(b => {
+        document.getElementById(`toggle-${b.id}`).addEventListener('change', e => setBouiVisible(b.id, e.target.checked));
+      });
+    }
     function isActive(path, href) {
       if (href === '#' || !href) return false;
       if (href === '/') return path === '/';
@@ -224,6 +252,24 @@
         </div>
       </nav>`;
     }
+    Promise.all([fetch('../apps.yml'), fetch('objects.yml')])
+      .then(([appsRes, objRes]) => Promise.all([appsRes.text(), objRes.text()]))
+      .then(([appsText, objText]) => {
+        const appData = jsyaml.load(appsText);
+        const objData = jsyaml.load(objText);
+        document.getElementById('app-nav').innerHTML = renderNav(appData.nav);
+        for (const b of objData.bouis || []) {
+          const marker = L.circleMarker([b.lat, b.lon], {
+            radius: 8, color: b.color, fillColor: b.color, fillOpacity: 0.8, weight: 2
+          }).addTo(bouiLayer).bindPopup(`<b>${b.name}</b>`);
+          bouis.push({ ...b, marker });
+        }
+        renderObjectList();
+      })
+      .catch(err => {
+        console.error('failed to load yaml', err);
+        document.getElementById('objectList').textContent = 'Object list unavailable';
+      });
   </script>
 </body>
 </html>
