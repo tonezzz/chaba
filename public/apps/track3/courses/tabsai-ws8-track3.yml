@@ -74,13 +74,44 @@ course:
       to: start_line
       color: '#64748b'
       dash: '4,6'
-  legs:
-    - mark: out-bouy
+  sections:
+    beach_start:
+      type: arrow-area
+      from: beach_start_line
+      to: start_line
+      text: บีชสตาร์ท
+    leg_1:
+      type: arrow-area
+      from: start_line
+      to: out_bouy_zone
+      text: สตาร์ท-ทุ่นนอก-รอบ-1
+    round_bouy_out_1:
+      type: round-bouy
+      bouy: out_bouy_zone
       rounding: port
-      label: รอทุ่นนอก ฝั่งซ้าย
-    - mark: in-bouy
+      text: อ้อมทุ่นนอก-รอบ-1
+    leg_2:
+      type: arrow-area
+      from: out_bouy_zone
+      to: in_bouy_zone
+      text: ทุ่นนอก-ทุ่นใน-รอบ-1
+    round_bouy_in_1:
+      type: round-bouy
+      bouy: in_bouy_zone
       rounding: starboard
-      label: รอทุ่นใน ฝั่งขวา
-    - mark: out-bouy
+      text: อ้อมทุ่นใน-รอบ-1
+    leg_3:
+      type: arrow-area
+      from: in_bouy_zone
+      to: out_bouy_zone
+      text: ทุ่นใน-ทุ่นนอก-รอบ-2
+    round_bouy_out_2:
+      type: round-bouy
+      bouy: out_bouy_zone
       rounding: port
-      label: รอทุ่นนอก ฝั่งซ้าย (ขากลับ)
+      text: อ้อมทุ่นนอก-รอบ-2
+    leg_4:
+      type: arrow-area
+      from: out_bouy_zone
+      to: finish_line
+      text: เส้นชัย
