@@ -41,17 +41,7 @@
   <link rel="stylesheet" href="/assets/tailwind.css">
 </head>
 <body class="bg-bg text-gray-200">
-    <nav class="bg-card border-b border-gray-700 sticky top-0 z-50 h-12">
-        <div class="max-w-6xl mx-auto px-4 h-full flex items-center gap-6">
-            <a href="/" class="text-lg font-bold text-white">HomeLab</a>
-            <div class="flex gap-4 text-sm">
-                <a href="/" class="text-gray-400 hover:text-white transition">Dashboard</a>
-                <a href="/apps/cams/index.html" class="text-accent font-semibold">Cameras</a>
-                <a href="/infrastructure.html" class="text-gray-400 hover:text-white transition">Infrastructure</a>
-                <a href="/decisions.html" class="text-gray-400 hover:text-white transition">Decisions</a>
-            </div>
-        </div>
-    </nav>
+    <div id="app-nav"></div>
 
     <div class="relative">
         <div id="map"></div>
@@ -92,7 +82,6 @@
             <h2 id="detailTitle" style="font-size:16px;margin-bottom:12px;"></h2>
             <div id="detailVideoContainer"></div>
             <div id="detailMeta" style="margin-top:12px;"></div>
-            <div style="margin-top:12px;"><a id="detailFrigate" href="#" target="_blank" class="control-btn control-btn-primary" style="display:inline-block;text-decoration:none;">Open in Frigate</a></div>
         </div>
     </div>
 
@@ -100,7 +89,6 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
     <script>
         let activeHls = null;
-        let snapshotTimer = null;
         let cameras = [];
         let groups = {};
         let map = null;
@@ -125,7 +113,6 @@
 
         function stopAllPlayers() {
             if (activeHls) { activeHls.destroy(); activeHls = null; }
-            if (snapshotTimer) { clearInterval(snapshotTimer); snapshotTimer = null; }
         }
 
         function startHls(videoEl, url) {
@@ -149,16 +136,6 @@
             } else if (loading) {
                 loading.textContent = 'HLS not supported';
             }
-        }
-
-        function startSnapshot(imgEl, camName) {
-            const update = () => { imgEl.src = `/frigate/api/${encodeURIComponent(camName)}/latest.jpg?h=180&cache=` + Date.now(); };
-            update();
-            snapshotTimer = setInterval(update, 2000);
-        }
-
-        function frigateUiUrl(camName) {
-            return `http://${window.location.hostname}:5000/cameras/${encodeURIComponent(camName)}`;
         }
 
         function pickPlayUrl(cam) {
@@ -215,7 +192,6 @@
                     ${videoHtml}
                     <div class="meta"><b>${escapeHtml(cam.group)}</b> · ${escapeHtml(cam.source)}${status ? ' · ' + escapeHtml(status) : ''}</div>
                     ${location}${perspective}${viewDesc}${coverage ? '<div class="meta">Coverage: ' + coverage + '</div>' : ''}${desc}
-                    <a href="#" onclick="window.open(frigateUiUrl('${escapeHtml(escapeJs(cam.name))}'), '_blank'); return false;">Open in Frigate</a>
                 </div>
             `;
 
@@ -286,7 +262,6 @@
                 ${coverage ? '<div class="meta">Coverage: ' + coverage + '</div>' : ''}
                 ${cam.description ? '<div class="meta">' + escapeHtml(cam.description) + '</div>' : ''}
             `;
-            document.getElementById('detailFrigate').href = frigateUiUrl(cam.name);
             document.getElementById('detailDrawer').classList.remove('hidden');
         }
 
@@ -447,5 +422,7 @@
 
         load();
     </script>
+    <script src="/apps/nav.js"></script>
+    <script>ChabaNav.load('/apps/apps.yml', 'app-nav');</script>
 </body>
 </html>
