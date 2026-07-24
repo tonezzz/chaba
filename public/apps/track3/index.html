@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Track3 Race Course</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+  <link rel="stylesheet" href="/assets/tailwind.css">
+  <style>
+    body { margin: 0; overflow: hidden; font-family: system-ui, sans-serif; color: #e5e7eb; }
+    #map { width: 100%; height: calc(100vh - 48px); background: #0b1021; }
+    .marker-icon { display: flex; align-items: center; justify-content: center; width: 28px !important; height: 28px !important; margin-left: -14px !important; margin-top: -14px !important; }
+    .marker-icon svg { width: 20px; height: 20px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.7)); }
+    .marker-label { display: flex; align-items: center; justify-content: center; width: auto !important; height: 14px !important; padding: 0 4px; font-size: 10px; font-weight: bold; color: #fff; background: rgba(0,0,0,0.55); border-radius: 3px; white-space: nowrap; margin-left: 0 !important; margin-top: -30px !important; }
+    .line-label { display: flex; align-items: center; justify-content: center; width: auto !important; height: 18px !important; padding: 0 6px; font-size: 10px; font-weight: bold; color: #fff; background: rgba(0,0,0,0.6); border-radius: 3px; white-space: nowrap; }
+    .arrow-icon { display: flex; align-items: center; justify-content: center; width: 16px !important; height: 16px !important; margin-left: -8px !important; margin-top: -8px !important; }
+    .arrow-icon svg { width: 12px; height: 12px; }
+    .leaflet-popup-content { font-size: 13px; color: #111; }
+    .course-panel { position: absolute; top: 60px; right: 12px; z-index: 1000; max-height: calc(100vh - 80px); overflow-y: auto; }
+    .course-panel * { pointer-events: auto; }
+  </style>
+</head>
+<body class="bg-bg">
+  <div id="app-nav"></div>
+
+  <div class="relative">
+    <div id="map"></div>
+    <div class="course-panel bg-card/95 border border-gray-700 rounded-lg p-4 shadow-lg w-72 text-sm">
+      <h2 class="font-semibold text-white mb-2">Race Course Guide</h2>
+      <div id="summary" class="text-xs text-gray-400 mb-3">Loading...</div>
+      <div id="brief" class="text-xs text-gray-300 mb-3"></div>
+      <div class="space-y-2 mb-3">
+        <label class="flex items-center gap-2 text-xs cursor-pointer"><input id="toggle-guide" type="checkbox" checked class="accent-accent"> แสดงเส้นทาง</label>
+        <label class="flex items-center gap-2 text-xs cursor-pointer"><input id="toggle-markers" type="checkbox" checked class="accent-accent"> แสดงทุ่น</label>
+        <label class="flex items-center gap-2 text-xs cursor-pointer"><input id="toggle-zones" type="checkbox" checked class="accent-accent"> แสดงวงรอบทุ่น</label>
+      </div>
+      <div class="border-t border-gray-700 pt-2">
+        <h3 class="font-semibold text-white text-xs mb-1">Legs</h3>
+        <div id="legs" class="space-y-1 text-xs">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const ROUND_DIST = 25;
+    const ICONS = {
+      'sausage-orange': '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#f97316" stroke="#fff" stroke-width="2"/></svg>',
+      'flag-checkered': '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" fill="#fff"/><path d="M3 3h9v9H3zm9 9h9v9h-9z" fill="#111"/></svg>',
+      'flag-square': '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" fill="#ef4444" stroke="#fff" stroke-width="2"/></svg>'
+    };
+
+    const map = L.map('map');
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd', maxZoom: 19
+    }).addTo(map);
+
+    function toRad(d) { return d * Math.PI / 180; }
+    function toDeg(r) { return r * 180 / Math.PI; }
+    function haversine([lat1, lon1], [lat2, lon2]) {
+      const R = 6371000;
+      const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+      return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+    function bearing([lat1, lon1], [lat2, lon2]) {
+      const p1 = toRad(lat1), p2 = toRad(lat2), dLon = toRad(lon2 - lon1);
+      const x = Math.sin(dLon) * Math.cos(p2);
+      const y = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dLon);
+      return (toDeg(Math.atan2(x, y)) + 360) % 360;
+    }
+    function midpoint([lat1, lon1], [lat2, lon2]) { return [(lat1 + lat2) / 2, (lon1 + lon2) / 2]; }
+    function offsetPoint([lat, lon], headingDeg, distM, side) {
+      const sign = side === 'right' ? 1 : -1;
+      const R = 6371000;
+      const h = toRad(headingDeg + 90 * sign);
+      const latR = toRad(lat);
+      const newLat = Math.asin(Math.sin(latR) * Math.cos(distM / R) + Math.cos(latR) * Math.sin(distM / R) * Math.cos(h));
+      const newLon = toRad(lon) + Math.atan2(Math.sin(h) * Math.sin(distM / R) * Math.cos(latR), Math.cos(distM / R) - Math.sin(latR) * Math.sin(newLat));
+      return [toDeg(newLat), toDeg(newLon)];
+    }
+
+    function markerIcon(name, label) {
+      const svg = ICONS[name] || '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#64748b" stroke="#fff" stroke-width="2"/></svg>';
+      return L.divIcon({
+        className: 'marker-icon',
+        html: svg,
+        iconSize: [28, 28], iconAnchor: [14, 14]
+      });
+    }
+    function markerLabelIcon(label) {
+      return L.divIcon({
+        className: 'marker-label',
+        html: `<span>${label}</span>`,
+        iconSize: [60, 14], iconAnchor: [30, 0]
+      });
+    }
+    function lineLabelIcon(text) {
+      return L.divIcon({
+        className: 'line-label',
+        html: `<span>${text}</span>`,
+        iconSize: [80, 18], iconAnchor: [40, 9]
+      });
+    }
+    function arrowIcon(heading) {
+      return L.divIcon({
+        className: 'arrow-icon',
+        html: `<svg viewBox="0 0 24 24" fill="#38bdf8" style="transform: rotate(${heading}deg)"><path d="M12 2l10 18H2z"/></svg>`,
+        iconSize: [16, 16], iconAnchor: [8, 8]
+      });
+    }
+
+    function renderNav(items) {
+      const path = window.location.pathname;
+      const isActive = (href) => href && href !== '#' && (path === href || path.startsWith(href));
+      return `<nav class="bg-card border-b border-gray-700 sticky top-0 z-50 h-12"><div class="max-w-7xl mx-auto px-4 h-full flex items-center justify-between"><a href="/" class="text-lg font-bold text-white">HomeLab</a><div class="hidden md:flex gap-4 text-sm h-full items-center">${items.map(i => `<a href="${i.href}" class="${isActive(i.href) ? 'text-accent font-semibold' : i.placeholder ? 'text-gray-500 cursor-not-allowed' : 'text-gray-400 hover:text-white transition'}">${i.label}</a>`).join('')}</div></div></nav>`;
+    }
+
+    const guideLayer = L.layerGroup().addTo(map);
+    const markerLayer = L.layerGroup().addTo(map);
+    const zoneLayer = L.layerGroup().addTo(map);
+    let courseData = null;
+    const STORAGE_KEY = 'track3-markers';
+
+    function getMarkers() { return Object.entries(courseData.markers || {}).map(([id, m]) => ({ id, ...m })); }
+    function saveMarkers() {
+      try {
+        const payload = {};
+        for (const [id, m] of Object.entries(courseData.markers || {})) payload[id] = { lat: m.lat, lon: m.lon };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      } catch (e) { console.warn('failed to save markers', e); }
+    }
+    function loadMarkers() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      try {
+        const saved = JSON.parse(raw);
+        for (const [id, pos] of Object.entries(saved)) {
+          if (courseData.markers && courseData.markers[id]) {
+            courseData.markers[id].lat = pos.lat;
+            courseData.markers[id].lon = pos.lon;
+          }
+        }
+      } catch (e) { console.warn('bad saved markers', e); }
+    }
+
+    function markerById(markers, id) { return markers.find(m => m.id === id); }
+    function coordsOf(markers, id) { const m = markerById(markers, id); return m ? [m.lat, m.lon] : [0, 0]; }
+
+    function lineEntry(course, role) {
+      const ann = (course.annotations || []).find(a => a.type === 'line' && a.role === role);
+      if (ann) return ann;
+      const legacy = role === 'start' ? course.start_line : role === 'finish' ? course.finish_line : course.beach_start_line;
+      const e = (legacy && legacy[0]) || {};
+      return { from: e.m1 || e.marker, to: e.m2 || e.marker };
+    }
+
+    function buildGuide(markers, course) {
+      const startEntry = lineEntry(course, 'start');
+      const start1 = coordsOf(markers, startEntry.from);
+      const start2 = coordsOf(markers, startEntry.to);
+      const startMid = midpoint(start1, start2);
+
+      const finishEntry = lineEntry(course, 'finish');
+      const finish1 = coordsOf(markers, finishEntry.from);
+      const finish2 = coordsOf(markers, finishEntry.to);
+      const finishMid = midpoint(finish1, finish2);
+
+      const legs = (course.legs || []);
+      const guidePts = [startMid];
+      const legInfo = [];
+      let from = startMid;
+      let total = 0;
+
+      for (const leg of legs) {
+        const m = markerById(markers, leg.mark);
+        if (!m) continue;
+        const mark = [m.lat, m.lon];
+        const h = bearing(from, mark);
+        const side = (leg.rounding || '').toLowerCase() === 'port' ? 'right' : 'left';
+        const pass = offsetPoint(mark, h, ROUND_DIST, side);
+        const d1 = haversine(from, pass);
+        total += d1;
+        legInfo.push({ label: leg.label || `Round ${m.label || leg.mark}`, distance: d1, target: m });
+        guidePts.push(pass);
+        from = pass;
+      }
+      const dFinish = haversine(from, finishMid);
+      total += dFinish;
+      guidePts.push(finishMid);
+
+      return { start1, start2, startMid, finish1, finish2, finishMid, guidePts, legInfo, total, startEntry, finishEntry };
+    }
+
+    function pointSide(p1, p2, p) {
+      const dx = p2[1] - p1[1], dy = p2[0] - p1[0];
+      const dpx = p[1] - p1[1], dpy = p[0] - p1[0];
+      const cross = dx * dpy - dy * dpx;
+      return cross > 1e-15 ? 'left' : 'right';
+    }
+
+    function resolveSide(p1, p2, side, role, roleSide, center) {
+      const s = (side || '').toLowerCase();
+      if (s === 'right' || s === 'starboard' || s === 'bottom') return 'right';
+      if (s === 'left' || s === 'port' || s === 'top') return 'left';
+      const inner = () => pointSide(p1, p2, [center.lat, center.lon]);
+      if (s === 'front') return (roleSide && roleSide[role]) || inner();
+      if (s === 'back') {
+        const front = (roleSide && roleSide[role]) || inner();
+        return front === 'left' ? 'right' : 'left';
+      }
+      if (s === 'inner') return inner();
+      if (s === 'outer') {
+        const i = inner();
+        return i === 'left' ? 'right' : 'left';
+      }
+      return 'left';
+    }
+
+    function drawLine(p1, p2, color, text, side = 'port', dash = '8,6', drawPoly = true) {
+      if (drawPoly) {
+        L.polyline([p1, p2], { color, weight: 4, dashArray: dash }).addTo(guideLayer);
+      }
+      const mid = midpoint(p1, p2);
+      const h = bearing(p1, p2);
+      const labelSide = side === 'starboard' || side === 'right' || side === 'bottom' ? 'right' : 'left';
+      const labelPos = offsetPoint(mid, h, 18, labelSide);
+      L.marker(labelPos, { icon: lineLabelIcon(text), interactive: false }).addTo(guideLayer);
+    }
+
+    function drawCourse(course, markers, fit = false) {
+      guideLayer.clearLayers();
+      markerLayer.clearLayers();
+      zoneLayer.clearLayers();
+      const g = buildGuide(markers, course);
+
+      const center = {
+        lat: markers.reduce((sum, m) => sum + m.lat, 0) / markers.length,
+        lon: markers.reduce((sum, m) => sum + m.lon, 0) / markers.length
+      };
+      const roleSide = {};
+      if (g.guidePts.length > 1) {
+        roleSide.start = pointSide(g.start1, g.start2, g.guidePts[1]);
+        const beachAnn = (course.annotations || []).find(a => a.type === 'line' && a.role === 'beach_start');
+        if (beachAnn) {
+          roleSide.beach_start = pointSide(coordsOf(markers, beachAnn.from), coordsOf(markers, beachAnn.to), g.guidePts[1]);
+        }
+        const lastPass = g.guidePts[g.guidePts.length - 2];
+        const finishFront = [2 * g.finishMid[0] - lastPass[0], 2 * g.finishMid[1] - lastPass[1]];
+        roleSide.finish = pointSide(g.finish1, g.finish2, finishFront);
+      }
+
+      // markers
+      for (const m of markers) {
+        const pos = [m.lat, m.lon];
+        const marker = L.marker(pos, { icon: markerIcon(m.icon, m.label), draggable: true })
+          .addTo(markerLayer)
+          .bindPopup(`<b>${m.label || m.id}</b><br>${m.description || ''}`);
+        marker.on('dragend', (e) => {
+          const ll = e.target.getLatLng();
+          courseData.markers[m.id].lat = ll.lat;
+          courseData.markers[m.id].lon = ll.lng;
+          saveMarkers();
+          drawCourse(course, getMarkers(), false);
+        });
+        L.marker(pos, { icon: markerLabelIcon(m.label || m.id), interactive: false }).addTo(markerLayer);
+      }
+
+      // annotations (lines, zones, labels)
+      const drawnLineKeys = new Set();
+      for (const a of (course.annotations || [])) {
+        if (a.type === 'line') {
+          const p1 = coordsOf(markers, a.from);
+          const p2 = coordsOf(markers, a.to);
+          const key = [a.from, a.to].sort().join('|');
+          const drawPoly = !drawnLineKeys.has(key);
+          drawnLineKeys.add(key);
+          const color = a.color || (a.role === 'start' ? '#22c55e' : a.role === 'finish' ? '#ef4444' : a.role === 'beach_start' ? '#a855f7' : '#38bdf8');
+          const side = resolveSide(p1, p2, a.label_side, a.role, roleSide, center);
+          drawLine(p1, p2, color, a.text || a.role, side, a.dash || '8,6', drawPoly);
+        } else if (a.type === 'zone') {
+          const m = markerById(markers, a.mark);
+          if (m) {
+            L.circle([m.lat, m.lon], { radius: a.radius || ROUND_DIST, color: a.color || '#f59e0b', weight: 1, dashArray: '4,4', fill: false }).addTo(zoneLayer);
+          }
+        } else if (a.type === 'label') {
+          const m = markerById(markers, a.mark);
+          if (m) {
+            L.marker([m.lat, m.lon], { icon: lineLabelIcon(a.text), interactive: false }).addTo(guideLayer);
+          }
+        }
+      }
+
+      // guide path
+      L.polyline(g.guidePts, { color: '#38bdf8', weight: 3, dashArray: '6,8', opacity: 0.9 }).addTo(guideLayer);
+      for (let i = 1; i < g.guidePts.length; i++) {
+        const p1 = g.guidePts[i - 1], p2 = g.guidePts[i];
+        const h = bearing(p1, p2);
+        const mid = midpoint(p1, p2);
+        L.marker(mid, { icon: arrowIcon(h), interactive: false }).addTo(guideLayer);
+      }
+
+      // fit bounds to all markers
+      if (fit) {
+        const allPts = markers.map(m => [m.lat, m.lon]);
+        map.fitBounds(L.latLngBounds(allPts).pad(0.25));
+      }
+
+      // update panel
+      document.getElementById('summary').textContent = `Total: ${g.total.toFixed(0)} m | Laps: ${course.repeat || 1}`;
+      const briefEl = document.getElementById('brief');
+      if (briefEl) {
+        if (Array.isArray(course.brief) && course.brief.length) {
+          briefEl.innerHTML = `<ul class="list-disc pl-4 space-y-1">${course.brief.map(b => `<li>${b}</li>`).join('')}</ul>`;
+        } else {
+          briefEl.innerHTML = '';
+        }
+      }
+      document.getElementById('legs').innerHTML = g.legInfo.map((l, i) =>
+        `<div class="flex justify-between"><span>${i + 1}. ${l.label}</span><span class="text-gray-400">${l.distance.toFixed(0)} m</span></div>`
+      ).join('');
+    }
+
+    function setupToggles() {
+      document.getElementById('toggle-guide').addEventListener('change', (e) => {
+        if (e.target.checked) guideLayer.addTo(map); else map.removeLayer(guideLayer);
+      });
+      document.getElementById('toggle-markers').addEventListener('change', (e) => {
+        if (e.target.checked) markerLayer.addTo(map); else map.removeLayer(markerLayer);
+      });
+      document.getElementById('toggle-zones').addEventListener('change', (e) => {
+        if (e.target.checked) zoneLayer.addTo(map); else map.removeLayer(zoneLayer);
+      });
+    }
+
+    Promise.all([fetch('/apps/apps.yml'), fetch('/apps/track3/courses/tabsai-ws8-track3.yml')])
+      .then(rs => Promise.all(rs.map(r => r.text())))
+      .then(([appsText, courseText]) => {
+        const appData = jsyaml.load(appsText);
+        courseData = jsyaml.load(courseText);
+        loadMarkers();
+        const markers = getMarkers();
+        document.getElementById('app-nav').innerHTML = renderNav(appData.nav);
+        drawCourse(courseData.course, markers, true);
+        setupToggles();
+      })
+      .catch(err => {
+        console.error('failed to load course data', err);
+        document.getElementById('summary').textContent = 'Error loading course';
+      });
+  </script>
+</body>
+</html>
