@@ -1,18 +1,22 @@
 # Chaba.h3
 
-Minimal dependency-free Node.js website/app for Plesk.
+Static website files for Plesk shared hosting. Only the `public/` directory is served.
 
-## Local test
+## Local preview
 
 ```bash
-npm start
+python3 -m http.server 8123 -d public
 ```
 
-Open `http://localhost:8080` and `http://localhost:8080/health`.
+Open `http://localhost:8123`.
+
+## Build CSS
+
+```bash
+npm install
+npm run build:css
+```
 
 ## Plesk settings
 
-- Application root: `/www/chaba.h3.gizmo-thailand.com/chaba`
 - Document root: `/www/chaba.h3.gizmo-thailand.com/chaba/public`
-- Application startup file: `proxy-server.mjs`
-- Application mode: `production`
