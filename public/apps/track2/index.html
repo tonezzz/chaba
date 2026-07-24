@@ -14,8 +14,13 @@
     .racer-icon svg { width: 18px; height: 18px; }
     .boui-icon { display: flex; align-items: center; justify-content: center; width: 22px !important; height: 22px !important; margin-left: -11px !important; margin-top: -11px !important; }
     .boui-icon span { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.7); }
+    .boat-icon { display: flex; align-items: center; justify-content: center; width: 30px !important; height: 30px !important; margin-left: -15px !important; margin-top: -15px !important; }
+    .boat-icon svg { width: 22px; height: 22px; filter: drop-shadow(0 0 3px rgba(0,0,0,0.7)); }
+    .start-label { display: flex; align-items: center; justify-content: center; width: 44px !important; height: 16px !important; margin-left: -22px !important; margin-top: -8px !important; font-size: 11px; font-weight: bold; color: #fff; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 1px 2px rgba(0,0,0,0.7); white-space: nowrap; }
+    .finish-label { display: flex; align-items: center; justify-content: center; width: 44px !important; height: 16px !important; margin-left: -22px !important; margin-top: -8px !important; font-size: 11px; font-weight: bold; color: #fca5a5; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 1px 2px rgba(0,0,0,0.7); white-space: nowrap; }
     .leaflet-popup-content { font-size: 13px; color: #111; }
-    .race-panel { position: absolute; top: 60px; right: 12px; z-index: 1000; max-height: calc(100vh - 80px); overflow-y: auto; }
+    .race-panel { position: absolute; top: 60px; right: 12px; z-index: 1000; max-height: calc(100vh - 80px); overflow-y: auto; pointer-events: none; }
+    .race-panel button, .race-panel input, .race-panel label, .race-panel a, .race-panel select { pointer-events: auto; }
   </style>
   <link rel="stylesheet" href="/assets/tailwind.css">
 </head>
@@ -35,6 +40,7 @@
         <button id="btn-pause" class="bg-slate-700 hover:bg-slate-600 rounded px-3 py-1.5 font-medium" disabled>Pause</button>
       </div>
       <button id="btn-reset" class="w-full bg-slate-700 hover:bg-slate-600 rounded px-3 py-1.5 mb-3">Reset</button>
+      <button id="btn-download" class="w-full bg-slate-700 hover:bg-slate-600 rounded px-3 py-1.5 mb-3">Download course.yml</button>
 
       <div class="mb-3 space-y-2">
         <div class="flex items-center justify-between">
@@ -80,6 +86,7 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="../track3/course.js"></script>
   <script>
     const CENTER = [13.24400, 100.92650];
     const KTS_TO_MS = 0.514444;
@@ -128,31 +135,67 @@
         iconSize: [28, 28], iconAnchor: [14, 14]
       });
     }
+    function boatIcon(color) {
+      return L.divIcon({
+        className: 'boat-icon',
+        html: `<svg viewBox="0 0 24 24" fill="${color}"><path d="M12 2l6 18H6z"/><rect x="9" y="18" width="6" height="4" rx="1" fill="#1f2937"/></svg>`,
+        iconSize: [30, 30], iconAnchor: [15, 15]
+      });
+    }
+    function startLabelIcon(angle) {
+      return L.divIcon({
+        className: 'start-label',
+        html: `<span style="display:inline-block;transform:rotate(${angle.toFixed(1)}deg);transform-origin:center;">start</span>`,
+        iconSize: [44, 16], iconAnchor: [22, 8]
+      });
+    }
+    function finishLabelIcon(angle) {
+      return L.divIcon({
+        className: 'finish-label',
+        html: `<span style="display:inline-block;transform:rotate(${angle.toFixed(1)}deg);transform-origin:center;">finish</span>`,
+        iconSize: [44, 16], iconAnchor: [22, 8]
+      });
+    }
 
-    let course = null, racers = [], wind = { direction: 90, speed: 12 };
+    let course = null, guide = null, racers = [], wind = { direction: 90, speed: 12 };
     let status = 'ready';
     let raceStartTime = 0, elapsedTime = 0;
     let speedMultiplier = 1;
     let lastTime = performance.now();
     let lastLeaderboard = 0;
+    let courseTrackPoly = null;
+    let startLinePoly = null;
+    let startLabelMarker = null;
+    let finishLinePoly = null;
+    let finishLabelMarker = null;
 
-    function courseTarget(index) {
-      if (index >= course.legs.length) return finishMid();
-      const leg = course.legs[index];
-      if (leg.target === 'finish') return finishMid();
-      const b = course.buoys.find(b => b.id === leg.target);
-      return [b.lat, b.lon];
+    function rebuildGuide() {
+      const markers = {};
+      for (const b of course.buoys) markers[b.id] = b;
+      const guideCourse = {
+        annotations: {
+          start_line: { type: 'line', role: 'start', from: course.start_line[0], to: course.start_line[1] },
+          finish_line: { type: 'line', role: 'finish', from: course.finish_line[0], to: course.finish_line[1] }
+        },
+        legs: course.legs.map(l => ({
+          mark: l.target,
+          rounding: l.rounding || (l.type === 'upwind' ? 'port' : l.type === 'downwind' ? 'starboard' : 'port'),
+          label: `${l.type} to ${l.target}`
+        })).filter(l => l.mark !== 'finish')
+      };
+      guide = Course.buildRoundedGuide(Object.values(markers), guideCourse, ROUND_DIST);
     }
     function startMid() { return linePos(course.start_line, 0.5); }
     function finishMid() { return linePos(course.finish_line, 0.5); }
 
     function resetRacers() {
       for (let i = 0; i < racers.length; i++) {
-        const t = i / Math.max(1, racers.length - 1);
+        const t = (i + 0.5) / Math.max(1, racers.length);
         const r = racers[i];
         r.pos = linePos(course.start_line, t);
         r.leg = 0;
-        r.heading = bearing(r.pos, courseTarget(0));
+        r.waypoint = 1;
+        r.heading = bearing(r.pos, guide.guidePts[r.waypoint]);
         r.finished = false;
         r.finishTime = null;
         r.speedKmh = 0;
@@ -175,7 +218,8 @@
         if (r.finished) continue;
         let remaining = dt * speedMultiplier;
         while (remaining > 1e-4 && !r.finished) {
-          const target = courseTarget(r.leg);
+          const target = guide.guidePts[r.waypoint];
+          if (!target) { r.finished = true; r.finishTime = elapsedTime; continue; }
           r.heading = bearing(r.pos, target);
           const factor = windSpeedFactor(r.heading, wind.direction);
           const gust = 0.95 + Math.random() * 0.1;
@@ -191,8 +235,9 @@
             r.trail.setLatLngs(pts);
           }
           if (step.reached) {
-            r.leg++;
-            if (r.leg >= course.legs.length) {
+            r.waypoint++;
+            if (r.leg < guide.legInfo.length && r.waypoint > guide.legInfo[r.leg].endIdx) r.leg++;
+            if (r.waypoint >= guide.guidePts.length) {
               r.finished = true;
               r.finishTime = elapsedTime;
             }
@@ -200,7 +245,7 @@
         }
         r.marker.setLatLng(r.pos);
         r.marker.setIcon(sailIcon(r.color, r.heading));
-        r.marker.setPopupContent(`${r.name}<br>${r.speedKmh.toFixed(1)} km/h<br>Leg ${r.leg + 1}/${course.legs.length}`);
+        r.marker.setPopupContent(`${r.name}<br>${r.speedKmh.toFixed(1)} km/h<br>Leg ${Math.min(r.leg + 1, guide.legInfo.length)}/${guide.legInfo.length}`);
       }
       if (racers.every(r => r.finished)) {
         status = 'finished';
@@ -216,7 +261,7 @@
     function updateLeaderboard() {
       const board = racers.map(r => {
         if (r.finished) return { r, sort: -1, rankKey: r.finishTime };
-        const target = courseTarget(r.leg);
+        const target = guide.guidePts[r.waypoint] || guide.finishMid;
         const d = haversine(r.pos, target);
         return { r, sort: r.leg * 1000000 - d, rankKey: null };
       });
@@ -263,39 +308,156 @@
     function renderCourseGuide() {
       const el = document.getElementById('course-guide');
       if (!el) return;
-      let from = startMid();
-      let total = 0;
-      const rows = [];
-      for (let i = 0; i < course.legs.length; i++) {
-        const leg = course.legs[i];
-        const to = courseTarget(i);
-        const d = haversine(from, to);
-        total += d;
-        const label = leg.target === 'finish' ? 'Finish' : (course.buoys.find(b => b.id === leg.target)?.name || leg.target);
-        rows.push(`<div class="flex justify-between text-xs"><span>${i + 1}. ${leg.type} to ${label}</span><span class="text-gray-400">${d.toFixed(0)} m</span></div>`);
-        from = to;
-      }
+      const rows = guide.legInfo.map((l, i) =>
+        `<div class="flex justify-between text-xs"><span>${i + 1}. ${l.label}</span><span class="text-gray-400">${l.distance.toFixed(0)} m</span></div>`
+      ).join('');
       el.innerHTML = `
         <p class="text-gray-400 text-xs mb-2">${course.description || ''}</p>
-        <div class="flex justify-between text-xs font-medium mb-2"><span>Total</span><span class="text-white">${total.toFixed(0)} m</span></div>
-        <div class="space-y-1">${rows.join('')}</div>
+        <div class="flex justify-between text-xs font-medium mb-2"><span>Total</span><span class="text-white">${guide.total.toFixed(0)} m</span></div>
+        <div class="space-y-1">${rows}</div>
       `;
     }
 
+    function updateCourse() {
+      rebuildGuide();
+      if (courseTrackPoly) courseTrackPoly.setLatLngs(guide.guidePts);
+      renderCourseGuide();
+    }
+    function updateStartLine() {
+      if (!startLinePoly || !startLabelMarker) return;
+      const s1 = [course.start_line[0].lat, course.start_line[0].lon];
+      const s2 = [course.start_line[1].lat, course.start_line[1].lon];
+      startLinePoly.setLatLngs([s1, s2]);
+      startLabelMarker.setLatLng(startMid());
+      let a = 90 - bearing(s1, s2);
+      while (a < -90) a += 180;
+      while (a > 90) a -= 180;
+      startLabelMarker.setIcon(startLabelIcon(a));
+    }
+    function updateFinishLine() {
+      if (!finishLinePoly || !finishLabelMarker) return;
+      const f1 = [course.finish_line[0].lat, course.finish_line[0].lon];
+      const f2 = [course.finish_line[1].lat, course.finish_line[1].lon];
+      finishLinePoly.setLatLngs([f1, f2]);
+      finishLabelMarker.setLatLng(finishMid());
+      let a = 90 - bearing(f1, f2);
+      while (a < -90) a += 180;
+      while (a > 90) a -= 180;
+      finishLabelMarker.setIcon(finishLabelIcon(a));
+    }
+    function saveState() {
+      const state = {
+        start_line: course.start_line.map(p => [p.lat, p.lon]),
+        finish_line: course.finish_line.map(p => [p.lat, p.lon]),
+        buoys: {},
+        map: { center: [map.getCenter().lat, map.getCenter().lng], zoom: map.getZoom() }
+      };
+      for (const b of course.buoys) state.buoys[b.id] = [b.lat, b.lon];
+      localStorage.setItem('track2-state', JSON.stringify(state));
+    }
+    function restoreState() {
+      const raw = localStorage.getItem('track2-state');
+      if (!raw) return;
+      try {
+        const state = JSON.parse(raw);
+        if (state.start_line) state.start_line.forEach(([lat, lon], i) => {
+          if (course.start_line[i]) { course.start_line[i].lat = lat; course.start_line[i].lon = lon; }
+        });
+        if (state.finish_line) state.finish_line.forEach(([lat, lon], i) => {
+          if (course.finish_line[i]) { course.finish_line[i].lat = lat; course.finish_line[i].lon = lon; }
+        });
+        if (state.buoys) {
+          for (const id in state.buoys) {
+            const b = course.buoys.find(b => b.id === id);
+            if (b) { [b.lat, b.lon] = state.buoys[id]; }
+          }
+        }
+        if (state.map) map.setView(state.map.center, state.map.zoom);
+      } catch (e) { console.warn('failed to restore track2 state', e); }
+    }
+
     function renderCourse() {
-      const sl = course.start_line.map(p => [p.lat, p.lon]);
       const fl = course.finish_line.map(p => [p.lat, p.lon]);
-      L.polyline(sl, { color: '#22c55e', weight: 4 }).addTo(map).bindPopup('Start line');
-      L.polyline(fl, { color: '#ef4444', weight: 4, dashArray: '8,6' }).addTo(map).bindPopup('Finish line');
+      finishLinePoly = L.polyline(fl, { color: '#ef4444', weight: 4, dashArray: '8,6' }).addTo(map).bindPopup('Finish line');
+
+      for (const [idx, b] of course.finish_line.entries()) {
+        const label = idx === 0 ? 'F1' : 'F2';
+        const marker = L.marker([b.lat, b.lon], {
+          icon: L.divIcon({ className: 'boui-icon', html: `<span style="background:#ef4444">${label}</span>`, iconSize: [22, 22], iconAnchor: [11, 11] }),
+          draggable: true
+        }).addTo(map).bindPopup(`<b>${b.name}</b> (${label}) — drag to move finish line`);
+        marker.dragging.enable();
+        marker.on('dragend', (e) => {
+          const ll = e.target.getLatLng();
+          course.finish_line[idx].lat = ll.lat;
+          course.finish_line[idx].lon = ll.lng;
+          updateFinishLine();
+          updateCourse();
+          saveState();
+          if (status !== 'ready') { status = 'ready'; resetRacers(); updateUI(); }
+        });
+      }
+      finishLabelMarker = L.marker(finishMid(), { icon: finishLabelIcon(0) }).addTo(map);
+      updateFinishLine();
+
+      startLinePoly = L.polyline([[course.start_line[0].lat, course.start_line[0].lon], [course.start_line[1].lat, course.start_line[1].lon]], { color: '#22c55e', weight: 3, dashArray: '8,6' }).addTo(map);
+
+      for (const [idx, b] of course.start_line.entries()) {
+        const label = idx === 0 ? 'S1' : 'S2';
+        const marker = L.marker([b.lat, b.lon], {
+          icon: L.divIcon({ className: 'boui-icon', html: `<span style="background:#22c55e">${label}</span>`, iconSize: [22, 22], iconAnchor: [11, 11] }),
+          draggable: true
+        }).addTo(map).bindPopup(`<b>${b.name}</b> (${label}) — drag to move start line`);
+        marker.dragging.enable();
+        marker.on('dragend', (e) => {
+          const ll = e.target.getLatLng();
+          course.start_line[idx].lat = ll.lat;
+          course.start_line[idx].lon = ll.lng;
+          updateStartLine();
+          updateCourse();
+          saveState();
+          if (status !== 'ready') { status = 'ready'; resetRacers(); updateUI(); }
+        });
+      }
+      startLabelMarker = L.marker(startMid(), { icon: startLabelIcon(0) }).addTo(map);
+      updateStartLine();
 
       for (const b of course.buoys) {
-        const icon = L.divIcon({ className: 'boui-icon', html: `<span style="background:${b.color}">${b.label || 'B'}</span>`, iconSize: [22, 22], iconAnchor: [11, 11] });
-        L.marker([b.lat, b.lon], { icon }).addTo(map).bindPopup(`<b>${b.name}</b> (${b.id})`);
+        const isBoat = ['w1', 'l1'].includes(b.id);
+        const icon = isBoat ? boatIcon(b.color) : L.divIcon({ className: 'boui-icon', html: `<span style="background:${b.color}">${b.label || 'B'}</span>`, iconSize: [22, 22], iconAnchor: [11, 11] });
+        const marker = L.marker([b.lat, b.lon], { icon, draggable: true }).addTo(map).bindPopup(`<b>${b.name}</b> (${b.id}) — drag to set course`);
+        marker.dragging.enable();
+        marker.on('dragend', (e) => {
+          const ll = e.target.getLatLng();
+          b.lat = ll.lat;
+          b.lon = ll.lng;
+          updateCourse();
+          saveState();
+          if (status !== 'ready') { status = 'ready'; resetRacers(); updateUI(); }
+        });
       }
 
-      const track = [startMid()];
-      for (let i = 0; i < course.legs.length; i++) track.push(courseTarget(i));
-      L.polyline(track, { color: '#64748b', weight: 2, dashArray: '4,6', opacity: 0.6 }).addTo(map);
+      courseTrackPoly = L.polyline(guide.guidePts, { color: '#64748b', weight: 2, dashArray: '4,6', opacity: 0.6 }).addTo(map);
+    }
+
+    function downloadCourse() {
+      const data = {
+        start_line: course.start_line,
+        finish_line: course.finish_line,
+        wind: course.wind,
+        buoys: course.buoys,
+        course: { description: course.description, legs: course.legs }
+      };
+      const yml = jsyaml.dump(data);
+      const blob = new Blob([yml], { type: 'text/yaml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'course.yml';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
     function initRacers(raw) {
@@ -333,6 +495,7 @@
       updateUI();
     });
     document.getElementById('btn-reset').addEventListener('click', resetRacers);
+    document.getElementById('btn-download').addEventListener('click', downloadCourse);
     document.getElementById('speed').addEventListener('input', (e) => {
       speedMultiplier = parseFloat(e.target.value);
       document.getElementById('speed-label').textContent = speedMultiplier.toFixed(1) + 'x';
@@ -353,6 +516,9 @@
         wind.speed = course.wind.speed_kts;
         document.getElementById('wind-dir').value = wind.direction;
         document.getElementById('wind-kts').value = wind.speed;
+        restoreState();
+        rebuildGuide();
+        map.on('moveend', saveState);
         renderCourseGuide();
         renderCourse();
         initRacers(racerData.racers);

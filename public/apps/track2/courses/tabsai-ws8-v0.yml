@@ -3,41 +3,34 @@ markers:
     icon: sausage-orange
     label: ทุ่นใน
     description: ทุ่นใกล้ฝั่ง
-    lat: 13.24500
-    lon: 100.92760
+    lat: 13.24480
+    lon: 100.92750
   out-bouy:
     icon: sausage-orange
     label: ทุ่นนอก
     description: ทุ่นไกลฝั่ง
-    lat: 13.24500
-    lon: 100.92840
+    lat: 13.24480
+    lon: 100.92780
   start-flag:
     icon: flag-checkered
     label: ธงสตาร์ท/ธงเส้นชัย
     description: 
-    lat: 13.24500
-    lon: 100.92800
+    lat: 13.24480
+    lon: 100.92750
   beach-start-upwind:
     icon: flag-square
     label: ธงบีชสตาร์ท เหนือลม
     description: 
-    lat: 13.24470
-    lon: 100.92790
+    lat: 13.24480
+    lon: 100.92750
   beach-start-downwind:
     icon: flag-square
     label: ธงบีชสตาร์ท ใต้ลม
     description: 
-    lat: 13.24470
-    lon: 100.92810
-
+    lat: 13.24480
+    lon: 100.92750
 course:
-  brief:
-    - Wait between the beach-start-upwind and beach-start-downwind
-    - Sail past start start_line
-    - Round the out-bouy keeping it on your port side
-    - Round the in-bouy keeping it on your starboard side
-    - Round the out-bouy keeping it on your port side
-    - Finish by passing the finish line
+  repeat: 2
   annotations:
     beach_start_line:
       type: line
@@ -68,19 +61,41 @@ course:
       type: zone
       mark: in-bouy
       radius: 25
-    path_beach_to_start:
-      type: path
-      from: beach_start_line
+  sections:
+    beach_start:
+      type: arrow-area
+      from: beach_start_line 
       to: start_line
-      color: '#64748b'
-      dash: '4,6'
-  legs:
-    - mark: out-bouy
-      rounding: port
-      label: รอทุ่นนอก ฝั่งซ้าย
-    - mark: in-bouy
-      rounding: starboard
-      label: รอทุ่นใน ฝั่งขวา
-    - mark: out-bouy
-      rounding: port
-      label: รอทุ่นนอก ฝั่งซ้าย (ขากลับ)
+      text: บีชสตาร์ท
+    leg_1:
+      type: arrow-area
+      from: start_line
+      to: out_bouy_zone
+      text: สตาร์ท-ทุ่นนอก-รอบ-1
+    round_bouy_out_1:
+      type: round-bouy
+      bouy: out_bouy_zone
+      text: อ้อมทุ่นนอก-รอบ-1
+    leg_2:
+      type: arrow-area
+      from: out_bouy_zone
+      to: in_bouy_zone
+      text: ทุ่นนอก-ทุ่นใน-รอบ-1
+    round_bouy_in_1:
+      type: round-bouy
+      bouy: in_bouy_zone
+      text: อ้อมทุ่นใน-รอบ-1
+    leg_3:
+      type: arrow-area
+      from: in_bouy_zone
+      to: out_bouy_zone
+      text: ทุ่นใน-ทุ่นนอก-รอบ-2
+    round_bouy_out_2:
+      type: round-bouy
+      bouy: out_bouy_zone
+      text: อ้อมทุ่นนอก-รอบ-2
+    leg_4:
+      type: arrow-area
+      from: out_bouy_zone
+      to: finish_line
+      text: เส้นชัย
