@@ -5,6 +5,8 @@ class CourseRenderer {
     this.guideLayer = L.layerGroup().addTo(map);
     this.markerLayer = L.layerGroup().addTo(map);
     this.zoneLayer = L.layerGroup().addTo(map);
+    this.highlightLayer = L.layerGroup().addTo(map);
+    this.hidden = new Set();
     this.icons = {
       'sausage-orange': '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#f97316" stroke="#fff" stroke-width="2"/></svg>',
       'flag-checkered': '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" fill="#fff"/><path d="M3 3h9v9H3zm9 9h9v9h-9z" fill="#111"/></svg>',
@@ -19,17 +21,23 @@ class CourseRenderer {
   markerLabelIcon(label) {
     return L.divIcon({ className: 'marker-label', html: `<span>${label}</span>`, iconSize: [60, 14], iconAnchor: [30, 0] });
   }
-  lineLabelIcon(text) {
-    return L.divIcon({ className: 'line-label', html: `<span>${text}</span>`, iconSize: [80, 18], iconAnchor: [40, 9] });
+  lineLabelIcon(text, rotation = 0) {
+    const style = `display:inline-block;white-space:nowrap;transform:rotate(${rotation.toFixed(1)}deg);transform-origin:center;`;
+    return L.divIcon({ className: 'line-label', html: `<span style="${style}">${text}</span>`, iconSize: [80, 18], iconAnchor: [40, 9] });
   }
   arrowIcon(heading) {
-    return L.divIcon({ className: 'arrow-icon', html: `<svg viewBox="0 0 24 24" fill="#38bdf8" style="transform: rotate(${heading}deg)"><path d="M12 2l10 18H2z"/></svg>`, iconSize: [16, 16], iconAnchor: [8, 8] });
+    return L.divIcon({ className: 'arrow-icon course-arrow', html: `<svg viewBox="0 0 24 24" fill="#38bdf8" style="transform: rotate(${heading}deg)"><path d="M12 2l10 18H2z"/></svg>`, iconSize: [16, 16], iconAnchor: [8, 8] });
+  }
+  windIcon(heading, speed) {
+    const text = speed != null ? `<text x="12" y="22" text-anchor="middle" fill="#e0f2fe" font-size="7" font-family="sans-serif">${speed} kt</text>` : '';
+    return L.divIcon({ className: 'wind-icon', html: `<svg viewBox="0 0 24 24" style="transform: rotate(${heading}deg)"><path d="M12 2l10 18H2z" fill="#0ea5e9"/></svg>${text}`, iconSize: [28, 28], iconAnchor: [14, 14] });
   }
 
   clear() {
     this.guideLayer.clearLayers();
     this.markerLayer.clearLayers();
     this.zoneLayer.clearLayers();
+    this.highlightLayer.clearLayers();
   }
 
   _roleSide(markers, course, g) {
@@ -107,6 +115,10 @@ class CourseRenderer {
 
     drawables.push({ kind: 'guidePath', points: g.guidePts });
 
+    if (course.wind) {
+      drawables.push({ kind: 'wind', center: [center.lat, center.lon], direction: course.wind.direction, speed: course.wind.speed_kts });
+    }
+
     const sectionEntries = Object.entries(course.sections || {});
     const rawSections = new Map();
     for (const [key, s] of sectionEntries) {
@@ -116,27 +128,20 @@ class CourseRenderer {
         const zoneKey = s.bouy || s.buoy || s.zone || s.mark;
         const centerPt = resolveRef(zoneKey);
         const zone = all[zoneKey];
-        const radius = (zone && zone.radius) || this.roundDist;
+        const radius = s.rounding_radius || s.radius || (zone && zone.radius) || this.roundDist;
         rawSections.set(key, { kind: 'round-bouy', center: centerPt, radius, rounding: s.rounding || 'starboard' });
       }
     }
 
-    const roundArcs = new Map();
-    for (let i = 0; i < sectionEntries.length; i++) {
-      const [key, s] = sectionEntries[i];
-      if (s.type !== 'round-bouy' && s.type !== 'round-buoy') continue;
-      const raw = rawSections.get(key);
-      const prevRaw = i > 0 ? rawSections.get(sectionEntries[i - 1][0]) : null;
-      const nextRaw = i + 1 < sectionEntries.length ? rawSections.get(sectionEntries[i + 1][0]) : null;
-      const prevCoord = prevRaw ? (prevRaw.kind === 'arrow-area' ? prevRaw.from : prevRaw.center) : raw.center;
-      const nextCoord = nextRaw ? (nextRaw.kind === 'arrow-area' ? nextRaw.to : nextRaw.center) : raw.center;
-      const arc = Course.roundBuoyArc(raw.center, prevCoord, nextCoord, raw.radius, raw.rounding, 8);
-      roundArcs.set(key, arc);
-    }
+    const roundArcs = g.roundArcs || new Map();
+    const sectionTint = (i, n) => {
+      const l = 30 + (i / (n - 1 || 1)) * 50;
+      return `hsl(48, 100%, ${l.toFixed(1)}%)`;
+    };
 
     for (let i = 0; i < sectionEntries.length; i++) {
       const [key, s] = sectionEntries[i];
-      let points, end, width, color;
+      let points, end, width, color, extra = {};
       if (s.type === 'arrow-area') {
         const raw = rawSections.get(key);
         let p1 = raw.from;
@@ -158,19 +163,20 @@ class CourseRenderer {
         points = [p1, p2];
         end = p2;
         width = s.width || 8;
-        color = s.color || '#22c55e';
+        color = s.color || sectionTint(i, sectionEntries.length);
       } else if (s.type === 'round-bouy' || s.type === 'round-buoy') {
         const arc = roundArcs.get(key);
         points = arc.arcPoints;
         end = arc.exit;
         width = s.width || 8;
-        color = s.color || '#f59e0b';
+        color = s.color || sectionTint(i, sectionEntries.length);
+        extra = { center: arc.center, entry: arc.entry, exit: arc.exit, turn: arc.turn };
       } else {
         continue;
       }
       let distance = 0;
       for (let k = 1; k < points.length; k++) distance += Course.haversine(points[k - 1], points[k]);
-      drawables.push({ kind: 'section', key, points, end, color, text: s.text || key, width, dash: s.dash || '4,4', distance });
+      drawables.push({ kind: 'section', key, points, end, color, text: s.text || key, width, dash: s.dash || '4,4', distance, ...extra });
     }
 
     return { drawables, g };
@@ -183,8 +189,9 @@ class CourseRenderer {
     const mid = Course.midpoint(p1, p2);
     const h = Course.bearing(p1, p2);
     const labelSide = side === 'right' || side === 'starboard' || side === 'bottom' ? 'right' : 'left';
-    const labelPos = Course.offsetPoint(mid, h, 18, labelSide);
-    L.marker(labelPos, { icon: this.lineLabelIcon(text), interactive: false }).addTo(this.guideLayer);
+    const labelPos = Course.offsetPoint(mid, h, 6, labelSide);
+    const labelRot = h - 90;
+    L.marker(labelPos, { icon: this.lineLabelIcon(text, labelRot), interactive: false }).addTo(this.guideLayer);
   }
 
   drawOne(d, onDrag) {
@@ -211,9 +218,19 @@ class CourseRenderer {
       }
       case 'section': {
         const pts = d.points.map(p => [p[0], p[1]]);
-        L.polyline(pts, { color: d.color, weight: d.width || 8, dashArray: d.dash, opacity: 0.8, lineCap: 'round', lineJoin: 'round' }).addTo(this.guideLayer);
-        const mid = pts[Math.floor(pts.length / 2)];
-        if (mid) L.marker(mid, { icon: this.lineLabelIcon(d.text), interactive: false }).addTo(this.guideLayer);
+        L.polyline(pts, { className: 'section-line', color: d.color, weight: d.width || 8, dashArray: d.dash, opacity: 0.8, lineCap: 'round', lineJoin: 'round' }).addTo(this.guideLayer);
+        const midIdx = Math.floor(pts.length / 2);
+        const mid = pts[midIdx];
+        if (mid) {
+          const pBefore = pts[midIdx - 1] || pts[0];
+          const pAfter = pts[midIdx + 1] || pts[pts.length - 1];
+          const h = Course.bearing(pBefore, pAfter);
+          L.marker(mid, { icon: this.lineLabelIcon(d.text, h - 90), interactive: false }).addTo(this.guideLayer);
+        }
+        if (d.center && d.entry && d.exit) {
+          L.polyline([[d.center[0], d.center[1]], [d.entry[0], d.entry[1]]], { className: 'section-line', color: d.color, weight: 1, dashArray: '2,4', opacity: 0.6 }).addTo(this.guideLayer);
+          L.polyline([[d.center[0], d.center[1]], [d.exit[0], d.exit[1]]], { className: 'section-line', color: d.color, weight: 1, dashArray: '2,4', opacity: 0.6 }).addTo(this.guideLayer);
+        }
         if (pts.length >= 2) {
           const pre = pts[pts.length - 2];
           const end = pts[pts.length - 1];
@@ -227,23 +244,54 @@ class CourseRenderer {
         return;
       }
       case 'guidePath': {
-        L.polyline(d.points, { color: '#38bdf8', weight: 3, dashArray: '6,8', opacity: 0.9 }).addTo(this.guideLayer);
-        for (let i = 1; i < d.points.length; i++) {
-          const p1 = d.points[i - 1], p2 = d.points[i];
-          const h = Course.bearing(p1, p2);
-          const mid = Course.midpoint(p1, p2);
-          L.marker(mid, { icon: this.arrowIcon(h), interactive: false }).addTo(this.guideLayer);
-        }
+        // guide path is intentionally not rendered
+        return;
+      }
+      case 'wind': {
+        L.marker([d.center[0], d.center[1]], { icon: this.windIcon(d.direction, d.speed), interactive: false }).addTo(this.guideLayer);
         return;
       }
     }
+  }
+
+  highlightSection(key) {
+    this.highlightLayer.clearLayers();
+    if (!this.lastDrawables) return;
+    const d = this.lastDrawables.find(x => x.kind === 'section' && x.key === key);
+    if (!d || !d.points) return;
+    this._drawSectionHighlight(d);
+  }
+
+  highlightAllSections() {
+    this.highlightLayer.clearLayers();
+    if (!this.lastDrawables) return;
+    for (const d of this.lastDrawables) {
+      if (d.kind === 'section' && d.points && d.points.length) this._drawSectionHighlight(d);
+    }
+  }
+
+  _drawSectionHighlight(d) {
+    const pts = d.points.map(p => [p[0], p[1]]);
+    L.polyline(pts, { className: 'animated-section', color: d.color || '#ffffff', weight: (d.width || 8) + 4, opacity: 0.75, interactive: false }).addTo(this.highlightLayer);
+    if (pts.length >= 2) {
+      const h = Course.bearing(pts[pts.length - 2], pts[pts.length - 1]);
+      L.marker(pts[pts.length - 1], { icon: this.arrowIcon(h), interactive: false }).addTo(this.highlightLayer);
+    }
+  }
+
+  clearHighlight() {
+    this.highlightLayer.clearLayers();
   }
 
   draw(course, markers, options = {}) {
     this.clear();
     const { drawables, g } = this.buildDrawables(markers, course);
     this.lastDrawables = drawables;
-    for (const d of drawables) this.drawOne(d, options.onDrag);
+    this.guide = g;
+    for (const d of drawables) {
+      if (this.hidden.size && d.key && this.hidden.has(d.key)) continue;
+      this.drawOne(d, options.onDrag);
+    }
     if (options.fit) {
       const allPts = markers.map(m => [m.lat, m.lon]);
       this.map.fitBounds(L.latLngBounds(allPts).pad(0.25));

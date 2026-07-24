@@ -23,6 +23,7 @@
       <div class="flex gap-2 mb-3">
         <button id="tab-map" class="flex-1 px-2 py-1 text-xs rounded bg-gray-700 text-white">Map</button>
         <button id="tab-sections" class="flex-1 px-2 py-1 text-xs rounded bg-gray-800 text-gray-300">Sections</button>
+        <button id="tab-sim" class="flex-1 px-2 py-1 text-xs rounded bg-gray-800 text-gray-300">Sim</button>
       </div>
       <div id="tab-map-content">
         <div class="space-y-2 mb-3">
@@ -36,8 +37,24 @@
         </div>
       </div>
       <div id="tab-sections-content" class="hidden">
-        <h3 class="font-semibold text-white text-xs mb-1">Race Sections</h3>
+        <h3 class="font-semibold text-white text-xs mb-1">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input id="check-all-sections" type="checkbox" checked> Race Sections
+          </label>
+        </h3>
         <div id="sections-list" class="space-y-1 text-xs">No sections</div>
+      </div>
+      <div id="tab-sim-content" class="hidden">
+        <h3 class="font-semibold text-white text-xs mb-2">Race Simulation</h3>
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <button id="sim-start" class="px-2 py-1 text-xs rounded bg-green-700 text-white">Start</button>
+          <button id="sim-reset" class="px-2 py-1 text-xs rounded bg-gray-700 text-white">Reset</button>
+        </div>
+        <div class="space-y-2 mb-3 text-xs">
+          <label class="flex items-center justify-between">Racers <input id="sim-racers" type="range" min="2" max="10" value="5" class="accent-accent"></label>
+          <label class="flex items-center justify-between">Speed <input id="sim-speed" type="range" min="0.5" max="3" step="0.5" value="1" class="accent-accent"></label>
+        </div>
+        <div id="sim-standings" class="space-y-1 text-xs">Press Start to simulate</div>
       </div>
     </div>
   </div>

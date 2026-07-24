@@ -1,9 +1,16 @@
 .marker-icon { display: flex; align-items: center; justify-content: center; width: 28px !important; height: 28px !important; margin-left: -14px !important; margin-top: -14px !important; }
 .marker-icon svg { width: 20px; height: 20px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.7)); }
 .marker-label { display: flex; align-items: center; justify-content: center; width: auto !important; height: 14px !important; padding: 0 4px; font-size: 10px; font-weight: bold; color: #fff; background: rgba(0,0,0,0.55); border-radius: 3px; white-space: nowrap; margin-left: 0 !important; margin-top: -30px !important; }
-.line-label { display: flex; align-items: center; justify-content: center; width: auto !important; height: 18px !important; padding: 0 6px; font-size: 10px; font-weight: bold; color: #fff; background: rgba(0,0,0,0.6); border-radius: 3px; white-space: nowrap; }
+.line-label { display: flex; align-items: center; justify-content: center; width: auto !important; height: 18px !important; padding: 0 6px; font-size: 10px; font-weight: bold; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.9); background: transparent; white-space: nowrap; }
+.animated-section { stroke-dasharray: 10 10; stroke-dashoffset: 20; animation: dash 0.6s linear infinite; }
+@keyframes dash { to { stroke-dashoffset: 0; } }
 .arrow-icon { display: flex; align-items: center; justify-content: center; width: 16px !important; height: 16px !important; margin-left: -8px !important; margin-top: -8px !important; }
 .arrow-icon svg { width: 12px; height: 12px; }
 
 .course-panel { position: absolute; top: 60px; right: 12px; z-index: 1000; max-height: calc(100vh - 80px); overflow-y: auto; }
 .course-panel * { pointer-events: auto; }
+.racer-icon { display: flex; align-items: center; justify-content: center; width: 20px !important; height: 20px !important; margin-left: -10px !important; margin-top: -10px !important; }
+.racer-icon svg { width: 14px; height: 14px; }
+.section-line, .course-arrow { transition: opacity 0.3s ease; }
+body.sim-active .section-line,
+body.sim-active .course-arrow { opacity: 0.25 !important; }

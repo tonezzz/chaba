@@ -73,7 +73,7 @@ function deriveLegs(course) {
       const zoneKey = s.bouy || s.buoy || s.zone || s.mark;
       const zone = all[zoneKey];
       const markId = (zone && zone.mark) ? zone.mark : zoneKey;
-      if (markId) legs.push({ mark: markId, rounding: s.rounding || 'starboard', label: s.text || key });
+      if (markId) legs.push({ key, mark: markId, rounding: s.rounding || 'starboard', label: s.text || key, section: s });
     }
   }
   return legs;
@@ -147,6 +147,7 @@ function buildRoundedGuide(markers, course, roundDist = 25) {
   const legs = deriveLegs(course);
   const guidePts = [startMid];
   const legInfo = [];
+  const roundArcs = new Map();
   let total = 0;
   let from = startMid;
 
@@ -164,49 +165,73 @@ function buildRoundedGuide(markers, course, roundDist = 25) {
     const mark = [m.lat, m.lon];
     const nextId = (i + 1 < legs.length) ? (legs[i + 1].mark || legs[i + 1].target) : null;
     const nextTarget = (nextId === 'finish' || !nextId) ? finishMid : coordsOf(markers, nextId);
-    const side = (leg.rounding || '').toLowerCase() === 'port' ? 'right' : 'left';
-    const r = roundDist;
+    const zoneKey = leg.section ? (leg.section.bouy || leg.section.buoy || leg.section.zone || leg.section.mark) : null;
+    const zone = zoneKey ? (course.annotations || {})[zoneKey] : null;
+    const r = (leg.section && (leg.section.rounding_radius || leg.section.radius)) || (zone && zone.radius) || roundDist;
     const startTotal = total;
-    const entry = tangentPoint(from, mark, r, side, from, mark);
-    const exit = tangentPoint(nextTarget, mark, r, side, mark, nextTarget);
-    push(entry);
-    const entryAngle = bearing(mark, entry);
-    const exitAngle = bearing(mark, exit);
-    let delta = normalizeAngle(exitAngle - entryAngle);
-    if (pointSide(entry, exit, mark) !== side) {
-      if (delta > 0) delta -= 360;
-      else delta += 360;
-    }
-    const arcSteps = 6;
-    for (let j = 1; j < arcSteps; j++) {
-      const a = entryAngle + delta * (j / arcSteps);
-      push(pointAt(mark, a, r));
-    }
-    push(exit);
-    legInfo.push({ label: leg.label || `${m.name || m.label || markId} (${side})`, distance: total - startTotal, target: m, endIdx: guidePts.length - 1 });
-    from = exit;
+    const section = leg.section || {};
+    const arc = roundBuoyArc(mark, from, nextTarget, r, leg.rounding || 'starboard', 6, section.entry_angle, section.exit_angle, section.turn);
+    roundArcs.set(leg.key, arc);
+    for (const p of arc.arcPoints) push(p);
+    legInfo.push({ key: leg.key, label: leg.label || `${m.name || m.label || markId} (${arc.side})`, distance: total - startTotal, target: m, endIdx: guidePts.length - 1 });
+    from = arc.exit;
   }
   push(finishMid);
-  return { start1, start2, startMid, finish1, finish2, finishMid, guidePts, legInfo, total, startEntry, finishEntry };
+  return { start1, start2, startMid, finish1, finish2, finishMid, guidePts, legInfo, roundArcs, total, startEntry, finishEntry };
 }
 
-function roundBuoyArc(center, prev, next, radius, rounding, steps = 6) {
-  const side = (rounding || '').toLowerCase() === 'port' ? 'right' : 'left';
-  const entry = tangentPoint(prev, center, radius, side, prev, center);
-  const exit = tangentPoint(next, center, radius, side, center, next);
-  const entryAngle = bearing(center, entry);
-  const exitAngle = bearing(center, exit);
-  let delta = normalizeAngle(exitAngle - entryAngle);
-  if (pointSide(entry, exit, center) !== side) {
-    if (delta > 0) delta -= 360;
-    else delta += 360;
+function roundBuoyArc(center, prev, next, radius, rounding, steps = 6, entryBearing = null, exitBearing = null, turn = null) {
+  // Starboard rounding keeps the mark on the right side of the boat, so the center is on the right and the turn is clockwise.
+  // Port rounding keeps the mark on the left side, so the center is on the left and the turn is counterclockwise.
+  const side = (rounding || '').toLowerCase() === 'starboard' ? 'right' : 'left';
+  let finalEntryB = entryBearing;
+  let finalExitB = exitBearing;
+  let desiredDelta = null;
+  if (turn != null && !Number.isNaN(Number(turn))) {
+    desiredDelta = Number(turn);
+    if (finalEntryB != null && finalExitB == null) {
+      finalExitB = finalEntryB + desiredDelta;
+    } else if (finalExitB != null && finalEntryB == null) {
+      finalEntryB = finalExitB - desiredDelta;
+    }
   }
+  const entry = finalEntryB != null
+    ? pointAt(center, finalEntryB, radius)
+    : tangentPoint(prev, center, radius, side, prev, center);
+  let exit = finalExitB != null
+    ? pointAt(center, finalExitB, radius)
+    : tangentPoint(next, center, radius, side, center, next);
+  const entryAngle = bearing(center, entry);
+  let exitAngle;
+  let delta;
+  if (desiredDelta != null && (entryBearing != null || exitBearing != null)) {
+    delta = desiredDelta;
+    exitAngle = entryAngle + delta;
+    if (entryBearing != null && exitBearing != null) {
+      const providedExit = pointAt(center, finalExitB, radius);
+      const providedExitAngle = bearing(center, providedExit);
+      if (Math.abs(normalizeAngle(providedExitAngle - exitAngle)) > 1) {
+        console.warn(`roundBuoyArc: turn ${turn}° conflicts with explicit entry ${entryBearing}°/exit ${exitBearing}° pair; using turn`);
+      }
+    }
+  } else {
+    exitAngle = bearing(center, exit);
+    delta = normalizeAngle(exitAngle - entryAngle);
+    // Starboard rounding should be a clockwise turn (negative delta),
+    // port rounding should be counterclockwise (positive delta).
+    if (side === 'right' && delta > 0) {
+      delta -= 360;
+    } else if (side === 'left' && delta < 0) {
+      delta += 360;
+    }
+  }
+  exit = pointAt(center, exitAngle, radius);
   const arcPoints = [entry];
   for (let j = 1; j < steps; j++) {
     arcPoints.push(pointAt(center, entryAngle + delta * (j / steps), radius));
   }
   arcPoints.push(exit);
-  return { entry, exit, arcPoints, side, entryAngle, exitAngle, radius, center };
+  return { entry, exit, arcPoints, side, entryAngle, exitAngle, radius, center, turn: desiredDelta };
 }
 
 function pointSide(p1, p2, p) {
