@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+  <meta charset='UTF-8' />
+  <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+  <title>Tony Omen · Thermal &amp; Fan Monitoring</title>
+  <script src='https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js'></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --err: #ef4444;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    h1 { margin: 0; font-size: 1.5rem; }
+    .updated { color: var(--muted); font-size: 0.9rem; }
+    button {
+      background: var(--accent);
+      border: none;
+      color: #0f172a;
+      padding: 0.5rem 1rem;
+      border-radius: 0.375rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:hover { opacity: 0.9; }
+    main {
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+    }
+    .card h2 { margin: 0 0 1rem; font-size: 1.1rem; color: var(--accent); }
+    .card h3 { margin: 0; font-size: 0.85rem; color: var(--muted); font-weight: 500; }
+    .metric {
+      text-align: center;
+    }
+    .metric .value {
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin: 0.4rem 0;
+      color: var(--text);
+    }
+    .metric .value.temp { color: var(--warn); }
+    .metric .value.fan { color: var(--accent); }
+    .metric .value.cpu { color: #38bdf8; }
+    .metric .value.mem { color: #a78bfa; }
+    .chart-wrap { position: relative; height: 280px; margin-bottom: 1.5rem; }
+    .core-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1rem;
+    }
+    .core-card {
+      background: #162032;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 0.75rem;
+      position: relative;
+      height: 140px;
+    }
+    .core-card h4 { margin: 0 0 0.4rem; font-size: 0.8rem; color: #fbbf24; }
+    .back {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.9rem;
+      display: inline-block;
+      margin-bottom: 0.25rem;
+    }
+    .back:hover { text-decoration: underline; }
+    .error { color: var(--err); }
+    .loading { color: var(--muted); }
+    @media (max-width: 640px) { header, main { padding: 1rem; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <a href='/' class='back'>← Dashboard</a>
+      <h1>Tony Omen</h1>
+      <div class='updated' id='updated'>Loading...</div>
+    </div>
+    <button id='refresh'>Refresh</button>
+  </header>
+
+  <main>
+    <section class='grid-3' id='summary'>
+      <div class='card metric'><h3>CPU</h3><div class='value cpu' id='cpu-hero'>—</div></div>
+      <div class='card metric'><h3>Memory</h3><div class='value mem' id='mem-hero'>—</div></div>
+      <div class='card metric'><h3>Hottest</h3><div class='value temp' id='temp-hero'>—</div></div>
+      <div class='card metric'><h3>Total Fan</h3><div class='value fan' id='fan-hero'>—</div></div>
+      <div class='card metric'><h3>Load 1m</h3><div class='value' id='load-hero'>—</div></div>
+      <div class='card metric'><h3>Uptime</h3><div class='value' id='uptime-hero'>—</div></div>
+      <div class='card metric'><h3>Battery</h3><div class='value' id='battery-hero'>—</div></div>
+      <div class='card metric'><h3>Avg Freq</h3><div class='value' id='freq-hero'>—</div></div>
+      <div class='card metric'><h3>Cooling</h3><div class='value' id='cooling-hero'>—</div></div>
+    </section>
+
+    <div class='grid-2'>
+      <section class='card chart-wrap'>
+        <h2>Fan Monitoring</h2>
+        <canvas id='fan-chart'></canvas>
+      </section>
+      <section class='card chart-wrap'>
+        <h2>CPU &amp; Memory</h2>
+        <canvas id='cpu-mem-chart'></canvas>
+      </section>
+    </div>
+
+    <section class='card chart-wrap'>
+      <h2>Cooling Demand</h2>
+      <canvas id='cooling-chart'></canvas>
+    </section>
+
+    <section class='card chart-wrap'>
+      <h2>Temperature History</h2>
+      <canvas id='temp-chart'></canvas>
+    </section>
+
+    <section class='card'>
+      <h2>Per-Core Temperature</h2>
+      <div class='core-grid' id='core-grid'></div>
+    </section>
+
+    <section class='card chart-wrap'>
+      <h2>Load Average</h2>
+      <canvas id='load-chart'></canvas>
+    </section>
+  </main>
+
+  <script>
+    const MAX_POINTS = 60;
+    const labels = [];
+    const dataMap = new Map();
+    const charts = {};
+    const coreCharts = {};
+
+    const PALETTE = ['#f87171','#fb923c','#fbbf24','#a3e635','#34d399','#22d3ee','#818cf8','#a78bfa','#e879f9','#fb7185','#facc15','#38bdf8','#2dd4bf','#f472b6','#60a5fa','#c084fc'];
+    function color(i) { return PALETTE[i % PALETTE.length]; }
+
+    function fmtTime(s) {
+      if (s == null || isNaN(s)) return '—';
+      const d = Math.floor(s / 86400);
+      const h = Math.floor((s % 86400) / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const parts = [];
+      if (d) parts.push(d + 'd');
+      if (h) parts.push(h + 'h');
+      if (m) parts.push(m + 'm');
+      return parts.join(' ') || Math.floor(s) + 's';
+    }
+
+    function chartOptions(yLabel, min, max) {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { labels: { color: '#e2e8f0', usePointStyle: true } } },
+        scales: {
+          x: { ticks: { color: '#94a3b8', maxTicksLimit: 6 }, grid: { color: '#334155' } },
+          y: { min, max, ticks: { color: '#94a3b8' }, grid: { color: '#334155' }, title: { display: true, color: '#94a3b8', text: yLabel } }
+        },
+        elements: { line: { tension: 0.3 }, point: { radius: 0, hitRadius: 8 } }
+      };
+    }
+
+    function coreChartOptions() {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: { legend: { display: false } },
+        scales: { x: { display: false }, y: { display: false } },
+        elements: { line: { tension: 0.3 }, point: { radius: 1 } }
+      };
+    }
+
+    function saveHistory() {
+      try {
+        localStorage.setItem('tony-omen-history', JSON.stringify({ labels, data: Object.fromEntries(dataMap) }));
+      } catch (e) {}
+    }
+
+    function loadHistory() {
+      try {
+        const raw = localStorage.getItem('tony-omen-history');
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed.labels) || typeof parsed.data !== 'object') return;
+        labels.length = 0;
+        labels.push(...parsed.labels);
+        dataMap.clear();
+        for (const [key, arr] of Object.entries(parsed.data)) {
+          dataMap.set(key, arr);
+        }
+      } catch (e) {}
+    }
+
+    function pushSnapshot(values) {
+      const now = new Date().toLocaleTimeString();
+      if (labels.length >= MAX_POINTS) {
+        labels.shift();
+        for (const arr of dataMap.values()) arr.shift();
+      }
+      for (const key of Object.keys(values)) {
+        if (!dataMap.has(key)) {
+          dataMap.set(key, new Array(labels.length).fill(null));
+        }
+      }
+      labels.push(now);
+      for (const arr of dataMap.values()) arr.push(null);
+      for (const [key, value] of Object.entries(values)) {
+        dataMap.get(key)[dataMap.get(key).length - 1] = value;
+      }
+    }
+
+    function ensureDataset(chart, key, c) {
+      if (chart.data.datasets.find(d => d.label === key)) return;
+      chart.data.datasets.push({
+        label: key,
+        data: dataMap.get(key),
+        borderColor: c,
+        borderWidth: 2,
+        spanGaps: true,
+        fill: false,
+        pointRadius: 0
+      });
+    }
+
+    function ensureChart(id, type, options) {
+      if (charts[id]) return charts[id];
+      const ctx = document.getElementById(id).getContext('2d');
+      charts[id] = new Chart(ctx, { type, data: { labels, datasets: [] }, options });
+      return charts[id];
+    }
+
+    function updateChart(chart) {
+      chart.data.labels = labels;
+      chart.update('none');
+    }
+
+    function updateCoreChart(key) {
+      if (coreCharts[key]) {
+        coreCharts[key].data.labels = labels;
+        coreCharts[key].update('none');
+        return;
+      }
+      const grid = document.getElementById('core-grid');
+      const div = document.createElement('div');
+      div.className = 'core-card';
+      div.innerHTML = '<h4>' + key + '</h4><canvas id=core-' + key.replace(/\s+/g, '-') + '></canvas>';
+      grid.appendChild(div);
+      const ctx = div.querySelector('canvas').getContext('2d');
+      coreCharts[key] = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets: [{ label: key, data: dataMap.get(key), borderColor: '#fbbf24', borderWidth: 2, tension: 0.3, pointRadius: 0, spanGaps: true }] },
+        options: coreChartOptions()
+      });
+    }
+
+    async function load() {
+      try {
+        const res = await fetch('/api/status');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const d = await res.json();
+        const host = d.host || {};
+        const sys = d.system || {};
+
+        const values = {};
+        const tempKeys = [];
+        const fanKeys = [];
+
+        for (const [group, entries] of Object.entries(host.temperatures || {})) {
+          for (const e of entries) {
+            const key = e.label || group;
+            values[key] = e.current;
+            tempKeys.push(key);
+          }
+        }
+        for (const [group, entries] of Object.entries(host.fans || {})) {
+          for (const e of entries) {
+            const key = e.label || group;
+            values[key] = e.current;
+            fanKeys.push(key);
+          }
+        }
+
+        values['CPU'] = host.cpu_percent;
+        values['Memory'] = host.memory.percent;
+        values['Load 1m'] = host.load_average['1m'];
+        values['Load 5m'] = host.load_average['5m'];
+        values['Load 15m'] = host.load_average['15m'];
+        (host.cpu_per_core || []).forEach((v, i) => { values['CPU ' + i] = v; });
+
+        const cooling = host.cooling || {};
+        const coolingKeys = [];
+        for (const [name, e] of Object.entries(cooling)) {
+          if (!e.max_state) continue;
+          const key = 'Cooling ' + name;
+          values[key] = (e.cur_state / e.max_state) * 100;
+          coolingKeys.push(key);
+        }
+
+        pushSnapshot(values);
+
+        const hottest = tempKeys.length ? tempKeys.reduce((m, k) => {
+          const c = values[k];
+          if (c == null) return m;
+          return m == null || c > m.current ? { key: k, current: c } : m;
+        }, null) : null;
+        const totalFan = fanKeys.reduce((s, k) => s + (values[k] || 0), 0);
+
+        document.getElementById('cpu-hero').textContent = (host.cpu_percent != null ? host.cpu_percent.toFixed(1) : '—') + '%';
+        document.getElementById('mem-hero').textContent = (host.memory ? host.memory.percent.toFixed(1) : '—') + '%';
+        document.getElementById('temp-hero').textContent = hottest ? hottest.current.toFixed(1) + '°C' : '—';
+        document.getElementById('fan-hero').textContent = totalFan ? totalFan.toLocaleString() + ' RPM' : '—';
+        document.getElementById('load-hero').textContent = host.load_average ? host.load_average['1m'].toFixed(2) : '—';
+        document.getElementById('uptime-hero').textContent = fmtTime(sys.uptime_seconds);
+
+        const battery = host.battery;
+        document.getElementById('battery-hero').textContent = battery ? battery.percent.toFixed(0) + '%' + (battery.power_plugged ? ' AC' : '') : '—';
+        const freqs = host.cpu_freq || [];
+        const avgFreq = freqs.length ? freqs.reduce((s, f) => s + (f.current || 0), 0) / freqs.length : null;
+        document.getElementById('freq-hero').textContent = avgFreq ? avgFreq.toFixed(0) + ' MHz' : '—';
+
+        const coolingEntries = Object.values(cooling);
+        const avgCooling = coolingEntries.length ? coolingEntries.reduce((s, e) => s + (e.max_state ? (e.cur_state / e.max_state * 100) : 0), 0) / coolingEntries.length : null;
+        document.getElementById('cooling-hero').textContent = avgCooling ? avgCooling.toFixed(0) + '%' : '—';
+
+        const fanChart = ensureChart('fan-chart', 'line', chartOptions('RPM', 0, 6000));
+        fanKeys.forEach((k, i) => ensureDataset(fanChart, k, color(i)));
+        updateChart(fanChart);
+
+        const tempChart = ensureChart('temp-chart', 'line', chartOptions('°C', 0, 120));
+        tempKeys.forEach((k, i) => ensureDataset(tempChart, k, color(i)));
+        updateChart(tempChart);
+
+        const cmChart = ensureChart('cpu-mem-chart', 'line', chartOptions('%', 0, 100));
+        ensureDataset(cmChart, 'CPU', '#38bdf8');
+        ensureDataset(cmChart, 'Memory', '#a78bfa');
+        updateChart(cmChart);
+
+        const loadChart = ensureChart('load-chart', 'line', chartOptions('load', 0, 15));
+        ensureDataset(loadChart, 'Load 1m', '#f87171');
+        ensureDataset(loadChart, 'Load 5m', '#fbbf24');
+        ensureDataset(loadChart, 'Load 15m', '#34d399');
+        updateChart(loadChart);
+
+        const coolingChart = ensureChart('cooling-chart', 'line', chartOptions('%', 0, 100));
+        coolingKeys.forEach((k, i) => ensureDataset(coolingChart, k, color(i)));
+        updateChart(coolingChart);
+
+        const fanSection = document.getElementById('fan-chart').closest('section');
+        if (fanSection) fanSection.style.display = fanKeys.length ? '' : 'none';
+
+        tempKeys.filter(k => k.startsWith('Core')).forEach(k => updateCoreChart(k));
+
+        const ts = new Date(sys.timestamp);
+        document.getElementById('updated').textContent = 'Updated: ' + ts.toLocaleString();
+        saveHistory();
+      } catch (err) {
+        document.getElementById('updated').innerHTML = '<span class=error>Error: ' + err.message + '</span>';
+      }
+    }
+
+    document.getElementById('refresh').addEventListener('click', load);
+    loadHistory();
+    load();
+    setInterval(load, 3000);
+  </script>
+</body>
+</html>

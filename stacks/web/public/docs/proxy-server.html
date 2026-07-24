@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>proxy-server docs</title>
+<style>
+body { font-family: monospace; background: #111; color: #0f0; padding: 2em; }
+h1 { color: #0ff; }
+pre { white-space: pre-wrap; word-break: break-all; background: #1a1a1a; padding: 1em; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1>/home/tony/CascadeProjects/chaba-h3/proxy-server.mjs</h1>
+<pre>import { createReadStream, readFileSync, writeFileSync } from &#x27;node:fs&#x27;;
+import { stat } from &#x27;node:fs/promises&#x27;;
+import { extname, join, normalize } from &#x27;node:path&#x27;;
+import { fileURLToPath } from &#x27;node:url&#x27;;
+import { createServer } from &#x27;node:http&#x27;;
+import { timingSafeEqual } from &#x27;node:crypto&#x27;;
+import { WebSocketServer, WebSocket } from &#x27;ws&#x27;;
+
+const port = Number.parseInt(process.env.PORT ?? &#x27;8080&#x27;, 10);
+const basicAuthUser = process.env.BASIC_AUTH_USER;
+const basicAuthPassword = process.env.BASIC_AUTH_PASSWORD;
+const publicDirectory = fileURLToPath(new URL(&#x27;./public/&#x27;, import.meta.url));
+const statusFile = process.env.STATUS_FILE ?? normalize(join(publicDirectory, &#x27;..&#x27;, &#x27;status.json&#x27;));
+const reportToken = process.env.REPORT_TOKEN;
+const knownHostNames = [&#x27;Tony Dell&#x27;, &#x27;Tony Omen&#x27;, &#x27;Android TV Box&#x27;];
+const reportStaleMs = Number.parseInt(process.env.REPORT_STALE_MS ?? &#x27;120000&#x27;, 10);
+function loadStatuses() {
+  try { return JSON.parse(readFileSync(statusFile, &#x27;utf8&#x27;)); } catch { return []; }
+}
+const contentTypes = {
+  &#x27;.css&#x27;: &#x27;text/css; charset=utf-8&#x27;,
+  &#x27;.html&#x27;: &#x27;text/html; charset=utf-8&#x27;,
+  &#x27;.ico&#x27;: &#x27;image/x-icon&#x27;,
+  &#x27;.jpg&#x27;: &#x27;image/jpeg&#x27;,
+  &#x27;.js&#x27;: &#x27;text/javascript; charset=utf-8&#x27;,
+  &#x27;.json&#x27;: &#x27;application/json; charset=utf-8&#x27;,
+  &#x27;.png&#x27;: &#x27;image/png&#x27;,
+  &#x27;.svg&#x27;: &#x27;image/svg+xml&#x27;
+};
+
+function matchesSecret(value, secret) {
+  const valueBuffer = Buffer.from(value);
+  const secretBuffer = Buffer.from(secret);
+  return valueBuffer.length === secretBuffer.length &amp;&amp; timingSafeEqual(valueBuffer, secretBuffer);
+}
+
+function isAuthorized(request) {
+  const authorization = request.headers.authorization;
+  if (!authorization?.startsWith(&#x27;Basic &#x27;)) return false;
+
+  try {
+    const credentials = Buffer.from(authorization.slice(6), &#x27;base64&#x27;).toString(&#x27;utf8&#x27;);
+    const separatorIndex = credentials.indexOf(&#x27;:&#x27;);
+    if (separatorIndex === -1) return false;
+
+    const username = credentials.slice(0, separatorIndex);
+    const password = credentials.slice(separatorIndex + 1);
+    return matchesSecret(username, basicAuthUser) &amp;&amp; matchesSecret(password, basicAuthPassword);
+  } catch {
+    return false;
+  }
+}
+
+const server = createServer(async (request, response) =&gt; {
+  response.setHeader(&#x27;X-Content-Type-Options&#x27;, &#x27;nosniff&#x27;);
+  response.setHeader(&#x27;X-Frame-Options&#x27;, &#x27;SAMEORIGIN&#x27;);
+  response.setHeader(&#x27;Referrer-Policy&#x27;, &#x27;strict-origin-when-cross-origin&#x27;);
+  response.setHeader(&#x27;Strict-Transport-Security&#x27;, &#x27;max-age=31536000&#x27;);
+
+  const pathname = decodeURIComponent(new URL(request.url ?? &#x27;/&#x27;, &#x27;http://localhost&#x27;).pathname);
+
+  if (pathname === &#x27;/health&#x27;) {
+    response.writeHead(200, { &#x27;Content-Type&#x27;: &#x27;application/json; charset=utf-8&#x27; });
+    response.end(JSON.stringify({ status: &#x27;ok&#x27; }));
+    return;
+  }
+
+  if (pathname === &#x27;/api/report&#x27; &amp;&amp; request.method === &#x27;POST&#x27;) {
+    const providedToken = new URL(request.url, &#x27;http://localhost&#x27;).searchParams.get(&#x27;token&#x27;) ?? request.headers[&#x27;x-report-token&#x27;];
+    if (reportToken &amp;&amp; providedToken !== reportToken) {
+      response.writeHead(403, { &#x27;Content-Type&#x27;: &#x27;text/plain; charset=utf-8&#x27; });
+      response.end(&#x27;Forbidden&#x27;);
+      return;
+    }
+
+    const chunks = [];
+    for await (const chunk of request) chunks.push(chunk);
+    const body = Buffer.concat(chunks).toString(&#x27;utf8&#x27;);
+    try {
+      const report = JSON.parse(body);
+      if (typeof report.name !== &#x27;string&#x27; || typeof report.status !== &#x27;string&#x27;) {
+        throw new Error(&#x27;name and status are required&#x27;);
+      }
+      const statuses = loadStatuses();
+      const idx = statuses.findIndex((s) =&gt; s.name === report.name);
+      const record = { name: report.name, status: report.status, reportedAt: Date.now() };
+      if (report.temp !== undefined) record.temp = report.temp;
+      if (report.fan !== undefined) record.fan = report.fan;
+      if (idx === -1) statuses.push(record); else statuses[idx] = record;
+      writeFileSync(statusFile, JSON.stringify(statuses, null, 2));
+      response.writeHead(200, { &#x27;Content-Type&#x27;: &#x27;application/json; charset=utf-8&#x27; });
+      response.end(JSON.stringify({ ok: true }));
+    } catch (err) {
+      response.writeHead(400, { &#x27;Content-Type&#x27;: &#x27;application/json; charset=utf-8&#x27; });
+      response.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  if (!basicAuthUser || !basicAuthPassword) {
+    response.writeHead(503, { &#x27;Content-Type&#x27;: &#x27;text/plain; charset=utf-8&#x27; });
+    response.end(&#x27;Authentication is not configured&#x27;);
+    return;
+  }
+
+  if (!isAuthorized(request)) {
+    response.writeHead(401, {
+      &#x27;Content-Type&#x27;: &#x27;text/plain; charset=utf-8&#x27;,
+      &#x27;WWW-Authenticate&#x27;: &#x27;Basic realm=&quot;chaba.h3&quot;, charset=&quot;UTF-8&quot;&#x27;
+    });
+    response.end(&#x27;Authentication required&#x27;);
+    return;
+  }
+
+  if (pathname === &#x27;/api/hosts&#x27;) {
+    const statuses = loadStatuses();
+    const now = Date.now();
+    const probes = knownHostNames.map((name) =&gt; {
+      const rec = statuses.find((s) =&gt; s.name === name);
+      const online = rec &amp;&amp; rec.status === &#x27;online&#x27; &amp;&amp; (now - rec.reportedAt) &lt; reportStaleMs;
+      return { name, status: online ? &#x27;online&#x27; : &#x27;offline&#x27; };
+    });
+
+    response.writeHead(200, { &#x27;Content-Type&#x27;: &#x27;application/json; charset=utf-8&#x27; });
+    response.end(JSON.stringify(probes));
+    return;
+  }
+
+  if (pathname.startsWith(&#x27;/api/status/&#x27;)) {
+    const name = decodeURIComponent(pathname.slice(&#x27;/api/status/&#x27;.length));
+    const statuses = loadStatuses();
+    const rec = statuses.find((s) =&gt; s.name === name);
+    if (!rec) {
+      response.writeHead(404, { &#x27;Content-Type&#x27;: &#x27;application/json; charset=utf-8&#x27; });
+      response.end(JSON.stringify({ error: &#x27;not found&#x27; }));
+      return;
+    }
+    response.writeHead(200, { &#x27;Content-Type&#x27;: &#x27;application/json; charset=utf-8&#x27; });
+    response.end(JSON.stringify(rec));
+    return;
+  }
+
+  const requestedPath = pathname === &#x27;/&#x27; ? &#x27;index.html&#x27; : pathname === &#x27;/hosts&#x27; || pathname === &#x27;/hosts/&#x27; ? &#x27;hosts/index.html&#x27; : pathname === &#x27;/tony-omen&#x27; || pathname === &#x27;/tony-omen/&#x27; ? &#x27;tony-omen/index.html&#x27; : pathname.slice(1);
+  const filePath = normalize(join(publicDirectory, requestedPath));
+
+  if (!filePath.startsWith(publicDirectory)) {
+    response.writeHead(403, { &#x27;Content-Type&#x27;: &#x27;text/plain; charset=utf-8&#x27; });
+    response.end(&#x27;Forbidden&#x27;);
+    return;
+  }
+
+  try {
+    const file = await stat(filePath);
+    if (!file.isFile()) throw new Error(&#x27;Not a file&#x27;);
+
+    response.writeHead(200, {
+      &#x27;Content-Type&#x27;: contentTypes[extname(filePath).toLowerCase()] ?? &#x27;application/octet-stream&#x27;,
+      &#x27;Content-Length&#x27;: file.size
+    });
+    createReadStream(filePath).pipe(response);
+  } catch {
+    response.writeHead(404, { &#x27;Content-Type&#x27;: &#x27;text/plain; charset=utf-8&#x27; });
+    response.end(&#x27;Not found&#x27;);
+  }
+});
+
+// WebSocket tunnel endpoints
+const tunnelToken = process.env.TUNNEL_TOKEN;
+const wssClient = new WebSocketServer({ noServer: true });
+const wssUser = new WebSocketServer({ noServer: true });
+let tunnelClient = null;
+let tunnelUser = null;
+
+function checkTunnelToken(request) {
+  if (!tunnelToken) return true;
+  const token = new URL(request.url, &#x27;http://localhost&#x27;).searchParams.get(&#x27;token&#x27;);
+  return token === tunnelToken;
+}
+
+wssClient.on(&#x27;connection&#x27;, (ws) =&gt; {
+  tunnelClient = ws;
+  ws.on(&#x27;message&#x27;, (data) =&gt; {
+    if (tunnelUser &amp;&amp; tunnelUser.readyState === WebSocket.OPEN) {
+      tunnelUser.send(data);
+    }
+  });
+  ws.on(&#x27;close&#x27;, () =&gt; {
+    tunnelClient = null;
+    if (tunnelUser) tunnelUser.close();
+  });
+  ws.on(&#x27;error&#x27;, (err) =&gt; console.error(&#x27;tunnel client error&#x27;, err.message));
+});
+
+wssUser.on(&#x27;connection&#x27;, (ws) =&gt; {
+  if (!tunnelClient || tunnelClient.readyState !== WebSocket.OPEN) {
+    ws.close();
+    return;
+  }
+  if (tunnelUser) tunnelUser.close();
+  tunnelUser = ws;
+  ws.on(&#x27;message&#x27;, (data) =&gt; {
+    if (tunnelClient &amp;&amp; tunnelClient.readyState === WebSocket.OPEN) {
+      tunnelClient.send(data);
+    }
+  });
+  ws.on(&#x27;close&#x27;, () =&gt; {
+    tunnelUser = null;
+  });
+  ws.on(&#x27;error&#x27;, (err) =&gt; console.error(&#x27;tunnel user error&#x27;, err.message));
+});
+
+server.on(&#x27;upgrade&#x27;, (request, socket, head) =&gt; {
+  if (!checkTunnelToken(request)) {
+    socket.destroy();
+    return;
+  }
+  const pathname = new URL(request.url, &#x27;http://localhost&#x27;).pathname;
+  if (pathname === &#x27;/tunnel&#x27;) {
+    wssClient.handleUpgrade(request, socket, head, (ws) =&gt; {
+      wssClient.emit(&#x27;connection&#x27;, ws, request);
+    });
+  } else if (pathname === &#x27;/connect&#x27;) {
+    wssUser.handleUpgrade(request, socket, head, (ws) =&gt; {
+      wssUser.emit(&#x27;connection&#x27;, ws, request);
+    });
+  } else {
+    socket.destroy();
+  }
+});
+
+server.listen(port, &#x27;0.0.0.0&#x27;, () =&gt; {
+  process.stdout.write(`chaba.h3 listening on port ${port}\n`);
+});
+</pre>
+</body>
+</html>

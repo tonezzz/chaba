@@ -52,7 +52,7 @@ fi
 
 # ── COLMAP ────────────────────────────────────────────────────────────────────
 echo "[2/2] Running COLMAP SfM pipeline..."
-docker compose run \
+docker compose -f stacks/ai/docker-compose.yml run \
     -e SOURCE_PATH=/data/$(basename "$OUTPUT_PATH") \
     -e CAMERA_MODEL="$CAMERA_MODEL" \
     colmap
@@ -63,4 +63,4 @@ echo "    $OUTPUT_PATH/images/   — undistorted images"
 echo "    $OUTPUT_PATH/sparse/0/ — COLMAP sparse model"
 echo ""
 echo "Now train with:"
-echo "  docker compose run 3dgs train -s /data/$(basename "$OUTPUT_PATH") -m /outputs/$(basename "$OUTPUT_PATH")"
+echo "  docker compose -f stacks/ai/docker-compose.yml run 3dgs train -s /data/$(basename "$OUTPUT_PATH") -m /outputs/$(basename "$OUTPUT_PATH")"

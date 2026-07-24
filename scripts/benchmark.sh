@@ -28,15 +28,15 @@ extract_metrics() {
 echo "=== Computing metrics for all methods ==="
 
 # 3DGS
-docker compose run 3dgs metrics -m "$OUTPUT_BASE/3dgs" 2>/dev/null || true
+docker compose -f stacks/ai/docker-compose.yml run 3dgs metrics -m "$OUTPUT_BASE/3dgs" 2>/dev/null || true
 extract_metrics "3dgs" "$OUTPUT_BASE/3dgs/results.json"
 
 # Mip-Splatting
-docker compose run -e VARIANT=mip variants metrics -m "$OUTPUT_BASE/mip" 2>/dev/null || true
+docker compose -f stacks/ai/docker-compose.yml run -e VARIANT=mip variants metrics -m "$OUTPUT_BASE/mip" 2>/dev/null || true
 extract_metrics "mip-splatting" "$OUTPUT_BASE/mip/results.json"
 
 # 2DGS
-docker compose run -e VARIANT=2dgs variants metrics -m "$OUTPUT_BASE/2dgs" 2>/dev/null || true
+docker compose -f stacks/ai/docker-compose.yml run -e VARIANT=2dgs variants metrics -m "$OUTPUT_BASE/2dgs" 2>/dev/null || true
 extract_metrics "2dgs" "$OUTPUT_BASE/2dgs/results.json"
 
 echo ""
