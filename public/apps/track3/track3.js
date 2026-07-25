@@ -617,6 +617,8 @@ function setupCourseControls() {
     setupToggles();
     setupTabs();
     setupSim();
+    activateTab('sim');
+    startSim();
     setupCourseControls();
   } catch (err) {
     console.error('failed to load course data', err);
