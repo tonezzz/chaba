@@ -122,7 +122,7 @@ function updateSections(drawables) {
 }
 
 function activateTab(which) {
-  for (const t of ['map', 'sections', 'sim']) {
+  for (const t of ['course', 'map', 'sections', 'sim']) {
     const btn = document.getElementById(`tab-${t}`);
     const content = document.getElementById(`tab-${t}-content`);
     if (!btn || !content) continue;
@@ -139,7 +139,7 @@ function activateTab(which) {
 }
 
 function setupTabs() {
-  for (const t of ['map', 'sections', 'sim']) {
+  for (const t of ['course', 'map', 'sections', 'sim']) {
     const btn = document.getElementById(`tab-${t}`);
     if (btn) btn.onclick = () => activateTab(t);
   }

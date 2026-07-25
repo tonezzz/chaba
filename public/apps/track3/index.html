@@ -17,41 +17,45 @@
   <div class="relative">
     <div id="map"></div>
     <div class="course-panel bg-card/95 border border-gray-700 rounded-lg p-4 shadow-lg w-80 text-sm">
-      <h2 class="font-semibold text-white mb-2">Race Course Guide</h2>
-      <div id="summary" class="text-xs text-gray-400 mb-3">Loading...</div>
-      <div id="brief" class="text-xs text-gray-300 mb-3"></div>
-
-      <div class="mb-3 border-b border-gray-700 pb-3">
-        <h3 class="font-semibold text-white text-xs mb-2">Course</h3>
-        <div class="flex gap-1 mb-2">
-          <input id="course-name" type="text" placeholder="name" class="flex-1 px-2 py-1 text-xs rounded bg-gray-800 border border-gray-600 text-white" value="">
-          <button id="btn-save" class="px-2 py-1 text-xs rounded bg-accent text-white">Save</button>
-        </div>
-        <div class="flex gap-1 mb-2">
-          <select id="course-select" class="flex-1 px-2 py-1 text-xs rounded bg-gray-800 border border-gray-600 text-white">
-            <option value="">Load course...</option>
-          </select>
-          <button id="btn-load" class="px-2 py-1 text-xs rounded bg-gray-700 text-white">Load</button>
-        </div>
-        <div id="course-msg" class="text-xs text-accent min-h-[1em]"></div>
-      </div>
-
       <div class="flex gap-2 mb-3">
-        <button id="tab-map" class="flex-1 px-2 py-1 text-xs rounded bg-gray-700 text-white">Map</button>
+        <button id="tab-course" class="flex-1 px-2 py-1 text-xs rounded bg-gray-700 text-white">Course</button>
+        <button id="tab-map" class="flex-1 px-2 py-1 text-xs rounded bg-gray-800 text-gray-300">Map</button>
         <button id="tab-sections" class="flex-1 px-2 py-1 text-xs rounded bg-gray-800 text-gray-300">Sections</button>
         <button id="tab-sim" class="flex-1 px-2 py-1 text-xs rounded bg-gray-800 text-gray-300">Sim</button>
       </div>
-      <div id="tab-map-content">
+
+      <div id="tab-course-content">
+        <h2 class="font-semibold text-white mb-2">Race Course Guide</h2>
+        <div id="summary" class="text-xs text-gray-400 mb-3">Loading...</div>
+        <div id="brief" class="text-xs text-gray-300 mb-3"></div>
+        <div class="border-t border-gray-700 pt-2 mb-3">
+          <h3 class="font-semibold text-white text-xs mb-1">Legs</h3>
+          <div id="legs" class="space-y-1 text-xs">Loading...</div>
+        </div>
+        <div class="border-t border-gray-700 pt-3">
+          <h3 class="font-semibold text-white text-xs mb-2">Save / Load</h3>
+          <div class="flex gap-1 mb-2">
+            <input id="course-name" type="text" placeholder="name" class="flex-1 px-2 py-1 text-xs rounded bg-gray-800 border border-gray-600 text-white" value="">
+            <button id="btn-save" class="px-2 py-1 text-xs rounded bg-accent text-white">Save</button>
+          </div>
+          <div class="flex gap-1 mb-2">
+            <select id="course-select" class="flex-1 px-2 py-1 text-xs rounded bg-gray-800 border border-gray-600 text-white">
+              <option value="">Load course...</option>
+            </select>
+            <button id="btn-load" class="px-2 py-1 text-xs rounded bg-gray-700 text-white">Load</button>
+          </div>
+          <div id="course-msg" class="text-xs text-accent min-h-[1em]"></div>
+        </div>
+      </div>
+
+      <div id="tab-map-content" class="hidden">
         <div class="space-y-2 mb-3">
           <label class="flex items-center gap-2 text-xs cursor-pointer"><input id="toggle-guide" type="checkbox" checked class="accent-accent"> แสดงเส้นทาง</label>
           <label class="flex items-center gap-2 text-xs cursor-pointer"><input id="toggle-markers" type="checkbox" checked class="accent-accent"> แสดงทุ่น</label>
           <label class="flex items-center gap-2 text-xs cursor-pointer"><input id="toggle-zones" type="checkbox" checked class="accent-accent"> แสดงวงรอบทุ่น</label>
         </div>
-        <div class="border-t border-gray-700 pt-2">
-          <h3 class="font-semibold text-white text-xs mb-1">Legs</h3>
-          <div id="legs" class="space-y-1 text-xs">Loading...</div>
-        </div>
       </div>
+
       <div id="tab-sections-content" class="hidden">
         <h3 class="font-semibold text-white text-xs mb-1">
           <label class="flex items-center gap-2 cursor-pointer">
