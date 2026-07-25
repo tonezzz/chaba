@@ -15,6 +15,7 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
 const raceLayer = L.layerGroup().addTo(map);
 const boatColors = ['#ef4444','#22c55e','#3b82f6','#f59e0b','#a855f7','#ec4899','#06b6d4','#eab308','#6366f1','#14b8a6'];
 let simState = { running: false, rafId: null, elapsed: 0, racers: [], speedFactor: 1, lastTs: 0, path: null };
+let highlightedRacer = null;
 
 function getMergedMarkers() {
   return Object.entries(courseData.markers || {}).map(([id, m]) => ({ id, ...m, ...(state.overrides[id] || {}) }));
@@ -258,7 +259,7 @@ function buildSectionRanges(pts, cum, guide) {
       }
     }
     if (endDist != null && endDist > ranges[ranges.length - 1].endDist) {
-      ranges.push({ endDist, text: s.text || key });
+      ranges.push({ key, endDist, text: s.text || key });
     }
   }
   return ranges;
@@ -297,6 +298,7 @@ function updateRacer(r, dt) {
   }
   r.marker.setLatLng(pos);
   r.marker.setIcon(boatIcon(r.color, heading));
+  if (r.hoverMarker) r.hoverMarker.setLatLng(pos);
 }
 
 function simStep(ts) {
@@ -315,6 +317,7 @@ function simStep(ts) {
 
 function initRacers() {
   if (!renderer.guide || !renderer.guide.guidePts.length) return;
+  highlightedRacer = null;
   simState.path = buildSimPath();
   const pts = simState.path.pts;
   const { beachBearing, lineLen } = simState.path;
@@ -368,6 +371,37 @@ function currentSection(r) {
   return 'Finished';
 }
 
+function currentSectionKey(r) {
+  if (r.finished) return null;
+  const ranges = (simState.path && simState.path.sectionRanges) || [];
+  for (const range of ranges) {
+    if (r.distance < range.endDist) return range.key || null;
+  }
+  return null;
+}
+
+function highlightRacer(r) {
+  clearRacerHighlight();
+  highlightedRacer = r;
+  if (!r) return;
+  r.marker.setZIndexOffset(10000);
+  const pos = r.marker.getLatLng();
+  r.hoverMarker = L.circleMarker([pos.lat, pos.lng], { radius: 14, color: r.color, weight: 3, fillColor: r.color, fillOpacity: 0.25, opacity: 0.9 }).addTo(raceLayer);
+  const key = currentSectionKey(r);
+  if (key && renderer) renderer.highlightSection(key);
+}
+
+function clearRacerHighlight() {
+  if (!highlightedRacer) return;
+  highlightedRacer.marker.setZIndexOffset(1000);
+  if (highlightedRacer.hoverMarker) {
+    raceLayer.removeLayer(highlightedRacer.hoverMarker);
+    highlightedRacer.hoverMarker = null;
+  }
+  highlightedRacer = null;
+  if (renderer) renderer.clearHighlight();
+}
+
 function updateSimStandings() {
   const el = document.getElementById('sim-standings');
   if (!simState.racers.length) { el.textContent = 'Press Start to simulate'; return; }
@@ -375,7 +409,7 @@ function updateSimStandings() {
   const sorted = [...simState.racers].sort((a, b) => b.distance - a.distance);
   const pct = d => total ? (d / total * 100).toFixed(0) : 0;
   const rows = sorted.map((r, i) => `
-    <tr class="align-middle whitespace-nowrap">
+    <tr class="align-middle whitespace-nowrap" data-name="${r.name}">
       <td class="text-left py-0.5 pr-1 truncate">${i + 1}. <span style="color:${r.color}">●</span> ${r.name}</td>
       <td class="text-left py-0.5 px-1 text-gray-400 truncate">${currentSection(r)}</td>
       <td class="text-right py-0.5 px-1 text-gray-400 w-12">${r.finished ? '' : pct(r.distance)}</td>
@@ -425,6 +459,20 @@ function setupSim() {
   document.getElementById('sim-reset').onclick = () => { stopSim(); initRacers(); };
   document.getElementById('sim-racers').oninput = () => { stopSim(); initRacers(); };
   document.getElementById('sim-speed').oninput = (e) => { simState.speedFactor = parseFloat(e.target.value) || 1; };
+  const standingsEl = document.getElementById('sim-standings');
+  if (standingsEl) {
+    standingsEl.onmouseover = (e) => {
+      const tr = e.target.closest('tr[data-name]');
+      if (!tr) return;
+      const r = simState.racers.find(x => x.name === tr.dataset.name);
+      if (r) highlightRacer(r);
+    };
+    standingsEl.onmouseout = (e) => {
+      const tr = e.target.closest('tr[data-name]');
+      if (!tr) return;
+      clearRacerHighlight();
+    };
+  }
 }
 
 function showCourseMsg(text) {
