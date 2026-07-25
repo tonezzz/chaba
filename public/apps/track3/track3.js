@@ -334,10 +334,13 @@ function initRacers() {
     const h = Course.bearing(pts[0], pts[1] || pts[0]);
     const startPos = Course.pointAt(pts[0], beachBearing, startOffset);
     const marker = L.marker(startPos, { icon: boatIcon(color, h), zIndexOffset: 1000 }).addTo(raceLayer);
-    simState.racers.push({
+    marker.on('mouseover', () => highlightRacer(r));
+    marker.on('mouseout', clearRacerHighlight);
+    const r = {
       name: `Boat ${i + 1}`, color, baseSpeed: 5 + Math.random() * 4,
       startOffset, lanes, distance: 0, finished: false, marker, speed: 0, heading: h
-    });
+    };
+    simState.racers.push(r);
   }
   updateSimStandings();
 }

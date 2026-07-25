@@ -167,10 +167,10 @@ function buildRoundedGuide(markers, course, roundDist = 25) {
     const nextTarget = (nextId === 'finish' || !nextId) ? finishMid : coordsOf(markers, nextId);
     const zoneKey = leg.section ? (leg.section.bouy || leg.section.buoy || leg.section.zone || leg.section.mark) : null;
     const zone = zoneKey ? (course.annotations || {})[zoneKey] : null;
-    const r = (leg.section && (leg.section.rounding_radius || leg.section.radius)) || (zone && zone.radius) || roundDist;
+    const arcRadius = ((leg.section && (leg.section.rounding_radius || leg.section.radius)) || (zone && zone.radius) || roundDist) / 2;
     const startTotal = total;
     const section = leg.section || {};
-    const arc = roundBuoyArc(mark, from, nextTarget, r, leg.rounding || 'starboard', 6, section.entry_angle, section.exit_angle, section.turn);
+    const arc = roundBuoyArc(mark, from, nextTarget, arcRadius, leg.rounding || 'starboard', 6, section.entry_angle, section.exit_angle, section.turn);
     roundArcs.set(leg.key, arc);
     for (const p of arc.arcPoints) push(p);
     legInfo.push({ key: leg.key, label: leg.label || `${m.name || m.label || markId} (${arc.side})`, distance: total - startTotal, target: m, endIdx: guidePts.length - 1 });
