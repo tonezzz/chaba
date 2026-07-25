@@ -1,0 +1,37 @@
+/* Standard styles for Facebook Page Plugin containers */
+.fb-shortcode-container, 
+.fb-widget-container {
+    min-height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+/* Loader styling */
+.fb_loader {
+    padding: 20px;
+    text-align: center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+}
+
+.fb_loader img {
+    width: 32px;
+    height: auto;
+}
+
+/* Smooth fade-in for the Facebook Page once loaded */
+.fb-page {
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.fb-page.fb_plugin_rendered {
+    opacity: 1 !important;
+}
