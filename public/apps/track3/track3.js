@@ -595,8 +595,15 @@ function setupCourseControls() {
   document.getElementById('btn-load').onclick = () => { if (sel && sel.value) loadCourse(sel.value); };
 }
 
+const urlParams = new URLSearchParams(window.location.search);
+const simOnly = urlParams.get('view') === 'sim';
+
 (async function init() {
   try {
+    if (simOnly) {
+      document.getElementById('app-nav').style.display = 'none';
+      document.querySelector('.course-panel').style.display = 'none';
+    }
     const appsText = await (await fetch('/apps/apps.yml')).text();
     const appData = jsyaml.load(appsText);
     document.getElementById('app-nav').innerHTML = ChabaNav.renderNav(appData.nav);
