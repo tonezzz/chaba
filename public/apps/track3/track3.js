@@ -1,5 +1,7 @@
 const ROUND_DIST = 25;
 const STORAGE_KEY = 'track3-marker-overrides';
+const COURSE_ID = 'tabsai-ws8-track3';
+let saveTimer = null;
 let courseData = null;
 let renderer = null;
 let state = { overrides: {}, hidden: new Set() };
@@ -19,9 +21,36 @@ function getMergedMarkers() {
 }
 function saveOverrides() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.overrides)); } catch (e) { console.warn('failed to save overrides', e); }
+  saveToServer();
 }
 function loadOverrides() {
   try { state.overrides = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { state.overrides = {}; }
+}
+
+async function loadServerState() {
+  try {
+    const r = await fetch(`api/load.php?course=${COURSE_ID}`);
+    if (!r.ok) throw new Error(`load ${r.status}`);
+    const data = await r.json();
+    if (data && typeof data === 'object') {
+      if (data.overrides && typeof data.overrides === 'object') state.overrides = data.overrides;
+      if (Array.isArray(data.hidden)) state.hidden = new Set(data.hidden);
+    }
+  } catch (e) { console.warn('server load failed, using local overrides', e); }
+}
+
+function saveToServer() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try {
+      const payload = { course: COURSE_ID, overrides: state.overrides, hidden: [...state.hidden] };
+      await fetch('api/save.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (e) { console.warn('server save failed', e); }
+  }, 500);
 }
 
 
@@ -57,6 +86,7 @@ function updateSections(drawables) {
         if (e.target.checked) state.hidden.delete(s.key);
         else state.hidden.add(s.key);
       }
+      saveToServer();
       render(false);
     };
   }
@@ -77,6 +107,7 @@ function updateSections(drawables) {
     `;
     row.querySelector('input').onchange = (e) => {
       if (e.target.checked) state.hidden.delete(s.key); else state.hidden.add(s.key);
+      saveToServer();
       render(false);
     };
     row.querySelector('button').onclick = () => {
@@ -397,10 +428,11 @@ function setupSim() {
 
 Promise.all([fetch('/apps/apps.yml'), fetch('/apps/track3/courses/tabsai-ws8-track3.yml')])
   .then(rs => Promise.all(rs.map(r => r.text())))
-  .then(([appsText, courseText]) => {
+  .then(async ([appsText, courseText]) => {
     const appData = jsyaml.load(appsText);
     courseData = jsyaml.load(courseText);
     loadOverrides();
+    await loadServerState();
     renderer = new CourseRenderer(map, { roundDist: ROUND_DIST });
     document.getElementById('app-nav').innerHTML = ChabaNav.renderNav(appData.nav);
     render(true);
