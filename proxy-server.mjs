@@ -45,6 +45,12 @@ const server = createServer(async (request, response) => {
     file = await stat(filePath);
   } catch { /* try index.html below */ }
 
+  if (file && file.isDirectory() && !pathname.endsWith('/') && pathname !== '/') {
+    response.writeHead(301, { 'Location': `${pathname}/` });
+    response.end();
+    return;
+  }
+
   if (!file || !file.isFile()) {
     const indexPath = normalize(join(filePath, 'index.html'));
     if (indexPath.startsWith(publicDirectory)) {
