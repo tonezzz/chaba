@@ -1,6 +1,6 @@
 const ROUND_DIST = 25;
-const STORAGE_KEY = 'track3-marker-overrides';
-const COURSE_ID = 'tabsai-ws8-track3';
+const DEFAULT_COURSE = 'tabsai-ws8-track3';
+let courseId = new URLSearchParams(window.location.search).get('course') || DEFAULT_COURSE;
 let saveTimer = null;
 let courseData = null;
 let renderer = null;
@@ -19,17 +19,18 @@ let simState = { running: false, rafId: null, elapsed: 0, racers: [], speedFacto
 function getMergedMarkers() {
   return Object.entries(courseData.markers || {}).map(([id, m]) => ({ id, ...m, ...(state.overrides[id] || {}) }));
 }
+function storageKey() { return 'track3-marker-overrides-' + courseId; }
 function saveOverrides() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.overrides)); } catch (e) { console.warn('failed to save overrides', e); }
+  try { localStorage.setItem(storageKey(), JSON.stringify(state.overrides)); } catch (e) { console.warn('failed to save overrides', e); }
   saveToServer();
 }
 function loadOverrides() {
-  try { state.overrides = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { state.overrides = {}; }
+  try { state.overrides = JSON.parse(localStorage.getItem(storageKey()) || '{}'); } catch { state.overrides = {}; }
 }
 
 async function loadServerState() {
   try {
-    const r = await fetch(`api/load.php?course=${COURSE_ID}`);
+    const r = await fetch(`api/load.php?course=${courseId}`);
     if (!r.ok) throw new Error(`load ${r.status}`);
     const data = await r.json();
     if (data && typeof data === 'object') {
@@ -43,7 +44,7 @@ function saveToServer() {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
     try {
-      const payload = { course: COURSE_ID, overrides: state.overrides, hidden: [...state.hidden] };
+      const payload = { course: courseId, overrides: state.overrides, hidden: [...state.hidden] };
       await fetch('api/save.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -426,21 +427,128 @@ function setupSim() {
   document.getElementById('sim-speed').oninput = (e) => { simState.speedFactor = parseFloat(e.target.value) || 1; };
 }
 
-Promise.all([fetch('/apps/apps.yml'), fetch('/apps/track3/courses/tabsai-ws8-track3.yml')])
-  .then(rs => Promise.all(rs.map(r => r.text())))
-  .then(async ([appsText, courseText]) => {
+function showCourseMsg(text) {
+  const el = document.getElementById('course-msg');
+  if (el) {
+    el.textContent = text;
+    setTimeout(() => { if (el.textContent === text) el.textContent = ''; }, 3000);
+  }
+}
+
+function updateUrlCourse() {
+  const url = new URL(window.location.href);
+  url.searchParams.set('course', courseId);
+  window.history.replaceState({}, '', url);
+}
+
+async function populateCourseList() {
+  try {
+    const r = await fetch('api/list.php');
+    if (!r.ok) return;
+    const list = await r.json();
+    const sel = document.getElementById('course-select');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Load course...</option>';
+    for (const c of list) {
+      const label = c.name + (c.saved ? ' (saved)' : '');
+      const opt = document.createElement('option');
+      opt.value = c.name;
+      opt.textContent = label;
+      sel.appendChild(opt);
+    }
+    sel.value = '';
+  } catch (e) { console.warn('course list failed', e); }
+}
+
+async function loadCourseYaml(id) {
+  const r = await fetch(`/apps/track3/courses/${id}.yml`);
+  if (!r.ok) throw new Error(`course not found: ${r.status}`);
+  return jsyaml.load(await r.text());
+}
+
+async function loadCourse(id) {
+  if (!id || !/^[a-zA-Z0-9_-]+$/.test(id)) { showCourseMsg('invalid course name'); return; }
+  stopSim();
+  try {
+    courseData = await loadCourseYaml(id);
+  } catch (e) {
+    console.warn(`no YAML for ${id}; keeping current base`, e);
+  }
+  courseId = id;
+  loadOverrides();
+  await loadServerState();
+  document.getElementById('course-name').value = courseId;
+  updateUrlCourse();
+  if (!renderer) renderer = new CourseRenderer(map, { roundDist: ROUND_DIST });
+  renderer.hidden = state.hidden;
+  render(true);
+  initRacers();
+  populateCourseList();
+  showCourseMsg('Loaded ' + courseId);
+}
+
+async function saveCourse(name) {
+  name = (name || '').trim();
+  if (!name) name = courseId;
+  if (!/^[a-zA-Z0-9_-]+$/.test(name)) { showCourseMsg('invalid course name'); return; }
+  const payload = { course: name, overrides: state.overrides, hidden: [...state.hidden] };
+  try {
+    const r = await fetch('api/save.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await r.json().catch(() => ({}));
+    if (r.ok && data.ok) {
+      courseId = name;
+      try { localStorage.setItem(storageKey(), JSON.stringify(state.overrides)); } catch (e) {}
+      document.getElementById('course-name').value = courseId;
+      updateUrlCourse();
+      populateCourseList();
+      showCourseMsg('Saved ' + courseId);
+    } else {
+      showCourseMsg(data.error || 'save failed');
+    }
+  } catch (e) {
+    console.warn('save failed', e);
+    showCourseMsg('save error');
+  }
+}
+
+function setupCourseControls() {
+  const nameInput = document.getElementById('course-name');
+  const sel = document.getElementById('course-select');
+  if (nameInput) nameInput.value = courseId;
+  populateCourseList();
+  document.getElementById('btn-save').onclick = () => saveCourse(nameInput ? nameInput.value : '');
+  document.getElementById('btn-load').onclick = () => { if (sel && sel.value) loadCourse(sel.value); };
+}
+
+(async function init() {
+  try {
+    const appsText = await (await fetch('/apps/apps.yml')).text();
     const appData = jsyaml.load(appsText);
+    document.getElementById('app-nav').innerHTML = ChabaNav.renderNav(appData.nav);
+
+    let courseText = '';
+    try {
+      courseText = await (await fetch(`/apps/track3/courses/${courseId}.yml`)).text();
+    } catch (e) {
+      console.warn(`course YAML ${courseId} not found, using ${DEFAULT_COURSE}`, e);
+      courseText = await (await fetch(`/apps/track3/courses/${DEFAULT_COURSE}.yml`)).text();
+    }
     courseData = jsyaml.load(courseText);
     loadOverrides();
     await loadServerState();
     renderer = new CourseRenderer(map, { roundDist: ROUND_DIST });
-    document.getElementById('app-nav').innerHTML = ChabaNav.renderNav(appData.nav);
+    document.getElementById('course-name').value = courseId;
     render(true);
     setupToggles();
     setupTabs();
     setupSim();
-  })
-  .catch(err => {
+    setupCourseControls();
+  } catch (err) {
     console.error('failed to load course data', err);
     document.getElementById('summary').textContent = 'Error loading course';
-  });
+  }
+})();
