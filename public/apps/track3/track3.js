@@ -274,9 +274,29 @@ function findSegment(dist) {
 }
 
 function updateRacer(r, dt) {
-  if (r.finished) return;
+  if (r.returned) return;
+  if (r.returning) {
+    const pos = r.marker.getLatLng();
+    const start = r.startPos;
+    const d = Course.haversine([pos.lat, pos.lng], start);
+    if (d < 3) {
+      r.returned = true;
+      r.speed = 0;
+      r.marker.setLatLng(start);
+      if (r.hoverMarker) r.hoverMarker.setLatLng(start);
+      return;
+    }
+    let h = Course.bearing([pos.lat, pos.lng], start) + (Math.random() * 60 - 30);
+    const speed = 3 + Math.random() * 2;
+    const next = Course.pointAt([pos.lat, pos.lng], h, speed * dt);
+    r.marker.setLatLng(next);
+    r.marker.setIcon(boatIcon(r.color, h));
+    r.speed = speed;
+    if (r.hoverMarker) r.hoverMarker.setLatLng(next);
+    return;
+  }
   const { pts, cum, total } = simState.path;
-  if (r.distance >= total) { r.finished = true; return; }
+  if (r.distance >= total) { r.distance = total; r.finished = true; r.returning = true; r.speed = 0; return; }
   const seg = findSegment(r.distance);
   const p1 = pts[seg], p2 = pts[seg + 1];
   const segLen = cum[seg + 1] - cum[seg];
@@ -284,7 +304,7 @@ function updateRacer(r, dt) {
   const heading = Course.bearing(p1, p2);
   r.speed = r.baseSpeed * simWindFactor(heading) * (0.85 + Math.random() * 0.3) * startPenalty(r.distance) * simState.speedFactor;
   r.distance += r.speed * dt;
-  if (r.distance >= total) { r.distance = total; r.finished = true; }
+  if (r.distance >= total) { r.distance = total; r.finished = true; r.returning = true; r.speed = 0; return; }
   const newT = segLen ? Math.min(1, (r.distance - cum[seg]) / segLen) : 0;
   const rawLat = p1[0] + (p2[0] - p1[0]) * newT;
   const rawLon = p1[1] + (p2[1] - p1[1]) * newT;
@@ -307,7 +327,7 @@ function simStep(ts) {
   const dt = (ts - simState.lastTs) / 1000;
   simState.lastTs = ts;
   simState.elapsed += dt;
-  const active = simState.racers.filter(r => !r.finished);
+  const active = simState.racers.filter(r => !r.returned);
   if (!active.length) { stopSim(); updateSimStandings(); return; }
   for (const r of simState.racers) updateRacer(r, dt);
   resolveCollisions(simState.racers);
@@ -338,7 +358,7 @@ function initRacers() {
     marker.on('mouseout', clearRacerHighlight);
     const r = {
       name: `Boat ${i + 1}`, color, baseSpeed: 5 + Math.random() * 4,
-      startOffset, lanes, distance: 0, finished: false, marker, speed: 0, heading: h
+      startOffset, startPos, lanes, distance: 0, finished: false, returning: false, returned: false, marker, speed: 0, heading: h
     };
     simState.racers.push(r);
   }
@@ -440,7 +460,7 @@ function dimCourse(active) {
 
 function startSim() {
   if (simState.running) return;
-  if (!simState.racers.length || simState.racers.every(r => r.finished)) initRacers();
+  if (!simState.racers.length || simState.racers.every(r => r.returned)) initRacers();
   if (!simState.racers.length) return;
   simState.speedFactor = parseFloat(document.getElementById('sim-speed').value) || 1;
   simState.running = true; simState.lastTs = 0;
