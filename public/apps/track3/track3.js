@@ -323,7 +323,7 @@ function initRacers() {
   const { beachBearing, lineLen } = simState.path;
   raceLayer.clearLayers();
   simState.racers = [];
-  const count = Math.min(10, Math.max(2, parseInt(document.getElementById('sim-racers').value, 10) || 5));
+  const count = Math.min(10, Math.max(2, parseInt(document.getElementById('sim-racers').value, 10) || 10));
   const maxSpread = Math.min((lineLen || 0) * 0.8, Math.min(80, count * 10));
   const spacing = count > 1 ? maxSpread / (count - 1) : 0;
   for (let i = 0; i < count; i++) {
