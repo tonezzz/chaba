@@ -40,7 +40,7 @@
 
 Selected `chaba.h3` apps can also be served directly by the main `chaba` Caddy stack (`web` container on `192.168.1.48:8080`) without using the Plesk Node proxy.
 
-- Mount the app directory into the `web` container in `chaba/web/docker-compose.yml`:
+- Mount the app directory into the `web` container in `stacks/web/docker-compose.yml`:
   - `/home/tony/CascadeProjects/chaba-h3/public/apps/<app>:/srv/public/tony-omen/apps/<app>`
   - Attach the `chaba-h3_default` network if the page needs to reach `chaba-h3` backend services.
 - With `root * /srv/public` and `file_server`, Caddy automatically serves `index.html` for directory URLs.

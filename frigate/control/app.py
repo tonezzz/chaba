@@ -23,7 +23,7 @@ from generate_config import (
 
 app = Flask(__name__)
 
-# Set True to copy frigate/camera-map.html -> web/public/camera-map.html after edits.
+# Set True to copy frigate/camera-map.html -> stacks/web/public/camera-map.html after edits.
 SYNC_WEB_MAP = False
 
 JOBS = {}
@@ -158,11 +158,11 @@ def api_generate():
 @app.route("/api/sync", methods=["POST"])
 def api_sync():
     src = FRIGATE_DIR / "camera-map.html"
-    dst = REPO_ROOT / "web" / "public" / "camera-map.html"
+    dst = REPO_ROOT / "stacks" / "web" / "public" / "camera-map.html"
     if not src.exists():
         return jsonify({"error": "frigate/camera-map.html not found"}), 404
     if not dst.parent.is_dir():
-        return jsonify({"error": "web/public/ not found"}), 404
+        return jsonify({"error": "stacks/web/public/ not found"}), 404
     shutil.copyfile(src, dst)
     return jsonify({"ok": True, "copied": str(dst)})
 
