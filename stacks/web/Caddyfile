@@ -84,10 +84,51 @@
 	handle /tony-omen/apps/imagen/* {
 		file_server
 	}
+
+	@imagen2_noslash path /apps/imagen2
+	redir @imagen2_noslash /apps/imagen2/ 308
+
+	handle_path /apps/imagen2/api/* {
+		reverse_proxy imagen2-inference:8000
+	}
+
+	handle_path /apps/imagen2/* {
+		root * /srv/public/tony-omen/apps/imagen2
+		file_server
+	}
+
+	handle /apps/imagen {
+		redir /apps/imagen/ 308
+	}
+
+	handle_path /apps/imagen/api/* {
+		reverse_proxy imagen-inference:8000
+	}
+
+	handle_path /apps/imagen/* {
+		root * /srv/public/tony-omen/apps/imagen
+		file_server
+	}
+
+	@yomi_noslash path /apps/yomi
+	redir @yomi_noslash /apps/yomi/ 308
+
+	handle_path /apps/yomi/* {
+		root * /srv/public/apps/yomi
+		basicauth {
+			yomi {env.YOMI_PASSWORD_HASH}
+		}
+		file_server
+	}
 }
 
 # chaba.h3 local dev root
 :8081 {
 	root * /srv/public/chaba-h3
+
+	handle /apps/track4/api/* {
+		reverse_proxy host.docker.internal:8123
+	}
+
 	file_server
 }

@@ -1,0 +1,151 @@
+# _config.yaml — bserver configuration
+#
+# Place this file in the www/ directory for server-wide defaults.
+# Per-site overrides: place a _config.yaml in a virtual host directory
+# (e.g., www/example.com/_config.yaml) to override cache-age, static-age,
+# parent-levels, and index for that site only.
+#
+# Precedence: environment variable > _config.yaml value > built-in default.
+# The -base flag (or BASE_DIR env) sets the www directory itself.
+
+# ---- Server-wide settings (not overridable per-site) ----
+
+# HTTP listen address.
+# Env: HTTP_ADDR
+# Default: :80 (falls back to :8000-8099 if port 80 is unavailable)
+#http: ":80"
+
+# HTTPS listen address.
+# Env: HTTPS_ADDR
+# Default: :443 (HTTPS disabled if port unavailable)
+#https: ":443"
+
+# Let's Encrypt contact email. Required for automatic HTTPS certificates
+# on public domains. Without this, all domains get self-signed certificates.
+# Env: LE_EMAIL
+#email: ""
+
+# Directory for cached TLS certificates (Let's Encrypt and self-signed).
+# Env: CERT_CACHE
+#cert-cache: "./cert-cache"
+
+# Path to php-cgi executable. Auto-detected from PATH and common locations
+# if not set. Set to "" to explicitly disable PHP support.
+# Env: PHP_CGI
+#php: ""
+
+# Render cache maximum size in megabytes. Set to 0 to disable caching
+# entirely. The effective size may be reduced automatically if the system
+# has limited RAM (see server-features.md for details).
+#cache-size: 1024
+
+# Maximum allowed request body size in megabytes. POST requests larger than
+# this limit are rejected with 413 Request Entity Too Large. Protects against
+# memory exhaustion from oversized uploads. Set to 0 to disable the limit.
+# Note: POST bodies larger than 1 MB are not passed to inline scripts via
+# the _POST_DATA environment variable (OS env block limits). PHP-CGI always
+# receives the full body via stdin regardless of this setting.
+# Default: 10
+#max-body-size: 10
+
+# Idle timeout in seconds for php-cgi. If php-cgi produces no output for
+# this long, the server kills it and (if headers haven't been flushed yet)
+# returns 504 Gateway Timeout. Total script runtime is NOT capped — as long
+# as output keeps arriving, the script may run indefinitely. Scripts wanting
+# progress visibility should echo periodically (e.g., inside long loops).
+# Overridable per-vhost.
+# Env: (none)
+# Default: 60
+#php-timeout: 60
+
+# How long (seconds) to buffer php-cgi output before switching to chunked
+# streaming. Scripts that complete within this window get a single buffered
+# response (with Content-Length, no streaming overhead). Scripts still
+# running past it switch to chunked transfer encoding so the user sees
+# incremental output instead of a spinner. Set to 0 to stream immediately.
+# Overridable per-vhost.
+# Env: (none)
+# Default: 5
+#php-stream-after: 5
+
+# ---- Per-site settings (overridable by vhost _config.yaml) ----
+
+# Render cache and Cache-Control max-age for rendered pages, in seconds.
+# Browsers and proxies reuse the page without re-requesting for this duration.
+# Default: 900 (15 minutes)
+#cache-age: 900
+
+# Maximum Cache-Control max-age for static files (images, CSS, JS), in seconds.
+# Actual max-age uses a heuristic: half the file's age, capped at this value,
+# minimum 60 seconds.
+# Default: 86400 (24 hours)
+#static-age: 86400
+
+# Serve this vhost over plain HTTP instead of redirecting to HTTPS. Intended
+# for constrained clients (e.g. IoT devices) that cannot do TLS. Has no effect
+# at the server-wide level — only meaningful in a per-vhost _config.yaml.
+# Default: false
+#allow-http: false
+
+# How many directory levels above a virtual host's document root the YAML
+# name search is allowed to traverse. Set to -1 for unlimited (use with
+# caution). Higher values allow sharing YAML definitions across sites.
+# Default: 1
+#parent-levels: 1
+
+# Index file priority. When a directory is requested, bserver tries these
+# filenames in order. Also used for name-matching (e.g., service/service.yaml).
+# Can be a YAML list or a comma-separated string.
+# Env: INDEX
+# Default:
+#index:
+#  - index.yaml
+#  - index.md
+#  - index.php
+#  - index.html
+#  - index.htm
+
+# Allowed file types. Only files whose extension appears in this list will be
+# served. Requests for unlisted extensions return 404, even if the file exists.
+# This is a security measure to prevent accidentally exposing configuration
+# files, secrets, or other sensitive data (e.g., .json, .env, .sql, .log).
+# Extensions are matched case-insensitively; leading dots are optional.
+# Can be a YAML list or a comma-separated string.
+# Env: TYPES
+# Default:
+#types:
+#  - yaml
+#  - md
+#  - php
+#  - html
+#  - htm
+#  - css
+#  - js
+#  - map
+#  - wasm
+#  - gif
+#  - jpg
+#  - jpeg
+#  - png
+#  - svg
+#  - ico
+#  - webp
+#  - avif
+#  - bmp
+#  - woff
+#  - woff2
+#  - ttf
+#  - eot
+#  - otf
+#  - pdf
+#  - txt
+#  - xml
+#  - csv
+#  - mp3
+#  - mp4
+#  - webm
+#  - ogg
+#  - wav
+#  - mp2
+#  - zip
+#  - gz

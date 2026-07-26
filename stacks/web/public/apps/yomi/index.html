@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yomi — LINE Conversations</title>
+  <style>
+    :root { --bg: #f8fafc; --card: #fff; --text: #0f172a; --muted: #64748b; --accent: #06b6d4; --danger: #ef4444; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+    header { background: #0f172a; color: #fff; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+    h1 { margin: 0; font-size: 1.25rem; }
+    main { max-width: 900px; margin: 1.5rem auto; padding: 0 1rem; }
+    .chat { background: var(--card); border-radius: .5rem; padding: .75rem 1rem; margin-bottom: .75rem; box-shadow: 0 1px 2px rgba(15,23,42,.05); }
+    .chat-header { display: flex; align-items: baseline; margin-bottom: .25rem; }
+    .name { font-weight: 600; cursor: pointer; color: var(--accent); }
+    .name:hover { text-decoration: underline; }
+    .open { margin-left: .35rem; color: #94a3b8; font-size: .85rem; text-decoration: none; }
+    .open:hover { color: var(--accent); }
+    .unread { background: var(--danger); color: #fff; border-radius: 999px; padding: .1rem .5rem; font-size: .75rem; font-weight: 600; min-width: 1.5rem; text-align: center; margin-left: auto; }
+    .unread-0 { background: #94a3b8; }
+    .preview { color: var(--muted); font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .preview-null { color: #94a3b8; font-style: italic; }
+    .messages { margin-top: .75rem; padding-top: .75rem; border-top: 1px solid #e2e8f0; }
+    .message { margin-bottom: .5rem; }
+    .meta { color: #94a3b8; font-size: .75rem; margin-bottom: .1rem; }
+    .text { white-space: pre-wrap; word-break: break-word; font-size: .9rem; color: var(--text); }
+    .text-null { color: #94a3b8; font-style: italic; }
+    .error { color: #ef4444; }
+    #status { padding: 1rem; color: var(--muted); }
+    .updated { font-size: .8rem; color: #94a3b8; }
+    .controls { max-width: 900px; margin: 1rem auto 0; padding: 0 1rem; display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+    #search { flex: 1; min-width: 200px; padding: .5rem .75rem; border: 1px solid #cbd5e1; border-radius: .375rem; font-size: .9rem; }
+    #search:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+    #refresh { padding: .5rem .75rem; border: 1px solid #cbd5e1; border-radius: .375rem; background: #fff; cursor: pointer; font-size: .9rem; }
+    #refresh:hover { border-color: var(--accent); color: var(--accent); }
+    #sort { padding: .5rem .75rem; border: 1px solid #cbd5e1; border-radius: .375rem; background: #fff; font-size: .9rem; }
+    .last-active { color: #94a3b8; font-size: .75rem; margin-left: .5rem; }
+    .chat.hidden { display: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>LINE Conversations</h1>
+    <span class="updated" id="updated"></span>
+  </header>
+  <div class="controls">
+    <input type="search" id="search" placeholder="Search conversations…" autocomplete="off">
+    <select id="sort" title="Sort by" aria-label="Sort conversations">
+      <option value="unread" selected>Unread</option>
+      <option value="lastActive">Last active</option>
+      <option value="name">Name</option>
+    </select>
+    <button id="refresh" type="button" title="Reload page">↻</button>
+  </div>
+  <main id="app"><p id="status">Loading…</p></main>
+  <script>
+    let allConversations = [];
+
+    async function load() {
+      const app = document.getElementById('app');
+      const updated = document.getElementById('updated');
+      try {
+        const res = await fetch('/apps/yomi/conversations.json');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const { generatedAt, conversations } = await res.json();
+        updated.textContent = generatedAt ? 'Updated ' + timeAgo(new Date(generatedAt)) + ' ago' : '';
+        if (generatedAt) updated.title = new Date(generatedAt).toLocaleString();
+        app.innerHTML = '';
+        if (!conversations || !conversations.length) {
+          app.innerHTML = '<p id="status">No conversations.</p>';
+          return;
+        }
+        allConversations = conversations || [];
+        renderConversations();
+        const chatParam = new URLSearchParams(location.search).get('chat');
+        if (chatParam) openChat(chatParam);
+      } catch (e) {
+        app.innerHTML = `<p id="status">Error loading conversations: ${escapeHtml(e.message)}</p>`;
+      }
+    }
+    async function openChat(id) {
+      const panel = document.getElementById('msg-' + id);
+      if (!panel) return;
+      panel.hidden = false;
+      if (panel.dataset.loaded !== '1') await loadMessages(id, panel);
+      const nameEl = document.querySelector('.name[data-id="' + id + '"]');
+      if (nameEl) nameEl.scrollIntoView({ behavior: 'instant', block: 'start' });
+    }
+
+    async function toggleMessages(e) {
+      const id = e.target.dataset.id;
+      const panel = document.getElementById('msg-' + id);
+      if (!panel) return;
+      panel.hidden = !panel.hidden;
+      if (!panel.hidden && panel.dataset.loaded !== '1') {
+        await loadMessages(id, panel);
+      }
+    }
+
+    async function loadMessages(id, panel) {
+      panel.innerHTML = '<p class="text-null">Loading messages…</p>';
+      try {
+        const res = await fetch('/apps/yomi/messages/' + id + '.json');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const { messages } = await res.json();
+        panel.innerHTML = '';
+        if (!messages || !messages.length) {
+          panel.innerHTML = '<p class="text-null">No messages.</p>';
+        } else {
+          const sorted = [...messages].sort((a, b) => a.deliveredTime - b.deliveredTime);
+          for (const m of sorted) {
+            const bubble = document.createElement('div');
+            bubble.className = 'message';
+            const time = new Date(m.deliveredTime).toLocaleString();
+            const text = m.text == null
+              ? '<span class="text-null">(no text)</span>'
+              : `<div class="text">${escapeHtml(m.text)}</div>`;
+            bubble.innerHTML = `
+              <div class="meta">${escapeHtml(m.fromName || m.from || 'Unknown')} · ${time}</div>
+              ${text}
+            `;
+            panel.appendChild(bubble);
+          }
+        }
+        panel.dataset.loaded = '1';
+      } catch (err) {
+        panel.innerHTML = `<p class="error">Could not load messages: ${escapeHtml(err.message)}</p>`;
+      }
+    }
+
+    function renderConversations() {
+      const app = document.getElementById('app');
+      app.innerHTML = '';
+      const sortValue = document.getElementById('sort').value;
+      const sorted = [...allConversations].sort((a, b) => {
+        if (sortValue === 'name') return a.name.localeCompare(b.name);
+        if (sortValue === 'lastActive') return (b.lastMessageTime || 0) - (a.lastMessageTime || 0) || b.unread - a.unread;
+        return b.unread - a.unread;
+      });
+      for (const c of sorted) {
+        const div = document.createElement('div');
+        div.className = 'chat';
+        const displayPreview = (c.lastPreview != null ? c.lastPreview : c.preview) ?? null;
+        const preview = displayPreview == null
+          ? '<div class="preview preview-null">No preview</div>'
+          : `<div class="preview" title="${escapeHtml(displayPreview)}">${escapeHtml(truncate(displayPreview, 120))}</div>`;
+        const lastActive = c.lastMessageTime
+          ? `<span class="last-active" title="${new Date(c.lastMessageTime).toLocaleString()}">${timeAgo(new Date(c.lastMessageTime))} ago</span>`
+          : '';
+        div.innerHTML = `
+          <div class="chat-header">
+            <span class="name" data-id="${c.id}" role="button" tabindex="0">${escapeHtml(c.name)}</span>
+            <a class="open" href="chat.html?chat=${c.id}" target="_blank" rel="noopener" aria-label="Open in new tab">↗</a>
+            ${lastActive}
+            <span class="unread ${c.unread ? '' : 'unread-0'}">${c.unread}</span>
+          </div>
+          ${preview}
+          <div class="messages" id="msg-${c.id}" hidden>
+            <p class="text-null">Loading messages…</p>
+          </div>
+        `;
+        app.appendChild(div);
+      }
+      filterChats();
+    }
+
+    document.getElementById('app').addEventListener('click', handleNameInteraction);
+    document.getElementById('app').addEventListener('keydown', handleNameInteraction);
+
+    function handleNameInteraction(e) {
+      if (!e.target.classList.contains('name')) return;
+      if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+      if (e.type === 'keydown') e.preventDefault();
+      toggleMessages(e);
+    }
+
+    function truncate(s, n) {
+      return s.length > n ? s.slice(0, n) + '…' : s;
+    }
+    function timeAgo(date) {
+      const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+      const units = [
+        [31536000, 'y'], [2592000, 'mo'], [86400, 'd'], [3600, 'h'], [60, 'm'], [1, 's']
+      ];
+      for (const [secs, label] of units) {
+        const count = Math.floor(seconds / secs);
+        if (count > 0) return `${count}${label}`;
+      }
+      return '0s';
+    }
+    function filterChats() {
+      const term = document.getElementById('search').value.trim().toLowerCase();
+      document.querySelectorAll('.chat').forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.classList.toggle('hidden', term.length > 0 && !text.includes(term));
+      });
+    }
+    document.getElementById('search').addEventListener('input', filterChats);
+    document.getElementById('sort').addEventListener('change', renderConversations);
+    document.getElementById('refresh').addEventListener('click', () => location.reload());
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+    load();
+  </script>
+</body>
+</html>

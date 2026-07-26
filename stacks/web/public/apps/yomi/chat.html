@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yomi — Conversation</title>
+  <style>
+    :root { --bg: #f8fafc; --card: #fff; --text: #0f172a; --muted: #64748b; --accent: #06b6d4; --danger: #ef4444; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+    header { background: #0f172a; color: #fff; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+    h1 { margin: 0; font-size: 1.25rem; }
+    main { max-width: 700px; margin: 1.5rem auto; padding: 0 1rem; }
+    .back { color: #fff; text-decoration: none; font-size: .9rem; }
+    .back:hover { text-decoration: underline; }
+    .chat { background: var(--card); border-radius: .5rem; padding: 1rem; box-shadow: 0 1px 2px rgba(15,23,42,.05); }
+    .chat-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+    .message { margin-bottom: .75rem; }
+    .meta { color: #94a3b8; font-size: .75rem; margin-bottom: .1rem; }
+    .text { white-space: pre-wrap; word-break: break-word; font-size: .9rem; color: var(--text); }
+    .text-null { color: #94a3b8; font-style: italic; }
+    .error { color: #ef4444; }
+    #status { color: var(--muted); padding: 1rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="back" href="/apps/yomi/">&larr; Back</a>
+    <h1>LINE Conversation</h1>
+    <span></span>
+  </header>
+  <main id="app"><p id="status">Loading…</p></main>
+  <script>
+    async function load() {
+      const params = new URLSearchParams(location.search);
+      const id = params.get('chat');
+      const app = document.getElementById('app');
+      if (!id) {
+        app.innerHTML = '<p id="status" class="error">No conversation selected.</p>';
+        return;
+      }
+      try {
+        const [convRes, msgRes] = await Promise.all([
+          fetch('/apps/yomi/conversations.json'),
+          fetch(`/apps/yomi/messages/${id}.json`)
+        ]);
+        if (!convRes.ok) throw new Error('Conversations ' + convRes.status);
+        if (!msgRes.ok) throw new Error('Messages ' + msgRes.status);
+        const { conversations } = await convRes.json();
+        const { messages } = await msgRes.json();
+        const conv = conversations.find(c => c.id === id);
+        const title = conv?.name || id;
+        document.title = `Yomi — ${title}`;
+        app.innerHTML = `<div class="chat">
+          <div class="chat-title">${escapeHtml(title)}</div>
+          <div id="messages"></div>
+        </div>`;
+        const panel = document.getElementById('messages');
+        if (!messages || !messages.length) {
+          panel.innerHTML = '<p class="text-null">No messages.</p>';
+          return;
+        }
+        const sorted = [...messages].sort((a, b) => a.deliveredTime - b.deliveredTime);
+        for (const m of sorted) {
+          const bubble = document.createElement('div');
+          bubble.className = 'message';
+          const time = m.deliveredTime ? ' · ' + new Date(m.deliveredTime).toLocaleString() : '';
+          const text = m.text == null
+            ? '<span class="text-null">(no text)</span>'
+            : `<div class="text">${escapeHtml(m.text)}</div>`;
+          bubble.innerHTML = `
+            <div class="meta">${escapeHtml(m.fromName || m.from || 'Unknown')}${time}</div>
+            ${text}
+          `;
+          panel.appendChild(bubble);
+        }
+      } catch (e) {
+        app.innerHTML = `<p id="status" class="error">${escapeHtml(e.message)}</p>`;
+      }
+    }
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+    load();
+  </script>
+</body>
+</html>
