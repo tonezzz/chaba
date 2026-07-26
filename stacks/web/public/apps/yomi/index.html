@@ -8,28 +8,60 @@
     :root { --bg: #f8fafc; --card: #fff; --text: #0f172a; --muted: #64748b; --accent: #06b6d4; --danger: #ef4444; }
     * { box-sizing: border-box; }
     body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
-    header { background: #0f172a; color: #fff; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
-    h1 { margin: 0; font-size: 1.25rem; }
-    main { max-width: 900px; margin: 1.5rem auto; padding: 0 1rem; }
-    .chat { background: var(--card); border-radius: .5rem; padding: .75rem 1rem; margin-bottom: .75rem; box-shadow: 0 1px 2px rgba(15,23,42,.05); }
-    .chat-header { display: flex; align-items: baseline; margin-bottom: .25rem; }
-    .name { font-weight: 600; cursor: pointer; color: var(--accent); }
+    header { background: #0f172a; color: #fff; padding: .65rem 1rem; display: flex; justify-content: space-between; align-items: center; }
+    h1 { margin: 0; font-size: 1rem; }
+    main { max-width: 1100px; margin: .75rem auto; padding: 0 .75rem; }
+    .chat { background: var(--card); border-radius: .375rem; padding: .45rem .75rem; margin-bottom: .35rem; box-shadow: 0 1px 1px rgba(15,23,42,.05); }
+    .chat-header { display: flex; align-items: center; gap: .35rem; }
+    .name { font-size: .9rem; font-weight: 600; cursor: pointer; color: var(--accent); }
     .name:hover { text-decoration: underline; }
-    .open { margin-left: .35rem; color: #94a3b8; font-size: .85rem; text-decoration: none; }
+    .open { color: #94a3b8; font-size: .75rem; text-decoration: none; }
     .open:hover { color: var(--accent); }
-    .unread { background: var(--danger); color: #fff; border-radius: 999px; padding: .1rem .5rem; font-size: .75rem; font-weight: 600; min-width: 1.5rem; text-align: center; margin-left: auto; }
+    .conv-setup { background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: .75rem; padding: 0; margin-left: .15rem; }
+    .conv-setup:hover { color: var(--accent); }
+    .unread { background: var(--danger); color: #fff; border-radius: 999px; padding: .05rem .4rem; font-size: .7rem; font-weight: 600; min-width: 1.4rem; text-align: center; margin-left: auto; }
     .unread-0 { background: #94a3b8; }
-    .preview { color: var(--muted); font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .category { display: inline-block; font-size: .65rem; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; padding: .05rem .35rem; border-radius: .25rem; color: #fff; margin-left: .35rem; }
+    .category-Family { background: #f59e0b; }
+    .category-Work { background: #3b82f6; }
+    .category-Promo { background: #ec4899; }
+    .category-Official { background: #6366f1; }
+    .category-Group { background: #8b5cf6; }
+    .category-Personal { background: #10b981; }
+    .category-Other { background: #94a3b8; }
+    .group { margin-left: .15rem; font-size: .8rem; }
+    .controls label { display: inline-flex; align-items: center; gap: .25rem; font-size: .9rem; color: var(--text); }
+    .preview { color: var(--muted); font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .preview-null { color: #94a3b8; font-style: italic; }
-    .messages { margin-top: .75rem; padding-top: .75rem; border-top: 1px solid #e2e8f0; }
-    .message { margin-bottom: .5rem; }
-    .meta { color: #94a3b8; font-size: .75rem; margin-bottom: .1rem; }
-    .text { white-space: pre-wrap; word-break: break-word; font-size: .9rem; color: var(--text); }
+    .summary { color: #0f172a; font-weight: 500; font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .messages { margin-top: .45rem; padding-top: .45rem; border-top: 1px solid #e2e8f0; }
+    .message {
+      padding: 0.6rem 0.75rem;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-left: 3px solid var(--accent);
+      border-radius: 0 0.5rem 0.5rem 0;
+      margin-bottom: 0.5rem;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .message:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 2px 5px rgba(15, 23, 42, 0.06);
+    }
+    .meta { color: #94a3b8; font-size: .7rem; margin-bottom: .05rem; }
+    .text { white-space: pre-wrap; word-break: break-word; font-size: .85rem; color: var(--text); }
     .text-null { color: #94a3b8; font-style: italic; }
+    .media-img { max-width: 100%; max-height: 220px; border-radius: .375rem; margin-top: .2rem; display: block; cursor: pointer; }
+    .media-video { max-width: 100%; max-height: 220px; border-radius: .375rem; margin-top: .2rem; display: block; background: #0f172a; }
+    .media-audio { width: 100%; margin-top: .2rem; }
+    .media-file { display: inline-flex; align-items: center; gap: .35rem; margin-top: .2rem; padding: .3rem .55rem; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: .375rem; color: var(--accent); text-decoration: none; font-size: .82rem; }
+    .media-file:hover { background: #e2e8f0; }
+    .media-placeholder { color: #64748b; font-style: italic; font-size: .82rem; }
     .error { color: #ef4444; }
     #status { padding: 1rem; color: var(--muted); }
-    .updated { font-size: .8rem; color: #94a3b8; }
-    .controls { max-width: 900px; margin: 1rem auto 0; padding: 0 1rem; display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+    .updated { font-size: .75rem; color: #94a3b8; }
+    .controls { max-width: 1100px; margin: .75rem auto 0; padding: 0 .75rem; display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
     #search { flex: 1; min-width: 200px; padding: .5rem .75rem; border: 1px solid #cbd5e1; border-radius: .375rem; font-size: .9rem; }
     #search:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
     #refresh { padding: .5rem .75rem; border: 1px solid #cbd5e1; border-radius: .375rem; background: #fff; cursor: pointer; font-size: .9rem; }
@@ -37,6 +69,63 @@
     #sort { padding: .5rem .75rem; border: 1px solid #cbd5e1; border-radius: .375rem; background: #fff; font-size: .9rem; }
     .last-active { color: #94a3b8; font-size: .75rem; margin-left: .5rem; }
     .chat.hidden { display: none; }
+    #lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      cursor: zoom-out;
+    }
+    #lightbox.active { display: flex; }
+    #lightbox img {
+      max-width: 95vw;
+      max-height: 95vh;
+      border-radius: .5rem;
+      box-shadow: 0 25px 50px rgba(0,0,0,.5);
+      cursor: default;
+    }
+    #lightbox .close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: rgba(15, 23, 42, 0.9);
+      color: #f8fafc;
+      border: none;
+      border-radius: .35rem;
+      width: 2rem;
+      height: 2rem;
+      font-size: 1.25rem;
+      cursor: pointer;
+    }
+    #lightbox .close:hover { background: #334155; }
+    .chip-row { display: flex; gap: .35rem; flex-wrap: wrap; align-items: center; }
+    .chip { display: inline-flex; align-items: center; gap: .25rem; padding: .25rem .55rem; border-radius: 999px; font-size: .8rem; font-weight: 600; cursor: pointer; border: 1px solid #cbd5e1; background: #f1f5f9; color: #475569; user-select: none; transition: all .15s ease; }
+    .chip input { display: none; }
+    .chip:hover { border-color: #94a3b8; }
+    .chip.active { color: #fff; border-color: transparent; }
+    .chip[data-cat="Family"].active { background: #f59e0b; }
+    .chip[data-cat="Work"].active { background: #3b82f6; }
+    .chip[data-cat="Promo"].active { background: #ec4899; }
+    .chip[data-cat="Official"].active { background: #6366f1; }
+    .chip[data-cat="Group"].active { background: #8b5cf6; }
+    .chip[data-cat="Personal"].active { background: #10b981; }
+    .chip[data-cat="Other"].active { background: #94a3b8; }
+    .group-chip.active { background: #475569; color: #fff; border-color: #475569; }
+    .count { font-size: .85rem; color: var(--muted); white-space: nowrap; }
+    dialog { border: none; border-radius: .5rem; padding: 0; box-shadow: 0 10px 25px rgba(15,23,42,.2); max-width: 320px; width: 90%; }
+    dialog::backdrop { background: rgba(15,23,42,.5); }
+    .config-content { padding: 1rem; }
+    .config-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: .75rem; }
+    .config-title { margin: 0; font-size: 1rem; }
+    .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin: .5rem 0; }
+    .config-row { display: flex; align-items: center; gap: .35rem; font-size: .9rem; cursor: pointer; }
+    .config-row input[type="checkbox"] { margin: 0; }
+    .config-close { background: #f1f5f9; border: none; border-radius: .25rem; padding: .25rem .5rem; cursor: pointer; font-size: .85rem; }
+    .config-close:hover { background: #e2e8f0; }
+    .config-section { margin-top: .75rem; }
   </style>
 </head>
 <body>
@@ -51,9 +140,42 @@
       <option value="lastActive">Last active</option>
       <option value="name">Name</option>
     </select>
+    <div class="chip-row" id="chips">
+      <label class="chip" data-cat="Family"><input type="checkbox" class="config-cat" value="Family" checked> Family</label>
+      <label class="chip" data-cat="Work"><input type="checkbox" class="config-cat" value="Work" checked> Work</label>
+      <label class="chip" data-cat="Promo"><input type="checkbox" class="config-cat" value="Promo" checked> Promo</label>
+      <label class="chip" data-cat="Official"><input type="checkbox" class="config-cat" value="Official" checked> Official</label>
+      <label class="chip" data-cat="Group"><input type="checkbox" class="config-cat" value="Group" checked> Group</label>
+      <label class="chip" data-cat="Personal"><input type="checkbox" class="config-cat" value="Personal" checked> Personal</label>
+      <label class="chip" data-cat="Other"><input type="checkbox" class="config-cat" value="Other" checked> Other</label>
+      <label class="chip group-chip"><input type="checkbox" id="config-group-only"> Groups only</label>
+    </div>
+    <span id="count" class="count">Loading…</span>
     <button id="refresh" type="button" title="Reload page">↻</button>
   </div>
+  <dialog id="edit-dialog">
+    <div class="config-content">
+      <div class="config-header">
+        <h2 class="config-title">Edit conversation</h2>
+        <button id="edit-close" class="config-close" type="button">Close</button>
+      </div>
+      <label class="config-row" style="margin-top:.5rem;display:block">Category
+        <select id="edit-category" style="margin-left:.35rem;padding:.25rem .5rem;border:1px solid #cbd5e1;border-radius:.25rem"></select>
+      </label>
+      <div class="config-section">
+        <label class="config-row"><input type="checkbox" id="edit-isGroup"> Group / room chat</label>
+      </div>
+      <div class="config-section" style="display:flex;gap:.5rem;margin-top:.75rem">
+        <button id="edit-save" type="button" style="padding:.4rem .75rem;border:1px solid #cbd5e1;border-radius:.25rem;background:var(--accent);color:#fff;cursor:pointer">Save</button>
+        <button id="edit-reset" type="button" style="padding:.4rem .75rem;border:1px solid #cbd5e1;border-radius:.25rem;background:#f1f5f9;cursor:pointer">Reset</button>
+      </div>
+    </div>
+  </dialog>
   <main id="app"><p id="status">Loading…</p></main>
+  <div id="lightbox" role="dialog" aria-modal="true" aria-label="Full-size image">
+    <button id="lightbox-close" class="close" type="button" aria-label="Close">×</button>
+    <img id="lightbox-img" src="" alt="Full-size image">
+  </div>
   <script>
     let allConversations = [];
 
@@ -61,7 +183,7 @@
       const app = document.getElementById('app');
       const updated = document.getElementById('updated');
       try {
-        const res = await fetch('/apps/yomi/conversations.json');
+        const res = await fetch('/apps/yomi/conversations.json', { credentials: 'include' });
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const { generatedAt, conversations } = await res.json();
         updated.textContent = generatedAt ? 'Updated ' + timeAgo(new Date(generatedAt)) + ' ago' : '';
@@ -72,6 +194,7 @@
           return;
         }
         allConversations = conversations || [];
+        applyConfig();
         renderConversations();
         const chatParam = new URLSearchParams(location.search).get('chat');
         if (chatParam) openChat(chatParam);
@@ -101,7 +224,7 @@
     async function loadMessages(id, panel) {
       panel.innerHTML = '<p class="text-null">Loading messages…</p>';
       try {
-        const res = await fetch('/apps/yomi/messages/' + id + '.json');
+        const res = await fetch('/apps/yomi/messages/' + id + '.json', { credentials: 'include' });
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const { messages } = await res.json();
         panel.innerHTML = '';
@@ -113,12 +236,9 @@
             const bubble = document.createElement('div');
             bubble.className = 'message';
             const time = new Date(m.deliveredTime).toLocaleString();
-            const text = m.text == null
-              ? '<span class="text-null">(no text)</span>'
-              : `<div class="text">${escapeHtml(m.text)}</div>`;
             bubble.innerHTML = `
               <div class="meta">${escapeHtml(m.fromName || m.from || 'Unknown')} · ${time}</div>
-              ${text}
+              ${renderContent(m, id)}
             `;
             panel.appendChild(bubble);
           }
@@ -138,20 +258,31 @@
         if (sortValue === 'lastActive') return (b.lastMessageTime || 0) - (a.lastMessageTime || 0) || b.unread - a.unread;
         return b.unread - a.unread;
       });
+      const overrides = loadOverrides();
       for (const c of sorted) {
         const div = document.createElement('div');
+        const override = overrides[c.id] || {};
+        const category = override.category ?? c.category ?? 'Other';
+        const isGroup = override.isGroup ?? c.isGroup ?? false;
         div.className = 'chat';
-        const displayPreview = (c.lastPreview != null ? c.lastPreview : c.preview) ?? null;
+        div.dataset.category = category;
+        div.dataset.isGroup = String(isGroup);
+        const hasSummary = Boolean(c.summary);
+        const displayPreview = c.summary || c.lastPreview || c.preview || null;
+        const previewClass = hasSummary ? 'summary' : 'preview';
         const preview = displayPreview == null
           ? '<div class="preview preview-null">No preview</div>'
-          : `<div class="preview" title="${escapeHtml(displayPreview)}">${escapeHtml(truncate(displayPreview, 120))}</div>`;
+          : `<div class="${previewClass}" title="${escapeHtml(displayPreview)}">${escapeHtml(truncate(displayPreview, 90))}</div>`;
         const lastActive = c.lastMessageTime
           ? `<span class="last-active" title="${new Date(c.lastMessageTime).toLocaleString()}">${timeAgo(new Date(c.lastMessageTime))} ago</span>`
           : '';
         div.innerHTML = `
           <div class="chat-header">
             <span class="name" data-id="${c.id}" role="button" tabindex="0">${escapeHtml(c.name)}</span>
+            ${isGroup ? '<span class="group" title="Group/room chat">👥</span>' : ''}
             <a class="open" href="chat.html?chat=${c.id}" target="_blank" rel="noopener" aria-label="Open in new tab">↗</a>
+            <button class="conv-setup" data-id="${c.id}" type="button" title="Edit category/group">⚙️</button>
+            <span class="category category-${escapeHtml(category)}">${escapeHtml(category)}</span>
             ${lastActive}
             <span class="unread ${c.unread ? '' : 'unread-0'}">${c.unread}</span>
           </div>
@@ -191,18 +322,172 @@
     }
     function filterChats() {
       const term = document.getElementById('search').value.trim().toLowerCase();
+      const groupOnly = document.getElementById('config-group-only').checked;
+      const enabledCats = [...document.querySelectorAll('.config-cat:checked')].map(cb => cb.value);
       document.querySelectorAll('.chat').forEach(card => {
         const text = card.textContent.toLowerCase();
-        card.classList.toggle('hidden', term.length > 0 && !text.includes(term));
+        const matchesText = term.length === 0 || text.includes(term);
+        const matchesCat = enabledCats.includes(card.dataset.category);
+        const matchesGroup = !groupOnly || card.dataset.isGroup === 'true';
+        card.classList.toggle('hidden', !(matchesText && matchesCat && matchesGroup));
+      });
+      updateCount();
+    }
+    function updateChipStyles() {
+      document.querySelectorAll('.chip').forEach(chip => {
+        const input = chip.querySelector('input[type="checkbox"]');
+        if (!input) return;
+        chip.classList.toggle('active', input.checked);
       });
     }
+    function updateCount() {
+      const total = document.querySelectorAll('.chat').length;
+      const visible = total - document.querySelectorAll('.chat.hidden').length;
+      const el = document.getElementById('count');
+      if (el) el.textContent = `${visible} of ${total}`;
+    }
+    function loadConfig() {
+      try {
+        const raw = localStorage.getItem('yomi_config');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.categories)) return parsed;
+        }
+      } catch {}
+      return { categories: ['Family','Work','Promo','Official','Group','Personal','Other'], groupOnly: false };
+    }
+    function saveConfig() {
+      const categories = [...document.querySelectorAll('.config-cat:checked')].map(cb => cb.value);
+      localStorage.setItem('yomi_config', JSON.stringify({ categories, groupOnly: document.getElementById('config-group-only').checked }));
+    }
+    function applyConfig() {
+      const cfg = loadConfig();
+      document.querySelectorAll('.config-cat').forEach(cb => cb.checked = cfg.categories.includes(cb.value));
+      document.getElementById('config-group-only').checked = cfg.groupOnly;
+      updateChipStyles();
+      filterChats();
+    }
+    function loadOverrides() {
+      try {
+        const raw = localStorage.getItem('yomi_overrides');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') return parsed;
+        }
+      } catch {}
+      return {};
+    }
+    function saveOverrides(overrides) { localStorage.setItem('yomi_overrides', JSON.stringify(overrides)); }
+    function openEditDialog(id) {
+      const c = allConversations.find(c => c.id === id);
+      if (!c) return;
+      const overrides = loadOverrides();
+      const override = overrides[id] || {};
+      document.getElementById('edit-category').value = override.category ?? c.category ?? 'Other';
+      document.getElementById('edit-isGroup').checked = override.isGroup ?? c.isGroup ?? false;
+      document.getElementById('edit-dialog').dataset.id = id;
+      document.getElementById('edit-dialog').showModal();
+    }
+    ['Family','Work','Promo','Official','Group','Personal','Other'].forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat;
+      opt.textContent = cat;
+      document.getElementById('edit-category').appendChild(opt);
+    });
+    document.getElementById('edit-close').addEventListener('click', () => document.getElementById('edit-dialog').close());
+    document.getElementById('edit-save').addEventListener('click', () => {
+      const id = document.getElementById('edit-dialog').dataset.id;
+      if (!id) return;
+      const overrides = loadOverrides();
+      overrides[id] = { category: document.getElementById('edit-category').value, isGroup: document.getElementById('edit-isGroup').checked };
+      saveOverrides(overrides);
+      renderConversations();
+      document.getElementById('edit-dialog').close();
+    });
+    document.getElementById('edit-reset').addEventListener('click', () => {
+      const id = document.getElementById('edit-dialog').dataset.id;
+      if (!id) return;
+      const overrides = loadOverrides();
+      delete overrides[id];
+      saveOverrides(overrides);
+      renderConversations();
+      document.getElementById('edit-dialog').close();
+    });
+    document.getElementById('app').addEventListener('click', e => {
+      if (e.target.classList.contains('conv-setup')) {
+        e.stopPropagation();
+        openEditDialog(e.target.dataset.id);
+      }
+    });
+    function handleChipClick(e) {
+      const chip = e.target.closest('.chip');
+      if (!chip) return;
+      const input = chip.querySelector('input[type="checkbox"]');
+      if (!input) return;
+      e.preventDefault();
+      const all = [...document.querySelectorAll('.config-cat')];
+      if (chip.classList.contains('group-chip')) {
+        input.checked = !input.checked;
+      } else {
+        const allChecked = all.every(cb => cb.checked);
+        const onlyThisChecked = all.filter(cb => cb.checked).length === 1 && input.checked;
+        if (allChecked) {
+          all.forEach(cb => cb.checked = false);
+          input.checked = true;
+        } else if (onlyThisChecked) {
+          all.forEach(cb => cb.checked = true);
+        } else {
+          input.checked = !input.checked;
+        }
+      }
+      saveConfig();
+      filterChats();
+      updateChipStyles();
+    }
     document.getElementById('search').addEventListener('input', filterChats);
+    document.getElementById('chips').addEventListener('click', handleChipClick);
     document.getElementById('sort').addEventListener('change', renderConversations);
     document.getElementById('refresh').addEventListener('click', () => location.reload());
 
+    function renderContent(m, chatId) {
+      const type = String(m.mediaType || '').toLowerCase();
+      if (type === 'image' && m.mediaFile) {
+        const src = `media/${chatId}/${m.mediaFile}`;
+        return `<img class="media-img" src="${encodeURI(src)}" alt="image" loading="lazy" onclick="openLightbox(this.src)" onerror="this.outerHTML='<span class=\\'text-null\\'>[image unavailable]</span>'">`;
+      }
+      if (type === 'video' && m.mediaFile) {
+        const src = `media/${chatId}/${m.mediaFile}`;
+        return `<video class="media-video" src="${encodeURI(src)}" controls preload="metadata" onerror="this.outerHTML='<span class=\\'media-placeholder\\'>[video unavailable]</span>'"></video>`;
+      }
+      if (type === 'audio' && m.mediaFile) {
+        const src = `media/${chatId}/${m.mediaFile}`;
+        return `<audio class="media-audio" src="${encodeURI(src)}" controls preload="metadata" onerror="this.outerHTML='<span class=\\'media-placeholder\\'>[audio unavailable]</span>'"></audio>`;
+      }
+      if (type === 'file') {
+        if (m.mediaFile) {
+          const src = `media/${chatId}/${m.mediaFile}`;
+          const name = m.mediaFile.split('/').pop();
+          return `<a class="media-file" href="${encodeURI(src)}" download target="_blank" rel="noopener">⬇ ${escapeHtml(name)}</a>`;
+        }
+        return '<span class="media-placeholder">[file]</span>';
+      }
+      if (type) return `<span class="media-placeholder">[${escapeHtml(type)}]</span>`;
+      if (m.text == null) return '<span class="text-null">(no text)</span>';
+      return `<div class="text">${escapeHtml(m.text)}</div>`;
+    }
     function escapeHtml(s) {
       return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     }
+
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxClose = document.getElementById('lightbox-close');
+    function openLightbox(src) { if (!src) return; lightboxImg.src = src; lightbox.classList.add('active'); }
+    function closeLightbox() { lightboxImg.src = ''; lightbox.classList.remove('active'); }
+    lightboxClose.addEventListener('click', closeLightbox);
+    lightbox.addEventListener('click', (e) => { if (e.target !== lightboxImg && e.target !== lightboxClose) closeLightbox(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
+
     load();
   </script>
 </body>

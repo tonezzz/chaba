@@ -8,6 +8,10 @@
 - `stacks/web/public/` and `stacks/web/bserver-www/` from the `master` / `chaba` branch are **not** served by `chaba.h3`.
 - Use the `chaba-h3` worktree at `/home/tony/CascadeProjects/chaba-h3` for edits.
 
+## Docs single source of truth
+
+`/apps/docs/` and `/apps/docs/tony-omen/` are authored in the `chaba-h3` worktree only and served at `http://192.168.1.48:8081/apps/docs/tony-omen/`. Do not mirror them under `stacks/web/public/apps/docs/`; the 8080 Caddy stack is not the source of truth for docs pages.
+
 ## URL routing
 
 - `proxy-server.mjs` maps the request `pathname` directly to `public/<pathname>`.
@@ -42,7 +46,6 @@ Selected `chaba.h3` apps can also be served directly by the main `chaba` Caddy s
 
 - Mount the app directory into the `web` container in `stacks/web/docker-compose.yml`:
   - `/home/tony/CascadeProjects/chaba-h3/public/apps/<app>:/srv/public/tony-omen/apps/<app>`
-  - Attach the `chaba-h3_default` network if the page needs to reach `chaba-h3` backend services.
 - With `root * /srv/public` and `file_server`, Caddy automatically serves `index.html` for directory URLs.
 - Example: `imagen` is available at `http://192.168.1.48:8080/tony-omen/apps/imagen/`.
 - Inside these pages, continue using absolute fetch paths such as `/data.json`; they resolve against `/srv/public`.
@@ -50,13 +53,6 @@ Selected `chaba.h3` apps can also be served directly by the main `chaba` Caddy s
 ## Local Development for chaba.h3 Pages
 
 You can preview `chaba-h3/public` apps on the main `chaba` Caddy stack before pushing to the `chaba.h3` branch.
-
-### Subpath preview (8080)
-
-- `stacks/web/docker-compose.yml`: bind mount `chaba-h3/public` to `/srv/public/chaba-h3`
-- `stacks/web/Caddyfile`: add `handle_path /chaba-h3/*` block
-- Access: `http://192.168.1.48:8080/chaba-h3/apps/<app>/`
-- Caveat: pages that use absolute root fetches (e.g. `/cameras.json`, `/api/*`) need those paths mapped or should use app-relative fetches.
 
 ### Full parity preview (8081)
 

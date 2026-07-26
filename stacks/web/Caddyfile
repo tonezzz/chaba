@@ -1,18 +1,14 @@
 :8080 {
 	root * /srv/public
+
+	@tony_omen_temp_bare path /apps/tony-omen-temp
+	redir @tony_omen_temp_bare /apps/tony-omen-temp/ 308
+
 	file_server
 
 	# Pretty URLs: /cameras → /cameras.json
 	rewrite /cameras /cameras.json
 
-	handle /chaba-h3 {
-		redir /chaba-h3/ 308
-	}
-
-	handle_path /chaba-h3/* {
-		root * /srv/public/chaba-h3
-		file_server
-	}
 
 	@root path /
 	handle @root {
@@ -85,6 +81,18 @@
 		file_server
 	}
 
+	@tony_omen_exact path /tony-omen /tony-omen/
+	redir @tony_omen_exact /apps/tony-omen-temp/ 308
+
+	handle /apps/tony-omen-temp {
+		redir /apps/tony-omen-temp/ 308
+	}
+
+	handle_path /apps/tony-omen-temp/* {
+		root * /srv/public/tony-omen
+		file_server
+	}
+
 	@imagen2_noslash path /apps/imagen2
 	redir @imagen2_noslash /apps/imagen2/ 308
 
@@ -119,6 +127,42 @@
 			yomi {env.YOMI_PASSWORD_HASH}
 		}
 		file_server
+	}
+
+	@chatlocal path /apps/chatlocal /apps/chatlocal/*
+	handle @chatlocal {
+		reverse_proxy host.docker.internal:3000 {
+			header_up Host localhost:3000
+		}
+	}
+
+	@neo_chat path /apps/neo-chat /apps/neo-chat/*
+	handle @neo_chat {
+		reverse_proxy host.docker.internal:3001 {
+			header_up Host localhost:3001
+		}
+	}
+
+	@chatllama_noslash path /apps/chatllama
+	redir @chatllama_noslash /apps/chatllama/ 308
+
+	handle /v1/* {
+		reverse_proxy host.docker.internal:8008 {
+			header_up Host localhost:8008
+		}
+	}
+
+	handle_path /apps/chatllama/* {
+		reverse_proxy host.docker.internal:8008 {
+			header_up Host localhost:8008
+			header_up Accept-Encoding gzip
+		}
+	}
+
+	handle /socket.io/* {
+		reverse_proxy host.docker.internal:3000 {
+			header_up Host localhost:3000
+		}
 	}
 }
 
