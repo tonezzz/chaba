@@ -1,6 +1,10 @@
-# Gaussian Splatting Docker
+# chaba
 
-A multi-container Docker environment for experimenting with **3D Gaussian Splatting** variants side-by-side.
+A multi-purpose homelab stack: 3D Gaussian Splatting research, Frigate NVR traffic-camera surveillance, and the chaba.h3 static web/apps server.
+
+- **master** branch (this repo) — 3DGS research stack, Frigate NVR, and web/Caddy stack
+- **chaba.h3** branch — Plesk static site served at https://chaba.h3.gizmo-thailand.com/
+- **chaba-omen** branch — omen host infrastructure (mcp-llama, ChatLocal/Neo Chat, NVR extras)
 
 ## Included Implementations
 
@@ -34,6 +38,30 @@ docker run --rm --gpus all nvidia/cuda:11.8.0-base-ubuntu22.04 nvidia-smi
 ```
 
 ---
+
+## System Overview
+
+### Hosts
+
+| Host | IP | Role |
+|------|----|------|
+| tony-omen | 192.168.1.48 | Docker host, GPU/NVR/web server |
+| tony-dell | 192.168.1.42 | Secondary workstation / Barrier client |
+
+### Stacks
+
+| Stack | Compose file | Ports |
+|-------|--------------|-------|
+| 3DGS / Research | `docker-compose.yml` | 7007 (nerfstudio), 8888 (jupyter) |
+| Frigate NVR | `frigate/docker-compose.yml` | 5000, 8554, 8555 |
+| Web (Caddy) | `stacks/web/docker-compose.yml` | 8080, 8081 |
+| AI (llama-server) | `chaba-omen/stacks/ai/docker-compose.yml` | 8008 |
+| ChatLocal | `chaba-omen/chat-uis/ChatLocal` | 3000 |
+| Neo Chat | `chaba-omen/chat-uis/neo-chat` | 3001 |
+
+### Web Apps (chaba.h3)
+
+Track/Track2/Track3/Track4, Imagen/Imagen2, Cameras, Reef Riders, Yomi, Docs — see https://chaba.h3.gizmo-thailand.com/apps/
 
 ## Quick Start
 
@@ -152,16 +180,7 @@ docker compose up -d
 # Open: http://localhost:5000
 ```
 
-**Current camera:** VSTARCAM at `192.168.1.41` (H.265, port 10554)
-
-| Stream | URL | Resolution | Role |
-|--------|-----|-----------|------|
-| Main | `rtsp://admin:tonytony@192.168.1.41:10554/tcp/av0_0` | 2304x1296 @ 15fps | record |
-| Sub | `rtsp://admin:tonytony@192.168.1.41:10554/tcp/av0_1` | 640x360 @ 20fps | detect |
-
-> **Note:** VSTARCAM uses non-standard RTSP paths (`/tcp/av0_0`, not `/stream1`).
-> The main stream's H.265 bitstream has a non-standard VPS, so recording transcodes
-> to H.264 with `libx264`. Audio (PCM A-law) is dropped (`-an`) as it's unsupported in MP4.
+**Cameras:** `frigate/cameras.json` is the single source of truth for 34+ traffic and local cameras. Run `python3 frigate/generate_config.py` to regenerate `frigate/config.yml` and `camera-map.html`.
 
 Config files:
 - `frigate/docker-compose.yml` — container definition
@@ -200,36 +219,43 @@ docker compose up jupyter
 ## Directory Structure
 
 ```
-gaussian-splatting-docker/
-├── docker/
-│   ├── base/           # Shared CUDA + Python base image
-│   ├── 3dgs/           # Original 3DGS image
-│   ├── nerfstudio/     # Nerfstudio + gsplat image
-│   ├── variants/       # 2DGS + Mip-Splatting + GOF image
-│   └── colmap/         # COLMAP SfM preprocessing image
-├── docker-compose.yml      # Main 3DGS stack
-├── docker-compose-diagram.md
-├── .env                    # Default environment variables
-├── data/                   # Input scenes (bind-mounted)
-├── outputs/                # Training results (bind-mounted)
+chaba/
+├── docker/                 # 3DGS container Dockerfiles
+│   ├── base/
+│   ├── 3dgs/
+│   ├── nerfstudio/
+│   ├── variants/
+│   └── colmap/
+├── docker-compose.yml      # Main 3DGS + research stack
+├── frigate/                # Frigate NVR stack
+│   ├── docker-compose.yml
+│   ├── cameras.json        # Single source of truth for cameras
+│   ├── generate_config.py  # Generates config.yml + camera-map.html
+│   └── config.yml          # Generated (do not edit)
+├── stacks/web/             # Caddy web server + status-api + camera-control
+│   ├── docker-compose.yml
+│   ├── Caddyfile
+│   └── public/             # Static files for 8080 apps
+├── scripts/                # Build/train/gdrive helpers
 ├── notebooks/              # JupyterLab notebooks
-├── src/                    # Source code mounts for dev (gitignored)
-├── scripts/
-│   ├── build_all.sh        # Build all images
-│   ├── prepare_scene.sh    # COLMAP pipeline helper
-│   ├── train_all.sh        # Train all variants on one scene
-│   ├── benchmark.sh        # Compute PSNR/SSIM/LPIPS
-│   └── setup_gdrive.sh     # Google Drive / rclone setup helper
-├── frigate/                # Frigate NVR (separate compose stack)
-│   ├── docker-compose.yml  # Frigate container definition
-│   ├── config.yml          # Camera + detection + recording config
-│   ├── db/                 # Frigate database
-│   └── storage/            # Recordings, clips, exports
-└── docs/
-    └── plan-brief.md       # Frigate setup plan & camera details
+├── data/                   # Input datasets
+├── outputs/                # Training outputs
+├── docs/                   # Project notes
+└── .env                    # Default environment variables
+
+Related worktrees:
+- ../chaba-h3/   — chaba.h3 branch (Plesk static site)
+- ../chaba-omen/ — chaba-omen branch (host infrastructure: mcp-llama, chat UIs)
 ```
 
 ---
+
+## Disaster Recovery Plan
+
+DR runbooks, backup sources, secrets inventory, and bootstrap checklist are maintained in the chaba.h3 docs app.
+
+- Rendered: https://chaba.h3.gizmo-thailand.com/apps/docs/
+- Source: `chaba-h3/public/apps/docs/data.yml` (and `tony-omen/data.yml`, `tony-dell/data.yml`) in the `chaba.h3` branch
 
 ## Benchmark Reference (Mip-NeRF360)
 
