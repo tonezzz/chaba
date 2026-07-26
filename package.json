@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "build:css": "tailwindcss -c ./tailwind.config.cjs -i ./src/tailwind.css -o ./public/assets/tailwind.css",
-    "watch:css": "tailwindcss -c ./tailwind.config.cjs -i ./src/tailwind.css -o ./public/assets/tailwind.css --watch"
+    "watch:css": "tailwindcss -c ./tailwind.config.cjs -i ./src/tailwind.css -o ./public/assets/tailwind.css --watch",
+    "serve:php": "php -S 0.0.0.0:8123 -t public",
+    "serve:php:quiet": "php -S 0.0.0.0:8123 -t public > /tmp/chaba-php.log 2>&1"
   },
   "engines": {
     "node": ">=20"

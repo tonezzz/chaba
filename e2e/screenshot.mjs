@@ -1,0 +1,13 @@
+import { chromium } from 'playwright';
+const browser = await chromium.launch();
+const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, ignoreHTTPSErrors: true });
+const page = await context.newPage();
+await page.goto('https://reefriders-watersports.com/', { waitUntil: 'domcontentloaded', timeout: 120000 });
+await page.waitForTimeout(3000);
+await page.screenshot({ path: '/tmp/original.png', fullPage: true });
+console.log('captured original');
+await page.goto('http://192.168.1.48:8081/apps/reefriders/index.html', { waitUntil: 'domcontentloaded', timeout: 120000 });
+await page.waitForTimeout(3000);
+await page.screenshot({ path: '/tmp/ours.png', fullPage: true });
+console.log('captured ours');
+await browser.close();

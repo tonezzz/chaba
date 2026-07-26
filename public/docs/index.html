@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>System Overview — chaba.h3</title>
+  <link rel="stylesheet" href="/assets/tailwind.css">
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+  <script src="/apps/nav.js"></script>
+</head>
+<body class="bg-bg text-gray-200 min-h-screen">
+  <div id="nav"></div>
+
+  <main class="max-w-5xl mx-auto px-4 py-10">
+    <h1 class="text-4xl font-bold mb-2">System Overview</h1>
+    <p class="text-gray-400 mb-8">A quick reference for the chaba.h3 site and the local tony-omen infrastructure behind it.</p>
+
+    <section class="mb-10">
+      <h2 class="text-2xl font-semibold mb-4">Hosts</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="rounded-xl border border-gray-700 bg-card p-5">
+          <h3 class="text-lg font-semibold text-white">tony-omen</h3>
+          <p class="text-gray-400 text-sm mt-1">Docker host, GPU/NVR server</p>
+          <code class="block mt-3 text-sm text-accent">192.168.1.48</code>
+        </div>
+        <div class="rounded-xl border border-gray-700 bg-card p-5">
+          <h3 class="text-lg font-semibold text-white">tony-dell</h3>
+          <p class="text-gray-400 text-sm mt-1">Secondary workstation</p>
+          <code class="block mt-3 text-sm text-accent">192.168.1.42</code>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-10">
+      <h2 class="text-2xl font-semibold mb-4">Web</h2>
+      <ul class="space-y-2 text-gray-300">
+        <li><strong class="text-white">Production:</strong> <a href="https://chaba.h3.gizmo-thailand.com/" class="text-accent hover:underline">https://chaba.h3.gizmo-thailand.com/</a> (Plesk static hosting)</li>
+        <li><strong class="text-white">Local preview (full parity):</strong> <a href="http://192.168.1.48:8081/" class="text-accent hover:underline">http://192.168.1.48:8081/</a></li>
+        <li><strong class="text-white">Local preview (subpath):</strong> <a href="http://192.168.1.48:8080/chaba-h3/" class="text-accent hover:underline">http://192.168.1.48:8080/chaba-h3/</a></li>
+        <li><strong class="text-white">Main chaba Caddy:</strong> <a href="http://192.168.1.48:8080/" class="text-accent hover:underline">http://192.168.1.48:8080/</a></li>
+      </ul>
+    </section>
+
+    <section class="mb-10">
+      <h2 class="text-2xl font-semibold mb-4">Apps</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="apps-grid">
+        <a href="/apps/track/" class="rounded-xl border border-gray-700 bg-card p-5 hover:border-accent transition">
+          <h3 class="font-semibold text-white">Track</h3>
+          <p class="text-gray-400 text-sm mt-1">Moving-object simulation on a Leaflet map.</p>
+        </a>
+        <a href="/apps/track2/" class="rounded-xl border border-gray-700 bg-card p-5 hover:border-accent transition">
+          <h3 class="font-semibold text-white">Track2</h3>
+          <p class="text-gray-400 text-sm mt-1">Windsurf race simulation with buoys and leaderboard.</p>
+        </a>
+        <a href="/apps/track3/" class="rounded-xl border border-gray-700 bg-card p-5 hover:border-accent transition">
+          <h3 class="font-semibold text-white">Track3</h3>
+          <p class="text-gray-400 text-sm mt-1">Race course guide with start/finish and buoy rounding.</p>
+        </a>
+        <a href="/apps/cams/" class="rounded-xl border border-gray-700 bg-card p-5 hover:border-accent transition">
+          <h3 class="font-semibold text-white">Cameras</h3>
+          <p class="text-gray-400 text-sm mt-1">Traffic camera map and live status.</p>
+        </a>
+        <a href="/apps/reefriders/" class="rounded-xl border border-gray-700 bg-card p-5 hover:border-accent transition">
+          <h3 class="font-semibold text-white">Reef Riders</h3>
+          <p class="text-gray-400 text-sm mt-1">Reef Riders Boracay watersports info and booking.</p>
+        </a>
+        <a href="/apps/imagen/" class="rounded-xl border border-gray-700 bg-card p-5 hover:border-accent transition">
+          <h3 class="font-semibold text-white">Imagen</h3>
+          <p class="text-gray-400 text-sm mt-1">Stable-diffusion image generator (main Caddy stack).</p>
+        </a>
+      </div>
+    </section>
+
+    <section class="mb-10">
+      <h2 class="text-2xl font-semibold mb-4">Docker Stacks</h2>
+      <div class="overflow-x-auto rounded-xl border border-gray-700">
+        <table class="w-full text-sm text-left text-gray-300">
+          <thead class="bg-card text-gray-200 uppercase text-xs">
+            <tr>
+              <th class="px-4 py-3">Stack</th>
+              <th class="px-4 py-3">Service</th>
+              <th class="px-4 py-3">Port</th>
+              <th class="px-4 py-3">Notes</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-700">
+            <tr class="bg-bg"><td class="px-4 py-3 font-medium">Web</td><td class="px-4 py-3">Caddy</td><td class="px-4 py-3 text-accent">8080</td><td class="px-4 py-3">Static files + reverse proxy</td></tr>
+            <tr class="bg-card"><td class="px-4 py-3 font-medium">Web</td><td class="px-4 py-3">Caddy (parity)</td><td class="px-4 py-3 text-accent">8081</td><td class="px-4 py-3">chaba.h3 root preview</td></tr>
+            <tr class="bg-bg"><td class="px-4 py-3 font-medium">Web</td><td class="px-4 py-3">status-api</td><td class="px-4 py-3 text-accent">8000</td><td class="px-4 py-3">FastAPI status backend</td></tr>
+            <tr class="bg-card"><td class="px-4 py-3 font-medium">Web</td><td class="px-4 py-3">camera-control</td><td class="px-4 py-3 text-accent">8090</td><td class="px-4 py-3">Flask camera registry panel</td></tr>
+            <tr class="bg-bg"><td class="px-4 py-3 font-medium">Frigate</td><td class="px-4 py-3">frigate</td><td class="px-4 py-3 text-accent">5000</td><td class="px-4 py-3">NVR Web UI</td></tr>
+            <tr class="bg-card"><td class="px-4 py-3 font-medium">Frigate</td><td class="px-4 py-3">RTSP restream</td><td class="px-4 py-3 text-accent">8554</td><td class="px-4 py-3">—</td></tr>
+            <tr class="bg-bg"><td class="px-4 py-3 font-medium">Frigate</td><td class="px-4 py-3">WebRTC</td><td class="px-4 py-3 text-accent">8555</td><td class="px-4 py-3">TCP + UDP</td></tr>
+            <tr class="bg-card"><td class="px-4 py-3 font-medium">Main</td><td class="px-4 py-3">nerfstudio</td><td class="px-4 py-3 text-accent">7007</td><td class="px-4 py-3">Web viewer</td></tr>
+            <tr class="bg-bg"><td class="px-4 py-3 font-medium">Main</td><td class="px-4 py-3">jupyter</td><td class="px-4 py-3 text-accent">8888</td><td class="px-4 py-3">JupyterLab</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="mb-10">
+      <h2 class="text-2xl font-semibold mb-4">Cameras</h2>
+      <p class="text-gray-300 mb-4">34 traffic cameras managed via <code class="text-accent">cameras.json</code> and <code class="text-accent">generate_config.py</code>. Frigate records and detects; the camera map shows live HLS streams and snapshots.</p>
+      <ul class="list-disc list-inside text-gray-300 space-y-1">
+        <li>Registry: <code class="text-accent">frigate/cameras.json</code></li>
+        <li>Generated config: <code class="text-accent">frigate/config.yml</code></li>
+        <li>Map: <code class="text-accent">/apps/cams/</code> or <code class="text-accent">http://192.168.1.48:8080/camera-map.html</code></li>
+        <li>Control panel: <code class="text-accent">http://192.168.1.48:8090/</code></li>
+      </ul>
+    </section>
+
+    <section class="mb-10">
+      <h2 class="text-2xl font-semibold mb-4">Repositories</h2>
+      <ul class="list-disc list-inside text-gray-300 space-y-1">
+        <li><strong class="text-white">chaba.h3</strong> branch / <code class="text-accent">/home/tony/CascadeProjects/chaba-h3</code> — static Plesk site</li>
+        <li><strong class="text-white">master</strong> branch / <code class="text-accent">/home/tony/CascadeProjects/chaba</code> — main Docker/infrastructure baseline</li>
+      </ul>
+    </section>
+  </main>
+
+  <script>
+    fetch('/apps/apps.yml').then(r => r.text()).then(text => {
+      const data = jsyaml.load(text);
+      document.getElementById('nav').innerHTML = ChabaNav.renderNav(data.nav);
+    });
+  </script>
+</body>
+</html>

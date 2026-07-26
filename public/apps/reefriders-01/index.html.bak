@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Reef Riders Boracay — Windsurfing, Kitesurfing, Wingfoiling & SUP">
+  <link rel="icon" type="image/png" href="/apps/reefriders/assets/logo.png">
+  <title>Reef Riders Boracay</title>
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+  <link rel="stylesheet" href="/assets/tailwind.css">
+  <link rel="stylesheet" href="/apps/common.css">
+  <style>
+    html { scroll-behavior: smooth; }
+    .hero-bg { background: linear-gradient(135deg, #0ea5e9, #0f172a); }
+    .hero-bg.with-image { background: linear-gradient(rgba(15,23,42,0.7), rgba(15,23,42,0.85)); }
+  </style>
+  <link href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/apps/reefriders/style.css">
+</head>
+<body class="bg-bg text-gray-200">
+  <header class="bg-surface border-b border-gray-700 py-3">
+    <div class="max-w-6xl mx-auto px-4 flex items-center">
+      <a href="/apps/reefriders/index.html" class="flex items-center">
+        <img src="/apps/reefriders/assets/logo.png" alt="Reef Riders Boracay" class="h-12 w-auto">
+      </a>
+    </div>
+  </header>
+  <div id="app-nav"></div>
+  <div id="app-subnav"></div>
+  <main id="app"></main>
+
+  <script src="/apps/nav.js"></script>
+  <script>
+  (function () {
+    function escapeHtml(str) {
+      if (str == null) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function nl2p(text) {
+      if (!text) return '';
+      return text
+        .split(/\n\s*\n/)
+        .map(p => `<p class="mb-4 text-gray-300 leading-relaxed">${escapeHtml(p).replace(/\n/g, '<br>')}</p>`)
+        .join('');
+    }
+
+    function resolveImage(path) {
+      if (!path) return '';
+      if (path.startsWith('assets/')) return '/apps/reefriders/' + path;
+      return path;
+    }
+
+    function ctaButton(c) {
+      const base = 'inline-block px-6 py-3 rounded-lg font-semibold transition hover:opacity-90';
+      const cls = c.style === 'primary' ? 'bg-accent text-black' : 'bg-gray-700 text-white';
+      return `<a href="${escapeHtml(c.href)}" class="${base} ${cls}">${escapeHtml(c.label)}</a>`;
+    }
+
+    function renderHero(s, data) {
+      const src = resolveImage(s.background_image, data);
+      const style = src ? `style="background-image: linear-gradient(rgba(15,23,42,0.6), rgba(15,23,42,0.85)), url('${escapeHtml(src)}'); background-size: cover; background-position: center;"` : '';
+      const cls = 'min-h-[70vh] flex items-center justify-center text-center text-white ' + (src ? 'with-image' : 'hero-bg');
+      return `<section id="${s.id}" class="${cls}" ${style}>
+        <div class="max-w-4xl mx-auto px-4 py-20">
+          <h1 class="text-4xl md:text-6xl font-bold mb-4">${escapeHtml(s.heading)}</h1>
+          <p class="text-xl md:text-2xl mb-2 text-gray-200">${escapeHtml(s.subheading)}</p>
+          <p class="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">${escapeHtml(s.tagline)}</p>
+          <div class="flex flex-wrap justify-center gap-4">${(s.ctas || []).map(ctaButton).join('')}</div>
+        </div>
+      </section>`;
+    }
+
+    function renderAbout(s, data) {
+      const src = resolveImage(s.image, data);
+      const subsections = (s.subsections || []).map(sub =>
+        `<div class="mt-6">
+          <h3 class="text-xl font-semibold text-accent mb-2">${escapeHtml(sub.title)}</h3>
+          ${nl2p(sub.content)}
+        </div>`).join('');
+      const imgHtml = src ? `<img src="${escapeHtml(src)}" alt="${escapeHtml(s.image_alt || '')}" class="rounded-xl border border-gray-700 w-full">` : '';
+      const layout = s.layout === 'image_left' ? 'md:flex-row-reverse' : 'md:flex-row';
+      return `<section id="${s.id}" class="py-16 bg-bg">
+        <div class="max-w-6xl mx-auto px-4">
+          <div class="flex flex-col ${layout} gap-10 items-start">
+            <div class="flex-1 w-full">
+              <h2 class="text-3xl font-bold text-white mb-4">${escapeHtml(s.heading)}</h2>
+              ${nl2p(s.content)}
+              ${subsections}
+            </div>
+            <div class="flex-1 w-full">${imgHtml}</div>
+          </div>
+        </div>
+      </section>`;
+    }
+
+    function renderCards(s, data) {
+      const cards = (s.cards || []).map(c => {
+        const src = resolveImage(c.image, data);
+        const img = src ? `<img src="${escapeHtml(src)}" alt="${escapeHtml(c.image_alt || '')}" class="rounded-lg mb-4 w-full h-48 object-cover">` : `<div class="rounded-lg mb-4 w-full h-48 bg-gray-800 flex items-center justify-center text-gray-500">No image</div>`;
+        const feats = (c.features || []).map(f => `<li class="text-sm text-gray-300">${escapeHtml(f)}</li>`).join('');
+        const cta = c.cta ? `<a href="${escapeHtml(c.cta.href)}" class="text-accent font-semibold hover:text-white transition">${escapeHtml(c.cta.label)} →</a>` : '';
+        return `<div class="bg-card border border-gray-700 rounded-xl p-6 flex flex-col h-full hover:border-accent transition">
+          ${img}
+          <h3 class="text-xl font-semibold text-white mb-2">${escapeHtml(c.title)}</h3>
+          <p class="text-gray-400 text-sm mb-4 flex-1">${escapeHtml(c.summary || '')}</p>
+          <ul class="space-y-1 mb-4 list-disc list-inside">${feats}</ul>
+          ${cta}
+        </div>`;
+      }).join('');
+      return `<section id="${s.id}" class="py-16 bg-surface">
+        <div class="max-w-6xl mx-auto px-4">
+          <h2 class="text-3xl font-bold text-white mb-2">${escapeHtml(s.heading)}</h2>
+          <p class="text-gray-400 mb-8">${escapeHtml(s.intro || '')}</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">${cards}</div>
+        </div>
+      </section>`;
+    }
+
+    function renderDetailList(s) {
+      const items = (s.items || []).map(item =>
+        `<div class="bg-card border border-gray-700 rounded-xl p-6">
+          <h3 class="text-xl font-semibold text-accent mb-3">${escapeHtml(item.title)}</h3>
+          ${nl2p(item.content)}
+        </div>`).join('');
+      return `<section id="${s.id}" class="py-16 bg-bg">
+        <div class="max-w-6xl mx-auto px-4">
+          <h2 class="text-3xl font-bold text-white mb-2">${escapeHtml(s.heading)}</h2>
+          <p class="text-gray-400 mb-8">${escapeHtml(s.intro || '')}</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">${items}</div>
+        </div>
+      </section>`;
+    }
+
+    function renderPricing(s) {
+      const packages = (s.packages || []).map(p =>
+        `<div class="bg-card border border-gray-700 rounded-xl p-6 flex flex-col h-full">
+          <h3 class="text-lg font-semibold text-white">${escapeHtml(p.title)}</h3>
+          <p class="text-accent text-2xl font-bold my-2">${escapeHtml(p.price)}</p>
+          <p class="text-gray-400 text-sm mb-3">${escapeHtml(p.duration)}</p>
+          <p class="text-gray-300 text-sm flex-1">${escapeHtml(p.includes)}</p>
+        </div>`).join('');
+      return `<section id="${s.id}" class="py-16 bg-surface">
+        <div class="max-w-6xl mx-auto px-4">
+          <h2 class="text-3xl font-bold text-white mb-2">${escapeHtml(s.heading)}</h2>
+          <p class="text-gray-400 mb-8">${escapeHtml(s.intro || '')}</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">${packages}</div>
+          <div class="bg-card border border-gray-700 rounded-xl p-6">
+            <h3 class="text-xl font-semibold text-white mb-2">${escapeHtml(s.rental.heading)}</h3>
+            ${nl2p(s.rental.content)}
+            <p class="text-gray-400 text-sm mt-3">${escapeHtml(s.rental.note)}</p>
+          </div>
+          <p class="text-gray-500 text-sm mt-4">${escapeHtml(s.payment_note || '')}</p>
+        </div>
+      </section>`;
+    }
+
+    function renderInfoBox(s) {
+      const iframe = s.widget && s.widget.src ? `<iframe src="${escapeHtml(s.widget.src)}" class="w-full h-72 rounded border-0" loading="lazy" title="${escapeHtml(s.heading)}"></iframe>` : '';
+      return `<section id="${s.id}" class="py-16 bg-bg">
+        <div class="max-w-6xl mx-auto px-4">
+          <h2 class="text-3xl font-bold text-white mb-4">${escapeHtml(s.heading)}</h2>
+          ${nl2p(s.content)}
+          <p class="text-gray-400 text-sm mt-4 mb-4">${escapeHtml(s.statistics_note || '')}</p>
+          <div class="bg-card border border-gray-700 rounded-xl p-4">
+            ${iframe}
+            <p class="text-gray-500 text-xs mt-2">${escapeHtml(s.widget.note)}</p>
+          </div>
+        </div>
+      </section>`;
+    }
+
+    function renderTravel(s) {
+      const src = resolveImage(s.image);
+      const img = src ? `<div class="mb-8"><img src="${escapeHtml(src)}" alt="${escapeHtml(s.image_alt || '')}" class="rounded-xl border border-gray-700 w-full max-w-3xl mx-auto"></div>` : '';
+      const routes = (s.routes || []).map(r =>
+        `<div class="bg-card border border-gray-700 rounded-xl p-6">
+          <h3 class="text-xl font-semibold text-accent mb-3">${escapeHtml(r.title)}</h3>
+          ${nl2p(r.content)}
+        </div>`).join('');
+      const transfers = (s.transfers || []).map(t => `<li class="text-gray-300">${escapeHtml(t)}</li>`).join('');
+      return `<section id="${s.id}" class="py-16 bg-surface">
+        <div class="max-w-6xl mx-auto px-4">
+          <h2 class="text-3xl font-bold text-white mb-2">${escapeHtml(s.heading)}</h2>
+          <p class="text-gray-400 mb-8">${escapeHtml(s.intro || '')}</p>
+          ${img}
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">${routes}</div>
+          <div class="bg-card border border-gray-700 rounded-xl p-6">
+            <h3 class="text-xl font-semibold text-white mb-3">Transfer costs</h3>
+            <ul class="space-y-2 list-disc list-inside">${transfers}</ul>
+            <p class="text-gray-500 text-sm mt-4">${escapeHtml(s.transfer_note || '')}</p>
+          </div>
+        </div>
+      </section>`;
+    }
+
+    function renderProfiles(s, data) {
+      const members = (s.members || []).map(m => {
+        const src = resolveImage(m.image, data);
+        const img = src ? `<img src="${escapeHtml(src)}" alt="${escapeHtml(m.name)}" class="w-20 h-20 rounded-full object-cover border border-gray-700">` : `<div class="w-20 h-20 rounded-full bg-gray-700 flex items-center justify-center text-xl font-bold text-white">${escapeHtml(m.name.charAt(0))}</div>`;
+        return `<div class="bg-card border border-gray-700 rounded-xl p-6 flex items-center gap-4">
+          ${img}
+          <div>
+            <h3 class="text-lg font-semibold text-white">${escapeHtml(m.name)}</h3>
+            <p class="text-gray-400 text-sm">${escapeHtml(m.role)}</p>
+          </div>
+        </div>`;
+      }).join('');
+      return `<section id="${s.id}" class="py-16 bg-bg">
+        <div class="max-w-6xl mx-auto px-4">
+          <h2 class="text-3xl font-bold text-white mb-2">${escapeHtml(s.heading)}</h2>
+          <p class="text-gray-400 mb-8">${escapeHtml(s.intro || '')}</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">${members}</div>
+        </div>
+      </section>`;
+    }
+
+    function renderTestimonials(s) {
+      const reviews = (s.reviews || []).map(r =>
+        `<div class="bg-card border border-gray-700 rounded-xl p-6">
+          <p class="text-gray-300 italic mb-4">"${escapeHtml(r.text)}"</p>
+          <p class="text-accent text-sm font-semibold">${escapeHtml(r.author)}</p>
+          <p class="text-gray-500 text-xs">${escapeHtml(r.source)}</p>
+        </div>`).join('');
+      return `<section id="${s.id}" class="py-16 bg-surface">
+        <div class="max-w-6xl mx-auto px-4">
+          <h2 class="text-3xl font-bold text-white mb-2">${escapeHtml(s.heading)}</h2>
+          <p class="text-gray-400 mb-8">${escapeHtml(s.intro || '')}</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">${reviews}</div>
+        </div>
+      </section>`;
+    }
+
+    function renderContact(s) {
+      const wa = s.whatsapp ? `https://wa.me/${String(s.whatsapp).replace(/\D/g, '')}` : '#';
+      return `<section id="${s.id}" class="py-16 bg-bg">
+        <div class="max-w-4xl mx-auto px-4 text-center">
+          <h2 class="text-3xl font-bold text-white mb-2">${escapeHtml(s.heading)}</h2>
+          <p class="text-gray-400 mb-8">${escapeHtml(s.intro || '')}</p>
+          <div class="bg-card border border-gray-700 rounded-xl p-8 inline-block text-left w-full max-w-lg">
+            <p class="text-gray-300 mb-3">Phone: <a href="tel:${escapeHtml(s.phone)}" class="text-accent">${escapeHtml(s.phone)}</a></p>
+            <p class="text-gray-300 mb-3">WhatsApp: <a href="${escapeHtml(wa)}" class="text-accent" target="_blank" rel="noopener">${escapeHtml(s.whatsapp || s.phone)}</a></p>
+            <p class="text-gray-300 mb-6">Email: <a href="mailto:${escapeHtml(s.email)}" class="text-accent">${escapeHtml(s.email)}</a></p>
+            <a href="${escapeHtml(s.cta.href)}" class="inline-block px-6 py-3 rounded-lg bg-accent text-black font-semibold hover:opacity-90 transition">${escapeHtml(s.cta.label)}</a>
+            <p class="text-gray-500 text-sm mt-6">${escapeHtml(s.form && s.form.note || '')}</p>
+            <p class="text-gray-500 text-sm mt-2">${escapeHtml(s.map && s.map.note || '')}</p>
+          </div>
+        </div>
+      </section>`;
+    }
+
+    function renderFooter(footer) {
+      const links = (footer.links || []).map(l => `<a href="${escapeHtml(l.href)}" class="text-gray-400 hover:text-white transition">${escapeHtml(l.label)}</a>`).join(' <span class="text-gray-600">|</span> ');
+      return `<footer class="bg-card border-t border-gray-700 py-8">
+        <div class="max-w-6xl mx-auto px-4 text-center text-gray-400 text-sm">
+          <p class="mb-2">${escapeHtml(footer.copyright)}</p>
+          <div class="flex flex-wrap justify-center gap-2">${links}</div>
+        </div>
+      </footer>`;
+    }
+
+    function renderSection(s, data) {
+      switch (s.type) {
+        case 'hero': return renderHero(s, data);
+        case 'split_text_image': return renderAbout(s, data);
+        case 'cards_grid': return renderCards(s, data);
+        case 'detail_list': return renderDetailList(s);
+        case 'pricing': return renderPricing(s);
+        case 'info_box': return renderInfoBox(s);
+        case 'travel_info': return renderTravel(s);
+        case 'profiles': return renderProfiles(s, data);
+        case 'testimonials': return renderTestimonials(s);
+        case 'contact': return renderContact(s);
+        default: return `<section id="${s.id}" class="py-16"><div class="max-w-6xl mx-auto px-4"><p class="text-gray-500">Unknown section type: ${escapeHtml(s.type)}</p></div></section>`;
+      }
+    }
+
+    fetch('/apps/reefriders/reefriders-wireframe-v2.yml')
+      .then(r => r.text())
+      .then(text => {
+        const data = jsyaml.load(text);
+        document.title = escapeHtml(data.site.title);
+        const desc = document.querySelector('meta[name="description"]');
+        if (desc) desc.setAttribute('content', escapeHtml(data.site.tagline));
+        ChabaNav.load({ subnav: data.nav, subnavTarget: 'app-subnav' });
+        document.getElementById('app').innerHTML = data.sections.map(s => renderSection(s, data)).join('') + renderFooter(data.footer);
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById('app').innerHTML = '<p class="p-8 text-center text-red-400">Failed to load page data.</p>';
+      });
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+"""Modular build for the Reef Riders static mirror."""
+import os, re, json, argparse, shutil
+from pathlib import Path
+
+BASE = Path('/home/tony/CascadeProjects/chaba-h3/public/apps/reefriders')
+SRC = Path(__file__).parent
+PARTIALS = SRC / 'partials'
+PAGES = SRC / 'pages'
+
+NAV = {
+    'about': 'about-us-windsurfing-kitesurfing-boracay/',
+    'windsurfing': 'windsurfing-boracay-philippines/',
+    'kitesurfing': 'kitesurfingboracay/',
+    'wingfoiling': 'wingfoiling/',
+    'sup': 'stand-up-paddleboarding-boracay-philippines/',
+    'wind': 'wind-condition-in-boracay/',
+    'contact': 'contact-us/',
+}
+
+def find_pages():
+    found = []
+    for dirpath, dirnames, filenames in os.walk(BASE):
+        if 'index.html' in filenames:
+            p = Path(dirpath) / 'index.html'
+            rel = p.relative_to(BASE)
+            if 'wp-json' in str(rel):
+                continue
+            slug = str(rel.parent) if str(rel.parent) != '.' else ''
+            found.append((slug, p))
+    return found
+
+def between(text, start, end, flags=re.I | re.S):
+    m = re.search(re.escape(start) + r'(.*?)' + re.escape(end), text, flags)
+    return m.group(1) if m else ''
+
+def meta_from_text(text):
+    head = between(text, '<head>', '</head>')
+    title = re.search(r'<title[^>]*>(.*?)</title>', head, re.S | re.I)
+    desc = re.search(r'<meta[^>]+name=["\']description["\'][^>]+content=["\']([^"\']*)["\']', head, re.I | re.S)
+    if not desc:
+        desc = re.search(r'<meta[^>]+content=["\']([^"\']*)["\'][^>]+name=["\']description["\']', head, re.I | re.S)
+    canon = re.search(r'<link[^>]+rel=["\']canonical["\'][^>]+href=["\']([^"\']*)["\']', head, re.I | re.S)
+    if not canon:
+        canon = re.search(r'<link[^>]+href=["\']([^"\']*)["\'][^>]+rel=["\']canonical["\']', head, re.I | re.S)
+    return {
+        'title': title.group(1).strip() if title else 'Reef Riders Boracay',
+        'description': desc.group(1).strip() if desc else '',
+        'canonical': canon.group(1).strip() if canon else './',
+    }
+
+def root_for(slug):
+    if not slug:
+        return './'
+    return '../' * len(Path(slug).parts)
+
+def slug_dir(slug):
+    return BASE / slug if slug else BASE
+
+def postprocess_top(html):
+    html = re.sub(r'(<title[^>]*>).*?(</title>)', r'\1{{TITLE}}\2', html, count=1, flags=re.I | re.S)
+    html = re.sub(r'(<meta[^>]+name=["\']description["\'][^>]+content=["\'])[^"\']*(["\'])',
+                  r'\1{{DESCRIPTION}}\2', html, count=1, flags=re.I | re.S)
+    if '{{DESCRIPTION}}' not in html:
+        html = re.sub(r'(<meta[^>]+content=["\'])[^"\']*(["\'][^>]+name=["\']description["\'])',
+                      r'\1{{DESCRIPTION}}\2', html, count=1, flags=re.I | re.S)
+    html = re.sub(r'(<link[^>]+rel=["\']canonical["\'][^>]+href=["\'])[^"\']*(["\'])',
+                  r'\1{{CANONICAL}}\2', html, count=1, flags=re.I | re.S)
+    if '{{CANONICAL}}' not in html:
+        html = re.sub(r'(<link[^>]+href=["\'])[^"\']*(["\'][^>]+rel=["\']canonical["\'])',
+                      r'\1{{CANONICAL}}\2', html, count=1, flags=re.I | re.S)
+    # prefix local asset paths and home link, preserving the original quote char
+    html = re.sub(r'\b(href|src)=(["\'])\.\/\2', r'\1=\2{{ROOT}}\2', html)
+    html = re.sub(r'\b(href|src)=(["\'])\.?\/?wp-content\/', r'\1=\2{{ROOT}}wp-content/', html)
+    html = re.sub(r'\b(href|src)=(["\'])\.?\/?splide\/', r'\1=\2{{ROOT}}splide/', html)
+    # prefix sub-page nav dirs (e.g. windsurfing-boracay-philippines/)
+    for key, href in NAV.items():
+        html = re.sub(r'\bhref=(["\'])(?P<d>' + re.escape(href) + r')\1',
+                      r'href=\1{{ROOT}}\g<d>\1', html)
+    # remove original flexslider include
+    html = re.sub(r'<script[^>]*id=["\']flexslider-js["\'][^>]*>.*?</script>', '', html, flags=re.I | re.S)
+    return html
+
+def postprocess_bottom(html):
+    html = re.sub(r'\bsrc=(["\'])\.?\/?wp-content\/', r'src=\1{{ROOT}}wp-content/', html)
+    html = re.sub(r'\bsrc=(["\'])\.?\/?splide\/', r'src=\1{{ROOT}}splide/', html)
+    # guard Splide init if present
+    html = re.sub(r'(new\s+Splide\(["\']#slider-wrap["\']\s*,\s*\{[\s\S]*?\}\)\.mount\(\);)',
+                  r'if (document.getElementById("slider-wrap")) {\n\1\n}', html, count=1)
+    # active nav + slider guard JS
+    js = '''\n<script>
+document.addEventListener('DOMContentLoaded', function () {\n  var cur = location.pathname.replace(/\\/$/, '');\n  document.querySelectorAll('#masternav a').forEach(function (a) {\n    var u = new URL(a.getAttribute('href'), location.href).pathname.replace(/\\/$/, '');\n    if (u && u === cur) {\n      var li = a.closest('li');\n      if (li) li.classList.add('current-menu-item');\n    }\n  });\n});\n</script>'''
+    html = html.replace('</body>', js + '\n</body>', 1)
+    return html
+def extract():
+    PARTIALS.mkdir(parents=True, exist_ok=True)
+    PAGES.mkdir(parents=True, exist_ok=True)
+    pages = find_pages()
+    home_text = None
+    home_slug = ''
+    for slug, path in pages:
+        page_dir = PAGES / (slug if slug else 'home')
+        src_path = page_dir / 'source.html' if (page_dir / 'source.html').exists() else path
+        text = src_path.read_text(encoding='utf-8', errors='ignore')
+        page_dir.mkdir(parents=True, exist_ok=True)
+        # backup raw source
+        (page_dir / 'source.html').write_text(text, encoding='utf-8')
+        # meta
+        meta = meta_from_text(text)
+        (page_dir / 'meta.json').write_text(json.dumps(meta, indent=2), encoding='utf-8')
+        # content between </header> and <footer>
+        content = between(text, '</header>', '<div id="footer"')
+        content = re.sub(r'^\s*<!-- /masterhead -->\s*', '', content, count=1)
+        (page_dir / 'content.html').write_text(content, encoding='utf-8')
+        if not slug:
+            home_text = text
+            home_slug = slug
+        print('extracted', slug or '/', '- content', len(content), 'bytes')
+    if home_text is None:
+        raise RuntimeError('home page not found')
+    top = re.search(r'(<!DOCTYPE[\s\S]*?</header>)', home_text, re.I | re.S)
+    bottom = re.search(r'(<div id="footer"[\s\S]*?</html>)', home_text, re.I | re.S)
+    if not top or not bottom:
+        raise RuntimeError('cannot split home page around header/footer')
+    top = postprocess_top(top.group(1))
+    bottom = postprocess_bottom(bottom.group(1))
+    (PARTIALS / 'top.html').write_text(top, encoding='utf-8')
+    (PARTIALS / 'bottom.html').write_text(bottom, encoding='utf-8')
+    print('wrote partials/top.html and partials/bottom.html')
+    # remove stray wp-json
+    wpjson = BASE / 'wp-json'
+    if wpjson.exists():
+        shutil.rmtree(wpjson)
+        print('removed stray wp-json directory')
+
+def build():
+    top = (PARTIALS / 'top.html').read_text(encoding='utf-8')
+    bottom = (PARTIALS / 'bottom.html').read_text(encoding='utf-8')
+    for page_dir in sorted(PAGES.iterdir()):
+        if not page_dir.is_dir():
+            continue
+        slug = '' if page_dir.name == 'home' else page_dir.name
+        meta = json.loads((page_dir / 'meta.json').read_text(encoding='utf-8'))
+        content = (page_dir / 'content.html').read_text(encoding='utf-8')
+        root = root_for(slug)
+        canonical = root if not slug else root + slug + '/'
+        t = top.replace('{{ROOT}}', root) \
+               .replace('{{TITLE}}', meta['title']) \
+               .replace('{{DESCRIPTION}}', meta['description']) \
+               .replace('{{CANONICAL}}', canonical)
+        b = bottom.replace('{{ROOT}}', root)
+        out = t + content + b
+        outdir = slug_dir(slug)
+        outdir.mkdir(parents=True, exist_ok=True)
+        (outdir / 'index.html').write_text(out, encoding='utf-8')
+        print('built', slug or '/')
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--extract', action='store_true', help='re-extract source pages and partials')
+    args = ap.parse_args()
+    if args.extract or not (PARTIALS / 'top.html').exists():
+        extract()
+    build()
+
+if __name__ == '__main__':
+    main()
