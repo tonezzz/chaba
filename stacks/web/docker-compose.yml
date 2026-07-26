@@ -11,7 +11,6 @@ services:
       - ./public:/srv/public
       - /home/tony/CascadeProjects/chaba-h3/public/apps/imagen:/srv/public/tony-omen/apps/imagen
       - /home/tony/CascadeProjects/chaba-h3/public/apps/imagen2:/srv/public/tony-omen/apps/imagen2
-      - /home/tony/CascadeProjects/chaba-h3/public:/srv/public/chaba-h3
       - caddy_data:/data
       - caddy_config:/config
     env_file:
@@ -21,7 +20,6 @@ services:
     networks:
       - default
       - frigate_default
-      - chaba-h3_default
 
   status-api:
     container_name: status-api
@@ -126,6 +124,4 @@ volumes:
 
 networks:
   frigate_default:
-    external: true
-  chaba-h3_default:
     external: true

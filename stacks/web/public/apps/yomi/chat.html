@@ -15,12 +15,63 @@
     .back:hover { text-decoration: underline; }
     .chat { background: var(--card); border-radius: .5rem; padding: 1rem; box-shadow: 0 1px 2px rgba(15,23,42,.05); }
     .chat-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
-    .message { margin-bottom: .75rem; }
+    .message {
+      padding: 0.6rem 0.75rem;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-left: 3px solid var(--accent);
+      border-radius: 0 0.5rem 0.5rem 0;
+      margin-bottom: 0.5rem;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .message:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 2px 5px rgba(15, 23, 42, 0.06);
+    }
     .meta { color: #94a3b8; font-size: .75rem; margin-bottom: .1rem; }
     .text { white-space: pre-wrap; word-break: break-word; font-size: .9rem; color: var(--text); }
     .text-null { color: #94a3b8; font-style: italic; }
+    .media-img { max-width: 100%; max-height: 300px; border-radius: .5rem; margin-top: .25rem; display: block; cursor: pointer; }
+    .media-video { max-width: 100%; max-height: 300px; border-radius: .5rem; margin-top: .25rem; display: block; background: #0f172a; }
+    .media-audio { width: 100%; margin-top: .25rem; }
+    .media-file { display: inline-flex; align-items: center; gap: .35rem; margin-top: .25rem; padding: .35rem .6rem; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: .375rem; color: var(--accent); text-decoration: none; font-size: .85rem; }
+    .media-file:hover { background: #e2e8f0; }
+    .media-placeholder { color: #64748b; font-style: italic; font-size: .85rem; }
     .error { color: #ef4444; }
     #status { color: var(--muted); padding: 1rem; }
+    #lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      cursor: zoom-out;
+    }
+    #lightbox.active { display: flex; }
+    #lightbox img {
+      max-width: 95vw;
+      max-height: 95vh;
+      border-radius: .5rem;
+      box-shadow: 0 25px 50px rgba(0,0,0,.5);
+      cursor: default;
+    }
+    #lightbox .close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: rgba(15, 23, 42, 0.9);
+      color: #f8fafc;
+      border: none;
+      border-radius: .35rem;
+      width: 2rem;
+      height: 2rem;
+      font-size: 1.25rem;
+      cursor: pointer;
+    }
+    #lightbox .close:hover { background: #334155; }
   </style>
 </head>
 <body>
@@ -30,6 +81,10 @@
     <span></span>
   </header>
   <main id="app"><p id="status">Loading…</p></main>
+  <div id="lightbox" role="dialog" aria-modal="true" aria-label="Full-size image">
+    <button id="lightbox-close" class="close" type="button" aria-label="Close">×</button>
+    <img id="lightbox-img" src="" alt="Full-size image">
+  </div>
   <script>
     async function load() {
       const params = new URLSearchParams(location.search);
@@ -41,8 +96,8 @@
       }
       try {
         const [convRes, msgRes] = await Promise.all([
-          fetch('/apps/yomi/conversations.json'),
-          fetch(`/apps/yomi/messages/${id}.json`)
+          fetch('/apps/yomi/conversations.json', { credentials: 'include' }),
+          fetch(`/apps/yomi/messages/${id}.json`, { credentials: 'include' })
         ]);
         if (!convRes.ok) throw new Error('Conversations ' + convRes.status);
         if (!msgRes.ok) throw new Error('Messages ' + msgRes.status);
@@ -65,12 +120,9 @@
           const bubble = document.createElement('div');
           bubble.className = 'message';
           const time = m.deliveredTime ? ' · ' + new Date(m.deliveredTime).toLocaleString() : '';
-          const text = m.text == null
-            ? '<span class="text-null">(no text)</span>'
-            : `<div class="text">${escapeHtml(m.text)}</div>`;
           bubble.innerHTML = `
             <div class="meta">${escapeHtml(m.fromName || m.from || 'Unknown')}${time}</div>
-            ${text}
+            ${renderContent(m, id)}
           `;
           panel.appendChild(bubble);
         }
@@ -78,9 +130,45 @@
         app.innerHTML = `<p id="status" class="error">${escapeHtml(e.message)}</p>`;
       }
     }
+    function renderContent(m, chatId) {
+      const type = String(m.mediaType || '').toLowerCase();
+      if (type === 'image' && m.mediaFile) {
+        const src = `media/${chatId}/${m.mediaFile}`;
+        return `<img class="media-img" src="${encodeURI(src)}" alt="image" loading="lazy" onclick="openLightbox(this.src)" onerror="this.outerHTML='<span class=\\'text-null\\'>[image unavailable]</span>'">`;
+      }
+      if (type === 'video' && m.mediaFile) {
+        const src = `media/${chatId}/${m.mediaFile}`;
+        return `<video class="media-video" src="${encodeURI(src)}" controls preload="metadata" onerror="this.outerHTML='<span class=\\'media-placeholder\\'>[video unavailable]</span>'"></video>`;
+      }
+      if (type === 'audio' && m.mediaFile) {
+        const src = `media/${chatId}/${m.mediaFile}`;
+        return `<audio class="media-audio" src="${encodeURI(src)}" controls preload="metadata" onerror="this.outerHTML='<span class=\\'media-placeholder\\'>[audio unavailable]</span>'"></audio>`;
+      }
+      if (type === 'file') {
+        if (m.mediaFile) {
+          const src = `media/${chatId}/${m.mediaFile}`;
+          const name = m.mediaFile.split('/').pop();
+          return `<a class="media-file" href="${encodeURI(src)}" download target="_blank" rel="noopener">⬇ ${escapeHtml(name)}</a>`;
+        }
+        return '<span class="media-placeholder">[file]</span>';
+      }
+      if (type) return `<span class="media-placeholder">[${escapeHtml(type)}]</span>`;
+      if (m.text == null) return '<span class="text-null">(no text)</span>';
+      return `<div class="text">${escapeHtml(m.text)}</div>`;
+    }
     function escapeHtml(s) {
       return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     }
+
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxClose = document.getElementById('lightbox-close');
+    function openLightbox(src) { if (!src) return; lightboxImg.src = src; lightbox.classList.add('active'); }
+    function closeLightbox() { lightboxImg.src = ''; lightbox.classList.remove('active'); }
+    lightboxClose.addEventListener('click', closeLightbox);
+    lightbox.addEventListener('click', (e) => { if (e.target !== lightboxImg && e.target !== lightboxClose) closeLightbox(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
+
     load();
   </script>
 </body>
