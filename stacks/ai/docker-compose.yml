@@ -130,3 +130,26 @@ services:
                --notebook-dir=/workspace/notebooks"
     ipc: host
 
+  # ── llama.cpp server for MCP text generation ─────────────────────────────────
+  llama-server:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    ports:
+      - "8008:8008"
+    environment: *shared-env
+    <<: *gpu
+    volumes:
+      - ../../data/models:/models:ro
+    command:
+      - "-m"
+      - "/models/${LLAMA_MODEL:-Llama-3.2-3B-Instruct-Q4_K_M.gguf}"
+      - "--port"
+      - "8008"
+      - "--host"
+      - "0.0.0.0"
+      - "-c"
+      - "4096"
+      - "--n-gpu-layers"
+      - "${LLAMA_N_GPU_LAYERS:-0}"
+    ipc: host
+    restart: unless-stopped
+

@@ -1,6 +1,6 @@
 .RECIPEPREFIX = >
 
-.PHONY: ai-up ai-down ai-build ai-3dgs nvr-up nvr-down nvr-regenerate nvr-restart web-up web-down sync status
+.PHONY: ai-up ai-down ai-build ai-3dgs nvr-up nvr-down nvr-regenerate nvr-restart web-up web-down sync status llama-up llama-down llama-logs llama-status
 
 ai-up:
 > docker compose -f stacks/ai/docker-compose.yml up -d
@@ -39,3 +39,16 @@ status:
 > docker compose -f stacks/ai/docker-compose.yml ps
 > docker compose -f stacks/nvr/docker-compose.yml ps
 > docker compose -f stacks/web/docker-compose.yml ps
+
+llama-up:
+> @mkdir -p data/models
+> docker compose -f stacks/ai/docker-compose.yml up -d llama-server
+
+llama-down:
+> docker compose -f stacks/ai/docker-compose.yml stop llama-server
+
+llama-logs:
+> docker compose -f stacks/ai/docker-compose.yml logs -f llama-server
+
+llama-status:
+> @curl -fsS http://localhost:8008/health || true
