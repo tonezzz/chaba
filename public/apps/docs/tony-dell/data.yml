@@ -1,0 +1,29 @@
+title: tony-dell
+subtitle: Secondary workstation / Barrier client
+icon: 🖥️
+sections:
+  - title: Overview
+    icon: 🖥️
+    layout: grid-2
+    items:
+      - title: Hostname
+        value: tony-dell
+      - title: IP
+        value: 192.168.1.42
+      - title: Role
+        value: Secondary workstation / Barrier client
+      - title: OS
+        value: Ubuntu / XFCE
+
+  - title: Host-level services
+    icon: ⚙️
+    layout: runbook
+    items:
+      - service: Barrier client
+        description: Connects to tony-omen Barrier server
+        start_command: 'nohup "$HOME/.local/bin/barrierc" --disable-crypto --name tony-dell --restart 192.168.1.48 > /tmp/barrier-client.log 2>&1 &'
+        pre_requisites: 'Barrier/input-leap client binary at ~/.local/bin/barrierc'
+        depends_on: 'tony-omen barriers.service'
+        health_check: 'ps -ef | grep barrierc'
+        backup_paths: '~/.local/bin/barrierc, ~/.config/autostart/barrierc.desktop'
+        last_verified: 2026-07-26

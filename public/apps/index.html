@@ -3,15 +3,26 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark">
+  <meta name="color-scheme" content="light">
   <title>Apps</title>
+  <link rel="stylesheet" href="/assets/tailwind.css">
   <style>
     body { font-family: system-ui, sans-serif; margin: 0; }
-    .app-card:hover { transform: translateY(-2px); }
+    body.bright { background-color: #f8fafc; color: #111827; }
+    body.bright .bg-card { background-color: #ffffff; }
+    body.bright .border-gray-700 { border-color: #e2e8f0; }
+    body.bright .text-gray-200 { color: #111827; }
+    body.bright .text-white { color: #111827; }
+    body.bright .text-gray-400 { color: #64748b; }
+    body.bright .text-gray-500 { color: #94a3b8; }
+    body.bright .text-gray-600 { color: #94a3b8; }
+    body.bright .text-accent { color: #0a84ff; }
+    .app-card { display: block; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); transition: all 0.15s; }
+    .app-card:hover { border-color: #0a84ff; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); transform: translateY(-2px); }
+    .app-card.cursor-not-allowed { border-style: dashed; border-color: #cbd5e1; }
   </style>
-  <link rel="stylesheet" href="/assets/tailwind.css">
 </head>
-<body class="bg-bg text-gray-200 min-h-screen">
+<body class="bg-bg text-gray-200 min-h-screen bright">
   <div id="nav"></div>
 
   <main id="apps" class="max-w-6xl mx-auto px-4 py-10"></main>
@@ -29,12 +40,11 @@
         <p class="text-gray-400 mb-8">Local chaba.h3 apps and placeholders for future tools.</p>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           ${data.apps.map(a => {
-            const base = a.placeholder
-              ? 'block p-6 rounded-xl border border-dashed border-gray-700 bg-card/50 cursor-not-allowed transition'
-              : 'app-card block p-6 rounded-xl border border-gray-700 bg-card hover:border-accent transition';
+            const base = a.placeholder ? 'app-card cursor-not-allowed' : 'app-card';
             const titleCls = a.placeholder ? 'text-xl font-semibold text-gray-500' : 'text-xl font-semibold text-white';
             const descCls = a.placeholder ? 'text-gray-600 text-sm mt-2' : 'text-gray-400 text-sm mt-2';
             return `<a href="${a.href}" class="${base}">
+              <div class="text-2xl mb-2">${a.icon || ''}</div>
               <h2 class="${titleCls}">${a.title}</h2>
               <p class="${descCls}">${a.description}</p>
             </a>`;

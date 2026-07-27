@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Overview</title>
+  <link rel="stylesheet" href="/assets/tailwind.css">
+  <link rel="stylesheet" href="/apps/overview/overview.css">
+  <script src="/apps/nav.js"></script>
+  <script src="/apps/overview/overview.js"></script>
+  <script src="/apps/shared/yml-edit.js"></script>
+  <link rel="yaml-source" href="./data.yml">
+  <link rel="yaml-source" href="/apps/apps.yml">
+</head>
+<body class="bg-bg text-gray-200 min-h-screen bright">
+  <div id="nav"></div>
+  <main id="overview" class="max-w-5xl mx-auto px-4 py-10"></main>
+  <script>
+    ChabaNav.load('/apps/apps.yml', 'nav');
+    Overview.init('./data.yml', 'overview');
+  </script>
+</body>
+</html>

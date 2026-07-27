@@ -1,4 +1,21 @@
 (function () {
+  function injectStyles() {
+    if (typeof document !== 'undefined' && document.getElementById('chaba-nav-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'chaba-nav-styles';
+    s.textContent = `
+      .chaba-nav-desktop { display: none; }
+      .chaba-nav-mobile { display: flex; align-items: center; }
+      @media (min-width: 768px) {
+        .chaba-nav-desktop { display: flex; align-items: center; }
+        .chaba-nav-mobile { display: none; }
+      }
+      .chaba-nav-menu { display: none; position: absolute; top: 100%; left: 0; width: 100%; z-index: 1100; }
+      .chaba-nav-menu.open { display: block; }
+    `;
+    document.head.appendChild(s);
+  }
+
   function isActive(path, href) {
     if (!href || href === '#') return false;
     if (href === '/') return path === '/';
@@ -18,9 +35,28 @@
     return `<a href="${i.href}" class="${isActive(path, i.href) ? 'text-accent font-semibold' : i.placeholder ? 'text-gray-500 cursor-not-allowed' : 'text-gray-400 hover:text-white transition'}">${i.label}</a>`;
   }
 
+  function renderMobileItem(i, path) {
+    if (i.children && i.children.length) {
+      return `<div class="mb-2">
+        <div class="text-gray-300 px-3 py-2 font-semibold text-sm">${i.label}</div>
+        ${i.children.map(c => `<a href="${c.href}" class="block px-3 py-2 text-sm ${isActive(path, c.href) ? 'text-accent font-semibold' : 'text-gray-300 hover:text-white transition'}">${c.label}</a>`).join('')}
+      </div>`;
+    }
+    return `<a href="${i.href}" class="block px-3 py-2 text-sm ${isActive(path, i.href) ? 'text-accent font-semibold' : i.placeholder ? 'text-gray-500 cursor-not-allowed' : 'text-gray-300 hover:text-white transition'}">${i.label}</a>`;
+  }
+
   function renderNav(items, path) {
+    injectStyles();
     path = path || (typeof window !== 'undefined' ? window.location.pathname : '/');
-    return `<nav class="bg-card border-b border-gray-700 sticky top-0 z-[1100] h-12"><div class="max-w-7xl mx-auto px-4 h-full flex items-center justify-between"><a href="/" class="text-lg font-bold text-white">HomeLab</a><div class="hidden md:flex gap-4 text-sm h-full items-center">${(items || []).map(i => renderItem(i, path)).join('')}</div></div></nav>`;
+    const menuId = 'chaba-nav-menu-' + Math.random().toString(36).slice(2);
+    return `<nav class="bg-card border-b border-gray-700 sticky top-0 z-[1100] h-12">
+      <div class="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
+        <a href="/" class="text-lg font-bold text-white">HomeLab</a>
+        <div class="chaba-nav-desktop gap-4 text-sm h-full">${(items || []).map(i => renderItem(i, path)).join('')}</div>
+        <button type="button" class="chaba-nav-mobile text-gray-400 hover:text-white text-xl" aria-label="Toggle menu" onclick="document.getElementById('${menuId}').classList.toggle('open')">☰</button>
+      </div>
+      <div id="${menuId}" class="chaba-nav-menu bg-card border-b border-gray-700 p-2 shadow-lg">${(items || []).map(i => renderMobileItem(i, path)).join('')}</div>
+    </nav>`;
   }
 
   function renderSubnav(items, path) {
