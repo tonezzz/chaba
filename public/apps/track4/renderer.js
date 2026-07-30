@@ -11,11 +11,7 @@ class CourseRenderer {
       pane.style.zIndex = 650;
     }
     this.hidden = new Set();
-    this.icons = {
-      'sausage-orange': '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#f97316" stroke="#fff" stroke-width="2"/></svg>',
-      'flag-checkered': '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" fill="#fff"/><path d="M3 3h9v9H3zm9 9h9v9h-9z" fill="#111"/></svg>',
-      'flag-square': '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" fill="#ef4444" stroke="#fff" stroke-width="2"/></svg>'
-    };
+    this.theme = options.theme || (typeof DefaultTheme !== 'undefined' ? new DefaultTheme() : {});
   }
 
   markerIcon(name, label) {
@@ -279,11 +275,11 @@ class CourseRenderer {
     L.polyline(pts, { className: 'animated-section', color: d.color || '#ffffff', weight: (d.width || 8) + 4, opacity: 0.75, interactive: false, pane: 'highlightPane' }).addTo(this.highlightLayer);
     const mid = Course.pointAlong(pts, 0.5);
     if (mid && mid.point) {
-      L.marker(mid.point, { icon: this.highlightLabelIcon(d.text, mid.bearing - 90), interactive: false, pane: 'highlightPane' }).addTo(this.highlightLayer);
+      L.marker(mid.point, { icon: this.theme.highlightLabelIcon(d.text, mid.bearing - 90), interactive: false, pane: 'highlightPane' }).addTo(this.highlightLayer);
     }
     if (pts.length >= 2) {
       const h = Course.bearing(pts[pts.length - 2], pts[pts.length - 1]);
-      L.marker(pts[pts.length - 1], { icon: this.arrowIcon(h), interactive: false, pane: 'highlightPane' }).addTo(this.highlightLayer);
+      L.marker(pts[pts.length - 1], { icon: this.theme.arrowIcon(h), interactive: false, pane: 'highlightPane' }).addTo(this.highlightLayer);
     }
   }
 
@@ -298,7 +294,7 @@ class CourseRenderer {
     this.guide = g;
     for (const d of drawables) {
       if (this.hidden.size && d.key && this.hidden.has(d.key)) continue;
-      this.drawOne(d, options.onDrag);
+      this.theme.drawOne(d, this, options.onDrag);
     }
     if (options.fit) {
       const allPts = markers.map(m => [m.lat, m.lon]);

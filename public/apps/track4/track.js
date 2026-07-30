@@ -14,6 +14,28 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
 
 const raceLayer = L.layerGroup().addTo(map);
 const boatColors = ['#ef4444','#22c55e','#3b82f6','#f59e0b','#a855f7','#ec4899','#06b6d4','#eab308','#6366f1','#14b8a6'];
+const RACER_PROFILES = [
+  { name: 'Rattanin', flag: '🇹🇭', code: 'THA' },
+  { name: 'Kieran', flag: '🇦🇺', code: 'AUS' },
+  { name: 'Pierre', flag: '🇫🇷', code: 'FRA' },
+  { name: 'Tom', flag: '🇬🇧', code: 'GBR' },
+  { name: 'Lilian', flag: '🇳🇱', code: 'NED' },
+  { name: 'Maja', flag: '🇵🇱', code: 'POL' },
+  { name: 'Blanca', flag: '🇪🇸', code: 'ESP' },
+  { name: 'Tobias', flag: '🇩🇪', code: 'GER' },
+  { name: 'Mattia', flag: '🇮🇹', code: 'ITA' },
+  { name: 'Antoine', flag: '🇳🇿', code: 'NZL' },
+  { name: 'Nikos', flag: '🇬🇷', code: 'GRE' },
+  { name: 'Ricardo', flag: '🇧🇷', code: 'BRA' },
+  { name: 'Li', flag: '🇨🇳', code: 'CHN' },
+  { name: 'Yuki', flag: '🇯🇵', code: 'JPN' },
+  { name: 'Caleb', flag: '🇺🇸', code: 'USA' },
+  { name: 'Jonas', flag: '🇩🇰', code: 'DEN' },
+  { name: 'Anton', flag: '🇸🇪', code: 'SWE' },
+  { name: 'Erik', flag: '🇳🇴', code: 'NOR' },
+  { name: 'Bram', flag: '🇧🇪', code: 'BEL' },
+  { name: 'Cameron', flag: '🇨🇦', code: 'CAN' }
+];
 let simState = { running: false, rafId: null, elapsed: 0, racers: [], speedFactor: 1, lastTs: 0, path: null };
 let highlightedRacer = null;
 
@@ -181,7 +203,10 @@ function setupToggles() {
 
 // --- Race simulation ---------------------------------------------------------
 
-function boatIcon(color, heading) {
+function boatIcon(color, heading, racer = null) {
+  if (renderer && renderer.theme && typeof renderer.theme.boatIcon === 'function') {
+    return renderer.theme.boatIcon(color, heading, racer);
+  }
   return L.divIcon({
     className: 'racer-icon',
     html: `<svg viewBox="0 0 24 24" style="transform: rotate(${heading.toFixed(1)}deg); color:${color}; fill:currentColor; filter:drop-shadow(0 0 2px rgba(0,0,0,0.8));"><path d="M3 17 Q12 23 21 17 L19 13 H5 Z M12 4 L7 14 h10 Z"/></svg>`,
@@ -291,8 +316,9 @@ function updateRacer(r, dt) {
     let h = Course.bearing([pos.lat, pos.lng], start) + (Math.random() * 60 - 30);
     const speed = 3 + Math.random() * 2;
     const next = Course.pointAt([pos.lat, pos.lng], h, speed * dt);
+    r.heading = r.heading ? (r.heading * 0.6 + h * 0.4) : h;
     r.marker.setLatLng(next);
-    r.marker.setIcon(boatIcon(r.color, h));
+    r.marker.setIcon(boatIcon(r.color, r.heading, r));
     r.speed = speed;
     if (r.hoverMarker) r.hoverMarker.setLatLng(next);
     return;
@@ -310,7 +336,7 @@ function updateRacer(r, dt) {
   const newT = segLen ? Math.min(1, (r.distance - cum[seg]) / segLen) : 0;
   const rawLat = p1[0] + (p2[0] - p1[0]) * newT;
   const rawLon = p1[1] + (p2[1] - p1[1]) * newT;
-  r.heading = heading;
+  r.heading = r.heading ? (r.heading * 0.6 + heading * 0.4) : heading;
   let pos = [rawLat, rawLon];
   if (r.distance < simState.path.startDist) {
     pos = Course.pointAt(pos, simState.path.beachBearing, r.startOffset || 0);
@@ -319,7 +345,7 @@ function updateRacer(r, dt) {
     if (Math.abs(lane) > 0.1) pos = Course.pointAt(pos, heading + (lane >= 0 ? 90 : -90), Math.abs(lane));
   }
   r.marker.setLatLng(pos);
-  r.marker.setIcon(boatIcon(r.color, heading));
+  r.marker.setIcon(boatIcon(r.color, r.heading, r));
   if (r.hoverMarker) r.hoverMarker.setLatLng(pos);
 }
 
@@ -348,6 +374,7 @@ function initRacers() {
   const count = Math.min(10, Math.max(2, parseInt(document.getElementById('sim-racers').value, 10) || 10));
   const maxSpread = Math.min((lineLen || 0) * 0.8, Math.min(80, count * 10));
   const spacing = count > 1 ? maxSpread / (count - 1) : 0;
+  const shuffled = [...RACER_PROFILES].sort(() => Math.random() - 0.5);
   for (let i = 0; i < count; i++) {
     const color = boatColors[i % boatColors.length];
     const startOffset = (i - (count - 1) / 2) * spacing;
@@ -355,13 +382,16 @@ function initRacers() {
     lanes[2] = startOffset;
     const h = Course.bearing(pts[0], pts[1] || pts[0]);
     const startPos = Course.pointAt(pts[0], beachBearing, startOffset);
-    const marker = L.marker(startPos, { icon: boatIcon(color, h), zIndexOffset: 1000 }).addTo(raceLayer);
+    const profile = shuffled[i % shuffled.length];
+    const sail = `${profile.code}-${100 + i * 9}`;
+    const r = {
+      name: profile.name, color, baseSpeed: 5 + Math.random() * 4,
+      startOffset, startPos, lanes, distance: 0, finished: false, returning: false, returned: false, speed: 0, heading: h, sail, flag: profile.flag, code: profile.code
+    };
+    const marker = L.marker(startPos, { icon: boatIcon(color, h, r), zIndexOffset: 1000 }).addTo(raceLayer);
     marker.on('mouseover', () => highlightRacer(r));
     marker.on('mouseout', clearRacerHighlight);
-    const r = {
-      name: `Boat ${i + 1}`, color, baseSpeed: 5 + Math.random() * 4,
-      startOffset, startPos, lanes, distance: 0, finished: false, returning: false, returned: false, marker, speed: 0, heading: h
-    };
+    r.marker = marker;
     simState.racers.push(r);
   }
   updateSimStandings();
@@ -432,6 +462,10 @@ function updateSimStandings() {
   if (!simState.racers.length) { el.textContent = 'Press Start to simulate'; return; }
   const { total } = simState.path || { total: 1 };
   const sorted = [...simState.racers].sort((a, b) => b.distance - a.distance);
+  if (renderer && renderer.theme && typeof renderer.theme.renderStandings === 'function') {
+    renderer.theme.renderStandings({ sorted, total, elapsed: simState.elapsed, speedFactor: simState.speedFactor });
+    return;
+  }
   const pct = d => total ? (d / total * 100).toFixed(0) : 0;
   const rows = sorted.map((r, i) => `
     <tr class="align-middle whitespace-nowrap" data-name="${r.name}">
@@ -487,13 +521,13 @@ function setupSim() {
   const standingsEl = document.getElementById('sim-standings');
   if (standingsEl) {
     standingsEl.onmouseover = (e) => {
-      const tr = e.target.closest('tr[data-name]');
+      const tr = e.target.closest('[data-name]');
       if (!tr) return;
       const r = simState.racers.find(x => x.name === tr.dataset.name);
       if (r) highlightRacer(r);
     };
     standingsEl.onmouseout = (e) => {
-      const tr = e.target.closest('tr[data-name]');
+      const tr = e.target.closest('[data-name]');
       if (!tr) return;
       clearRacerHighlight();
     };
@@ -552,10 +586,15 @@ async function loadCourse(id) {
   await loadServerState();
   document.getElementById('course-name').value = courseId;
   updateUrlCourse();
-  if (!renderer) renderer = new CourseRenderer(map, { roundDist: ROUND_DIST });
+  let ThemeClass = DefaultTheme;
+  if (themeId !== 'default') {
+    try { ThemeClass = await loadTheme(themeId); } catch (e) { console.warn('theme load failed', e); }
+  }
+  if (!renderer) renderer = new CourseRenderer(map, { roundDist: ROUND_DIST, theme: new ThemeClass() });
   renderer.hidden = state.hidden;
   render(true);
   initRacers();
+  if (renderer.theme && renderer.theme.installChrome) renderer.theme.installChrome(courseData);
   populateCourseList();
   showCourseMsg('Loaded ' + courseId);
 }
@@ -652,6 +691,18 @@ function setupYamlEditor() {
 
 const urlParams = new URLSearchParams(window.location.search);
 const simOnly = urlParams.get('view') === 'sim';
+const themeId = urlParams.get('theme') || 'default';
+
+async function loadTheme(id) {
+  if (id === 'default') return DefaultTheme;
+  return new Promise((resolve) => {
+    const s = document.createElement('script');
+    s.src = `themes/${encodeURIComponent(id)}.js?v=${Date.now()}`;
+    s.onload = () => resolve(window.TrackTheme || DefaultTheme);
+    s.onerror = () => { console.warn(`Theme ${id} not found, falling back to default`); resolve(DefaultTheme); };
+    document.head.appendChild(s);
+  });
+}
 
 (async function init() {
   try {
@@ -673,7 +724,11 @@ const simOnly = urlParams.get('view') === 'sim';
     courseData = jsyaml.load(courseText);
     loadOverrides();
     await loadServerState();
-    renderer = new CourseRenderer(map, { roundDist: ROUND_DIST });
+    let ThemeClass = DefaultTheme;
+    if (themeId !== 'default') {
+      try { ThemeClass = await loadTheme(themeId); } catch (e) { console.warn('theme load failed', e); }
+    }
+    renderer = new CourseRenderer(map, { roundDist: ROUND_DIST, theme: new ThemeClass() });
     document.getElementById('course-name').value = courseId;
     render(true);
     setupToggles();
@@ -683,6 +738,7 @@ const simOnly = urlParams.get('view') === 'sim';
     startSim();
     setupCourseControls();
     setupYamlEditor();
+    if (renderer && renderer.theme && renderer.theme.installChrome) renderer.theme.installChrome(courseData);
   } catch (err) {
     console.error('failed to load course data', err);
     document.getElementById('summary').textContent = 'Error loading course';
