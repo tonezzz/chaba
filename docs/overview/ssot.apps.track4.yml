@@ -1,0 +1,37 @@
+title: Track4 Themes
+subtitle: Theme engine and available themes for the Track4 course simulator.
+icon: 🏁
+ideas:
+- racer_label is information box with format "USA-1111"
+- racer_label_background is the country flag of the racer.
+sections:
+  - title: How themes are loaded
+    icon: 🎨
+    layout: list
+    items:
+      - label: Query parameter
+        text: '/apps/track4/?theme=1 loads themes/1.js. Omitting ?theme or ?theme=default loads DefaultTheme.'
+      - label: Loader
+        text: 'track.js appends themes/<id>.js and passes the class to CourseRenderer as options.theme.'
+      - label: Contract
+        text: 'A theme file must set window.TrackTheme to a class; the class should extend DefaultTheme.'
+
+  - title: Available themes
+    icon: 🏁
+    layout: list
+    items:
+      - label: default
+        text: 'Current Track4 map style. File: public/apps/track4/themes/default.js.'
+      - label: '1 (racing)'
+        text: 'Broadcast chrome (header, live UTC clock, wind, compass), orange markers, yellow arrows, high-contrast leg labels, start/finish gates, and a race dashboard panel. Racer marker: arrow with 34px hinge link, upright label showing full sail number and country flag. Files: public/apps/track4/themes/1.js and 1.css.'
+
+  - title: Engine split
+    icon: ⚙️
+    layout: list
+    items:
+      - label: CourseRenderer
+        text: 'Builds drawable geometry and delegates all drawing to the active theme.'
+      - label: DefaultTheme
+        text: 'Holds all marker, line, section, arrow and wind rendering primitives.'
+      - label: Override points
+        text: 'Currently overridden in racing: markerIcon, markerLabelIcon, lineLabelIcon, arrowIcon, boatIcon (racer arrow, hinge link and upright flag/number label), drawLine, drawOne (start/finish gates, leg/round callouts, solid sections) and renderStandings (race dashboard). windIcon can also be overridden per theme.'
