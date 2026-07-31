@@ -40,7 +40,7 @@ components:
     x: 780
     y: 200
     status: healthy
-    url: http://192.168.1.48:8080/frigate/api/status
+    url: http://192.168.1.48:8080/frigate/api/version
     detail: Camera recording and object detection on frigate_default network
 
   - id: redis
@@ -49,7 +49,7 @@ components:
     x: 220
     y: 360
     status: healthy
-    url: http://192.168.1.48:8080/api/redis-ping
+    url: http://192.168.1.48:8080/api/container/redis
     detail: Redis 7.4-alpine, AOF, 512MB maxmemory, allkeys-lru
 
   - id: postgres
@@ -58,7 +58,7 @@ components:
     x: 500
     y: 360
     status: healthy
-    url: http://192.168.1.48:8080/api/pg-status
+    url: http://192.168.1.48:8080/api/container/postgres
     detail: PostgreSQL 16-alpine, persistent volume, chaba + activepieces DBs
 
   - id: activepieces
@@ -67,6 +67,7 @@ components:
     x: 780
     y: 360
     status: unknown
+    url: http://192.168.1.48:8080/api/container/activepieces
     detail: Automation platform, depends on Postgres + Redis
 
   - id: thai-legal
@@ -93,6 +94,7 @@ components:
     x: 780
     y: 500
     status: unknown
+    url: http://192.168.1.48:8080/api/container/cogvideo-inference
     detail: LTX-Video text-to-video generation on GPU
 
   - id: yomi-api
