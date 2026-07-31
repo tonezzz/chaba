@@ -36,4 +36,4 @@ llama-status:
 
 # Show running Docker containers
 docker-ps:
-    docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+    docker ps --format 'table {{"{{"}}.Names{{"}}"}}\t{{"{{"}}.Status{{"}}"}}\t{{"{{"}}.Ports{{"}}"}}'
