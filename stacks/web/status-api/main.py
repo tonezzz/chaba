@@ -372,6 +372,25 @@ app.add_middleware(
 def health() -> dict[str, str]:
     return {"status": "ok"}
 
+@app.get("/api/container/{name}")
+def container_health(name: str):
+    """Return health status for a single Docker container by name."""
+    try:
+        client = docker.DockerClient(base_url="unix://var/run/docker.sock")
+        c = client.containers.get(name)
+        state = c.attrs.get("State", {})
+        health = state.get("Health", {}).get("Status")
+        return {
+            "name": c.name,
+            "status": state.get("Status", "unknown"),
+            "health": health,
+            "image": c.image.tags[0] if c.image.tags else c.image.id,
+        }
+    except Exception as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail=f"Container {name} not found")
+
+
 @app.get("/api/status")
 def status() -> dict[str, Any]:
     return {
