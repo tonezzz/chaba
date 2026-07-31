@@ -1,68 +1,185 @@
-title: HomeLab System
-description: Live topology and event flow for chaba services
+title: Tony-Omen 8080 Stack
+description: Live topology and health for chaba 8080 Docker services
 refresh: 30
 layout:
   auto: true
-  width: 900
-  height: 500
+  width: 1000
+  height: 600
 
 components:
   - id: caddy
-    label: Caddy Web
-    type: service
-    x: 450
+    label: Caddy
+    type: proxy
+    x: 500
     y: 80
     status: healthy
+    url: http://192.168.1.48:8080/apps/
+    detail: Reverse proxy and static file server on :8080/:8081
+
+  - id: bserver
+    label: BServer
+    type: service
+    x: 220
+    y: 200
+    status: healthy
+    url: http://192.168.1.48:8080/
+    detail: Go web server for dashboard, decisions, infrastructure pages
+
+  - id: status-api
+    label: Status API
+    type: service
+    x: 500
+    y: 200
+    status: healthy
     url: http://192.168.1.48:8080/api/status
-    detail: Static files and reverse proxy on port 8080/8081
+    detail: Python FastAPI — system metrics, Docker status, host sensors
 
   - id: frigate
     label: Frigate NVR
     type: service
-    x: 220
-    y: 260
+    x: 780
+    y: 200
     status: healthy
-    url: http://192.168.1.48:5000/
-    detail: Camera recording and object detection
+    url: http://192.168.1.48:8080/frigate/api/status
+    detail: Camera recording and object detection on frigate_default network
 
-  - id: yomi-api
-    label: Yomi API
+  - id: redis
+    label: Redis
+    type: datastore
+    x: 220
+    y: 360
+    status: healthy
+    url: http://192.168.1.48:8080/api/redis-ping
+    detail: Redis 7.4-alpine, AOF, 512MB maxmemory, allkeys-lru
+
+  - id: postgres
+    label: Postgres
+    type: datastore
+    x: 500
+    y: 360
+    status: healthy
+    url: http://192.168.1.48:8080/api/pg-status
+    detail: PostgreSQL 16-alpine, persistent volume, chaba + activepieces DBs
+
+  - id: activepieces
+    label: Activepieces
     type: service
-    x: 680
-    y: 260
+    x: 780
+    y: 360
     status: unknown
-    detail: LINE conversation API served through Caddy
+    detail: Automation platform, depends on Postgres + Redis
+
+  - id: thai-legal
+    label: Thai Legal LLM
+    type: gpu
+    x: 220
+    y: 500
+    status: healthy
+    url: http://192.168.1.48:8001/health
+    detail: llama.cpp server-cuda, Phi-3-mini + Thai-legal-gemma models
 
   - id: imagen2
     label: Imagen2
     type: gpu
-    x: 450
-    y: 420
-    status: offline
-    detail: SDXL image generation container
+    x: 500
+    y: 500
+    status: unknown
+    url: http://192.168.1.48:8000/health
+    detail: SDXL-Lightning image generation on GPU
+
+  - id: cogvideo
+    label: CogVideo
+    type: gpu
+    x: 780
+    y: 500
+    status: unknown
+    detail: LTX-Video text-to-video generation on GPU
+
+  - id: yomi-api
+    label: Yomi API
+    type: service
+    x: 60
+    y: 200
+    status: unknown
+    url: http://192.168.1.48:8080/api/yomi/conversations
+    detail: LINE conversation viewer API on host:3000
+
+  - id: gpu-queue
+    label: GPU Queue
+    type: service
+    x: 60
+    y: 360
+    status: unknown
+    url: http://192.168.1.48:3001/health
+    detail: Node.js GPU job queue on host:3001
 
 connections:
+  - id: caddy-bserver
+    from: caddy
+    to: bserver
+    label: / /new /decisions
+
+  - id: caddy-status
+    from: caddy
+    to: status-api
+    label: /api/*
+
   - id: caddy-frigate
     from: caddy
     to: frigate
-    label: /frigate proxy
-    events:
-      - { time: '2026-07-31 14:00:00', level: info, message: '200 OK' }
+    label: /frigate/*
+
+  - id: caddy-yomi
+    from: caddy
+    to: yomi-api
+    label: /api/yomi/*
+
+  - id: caddy-gpuq
+    from: caddy
+    to: gpu-queue
+    label: /api/gpu-queue/*
+
+  - id: caddy-thai-legal
+    from: caddy
+    to: thai-legal
+    label: /v1/* /apps/chatllama
 
   - id: caddy-imagen2
     from: caddy
     to: imagen2
     label: /apps/imagen2/api
-    events:
-      - { time: '2026-07-31 13:58:00', level: info, message: '200 OK' }
-      - { time: '2026-07-31 13:59:00', level: warn, message: 'slow response' }
 
-  - id: caddy-yomi
+  - id: caddy-cogvideo
     from: caddy
-    to: yomi-api
-    label: /api/yomi
+    to: cogvideo
+    label: /apps/txt2vid/api
+
+  - id: caddy-activepieces
+    from: caddy
+    to: activepieces
+    label: /apps/activepieces
+
+  - id: activepieces-redis
+    from: activepieces
+    to: redis
+    label: queue
+
+  - id: activepieces-pg
+    from: activepieces
+    to: postgres
+    label: persistence
+
+  - id: gpuq-pg
+    from: gpu-queue
+    to: postgres
+    label: jobs
+
+  - id: status-frigate
+    from: status-api
+    to: frigate
+    label: container stats
 
 events:
-  - { time: '2026-07-31 14:02:00', component: caddy, level: info, message: 'Caddy reloaded' }
-  - { time: '2026-07-31 14:01:00', component: imagen2, level: error, message: 'Container stopped' }
-  - { time: '2026-07-31 13:55:00', component: frigate, level: info, message: 'Recording rotation' }
+  - { time: '2026-07-31 16:40:00', component: caddy, level: info, message: 'Container recreated for sysdiag deployment' }
+  - { time: '2026-07-31 16:35:00', component: caddy, level: info, message: 'sysdiag app added to apps.yml' }
+  - { time: '2026-07-31 14:00:00', component: thai-legal, level: info, message: 'llama.cpp router consolidated' }
