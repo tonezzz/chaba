@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sysdiag</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="./sysdiag.css">
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+</head>
+<body>
+  <nav class="sys-topnav">
+    <a href="/apps/" class="sys-topnav-link">← Apps</a>
+    <span class="sys-topnav-sep">|</span>
+    <span class="sys-topnav-title">Sysdiag</span>
+  </nav>
+  <main class="sys-app">
+    <header class="sys-header">
+      <div class="sys-header-main">
+        <h1 id="page-title" class="sys-title">Sysdiag</h1>
+        <p id="page-desc" class="sys-desc">YAML-driven system topology</p>
+      </div>
+      <div class="sys-toolbar">
+        <label class="sys-check">
+          <input id="auto-refresh" type="checkbox" checked>
+          <span>Auto-refresh</span>
+        </label>
+        <input id="yaml-url" type="text" value="/apps/sysdiag/sysdiag.yml" placeholder="YAML URL">
+        <button id="btn-load" type="button">Load</button>
+        <button id="btn-reload" type="button">Reload</button>
+      </div>
+    </header>
+    <div class="sys-workspace">
+      <div class="sys-stage">
+        <svg id="diagram" class="sys-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+      <aside id="sidebar" class="sys-sidebar">
+        <div class="sys-empty">Select a component or connection to inspect.</div>
+      </aside>
+    </div>
+  </main>
+  <script src="./sysdiag.js"></script>
+</body>
+</html>

@@ -1,0 +1,264 @@
+:root {
+  --ch-bg: #1a1a2e;
+  --ch-card: #16213e;
+  --ch-panel: #1a1a2e;
+  --ch-text: #e5e7eb;
+  --ch-muted: #9ca3af;
+  --ch-border: #1f2937;
+  --ch-accent: #0a84ff;
+  --ch-accent-hover: #0066cc;
+  --ch-inverse: #ffffff;
+  --ch-input-bg: #0f172a;
+  --ch-radius: 0.375rem;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+  background: var(--ch-bg);
+  color: var(--ch-text);
+  font-family: system-ui, sans-serif;
+}
+
+.sys-topnav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+  height: 2.5rem;
+  background: var(--ch-card);
+  border-bottom: 1px solid var(--ch-border);
+  font-size: 0.875rem;
+}
+
+.sys-topnav-link {
+  color: var(--ch-accent);
+  text-decoration: none;
+}
+
+.sys-topnav-link:hover {
+  text-decoration: underline;
+}
+
+.sys-topnav-sep {
+  color: var(--ch-muted);
+}
+
+.sys-topnav-title {
+  color: var(--ch-text);
+  font-weight: 600;
+}
+
+.sys-app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  color: var(--ch-text);
+  background: var(--ch-bg);
+}
+
+.sys-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--ch-border);
+  background: var(--ch-card);
+}
+
+.sys-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.sys-desc {
+  margin: 0.25rem 0 0;
+  color: var(--ch-muted);
+  font-size: 0.8125rem;
+}
+
+.sys-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.sys-toolbar input[type="text"] {
+  background: var(--ch-input-bg);
+  border: 1px solid var(--ch-border);
+  color: var(--ch-text);
+  border-radius: var(--ch-radius);
+  padding: 0.25rem 0.5rem;
+  min-width: 12rem;
+  font-size: 0.8125rem;
+}
+
+.sys-toolbar button {
+  background: var(--ch-accent);
+  color: var(--ch-inverse);
+  border: none;
+  border-radius: var(--ch-radius);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.sys-toolbar button:hover {
+  background: var(--ch-accent-hover);
+}
+
+.sys-check {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--ch-muted);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.sys-workspace {
+  flex: 1 1 auto;
+  display: flex;
+  overflow: hidden;
+}
+
+.sys-stage {
+  flex: 1 1 auto;
+  position: relative;
+  overflow: auto;
+  background: #0b1021;
+}
+
+.sys-svg {
+  display: block;
+  min-width: 100%;
+  min-height: 100%;
+}
+
+.sys-sidebar {
+  flex: 0 0 22rem;
+  border-left: 1px solid var(--ch-border);
+  background: var(--ch-panel);
+  overflow: auto;
+  padding: 1rem;
+}
+
+.sys-empty {
+  color: var(--ch-muted);
+  font-size: 0.875rem;
+}
+
+/* SVG nodes and edges */
+.sys-node {
+  cursor: pointer;
+}
+
+.sys-node-rect {
+  fill: var(--ch-card);
+  stroke: var(--ch-border);
+  stroke-width: 2;
+  rx: 6;
+  transition: stroke 0.15s;
+}
+
+.sys-node:hover .sys-node-rect,
+.sys-node.selected .sys-node-rect {
+  stroke: var(--ch-accent);
+}
+
+.sys-node-label {
+  fill: var(--ch-text);
+  font-size: 12px;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+.sys-node-status {
+  stroke: var(--ch-bg);
+  stroke-width: 2;
+}
+
+.sys-edge-group {
+  cursor: pointer;
+}
+
+.sys-edge {
+  fill: none;
+  stroke: var(--ch-border);
+  stroke-width: 2;
+}
+
+.sys-edge.active {
+  stroke: var(--ch-accent);
+  stroke-dasharray: 8 4;
+  animation: sys-dash 0.6s linear infinite;
+}
+
+@keyframes sys-dash {
+  to {
+    stroke-dashoffset: -12;
+  }
+}
+
+.sys-edge-label {
+  fill: var(--ch-muted);
+  font-size: 10px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+/* Sidebar details */
+.sys-section-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ch-muted);
+  margin: 1.25rem 0 0.5rem;
+}
+
+.sys-kv {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--ch-border);
+}
+
+.sys-kv span:first-child {
+  color: var(--ch-muted);
+}
+
+.sys-detail {
+  color: var(--ch-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.sys-event {
+  padding: 0.5rem;
+  border-radius: var(--ch-radius);
+  background: rgba(255, 255, 255, 0.03);
+  margin-bottom: 0.5rem;
+}
+
+.sys-event time {
+  color: var(--ch-muted);
+  font-size: 0.75rem;
+}
+
+.sys-event .msg {
+  margin-top: 0.125rem;
+  font-size: 0.875rem;
+}

@@ -1,0 +1,68 @@
+title: HomeLab System
+description: Live topology and event flow for chaba services
+refresh: 30
+layout:
+  auto: true
+  width: 900
+  height: 500
+
+components:
+  - id: caddy
+    label: Caddy Web
+    type: service
+    x: 450
+    y: 80
+    status: healthy
+    url: http://192.168.1.48:8080/api/status
+    detail: Static files and reverse proxy on port 8080/8081
+
+  - id: frigate
+    label: Frigate NVR
+    type: service
+    x: 220
+    y: 260
+    status: healthy
+    url: http://192.168.1.48:5000/
+    detail: Camera recording and object detection
+
+  - id: yomi-api
+    label: Yomi API
+    type: service
+    x: 680
+    y: 260
+    status: unknown
+    detail: LINE conversation API served through Caddy
+
+  - id: imagen2
+    label: Imagen2
+    type: gpu
+    x: 450
+    y: 420
+    status: offline
+    detail: SDXL image generation container
+
+connections:
+  - id: caddy-frigate
+    from: caddy
+    to: frigate
+    label: /frigate proxy
+    events:
+      - { time: '2026-07-31 14:00:00', level: info, message: '200 OK' }
+
+  - id: caddy-imagen2
+    from: caddy
+    to: imagen2
+    label: /apps/imagen2/api
+    events:
+      - { time: '2026-07-31 13:58:00', level: info, message: '200 OK' }
+      - { time: '2026-07-31 13:59:00', level: warn, message: 'slow response' }
+
+  - id: caddy-yomi
+    from: caddy
+    to: yomi-api
+    label: /api/yomi
+
+events:
+  - { time: '2026-07-31 14:02:00', component: caddy, level: info, message: 'Caddy reloaded' }
+  - { time: '2026-07-31 14:01:00', component: imagen2, level: error, message: 'Container stopped' }
+  - { time: '2026-07-31 13:55:00', component: frigate, level: info, message: 'Recording rotation' }
