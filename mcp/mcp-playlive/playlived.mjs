@@ -182,17 +182,20 @@ async function doAction(id, action, body) {
 
       const dropFilename = filename || (stash_id ? stash.get(stash_id).filename : 'drop.bin');
       const dropMimeType = mimeType || (stash_id ? stash.get(stash_id).mimeType : 'application/octet-stream');
-      const dataUrl = `data:${dropMimeType};base64,${buf.toString('base64')}`;
+      const b64Str = buf.toString('base64');
 
       const script = `
         (async () => {
           const sel = ${JSON.stringify(selector)};
-          const url = ${JSON.stringify(dataUrl)};
+          const b64 = ${JSON.stringify(b64Str)};
           const fname = ${JSON.stringify(dropFilename)};
           const mtype = ${JSON.stringify(dropMimeType)};
           const el = document.querySelector(sel);
           if (!el) throw new Error('drop target not found: ' + sel);
-          const blob = await (await fetch(url)).blob();
+          const bin = atob(b64);
+          const arr = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+          const blob = new Blob([arr], { type: mtype });
           const file = new File([blob], fname, { type: mtype });
           const dt = new DataTransfer();
           dt.items.add(file);
