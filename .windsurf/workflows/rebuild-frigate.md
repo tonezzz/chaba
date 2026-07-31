@@ -1,7 +1,10 @@
 ---
 description: Regenerate Frigate config and restart the NVR
 ---
-1. Run `just -f /home/tony/CascadeProjects/chaba/Justfile rebuild-cameras`.
-2. Restart Frigate with `just -f /home/tony/CascadeProjects/chaba/Justfile restart-frigate`.
-3. Wait 10 seconds, then check `docker ps` for the frigate container.
-4. Optionally verify the Frigate web UI is reachable on its configured port.
+1. Confirm with the user before regenerating config and restarting Frigate. If they agree, proceed.
+2. Run `just -f /home/tony/CascadeProjects/chaba/Justfile rebuild-cameras`.
+3. Restart Frigate with `just -f /home/tony/CascadeProjects/chaba/Justfile restart-frigate`.
+4. Wait 10 seconds, then check `docker ps` for the frigate container.
+5. Verify the web UI is reachable: `curl -I http://192.168.1.48:5000/`.
+6. If the UI is not reachable, show `docker logs frigate --tail 50` for diagnosis.
+7. Report when it is ready.
