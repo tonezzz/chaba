@@ -1,30 +1,74 @@
-title: Track4 Themes
-subtitle: Theme engine and available themes for the Track4 course simulator.
+title: Track4 Modularization
+subtitle: Complete modularization of Track4 course simulator with 5 independent modules, testing, and replay features.
 icon: 🏁
-ideas:
-- racer_label is a dark rounded pill with the full sail number (e.g. "THA-19")
-- racer_label contains a small country flag emoji on the left and bold white sail text on the right
-- racer_label stays screen-upright and is linked to the boat arrow by a 34px hinge
 sections:
-  - title: How themes are loaded
+  - title: Completed Modules
+    icon: ✅
+    layout: list
+    items:
+      - label: RacerIconRenderer
+        text: 'Extracted racer icon/label rendering logic. File: racer-icons.js. Methods: boatIcon, flagIcon, sailLabel. CSS: racer-icons.css.'
+      - label: SimulationEngine
+        text: 'Physics and simulation loop separated from UI logic. File: simulation-engine.js. Methods: start, stop, update, initRacers, updateRacer, resolveCollisions, simWindFactor, startPenalty, findSegment, random, resetRandom, startRecording, stopRecording, getRecording, loadRecording, startPlayback, stopPlayback, updatePlayback. Features: seeded random (LCG) for deterministic replay, recording/playback support, binary search optimization.'
+      - label: UIController
+        text: 'Manages UI updates and event handling. File: ui-controller.js. Methods: updateStandings, updateRacerList, updateElapsedTime, toggleSimulationControls.'
+      - label: MapLayerManager
+        text: 'Manages base maps and overlays. File: map-layers.js. Methods: addBaseLayer, addOverlay, setActiveBase, toggleOverlay, createLayerControl, removeLayerControl, getState.'
+      - label: StateManager
+        text: 'Centralized state management with reactivity. File: state-manager.js. Methods: setState, getState, subscribe, reset, getCourseState, setCourseState, getSimulationState, setSimulationState, getUIState, setUIState, getListenerCount, getSubscribedPaths.'
+
+  - title: Testing
+    icon: 🧪
+    layout: list
+    items:
+      - label: Integration tests
+        text: 'test.html with 10 automated tests covering module loading, course loading, racer rendering, simulation, layers, leader focus, ribbon caps, sections, interaction, UI controls. All passing.'
+      - label: Unit tests
+        text: 'tests/simulation-engine.test.js (10 tests), tests/state-manager.test.js (20 tests). Custom test runner. All passing. Total: 40 tests.'
+      - label: Test skill
+        text: 'track4-smoke-test skill for reusable smoke testing.'
+
+  - title: Documentation
+    icon: 📚
+    layout: list
+    items:
+      - label: ARCHITECTURE.md
+        text: 'Comprehensive architecture documentation with module descriptions, data flow, usage examples, migration notes.'
+      - label: COURSE_LOADING_ISSUE.md
+        text: 'Documents PHP backend 502 Bad Gateway issue (server infrastructure, not Track4 code).'
+
+  - title: Performance
+    icon: ⚡
+    layout: list
+    items:
+      - label: Binary search
+        text: 'findSegment optimized from O(n) to O(log n) using binary search on cumulative distances.'
+      - label: Collision detection
+        text: 'Early return for <2 racers. O(n²) acceptable for 2-10 racers.'
+      - label: Path caching
+        text: 'Cached path data in updateRacer to avoid repeated property access.'
+
+  - title: CSS Organization
     icon: 🎨
     layout: list
     items:
-      - label: Query parameter
-        text: '/apps/track4/?theme=1 loads themes/1.js. Omitting ?theme or ?theme=default loads DefaultTheme.'
-      - label: Loader
-        text: 'track.js appends themes/<id>.js and passes the class to CourseRenderer as options.theme.'
-      - label: Contract
-        text: 'A theme file must set window.TrackTheme to a class; the class should extend DefaultTheme.'
+      - label: base.css
+        text: 'Base styles, variables, reset.'
+      - label: components.css
+        text: 'Component-specific styles (buttons, inputs, cards).'
+      - label: layout.css
+        text: 'Layout-specific styles (grid, flex, positioning).'
+      - label: racer-icons.css
+        text: 'Racer icon and animation styles.'
+      - label: track.css
+        text: 'Streamlined for course-specific styles.'
 
-  - title: Available themes
-    icon: 🏁
+  - title: Known Issues
+    icon: ⚠️
     layout: list
     items:
-      - label: default
-        text: 'Current Track4 map style. File: public/apps/track4/themes/default.js.'
-      - label: '1 (racing)'
-        text: 'Broadcast chrome (header, live UTC clock, wind, compass), orange markers, yellow arrows, high-contrast leg labels, start/finish gates, minimal racing wind icon, and a race dashboard panel. Racer marker: arrow with 34px hinge link, upright dark pill label with small country flag emoji and full sail number. Files: public/apps/track4/themes/1.js and 1.css.'
+      - label: Course loading
+        text: 'PHP backend returning 502 Bad Gateway. Server infrastructure issue, not Track4 code. Course file exists at courses/tabsai-ws8-track3.yml.'
 
   - title: Engine split
     icon: ⚙️
@@ -34,14 +78,24 @@ sections:
         text: 'Builds drawable geometry and delegates all drawing to the active theme.'
       - label: DefaultTheme
         text: 'Holds all marker, line, section, arrow and wind rendering primitives.'
-      - label: RacerIconRenderer (planned)
-        text: 'Module for racer icon/label rendering logic. Extracted from themes for reusability and testability. File: racer-icons.js (planned).'
-      - label: SimulationEngine (planned)
-        text: 'Physics and simulation loop separated from UI logic. Testable racer movement, collision detection, and state management. File: simulation-engine.js (planned).'
-      - label: MapLayerManager (planned)
-        text: 'Manages base maps and overlays independently of app logic. Easier layer switching and configuration. File: map-layers.js (planned).'
+      - label: RacerIconRenderer
+        text: 'Module for racer icon/label rendering logic. Extracted from themes for reusability and testability. File: racer-icons.js. Methods: boatIcon, flagIcon, sailLabel.'
+      - label: SimulationEngine
+        text: 'Physics and simulation loop separated from UI logic. Testable racer movement, collision detection, and state management. File: simulation-engine.js. Methods: start, stop, update, initRacers, updateRacer, resolveCollisions, simWindFactor, startPenalty, findSegment. Features: seeded random for deterministic replay, recording/playback support.'
+      - label: UIController
+        text: 'Manages UI updates and event handling for simulation controls. File: ui-controller.js. Methods: updateStandings, updateRacerList, updateElapsedTime, toggleSimulationControls.'
+      - label: MapLayerManager
+        text: 'Manages base maps and overlays independently of app logic. Easier layer switching and configuration. File: map-layers.js. Methods: addBaseLayer, addOverlay, setActiveBase, toggleOverlay, createLayerControl.'
+      - label: StateManager
+        text: 'Centralized state management with reactivity and easier debugging. File: state-manager.js. Methods: setState, getState, subscribe, reset, getCourseState, setCourseState, getSimulationState, setSimulationState, getUIState, setUIState.'
       - label: Override points
         text: 'Currently overridden in racing: markerIcon, markerLabelIcon, lineLabelIcon, arrowIcon, windIcon (minimal racing arrow), boatIcon (racer arrow, hinge link and upright flag/number pill), drawLine, drawOne (start/finish gates, leg/round callouts, solid sections) and renderStandings (race dashboard).'
+      - label: CSS organization
+        text: 'CSS organized into base.css (base styles, variables), components.css (component-specific), layout.css (layout-specific), racer-icons.css (racer icon animations). Track.css streamlined for course-specific styles.'
+      - label: Testing
+        text: 'Integration test suite at test.html with 10 automated tests. Unit tests in tests/ directory: simulation-engine.test.js (10 tests), state-manager.test.js (20 tests). Total: 40 tests passing.'
+      - label: Performance
+        text: 'Optimized findSegment with binary search (O(n) → O(log n)). Early return in collision detection for <2 racers. Cached path data in updateRacer.'
 
   - title: Leader Focus Feature
     icon: 🎯
