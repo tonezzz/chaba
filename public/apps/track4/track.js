@@ -1,10 +1,9 @@
 const ROUND_DIST = 25;
 const DEFAULT_COURSE = 'tabsai-ws8-track3';
 let courseId = new URLSearchParams(window.location.search).get('course') || DEFAULT_COURSE;
-let saveTimer = null;
 let courseData = null;
 let renderer = null;
-let state = { overrides: {}, hidden: new Set() };
+let stateManager = new StateManager(courseId);
 
 const map = L.map('map');
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -38,45 +37,24 @@ const RACER_PROFILES = [
 ];
 let simState = { running: false, rafId: null, elapsed: 0, racers: [], speedFactor: 1, lastTs: 0, path: null };
 let highlightedRacer = null;
-let focusState = { enabled: true, manualSection: null };
+let leaderFocus = new LeaderFocus();
 let windSystem = new WindSystem();
 
+// State management functions (delegated to StateManager module)
 function getMergedMarkers() {
-  return Object.entries(courseData.markers || {}).map(([id, m]) => ({ id, ...m, ...(state.overrides[id] || {}) }));
+  return stateManager.getMergedMarkers(courseData);
 }
-function storageKey() { return 'track-marker-overrides-' + courseId; }
+
 function saveOverrides() {
-  try { localStorage.setItem(storageKey(), JSON.stringify(state.overrides)); } catch (e) { console.warn('failed to save overrides', e); }
-  saveToServer();
+  stateManager.saveOverrides();
 }
+
 function loadOverrides() {
-  try { state.overrides = JSON.parse(localStorage.getItem(storageKey()) || '{}'); } catch { state.overrides = {}; }
+  stateManager.loadOverrides();
 }
 
 async function loadServerState() {
-  try {
-    const r = await fetch(`api/load.php?course=${courseId}`);
-    if (!r.ok) throw new Error(`load ${r.status}`);
-    const data = await r.json();
-    if (data && typeof data === 'object') {
-      if (data.overrides && typeof data.overrides === 'object') state.overrides = data.overrides;
-      if (Array.isArray(data.hidden)) state.hidden = new Set(data.hidden);
-    }
-  } catch (e) { console.warn('server load failed, using local overrides', e); }
-}
-
-function saveToServer() {
-  if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(async () => {
-    try {
-      const payload = { course: courseId, overrides: state.overrides, hidden: [...state.hidden] };
-      await fetch('api/save.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-    } catch (e) { console.warn('server save failed', e); }
-  }, 500);
+  await stateManager.loadServerState();
 }
 
 
@@ -104,21 +82,20 @@ function updateSections(drawables) {
     if (header) header.checked = true;
     return;
   }
-  const allChecked = sections.every(s => !state.hidden.has(s.key));
+  const allChecked = sections.every(s => !stateManager.isHidden(s.key));
   if (header) {
     header.checked = allChecked;
     header.onchange = (e) => {
       for (const s of sections) {
-        if (e.target.checked) state.hidden.delete(s.key);
-        else state.hidden.add(s.key);
+        stateManager.toggleSection(s.key, !e.target.checked);
       }
-      saveToServer();
+      stateManager.saveOverrides();
       render(false);
     };
   }
   list.innerHTML = '';
   sections.forEach((s, i) => {
-    const checked = !state.hidden.has(s.key) ? 'checked' : '';
+    const checked = !stateManager.isHidden(s.key) ? 'checked' : '';
     const row = document.createElement('div');
     row.className = 'mb-2 section-row';
     row.dataset.key = s.key;
@@ -134,8 +111,8 @@ function updateSections(drawables) {
     `;
     row.querySelector('input').onchange = (e) => {
       e.stopPropagation();
-      if (e.target.checked) state.hidden.delete(s.key); else state.hidden.add(s.key);
-      saveToServer();
+      stateManager.toggleSection(s.key, !e.target.checked);
+      stateManager.saveOverrides();
       render(false);
     };
     row.querySelector('button').onclick = (e) => {
@@ -144,8 +121,7 @@ function updateSections(drawables) {
       if (pts.length) map.fitBounds(L.latLngBounds(pts).pad(0.25));
     };
     row.onclick = () => {
-      focusState.manualSection = s.key;
-      focusState.enabled = true;
+      leaderFocus.setManualSection(s.key);
       const focusToggle = document.getElementById('toggle-focus-leader');
       if (focusToggle) focusToggle.checked = true;
       updateFocusStatus();
@@ -189,14 +165,13 @@ function setupTabs() {
 }
 
 function onMarkerDrag(id, lat, lon) {
-  state.overrides[id] = { lat, lon };
-  saveOverrides();
+  stateManager.updateMarkerOverride(id, { lat, lon });
   render(false);
 }
 
 function render(fit = false) {
   const markers = getMergedMarkers();
-  renderer.hidden = state.hidden;
+  renderer.hidden = stateManager.getHidden();
   const g = renderer.draw(courseData.course, markers, { onDrag: onMarkerDrag, fit });
   updatePanel(courseData.course, g);
   updateSections(renderer.lastDrawables);
@@ -455,98 +430,21 @@ function currentSectionKey(r) {
   return null;
 }
 
+// Leader focus functions (delegated to LeaderFocus module)
 function updateFocusStatus() {
-  const el = document.getElementById('focus-status');
-  if (!el) return;
-  if (!focusState.enabled) {
-    el.textContent = '';
-    return;
-  }
-  if (focusState.manualSection) {
-    const sections = (renderer.lastDrawables || []).filter(d => d.kind === 'section');
-    const section = sections.find(s => s.key === focusState.manualSection);
-    el.textContent = `Focused: ${section ? (section.text || section.key) : focusState.manualSection}`;
-  } else {
-    if (!simState.racers.length) {
-      el.textContent = 'Start simulation to follow leader';
-      return;
-    }
-    const leader = simState.racers.sort((a, b) => b.distance - a.distance)[0];
-    if (leader) {
-      const section = currentSection(leader);
-      el.textContent = `Following: ${section}`;
-    } else {
-      el.textContent = 'Following: —';
-    }
-  }
+  leaderFocus.updateStatus({
+    sections: (renderer.lastDrawables || []).filter(d => d.kind === 'section'),
+    racers: simState.racers,
+    currentSection: currentSection
+  });
 }
 
 function applyLeaderFocus() {
-  document.body.classList.toggle('leader-focus-active', focusState.enabled);
-  if (!focusState.enabled || !renderer) return;
-  
-  let targetSectionKey = focusState.manualSection;
-  let leader = null;
-  
-  if (!targetSectionKey) {
-    if (!simState.racers.length) return;
-    leader = simState.racers.sort((a, b) => b.distance - a.distance)[0];
-    if (leader) targetSectionKey = currentSectionKey(leader);
-  } else {
-    leader = simState.racers.sort((a, b) => b.distance - a.distance)[0];
-  }
-  
-  if (!targetSectionKey) return;
-  
-  const sections = (renderer.lastDrawables || []).filter(d => d.kind === 'section');
-  const targetSection = sections.find(s => s.key === targetSectionKey);
-  
-  sections.forEach(s => {
-    const isTarget = s.key === targetSectionKey;
-    const polyline = s.polyline;
-    if (polyline) {
-      const el = polyline.getElement();
-      if (el) {
-        if (el.tagName === 'path') {
-          if (isTarget) {
-            el.classList.add('leader-section');
-            el.classList.remove('dimmed-section');
-          } else {
-            el.classList.add('dimmed-section');
-            el.classList.remove('leader-section');
-          }
-        }
-      }
-    }
-  });
-  
-  // Highlight racers in target section
-  simState.racers.forEach(r => {
-    const rSectionKey = currentSectionKey(r);
-    const isTarget = rSectionKey === targetSectionKey;
-    const iconEl = r.marker.getElement();
-    if (iconEl) {
-      if (isTarget) {
-        iconEl.classList.add('leader-racer');
-        iconEl.classList.remove('dimmed-racer');
-      } else {
-        iconEl.classList.add('dimmed-racer');
-        iconEl.classList.remove('leader-racer');
-      }
-    }
-  });
-  
-  updateSectionListHighlight(targetSectionKey);
-}
-
-function updateSectionListHighlight(targetKey) {
-  const rows = document.querySelectorAll('.section-row');
-  rows.forEach(row => {
-    if (row.dataset.key === targetKey) {
-      row.classList.add('focus-section');
-    } else {
-      row.classList.remove('focus-section');
-    }
+  leaderFocus.applyFocus({
+    sections: (renderer.lastDrawables || []).filter(d => d.kind === 'section'),
+    racers: simState.racers,
+    currentSectionKey: currentSectionKey,
+    renderer: renderer
   });
 }
 
@@ -647,19 +545,16 @@ function setupSim() {
     }
   });
   
-  // Leader focus toggle
-  const focusToggle = document.getElementById('toggle-focus-leader');
-  if (focusToggle) {
-    focusToggle.checked = focusState.enabled;
-    focusToggle.onchange = (e) => {
-      focusState.enabled = e.target.checked;
-      if (!focusState.enabled) {
-        focusState.manualSection = null;
-      }
+  // Set up leader focus UI
+  leaderFocus.setupUI({
+    onToggle: (state) => {
+      updateFocusStatus();
+    },
+    onApply: () => {
       updateFocusStatus();
       applyLeaderFocus();
-    };
-  }
+    }
+  });
   
   document.addEventListener('keydown', (e) => {
     if (e.key === 'l' || e.key === 'L') {
@@ -748,17 +643,7 @@ async function loadCourse(id) {
     try { ThemeClass = await loadTheme(themeId); } catch (e) { console.warn('theme load failed', e); }
   }
   if (!renderer) renderer = new CourseRenderer(map, { roundDist: ROUND_DIST, theme: new ThemeClass() });
-  renderer.hidden = state.hidden;
-  
-  // Update wind configuration from course data
-  if (courseData.wind) {
-    setWind({
-      direction: courseData.wind.direction || 180,
-      speed: courseData.wind.speed_kts || 15,
-      gustFactor: courseData.wind.gust_factor || 0.2,
-      variability: courseData.wind.variability || 10
-    });
-  }
+  renderer.hidden = stateManager.getHidden();
   
   render(true);
   initRacers();
@@ -771,7 +656,8 @@ async function saveCourse(name) {
   name = (name || '').trim();
   if (!name) name = courseId;
   if (!/^[a-zA-Z0-9_-]+$/.test(name)) { showCourseMsg('invalid course name'); return; }
-  const payload = { course: name, overrides: state.overrides, hidden: [...state.hidden] };
+  const currentState = stateManager.getState();
+  const payload = { course: name, overrides: currentState.overrides, hidden: [...currentState.hidden] };
   try {
     const r = await fetch('api/save.php', {
       method: 'POST',
@@ -781,7 +667,8 @@ async function saveCourse(name) {
     const data = await r.json().catch(() => ({}));
     if (r.ok && data.ok) {
       courseId = name;
-      try { localStorage.setItem(storageKey(), JSON.stringify(state.overrides)); } catch (e) {}
+      stateManager.setCourseId(name);
+      try { localStorage.setItem(stateManager.getStorageKey(), JSON.stringify(currentState.overrides)); } catch (e) {}
       document.getElementById('course-name').value = courseId;
       updateUrlCourse();
       populateCourseList();

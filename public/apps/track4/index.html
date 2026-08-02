@@ -71,6 +71,31 @@
           <label class="flex items-center gap-2 cursor-pointer"><input id="toggle-focus-leader" type="checkbox" checked class="accent-accent"> Focus Leader (L)</label>
           <div id="focus-status" class="text-accent text-xs"></div>
         </div>
+        <div class="border-t border-gray-700 pt-2 mb-3">
+          <h3 class="font-semibold text-white text-xs mb-2">Wind Configuration</h3>
+          <div class="space-y-2 mb-2 text-xs">
+            <div class="flex items-center justify-between">
+              <span>Direction</span>
+              <span id="wind-direction-value" class="text-accent">180°</span>
+            </div>
+            <input id="wind-direction" type="range" min="0" max="360" value="180" class="w-full accent-accent">
+            <div class="flex items-center justify-between">
+              <span id="wind-direction-label" class="text-gray-400">S</span>
+              <span>Compass</span>
+            </div>
+            <div class="flex items-center justify-between mt-2">
+              <span>Speed</span>
+              <span id="wind-speed-value" class="text-accent">15</span>
+            </div>
+            <input id="wind-speed" type="range" min="5" max="30" value="15" class="w-full accent-accent">
+            <div class="flex items-center justify-between mt-2">
+              <span>Gust Factor</span>
+              <span id="wind-gust-value" class="text-accent">0.20</span>
+            </div>
+            <input id="wind-gust" type="range" min="0" max="0.5" step="0.05" value="0.2" class="w-full accent-accent">
+            <button id="apply-wind" class="w-full mt-2 px-2 py-1 text-xs rounded bg-accent text-white">Apply Wind</button>
+          </div>
+        </div>
         <div class="grid grid-cols-2 gap-2 mb-3">
           <button id="sim-start" class="px-2 py-1 text-xs rounded bg-green-700 text-white">Start</button>
           <button id="sim-reset" class="px-2 py-1 text-xs rounded bg-gray-700 text-white">Reset</button>
@@ -99,6 +124,8 @@
   <script src="themes/default.js"></script>
   <script src="renderer.js"></script>
   <script src="wind-system.js"></script>
+  <script src="leader-focus.js"></script>
+  <script src="state-manager.js"></script>
     <script src="track.js"></script>
 </body>
 </html>
