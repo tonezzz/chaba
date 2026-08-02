@@ -4,6 +4,25 @@
 	@tony_omen_temp_bare path /apps/tony-omen-temp
 	redir @tony_omen_temp_bare /apps/tony-omen-temp/ 308
 
+	# Activepieces root-level assets (SPA loads from / due to original base href)
+	@ap_assets path /assets /assets/*
+	handle @ap_assets {
+		reverse_proxy activepieces:80
+	}
+
+	@ap_logo path /logo.svg /logo-192.png /logo-180.png
+	handle @ap_logo {
+		reverse_proxy activepieces:80
+	}
+
+	handle /apps/activepieces {
+		redir /apps/activepieces/ 308
+	}
+
+	handle_path /apps/activepieces/* {
+		reverse_proxy activepieces:80
+	}
+
 	file_server
 
 	# Pretty URLs: /cameras → /cameras.json
@@ -59,6 +78,23 @@
 		file_server
 	}
 
+	# Activepieces API (must be before generic /api/* handler)
+	handle /api/v1/* {
+		reverse_proxy activepieces:80
+	}
+
+	handle /api/socket.io/* {
+		reverse_proxy activepieces:80
+	}
+
+	handle /api/yomi/* {
+		reverse_proxy host.docker.internal:3000
+	}
+
+	handle /api/gpu-queue/* {
+		reverse_proxy host.docker.internal:3001
+	}
+
 	handle /api/* {
 		reverse_proxy status-api:8000
 	}
@@ -105,6 +141,54 @@
 		file_server
 	}
 
+	@imagen3_noslash path /apps/imagen3
+	redir @imagen3_noslash /apps/imagen3/ 308
+
+	handle_path /apps/imagen3/api/* {
+		reverse_proxy imagen2-inference:8000
+	}
+
+	handle_path /apps/imagen3/* {
+		root * /srv/public/chaba-h3/apps/imagen3
+		file_server
+	}
+
+	@raj_noslash path /apps/raj
+	redir @raj_noslash /apps/raj/ 308
+
+	handle_path /apps/raj/api/* {
+		reverse_proxy imagen2-inference:8000
+	}
+
+	handle_path /apps/raj/* {
+		root * /srv/public/chaba-h3/apps/raj
+		file_server
+	}
+
+	@txt2vid_noslash path /apps/txt2vid
+	redir @txt2vid_noslash /apps/txt2vid/ 308
+
+	handle_path /apps/txt2vid/api/* {
+		reverse_proxy txt2vid-inference:8000
+	}
+
+	handle_path /apps/txt2vid/* {
+		root * /srv/public/chaba-h3/apps/txt2vid
+		file_server
+	}
+
+	@gpu-queue_noslash path /apps/gpu-queue
+	redir @gpu-queue_noslash /apps/gpu-queue/ 308
+
+	handle_path /apps/gpu-queue/* {
+		root * /srv/public/chaba-h3/apps/gpu-queue
+		file_server
+	}
+
+	handle_path /api/gpu-queue/* {
+		reverse_proxy host.docker.internal:3001
+	}
+
 	handle /apps/imagen {
 		redir /apps/imagen/ 308
 	}
@@ -147,14 +231,11 @@
 	redir @chatllama_noslash /apps/chatllama/ 308
 
 	handle /v1/* {
-		reverse_proxy host.docker.internal:8008 {
-			header_up Host localhost:8008
-		}
+		reverse_proxy thai-legal-inference:8000
 	}
 
 	handle_path /apps/chatllama/* {
-		reverse_proxy host.docker.internal:8008 {
-			header_up Host localhost:8008
+		reverse_proxy thai-legal-inference:8000 {
 			header_up Accept-Encoding gzip
 		}
 	}
@@ -164,14 +245,48 @@
 			header_up Host localhost:3000
 		}
 	}
+
+	@thai_legal_noslash path /apps/thai-legal
+	redir @thai_legal_noslash /apps/thai-legal/ 308
+
+	handle_path /apps/thai-legal/api/* {
+		reverse_proxy thai-legal-inference:8000
+	}
+
+	handle_path /apps/thai-legal/* {
+		root * /srv/public/apps/thai-legal
+		file_server
+	}
+
+	@pegion_noslash path /apps/pegion
+	redir @pegion_noslash /apps/pegion/ 308
+
+	handle_path /apps/pegion/* {
+		root * /srv/public/apps/pegion
+		file_server
+	}
+
 }
 
 # chaba.h3 local dev root
 :8081 {
 	root * /srv/public/chaba-h3
 
+	# CORS headers for splat files
+	header {
+		Access-Control-Allow-Origin *
+		Access-Control-Allow-Methods GET, OPTIONS
+		Access-Control-Allow-Headers *
+	}
+
 	handle /apps/track4/api/* {
+		uri strip_prefix /apps/track4/api
 		reverse_proxy host.docker.internal:8123
+	}
+
+	handle /apps/txt2vid/api/* {
+		uri strip_prefix /apps/txt2vid/api
+		reverse_proxy txt2vid-inference:8000
 	}
 
 	file_server
