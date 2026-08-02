@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raj - Image Gen Lite</title>
+  <link rel="stylesheet" href="./raj.css">
+</head>
+<body>
+  <a href="/apps/" class="back-link">← Apps</a>
+
+  <main class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">✨</div>
+        <div>
+          <h1>Image Gen Lite</h1>
+          <p>Static preview of RajTewari01/image-generation</p>
+        </div>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab active" data-tab="generate" role="tab" aria-selected="true">Generate</button>
+        <button type="button" class="tab" data-tab="history" role="tab" aria-selected="false">History</button>
+      </div>
+
+      <div class="tab-panels">
+        <div id="panel-generate" class="tab-panel active" role="tabpanel">
+          <div class="field">
+            <label for="pipeline">Engine Pipeline</label>
+            <select id="pipeline"></select>
+          </div>
+
+          <div class="field">
+            <label for="prompt">Prompt</label>
+            <textarea id="prompt" rows="4" placeholder="Describe your vision..."></textarea>
+          </div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label for="steps">Steps</label>
+              <input id="steps" type="number" value="20" min="1" max="150">
+            </div>
+            <div class="field">
+              <label for="cfg">CFG</label>
+              <input id="cfg" type="number" value="7.0" step="0.5" min="1" max="30">
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Aspect Ratio</label>
+            <div class="ratio-group" id="ratio-group">
+              <button type="button" data-ratio="square" class="active">Square</button>
+              <button type="button" data-ratio="landscape">Landscape</button>
+              <button type="button" data-ratio="portrait">Portrait</button>
+            </div>
+          </div>
+
+          <button id="generate" class="generate" type="button">
+            <span class="icon">✨</span>
+            <span id="generate-text">Synthesize</span>
+          </button>
+
+          <p class="note">
+            Backed by the imagen2 SDXL-Lightning backend via <code>/apps/raj/api/v1</code>.
+            See the <a href="https://github.com/RajTewari01/image-generation" target="_blank" rel="noopener">original repo</a>.
+          </p>
+        </div>
+
+        <div id="panel-history" class="tab-panel" role="tabpanel">
+          <div class="history" id="history">
+            <div class="history-header">
+              <span>Recent</span>
+              <button type="button" id="refresh-history" title="Refresh">↻</button>
+            </div>
+            <div class="history-list" id="history-list"></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <section class="canvas">
+      <div class="right-panel">
+        <div class="right-tabs" role="tablist">
+          <button type="button" class="right-tab active" data-right-tab="image" role="tab" aria-selected="true">Image</button>
+          <button type="button" class="right-tab" data-right-tab="params" role="tab" aria-selected="false">Parameters</button>
+        </div>
+
+        <div class="right-tab-panels">
+          <div id="right-panel-image" class="right-tab-panel active panel-image" role="tabpanel">
+            <div id="frame" class="frame square">
+              <div class="zoom-bar" id="zoom-bar">
+                <button type="button" data-zoom="fit" title="Fit to frame">Fit</button>
+                <button type="button" data-zoom="full" class="active" title="Fill frame">Full</button>
+                <button type="button" data-zoom="scale" title="Actual size">Scale</button>
+              </div>
+
+              <div id="placeholder" class="placeholder">
+                <span class="placeholder-icon">🖼</span>
+                <p>Awaiting parameters</p>
+              </div>
+
+              <div id="loading" class="loading hidden">
+                <div class="progress-wrap">
+                  <div class="progress-track">
+                    <div id="progress-fill" class="progress-fill"></div>
+                  </div>
+                </div>
+                <p id="status-text" class="status-text">GENERATING...</p>
+              </div>
+
+              <img id="result" class="result hidden" alt="Generated">
+
+              <a id="download" class="download hidden" href="#" download="generation.png" title="Download">
+                ⬇
+              </a>
+            </div>
+          </div>
+
+          <div id="right-panel-params" class="right-tab-panel panel-params" role="tabpanel">
+            <form id="params-form" class="params-form" autocomplete="off">
+              <div class="field">
+                <label for="params-prompt">Prompt</label>
+                <textarea id="params-prompt" rows="4"></textarea>
+              </div>
+              <div class="field">
+                <label for="params-pipeline">Pipeline</label>
+                <select id="params-pipeline"></select>
+              </div>
+              <div class="grid-2">
+                <div class="field">
+                  <label for="params-steps">Steps</label>
+                  <input id="params-steps" type="number" value="4" min="1" max="150">
+                </div>
+                <div class="field">
+                  <label for="params-cfg">CFG</label>
+                  <input id="params-cfg" type="number" value="1.5" step="0.5" min="1" max="30">
+                </div>
+              </div>
+              <div class="grid-2">
+                <div class="field">
+                  <label for="params-width">Width</label>
+                  <input id="params-width" type="number" value="512" min="64" max="2048" step="64">
+                </div>
+                <div class="field">
+                  <label for="params-height">Height</label>
+                  <input id="params-height" type="number" value="768" min="64" max="2048" step="64">
+                </div>
+              </div>
+              <div class="field">
+                <label for="params-seed">Seed (optional)</label>
+                <input id="params-seed" type="number" value="" placeholder="random">
+              </div>
+              <button id="params-regenerate" type="button" class="generate">
+                <span class="icon">✨</span> Regenerate
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API = '/apps/raj/api';
+
+    const $ = id => document.getElementById(id);
+    const pipelineSelect = $('pipeline');
+    const paramsPipeline = $('params-pipeline');
+    const promptEl = $('prompt');
+    const stepsEl = $('steps');
+    const cfgEl = $('cfg');
+    const generateBtn = $('generate');
+    const generateText = $('generate-text');
+    const loading = $('loading');
+    const placeholder = $('placeholder');
+    const result = $('result');
+    const download = $('download');
+    const progressFill = $('progress-fill');
+    const statusText = $('status-text');
+    const frame = $('frame');
+    const historyList = $('history-list');
+    const refreshHistoryBtn = $('refresh-history');
+    const paramsPrompt = $('params-prompt');
+    const paramsSteps = $('params-steps');
+    const paramsCfg = $('params-cfg');
+    const paramsWidth = $('params-width');
+    const paramsHeight = $('params-height');
+    const paramsSeed = $('params-seed');
+    const paramsRegenerate = $('params-regenerate');
+    const zoomButtons = document.querySelectorAll('#zoom-bar button');
+    const tabButtons = document.querySelectorAll('.tab');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+    const rightTabButtons = document.querySelectorAll('.right-tab');
+    const rightTabPanels = document.querySelectorAll('.right-tab-panel');
+
+    function switchTab(name) {
+      tabButtons.forEach(btn => {
+        const active = btn.dataset.tab === name;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      tabPanels.forEach(panel => panel.classList.toggle('active', panel.id === `panel-${name}`));
+    }
+    tabButtons.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+
+    function switchRightTab(name) {
+      rightTabButtons.forEach(btn => {
+        const active = btn.dataset.rightTab === name;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      rightTabPanels.forEach(panel => panel.classList.toggle('active', panel.id === `right-panel-${name}`));
+    }
+    rightTabButtons.forEach(btn => btn.addEventListener('click', () => switchRightTab(btn.dataset.rightTab)));
+
+    const DEFAULT_PIPELINES = [
+      'anime', 'cars', 'closeup_anime', 'difconsistency',
+      'diffusionbrush', 'drawing', 'ethnicity', 'ghost',
+      'horror', 'hyperrealistic', 'papercut', 'space', 'zombie'
+    ];
+
+    function loadPipelines() {
+      fetch(`${API}/v1/pipelines`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          pipelineSelect.innerHTML = '';
+          paramsPipeline.innerHTML = '';
+          const names = data?.pipelines ? Object.keys(data.pipelines) : DEFAULT_PIPELINES;
+          names.forEach((p, i) => {
+            const opt = document.createElement('option');
+            opt.value = p;
+            opt.textContent = p.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            if (i === 0) opt.selected = true;
+            pipelineSelect.appendChild(opt);
+            paramsPipeline.appendChild(opt.cloneNode(true));
+          });
+        })
+        .catch(() => {
+          pipelineSelect.innerHTML = '';
+          paramsPipeline.innerHTML = '';
+          DEFAULT_PIPELINES.forEach((p, i) => {
+            const opt = document.createElement('option');
+            opt.value = p;
+            opt.textContent = p.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            if (i === 0) opt.selected = true;
+            pipelineSelect.appendChild(opt);
+            paramsPipeline.appendChild(opt.cloneNode(true));
+          });
+        });
+    }
+    loadPipelines();
+
+    let aspectRatio = 'square';
+    document.querySelectorAll('#ratio-group button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#ratio-group button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        aspectRatio = btn.dataset.ratio;
+        frame.classList.remove('square', 'landscape', 'portrait');
+        frame.classList.add(aspectRatio);
+      });
+    });
+
+    function dimsForRatio(ratio) {
+      if (ratio === 'landscape') return { width: 1024, height: 576 };
+      if (ratio === 'portrait') return { width: 512, height: 768 };
+      return { width: 768, height: 768 };
+    }
+
+    function ratioForDims(w, h) {
+      if (w > h) return 'landscape';
+      if (h > w) return 'portrait';
+      return 'square';
+    }
+
+    function setAspectRatio(ratio) {
+      document.querySelectorAll('#ratio-group button').forEach(b => b.classList.remove('active'));
+      const btn = document.querySelector(`#ratio-group button[data-ratio="${ratio}"]`);
+      if (btn) btn.classList.add('active');
+      aspectRatio = ratio;
+      frame.classList.remove('square', 'landscape', 'portrait');
+      frame.classList.add(aspectRatio);
+    }
+
+    function setZoom(mode) {
+      zoomButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.zoom === mode));
+      if (mode === 'fit') {
+        result.style.objectFit = 'contain';
+        result.style.width = '100%';
+        result.style.height = '100%';
+        frame.style.overflow = 'hidden';
+      } else if (mode === 'full') {
+        result.style.objectFit = 'cover';
+        result.style.width = '100%';
+        result.style.height = '100%';
+        frame.style.overflow = 'hidden';
+      } else if (mode === 'scale') {
+        result.style.objectFit = 'none';
+        result.style.width = 'auto';
+        result.style.height = 'auto';
+        frame.style.overflow = 'auto';
+      }
+    }
+    zoomButtons.forEach(btn => btn.addEventListener('click', () => setZoom(btn.dataset.zoom)));
+
+    let pollTimer = null;
+    let fakeTimer = null;
+
+    function stopGenerationUi() {
+      if (pollTimer) clearInterval(pollTimer);
+      if (fakeTimer) cancelAnimationFrame(fakeTimer);
+      loading.classList.add('hidden');
+      generateBtn.disabled = false;
+      paramsRegenerate.disabled = false;
+      generateText.textContent = 'Synthesize';
+    }
+
+    function showImage(imageUrl) {
+      placeholder.classList.add('hidden');
+      result.src = `${API}/${imageUrl}`;
+      result.classList.remove('hidden');
+      download.href = `${API}/${imageUrl}`;
+      download.classList.remove('hidden');
+    }
+
+    function pollJob(jobId) {
+      const start = performance.now();
+      let fake = 0;
+      function bump() {
+        const elapsed = (performance.now() - start) / 1000;
+        fake = Math.min(90, elapsed / 45 * 90);
+        progressFill.style.width = fake + '%';
+        fakeTimer = requestAnimationFrame(bump);
+      }
+      bump();
+
+      pollTimer = setInterval(async () => {
+        try {
+          const r = await fetch(`${API}/v1/jobs/${jobId}`);
+          if (!r.ok) return;
+          const data = await r.json();
+          statusText.textContent = data.status.toUpperCase();
+          if (data.status === 'completed' && data.image_url) {
+            stopGenerationUi();
+            showImage(data.image_url);
+            loadHistory();
+          } else if (data.status === 'failed') {
+            stopGenerationUi();
+            placeholder.classList.remove('hidden');
+            placeholder.querySelector('p').textContent = data.error || 'Generation failed';
+            alert(data.error || 'Generation failed');
+          }
+        } catch (e) {
+          // ignore poll errors
+        }
+      }, 1500);
+    }
+
+    function formatDate(iso) {
+      try {
+        return new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      } catch (e) { return iso || ''; }
+    }
+
+    async function loadHistory() {
+      try {
+        const r = await fetch(`${API}/v1/history`);
+        if (!r.ok) return;
+        const data = await r.json();
+        renderHistory(data.history || []);
+      } catch (e) { /* ignore */ }
+    }
+
+    function renderHistory(items) {
+      historyList.innerHTML = '';
+      if (!items.length) {
+        historyList.innerHTML = '<p class="history-empty">No generations yet</p>';
+        return;
+      }
+      items.forEach(item => {
+        const el = document.createElement('div');
+        el.className = 'history-item';
+        const img = document.createElement('img');
+        img.className = 'history-thumb';
+        img.src = item.thumb_url ? `${API}/${item.thumb_url}` : (item.image_url ? `${API}/${item.image_url}` : '');
+        img.alt = 'history';
+        img.loading = 'lazy';
+
+        const overlay = document.createElement('div');
+        overlay.className = 'history-overlay';
+        const pipe = item.pipeline ? `<span class="history-pipeline">${item.pipeline.replace(/_/g, ' ')}</span>` : '';
+        overlay.innerHTML = `${pipe}<span class="history-when">${formatDate(item.created_at)}</span>`;
+
+        const actions = document.createElement('div');
+        actions.className = 'history-actions';
+
+        const viewBtn = document.createElement('button');
+        viewBtn.textContent = 'View';
+        viewBtn.addEventListener('click', (e) => { e.stopPropagation(); openDetail(item); });
+
+        const regenBtn = document.createElement('button');
+        regenBtn.textContent = 'Regenerate';
+        regenBtn.addEventListener('click', (e) => { e.stopPropagation(); recallItem(item); generateBtn.click(); });
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete';
+        delBtn.textContent = '×';
+        delBtn.title = 'Delete';
+        delBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!confirm('Delete this item?')) return;
+          try {
+            await fetch(`${API}/v1/history/${item.id}`, { method: 'DELETE' });
+            await loadHistory();
+          } catch (err) { alert('Delete failed'); }
+        });
+
+        actions.append(viewBtn, regenBtn, delBtn);
+        el.append(img, overlay, actions);
+        el.addEventListener('click', () => openDetail(item));
+        historyList.appendChild(el);
+      });
+    }
+
+    function openDetail(item) {
+      showImage(item.image_url);
+      paramsPrompt.value = item.prompt || '';
+      if (item.cfg !== undefined && item.cfg !== null) paramsCfg.value = item.cfg;
+      if (item.steps !== undefined && item.steps !== null) paramsSteps.value = item.steps;
+      if (item.width !== undefined) paramsWidth.value = item.width;
+      if (item.height !== undefined) paramsHeight.value = item.height;
+      if (item.seed !== undefined && item.seed !== null) paramsSeed.value = item.seed;
+      if (item.pipeline) {
+        for (const opt of paramsPipeline.options) {
+          if (opt.value === item.pipeline) { paramsPipeline.value = item.pipeline; break; }
+        }
+      }
+      if (item.width && item.height) setAspectRatio(ratioForDims(item.width, item.height));
+      switchRightTab('image');
+    }
+
+    function recallItem(item) {
+      promptEl.value = item.prompt || '';
+      if (item.cfg !== undefined && item.cfg !== null) cfgEl.value = item.cfg;
+      if (item.steps !== undefined && item.steps !== null) stepsEl.value = item.steps;
+      if (item.pipeline) {
+        for (const opt of pipelineSelect.options) {
+          if (opt.value === item.pipeline) { pipelineSelect.value = item.pipeline; break; }
+        }
+      }
+      if (item.width && item.height) setAspectRatio(ratioForDims(item.width, item.height));
+      switchTab('generate');
+    }
+
+    refreshHistoryBtn.addEventListener('click', loadHistory);
+    loadHistory();
+
+    async function doGenerate(payload) {
+      placeholder.classList.add('hidden');
+      result.classList.add('hidden');
+      download.classList.add('hidden');
+      loading.classList.remove('hidden');
+      generateBtn.disabled = true;
+      paramsRegenerate.disabled = true;
+      generateText.textContent = 'GENERATING...';
+      progressFill.style.width = '5%';
+      statusText.textContent = 'SENDING...';
+      switchRightTab('image');
+
+      try {
+        const r = await fetch(`${API}/v1/generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!r.ok) {
+          const err = await r.text();
+          throw new Error(err || `HTTP ${r.status}`);
+        }
+        const data = await r.json();
+        pollJob(data.job_id);
+      } catch (e) {
+        stopGenerationUi();
+        placeholder.classList.remove('hidden');
+        placeholder.querySelector('p').textContent = e.message || 'Backend error';
+        alert(e.message || 'Backend error');
+      }
+    }
+
+    generateBtn.addEventListener('click', async () => {
+      const prompt = (promptEl.value || '').trim();
+      if (!prompt) {
+        alert('Please enter a prompt');
+        return;
+      }
+      const dims = dimsForRatio(aspectRatio);
+      await doGenerate({
+        prompt,
+        pipeline: pipelineSelect.value,
+        width: dims.width,
+        height: dims.height,
+        steps: Math.min(50, Math.max(1, Number(stepsEl.value) || 4)),
+        cfg: Number(cfgEl.value) || 1.5,
+      });
+    });
+
+    paramsRegenerate.addEventListener('click', async () => {
+      const prompt = (paramsPrompt.value || '').trim();
+      if (!prompt) {
+        alert('Please enter a prompt');
+        return;
+      }
+      const seedVal = (paramsSeed.value || '').trim();
+      await doGenerate({
+        prompt,
+        pipeline: paramsPipeline.value,
+        width: Math.max(64, Number(paramsWidth.value) || 512),
+        height: Math.max(64, Number(paramsHeight.value) || 768),
+        steps: Math.min(50, Math.max(1, Number(paramsSteps.value) || 4)),
+        cfg: Number(paramsCfg.value) || 1.5,
+        seed: seedVal !== '' ? Number(seedVal) : undefined,
+      });
+    });
+    setZoom('full');
+  </script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+title: Map3D - 3D Map Viewer
+subtitle: Dedicated app for 3D visualization including point clouds, Gaussian splats, and tiltable map overlays
+icon: 🗺️
+ideas:
+- Isolates 3D development from Track4 to keep the racing simulator focused
+- Reuses splat-layer.js from Track4 (moved to map3d)
+- Supports scene-based configuration for easy testing
+- Uses Leaflet for 2D map with Three.js overlay for 3D content
+sections:
+  - title: Purpose
+    icon: 🎯
+    layout: list
+    items:
+      - label: Isolation
+        text: 'Separate 3D visualization development from Track4 racing simulator to avoid cluttering the racing-focused codebase.'
+      - label: Testing platform
+        text: 'Dedicated environment for testing point cloud rendering, Gaussian splat viewers, and 3D map overlays without affecting production racing app.'
+      - label: Scene management
+        text: 'Scene-based configuration allows quick switching between different 3D datasets for testing and comparison.'
+
+  - title: Architecture
+    icon: 🏗️
+    layout: list
+    items:
+      - label: Core components
+        text: 'index.html: UI with map container and controls. main.js: App logic, scene management, Leaflet integration. splat-layer.js: Three.js point cloud/Gaussian splat renderer (moved from Track4).'
+      - label: Map engine
+        text: 'Leaflet.js for 2D map tiles (CARTO Dark basemap). Three.js for 3D content overlay via custom SplatLayer.'
+      - label: Data storage
+        text: 'Scene definitions in main.js. PLY/splat files in data/ directory. GPS bounds and center per scene for georeferencing.'
+
+  - title: Features
+    icon: ✨
+    layout: list
+    items:
+      - label: Point cloud rendering
+        text: 'Three.js PointsMaterial with vertex colors from ASCII PLY files. Supports position (x,y,z) and color (r,g,b) per vertex.'
+      - label: Transparent walls
+        text: 'Auto-generated bounding box walls around point clouds. Configurable height, opacity, and visibility toggle.'
+      - label: Scene tilt
+        text: 'Rotates the 3D scene group (not camera) for oblique viewing. 0-60 degree range via slider. Keeps map alignment correct.'
+      - label: Scene selector
+        text: 'Dropdown to switch between predefined scenes. Each scene has file, bounds, center, and name.'
+      - label: 3D toggle
+        text: 'Enable/disable 3D rendering without unloading the scene. Useful for comparing 2D vs 3D views.'
+
+  - title: Point Cloud Format
+    icon: 📄
+    layout: list
+    items:
+      - label: PLY ASCII format
+        text: 'Standard ASCII PLY with element vertex, properties x/y/z (float) and red/green/blue (uchar). Header: ply, format ascii 1.0, element vertex N, property declarations, end_header.'
+      - label: Example header
+        text: 'ply\nformat ascii 1.0\nelement vertex 100\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nend_header'
+      - label: Coordinate system
+        text: 'Local 3D coordinates mapped to GPS via scene bounds and center. SplatLayer handles GPS-to-world conversion using Haversine formula.'
+      - label: Test data
+        text: 'data/test-points.ply: 400-point cube (13x13x3 grid) for testing. Colors fade from red (bottom) to pink (top).'
+
+  - title: Gaussian Splat Status
+    icon: 🎥
+    layout: list
+    items:
+      - label: Current status
+        text: 'Not yet implemented. SplatLayer has infrastructure but Gaussian splat parsing fails with all tested libraries.'
+      - label: Library issues
+        text: '@mkkellogg/gaussian-splats-3D (v0.4.0, v0.3.0): "Offset is outside the bounds of the DataView" in PlyParser.js. three-gaussian-splats (v0.0.7): same error. iframe with esm.sh CDN: "Invalid typed array length: 4".'
+      - label: Root cause
+        text: 'Issue appears fundamental to browser environment or file format compatibility. Official room.splat from graphdeco-inria/gaussian-splatting repo fails in all approaches.'
+      - label: Future approach
+        text: 'Wait for library updates, use official desktop viewer, or implement custom parser with specific format requirements. Point cloud fallback is reliable alternative.'
+
+  - title: Scene Configuration
+    icon: ⚙️
+    layout: list
+    items:
+      - label: Scene object structure
+        text: '{ id: string, name: string, file: string (path to PLY), bounds: [[south,west],[north,east]], center: [lat,lon] }'
+      - label: Adding scenes
+        text: 'Add scene object to scenes array in main.js. Place PLY file in data/ directory. Determine GPS bounds from training data or manual measurement.'
+      - label: Bounds calculation
+        text: 'Use GPS coordinates of scene corners. For synthetic data, estimate based on desired map coverage. Center should be midpoint of bounds.'
+      - label: Example scene
+        text: '{ id: "test-cube", name: "Test Cube", file: "./data/test-points.ply", bounds: [[13.2435, 100.9280], [13.2450, 100.9300]], center: [13.2442, 100.9292] }'
+
+  - title: Controls
+    icon: 🎛️
+    layout: list
+    items:
+      - label: Scene selector
+        text: 'Dropdown in top-right panel. Loads scene bounds, centers map, prepares 3D data (but does not enable 3D until checkbox checked).'
+      - label: Enable 3D checkbox
+        text: 'Toggles Three.js rendering. When unchecked, shows only 2D Leaflet map. When checked, overlays 3D content.'
+      - label: Tilt slider
+        text: 'Range 0-60 degrees. Rotates scene group around X-axis. 0° = flat (top-down), 60° = maximum oblique angle.'
+      - label: Show Walls checkbox
+        text: 'Toggles visibility of auto-generated bounding box walls. Walls are hidden by default.'
+      - label: Status display
+        text: 'Shows current state: Ready, Loading scene, 3D enabled/disabled, error messages.'
+
+  - title: File Structure
+    icon: 📁
+    layout: list
+    items:
+      - label: public/apps/map3d/
+        text: 'Main app directory.'
+      - label: index.html
+        text: 'UI shell with map container and control panel.'
+      - label: main.js
+        text: 'App logic, scene management, Leaflet integration, event handlers.'
+      - label: splat-layer.js
+        text: 'Three.js renderer (Leaflet layer wrapper). Handles PLY parsing, wall generation, camera sync, scene tilt.'
+      - label: data/
+        text: 'Directory for PLY and splat files.'
+      - label: data/test-points.ply
+        text: 'Test point cloud (400-point cube) for initial testing.'
+
+  - title: Development Workflow
+    icon: 🔧
+    layout: list
+    items:
+      - label: Adding new point clouds
+        text: '1. Generate or export PLY file. 2. Place in data/ directory. 3. Add scene definition to main.js. 4. Test in map3d app. 5. If for Track4, copy to track4/splats/ and add to course YAML.'
+      - label: Testing Gaussian splats
+        text: '1. Export .splat or .ply from training. 2. Place in data/ directory. 3. Add scene definition. 4. Enable 3D and test. 5. Debug in isolated environment without affecting Track4.'
+      - label: Debugging rendering
+        text: 'Use browser console for Three.js errors. Check network tab for file loading. Verify GPS bounds match actual location. Test tilt and wall visibility separately.'
+      - label: Performance tuning
+        text: 'Reduce point count for testing. Adjust wall opacity/height. Limit tilt angle for better performance on low-end devices.'
+
+  - title: Integration with Track4
+    icon: 🔗
+    layout: list
+    items:
+      - label: Code sharing
+        text: 'splat-layer.js originally developed in Track4, moved to map3d for isolation. Can be copied back to Track4 when 3D features are production-ready.'
+      - label: Data sharing
+        text: 'PLY files in map3d/data/ can be copied to track4/splats/ for use in racing courses. Scene definitions map to course YAML splat section.'
+      - label: Feature parity
+        text: 'map3d has tilt and wall controls. Track4 had these too but they were removed during isolation. Can be re-added if needed for racing visualization.'
+      - label: Future integration
+        text: 'If Gaussian splat rendering becomes reliable, consider adding optional 3D overlay to Track4 for race course visualization (e.g., showing 3D terrain or obstacles).'
+
+  - title: Known Issues
+    icon: ⚠️
+    layout: list
+    items:
+      - label: Gaussian splat parsing
+        text: 'All tested libraries fail with parsing errors. Point cloud fallback is only working 3D feature currently.'
+      - label: Wall height
+        text: 'Fixed at 15 units regardless of point cloud Z range. May need adjustment for different datasets.'
+      - label: Scene tilt direction
+        text: 'Rotates around X-axis only. May need Y-axis rotation for certain viewing angles.'
+      - label: GPS accuracy
+        text: 'Bounds and center must be manually determined. Inaccurate bounds cause misalignment between 3D content and map.'

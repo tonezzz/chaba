@@ -1,0 +1,133 @@
+title: chaba Lab Plan Brief
+subtitle: Scope, status, blockers, and next steps for the chaba.h3 lab and tony-omen host.
+icon: 📋
+sections:
+  - title: Goal
+    icon: 🎯
+    layout: list
+    items:
+      - label: Scope
+        text: Build and maintain a self-hosted lab on tony-omen that covers 3D Gaussian Splatting research, AI-powered IP-camera surveillance, a static Plesk web presence (chaba.h3), local LLM/AI endpoints, and a LINE conversation archive.
+      - label: Worktree split
+        text: Keep responsibilities split between chaba/master (generic baseline), chaba-omen (host infrastructure), and chaba.h3 (static-only Plesk site).
+
+  - title: Worktrees
+    icon: 🌳
+    layout: table
+    headers: [Worktree, Branch, Purpose]
+    rows:
+      - [/home/tony/CascadeProjects/chaba, master, 'Generic baseline + Frigate registry + shared docs']
+      - [/home/tony/CascadeProjects/chaba-omen, chaba-omen, 'Host infrastructure: Caddy, APIs, NVR, MCP, AI']
+      - [/home/tony/CascadeProjects/chaba-h3, chaba.h3, Static-only Plesk site]
+
+  - title: Infrastructure
+    icon: 🖥️
+    layout: list
+    items:
+      - label: Host
+        text: tony-omen @ 192.168.1.48, Ubuntu/Debian, NVIDIA GPU, Docker 24+ with nvidia-container-toolkit.
+      - label: Web
+        text: Caddy on 8080 (stacks/web) and 8081 full-parity preview for chaba-h3/public. PHP dev server on 8123 for local Plesk-style tests.
+      - label: NVR
+        text: Frigate on 5000 with frigate/cameras.json as the single source of truth; generate_config.py produces config.yml and camera-map.html.
+      - label: AI
+        text: mcp-llama on localhost:8008 (Phi-3-mini Q4_K_M, 2 GPU layers), exposed as OpenAI-compatible /v1/chat/completions.
+      - label: Tooling
+        text: Justfiles in both worktrees, slash workflows, pre-commit hook for .js/.mjs/.py syntax checks, Playwright e2e for chaba.h3.
+
+  - title: Cameras and NVR
+    icon: 📷
+    layout: list
+    items:
+      - label: Registry
+        text: 34 cameras in cameras.json, 4 groups, heading metadata for direction arrows on the map.
+      - label: VSTARCAM
+        text: 192.168.1.41:10554 (/tcp/av0_0) transcoded from H.265 to H.264; audio dropped.
+      - label: DOH
+        text: Wowza streams use direct IPs 180.180.242.207/208 because domain names fail TLS/SNI.
+      - label: Map
+        text: camera-map.html has popup HLS/snapshot players, draggable pinned panels, fullscreen, follow-map, and off-screen hiding.
+      - label: Control
+        text: Camera control panel runs at port 8090 for enable/disable/discover.
+
+  - title: Camera Status
+    icon: ✅
+    layout: list
+    items:
+      - label: Done
+        text: Camera registry, Frigate config generation, web map with pinned panels.
+      - label: Todo
+        text: Upgrade detector from CPU to Coral/OpenVINO/TensorRT; tune zones/masks; add custom models or remove animal/package labels; MQTT + Home Assistant; notifications; XMEye P2P DVR (blocked).
+
+  - title: Web Apps
+    icon: 🌐
+    layout: list
+    items:
+      - label: chaba.h3
+        text: /apps/track3/, /apps/track4/, /apps/imagen2/, /apps/reefriders/, /apps/reefriders-01/, /apps/docs/, /apps/overview/.
+      - label: chaba-omen / 8080
+        text: /apps/yomi/, /apps/camera-map.html, /apps/chatllama/, /apps/chatlocal/, /apps/neo-chat/.
+      - label: Done
+        text: nav.js shared navigation; Tailwind bright/dark themes; apps.yml data-driven landing page.
+      - label: Todo
+        text: Commit chaba.h3 WIP in logical chunks; remove transitional imagen2.js; add e2e for imagen2 and track3.
+
+  - title: AI and Automation
+    icon: 🤖
+    layout: list
+    items:
+      - label: mcp-llama
+        text: OpenAI-compatible chat completions for Yomi summaries and MCP clients.
+      - label: imagen2
+        text: SDXL-Lightning 4-step LoRA (guidance_scale=0, num_inference_steps=4) for ~49 s 1024x1024 images.
+      - label: Yomi pipeline
+        text: Planned image captioning, audio transcription (faster-whisper), video frame captioning.
+      - label: Done
+        text: mcp-llama GPU offload; imagen2 modular frontend + Lightning backend; Yomi summaries and category filter chips.
+      - label: Todo
+        text: Media caption/transcription for Yomi; update imagen2 UI defaults for Lightning or offer a Lightning toggle.
+
+  - title: Verification
+    icon: 🩺
+    layout: list
+    items:
+      - label: Done
+        text: Caddy 8080/8081 respond; Frigate Web UI on 5000; mcp-llama /health and /v1/chat/completions; imagen2 /api/health.
+      - label: Todo
+        text: Full e2e pass via just test-e2e before each deploy; object detection in Frigate logs; Home Assistant camera entities.
+
+  - title: Blockers
+    icon: 🚧
+    layout: list
+    items:
+      - label: XMEye DVR
+        text: P2P/QR-only, no RTSP without remote network access or credentials. Hold unless a VPN/tunnel or direct IP is obtained.
+      - label: chaba.h3 working tree
+        text: Large uncommitted WIP must be committed in logical chunks before more parallel work.
+      - label: Frigate detector
+        text: Still on CPU; 34 streams need hardware acceleration for reliable real-time detection.
+
+  - title: Next Steps
+    icon: 🚀
+    layout: list
+    items:
+      - label: '1'
+        text: Commit and push chaba.h3 WIP in logical chunks (imagen2, track3/4, reef riders, docs relocation).
+      - label: '2'
+        text: Add inference/ and inference2/ to chaba-h3/.gitignore or move them to chaba-omen.
+      - label: '3'
+        text: Delete merged remote branches docs/readme-update and sync-master-workspace.
+      - label: '4'
+        text: Fix chaba-omen submodule pointers for chat-uis/ChatLocal and chat-uis/neo-chat.
+      - label: '5'
+        text: Install/switch Frigate to an accelerated detector.
+      - label: '6'
+        text: Add MQTT broker and Home Assistant camera/sensor integration.
+      - label: '7'
+        text: Continue camera discovery through Longdo, Windy, and iTIC APIs.
+      - label: '8'
+        text: Wire Playwright e2e (just test-e2e) into the chaba.h3 deploy workflow.
+      - label: '9'
+        text: Add image caption and audio transcription to the Yomi pipeline.
+      - label: '10'
+        text: Keep public/apps/overview/data.yml in sync with this plan.

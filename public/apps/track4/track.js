@@ -518,6 +518,101 @@ function setupSim() {
   document.getElementById('sim-reset').onclick = () => { stopSim(); initRacers(); };
   document.getElementById('sim-racers').oninput = () => { stopSim(); initRacers(); };
   document.getElementById('sim-speed').oninput = (e) => { simState.speedFactor = parseFloat(e.target.value) || 1; };
+  
+  // Wind configuration controls
+  const windDirSlider = document.getElementById('wind-direction');
+  const windSpeedSlider = document.getElementById('wind-speed');
+  const windGustSlider = document.getElementById('wind-gust');
+  const applyWindBtn = document.getElementById('apply-wind');
+  
+  // Update wind direction display
+  function updateWindDirectionDisplay() {
+    const dir = parseInt(windDirSlider.value);
+    document.getElementById('wind-direction-value').textContent = dir + '°';
+    
+    // Convert to compass direction
+    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    const index = Math.round(dir / 45) % 8;
+    document.getElementById('wind-direction-label').textContent = directions[index];
+  }
+  
+  // Update wind speed display
+  function updateWindSpeedDisplay() {
+    const speed = parseInt(windSpeedSlider.value);
+    document.getElementById('wind-speed-value').textContent = speed;
+  }
+  
+  // Update wind gust display
+  function updateWindGustDisplay() {
+    const gust = parseFloat(windGustSlider.value);
+    document.getElementById('wind-gust-value').textContent = gust.toFixed(2);
+  }
+  
+  // Apply wind configuration
+  function applyWindConfig() {
+    if (simulationEngine) {
+      simulationEngine.setWind({
+        direction: parseInt(windDirSlider.value),
+        speed: parseInt(windSpeedSlider.value),
+        gustFactor: parseFloat(windGustSlider.value),
+        variability: 10 // Fixed for now
+      });
+      console.log('Wind configuration applied:', simulationEngine.getWind());
+    }
+  }
+  
+  // Set up wind control event listeners
+  if (windDirSlider) {
+    windDirSlider.oninput = updateWindDirectionDisplay;
+  }
+  if (windSpeedSlider) {
+    windSpeedSlider.oninput = updateWindSpeedDisplay;
+  }
+  if (windGustSlider) {
+    windGustSlider.oninput = updateWindGustDisplay;
+  }
+  if (applyWindBtn) {
+    applyWindBtn.onclick = applyWindConfig;
+  }
+  
+  // Initialize wind displays from current simulation engine state
+  if (simulationEngine) {
+    const currentWind = simulationEngine.getWind();
+    if (windDirSlider) windDirSlider.value = currentWind.direction;
+    if (windSpeedSlider) windSpeedSlider.value = currentWind.speed;
+    if (windGustSlider) windGustSlider.value = currentWind.gustFactor;
+    updateWindDirectionDisplay();
+    updateWindSpeedDisplay();
+    updateWindGustDisplay();
+  }
+  
+  // Leader focus toggle
+  const focusToggle = document.getElementById('toggle-focus-leader');
+  if (focusToggle) {
+    focusToggle.onchange = (e) => {
+      focusState.enabled = e.target.checked;
+      if (!focusState.enabled) {
+        focusState.manualSection = null;
+      }
+      updateFocusStatus();
+      applyLeaderFocus();
+    };
+  }
+  
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'l' || e.key === 'L') {
+      if (focusToggle) {
+        focusToggle.checked = !focusToggle.checked;
+        focusState.enabled = focusToggle.checked;
+        if (!focusState.enabled) {
+          focusState.manualSection = null;
+        }
+        updateFocusStatus();
+        applyLeaderFocus();
+      }
+    }
+  });
+  
   const standingsEl = document.getElementById('sim-standings');
   if (standingsEl) {
     standingsEl.onmouseover = (e) => {

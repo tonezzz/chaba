@@ -1,0 +1,67 @@
+title: Playlive
+subtitle: Shared browser session automation
+icon: 🎭
+sections:
+  - title: Purpose
+    icon: 🎯
+    layout: list
+    items:
+      - label: What it is
+        text: A remote browser-control facility that lets multiple AI clients drive Chrome/Playwright sessions through a shared daemon.
+      - label: Primary uses
+        text: E2E verification, UI testing, screenshots, page navigation, form interaction, and live remote debugging.
+
+  - title: Architecture
+    icon: 🏗️
+    layout: list
+    items:
+      - label: Daemon
+        text: playlived (chaba-omen/mcp/mcp-playlive/playlived.mjs) runs on the browser host (tony-dell) and owns all session state.
+      - label: MCP client
+        text: mcp-playlive (chaba-omen/mcp/mcp-playlive/playlive-server.py) forwards tool calls from Windsurf to the daemon.
+      - label: CDP target
+        text: Real Chrome is chrome-monitor.service on tony-dell at 127.0.0.1:9223.
+
+  - title: Hosts & endpoints
+    icon: 🌐
+    layout: table
+    headers: [Name, Host, Endpoint, Purpose]
+    rows:
+      - [playlived, tony-dell, http://192.168.1.42:9230, Session daemon]
+      - [chrome-monitor, tony-dell, http://127.0.0.1:9223, Real Chrome CDP endpoint]
+      - [cdp-controller, tony-dell, http://192.168.1.42:9224, Legacy Node CDP controller]
+
+  - title: Tools
+    icon: 🛠️
+    layout: list
+    items:
+      - label: Session lifecycle
+        text: playlive_create_chrome_live, playlive_create_playwright_chrome, playlive_create_playwright, playlive_list_sessions, playlive_close_session
+      - label: Page interaction
+        text: playlive_navigate, playlive_click, playlive_fill, playlive_select, playlive_eval, playlive_state
+      - label: Capture
+        text: playlive_screenshot, playlive_screenshot_image
+
+  - title: Verified workflow
+    icon: ✅
+    layout: list
+    items:
+      - label: Start daemon
+        text: Start playlived on tony-dell.
+      - label: Create session
+        text: playlive_create_chrome_live creates a remote CDP session.
+      - label: Navigate
+        text: playlive_navigate to the target URL (default page.goto timeout 15s).
+      - label: Verify
+        text: playlive_state returns url and title.
+
+  - title: Limitations & cautions
+    icon: ⚠️
+    layout: list
+    items:
+      - label: Security
+        text: CDP and playlived are unauthenticated on the LAN; do not expose to untrusted networks.
+      - label: Resource contention
+        text: Browser automation shares tony-dell with GPU/interactive workloads.
+      - label: Windsurf reload
+        text: Reload Windsurf after mcp_config.json changes for tools to appear.

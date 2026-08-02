@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Imagen3</title>
+  <link rel="stylesheet" href="./imagen3.css">
+</head>
+<body>
+  <a href="/apps/" class="back-link">← Apps</a>
+  <div class="container">
+    <h1>Imagen3</h1>
+    <div class="layout">
+      <div class="panel">
+        <div class="field">
+          <label for="preset">Preset</label>
+          <select id="preset">
+            <option value="" selected>Custom</option>
+          </select>
+          <div id="preset-hint" class="preset-hint"></div>
+        </div>
+        <div class="field">
+          <div class="label-row">
+            <label for="prompt">Prompt</label>
+            <button type="button" id="add-quality" class="inline-helper">+ quality</button>
+          </div>
+          <textarea id="prompt" placeholder="a futuristic sailboat racing on a neon sea"></textarea>
+        </div>
+        <div class="field">
+          <div class="label-row">
+            <label for="negative">Negative prompt</label>
+            <button type="button" id="add-negative" class="inline-helper">+ presets</button>
+          </div>
+          <textarea id="negative">blurry, low quality, worst quality, bad anatomy, deformed, extra limbs, missing fingers, mutated hands, watermark, signature, text, logo</textarea>
+        </div>
+        <div class="generate-wrap">
+          <button id="generate">Generate</button>
+          <div class="row">
+            <button id="regenerate" type="button" disabled>Regenerate last</button>
+            <button id="variate" type="button" disabled>Variate last</button>
+          </div>
+        </div>
+        <details id="advanced" class="advanced-details">
+          <summary class="section-label">Advanced</summary>
+          <div class="details-body">
+            <div class="field">
+              <label for="mode">Mode</label>
+              <select id="mode">
+                <option value="lightning_txt2img" selected>Lightning 4-step (txt2img)</option>
+                <option value="lightning_img2img">Lightning 4-step (img2img)</option>
+                <option value="fast_img2img">Fast generate (img2img)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="size">Size</label>
+              <select id="size">
+                <option value="1024x1024" selected>1024×1024 (1:1)</option>
+                <option value="1024x768">1024×768 (4:3)</option>
+                <option value="768x1024">768×1024 (3:4)</option>
+                <option value="1024x512">1024×512 (2:1)</option>
+                <option value="512x1024">512×1024 (1:2)</option>
+                <option value="768x768">768×768 (1:1)</option>
+                <option value="512x512">512×512 (1:1)</option>
+              </select>
+              <div class="size-chips">
+                <button type="button" data-size="1024x1024" class="chip">1:1</button>
+                <button type="button" data-size="1024x768" class="chip">4:3</button>
+                <button type="button" data-size="768x1024" class="chip">3:4</button>
+                <button type="button" data-size="1024x512" class="chip">2:1</button>
+                <button type="button" data-size="512x1024" class="chip">1:2</button>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="guidance-scale">CFG</label>
+                <input id="guidance-scale" type="number" value="7.5" min="1" max="20" step="0.5" />
+              </div>
+              <div class="field">
+                <label for="guidance-rescale">Rescale</label>
+                <input id="guidance-rescale" type="number" value="0.7" min="0" max="1" step="0.05" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="steps">Steps</label>
+                <input id="steps" type="number" value="25" min="1" max="50" />
+              </div>
+              <div class="field">
+                <label for="seed">Seed</label>
+                <input id="seed" type="number" value="-1" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="width">Width</label>
+                <select id="width">
+                  <option value="512">512</option>
+                  <option value="768">768</option>
+                  <option value="1024" selected>1024</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="height">Height</label>
+                <select id="height">
+                  <option value="512">512</option>
+                  <option value="768">768</option>
+                  <option value="1024" selected>1024</option>
+                </select>
+              </div>
+            </div>
+            <div class="field" id="ref-field" style="display:none;">
+              <label for="reference">Reference image</label>
+              <input id="reference" type="file" accept="image/*" />
+              <img id="ref-preview" class="ref-preview" alt="Reference preview" />
+              <button id="ref-clear" class="ref-clear" type="button">Clear reference</button>
+            </div>
+            <div class="field" id="strength-field" style="display:none;">
+              <label for="strength">Strength: <span id="strength-val">0.5</span></label>
+              <input id="strength" type="range" min="0.1" max="1.0" step="0.05" value="0.5" />
+            </div>
+          </div>
+        </details>
+        <div id="meta" class="meta"></div>
+      </div>
+      <div>
+        <div id="status" class="status">Checking backend...</div>
+        <div id="view-tabs" class="tabs" style="display:none;">
+          <button type="button" data-tab="generated" class="active">Generated</button>
+          <button type="button" data-tab="original">Original</button>
+        </div>
+        <div id="output" class="image-wrap">
+          <div class="placeholder">
+            <div class="placeholder-title">Ready to generate</div>
+            <div class="placeholder-hint">Pick a preset, enter a prompt, then click Generate.</div>
+          </div>
+        </div>
+        <div class="progress-row">
+          <progress id="progress" class="progress" value="0" max="100" style="display:none;"></progress>
+        </div>
+        <div class="panel history">
+          <h2>History</h2>
+          <div id="thumbs" class="thumbs"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="history-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>History Detail</h3>
+        <button id="modal-close" type="button" class="modal-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-tabs">
+        <button type="button" data-modal-tab="generated" class="active">Generated</button>
+        <button type="button" data-modal-tab="original">Original</button>
+        <button type="button" data-modal-tab="parameters">Parameters</button>
+      </div>
+      <div class="modal-body">
+        <div id="modal-generated" class="modal-panel active">
+          <img id="modal-img" src="" alt="Generated">
+        </div>
+        <div id="modal-original" class="modal-panel">
+          <img id="modal-original-img" src="" alt="Original" style="display:none;">
+          <p id="modal-original-empty" class="placeholder">No original image</p>
+        </div>
+        <div id="modal-parameters" class="modal-panel">
+          <form id="modal-form" class="modal-form" onsubmit="return false;">
+            <div class="field">
+              <label for="modal-prompt">Prompt</label>
+              <textarea id="modal-prompt" rows="3"></textarea>
+            </div>
+            <div class="field">
+              <label for="modal-negative">Negative prompt</label>
+              <textarea id="modal-negative" rows="2"></textarea>
+            </div>
+            <div class="field">
+              <label for="modal-mode">Mode</label>
+              <select id="modal-mode">
+                <option value="lightning_txt2img">Lightning 4-step (txt2img)</option>
+                <option value="lightning_img2img">Lightning 4-step (img2img)</option>
+                <option value="fast_img2img">Fast generate (img2img)</option>
+              </select>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="modal-width">Width</label>
+                <select id="modal-width">
+                  <option value="512">512</option>
+                  <option value="768">768</option>
+                  <option value="1024" selected>1024</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="modal-height">Height</label>
+                <select id="modal-height">
+                  <option value="512">512</option>
+                  <option value="768">768</option>
+                  <option value="1024" selected>1024</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="modal-steps">Steps</label>
+                <input id="modal-steps" type="number" min="1" max="50" value="25" />
+              </div>
+              <div class="field">
+                <label for="modal-seed">Seed</label>
+                <input id="modal-seed" type="number" value="-1" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="modal-guidance-scale">CFG</label>
+                <input id="modal-guidance-scale" type="number" min="1" max="20" step="0.5" value="7.5" />
+              </div>
+              <div class="field">
+                <label for="modal-guidance-rescale">Rescale</label>
+                <input id="modal-guidance-rescale" type="number" min="0" max="1" step="0.05" value="0.7" />
+              </div>
+            </div>
+            <div class="field" id="modal-strength-field" style="display:none;">
+              <label for="modal-strength">Strength: <span id="modal-strength-val">0.5</span></label>
+              <input id="modal-strength" type="range" min="0.1" max="1.0" step="0.05" value="0.5" />
+            </div>
+            <div class="field" id="modal-ref-field" style="display:none;">
+              <label for="modal-ref">Reference image</label>
+              <input id="modal-ref" type="file" accept="image/*" />
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="modal-generate" type="button" class="modal-generate">Generate / Add to queue</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
