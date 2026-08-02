@@ -20,19 +20,19 @@ const BRANDS = new Set([
 function categorize(c) {
   const text = normalize([c.name, c.lastPreview, c.summary].filter(Boolean).join(' '));
   const name = normalize(c.name);
-  const isGroupLike = c.id.startsWith('c') || c.id.startsWith('r');
+  const isGroup = c.id.startsWith('c') || c.id.startsWith('r');
 
-  if (BRANDS.has(name)) return { category: 'Official', source: 'brand' };
+  if (BRANDS.has(name)) return { category: 'Official', source: 'brand', isGroup };
 
   for (const cat of CATEGORIES) {
-    if (cat.id === 'Group' && !isGroupLike) continue;
+    if (cat.id === 'Group' && !isGroup) continue;
     for (const kw of cat.keywords) {
-      if (text.includes(kw.toLowerCase())) return { category: cat.id, source: 'text' };
+      if (text.includes(kw.toLowerCase())) return { category: cat.id, source: 'text', isGroup };
     }
   }
 
-  if (isGroupLike) return { category: 'Group', source: 'id' };
-  return { category: 'Personal', source: 'default' };
+  if (isGroup) return { category: 'Group', source: 'id', isGroup };
+  return { category: 'Personal', source: 'default', isGroup };
 }
 
 function main() {
@@ -40,9 +40,8 @@ function main() {
   if (!Array.isArray(data.conversations)) throw new Error('conversations array missing');
 
   for (const c of data.conversations) {
-    const isGroup = c.id.startsWith('c') || c.id.startsWith('r');
     const result = categorize(c);
-    c.isGroup = isGroup;
+    c.isGroup = result.isGroup;
     c.category = result.category;
     c.categorySource = result.source;
   }
@@ -57,4 +56,7 @@ function main() {
   console.log(counts);
 }
 
-main();
+export { categorize };
+
+const isMain = process.argv[1] === new URL(import.meta.url).pathname;
+if (isMain) main();
