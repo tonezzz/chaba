@@ -1,68 +1,109 @@
-# Frigate Setup Plan Brief
+# chaba Lab Plan Brief
 
 ## 1. Goal
-Deploy a local, AI-powered NVR for IP cameras using Frigate with real-time object detection and optional Home Assistant integration.
+Build and maintain a self-hosted lab on `tony-omen` that covers 3D Gaussian Splatting research, AI-powered IP-camera surveillance, a static Plesk web presence (`chaba.h3`), local LLM/AI endpoints, and a LINE conversation archive.
 
-## 2. Hardware & AI Accelerator
-- **Host:** Linux server (Ubuntu/Debian) or Proxmox/VM with Docker
-- **Cameras:** IP cameras with RTSP/ONVIF or HTTP streams
-- **AI accelerator (recommended):** one of the following
-  - Google Coral EdgeTPU (USB/PCIe/M.2)
-  - Intel GPU/NPU (OpenVINO)
-  - NVIDIA GPU (ONNX / TensorRT)
-  - Hailo-8 / Rockchip NPU / AMD ROCm
+Keep responsibilities split between the three worktrees:
+- `chaba` / `master` — generic baseline, shared documentation, and Frigate camera registry.
+- `chaba-omen` / `chaba-omen` — host infrastructure: Caddy, status APIs, MCP servers, NVR runtime, AI/llama server.
+- `chaba.h3` / `chaba.h3` — static-only Plesk site under `public/` (HTML, CSS, JS, YAML).
 
-## 3. Storage
-- Fast media storage for recordings (SATA/NVMe)
-- Separate drive for Frigate DB (`/frigate-db`) recommended
-- Retention: event-based or 24/7, with object filter rules
+## 2. Worktrees & Sources of Truth
 
-## 4. Network
-- Cameras reachable on stable IP or mDNS/ONVIF
-- Optional VLAN isolation for cameras
-- MQTT broker if integrating with Home Assistant / Node-RED
+| Worktree | Branch | Purpose | Key Files |
+|----------|--------|---------|-----------|
+| `/home/tony/CascadeProjects/chaba` | `master` | Generic baseline + Frigate registry + shared docs | `frigate/cameras.json`, `stacks/web/`, `docs/plan-brief.md` |
+| `/home/tony/CascadeProjects/chaba-omen` | `chaba-omen` | Host infrastructure: Caddy, APIs, NVR, MCP, AI | `stacks/`, `mcp/`, `frigate/` (runtime) |
+| `/home/tony/CascadeProjects/chaba-h3` | `chaba.h3` | Static-only Plesk site | `public/` (HTML/CSS/JS/YAML) |
 
-## 5. Deployment
-- Use Docker Compose with `blakeblackshear/frigate:stable` image
-- Mount `config.yml`, media directory, and DB cache
-- Expose web UI port (usually `5000`) and optionally RTMP/RTSP ports
+Rule: `chaba.h3` stays static-only. Do not commit Node/Docker backend files, `.env`, `inference/`, or `proxy-server.mjs` to `chaba.h3`.
 
-## 6. Configuration Checklist
-- [x] Define camera streams in `config.yml` (VSTARCAM on 192.168.1.41)
-- [x] Choose detector — CPU (default, for testing)
-- [x] Set recording retention and zones
-- [ ] Configure objects to detect — `person`, `car` work; `animal`, `package` need custom model
-- [ ] Enable MQTT for Home Assistant
-- [ ] Set up notifications and automations
+## 3. Infrastructure (Deployed)
 
-## 7. Verification
-- [x] Web UI loads at `http://localhost:5000`
-- [x] Camera feed visible in Frigate UI
-- [x] Recording segments saved to disk (H.264 transcoded from H.265)
-- [ ] Object detection runs and logs appear
-- [ ] Home Assistant integration shows camera entities and sensors
+- **Host** `tony-omen` @ `192.168.1.48`, Ubuntu/Debian, NVIDIA GPU, Docker 24+ with nvidia-container-toolkit.
+- **Web**: Caddy on `8080` (`stacks/web`) and `8081` full-parity preview for `chaba-h3/public`. PHP dev server on `8123` for local Plesk-style tests.
+- **NVR**: Frigate on `5000` with `frigate/cameras.json` as the single source of truth; `generate_config.py` produces `config.yml` and `camera-map.html`.
+- **AI**: `mcp-llama` on `localhost:8008` (Phi-3-mini Q4_K_M, 2 GPU layers), exposed as OpenAI-compatible `/v1/chat/completions`.
+- **Tooling**: Justfiles in both worktrees, slash workflows, `pre-commit` hook for `.js`/`.mjs`/`.py` syntax checks, Playwright e2e for `chaba.h3`.
 
-## 8. Camera Details
+## 4. Cameras & NVR
 
-| Property | Value |
-|----------|-------|
-| Brand | VSTARCAM |
-| IP | 192.168.1.41 |
-| RTSP port | 10554 (non-standard) |
-| Auth | Digest (realm: RTSPD) |
-| Video codec | H.265/HEVC |
-| Main stream | `rtsp://admin:tonytony@192.168.1.41:10554/tcp/av0_0` (2304x1296 @ 15fps) |
-| Sub stream | `rtsp://admin:tonytony@192.168.1.41:10554/tcp/av0_1` (640x360 @ 20fps) |
-| Audio | PCM A-law (dropped — not supported in MP4) |
+- 34 cameras in `cameras.json`, 4 groups, heading metadata for direction arrows on the map.
+- VSTARCAM on `192.168.1.41:10554` (`/tcp/av0_0`) transcoded from H.265 to H.264; audio dropped.
+- DOH Wowza streams use direct IPs `180.180.242.207/208` because the domain names fail TLS/SNI.
+- Camera map (`camera-map.html`) has popup HLS/snapshot players, draggable pinned panels, fullscreen, follow-map, and off-screen hiding.
+- Camera control panel runs at `:8090` for enable/disable/discover.
 
-### Known Issues
-- VSTARCAM uses `/tcp/av0_0` path format, not the standard `/stream1`
-- Main stream H.265 bitstream has non-standard VPS — cannot stream-copy to MP4, must transcode to H.264 (`libx264`)
-- Camera rate-limits rapid connection attempts (connection reset by peer)
+Status:
+- [x] Camera registry in `cameras.json` with 34 cameras
+- [x] Frigate `config.yml` generation via `generate_config.py`
+- [x] Web map with pinned panels and heading arrows
+- [ ] Upgrade detector from CPU to Coral / OpenVINO / TensorRT
+- [ ] Tune detection zones / masks
+- [ ] Add custom models for `animal` / `package` or remove those labels
+- [ ] MQTT broker + Home Assistant integration
+- [ ] Notifications / automations
+- [ ] XMEye P2P DVR (blocked — no RTSP access)
+
+## 5. Web Apps
+
+### `chaba.h3` (Plesk static, `8081` preview)
+- `/apps/track3/` and `/apps/track4/` — windsurfing course map, simulation, YAML course editor, PHP state persistence.
+- `/apps/imagen2/` — SDXL-Lightning image generation UI, modular JS, queue, history.
+- `/apps/reefriders/` and `/apps/reefriders-01/` — static WordPress mirror builders.
+- `/apps/docs/` — data-driven docs.
+- `/apps/overview/` — system status / plan page.
+
+### `chaba-omen` / `8080` apps
+- `/apps/yomi/` — LINE conversation viewer with AI summaries and media gallery.
+- `/apps/camera-map.html` — served camera map.
+- `/apps/chatllama/`, `/apps/chatlocal/`, `/apps/neo-chat/` — LLM/chat UIs.
+
+Status:
+- [x] `nav.js` shared navigation across `chaba.h3` and `8080` apps
+- [x] Tailwind bright/dark themes and `apps.yml` data-driven landing page
+- [ ] Commit the large `chaba.h3` WIP in logical chunks
+- [ ] Remove transitional `imagen2.js` once browser-confirmed
+- [ ] Add e2e coverage for `imagen2` and `track3`
+
+## 6. AI / Automation
+
+- `mcp-llama` provides OpenAI-compatible chat completions for Yomi summaries and MCP clients.
+- `imagen2` uses SDXL-Lightning 4-step LoRA (`guidance_scale=0`, `num_inference_steps=4`) for ~49 s 1024×1024 images.
+- Yomi media pipeline planned: image captioning, audio transcription (faster-whisper), video frame captioning.
+
+Status:
+- [x] `mcp-llama` running with GPU offload
+- [x] `imagen2` modular frontend + Lightning backend
+- [x] Yomi summaries and category filter chips
+- [ ] Media caption / transcription for Yomi
+- [ ] Update `imagen2` UI defaults for Lightning or offer a Lightning toggle
+
+## 7. Verification / Health
+
+- [x] Caddy `8080` and `8081` respond (`/`, `/apps/`, `/apps/track3/`, `/apps/docs/`, `/apps/imagen2/`)
+- [x] Frigate Web UI on `5000`
+- [x] `mcp-llama` `/health` and `/v1/chat/completions`
+- [x] `imagen2` `/api/health`
+- [ ] Full e2e pass via `just test-e2e` before each deploy
+- [ ] Object detection visible in Frigate logs
+- [ ] Home Assistant camera entities
+
+## 8. Blockers
+
+- **XMEye DVR** — P2P/QR-only, no RTSP without remote network access or credentials. Hold unless a VPN/tunnel or direct IP is obtained.
+- **chaba.h3 working tree** — large uncommitted WIP (imagen2 modularization, track3/4, reef riders, docs move) must be committed in logical chunks before more parallel work.
+- **Frigate detector** — still on CPU; 34 streams need hardware acceleration for reliable real-time detection.
 
 ## 9. Next Steps
-1. Upgrade detector to Coral/OpenVINO/TensorRT for better performance
-2. Tune detection zones / masks for the camera view
-3. Remove unsupported objects (`animal`, `package`) or install a custom model
-4. Enable MQTT and integrate with Home Assistant
-5. Configure notifications and automations
+
+1. Commit and push `chaba.h3` WIP in logical chunks (imagen2, track3/4, reef riders, docs relocation).
+2. Add `inference/` and `inference2/` to `chaba-h3/.gitignore` or move them to `chaba-omen`.
+3. Delete merged remote branches `docs/readme-update` and `sync-master-workspace`.
+4. Fix `chaba-omen` submodule pointers for `chat-uis/ChatLocal` and `chat-uis/neo-chat`.
+5. Install/switch Frigate to an accelerated detector (Coral / OpenVINO / TensorRT).
+6. Add MQTT broker and Home Assistant camera/sensor integration.
+7. Continue camera discovery through Longdo, Windy, and iTIC APIs.
+8. Wire Playwright e2e (`just test-e2e`) into the `chaba.h3` deploy workflow.
+9. Add image caption and audio transcription to the Yomi pipeline.
+10. Keep `public/apps/overview/data.yml` in sync with this plan.
