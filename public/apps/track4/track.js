@@ -214,10 +214,50 @@ function boatIcon(color, heading, racer = null) {
   });
 }
 
+// Enhanced wind configuration
+let windConfig = {
+  direction: 180, // Wind from direction (degrees)
+  speed: 15, // Wind speed in knots
+  gustFactor: 0.2, // Gust variability (0-1)
+  variability: 10 // Direction variability (degrees)
+};
+
 function simWindFactor(heading) {
-  const wind = (courseData.wind && courseData.wind.direction) || 180;
-  const a = Math.abs(((heading - wind + 540) % 360) - 180);
-  return 0.55 + 0.45 * (1 - Math.cos(a * Math.PI / 180));
+  const windDir = windConfig.direction;
+  const windSpeed = windConfig.speed;
+  const gustFactor = windConfig.gustFactor;
+  const variability = windConfig.variability;
+  
+  // Add some randomness to wind direction (gusts and shifts)
+  const effectiveWindDir = windDir + (Math.random() - 0.5) * variability * 2;
+  
+  // Calculate angle difference between boat heading and wind direction
+  const angleDiff = Math.abs(((heading - effectiveWindDir + 540) % 360) - 180);
+  
+  // Base wind factor based on point of sail
+  // Upwind (close-hauled): slower, Downwind (reaching/running): faster
+  const baseFactor = 0.55 + 0.45 * (1 - Math.cos(angleDiff * Math.PI / 180));
+  
+  // Add gust effect (random speed variation)
+  const gustEffect = 1 + (Math.random() - 0.5) * gustFactor;
+  
+  // Wind speed modifier (stronger wind = faster, but with diminishing returns)
+  const speedModifier = Math.min(1.5, 0.5 + windSpeed / 20);
+  
+  return baseFactor * gustEffect * speedModifier;
+}
+
+function setWind(config) {
+  if (config) {
+    windConfig = {
+      ...windConfig,
+      ...config
+    };
+  }
+}
+
+function getWind() {
+  return { ...windConfig };
 }
 
 function startPenalty(dist) {
@@ -550,14 +590,17 @@ function setupSim() {
   
   // Apply wind configuration
   function applyWindConfig() {
-    if (simulationEngine) {
-      simulationEngine.setWind({
-        direction: parseInt(windDirSlider.value),
-        speed: parseInt(windSpeedSlider.value),
-        gustFactor: parseFloat(windGustSlider.value),
-        variability: 10 // Fixed for now
-      });
-      console.log('Wind configuration applied:', simulationEngine.getWind());
+    setWind({
+      direction: parseInt(windDirSlider.value),
+      speed: parseInt(windSpeedSlider.value),
+      gustFactor: parseFloat(windGustSlider.value),
+      variability: 10 // Fixed for now
+    });
+    console.log('Wind configuration applied:', getWind());
+    // Reinitialize racers with new wind configuration
+    if (simState.running) {
+      stopSim();
+      initRacers();
     }
   }
   
@@ -575,16 +618,14 @@ function setupSim() {
     applyWindBtn.onclick = applyWindConfig;
   }
   
-  // Initialize wind displays from current simulation engine state
-  if (simulationEngine) {
-    const currentWind = simulationEngine.getWind();
-    if (windDirSlider) windDirSlider.value = currentWind.direction;
-    if (windSpeedSlider) windSpeedSlider.value = currentWind.speed;
-    if (windGustSlider) windGustSlider.value = currentWind.gustFactor;
-    updateWindDirectionDisplay();
-    updateWindSpeedDisplay();
-    updateWindGustDisplay();
-  }
+  // Initialize wind displays from current wind configuration
+  const currentWind = getWind();
+  if (windDirSlider) windDirSlider.value = currentWind.direction;
+  if (windSpeedSlider) windSpeedSlider.value = currentWind.speed;
+  if (windGustSlider) windGustSlider.value = currentWind.gustFactor;
+  updateWindDirectionDisplay();
+  updateWindSpeedDisplay();
+  updateWindGustDisplay();
   
   // Leader focus toggle
   const focusToggle = document.getElementById('toggle-focus-leader');
@@ -687,6 +728,17 @@ async function loadCourse(id) {
   }
   if (!renderer) renderer = new CourseRenderer(map, { roundDist: ROUND_DIST, theme: new ThemeClass() });
   renderer.hidden = state.hidden;
+  
+  // Update wind configuration from course data
+  if (courseData.wind) {
+    setWind({
+      direction: courseData.wind.direction || 180,
+      speed: courseData.wind.speed_kts || 15,
+      gustFactor: courseData.wind.gust_factor || 0.2,
+      variability: courseData.wind.variability || 10
+    });
+  }
+  
   render(true);
   initRacers();
   if (renderer.theme && renderer.theme.installChrome) renderer.theme.installChrome(courseData);
