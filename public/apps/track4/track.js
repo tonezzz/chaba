@@ -35,10 +35,11 @@ const RACER_PROFILES = [
   { name: 'Bram', flag: '🇧🇪', code: 'BEL' },
   { name: 'Cameron', flag: '🇨🇦', code: 'CAN' }
 ];
-let simState = { running: false, rafId: null, elapsed: 0, racers: [], speedFactor: 1, lastTs: 0, path: null };
-let highlightedRacer = null;
 let leaderFocus = new LeaderFocus();
 let windSystem = new WindSystem();
+let simulation = null;
+let courseManager = null;
+let yamlEditor = null;
 
 // State management functions (delegated to StateManager module)
 function getMergedMarkers() {
@@ -189,252 +190,21 @@ function setupToggles() {
   });
 }
 
-// --- Race simulation ---------------------------------------------------------
-
-function boatIcon(color, heading, racer = null) {
-  if (renderer && renderer.theme && typeof renderer.theme.boatIcon === 'function') {
-    return renderer.theme.boatIcon(color, heading, racer);
-  }
-  return L.divIcon({
-    className: 'racer-icon',
-    html: `<svg viewBox="0 0 24 24" style="transform: rotate(${heading.toFixed(1)}deg); color:${color}; fill:currentColor; filter:drop-shadow(0 0 2px rgba(0,0,0,0.8));"><path d="M3 17 Q12 23 21 17 L19 13 H5 Z M12 4 L7 14 h10 Z"/></svg>`,
-    iconSize: [20, 20], iconAnchor: [10, 10]
-  });
-}
-
-// Wind system functions (delegated to WindSystem module)
-function simWindFactor(heading) {
-  return windSystem.simWindFactor(heading);
-}
-
-function setWind(config) {
-  windSystem.setConfig(config);
-}
-
-function getWind() {
-  return windSystem.getConfig();
-}
-
-function startPenalty(dist) {
-  const s = (simState.path && simState.path.startDist) || 0;
-  if (dist < s) return 0.3;
-  const ramp = 30;
-  if (dist >= s + ramp) return 1;
-  return 0.3 + 0.7 * ((dist - s) / ramp);
-}
-
-function buildSimPath() {
-  const guide = renderer.guide;
-  const guidePts = guide.guidePts;
-  const markers = getMergedMarkers();
-  const beachEntry = Course.lineEntry(courseData.course, 'beach_start');
-  const beach1 = Course.coordsOf(markers, beachEntry.from);
-  const beach2 = Course.coordsOf(markers, beachEntry.to);
-  const beachMid = Course.midpoint(beach1, beach2);
-  const lineLen = Course.haversine(beach1, beach2);
-  const beachBearing = Course.bearing(beach1, beach2);
-  const startMid = guidePts[0];
-  const toStart = Course.bearing(beachMid, startMid);
-  const reverse = toStart + 180;
-  const perpA = beachBearing + 90;
-  const perpB = beachBearing - 90;
-  const diff = deg => Math.abs(((deg - reverse) % 360 + 540) % 360 - 180);
-  const behindBearing = diff(perpA) < diff(perpB) ? perpA : perpB;
-  const startBehind = Course.pointAt(beachMid, behindBearing, 5);
-  const pts = [startBehind, beachMid, startMid, ...guidePts.slice(1)];
-  const cum = [0];
-  for (let i = 1; i < pts.length; i++) cum[i] = cum[i - 1] + Course.haversine(pts[i - 1], pts[i]);
-  const sectionRanges = buildSectionRanges(pts, cum, guide);
-  return { pts, cum, total: cum[cum.length - 1], startDist: cum[2], beachBearing, lineLen, sectionRanges };
-}
-
-function buildSectionRanges(pts, cum, guide) {
-  const guidePts = guide.guidePts;
-  const roundArcs = guide.roundArcs || new Map();
-  const roundQueue = [];
-  for (const [key, s] of Object.entries(courseData.course.sections || {})) {
-    if (s.type === 'round-bouy' || s.type === 'round-buoy') {
-      const arc = roundArcs.get(key);
-      if (arc) roundQueue.push(arc);
-    }
-  }
-  const find = p => guidePts.findIndex(x => x === p);
-  const ranges = [{ endDist: cum[1], text: 'Pre-start' }];
-  for (const [key, s] of Object.entries(courseData.course.sections || {})) {
-    let endDist = null;
-    if (key === 'beach_start') {
-      endDist = cum[2];
-    } else if (s.type === 'round-bouy' || s.type === 'round-buoy') {
-      const arc = roundArcs.get(key);
-      if (arc) {
-        const idx = find(arc.exit);
-        endDist = idx >= 0 ? cum[idx + 2] : null;
-      }
-      if (roundQueue.length && roundQueue[0] === arc) roundQueue.shift();
-    } else if (s.type === 'arrow-area') {
-      if (s.to === 'finish_line') {
-        endDist = cum[cum.length - 1];
-      } else if (roundQueue.length) {
-        const arc = roundQueue[0];
-        const idx = find(arc.entry);
-        endDist = idx >= 0 ? cum[idx + 2] : null;
-      }
-    }
-    if (endDist != null && endDist > ranges[ranges.length - 1].endDist) {
-      ranges.push({ key, endDist, text: s.text || key });
-    }
-  }
-  return ranges;
-}
-
-function findSegment(dist) {
-  const { cum } = simState.path;
-  for (let i = 1; i < cum.length; i++) {
-    if (dist < cum[i]) return i - 1;
-  }
-  return cum.length - 2;
-}
-
-function updateRacer(r, dt) {
-  if (r.returned) return;
-  if (r.returning) {
-    const pos = r.marker.getLatLng();
-    const start = r.startPos;
-    const d = Course.haversine([pos.lat, pos.lng], start);
-    if (d < 3) {
-      r.returned = true;
-      r.speed = 0;
-      r.marker.setLatLng(start);
-      if (r.hoverMarker) r.hoverMarker.setLatLng(start);
-      return;
-    }
-    let h = Course.bearing([pos.lat, pos.lng], start) + (Math.random() * 60 - 30);
-    const speed = 3 + Math.random() * 2;
-    const next = Course.pointAt([pos.lat, pos.lng], h, speed * dt);
-    r.heading = r.heading ? (r.heading * 0.6 + h * 0.4) : h;
-    r.marker.setLatLng(next);
-    r.marker.setIcon(boatIcon(r.color, r.heading, r));
-    r.speed = speed;
-    if (r.hoverMarker) r.hoverMarker.setLatLng(next);
-    return;
-  }
-  const { pts, cum, total } = simState.path;
-  if (r.distance >= total) { r.distance = total; r.finished = true; r.returning = true; r.speed = 0; return; }
-  const seg = findSegment(r.distance);
-  const p1 = pts[seg], p2 = pts[seg + 1];
-  const segLen = cum[seg + 1] - cum[seg];
-  const t = segLen ? (r.distance - cum[seg]) / segLen : 0;
-  const heading = Course.bearing(p1, p2);
-  r.speed = r.baseSpeed * simWindFactor(heading) * (0.85 + Math.random() * 0.3) * startPenalty(r.distance) * simState.speedFactor;
-  r.distance += r.speed * dt;
-  if (r.distance >= total) { r.distance = total; r.finished = true; r.returning = true; r.speed = 0; return; }
-  const newT = segLen ? Math.min(1, (r.distance - cum[seg]) / segLen) : 0;
-  const rawLat = p1[0] + (p2[0] - p1[0]) * newT;
-  const rawLon = p1[1] + (p2[1] - p1[1]) * newT;
-  r.heading = r.heading ? (r.heading * 0.6 + heading * 0.4) : heading;
-  let pos = [rawLat, rawLon];
-  if (r.distance < simState.path.startDist) {
-    pos = Course.pointAt(pos, simState.path.beachBearing, r.startOffset || 0);
-  } else {
-    const lane = r.lanes[seg] + (r.lanes[seg + 1] - r.lanes[seg]) * newT;
-    if (Math.abs(lane) > 0.1) pos = Course.pointAt(pos, heading + (lane >= 0 ? 90 : -90), Math.abs(lane));
-  }
-  r.marker.setLatLng(pos);
-  r.marker.setIcon(boatIcon(r.color, r.heading, r));
-  if (r.hoverMarker) r.hoverMarker.setLatLng(pos);
-}
-
-function simStep(ts) {
-  if (!simState.running) return;
-  if (!simState.lastTs) simState.lastTs = ts;
-  const dt = (ts - simState.lastTs) / 1000;
-  simState.lastTs = ts;
-  simState.elapsed += dt;
-  const active = simState.racers.filter(r => !r.returned);
-  if (!active.length) { stopSim(); updateSimStandings(); return; }
-  for (const r of simState.racers) updateRacer(r, dt);
-  resolveCollisions(simState.racers);
-  updateSimStandings();
-  simState.rafId = requestAnimationFrame(simStep);
-}
-
-function initRacers() {
-  if (!renderer.guide || !renderer.guide.guidePts.length) return;
-  highlightedRacer = null;
-  simState.path = buildSimPath();
-  const pts = simState.path.pts;
-  const { beachBearing, lineLen } = simState.path;
-  raceLayer.clearLayers();
-  simState.racers = [];
-  const count = Math.min(10, Math.max(2, parseInt(document.getElementById('sim-racers').value, 10) || 10));
-  const maxSpread = Math.min((lineLen || 0) * 0.8, Math.min(80, count * 10));
-  const spacing = count > 1 ? maxSpread / (count - 1) : 0;
-  const shuffled = [...RACER_PROFILES].sort(() => Math.random() - 0.5);
-  for (let i = 0; i < count; i++) {
-    const color = boatColors[i % boatColors.length];
-    const startOffset = (i - (count - 1) / 2) * spacing;
-    const lanes = pts.map(() => (Math.random() * 8 - 4));
-    lanes[2] = startOffset;
-    const h = Course.bearing(pts[0], pts[1] || pts[0]);
-    const startPos = Course.pointAt(pts[0], beachBearing, startOffset);
-    const profile = shuffled[i % shuffled.length];
-    const sail = `${profile.code}-${100 + i * 9}`;
-    const r = {
-      name: profile.name, color, baseSpeed: 5 + Math.random() * 4,
-      startOffset, startPos, lanes, distance: 0, finished: false, returning: false, returned: false, speed: 0, heading: h, sail, flag: profile.flag, code: profile.code
-    };
-    const marker = L.marker(startPos, { icon: boatIcon(color, h, r), zIndexOffset: 1000 }).addTo(raceLayer);
-    marker.on('mouseover', () => highlightRacer(r));
-    marker.on('mouseout', clearRacerHighlight);
-    r.marker = marker;
-    simState.racers.push(r);
-  }
-  updateSimStandings();
-}
-
-function resolveCollisions(racers) {
-  const MIN = 6;
-  const active = racers.filter(r => !r.finished);
-  for (let pass = 0; pass < 3; pass++) {
-    for (let i = 0; i < active.length; i++) {
-      for (let j = i + 1; j < active.length; j++) {
-        const a = active[i].marker.getLatLng();
-        const b = active[j].marker.getLatLng();
-        const d = Course.haversine([a.lat, a.lng], [b.lat, b.lng]);
-        if (d > 0 && d < MIN) {
-          const overlap = (MIN - d) / 2;
-          const h = Course.bearing([a.lat, a.lng], [b.lat, b.lng]);
-          active[i].marker.setLatLng(Course.pointAt([a.lat, a.lng], h, -overlap));
-          active[j].marker.setLatLng(Course.pointAt([b.lat, b.lng], h, overlap));
-        }
-      }
-    }
-  }
-}
+// --- Race simulation (delegated to RaceSimulation module) ---
 
 function currentSection(r) {
-  if (r.finished) return 'Finished';
-  const ranges = (simState.path && simState.path.sectionRanges) || [];
-  for (const range of ranges) {
-    if (r.distance < range.endDist) return range.text;
-  }
-  return 'Finished';
+  return simulation ? simulation.currentSection(r) : 'Finished';
 }
 
 function currentSectionKey(r) {
-  if (r.finished) return null;
-  const ranges = (simState.path && simState.path.sectionRanges) || [];
-  for (const range of ranges) {
-    if (r.distance < range.endDist) return range.key || null;
-  }
-  return null;
+  return simulation ? simulation.currentSectionKey(r) : null;
 }
 
 // Leader focus functions (delegated to LeaderFocus module)
 function updateFocusStatus() {
   leaderFocus.updateStatus({
     sections: (renderer.lastDrawables || []).filter(d => d.kind === 'section'),
-    racers: simState.racers,
+    racers: simulation ? simulation.getRacers() : [],
     currentSection: currentSection
   });
 }
@@ -442,149 +212,47 @@ function updateFocusStatus() {
 function applyLeaderFocus() {
   leaderFocus.applyFocus({
     sections: (renderer.lastDrawables || []).filter(d => d.kind === 'section'),
-    racers: simState.racers,
+    racers: simulation ? simulation.getRacers() : [],
     currentSectionKey: currentSectionKey,
     renderer: renderer
   });
 }
 
-function highlightRacer(r) {
-  clearRacerHighlight();
-  highlightedRacer = r;
-  if (!r) return;
-  r.marker.setZIndexOffset(10000);
-  const pos = r.marker.getLatLng();
-  r.hoverMarker = L.circleMarker([pos.lat, pos.lng], { radius: 14, color: r.color, weight: 3, fillColor: r.color, fillOpacity: 0.25, opacity: 0.9 }).addTo(raceLayer);
-  const key = currentSectionKey(r);
-  if (key && renderer) renderer.highlightSection(key);
-}
-
-function clearRacerHighlight() {
-  if (!highlightedRacer) return;
-  highlightedRacer.marker.setZIndexOffset(1000);
-  if (highlightedRacer.hoverMarker) {
-    raceLayer.removeLayer(highlightedRacer.hoverMarker);
-    highlightedRacer.hoverMarker = null;
-  }
-  highlightedRacer = null;
-  if (renderer) renderer.clearHighlight();
-}
-
-function updateSimStandings() {
-  const el = document.getElementById('sim-standings');
-  if (!simState.racers.length) { el.textContent = 'Press Start to simulate'; return; }
-  const { total } = simState.path || { total: 1 };
-  const sorted = [...simState.racers].sort((a, b) => b.distance - a.distance);
-  if (renderer && renderer.theme && typeof renderer.theme.renderStandings === 'function') {
-    renderer.theme.renderStandings({ sorted, total, elapsed: simState.elapsed, speedFactor: simState.speedFactor });
-    return;
-  }
-  const pct = d => total ? (d / total * 100).toFixed(0) : 0;
-  const rows = sorted.map((r, i) => `
-    <tr class="align-middle whitespace-nowrap" data-name="${r.name}">
-      <td class="text-left py-0.5 pr-1 truncate">${i + 1}. <span style="color:${r.color}">●</span> ${r.name}</td>
-      <td class="text-left py-0.5 px-1 text-gray-400 truncate">${currentSection(r)}</td>
-      <td class="text-right py-0.5 px-1 text-gray-400 w-12">${r.finished ? '' : pct(r.distance)}</td>
-      <td class="text-right py-0.5 pl-1 text-gray-400 w-14">${(r.speed * 3.6).toFixed(1)}</td>
-    </tr>
-  `).join('');
-  el.innerHTML = `
-    <table class="w-full border-collapse table-fixed text-xs">
-      <thead>
-        <tr class="text-gray-500 whitespace-nowrap">
-          <th class="text-left font-normal py-0.5 pr-1 w-1/3">Boat</th>
-          <th class="text-left font-normal py-0.5 px-1 w-1/3">Section</th>
-          <th class="text-right font-normal py-0.5 px-1 w-16">%</th>
-          <th class="text-right font-normal py-0.5 pl-1 w-16">km/h</th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>
-  `;
-}
-
-function dimCourse(active) {
-  document.body.classList.toggle('sim-active', !!active);
-}
-
 function startSim() {
-  if (simState.running) return;
-  if (!simState.racers.length || simState.racers.every(r => r.returned)) initRacers();
-  if (!simState.racers.length) return;
-  simState.speedFactor = parseFloat(document.getElementById('sim-speed').value) || 1;
-  simState.running = true; simState.lastTs = 0;
-  dimCourse(true);
-  simState.rafId = requestAnimationFrame(simStep);
+  if (simulation) simulation.start();
 }
 
 function stopSim() {
-  simState.running = false;
-  cancelAnimationFrame(simState.rafId);
-  simState.rafId = null;
-  simState.lastTs = 0;
-  dimCourse(false);
+  if (simulation) simulation.stop();
 }
 
 function setupSim() {
-  initRacers();
-  document.getElementById('sim-start').onclick = startSim;
-  document.getElementById('sim-reset').onclick = () => { stopSim(); initRacers(); };
-  document.getElementById('sim-racers').oninput = () => { stopSim(); initRacers(); };
-  document.getElementById('sim-speed').oninput = (e) => { simState.speedFactor = parseFloat(e.target.value) || 1; };
+  if (!simulation) {
+    simulation = new RaceSimulation({
+      map: map,
+      renderer: renderer,
+      raceLayer: raceLayer,
+      boatColors: boatColors,
+      racerProfiles: RACER_PROFILES,
+      windSystem: windSystem,
+      leaderFocus: leaderFocus,
+      getCourseData: () => courseData,
+      getMergedMarkers: getMergedMarkers
+    });
+  }
   
-  // Set up wind system UI
-  windSystem.setupUI({
-    onApply: (config) => {
-      console.log('Wind configuration applied:', config);
-    },
-    onReinit: () => {
-      if (simState.running) {
-        stopSim();
-        initRacers();
-      }
-    }
-  });
-  
-  // Set up leader focus UI
-  leaderFocus.setupUI({
-    onToggle: (state) => {
+  simulation.setupUI({
+    onFocusToggle: (state) => {
       updateFocusStatus();
     },
-    onApply: () => {
+    onFocusApply: () => {
       updateFocusStatus();
       applyLeaderFocus();
     }
   });
-  
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'l' || e.key === 'L') {
-      if (focusToggle) {
-        focusToggle.checked = !focusToggle.checked;
-        focusState.enabled = focusToggle.checked;
-        if (!focusState.enabled) {
-          focusState.manualSection = null;
-        }
-        updateFocusStatus();
-        applyLeaderFocus();
-      }
-    }
-  });
-  
-  const standingsEl = document.getElementById('sim-standings');
-  if (standingsEl) {
-    standingsEl.onmouseover = (e) => {
-      const tr = e.target.closest('[data-name]');
-      if (!tr) return;
-      const r = simState.racers.find(x => x.name === tr.dataset.name);
-      if (r) highlightRacer(r);
-    };
-    standingsEl.onmouseout = (e) => {
-      const tr = e.target.closest('[data-name]');
-      if (!tr) return;
-      clearRacerHighlight();
-    };
-  }
 }
+
+// --- Course management (delegated to CourseManager module) ---
 
 function showCourseMsg(text) {
   const el = document.getElementById('course-msg');
@@ -594,154 +262,59 @@ function showCourseMsg(text) {
   }
 }
 
-function updateUrlCourse() {
-  const url = new URL(window.location.href);
-  url.searchParams.set('course', courseId);
-  window.history.replaceState({}, '', url);
+function loadCourse(id) {
+  if (courseManager) courseManager.loadCourse(id);
 }
 
-async function populateCourseList() {
-  try {
-    const r = await fetch('api/list.php');
-    if (!r.ok) return;
-    const list = await r.json();
-    const sel = document.getElementById('course-select');
-    if (!sel) return;
-    sel.innerHTML = '<option value="">Load course...</option>';
-    for (const c of list) {
-      const label = c.name + (c.saved ? ' (saved)' : '');
-      const opt = document.createElement('option');
-      opt.value = c.name;
-      opt.textContent = label;
-      sel.appendChild(opt);
-    }
-    sel.value = '';
-  } catch (e) { console.warn('course list failed', e); }
-}
-
-async function loadCourseYaml(id) {
-  const r = await fetch(`courses/${id}.yml`, { cache: 'no-store' });
-  if (!r.ok) throw new Error(`course not found: ${r.status}`);
-  return jsyaml.load(await r.text());
-}
-
-async function loadCourse(id) {
-  if (!id || !/^[a-zA-Z0-9_-]+$/.test(id)) { showCourseMsg('invalid course name'); return; }
-  stopSim();
-  try {
-    courseData = await loadCourseYaml(id);
-  } catch (e) {
-    console.warn(`no YAML for ${id}; keeping current base`, e);
-  }
-  courseId = id;
-  loadOverrides();
-  await loadServerState();
-  document.getElementById('course-name').value = courseId;
-  updateUrlCourse();
-  let ThemeClass = DefaultTheme;
-  if (themeId !== 'default') {
-    try { ThemeClass = await loadTheme(themeId); } catch (e) { console.warn('theme load failed', e); }
-  }
-  if (!renderer) renderer = new CourseRenderer(map, { roundDist: ROUND_DIST, theme: new ThemeClass() });
-  renderer.hidden = stateManager.getHidden();
-  
-  render(true);
-  initRacers();
-  if (renderer.theme && renderer.theme.installChrome) renderer.theme.installChrome(courseData);
-  populateCourseList();
-  showCourseMsg('Loaded ' + courseId);
-}
-
-async function saveCourse(name) {
-  name = (name || '').trim();
-  if (!name) name = courseId;
-  if (!/^[a-zA-Z0-9_-]+$/.test(name)) { showCourseMsg('invalid course name'); return; }
-  const currentState = stateManager.getState();
-  const payload = { course: name, overrides: currentState.overrides, hidden: [...currentState.hidden] };
-  try {
-    const r = await fetch('api/save.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const data = await r.json().catch(() => ({}));
-    if (r.ok && data.ok) {
-      courseId = name;
-      stateManager.setCourseId(name);
-      try { localStorage.setItem(stateManager.getStorageKey(), JSON.stringify(currentState.overrides)); } catch (e) {}
-      document.getElementById('course-name').value = courseId;
-      updateUrlCourse();
-      populateCourseList();
-      showCourseMsg('Saved ' + courseId);
-    } else {
-      showCourseMsg(data.error || 'save failed');
-    }
-  } catch (e) {
-    console.warn('save failed', e);
-    showCourseMsg('save error');
-  }
+function saveCourse(name) {
+  if (courseManager) courseManager.saveCourse(name);
 }
 
 function setupCourseControls() {
-  const nameInput = document.getElementById('course-name');
-  const sel = document.getElementById('course-select');
-  if (nameInput) nameInput.value = courseId;
-  populateCourseList();
-  document.getElementById('btn-save').onclick = () => saveCourse(nameInput ? nameInput.value : '');
-  document.getElementById('btn-load').onclick = () => { if (sel && sel.value) loadCourse(sel.value); };
-}
-
-function showYamlMsg(text) {
-  const el = document.getElementById('yaml-msg');
-  if (el) {
-    el.textContent = text;
-    setTimeout(() => { if (el.textContent === text) el.textContent = ''; }, 3000);
-  }
-}
-
-async function openYamlEditor() {
-  const textarea = document.getElementById('yaml-text');
-  if (!textarea) return;
-  try {
-    const r = await fetch(`courses/${courseId}.yml`, { cache: 'no-store' });
-    if (!r.ok) throw new Error(`load ${r.status}`);
-    textarea.value = await r.text();
-  } catch (e) {
-    console.warn('yaml load failed', e);
-    showYamlMsg('Failed to load YAML');
-  }
-}
-
-async function saveYamlEditor() {
-  const textarea = document.getElementById('yaml-text');
-  if (!textarea) return;
-  const yaml = textarea.value;
-  try {
-    try { jsyaml.load(yaml); } catch (e) { showYamlMsg('Invalid YAML: ' + e.message); return; }
-    const r = await fetch('api/save-course.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ course: courseId, yaml })
+  if (!courseManager) {
+    courseManager = new CourseManager({
+      stateManager: stateManager,
+      renderer: renderer,
+      simulation: simulation,
+      getCourseId: () => courseId,
+      setCourseId: (id) => courseId = id,
+      getCourseData: () => courseData,
+      setCourseData: (data) => courseData = data,
+      getRenderer: () => renderer,
+      setRenderer: (r) => renderer = r,
+      getSimulation: () => simulation,
+      onRender: (fit) => render(fit),
+      onLoadOverrides: () => loadOverrides(),
+      onLoadServerState: () => loadServerState(),
+      onThemeLoad: () => loadTheme(themeId),
+      onShowMsg: (text) => showCourseMsg(text)
     });
-    const data = await r.json().catch(() => ({}));
-    if (r.ok && data.ok) {
-      showYamlMsg('Saved; reloading...');
-      await loadCourse(courseId);
-      activateTab('course');
-    } else {
-      showYamlMsg(data.error || 'save failed');
-    }
-  } catch (e) {
-    console.warn('yaml save failed', e);
-    showYamlMsg('save error');
   }
+  courseManager.setupCourseControls();
+}
+
+// --- YAML editor (delegated to YamlEditor module) ---
+
+function openYamlEditor() {
+  if (yamlEditor) yamlEditor.openYamlEditor();
 }
 
 function setupYamlEditor() {
-  const cancel = document.getElementById('btn-cancel-yaml');
-  const save = document.getElementById('btn-save-yaml');
-  if (cancel) cancel.onclick = () => activateTab('course');
-  if (save) save.onclick = saveYamlEditor;
+  if (!yamlEditor) {
+    yamlEditor = new YamlEditor({
+      getCourseId: () => courseId,
+      onShowMsg: (text) => {
+        const el = document.getElementById('yaml-msg');
+        if (el) {
+          el.textContent = text;
+          setTimeout(() => { if (el.textContent === text) el.textContent = ''; }, 3000);
+        }
+      },
+      onActivateTab: (tab) => activateTab(tab),
+      onLoadCourse: (id) => courseManager ? courseManager.loadCourse(id) : null
+    });
+  }
+  yamlEditor.setupYamlEditor();
 }
 
 const urlParams = new URLSearchParams(window.location.search);
