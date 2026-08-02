@@ -1,0 +1,129 @@
+title: Chaba Health Check Configuration
+description: Health check endpoints and monitoring for all chaba services
+version: 1
+
+services:
+  # Web Stack Services (8080/8081)
+  - id: caddy
+    name: Caddy
+    type: http
+    url: http://192.168.1.48:8080/apps/
+    expected_status: 200
+    timeout: 5
+    category: web
+
+  - id: bserver
+    name: BServer
+    type: http
+    url: http://192.168.1.48:8080/
+    expected_status: 200
+    timeout: 5
+    category: web
+
+  - id: status-api
+    name: Status API
+    type: http
+    url: http://192.168.1.48:8080/api/status
+    expected_status: 200
+    timeout: 5
+    category: api
+
+  - id: yomi-api
+    name: Yomi API
+    type: http
+    url: http://192.168.1.48:8080/api/yomi/conversations
+    expected_status: 200
+    timeout: 5
+    category: api
+
+  # Data Services
+  - id: redis
+    name: Redis
+    type: container
+    container: redis
+    expected_state: running
+    timeout: 5
+    category: datastore
+
+  - id: postgres
+    name: Postgres
+    type: container
+    container: postgres
+    expected_state: running
+    timeout: 5
+    category: datastore
+
+  # GPU Services
+  - id: thai-legal
+    name: Thai Legal LLM
+    type: http
+    url: http://192.168.1.48:8001/health
+    expected_status: 200
+    timeout: 10
+    category: gpu
+
+  - id: imagen2
+    name: Imagen2
+    type: http
+    url: http://192.168.1.48:8000/health
+    expected_status: 200
+    timeout: 10
+    category: gpu
+
+  - id: txt2vid
+    name: Txt2Vid
+    type: container
+    container: txt2vid-inference
+    expected_state: running
+    timeout: 10
+    category: gpu
+
+  # Queue Services
+  - id: gpu-queue
+    name: GPU Queue
+    type: http
+    url: http://192.168.1.48:3001/health
+    expected_status: 200
+    timeout: 5
+    category: queue
+
+  # Optional Services
+  - id: activepieces
+    name: Activepieces
+    type: container
+    container: activepieces
+    expected_state: running
+    timeout: 5
+    category: optional
+
+  - id: frigate
+    name: Frigate NVR
+    type: http
+    url: http://192.168.1.48:8080/frigate/api/version
+    expected_status: 200
+    timeout: 10
+    category: optional
+
+# Recovery suggestions for common failure modes
+recovery_actions:
+  container_down:
+    - Check docker compose status: `docker compose ps`
+    - Restart container: `docker compose restart <container>`
+    - Check logs: `docker compose logs <container>`
+
+  http_error:
+    - Check if service is running: `docker compose ps`
+    - Check service logs for errors
+    - Verify port is accessible: `curl -v <url>`
+    - Restart service if needed
+
+  timeout:
+    - Check if service is overloaded
+    - Check system resources: `htop` or `docker stats`
+    - Consider restarting the service
+
+  gpu_service_down:
+    - Check GPU status with mcp1_gpu_status
+    - Check if llama is holding GPU: mcp2_status
+    - Hold llama if needed: mcp1_hold_llama
+    - Restart GPU service

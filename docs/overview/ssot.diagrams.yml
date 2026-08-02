@@ -1,0 +1,152 @@
+title: System Diagrams
+subtitle: Architecture and connection diagrams for chaba services.
+icon: 📊
+sections:
+  - title: Playlive Architecture
+    icon: 🔗
+    layout: diagram
+    items:
+      - label: tony-omen (Windsurf)
+        text: IDE with MCP client calling playlive-server.py tools
+        type: client
+      - label: playlive-server.py
+        text: MCP server on tony-omen bridging Windsurf to playlived HTTP API
+        type: service
+      - label: playlived daemon
+        text: Node.js HTTP server on tony-dell managing Playwright sessions
+        type: service
+      - label: Chrome CDP
+        text: Chrome on tony-dell with --remote-debugging-port=9223
+        type: service
+      - label: ChatGPT tab
+        text: chatgpt.com attached via CDP
+        type: target
+      - label: Claude tab
+        text: claude.ai attached via CDP
+        type: target
+      - label: Gemini tab
+        text: gemini.google.com attached via CDP
+        type: target
+    connections:
+      - from: tony-omen (Windsurf)
+        to: playlive-server.py
+        protocol: stdio MCP
+      - from: playlive-server.py
+        to: playlived daemon
+        protocol: HTTP (port 9230)
+      - from: playlived daemon
+        to: Chrome CDP
+        protocol: CDP (port 9223)
+      - from: Chrome CDP
+        to: ChatGPT tab
+        protocol: CDP attach
+      - from: Chrome CDP
+        to: Claude tab
+        protocol: CDP attach
+      - from: Chrome CDP
+        to: Gemini tab
+        protocol: CDP attach
+
+  - title: Web Stack (8080)
+    icon: 🌐
+    layout: diagram
+    items:
+      - label: Caddy
+        text: Reverse proxy on port 8080
+        type: proxy
+      - label: web container
+        text: Static file server for /apps and /tony-omen-temp
+        type: service
+      - label: status-api
+        text: Python API for system status
+        type: service
+      - label: redis
+        text: Redis 7.4 for caching and queues
+        type: service
+      - label: chaba-h3 staging
+        text: Node.js dev server on port 8081
+        type: service
+    connections:
+      - from: Caddy
+        to: web container
+        protocol: handle_path
+      - from: Caddy
+        to: status-api
+        protocol: reverse_proxy
+      - from: web container
+        to: redis
+        protocol: internal network
+      - from: status-api
+        to: redis
+        protocol: internal network
+
+  - title: CDP Controller (tony-dell)
+    icon: 🖥️
+    layout: diagram
+    items:
+      - label: cdp-controller
+        text: Node.js HTTP server on tony-dell
+        type: service
+      - label: mcp-cdp-controller
+        text: MCP server on tony-omen
+        type: service
+      - label: Chrome
+        text: Chrome browser on tony-dell
+        type: service
+      - label: xdotool
+        text: Window management tool
+        type: tool
+      - label: scrot
+        text: Screenshot capture tool
+        type: tool
+    connections:
+      - from: mcp-cdp-controller
+        to: cdp-controller
+        protocol: HTTP
+      - from: cdp-controller
+        to: Chrome
+        protocol: CDP
+      - from: cdp-controller
+        to: xdotool
+        protocol: exec
+      - from: cdp-controller
+        to: scrot
+        protocol: exec
+
+  - title: Frigate NVR
+    icon: 📹
+    layout: diagram
+    items:
+      - label: HLS sources
+        text: Longdo, Windy, DOH, iTIC streams
+        type: source
+      - label: Frigate
+        text: NVR with object detection
+        type: service
+      - label: Redis
+        text: Message broker for MQTT
+        type: service
+      - label: Web UI
+        text: Frigate web interface
+        type: ui
+    connections:
+      - from: HLS sources
+        to: Frigate
+        protocol: RTSP/HLS
+      - from: Frigate
+        to: Redis
+        protocol: MQTT
+      - from: Frigate
+        to: Web UI
+        protocol: HTTP
+
+  - title: Files
+    icon: 📁
+    layout: list
+    items:
+      - label: This SSOT
+        text: chaba/docs/overview/ssot.diagrams.yml
+      - label: AI Hub SSOT
+        text: chaba/docs/overview/ssot.apps.aihub.yml
+      - label: Wind SSOT
+        text: chaba/docs/overview/ssot.apps.wind.yml
