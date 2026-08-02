@@ -9,6 +9,8 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - ./public:/srv/public
+      - /home/tony/CascadeProjects/chaba-omen/stacks/web/public/tony-omen:/srv/public/tony-omen
+      - /home/tony/CascadeProjects/chaba-h3/public:/srv/public/chaba-h3
       - /home/tony/CascadeProjects/chaba-h3/public/apps/imagen:/srv/public/tony-omen/apps/imagen
       - /home/tony/CascadeProjects/chaba-h3/public/apps/imagen2:/srv/public/tony-omen/apps/imagen2
       - caddy_data:/data
@@ -24,7 +26,7 @@ services:
   status-api:
     container_name: status-api
     build:
-      context: ./status-api
+      context: /home/tony/CascadeProjects/chaba-omen/stacks/web/status-api
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
@@ -37,7 +39,7 @@ services:
       - /sys/class/hwmon:/sys/class/hwmon:ro
       - /sys/devices/platform/hp-wmi:/sys/devices/platform/hp-wmi:rw
       - /sys/devices/system/cpu/intel_pstate:/sys/devices/system/cpu/intel_pstate:rw
-      - ./status-api/main.py:/app/main.py:ro
+      - /home/tony/CascadeProjects/chaba-omen/stacks/web/status-api/main.py:/app/main.py:ro
     privileged: true
     networks:
       - default
@@ -108,6 +110,8 @@ services:
       - /home/tony/.cache/huggingface:/root/.cache/huggingface
       - /home/tony/CascadeProjects/chaba-h3/inference2/main.py:/app/main.py:ro
       - /home/tony/CascadeProjects/chaba-h3/inference2/data:/app/data
+    ports:
+      - "8000:8000"
     deploy:
       resources:
         reservations:
@@ -118,9 +122,159 @@ services:
     networks:
       - default
 
+  txt2vid-inference:
+    container_name: txt2vid-inference
+    build:
+      context: /home/tony/CascadeProjects/chaba-h3/inference-cogvideo
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - MODEL_ID=a-r-r-o-w/LTX-Video-diffusers
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+    volumes:
+      - /home/tony/.cache/huggingface:/root/.cache/huggingface
+      - /home/tony/CascadeProjects/chaba-h3/inference-cogvideo/main.py:/app/main.py:ro
+      - /home/tony/CascadeProjects/chaba-h3/inference-cogvideo/data:/app/data
+    ports:
+      - "8002:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - default
+
+  thai-legal-inference:
+    container_name: thai-legal-inference
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    restart: unless-stopped
+    command:
+      - "--models-dir"
+      - "/models"
+      - "--models-max"
+      - "2"
+      - "--models-autoload"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8000"
+      - "--n-gpu-layers"
+      - "${LLAMA_N_GPU_LAYERS:-auto}"
+      - "--alias"
+      - "thai-legal:thai-legal-gemma-4b-cpt.Q4_K_M.gguf,phi-3:Phi-3-mini-4k-instruct-q4.gguf"
+    volumes:
+      - /data/gguf:/models:ro
+    ports:
+      - "8001:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - default
+
+  postgres:
+    container_name: postgres
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    container_name: redis
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy noeviction
+    volumes:
+      - redis_data:/data
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  activepieces:
+    container_name: activepieces
+    image: ghcr.io/activepieces/activepieces:latest
+    restart: unless-stopped
+    environment:
+      - AP_DB_TYPE=POSTGRES
+      - AP_POSTGRES_DATABASE=activepieces
+      - AP_POSTGRES_USERNAME=activepieces
+      - AP_POSTGRES_PASSWORD=${AP_POSTGRES_PASSWORD}
+      - AP_POSTGRES_HOST=postgres
+      - AP_POSTGRES_PORT=5432
+      - AP_REDIS_URL=redis://redis:6379
+      - AP_ENCRYPTION_KEY=${AP_ENCRYPTION_KEY}
+      - AP_JWT_SECRET=${AP_JWT_SECRET}
+      - AP_FRONTEND_URL=http://192.168.1.48:8080/apps/activepieces
+    volumes:
+      - ./activepieces-index.html:/usr/src/app/dist/packages/web/index.html:ro
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - default
+
+  gpu-queue:
+    container_name: gpu-queue
+    image: node:20-alpine
+    restart: unless-stopped
+    working_dir: /app/gpu-queue
+    command: npm start
+    volumes:
+      - ../../scripts/gpu-queue:/app/gpu-queue
+    environment:
+      - DATABASE_URL=postgres://chaba:chabapass@postgres:5432/chaba
+      - GPU_QUEUE_PORT=3001
+    ports:
+      - "3001:3001"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - default
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   caddy_data:
   caddy_config:
+  postgres_data:
+  redis_data:
 
 networks:
   frigate_default:
