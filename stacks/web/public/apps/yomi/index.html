@@ -61,6 +61,10 @@
     .error { color: #ef4444; }
     #status { padding: 1rem; color: var(--muted); }
     .updated { font-size: .75rem; color: #94a3b8; }
+    .updated.refreshing { color: var(--accent); }
+    .refresh-indicator { display: inline-block; width: 10px; height: 10px; border: 2px solid #94a3b8; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-left: .25rem; vertical-align: middle; }
+    .refresh-indicator.active { border-color: var(--accent); border-top-color: transparent; }
+    @keyframes spin { to { transform: rotate(360deg); } }
     .controls { max-width: 1100px; margin: .75rem auto 0; padding: 0 .75rem; display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
     #search { flex: 1; min-width: 200px; padding: .5rem .75rem; border: 1px solid #cbd5e1; border-radius: .375rem; font-size: .9rem; }
     #search:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
@@ -132,6 +136,7 @@
   <header>
     <h1>LINE Conversations</h1>
     <span class="updated" id="updated"></span>
+    <span class="refresh-indicator" id="refresh-indicator" style="display:none"></span>
   </header>
   <div class="controls">
     <input type="search" id="search" placeholder="Search conversations…" autocomplete="off">
@@ -178,16 +183,27 @@
   </div>
   <script>
     let allConversations = [];
+    let lastServerUpdated = null;
+    let refreshInterval = null;
+    let timeUpdateInterval = null;
 
     async function load() {
       const app = document.getElementById('app');
       const updated = document.getElementById('updated');
       try {
-        const res = await fetch('/apps/yomi/conversations.json', { credentials: 'include' });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const { generatedAt, conversations } = await res.json();
-        updated.textContent = generatedAt ? 'Updated ' + timeAgo(new Date(generatedAt)) + ' ago' : '';
-        if (generatedAt) updated.title = new Date(generatedAt).toLocaleString();
+        const [convRes, timeRes] = await Promise.all([
+          fetch('/api/yomi/conversations', { credentials: 'include' }),
+          fetch('/api/yomi/last-updated', { credentials: 'include' })
+        ]);
+        if (!convRes.ok) throw new Error('HTTP ' + convRes.status);
+        const { generatedAt, conversations } = await convRes.json();
+        if (timeRes.ok) {
+          const { lastUpdated } = await timeRes.json();
+          lastServerUpdated = lastUpdated;
+          updateUpdatedDisplay(lastUpdated);
+        } else {
+          updateUpdatedDisplay(generatedAt);
+        }
         app.innerHTML = '';
         if (!conversations || !conversations.length) {
           app.innerHTML = '<p id="status">No conversations.</p>';
@@ -198,11 +214,67 @@
         renderConversations();
         const chatParam = new URLSearchParams(location.search).get('chat');
         if (chatParam) openChat(chatParam);
+        startAutoRefresh();
+        startTimeUpdate();
       } catch (e) {
         app.innerHTML = `<p id="status">Error loading conversations: ${escapeHtml(e.message)}</p>`;
       }
     }
+
+    async function checkForUpdates() {
+      const indicator = document.getElementById('refresh-indicator');
+      const updated = document.getElementById('updated');
+      try {
+        indicator.style.display = 'inline-block';
+        indicator.classList.add('active');
+        updated.classList.add('refreshing');
+        const res = await fetch('/api/yomi/last-updated', { credentials: 'include' });
+        if (!res.ok) {
+          console.warn('Auto-refresh check returned', res.status);
+          return;
+        }
+        const { lastUpdated } = await res.json();
+        console.log('Auto-refresh check:', { lastUpdated, lastServerUpdated });
+        if (lastUpdated && lastServerUpdated && new Date(lastUpdated) > new Date(lastServerUpdated)) {
+          console.log('New data detected, reloading...');
+          location.reload();
+        }
+      } catch (err) {
+        console.error('Auto-refresh check failed:', err);
+      } finally {
+        indicator.style.display = 'none';
+        indicator.classList.remove('active');
+        updated.classList.remove('refreshing');
+      }
+    }
+
+    function startAutoRefresh() {
+      if (refreshInterval) clearInterval(refreshInterval);
+      refreshInterval = setInterval(checkForUpdates, 30000);
+    }
+
+    function updateUpdatedDisplay(timestamp) {
+      const updated = document.getElementById('updated');
+      if (!timestamp) {
+        updated.textContent = '';
+        return;
+      }
+      const date = new Date(timestamp);
+      updated.textContent = 'Updated ' + timeAgo(date) + ' ago';
+      updated.title = date.toLocaleString();
+    }
+
+    function startTimeUpdate() {
+      if (timeUpdateInterval) clearInterval(timeUpdateInterval);
+      timeUpdateInterval = setInterval(() => {
+        if (lastServerUpdated) updateUpdatedDisplay(lastServerUpdated);
+      }, 60000);
+    }
     async function openChat(id) {
+      const p = new URLSearchParams(location.search);
+      p.set('chat', id);
+      history.replaceState(null, '', `${location.pathname}?${p.toString()}`);
+      writeUrlState();
       const panel = document.getElementById('msg-' + id);
       if (!panel) return;
       panel.hidden = false;
@@ -221,10 +293,16 @@
       }
     }
 
+    function mediaSrc(m, chatId) {
+      if (m.mediaFile) return `media/${chatId}/${m.mediaFile}`;
+      if (m.id) return `/api/yomi/media/${chatId}/${m.id}`;
+      return null;
+    }
+
     async function loadMessages(id, panel) {
       panel.innerHTML = '<p class="text-null">Loading messages…</p>';
       try {
-        const res = await fetch('/apps/yomi/messages/' + id + '.json', { credentials: 'include' });
+        const res = await fetch(`/api/yomi/messages?chat=${encodeURIComponent(id)}&limit=20`, { credentials: 'include' });
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const { messages } = await res.json();
         panel.innerHTML = '';
@@ -235,6 +313,7 @@
           for (const m of sorted) {
             const bubble = document.createElement('div');
             bubble.className = 'message';
+            if (m.id) bubble.dataset.id = m.id;
             const time = new Date(m.deliveredTime).toLocaleString();
             bubble.innerHTML = `
               <div class="meta">${escapeHtml(m.fromName || m.from || 'Unknown')} · ${time}</div>
@@ -272,7 +351,7 @@
         const previewClass = hasSummary ? 'summary' : 'preview';
         const preview = displayPreview == null
           ? '<div class="preview preview-null">No preview</div>'
-          : `<div class="${previewClass}" title="${escapeHtml(displayPreview)}">${escapeHtml(truncate(displayPreview, 90))}</div>`;
+          : `<div class="${previewClass}" title="${escapeHtml(displayPreview)}">${linkify(truncate(displayPreview, 90))}</div>`;
         const lastActive = c.lastMessageTime
           ? `<span class="last-active" title="${new Date(c.lastMessageTime).toLocaleString()}">${timeAgo(new Date(c.lastMessageTime))} ago</span>`
           : '';
@@ -294,6 +373,7 @@
         app.appendChild(div);
       }
       filterChats();
+      writeUrlState();
     }
 
     document.getElementById('app').addEventListener('click', handleNameInteraction);
@@ -332,6 +412,7 @@
         card.classList.toggle('hidden', !(matchesText && matchesCat && matchesGroup));
       });
       updateCount();
+      writeUrlState();
     }
     function updateChipStyles() {
       document.querySelectorAll('.chip').forEach(chip => {
@@ -360,8 +441,38 @@
       const categories = [...document.querySelectorAll('.config-cat:checked')].map(cb => cb.value);
       localStorage.setItem('yomi_config', JSON.stringify({ categories, groupOnly: document.getElementById('config-group-only').checked }));
     }
+    function readUrlConfig() {
+      const p = new URLSearchParams(location.search);
+      const q = p.get('q');
+      const sort = p.get('sort');
+      const cats = p.get('cats');
+      const group = p.get('group');
+      const chat = p.get('chat');
+      if (!q && !sort && !cats && !group && !chat) return null;
+      const base = loadConfig();
+      const categories = cats ? cats.split(',').filter(Boolean) : base.categories;
+      return { q: q || '', sort: sort || base.sort || 'unread', categories, groupOnly: group === '1', chat };
+    }
+    function writeUrlState() {
+      const p = new URLSearchParams();
+      const q = document.getElementById('search').value.trim();
+      const sort = document.getElementById('sort').value;
+      const cats = [...document.querySelectorAll('.config-cat:checked')].map(cb => cb.value).join(',');
+      const group = document.getElementById('config-group-only').checked ? '1' : '0';
+      const chat = new URLSearchParams(location.search).get('chat');
+      if (q) p.set('q', q);
+      if (sort !== 'unread') p.set('sort', sort);
+      if (cats !== 'Family,Work,Promo,Official,Group,Personal,Other') p.set('cats', cats);
+      if (group === '1') p.set('group', '1');
+      if (chat) p.set('chat', chat);
+      const qs = p.toString();
+      const newUrl = qs ? `${location.pathname}?${qs}` : location.pathname;
+      history.replaceState(null, '', newUrl);
+    }
     function applyConfig() {
-      const cfg = loadConfig();
+      const cfg = readUrlConfig() || loadConfig();
+      document.getElementById('search').value = cfg.q || '';
+      document.getElementById('sort').value = cfg.sort || 'unread';
       document.querySelectorAll('.config-cat').forEach(cb => cb.checked = cfg.categories.includes(cb.value));
       document.getElementById('config-group-only').checked = cfg.groupOnly;
       updateChipStyles();
@@ -451,32 +562,52 @@
 
     function renderContent(m, chatId) {
       const type = String(m.mediaType || '').toLowerCase();
-      if (type === 'image' && m.mediaFile) {
-        const src = `media/${chatId}/${m.mediaFile}`;
-        return `<img class="media-img" src="${encodeURI(src)}" alt="image" loading="lazy" onclick="openLightbox(this.src)" onerror="this.outerHTML='<span class=\\'text-null\\'>[image unavailable]</span>'">`;
+      if (type === 'image') {
+        const src = mediaSrc(m, chatId);
+        if (!src) return '<span class="text-null">[image unavailable]</span>';
+        return `<img class="media-img" src="${encodeURI(src)}" alt="image" loading="lazy" onclick="openLightbox(this.src)" onerror="this.outerHTML='<span class=\"text-null\">[image unavailable]</span>'">`;
       }
-      if (type === 'video' && m.mediaFile) {
-        const src = `media/${chatId}/${m.mediaFile}`;
-        return `<video class="media-video" src="${encodeURI(src)}" controls preload="metadata" onerror="this.outerHTML='<span class=\\'media-placeholder\\'>[video unavailable]</span>'"></video>`;
+      if (type === 'video') {
+        const src = mediaSrc(m, chatId);
+        if (!src) return '<span class="media-placeholder">[video unavailable]</span>';
+        return `<video class="media-video" src="${encodeURI(src)}" controls preload="metadata" onerror="this.outerHTML='<span class=\"media-placeholder\">[video unavailable]</span>'"></video>`;
       }
-      if (type === 'audio' && m.mediaFile) {
-        const src = `media/${chatId}/${m.mediaFile}`;
-        return `<audio class="media-audio" src="${encodeURI(src)}" controls preload="metadata" onerror="this.outerHTML='<span class=\\'media-placeholder\\'>[audio unavailable]</span>'"></audio>`;
+      if (type === 'audio') {
+        const src = mediaSrc(m, chatId);
+        if (!src) return '<span class="media-placeholder">[audio unavailable]</span>';
+        return `<audio class="media-audio" src="${encodeURI(src)}" controls preload="metadata" onerror="this.outerHTML='<span class=\"media-placeholder\">[audio unavailable]</span>'"></audio>`;
       }
       if (type === 'file') {
-        if (m.mediaFile) {
-          const src = `media/${chatId}/${m.mediaFile}`;
-          const name = m.mediaFile.split('/').pop();
-          return `<a class="media-file" href="${encodeURI(src)}" download target="_blank" rel="noopener">⬇ ${escapeHtml(name)}</a>`;
+        const src = mediaSrc(m, chatId);
+        if (src) {
+          const name = m.mediaFile ? m.mediaFile.split('/').pop() : 'download';
+          return `<a class="media-file" href="${encodeURI(src)}" download="${escapeHtml(name)}" target="_blank" rel="noopener">⬇ ${escapeHtml(name)}</a>`;
         }
         return '<span class="media-placeholder">[file]</span>';
       }
-      if (type) return `<span class="media-placeholder">[${escapeHtml(type)}]</span>`;
-      if (m.text == null) return '<span class="text-null">(no text)</span>';
-      return `<div class="text">${escapeHtml(m.text)}</div>`;
+      if (type) {
+        if (type === 'unavailable' && (m.e2eeDecrypted === false || m.e2eeIntegrityVerified === false)) {
+          return '<span class="media-placeholder">[E2EE locked]</span>';
+        }
+        return `<span class="media-placeholder">[${escapeHtml(type)}]</span>`;
+      }
+      if (m.text == null) {
+        if (m.e2eeDecrypted === false || m.e2eeIntegrityVerified === false) {
+          return '<span class="media-placeholder">[E2EE locked]</span>';
+        }
+        return '<span class="text-null">(no text)</span>';
+      }
+      return `<div class="text">${linkify(m.text)}</div>`;
     }
     function escapeHtml(s) {
       return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+    function linkify(s) {
+      return String(s).replace(/\\n/g, '\n').split(/(https?:\/\/[^\s<>"'{}|\\^`\[\]]+)/gi).map(part =>
+        /^https?:\/\//i.test(part)
+          ? `<a href="${escapeHtml(part)}" target="_blank" rel="noopener">${escapeHtml(part)}</a>`
+          : escapeHtml(part)
+      ).join('');
     }
 
     const lightbox = document.getElementById('lightbox');

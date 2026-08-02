@@ -7,21 +7,44 @@
   <style>
     :root { --bg: #f8fafc; --card: #fff; --text: #0f172a; --muted: #64748b; --accent: #06b6d4; --danger: #ef4444; }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
-    header { background: #0f172a; color: #fff; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
-    h1 { margin: 0; font-size: 1.25rem; }
-    main { max-width: 700px; margin: 1.5rem auto; padding: 0 1rem; }
-    .back { color: #fff; text-decoration: none; font-size: .9rem; }
+    html, body { height: 100%; margin: 0; overflow: hidden; }
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+    header { background: #0f172a; color: #fff; padding: 0.5rem 1rem; display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-shrink: 0; }
+    h1 { margin: 0; font-size: 1rem; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    main { max-width: 700px; width: 100%; margin: 0 auto; padding: 0 1rem; flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+    .back { color: #fff; text-decoration: none; font-size: .85rem; white-space: nowrap; }
     .back:hover { text-decoration: underline; }
-    .chat { background: var(--card); border-radius: .5rem; padding: 1rem; box-shadow: 0 1px 2px rgba(15,23,42,.05); }
-    .chat-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+    .refetch-btn { background: #0ea5e9; color: #0f172a; border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
+    .refetch-btn:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; }
+    .msg-search { padding: 4px 8px; border: 1px solid #334155; border-radius: 6px; background: #0f172a; color: #fff; font-size: 0.85rem; min-width: 120px; max-width: 180px; }
+    .msg-search::placeholder { color: #94a3b8; }
+    .message-match { background: #fef9c3 !important; border-color: #f59e0b !important; }
+    .chat { background: var(--card); border-radius: .5rem; padding: 0.75rem; box-shadow: 0 1px 2px rgba(15,23,42,.05); flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .day-header {
+      text-align: center;
+      color: #94a3b8;
+      font-size: .75rem;
+      font-weight: 600;
+      margin: .75rem 0 .5rem;
+      position: relative;
+    }
+    .day-header::before, .day-header::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: calc(50% - 3.5rem);
+      height: 1px;
+      background: #e2e8f0;
+    }
+    .day-header::before { left: 0; }
+    .day-header::after { right: 0; }
     .message {
-      padding: 0.6rem 0.75rem;
+      padding: 0.5rem 0.625rem;
       background: #fff;
       border: 1px solid #e2e8f0;
       border-left: 3px solid var(--accent);
       border-radius: 0 0.5rem 0.5rem 0;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.4rem;
       box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
@@ -40,6 +63,8 @@
     .media-placeholder { color: #64748b; font-style: italic; font-size: .85rem; }
     .error { color: #ef4444; }
     #status { color: var(--muted); padding: 1rem; }
+    #loader { color: var(--muted); padding: .5rem; text-align: center; font-size: .85rem; flex-shrink: 0; }
+    #messages { flex: 1; overflow-y: auto; }
     #lightbox {
       position: fixed;
       inset: 0;
@@ -72,20 +97,235 @@
       cursor: pointer;
     }
     #lightbox .close:hover { background: #334155; }
+    #scroll-ctrls { position: fixed; right: 1rem; bottom: 5rem; display: flex; flex-direction: column; gap: 0.35rem; z-index: 1000; }
+    #scroll-ctrls button { padding: 0.35rem 0.6rem; border: none; border-radius: 0.375rem; background: #0f172a; color: #fff; font-size: 0.75rem; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.2); opacity: 0.75; transition: opacity .15s; }
+    #scroll-ctrls button:hover { opacity: 1; }
+    #status-bar { display: none; background: #0f172a; color: #fff; padding: .25rem .75rem; text-align: center; font-size: .8rem; flex-shrink: 0; }
+    #status-bar.active { display: block; }
+    #reply-form { display: flex; gap: 0.5rem; padding: 0.75rem; background: #f8fafc; border-top: 1px solid #e2e8f0; position: sticky; bottom: 0; }
+    #reply-input { flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.375rem; font-size: 0.9rem; resize: none; min-height: 2.5rem; max-height: 8rem; }
+    #reply-input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+    #reply-send { padding: 0.5rem 1rem; border: none; border-radius: 0.375rem; background: var(--accent); color: #fff; font-size: 0.9rem; cursor: pointer; white-space: nowrap; }
+    #reply-send:hover { opacity: 0.9; }
+    #reply-send:disabled { opacity: 0.5; cursor: not-allowed; }
   </style>
 </head>
 <body>
   <header>
     <a class="back" href="/apps/yomi/">&larr; Back</a>
-    <h1>LINE Conversation</h1>
-    <span></span>
+    <h1 id="chat-name">LINE Conversation</h1>
+    <input type="search" id="msg-search" class="msg-search" placeholder="Find in chat…" autocomplete="off">
+    <button id="refetch" class="refetch-btn" title="Refresh this conversation from LINE">Refresh</button>
   </header>
+  <div id="status-bar"></div>
   <main id="app"><p id="status">Loading…</p></main>
+  <form id="reply-form">
+    <textarea id="reply-input" placeholder="Type a message…" rows="1"></textarea>
+    <button type="submit" id="reply-send">Send</button>
+  </form>
   <div id="lightbox" role="dialog" aria-modal="true" aria-label="Full-size image">
     <button id="lightbox-close" class="close" type="button" aria-label="Close">×</button>
+    <button id="lightbox-prev" class="close" type="button" aria-label="Previous image" style="right:auto;left:1rem">‹</button>
+    <button id="lightbox-next" class="close" type="button" aria-label="Next image">›</button>
     <img id="lightbox-img" src="" alt="Full-size image">
   </div>
+  <div id="scroll-ctrls" aria-label="Message scroll controls">
+    <button type="button" data-dir="top" aria-label="Oldest messages">Top</button>
+    <button type="button" data-dir="up" aria-label="Page up">Up</button>
+    <button type="button" data-dir="down" aria-label="Page down">Down</button>
+    <button type="button" data-dir="last" aria-label="Newest messages">Last</button>
+  </div>
   <script>
+    const PAGE_LIMIT = 50;
+    let allMessages = [];
+    let oldestCursor = null;
+    let newestCursor = null;
+    let loading = false;
+    let exhausted = false;
+
+    function mediaSrc(m, chatId) {
+      if (m.mediaFile) return `media/${chatId}/${m.mediaFile}`;
+      if (m.id) return `/api/yomi/media/${chatId}/${m.id}`;
+      return null;
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+    function linkify(s) {
+      return String(s).replace(/\\n/g, '\n').split(/(https?:\/\/[^\s<>"'{}|\\^`\[\]]+)/gi).map(part =>
+        /^https?:\/\//i.test(part)
+          ? `<a href="${escapeHtml(part)}" target="_blank" rel="noopener">${escapeHtml(part)}</a>`
+          : escapeHtml(part)
+      ).join('');
+    }
+
+    function dayLabel(ts) {
+      const d = new Date(ts);
+      return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' });
+    }
+
+    function renderContent(m, chatId) {
+      const type = String(m.mediaType || '').toLowerCase();
+      if (type === 'image') {
+        const src = mediaSrc(m, chatId);
+        if (!src) return '<span class="text-null">[image unavailable]</span>';
+        return `<img class="media-img" src="${encodeURI(src)}" alt="image" loading="lazy" onclick="openLightbox(this.src)" onerror="this.outerHTML='<span class=\"text-null\">[image unavailable]</span>'">`;
+      }
+      if (type === 'video') {
+        const src = mediaSrc(m, chatId);
+        if (!src) return '<span class="media-placeholder">[video unavailable]</span>';
+        return `<video class="media-video" src="${encodeURI(src)}" controls preload="metadata" onerror="this.outerHTML='<span class=\"media-placeholder\">[video unavailable]</span>'"></video>`;
+      }
+      if (type === 'audio') {
+        const src = mediaSrc(m, chatId);
+        if (!src) return '<span class="media-placeholder">[audio unavailable]</span>';
+        return `<audio class="media-audio" src="${encodeURI(src)}" controls preload="metadata" onerror="this.outerHTML='<span class=\"media-placeholder\">[audio unavailable]</span>'"></audio>`;
+      }
+      if (type === 'file') {
+        const src = mediaSrc(m, chatId);
+        if (src) {
+          const name = m.mediaFile ? m.mediaFile.split('/').pop() : 'download';
+          return `<a class="media-file" href="${encodeURI(src)}" download="${escapeHtml(name)}" target="_blank" rel="noopener">⬇ ${escapeHtml(name)}</a>`;
+        }
+        return '<span class="media-placeholder">[file]</span>';
+      }
+      if (type) {
+        if (type === 'unavailable' && (m.e2eeDecrypted === false || m.e2eeIntegrityVerified === false)) {
+          return '<span class="media-placeholder">[E2EE locked]</span>';
+        }
+        return `<span class="media-placeholder">[${escapeHtml(type)}]</span>`;
+      }
+      if (m.text == null) {
+        if (m.e2eeDecrypted === false || m.e2eeIntegrityVerified === false) {
+          return '<span class="media-placeholder">[E2EE locked]</span>';
+        }
+        return '<span class="text-null">(no text)</span>';
+      }
+      return `<div class="text">${linkify(m.text)}</div>`;
+    }
+
+    function createMessageEl(m, chatId) {
+      const bubble = document.createElement('div');
+      bubble.className = 'message';
+      if (m.id) bubble.dataset.id = m.id;
+      const time = m.deliveredTime ? ' · ' + new Date(m.deliveredTime).toLocaleString() : '';
+      bubble.innerHTML = `
+        <div class="meta">${escapeHtml(m.fromName || m.from || 'Unknown')}${time}</div>
+        ${renderContent(m, chatId)}
+      `;
+      return bubble;
+    }
+
+    async function fetchMessages(chatId, before) {
+      let url = `/api/yomi/messages?chat=${encodeURIComponent(chatId)}&limit=${PAGE_LIMIT}`;
+      if (before) url += `&before=${encodeURIComponent(before)}`;
+      const res = await fetch(url, { credentials: 'include' });
+      if (!res.ok) throw new Error('Messages ' + res.status);
+      const { messages } = await res.json();
+      return messages || [];
+    }
+
+    function appendMessages(messages, chatId, toStart) {
+      const panel = document.getElementById('messages');
+      if (!panel) return;
+      const sorted = [...messages].sort((a, b) => a.deliveredTime - b.deliveredTime);
+      let currentDay = null;
+      const frag = document.createDocumentFragment();
+      for (const m of sorted) {
+        const day = m.deliveredTime ? dayLabel(m.deliveredTime) : null;
+        if (day && day !== currentDay) {
+          const h = document.createElement('div');
+          h.className = 'day-header';
+          h.textContent = day;
+          h.dataset.day = day;
+          frag.appendChild(h);
+          currentDay = day;
+        }
+        frag.appendChild(createMessageEl(m, chatId));
+      }
+      if (toStart) {
+        const first = panel.firstChild;
+        panel.insertBefore(frag, first);
+      } else {
+        panel.appendChild(frag);
+      }
+      // dedupe by message id
+      const seen = new Set();
+      panel.querySelectorAll('.message').forEach(el => {
+        const id = el.dataset.id;
+        if (id && seen.has(id)) el.remove();
+        if (id) seen.add(id);
+      });
+    }
+
+    async function loadInitial(chatId) {
+      const app = document.getElementById('app');
+      app.innerHTML = `<div class="chat"><div id="loader">Loading…</div><div id="messages"></div></div>`;
+      try {
+        const messages = await fetchMessages(chatId);
+        const panel = document.getElementById('messages');
+        const loader = document.getElementById('loader');
+        if (!messages.length) {
+          panel.innerHTML = '<p class="text-null">No messages.</p>';
+          loader.textContent = 'No messages.';
+          exhausted = true;
+        } else {
+          messages.forEach(m => allMessages.push(m));
+          newestCursor = messages[0].deliveredTime;
+          oldestCursor = messages[messages.length - 1].deliveredTime;
+          appendMessages(messages, chatId, false);
+          // scroll to bottom to show newest
+          panel.scrollTop = panel.scrollHeight;
+          panel.addEventListener('scroll', () => {
+            if (panel.scrollTop < 150 && panel.scrollHeight > panel.clientHeight && !loading && !exhausted) {
+              loadOlder(chatId);
+            }
+          });
+        }
+        if (messages.length < PAGE_LIMIT) {
+          exhausted = true;
+          loader.textContent = 'Reached the beginning.';
+        } else {
+          loader.style.display = 'none';
+        }
+      } catch (e) {
+        app.innerHTML = `<p id="status" class="error">${escapeHtml(e.message)}</p>`;
+      }
+    }
+
+    async function loadOlder(chatId) {
+      if (loading || exhausted || !oldestCursor) return;
+      loading = true;
+      const panel = document.getElementById('messages');
+      const loader = document.getElementById('loader');
+      if (loader) { loader.textContent = 'Loading older…'; loader.style.display = ''; }
+      try {
+        const messages = await fetchMessages(chatId, oldestCursor);
+        if (!messages.length) {
+          exhausted = true;
+          if (loader) loader.textContent = 'Reached the beginning.';
+          return;
+        }
+        messages.forEach(m => allMessages.push(m));
+        oldestCursor = messages[messages.length - 1].deliveredTime;
+        const oldHeight = panel.scrollHeight;
+        appendMessages(messages, chatId, true);
+        const newHeight = panel.scrollHeight;
+        panel.scrollTop += (newHeight - oldHeight);
+        if (messages.length < PAGE_LIMIT) {
+          exhausted = true;
+          if (loader) loader.textContent = 'Reached the beginning.';
+        } else {
+          if (loader) loader.style.display = 'none';
+        }
+      } catch (e) {
+        if (loader) loader.textContent = 'Error loading older: ' + e.message;
+      } finally {
+        loading = false;
+      }
+    }
+
     async function load() {
       const params = new URLSearchParams(location.search);
       const id = params.get('chat');
@@ -95,79 +335,194 @@
         return;
       }
       try {
-        const [convRes, msgRes] = await Promise.all([
-          fetch('/apps/yomi/conversations.json', { credentials: 'include' }),
-          fetch(`/apps/yomi/messages/${id}.json`, { credentials: 'include' })
-        ]);
+        const convRes = await fetch('/api/yomi/conversations', { credentials: 'include' });
         if (!convRes.ok) throw new Error('Conversations ' + convRes.status);
-        if (!msgRes.ok) throw new Error('Messages ' + msgRes.status);
         const { conversations } = await convRes.json();
-        const { messages } = await msgRes.json();
         const conv = conversations.find(c => c.id === id);
         const title = conv?.name || id;
         document.title = `Yomi — ${title}`;
-        app.innerHTML = `<div class="chat">
-          <div class="chat-title">${escapeHtml(title)}</div>
-          <div id="messages"></div>
-        </div>`;
-        const panel = document.getElementById('messages');
-        if (!messages || !messages.length) {
-          panel.innerHTML = '<p class="text-null">No messages.</p>';
-          return;
-        }
-        const sorted = [...messages].sort((a, b) => a.deliveredTime - b.deliveredTime);
-        for (const m of sorted) {
-          const bubble = document.createElement('div');
-          bubble.className = 'message';
-          const time = m.deliveredTime ? ' · ' + new Date(m.deliveredTime).toLocaleString() : '';
-          bubble.innerHTML = `
-            <div class="meta">${escapeHtml(m.fromName || m.from || 'Unknown')}${time}</div>
-            ${renderContent(m, id)}
-          `;
-          panel.appendChild(bubble);
-        }
+        const chatName = document.getElementById('chat-name');
+        if (chatName) chatName.textContent = title;
+        await loadInitial(id);
       } catch (e) {
         app.innerHTML = `<p id="status" class="error">${escapeHtml(e.message)}</p>`;
       }
     }
-    function renderContent(m, chatId) {
-      const type = String(m.mediaType || '').toLowerCase();
-      if (type === 'image' && m.mediaFile) {
-        const src = `media/${chatId}/${m.mediaFile}`;
-        return `<img class="media-img" src="${encodeURI(src)}" alt="image" loading="lazy" onclick="openLightbox(this.src)" onerror="this.outerHTML='<span class=\\'text-null\\'>[image unavailable]</span>'">`;
-      }
-      if (type === 'video' && m.mediaFile) {
-        const src = `media/${chatId}/${m.mediaFile}`;
-        return `<video class="media-video" src="${encodeURI(src)}" controls preload="metadata" onerror="this.outerHTML='<span class=\\'media-placeholder\\'>[video unavailable]</span>'"></video>`;
-      }
-      if (type === 'audio' && m.mediaFile) {
-        const src = `media/${chatId}/${m.mediaFile}`;
-        return `<audio class="media-audio" src="${encodeURI(src)}" controls preload="metadata" onerror="this.outerHTML='<span class=\\'media-placeholder\\'>[audio unavailable]</span>'"></audio>`;
-      }
-      if (type === 'file') {
-        if (m.mediaFile) {
-          const src = `media/${chatId}/${m.mediaFile}`;
-          const name = m.mediaFile.split('/').pop();
-          return `<a class="media-file" href="${encodeURI(src)}" download target="_blank" rel="noopener">⬇ ${escapeHtml(name)}</a>`;
-        }
-        return '<span class="media-placeholder">[file]</span>';
-      }
-      if (type) return `<span class="media-placeholder">[${escapeHtml(type)}]</span>`;
-      if (m.text == null) return '<span class="text-null">(no text)</span>';
-      return `<div class="text">${escapeHtml(m.text)}</div>`;
-    }
-    function escapeHtml(s) {
-      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-    }
+
 
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightbox-img');
     const lightboxClose = document.getElementById('lightbox-close');
-    function openLightbox(src) { if (!src) return; lightboxImg.src = src; lightbox.classList.add('active'); }
+    const lightboxPrev = document.getElementById('lightbox-prev');
+    const lightboxNext = document.getElementById('lightbox-next');
+    let gallery = [];
+    let galleryIndex = -1;
+
+    function refreshGallery() {
+      gallery = [...document.querySelectorAll('.media-img')].map(img => img.src);
+    }
+    function showLightboxAt(i) {
+      if (i < 0 || i >= gallery.length) return;
+      galleryIndex = i;
+      lightboxImg.src = gallery[i];
+      lightboxPrev.hidden = i === 0;
+      lightboxNext.hidden = i === gallery.length - 1;
+      lightbox.classList.add('active');
+    }
+    function openLightbox(src) {
+      refreshGallery();
+      const i = gallery.indexOf(src);
+      showLightboxAt(i >= 0 ? i : 0);
+    }
     function closeLightbox() { lightboxImg.src = ''; lightbox.classList.remove('active'); }
     lightboxClose.addEventListener('click', closeLightbox);
-    lightbox.addEventListener('click', (e) => { if (e.target !== lightboxImg && e.target !== lightboxClose) closeLightbox(); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
+    lightboxPrev.addEventListener('click', (e) => { e.stopPropagation(); showLightboxAt(galleryIndex - 1); });
+    lightboxNext.addEventListener('click', (e) => { e.stopPropagation(); showLightboxAt(galleryIndex + 1); });
+    lightbox.addEventListener('click', (e) => { if (e.target !== lightboxImg && e.target !== lightboxClose && e.target !== lightboxPrev && e.target !== lightboxNext) closeLightbox(); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft' && !lightboxPrev.hidden) showLightboxAt(galleryIndex - 1);
+      if (e.key === 'ArrowRight' && !lightboxNext.hidden) showLightboxAt(galleryIndex + 1);
+    });
+
+    const msgSearch = document.getElementById('msg-search');
+    if (msgSearch) {
+      msgSearch.addEventListener('input', () => {
+        const term = msgSearch.value.trim().toLowerCase();
+        document.querySelectorAll('.message').forEach(el => {
+          el.classList.toggle('message-match', term.length > 0 && el.textContent.toLowerCase().includes(term));
+        });
+        if (term) {
+          const first = document.querySelector('.message-match');
+          if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+    }
+
+    const refetch = document.getElementById('refetch');
+    const chatId = new URLSearchParams(location.search).get('chat');
+    const statusBar = document.getElementById('status-bar');
+    let lastServerUpdated = null;
+    let refreshInterval = null;
+
+    async function checkForUpdates() {
+      if (!chatId) return;
+      try {
+        const res = await fetch('/api/yomi/last-updated', { credentials: 'include' });
+        if (!res.ok) return;
+        const { lastUpdated } = await res.json();
+        if (lastUpdated && lastServerUpdated && new Date(lastUpdated) > new Date(lastServerUpdated)) {
+          location.reload();
+        }
+      } catch (err) {
+        console.error('Auto-refresh check failed:', err);
+      }
+    }
+
+    function startAutoRefresh() {
+      if (refreshInterval) clearInterval(refreshInterval);
+      refreshInterval = setInterval(checkForUpdates, 30000);
+    }
+
+    async function doRefresh() {
+      if (!chatId) return;
+      if (refetch) { refetch.disabled = true; refetch.textContent = 'Refreshing...'; }
+      if (statusBar) { statusBar.textContent = 'Refreshing from LINE…'; statusBar.classList.add('active'); }
+      try {
+        const res = await fetch('/api/yomi/refresh?chat=' + encodeURIComponent(chatId), { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || res.statusText);
+        if (statusBar) statusBar.textContent = 'Updated. Reloading…';
+        location.reload();
+      } catch (err) {
+        if (statusBar) statusBar.textContent = 'Refresh failed: ' + err.message;
+        if (refetch) { refetch.disabled = false; refetch.textContent = 'Refresh'; }
+      }
+    }
+    if (refetch && chatId) {
+      refetch.addEventListener('click', doRefresh);
+    } else if (refetch) {
+      refetch.style.display = 'none';
+    }
+
+    async function initAutoRefresh() {
+      if (!chatId) return;
+      try {
+        const res = await fetch('/api/yomi/last-updated', { credentials: 'include' });
+        if (res.ok) {
+          const { lastUpdated } = await res.json();
+          lastServerUpdated = lastUpdated;
+          startAutoRefresh();
+        }
+      } catch (err) {
+        console.error('Failed to init auto-refresh:', err);
+      }
+    }
+    initAutoRefresh();
+
+    const replyForm = document.getElementById('reply-form');
+    const replyInput = document.getElementById('reply-input');
+    const replySend = document.getElementById('reply-send');
+
+    if (replyForm && chatId) {
+      replyForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = replyInput.value.trim();
+        if (!text) return;
+        replySend.disabled = true;
+        replySend.textContent = 'Sending...';
+        try {
+          const res = await fetch('/api/yomi/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chatId, text }),
+            credentials: 'include'
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) {
+            throw new Error(data.error || res.statusText);
+          }
+          replyInput.value = '';
+          if (statusBar) {
+            statusBar.textContent = 'Message sent. Refreshing…';
+            statusBar.classList.add('active');
+          }
+          setTimeout(() => location.reload(), 500);
+        } catch (err) {
+          if (statusBar) {
+            statusBar.textContent = 'Send failed: ' + err.message;
+            statusBar.classList.add('active');
+          }
+          replySend.disabled = false;
+          replySend.textContent = 'Send';
+        }
+      });
+
+      replyInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          replyForm.dispatchEvent(new Event('submit'));
+        }
+      });
+    } else if (replyForm) {
+      replyForm.style.display = 'none';
+    }
+
+    const scrollCtrls = document.getElementById('scroll-ctrls');
+    if (scrollCtrls) {
+      scrollCtrls.addEventListener('click', (e) => {
+        const btn = e.target.closest('#scroll-ctrls button');
+        if (!btn) return;
+        const panel = document.getElementById('messages');
+        if (!panel) return;
+        const dir = btn.dataset.dir;
+        const page = panel.clientHeight * 0.85;
+        if (dir === 'top') panel.scrollTo({ top: 0, behavior: 'smooth' });
+        if (dir === 'up') panel.scrollBy({ top: -page, behavior: 'smooth' });
+        if (dir === 'down') panel.scrollBy({ top: page, behavior: 'smooth' });
+        if (dir === 'last') doRefresh();
+      });
+    }
 
     load();
   </script>
