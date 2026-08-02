@@ -1,8 +1,11 @@
 ---
-description: Summarize project status — done, remaining, and next high-value work
+description: Summarize project status — current focus, done, remaining, and next high-value work
 ---
 
 When invoked with `/summarize` (or phrases like `summarize this` or `give me a summary`), produce a concise project/status summary using exactly these sections:
+
+## Working on
+1–2 lines stating the current task or focus of this session/conversation. Answer "what is being worked on right now?" — the active goal, the feature/bug/refactor in progress, or the question being investigated. If multiple threads are active, lead with the primary one and list secondary ones briefly.
 
 ## Done
 Completed items, committed changes, verified deployments, and closed issues from the current context.
