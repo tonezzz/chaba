@@ -38,6 +38,8 @@ const RACER_PROFILES = [
 ];
 let simState = { running: false, rafId: null, elapsed: 0, racers: [], speedFactor: 1, lastTs: 0, path: null };
 let highlightedRacer = null;
+let focusState = { enabled: true, manualSection: null };
+let windSystem = new WindSystem();
 
 function getMergedMarkers() {
   return Object.entries(courseData.markers || {}).map(([id, m]) => ({ id, ...m, ...(state.overrides[id] || {}) }));
@@ -118,7 +120,8 @@ function updateSections(drawables) {
   sections.forEach((s, i) => {
     const checked = !state.hidden.has(s.key) ? 'checked' : '';
     const row = document.createElement('div');
-    row.className = 'mb-2';
+    row.className = 'mb-2 section-row';
+    row.dataset.key = s.key;
     row.innerHTML = `
       <div class="flex items-center justify-between">
         <label class="flex items-center gap-2 cursor-pointer">
@@ -130,13 +133,23 @@ function updateSections(drawables) {
       <div class="text-gray-400 text-xs">${s.distance != null ? s.distance.toFixed(0) + ' m' : ''}</div>
     `;
     row.querySelector('input').onchange = (e) => {
+      e.stopPropagation();
       if (e.target.checked) state.hidden.delete(s.key); else state.hidden.add(s.key);
       saveToServer();
       render(false);
     };
-    row.querySelector('button').onclick = () => {
+    row.querySelector('button').onclick = (e) => {
+      e.stopPropagation();
       const pts = s.points.map(p => [p[0], p[1]]);
       if (pts.length) map.fitBounds(L.latLngBounds(pts).pad(0.25));
+    };
+    row.onclick = () => {
+      focusState.manualSection = s.key;
+      focusState.enabled = true;
+      const focusToggle = document.getElementById('toggle-focus-leader');
+      if (focusToggle) focusToggle.checked = true;
+      updateFocusStatus();
+      applyLeaderFocus();
     };
     row.onmouseenter = () => renderer && renderer.highlightSection(s.key);
     row.onmouseleave = () => renderer && renderer.clearHighlight();
@@ -214,50 +227,17 @@ function boatIcon(color, heading, racer = null) {
   });
 }
 
-// Enhanced wind configuration
-let windConfig = {
-  direction: 180, // Wind from direction (degrees)
-  speed: 15, // Wind speed in knots
-  gustFactor: 0.2, // Gust variability (0-1)
-  variability: 10 // Direction variability (degrees)
-};
-
+// Wind system functions (delegated to WindSystem module)
 function simWindFactor(heading) {
-  const windDir = windConfig.direction;
-  const windSpeed = windConfig.speed;
-  const gustFactor = windConfig.gustFactor;
-  const variability = windConfig.variability;
-  
-  // Add some randomness to wind direction (gusts and shifts)
-  const effectiveWindDir = windDir + (Math.random() - 0.5) * variability * 2;
-  
-  // Calculate angle difference between boat heading and wind direction
-  const angleDiff = Math.abs(((heading - effectiveWindDir + 540) % 360) - 180);
-  
-  // Base wind factor based on point of sail
-  // Upwind (close-hauled): slower, Downwind (reaching/running): faster
-  const baseFactor = 0.55 + 0.45 * (1 - Math.cos(angleDiff * Math.PI / 180));
-  
-  // Add gust effect (random speed variation)
-  const gustEffect = 1 + (Math.random() - 0.5) * gustFactor;
-  
-  // Wind speed modifier (stronger wind = faster, but with diminishing returns)
-  const speedModifier = Math.min(1.5, 0.5 + windSpeed / 20);
-  
-  return baseFactor * gustEffect * speedModifier;
+  return windSystem.simWindFactor(heading);
 }
 
 function setWind(config) {
-  if (config) {
-    windConfig = {
-      ...windConfig,
-      ...config
-    };
-  }
+  windSystem.setConfig(config);
 }
 
 function getWind() {
-  return { ...windConfig };
+  return windSystem.getConfig();
 }
 
 function startPenalty(dist) {
@@ -475,6 +455,101 @@ function currentSectionKey(r) {
   return null;
 }
 
+function updateFocusStatus() {
+  const el = document.getElementById('focus-status');
+  if (!el) return;
+  if (!focusState.enabled) {
+    el.textContent = '';
+    return;
+  }
+  if (focusState.manualSection) {
+    const sections = (renderer.lastDrawables || []).filter(d => d.kind === 'section');
+    const section = sections.find(s => s.key === focusState.manualSection);
+    el.textContent = `Focused: ${section ? (section.text || section.key) : focusState.manualSection}`;
+  } else {
+    if (!simState.racers.length) {
+      el.textContent = 'Start simulation to follow leader';
+      return;
+    }
+    const leader = simState.racers.sort((a, b) => b.distance - a.distance)[0];
+    if (leader) {
+      const section = currentSection(leader);
+      el.textContent = `Following: ${section}`;
+    } else {
+      el.textContent = 'Following: —';
+    }
+  }
+}
+
+function applyLeaderFocus() {
+  document.body.classList.toggle('leader-focus-active', focusState.enabled);
+  if (!focusState.enabled || !renderer) return;
+  
+  let targetSectionKey = focusState.manualSection;
+  let leader = null;
+  
+  if (!targetSectionKey) {
+    if (!simState.racers.length) return;
+    leader = simState.racers.sort((a, b) => b.distance - a.distance)[0];
+    if (leader) targetSectionKey = currentSectionKey(leader);
+  } else {
+    leader = simState.racers.sort((a, b) => b.distance - a.distance)[0];
+  }
+  
+  if (!targetSectionKey) return;
+  
+  const sections = (renderer.lastDrawables || []).filter(d => d.kind === 'section');
+  const targetSection = sections.find(s => s.key === targetSectionKey);
+  
+  sections.forEach(s => {
+    const isTarget = s.key === targetSectionKey;
+    const polyline = s.polyline;
+    if (polyline) {
+      const el = polyline.getElement();
+      if (el) {
+        if (el.tagName === 'path') {
+          if (isTarget) {
+            el.classList.add('leader-section');
+            el.classList.remove('dimmed-section');
+          } else {
+            el.classList.add('dimmed-section');
+            el.classList.remove('leader-section');
+          }
+        }
+      }
+    }
+  });
+  
+  // Highlight racers in target section
+  simState.racers.forEach(r => {
+    const rSectionKey = currentSectionKey(r);
+    const isTarget = rSectionKey === targetSectionKey;
+    const iconEl = r.marker.getElement();
+    if (iconEl) {
+      if (isTarget) {
+        iconEl.classList.add('leader-racer');
+        iconEl.classList.remove('dimmed-racer');
+      } else {
+        iconEl.classList.add('dimmed-racer');
+        iconEl.classList.remove('leader-racer');
+      }
+    }
+  });
+  
+  updateSectionListHighlight(targetSectionKey);
+}
+
+function updateSectionListHighlight(targetKey) {
+  const rows = document.querySelectorAll('.section-row');
+  rows.forEach(row => {
+    if (row.dataset.key === targetKey) {
+      row.classList.add('focus-section');
+    } else {
+      row.classList.remove('focus-section');
+    }
+  });
+}
+
 function highlightRacer(r) {
   clearRacerHighlight();
   highlightedRacer = r;
@@ -559,77 +634,23 @@ function setupSim() {
   document.getElementById('sim-racers').oninput = () => { stopSim(); initRacers(); };
   document.getElementById('sim-speed').oninput = (e) => { simState.speedFactor = parseFloat(e.target.value) || 1; };
   
-  // Wind configuration controls
-  const windDirSlider = document.getElementById('wind-direction');
-  const windSpeedSlider = document.getElementById('wind-speed');
-  const windGustSlider = document.getElementById('wind-gust');
-  const applyWindBtn = document.getElementById('apply-wind');
-  
-  // Update wind direction display
-  function updateWindDirectionDisplay() {
-    const dir = parseInt(windDirSlider.value);
-    document.getElementById('wind-direction-value').textContent = dir + '°';
-    
-    // Convert to compass direction
-    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-    const index = Math.round(dir / 45) % 8;
-    document.getElementById('wind-direction-label').textContent = directions[index];
-  }
-  
-  // Update wind speed display
-  function updateWindSpeedDisplay() {
-    const speed = parseInt(windSpeedSlider.value);
-    document.getElementById('wind-speed-value').textContent = speed;
-  }
-  
-  // Update wind gust display
-  function updateWindGustDisplay() {
-    const gust = parseFloat(windGustSlider.value);
-    document.getElementById('wind-gust-value').textContent = gust.toFixed(2);
-  }
-  
-  // Apply wind configuration
-  function applyWindConfig() {
-    setWind({
-      direction: parseInt(windDirSlider.value),
-      speed: parseInt(windSpeedSlider.value),
-      gustFactor: parseFloat(windGustSlider.value),
-      variability: 10 // Fixed for now
-    });
-    console.log('Wind configuration applied:', getWind());
-    // Reinitialize racers with new wind configuration
-    if (simState.running) {
-      stopSim();
-      initRacers();
+  // Set up wind system UI
+  windSystem.setupUI({
+    onApply: (config) => {
+      console.log('Wind configuration applied:', config);
+    },
+    onReinit: () => {
+      if (simState.running) {
+        stopSim();
+        initRacers();
+      }
     }
-  }
-  
-  // Set up wind control event listeners
-  if (windDirSlider) {
-    windDirSlider.oninput = updateWindDirectionDisplay;
-  }
-  if (windSpeedSlider) {
-    windSpeedSlider.oninput = updateWindSpeedDisplay;
-  }
-  if (windGustSlider) {
-    windGustSlider.oninput = updateWindGustDisplay;
-  }
-  if (applyWindBtn) {
-    applyWindBtn.onclick = applyWindConfig;
-  }
-  
-  // Initialize wind displays from current wind configuration
-  const currentWind = getWind();
-  if (windDirSlider) windDirSlider.value = currentWind.direction;
-  if (windSpeedSlider) windSpeedSlider.value = currentWind.speed;
-  if (windGustSlider) windGustSlider.value = currentWind.gustFactor;
-  updateWindDirectionDisplay();
-  updateWindSpeedDisplay();
-  updateWindGustDisplay();
+  });
   
   // Leader focus toggle
   const focusToggle = document.getElementById('toggle-focus-leader');
   if (focusToggle) {
+    focusToggle.checked = focusState.enabled;
     focusToggle.onchange = (e) => {
       focusState.enabled = e.target.checked;
       if (!focusState.enabled) {
@@ -871,6 +892,9 @@ async function loadTheme(id) {
     courseData = jsyaml.load(courseText);
     loadOverrides();
     await loadServerState();
+    
+    // Load wind configuration from course YAML
+    windSystem.loadFromCourse(courseData);
     let ThemeClass = DefaultTheme;
     if (themeId !== 'default') {
       try { ThemeClass = await loadTheme(themeId); } catch (e) { console.warn('theme load failed', e); }
@@ -886,6 +910,8 @@ async function loadTheme(id) {
     setupCourseControls();
     setupYamlEditor();
     if (renderer && renderer.theme && renderer.theme.installChrome) renderer.theme.installChrome(courseData);
+    updateFocusStatus();
+    applyLeaderFocus();
   } catch (err) {
     console.error('failed to load course data', err);
     document.getElementById('summary').textContent = 'Error loading course';

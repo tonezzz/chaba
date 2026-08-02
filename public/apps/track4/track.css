@@ -15,3 +15,26 @@
 .section-line, .course-arrow { transition: opacity 0.3s ease; }
 body.sim-active .section-line,
 body.sim-active .course-arrow { opacity: 0.25 !important; }
+
+/* Leader focus styles */
+path.leader-section {
+  stroke: #4ade80 !important;
+  stroke-width: 3 !important;
+  filter: drop-shadow(0 0 8px rgba(74,222,128,0.8));
+  opacity: 1 !important;
+}
+path.dimmed-section {
+  opacity: 0.3 !important;
+}
+body.leader-focus-active .racer-icon {
+  opacity: 0.5;
+}
+body.leader-focus-active .racer-icon.leader-racer {
+  opacity: 1;
+  transform: scale(1.1);
+}
+.section-row.focus-section {
+  background: rgba(74,222,128,0.2);
+  border-radius: 4px;
+  padding: 4px;
+}
