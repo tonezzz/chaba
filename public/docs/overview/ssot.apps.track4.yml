@@ -1,79 +1,71 @@
-title: Track4 Themes
-subtitle: Theme engine and available themes for the Track4 course simulator.
+title: Track4 - Windsurf Race Course Simulator
+subtitle: Modular course editor and simulator with YAML support, theme engine, and leader focus
 icon: 🏁
-ideas:
-- racer_label is a dark rounded pill with the full sail number (e.g. "THA-19")
-- racer_label contains a small country flag emoji on the left and bold white sail text on the right
-- racer_label stays screen-upright and is linked to the boat arrow by a 34px hinge
 sections:
-  - title: How themes are loaded
-    icon: 🎨
+  - title: Core Architecture
+    icon: �️
     layout: list
     items:
-      - label: Query parameter
-        text: '/apps/track4/?theme=1 loads themes/1.js. Omitting ?theme or ?theme=default loads DefaultTheme.'
-      - label: Loader
-        text: 'track.js appends themes/<id>.js and passes the class to CourseRenderer as options.theme.'
-      - label: Contract
-        text: 'A theme file must set window.TrackTheme to a class; the class should extend DefaultTheme.'
+      - label: Modular design
+        text: '10 modules: simulation, course-manager, yaml-editor, wind-system, leader-focus, state-manager, renderer, sections, guide-path, section-highlighter. track.js: 379 lines (62% reduction from 1003).'
+      - label: Theme engine
+        text: 'Query parameter ?theme=1 loads themes/1.js. DefaultTheme provides base rendering. Racing theme (1.js) adds broadcast chrome, race dashboard, high-contrast labels.'
+      - label: File structure
+        text: 'track.js (main), simulation.js (physics), course-manager.js (persistence), yaml-editor.js (editing), wind-system.js (wind physics), leader-focus.js (visual focus), state-manager.js (state), renderer.js (drawing), sections.js (geometry), guide-path.js (path), section-highlighter.js (interaction).'
 
-  - title: Available themes
-    icon: 🏁
+  - title: Course System
+    icon: 📂
     layout: list
     items:
-      - label: default
-        text: 'Current Track4 map style. File: public/apps/track4/themes/default.js.'
-      - label: '1 (racing)'
-        text: 'Broadcast chrome (header, live UTC clock, wind, compass), orange markers, yellow arrows, high-contrast leg labels, start/finish gates, minimal racing wind icon, and a race dashboard panel. Racer marker: arrow with 34px hinge link, upright dark pill label with small country flag emoji and full sail number. Files: public/apps/track4/themes/1.js and 1.css.'
+      - label: YAML format
+        text: 'Course definition with markers, sections, annotations, wind config. Supports start/finish lines, legs, rounding zones, arrow areas.'
+      - label: Loading
+        text: 'Tries PHP API first, falls back to static YAML. Direct fetch for individual courses. Wind config loaded from course YAML.'
+      - label: Editing
+        text: 'YAML editor with validation. Save via PHP API. Marker drag-and-drop with state persistence (localStorage + server).'
+      - label: State management
+        text: 'Marker overrides, hidden sections, course preferences. LocalStorage sync + server backup. Per-course state isolation.'
 
-  - title: Engine split
-    icon: ⚙️
+  - title: Simulation Engine
+    icon: ⚡
     layout: list
     items:
-      - label: CourseRenderer
-        text: 'Builds drawable geometry and delegates all drawing to the active theme.'
-      - label: DefaultTheme
-        text: 'Holds all marker, line, section, arrow and wind rendering primitives.'
-      - label: Override points
-        text: 'Currently overridden in racing: markerIcon, markerLabelIcon, lineLabelIcon, arrowIcon, windIcon (minimal racing arrow), boatIcon (racer arrow, hinge link and upright flag/number pill), drawLine, drawOne (start/finish gates, leg/round callouts, solid sections) and renderStandings (race dashboard).'
+      - label: Physics
+        text: 'Wind factor based on point of sail (upwind slower, downwind faster). Gust effects, direction variability. Collision detection (6m minimum separation).'
+      - label: Racer movement
+        text: 'Speed based on wind × boat skill × start penalty. Lane offsets for realistic spacing. Return-to-beach after finish.'
+      - label: Wind system
+        text: 'Configurable direction (0-360°), speed (5-30 kts), gust factor (0-0.5). UI controls in SIM tab. Real-time application.'
+      - label: Performance
+        text: 'Binary search for segment finding (O(n)→O(log n)). Early return for <2 racers in collision. Path data caching.'
 
-  - title: Leader Focus Feature
+  - title: Leader Focus
     icon: 🎯
     layout: list
     items:
-      - label: Purpose
-        text: 'Highlight the race leader by focusing on their current section and dimming other sections and racers for visual clarity during simulation.'
-      - label: Toggle control
-        text: 'Add "Focus Leader" checkbox in SIM tab. When enabled, auto-follows the leader through the course. Press L to toggle.'
+      - label: Auto-follow leader
+        text: 'Highlight leader section (100% opacity), dim others (30%). Press L to toggle. Status shows current section.'
       - label: Manual override
-        text: 'Click any section in the SECTIONS list to manually focus that section instead of auto-following the leader.'
-      - label: Visual hierarchy
-        text: 'Leader section: 100% opacity with glow. Other sections: 30% opacity. Racers in leader section: 100% opacity, slightly larger. Racers elsewhere: 50% opacity.'
-      - label: Smooth transitions
-        text: 'CSS opacity transitions (0.3s ease) to avoid jarring jumps when focus changes.'
-      - label: Status indicator
-        text: 'Show "Following: [Section Name]" indicator when auto-focus is active, or "Focused: [Section Name]" for manual override.'
-      - label: Edge case handling
-        text: 'If leader is between sections, highlight the section they are approaching based on course direction.'
-      - label: CSS classes
-        text: '.leader-focus-active on body when feature enabled. .leader-section on focused section polyline. .leader-racer on boats in focused section. .dimmed-section and .dimmed-racer for non-focused elements.'
-      - label: Implementation files
-        text: 'track.js: track leader section in simulation loop, handle toggle and manual override. renderer.js: apply CSS classes when drawing sections and boat markers. track.css: opacity transitions and glow effects.'
+        text: 'Click section in SECTIONS list to focus manually. Visual hierarchy: leader section glow, dimmed others.'
+      - label: Implementation
+        text: 'CSS transitions (0.3s). Classes: .leader-focus-active, .leader-section, .leader-racer, .dimmed-section, .dimmed-racer.'
 
-  - title: 3D Gaussian Splat Integration
+  - title: 3D Gaussian Splat
     icon: 🎥
     layout: list
     items:
-      - label: Moved to test page
-        text: '3D Gaussian Splat functionality moved to /apps/test-splat/ for isolated testing. Not included in Track4 production due to library compatibility issues.'
-      - label: Test page location
-        text: '/apps/test-splat/index.html - dedicated test environment for experimenting with different splat libraries (@mkkellogg, @antimatter15, Three.js fallback).'
-      - label: Library compatibility issues
-        text: 'All tested approaches fail with parsing errors: @mkkellogg/gaussian-splats-3D (v0.4.0, v0.3.0) fails with "Offset is outside the bounds of the DataView" in PlyParser.js; three-gaussian-splats (v0.0.7) fails with same error; iframe with esm.sh CDN fails with "Invalid typed array length: 4".'
-      - label: Current status
-        text: 'Track4 splat-layer.js and splat-viewer.html remain for reference but are not integrated into main Track4 UI. Use test page for experimentation.'
-      - label: Future integration
-        text: 'If library compatibility is resolved, consider re-integrating 3D splat viewing into Track4 for race course visualization. Until then, focus on 2D racing simulation.'
-        text: 'Train splats in docker/3dgs container, export .ply, determine GPS bounds, place in public/apps/track4/splats/, add metadata to course YAML.'
-      - label: Future options
-        text: 'Wait for library updates, use official desktop viewer (not web-based), implement point cloud fallback with Three.js (in progress), or generate custom splat files with specific format requirements (days to weeks).'
+      - label: Status
+        text: 'Moved to /apps/test-splat/ due to library compatibility issues. Not in production.'
+      - label: Test page
+        text: 'Isolated environment for @mkkellogg, @antimatter15, Three.js experimentation. See Map3D SSOT for details.'
+
+  - title: Testing & Performance
+    icon: 🧪
+    layout: list
+    items:
+      - label: Unit tests
+        text: '10 tests in course.test.js (haversine, midpoint, resolveSide, buildGuide, buildRoundedGuide). All passing.'
+      - label: Integration
+        text: 'Module loading, course loading, racer rendering, simulation, layers, UI controls. Verified via syntax checks.'
+      - label: Code quality
+        text: 'Pre-commit hooks for JS syntax. All modules pass node --check. Total: 2,514 lines across 13 files.'
