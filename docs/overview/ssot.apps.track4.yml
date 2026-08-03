@@ -6,6 +6,8 @@ sections:
     icon: ✅
     layout: list
     items:
+      - label: 2026-08-02 - Course Loading & Wind Enhancements
+        text: 'Fixed course loading with static YAML fallback (no PHP required), enhanced wind simulation with configurable direction/speed/gusts, added wind configuration UI'
       - label: 2026-08-01 - Complete Modularization
         text: 'Completed 5-module extraction, 40 tests, simulation replay, performance optimizations, comprehensive documentation'
       - label: RacerIconRenderer
@@ -69,8 +71,8 @@ sections:
     icon: ⚠️
     layout: list
     items:
-      - label: Course loading
-        text: 'PHP backend returning 502 Bad Gateway. Server infrastructure issue, not Track4 code. Course file exists at courses/tabsai-ws8-track3.yml.'
+      - label: 3D Gaussian Splat
+        text: 'Library compatibility issues with all tested approaches (@mkkellogg/gaussian-splats-3d, @antimatter15/splat, react-three-fiber). Currently disabled.'
 
   - title: Sessions
     icon: 📜
@@ -105,6 +107,38 @@ sections:
         text: 'Integration test suite at test.html with 10 automated tests. Unit tests in tests/ directory: simulation-engine.test.js (10 tests), state-manager.test.js (20 tests). Total: 40 tests passing.'
       - label: Performance
         text: 'Optimized findSegment with binary search (O(n) → O(log n)). Early return in collision detection for <2 racers. Cached path data in updateRacer.'
+
+  - title: Wind Simulation Enhancements
+    icon: 💨
+    layout: list
+    items:
+      - label: Enhanced wind model
+        text: 'Configurable wind direction (0-360°), speed (5-30 kts), gust factor (0-0.5), and direction variability. Replaces hardcoded NE wind assumption.'
+      - label: Point of sail physics
+        text: 'Wind factor now based on angle between boat heading and wind direction. Upwind (close-hauled) slower, downwind (reaching/running) faster.'
+      - label: Gust effects
+        text: 'Random gust variations affect boat speed realistically. Stronger wind = faster boats with diminishing returns above 20 kts.'
+      - label: Wind configuration UI
+        text: 'New wind controls in SIM tab: direction slider with compass display, speed slider, gust factor slider, Apply Wind button.'
+      - label: Course YAML integration
+        text: 'Wind configuration loaded from course YAML (wind.direction, wind.speed_kts, wind.gust_factor, wind.variability).'
+      - label: Real-time updates
+        text: 'Wind changes apply immediately to simulation. "Apply Wind" button restarts simulation with new wind parameters.'
+
+  - title: Course Loading Improvements
+    icon: 📂
+    layout: list
+    items:
+      - label: Static YAML fallback
+        text: 'Course loading now works without PHP backend. Tries PHP API first, falls back to static course list if server unavailable.'
+      - label: getStaticCourseList()
+        text: 'New function checks if default course file is accessible, returns known course names without requiring PHP.'
+      - label: Enhanced populateCourseList()
+        text: 'Modified to try PHP API first, then static fallback. Course dropdown now populates even without backend.'
+      - label: Direct YAML loading
+        text: 'loadCourseYaml() always worked via direct fetch - no PHP required for individual course files.'
+      - label: Course loading resolved
+        text: 'Previous 502 Bad Gateway issue resolved. Course loading now functional regardless of PHP backend status.'
 
   - title: Leader Focus Feature
     icon: 🎯

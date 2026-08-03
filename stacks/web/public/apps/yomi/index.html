@@ -19,6 +19,8 @@
     .open:hover { color: var(--accent); }
     .conv-setup { background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: .75rem; padding: 0; margin-left: .15rem; }
     .conv-setup:hover { color: var(--accent); }
+    .daily-link { background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: .75rem; padding: 0; margin-left: .15rem; text-decoration: none; }
+    .daily-link:hover { color: var(--accent); }
     .unread { background: var(--danger); color: #fff; border-radius: 999px; padding: .05rem .4rem; font-size: .7rem; font-weight: 600; min-width: 1.4rem; text-align: center; margin-left: auto; }
     .unread-0 { background: #94a3b8; }
     .category { display: inline-block; font-size: .65rem; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; padding: .05rem .35rem; border-radius: .25rem; color: #fff; margin-left: .35rem; }
@@ -70,6 +72,11 @@
     #search:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
     #refresh { padding: .5rem .75rem; border: 1px solid #cbd5e1; border-radius: .375rem; background: #fff; cursor: pointer; font-size: .9rem; }
     #refresh:hover { border-color: var(--accent); color: var(--accent); }
+    #refresh:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+    #refresh-all { padding: .5rem .75rem; border: 1px solid #cbd5e1; border-radius: .375rem; background: #fff; cursor: pointer; font-size: .9rem; }
+    #refresh-all:hover { border-color: var(--accent); color: var(--accent); }
+    #refresh-all:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+    .refresh-status { font-size: .85rem; color: var(--accent); margin-left: .5rem; }
     #sort { padding: .5rem .75rem; border: 1px solid #cbd5e1; border-radius: .375rem; background: #fff; font-size: .9rem; }
     .last-active { color: #94a3b8; font-size: .75rem; margin-left: .5rem; }
     .chat.hidden { display: none; }
@@ -156,7 +163,9 @@
       <label class="chip group-chip"><input type="checkbox" id="config-group-only"> Groups only</label>
     </div>
     <span id="count" class="count">Loading…</span>
+    <button id="refresh-all" type="button" title="Refresh all conversations from LINE">Refresh All</button>
     <button id="refresh" type="button" title="Reload page">↻</button>
+    <span id="refresh-status" class="refresh-status"></span>
   </div>
   <dialog id="edit-dialog">
     <div class="config-content">
@@ -361,6 +370,7 @@
             ${isGroup ? '<span class="group" title="Group/room chat">👥</span>' : ''}
             <a class="open" href="chat.html?chat=${c.id}" target="_blank" rel="noopener" aria-label="Open in new tab">↗</a>
             <button class="conv-setup" data-id="${c.id}" type="button" title="Edit category/group">⚙️</button>
+            <a class="daily-link" href="daily/index.html?chat=${c.id}" title="View daily summaries" aria-label="View daily summaries">📅</a>
             <span class="category category-${escapeHtml(category)}">${escapeHtml(category)}</span>
             ${lastActive}
             <span class="unread ${c.unread ? '' : 'unread-0'}">${c.unread}</span>
@@ -559,6 +569,46 @@
     document.getElementById('chips').addEventListener('click', handleChipClick);
     document.getElementById('sort').addEventListener('change', renderConversations);
     document.getElementById('refresh').addEventListener('click', () => location.reload());
+    
+    // Refresh all conversations from LINE
+    const refreshAllBtn = document.getElementById('refresh-all');
+    if (refreshAllBtn) {
+      refreshAllBtn.addEventListener('click', async () => {
+        if (refreshAllBtn.disabled) return;
+        
+        const statusEl = document.getElementById('refresh-status');
+        refreshAllBtn.disabled = true;
+        refreshAllBtn.textContent = 'Fetching...';
+        if (statusEl) statusEl.textContent = 'Fetching conversations from LINE...';
+        
+        try {
+          // Step 1: Fetch from LINE
+          const fetchRes = await fetch('/api/yomi/fetch', { method: 'POST' });
+          const fetchData = await fetchRes.json();
+          if (!fetchRes.ok || !fetchData.ok) {
+            throw new Error(fetchData.error || 'Fetch failed');
+          }
+          
+          refreshAllBtn.textContent = 'Processing...';
+          if (statusEl) statusEl.textContent = 'Processing and summarizing...';
+          
+          // Step 2: Process and summarize
+          const processRes = await fetch('/api/yomi/process', { method: 'POST' });
+          const processData = await processRes.json();
+          if (!processRes.ok || !processData.ok) {
+            throw new Error(processData.error || 'Process failed');
+          }
+          
+          if (statusEl) statusEl.textContent = 'Updated! Reloading...';
+          setTimeout(() => location.reload(), 1000);
+        } catch (err) {
+          if (statusEl) statusEl.textContent = 'Failed: ' + err.message;
+          refreshAllBtn.disabled = false;
+          refreshAllBtn.textContent = 'Refresh All';
+          setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 5000);
+        }
+      });
+    }
 
     function renderContent(m, chatId) {
       const type = String(m.mediaType || '').toLowerCase();

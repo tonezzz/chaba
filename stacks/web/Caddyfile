@@ -4,6 +4,12 @@
 	@tony_omen_temp_bare path /apps/tony-omen-temp
 	redir @tony_omen_temp_bare /apps/tony-omen-temp/ 308
 
+	# Docs serving for health check config
+	handle /docs/* {
+		root * /srv/docs
+		file_server
+	}
+
 	# Activepieces root-level assets (SPA loads from / due to original base href)
 	@ap_assets path /assets /assets/*
 	handle @ap_assets {
@@ -24,6 +30,12 @@
 	}
 
 	file_server
+
+	# Docs serving for health check config
+	handle /docs/* {
+		root * /srv/docs
+		file_server
+	}
 
 	# Pretty URLs: /cameras → /cameras.json
 	rewrite /cameras /cameras.json
@@ -95,6 +107,25 @@
 		reverse_proxy host.docker.internal:3001
 	}
 
+	handle /api/weaviate-search/* {
+		uri strip_prefix /api/weaviate-search
+		reverse_proxy weaviate-search:3002
+	}
+
+	handle /api/weaviate/* {
+		uri strip_prefix /api/weaviate
+		reverse_proxy weaviate:8080
+	}
+
+	handle /api/gpu/* {
+		reverse_proxy status-api:8000
+	}
+
+	handle /docs/overview/ssot.health.yml {
+		root * /home/tony/CascadeProjects/chaba/docs/overview
+		file_server
+	}
+
 	handle /api/* {
 		reverse_proxy status-api:8000
 	}
@@ -102,19 +133,6 @@
 	handle /frigate/* {
 		uri strip_prefix /frigate
 		reverse_proxy frigate:5000
-	}
-
-	handle /tony-omen/apps/imagen/api/* {
-		uri strip_prefix /tony-omen/apps/imagen/api
-		reverse_proxy imagen-inference:8000
-	}
-
-	handle /tony-omen/apps/imagen {
-		redir /tony-omen/apps/imagen/ 308
-	}
-
-	handle /tony-omen/apps/imagen/* {
-		file_server
 	}
 
 	@tony_omen_exact path /tony-omen /tony-omen/
@@ -189,16 +207,19 @@
 		reverse_proxy host.docker.internal:3001
 	}
 
-	handle /apps/imagen {
-		redir /apps/imagen/ 308
+	@gpu_monitor_noslash path /apps/gpu-monitor
+	redir @gpu_monitor_noslash /apps/gpu-monitor/ 308
+
+	handle_path /apps/gpu-monitor/* {
+		root * /srv/public/apps/gpu-monitor
+		file_server
 	}
 
-	handle_path /apps/imagen/api/* {
-		reverse_proxy imagen-inference:8000
-	}
+	@health_check_noslash path /apps/health-check
+	redir @health_check_noslash /apps/health-check/ 308
 
-	handle_path /apps/imagen/* {
-		root * /srv/public/tony-omen/apps/imagen
+	handle_path /apps/health-check/* {
+		root * /srv/public/apps/health-check
 		file_server
 	}
 
@@ -266,6 +287,21 @@
 		file_server
 	}
 
+	@weaviate_search_noslash path /apps/weaviate-search
+	redir @weaviate_search_noslash /apps/weaviate-search/ 308
+
+	handle_path /apps/weaviate-search/* {
+		root * /srv/public/apps/weaviate-search
+		file_server
+	}
+
+	@netdata_noslash path /apps/netdata
+	redir @netdata_noslash /apps/netdata/ 308
+
+	handle_path /apps/netdata/* {
+		reverse_proxy netdata:19999
+	}
+
 }
 
 # chaba.h3 local dev root
@@ -287,6 +323,33 @@
 	handle /apps/txt2vid/api/* {
 		uri strip_prefix /apps/txt2vid/api
 		reverse_proxy txt2vid-inference:8000
+	}
+
+	handle /api/gpu/* {
+		reverse_proxy status-api:8000
+	}
+
+	@gpu_monitor_noslash path /apps/gpu-monitor
+	redir @gpu_monitor_noslash /apps/gpu-monitor/ 308
+
+	handle_path /apps/gpu-monitor/* {
+		root * /srv/public/apps/gpu-monitor
+		file_server
+	}
+
+	@health_check_noslash path /apps/health-check
+	redir @health_check_noslash /apps/health-check/ 308
+
+	handle_path /apps/health-check/* {
+		root * /srv/public/apps/health-check
+		file_server
+	}
+
+	@netdata_noslash path /apps/netdata
+	redir @netdata_noslash /apps/netdata/ 308
+
+	handle_path /apps/netdata/* {
+		reverse_proxy netdata:19999
 	}
 
 	file_server

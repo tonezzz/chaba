@@ -16,6 +16,8 @@
     .back:hover { text-decoration: underline; }
     .refetch-btn { background: #0ea5e9; color: #0f172a; border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
     .refetch-btn:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; }
+    .refetch-force { background: #f59e0b; color: #0f172a; border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-weight: 600; font-size: 0.85rem; margin-left: 0.5rem; }
+    .refetch-force:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; }
     .msg-search { padding: 4px 8px; border: 1px solid #334155; border-radius: 6px; background: #0f172a; color: #fff; font-size: 0.85rem; min-width: 120px; max-width: 180px; }
     .msg-search::placeholder { color: #94a3b8; }
     .message-match { background: #fef9c3 !important; border-color: #f59e0b !important; }
@@ -116,6 +118,7 @@
     <h1 id="chat-name">LINE Conversation</h1>
     <input type="search" id="msg-search" class="msg-search" placeholder="Find in chat…" autocomplete="off">
     <button id="refetch" class="refetch-btn" title="Refresh this conversation from LINE">Refresh</button>
+    <button id="refetch-force" class="refetch-force" title="Force refresh (bypass cache)">Force</button>
   </header>
   <div id="status-bar"></div>
   <main id="app"><p id="status">Loading…</p></main>
@@ -424,25 +427,48 @@
       refreshInterval = setInterval(checkForUpdates, 30000);
     }
 
-    async function doRefresh() {
+    async function doRefresh(force = false) {
       if (!chatId) return;
-      if (refetch) { refetch.disabled = true; refetch.textContent = 'Refreshing...'; }
-      if (statusBar) { statusBar.textContent = 'Refreshing from LINE…'; statusBar.classList.add('active'); }
+      if (refetch) { refetch.disabled = true; refetch.textContent = 'Fetching...'; }
+      const forceBtn = document.getElementById('refetch-force');
+      if (forceBtn) { forceBtn.disabled = true; }
+      if (statusBar) { statusBar.textContent = 'Fetching from LINE…'; statusBar.classList.add('active'); }
+      
       try {
-        const res = await fetch('/api/yomi/refresh?chat=' + encodeURIComponent(chatId), { method: 'POST' });
-        const data = await res.json();
-        if (!res.ok || !data.ok) throw new Error(data.error || res.statusText);
+        // Step 1: Fetch from LINE
+        const fetchUrl = '/api/yomi/fetch?chat=' + encodeURIComponent(chatId);
+        const fetchRes = await fetch(fetchUrl, { method: 'POST' });
+        const fetchData = await fetchRes.json();
+        if (!fetchRes.ok || !fetchData.ok) throw new Error(fetchData.error || 'Fetch failed');
+        
+        if (statusBar) statusBar.textContent = 'Processing...';
+        if (refetch) refetch.textContent = 'Processing...';
+        
+        // Step 2: Process and summarize
+        const processUrl = '/api/yomi/process?chat=' + encodeURIComponent(chatId) + (force ? '&force=true' : '');
+        const processRes = await fetch(processUrl, { method: 'POST' });
+        const processData = await processRes.json();
+        if (!processRes.ok || !processData.ok) throw new Error(processData.error || 'Process failed');
+        
         if (statusBar) statusBar.textContent = 'Updated. Reloading…';
         location.reload();
       } catch (err) {
         if (statusBar) statusBar.textContent = 'Refresh failed: ' + err.message;
         if (refetch) { refetch.disabled = false; refetch.textContent = 'Refresh'; }
+        if (forceBtn) { forceBtn.disabled = false; }
       }
     }
     if (refetch && chatId) {
-      refetch.addEventListener('click', doRefresh);
+      refetch.addEventListener('click', () => doRefresh(false));
     } else if (refetch) {
       refetch.style.display = 'none';
+    }
+    
+    const forceBtn = document.getElementById('refetch-force');
+    if (forceBtn && chatId) {
+      forceBtn.addEventListener('click', () => doRefresh(true));
+    } else if (forceBtn) {
+      forceBtn.style.display = 'none';
     }
 
     async function initAutoRefresh() {

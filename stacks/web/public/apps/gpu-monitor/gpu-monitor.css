@@ -1,0 +1,480 @@
+:root {
+  --gpu-bg-primary: #0f172a;
+  --gpu-bg-secondary: #1e293b;
+  --gpu-bg-tertiary: #334155;
+  --gpu-text-primary: #f1f5f9;
+  --gpu-text-secondary: #94a3b8;
+  --gpu-accent: #3b82f6;
+  --gpu-success: #22c55e;
+  --gpu-warning: #f59e0b;
+  --gpu-error: #ef4444;
+  --gpu-border: #475569;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--gpu-bg-primary);
+  color: var(--gpu-text-primary);
+  min-height: 100vh;
+}
+
+/* Top Navigation */
+.gpu-topnav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  background: var(--gpu-bg-secondary);
+  border-bottom: 1px solid var(--gpu-border);
+}
+
+.gpu-topnav-link {
+  color: var(--gpu-text-secondary);
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: color 0.2s;
+}
+
+.gpu-topnav-link:hover {
+  color: var(--gpu-accent);
+}
+
+.gpu-topnav-sep {
+  color: var(--gpu-border);
+  font-size: 0.75rem;
+}
+
+.gpu-topnav-title {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--gpu-text-primary);
+}
+
+/* Main App */
+.gpu-app {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+/* Header */
+.gpu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.gpu-header-main h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.gpu-header-main p {
+  color: var(--gpu-text-secondary);
+  font-size: 0.875rem;
+}
+
+.gpu-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.gpu-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--gpu-text-secondary);
+}
+
+.gpu-check input {
+  cursor: pointer;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--gpu-border);
+  background: var(--gpu-bg-tertiary);
+  color: var(--gpu-text-primary);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+button:hover {
+  background: var(--gpu-accent);
+  border-color: var(--gpu-accent);
+}
+
+.gpu-btn-netdata {
+  background: var(--gpu-accent);
+  border-color: var(--gpu-accent);
+  text-decoration: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.gpu-btn-netdata:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+/* Content Grid */
+.gpu-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1rem;
+}
+
+/* Cards */
+.gpu-card {
+  background: var(--gpu-bg-secondary);
+  border: 1px solid var(--gpu-border);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+}
+
+.gpu-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--gpu-text-primary);
+}
+
+/* GPU Overview */
+.gpu-overview {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+.gpu-stat {
+  background: var(--gpu-bg-tertiary);
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+}
+
+.gpu-stat-label {
+  font-size: 0.75rem;
+  color: var(--gpu-text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.gpu-stat-value {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--gpu-text-primary);
+}
+
+.gpu-stat-value.highlight {
+  color: var(--gpu-accent);
+}
+
+/* VRAM Usage */
+.gpu-vram-bar {
+  background: var(--gpu-bg-tertiary);
+  border-radius: 0.375rem;
+  height: 2rem;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+.gpu-vram-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gpu-accent), var(--gpu-success));
+  transition: width 0.5s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+}
+
+.gpu-vram-fill.warning {
+  background: linear-gradient(90deg, var(--gpu-warning), var(--gpu-error));
+}
+
+.gpu-vram-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  color: var(--gpu-text-secondary);
+}
+
+/* GPU Processes */
+.gpu-process-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.gpu-process-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--gpu-bg-tertiary);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.gpu-process-name {
+  font-family: monospace;
+  color: var(--gpu-text-primary);
+}
+
+.gpu-process-pid {
+  color: var(--gpu-text-secondary);
+  font-size: 0.75rem;
+  margin-right: 0.5rem;
+}
+
+.gpu-process-memory {
+  font-weight: 600;
+  color: var(--gpu-accent);
+}
+
+/* GPU Queue */
+.gpu-queue-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.gpu-queue-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.gpu-queue-badge.running {
+  background: var(--gpu-success);
+  color: white;
+}
+
+.gpu-queue-badge.queued {
+  background: var(--gpu-warning);
+  color: white;
+}
+
+.gpu-queue-badge.idle {
+  background: var(--gpu-bg-tertiary);
+  color: var(--gpu-text-secondary);
+}
+
+.gpu-queue-job {
+  background: var(--gpu-bg-tertiary);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.gpu-queue-job-type {
+  font-weight: 600;
+}
+
+.gpu-queue-job-meta {
+  color: var(--gpu-text-secondary);
+  font-size: 0.75rem;
+}
+
+/* Quick Actions */
+.gpu-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.gpu-btn {
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.gpu-btn-warning {
+  background: var(--gpu-warning);
+  color: white;
+}
+
+.gpu-btn-warning:hover {
+  background: #d97706;
+}
+
+.gpu-btn-success {
+  background: var(--gpu-success);
+  color: white;
+}
+
+.gpu-btn-success:hover {
+  background: #16a34a;
+}
+
+.gpu-action-status {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  min-height: 1.25rem;
+}
+
+.gpu-action-status.success {
+  color: var(--gpu-success);
+}
+
+.gpu-action-status.error {
+  color: var(--gpu-error);
+}
+
+.gpu-action-status.info {
+  color: var(--gpu-accent);
+}
+
+/* Loading State */
+.gpu-loading {
+  color: var(--gpu-text-secondary);
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 1rem;
+}
+
+/* Footer */
+.gpu-footer {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gpu-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+  color: var(--gpu-text-secondary);
+}
+
+.gpu-refresh-status {
+  font-size: 0.75rem;
+}
+
+.gpu-refresh-status.refreshing {
+  color: var(--gpu-accent);
+}
+
+.gpu-refresh-status.error {
+  color: var(--gpu-error);
+}
+
+/* Background Processing Card */
+.gpu-card-processing {
+  grid-column: span 2;
+}
+
+.gpu-processing {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.gpu-processing-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.gpu-processing-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.gpu-processing-badge.idle {
+  background: var(--gpu-bg);
+  color: var(--gpu-text-secondary);
+}
+
+.gpu-processing-badge.active {
+  background: var(--gpu-accent);
+  color: var(--gpu-bg);
+}
+
+.gpu-processing-badge.success {
+  background: var(--gpu-success);
+  color: var(--gpu-bg);
+}
+
+.gpu-processing-badge.unknown {
+  background: var(--gpu-warning);
+  color: var(--gpu-bg);
+}
+
+.gpu-processing-progress {
+  margin-top: 0.5rem;
+}
+
+.gpu-processing-progress-bar {
+  height: 6px;
+  background: var(--gpu-bg);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.25rem;
+}
+
+.gpu-processing-progress-fill {
+  height: 100%;
+  background: var(--gpu-accent);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.gpu-processing-progress-text {
+  font-size: 0.75rem;
+  color: var(--gpu-text-secondary);
+  text-align: center;
+}
+
+.gpu-processing-meta {
+  font-size: 0.75rem;
+  color: var(--gpu-text-secondary);
+  margin-top: 0.25rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .gpu-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .gpu-header {
+    flex-direction: column;
+  }
+  
+  .gpu-toolbar {
+    width: 100%;
+  }
+}
