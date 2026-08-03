@@ -1,0 +1,121 @@
+title: Weaviate Vector Database
+description: Vector database configuration and status for semantic search and RAG pipelines
+version: 1
+status: testing
+
+container:
+  name: weaviate
+  image: semitechnologies/weaviate:latest
+  version: 1.38.8
+  ports:
+    internal: 8080
+    external: 8082
+  status: running
+  deployment: docker
+
+configuration:
+  authentication:
+    anonymous_access: true
+  persistence:
+    path: /var/lib/weaviate
+    volume: weaviate_data
+  vectorizer:
+    default: none
+    modules: []
+
+collection:
+  name: SSOTDocument
+  description: Single Source of Truth documents for chaba project
+  vector_index_type: hnsw
+  distance: cosine
+  properties:
+    - name: title
+      type: text
+      description: Document title or filename
+    - name: content
+      type: text
+      description: Full document content for semantic search
+    - name: path
+      type: text
+      description: File path in the repository
+    - name: type
+      type: text
+      description: Document type: ssot, session, kb, docs
+    - name: category
+      type: text
+      description: Document category (e.g., apps, infrastructure, sessions)
+    - name: tags
+      type: text[]
+      description: Array of tags for filtering
+    - name: language
+      type: text
+      description: Primary language: en, th, mixed
+    - name: lastModified
+      type: date
+      description: Last modification timestamp
+    - name: size
+      type: int
+      description: File size in bytes
+
+services:
+  embedding_service:
+    name: embedding-service
+    type: cpu
+    status: building
+    image: python:3.11-slim
+    model: all-MiniLM-L6-v2
+    dimensions: 384
+    port: 5000
+    purpose: CPU-only text embeddings for Weaviate
+
+  weaviate_search:
+    name: weaviate-search
+    type: api
+    status: pending
+    image: node:20-alpine
+    port: 3002
+    purpose: Search API for SSOT documents
+    dependencies:
+      - weaviate
+      - embedding_service
+
+endpoints:
+  weaviate:
+    - http://localhost:8082/v1/.well-known/ready
+    - http://localhost:8082/v1/schema
+    - http://localhost:8082/v1/nodes
+  embedding_service:
+    - http://localhost:5000/health
+    - http://localhost:5000/model-info
+    - http://localhost:5000/embed
+  weaviate_search:
+    - http://localhost:3002/health
+    - http://localhost:3002/search
+
+routing:
+  caddy:
+    - /api/weaviate/* → weaviate:8080
+    - /api/weaviate-search/* → weaviate-search:3002
+    - /apps/weaviate-search/ → weaviate-search UI
+
+test_status:
+  weaviate_container: running ✅
+  embedding_service: skipped ⏭️
+  weaviate_search: running ✅
+  indexing: not_started ❌
+  search_ui: deployed ✅
+  search_functionality: working ✅
+  data_collection: in_progress 🔬
+
+known_issues:
+  - embedding_service build takes long due to PyTorch dependencies
+  - currently using mock data for search testing
+  - no real documents indexed yet
+  - need OpenAI API key for real embeddings
+
+next_steps:
+  - Add OpenAI API key to .env for real embeddings
+  - Run initial document indexing
+  - Test real semantic search
+  - Collect performance data for GPU sharing analysis
+  - Optimize CPU embedding service for production

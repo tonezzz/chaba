@@ -277,6 +277,7 @@ services:
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - WEAVIATE_URL=http://weaviate:8080
+      - EMBEDDING_SERVICE_URL=http://embedding-service:5000
       - PORT=3002
     ports:
       - "3002:3002"
@@ -284,6 +285,31 @@ services:
       - default
     depends_on:
       - weaviate
+      - embedding-service
+
+  embedding-service:
+    container_name: embedding-service
+    build:
+      context: ../../scripts/embeddings
+      dockerfile: Dockerfile
+    runtime: nvidia
+    restart: unless-stopped
+    environment:
+      - EMBEDDING_MODEL=all-MiniLM-L6-v2
+      - BATCH_SIZE=32
+      - PORT=5000
+      - NVIDIA_VISIBLE_DEVICES=all
+    ports:
+      - "5000:5000"
+    networks:
+      - default
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
   netdata:
     container_name: netdata
