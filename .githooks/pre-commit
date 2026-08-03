@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Pre-commit hook: syntax-check staged JS/MJS and Python files.
+# Pre-commit hook: syntax-check staged JS/MJS and Python files, and check for hardcoded IPs.
 # Set via: git config core.hooksPath /home/tony/CascadeProjects/chaba/.githooks
 
 set -euo pipefail
@@ -7,6 +7,8 @@ set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
 failed=0
+
+# Syntax check JS/MJS and Python files
 while IFS= read -r -d '' file; do
     case "$file" in
         *.js|*.mjs)
@@ -27,5 +29,30 @@ while IFS= read -r -d '' file; do
             ;;
     esac
 done < <(git diff --cached --name-only -z --diff-filter=ACM)
+
+# Check for hardcoded IP addresses
+echo "Checking for hardcoded IP addresses..."
+staged_files=$(git diff --cached --name-only --diff-filter=ACM)
+if [ -n "$staged_files" ]; then
+    violations=$(echo "$staged_files" | xargs grep -l "192\.168\.1\.48\|192\.168\.1\.42" 2>/dev/null || true)
+    if [ -n "$violations" ]; then
+        echo "❌ ERROR: Found hardcoded IP addresses in staged files:"
+        echo "$violations" | while read file; do
+            echo "  - $file"
+            echo "    Lines with IPs:"
+            grep -n "192\.168\.1\.48\|192\.168\.1\.42" "$file" 2>/dev/null | sed 's/^/      /' || true
+        done
+        echo ""
+        echo "Please use hostnames instead:"
+        echo "  - Replace 192.168.1.48 with tony-omen.local"
+        echo "  - Replace 192.168.1.42 with tony-dell.local"
+        echo ""
+        echo "Exceptions: Network documentation where IPs are explicitly relevant"
+        echo "To bypass this check, use: git commit --no-verify"
+        failed=1
+    else
+        echo "✅ No hardcoded IP addresses found in staged files"
+    fi
+fi
 
 exit "$failed"

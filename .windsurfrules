@@ -38,6 +38,14 @@ When adding or editing pages for `chaba.h3.gizmo-thailand.com`, follow `.windsur
 - Link to explicit `/foo/index.html` URLs unless `proxy-server.mjs` has a directory special case.
 - Use absolute fetch paths such as `/data.json` inside pages.
 
+## Hostname Usage Standards
+
+- Always use `.local` hostnames instead of IP addresses: `tony-omen.local` instead of `192.168.1.48`, `tony-dell.local` instead of `192.168.1.42`
+- Use hostnames in configuration files, SSOT documents, and application URLs
+- Exceptions: Network documentation where IP addresses are explicitly relevant (subnet info, firewall rules, DNS config)
+- For health check configs, use location-specific files: `ssot.health.home.yml` and `ssot.health.mobile.yml`
+- See `docs/overview/hostname-enforcement-strategy.md` for comprehensive enforcement strategy
+
 ## Auto KB review at end of each session (MANDATORY)
 
 At the end of every assistant response that answers or completes a user request — including small test questions — you MUST append a markdown section titled exactly `KB review`. In that section, briefly list any KB-worthy facts from the conversation: decisions, discoveries, infrastructure changes, conventions, and workarounds. Before saving anything, check existing memories and update or archive stale entries rather than duplicating. Create new memories in the correct corpus with clear titles and tags. Do NOT save temporary commands, one-off output, or obvious trivia.

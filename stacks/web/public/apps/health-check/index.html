@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Health Check Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="./health-check.css">
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+</head>
+<body>
+  <nav class="health-topnav">
+    <a href="/apps/" class="health-topnav-link">← Apps</a>
+    <span class="health-topnav-sep">|</span>
+    <span class="health-topnav-title">Health Check</span>
+  </nav>
+  <main class="health-app">
+    <header class="health-header">
+      <div class="health-header-main">
+        <h1 class="health-title">Health Check Dashboard</h1>
+        <p class="health-desc">Real-time system health monitoring</p>
+      </div>
+      <div class="health-toolbar">
+        <label class="health-check">
+          <input id="auto-refresh" type="checkbox" checked>
+          <span>Auto-refresh (30s)</span>
+        </label>
+        <button id="btn-refresh" type="button">Refresh Now</button>
+        <select id="category-filter" class="health-select">
+          <option value="all">All Categories</option>
+          <option value="web">Web</option>
+          <option value="api">API</option>
+          <option value="datastore">Data Store</option>
+          <option value="gpu">GPU</option>
+          <option value="queue">Queue</option>
+          <option value="optional">Optional</option>
+        </select>
+        <select id="location-selector" class="health-select">
+          <option value="auto">Auto-detect</option>
+          <option value="home">Home (Local)</option>
+          <option value="mobile">Mobile (External)</option>
+        </select>
+        <span id="location-status" class="location-status">Detecting...</span>
+      </div>
+    </header>
+
+    <div class="health-content">
+      <!-- Tab Navigation -->
+      <div class="health-tabs">
+        <button class="health-tab health-tab-active" data-tab="services">Services</button>
+        <button class="health-tab" data-tab="gpu">GPU</button>
+        <button class="health-tab" data-tab="yomi">Yomi (LINE)</button>
+      </div>
+
+      <!-- Services Tab -->
+      <div id="tab-services" class="health-tab-content health-tab-active">
+        <div class="health-tab-grid">
+          <!-- Overall Status Card -->
+          <div class="health-card health-card-overview">
+            <h2 class="health-card-title">Overall Status</h2>
+            <div id="overall-status" class="health-overview">
+              <div class="health-loading">Loading health status...</div>
+            </div>
+          </div>
+
+          <!-- Services Grid -->
+          <div class="health-card health-card-services">
+            <h2 class="health-card-title">Services Status</h2>
+            <div id="services-grid" class="health-services">
+              <div class="health-loading">Loading services...</div>
+            </div>
+          </div>
+
+          <!-- Recovery Actions Card -->
+          <div class="health-card health-card-actions">
+            <h2 class="health-card-title">Recovery Actions</h2>
+            <div id="recovery-actions" class="health-recovery">
+              <div class="health-loading">Loading recovery actions...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GPU Tab -->
+      <div id="tab-gpu" class="health-tab-content">
+        <div class="health-card health-card-gpu">
+          <h2 class="health-card-title">GPU Status</h2>
+          <div id="gpu-status" class="health-gpu">
+            <div class="health-loading">Loading GPU status...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Yomi Tab -->
+      <div id="tab-yomi" class="health-tab-content">
+        <div class="health-card health-card-yomi">
+          <h2 class="health-card-title">Yomi (LINE Integration) Status</h2>
+          <div id="yomi-status" class="health-yomi">
+            <div class="health-loading">Loading Yomi status...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Last Updated -->
+    <div class="health-footer">
+      <span id="last-updated">Last updated: Never</span>
+      <span id="refresh-status" class="health-refresh-status"></span>
+    </div>
+  </main>
+  <script src="./health-check.js?v=20260803-14"></script>
+</body>
+</html>

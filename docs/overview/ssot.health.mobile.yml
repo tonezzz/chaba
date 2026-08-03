@@ -1,0 +1,132 @@
+title: Chaba Health Check Configuration (Mobile)
+description: Health check endpoints for external/mobile access (VPN or external domain)
+version: 1
+
+services:
+  # Web Stack Services (External access only)
+  - id: caddy
+    name: Caddy (External)
+    type: http
+    url: http://tony-omen.local:8080/apps/
+    expected_status: 200
+    timeout: 10
+    category: web
+
+  - id: status-api
+    name: Status API (External)
+    type: http
+    url: http://tony-omen.local:8080/api/status
+    expected_status: 200
+    timeout: 10
+    category: api
+
+  - id: yomi-api
+    name: Yomi API (External)
+    type: http
+    url: http://tony-omen.local:8080/api/yomi/conversations
+    expected_status: 200
+    timeout: 10
+    category: api
+
+  - id: yomi-summarization
+    name: Yomi Summarization (External)
+    type: http
+    url: http://tony-omen.local:8080/api/yomi/summarization-status
+    expected_status: 200
+    timeout: 10
+    category: api
+
+  # Data Services (via external API)
+  - id: weaviate
+    name: Weaviate (External)
+    type: http
+    url: http://tony-omen.local:8080/api/weaviate/v1/nodes
+    expected_status: 200
+    timeout: 10
+    category: datastore
+
+  # GPU Services (limited external access)
+  - id: thai-legal
+    name: Thai Legal LLM (External)
+    type: http
+    url: http://tony-omen.local:8001/health
+    expected_status: 200
+    timeout: 15
+    category: gpu
+
+  - id: imagen2
+    name: Imagen2 (External)
+    type: http
+    url: http://tony-omen.local:8000/health
+    expected_status: 200
+    timeout: 15
+    category: gpu
+
+  # Queue Services
+  - id: gpu-queue
+    name: GPU Queue (External)
+    type: http
+    url: http://tony-omen.local:3001/health
+    expected_status: 200
+    timeout: 10
+    category: queue
+
+  # Optional Services
+  - id: frigate
+    name: Frigate NVR (External)
+    type: http
+    url: http://tony-omen.local:8080/frigate/api/version
+    expected_status: 200
+    timeout: 15
+    category: optional
+
+# Recovery suggestions for common failure modes (mobile-specific)
+recovery_actions:
+  network_unreachable:
+    - Check if VPN is connected
+    - Verify home network is accessible
+    - Check mobile data connection
+    - Try switching between WiFi and mobile data
+
+  timeout:
+    - External access may be slower than local
+    - Check if home network has bandwidth issues
+    - VPN connection may be slow
+    - Consider using local network when at home
+
+  service_unavailable:
+    - Some services may not be exposed externally
+    - Check if service requires local network access
+    - Container checks may not work externally
+    - Use Status API for container status when available
+
+  vpn_required:
+    - Some services require VPN for external access
+    - Connect to home VPN first
+    - Verify VPN credentials
+    - Check VPN server status
+
+# Testing and debugging guidance (mobile-specific)
+debugging_guidance:
+  web_testing:
+    - Use localhost for testing on the same machine: http://localhost:8080/apps/health-check/
+    - Avoid browser preview for local testing - use regular browser instead
+    - Browser preview is only for isolated environments or when direct access unavailable
+    - Test mobile viewport responsiveness using browser dev tools
+
+  location_testing:
+    - On Mobile: Use localhost if testing on the same machine
+    - External: Use VPN or external domain when away from home network
+    - At Home: Switch to tony-omen.local for better performance
+
+  network_testing:
+    - Test VPN connectivity before accessing services
+    - Check mobile signal strength and data connection
+    - Test both WiFi and mobile data for comparison
+    - Use browser dev tools network throttling to simulate poor connections
+
+  service_testing:
+    - External access has longer timeouts - be patient
+    - Some services may be limited or unavailable externally
+    - Use Status API for container status when direct checks fail
+    - Test critical services first when connection is unstable

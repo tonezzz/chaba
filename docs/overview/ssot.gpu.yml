@@ -126,7 +126,7 @@ policy:
 hardware:
   gpu: NVIDIA GeForce GTX 1650
   vram_total_mb: 4096
-  host: tony-omen (192.168.1.48)
+  host: tony-omen (tony-omen.local)
 
 tools:
   mcp-gpu:
@@ -180,10 +180,44 @@ tools:
     - mcp6_get_message_media: Download media (image/video/audio/file)
 
 current_state:
-  last_checked: 2026-07-31
-  vram_used_mb: 590
-  vram_free_mb: 3127
+  last_checked: 2026-08-03
+  vram_used_mb: 2616
+  vram_free_mb: 1101
   running_processes:
-    - llama-server (thai-legal-inference router, ~70MB overhead)
-    - python3.11 (~144 MB)
+    - /app/llama-server (2442 MB)
+    - /opt/conda/bin/python3.11 (58 MB)
+    - /opt/conda/bin/python (58 MB)
   note: Llama router on port 8001, models loaded on-demand, thai-legal CPU-only
+
+monitoring:
+  netdata:
+    status: deployed
+    access_points:
+      - http://tony-omen.local:8080/apps/netdata/
+      - http://tony-omen.local:8081/apps/netdata/
+      - http://localhost:19999
+    gpu_metrics_available:
+      - GPU utilization percentage
+      - VRAM usage (used/free/total)
+      - GPU temperature
+      - GPU power consumption
+      - GPU clock frequencies
+      - GPU processes and memory usage
+      - Historical GPU performance data
+    integration: Auto-discovers NVIDIA GPU via nvidia-smi
+    retention: Default Netdata retention (1 hour detail, 1 day reduced resolution)
+    alerts: Configurable alerts for GPU temperature, VRAM usage, utilization
+
+  mcp_gpu:
+    tool: mcp1_gpu_status
+    output: JSON with VRAM usage, process list, memory per process
+    use_case: On-demand GPU status checks, programmatic access
+    realtime: No (snapshot only)
+
+  health_checks:
+    gpu_services:
+      - thai-legal (http://tony-omen.local:8001/health)
+      - imagen2 (http://tony-omen.local:8000/health)
+      - txt2vid (container state: txt2vid-inference)
+    use_case: Service availability monitoring
+    gpu_metrics: No (service health only)

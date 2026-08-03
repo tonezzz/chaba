@@ -11,8 +11,7 @@ services:
       - ./public:/srv/public
       - /home/tony/CascadeProjects/chaba-omen/stacks/web/public/tony-omen:/srv/public/tony-omen
       - /home/tony/CascadeProjects/chaba-h3/public:/srv/public/chaba-h3
-      - /home/tony/CascadeProjects/chaba-h3/public/apps/imagen:/srv/public/tony-omen/apps/imagen
-      - /home/tony/CascadeProjects/chaba-h3/public/apps/imagen2:/srv/public/tony-omen/apps/imagen2
+      - /home/tony/CascadeProjects/chaba/docs:/srv/docs
       - caddy_data:/data
       - caddy_config:/config
     env_file:
@@ -34,7 +33,7 @@ services:
       - FRIGATE_URL=http://frigate:5000
     volumes:
       - ../..:/repo
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/run/docker.sock:/var/run/docker.sock:rw
       - /sys/class/thermal:/sys/class/thermal:ro
       - /sys/class/hwmon:/sys/class/hwmon:ro
       - /sys/devices/platform/hp-wmi:/sys/devices/platform/hp-wmi:rw
@@ -44,6 +43,9 @@ services:
     networks:
       - default
       - frigate_default
+    external_links:
+      - web:web
+      - web_default
 
   camera-control:
     container_name: camera-control
@@ -71,29 +73,6 @@ services:
     volumes:
       - ./bserver-www/_config.yaml:/srv/www/_config.yaml:ro
       - ./bserver-www/default:/srv/www/default
-    networks:
-      - default
-
-  imagen-inference:
-    container_name: imagen-inference
-    build:
-      context: /home/tony/CascadeProjects/chaba-h3/inference
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    environment:
-      - MODEL_ID=stabilityai/stable-diffusion-xl-base-1.0
-      - VAE_ID=madebyollin/sdxl-vae-fp16-fix
-    volumes:
-      - /home/tony/.cache/huggingface:/root/.cache/huggingface
-      - /home/tony/CascadeProjects/chaba-h3/inference/main.py:/app/main.py:ro
-      - /home/tony/CascadeProjects/chaba-h3/inference/data:/app/data
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
     networks:
       - default
 
@@ -187,7 +166,7 @@ services:
 
   postgres:
     container_name: postgres
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     restart: unless-stopped
     env_file:
       - .env
@@ -236,7 +215,7 @@ services:
       - AP_REDIS_URL=redis://redis:6379
       - AP_ENCRYPTION_KEY=${AP_ENCRYPTION_KEY}
       - AP_JWT_SECRET=${AP_JWT_SECRET}
-      - AP_FRONTEND_URL=http://192.168.1.48:8080/apps/activepieces
+      - AP_FRONTEND_URL=http://tony-omen.local:8080/apps/activepieces
     volumes:
       - ./activepieces-index.html:/usr/src/app/dist/packages/web/index.html:ro
     depends_on:
@@ -270,11 +249,73 @@ services:
       postgres:
         condition: service_healthy
 
+  weaviate:
+    container_name: weaviate
+    image: semitechnologies/weaviate:latest
+    restart: unless-stopped
+    ports:
+      - "8082:8080"
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+    environment:
+      - QUERY_DEFAULTS_LIMIT=25
+      - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
+      - PERSISTENCE_DATA_PATH=/var/lib/weaviate
+      - DEFAULT_VECTORIZER_MODULE=none
+      - CLUSTER_HOSTNAME=node1
+    networks:
+      - default
+
+  weaviate-search:
+    container_name: weaviate-search
+    image: node:20-alpine
+    restart: unless-stopped
+    working_dir: /app/weaviate-search
+    command: npm start
+    volumes:
+      - ../../scripts/weaviate:/app/weaviate-search
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - WEAVIATE_URL=http://weaviate:8080
+      - PORT=3002
+    ports:
+      - "3002:3002"
+    networks:
+      - default
+    depends_on:
+      - weaviate
+
+  netdata:
+    container_name: netdata
+    image: netdata/netdata:stable
+    hostname: netdata
+    ports:
+      - "19999:19999"
+    volumes:
+      - netdata_config:/etc/netdata
+      - netdata_lib:/var/lib/netdata
+      - netdata_cache:/var/cache/netdata
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    restart: unless-stopped
+    networks:
+      - default
+
 volumes:
   caddy_data:
   caddy_config:
   postgres_data:
   redis_data:
+  weaviate_data:
+  netdata_config:
+  netdata_lib:
+  netdata_cache:
 
 networks:
   frigate_default:
