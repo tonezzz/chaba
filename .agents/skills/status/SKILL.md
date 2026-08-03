@@ -27,3 +27,4 @@ Guidelines:
 - Do not invent status; base the summary on the conversation and available evidence.
 - If scope is unclear, ask which project or context to summarize.
 - This is a lightweight status check — no KB archiving or auto-saving.
+- For comprehensive status + KB archiving, use `/archive` workflow instead.

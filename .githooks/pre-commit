@@ -34,24 +34,32 @@ done < <(git diff --cached --name-only -z --diff-filter=ACM)
 echo "Checking for hardcoded IP addresses..."
 staged_files=$(git diff --cached --name-only --diff-filter=ACM)
 if [ -n "$staged_files" ]; then
-    violations=$(echo "$staged_files" | xargs grep -l "192\.168\.1\.48\|192\.168\.1\.42" 2>/dev/null || true)
-    if [ -n "$violations" ]; then
-        echo "❌ ERROR: Found hardcoded IP addresses in staged files:"
-        echo "$violations" | while read file; do
-            echo "  - $file"
-            echo "    Lines with IPs:"
-            grep -n "192\.168\.1\.48\|192\.168\.1\.42" "$file" 2>/dev/null | sed 's/^/      /' || true
-        done
-        echo ""
-        echo "Please use hostnames instead:"
-        echo "  - Replace 192.168.1.48 with tony-omen.local"
-        echo "  - Replace 192.168.1.42 with tony-dell.local"
-        echo ""
-        echo "Exceptions: Network documentation where IPs are explicitly relevant"
-        echo "To bypass this check, use: git commit --no-verify"
-        failed=1
+    # Skip documentation files and scripts that legitimately reference IPs
+    skip_files=$(echo "$staged_files" | grep -E '\.(md|MD)$|pre-commit$|\.windsurfrules$|hostname-enforcement' || true)
+    check_files=$(echo "$staged_files" | grep -v -E '\.(md|MD)$|pre-commit$|\.windsurfrules$|hostname-enforcement' || true)
+    
+    if [ -n "$check_files" ]; then
+        violations=$(echo "$check_files" | xargs grep -l "192\.168\.1\.48\|192\.168\.1\.42" 2>/dev/null || true)
+        if [ -n "$violations" ]; then
+            echo "❌ ERROR: Found hardcoded IP addresses in staged files:"
+            echo "$violations" | while read file; do
+                echo "  - $file"
+                echo "    Lines with IPs:"
+                grep -n "192\.168\.1\.48\|192\.168\.1\.42" "$file" 2>/dev/null | sed 's/^/      /' || true
+            done
+            echo ""
+            echo "Please use hostnames instead:"
+            echo "  - Replace 192.168.1.48 with tony-omen.local"
+            echo "  - Replace 192.168.1.42 with tony-dell.local"
+            echo ""
+            echo "Exceptions: Network documentation where IPs are explicitly relevant"
+            echo "To bypass this check, use: git commit --no-verify"
+            failed=1
+        else
+            echo "✅ No hardcoded IP addresses found in staged files"
+        fi
     else
-        echo "✅ No hardcoded IP addresses found in staged files"
+        echo "✅ Skipping IP check (documentation/policy files only)"
     fi
 fi
 
