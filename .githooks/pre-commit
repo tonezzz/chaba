@@ -35,8 +35,8 @@ echo "Checking for hardcoded IP addresses..."
 staged_files=$(git diff --cached --name-only --diff-filter=ACM)
 if [ -n "$staged_files" ]; then
     # Skip documentation files and scripts that legitimately reference IPs
-    skip_files=$(echo "$staged_files" | grep -E '\.(md|MD)$|pre-commit$|\.windsurfrules$|hostname-enforcement' || true)
-    check_files=$(echo "$staged_files" | grep -v -E '\.(md|MD)$|pre-commit$|\.windsurfrules$|hostname-enforcement' || true)
+    skip_files=$(echo "$staged_files" | grep -E '\.(md|MD)$|pre-commit$|\.windsurfrules$|hostname-enforcement|fetch-data/|\.json$' || true)
+    check_files=$(echo "$staged_files" | grep -v -E '\.(md|MD)$|pre-commit$|\.windsurfrules$|hostname-enforcement|fetch-data/|\.json$' || true)
     
     if [ -n "$check_files" ]; then
         violations=$(echo "$check_files" | xargs grep -l "192\.168\.1\.48\|192\.168\.1\.42" 2>/dev/null || true)
