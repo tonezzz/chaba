@@ -58,16 +58,16 @@
         <input id="negative_prompt" type="text" value="worst quality, inconsistent motion, blurry, jittery, distorted">
       </div>
       <div class="row">
-        <div class="field"><label for="width">Width <span class="info" data-tip="Video width. Multiple of 32. Official i2v default: 704">?</span></label><input id="width" type="number" value="704" step="32" min="128" max="1280"></div>
-        <div class="field"><label for="height">Height <span class="info" data-tip="Video height. Multiple of 32. Official i2v default: 480">?</span></label><input id="height" type="number" value="480" step="32" min="128" max="1280"></div>
+        <div class="field"><label for="width">Width <span class="info" data-tip="Video width. Multiple of 32. 4GB GPU: use 416 or lower">?</span></label><input id="width" type="number" value="416" step="32" min="128" max="1280"></div>
+        <div class="field"><label for="height">Height <span class="info" data-tip="Video height. Multiple of 32. 4GB GPU: use 288 or lower">?</span></label><input id="height" type="number" value="288" step="32" min="128" max="1280"></div>
       </div>
       <div class="row">
-        <div class="field"><label for="num_frames">Frames (8n+1) <span class="info" data-tip="For LTX i2v use 9, 17, 25, etc. Official default: 161 frames (~6.4s at 25fps)">?</span></label><input id="num_frames" type="number" value="161" step="8" min="9" max="257"></div>
-        <div class="field"><label for="fps">FPS</label><input id="fps" type="number" value="25" min="1" max="60"></div>
+        <div class="field"><label for="num_frames">Frames (8n+1) <span class="info" data-tip="For LTX i2v use 9, 17, 25, etc. Shorter videos maintain better facial consistency">?</span></label><input id="num_frames" type="number" value="41" step="8" min="9" max="129"></div>
+        <div class="field"><label for="fps">FPS</label><input id="fps" type="number" value="8" min="1" max="60"></div>
       </div>
       <div class="row">
-        <div class="field"><label for="steps">Steps</label><input id="steps" type="number" value="50" min="1" max="100"></div>
-        <div class="field"><label for="guidance">Guidance scale</label><input id="guidance" type="number" value="3.0" step="0.1" min="1" max="20"></div>
+        <div class="field"><label for="steps">Steps <span class="info" data-tip="Higher steps improve quality but take longer">?</span></label><input id="steps" type="number" value="30" min="1" max="100"></div>
+        <div class="field"><label for="guidance">Guidance scale <span class="info" data-tip="Higher values maintain reference image better (try 4-6 for faces)">?</span></label><input id="guidance" type="number" value="5.0" step="0.1" min="1" max="20"></div>
       </div>
       <div class="field"><label for="seed">Seed (-1 = random)</label><input id="seed" type="number" value="42"></div>
       <button id="generate" type="button">Generate from Image</button>

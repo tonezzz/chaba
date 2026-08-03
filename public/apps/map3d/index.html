@@ -326,28 +326,46 @@
           </div>
           <div class="control-section">
             <div class="section-header">View</div>
-            <div class="control-row">
-              <label>Tilt</label>
-              <div class="button-group">
-                <button class="btn-small" data-control="tilt" data-action="decrease">-</button>
-                <span class="value-display" id="tilt-value">0°</span>
-                <button class="btn-small" data-control="tilt" data-action="increase">+</button>
+            <div class="slider-row">
+              <div class="slider-header">
+                <label>Tilt</label>
+                <span class="slider-value" id="tilt-slider-value">0°</span>
+              </div>
+              <input type="range" id="tilt-slider" min="0" max="60" value="0" step="1">
+              <div class="control-row" style="margin-top: 6px;">
+                <div class="button-group">
+                  <button class="btn-small" data-control="tilt" data-action="decrease" id="tilt-decrease">-</button>
+                  <span class="value-display" id="tilt-value">0°</span>
+                  <button class="btn-small" data-control="tilt" data-action="increase" id="tilt-increase">+</button>
+                </div>
               </div>
             </div>
-            <div class="control-row">
-              <label>Bearing</label>
-              <div class="button-group">
-                <button class="btn-small" data-control="bearing" data-action="decrease">-</button>
-                <span class="value-display" id="bearing-value">0°</span>
-                <button class="btn-small" data-control="bearing" data-action="increase">+</button>
+            <div class="slider-row">
+              <div class="slider-header">
+                <label>Bearing</label>
+                <span class="slider-value" id="bearing-slider-value">0°</span>
+              </div>
+              <input type="range" id="bearing-slider" min="0" max="360" value="0" step="1">
+              <div class="control-row" style="margin-top: 6px;">
+                <div class="button-group">
+                  <button class="btn-small" data-control="bearing" data-action="decrease" id="bearing-decrease">-</button>
+                  <span class="value-display" id="bearing-value">0°</span>
+                  <button class="btn-small" data-control="bearing" data-action="increase" id="bearing-increase">+</button>
+                </div>
               </div>
             </div>
-            <div class="control-row">
-              <label>Zoom</label>
-              <div class="button-group">
-                <button class="btn-small" data-control="zoom" data-action="decrease">-</button>
-                <span class="value-display" id="zoom-value">18</span>
-                <button class="btn-small" data-control="zoom" data-action="increase">+</button>
+            <div class="slider-row">
+              <div class="slider-header">
+                <label>Zoom</label>
+                <span class="slider-value" id="zoom-slider-value">18.0</span>
+              </div>
+              <input type="range" id="zoom-slider" min="10" max="22" value="18" step="0.1">
+              <div class="control-row" style="margin-top: 6px;">
+                <div class="button-group">
+                  <button class="btn-small" data-control="zoom" data-action="decrease" id="zoom-decrease">-</button>
+                  <span class="value-display" id="zoom-value">18.0</span>
+                  <button class="btn-small" data-control="zoom" data-action="increase" id="zoom-increase">+</button>
+                </div>
               </div>
             </div>
             <div class="control-row" style="margin-top: 12px;">

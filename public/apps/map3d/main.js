@@ -117,6 +117,62 @@ async function init() {
   let currentTilt = 0;
   let currentBearing = 0;
   let currentZoom = 18;
+  let isDraggingSlider = false; // Track when user is actively dragging a slider
+
+  // Initialize slider elements
+  const tiltSlider = document.getElementById('tilt-slider');
+  const bearingSlider = document.getElementById('bearing-slider');
+  const zoomSlider = document.getElementById('zoom-slider');
+  const tiltSliderValue = document.getElementById('tilt-slider-value');
+  const bearingSliderValue = document.getElementById('bearing-slider-value');
+  const zoomSliderValue = document.getElementById('zoom-slider-value');
+
+  // Slider event listeners with drag tracking
+  if (tiltSlider) {
+    tiltSlider.addEventListener('mousedown', () => { isDraggingSlider = true; });
+    tiltSlider.addEventListener('touchstart', () => { isDraggingSlider = true; });
+    tiltSlider.addEventListener('mouseup', () => { isDraggingSlider = false; });
+    tiltSlider.addEventListener('touchend', () => { isDraggingSlider = false; });
+    tiltSlider.addEventListener('mouseleave', () => { isDraggingSlider = false; });
+    
+    tiltSlider.addEventListener('input', (e) => {
+      currentTilt = parseInt(e.target.value);
+      if (tiltSliderValue) tiltSliderValue.textContent = currentTilt + '°';
+      document.getElementById('tilt-value').textContent = currentTilt + '°';
+      map.easeTo({ pitch: currentTilt }, { duration: 100 });
+      if (splatLayer) splatLayer.setTilt(currentTilt);
+    });
+  }
+
+  if (bearingSlider) {
+    bearingSlider.addEventListener('mousedown', () => { isDraggingSlider = true; });
+    bearingSlider.addEventListener('touchstart', () => { isDraggingSlider = true; });
+    bearingSlider.addEventListener('mouseup', () => { isDraggingSlider = false; });
+    bearingSlider.addEventListener('touchend', () => { isDraggingSlider = false; });
+    bearingSlider.addEventListener('mouseleave', () => { isDraggingSlider = false; });
+    
+    bearingSlider.addEventListener('input', (e) => {
+      currentBearing = parseInt(e.target.value);
+      if (bearingSliderValue) bearingSliderValue.textContent = currentBearing + '°';
+      document.getElementById('bearing-value').textContent = currentBearing + '°';
+      map.easeTo({ bearing: currentBearing }, { duration: 100 });
+    });
+  }
+
+  if (zoomSlider) {
+    zoomSlider.addEventListener('mousedown', () => { isDraggingSlider = true; });
+    zoomSlider.addEventListener('touchstart', () => { isDraggingSlider = true; });
+    zoomSlider.addEventListener('mouseup', () => { isDraggingSlider = false; });
+    zoomSlider.addEventListener('touchend', () => { isDraggingSlider = false; });
+    zoomSlider.addEventListener('mouseleave', () => { isDraggingSlider = false; });
+    
+    zoomSlider.addEventListener('input', (e) => {
+      currentZoom = parseFloat(e.target.value);
+      if (zoomSliderValue) zoomSliderValue.textContent = currentZoom.toFixed(1);
+      document.getElementById('zoom-value').textContent = currentZoom.toFixed(1);
+      map.easeTo({ zoom: currentZoom }, { duration: 100 });
+    });
+  }
 
   const buttons = document.querySelectorAll('.btn-small');
   console.log('Found buttons:', buttons.length);
@@ -137,6 +193,8 @@ async function init() {
         if (action === 'increase') currentTilt = Math.min(60, currentTilt + 5);
         else currentTilt = Math.max(0, currentTilt - 5);
         document.getElementById('tilt-value').textContent = currentTilt + '°';
+        if (tiltSlider) tiltSlider.value = currentTilt;
+        if (tiltSliderValue) tiltSliderValue.textContent = currentTilt + '°';
         console.log('Setting pitch to:', currentTilt);
         console.log('Current map pitch:', map.getPitch());
         map.easeTo({ pitch: currentTilt }, { duration: 300 });
@@ -146,32 +204,42 @@ async function init() {
         if (action === 'increase') currentBearing = (currentBearing + 15) % 360;
         else currentBearing = (currentBearing - 15 + 360) % 360;
         document.getElementById('bearing-value').textContent = currentBearing + '°';
+        if (bearingSlider) bearingSlider.value = currentBearing;
+        if (bearingSliderValue) bearingSliderValue.textContent = currentBearing + '°';
         console.log('Setting bearing to:', currentBearing);
         map.easeTo({ bearing: currentBearing }, { duration: 300 });
       } else if (control === 'zoom') {
         if (action === 'increase') currentZoom = Math.min(22, currentZoom + 0.5);
         else currentZoom = Math.max(10, currentZoom - 0.5);
         document.getElementById('zoom-value').textContent = currentZoom;
+        if (zoomSlider) zoomSlider.value = currentZoom;
+        if (zoomSliderValue) zoomSliderValue.textContent = currentZoom.toFixed(1);
         console.log('Setting zoom to:', currentZoom);
         map.easeTo({ zoom: currentZoom }, { duration: 300 });
       }
     });
   });
 
-  // Sync button values with map changes
+  // Sync text displays with map changes (but NOT slider values to prevent feedback loop)
   map.on('pitch', (e) => {
     currentTilt = Math.round(e.target.pitch);
     document.getElementById('tilt-value').textContent = currentTilt + '°';
+    if (tiltSliderValue) tiltSliderValue.textContent = currentTilt + '°';
+    // Don't update slider.value to prevent feedback loop
   });
 
   map.on('rotate', (e) => {
     currentBearing = Math.round(e.target.bearing);
     document.getElementById('bearing-value').textContent = currentBearing + '°';
+    if (bearingSliderValue) bearingSliderValue.textContent = currentBearing + '°';
+    // Don't update slider.value to prevent feedback loop
   });
 
   map.on('zoom', (e) => {
     currentZoom = e.target.zoom;
     document.getElementById('zoom-value').textContent = currentZoom.toFixed(1);
+    if (zoomSliderValue) zoomSliderValue.textContent = currentZoom.toFixed(1);
+    // Don't update slider.value to prevent feedback loop
   });
 
   // Reset view button
