@@ -64,12 +64,53 @@ function spawnNode(script, args) {
   });
 }
 
-async function handleRefresh(chatId, res) {
-  const { code, err } = await spawnNode(`${SCRIPT_DIR}/update-conversations.mjs`, ['--chat', chatId]);
+async function handleRefresh(chatId, res, force = false) {
+  const args = ['--chat', chatId];
+  if (force) args.push('--force');
+  
+  const { code, err } = await spawnNode(`${SCRIPT_DIR}/update-conversations.mjs`, args);
   if (code === 0) {
-    sendJson(res, 200, { ok: true });
+    sendJson(res, 200, { ok: true, forced: force });
   } else {
     sendJson(res, 500, { ok: false, error: err.trim() || 'export failed' });
+  }
+}
+
+async function handleRefreshAll(res, force = false) {
+  const args = force ? [] : ['--recent'];
+  
+  const { code, out, err } = await spawnNode(`${SCRIPT_DIR}/update-conversations.mjs`, args);
+  if (code === 0) {
+    sendJson(res, 200, { ok: true, forced: force, output: out });
+  } else {
+    sendJson(res, 500, { ok: false, error: err.trim() || 'export failed' });
+  }
+}
+
+async function handleFetch(chatId, res) {
+  const args = chatId ? ['--chat', chatId] : [];
+  const limitIdx = process.argv.indexOf('--limit');
+  if (limitIdx !== -1) {
+    args.push('--limit', process.argv[limitIdx + 1]);
+  }
+  
+  const { code, out, err } = await spawnNode(`${SCRIPT_DIR}/fetch-conversations.mjs`, args);
+  if (code === 0) {
+    sendJson(res, 200, { ok: true, output: out });
+  } else {
+    sendJson(res, 500, { ok: false, error: err.trim() || 'fetch failed' });
+  }
+}
+
+async function handleProcess(chatId, res, force = false) {
+  const args = chatId ? ['--chat', chatId] : [];
+  if (force) args.push('--force');
+  
+  const { code, out, err } = await spawnNode(`${SCRIPT_DIR}/process-conversations.mjs`, args);
+  if (code === 0) {
+    sendJson(res, 200, { ok: true, forced: force, output: out });
+  } else {
+    sendJson(res, 500, { ok: false, error: err.trim() || 'process failed' });
   }
 }
 
@@ -123,6 +164,227 @@ async function handleDailySummaries(url, res) {
     ORDER BY date DESC
   `, [chatId]);
   sendJson(res, 200, { chatId, summaries: rows });
+}
+
+async function handleResummarize(req, res) {
+  let body = '';
+  for await (const chunk of req) body += chunk.toString();
+  let data;
+  try {
+    data = JSON.parse(body);
+  } catch {
+    return sendJson(res, 400, { ok: false, error: 'invalid JSON' });
+  }
+  
+  const { chatIds, forceAll } = data;
+  
+  try {
+    // Trigger re-summarization by calling update-conversations
+    const { code, out, err } = await spawnNode(`${SCRIPT_DIR}/update-conversations.mjs`, 
+      chatIds ? chatIds.map(id => ['--chat', id]).flat() : (forceAll ? [] : ['--recent'])
+    );
+    
+    if (code === 0) {
+      sendJson(res, 200, { ok: true, message: 'Re-summarization initiated' });
+    } else {
+      sendJson(res, 500, { ok: false, error: err.trim() || 're-summarization failed' });
+    }
+  } catch (error) {
+    sendJson(res, 500, { ok: false, error: error.message });
+  }
+}
+
+async function handleSummaryQuality(res) {
+  try {
+    const { rows: qualityStats } = await pool.query(`
+      SELECT 
+        chat_id,
+        name,
+        summary,
+        summary_quality,
+        summary_generated_at,
+        summary_retry_count,
+        summary_error_message
+      FROM conversations
+      WHERE summary IS NOT NULL
+      ORDER BY summary_quality ASC NULLS LAST
+    `);
+
+    const { rows: overallStats } = await pool.query(`
+      SELECT 
+        COUNT(*) as total,
+        COUNT(CASE WHEN summary_quality >= 80 THEN 1 END) as excellent,
+        COUNT(CASE WHEN summary_quality >= 60 AND summary_quality < 80 THEN 1 END) as good,
+        COUNT(CASE WHEN summary_quality >= 30 AND summary_quality < 60 THEN 1 END) as medium,
+        COUNT(CASE WHEN summary_quality > 0 AND summary_quality < 30 THEN 1 END) as poor,
+        COUNT(CASE WHEN summary_quality = 0 THEN 1 END) as failed,
+        AVG(summary_quality) as avg_quality
+      FROM conversations
+      WHERE summary IS NOT NULL
+    `);
+
+    sendJson(res, 200, {
+      overall: overallStats[0] || {},
+      conversations: qualityStats,
+      generatedAt: new Date().toISOString()
+    });
+  } catch (err) {
+    sendJson(res, 500, { ok: false, error: err.message });
+  }
+}
+
+async function handleActivityStatus(res) {
+  try {
+    // Get process info
+    const processInfo = {
+      pid: process.pid,
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      platform: process.platform,
+      nodeVersion: process.version
+    };
+
+    // Get recent database activity
+    const { rows: recentUpdates } = await pool.query(`
+      SELECT 
+        chat_id,
+        name,
+        updated_at,
+        summary_quality
+      FROM conversations
+      ORDER BY updated_at DESC
+      LIMIT 10
+    `);
+
+    // Get activity metrics
+    const { rows: activityMetrics } = await pool.query(`
+      SELECT 
+        COUNT(*) as total_updates,
+        COUNT(CASE WHEN updated_at > NOW() - INTERVAL '1 hour' THEN 1 END) as updates_last_hour,
+        COUNT(CASE WHEN updated_at > NOW() - INTERVAL '24 hours' THEN 1 END) as updates_last_day,
+        MAX(updated_at) as last_update
+      FROM conversations
+    `);
+
+    // Get daily summary activity
+    const { rows: dailyActivity } = await pool.query(`
+      SELECT 
+        COUNT(*) as total_summaries,
+        COUNT(DISTINCT chat_id) as unique_chats,
+        MAX(updated_at) as last_summary_update
+      FROM daily_summaries
+    `);
+
+    // Get system health
+    const { rows: systemHealth } = await pool.query(`
+      SELECT 
+        COUNT(*) as total_conversations,
+        COUNT(CASE WHEN summary IS NOT NULL THEN 1 END) as with_summary,
+        COUNT(CASE WHEN category IS NOT NULL THEN 1 END) as with_category,
+        MAX(last_message_time) as latest_message
+      FROM conversations
+    `);
+
+    // Get process status from file
+    let processStatus = null;
+    try {
+      const STATUS_FILE = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/process-status.json';
+      const { existsSync, readFileSync } = await import('node:fs');
+      if (existsSync(STATUS_FILE)) {
+        processStatus = JSON.parse(readFileSync(STATUS_FILE, 'utf-8'));
+      }
+    } catch (err) {
+      // Ignore errors reading status file
+    }
+
+    sendJson(res, 200, {
+      process: processInfo,
+      recentActivity: recentUpdates,
+      metrics: {
+        database: activityMetrics[0] || {},
+        dailySummaries: dailyActivity[0] || {},
+        system: systemHealth[0] || {}
+      },
+      processStatus,
+      status: {
+        healthy: true,
+        message: 'All systems operational'
+      },
+      generatedAt: new Date().toISOString()
+    });
+  } catch (err) {
+    sendJson(res, 500, { ok: false, error: err.message });
+  }
+}
+
+async function handleSummarizationStatus(res) {
+  try {
+    // Get overall statistics with quality metrics
+    const { rows: totalStats } = await pool.query(`
+      SELECT 
+        COUNT(*) as total_conversations,
+        COUNT(CASE WHEN summary IS NOT NULL AND summary != '' THEN 1 END) as with_summary,
+        COUNT(CASE WHEN summary_quality > 0 THEN 1 END) as with_meaningful_summary,
+        COUNT(CASE WHEN category IS NOT NULL AND category != '' THEN 1 END) as with_category,
+        MAX(last_message_time) as latest_message_time,
+        AVG(summary_quality) as avg_summary_quality
+      FROM conversations
+    `);
+
+    // Get daily summary statistics
+    const { rows: dailyStats } = await pool.query(`
+      SELECT 
+        COUNT(DISTINCT chat_id) as conversations_with_summaries,
+        COUNT(*) as total_summaries,
+        MAX(date) as latest_summary_date,
+        MAX(updated_at) as last_updated
+      FROM daily_summaries
+    `);
+
+    // Get recent summarization activity
+    const { rows: recentActivity } = await pool.query(`
+      SELECT chat_id, date, message_count, updated_at
+      FROM daily_summaries
+      ORDER BY updated_at DESC
+      LIMIT 5
+    `);
+
+    // Get quality distribution
+    const { rows: qualityDist } = await pool.query(`
+      SELECT 
+        summary_quality,
+        COUNT(*) as count
+      FROM conversations
+      WHERE summary_quality IS NOT NULL
+      GROUP BY summary_quality
+      ORDER BY summary_quality
+    `);
+
+    const stats = totalStats[0] || {};
+    const daily = dailyStats[0] || {};
+
+    sendJson(res, 200, {
+      conversations: {
+        total: parseInt(stats.total_conversations) || 0,
+        withSummary: parseInt(stats.with_summary) || 0,
+        withMeaningfulSummary: parseInt(stats.with_meaningful_summary) || 0,
+        withCategory: parseInt(stats.with_category) || 0,
+        latestMessageTime: stats.latest_message_time,
+        avgSummaryQuality: Math.round(stats.avg_summary_quality) || 0
+      },
+      dailySummaries: {
+        conversationsWithSummaries: parseInt(daily.conversations_with_summaries) || 0,
+        totalSummaries: parseInt(daily.total_summaries) || 0,
+        latestSummaryDate: daily.latest_summary_date,
+        lastUpdated: daily.last_updated
+      },
+      recentActivity: recentActivity,
+      qualityDistribution: qualityDist,
+      generatedAt: new Date().toISOString()
+    });
+  } catch (err) {
+    sendJson(res, 500, { ok: false, error: err.message });
+  }
 }
 
 async function handleMessages(chatId, url, res) {
@@ -208,11 +470,77 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  if (url.pathname === '/api/yomi/summarization-status' && req.method === 'GET') {
+    try {
+      await handleSummarizationStatus(res);
+    } catch (err) {
+      sendJson(res, 500, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  if (url.pathname === '/api/yomi/resummarize' && req.method === 'POST') {
+    try {
+      await handleResummarize(req, res);
+    } catch (err) {
+      sendJson(res, 500, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  if (url.pathname === '/api/yomi/summary-quality' && req.method === 'GET') {
+    try {
+      await handleSummaryQuality(res);
+    } catch (err) {
+      sendJson(res, 500, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  if (url.pathname === '/api/yomi/activity-status' && req.method === 'GET') {
+    try {
+      await handleActivityStatus(res);
+    } catch (err) {
+      sendJson(res, 500, { ok: false, error: err.message });
+    }
+    return;
+  }
+
   if (url.pathname === '/api/yomi/refresh' && (req.method === 'GET' || req.method === 'POST')) {
     const chatId = url.searchParams.get('chat');
-    if (!chatId) return sendJson(res, 400, { error: 'chat parameter required' });
+    const force = url.searchParams.get('force') === 'true';
+    
+    if (chatId) {
+      try {
+        await handleRefresh(chatId, res, force);
+      } catch (err) {
+        sendJson(res, 500, { ok: false, error: err.message });
+      }
+    } else {
+      try {
+        await handleRefreshAll(res, force);
+      } catch (err) {
+        sendJson(res, 500, { ok: false, error: err.message });
+      }
+    }
+    return;
+  }
+
+  if (url.pathname === '/api/yomi/fetch' && (req.method === 'GET' || req.method === 'POST')) {
+    const chatId = url.searchParams.get('chat');
     try {
-      await handleRefresh(chatId, res);
+      await handleFetch(chatId, res);
+    } catch (err) {
+      sendJson(res, 500, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  if (url.pathname === '/api/yomi/process' && (req.method === 'GET' || req.method === 'POST')) {
+    const chatId = url.searchParams.get('chat');
+    const force = url.searchParams.get('force') === 'true';
+    try {
+      await handleProcess(chatId, res, force);
     } catch (err) {
       sendJson(res, 500, { ok: false, error: err.message });
     }

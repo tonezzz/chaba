@@ -3,6 +3,7 @@ import { StdioClientTransport } from '/home/tony/.yomi/mcpb/node_modules/@modelc
 import { writeFileSync, readFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { categorize } from './categorize-conversations.mjs';
+import { evaluateSummaryQuality, isMeaningfulSummary, retryWithBackoff, generateCacheKey, parseCacheKey } from './summary-utils.mjs';
 import pool from './db.mjs';
 
 const OUT = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/conversations.json';
@@ -346,7 +347,25 @@ function buildPrompt(name, messages) {
     if (!text) return null;
     return `${from}: ${String(text).replace(/\n/g, ' ')}`;
   }).filter(Boolean);
-  if (lines.length === 0) return null;
+  
+  // Enhanced content validation
+  if (lines.length === 0) {
+    console.log(`No content available for summarization of ${name}`);
+    return null;
+  }
+  
+  if (lines.length < 2) {
+    console.log(`Insufficient content for summarization: ${lines.length} items (need at least 2)`);
+    return null;
+  }
+  
+  // Check for meaningful content (not just media)
+  const textOnlyLines = lines.filter(line => !line.includes('['));
+  if (textOnlyLines.length === 0) {
+    console.log(`No text content available for summarization, only media: ${name}`);
+    return null;
+  }
+  
   return `Summarize the following LINE conversation with ${name} in one concise sentence (under 20 words). Focus on the main topic, question, or decision.\n\n${lines.join('\n')}\n\nSummary:`;
 }
 
@@ -372,23 +391,69 @@ async function summarizeWithLlama(prompt) {
   return content.replace(/\\n/g, ' ').replace(/\s+/g, ' ');
 }
 
-async function getSummary(chatId, messages, name) {
+async function getSummary(chatId, messages, name, forceRefresh = false) {
   const lastTime = messages.reduce((max, m) => Math.max(max, m.deliveredTime || 0), 0);
-  const cached = summaryCache[chatId];
-  if (cached && cached.lastMessageTime === lastTime && cached.summary) {
-    return cached.summary;
+  const cacheKey = generateCacheKey(chatId);
+  const cached = summaryCache[cacheKey];
+  
+  // Return cached summary if valid and not forcing refresh
+  if (!forceRefresh && cached && cached.lastMessageTime === lastTime && cached.summary) {
+    // Check if cached summary is still meaningful
+    if (isMeaningfulSummary(cached.summary)) {
+      return cached.summary;
+    }
+    // Cache has low-quality summary, re-summarize
+    console.log(`Low-quality cached summary for ${chatId}, re-summarizing...`);
   }
+  
   const prompt = buildPrompt(name, messages);
   if (!prompt) {
-    summaryCache[chatId] = { lastMessageTime: lastTime, summary: null };
+    summaryCache[cacheKey] = { lastMessageTime: lastTime, summary: null, quality: 0 };
     return null;
   }
+  
   try {
-    const summary = await summarizeWithLlama(prompt);
-    summaryCache[chatId] = { lastMessageTime: lastTime, summary };
+    const summary = await retryWithBackoff(
+      () => summarizeWithLlama(prompt),
+      {
+        maxRetries: 3,
+        baseDelay: 1000,
+        maxDelay: 10000,
+        onRetry: (attempt, delay, error) => {
+          console.log(`Summary retry ${attempt}/3 for ${chatId} after ${delay}ms (error: ${error.message})`);
+        }
+      }
+    );
+    
+    // Validate summary quality
+    const quality = evaluateSummaryQuality(summary);
+    if (quality === 0) {
+      console.warn(`Low-quality summary generated for ${chatId}: "${summary.substring(0, 50)}..."`);
+    }
+    
+    summaryCache[cacheKey] = { 
+      lastMessageTime: lastTime, 
+      summary, 
+      quality,
+      generatedAt: new Date().toISOString(),
+      error: null
+    };
+    
     return summary;
   } catch (err) {
-    console.error(`Summary failed for ${chatId}: ${err.message}`);
+    const errorMessage = `Summary failed for ${chatId} after retries: ${err.message}`;
+    console.error(errorMessage);
+    
+    // Cache the error
+    summaryCache[cacheKey] = { 
+      lastMessageTime: lastTime, 
+      summary: cached?.summary || null, 
+      quality: cached?.quality || 0,
+      generatedAt: cached?.generatedAt || null,
+      error: err.message
+    };
+    
+    // Return cached summary if available, even if low quality
     return cached?.summary || null;
   }
 }
@@ -570,9 +635,11 @@ async function saveMessages(chatId, messages) {
 }
 
 async function saveConversation(conv) {
+  const summaryQuality = conv.summary ? evaluateSummaryQuality(conv.summary) : 0;
+  
   await pool.query(`
-    INSERT INTO conversations (chat_id, name, is_group, category, category_source, unread, last_message_time, last_preview, summary, meta)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    INSERT INTO conversations (chat_id, name, is_group, category, category_source, unread, last_message_time, last_preview, summary, summary_quality, summary_generated_at, meta)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     ON CONFLICT (chat_id) DO UPDATE SET
       name = EXCLUDED.name,
       is_group = EXCLUDED.is_group,
@@ -582,14 +649,16 @@ async function saveConversation(conv) {
       last_message_time = EXCLUDED.last_message_time,
       last_preview = EXCLUDED.last_preview,
       summary = EXCLUDED.summary,
+      summary_quality = EXCLUDED.summary_quality,
+      summary_generated_at = COALESCE(EXCLUDED.summary_generated_at, conversations.summary_generated_at),
       meta = EXCLUDED.meta,
       updated_at = NOW()
-  `, [conv.id, conv.name, conv.isGroup, conv.category, conv.categorySource, conv.unread, conv.lastMessageTime, conv.lastPreview, conv.summary, JSON.stringify(conv.meta || {})]);
+  `, [conv.id, conv.name, conv.isGroup, conv.category, conv.categorySource, conv.unread, conv.lastMessageTime, conv.lastPreview, conv.summary, summaryQuality, conv.summaryGeneratedAt || new Date(), JSON.stringify(conv.meta || {})]);
 }
 
 const isMain = process.argv[1] === new URL(import.meta.url).pathname;
 
-async function refreshSingle(chatId) {
+async function refreshSingle(chatId, forceRefresh = false) {
   const messages = mergeMessages(await loadMessages(chatId), await getChatMessages(chatId, 100));
   await saveMessages(chatId, messages);
   const conv = await loadConversation(chatId);
@@ -598,7 +667,9 @@ async function refreshSingle(chatId) {
     const byTimeDesc = [...messages].sort((a, b) => (b.deliveredTime || 0) - (a.deliveredTime || 0));
     const lastPreviewMsg = byTimeDesc.find(m => m.text != null || (m.mediaType && m.mediaType !== 'unavailable'));
     conv.lastPreview = lastPreviewMsg ? (lastPreviewMsg.text ?? `[${lastPreviewMsg.mediaType.toLowerCase()}]`) : null;
-    conv.summary = await getSummary(chatId, messages, conv.name);
+    conv.summary = await getSummary(chatId, messages, conv.name, forceRefresh);
+    conv.summaryQuality = conv.summary ? evaluateSummaryQuality(conv.summary) : 0;
+    conv.summaryGeneratedAt = new Date();
     const result = categorize(conv);
     conv.category = result.category;
     conv.categorySource = result.source;
@@ -649,6 +720,8 @@ async function exportAll() {
       const lastPreviewMsg = byTimeDesc.find(m => m.text != null || (m.mediaType && m.mediaType !== 'unavailable'));
       c.lastPreview = lastPreviewMsg ? (lastPreviewMsg.text ?? `[${lastPreviewMsg.mediaType.toLowerCase()}]`) : null;
       c.summary = await getSummary(c.id, messages, c.name);
+      c.summaryQuality = c.summary ? evaluateSummaryQuality(c.summary) : 0;
+      c.summaryGeneratedAt = new Date();
       await saveMessages(c.id, messages);
       messagesWritten++;
     } catch (err) {
@@ -683,8 +756,11 @@ async function exportAll() {
 async function main() {
   const i = process.argv.indexOf('--chat');
   const singleChat = i !== -1 ? process.argv[i + 1] : null;
+  const forceIdx = process.argv.indexOf('--force');
+  const forceRefresh = forceIdx !== -1;
+  
   if (singleChat) {
-    await refreshSingle(singleChat);
+    await refreshSingle(singleChat, forceRefresh);
   } else {
     await exportAll();
   }
