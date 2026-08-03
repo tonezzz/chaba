@@ -106,3 +106,29 @@ bouis:
 - Simulated vehicles are kept in a `vehicleLayer`; the control panel toggles the whole group.
 - BOUI markers are added to a `bouiLayer`; each one can be toggled independently.
 - The top nav and object list are rendered from YAML after the page loads.
+
+## Track4 modularization (August 2026)
+
+Track4 was successfully modularized from a monolithic 1003-line `track.js` into 10 focused modules, achieving 62% code reduction while maintaining functionality:
+
+**Modules extracted:**
+- `RacerIconRenderer` - Racer marker rendering and state visualization
+- `SimulationEngine` - Race simulation physics and timing
+- `UIController` - UI state management and event handling
+- `MapLayerManager` - Leaflet layer organization and control
+- `StateManager` - Global state persistence and synchronization
+- `RaceSimulation` - Race simulation physics, collision detection, racer movement, wind integration
+- `CourseManager` - Course loading, saving, YAML persistence, API integration
+- `YamlEditor` - YAML editing interface, validation, save/load
+
+**Results:**
+- `track.js`: 1003 → 379 lines (62% reduction)
+- Total: 10 modules across the Track4 application
+- All 10 unit tests passing in `course.test.js`
+- 3D Gaussian Splat separated to isolated test page `/apps/test-splat/`
+- SSOT documentation restructured for completeness with Access & URLs section
+
+**Testing:**
+- Unit tests: 10 tests in `course.test.js` (haversine, midpoint, resolveSide, buildGuide, buildRoundedGuide)
+- Integration: Module loading, course loading, racer rendering, simulation, layers, UI controls
+- Code quality: Pre-commit hooks for JS syntax, all modules pass `node --check`
