@@ -779,9 +779,9 @@ class HealthCheckDashboard {
     
     try {
       if (service.type === 'http') {
-        return await this.checkHttp(service);
+        return await this.checkHttp(service, startTime);
       } else if (service.type === 'container') {
-        return await this.checkContainer(service);
+        return await this.checkContainer(service, startTime);
       } else {
         return { status: 'unknown', error: 'Unknown service type' };
       }
@@ -794,7 +794,7 @@ class HealthCheckDashboard {
     }
   }
 
-  async checkHttp(service) {
+  async checkHttp(service, startTime) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), service.timeout * 1000);
 
@@ -805,18 +805,18 @@ class HealthCheckDashboard {
       });
       clearTimeout(timeout);
 
-      const responseTime = Date.now() - Date.now() - (service.timeout * 1000); // Rough estimate
+      const responseTime = Date.now() - startTime;
 
       if (response.status === service.expected_status) {
         return {
           status: 'healthy',
-          responseTime: Math.abs(responseTime),
+          responseTime,
           statusCode: response.status
         };
       } else {
         return {
           status: 'degraded',
-          responseTime: Math.abs(responseTime),
+          responseTime,
           statusCode: response.status,
           error: `Expected ${service.expected_status}, got ${response.status}`
         };
@@ -836,7 +836,7 @@ class HealthCheckDashboard {
     }
   }
 
-  async checkContainer(service) {
+  async checkContainer(service, startTime) {
     try {
       // Use status-api to check container status
       const response = await fetch(`/api/container/${service.container}`);
@@ -846,7 +846,7 @@ class HealthCheckDashboard {
         return {
           status: 'healthy',
           state: data.state,
-          responseTime: Date.now() - Date.now()
+          responseTime: Date.now() - startTime
         };
       } else {
         return {
