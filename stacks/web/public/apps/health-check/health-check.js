@@ -101,20 +101,14 @@ class HealthCheckDashboard {
       '/api/status'
     ];
 
-    console.log('Starting location detection...');
     for (const endpoint of homeEndpoints) {
       try {
-        console.log('Trying endpoint:', endpoint);
         const response = await fetch(endpoint);
-
-        console.log('Response from', endpoint, ':', response.status, response.ok);
         if (response.ok) {
           this.detectedLocation = 'home';
-          console.log('Location detected as home via', endpoint);
           return 'home';
         }
       } catch (error) {
-        console.log('Failed to reach', endpoint, ':', error.message);
         // Try next endpoint
         continue;
       }
@@ -122,7 +116,6 @@ class HealthCheckDashboard {
 
     // If no home endpoint reachable, assume mobile
     this.detectedLocation = 'mobile';
-    console.log('Location detected as mobile (no home endpoints reachable)');
     return 'mobile';
   }
 
@@ -130,14 +123,11 @@ class HealthCheckDashboard {
     try {
       let location = this.location;
 
-      console.log('loadConfig: starting with location =', location);
       if (location === 'auto') {
         location = await this.detectLocation();
-        console.log('loadConfig: detected location =', location);
       }
 
       const configFile = this.configs[location] || this.configs.home;
-      console.log('loadConfig: loading config from', configFile);
 
       const response = await fetch(configFile);
       if (!response.ok) {
@@ -149,7 +139,6 @@ class HealthCheckDashboard {
       this.services = this.config.services || [];
       this.recoveryActions = this.config.recovery_actions || {};
 
-      console.log('loadConfig: calling updateLocationSelector with', location);
       // Update location selector
       this.updateLocationSelector(location);
 
@@ -173,12 +162,8 @@ class HealthCheckDashboard {
           const detectedText = this.location === 'auto' && this.detectedLocation ? ` (${this.detectedLocation})` : '';
           statusIndicator.textContent = `Using: ${location}${detectedText}`;
           statusIndicator.className = `location-status location-${location}`;
-          console.log('Location selector updated:', location, detectedText);
-        } else {
-          console.log('Location status indicator not found');
         }
       } else {
-        console.log('Location selector not found, retrying...');
         setTimeout(update, 100);
       }
     };
@@ -327,7 +312,7 @@ class HealthCheckDashboard {
           <div class="health-yomi-activity">
             <div class="health-yomi-activity-status">
               <div class="health-yomi-activity-indicator ${processStatus.status === 'processing' || processStatus.status === 'processing_batch' ? 'busy' : 'active'}"></div>
-              <div class="health-yomi-activity-text">${getProcessStatusText(processStatus)}</div>
+              <div class="health-yomi-activity-text">${this.getProcessStatusText(processStatus)}</div>
             </div>
             <div class="health-yomi-activity-metrics">
               <div class="health-yomi-activity-metric">
@@ -346,9 +331,9 @@ class HealthCheckDashboard {
             ${processStatus.status && processStatus.status !== 'idle' ? `
               <div class="health-yomi-progress">
                 <div class="health-yomi-progress-bar">
-                  <div class="health-yomi-progress-fill" style="width: ${getProgressPercent(processStatus)}%"></div>
+                  <div class="health-yomi-progress-fill" style="width: ${this.getProgressPercent(processStatus)}%"></div>
                 </div>
-                <div class="health-yomi-progress-text">${getProgressText(processStatus)}</div>
+                <div class="health-yomi-progress-text">${this.getProgressText(processStatus)}</div>
               </div>
             ` : ''}
           </div>
