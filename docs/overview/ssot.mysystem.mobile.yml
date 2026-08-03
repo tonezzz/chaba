@@ -1,0 +1,93 @@
+title: Mobile Environment
+subtitle: Systems, devices, and setup for mobile/remote work
+icon: 📱
+
+ideas:
+  - Mobile and remote work setup
+  - Single primary workstation (tony-omen) accessible from various networks
+  - Dynamic IP handling across different WiFi networks
+  - Remote access methods and connectivity
+
+sections:
+  - title: Workstations
+    icon: 💻
+    layout: list
+    items:
+      - label: tony-omen
+        text: Primary workstation (dynamic IP across networks)
+        tags: [primary, server, remote-access]
+
+  - title: Network
+    icon: 🌐
+    layout: list
+    items:
+      - label: Dynamic IP Challenge
+        text: tony-omen IP changes across different WiFi networks
+      - label: Home Network
+        text: 192.168.1.0/24 subnet with .local hostname resolution
+      - label: Other Networks
+        text: Various WiFi networks with different IP ranges
+
+  - title: Dynamic IP Solutions
+    icon: 🔧
+    layout: list
+    items:
+      - label: DDNS (Dynamic DNS)
+        text: Use a service like DuckDNS, No-IP, or Cloudflare to get a stable hostname that updates with your IP
+      - label: VPN/Tunnel
+        text: Set up Tailscale, WireGuard, or similar for stable access across networks
+      - label: SSH Config
+        text: Use SSH config with multiple Host entries for different networks
+      - label: IP Discovery Script
+        text: Run a script on tony-omen to email/message current IP when network changes
+      - label: mDNS/Bonjour
+        text: Use .local hostnames when on same network (doesn't work across different networks)
+
+  - title: Services (tony-omen)
+    icon: ⚙️
+    layout: list
+    items:
+      - label: llama-router
+        text: LLM inference router with model routing support (port 8001)
+        tags: [ai, llm, router]
+      - label: postgres
+        text: PostgreSQL database server (port 5432)
+        tags: [database, postgres]
+      - label: Apps Server
+        text: Main apps server (port 8080)
+      - label: Chaba-h3 Preview
+        text: Chaba-h3 preview server (port 8081)
+
+  - title: Available Apps
+    icon: 📱
+    layout: list
+    items:
+      - label: cams
+        text: Camera monitor application
+        tags: [camera, monitor]
+      - label: track4
+        text: Track4 application (training system)
+        tags: [training, simulation]
+
+  - title: Access & URLs
+    icon: 🔗
+    layout: list
+    items:
+      - label: Apps (tony-omen)
+        text: "Use DDNS hostname or current IP: http://[IP]:8080/apps"
+      - label: Chaba-h3 Preview
+        text: "Use DDNS hostname or current IP: http://[IP]:8081/apps"
+      - label: Llama Router API
+        text: "Use DDNS hostname or current IP: http://[IP]:8001"
+      - label: PostgreSQL
+        text: "Use DDNS hostname or current IP: postgresql://[IP]:5432"
+      - label: SSH Access
+        text: "ssh tony@[DDNS-hostname-or-IP]"
+
+config:
+  version: 1
+  last_updated: 2026-08-03
+  maintainer: tony
+  related_files:
+    - ssot.services.yml
+    - ssot.apps.yml

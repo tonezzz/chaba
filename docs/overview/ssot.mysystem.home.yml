@@ -1,0 +1,149 @@
+title: Home Environment
+subtitle: Systems, devices, and setup at home location
+icon: 🏠
+
+ideas:
+  - Central hub for development and testing work
+  - Two workstations with shared input via Barrier
+  - Multiple services and apps deployed across machines
+  - Local network with .local hostname resolution
+
+sections:
+  - title: Workstations
+    icon: 💻
+    layout: list
+    items:
+      - label: tony-omen
+        text: Primary workstation (tony-omen.local, 192.168.1.48)
+        tags: [primary, server, barrier-server]
+      - label: tony-dell
+        text: Secondary workstation (tony-dell.local, 192.168.1.42)
+        tags: [secondary, testing, barrier-client]
+
+  - title: Network
+    icon: 🌐
+    layout: list
+    items:
+      - label: Local Network
+        text: 192.168.1.0/24 subnet with .local hostname resolution
+      - label: tony-omen.local
+        text: 192.168.1.48 - primary workstation
+      - label: tony-dell.local
+        text: 192.168.1.42 - secondary workstation
+
+  - title: Input Sharing (Barrier)
+    icon: 🖱️
+    layout: list
+    items:
+      - label: Barrier Server
+        text: Runs on tony-omen (tony-omen.local:24800) with physical mouse/keyboard
+      - label: Barrier Client
+        text: Runs on tony-dell, connects to tony-omen.local:24800
+        url: file:///home/tony/.config/autostart/barrierc.desktop
+      - label: Client Binary
+        text: /usr/bin/barrierc (not ~/.local/bin/barrierc)
+      - label: Start Command
+        text: nohup /usr/bin/barrierc --disable-crypto --name tony-dell --restart tony-omen.local > /tmp/barrier-client.log 2>&1 &
+      - label: Health Check
+        text: ps -ef | grep barrierc
+      - label: Logs
+        text: /tmp/barrier-client.log
+
+  - title: Services (tony-omen)
+    icon: ⚙️
+    layout: list
+    items:
+      - label: llama-router
+        text: LLM inference router with model routing support
+        tags: [ai, llm, router]
+      - label: postgres
+        text: PostgreSQL database server (port 5432)
+        tags: [database, postgres]
+      - label: yomi-api
+        text: LINE conversation archive and viewer API (port 3000)
+        url: http://tony-omen.local:8080/api/yomi/conversations
+        tags: [api, line, messaging]
+      - label: Apps Server
+        text: Main apps server on port 8080
+        url: http://tony-omen.local:8080
+      - label: Chaba-h3 Preview
+        text: Chaba-h3 preview server on port 8081
+        url: http://tony-omen.local:8081
+
+  - title: Services (tony-dell)
+    icon: ⚙️
+    layout: list
+    items:
+      - label: Apps Server
+        text: Testing apps server on port 8080
+        url: http://tony-dell.local:8080
+
+  - title: Available Apps
+    icon: 📱
+    layout: list
+    items:
+      - label: cams
+        text: Camera monitor application
+        tags: [camera, monitor]
+      - label: track4
+        text: Track4 application (training system)
+        tags: [training, simulation]
+      - label: yomi
+        text: LINE conversation archive and viewer
+        url: http://tony-omen.local:8080/apps/yomi/
+        tags: [messaging, line, archive]
+
+  - title: Access & URLs
+    icon: 🔗
+    layout: list
+    items:
+      - label: Apps (tony-omen)
+        text: http://tony-omen.local:8080/apps
+      - label: Apps (tony-dell)
+        text: http://tony-dell.local:8080/apps
+      - label: Chaba-h3 Preview
+        text: http://tony-omen.local:8081/apps
+      - label: Llama Router API
+        text: http://tony-omen.local:8001
+      - label: Yomi API
+        text: http://tony-omen.local:8080/api/yomi/
+      - label: PostgreSQL
+        text: postgresql://tony-omen.local:5432
+
+  - title: Health Check Endpoints
+    icon: ❤️
+    layout: list
+    items:
+      - label: Health Dashboard
+        text: Location-aware health monitoring dashboard
+        url: http://tony-omen.local:8080/apps/health-check/
+      - label: Web Stack
+        text: Caddy, BServer, Status API
+        url: http://tony-omen.local:8080/api/status
+      - label: Yomi API
+        text: LINE conversation service health
+        url: http://tony-omen.local:8080/api/yomi/conversations
+      - label: Thai Legal LLM
+        text: LLM inference health check
+        url: http://tony-omen.local:8001/health
+      - label: Imagen2
+        text: Image generation service health
+        url: http://tony-omen.local:8000/health
+      - label: GPU Queue
+        text: GPU workload queue health
+        url: http://tony-omen.local:3001/health
+      - label: Home Health Config
+        text: Local network health check configuration
+        url: file:///home/tony/CascadeProjects/chaba/docs/overview/ssot.health.home.yml
+      - label: Mobile Health Config
+        text: External/mobile health check configuration
+        url: file:///home/tony/CascadeProjects/chaba/docs/overview/ssot.health.mobile.yml
+
+config:
+  version: 1
+  last_updated: 2026-08-03
+  maintainer: tony
+  related_files:
+    - ssot.services.yml
+    - ssot.apps.yml
+    - ssot.health.yml
