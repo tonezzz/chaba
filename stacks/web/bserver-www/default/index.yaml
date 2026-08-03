@@ -17,7 +17,7 @@ main:
               <span class="host-temp text-xs text-gray-500 cursor-pointer hover:text-white" data-host="tony-omen" onclick="openTempDetail('tony-omen'); event.stopPropagation();">--°C</span>
             </div>
             <p class="text-xs text-gray-500 mb-3">Docker host server</p>
-            <span class="text-accent text-sm">192.168.1.48</span>
+            <span class="text-accent text-sm">tony-omen.local</span>
             <p class="text-xs text-gray-600 mt-2">Click for details</p>
           </div>
           <div class="bg-card rounded-xl p-5 border border-gray-700 cursor-pointer hover:border-accent transition" onclick="openHost('tony-dell')">
@@ -26,7 +26,7 @@ main:
               <span class="host-temp text-xs text-gray-500 cursor-pointer hover:text-white" data-host="tony-dell" onclick="openTempDetail('tony-dell'); event.stopPropagation();">--°C</span>
             </div>
             <p class="text-xs text-gray-500 mb-3">Secondary workstation</p>
-            <span class="text-accent text-sm">192.168.1.42</span>
+            <span class="text-accent text-sm">tony-dell.local</span>
             <p class="text-xs text-gray-600 mt-2">Click for details</p>
           </div>
           <div class="bg-card rounded-xl p-5 border border-gray-700 cursor-pointer hover:border-accent transition" onclick="openHost('vstarcam')">
@@ -49,7 +49,7 @@ main:
             </div>
             <h3 class="text-white font-semibold mb-1">Caddy</h3>
             <p class="text-xs text-gray-500 mb-3">Static files + reverse proxy</p>
-            <a href="http://192.168.1.48:8080" class="text-accent text-sm hover:underline">:8080 →</a>
+            <a href="http://tony-omen.local:8080" class="text-accent text-sm hover:underline">:8080 →</a>
           </div>
 
           <div class="bg-card rounded-xl p-5 border border-gray-700">
@@ -59,7 +59,7 @@ main:
             </div>
             <h3 class="text-white font-semibold mb-1">Frigate</h3>
             <p class="text-xs text-gray-500 mb-3">AI-powered camera surveillance</p>
-            <a href="http://192.168.1.48:5000" class="text-accent text-sm hover:underline">:5000 →</a>
+            <a href="http://tony-omen.local:5000" class="text-accent text-sm hover:underline">:5000 →</a>
           </div>
 
           <div class="bg-card rounded-xl p-5 border border-gray-700">
@@ -69,7 +69,7 @@ main:
             </div>
             <h3 class="text-white font-semibold mb-1">JupyterLab</h3>
             <p class="text-xs text-gray-500 mb-3">Notebooks &amp; experiments</p>
-            <a href="http://192.168.1.48:8888" class="text-accent text-sm hover:underline">:8888 →</a>
+            <a href="http://tony-omen.local:8888" class="text-accent text-sm hover:underline">:8888 →</a>
           </div>
         </div>
 
@@ -90,12 +90,12 @@ main:
             <div class="text-sm text-white font-semibold">Decisions</div>
             <div class="text-xs text-gray-500">Architecture log</div>
           </a>
-          <a href="http://192.168.1.48:5000" class="bg-card rounded-lg p-4 border border-gray-700 hover:border-accent transition text-center">
+          <a href="http://tony-omen.local:5000" class="bg-card rounded-lg p-4 border border-gray-700 hover:border-accent transition text-center">
             <div class="text-2xl mb-2">🎥</div>
             <div class="text-sm text-white font-semibold">Frigate UI</div>
             <div class="text-xs text-gray-500">NVR interface</div>
           </a>
-          <a href="http://192.168.1.48:8090/" class="bg-card rounded-lg p-4 border border-gray-700 hover:border-accent transition text-center">
+          <a href="http://tony-omen.local:8090/" class="bg-card rounded-lg p-4 border border-gray-700 hover:border-accent transition text-center">
             <div class="text-2xl mb-2">⚙️</div>
             <div class="text-sm text-white font-semibold">Camera Control</div>
             <div class="text-xs text-gray-500">tony-omen · detection</div>
@@ -182,14 +182,14 @@ main:
         const hosts = {
           'tony-omen': {
             name: 'tony-omen',
-            ip: '192.168.1.48',
+            hostname: 'tony-omen.local',
             role: 'Docker host',
-            checkUrl: 'http://192.168.1.48:8080',
+            checkUrl: 'http://tony-omen.local:8080',
             services: ['Caddy :8080', 'Frigate :5000', 'Jupyter :8888', 'Camera Control :8090']
           },
           'tony-dell': {
             name: 'tony-dell',
-            ip: '192.168.1.42',
+            hostname: 'tony-dell.local',
             role: 'Secondary workstation',
             checkUrl: 'http://tony-dell.local:8090/',
             services: ['Camera Control :8090']
@@ -257,9 +257,9 @@ main:
             el.innerHTML = '<span class="status-dot"></span>Offline';
           }
         }
-        checkService('http://192.168.1.48:8080', 'status-web');
-        checkService('http://192.168.1.48:5000', 'status-frigate');
-        checkService('http://192.168.1.48:8888', 'status-jupyter');
+        checkService('http://tony-omen.local:8080', 'status-web');
+        checkService('http://tony-omen.local:5000', 'status-frigate');
+        checkService('http://tony-omen.local:8888', 'status-jupyter');
       </script>
 
       <script>
