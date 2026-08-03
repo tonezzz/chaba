@@ -1,8 +1,11 @@
 /**
  * SplatLayer - MapLibre GL custom layer for Three.js point cloud renderer
  *
- * Uses Three.js to render point clouds from PLY files as a reliable fallback
- * for Gaussian splat rendering. Leverages existing GPS mapping and camera sync.
+ * Uses Three.js to render point clouds from PLY files. 
+ * 
+ * Note: Gaussian splat rendering has been moved to test page (/apps/test-splat/)
+ * due to library compatibility issues. This layer now focuses on reliable
+ * point cloud rendering with GPS mapping and camera sync.
  */
 
 class SplatLayer {

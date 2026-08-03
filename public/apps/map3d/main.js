@@ -3,9 +3,11 @@
  * 
  * A dedicated app for 3D visualization including:
  * - Point cloud rendering from PLY files
- * - Gaussian splat rendering (future)
  * - Tiltable 3D map overlay
  * - Transparent wall visualization
+ * 
+ * Note: Gaussian splat rendering moved to test page (/apps/test-splat/)
+ * due to library compatibility issues. Use test page for experimentation.
  */
 
 import { SplatLayer } from './splat-layer.js';

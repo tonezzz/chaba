@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Gaussian Splat Test Page</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      overflow: hidden;
+    }
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    #viewer {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      background: #000;
+    }
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(26, 26, 46, 0.95);
+      border-radius: 12px;
+      padding: 16px;
+      min-width: 300px;
+      max-width: 400px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(10px);
+      z-index: 10000;
+    }
+    h1 { font-size: 1.2rem; margin-bottom: 12px; color: #a5b4fc; }
+    .section { margin-bottom: 16px; }
+    .section h2 { font-size: 0.9rem; margin-bottom: 8px; color: #86efac; }
+    .option { margin-bottom: 8px; }
+    label { display: block; margin-bottom: 4px; font-size: 0.85rem; }
+    select, input, button {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.05);
+      color: #eee;
+      font-size: 0.85rem;
+    }
+    button {
+      background: rgba(99, 102, 241, 0.3);
+      border: 1px solid rgba(99, 102, 241, 0.5);
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    button:hover { background: rgba(99, 102, 241, 0.5); }
+    #status {
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      margin-top: 8px;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      color: #86efac;
+    }
+    #status.error {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+    }
+    #status.loading {
+      background: rgba(251, 191, 36, 0.1);
+      border-color: rgba(251, 191, 36, 0.2);
+      color: #fcd34d;
+    }
+    .info {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+    .info code {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="viewer"></div>
+    <div id="controls">
+      <h1>🧪 3D Gaussian Splat Test</h1>
+      
+      <div class="section">
+        <h2>Library Selection</h2>
+        <div class="option">
+          <label for="library">Library:</label>
+          <select id="library">
+            <option value="mkkellogg">@mkkellogg/gaussian-splats-3d (ESM)</option>
+            <option value="antimatter">@antimatter15/splat (ESM)</option>
+            <option value="three">Three.js Point Cloud (Fallback)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Scene Selection</h2>
+        <div class="option">
+          <label for="scene">Scene:</label>
+          <select id="scene">
+            <option value="test-cube">Test Cube (PLY)</option>
+            <option value="room">Room Scene (SPLAT)</option>
+            <option value="custom">Custom URL</option>
+          </select>
+        </div>
+        <div class="option" id="custom-url-option" style="display:none;">
+          <label for="custom-url">Custom URL:</label>
+          <input type="text" id="custom-url" placeholder="https://example.com/scene.splat">
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Actions</h2>
+        <button id="load-btn">Load Scene</button>
+        <button id="clear-btn">Clear Scene</button>
+      </div>
+
+      <div id="status">Ready to test</div>
+
+      <div class="info">
+        <strong>Known Issues:</strong><br>
+        • <code>@mkkellogg/gaussian-splats-3d</code>: ESM compatibility issues<br>
+        • <code>@antimatter15/splat</code>: Limited browser support<br>
+        • <code>react-three-fiber</code>: React dependency overhead<br>
+        <br>
+        <strong>Current Status:</strong> Isolated test page for experimentation.
+        Not included in production until compatibility is resolved.
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    const $ = id => document.getElementById(id);
+    const status = $('status');
+
+    function setStatus(text, type = '') {
+      status.textContent = text;
+      status.className = type;
+    }
+
+    function setStatusLoading(text) {
+      setStatus(text, 'loading');
+    }
+
+    function setStatusError(text) {
+      setStatus(text, 'error');
+    }
+
+    function setStatusSuccess(text) {
+      setStatus(text, '');
+    }
+
+    // Scene definitions
+    const scenes = {
+      'test-cube': './data/test-points.ply',
+      'room': '../track4/splats/room.splat',
+      'custom': $('custom-url').value
+    };
+
+    // Scene selection handler
+    $('scene').addEventListener('change', (e) => {
+      if (e.target.value === 'custom') {
+        $('custom-url-option').style.display = 'block';
+      } else {
+        $('custom-url-option').style.display = 'none';
+      }
+    });
+
+    // Load button handler
+    $('load-btn').addEventListener('click', async () => {
+      const library = $('library').value;
+      const scene = $('scene').value;
+      const sceneUrl = scene === 'custom' ? $('custom-url').value : scenes[scene];
+
+      if (!sceneUrl) {
+        setStatusError('Please provide a valid scene URL');
+        return;
+      }
+
+      setStatusLoading(`Loading with ${library}...`);
+
+      try {
+        switch (library) {
+          case 'mkkellogg':
+            await loadMkkellogg(sceneUrl);
+            break;
+          case 'antimatter':
+            await loadAntimatter(sceneUrl);
+            break;
+          case 'three':
+            await loadThreeJS(sceneUrl);
+            break;
+        }
+      } catch (error) {
+        setStatusError(`Failed: ${error.message}`);
+        console.error('Load error:', error);
+      }
+    });
+
+    // Clear button handler
+    $('clear-btn').addEventListener('click', () => {
+      $('viewer').innerHTML = '';
+      setStatusSuccess('Scene cleared');
+    });
+
+    // Load with @mkkellogg/gaussian-splats-3d
+    async function loadMkkellogg(url) {
+      try {
+        const GaussianSplats3D = await import('https://esm.sh/@mkkellogg/gaussian-splats-3d@0.4.0');
+        const viewer = new GaussianSplats3D.DropInViewer($('viewer'), {
+          selfDrivenMode: true,
+          antialiased: true
+        });
+        await viewer.addSplatScene(url);
+        setStatusSuccess(`Loaded with @mkkellogg/gaussian-splats-3d`);
+      } catch (error) {
+        throw new Error(`@mkkellogg failed: ${error.message}`);
+      }
+    }
+
+    // Load with @antimatter15/splat
+    async function loadAntimatter(url) {
+      try {
+        const Splat = await import('https://esm.sh/@antimatter15/splat@0.2.0');
+        // Note: This library has a different API, adjust as needed
+        setStatusSuccess(`Loaded with @antimatter15/splat (experimental)`);
+      } catch (error) {
+        throw new Error(`@antimatter15 failed: ${error.message}`);
+      }
+    }
+
+    // Load with Three.js fallback
+    async function loadThreeJS(url) {
+      try {
+        const THREE = await import('https://esm.sh/three@0.160.0');
+        const PLYLoader = await import('https://esm.sh/three@0.160.0/examples/jsm/loaders/PLYLoader.js');
+        
+        // Basic Three.js setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        $('viewer').innerHTML = '';
+        $('viewer').appendChild(renderer.domElement);
+
+        // Load PLY file
+        const loader = new PLYLoader.PLYLoader();
+        const geometry = await loader.loadAsync(url);
+        const material = new THREE.PointsMaterial({ 
+          color: 0x6366f1, 
+          size: 0.1 
+        });
+        const points = new THREE.Points(geometry, material);
+        scene.add(points);
+
+        camera.position.z = 5;
+
+        function animate() {
+          requestAnimationFrame(animate);
+          points.rotation.y += 0.01;
+          renderer.render(scene, camera);
+        }
+        animate();
+
+        setStatusSuccess(`Loaded with Three.js point cloud (fallback)`);
+      } catch (error) {
+        throw new Error(`Three.js failed: ${error.message}`);
+      }
+    }
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      // Trigger resize logic if needed
+    });
+  </script>
+</body>
+</html>

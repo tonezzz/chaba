@@ -1,5 +1,5 @@
 title: Map3D - 3D Map Viewer
-subtitle: Dedicated app for 3D visualization including point clouds, Gaussian splats, and tiltable map overlays
+subtitle: Dedicated app for 3D visualization including point clouds and tiltable map overlays
 icon: 🗺️
 ideas:
 - Isolates 3D development from Track4 to keep the racing simulator focused
@@ -61,14 +61,14 @@ sections:
     icon: 🎥
     layout: list
     items:
-      - label: Current status
-        text: 'Not yet implemented. SplatLayer has infrastructure but Gaussian splat parsing fails with all tested libraries.'
+      - label: Moved to test page
+        text: 'Gaussian splat rendering moved to /apps/test-splat/ for isolated testing. Not included in production due to library compatibility issues.'
+      - label: Test page location
+        text: '/apps/test-splat/index.html - dedicated test environment for experimenting with different splat libraries without affecting production apps.'
       - label: Library issues
         text: '@mkkellogg/gaussian-splats-3D (v0.4.0, v0.3.0): "Offset is outside the bounds of the DataView" in PlyParser.js. three-gaussian-splats (v0.0.7): same error. iframe with esm.sh CDN: "Invalid typed array length: 4".'
-      - label: Root cause
-        text: 'Issue appears fundamental to browser environment or file format compatibility. Official room.splat from graphdeco-inria/gaussian-splatting repo fails in all approaches.'
-      - label: Future approach
-        text: 'Wait for library updates, use official desktop viewer, or implement custom parser with specific format requirements. Point cloud fallback is reliable alternative.'
+      - label: Current approach
+        text: 'Use test page for library experimentation. Map3D focuses on reliable point cloud rendering via Three.js as production fallback.'
 
   - title: Scene Configuration
     icon: ⚙️

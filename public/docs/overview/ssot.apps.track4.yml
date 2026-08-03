@@ -64,19 +64,16 @@ sections:
     icon: 🎥
     layout: list
     items:
-      - label: Current implementation
-        text: 'Custom Leaflet layer (SplatLayer) wrapping Gaussian splat viewer libraries. File: public/apps/track4/splat-layer.js. Currently disabled due to library compatibility issues.'
+      - label: Moved to test page
+        text: '3D Gaussian Splat functionality moved to /apps/test-splat/ for isolated testing. Not included in Track4 production due to library compatibility issues.'
+      - label: Test page location
+        text: '/apps/test-splat/index.html - dedicated test environment for experimenting with different splat libraries (@mkkellogg, @antimatter15, Three.js fallback).'
       - label: Library compatibility issues
-        text: 'All tested approaches fail with parsing errors: @mkkellogg/gaussian-splats-3D (v0.4.0, v0.3.0) fails with "Offset is outside the bounds of the DataView" in PlyParser.js; three-gaussian-splats (v0.0.7) fails with same error; iframe with esm.sh CDN fails with "Invalid typed array length: 4" in parseStandardSplatToUncompressedSplatArray. Tried official room.splat from graphdeco-inria/gaussian-splatting repo - all fail. Issue appears fundamental to browser environment or file format compatibility.'
-      - label: CORS configuration
-        text: 'Caddy configured with Access-Control-Allow-Origin: * for splat files. File serving confirmed working via curl.'
-      - label: Iframe approach
-        text: 'Tried iframe-based viewer with esm.sh CDN to isolate library context. Still fails with parsing errors. The issue is not specific to direct library integration.'
-      - label: Point cloud fallback
-        text: 'Implementing Three.js point cloud renderer as reliable fallback. Uses standard .ply point cloud format (positions + colors) with PointsMaterial. Estimated 2-4 hours implementation. Lower visual quality than Gaussian splats but reliable rendering. Leverages existing SplatLayer GPS mapping and camera sync logic.'
-      - label: Course YAML splat section
-        text: 'Add optional splat metadata to course YAML: splat.file (path to .ply/.splat), splat.bounds ([[south,west],[north,east]]), splat.center ([lat,lon]). Toggled via MAP tab checkbox.'
-      - label: Training workflow
+        text: 'All tested approaches fail with parsing errors: @mkkellogg/gaussian-splats-3D (v0.4.0, v0.3.0) fails with "Offset is outside the bounds of the DataView" in PlyParser.js; three-gaussian-splats (v0.0.7) fails with same error; iframe with esm.sh CDN fails with "Invalid typed array length: 4".'
+      - label: Current status
+        text: 'Track4 splat-layer.js and splat-viewer.html remain for reference but are not integrated into main Track4 UI. Use test page for experimentation.'
+      - label: Future integration
+        text: 'If library compatibility is resolved, consider re-integrating 3D splat viewing into Track4 for race course visualization. Until then, focus on 2D racing simulation.'
         text: 'Train splats in docker/3dgs container, export .ply, determine GPS bounds, place in public/apps/track4/splats/, add metadata to course YAML.'
       - label: Future options
         text: 'Wait for library updates, use official desktop viewer (not web-based), implement point cloud fallback with Three.js (in progress), or generate custom splat files with specific format requirements (days to weeks).'
