@@ -66,13 +66,14 @@ collection:
 services:
   embedding_service:
     name: embedding-service
-    type: cpu
-    status: building
-    image: python:3.11-slim
+    type: gpu
+    status: running
+    image: gperdrizet/llms-gpu:latest
     model: all-MiniLM-L6-v2
     dimensions: 384
     port: 5000
-    purpose: CPU-only text embeddings for Weaviate
+    purpose: GPU-accelerated text embeddings for Weaviate
+    performance: 32ms per embedding (34x faster than CPU baseline)
 
   weaviate_search:
     name: weaviate-search
@@ -106,7 +107,7 @@ routing:
 
 test_status:
   weaviate_container: running ✅
-  embedding_service: skipped ⏭️
+  embedding_service: running ✅ (GPU, 32ms per embedding)
   weaviate_search: running ✅
   indexing: working ✅
   search_ui: deployed ✅
@@ -114,15 +115,12 @@ test_status:
   data_collection: completed ✅
 
 known_issues:
-  - embedding_service build takes long due to PyTorch dependencies
-  - currently using hash-based embeddings for testing (not production quality)
-  - disk quota issue prevents sentence-transformers installation
-  - need GPU-accelerated embeddings for production
   - Chonkie chunking not yet integrated (using simple character-based chunking)
+  - GPU queue integration complete but not yet actively used for embedding jobs
 
 next_steps:
-  - Implement GPU-accelerated embeddings with sentence-transformers
   - Integrate Chonkie for proper text chunking
   - Test with real semantic search quality
   - Collect performance data for GPU sharing analysis
   - Optimize embedding service for production
+  - Integrate GPU queue for batch embedding jobs

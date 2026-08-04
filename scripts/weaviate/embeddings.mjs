@@ -5,7 +5,7 @@
  * Supports both CPU and GPU modes for comparative testing
  */
 
-const EMBEDDING_SERVICE_URL = process.env.EMBEDDING_SERVICE_URL || 'http://localhost:5001';
+const EMBEDDING_SERVICE_URL = process.env.EMBEDDING_SERVICE_URL || 'http://localhost:5000';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const EMBEDDING_MODEL = 'text-embedding-3-small'; // 1536 dimensions, cost-effective
 const LOCAL_MODEL_DIM = 384; // all-MiniLM-L6-v2 dimension
