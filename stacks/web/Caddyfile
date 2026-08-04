@@ -227,6 +227,10 @@
 	redir @trade_noslash /apps/trade/ 308
 
 	handle_path /apps/trade/api/* {
+		uri strip_prefix /apps/trade/api
+		reverse_proxy trade-api:8000
+	}
+	handle_path /apps/trade/api/* {
 		reverse_proxy trade-api:8000
 	}
 
@@ -357,12 +361,6 @@
 		reverse_proxy txt2vid-inference:8000
 	}
 
-	handle /api/gpu/* {
-		reverse_proxy status-api:8000
-	}
-
-	@gpu_monitor_noslash path /apps/gpu-monitor
-	redir @gpu_monitor_noslash /apps/gpu-monitor/ 308
 
 	handle_path /apps/gpu-monitor/* {
 		root * /srv/public/apps/gpu-monitor
