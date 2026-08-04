@@ -31,6 +31,17 @@ sections:
       - [chrome-monitor, tony-dell, http://127.0.0.1:9223, Real Chrome CDP endpoint]
       - [cdp-controller, tony-dell, http://tony-dell.local:9224, Legacy Node CDP controller]
 
+  - title: Authentication
+    icon: 🔐
+    layout: list
+    items:
+      - label: Basic auth support
+        text: PlayLive sessions can be configured with basic authentication credentials for accessing protected pages.
+      - label: Credential configuration
+        text: Credentials passed via playlived configuration or session creation parameters (username/password).
+      - label: Use case
+        text: Enables verification of Caddy-protected pages like /apps/yomi/* which require basic auth.
+
   - title: Tools
     icon: 🛠️
     layout: list
@@ -52,6 +63,8 @@ sections:
         text: playlive_create_chrome_live creates a remote CDP session.
       - label: Navigate
         text: playlive_navigate to the target URL (default page.goto timeout 15s).
+      - label: Authenticated access
+        text: For protected pages, configure basic auth credentials before navigation to bypass Caddy basic auth prompts.
       - label: Verify
         text: playlive_state returns url and title.
 
@@ -60,7 +73,7 @@ sections:
     layout: list
     items:
       - label: Security
-        text: CDP and playlived are unauthenticated on the LAN; do not expose to untrusted networks.
+        text: CDP and playlived are unauthenticated on the LAN; basic auth is for target page access only, not daemon security. Do not expose to untrusted networks.
       - label: Resource contention
         text: Browser automation shares tony-dell with GPU/interactive workloads.
       - label: Windsurf reload
