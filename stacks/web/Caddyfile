@@ -230,6 +230,31 @@
 		reverse_proxy trade-api:8000
 	}
 
+	handle_path /apps/trade/* {
+		root * /srv/public/apps/trade
+		file_server
+	}
+
+	@tradecanvas_noslash path /apps/trade/tradecanvas
+	redir @tradecanvas_noslash /apps/trade/tradecanvas/ 308
+
+	handle_path /apps/trade/tradecanvas/* {
+		root * /srv/public/apps/trade/tradecanvas
+		file_server
+	}
+
+	@terminal_noslash path /apps/trade/terminal
+	redir @terminal_noslash /apps/trade/terminal/ 308
+
+	handle_path /apps/trade/terminal/api/trade/* {
+		uri strip_prefix /apps/trade/terminal/api/trade
+		reverse_proxy trade-api:8000
+	}
+
+	handle_path /apps/trade/terminal/* {
+		reverse_proxy trading-terminal:80
+	}
+
 	@yomi_noslash path /apps/yomi
 	redir @yomi_noslash /apps/yomi/ 308
 

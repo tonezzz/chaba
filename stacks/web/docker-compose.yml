@@ -65,6 +65,15 @@ services:
       postgres:
         condition: service_healthy
 
+  trading-terminal:
+    container_name: trading-terminal
+    build:
+      context: /home/tony/CascadeProjects/trading-terminal
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    networks:
+      - default
+
   camera-control:
     container_name: camera-control
     build:
