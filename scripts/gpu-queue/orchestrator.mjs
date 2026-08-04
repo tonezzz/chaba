@@ -144,6 +144,61 @@ async function processTxt2vidJob(job) {
   }
 }
 
+// Process embedding job
+async function processEmbeddingJob(job) {
+  console.log(`Processing embedding job ${job.id}`);
+
+  try {
+    const params = job.params;
+    const embeddingServiceUrl = params.embedding_service_url || 'http://localhost:5000';
+    const useGpu = params.use_gpu !== false; // default to GPU
+
+    // Determine endpoint based on single or batch
+    const isBatch = params.texts && Array.isArray(params.texts);
+    const endpoint = isBatch ? '/embed' : '/embed-single';
+    const payload = isBatch 
+      ? { texts: params.texts, use_gpu: useGpu }
+      : { text: params.text, use_gpu: useGpu };
+
+    console.log(`Calling embedding service at ${embeddingServiceUrl}${endpoint}`);
+    console.log(`GPU mode: ${useGpu}, Batch: ${isBatch}, Text count: ${isBatch ? params.texts.length : 1}`);
+
+    const startTime = Date.now();
+    const response = await fetch(`${embeddingServiceUrl}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Embedding service failed: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    const duration = Date.now() - startTime;
+
+    console.log(`Embeddings generated in ${duration}ms`);
+    console.log(`Dimensions: ${result.dimensions || result.embeddings?.[0]?.length || 'unknown'}`);
+    console.log(`Model: ${result.model || params.model || 'unknown'}`);
+
+    // Update job with embedding metadata
+    await db.updateJobMetadata(job.id, {
+      embedding_dimensions: result.dimensions || result.embeddings?.[0]?.length,
+      embedding_model: result.model || params.model,
+      text_count: isBatch ? params.texts.length : 1,
+      processing_time_ms: duration,
+      gpu_used: useGpu
+    });
+
+    await completeJob(job.id, true);
+    return result;
+  } catch (error) {
+    console.error('Embedding job failed:', error);
+    await completeJob(job.id, false, error.message);
+    throw error;
+  }
+}
+
 // CLI interface
 const args = process.argv.slice(2);
 const command = args[0];
@@ -179,6 +234,8 @@ switch (command) {
           processLlamaJob(job);
         } else if (job.type === 'txt2vid') {
           processTxt2vidJob(job);
+        } else if (job.type === 'embedding') {
+          processEmbeddingJob(job);
         } else {
           console.log(`Unknown job type: ${job.type}`);
           completeJob(job.id, false, `Unknown job type: ${job.type}`);

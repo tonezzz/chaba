@@ -177,6 +177,65 @@ export async function updateJobMetrics(id, metrics) {
   return dbResult.rows[0];
 }
 
+// Update job metadata (for embedding-specific fields)
+export async function updateJobMetadata(id, metadata) {
+  const {
+    embedding_dimensions,
+    embedding_model,
+    text_count,
+    processing_time_ms,
+    gpu_used
+  } = metadata;
+
+  const updates = [];
+  const values = [];
+  let paramIndex = 1;
+
+  if (embedding_dimensions !== undefined) {
+    updates.push(`embedding_dimensions = $${paramIndex}`);
+    values.push(embedding_dimensions);
+    paramIndex++;
+  }
+
+  if (embedding_model !== undefined) {
+    updates.push(`embedding_model = $${paramIndex}`);
+    values.push(embedding_model);
+    paramIndex++;
+  }
+
+  if (text_count !== undefined) {
+    updates.push(`text_count = $${paramIndex}`);
+    values.push(text_count);
+    paramIndex++;
+  }
+
+  if (processing_time_ms !== undefined) {
+    updates.push(`execution_time_ms = $${paramIndex}`);
+    values.push(processing_time_ms);
+    paramIndex++;
+  }
+
+  if (gpu_used !== undefined) {
+    updates.push(`gpu_used = $${paramIndex}`);
+    values.push(gpu_used);
+    paramIndex++;
+  }
+
+  if (updates.length === 0) return null;
+
+  values.push(id);
+
+  const query = `
+    UPDATE gpu_queue_jobs
+    SET ${updates.join(', ')}
+    WHERE id = $${paramIndex}
+    RETURNING *
+  `;
+
+  const dbResult = await pool.query(query, values);
+  return dbResult.rows[0];
+}
+
 // Get queue status summary
 export async function getQueueStatus() {
   const result = await pool.query(`
