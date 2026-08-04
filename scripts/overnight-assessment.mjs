@@ -670,6 +670,16 @@ function checkImprovementsSSOT() {
         content += '\n';
       }
       
+      // Analyze impact scores
+      const impactAnalysis = analyzeImpactScores(ssotContent);
+      if (impactAnalysis.highImpactCount > 0) {
+        content += '**High Impact Improvements:** ' + impactAnalysis.highImpactCount + '\n\n';
+        impactAnalysis.highImpactItems.forEach(item => {
+          content += '- **' + item.label + '** (' + item.overall_impact + '/10)\n';
+        });
+        content += '\n';
+      }
+      
     } catch (e) {
       content += 'Failed to parse improvements SSOT: ' + e.message + '\n';
     }
@@ -679,6 +689,51 @@ function checkImprovementsSSOT() {
   }
 
   appendSection('Improvements Tracking', content);
+}
+
+function analyzeImpactScores(ssotContent) {
+  const improvements = parseImprovements(ssotContent);
+  const highImpactItems = [];
+  let highImpactCount = 0;
+  
+  improvements.forEach(imp => {
+    if (imp.status === 'pending' || imp.status === 'planned') {
+      const overall = calculateOverallImpact(imp);
+      if (overall >= 8) {
+        highImpactCount++;
+        highImpactItems.push({
+          label: imp.label,
+          overall_impact: overall
+        });
+      }
+    }
+  });
+  
+  return { highImpactCount, highImpactItems };
+}
+
+function calculateOverallImpact(improvement) {
+  // Weighted average: business 30%, technical 30%, user experience 20%, cost savings 20%
+  const weights = {
+    business: 0.3,
+    technical: 0.3,
+    user_experience: 0.2,
+    cost_savings: 0.2
+  };
+  
+  const business = improvement.business_impact || 5;
+  const technical = improvement.technical_impact || 5;
+  const user_experience = improvement.user_experience_impact || 5;
+  const cost_savings = improvement.cost_savings_impact || 5;
+  
+  const overall = (
+    (business * weights.business) +
+    (technical * weights.technical) +
+    (user_experience * weights.user_experience) +
+    (cost_savings * weights.cost_savings)
+  );
+  
+  return Math.round(overall);
 }
 
 function validateDependencies(ssotContent) {
@@ -748,8 +803,15 @@ function parseImprovements(ssotContent) {
       currentImprovement = { 
         label: line.split('label:')[1].trim(),
         depends_on: [],
+        blocks: [],
         priority: 'medium',
-        status: 'pending'
+        status: 'pending',
+        category: 'general',
+        effort: 'TBD',
+        business_impact: 5,
+        technical_impact: 5,
+        user_experience_impact: 5,
+        cost_savings_impact: 5
       };
     } else if (currentImprovement) {
       if (line.startsWith('depends_on:')) {
@@ -770,13 +832,32 @@ function parseImprovements(ssotContent) {
         currentImprovement.priority = line.split('priority:')[1].trim();
       } else if (line.startsWith('status:')) {
         currentImprovement.status = line.split('status:')[1].trim();
+      } else if (line.startsWith('category:')) {
+        currentImprovement.category = line.split('category:')[1].trim();
+      } else if (line.startsWith('effort:')) {
+        currentImprovement.effort = line.split('effort:')[1].trim();
+      } else if (line.startsWith('business_impact:')) {
+        currentImprovement.business_impact = parseInt(line.split('business_impact:')[1].trim()) || 5;
+      } else if (line.startsWith('technical_impact:')) {
+        currentImprovement.technical_impact = parseInt(line.split('technical_impact:')[1].trim()) || 5;
+      } else if (line.startsWith('user_experience_impact:')) {
+        currentImprovement.user_experience_impact = parseInt(line.split('user_experience_impact:')[1].trim()) || 5;
+      } else if (line.startsWith('cost_savings_impact:')) {
+        currentImprovement.cost_savings_impact = parseInt(line.split('cost_savings_impact:')[1].trim()) || 5;
       } else if (line.startsWith('- label:') && currentImprovement.label) {
         improvements.push(currentImprovement);
         currentImprovement = { 
           label: line.split('label:')[1].trim(),
           depends_on: [],
+          blocks: [],
           priority: 'medium',
-          status: 'pending'
+          status: 'pending',
+          category: 'general',
+          effort: 'TBD',
+          business_impact: 5,
+          technical_impact: 5,
+          user_experience_impact: 5,
+          cost_savings_impact: 5
         };
       }
     }

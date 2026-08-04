@@ -214,7 +214,185 @@ Potential improvements for the assessment system:
 - **Custom Assessment Profiles:** Different scopes for different needs
 - **Integration with Monitoring:** Correlate with Netdata/Prometheus metrics
 
-## Phase 2 Dependency Management Features
+## Phase 3 Impact Scoring Features
+
+**Documentation:** See `docs/kb-dependency-management.md` for comprehensive dependency management documentation.
+
+### Impact Scoring System
+
+**Purpose:** Quantify the expected value of improvements to enable data-driven prioritization and resource allocation.
+
+**Impact Categories:**
+
+**business_impact:** Business value (1-10 scale)
+- Revenue impact, customer satisfaction, competitive advantage
+- 10: Critical business impact, revenue-generating
+- 7-9: Significant business value, strategic importance
+- 4-6: Moderate business value, operational improvement
+- 1-3: Low business value, nice to have
+
+**technical_impact:** Technical improvement (1-10 scale)
+- Code quality, architecture, performance, security
+- 10: Critical technical debt, security vulnerability
+- 7-9: Significant technical improvement, performance gain
+- 4-6: Moderate technical improvement, code quality
+- 1-3: Low technical impact, minor cleanup
+
+**user_experience_impact:** User experience value (1-10 scale)
+- Usability, performance, reliability, features
+- 10: Critical UX issue, user-facing outage
+- 7-9: Significant UX improvement, major feature
+- 4-6: Moderate UX improvement, minor feature
+- 1-3: Low UX impact, polish
+
+**cost_savings_impact:** Cost reduction value (1-10 scale)
+- Infrastructure costs, operational efficiency, time savings
+- 10: Major cost reduction, significant savings
+- 7-9: Moderate cost reduction, measurable savings
+- 4-6: Minor cost reduction, some efficiency gains
+- 1-3: Minimal cost impact, negligible savings
+
+**impact_summary:** Brief description of expected impact
+- Example: "Reduces infrastructure costs by 20% through GPU optimization"
+- Purpose: Quick understanding of improvement value
+
+### Priority Calculation
+
+**Weighted Average Formula:**
+```
+Overall Impact = (business_impact × 0.3) + (technical_impact × 0.3) + 
+                 (user_experience_impact × 0.2) + (cost_savings_impact × 0.2)
+```
+
+**Priority Mapping:**
+- Overall Impact ≥ 8: HIGH priority
+- Overall Impact 5-7: MEDIUM priority
+- Overall Impact < 5: LOW priority
+
+**Usage:** Used for automatic prioritization alongside manual priority settings.
+
+### Impact Scoring Script
+
+**Script:** `scripts/impact-scoring.mjs`
+
+**Usage:**
+```bash
+# Analyze current impact scores
+node scripts/impact-scoring.mjs analyze
+
+# Calculate impact scores for all improvements
+node scripts/impact-scoring.mjs score
+
+# Prioritize improvements by impact
+node scripts/impact-scoring.mjs prioritize
+```
+
+**Features:**
+- **Analyze Mode:** Detailed impact analysis by category and status
+- **Score Mode:** Calculate overall impact scores and suggest priorities
+- **Prioritize Mode:** Sort improvements by impact and identify priority mismatches
+
+**Example Output:**
+```
+1. 🟡 MEDIUM 7/10 - Memory Usage Optimization
+   Business: 6, Technical: 8, UX: 7, Cost: 5
+   Current priority: medium, Effort: 2-3 hours
+```
+
+### SSOT Integration
+
+**SSOT Fields:**
+```yaml
+- label: Memory Usage Optimization
+  business_impact: 6
+  technical_impact: 8
+  user_experience_impact: 7
+  cost_savings_impact: 5
+  impact_summary: Reduces infrastructure costs and improves system performance
+```
+
+**Assessment Integration:**
+- Impact scores automatically analyzed during overnight assessments
+- High impact improvements (≥8/10) highlighted in reports
+- Impact distribution by category included in assessment results
+- Priority mismatches between manual and impact-based prioritization identified
+
+### Impact Analysis in Assessment Reports
+
+**High Impact Improvements Section:**
+- Lists all improvements with overall impact ≥ 8/10
+- Shows individual impact scores and summaries
+- Helps identify most valuable work to prioritize
+
+**Impact Distribution:**
+- High Impact (≥8): Count of high-value improvements
+- Medium Impact (5-7): Count of moderate-value improvements
+- Low Impact (<5): Count of low-value improvements
+
+**Category Impact Averages:**
+- Average impact score by category
+- Identifies which categories have highest expected value
+- Helps with resource allocation and category prioritization
+
+### Impact-Based Prioritization Benefits
+
+**Data-Driven Decisions:**
+- Quantitative basis for improvement selection
+- Reduces bias in prioritization decisions
+- Enables comparison across different improvement types
+
+**Resource Allocation:**
+- Focus effort on highest-impact improvements
+- Align resources with expected business value
+- Optimize return on investment for improvement work
+
+**Transparency:**
+- Clear rationale for prioritization decisions
+- Stakeholder understanding of improvement value
+- Historical tracking of impact predictions vs actual results
+
+**Continuous Improvement:**
+- Track impact accuracy over time
+- Refine impact scoring based on actual outcomes
+- Learn which impact categories are most predictive
+
+### Best Practices for Impact Scoring
+
+**Scoring Guidelines:**
+- **Be Realistic:** Avoid overestimating impact - conservative scoring is better
+- **Consider Effort:** High impact with low effort should be prioritized
+- **Think Long-term:** Consider both immediate and future impact
+- **Be Specific:** Use impact summaries to explain scoring rationale
+- **Review Regularly:** Update impact scores as understanding improves
+
+**Priority Alignment:**
+- Use impact scores to validate manual priority assignments
+- Address priority mismatches (manual vs impact-based)
+- Consider both impact and dependencies when planning
+- Adjust manual priority if impact analysis suggests different prioritization
+
+**Category Considerations:**
+- Different categories naturally have different impact profiles
+- Technical improvements may have high technical impact but low business impact
+- Monitoring improvements often have high business impact through risk reduction
+- Documentation improvements typically have lower immediate impact
+
+### Integration with Existing Features
+
+**Dependency Management:**
+- Impact scores complement dependency analysis
+- High impact improvements may justify breaking dependency rules
+- Dependency chains can be prioritized by cumulative impact
+
+**Git Integration:**
+- Impact scores included in improvement metadata
+- Track impact predictions vs actual outcomes via git history
+- Link impact changes to specific commits
+
+**Verification Loop:**
+- Verify impact predictions during improvement completion
+- Update impact scores based on actual results
+- Learn from impact prediction accuracy
 
 **Documentation:** See `docs/kb-dependency-management.md` for comprehensive dependency management documentation.
 

@@ -65,23 +65,46 @@ sections:
           **Plan Critical Path:** Identify dependencies that form the critical path for delivery
         tags: [dependencies, best-practices]
 
-      - label: Example Dependency Chain
+      - label: Impact Scoring Guide
         text: |
-          **Linear Chain:** A → B → C
-          - A must complete before B can start
-          - B must complete before C can start
-          - Critical path: A → B → C
+          Use impact scoring to prioritize improvements based on their expected value:
           
-          **Fan-Out:** A → [B, C, D]
-          - A must complete before B, C, or D can start
-          - B, C, D can proceed in parallel after A completes
-          - A is critical path item
+          **business_impact:** Business value (1-10 scale)
+          - Revenue impact, customer satisfaction, competitive advantage
+          - 10: Critical business impact, revenue-generating
+          - 7-9: Significant business value, strategic importance
+          - 4-6: Moderate business value, operational improvement
+          - 1-3: Low business value, nice to have
           
-          **Fan-In:** [A, B, C] → D
-          - A, B, C must all complete before D can start
-          - A, B, C can proceed in parallel
-          - Longest of A, B, C determines critical path
-        tags: [dependencies, examples]
+          **technical_impact:** Technical improvement (1-10 scale)
+          - Code quality, architecture, performance, security
+          - 10: Critical technical debt, security vulnerability
+          - 7-9: Significant technical improvement, performance gain
+          - 4-6: Moderate technical improvement, code quality
+          - 1-3: Low technical impact, minor cleanup
+          
+          **user_experience_impact:** User experience value (1-10 scale)
+          - Usability, performance, reliability, features
+          - 10: Critical UX issue, user-facing outage
+          - 7-9: Significant UX improvement, major feature
+          - 4-6: Moderate UX improvement, minor feature
+          - 1-3: Low UX impact, polish
+          
+          **cost_savings_impact:** Cost reduction value (1-10 scale)
+          - Infrastructure costs, operational efficiency, time savings
+          - 10: Major cost reduction, significant savings
+          - 7-9: Moderate cost reduction, measurable savings
+          - 4-6: Minor cost reduction, some efficiency gains
+          - 1-3: Minimal cost impact, negligible savings
+          
+          **impact_summary:** Brief description of expected impact
+          - Example: "Reduces infrastructure costs by 20% through GPU optimization"
+          - Purpose: Quick understanding of improvement value
+          
+          **Priority Calculation:** Weighted average of impact scores
+          - Formula: (business * 0.3) + (technical * 0.3) + (user_experience * 0.2) + (cost_savings * 0.2)
+          - Result: Used for automatic prioritization alongside manual priority
+        tags: [impact, scoring, guide]
   - title: High Priority Improvements
     icon: 🔴
     layout: list
@@ -112,6 +135,11 @@ sections:
         category: configuration
         discovered: 2026-08-04
         assessment_ref: overnight-assessment-2026-08-04
+        business_impact: 3
+        technical_impact: 7
+        user_experience_impact: 2
+        cost_savings_impact: 1
+        impact_summary: Eliminates deprecation warning and ensures future Docker Compose compatibility
         action_items:
           - Remove version attribute from docker-compose.yml
           - Test docker compose commands after change
@@ -123,6 +151,25 @@ sections:
         git_branch: master
         git_short_commit: f159c7af
         git_commit_message: Remove obsolete version attribute from docker-compose.yml
+
+      - label: GPU Queue Priority System Enhancement
+        text: Enhanced GPU queue with yomi_summary and yomi_daily priority levels (P4), added cancelled status tracking, and improved job type breakdown
+        status: pending
+        priority: medium
+        effort: 1 hour
+        category: gpu
+        discovered: 2026-08-04
+        assessment_ref: overnight-assessment-2026-08-04
+        depends_on: GPU Monitoring Enhancements
+        dependency_reason: Priority system enhancement builds on monitoring improvements
+        action_items:
+          - Add yomi_summary and yomi_daily to priority mapping (P4)
+          - Implement cancelled status tracking in database
+          - Update job type breakdown to include new types
+          - Test priority scheduling with new levels
+        related_files:
+          - scripts/gpu-queue/db.mjs
+        tags: [gpu, queue, priority, enhancements]
 
       - label: Yomi Summarization Status Investigation
         text: Fix Yomi summarization status endpoint showing "Unknown" and "Last Run: Never" - verify if daily summarization is actually running
@@ -150,12 +197,15 @@ sections:
 
       - label: GPU Queue Job History Verification
         text: Investigate why GPU queue shows 0 completed/failed jobs - verify job history tracking and data retention policies
-        status: pending
+        status: completed
         priority: high
         effort: 1-2 hours
         category: gpu
         discovered: 2026-08-04
         assessment_ref: overnight-assessment-2026-08-04
+        completed: 2026-08-04
+        depends_on: GPU Queue Job History Verification
+        dependency_reason: Memory analysis requires understanding GPU memory usage patterns
         action_items:
           - Check database for historical job records
           - Verify job completion logging
@@ -165,6 +215,10 @@ sections:
           - scripts/gpu-queue/db.mjs
           - scripts/gpu-queue/queue.mjs
         tags: [gpu, queue, database, monitoring]
+        git_commit: f159c7afaeab12c62a034af680cb2a3b818b50c7
+        git_branch: master
+        git_short_commit: f159c7af
+        git_commit_message: Enhanced GPU queue monitoring with job type breakdown, recent history, and priority distribution
 
   - title: Medium Priority Improvements
     icon: 🟡
@@ -178,10 +232,14 @@ sections:
         category: performance
         discovered: 2026-08-04
         assessment_ref: overnight-assessment-2026-08-04
-        depends_on: GPU Queue Job History Verification
-        dependency_reason: Memory analysis requires understanding GPU memory usage patterns
+        dependency_reason: Memory analysis should follow GPU queue monitoring completion
         blocks: System Load Analysis, GPU Process Management
         blocking_reason: Memory optimization baseline needed for load and GPU analysis
+        business_impact: 6
+        technical_impact: 8
+        user_experience_impact: 7
+        cost_savings_impact: 5
+        impact_summary: Reduces infrastructure costs and improves system performance through memory optimization
         action_items:
           - Identify top memory-consuming processes
           - Review container memory limits
@@ -210,6 +268,34 @@ sections:
           - docs/overview/ssot.services.yml
         tags: [performance, load, optimization]
 
+      - label: GPU Monitoring Enhancements
+        text: Enhanced GPU tab with job type breakdown, recent job history, priority distribution, cancelled job tracking, and job duration display
+        status: completed
+        priority: medium
+        effort: 2-3 hours
+        category: gpu
+        discovered: 2026-08-04
+        completed: 2026-08-04
+        action_items:
+          - Add job type breakdown by status (imagen2, txt2vid, embedding, llama)
+          - Implement recent job history display (last 5 jobs)
+          - Add priority distribution for pending jobs
+          - Track cancelled jobs in queue status
+          - Show job duration for running jobs
+          - Update Txt2Vid from container to HTTP health check
+        related_files:
+          - scripts/gpu-queue/db.mjs
+          - scripts/gpu-queue/index.mjs
+          - stacks/web/public/apps/health-check/health-check.js
+          - stacks/web/public/apps/health-check/health-check.css
+          - docs/overview/ssot.health.home.yml
+          - docs/overview/ssot.health.yml
+        tags: [gpu, monitoring, enhancements, completed]
+        git_commit: f159c7afaeab12c62a034af680cb2a3b818b50c7
+        git_branch: master
+        git_short_commit: f159c7af
+        git_commit_message: Enhanced GPU monitoring with job type breakdown, recent history, priority distribution, and cancelled tracking
+
       - label: GPU Process Management
         text: Investigate PID 143 holding 2466MB VRAM continuously - implement GPU memory cleanup policies and workload scheduling
         status: pending
@@ -233,6 +319,50 @@ sections:
     icon: 🟢
     layout: list
     items:
+      - label: Health Check API Integration
+        text: Integrated Yomi rate limiter status endpoint into health check configuration for home and mobile locations, added Txt2Vid HTTP health check
+        status: completed
+        priority: medium
+        effort: 30 minutes
+        category: monitoring
+        discovered: 2026-08-04
+        completed: 2026-08-04
+        action_items:
+          - Add yomi-rate-limiter endpoint to ssot.health.home.yml
+          - Add yomi-rate-limiter endpoint to ssot.health.mobile.yml
+          - Change Txt2Vid from container to HTTP health check
+          - Update health check API routing
+        related_files:
+          - docs/overview/ssot.health.home.yml
+          - docs/overview/ssot.health.mobile.yml
+          - stacks/web/public/ssot.health.mobile.yml
+        tags: [monitoring, health-check, integration, completed]
+        git_commit: f159c7afaeab12c62a034af680cb2a3b818b50c7
+        git_branch: master
+        git_short_commit: f159c7af
+        git_commit_message: Integrated Yomi rate limiter and Txt2Vid health checks into health monitoring
+
+      - label: Yomi Activity Status Enhancement
+        text: Enhanced Yomi activity status endpoint with processing statistics, conversation quality metrics, and improved health determination logic
+        status: completed
+        priority: medium
+        effort: 1 hour
+        category: yomi
+        discovered: 2026-08-04
+        completed: 2026-08-04
+        action_items:
+          - Add database processing statistics query
+          - Include conversation quality metrics in activity status
+          - Add elevated GPU temperature to health determination
+          - Improve health status message accuracy
+        related_files:
+          - scripts/yomi/yomi-api.mjs
+        tags: [yomi, monitoring, enhancements, completed]
+        git_commit: f159c7afaeab12c62a034af680cb2a3b818b50c7
+        git_branch: master
+        git_short_commit: f159c7af
+        git_commit_message: Enhanced Yomi activity status with processing statistics and quality metrics
+
       - label: Assessment Enhancements
         text: Add historical trend analysis, performance baseline tracking, automated notifications, and dashboard integration to overnight assessment system
         status: pending
@@ -251,6 +381,31 @@ sections:
           - docs/kb-overnight-assessment.md
           - stacks/web/public/apps/health-check/health-check.js
         tags: [monitoring, assessment, enhancements]
+        business_impact: 7
+        technical_impact: 6
+        user_experience_impact: 5
+        cost_savings_impact: 3
+        impact_summary: Enhanced monitoring and trend analysis enables data-driven decisions and proactive issue detection
+
+      - label: Overnight Assessment Yomi Smart Wait
+        text: Added smart Yomi processing detection to overnight assessment - waits 30 seconds for GPU load to normalize if Yomi is actively processing before GPU assessment
+        status: completed
+        priority: medium
+        effort: 30 minutes
+        category: monitoring
+        discovered: 2026-08-04
+        completed: 2026-08-04
+        action_items:
+          - Add Yomi activity status check before GPU assessment
+          - Implement 30-second wait if Yomi is processing
+          - Improve GPU assessment accuracy during active workloads
+        related_files:
+          - scripts/overnight-assessment.mjs
+        tags: [monitoring, assessment, optimization, completed]
+        git_commit: f159c7afaeab12c62a034af680cb2a3b818b50c7
+        git_branch: master
+        git_short_commit: f159c7af
+        git_commit_message: Added smart Yomi processing detection to overnight assessment
 
       - label: Documentation Cleanup
         text: Add explanatory comments for IP addresses in documentation files to clarify why they exist vs active configurations
@@ -304,6 +459,11 @@ sections:
         dependency_reason: Alerting system requires enhanced assessment data for accurate alerts
         blocks: Performance Baselines
         blocking_reason: Alerting infrastructure needed before performance baseline tracking
+        business_impact: 8
+        technical_impact: 7
+        user_experience_impact: 6
+        cost_savings_impact: 4
+        impact_summary: Proactive issue detection reduces downtime and operational costs through faster response
         action_items:
           - Design alerting architecture
           - Implement notification service
@@ -361,27 +521,69 @@ sections:
     icon: ✅
     layout: list
     items:
-      - label: Overnight Assessment System
-        text: Implemented comprehensive overnight system assessment with systemd timer, Node.js script, and automated reporting
+      - label: Overnight Assessment GPU Temp Thresholds
+        text: Adjusted GPU temperature thresholds to realistic values (80°C high, 85°C critical) and added moderate elevation alerting (75°C)
         status: completed
         priority: high
-        effort: 3 hours
+        effort: 30 minutes
         category: monitoring
-        completed: 2026-08-03
-        assessment_ref: overnight-assessment-2026-08-03
+        discovered: 2026-08-04
+        completed: 2026-08-04
         action_items:
-          - Created assessment skill definition
-          - Implemented Node.js assessment script
-          - Set up systemd timer and service
-          - Created comprehensive KB documentation
-          - Tested and validated system
+          - Adjust GPU temperature thresholds (80°C high, 85°C critical)
+          - Add moderate elevation alerting at 75°C
+          - Update auto-creation logic with new thresholds
+          - Test threshold changes
         related_files:
-          - .agents/skills/overnight-assessment/SKILL.md
           - scripts/overnight-assessment.mjs
-          - /etc/systemd/system/chaba-assessment.timer
-          - /etc/systemd/system/chaba-assessment.service
-          - docs/kb-overnight-assessment.md
-        tags: [monitoring, assessment, automation, completed]
+        tags: [monitoring, gpu, thresholds, completed]
+        git_commit: f159c7afaeab12c62a034af680cb2a3b818b50c7
+        git_branch: master
+        git_short_commit: f159c7af
+        git_commit_message: Adjusted GPU temperature thresholds to realistic values (80°C high, 85°C critical)
+
+      - label: Git Hook Hostname Enforcement
+        text: Updated pre-commit hook to skip hosts.* files from IP address validation (they legitimately contain network documentation)
+        status: completed
+        priority: low
+        effort: 15 minutes
+        category: configuration
+        discovered: 2026-08-04
+        completed: 2026-08-04
+        action_items:
+          - Add hosts.* pattern to skip files in pre-commit hook
+          - Update both skip_files and check_files patterns
+          - Test hostname enforcement with network documentation
+        related_files:
+          - .githooks/pre-commit
+        tags: [git, configuration, hostname-enforcement, completed]
+        git_commit: f159c7afaeab12c62a034af680cb2a3b818b50c7
+        git_branch: master
+        git_short_commit: f159c7af
+        git_commit_message: Updated pre-commit hook to skip hosts.* files from IP validation
+
+      - label: Embeddings PyTorch Upgrade
+        text: Upgraded PyTorch from 2.0.1 to 2.1.0 and fixed numpy dependency resolution in embeddings Dockerfile
+        status: completed
+        priority: medium
+        effort: 1 hour
+        category: infrastructure
+        discovered: 2026-08-04
+        completed: 2026-08-04
+        action_items:
+          - Upgrade PyTorch from 2.0.1+cu118 to 2.1.0+cu118
+          - Upgrade pip and install wheel first
+          - Remove hardcoded numpy version from requirements.txt
+          - Add PyTorch installation verification
+          - Let pip resolve numpy version automatically
+        related_files:
+          - scripts/embeddings/Dockerfile
+          - scripts/embeddings/requirements.txt
+        tags: [infrastructure, docker, pytorch, completed]
+        git_commit: f159c7afaeab12c62a034af680cb2a3b818b50c7
+        git_branch: master
+        git_short_commit: f159c7af
+        git_commit_message: Upgraded PyTorch to 2.1.0 and fixed numpy dependency resolution
 
   - title: Action Plan Timeline
     icon: 📅
