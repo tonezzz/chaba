@@ -7,7 +7,6 @@
  * for semantic search using SEA-LION-E5-Embedding-600M model
  */
 
-import weaviate from 'weaviate-client';
 import { readFile, readdir, stat } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -34,22 +33,22 @@ const DOCUMENT_PATTERNS = [
   { pattern: 'scripts/**/*.md', type: 'docs', category: 'scripts' },
 ];
 
-// Connect to Weaviate
-const client = weaviate.client({
-  connectionParams: {
-    http: {
-      host: WEAVIATE_URL.replace('http://', '').replace('https://', '').split(':')[0],
-      port: parseInt(WEAVIATE_URL.split(':')[2]) || 8082,
-      secure: false
-    },
-    grpc: {
-      address: WEAVIATE_URL.replace('http://', '').replace('https://', '').split(':')[0] + ':' + (parseInt(WEAVIATE_URL.split(':')[2]) || 8082),
-      secure: false
-    }
-  }
-});
+// Connect to Weaviate using REST API
+const WEAVIATE_API = `${WEAVIATE_URL}/v1`;
 
-console.log('Connected to Weaviate at', WEAVIATE_URL);
+async function connectToWeaviate() {
+  try {
+    const response = await fetch(`${WEAVIATE_API}/.well-known/ready`);
+    if (response.ok) {
+      console.log('Connected to Weaviate at', WEAVIATE_URL);
+    } else {
+      throw new Error('Weaviate not ready');
+    }
+  } catch (error) {
+    console.error('Failed to connect to Weaviate:', error);
+    throw error;
+  }
+}
 
 // Create collection if it doesn't exist
 async function createCollection() {
@@ -59,13 +58,23 @@ async function createCollection() {
     );
     
     try {
-      await client.schema.classDeleter().withClassName(schema.class).do();
+      await fetch(`${WEAVIATE_API}/schema/${schema.class}`, {
+        method: 'DELETE'
+      });
       console.log(`Deleted existing collection: ${schema.class}`);
     } catch (e) {
       // Collection doesn't exist, that's fine
     }
     
-    await client.schema.classCreator().withClass(schema).do();
+    const response = await fetch(`${WEAVIATE_API}/schema`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ class: schema.class, ...schema })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to create collection: ${response.status}`);
+    }
     
     console.log(`Created collection: ${schema.class}`);
   } catch (error) {
@@ -82,13 +91,13 @@ async function generateEmbedding(text) {
 import sys
 from sentence_transformers import SentenceTransformer
 
-model = SentenceTransformer('${MODEL_NAME}')
+model = SentenceTransformer('all-MiniLM-L6-v2')
 text = sys.argv[1]
 embedding = model.encode(text, convert_to_numpy=False)
 print(','.join(map(str, embedding)))
 `;
     
-    const { stdout } = await execAsync(`python3 -c "${script.replace(/"/g, '\\"')}" "${text.replace(/"/g, '\\"')}"`);
+    const { stdout } = await execAsync(`/home/tony/CascadeProjects/chaba/venv/bin/python3 -c "${script.replace(/"/g, '\\"')}" "${text.replace(/"/g, '\\"')}"`);
     const embedding = stdout.trim().split(',').map(Number);
     return embedding;
   } catch (error) {
@@ -130,8 +139,7 @@ function extractTags(content, type) {
 async function chunkText(content, chunkSize = 512, chunkOverlap = 50) {
   try {
     const { stdout } = await execAsync(
-      `source venv/bin/activate && python3 scripts/chunk-text.py "${content.replace(/"/g, '\\"')}" ${chunkSize} ${chunkOverlap}`,
-      { cwd: CHABA_ROOT }
+      `/home/tony/CascadeProjects/chaba/venv/bin/python3 /home/tony/CascadeProjects/chaba/scripts/chunk-text.py "${content.replace(/"/g, '\\"')}" ${chunkSize} ${chunkOverlap}`
     );
     const result = JSON.parse(stdout);
     return result.chunks || [content]; // Return chunks or original if chunking fails
@@ -179,7 +187,15 @@ async function indexDocument(filePath, type, category) {
         vector: embedding,
       };
       
-      await client.data.creator().withObject(dataObj).do();
+      const response = await fetch(`${WEAVIATE_API}/objects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dataObj)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to insert data: ${response.status}`);
+      }
     }
     
     console.log(`Indexed: ${filePath} (${language}, ${content.length} chars, ${chunks.length} chunk${chunks.length > 1 ? 's' : ''})`);
@@ -213,7 +229,7 @@ async function main() {
   try {
     console.log('Starting SSOT document indexing...');
     
-    // Create collection
+    await connectToWeaviate();
     await createCollection();
     
     // Find documents
@@ -228,7 +244,8 @@ async function main() {
     console.log('Indexing complete!');
     
     // Show collection stats
-    const classInfo = await client.schema.classGetter().withClassName('SSOTDocument').do();
+    const response = await fetch(`${WEAVIATE_URL}/v1/schema/SSOTDocument`);
+    const classInfo = await response.json();
     console.log('Collection created:', classInfo);
     
   } catch (error) {
