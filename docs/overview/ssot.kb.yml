@@ -1,0 +1,97 @@
+title: Chaba Knowledge Base & Session Memories
+subtitle: Session learnings, decisions, discoveries, and conventions
+icon: 🧠
+
+# Purpose: Capture KB-worthy facts from assistant sessions
+# This SSOT file serves as the central repository for session learnings
+ideas:
+  - Capture decisions, discoveries, infrastructure changes, conventions, workarounds
+  - Link sessions to KB documentation files (docs/kb-*.md)
+  - Track session metadata (date, topics, duration, outcomes)
+  - Maintain searchable history of system evolution
+  - Support cross-session learning and context preservation
+  - Integrate with existing KB documentation system
+
+# Memory corpus structure
+corpus:
+  system:
+    description: System architecture, infrastructure, and configuration decisions
+    location: docs/kb-system.md
+    tags: [architecture, infrastructure, configuration]
+  
+  development:
+    description: Development workflows, coding conventions, and tooling decisions
+    location: docs/kb-development.md
+    tags: [workflow, conventions, tooling]
+  
+  operations:
+    description: Operational procedures, monitoring, and incident response
+    location: docs/kb-operations.md
+    tags: [operations, monitoring, incidents]
+  
+  features:
+    description: Feature implementations, enhancements, and user-facing changes
+    location: docs/kb-features.md
+    tags: [features, enhancements, user-facing]
+
+# Session memories
+sessions:
+  - date: 2026-08-04
+    duration: 2 hours
+    topics: [dependency-management, impact-scoring, improvements-tracking, gpu-monitoring, yomi-enhancements]
+    outcomes:
+      - Implemented Phase 2 dependency management system
+      - Implemented Phase 3 impact scoring system
+      - Updated SSOT improvements with completed work
+      - Enhanced GPU monitoring with job type breakdown and recent history
+      - Improved Yomi with language detection and batch processing
+    decisions:
+      - Weighted average formula for impact scoring (business 30%, technical 30%, UX 20%, cost 20%)
+      - Dependency fields: depends_on, dependency_reason, blocks, blocking_reason
+      - GPU temperature thresholds: 80°C high, 85°C critical, 75°C moderate
+      - Yomi batch processing: 4 dates per API call, 30-day filtering, 3 concurrent
+      - Thai language detection using Unicode range U+0E00-U+0E7F
+    discoveries:
+      - GPU temperature thresholds needed adjustment to realistic values
+      - Yomi summarization status was working but assessment had parsing bug
+      - GPU queue job history was working but needed enhanced monitoring
+      - PyTorch 2.1.0 upgrade attempted but reverted to 2.0.1 due to compatibility
+      - Git hook needed to skip hosts.* files from IP validation
+    infrastructure_changes:
+      - scripts/dependency-graph.mjs - New dependency graph generation (text, mermaid, dot formats)
+      - scripts/dependency-resolver.mjs - New dependency resolution suggestions
+      - scripts/impact-scoring.mjs - New impact scoring analysis (analyze, score, prioritize modes)
+      - scripts/overnight-assessment.mjs - Enhanced with impact analysis and smart Yomi wait
+      - scripts/gpu-queue/db.mjs - Enhanced with job type breakdown and recent history
+      - scripts/yomi/process-conversations.mjs - Added language detection and batch processing
+      - scripts/yomi/yomi-api.mjs - Enhanced with processing statistics
+      - .githooks/pre-commit - Updated to skip hosts.* files
+    configuration_changes:
+      - docs/overview/ssot.improvements.yml - Added dependency fields, impact scores, updated statuses
+      - docs/overview/ssot.health.home.yml - Added Yomi rate limiter and Txt2Vid HTTP checks
+      - docs/overview/ssot.health.mobile.yml - Added Yomi rate limiter and Txt2Vid HTTP checks
+    related_kb:
+      - docs/kb-overnight-assessment.md
+      - docs/kb-health-check.md
+      - docs/kb-yomi.md
+    related_ssot:
+      - docs/overview/ssot.improvements.yml
+      - docs/overview/ssot.health.home.yml
+      - docs/overview/ssot.health.mobile.yml
+    completed_improvements:
+      - GPU Temperature Elevated (threshold adjustments)
+      - Yomi Summarization Status Investigation (assessment parsing fix)
+      - GPU Queue Job History Verification (monitoring enhancements)
+      - GPU Monitoring Enhancements (job type breakdown, recent history, priority distribution)
+      - Yomi Language Detection & Batch Processing (Thai/English detection, 30-day filtering)
+      - Health Check API Integration (Yomi rate limiter, Txt2Vid HTTP checks)
+      - Yomi Activity Status Enhancement (processing statistics, quality metrics)
+      - Overnight Assessment GPU Temp Thresholds (realistic thresholds, smart Yomi wait)
+      - Git Hook Hostname Enforcement (skip hosts.* files)
+    new_improvements:
+      - GPU Queue Priority System Enhancement (yomi_summary, yomi_daily priority levels)
+    notes:
+      - PyTorch upgrade attempted (2.0.1 → 2.1.0) but reverted due to compatibility issues
+      - Smart Yomi wait added to overnight assessment to avoid GPU load interference
+      - Impact scoring currently shows 0 high impact, 27 medium impact, 1 low impact improvements
+      - Dependency validation working with 1 priority conflict identified

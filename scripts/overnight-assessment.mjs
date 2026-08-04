@@ -672,9 +672,22 @@ function checkImprovementsSSOT() {
       
       // Analyze impact scores
       const impactAnalysis = analyzeImpactScores(ssotContent);
+      content += '**Impact Analysis:**\n\n';
+      content += '- High Impact (≥8/10): ' + impactAnalysis.highImpactCount + '\n';
+      content += '- Medium Impact (5-7/10): ' + impactAnalysis.mediumImpactCount + '\n';
+      content += '- Low Impact (<5/10): ' + impactAnalysis.lowImpactCount + '\n\n';
+      
       if (impactAnalysis.highImpactCount > 0) {
-        content += '**High Impact Improvements:** ' + impactAnalysis.highImpactCount + '\n\n';
+        content += '**High Impact Improvements:**\n\n';
         impactAnalysis.highImpactItems.forEach(item => {
+          content += '- **' + item.label + '** (' + item.overall_impact + '/10)\n';
+        });
+        content += '\n';
+      }
+      
+      if (impactAnalysis.mediumImpactCount > 0) {
+        content += '**Medium Impact Improvements:**\n\n';
+        impactAnalysis.mediumImpactItems.forEach(item => {
           content += '- **' + item.label + '** (' + item.overall_impact + '/10)\n';
         });
         content += '\n';
@@ -694,7 +707,11 @@ function checkImprovementsSSOT() {
 function analyzeImpactScores(ssotContent) {
   const improvements = parseImprovements(ssotContent);
   const highImpactItems = [];
+  const mediumImpactItems = [];
+  const lowImpactItems = [];
   let highImpactCount = 0;
+  let mediumImpactCount = 0;
+  let lowImpactCount = 0;
   
   improvements.forEach(imp => {
     if (imp.status === 'pending' || imp.status === 'planned') {
@@ -705,11 +722,30 @@ function analyzeImpactScores(ssotContent) {
           label: imp.label,
           overall_impact: overall
         });
+      } else if (overall >= 5) {
+        mediumImpactCount++;
+        mediumImpactItems.push({
+          label: imp.label,
+          overall_impact: overall
+        });
+      } else {
+        lowImpactCount++;
+        lowImpactItems.push({
+          label: imp.label,
+          overall_impact: overall
+        });
       }
     }
   });
   
-  return { highImpactCount, highImpactItems };
+  return { 
+    highImpactCount, 
+    highImpactItems,
+    mediumImpactCount,
+    mediumImpactItems,
+    lowImpactCount,
+    lowImpactItems
+  };
 }
 
 function calculateOverallImpact(improvement) {
@@ -792,12 +828,20 @@ function parseImprovements(ssotContent) {
   const improvements = [];
   const lines = ssotContent.split('\n');
   let currentImprovement = null;
+  let currentSection = null;
+  let skipSection = false;
   
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     
+    // Track current section
+    if (line.startsWith('- title:')) {
+      currentSection = line.split('title:')[1].trim();
+      skipSection = currentSection === 'Dependency Management Guide' || currentSection === 'Completed Improvements' || currentSection === 'Action Plan Timeline';
+    }
+    
     if (line.startsWith('- label:')) {
-      if (currentImprovement) {
+      if (currentImprovement && !skipSection) {
         improvements.push(currentImprovement);
       }
       currentImprovement = { 
@@ -813,7 +857,7 @@ function parseImprovements(ssotContent) {
         user_experience_impact: 5,
         cost_savings_impact: 5
       };
-    } else if (currentImprovement) {
+    } else if (currentImprovement && !skipSection) {
       if (line.startsWith('depends_on:')) {
         const deps = line.split('depends_on:')[1].trim();
         if (deps.startsWith('[') && deps.endsWith(']')) {
@@ -845,7 +889,9 @@ function parseImprovements(ssotContent) {
       } else if (line.startsWith('cost_savings_impact:')) {
         currentImprovement.cost_savings_impact = parseInt(line.split('cost_savings_impact:')[1].trim()) || 5;
       } else if (line.startsWith('- label:') && currentImprovement.label) {
-        improvements.push(currentImprovement);
+        if (!skipSection) {
+          improvements.push(currentImprovement);
+        }
         currentImprovement = { 
           label: line.split('label:')[1].trim(),
           depends_on: [],
@@ -863,7 +909,7 @@ function parseImprovements(ssotContent) {
     }
   }
   
-  if (currentImprovement) {
+  if (currentImprovement && !skipSection) {
     improvements.push(currentImprovement);
   }
   

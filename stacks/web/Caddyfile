@@ -10,6 +10,25 @@
 		file_server
 	}
 
+	# Raceman assets (must come before Activepieces to avoid conflicts)
+	handle /assets/* {
+		reverse_proxy host.docker.internal:8083 {
+			header_up Host localhost
+		}
+	}
+
+	handle /apps/common.css {
+		reverse_proxy host.docker.internal:8083 {
+			header_up Host localhost
+		}
+	}
+
+	handle /apps/nav.js {
+		reverse_proxy host.docker.internal:8083 {
+			header_up Host localhost
+		}
+	}
+
 	# Activepieces root-level assets (SPA loads from / due to original base href)
 	@ap_assets path /assets /assets/*
 	handle @ap_assets {
@@ -370,6 +389,25 @@
 		Access-Control-Allow-Headers *
 	}
 
+	# Raceman assets (must come before other handlers)
+	handle /assets/* {
+		reverse_proxy host.docker.internal:8083 {
+			header_up Host localhost
+		}
+	}
+
+	handle /apps/common.css {
+		reverse_proxy host.docker.internal:8083 {
+			header_up Host localhost
+		}
+	}
+
+	handle /apps/nav.js {
+		reverse_proxy host.docker.internal:8083 {
+			header_up Host localhost
+		}
+	}
+
 	handle /apps/track4/api/* {
 		uri strip_prefix /apps/track4/api
 		reverse_proxy host.docker.internal:8123
@@ -388,7 +426,6 @@
 			header_up Host localhost
 		}
 	}
-
 
 	handle_path /apps/gpu-monitor/* {
 		root * /srv/public/apps/gpu-monitor

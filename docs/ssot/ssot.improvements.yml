@@ -204,8 +204,6 @@ sections:
         discovered: 2026-08-04
         assessment_ref: overnight-assessment-2026-08-04
         completed: 2026-08-04
-        depends_on: GPU Queue Job History Verification
-        dependency_reason: Memory analysis requires understanding GPU memory usage patterns
         action_items:
           - Check database for historical job records
           - Verify job completion logging
@@ -415,6 +413,11 @@ sections:
         category: documentation
         discovered: 2026-08-04
         assessment_ref: overnight-assessment-2026-08-04
+        business_impact: 2
+        technical_impact: 3
+        user_experience_impact: 1
+        cost_savings_impact: 1
+        impact_summary: Improves documentation clarity with minimal operational impact
         action_items:
           - Add comments explaining IP addresses in docs
           - Document when IPs are appropriate in documentation
@@ -506,6 +509,11 @@ sections:
         assessment_ref: overnight-assessment-2026-08-04
         depends_on: Docker Compose Configuration Fix
         dependency_reason: Security scanning requires stable Docker configuration
+        business_impact: 9
+        technical_impact: 9
+        user_experience_impact: 7
+        cost_savings_impact: 7
+        impact_summary: Prevents security vulnerabilities and reduces technical debt through proactive dependency management
         action_items:
           - Integrate security vulnerability scanner
           - Add dependency update checking
