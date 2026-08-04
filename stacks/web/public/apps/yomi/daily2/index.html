@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yomi Daily Calendar</title>
+  <style>
+    :root { --bg: #f1f5f9; --card: #fff; --text: #0f172a; --muted: #64748b; --accent: #06b6d4; --border: #e2e8f0; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; overflow: hidden; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+    
+    header { background: #0f172a; color: #f8fafc; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
+    header a.back { color: #f8fafc; text-decoration: none; font-size: 1.1rem; }
+    header h1 { margin: 0; font-size: 1.1rem; flex: 1; }
+    #chat-select { padding: 0.4rem 0.6rem; border: 1px solid #334155; border-radius: 0.375rem; background: #1e293b; color: #f8fafc; font-size: 0.85rem; min-width: 180px; }
+    
+    #app { flex: 1; display: flex; overflow: hidden; }
+    
+    /* Left panel - Calendar */
+    .calendar-panel {
+      width: 280px;
+      min-width: 280px;
+      background: var(--card);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    
+    .calendar-header {
+      padding: 0.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .calendar-nav {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 0.25rem;
+      padding: 0.25rem 0.5rem;
+      cursor: pointer;
+      font-size: 0.8rem;
+      color: var(--text);
+    }
+    
+    .calendar-nav:hover { background: #f8fafc; }
+    
+    .calendar-title {
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+    
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(30px, 1fr));
+      gap: 1px;
+      padding: 0.25rem;
+      flex: 1;
+      overflow: hidden;
+      width: 100%;
+    }
+    
+    .calendar-day-header {
+      text-align: center;
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--muted);
+      padding: 0.2rem 0;
+      min-width: 30px;
+    }
+    
+    .calendar-day {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0.25rem;
+      cursor: pointer;
+      font-size: 0.75rem;
+      position: relative;
+      min-width: 30px;
+      flex-shrink: 0;
+      transition: background 0.15s ease;
+    }
+    
+    .calendar-day:hover { background: #f1f5f9; }
+    
+    .calendar-day.selected { background: var(--accent); color: #fff; }
+    
+    .calendar-day.has-data::after {
+      content: '';
+      position: absolute;
+      bottom: 3px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px;
+      height: 4px;
+      background: currentColor;
+      border-radius: 50%;
+      opacity: 0.7;
+    }
+    
+    .calendar-day.other-month { color: #cbd5e1; }
+    
+    .calendar-day.today { font-weight: 600; }
+    
+    /* Right panel - Summary */
+    .summary-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .summary-header {
+      padding: 1rem 1.5rem;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .summary-date {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    
+    .summary-count {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 0.25rem;
+    }
+    
+    .summary-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+    }
+    
+    .summary-section {
+      background: var(--card);
+      border-radius: 0.5rem;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    
+    .section-title {
+      font-weight: 600;
+      color: #334155;
+      font-size: 0.95rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    .tag-list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    
+    .tag {
+      background: #e2e8f0;
+      color: #334155;
+      padding: 0.3rem 0.7rem;
+      border-radius: 0.375rem;
+      font-size: 0.85rem;
+    }
+    
+    .tag.events { background: #dbeafe; color: #1e40af; }
+    .tag.actions { background: #dcfce7; color: #166534; }
+    .tag.topics { background: #fef3c7; color: #92400e; }
+    
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      padding: 3rem;
+    }
+    
+    .loading {
+      text-align: center;
+      color: var(--muted);
+      padding: 2rem;
+    }
+    
+    .view-chat {
+      color: #3b82f6;
+      text-decoration: none;
+      font-size: 0.85rem;
+      display: inline-block;
+      margin-top: 0.75rem;
+    }
+    
+    .view-chat:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="back" href="/apps/yomi/">&larr; Back</a>
+    <h1>Daily Calendar</h1>
+    <select id="chat-select"><option value="">Loading conversations...</option></select>
+  </header>
+  <div id="app">
+    <div class="calendar-panel">
+      <div class="calendar-header">
+        <button class="calendar-nav" id="prev-month">&laquo;</button>
+        <div class="calendar-title" id="calendar-title">Loading...</div>
+        <button class="calendar-nav" id="next-month">&raquo;</button>
+      </div>
+      <div class="calendar-grid" id="calendar-grid">
+        <div class="calendar-day-header">Sun</div>
+        <div class="calendar-day-header">Mon</div>
+        <div class="calendar-day-header">Tue</div>
+        <div class="calendar-day-header">Wed</div>
+        <div class="calendar-day-header">Thu</div>
+        <div class="calendar-day-header">Fri</div>
+        <div class="calendar-day-header">Sat</div>
+      </div>
+    </div>
+    <div class="summary-panel">
+      <div class="summary-header">
+        <div class="summary-date" id="summary-date">Select a date</div>
+        <div class="summary-count" id="summary-count"></div>
+      </div>
+      <div class="summary-content" id="summary-content">
+        <div class="empty-state">Select a date from the calendar to view the daily summary</div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    let currentChatId = null;
+    let currentMonth = new Date();
+    let selectedDate = null;
+    let dailySummaries = [];
+    let availableDates = new Set();
+    
+    const DAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    async function loadConversations() {
+      const res = await fetch('/api/yomi/conversations', { credentials: 'include' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const { conversations } = await res.json();
+      return conversations || [];
+    }
+    
+    async function loadDailySummaries(chatId) {
+      const res = await fetch(`/api/yomi/daily?chat=${encodeURIComponent(chatId)}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      return data.summaries || [];
+    }
+    
+    function formatDate(dateStr) {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+    }
+    
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+    
+    function renderTag(tag, type) {
+      return `<span class="tag ${type}">${escapeHtml(tag)}</span>`;
+    }
+    
+    function renderSection(title, items, type) {
+      if (!items || !items.length) return '';
+      return `
+        <div class="summary-section">
+          <div class="section-title">${title}</div>
+          <div class="tag-list">${items.map(t => renderTag(t, type)).join('')}</div>
+        </div>
+      `;
+    }
+    
+    function renderSummary(summary, chatId) {
+      if (!summary) {
+        return '<div class="empty-state">No summary available for this date</div>';
+      }
+      
+      return `
+        ${renderSection('Events', summary.events, 'events')}
+        ${renderSection('Actions', summary.actions, 'actions')}
+        ${renderSection('Topics', summary.topics, 'topics')}
+        <a class="view-chat" href="/apps/yomi/chat.html?chat=${encodeURIComponent(chatId)}">View conversation</a>
+      `;
+    }
+    
+    function buildCalendar() {
+      const grid = document.getElementById('calendar-grid');
+      const title = document.getElementById('calendar-title');
+      
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+      
+      title.textContent = currentMonth.toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
+      
+      // Clear and rebuild entire grid including headers
+      grid.innerHTML = '';
+      
+      // Add day headers
+      DAY_HEADERS.forEach(day => {
+        const header = document.createElement('div');
+        header.className = 'calendar-day-header';
+        header.textContent = day;
+        grid.appendChild(header);
+      });
+      
+      // Get first day of month and total days
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const startDay = firstDay.getDay();
+      const totalDays = lastDay.getDate();
+      
+      // Get previous month's days for padding
+      const prevMonthLastDay = new Date(year, month, 0).getDate();
+      
+      // Add previous month's days
+      for (let i = startDay - 1; i >= 0; i--) {
+        const day = prevMonthLastDay - i;
+        const dateStr = formatDateKey(new Date(year, month - 1, day));
+        const dayEl = createDayElement(day, dateStr, true);
+        grid.appendChild(dayEl);
+      }
+      
+      // Add current month's days
+      const today = new Date();
+      for (let day = 1; day <= totalDays; day++) {
+        const date = new Date(year, month, day);
+        const dateStr = formatDateKey(date);
+        const isToday = date.toDateString() === today.toDateString();
+        const dayEl = createDayElement(day, dateStr, false, isToday);
+        grid.appendChild(dayEl);
+      }
+      
+      // Add next month's days to fill grid
+      const totalCells = startDay + totalDays;
+      const remainingCells = totalCells <= 35 ? 35 - totalCells : 42 - totalCells;
+      for (let day = 1; day <= remainingCells; day++) {
+        const dateStr = formatDateKey(new Date(year, month + 1, day));
+        const dayEl = createDayElement(day, dateStr, true);
+        grid.appendChild(dayEl);
+      }
+    }
+    
+    function createDayElement(day, dateStr, isOtherMonth, isToday = false) {
+      const el = document.createElement('div');
+      el.className = 'calendar-day';
+      if (isOtherMonth) el.classList.add('other-month');
+      if (isToday) el.classList.add('today');
+      if (availableDates.has(dateStr)) el.classList.add('has-data');
+      if (selectedDate === dateStr) el.classList.add('selected');
+      
+      el.textContent = day;
+      el.addEventListener('click', () => selectDate(dateStr));
+      return el;
+    }
+    
+    function formatDateKey(date) {
+      return date.toISOString().split('T')[0];
+    }
+    
+    function selectDate(dateStr) {
+      selectedDate = dateStr;
+      buildCalendar();
+      renderSummaryForDate(dateStr);
+    }
+    
+    function renderSummaryForDate(dateStr) {
+      const content = document.getElementById('summary-content');
+      const dateEl = document.getElementById('summary-date');
+      const countEl = document.getElementById('summary-count');
+      
+      if (!dateStr) {
+        content.innerHTML = '<div class="empty-state">Select a date from the calendar to view the daily summary</div>';
+        dateEl.textContent = 'Select a date';
+        countEl.textContent = '';
+        return;
+      }
+      
+      const summary = dailySummaries.find(s => s.date === dateStr);
+      
+      dateEl.textContent = formatDate(dateStr);
+      countEl.textContent = summary ? `${summary.message_count} messages` : '';
+      content.innerHTML = '<div class="loading">Loading...</div>';
+      
+      // Small delay to allow UI to update
+      setTimeout(() => {
+        content.innerHTML = renderSummary(summary, currentChatId);
+      }, 50);
+    }
+    
+    async function init() {
+      const select = document.getElementById('chat-select');
+      
+      try {
+        const conversations = await loadConversations();
+        if (!conversations.length) {
+          document.getElementById('app').innerHTML = '<div class="empty-state">No conversations found.</div>';
+          return;
+        }
+        
+        select.innerHTML = conversations.map(c => 
+          `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`
+        ).join('');
+        
+        const chatParam = new URLSearchParams(location.search).get('chat');
+        if (chatParam) {
+          select.value = chatParam;
+          await loadChatData(chatParam);
+        } else if (conversations.length) {
+          select.value = conversations[0].id;
+          await loadChatData(conversations[0].id);
+        }
+        
+        select.addEventListener('change', () => {
+          const chatId = select.value;
+          if (chatId) {
+            const url = new URL(location.href);
+            url.searchParams.set('chat', chatId);
+            history.replaceState(null, '', url);
+            loadChatData(chatId);
+          }
+        });
+        
+        document.getElementById('prev-month').addEventListener('click', () => {
+          currentMonth.setMonth(currentMonth.getMonth() - 1);
+          buildCalendar();
+        });
+        
+        document.getElementById('next-month').addEventListener('click', () => {
+          currentMonth.setMonth(currentMonth.getMonth() + 1);
+          buildCalendar();
+        });
+        
+      } catch (err) {
+        document.getElementById('app').innerHTML = `<div class="empty-state">Error: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+    
+    async function loadChatData(chatId) {
+      currentChatId = chatId;
+      dailySummaries = await loadDailySummaries(chatId);
+      availableDates = new Set(dailySummaries.map(s => s.date));
+      
+      // Select today or the most recent date
+      const today = formatDateKey(new Date());
+      if (availableDates.has(today)) {
+        selectedDate = today;
+      } else if (dailySummaries.length > 0) {
+        selectedDate = dailySummaries[0].date;
+        // Set calendar to the month of the most recent summary
+        const mostRecent = new Date(dailySummaries[0].date);
+        currentMonth = new Date(mostRecent.getFullYear(), mostRecent.getMonth(), 1);
+      } else {
+        selectedDate = null;
+      }
+      
+      buildCalendar();
+      renderSummaryForDate(selectedDate);
+    }
+    
+    init();
+  </script>
+</body>
+</html>

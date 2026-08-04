@@ -28,6 +28,7 @@ Yomi has been split into a two-stage pipeline for better reliability and monitor
 
 ### API Server (`yomi-api.mjs`)
 - HTTP API on port 3000 (default)
+- **Systemd Service**: `yomi-api.service` (auto-restart enabled)
 - Endpoints:
   - `/api/yomi/health` - Health check
   - `/api/yomi/conversations` - List all conversations
@@ -70,6 +71,12 @@ Only one Yomi MCP server can hold `search-index.db` at a time.
 
 Yomi uses systemd timers for automated operation:
 
+### API Server (`yomi-api.service`)
+- **Purpose**: HTTP API server for Yomi data
+- **Location**: `/etc/systemd/system/yomi-api.service`
+- **Enabled**: Yes (auto-restart on failure)
+- **Status**: Active (added 2026-08-04)
+
 ### Fetch Timer (`yomi-fetch.timer`)
 - **Frequency**: Every 15 minutes (`*:0/15`)
 - **Service**: `yomi-fetch.service`
@@ -77,10 +84,11 @@ Yomi uses systemd timers for automated operation:
 - **Enabled**: Yes (symlinked in `timers.target.wants`)
 
 ### Process Timer (`yomi-process.timer`)
-- **Frequency**: Every 5 minutes (`*:0/5`)
+- **Frequency**: Every minute during midnight to 7 AM (`*-*-* 00,01,02,03,04,05,06,07:*:0/1`)
 - **Service**: `yomi-process.service`
 - **Location**: `/etc/systemd/system/yomi-process.timer`
 - **Enabled**: Yes (symlinked in `timers.target.wants`)
+- **Time-Restricted Execution**: Configured to run only during overnight hours (00:00-07:00) to avoid GPU resource contention during daytime usage (updated 2026-08-04)
 
 ### Management Commands
 ```bash
@@ -90,10 +98,12 @@ systemctl list-timers yomi-*
 # View timer logs
 journalctl -u yomi-fetch.timer
 journalctl -u yomi-process.timer
+journalctl -u yomi-api.service
 
 # Manual trigger
 systemctl start yomi-fetch.service
 systemctl start yomi-process.service
+systemctl restart yomi-api.service
 ```
 
 ## Manual Refreshing
@@ -145,6 +155,7 @@ Parsed objects look like:
 - Daily summaries empty → Ensure `process-conversations.mjs` includes `generateDailySummaries()` call (added in 2026-08-03 fix). Previously only available in legacy `update-conversations.mjs`.
 - Summary language mismatch → Language-aware summarization implemented (2026-08-03) with Thai/English/mixed detection. Some encoding issues remain for certain conversations.
 - Frequent Llama API 500 errors → Rate limiting and circuit breakers implemented (2026-08-03) to manage GPU load. Check `/api/yomi/rate-limiter-status` for current state.
+- **Yomi API not responding** → Check `yomi-api.service` status: `systemctl status yomi-api.service`. Service auto-restarts on failure (added 2026-08-04).
 
 ## UI Improvements (Post-Improvement Session)
 

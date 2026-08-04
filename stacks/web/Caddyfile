@@ -29,6 +29,15 @@
 		reverse_proxy activepieces:80
 	}
 
+	@raceman_noslash path /apps/raceman
+	redir @raceman_noslash /apps/raceman/ 308
+
+	handle /apps/raceman/* {
+		reverse_proxy host.docker.internal:8083 {
+			header_up Host localhost
+		}
+	}
+
 	file_server
 
 	# Docs serving for health check config
@@ -122,8 +131,8 @@
 	}
 
 	handle /docs/overview/ssot.health.yml {
-		root * /home/tony/CascadeProjects/chaba/docs/ssot/infrastructure
-		file_server browse
+		root * /home/tony/CascadeProjects/chaba/docs/overview
+		file_server
 	}
 
 	handle /api/* {
@@ -223,6 +232,44 @@
 		file_server
 	}
 
+	@trade_noslash path /apps/trade
+	redir @trade_noslash /apps/trade/ 308
+
+	handle /apps/trade/api/* {
+		uri strip_prefix /apps/trade
+		reverse_proxy trade-api:8000
+	}
+
+	handle /apps/trade/ws/* {
+		uri strip_prefix /apps/trade
+		reverse_proxy trade-api:8000
+	}
+
+	handle_path /apps/trade/* {
+		root * /srv/public/apps/trade
+		file_server
+	}
+
+	@tradecanvas_noslash path /apps/trade/tradecanvas
+	redir @tradecanvas_noslash /apps/trade/tradecanvas/ 308
+
+	handle_path /apps/trade/tradecanvas/* {
+		root * /srv/public/apps/trade/tradecanvas
+		file_server
+	}
+
+	@terminal_noslash path /apps/trade/terminal
+	redir @terminal_noslash /apps/trade/terminal/ 308
+
+	handle_path /apps/trade/terminal/api/trade/* {
+		uri strip_prefix /apps/trade/terminal/api/trade
+		reverse_proxy trade-api:8000
+	}
+
+	handle_path /apps/trade/terminal/* {
+		reverse_proxy trading-terminal:80
+	}
+
 	@yomi_noslash path /apps/yomi
 	redir @yomi_noslash /apps/yomi/ 308
 
@@ -302,6 +349,14 @@
 		reverse_proxy netdata:19999
 	}
 
+	@tradecanvas_ui_noslash path /apps/trade/tradecanvas-ui
+	redir @tradecanvas_ui_noslash /apps/trade/tradecanvas-ui/ 308
+
+	handle_path /apps/trade/tradecanvas-ui/* {
+		root * /srv/public/apps/trade/tradecanvas-ui
+		file_server
+	}
+
 }
 
 # chaba.h3 local dev root
@@ -325,31 +380,31 @@
 		reverse_proxy txt2vid-inference:8000
 	}
 
-	handle /api/gpu/* {
-		reverse_proxy status-api:8000
+	@raceman_noslash path /apps/raceman
+	redir @raceman_noslash /apps/raceman/ 308
+
+	handle /apps/raceman/* {
+		reverse_proxy host.docker.internal:8083 {
+			header_up Host localhost
+		}
 	}
 
-	@gpu_monitor_noslash path /apps/gpu-monitor
-	redir @gpu_monitor_noslash /apps/gpu-monitor/ 308
 
 	handle_path /apps/gpu-monitor/* {
 		root * /srv/public/apps/gpu-monitor
 		file_server
 	}
 
-	@health_check_noslash path /apps/health-check
-	redir @health_check_noslash /apps/health-check/ 308
-
-	handle_path /apps/health-check/* {
-		root * /srv/public/apps/health-check
-		file_server
-	}
-
-	@netdata_noslash path /apps/netdata
-	redir @netdata_noslash /apps/netdata/ 308
-
 	handle_path /apps/netdata/* {
 		reverse_proxy netdata:19999
+	}
+
+	@tradecanvas_ui_noslash path /apps/trade/tradecanvas-ui
+	redir @tradecanvas_ui_noslash /apps/trade/tradecanvas-ui/ 308
+
+	handle_path /apps/trade/tradecanvas-ui/* {
+	    root * /srv/public/apps/trade/tradecanvas-ui
+	    file_server
 	}
 
 	file_server
