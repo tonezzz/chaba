@@ -39,7 +39,11 @@ const client = weaviate.client({
   connectionParams: {
     http: {
       host: WEAVIATE_URL.replace('http://', '').replace('https://', '').split(':')[0],
-      port: parseInt(WEAVIATE_URL.split(':')[2]) || 8080,
+      port: parseInt(WEAVIATE_URL.split(':')[2]) || 8082,
+      secure: false
+    },
+    grpc: {
+      address: WEAVIATE_URL.replace('http://', '').replace('https://', '').split(':')[0] + ':' + (parseInt(WEAVIATE_URL.split(':')[2]) || 8082),
       secure: false
     }
   }
