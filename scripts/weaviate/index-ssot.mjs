@@ -122,6 +122,21 @@ function extractTags(content, type) {
   return tags;
 }
 
+// Chunk text using Chonkie Python script
+async function chunkText(content, chunkSize = 512, chunkOverlap = 50) {
+  try {
+    const { stdout } = await execAsync(
+      `source venv/bin/activate && python3 scripts/chunk-text.py "${content.replace(/"/g, '\\"')}" ${chunkSize} ${chunkOverlap}`,
+      { cwd: CHABA_ROOT }
+    );
+    const result = JSON.parse(stdout);
+    return result.chunks || [content]; // Return chunks or original if chunking fails
+  } catch (error) {
+    console.warn('Chunking failed, using original content:', error.message);
+    return [content]; // Fallback to original content
+  }
+}
+
 // Index a single document
 async function indexDocument(filePath, type, category) {
   try {
@@ -129,29 +144,41 @@ async function indexDocument(filePath, type, category) {
     const stats = await stat(filePath);
     const title = filePath.split('/').pop();
     
-    const embedding = await generateEmbedding(content);
+    // Chunk the document if it's large (>1000 chars)
+    const chunks = content.length > 1000 
+      ? await chunkText(content, 512, 50)
+      : [content];
+    
     const language = detectLanguage(content);
     const tags = extractTags(content, type);
     
-    const dataObj = {
-      class: 'SSOTDocument',
-      properties: {
-        title,
-        content,
-        path: filePath,
-        type,
-        category,
-        tags,
-        language,
-        lastModified: stats.mtime.toISOString(),
-        size: stats.size,
-      },
-      vector: embedding,
-    };
+    // Index each chunk separately
+    for (let i = 0; i < chunks.length; i++) {
+      const chunkContent = chunks[i];
+      const embedding = await generateEmbedding(chunkContent);
+      
+      const dataObj = {
+        class: 'SSOTDocument',
+        properties: {
+          title: chunks.length > 1 ? `${title} (chunk ${i + 1}/${chunks.length})` : title,
+          content: chunkContent,
+          path: filePath,
+          type,
+          category,
+          tags,
+          language,
+          lastModified: stats.mtime.toISOString(),
+          size: stats.size,
+          chunkIndex: chunks.length > 1 ? i : null,
+          totalChunks: chunks.length > 1 ? chunks.length : null,
+        },
+        vector: embedding,
+      };
+      
+      await client.data.creator().withObject(dataObj).do();
+    }
     
-    await client.data.creator().withObject(dataObj).do();
-    
-    console.log(`Indexed: ${filePath} (${language}, ${content.length} chars)`);
+    console.log(`Indexed: ${filePath} (${language}, ${content.length} chars, ${chunks.length} chunk${chunks.length > 1 ? 's' : ''})`);
   } catch (error) {
     console.error(`Error indexing ${filePath}:`, error.message);
   }
