@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeCanvas - Enhanced Trading UI</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>TradeCanvas - USD/THB</h1>
+            <div class="header-controls">
+                <select id="symbol-selector" class="selector">
+                    <option value="THB" selected>USD/THB</option>
+                    <option value="EUR">EUR/USD</option>
+                    <option value="GBP">GBP/USD</option>
+                    <option value="JPY">USD/JPY</option>
+                    <option value="DXY">DXY</option>
+                    <option value="OIL">OIL</option>
+                </select>
+                <select id="timeframe-selector" class="selector">
+                    <option value="1D">1 Day</option>
+                    <option value="1W">1 Week</option>
+                    <option value="1M">1 Month</option>
+                    <option value="3M">3 Months</option>
+                    <option value="6M">6 Months</option>
+                    <option value="1Y" selected>1 Year</option>
+                    <option value="2Y">2 Years</option>
+                </select>
+                <button id="refresh-btn" class="btn">Refresh</button>
+                <button id="settings-btn" class="btn">Settings</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="chart-section">
+                <div class="chart-header">
+                    <h2 id="chart-title">USD/THB - 1 Year</h2>
+                    <div class="chart-info">
+                        <span id="current-price">--</span>
+                        <span id="price-change">--</span>
+                        <span id="connection-status" class="status disconnected">Disconnected</span>
+                    </div>
+                </div>
+                <div id="main-chart" class="chart-container"></div>
+                <div id="volume-chart" class="chart-container volume-container"></div>
+                <div id="indicator-chart" class="chart-container indicator-container"></div>
+                
+                <div class="chart-controls">
+                    <div class="control-group">
+                        <label>Chart Type:</label>
+                        <button class="chart-type-btn active" data-type="candlestick">Candles</button>
+                        <button class="chart-type-btn" data-type="line">Line</button>
+                        <button class="chart-type-btn" data-type="area">Area</button>
+                    </div>
+                    <div class="control-group">
+                        <label>Indicators:</label>
+                        <button class="indicator-btn" data-indicator="sma">SMA</button>
+                        <button class="indicator-btn" data-indicator="ema">EMA</button>
+                        <button class="indicator-btn" data-indicator="rsi">RSI</button>
+                        <button class="indicator-btn" data-indicator="macd">MACD</button>
+                        <button class="indicator-btn" data-indicator="bb">Bollinger Bands</button>
+                    </div>
+                    <div class="control-group">
+                        <label>Zoom:</label>
+                        <button id="zoom-in-btn" class="zoom-btn">+</button>
+                        <button id="zoom-out-btn" class="zoom-btn">-</button>
+                        <button id="reset-zoom-btn" class="zoom-btn">Reset</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="side-panel">
+                <div class="panel-section">
+                    <h3>Market Summary</h3>
+                    <div class="summary-stats">
+                        <div class="stat-row">
+                            <span class="stat-label">Open:</span>
+                            <span class="stat-value" id="stat-open">--</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">High:</span>
+                            <span class="stat-value" id="stat-high">--</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Low:</span>
+                            <span class="stat-value" id="stat-low">--</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Close:</span>
+                            <span class="stat-value" id="stat-close">--</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Volume:</span>
+                            <span class="stat-value" id="stat-volume">--</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Change %:</span>
+                            <span class="stat-value" id="stat-change">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>Indicator Values</h3>
+                    <div class="indicator-values">
+                        <div class="indicator-row">
+                            <span class="indicator-label">SMA (20):</span>
+                            <span class="indicator-value" id="sma-value">--</span>
+                        </div>
+                        <div class="indicator-row">
+                            <span class="indicator-label">EMA (12):</span>
+                            <span class="indicator-value" id="ema-value">--</span>
+                        </div>
+                        <div class="indicator-row">
+                            <span class="indicator-label">RSI (14):</span>
+                            <span class="indicator-value" id="rsi-value">--</span>
+                        </div>
+                        <div class="indicator-row">
+                            <span class="indicator-label">MACD:</span>
+                            <span class="indicator-value" id="macd-value">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>Recent Trades</h3>
+                    <div id="trade-feed" class="trade-feed">
+                        <!-- Trades will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Chart Settings</h2>
+                    <button class="close-btn" id="close-settings">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="setting-group">
+                        <label>Up Color:</label>
+                        <input type="color" id="up-color" value="#238636">
+                    </div>
+                    <div class="setting-group">
+                        <label>Down Color:</label>
+                        <input type="color" id="down-color" value="#da3633">
+                    </div>
+                    <div class="setting-group">
+                        <label>Background Color:</label>
+                        <input type="color" id="bg-color" value="#21262d">
+                    </div>
+                    <div class="setting-group">
+                        <label>Grid Color:</label>
+                        <input type="color" id="grid-color" value="#30363d">
+                    </div>
+                    <div class="setting-group">
+                        <label>Show Volume:</label>
+                        <input type="checkbox" id="show-volume" checked>
+                    </div>
+                    <div class="setting-group">
+                        <label>Show Crosshair:</label>
+                        <input type="checkbox" id="show-crosshair" checked>
+                    </div>
+                    <div class="setting-group">
+                        <label>Auto Refresh (seconds):</label>
+                        <input type="number" id="auto-refresh" value="30" min="5" max="300">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" id="apply-settings">Apply</button>
+                    <button class="btn" id="cancel-settings">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>Data provided by Trade API | <span id="last-update">Last update: --</span></p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
