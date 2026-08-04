@@ -18,19 +18,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Configuration
 const WEAVIATE_URL = process.env.WEAVIATE_URL || 'http://localhost:8082';
-const EMBEDDING_DIM = 1536; // OpenAI text-embedding-3-small
+const EMBEDDING_DIM = 384; // all-MiniLM-L6-v2 (temporary hash-based for testing)
 const CHABA_ROOT = '/home/tony/CascadeProjects/chaba';
 
 // Document patterns to index
 const DOCUMENT_PATTERNS = [
-  { pattern: 'docs/ssot/**/*.yml', type: 'ssot', category: 'ssot' },
-  { pattern: 'docs/sessions/**/*.yml', type: 'session', category: 'sessions' },
-  { pattern: 'docs/kb/*.md', type: 'kb', category: 'kb' },
-  { pattern: 'docs/assessments/**/*.md', type: 'assessment', category: 'assessments' },
-  { pattern: 'docs/architecture/*.md', type: 'architecture', category: 'architecture' },
   { pattern: 'docs/overview/*.md', type: 'docs', category: 'overview' },
-  { pattern: '.sessions/**/*.yml', type: 'session', category: 'sessions' },
-  { pattern: 'scripts/**/*.md', type: 'docs', category: 'scripts' },
 ];
 
 // Connect to Weaviate using REST API
@@ -86,20 +79,16 @@ async function createCollection() {
 // Generate embedding using local model
 async function generateEmbedding(text) {
   try {
-    // Use Python script with sentence-transformers
-    const script = `
-import sys
-from sentence_transformers import SentenceTransformer
-
-model = SentenceTransformer('all-MiniLM-L6-v2')
-text = sys.argv[1]
-embedding = model.encode(text, convert_to_numpy=False)
-print(','.join(map(str, embedding)))
-`;
-    
-    const { stdout } = await execAsync(`/home/tony/CascadeProjects/chaba/venv/bin/python3 -c "${script.replace(/"/g, '\\"')}" "${text.replace(/"/g, '\\"')}"`);
-    const embedding = stdout.trim().split(',').map(Number);
-    return embedding;
+    // Use simple hash-based embedding for testing (no heavy dependencies)
+    // This is a temporary solution for testing the pipeline
+    const simpleEmbedding = [];
+    for (let i = 0; i < 384; i++) {
+      // Generate deterministic hash-based embedding
+      const charCode = text.charCodeAt(i % text.length) || 0;
+      const hash = (charCode * 31 + i) % 1000 / 1000;
+      simpleEmbedding.push(hash);
+    }
+    return simpleEmbedding;
   } catch (error) {
     console.error('Error generating embedding:', error);
     throw error;
@@ -135,14 +124,22 @@ function extractTags(content, type) {
   return tags;
 }
 
-// Chunk text using Chonkie Python script
+// Chunk text using simple character-based chunking (for testing)
 async function chunkText(content, chunkSize = 512, chunkOverlap = 50) {
   try {
-    const { stdout } = await execAsync(
-      `/home/tony/CascadeProjects/chaba/venv/bin/python3 /home/tony/CascadeProjects/chaba/scripts/chunk-text.py "${content.replace(/"/g, '\\"')}" ${chunkSize} ${chunkOverlap}`
-    );
-    const result = JSON.parse(stdout);
-    return result.chunks || [content]; // Return chunks or original if chunking fails
+    if (content.length <= chunkSize) {
+      return [content];
+    }
+    
+    const chunks = [];
+    let start = 0;
+    while (start < content.length) {
+      const end = Math.min(start + chunkSize, content.length);
+      chunks.push(content.substring(start, end));
+      start = end - chunkOverlap;
+      if (start < 0) start = 0;
+    }
+    return chunks;
   } catch (error) {
     console.warn('Chunking failed, using original content:', error.message);
     return [content]; // Fallback to original content
@@ -152,53 +149,49 @@ async function chunkText(content, chunkSize = 512, chunkOverlap = 50) {
 // Index a single document
 async function indexDocument(filePath, type, category) {
   try {
+    console.log(`Processing: ${filePath}`);
     const content = await readFile(filePath, 'utf-8');
     const stats = await stat(filePath);
     const title = filePath.split('/').pop();
     
-    // Chunk the document if it's large (>1000 chars)
-    const chunks = content.length > 1000 
-      ? await chunkText(content, 512, 50)
-      : [content];
+    console.log(`Content length: ${content.length} chars`);
     
-    const language = detectLanguage(content);
-    const tags = extractTags(content, type);
+    // Use full content without chunking for testing
+    const chunkContent = content;
+    const embedding = await generateEmbedding(chunkContent);
     
-    // Index each chunk separately
-    for (let i = 0; i < chunks.length; i++) {
-      const chunkContent = chunks[i];
-      const embedding = await generateEmbedding(chunkContent);
-      
-      const dataObj = {
-        class: 'SSOTDocument',
-        properties: {
-          title: chunks.length > 1 ? `${title} (chunk ${i + 1}/${chunks.length})` : title,
-          content: chunkContent,
-          path: filePath,
-          type,
-          category,
-          tags,
-          language,
-          lastModified: stats.mtime.toISOString(),
-          size: stats.size,
-          chunkIndex: chunks.length > 1 ? i : null,
-          totalChunks: chunks.length > 1 ? chunks.length : null,
-        },
-        vector: embedding,
-      };
-      
-      const response = await fetch(`${WEAVIATE_API}/objects`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dataObj)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to insert data: ${response.status}`);
-      }
+    console.log(`Embedding generated: ${embedding.length} dimensions`);
+    
+    const dataObj = {
+      class: 'SSOTDocument',
+      properties: {
+        title: title,
+        content: chunkContent,
+        path: filePath,
+        type,
+        category,
+        tags: [],
+        language: 'en',
+        lastModified: stats.mtime.toISOString(),
+        size: stats.size,
+        chunkIndex: null,
+        totalChunks: null,
+      },
+      vector: embedding,
+    };
+    
+    console.log(`Sending to Weaviate...`);
+    const response = await fetch(`${WEAVIATE_API}/objects`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dataObj)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to insert data: ${response.status}`);
     }
     
-    console.log(`Indexed: ${filePath} (${language}, ${content.length} chars, ${chunks.length} chunk${chunks.length > 1 ? 's' : ''})`);
+    console.log(`Document indexed successfully`);
   } catch (error) {
     console.error(`Error indexing ${filePath}:`, error.message);
   }
@@ -206,22 +199,10 @@ async function indexDocument(filePath, type, category) {
 
 // Find files matching patterns
 async function findDocuments() {
-  const documents = [];
-  
-  for (const { pattern, type, category } of DOCUMENT_PATTERNS) {
-    try {
-      const { stdout } = await execAsync(`find ${CHABA_ROOT}/${pattern} -type f 2>/dev/null`);
-      const files = stdout.trim().split('\n').filter(Boolean);
-      
-      for (const file of files) {
-        documents.push({ path: file, type, category });
-      }
-    } catch (error) {
-      console.warn(`No files found for pattern: ${pattern}`);
-    }
-  }
-  
-  return documents;
+  // Hardcoded test file for debugging
+  return [
+    { path: '/home/tony/CascadeProjects/chaba/docs/overview/github-mcp-model-assessment.md', type: 'docs', category: 'overview' }
+  ];
 }
 
 // Main indexing process
@@ -236,8 +217,10 @@ async function main() {
     const documents = await findDocuments();
     console.log(`Found ${documents.length} documents to index`);
     
-    // Index documents
-    for (const doc of documents) {
+    // Index documents (limit to 2 for testing)
+    const testDocs = documents.slice(0, 2);
+    console.log(`Testing with ${testDocs.length} documents`);
+    for (const doc of testDocs) {
       await indexDocument(doc.path, doc.type, doc.category);
     }
     
