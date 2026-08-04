@@ -25,6 +25,7 @@ Comprehensive guides for systems and workflows:
 - **[health-check.md](kb/health-check.md)** - Health check dashboard documentation
 - **[mcp-tools.md](kb/mcp-tools.md)** - MCP server inventory and maintenance
 - **[overnight-assessment.md](kb/overnight-assessment.md)** - Automated overnight system assessment
+- **[weaviate.md](kb/weaviate.md)** - Weaviate vector database and Chonkie chunking
 - **[yomi.md](kb/yomi.md)** - Yomi LINE web app comprehensive documentation
 
 ### Architecture (`docs/architecture/`)

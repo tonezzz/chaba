@@ -112,10 +112,14 @@ known_issues:
   - currently using mock data for search testing
   - no real documents indexed yet
   - need OpenAI API key for real embeddings
+  - Weaviate client library gRPC connection parameter compatibility issue
+  - index-ssot.mjs fails with "Cannot destructure property 'host' of params.connectionParams.grpc as it is undefined"
 
 next_steps:
+  - Fix Weaviate client library gRPC connection parameter compatibility issue
+  - Consider using Weaviate REST API instead of client library
   - Add OpenAI API key to .env for real embeddings
-  - Run initial document indexing
+  - Run initial document indexing with Chonkie chunking
   - Test real semantic search
   - Collect performance data for GPU sharing analysis
   - Optimize CPU embedding service for production
