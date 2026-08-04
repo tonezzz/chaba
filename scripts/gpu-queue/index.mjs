@@ -51,7 +51,7 @@ async function handleRequest(req, res) {
         return sendJson(res, 400, { error: 'Missing type or params' });
       }
 
-      const validTypes = ['llama', 'imagen2', 'txt2vid'];
+      const validTypes = ['llama', 'imagen2', 'txt2vid', 'embedding'];
       if (!validTypes.includes(type)) {
         return sendJson(res, 400, { error: `Invalid type. Must be one of: ${validTypes.join(', ')}` });
       }
