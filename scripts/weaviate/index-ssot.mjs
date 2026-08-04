@@ -199,10 +199,30 @@ async function indexDocument(filePath, type, category) {
 
 // Find files matching patterns
 async function findDocuments() {
-  // Hardcoded test file for debugging
-  return [
-    { path: '/home/tony/CascadeProjects/chaba/docs/overview/github-mcp-model-assessment.md', type: 'docs', category: 'overview' }
+  const documents = [];
+  
+  // Test with multiple overview documents
+  const testFiles = [
+    'github-mcp-model-assessment.md',
+    'gpu-embedding-action-plan.md',
+    'gpu-embedding-feasibility-assessment.md',
+    'gpu-embedding-gap-analysis.md',
+    'gpu-embedding-revised-plan.md',
+    'gpu-sharing-data-collection.md',
+    'wireguard-architecture.md'
   ];
+  
+  for (const file of testFiles) {
+    const path = `/home/tony/CascadeProjects/chaba/docs/overview/${file}`;
+    try {
+      await stat(path); // Check if file exists
+      documents.push({ path, type: 'docs', category: 'overview' });
+    } catch (error) {
+      console.log(`File not found: ${file}`);
+    }
+  }
+  
+  return documents;
 }
 
 // Main indexing process
@@ -217,10 +237,9 @@ async function main() {
     const documents = await findDocuments();
     console.log(`Found ${documents.length} documents to index`);
     
-    // Index documents (limit to 2 for testing)
-    const testDocs = documents.slice(0, 2);
-    console.log(`Testing with ${testDocs.length} documents`);
-    for (const doc of testDocs) {
+    // Index all found documents
+    console.log(`Indexing ${documents.length} documents`);
+    for (const doc of documents) {
       await indexDocument(doc.path, doc.type, doc.category);
     }
     

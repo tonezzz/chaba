@@ -6,9 +6,23 @@
  * Search indexed SSOT documents using Weaviate REST API
  */
 
-import { generateEmbedding } from './embeddings.mjs';
-
 const WEAVIATE_URL = process.env.WEAVIATE_URL || 'http://localhost:8082';
+
+// Simple hash-based embedding (same as index-ssot.mjs)
+async function generateEmbedding(text) {
+  try {
+    const simpleEmbedding = [];
+    for (let i = 0; i < 384; i++) {
+      const charCode = text.charCodeAt(i % text.length) || 0;
+      const hash = (charCode * 31 + i) % 1000 / 1000;
+      simpleEmbedding.push(hash);
+    }
+    return simpleEmbedding;
+  } catch (error) {
+    console.error('Error generating embedding:', error);
+    throw error;
+  }
+}
 
 async function search(query, limit = 5) {
   try {
