@@ -8,6 +8,9 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
+# Upgrade pip and install wheel first
+RUN pip3 install --upgrade pip setuptools wheel
+
 # Install GPU PyTorch first
 RUN pip3 install --no-cache-dir torch==2.0.1+cu118 -f https://download.pytorch.org/whl/torch_stable.html
 
