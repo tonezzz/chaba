@@ -436,13 +436,5 @@
 		reverse_proxy netdata:19999
 	}
 
-	@tradecanvas_ui_noslash path /apps/trade/tradecanvas-ui
-	redir @tradecanvas_ui_noslash /apps/trade/tradecanvas-ui/ 308
-
-	handle_path /apps/trade/tradecanvas-ui/* {
-	    root * /srv/public/apps/trade/tradecanvas-ui
-	    file_server
-	}
-
 	file_server
 }
