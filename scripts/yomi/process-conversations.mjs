@@ -139,7 +139,7 @@ async function summarizeWithLlama(prompt) {
         body: JSON.stringify({
           model: 'Phi-3-mini-4k-instruct-q4',
           messages: [{ role: 'user', content: prompt }],
-          max_tokens: 50,
+          max_tokens: 150,
           temperature: 0.3,
         }),
       });

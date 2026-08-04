@@ -16,6 +16,39 @@ const ERROR_PATTERNS = [
 ];
 
 /**
+ * Detect corruption patterns in summary text
+ */
+function detectCorruptionPatterns(summary) {
+  if (!summary || typeof summary !== 'string') return false;
+  
+  const text = summary.trim();
+  
+  // Check for repeated character patterns (e.g., "ดดดดดดวดดกอดกงววมวม")
+  const repeatedCharPattern = /(.)\1{4,}/;
+  if (repeatedCharPattern.test(text)) return true;
+  
+  // Check for repeated word patterns (e.g., "discussing discussing Savannah Guthrie'ranews about Savannah Guthron")
+  const words = text.split(/\s+/);
+  const wordCounts = {};
+  for (const word of words) {
+    if (word.length > 3) { // Only check meaningful words
+      wordCounts[word] = (wordCounts[word] || 0) + 1;
+      if (wordCounts[word] >= 3) return true;
+    }
+  }
+  
+  // Check for garbled text patterns (mixed random characters)
+  const garbledPattern = /[^\w\s\u0E00-\u0E7F.,!?;:'"()-]/g;
+  const garbledCount = (text.match(garbledPattern) || []).length;
+  if (garbledCount > text.length * 0.3) return true;
+  
+  // Check for specific corruption patterns found in investigation
+  if (text.includes('Guthron') || text.includes('Guthrie\'ranews')) return true;
+  
+  return false;
+}
+
+/**
  * Evaluate summary quality (0-100 score)
  */
 export function evaluateSummaryQuality(summary) {
@@ -23,6 +56,9 @@ export function evaluateSummaryQuality(summary) {
   
   const text = summary.trim();
   if (text === '') return 0;
+  
+  // Check for corruption patterns first
+  if (detectCorruptionPatterns(text)) return 0;
   
   // Check for generic error messages
   for (const pattern of ERROR_PATTERNS) {
