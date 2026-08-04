@@ -15,7 +15,7 @@ import mcp.types as mcp_types
 
 mcp = FastMCP("mcp-playlive")
 
-DAEMON_URL = os.environ.get("PLAYLIVE_URL", "http://192.168.1.42:9230")
+DAEMON_URL = os.environ.get("PLAYLIVE_URL", "http://tony-dell.local:9230")
 
 
 def _request(method, path, payload=None):
@@ -206,6 +206,30 @@ def playlive_get_stash(stash_id: str) -> str:
 def playlive_delete_stash(stash_id: str) -> str:
     """Delete a stashed file by its stash_id."""
     return json.dumps(_request("DELETE", f"/stash/{stash_id}"), indent=2)
+
+
+@mcp.tool()
+def playlive_set_clipboard(session_id: str, text: str) -> str:
+    """Write text to the browser's page clipboard via navigator.clipboard."""
+    return json.dumps(_request("POST", f"/sessions/{session_id}/set_clipboard", {"text": text}), indent=2)
+
+
+@mcp.tool()
+def playlive_get_clipboard(session_id: str) -> str:
+    """Read text from the browser's page clipboard via navigator.clipboard."""
+    return json.dumps(_request("POST", f"/sessions/{session_id}/get_clipboard", {}), indent=2)
+
+
+@mcp.tool()
+def playlive_set_auth(session_id: str, username: str, password: str) -> str:
+    """Set basic authentication credentials for the session. These credentials will be used for all subsequent navigate requests."""
+    return json.dumps(_request("POST", f"/sessions/{session_id}/set_auth", {"username": username, "password": password}), indent=2)
+
+
+@mcp.tool()
+def playlive_clear_auth(session_id: str) -> str:
+    """Clear basic authentication credentials from the session."""
+    return json.dumps(_request("POST", f"/sessions/{session_id}/clear_auth", {}), indent=2)
 
 
 if __name__ == "__main__":

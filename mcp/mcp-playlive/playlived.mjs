@@ -14,6 +14,7 @@ import { randomBytes } from 'crypto';
 const PORT = process.env.PLAYLIVED_PORT || 9230;
 const DEFAULT_REMOTE_CDP = process.env.PLAYLIVED_REMOTE_CDP || 'http://127.0.0.1:9223';
 const DEFAULT_LOCAL_CDP = process.env.PLAYLIVED_LOCAL_CDP || 'http://localhost:9222';
+const MAX_BODY_SIZE = 16 * 1024 * 1024; // 16 MB
 
 const sessions = new Map();
 const stash = new Map();
@@ -33,11 +34,22 @@ function success(res, data) {
 function parseBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
-    req.on('data', d => { body += d; });
+    let rejected = false;
+    req.on('data', d => {
+      if (rejected) return;
+      if (body.length + d.length > MAX_BODY_SIZE) {
+        rejected = true;
+        req.destroy();
+        return reject(new Error('request body too large'));
+      }
+      body += d;
+    });
     req.on('end', () => {
+      if (rejected) return;
       if (!body) return resolve(null);
       try { resolve(JSON.parse(body)); } catch { reject(new Error('invalid JSON')); }
     });
+    req.on('error', reject);
   });
 }
 
@@ -85,13 +97,14 @@ async function createSession(type, target, remote_url, reuse_context = false, at
         if (!context) context = await browser.newContext({ viewport: null });
       } else {
         context = await browser.newContext({ viewport: null });
+        try { await context.grantPermissions(['clipboard-read', 'clipboard-write']); } catch {}
+        page = await context.newPage();
       }
-      page = await context.newPage();
     }
   }
 
   const id = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const session = { id, type, target, cdpUrl, browser, context, page, createdAt: Date.now(), reuse_context, attached };
+  const session = { id, type, target, cdpUrl, browser, context, page, createdAt: Date.now(), reuse_context, attached, httpCredentials: null };
   sessions.set(id, session);
   return { session_id: id, type, target, cdpUrl, reuse_context, attached };
 }
@@ -145,22 +158,22 @@ async function doAction(id, action, body) {
     case 'upload': {
       const { selector, base64: b64, filename, mimeType, stash_id } = body || {};
       if (!selector || typeof selector !== 'string') throw new Error('upload requires a string selector');
-      
       let buf;
+      let uploadFilename, uploadMimeType;
       if (stash_id) {
         const entry = stash.get(stash_id);
         if (!entry) throw new Error(`stash_id ${stash_id} not found`);
         buf = Buffer.from(entry.base64, 'base64');
+        uploadFilename = filename || entry.filename;
+        uploadMimeType = mimeType || entry.mimeType;
       } else if (b64) {
         if (typeof b64 !== 'string') throw new Error('upload requires a base64 string');
         buf = Buffer.from(b64, 'base64');
+        uploadFilename = filename || 'upload.bin';
+        uploadMimeType = mimeType || 'application/octet-stream';
       } else {
         throw new Error('upload requires either base64 or stash_id');
       }
-      
-      const uploadFilename = filename || (stash_id ? stash.get(stash_id).filename : 'upload.bin');
-      const uploadMimeType = mimeType || (stash_id ? stash.get(stash_id).mimeType : 'application/octet-stream');
-      
       await page.locator(selector).setInputFiles([{ name: uploadFilename, mimeType: uploadMimeType, buffer: buf }]);
       return { uploaded: selector, filename: uploadFilename, mimeType: uploadMimeType, size: buf.length };
     }
@@ -208,6 +221,35 @@ async function doAction(id, action, body) {
       `;
       const result = await page.evaluate(script);
       return result;
+    }
+    case 'set_clipboard': {
+      if (typeof body.text !== 'string') throw new Error('text required');
+      await page.evaluate(async (t) => {
+        if (!navigator.clipboard || !navigator.clipboard.writeText) throw new Error('clipboard API not available');
+        await navigator.clipboard.writeText(t);
+      }, body.text);
+      return { set: true };
+    }
+    case 'get_clipboard': {
+      const cbText = await page.evaluate(async () => {
+        if (!navigator.clipboard || !navigator.clipboard.readText) throw new Error('clipboard API not available');
+        return await navigator.clipboard.readText();
+      });
+      return { text: cbText };
+    }
+    case 'set_auth': {
+      const { username, password } = body || {};
+      if (!username || typeof username !== 'string') throw new Error('username required');
+      if (!password || typeof password !== 'string') throw new Error('password required');
+      s.httpCredentials = { username, password };
+      // Set credentials on the context for all future requests
+      await s.context.setHTTPCredentials({ username, password });
+      return { set: true, username };
+    }
+    case 'clear_auth': {
+      s.httpCredentials = null;
+      await s.context.setHTTPCredentials(null);
+      return { cleared: true };
     }
     default:
       throw new Error(`unknown action: ${action}`);
