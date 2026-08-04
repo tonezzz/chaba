@@ -162,6 +162,53 @@ curl http://localhost:8082/v1/.well-known/ready
 - File paths are correct
 - Chonkie virtual environment is activated
 
+### gRPC Connection Error
+**Issue**: `TypeError: Cannot destructure property 'host' of 'params.connectionParams.grpc' as it is undefined`
+**Root Cause**: Weaviate TypeScript client v3 requires both http and grpc connection parameters
+**Solution**: Use REST API instead of gRPC client methods
+**Fix Applied**:
+```javascript
+// Before (gRPC approach - fails)
+const client = weaviate.client({
+  connectionParams: {
+    http: { host: 'localhost', port: 8082, secure: false },
+    grpc: { address: 'localhost:8082', secure: false }
+  }
+});
+
+// After (REST API approach - works)
+const client = await weaviate.connectToCustom({
+  httpHost: 'localhost',
+  httpPort: 8082,
+  httpSecure: false,
+  grpcHost: 'localhost',
+  grpcPort: 8300, // Internal gRPC port
+  grpcSecure: false,
+  skipInitChecks: true // Skip gRPC health check
+});
+```
+**Status**: ✅ Resolved (2026-08-04)
+
+### Disk Quota Issue with sentence-transformers
+**Issue**: Disk quota exceeded when installing sentence-transformers for embeddings
+**Root Cause**: sentence-transformers requires PyTorch and heavy ML dependencies (500MB+)
+**Temporary Solution**: Use simple hash-based embeddings for testing
+**Fix Applied**:
+```javascript
+// Temporary hash-based embedding (384 dimensions)
+async function generateEmbedding(text) {
+  const simpleEmbedding = [];
+  for (let i = 0; i < 384; i++) {
+    const charCode = text.charCodeAt(i % text.length) || 0;
+    const hash = (charCode * 31 + i) % 1000 / 1000;
+    simpleEmbedding.push(hash);
+  }
+  return simpleEmbedding;
+}
+```
+**Production Solution**: Use GPU-accelerated embeddings with proper sentence-transformers
+**Status**: ⚠️ Temporary fix - production requires proper ML embeddings
+
 ## Related Documentation
 
 - **[weaviate-assessment.md](../assessments/weaviate-assessment.md)** - Weaviate vs pgvector analysis

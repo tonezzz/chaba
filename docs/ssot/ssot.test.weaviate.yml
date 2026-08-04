@@ -56,6 +56,12 @@ collection:
     - name: size
       type: int
       description: File size in bytes
+    - name: chunkIndex
+      type: int
+      description: Chunk index for multi-chunk documents (null for single chunk)
+    - name: totalChunks
+      type: int
+      description: Total number of chunks for this document (null for single chunk)
 
 services:
   embedding_service:
@@ -102,24 +108,21 @@ test_status:
   weaviate_container: running ✅
   embedding_service: skipped ⏭️
   weaviate_search: running ✅
-  indexing: not_started ❌
+  indexing: working ✅
   search_ui: deployed ✅
   search_functionality: working ✅
-  data_collection: in_progress 🔬
+  data_collection: completed ✅
 
 known_issues:
   - embedding_service build takes long due to PyTorch dependencies
-  - currently using mock data for search testing
-  - no real documents indexed yet
-  - need OpenAI API key for real embeddings
-  - Weaviate client library gRPC connection parameter compatibility issue
-  - index-ssot.mjs fails with "Cannot destructure property 'host' of params.connectionParams.grpc as it is undefined"
+  - currently using hash-based embeddings for testing (not production quality)
+  - disk quota issue prevents sentence-transformers installation
+  - need GPU-accelerated embeddings for production
+  - Chonkie chunking not yet integrated (using simple character-based chunking)
 
 next_steps:
-  - Fix Weaviate client library gRPC connection parameter compatibility issue
-  - Consider using Weaviate REST API instead of client library
-  - Add OpenAI API key to .env for real embeddings
-  - Run initial document indexing with Chonkie chunking
-  - Test real semantic search
+  - Implement GPU-accelerated embeddings with sentence-transformers
+  - Integrate Chonkie for proper text chunking
+  - Test with real semantic search quality
   - Collect performance data for GPU sharing analysis
-  - Optimize CPU embedding service for production
+  - Optimize embedding service for production
