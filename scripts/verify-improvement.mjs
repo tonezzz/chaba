@@ -7,7 +7,7 @@ import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
-const SSOT_PATH = '/home/tony/CascadeProjects/chaba/docs/overview/ssot.improvements.yml';
+const SSOT_PATH = '/home/tony/CascadeProjects/chaba/docs/ssot/ssot.improvements.yml';
 
 // Parse command line arguments
 const args = process.argv.slice(2);

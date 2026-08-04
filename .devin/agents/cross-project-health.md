@@ -55,7 +55,7 @@ When performing cross-project health checks:
 
 ## File Locations
 
-- Chaba project: /home/tony/CascadeProjects/chaba/docs/overview/ssot.health.yml
+- Chaba project: /home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.health.yml
 - Chaba-h3 project: /home/tony/CascadeProjects/chaba-h3/docs/overview/ssot.health.yml
 - Location-specific: ssot.health.home.yml, ssot.health.mobile.yml (if present)
 

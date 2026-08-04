@@ -20,7 +20,7 @@ const mockResults = [
   {
     title: 'GPU Queue Management',
     content: 'GPU queue system for efficient resource allocation across llama, imagen2, and txt2vid workloads',
-    path: 'docs/overview/ssot.gpu.yml',
+    path: 'docs/ssot/infrastructure/ssot.gpu.yml',
     type: 'ssot',
     category: 'infrastructure',
     tags: ['gpu', 'queue', 'management'],
@@ -30,7 +30,7 @@ const mockResults = [
   {
     title: 'Weaviate Vector Database',
     content: 'Vector database configuration for semantic search and RAG pipelines',
-    path: 'docs/overview/ssot.test.weaviate.yml',
+    path: 'docs/ssot/ssot.test.weaviate.yml',
     type: 'ssot',
     category: 'infrastructure',
     tags: ['weaviate', 'vector', 'search'],

@@ -6,15 +6,15 @@
 
 #### High Priority (Configuration Files)
 - `stacks/web/public/ssot.health.yml` (10 matches) - Health check endpoints
-- `docs/overview/ssot.health.yml` (10 matches) - Health check endpoints  
-- `docs/overview/ssot.health.home.yml` - ✅ Already updated
-- `docs/overview/ssot.health.mobile.yml` - ✅ Already updated
+- `docs/ssot/infrastructure/ssot.health.yml` (10 matches) - Health check endpoints
+- `docs/ssot/infrastructure/ssot.health.home.yml` - ✅ Already updated
+- `docs/ssot/infrastructure/ssot.health.mobile.yml` - ✅ Already updated
 - `stacks/web/docker-compose.yml` (1 match) - Activepieces frontend URL
 - `stacks/web/public/apps/gpu-monitor/index.html` (1 match) - Netdata dashboard link
 
 #### Medium Priority (Documentation)
-- `docs/overview/ssot.mysystem.home.yml` (5 matches) - Network documentation
-- `docs/overview/ssot.gpu.yml` (5 matches) - GPU service URLs
+- `docs/ssot/ssot.mysystem.home.yml` (5 matches) - Network documentation
+- `docs/ssot/infrastructure/ssot.gpu.yml` (5 matches) - GPU service URLs
 - `stacks/web/public/apps/health-check/README.md` (3 matches) - Documentation
 - `docs/overview/hosts.tony-omen.yml` (3 matches) - Host documentation
 - `docs/overview/hosts.tony-dell.yml` (2 matches) - Host documentation
@@ -123,8 +123,8 @@ Update `.windsurfrules` to include hostname policy:
 - ⏳ `stacks/web/public/apps/gpu-monitor/index.html` - Netdata link
 
 #### Phase 2: SSOT Documentation (High)
-- ⏳ `docs/overview/ssot.mysystem.home.yml` - Network info
-- ⏳ `docs/overview/ssot.gpu.yml` - GPU service URLs
+- ⏳ `docs/ssot/ssot.mysystem.home.yml` - Network info
+- ⏳ `docs/ssot/infrastructure/ssot.gpu.yml` - GPU service URLs
 - ⏳ `docs/overview/hosts.*.yml` - Host documentation
 
 #### Phase 3: App Configuration (Medium)

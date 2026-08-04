@@ -54,14 +54,14 @@ When maintaining documentation:
 ## File Locations
 
 ### Knowledge Base
-- KB entries: /home/tony/CascadeProjects/chaba/docs/kb-*.md (if using centralized KB)
+- KB entries: /home/tony/CascadeProjects/chaba/docs/kb/*.md (if using centralized KB)
 - Alternative: Project-specific KB directories
 - Memories: Various locations based on project structure
 
 ### Session Archives
 - Chaba sessions: /home/tony/CascadeProjects/chaba/.sessions/**/*.yml
 - Chaba-h3 sessions: /home/tony/CascadeProjects/chaba-h3/.sessions/**/*.yml
-- Alternative: docs/overview/sessions/**/*.yml
+- Alternative: docs/sessions/**/*.yml
 
 ### Documentation
 - Main docs: /home/tony/CascadeProjects/chaba/docs/overview/

@@ -9,11 +9,11 @@ triggers:
   - model
 ---
 
-Validate all SSOT YAML files in docs/overview/:
+Validate all SSOT YAML files in docs/ssot/:
 
 1. Find all SSOT YAML files:
-   - Look for files matching pattern: docs/overview/ssot.*.yml
-   - Exclude template file: ssot.template.yml
+   - Look for files matching pattern: docs/ssot/**/*.yml
+   - Exclude template file: template.yml
 
 2. For each SSOT file, validate:
    - YAML syntax is valid (can be parsed)

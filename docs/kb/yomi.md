@@ -181,7 +181,7 @@ Yomi is integrated into the health check system with comprehensive monitoring:
 - **Yomi Rate Limiter**: Monitored at `http://tony-omen.local:8080/api/yomi/rate-limiter-status`
 - **Category**: API services
 - **Timeout**: 5 seconds
-- **Config**: `docs/overview/ssot.health.home.yml`
+- **Config**: `docs/ssot/infrastructure/ssot.health.home.yml`
 
 ### GPU Load Management (2026-08-03, Updated 2026-08-04)
 - **Rate Limiting**: Optimized settings (3 concurrent for daily summaries, 1 for regular summaries) to balance speed and GPU load

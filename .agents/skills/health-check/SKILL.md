@@ -13,7 +13,7 @@ triggers:
 Check health of all services defined in SSOT health configuration:
 
 1. Read the SSOT health configuration file:
-   - File: chaba/docs/overview/ssot.health.yml
+   - File: chaba/docs/ssot/infrastructure/ssot.health.yml
    - Parse the services list to get all monitored services
 
 2. For each service in the configuration:

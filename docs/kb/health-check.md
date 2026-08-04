@@ -11,9 +11,9 @@ Real-time system health monitoring dashboard served from `http://tony-omen.local
 | `chaba/stacks/web/public/apps/health-check/index.html` | Main dashboard HTML with tab navigation |
 | `chaba/stacks/web/public/apps/health-check/health-check.js` | Dashboard logic, health checks, tab switching |
 | `chaba/stacks/web/public/apps/health-check/health-check.css` | Dashboard styling |
-| `chaba/docs/overview/ssot.health.yml` | Service definitions and recovery actions |
-| `chaba/docs/overview/ssot.health.home.yml` | Home location-specific config |
-| `chaba/docs/overview/ssot.health.mobile.yml` | Mobile location-specific config |
+| `chaba/docs/ssot/infrastructure/ssot.health.yml` | Service definitions and recovery actions |
+| `chaba/docs/ssot/infrastructure/ssot.health.home.yml` | Home location-specific config |
+| `chaba/docs/ssot/infrastructure/ssot.health.mobile.yml` | Mobile location-specific config |
 
 ## Tabs
 
@@ -49,7 +49,7 @@ Real-time system health monitoring dashboard served from `http://tony-omen.local
 - **Expected Status**: 200
 - **Timeout**: 10 seconds
 - **Category**: GPU services
-- **Config**: `docs/overview/ssot.health.home.yml`
+- **Config**: `docs/ssot/infrastructure/ssot.health.home.yml`
 
 **Service Status Display:**
 - Individual health indicators for each GPU service
@@ -250,8 +250,8 @@ Using `handle_path` causes 404 errors because it strips the path prefix before p
 - `scripts/gpu-queue/index.mjs` - Enhanced `/api/gpu-queue/status` endpoint to return new data
 - `stacks/web/public/apps/health-check/health-check.js` - Enhanced GPU tab rendering with new displays
 - `stacks/web/public/apps/health-check/health-check.css` - Added 240+ lines of new styling
-- `docs/overview/ssot.health.home.yml` - Changed Txt2Vid from container check to HTTP check
-- `docs/overview/ssot.health.yml` - Changed Txt2Vid from container check to HTTP check
+- `docs/ssot/infrastructure/ssot.health.home.yml` - Changed Txt2Vid from container check to HTTP check
+- `docs/ssot/infrastructure/ssot.health.yml` - Changed Txt2Vid from container check to HTTP check
 
 ### GPU Queue API Response Structure:
 ```json

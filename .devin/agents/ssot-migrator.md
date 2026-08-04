@@ -51,10 +51,10 @@ When performing SSOT migrations:
 
 ## File Locations
 
-- Primary SSOT files: /home/tony/CascadeProjects/chaba/docs/overview/ssot.*.yml
+- Primary SSOT files: /home/tony/CascadeProjects/chaba/docs/ssot/**/*.yml
 - Served copies: /home/tony/CascadeProjects/chaba/stacks/web/public/ssot.*.yml
 - Location-specific: ssot.health.home.yml, ssot.health.mobile.yml
-- Template: ssot.template.yml (do not modify)
+- Template: template.yml (do not modify)
 - Chaba-h3 project: /home/tony/CascadeProjects/chaba-h3/docs/overview/ssot.*.yml
 
 ## SSOT Structure Knowledge

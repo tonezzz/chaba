@@ -18,9 +18,12 @@ const CHABA_ROOT = '/home/tony/CascadeProjects/chaba';
 
 // Document patterns to index
 const DOCUMENT_PATTERNS = [
-  { pattern: 'docs/overview/ssot*.yml', type: 'ssot', category: 'overview' },
+  { pattern: 'docs/ssot/**/*.yml', type: 'ssot', category: 'ssot' },
   { pattern: 'docs/overview/*.md', type: 'docs', category: 'overview' },
-  { pattern: 'docs/overview/sessions/*.yml', type: 'session', category: 'sessions' },
+  { pattern: 'docs/sessions/*.yml', type: 'session', category: 'sessions' },
+  { pattern: 'docs/kb/*.md', type: 'kb', category: 'kb' },
+  { pattern: 'docs/assessments/**/*.md', type: 'assessment', category: 'assessments' },
+  { pattern: 'docs/architecture/*.md', type: 'architecture', category: 'architecture' },
 ];
 
 // Generate embedding using local service

@@ -21,4 +21,4 @@ description: Add a static page to chaba.h3.gizmo-thailand.com
    ```
 9. On the host: pull the `chaba.h3` branch. Restart the app only if `proxy-server.mjs` changed.
 
-See also `docs/kb-h3-pages.md`.
+See also `docs/kb/h3-pages.md`.

@@ -216,7 +216,7 @@ Potential improvements for the assessment system:
 
 ## Phase 3 Impact Scoring Features
 
-**Documentation:** See `docs/kb-dependency-management.md` for comprehensive dependency management documentation.
+**Documentation:** See `docs/kb/dependency-management.md` for comprehensive dependency management documentation.
 
 ### Impact Scoring System
 
@@ -394,7 +394,7 @@ node scripts/impact-scoring.mjs prioritize
 - Update impact scores based on actual results
 - Learn from impact prediction accuracy
 
-**Documentation:** See `docs/kb-dependency-management.md` for comprehensive dependency management documentation.
+**Documentation:** See `docs/kb/dependency-management.md` for comprehensive dependency management documentation.
 
 ### Dependency Fields and Structure
 

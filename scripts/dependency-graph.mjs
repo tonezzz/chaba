@@ -3,7 +3,7 @@
 import { readFileSync, existsSync, writeFileSync } from 'fs';
 import { execSync } from 'child_process';
 
-const SSOT_PATH = '/home/tony/CascadeProjects/chaba/docs/overview/ssot.improvements.yml';
+const SSOT_PATH = '/home/tony/CascadeProjects/chaba/docs/ssot/ssot.improvements.yml';
 const OUTPUT_DIR = '/home/tony/CascadeProjects/chaba/reports';
 
 // Parse command line arguments

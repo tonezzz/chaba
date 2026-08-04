@@ -545,9 +545,9 @@
 ## Resources
 
 ### Documentation
-- GPU Embedding Gap Analysis: `docs/overview/gpu-embedding-gap-analysis.md`
-- Weaviate Test SSOT: `docs/overview/ssot.test.weaviate.yml`
-- GPU Queue SSOT: `docs/overview/ssot.gpu.yml`
+- GPU Embedding Gap Analysis: `docs/assessments/gpu-embedding/gpu-embedding-gap-analysis.md`
+- Weaviate Test SSOT: `docs/ssot/ssot.test.weaviate.yml`
+- GPU Queue SSOT: `docs/ssot/infrastructure/ssot.gpu.yml`
 
 ### Code
 - Embedding Service: `scripts/embeddings/embedding-service.py`

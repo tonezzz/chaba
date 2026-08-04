@@ -17,7 +17,7 @@ if (!existsSync(LOG_DIR)) mkdirSync(LOG_DIR, { recursive: true });
 const HOST = 'tony-omen.local';
 const reportDate = new Date().toISOString().split('T')[0];
 const reportPath = join(REPORT_DIR, `overnight-assessment-${reportDate}.md`);
-const ssotImprovementsPath = '/home/tony/CascadeProjects/chaba/docs/overview/ssot.improvements.yml';
+const ssotImprovementsPath = '/home/tony/CascadeProjects/chaba/docs/ssot/ssot.improvements.yml';
 
 let report = `# Overnight System Assessment Report - ${reportDate}\n\n`;
 let criticalIssues = [];
@@ -302,7 +302,7 @@ async function checkHealthServices() {
             `${service.name} returned status ${result.status} - service is unhealthy and needs investigation`,
             'high',
             'service-health',
-            [`docs/overview/ssot.health.home.yml`]
+            [`docs/ssot/health.home.yml`]
           );
         }
       }
@@ -387,7 +387,7 @@ async function checkGPUStatus() {
             `GPU temperature critical at ${gpu.temperature_c}°C - immediate cooling intervention required`,
             'high',
             'gpu',
-            [`docs/overview/ssot.gpu.yml`]
+            [`docs/ssot/gpu.yml`]
           );
         }
       } else if (gpu.temperature_c > 80) {
@@ -400,7 +400,7 @@ async function checkGPUStatus() {
             `GPU temperature elevated at ${gpu.temperature_c}°C - investigate cooling and workload`,
             'high',
             'gpu',
-            [`docs/overview/ssot.gpu.yml`]
+            [`docs/ssot/gpu.yml`]
           );
         }
       } else if (gpu.temperature_c > 75) {
@@ -417,7 +417,7 @@ async function checkGPUStatus() {
             `GPU VRAM usage critical at ${vramPercent}% - investigate memory leaks or optimize GPU workload`,
             'high',
             'gpu',
-            [`docs/overview/ssot.gpu.yml`]
+            [`docs/ssot/gpu.yml`]
           );
         }
       }
@@ -583,8 +583,8 @@ function checkConfiguration() {
 
   // Check SSOT files
   const ssotFiles = [
-    '/home/tony/CascadeProjects/chaba/docs/overview/ssot.health.home.yml',
-    '/home/tony/CascadeProjects/chaba/docs/overview/ssot.health.yml',
+    '/home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.health.home.yml',
+    '/home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.health.yml',
   ];
 
   content += '**SSOT Configuration Files:**\n\n';
@@ -613,7 +613,7 @@ function checkImprovementsSSOT() {
   console.log('Checking improvements SSOT...');
   let content = '';
 
-  const ssotPath = '/home/tony/CascadeProjects/chaba/docs/overview/ssot.improvements.yml';
+  const ssotPath = '/home/tony/CascadeProjects/chaba/docs/ssot/improvements.yml';
   if (existsSync(ssotPath)) {
     content += '**Improvements SSOT:** ✅ Found at ' + ssotPath + '\n\n';
     

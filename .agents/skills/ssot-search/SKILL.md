@@ -9,11 +9,11 @@ triggers:
   - model
 ---
 
-Search across all SSOT YAML files in docs/overview/:
+Search across all SSOT YAML files in docs/ssot/:
 
 1. Accept search term as argument or prompt for it
-2. Search across all SSOT files matching pattern: docs/overview/ssot.*.yml
-3. Exclude template file: ssot.template.yml
+2. Search across all SSOT files matching pattern: docs/ssot/**/*.yml
+3. Exclude template file: template.yml
 4. Use grep to find matches with context (2 lines before and after)
 5. Group results by SSOT file
 6. For each matching file:

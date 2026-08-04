@@ -2,7 +2,7 @@
 
 import { readFileSync, existsSync } from 'fs';
 
-const SSOT_PATH = '/home/tony/CascadeProjects/chaba/docs/overview/ssot.improvements.yml';
+const SSOT_PATH = '/home/tony/CascadeProjects/chaba/docs/ssot/ssot.improvements.yml';
 
 console.log('Analyzing dependency resolution suggestions...\n');
 

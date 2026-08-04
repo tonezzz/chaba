@@ -8,11 +8,11 @@ The dependency management system provides structured tracking of improvement dep
 
 | File | Purpose |
 |------|---------|
-| `docs/overview/ssot.improvements.yml` | SSOT file with dependency fields |
+| `docs/ssot/ssot.improvements.yml` | SSOT file with dependency fields |
 | `scripts/dependency-graph.mjs` | Generate dependency graphs (text, mermaid, DOT) |
 | `scripts/dependency-resolver.mjs` Analyze dependencies and suggest resolutions |
 | `scripts/overnight-assessment.mjs` | Automated dependency validation |
-| `docs/kb-overnight-assessment.md` | Assessment documentation with dependency features |
+| `docs/kb/overnight-assessment.md` | Assessment documentation with dependency features |
 
 ## Dependency Fields
 
