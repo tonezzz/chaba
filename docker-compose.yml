@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  raceman-web:
+    image: nginx:alpine
+    container_name: raceman-web
+    restart: unless-stopped
+    ports:
+      - "8083:80"
+    volumes:
+      - ./public:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - raceman-network
+
+networks:
+  raceman-network:
+    driver: bridge
