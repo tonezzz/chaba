@@ -4,7 +4,7 @@
  * SSOT Document Indexer for Weaviate
  * 
  * Indexes SSOT YAML files, session archives, and documentation into Weaviate
- * for semantic search using SEA-LION-E5-Embedding-600M model
+ * for semantic search using all-MiniLM-L6-v2 model via GPU embedding service
  */
 
 import { readFile, readdir, stat } from 'fs/promises';
@@ -18,12 +18,20 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Configuration
 const WEAVIATE_URL = process.env.WEAVIATE_URL || 'http://localhost:8082';
-const EMBEDDING_DIM = 384; // all-MiniLM-L6-v2 (temporary hash-based for testing)
+const EMBEDDING_DIM = 384; // all-MiniLM-L6-v2 (GPU-accelerated via embedding service)
 const CHABA_ROOT = '/home/tony/CascadeProjects/chaba';
 
 // Document patterns to index
 const DOCUMENT_PATTERNS = [
-  { pattern: 'docs/overview/*.md', type: 'docs', category: 'overview' },
+  { pattern: 'docs/ssot/*.yml', type: 'ssot', category: 'ssot' },
+  { pattern: 'docs/ssot/infrastructure/*.yml', type: 'ssot', category: 'infrastructure' },
+  { pattern: 'docs/ssot/apps/*.yml', type: 'ssot', category: 'apps' },
+  { pattern: 'docs/overview/*.yml', type: 'docs', category: 'overview' },
+  { pattern: 'docs/sessions/*.yml', type: 'session', category: 'sessions' },
+  { pattern: 'docs/kb/*.md', type: 'kb', category: 'kb' },
+  { pattern: 'docs/assessments/*.md', type: 'assessment', category: 'assessments' },
+  { pattern: 'docs/assessments/gpu-embedding/*.md', type: 'assessment', category: 'gpu-embedding' },
+  { pattern: 'docs/architecture/*.md', type: 'architecture', category: 'architecture' },
 ];
 
 // Connect to Weaviate using REST API
@@ -76,19 +84,21 @@ async function createCollection() {
   }
 }
 
-// Generate embedding using local model
+// Generate embedding using GPU service
 async function generateEmbedding(text) {
   try {
-    // Use simple hash-based embedding for testing (no heavy dependencies)
-    // This is a temporary solution for testing the pipeline
-    const simpleEmbedding = [];
-    for (let i = 0; i < 384; i++) {
-      // Generate deterministic hash-based embedding
-      const charCode = text.charCodeAt(i % text.length) || 0;
-      const hash = (charCode * 31 + i) % 1000 / 1000;
-      simpleEmbedding.push(hash);
+    const response = await fetch('http://localhost:5000/embed-single', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, use_gpu: true }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Embedding service error: ${response.statusText}`);
     }
-    return simpleEmbedding;
+
+    const data = await response.json();
+    return data.embedding;
   } catch (error) {
     console.error('Error generating embedding:', error);
     throw error;
@@ -201,24 +211,16 @@ async function indexDocument(filePath, type, category) {
 async function findDocuments() {
   const documents = [];
   
-  // Test with multiple overview documents
-  const testFiles = [
-    'github-mcp-model-assessment.md',
-    'gpu-embedding-action-plan.md',
-    'gpu-embedding-feasibility-assessment.md',
-    'gpu-embedding-gap-analysis.md',
-    'gpu-embedding-revised-plan.md',
-    'gpu-sharing-data-collection.md',
-    'wireguard-architecture.md'
-  ];
-  
-  for (const file of testFiles) {
-    const path = `/home/tony/CascadeProjects/chaba/docs/overview/${file}`;
+  for (const { pattern, type, category } of DOCUMENT_PATTERNS) {
     try {
-      await stat(path); // Check if file exists
-      documents.push({ path, type: 'docs', category: 'overview' });
+      const { stdout } = await execAsync(`find ${CHABA_ROOT}/${pattern} -type f 2>/dev/null`);
+      const files = stdout.trim().split('\n').filter(Boolean);
+      
+      for (const file of files) {
+        documents.push({ path: file, type, category });
+      }
     } catch (error) {
-      console.log(`File not found: ${file}`);
+      console.warn(`No files found for pattern: ${pattern}`);
     }
   }
   
