@@ -17,9 +17,9 @@ RUN pip3 install --no-cache-dir torch==2.0.1+cu118 -f https://download.pytorch.o
 # Verify PyTorch installation
 RUN python3 -c "import torch; print(f'PyTorch version: {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}')"
 
-# Install other dependencies (let pip resolve numpy version)
+# Install other dependencies (use older transformers compatible with PyTorch 2.0.1)
 COPY requirements.txt .
-RUN pip3 install --no-cache-dir flask==3.0.0 sentence-transformers==2.7.0
+RUN pip3 install --no-cache-dir flask==3.0.0 sentence-transformers==2.7.0 transformers==4.35.0
 
 # Copy GPU service
 COPY embedding-service-gpu.py embedding-service.py

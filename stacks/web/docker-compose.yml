@@ -47,6 +47,24 @@ services:
       - web:web
       - web_default
 
+  trade-api:
+    container_name: trade-api
+    build:
+      context: /home/tony/CascadeProjects/trade
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=trade
+      - DB_USER=chaba
+      - DB_PASSWORD=chabapass
+    networks:
+      - default
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   camera-control:
     container_name: camera-control
     build:

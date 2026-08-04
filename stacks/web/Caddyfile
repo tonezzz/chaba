@@ -223,6 +223,13 @@
 		file_server
 	}
 
+	@trade_noslash path /apps/trade
+	redir @trade_noslash /apps/trade/ 308
+
+	handle_path /apps/trade/api/* {
+		reverse_proxy trade-api:8000
+	}
+
 	@yomi_noslash path /apps/yomi
 	redir @yomi_noslash /apps/yomi/ 308
 

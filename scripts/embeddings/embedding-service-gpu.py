@@ -70,7 +70,7 @@ def load_model(force_device=None):
         
         model = SentenceTransformer(model_name)
         model.to(target_device)
-        print(f"Model loaded successfully on {target_device}. Dimensions: {model.get_embedding_dimension()}")
+        print(f"Model loaded successfully on {target_device}. Dimensions: {model.get_sentence_embedding_dimension()}")
         
         if target_device == 'cuda':
             vram_usage = get_vram_usage()
@@ -107,7 +107,7 @@ def model_info():
     
     return jsonify({
         'model_name': model_name,
-        'dimensions': model.get_embedding_dimension(),
+        'dimensions': model.get_sentence_embedding_dimension(),
         'max_seq_length': model.max_seq_length,
         'device': current_device,
         'vram_usage_mb': vram_usage,
