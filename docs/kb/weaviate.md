@@ -24,11 +24,13 @@ Weaviate is a vector database for semantic search and RAG (Retrieval-Augmented G
 
 | File | Purpose |
 |------|---------|
-| `scripts/weaviate/index-ssot.mjs` | SSOT document indexing with Chonkie chunking |
+| `scripts/weaviate/index-ssot.mjs` | SSOT document indexing with GPU embeddings |
 | `scripts/weaviate/index-simple.mjs` | Simple document indexing |
 | `scripts/weaviate/api.mjs` | Search API server |
+| `scripts/weaviate/search.mjs` | Semantic search interface |
 | `scripts/weaviate/schema.json` | Weaviate collection schema |
-| `scripts/chunk-text.py` | Chonkie text chunking integration |
+| `scripts/embeddings/embedding-service-gpu.py` | GPU-accelerated embedding service |
+| `scripts/embeddings/Dockerfile` | GPU embedding service container |
 | `docs/ssot/ssot.test.weaviate.yml` | Weaviate configuration and status |
 | `docs/assessments/weaviate-assessment.md` | Weaviate vs pgvector analysis |
 
@@ -77,29 +79,43 @@ python3 scripts/chunk-text.py "text to chunk"
 
 ## Current Status
 
-### Test Status
+### Indexing Results (2026-08-04)
+- **Total Documents Indexed**: 69
+- **Categories**: SSOT YAML, session archives, KB entries, assessments, architecture docs
+- **Embedding Type**: GPU-accelerated (all-MiniLM-L6-v2, 384 dimensions)
+- **Collection**: SSOTDocument
+- **Search Performance**: Semantic search verified with real embeddings
+- **Test Queries**: "GPU embedding", "embedding action plan", "Yomi LINE conversations"
+
+### Document Patterns
+```javascript
+const DOCUMENT_PATTERNS = [
+  { pattern: 'docs/ssot/*.yml', type: 'ssot', category: 'ssot' },
+  { pattern: 'docs/ssot/infrastructure/*.yml', type: 'ssot', category: 'infrastructure' },
+  { pattern: 'docs/ssot/apps/*.yml', type: 'ssot', category: 'apps' },
+  { pattern: 'docs/overview/*.yml', type: 'docs', category: 'overview' },
+  { pattern: 'docs/sessions/*.yml', type: 'session', category: 'sessions' },
+  { pattern: 'docs/kb/*.md', type: 'kb', category: 'kb' },
+  { pattern: 'docs/assessments/*.md', type: 'assessment', category: 'assessments' },
+  { pattern: 'docs/assessments/gpu-embedding/*.md', type: 'assessment', category: 'gpu-embedding' },
+  { pattern: 'docs/architecture/*.md', type: 'architecture', category: 'architecture' },
+];
+```
+
 - **Weaviate Container**: Running ✅
-- **Embedding Service**: Skipped ⏭️
+- **Embedding Service**: Operational ✅ (GPU-accelerated)
 - **Weaviate Search API**: Running ✅
-- **Indexing**: Not Started ❌
+- **Indexing**: Complete ✅ (69 documents indexed)
 - **Search UI**: Deployed ✅
-- **Search Functionality**: Working ✅ (with mock data)
-- **Data Collection**: In Progress 🔬
+- **Search Functionality**: Working ✅ (with real embeddings)
+- **Data Collection**: Complete ✅
 
 ### Known Issues
-- **Weaviate Client Library**: gRPC connection parameter compatibility issue
-  - Error: "Cannot destructure property 'host' of params.connectionParams.grpc as it is undefined"
-  - Location: `scripts/weaviate/index-ssot.mjs`
-  - Status: Needs investigation
-  - Potential fixes:
-    - Use Weaviate REST API instead of client library
-    - Upgrade Weaviate client library to compatible version
-    - Add gRPC configuration parameters
-
-- **Embedding Service Build**: Takes long due to PyTorch dependencies
-- **Mock Data**: Currently using mock data for search testing
-- **No Real Documents**: No real documents indexed yet
-- **OpenAI API Key**: Need OpenAI API key for real embeddings
+- **Weaviate Client Library**: ✅ Resolved - Using REST API instead of gRPC
+- **Embedding Service Build**: ✅ Resolved - GPU service operational
+- **Mock Data**: ✅ Resolved - Using real GPU-accelerated embeddings
+- **No Real Documents**: ✅ Resolved - 69 documents indexed
+- **OpenAI API Key**: Not needed - Using local GPU embedding service
 
 ## Use Cases
 
@@ -207,7 +223,37 @@ async function generateEmbedding(text) {
 }
 ```
 **Production Solution**: Use GPU-accelerated embeddings with proper sentence-transformers
-**Status**: ⚠️ Temporary fix - production requires proper ML embeddings
+**Status**: ✅ Resolved (2026-08-04) - GPU embedding service implemented
+
+### GPU Embedding Service Implementation
+**Issue**: Need production-quality embeddings for semantic search
+**Solution**: Deploy GPU-accelerated embedding service with all-MiniLM-L6-v2 model
+**Implementation**:
+- **Container**: `embedding-service` in docker-compose.yml
+- **Model**: all-MiniLM-L6-v2 (384 dimensions)
+- **Hardware**: CUDA 11.8, GPU runtime
+- **API Endpoints**:
+  - `POST /embed-single` - Single text embedding
+  - `POST /embed` - Batch text embeddings
+  - `GET /health` - Service health check
+  - `GET /model-info` - Model information
+- **Performance**: 0.68s per single embedding, 0.03s for batch
+- **VRAM Usage**: 2804MB
+**Indexing Integration**:
+```javascript
+// Updated index-ssot.mjs to use GPU service
+async function generateEmbedding(text) {
+  const response = await fetch('http://localhost:5000/embed-single', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, use_gpu: true }),
+  });
+  const data = await response.json();
+  return data.embedding;
+}
+```
+**Results**: Successfully indexed 69 documents with real GPU-accelerated embeddings
+**Status**: ✅ Operational (2026-08-04)
 
 ## Related Documentation
 
