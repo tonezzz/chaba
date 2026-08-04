@@ -310,6 +310,26 @@ async function handleActivityStatus(res) {
       }
     };
 
+    // Get processing statistics from database
+    let processingStats = null;
+    try {
+      const { rows } = await pool.query(`
+        SELECT 
+          COUNT(*) as total_conversations,
+          COUNT(CASE WHEN summary IS NOT NULL THEN 1 END) as with_summary,
+          COUNT(CASE WHEN summary_quality >= 80 THEN 1 END) as high_quality,
+          COUNT(CASE WHEN summary_quality < 50 THEN 1 END) as low_quality,
+          AVG(summary_quality) as avg_quality,
+          MAX(summary_generated_at) as last_summary_time,
+          COUNT(CASE WHEN updated_at > NOW() - INTERVAL '1 hour' THEN 1 END) as updated_last_hour,
+          COUNT(CASE WHEN updated_at > NOW() - INTERVAL '24 hours' THEN 1 END) as updated_last_day
+        FROM conversations
+      `);
+      processingStats = rows[0];
+    } catch (err) {
+      processingStats = { error: 'Processing stats unavailable' };
+    }
+
     // Get GPU status
     let gpuStatus = null;
     try {
@@ -331,12 +351,14 @@ async function handleActivityStatus(res) {
     const anyCircuitBreakerOpen = rateLimiterStatus.summary.circuitBreaker.state === 'open' || 
                               rateLimiterStatus.daily.circuitBreaker.state === 'open';
     const highGpuTemp = gpuStatus.temperature && gpuStatus.temperature > 85;
+    const elevatedGpuTemp = gpuStatus.temperature && gpuStatus.temperature > 80;
     const highGpuMemory = gpuStatus.memoryPercent && gpuStatus.memoryPercent > 90;
 
     const healthStatus = {
       healthy: !anyCircuitBreakerOpen && !highGpuTemp && !highGpuMemory,
       message: anyCircuitBreakerOpen ? 'Circuit breaker active - GPU overloaded' :
                highGpuTemp ? 'High GPU temperature' :
+               elevatedGpuTemp ? 'Elevated GPU temperature' :
                highGpuMemory ? 'High GPU memory usage' :
                'All systems operational'
     };
@@ -347,7 +369,8 @@ async function handleActivityStatus(res) {
       metrics: {
         database: activityMetrics[0] || {},
         dailySummaries: dailyActivity[0] || {},
-        system: systemHealth[0] || {}
+        system: systemHealth[0] || {},
+        processing: processingStats
       },
       processStatus,
       rateLimiter: rateLimiterStatus,
