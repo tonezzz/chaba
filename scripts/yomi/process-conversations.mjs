@@ -1,6 +1,7 @@
 import { readFileSync, existsSync, readdirSync, writeFileSync } from 'node:fs';
 import { categorize } from './categorize-conversations.mjs';
 import { evaluateSummaryQuality, isMeaningfulSummary, retryWithBackoff, generateCacheKey, parseCacheKey } from './summary-utils.mjs';
+import { summaryRateLimiter, dailyRateLimiter, summaryCircuitBreaker, dailyCircuitBreaker } from './llama-rate-limiter.mjs';
 import pool from './db.mjs';
 
 const FETCH_DIR = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/fetch-data';
@@ -90,6 +91,11 @@ async function getSummary(chatId, messages, name, forceRefresh = false) {
         maxDelay: 10000,
         onRetry: (attempt, delay, error) => {
           console.log(`Summary retry ${attempt}/3 for ${chatId} after ${delay}ms (error: ${error.message})`);
+          // Reset circuit breaker on retry to allow recovery
+          if (error.message.includes('Circuit breaker')) {
+            console.log('Resetting circuit breaker for retry');
+            summaryCircuitBreaker.reset();
+          }
         }
       }
     );
@@ -125,19 +131,65 @@ async function getSummary(chatId, messages, name, forceRefresh = false) {
 }
 
 async function summarizeWithLlama(prompt) {
-  const res = await fetch(LLAMA_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'Phi-3-mini-4k-instruct-q4',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 50,
-      temperature: 0.3,
-    }),
+  return await summaryRateLimiter.run(async () => {
+    return await summaryCircuitBreaker.run(async () => {
+      const res = await fetch(LLAMA_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'Phi-3-mini-4k-instruct-q4',
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 50,
+          temperature: 0.3,
+        }),
+      });
+      if (!res.ok) throw new Error(`Llama API error: ${res.status}`);
+      const data = await res.json();
+      return data.choices?.[0]?.message?.content?.trim() || null;
+    });
   });
-  if (!res.ok) throw new Error(`Llama API error: ${res.status}`);
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content?.trim() || null;
+}
+
+function detectLanguage(text) {
+  // Thai character ranges: U+0E00-U+0E7F
+  const thaiChars = text.match(/[\u0E00-\u0E7F]/g);
+  const totalChars = text.replace(/\s/g, '').length;
+  
+  if (totalChars === 0) return 'unknown';
+  
+  const thaiRatio = thaiChars ? thaiChars.length / totalChars : 0;
+  
+  // Adjusted thresholds for better mixed detection
+  if (thaiRatio > 0.5) return 'thai';
+  if (thaiRatio > 0.05) return 'mixed';
+  return 'english';
+}
+
+function detectConversationLanguage(messages) {
+  const textContent = messages
+    .map(m => m.text || '')
+    .filter(Boolean)
+    .join(' ');
+  
+  if (!textContent) return 'english';
+  
+  return detectLanguage(textContent);
+}
+
+function getLanguageSpecificPrompt(language, name, lines) {
+  const baseContent = lines.join('\n');
+  
+  switch (language) {
+    case 'thai':
+      return `สรุปการสนทนา LINE กับ ${name} เป็นประโยคเดียวสั้นๆ (ไม่เกิน 20 คำ) เน้นหัวข้อหลัก คำถาม หรือการตัดสินใจ\n\n${baseContent}\n\nสรุป:`;
+    
+    case 'mixed':
+      return `Summarize the following LINE conversation with ${name} in one concise sentence (under 20 words). Use the same language as the messages (Thai/English mix). Focus on the main topic, question, or decision.\n\n${baseContent}\n\nSummary:`;
+    
+    case 'english':
+    default:
+      return `Summarize the following LINE conversation with ${name} in one concise sentence (under 20 words). Focus on the main topic, question, or decision.\n\n${baseContent}\n\nSummary:`;
+  }
 }
 
 function buildPrompt(name, messages) {
@@ -165,7 +217,323 @@ function buildPrompt(name, messages) {
     return null;
   }
   
-  return `Summarize the following LINE conversation with ${name} in one concise sentence (under 20 words). Focus on the main topic, question, or decision.\n\n${lines.join('\n')}\n\nSummary:`;
+  // Detect language and use appropriate prompt
+  const language = detectConversationLanguage(messages);
+  console.log(`Detected language for ${name}: ${language}`);
+  
+  return getLanguageSpecificPrompt(language, name, textOnlyLines);
+}
+
+function groupMessagesByDate(messages) {
+  const byDate = new Map();
+  for (const m of messages) {
+    if (!m.deliveredTime) continue;
+    try {
+      // Convert string timestamp to number
+      let timestamp = parseInt(m.deliveredTime, 10);
+      if (isNaN(timestamp)) {
+        console.warn(`Invalid deliveredTime (not a number): ${m.deliveredTime}, skipping`);
+        continue;
+      }
+      
+      // Handle both millisecond and microsecond timestamps
+      if (timestamp > 2500000000000) {
+        // If timestamp is in microseconds, convert to milliseconds
+        timestamp = Math.floor(timestamp / 1000);
+      }
+      
+      const date = new Date(timestamp).toISOString().split('T')[0];
+      if (!byDate.has(date)) byDate.set(date, []);
+      byDate.get(date).push(m);
+    } catch (err) {
+      console.warn(`Invalid deliveredTime for message: ${m.deliveredTime}, skipping`);
+    }
+  }
+  return byDate;
+}
+
+function buildDailyPrompt(date, messages, name) {
+  const lines = messages.map(m => {
+    const from = m.fromName || m.from || 'Unknown';
+    const text = m.text || (m.mediaType ? `[${m.mediaType}]` : null);
+    if (!text) return null;
+    return `${from}: ${String(text).replace(/\n/g, ' ')}`;
+  }).filter(Boolean);
+  if (lines.length === 0) return null;
+  return `Extract from these LINE messages for ${date} in conversation with ${name}:
+- Events (things that happened)
+- Actions (things people did or plan to do)
+- Topics (main subjects discussed)
+
+Format as JSON:
+{
+  "events": ["event1", "event2"],
+  "actions": ["action1", "action2"],
+  "topics": ["topic1", "topic2"]
+}
+
+Messages:
+${lines.join('\n')}`;
+}
+
+function buildBatchDailyPrompt(dateGroups, name) {
+  const dateSections = [];
+  for (const [date, messages] of dateGroups) {
+    const lines = messages.map(m => {
+      const from = m.fromName || m.from || 'Unknown';
+      const text = m.text || (m.mediaType ? `[${m.mediaType}]` : null);
+      if (!text) return null;
+      return `${from}: ${String(text).replace(/\n/g, ' ')}`;
+    }).filter(Boolean);
+    
+    if (lines.length > 0) {
+      dateSections.push(`=== ${date} ===\n${lines.join('\n')}`);
+    }
+  }
+  
+  if (dateSections.length === 0) return null;
+  
+  const dates = Array.from(dateGroups.keys()).join(', ');
+  
+  return `Extract structured information from these LINE messages for conversation with ${name} across multiple dates (${dates}):
+- Events (things that happened)
+- Actions (things people did or plan to do)
+- Topics (main subjects discussed)
+
+Format as JSON with date keys:
+{
+  "YYYY-MM-DD": {
+    "events": ["event1", "event2"],
+    "actions": ["action1", "action2"],
+    "topics": ["topic1", "topic2"]
+  },
+  "YYYY-MM-DD": {
+    "events": ["event1"],
+    "actions": ["action1"],
+    "topics": ["topic1"]
+  }
+}
+
+Messages:
+${dateSections.join('\n\n')}`;
+}
+
+async function extractDailyWithLlama(prompt) {
+  return await dailyRateLimiter.run(async () => {
+    return await dailyCircuitBreaker.run(async () => {
+      const res = await fetch(LLAMA_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'Phi-3-mini-4k-instruct-q4',
+          messages: [
+            { role: 'system', content: 'You extract structured information from chat conversations and return valid JSON.' },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.3,
+          max_tokens: 300,
+          stop: ['\n\n']
+        })
+      });
+      if (!res.ok) throw new Error(`Llama API error: ${res.status}`);
+      const data = await res.json();
+      const content = data.choices?.[0]?.message?.content?.trim();
+      if (!content) throw new Error('empty llama response');
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('no json in response');
+      try {
+        return JSON.parse(jsonMatch[0]);
+      } catch {
+        throw new Error('invalid json in response');
+      }
+    });
+  });
+}
+
+async function extractBatchDailyWithLlama(prompt) {
+  return await dailyRateLimiter.run(async () => {
+    return await dailyCircuitBreaker.run(async () => {
+      const res = await fetch(LLAMA_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'Phi-3-mini-4k-instruct-q4',
+          messages: [
+            { role: 'system', content: 'You extract structured information from chat conversations and return valid JSON with date keys.' },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.3,
+          max_tokens: 600,
+          stop: ['\n\n']
+        })
+      });
+      if (!res.ok) throw new Error(`Llama API error: ${res.status}`);
+      const data = await res.json();
+      const content = data.choices?.[0]?.message?.content?.trim();
+      if (!content) throw new Error('empty llama response');
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('no json in response');
+      try {
+        return JSON.parse(jsonMatch[0]);
+      } catch {
+        throw new Error('invalid json in response');
+      }
+    });
+  });
+}
+
+async function saveDailySummary(chatId, date, events, actions, topics, messageCount) {
+  await pool.query(`
+    INSERT INTO daily_summaries (chat_id, date, events, actions, topics, message_count)
+    VALUES ($1, $2, $3, $4, $5, $6)
+    ON CONFLICT (chat_id, date) DO UPDATE SET
+      events = EXCLUDED.events,
+      actions = EXCLUDED.actions,
+      topics = EXCLUDED.topics,
+      message_count = EXCLUDED.message_count,
+      updated_at = NOW()
+  `, [chatId, date, events, actions, topics, messageCount]);
+}
+
+async function generateDailySummaries(chatId, messages, name) {
+  const byDate = groupMessagesByDate(messages);
+  console.log(`generateDailySummaries for ${chatId}: ${byDate.size} dates with messages`);
+  let processed = 0;
+  
+  // Filter to only process dates within last 30 days
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+  
+  const filteredDates = new Map();
+  for (const [date, msgs] of byDate) {
+    if (date >= thirtyDaysAgoStr) {
+      filteredDates.set(date, msgs);
+    }
+  }
+  
+  console.log(`Filtered to ${filteredDates.size} dates within last 30 days (skipped ${byDate.size - filteredDates.size} older dates)`);
+  
+  // Convert to array and sort by date
+  const datesArray = Array.from(filteredDates.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  
+  // Process in batches of 3-5 dates to reduce API calls
+  const batchSize = 4;
+  for (let i = 0; i < datesArray.length; i += batchSize) {
+    const batch = datesArray.slice(i, i + batchSize);
+    const batchDates = batch.map(([date]) => date);
+    
+    try {
+      // Try batch processing first
+      if (batch.length > 1) {
+        console.log(`Processing batch for ${chatId}: ${batchDates.join(', ')} (${batch.length} dates)`);
+        const dateGroups = new Map(batch);
+        const prompt = buildBatchDailyPrompt(dateGroups, name);
+        
+        if (prompt) {
+          try {
+            const extracted = await extractBatchDailyWithLlama(prompt);
+            
+            // Save each date from the batch response
+            for (const [date, dayMessages] of batch) {
+              const dateData = extracted[date];
+              if (dateData) {
+                await saveDailySummary(
+                  chatId,
+                  date,
+                  dateData.events || [],
+                  dateData.actions || [],
+                  dateData.topics || [],
+                  dayMessages.length
+                );
+                processed++;
+                console.log(`Daily summary generated for ${chatId} on ${date} (batch: ${processed}/${byDate.size} complete)`);
+              } else {
+                console.log(`No data for ${date} in batch response, falling back to single processing`);
+                // Fall back to single processing for this date
+                await processSingleDate(chatId, date, dayMessages, name, byDate.size, processed);
+                processed++;
+              }
+            }
+            continue; // Skip to next batch if successful
+          } catch (batchErr) {
+            console.log(`Batch processing failed: ${batchErr.message}, falling back to single-date processing`);
+            // Fall through to single-date processing
+          }
+        }
+      }
+      
+      // Fallback to single-date processing
+      for (const [date, dayMessages] of batch) {
+        await processSingleDate(chatId, date, dayMessages, name, byDate.size, processed);
+        processed++;
+      }
+      
+    } catch (err) {
+      console.error(`Batch processing failed for ${chatId}: ${err.message}`);
+      
+      // Handle circuit breaker errors
+      if (err.message.includes('Circuit breaker')) {
+        console.log('Circuit breaker triggered, skipping remaining daily summaries');
+        break;
+      }
+      
+      if (err.message.includes('fetch failed') || err.message.includes('ECONNREFUSED')) {
+        console.log('Llama server not available, skipping remaining daily summaries');
+        break;
+      }
+      
+      // Reset circuit breaker on other errors to allow recovery
+      if (err.message.includes('Llama API error')) {
+        console.log('Resetting daily circuit breaker after API error');
+        dailyCircuitBreaker.reset();
+      }
+      
+      console.log(`Skipping batch due to error, continuing with next batch`);
+    }
+  }
+  
+  console.log(`Daily summary generation complete for ${chatId}: ${processed}/${filteredDates.size} days processed`);
+}
+
+async function processSingleDate(chatId, date, dayMessages, name, total, processed) {
+  try {
+    console.log(`Processing ${chatId} on ${date}: ${dayMessages.length} messages`);
+    const prompt = buildDailyPrompt(date, dayMessages, name);
+    if (!prompt) {
+      console.log(`Skipping ${date}: no text content`);
+      return;
+    }
+    const extracted = await extractDailyWithLlama(prompt);
+    await saveDailySummary(
+      chatId,
+      date,
+      extracted.events || [],
+      extracted.actions || [],
+      extracted.topics || [],
+      dayMessages.length
+    );
+    console.log(`Daily summary generated for ${chatId} on ${date} (${processed + 1}/${total} complete)`);
+  } catch (err) {
+    console.error(`Daily summary failed for ${chatId} on ${date}: ${err.message}`);
+    
+    // Handle circuit breaker errors
+    if (err.message.includes('Circuit breaker')) {
+      throw err; // Re-throw to break outer loop
+    }
+    
+    if (err.message.includes('fetch failed') || err.message.includes('ECONNREFUSED')) {
+      throw err; // Re-throw to break outer loop
+    }
+    
+    // Reset circuit breaker on other errors to allow recovery
+    if (err.message.includes('Llama API error')) {
+      console.log('Resetting daily circuit breaker after API error');
+      dailyCircuitBreaker.reset();
+    }
+    
+    console.log(`Skipping ${date} due to error, continuing with next date`);
+  }
 }
 
 async function saveConversationToDB(conv) {
@@ -245,6 +613,9 @@ async function processSingle(chatId, forceSummarize = false) {
   conv.categorySource = result.source;
   conv.isGroup = result.isGroup;
   
+  // Generate daily summaries
+  await generateDailySummaries(chatId, messages, conv.name);
+  
   // Save to database
   await saveConversationToDB(conv);
   
@@ -274,12 +645,36 @@ async function processAll(forceSummarize = false) {
     const chatId = file.replace('.json', '');
     const data = loadFetchData(chatId);
     if (data) {
-      conversations.push({ chatId, lastMessageTime: data.lastMessageTime });
+      conversations.push({ 
+        chatId, 
+        lastMessageTime: data.lastMessageTime,
+        isGroup: data.isGroup || false
+      });
     }
   }
-  conversations.sort((a, b) => (a.lastMessageTime || 0) - (b.lastMessageTime || 0));
   
-  console.log(`Processing ${conversations.length} conversations (oldest first)...`);
+  // Prioritize conversations: one-on-one > recent > older
+  const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+  conversations.sort((a, b) => {
+    // One-on-one conversations first
+    if (a.isGroup !== b.isGroup) {
+      return a.isGroup ? 1 : -1;
+    }
+    
+    // Recent conversations (last 30 days) next
+    const aRecent = (a.lastMessageTime || 0) > thirtyDaysAgo;
+    const bRecent = (b.lastMessageTime || 0) > thirtyDaysAgo;
+    if (aRecent !== bRecent) {
+      return aRecent ? -1 : 1;
+    }
+    
+    // Within same priority, newest first
+    return (b.lastMessageTime || 0) - (a.lastMessageTime || 0);
+  });
+  
+  console.log(`Processing ${conversations.length} conversations (prioritized: one-on-one + recent first)...`);
+  console.log(`Rate limiter status: ${JSON.stringify(summaryRateLimiter.getStats())}`);
+  console.log(`Circuit breaker status: ${JSON.stringify(summaryCircuitBreaker.getState())}`);
   
   saveProcessStatus({
     status: 'starting',
@@ -307,14 +702,21 @@ async function processAll(forceSummarize = false) {
       timestamp: new Date().toISOString()
     });
     
-    for (const { chatId } of batch) {
-      const result = await processSingle(chatId, forceSummarize);
+    // Process conversations in parallel for daily summaries (up to 3 concurrent)
+    const parallelLimit = 3;
+    for (let j = 0; j < batch.length; j += parallelLimit) {
+      const parallelBatch = batch.slice(j, j + parallelLimit);
+      const results = await Promise.allSettled(
+        parallelBatch.map(({ chatId }) => processSingle(chatId, forceSummarize))
+      );
       
-      if (result.success) {
-        successCount++;
-        totalQuality += result.quality || 0;
-      } else {
-        failCount++;
+      for (const result of results) {
+        if (result.status === 'fulfilled' && result.value.success) {
+          successCount++;
+          totalQuality += result.value.quality || 0;
+        } else {
+          failCount++;
+        }
       }
     }
     
@@ -333,6 +735,8 @@ async function processAll(forceSummarize = false) {
     
     if (i + BATCH_SIZE < conversations.length) {
       console.log(`Batch complete. ${successCount} total processed so far.`);
+      console.log(`Rate limiter status: ${JSON.stringify(summaryRateLimiter.getStats())}`);
+      console.log(`Circuit breaker status: ${JSON.stringify(summaryCircuitBreaker.getState())}`);
     }
   }
   

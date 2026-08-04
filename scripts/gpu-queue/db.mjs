@@ -15,6 +15,8 @@ const PRIORITY = {
   txt2vid: 3,
   cogvideo: 3,
   imagen2: 2,
+  yomi_summary: 2,
+  yomi_daily: 2,
   llama: 1,
 };
 
@@ -185,7 +187,7 @@ export async function getQueueStatus() {
     GROUP BY status
   `);
 
-  const statusCounts = {};
+  const statusCounts = { pending: 0, running: 0, completed: 0, failed: 0, cancelled: 0 };
   result.rows.forEach(row => {
     statusCounts[row.status] = parseInt(row.count);
   });
@@ -215,6 +217,62 @@ export async function cleanupOldJobs() {
     RETURNING id
   `);
   return result.rows.length;
+}
+
+// Get job type breakdown by status
+export async function getJobTypeBreakdown() {
+  const result = await pool.query(`
+    SELECT
+      type,
+      status,
+      COUNT(*) as count
+    FROM gpu_queue_jobs
+    GROUP BY type, status
+    ORDER BY type, status
+  `);
+
+  const breakdown = {};
+  result.rows.forEach(row => {
+    if (!breakdown[row.type]) {
+      breakdown[row.type] = {};
+    }
+    breakdown[row.type][row.status] = parseInt(row.count);
+  });
+
+  return breakdown;
+}
+
+// Get recent job history (last 5 jobs)
+export async function getRecentJobs(limit = 5) {
+  const result = await pool.query(
+    `SELECT id, type, status, created_at, started_at, completed_at, error
+     FROM gpu_queue_jobs
+     WHERE status IN ('completed', 'failed', 'cancelled')
+     ORDER BY completed_at DESC
+     LIMIT $1`,
+    [limit]
+  );
+  return result.rows;
+}
+
+// Get priority distribution for pending jobs
+export async function getPriorityDistribution() {
+  const result = await pool.query(`
+    SELECT
+      priority,
+      COUNT(*) as count
+    FROM gpu_queue_jobs
+    WHERE status = 'pending'
+    GROUP BY priority
+    ORDER BY priority DESC
+  `);
+
+  const distribution = {};
+  result.rows.forEach(row => {
+    distribution[row.priority] = parseInt(row.count);
+  });
+
+  return distribution;
 }
 
 // Close pool on shutdown

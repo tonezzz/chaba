@@ -3,6 +3,24 @@ import { StdioClientTransport } from '/home/tony/.yomi/mcpb/node_modules/@modelc
 import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs';
 import pool from './db.mjs';
 
+function normalizeTimestamp(deliveredTime) {
+  if (!deliveredTime) return null;
+  try {
+    let timestamp = parseInt(deliveredTime, 10);
+    if (isNaN(timestamp)) {
+      console.warn(`Invalid deliveredTime (not a number): ${deliveredTime}`);
+      return null;
+    }
+    if (timestamp > 2500000000000) {
+      timestamp = Math.floor(timestamp / 1000);
+    }
+    return timestamp;
+  } catch (err) {
+    console.warn(`Invalid deliveredTime: ${deliveredTime}`);
+    return null;
+  }
+}
+
 const FETCH_DIR = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/fetch-data';
 const BATCH_SIZE = 10;
 const BATCH_DELAY_MS = 2000;
@@ -51,7 +69,7 @@ function parseMessages(text) {
     id: m.header.split(',')[0],
     from: m.header.split(',')[1],
     fromName: m.header.split(',')[2],
-    deliveredTime: parseInt(m.header.split(',')[3], 10),
+    deliveredTime: normalizeTimestamp(m.header.split(',')[3]),
     text: m.content.trim() || null,
   }));
 }
@@ -111,7 +129,7 @@ async function fetchSingle(chatId) {
   
   try {
     const messages = await getChatMessages(chatId, 100);
-    const lastMessageTime = messages.reduce((max, m) => Math.max(max, m.deliveredTime || 0), 0);
+    const lastMessageTime = messages.reduce((max, m) => Math.max(max, normalizeTimestamp(m.deliveredTime) || 0), 0);
     
     const data = {
       chatId,

@@ -15,7 +15,7 @@ services:
   - id: status-api
     name: Status API (External)
     type: http
-    url: http://tony-omen.local:8080/api/status
+    url: http://tony-omen.local:8080/api/health
     expected_status: 200
     timeout: 10
     category: api
@@ -23,7 +23,7 @@ services:
   - id: yomi-api
     name: Yomi API (External)
     type: http
-    url: http://tony-omen.local:8080/api/yomi/conversations
+    url: http://tony-omen.local:8080/api/yomi/health
     expected_status: 200
     timeout: 10
     category: api
@@ -32,6 +32,14 @@ services:
     name: Yomi Summarization (External)
     type: http
     url: http://tony-omen.local:8080/api/yomi/summarization-status
+    expected_status: 200
+    timeout: 10
+    category: api
+
+  - id: yomi-rate-limiter
+    name: Yomi Rate Limiter (External)
+    type: http
+    url: http://tony-omen.local:8080/api/yomi/rate-limiter-status
     expected_status: 200
     timeout: 10
     category: api
@@ -58,6 +66,14 @@ services:
     name: Imagen2 (External)
     type: http
     url: http://tony-omen.local:8000/health
+    expected_status: 200
+    timeout: 15
+    category: gpu
+
+  - id: txt2vid
+    name: Txt2Vid (External)
+    type: http
+    url: http://tony-omen.local:8002/health
     expected_status: 200
     timeout: 15
     category: gpu

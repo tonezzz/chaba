@@ -52,10 +52,10 @@ sections:
       - label: Sync source
         text: >
           scp chaba-omen/mcp/mcp-playlive/playlived.mjs
-          tony@192.168.1.42:/home/tony/.local/playlive/playlived.mjs
+          tony@tony-dell.local:/home/tony/.local/playlive/playlived.mjs
       - label: Safe restart
         text: >
-          ssh tony@192.168.1.42 'lsof -ti:9230 | xargs -r kill -9 ; sleep 2 ;
+          ssh tony@tony-dell.local 'lsof -ti:9230 | xargs -r kill -9 ; sleep 2 ;
           cd /home/tony/.local/playlive && > playlived.log &&
           PLAYLIVED_REMOTE_CDP=http://127.0.0.1:9223
           setsid -f sh -c "exec /home/tony/.local/node/bin/node playlived.mjs >> playlived.log 2>&1" ;
@@ -117,7 +117,7 @@ sections:
       - label: List CDP targets
         text: "curl -s http://127.0.0.1:9223/json/list | jq '.[] | {id:.id, url:.url, title:.title}'"
       - label: Health check
-        text: "curl -s http://192.168.1.42:9230/sessions should return 200 with a JSON sessions list"
+        text: "curl -s http://tony-dell.local:9230/sessions should return 200 with a JSON sessions list"
       - label: Confirm login
         text: The CDP target's tab URLs/titles must show the logged-in AI UIs, not login pages.
 

@@ -18,7 +18,11 @@ CREATE TABLE IF NOT EXISTS gpu_queue_jobs (
   batch_size INTEGER DEFAULT 1,
   -- Additional metrics
   queue_wait_time_ms INTEGER,
-  result JSONB
+  result JSONB,
+  -- Embedding-specific metrics
+  embedding_dimensions INTEGER,
+  embedding_model VARCHAR(100),
+  text_count INTEGER DEFAULT 1
 );
 
 -- Index for status queries

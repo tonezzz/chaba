@@ -105,10 +105,16 @@ async function handleRequest(req, res) {
     if (path[0] === 'api' && path[1] === 'gpu-queue' && path[2] === 'status' && method === 'GET') {
       const statusCounts = await db.getQueueStatus();
       const runningJob = await db.getRunningJob();
+      const jobTypeBreakdown = await db.getJobTypeBreakdown();
+      const recentJobs = await db.getRecentJobs(5);
+      const priorityDistribution = await db.getPriorityDistribution();
 
       sendJson(res, 200, {
         status: statusCounts,
-        running: runningJob || null
+        running: runningJob || null,
+        jobTypeBreakdown,
+        recentJobs,
+        priorityDistribution
       });
       return;
     }

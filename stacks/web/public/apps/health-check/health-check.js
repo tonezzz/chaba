@@ -98,7 +98,7 @@ class HealthCheckDashboard {
     // Try to reach local endpoints to determine location
     // Use relative URLs since we're on the same domain
     const homeEndpoints = [
-      '/api/status'
+      '/api/health'
     ];
 
     for (const endpoint of homeEndpoints) {
@@ -247,9 +247,21 @@ class HealthCheckDashboard {
       const queueResponse = await fetch('/api/gpu-queue/status');
       const queueData = await queueResponse.json();
 
+      // Get GPU service health
+      const [imagen2Health, thaiLegalHealth, txt2vidHealth] = await Promise.all([
+        fetch('http://tony-omen.local:8000/health').then(r => r.json()).catch(() => ({ status: 'error' })),
+        fetch('http://tony-omen.local:8001/health').then(r => r.json()).catch(() => ({ status: 'error' })),
+        fetch('http://tony-omen.local:8002/health').then(r => r.json()).catch(() => ({ status: 'error' }))
+      ]);
+
       const status = {
         gpu: gpuData,
-        queue: queueData
+        queue: queueData,
+        services: {
+          imagen2: imagen2Health,
+          thaiLegal: thaiLegalHealth,
+          txt2vid: txt2vidHealth
+        }
       };
 
       this.renderGPUStatus(status);
@@ -540,6 +552,7 @@ class HealthCheckDashboard {
     const container = document.getElementById('gpu-status');
     const gpu = status.gpu;
     const queue = status.queue;
+    const services = status.services || {};
 
     // Check if initial render or error state
     const isInitialRender = container.innerHTML.includes('health-loading') ||
@@ -551,6 +564,9 @@ class HealthCheckDashboard {
       const processes = gpu.processes || [];
       const queueStatus = queue.status || {};
       const runningJob = queue.running || null;
+      const jobTypeBreakdown = queue.jobTypeBreakdown || {};
+      const recentJobs = queue.recentJobs || [];
+      const priorityDistribution = queue.priorityDistribution || {};
 
       if (gpu.error) {
         container.innerHTML = `
@@ -592,6 +608,12 @@ class HealthCheckDashboard {
       const runningCount = queueStatus.running || 0;
       const completedCount = queueStatus.completed || 0;
       const failedCount = queueStatus.failed || 0;
+      const cancelledCount = queueStatus.cancelled || 0;
+
+      // Calculate job duration for running job
+      const runningJobDuration = runningJob && runningJob.started_at 
+        ? this.formatTimeSince(new Date(runningJob.started_at)) 
+        : null;
 
       const runningJobHtml = runningJob ? `
         <div class="health-gpu-running-job">
@@ -600,8 +622,51 @@ class HealthCheckDashboard {
             <span class="health-gpu-job-id">#${runningJob.id}</span>
           </div>
           <div class="health-gpu-job-time">Started: ${new Date(runningJob.started_at).toLocaleTimeString()}</div>
+          ${runningJobDuration ? `<div class="health-gpu-job-duration">Running for: ${runningJobDuration}</div>` : ''}
         </div>
       ` : '<div class="health-gpu-running-job health-gpu-job-empty">No job currently running</div>';
+
+      // Build GPU service health
+      const imagen2Status = services.imagen2?.status === 'ok' ? 'healthy' : 'unhealthy';
+      const thaiLegalStatus = services.thaiLegal?.status === 'ok' ? 'healthy' : 'unhealthy';
+      const txt2vidStatus = services.txt2vid?.status === 'ok' ? 'healthy' : 'unhealthy';
+
+      const imagen2Model = services.imagen2?.model || 'Unknown';
+      const txt2vidModel = services.txt2vid?.model || 'Unknown';
+
+      // Build job type breakdown
+      const jobTypeHtml = Object.keys(jobTypeBreakdown).length > 0 ? Object.entries(jobTypeBreakdown).map(([type, statuses]) => `
+        <div class="health-gpu-job-type-item">
+          <span class="health-gpu-job-type-name">${type}</span>
+          <span class="health-gpu-job-type-statuses">
+            ${Object.entries(statuses).map(([status, count]) => `
+              <span class="health-gpu-job-type-status health-gpu-job-type-${status}">${status}: ${count}</span>
+            `).join('')}
+          </span>
+        </div>
+      `).join('') : '<div class="health-gpu-job-type-empty">No job history</div>';
+
+      // Build recent jobs
+      const recentJobsHtml = recentJobs.length > 0 ? recentJobs.map(job => `
+        <div class="health-gpu-recent-job">
+          <span class="health-gpu-recent-job-type">${job.type}</span>
+          <span class="health-gpu-recent-job-id">#${job.id}</span>
+          <span class="health-gpu-recent-job-status health-gpu-recent-${job.status}">${job.status}</span>
+          <span class="health-gpu-recent-job-time">${this.formatTimeSince(new Date(job.completed_at || job.created_at))} ago</span>
+        </div>
+      `).join('') : '<div class="health-gpu-recent-empty">No recent jobs</div>';
+
+      // Build priority distribution
+      const priorityHtml = Object.keys(priorityDistribution).length > 0 ? Object.entries(priorityDistribution).map(([priority, count]) => {
+        const priorityNames = { '4': 'embedding', '3': 'txt2vid/cogvideo', '2': 'imagen2', '1': 'llama' };
+        return `
+          <div class="health-gpu-priority-item">
+            <span class="health-gpu-priority-level">P${priority}</span>
+            <span class="health-gpu-priority-name">${priorityNames[priority] || 'unknown'}</span>
+            <span class="health-gpu-priority-count">${count}</span>
+          </div>
+        `;
+      }).join('') : '<div class="health-gpu-priority-empty">No pending jobs</div>';
 
       container.innerHTML = `
         <div class="health-gpu-overview">
@@ -627,6 +692,33 @@ class HealthCheckDashboard {
             <div class="health-gpu-label">Temperature</div>
           </div>
           ` : ''}
+        </div>
+
+        <div class="health-gpu-section">
+          <h3 class="health-gpu-section-title">GPU Service Health</h3>
+          <div class="health-gpu-services">
+            <div class="health-gpu-service">
+              <div class="health-gpu-service-status ${imagen2Status}" data-field="service-imagen2">${imagen2Status === 'healthy' ? '✓' : '✗'}</div>
+              <div class="health-gpu-service-info">
+                <span class="health-gpu-service-name">Imagen2</span>
+                <span class="health-gpu-service-model">${imagen2Model}</span>
+              </div>
+            </div>
+            <div class="health-gpu-service">
+              <div class="health-gpu-service-status ${thaiLegalStatus}" data-field="service-thai-legal">${thaiLegalStatus === 'healthy' ? '✓' : '✗'}</div>
+              <div class="health-gpu-service-info">
+                <span class="health-gpu-service-name">Thai Legal</span>
+                <span class="health-gpu-service-model">LLM</span>
+              </div>
+            </div>
+            <div class="health-gpu-service">
+              <div class="health-gpu-service-status ${txt2vidStatus}" data-field="service-txt2vid">${txt2vidStatus === 'healthy' ? '✓' : '✗'}</div>
+              <div class="health-gpu-service-info">
+                <span class="health-gpu-service-name">Txt2Vid</span>
+                <span class="health-gpu-service-model">${txt2vidModel}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="health-gpu-section">
@@ -662,6 +754,10 @@ class HealthCheckDashboard {
               <div class="health-gpu-queue-value" data-field="queue-failed">${failedCount}</div>
               <div class="health-gpu-queue-label">Failed</div>
             </div>
+            <div class="health-gpu-queue-stat">
+              <div class="health-gpu-queue-value" data-field="queue-cancelled">${cancelledCount}</div>
+              <div class="health-gpu-queue-label">Cancelled</div>
+            </div>
           </div>
           <div class="health-gpu-running-job-container">
             <h4 class="health-gpu-job-title">Currently Running</h4>
@@ -670,6 +766,29 @@ class HealthCheckDashboard {
             </div>
           </div>
         </div>
+
+        <div class="health-gpu-section">
+          <h3 class="health-gpu-section-title">Job Type Breakdown</h3>
+          <div class="health-gpu-job-types" data-field="job-types">
+            ${jobTypeHtml}
+          </div>
+        </div>
+
+        <div class="health-gpu-section">
+          <h3 class="health-gpu-section-title">Recent Jobs (Last 5)</h3>
+          <div class="health-gpu-recent-jobs" data-field="recent-jobs">
+            ${recentJobsHtml}
+          </div>
+        </div>
+
+        ${Object.keys(priorityDistribution).length > 0 ? `
+        <div class="health-gpu-section">
+          <h3 class="health-gpu-section-title">Pending Priority Distribution</h3>
+          <div class="health-gpu-priority" data-field="priority">
+            ${priorityHtml}
+          </div>
+        </div>
+        ` : ''}
 
         <div class="health-gpu-links">
           <a href="/apps/gpu-queue/" target="_blank" class="health-gpu-link">GPU Queue UI</a>
@@ -733,6 +852,7 @@ class HealthCheckDashboard {
       const runningCount = queueStatus.running || 0;
       const completedCount = queueStatus.completed || 0;
       const failedCount = queueStatus.failed || 0;
+      const cancelledCount = queueStatus.cancelled || 0;
 
       const pendingEl = container.querySelector('[data-field="queue-pending"]');
       if (pendingEl) pendingEl.textContent = pendingCount;
@@ -746,10 +866,16 @@ class HealthCheckDashboard {
       const failedEl = container.querySelector('[data-field="queue-failed"]');
       if (failedEl) failedEl.textContent = failedCount;
 
+      const cancelledEl = container.querySelector('[data-field="queue-cancelled"]');
+      if (cancelledEl) cancelledEl.textContent = cancelledCount;
+
       // Update running job
       const runningJobEl = container.querySelector('[data-field="running-job"]');
       if (runningJobEl) {
         const runningJob = queue.running || null;
+        const runningJobDuration = runningJob && runningJob.started_at 
+          ? this.formatTimeSince(new Date(runningJob.started_at)) 
+          : null;
         const runningJobHtml = runningJob ? `
           <div class="health-gpu-running-job">
             <div class="health-gpu-job-info">
@@ -757,9 +883,82 @@ class HealthCheckDashboard {
               <span class="health-gpu-job-id">#${runningJob.id}</span>
             </div>
             <div class="health-gpu-job-time">Started: ${new Date(runningJob.started_at).toLocaleTimeString()}</div>
+            ${runningJobDuration ? `<div class="health-gpu-job-duration">Running for: ${runningJobDuration}</div>` : ''}
           </div>
         ` : '<div class="health-gpu-running-job health-gpu-job-empty">No job currently running</div>';
         runningJobEl.innerHTML = runningJobHtml;
+      }
+
+      // Update GPU service health
+      const imagen2Status = services.imagen2?.status === 'ok' ? 'healthy' : 'unhealthy';
+      const thaiLegalStatus = services.thaiLegal?.status === 'ok' ? 'healthy' : 'unhealthy';
+      const txt2vidStatus = services.txt2vid?.status === 'ok' ? 'healthy' : 'unhealthy';
+
+      const imagen2El = container.querySelector('[data-field="service-imagen2"]');
+      if (imagen2El) {
+        imagen2El.className = `health-gpu-service-status ${imagen2Status}`;
+        imagen2El.textContent = imagen2Status === 'healthy' ? '✓' : '✗';
+      }
+
+      const thaiLegalEl = container.querySelector('[data-field="service-thai-legal"]');
+      if (thaiLegalEl) {
+        thaiLegalEl.className = `health-gpu-service-status ${thaiLegalStatus}`;
+        thaiLegalEl.textContent = thaiLegalStatus === 'healthy' ? '✓' : '✗';
+      }
+
+      const txt2vidEl = container.querySelector('[data-field="service-txt2vid"]');
+      if (txt2vidEl) {
+        txt2vidEl.className = `health-gpu-service-status ${txt2vidStatus}`;
+        txt2vidEl.textContent = txt2vidStatus === 'healthy' ? '✓' : '✗';
+      }
+
+      // Update job type breakdown
+      const jobTypesEl = container.querySelector('[data-field="job-types"]');
+      if (jobTypesEl && queue.jobTypeBreakdown) {
+        const jobTypeBreakdown = queue.jobTypeBreakdown;
+        const jobTypeHtml = Object.keys(jobTypeBreakdown).length > 0 ? Object.entries(jobTypeBreakdown).map(([type, statuses]) => `
+          <div class="health-gpu-job-type-item">
+            <span class="health-gpu-job-type-name">${type}</span>
+            <span class="health-gpu-job-type-statuses">
+              ${Object.entries(statuses).map(([status, count]) => `
+                <span class="health-gpu-job-type-status health-gpu-job-type-${status}">${status}: ${count}</span>
+              `).join('')}
+            </span>
+          </div>
+        `).join('') : '<div class="health-gpu-job-type-empty">No job history</div>';
+        jobTypesEl.innerHTML = jobTypeHtml;
+      }
+
+      // Update recent jobs
+      const recentJobsEl = container.querySelector('[data-field="recent-jobs"]');
+      if (recentJobsEl && queue.recentJobs) {
+        const recentJobs = queue.recentJobs;
+        const recentJobsHtml = recentJobs.length > 0 ? recentJobs.map(job => `
+          <div class="health-gpu-recent-job">
+            <span class="health-gpu-recent-job-type">${job.type}</span>
+            <span class="health-gpu-recent-job-id">#${job.id}</span>
+            <span class="health-gpu-recent-job-status health-gpu-recent-${job.status}">${job.status}</span>
+            <span class="health-gpu-recent-job-time">${this.formatTimeSince(new Date(job.completed_at || job.created_at))} ago</span>
+          </div>
+        `).join('') : '<div class="health-gpu-recent-empty">No recent jobs</div>';
+        recentJobsEl.innerHTML = recentJobsHtml;
+      }
+
+      // Update priority distribution
+      const priorityEl = container.querySelector('[data-field="priority"]');
+      if (priorityEl && queue.priorityDistribution) {
+        const priorityDistribution = queue.priorityDistribution;
+        const priorityHtml = Object.keys(priorityDistribution).length > 0 ? Object.entries(priorityDistribution).map(([priority, count]) => {
+          const priorityNames = { '4': 'embedding', '3': 'txt2vid/cogvideo', '2': 'imagen2', '1': 'llama' };
+          return `
+            <div class="health-gpu-priority-item">
+              <span class="health-gpu-priority-level">P${priority}</span>
+              <span class="health-gpu-priority-name">${priorityNames[priority] || 'unknown'}</span>
+              <span class="health-gpu-priority-count">${count}</span>
+            </div>
+          `;
+        }).join('') : '<div class="health-gpu-priority-empty">No pending jobs</div>';
+        priorityEl.innerHTML = priorityHtml;
       }
     }
   }

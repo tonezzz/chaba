@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
-import { spawn } from 'node:child_process';
+import { spawn, execSync } from 'node:child_process';
 import { existsSync, createReadStream, readdirSync } from 'node:fs';
+import { summaryRateLimiter, dailyRateLimiter, summaryCircuitBreaker, dailyCircuitBreaker } from './llama-rate-limiter.mjs';
 import pool from './db.mjs';
 
 const PORT = parseInt(process.env.YOMI_API_PORT || '3000', 10);
@@ -297,6 +298,49 @@ async function handleActivityStatus(res) {
       // Ignore errors reading status file
     }
 
+    // Get rate limiter and circuit breaker status
+    const rateLimiterStatus = {
+      summary: {
+        rateLimiter: summaryRateLimiter.getStats(),
+        circuitBreaker: summaryCircuitBreaker.getState()
+      },
+      daily: {
+        rateLimiter: dailyRateLimiter.getStats(),
+        circuitBreaker: dailyCircuitBreaker.getState()
+      }
+    };
+
+    // Get GPU status
+    let gpuStatus = null;
+    try {
+      const { execSync } = await import('node:child_process');
+      const gpuOutput = execSync('nvidia-smi --query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader,nounits', { encoding: 'utf8' });
+      const [util, memUsed, memTotal, temp] = gpuOutput.trim().split(',').map(s => s.trim());
+      gpuStatus = {
+        utilization: parseInt(util) || 0,
+        memoryUsed: parseInt(memUsed) || 0,
+        memoryTotal: parseInt(memTotal) || 0,
+        memoryPercent: Math.round((parseInt(memUsed) / parseInt(memTotal)) * 100) || 0,
+        temperature: parseInt(temp) || null
+      };
+    } catch (err) {
+      gpuStatus = { error: 'GPU monitoring unavailable' };
+    }
+
+    // Determine overall health
+    const anyCircuitBreakerOpen = rateLimiterStatus.summary.circuitBreaker.state === 'open' || 
+                              rateLimiterStatus.daily.circuitBreaker.state === 'open';
+    const highGpuTemp = gpuStatus.temperature && gpuStatus.temperature > 85;
+    const highGpuMemory = gpuStatus.memoryPercent && gpuStatus.memoryPercent > 90;
+
+    const healthStatus = {
+      healthy: !anyCircuitBreakerOpen && !highGpuTemp && !highGpuMemory,
+      message: anyCircuitBreakerOpen ? 'Circuit breaker active - GPU overloaded' :
+               highGpuTemp ? 'High GPU temperature' :
+               highGpuMemory ? 'High GPU memory usage' :
+               'All systems operational'
+    };
+
     sendJson(res, 200, {
       process: processInfo,
       recentActivity: recentUpdates,
@@ -306,10 +350,9 @@ async function handleActivityStatus(res) {
         system: systemHealth[0] || {}
       },
       processStatus,
-      status: {
-        healthy: true,
-        message: 'All systems operational'
-      },
+      rateLimiter: rateLimiterStatus,
+      gpu: gpuStatus,
+      status: healthStatus,
       generatedAt: new Date().toISOString()
     });
   } catch (err) {
@@ -380,6 +423,47 @@ async function handleSummarizationStatus(res) {
       },
       recentActivity: recentActivity,
       qualityDistribution: qualityDist,
+      generatedAt: new Date().toISOString()
+    });
+  } catch (err) {
+    sendJson(res, 500, { ok: false, error: err.message });
+  }
+}
+
+async function handleRateLimiterStatus(res) {
+  try {
+    const summaryStats = summaryRateLimiter.getStats();
+    const dailyStats = dailyRateLimiter.getStats();
+    const summaryCB = summaryCircuitBreaker.getState();
+    const dailyCB = dailyCircuitBreaker.getState();
+    
+    // Get GPU status
+    let gpuStatus = null;
+    try {
+      const { execSync } = await import('node:child_process');
+      const gpuOutput = execSync('nvidia-smi --query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader,nounits', { encoding: 'utf8' });
+      const [util, memUsed, memTotal, temp] = gpuOutput.trim().split(',').map(s => s.trim());
+      gpuStatus = {
+        utilization: parseInt(util) || 0,
+        memoryUsed: parseInt(memUsed) || 0,
+        memoryTotal: parseInt(memTotal) || 0,
+        memoryPercent: Math.round((parseInt(memUsed) / parseInt(memTotal)) * 100) || 0,
+        temperature: parseInt(temp) || null
+      };
+    } catch (err) {
+      gpuStatus = { error: 'GPU monitoring unavailable' };
+    }
+    
+    sendJson(res, 200, {
+      summary: {
+        rateLimiter: summaryStats,
+        circuitBreaker: summaryCB
+      },
+      daily: {
+        rateLimiter: dailyStats,
+        circuitBreaker: dailyCB
+      },
+      gpu: gpuStatus,
       generatedAt: new Date().toISOString()
     });
   } catch (err) {
@@ -500,6 +584,15 @@ const server = createServer(async (req, res) => {
   if (url.pathname === '/api/yomi/activity-status' && req.method === 'GET') {
     try {
       await handleActivityStatus(res);
+    } catch (err) {
+      sendJson(res, 500, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  if (url.pathname === '/api/yomi/rate-limiter-status' && req.method === 'GET') {
+    try {
+      await handleRateLimiterStatus(res);
     } catch (err) {
       sendJson(res, 500, { ok: false, error: err.message });
     }

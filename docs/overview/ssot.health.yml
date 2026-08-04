@@ -23,7 +23,7 @@ services:
   - id: status-api
     name: Status API
     type: http
-    url: http://tony-omen.local:8080/api/status
+    url: http://tony-omen.local:8080/api/health
     expected_status: 200
     timeout: 5
     category: api
@@ -31,7 +31,7 @@ services:
   - id: yomi-api
     name: Yomi API
     type: http
-    url: http://tony-omen.local:8080/api/yomi/conversations
+    url: http://tony-omen.local:8080/api/yomi/health
     expected_status: 200
     timeout: 5
     category: api
@@ -88,9 +88,9 @@ services:
 
   - id: txt2vid
     name: Txt2Vid
-    type: container
-    container: txt2vid-inference
-    expected_state: running
+    type: http
+    url: http://tony-omen.local:8002/health
+    expected_status: 200
     timeout: 10
     category: gpu
 

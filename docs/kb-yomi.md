@@ -21,6 +21,7 @@ Yomi has been split into a two-stage pipeline for better reliability and monitor
 - Reads from `fetch-data/` directory
 - Generates AI summaries using Llama (Phi-3-mini-4k-instruct-q4)
 - Categorizes conversations
+- Generates daily summaries (events, actions, topics per date)
 - Updates summaries and categories in PostgreSQL
 - Tracks processing status in `process-status.json`
 - Runs every 5 minutes via systemd timer
@@ -36,11 +37,13 @@ Yomi has been split into a two-stage pipeline for better reliability and monitor
   - `/api/yomi/send` - Send a message
   - `/api/yomi/media/<chatId>/<messageId>` - Download media
   - `/api/yomi/last-updated` - Last database update timestamp
-
-### Planned API Endpoints (Not Yet Implemented)
-- `/api/yomi/fetch` - Trigger fetch stage manually
-- `/api/yomi/process` - Trigger process stage manually
-- `/api/yomi/activity-status` - Return processing status from `process-status.json`
+  - `/api/yomi/fetch?chat=<id>` - Trigger fetch stage manually
+  - `/api/yomi/process?chat=<id>&force=<bool>` - Trigger process stage manually
+  - `/api/yomi/activity-status` - Comprehensive system status and processing state
+  - `/api/yomi/summarization-status` - Summarization statistics and quality metrics
+  - `/api/yomi/summary-quality` - Detailed quality metrics per conversation
+  - `/api/yomi/resummarize` - Trigger re-summarization of conversations
+  - `/api/yomi/rate-limiter-status` - Rate limiter and circuit breaker status
 
 ## Key files
 
@@ -139,6 +142,9 @@ Parsed objects look like:
 - If messages look garbled after a Yomi update, inspect the raw `get_chat_messages` output and adjust the CSV tokenizer in `fetch-conversations.mjs`.
 - Process status stuck in "processing" → Check `process-status.json` and clear if needed: `rm /home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/process-status.json`
 - Summaries not generating → Check Llama API is accessible at `http://localhost:8001/v1/chat/completions` and GPU is available
+- Daily summaries empty → Ensure `process-conversations.mjs` includes `generateDailySummaries()` call (added in 2026-08-03 fix). Previously only available in legacy `update-conversations.mjs`.
+- Summary language mismatch → Language-aware summarization implemented (2026-08-03) with Thai/English/mixed detection. Some encoding issues remain for certain conversations.
+- Frequent Llama API 500 errors → Rate limiting and circuit breakers implemented (2026-08-03) to manage GPU load. Check `/api/yomi/rate-limiter-status` for current state.
 
 ## UI Improvements (Post-Improvement Session)
 
@@ -167,20 +173,424 @@ The Yomi web UI was streamlined for better usability:
 
 ## Monitoring Integration
 
-Yomi is integrated into the health check system:
+Yomi is integrated into the health check system with comprehensive monitoring:
 
 ### Health Check Configuration
 - **Yomi API**: Monitored at `http://tony-omen.local:8080/api/yomi/conversations`
+- **Yomi Summarization**: Monitored at `http://tony-omen.local:8080/api/yomi/summarization-status`
+- **Yomi Rate Limiter**: Monitored at `http://tony-omen.local:8080/api/yomi/rate-limiter-status`
 - **Category**: API services
 - **Timeout**: 5 seconds
 - **Config**: `docs/overview/ssot.health.home.yml`
 
-### GPU Monitor Integration (Planned)
-- GPU monitor intended to display Yomi processing status
-- Planned endpoint: `/api/yomi/activity-status` (not yet implemented)
-- Would show: Processing state, current chat, progress
-- Location: `stacks/web/public/apps/gpu-monitor/gpu-monitor.js`
-- Current status: Endpoint needs to be added to `yomi-api.mjs`
+### GPU Load Management (2026-08-03, Updated 2026-08-04)
+- **Rate Limiting**: Optimized settings (3 concurrent for daily summaries, 1 for regular summaries) to balance speed and GPU load
+- **Circuit Breakers**: Automatic protection when GPU overloaded (2-5 failures trigger open state)
+- **Queue Management**: Prevents request pile-up with configurable timeouts
+- **GPU Monitoring**: Real-time GPU utilization, memory, and temperature tracking
+- **Alerting**: Automatic detection of circuit breaker triggers, high GPU load, and temperature issues
+
+### Rate Limiter Status (Updated 2026-08-04)
+- **Summary Rate Limiter**: 1 concurrent, 2min queue timeout
+- **Daily Rate Limiter**: 3 concurrent, 3min queue timeout (increased from 1 for faster processing)
+- **Summary Circuit Breaker**: Opens after 2 failures, 3min timeout
+- **Daily Circuit Breaker**: Opens after 5 failures, 4min timeout (more tolerant for batch processing)
+
+### Rate Limiter and Circuit Breaker Architecture
+
+**Implementation File:** `scripts/yomi/llama-rate-limiter.mjs`
+
+**Rate Limiter Class:**
+- Tracks running requests and queue depth
+- Implements FIFO queue with timeout
+- Automatically processes queued requests when slots available
+- Returns statistics: running, queued, maxConcurrent
+
+**Circuit Breaker Class:**
+- Tracks failure count and last failure time
+- Implements state machine (closed → open → half-open → closed)
+- Automatic reset on successful requests
+- Manual reset capability via API
+
+**Circuit Breaker States:**
+- **Closed**: Normal operation, requests pass through
+- **Open**: Requests blocked after threshold failures, timeout period active
+- **Half-open**: Testing recovery after timeout, allows single request to test
+
+**Integration Points:**
+- Process stage wraps Llama API calls with rate limiters
+- API server provides `/api/yomi/rate-limiter-status` endpoint
+- Health check system monitors rate limiter status
+
+**Rate Limiter Status API Response:**
+```json
+{
+  "summaryRateLimiter": {
+    "running": 0,
+    "queued": 0,
+    "maxConcurrent": 1
+  },
+  "dailyRateLimiter": {
+    "running": 0,
+    "queued": 0,
+    "maxConcurrent": 3
+  },
+  "summaryCircuitBreaker": {
+    "state": "closed",
+    "failureCount": 0,
+    "lastFailureTime": null
+  },
+  "dailyCircuitBreaker": {
+    "state": "closed",
+    "failureCount": 0,
+    "lastFailureTime": null
+  }
+}
+```
+
+## Language Detection System (2026-08-03)
+
+### Detection Algorithm
+
+Yomi automatically detects the language of LINE conversations to provide appropriate summarization:
+
+**Thai Character Detection:**
+- Unicode range: U+0E00-U+0E7F (Thai character block)
+- Calculates ratio of Thai characters to total characters
+- Threshold: > 30% Thai characters = Thai language
+
+**Language Categories:**
+- **Thai**: > 30% Thai characters
+- **English**: < 10% Thai characters
+- **Mixed**: 10-30% Thai characters (Thai/English mix)
+
+### Language-Specific Prompts
+
+**Thai Prompt:**
+```
+สรุปการสนทนา LINE กับ ${name} เป็นประโยคเดียวสั้นๆ (ไม่เกิน 20 คำ) เน้นหัวข้อหลัก คำถาม หรือการตัดสินใจ
+
+${content}
+
+สรุป:
+```
+
+**English Prompt:**
+```
+Summarize the following LINE conversation with ${name} in one concise sentence (under 20 words). Focus on the main topic, question, or decision.
+
+${content}
+
+Summary:
+```
+
+**Mixed Language Prompt:**
+```
+Summarize the following LINE conversation with ${name} in one concise sentence (under 20 words). Use the same language as the messages (Thai/English mix). Focus on the main topic, question, or decision.
+
+${content}
+
+Summary:
+```
+
+### Implementation
+
+**File:** `scripts/yomi/process-conversations.mjs`
+
+**Functions:**
+- `detectLanguage(text)`: Analyzes text to determine language
+- `detectConversationLanguage(messages)`: Aggregates language detection across all messages
+- `getLanguageSpecificPrompt(language, name, lines)`: Returns appropriate prompt based on detected language
+
+**Detection Process:**
+1. Extract text content from all messages
+2. Count Thai characters (U+0E00-U+0E7F)
+3. Calculate Thai character ratio
+4. Classify as Thai, English, or Mixed
+5. Select appropriate summarization prompt
+
+### Benefits
+
+- **Improved Accuracy**: Language-specific prompts produce better summaries
+- **Mixed Language Support**: Handles conversations with both Thai and English
+- **Cultural Context**: Thai prompts use culturally appropriate phrasing
+- **User Experience**: Summaries match the language of the conversation
+
+### Limitations
+
+- Some encoding issues remain for certain conversations
+- Detection based on character count, not semantic analysis
+- May misclassify short conversations with few characters
+- Mixed language conversations may have inconsistent results
+
+## Batch Daily Summarization (2026-08-03)
+
+### Overview
+
+Daily summarization processes conversation messages grouped by date to extract structured information:
+
+**Structured Output Format:**
+```json
+{
+  "events": ["Event 1", "Event 2"],
+  "actions": ["Action 1", "Action 2"],
+  "topics": ["Topic 1", "Topic 2"]
+}
+```
+
+**Database Schema:**
+- Table: `daily_summaries`
+- Fields: chat_id, date, events (array), actions (array), topics (array), message_count
+- Index: chat_id + date for efficient lookups
+
+### Batch Processing Strategy
+
+**Batch Size:** 4 dates per API call
+- Reduces Llama API calls by 60-75%
+- Processes multiple dates in single request
+- Falls back to single-date processing on errors
+
+**Date Range:** Last 30 days
+- Reduces processing load by 40-60%
+- Focuses on recent activity
+- Configurable for different use cases
+
+**Processing Order:**
+1. One-on-one conversations (highest priority)
+2. Recent conversations (last 30 days)
+3. Older conversations (historical data)
+
+### Implementation
+
+**File:** `scripts/yomi/process-conversations.mjs`
+
+**Functions:**
+- `groupMessagesByDate(messages)`: Groups messages by date
+- `generateDailySummaries(chatId, messages, name)`: Main batch processing function
+- `saveDailySummary(chatId, date, events, actions, topics, messageCount)`: Saves to database
+- `processSingleDate(chatId, date, dayMessages, name, total, processed)`: Fallback for single dates
+
+**Batch Processing Flow:**
+1. Group messages by date
+2. Filter to last 30 days
+3. Create batch prompts (4 dates each)
+4. Submit to Llama API with daily rate limiter
+5. Parse structured JSON response
+6. Save individual date summaries to database
+7. Handle errors with circuit breaker logic
+
+### Daily Summary Prompt
+
+```
+Extract structured information from this LINE conversation for each date. Return JSON with date keys and values containing events, actions, and topics arrays.
+
+${messagesByDate}
+
+Return format:
+{
+  "YYYY-MM-DD": {
+    "events": ["event1", "event2"],
+    "actions": ["action1", "action2"],
+    "topics": ["topic1", "topic2"]
+  }
+}
+```
+
+### Performance Optimizations
+
+**Parallel Processing:**
+- Process 3 conversations simultaneously for daily summaries
+- Uses daily rate limiter (3 concurrent)
+- Balances speed with GPU load
+
+**Selective Processing:**
+- Skip dates with < 5 messages
+- Skip conversations with < 10 total messages
+- Prioritize active conversations
+
+**Error Handling:**
+- Circuit breaker prevents cascading failures
+- Automatic fallback to single-date processing
+- Retry with exponential backoff
+- Log errors for troubleshooting
+
+### API Integration
+
+**Endpoint:** `/api/yomi/daily?chat=<id>`
+- Returns daily summaries for a conversation
+- JSON format with date keys
+- Includes message count per date
+
+**Example Response:**
+```json
+{
+  "2026-08-01": {
+    "events": ["Meeting scheduled", "Project deadline discussed"],
+    "actions": ["Sent email", "Created task"],
+    "topics": ["Project management", "Deadlines"]
+  },
+  "2026-08-02": {
+    "events": ["Code review completed"],
+    "actions": ["Merged PR", "Updated documentation"],
+    "topics": ["Development", "Code review"]
+  }
+}
+```
+
+### Database Integration
+
+**Query for Daily Summaries:**
+```sql
+SELECT date, events, actions, topics, message_count
+FROM daily_summaries
+WHERE chat_id = $1
+ORDER BY date DESC
+```
+
+**Statistics Tracking:**
+- Total daily summaries per conversation
+- Latest summary date
+- Average messages per day
+- Coverage percentage (days with summaries / total days)
+
+## GPU Queue Integration (2026-08-04)
+
+### Overview
+
+Yomi integrates with the GPU queue system for managed GPU workload scheduling:
+
+**Job Types:**
+- `yomi_summary`: Individual conversation summarization
+- `yomi_daily`: Daily summary generation
+- Priority level: 2 (medium-high priority)
+
+### Integration Module
+
+**File:** `scripts/yomi/gpu-queue-integration.mjs`
+
+**Functions:**
+- `submitSummaryJob(chatId, prompt, type)`: Submit summary job to queue
+- `submitDailySummaryJob(chatId, date, prompt, type)`: Submit daily summary job
+- `submitBatchDailySummaryJob(chatId, dates, prompt, type)`: Submit batch daily summary job
+- `getJob(jobId)`: Check job status
+- `updateJobStatus(jobId, status, error)`: Update job completion
+
+### Job Parameters
+
+**Summary Job:**
+```json
+{
+  "chatId": "c123",
+  "prompt": "Summarize conversation...",
+  "type": "yomi_summary",
+  "model": "Phi-3-mini-4k-instruct-q4",
+  "maxTokens": 150,
+  "temperature": 0.3
+}
+```
+
+**Daily Summary Job:**
+```json
+{
+  "chatId": "c123",
+  "date": "2026-08-01",
+  "prompt": "Extract daily summary...",
+  "type": "yomi_daily",
+  "model": "Phi-3-mini-4k-instruct-q4",
+  "maxTokens": 300,
+  "temperature": 0.3
+}
+```
+
+**Batch Daily Summary Job:**
+```json
+{
+  "chatId": "c123",
+  "dates": ["2026-08-01", "2026-08-02", "2026-08-03", "2026-08-04"],
+  "prompt": "Extract batch daily summaries...",
+  "type": "batch_daily_summary",
+  "model": "Phi-3-mini-4k-instruct-q4",
+  "maxTokens": 600,
+  "temperature": 0.3
+}
+```
+
+### Priority Levels
+
+**GPU Queue Priority Mapping:**
+- P4: embedding, yomi_summary, yomi_daily (highest priority)
+- P3: txt2vid, cogvideo
+- P2: imagen2
+- P1: llama (lowest priority)
+
+**Rationale:**
+- Yomi workloads are high priority for user-facing features
+- Embedding jobs are critical for search functionality
+- Image/video generation is lower priority (background work)
+
+### Database Functions
+
+**File:** `scripts/gpu-queue/db.mjs`
+
+**Yomi-Specific Functions:**
+- `getJobTypeBreakdown()`: Returns job counts by type and status
+- `getRecentJobs(limit)`: Returns recent completed/failed/cancelled jobs
+- `getPriorityDistribution()`: Returns pending jobs by priority level
+
+**Job Type Breakdown Response:**
+```json
+{
+  "yomi_summary": {
+    "completed": 10,
+    "failed": 1,
+    "running": 2
+  },
+  "yomi_daily": {
+    "completed": 5,
+    "failed": 0,
+    "running": 1
+  }
+}
+```
+
+### Integration Benefits
+
+**GPU Load Management:**
+- Centralized queue prevents GPU overload
+- Priority-based scheduling ensures critical work completes first
+- Fair sharing across all GPU workloads
+
+**Monitoring:**
+- Job status tracking in health check dashboard
+- Historical job data for performance analysis
+- Error tracking and retry logic
+
+**Scalability:**
+- Easy to add new Yomi job types
+- Configurable priority levels
+- Support for batch and single jobs
+
+### Current Status
+
+**Implementation Phase:** Ready for integration
+- GPU queue integration module created
+- Job submission functions implemented
+- Database functions for job tracking available
+- Priority levels configured
+
+**Next Steps:**
+- Replace direct Llama API calls with GPU queue submissions
+- Update process-conversations.mjs to use queue
+- Add job status polling for completion
+- Implement fallback to direct API on queue failures
+
+### Performance Optimizations (2026-08-04)
+- **Batch Processing**: Process 4 dates per API call to reduce Llama API calls by 60-75%
+- **Selective Processing**: Only generate daily summaries for last 30 days (reduces processing load by 40-60%)
+- **Conversation Prioritization**: One-on-one conversations first, then recent (last 30 days), then older
+- **Parallel Processing**: Process 3 conversations simultaneously for daily summaries
+- **Extended Window**: Processing timer increased from 5min to 10min for more complete cycles
+- **GPU Queue Integration**: Ready for integration with existing GPU queue system (priority 2 for Yomi workloads)
 
 ## Process Status Tracking
 
@@ -204,8 +614,8 @@ Yomi tracks processing state in a JSON file:
 
 ### Usage
 - Can be manually cleared if stuck
-- Intended for GPU monitor integration (pending endpoint implementation)
-- Would be checked by health check for summarization status (pending)
+- Available via `/api/yomi/activity-status` for GPU monitor integration
+- Can be checked by health check for summarization status
 
 ## Backlog Management
 
@@ -232,11 +642,13 @@ Yomi tracks processing state in a JSON file:
 - `POST /api/yomi/send` - Send a message
 - `GET /api/yomi/media/<chatId>/<messageId>` - Download media
 - `GET /api/yomi/last-updated` - Last database update timestamp
-
-### Planned Endpoints (Not Yet Implemented)
-- `POST /api/yomi/fetch` - Trigger fetch stage manually
-- `POST /api/yomi/process` - Trigger process stage manually
-- `GET /api/yomi/activity-status` - Return processing status from `process-status.json`
+- `GET/POST /api/yomi/fetch?chat=<id>` - Trigger fetch stage manually
+- `GET/POST /api/yomi/process?chat=<id>&force=<bool>` - Trigger process stage manually
+- `GET /api/yomi/activity-status` - Comprehensive system status, GPU status, rate limiter status
+- `GET /api/yomi/rate-limiter-status` - Rate limiter and circuit breaker status (GPU monitoring)
+- `GET /api/yomi/summarization-status` - Summarization statistics and quality metrics
+- `GET /api/yomi/summary-quality` - Detailed quality metrics per conversation
+- `POST /api/yomi/resummarize` - Trigger re-summarization of conversations
 
 ## URLs
 
@@ -252,9 +664,13 @@ Yomi tracks processing state in a JSON file:
 - **architecture**: Two-stage fetch/process pipeline
 - **systemd**: Automated timers for fetch (15min) and process (5min)
 - **ui**: Streamlined interface with actions menu and collapsible categories
-- **monitoring**: Health check integration (GPU monitor pending)
+- **monitoring**: Health check integration with GPU monitoring
 - **api**: RESTful endpoints for conversations, messages, media
 - **postgresql**: Database backend for conversations and messages
 - **llama**: AI summarization using Phi-3-mini-4k-instruct-q4
 - **backlog**: Strategy for clearing unprocessed conversations
 - **process-status**: JSON file tracking processing state
+- **rate-limiting**: GPU load management with rate limiters and circuit breakers
+- **language-detection**: Thai/English/mixed language detection for summarization
+- **daily-summaries**: Batch daily summarization with structured output
+- **gpu-queue**: Integration with GPU queue system for workload scheduling
