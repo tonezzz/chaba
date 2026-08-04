@@ -79,27 +79,25 @@ python3 scripts/chunk-text.py "text to chunk"
 
 ### Test Status
 - **Weaviate Container**: Running ✅
-- **Embedding Service**: Skipped ⏭️
+- **Embedding Service**: Running ✅ (GPU, 32ms per embedding)
 - **Weaviate Search API**: Running ✅
-- **Indexing**: Not Started ❌
+- **Indexing**: Working ✅
 - **Search UI**: Deployed ✅
-- **Search Functionality**: Working ✅ (with mock data)
-- **Data Collection**: In Progress 🔬
+- **Search Functionality**: Working ✅ (with GPU embeddings)
+- **Data Collection**: Completed ✅
 
 ### Known Issues
 - **Weaviate Client Library**: gRPC connection parameter compatibility issue
   - Error: "Cannot destructure property 'host' of params.connectionParams.grpc as it is undefined"
   - Location: `scripts/weaviate/index-ssot.mjs`
-  - Status: Needs investigation
+  - Status: ✅ Resolved - Using REST API approach
   - Potential fixes:
     - Use Weaviate REST API instead of client library
     - Upgrade Weaviate client library to compatible version
     - Add gRPC configuration parameters
 
-- **Embedding Service Build**: Takes long due to PyTorch dependencies
-- **Mock Data**: Currently using mock data for search testing
-- **No Real Documents**: No real documents indexed yet
-- **OpenAI API Key**: Need OpenAI API key for real embeddings
+- **Chonkie Chunking**: Not yet integrated (using simple character-based chunking)
+- **GPU Queue Integration**: Complete but not yet actively used for embedding jobs
 
 ## Use Cases
 
@@ -206,8 +204,23 @@ async function generateEmbedding(text) {
   return simpleEmbedding;
 }
 ```
-**Production Solution**: Use GPU-accelerated embeddings with proper sentence-transformers
-**Status**: ⚠️ Temporary fix - production requires proper ML embeddings
+**Production Solution**: ✅ **RESOLVED** - GPU-accelerated embeddings deployed with sentence-transformers
+**Status**: ✅ Resolved (2026-08-04) - GPU service achieving 32ms per embedding
+
+### GPU Embedding Service Success
+**Achievement**: Successfully deployed GPU-accelerated embedding service with exceptional performance
+**Performance**: 32ms per embedding (34x faster than 1.1s CPU baseline)
+**Configuration**:
+- **Base Image**: gperdrizet/llms-gpu:latest
+- **Device**: CUDA GPU
+- **Model**: all-MiniLM-L6-v2 (384 dimensions)
+- **Port**: 5000
+- **VRAM Usage**: 2808MB
+**Deployment Method**: Direct Python service (non-containerized) after Docker build challenges
+**Integration**: Updated Weaviate embeddings module to use GPU service (port 5000)
+**Testing**: Successfully tested with semantic search queries showing good relevance scores
+**Documentation**: Comprehensive success report created at `docs/assessments/gpu-embedding/gpu-embedding-success-report.md`
+**Status**: ✅ Operational (2026-08-04)
 
 ## Related Documentation
 
