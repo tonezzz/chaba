@@ -130,21 +130,9 @@ services:
 
 # Recovery suggestions for common failure modes
 recovery_actions:
-  container_down:
-    - Check docker compose status: `docker compose ps`
-    - Restart container: `docker compose restart <container>`
-    - Check logs: `docker compose logs <container>`
-
-  http_error:
-    - Check if service is running: `docker compose ps`
-    - Check service logs for errors
-    - Verify port is accessible: `curl -v <url>`
-    - Restart service if needed
-
-  timeout:
-    - Check if service is overloaded
-    - Check system resources: `htop` or `docker stats`
-    - Consider restarting the service
+  container_down: "Check docker compose status: `docker compose ps`, Restart container: `docker compose restart <container>`, Check logs: `docker compose logs <container>`"
+  http_error: "Check if service is running: `docker compose ps`, Check service logs for errors, Verify port is accessible: `curl -v <url>`, Restart service if needed"
+  timeout: "Check if service is overloaded, Check system resources: `htop` or `docker stats`, Consider restarting the service"
 
   gpu_service_down:
     - Check GPU status with mcp1_gpu_status

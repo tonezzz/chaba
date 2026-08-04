@@ -127,30 +127,30 @@ sections:
     tags: ['auto-generated', 'gpu']
     git_commit_message: Adjusted GPU temperature thresholds to realistic values (80°C high, 85°C critical)
 
-      - label: Docker Compose Configuration Fix
-        text: Remove obsolete 'version' attribute from docker-compose.yml to eliminate deprecation warning
-        status: pending
-        priority: high
-        effort: 5 minutes
-        category: configuration
-        discovered: 2026-08-04
-        assessment_ref: overnight-assessment-2026-08-04
-        business_impact: 3
-        technical_impact: 7
-        user_experience_impact: 2
-        cost_savings_impact: 1
-        impact_summary: Eliminates deprecation warning and ensures future Docker Compose compatibility
-        action_items:
-          - Remove version attribute from docker-compose.yml
-          - Test docker compose commands after change
-          - Verify no breaking changes
-        related_files:
-          - docker-compose.yml
-        tags: [docker, configuration, deprecation]
-        git_commit: f159c7afaeab12c62a034af680cb2a3b818b50c7
-        git_branch: master
-        git_short_commit: f159c7af
-        git_commit_message: Remove obsolete version attribute from docker-compose.yml
+  - label: Docker Compose Configuration Fix
+    text: Remove obsolete 'version' attribute from docker-compose.yml to eliminate deprecation warning
+    status: pending
+    priority: high
+    effort: 5 minutes
+    category: configuration
+    discovered: 2026-08-04
+    assessment_ref: overnight-assessment-2026-08-04
+    business_impact: 3
+    technical_impact: 7
+    user_experience_impact: 2
+    cost_savings_impact: 1
+    impact_summary: Eliminates deprecation warning and ensures future Docker Compose compatibility
+    action_items:
+      - Remove version attribute from docker-compose.yml
+      - Test docker compose commands after change
+      - Verify no breaking changes
+    related_files:
+      - docker-compose.yml
+    tags: [docker, configuration, deprecation]
+    git_commit: f159c7afaeab12c62a034af680cb2a3b818b50c7
+    git_branch: master
+    git_short_commit: f159c7af
+    git_commit_message: Remove obsolete version attribute from docker-compose.yml
 
       - label: GPU Queue Priority System Enhancement
         text: Enhanced GPU queue with yomi_summary and yomi_daily priority levels (P4), added cancelled status tracking, and improved job type breakdown
