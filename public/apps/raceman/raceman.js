@@ -40,6 +40,10 @@ let windSystem = new WindSystem();
 let simulation = null;
 let courseManager = null;
 let yamlEditor = null;
+let notificationManager = new NotificationManager();
+let dragManager = new DragManager({
+  onDrag: onMarkerDrag
+});
 
 // State management functions (delegated to StateManager module)
 function getMergedMarkers() {
@@ -171,21 +175,9 @@ function onMarkerDrag(id, lat, lon, duringDrag = false) {
   // Only re-render on drag complete to avoid performance issues
   if (!duringDrag) {
     render(false);
-    showDragNotification(id, lat, lon);
-  }
-}
-
-function showDragNotification(id, lat, lon) {
-  const msgEl = document.getElementById('course-msg');
-  if (msgEl) {
     const marker = courseData.markers[id];
     const label = marker ? (marker.label || marker.id) : id;
-    msgEl.textContent = `Moved ${label} to ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
-    msgEl.classList.add('text-green-400');
-    setTimeout(() => {
-      msgEl.classList.remove('text-green-400');
-      msgEl.textContent = '';
-    }, 3000);
+    notificationManager.showDragNotification(id, label, lat, lon);
   }
 }
 
@@ -378,7 +370,7 @@ async function loadTheme(id) {
     if (themeId !== 'default') {
       try { ThemeClass = await loadTheme(themeId); } catch (e) { console.warn('theme load failed', e); }
     }
-    renderer = new CourseRenderer(map, { roundDist: ROUND_DIST, theme: new ThemeClass() });
+    renderer = new CourseRenderer(map, { roundDist: ROUND_DIST, theme: new ThemeClass(), dragManager: dragManager });
     document.getElementById('course-name').value = courseId;
     render(true);
     setupToggles();

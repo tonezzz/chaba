@@ -17,6 +17,9 @@ class CourseRenderer {
     this.renderPending = false;
     this.renderTimeout = null;
     this.lastDrawables = null;
+    
+    // Initialize drag manager
+    this.dragManager = options.dragManager || (typeof DragManager !== 'undefined' ? new DragManager() : null);
   }
 
   // Debounced render for performance optimization
@@ -282,38 +285,17 @@ class CourseRenderer {
           .addTo(this.markerLayer)
           .bindPopup(`<b>${d.m.label || d.m.id}</b><br>${d.m.description || ''}`);
         
-        if (onDrag) {
-          // Enhanced drag handling with visual feedback
-          marker.on('dragstart', (e) => {
-            const el = e.target.getElement();
-            if (el) {
-              el.classList.add('marker-dragging');
-              document.body.style.cursor = 'grabbing';
-              document.body.classList.add('dragging-marker');
-            }
-            // Store original position for potential undo
-            e.target._originalPos = e.target.getLatLng();
+        // Use drag manager if available, otherwise fall back to inline handling
+        if (this.dragManager) {
+          this.dragManager.setCallbacks({
+            onDrag: onDrag
           });
-          
-          marker.on('drag', (e) => {
-            // Real-time position updates during drag
-            const ll = e.target.getLatLng();
-            if (onDrag) {
-              onDrag(d.m.id, ll.lat, ll.lng, true); // true = during drag
-            }
-          });
-          
-          marker.on('dragend', (e) => {
-            const el = e.target.getElement();
-            if (el) {
-              el.classList.remove('marker-dragging');
-              document.body.style.cursor = '';
-              document.body.classList.remove('dragging-marker');
-            }
-            const ll = e.target.getLatLng();
-            if (onDrag) {
-              onDrag(d.m.id, ll.lat, ll.lng, false); // false = drag complete
-            }
+          this.dragManager.setupMarkerDrag(marker, d.m);
+        } else if (onDrag) {
+          // Fallback to inline drag handling
+          marker.on('dragend', (e) => { 
+            const ll = e.target.getLatLng(); 
+            onDrag(d.m.id, ll.lat, ll.lng); 
           });
         }
         

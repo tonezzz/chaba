@@ -9,12 +9,45 @@ class DefaultTheme {
   }
 
   markerIcon(name, label) {
-    const svg = this.icons[name] || '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#64748b" stroke="#fff" stroke-width="2"/></svg>';
-    return L.divIcon({ className: 'marker-icon', html: svg, iconSize: [28, 28], iconAnchor: [14, 14] });
+    const svg = this.icons[name] || this.defaultMarkerIcon(name);
+    return L.divIcon({ className: 'marker-icon enhanced-marker', html: svg, iconSize: [32, 32], iconAnchor: [16, 16] });
+  }
+
+  defaultMarkerIcon(name) {
+    const colors = {
+      'start': '#22c55e',
+      'finish': '#ef4444', 
+      '1': '#3b82f6',
+      '2': '#a855f7',
+      '3': '#f59e0b',
+      '4': '#06b6d4',
+      '5': '#ec4899',
+      'default': '#64748b'
+    };
+    const color = colors[name] || colors['default'];
+    return `<svg viewBox="0 0 24 24">
+      <defs>
+        <filter id="marker-glow-${name}">
+          <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <circle cx="12" cy="12" r="10" fill="${color}" stroke="#fff" stroke-width="2" filter="url(#marker-glow-${name})"/>
+      <circle cx="12" cy="12" r="4" fill="#fff" opacity="0.8"/>
+      <text x="12" y="16" text-anchor="middle" fill="#fff" font-size="8" font-weight="bold">${name}</text>
+    </svg>`;
   }
 
   markerLabelIcon(label) {
-    return L.divIcon({ className: 'marker-label', html: `<span>${label}</span>`, iconSize: [60, 14], iconAnchor: [30, 0] });
+    return L.divIcon({ 
+      className: 'marker-label enhanced-marker-label', 
+      html: `<span class="label-text">${label}</span>`, 
+      iconSize: [70, 18], 
+      iconAnchor: [35, 0] 
+    });
   }
 
   lineLabelIcon(text, rotation = 0) {
@@ -32,8 +65,34 @@ class DefaultTheme {
   }
 
   windIcon(heading, speed) {
-    const text = speed != null ? `<text x="12" y="22" text-anchor="middle" fill="#e0f2fe" font-size="7" font-family="sans-serif">${speed} kt</text>` : '';
-    return L.divIcon({ className: 'wind-icon', html: `<svg viewBox="0 0 24 24" style="transform: rotate(${heading}deg)"><path d="M12 2l10 18H2z" fill="#0ea5e9"/></svg>${text}`, iconSize: [28, 28], iconAnchor: [14, 14] });
+    const text = speed != null ? `<text x="12" y="22" text-anchor="middle" fill="#e0f2fe" font-size="7" font-family="sans-serif" font-weight="bold">${speed} kt</text>` : '';
+    const speedColor = this.getWindSpeedColor(speed);
+    return L.divIcon({ 
+      className: 'wind-icon enhanced-wind-icon', 
+      html: `<svg viewBox="0 0 24 24" style="transform: rotate(${heading}deg)">
+        <defs>
+          <filter id="wind-glow-${speed}">
+            <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        <path d="M12 2l10 18H2z" fill="${speedColor}" filter="url(#wind-glow-${speed})" stroke="#fff" stroke-width="0.5"/>
+        <circle cx="12" cy="12" r="2" fill="#fff" opacity="0.8"/>
+      </svg>${text}`, 
+      iconSize: [32, 32], 
+      iconAnchor: [16, 16] 
+    });
+  }
+
+  getWindSpeedColor(speed) {
+    if (speed == null) return '#0ea5e9';
+    if (speed < 10) return '#22c55e'; // Light wind - green
+    if (speed < 15) return '#eab308'; // Moderate wind - yellow
+    if (speed < 20) return '#f97316'; // Strong wind - orange
+    return '#ef4444'; // Very strong wind - red
   }
 
   boatIcon(color, heading) {
@@ -60,36 +119,17 @@ class DefaultTheme {
           .addTo(renderer.markerLayer)
           .bindPopup(`<b>${d.m.label || d.m.id}</b><br>${d.m.description || ''}`);
         
-        if (onDrag) {
-          // Enhanced drag handling with visual feedback
-          marker.on('dragstart', (e) => {
-            const el = e.target.getElement();
-            if (el) {
-              el.classList.add('marker-dragging');
-              document.body.style.cursor = 'grabbing';
-              document.body.classList.add('dragging-marker');
-            }
-            e.target._originalPos = e.target.getLatLng();
+        // Use drag manager if available, otherwise fall back to inline handling
+        if (renderer.dragManager) {
+          renderer.dragManager.setCallbacks({
+            onDrag: onDrag
           });
-          
-          marker.on('drag', (e) => {
-            const ll = e.target.getLatLng();
-            if (onDrag) {
-              onDrag(d.m.id, ll.lat, ll.lng, true);
-            }
-          });
-          
-          marker.on('dragend', (e) => {
-            const el = e.target.getElement();
-            if (el) {
-              el.classList.remove('marker-dragging');
-              document.body.style.cursor = '';
-              document.body.classList.remove('dragging-marker');
-            }
-            const ll = e.target.getLatLng();
-            if (onDrag) {
-              onDrag(d.m.id, ll.lat, ll.lng, false);
-            }
+          renderer.dragManager.setupMarkerDrag(marker, d.m);
+        } else if (onDrag) {
+          // Fallback to inline drag handling
+          marker.on('dragend', (e) => { 
+            const ll = e.target.getLatLng(); 
+            onDrag(d.m.id, ll.lat, ll.lng); 
           });
         }
         
