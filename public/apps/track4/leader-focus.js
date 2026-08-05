@@ -34,9 +34,9 @@ class LeaderFocus {
       const leader = racers.sort((a, b) => b.distance - a.distance)[0];
       if (leader) {
         const section = currentSection ? currentSection(leader) : '—';
-        el.textContent = `Following: ${section}`;
+        el.textContent = `Section: ${section}`;
       } else {
-        el.textContent = 'Following: —';
+        el.textContent = 'Section: —';
       }
     }
   }
