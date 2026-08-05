@@ -76,7 +76,7 @@ class DefaultTheme {
       }
       case 'section': {
         const pts = d.points.map(p => [p[0], p[1]]);
-        L.polyline(pts, { className: 'section-line', color: d.color, weight: d.width || 8, dashArray: d.dash, opacity: 0.8, lineCap: 'round', lineJoin: 'round' }).addTo(renderer.guideLayer);
+        d.polyline = L.polyline(pts, { className: 'section-line', color: d.color, weight: d.width || 8, dashArray: d.dash, opacity: 0.8, lineCap: 'round', lineJoin: 'round' }).addTo(renderer.guideLayer);
         const mid = Course.pointAlong(pts, 0.5);
         if (mid && mid.point) {
           L.marker(mid.point, { icon: this.lineLabelIcon(d.text, mid.bearing - 90), interactive: false }).addTo(renderer.guideLayer);

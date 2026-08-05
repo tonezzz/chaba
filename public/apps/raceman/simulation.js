@@ -184,6 +184,7 @@ class RaceSimulation {
     for (const r of this.state.racers) this.updateRacer(r, dt);
     this.resolveCollisions(this.state.racers);
     this.updateSimStandings();
+    if (this.onFocusApply) this.onFocusApply();
     this.state.rafId = requestAnimationFrame(this.simStep.bind(this));
   }
 
@@ -371,6 +372,7 @@ class RaceSimulation {
         }
       });
     }
+    this.onFocusApply = options.onFocusApply || null;
     
     document.addEventListener('keydown', (e) => {
       if (e.key === 'l' || e.key === 'L') {

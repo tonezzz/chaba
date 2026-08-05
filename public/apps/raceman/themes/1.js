@@ -83,7 +83,7 @@ class RacingTheme extends DefaultTheme {
   drawOne(d, renderer, onDrag) {
     if (d.kind === 'section') {
       const pts = d.points.map(p => [p[0], p[1]]);
-      L.polyline(pts, { className: 'racing-section-line', color: d.color, weight: (d.width || 8) + 4, dashArray: null, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }).addTo(renderer.guideLayer);
+      d.polyline = L.polyline(pts, { className: 'racing-section-line', color: d.color, weight: (d.width || 8) + 4, dashArray: null, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }).addTo(renderer.guideLayer);
       const mid = Course.pointAlong(pts, 0.5);
       if (mid && mid.point) {
         const n = (d.key.match(/\d+$/) || [''])[0];
