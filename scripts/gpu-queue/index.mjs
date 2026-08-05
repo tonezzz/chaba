@@ -1,6 +1,7 @@
 import http from 'http';
 import * as db from './db.mjs';
 import * as queue from './queue.mjs';
+import * as monitoring from './monitoring.mjs';
 
 const PORT = process.env.GPU_QUEUE_PORT || 3001;
 const HOST = process.env.GPU_QUEUE_HOST || '0.0.0.0';
@@ -121,7 +122,37 @@ async function handleRequest(req, res) {
 
     // GET /health - Health check
     if (path[0] === 'health' && method === 'GET') {
-      sendJson(res, 200, { ok: true });
+      const health = await monitoring.getQueueHealth();
+      sendJson(res, 200, health);
+      return;
+    }
+
+    // GET /api/gpu-queue/monitoring/health - Detailed health check
+    if (path[0] === 'api' && path[1] === 'gpu-queue' && path[2] === 'monitoring' && path[3] === 'health' && method === 'GET') {
+      const health = await monitoring.getQueueHealth();
+      sendJson(res, 200, health);
+      return;
+    }
+
+    // GET /api/gpu-queue/monitoring/performance - Performance metrics
+    if (path[0] === 'api' && path[1] === 'gpu-queue' && path[2] === 'monitoring' && path[3] === 'performance' && method === 'GET') {
+      const performance = await monitoring.getPerformanceMetrics();
+      sendJson(res, 200, performance);
+      return;
+    }
+
+    // GET /api/gpu-queue/monitoring/activity - Recent activity
+    if (path[0] === 'api' && path[1] === 'gpu-queue' && path[2] === 'monitoring' && path[3] === 'activity' && method === 'GET') {
+      const limit = parseInt(new URL(req.url, `http://${HOST}`).searchParams.get('limit')) || 20;
+      const activity = await monitoring.getRecentActivity(limit);
+      sendJson(res, 200, activity);
+      return;
+    }
+
+    // GET /api/gpu-queue/monitoring/overview - System overview
+    if (path[0] === 'api' && path[1] === 'gpu-queue' && path[2] === 'monitoring' && path[3] === 'overview' && method === 'GET') {
+      const overview = await monitoring.getSystemOverview();
+      sendJson(res, 200, overview);
       return;
     }
 
