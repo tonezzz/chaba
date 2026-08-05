@@ -32,7 +32,9 @@ sections:
       - label: Registry
         text: public/apps/apps.yml (nav + apps arrays)
       - label: API
-        text: 'ChabaNav.load(url, targetId); ChabaNav.renderSubnav(items, path)'
+        text: >-
+          ChabaNav.load(url, targetId);
+          ChabaNav.renderSubnav(items, path)
       - label: Top nav
         text: Sticky, bg-card, z-1100, two-level hover dropdowns, hamburger on mobile.
       - label: Sub nav
@@ -45,13 +47,22 @@ sections:
     layout: list
     items:
       - label: App card
-        text: '.app-card' class used across apps/grid/panels; hover border accent.
+        text: >-
+          .app-card class used across apps/grid/panels;
+          hover border accent.
       - label: Common CSS
-        text: chaba-h3/public/apps/common.css (body, #map, leaflet popup overrides).
+        text: >-
+          chaba-h3/public/apps/common.css (body, #map,
+          leaflet popup overrides).
       - label: Overview renderer
-        text: 'chaba-h3/public/apps/overview/overview.js: layouts link-grid, panels, stats, list, table, tree, dynamic-panels'
+        text: >-
+          chaba-h3/public/apps/overview/overview.js:
+          layouts link-grid, panels, stats, list, table,
+          tree, dynamic-panels
       - label: YAML editor
-        text: public/apps/shared/yml-edit.js for in-browser YAML copy/download/server-save.
+        text: >-
+          public/apps/shared/yml-edit.js for in-browser
+          YAML copy/download/server-save.
       - label: Icons
         text: Emoji icons for page/app cards; keep short and consistent.
 
@@ -71,20 +82,30 @@ sections:
     layout: list
     items:
       - label: Absolute preferred
-        text: '/apps/foo/asset.css' not 'asset.css' so directory-index or bare-URL redirects work.'
+        text: >-
+          /apps/foo/asset.css not 'asset.css' so
+          directory-index or bare-URL redirects work.
       - label: Plesk parity
-        text: 'chaba.h3 serves public/ as docroot; /apps/foo/ maps to public/apps/foo/.'
+        text: >-
+          chaba.h3 serves public/ as docroot;
+          /apps/foo/ maps to public/apps/foo/.
       - label: Local preview
-        text: ':8081 full parity via Caddy; :8123 via php -S for PHP apps.'
+        text: >-
+          :8081 full parity via Caddy;
+          :8123 via php -S for PHP apps.
 
   - title: Constraints
     icon: ⚠️
     layout: list
     items:
       - label: Static only
-        text: 'chaba.h3 on Plesk: no Node, Docker, WebSocket, or LAN-only APIs.'
+        text: >-
+          chaba.h3 on Plesk: no Node, Docker,
+          WebSocket, or LAN-only APIs.
       - label: PHP allowed
-        text: PHP 8.x on Plesk; file IO works, disable_functions blocks shell/process functions.
+        text: >-
+          PHP 8.x on Plesk; file IO works,
+          disable_functions blocks shell/process functions.
       - label: Dynamic features
         text: Keep dynamic APIs in chaba-omen stacks or 8080 web stack, not in chaba.h3.
 
@@ -93,8 +114,12 @@ sections:
     layout: list
     items:
       - label: CSS
-        text: 'npm install && npm run build:css' in chaba-h3.
+        text: >-
+          npm install && npm run build:css in chaba-h3.
       - label: Tailwind watch
-        text: 'npm run watch:css'
+        text: >-
+          npm run watch:css
       - label: Pre-commit
-        text: 'chaba/.githooks/pre-commit runs node --check for .js/.mjs and py_compile for .py.'
+        text: >-
+          chaba/.githooks/pre-commit runs node --check
+          for .js/.mjs and py_compile for .py.

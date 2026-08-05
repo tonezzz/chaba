@@ -24,11 +24,11 @@ Weaviate is a vector database for semantic search and RAG (Retrieval-Augmented G
 
 | File | Purpose |
 |------|---------|
-| `scripts/weaviate/index-ssot.mjs` | SSOT document indexing with Chonkie chunking |
+| `scripts/weaviate/index-ssot.mjs` | SSOT document indexing with Chonkie chunking and GPU embeddings |
 | `scripts/weaviate/index-simple.mjs` | Simple document indexing |
 | `scripts/weaviate/api.mjs` | Search API server |
 | `scripts/weaviate/schema.json` | Weaviate collection schema |
-| `scripts/chunk-text.py` | Chonkie text chunking integration |
+| `scripts/chunk-text.py` | Chonkie text chunking integration (sentence-aware) |
 | `docs/ssot/ssot.test.weaviate.yml` | Weaviate configuration and status |
 | `docs/assessments/weaviate-assessment.md` | Weaviate vs pgvector analysis |
 
@@ -60,20 +60,30 @@ Weaviate is a vector database for semantic search and RAG (Retrieval-Augmented G
 - **Chunk Overlap**: 50 tokens
 - **Trigger**: Documents >1000 characters
 - **Purpose**: Better semantic search with sentence boundary preservation
+- **Status**: ✅ Fully integrated and operational
 
 ### Installation
 ```bash
 cd /home/tony/CascadeProjects/chaba
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv venv-embeddings
+source venv-embeddings/bin/activate
 pip install "chonkie[sentence]"
 ```
 
+**Note**: Chonkie is installed in the `venv-embeddings` virtual environment, which is also used for the GPU embedding service. This ensures consistent Python environment for both chunking and embedding operations.
+
 ### Usage
 ```bash
-source venv/bin/activate
+source venv-embeddings/bin/activate
 python3 scripts/chunk-text.py "text to chunk"
 ```
+
+### Integration Details
+- **File**: `scripts/weaviate/index-ssot.mjs` updated to use Chonkie Python script
+- **Fallback**: Simple character-based chunking as fallback if Chonkie fails
+- **Execution**: Requires bash shell execution with proper virtual environment activation
+- **Indexing Results**: Successfully indexed 24+ chunks using Chonkie chunking with GPU-accelerated embeddings
+- **Search Quality**: Good semantic search quality with relevance scores on test queries for GPU queue, Chonkie chunking, and batch embedding topics
 
 ## Current Status
 
@@ -96,8 +106,8 @@ python3 scripts/chunk-text.py "text to chunk"
     - Upgrade Weaviate client library to compatible version
     - Add gRPC configuration parameters
 
-- **Chonkie Chunking**: Not yet integrated (using simple character-based chunking)
-- **GPU Queue Integration**: Complete but not yet actively used for embedding jobs
+- **Chonkie Chunking**: ✅ Resolved - Fully integrated with sentence-aware chunking
+- **GPU Queue Integration**: ✅ Complete and operational with validated batch embedding performance
 
 ## Use Cases
 

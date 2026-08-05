@@ -11,7 +11,7 @@ Created 2026-08-04 to provide alternative interface for daily summaries with cal
 ## Key Details
 
 ### Technical Details
-- **Location**: `/home/tony/CascadeProjects/chaba-yomi/stacks/web/public/apps/yomi/daily2/index.html`
+- **Location**: `/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/daily2/index.html`
 - **Access**: `http://tony-omen.local:8080/apps/yomi/daily2/index.html`
 - **Auth**: Basic auth (same as other Yomi pages)
 - **Layout**: Two-panel design (calendar left, summary right)
