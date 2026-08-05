@@ -7,10 +7,11 @@ Daily summarization is a Yomi feature that extracts events, actions, and topics 
 ## Current Status (2026-08-05)
 
 ### Coverage Statistics
-- **Total Daily Summaries**: 313
-- **Conversations with Summaries**: 48 out of 71 (67.6% coverage)
-- **Date Range**: July 12, 2026 → August 4, 2026
+- **Total Daily Summaries**: 313+
+- **Conversations with Summaries**: 50 out of 71 (70.4% coverage)
+- **Date Range**: July 12, 2026 → August 5, 2026
 - **Recent Activity**: 8-24 summaries per day
+- **Commercial Filtering**: 10+ commercial services excluded from daily summarization
 
 ### Quality Variability
 
@@ -68,30 +69,31 @@ Returns overall system statistics:
 
 ## Known Issues
 
-### Variable Extraction Quality
+### Variable Extraction Quality (RESOLVED 2026-08-05)
 **Problem**: Some conversations consistently show empty events/actions/topics arrays despite having messages.
 
-**Possible Causes**:
-- LLM model not extracting meaningful content from certain message types
-- Low-quality or repetitive content (e.g., automated messages)
-- Language detection issues for mixed Thai/English content
-- Insufficient context for extraction (too few messages per day)
+**Root Cause**: Daily summary generation was not using language-specific prompts (only main summaries had language detection).
 
-**Investigation Steps**:
-1. Check `/api/yomi/summary-quality` for per-conversation metrics
-2. Review raw messages for affected conversations
-3. Test LLM extraction manually with sample messages
-4. Check Llama API logs for extraction failures
+**Solution**: Added language-specific prompts for daily summary generation:
+- `getLanguageSpecificDailyPrompt()` function for single-date processing
+- `getLanguageSpecificBatchDailyPrompt()` function for batch processing
+- Thai prompts use Thai language for instructions and expected JSON structure
+- Mixed/English prompts use English with appropriate language handling
 
-### Commercial Content Summarization
+**Result**: Thai conversations now show proper extraction (e.g., "The Gang Promenade SsK" shows 4 events, 4 actions, 4 topics for high-activity days).
+
+### Commercial Content Summarization (RESOLVED 2026-08-05)
 **Problem**: LINE Shopping bot and similar automated services are being summarized with commercial/promotional content.
 
 **Impact**: Low-value summaries cluttering the system with promotional content.
 
-**Solution**: Consider implementing exclusion filters for:
-- Known automated service chat IDs
-- Pattern matching for promotional content
-- Low-engagement conversations (high message count, low human interaction)
+**Solution**: Implemented commercial service exclusion system:
+- `COMMERCIAL_EXCLUDE_LIST` with specific chat IDs (LINE SHOPPING, ShopeeTH, KTC, etc.)
+- `isCommercialService()` function with pattern matching for commercial names
+- Patterns include: LINE SHOPPING, Shopee, KTC, Big C, KEX, Krungthai, LINE GAME, etc.
+- Daily summarization skipped for detected commercial services
+
+**Result**: Commercial services excluded from daily summarization, reducing low-value content.
 
 ### Coverage Gap
 **Problem**: 23 conversations (32.4%) have no daily summaries.
