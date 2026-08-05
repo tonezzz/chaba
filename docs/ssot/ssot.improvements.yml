@@ -296,7 +296,7 @@ sections:
       usage.
   - label: GPU Process Management
     text: Investigate PID 143 holding 2466MB VRAM continuously - implement GPU memory cleanup policies and workload scheduling
-    status: pending
+    status: completed
     priority: medium
     effort: 1-2 hours
     category: gpu
@@ -315,6 +315,9 @@ sections:
     - gpu
     - memory
     - processes
+    completed: '2026-08-05'
+    completion_note: 'PID 143 no longer exists. Current VRAM: llama-server 2350MB (expected), embedding-service 182MB (expected), status-api 116MB (expected). Added CPU temperature check + unexpected-VRAM-holder
+      detection to overnight-assessment.mjs.'
 - title: Low Priority Improvements
   icon: 🟢
   layout: list

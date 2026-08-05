@@ -464,6 +464,57 @@ async function checkGPUStatus() {
     content += `\nFailed to get GPU queue status: ${error.message}\n`;
   }
 
+  // CPU temperature check via thermal zones
+  try {
+    const thermalOutput = runCommand('cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null');
+    if (thermalOutput.success) {
+      const temps = thermalOutput.output.trim().split('\n')
+        .map(t => parseInt(t) / 1000)
+        .filter(t => !isNaN(t) && t > 20);
+      if (temps.length > 0) {
+        const maxTemp = Math.max(...temps);
+        content += `\n**CPU Temperature (max):** ${maxTemp.toFixed(1)}°C\n\n`;
+        if (maxTemp > 90) {
+          highIssues.push(`CPU temperature critical: ${maxTemp.toFixed(1)}°C`);
+          const label = 'CPU Temperature Critical';
+          if (!improvementExists(label)) {
+            autoCreateImprovement(label,
+              `CPU temperature critical at ${maxTemp.toFixed(1)}°C - check thermal paste, cooling, and sustained workload`,
+              'high', 'performance', ['docs/ssot/infrastructure/ssot.gpu.yml']);
+          }
+        } else if (maxTemp > 80) {
+          mediumIssues.push(`CPU temperature elevated: ${maxTemp.toFixed(1)}°C`);
+        }
+      }
+    }
+  } catch (e) { /* thermal check optional */ }
+
+  // Check for unexpected VRAM holders (processes not in known-good list)
+  try {
+    const nvsmiOutput = runCommand("nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader 2>/dev/null");
+    if (nvsmiOutput.success) {
+      const KNOWN_SERVICES = ['llama-server', 'embedding-service', 'uvicorn', 'python', 'Xorg'];
+      const lines = nvsmiOutput.output.trim().split('\n').filter(Boolean);
+      let unexpectedVram = 0;
+      lines.forEach(line => {
+        const [pidStr, memStr] = line.split(',').map(s => s.trim());
+        const pid = parseInt(pidStr);
+        const memMb = parseInt(memStr);
+        if (pid && memMb > 500) {
+          const cmd = runCommand(`ps -p ${pid} -o comm= 2>/dev/null`).output.trim();
+          const isKnown = KNOWN_SERVICES.some(s => cmd.includes(s));
+          if (!isKnown) {
+            unexpectedVram += memMb;
+            highIssues.push(`Unexpected process holding ${memMb}MB VRAM: PID ${pid} (${cmd})`);
+          }
+        }
+      });
+      if (unexpectedVram > 0) {
+        content += `\n⚠️ **Unexpected VRAM holders:** ${unexpectedVram}MB across unknown processes\n\n`;
+      }
+    }
+  } catch (e) { /* vram check optional */ }
+
   appendSection('GPU & Queue Status', content);
 }
 
