@@ -156,6 +156,8 @@ Parsed objects look like:
 - Summary language mismatch → Language-aware summarization implemented (2026-08-03) with Thai/English/mixed detection. Some encoding issues remain for certain conversations.
 - Frequent Llama API 500 errors → Rate limiting and circuit breakers implemented (2026-08-03) to manage GPU load. Check `/api/yomi/rate-limiter-status` for current state.
 - **Yomi API not responding** → Check `yomi-api.service` status: `systemctl status yomi-api.service`. Service auto-restarts on failure (added 2026-08-04).
+- **Variable daily summary quality** → Some conversations show rich extraction (events/actions/topics) while others have empty arrays despite having messages. Check `/api/yomi/summary-quality` for per-conversation metrics (2026-08-05).
+- **Systemd service failure** → If `yomi-api.service` fails but API runs manually, check logs: `journalctl -u yomi-api.service`. May need to restart service or fix configuration (2026-08-05).
 
 ## UI Improvements (Post-Improvement Session)
 
