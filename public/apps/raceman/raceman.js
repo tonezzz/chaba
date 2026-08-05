@@ -165,9 +165,28 @@ function setupTabs() {
   }
 }
 
-function onMarkerDrag(id, lat, lon) {
+function onMarkerDrag(id, lat, lon, duringDrag = false) {
   stateManager.updateMarkerOverride(id, { lat, lon });
-  render(false);
+  
+  // Only re-render on drag complete to avoid performance issues
+  if (!duringDrag) {
+    render(false);
+    showDragNotification(id, lat, lon);
+  }
+}
+
+function showDragNotification(id, lat, lon) {
+  const msgEl = document.getElementById('course-msg');
+  if (msgEl) {
+    const marker = courseData.markers[id];
+    const label = marker ? (marker.label || marker.id) : id;
+    msgEl.textContent = `Moved ${label} to ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+    msgEl.classList.add('text-green-400');
+    setTimeout(() => {
+      msgEl.classList.remove('text-green-400');
+      msgEl.textContent = '';
+    }, 3000);
+  }
 }
 
 function render(fit = false) {

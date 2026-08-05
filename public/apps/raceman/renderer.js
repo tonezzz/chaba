@@ -281,9 +281,42 @@ class CourseRenderer {
         const marker = L.marker(pos, { icon: this.markerIcon(d.m.icon, d.m.label), draggable: true })
           .addTo(this.markerLayer)
           .bindPopup(`<b>${d.m.label || d.m.id}</b><br>${d.m.description || ''}`);
+        
         if (onDrag) {
-          marker.on('dragend', (e) => { const ll = e.target.getLatLng(); onDrag(d.m.id, ll.lat, ll.lng); });
+          // Enhanced drag handling with visual feedback
+          marker.on('dragstart', (e) => {
+            const el = e.target.getElement();
+            if (el) {
+              el.classList.add('marker-dragging');
+              document.body.style.cursor = 'grabbing';
+              document.body.classList.add('dragging-marker');
+            }
+            // Store original position for potential undo
+            e.target._originalPos = e.target.getLatLng();
+          });
+          
+          marker.on('drag', (e) => {
+            // Real-time position updates during drag
+            const ll = e.target.getLatLng();
+            if (onDrag) {
+              onDrag(d.m.id, ll.lat, ll.lng, true); // true = during drag
+            }
+          });
+          
+          marker.on('dragend', (e) => {
+            const el = e.target.getElement();
+            if (el) {
+              el.classList.remove('marker-dragging');
+              document.body.style.cursor = '';
+              document.body.classList.remove('dragging-marker');
+            }
+            const ll = e.target.getLatLng();
+            if (onDrag) {
+              onDrag(d.m.id, ll.lat, ll.lng, false); // false = drag complete
+            }
+          });
         }
+        
         L.marker(pos, { icon: this.markerLabelIcon(d.m.label || d.m.id), interactive: false }).addTo(this.markerLayer);
         return;
       }
