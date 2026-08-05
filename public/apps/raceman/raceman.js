@@ -52,10 +52,198 @@ let tourTooltip = null;
 let currentTourStep = 0;
 let tourSteps = [];
 
+// Context menu system
+let contextMenu = null;
+let contextMenuTarget = null;
+
+function setupContextMenu() {
+  contextMenu = document.getElementById('context-menu');
+  if (!contextMenu) return;
+  
+  // Close context menu on outside click
+  document.addEventListener('click', (e) => {
+    if (contextMenu && contextMenu.classList.contains('show') && !contextMenu.contains(e.target)) {
+      hideContextMenu();
+    }
+  });
+  
+  // Handle context menu item clicks
+  contextMenu.addEventListener('click', (e) => {
+    const item = e.target.closest('.context-menu-item');
+    if (item) {
+      const action = item.dataset.action;
+      handleContextMenuAction(action);
+      hideContextMenu();
+    }
+  });
+  
+  // Add keyboard shortcuts for context menu
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      hideContextMenu();
+    }
+  });
+}
+
+function showContextMenu(x, y, markerId) {
+  if (!contextMenu) return;
+  
+  contextMenuTarget = markerId;
+  
+  // Position context menu
+  const menuWidth = 180;
+  const menuHeight = contextMenu.offsetHeight || 200;
+  
+  // Keep menu within viewport
+  const padding = 10;
+  let posX = x;
+  let posY = y;
+  
+  if (posX + menuWidth > window.innerWidth - padding) {
+    posX = window.innerWidth - menuWidth - padding;
+  }
+  
+  if (posY + menuHeight > window.innerHeight - padding) {
+    posY = window.innerHeight - menuHeight - padding;
+  }
+  
+  posX = Math.max(padding, posX);
+  posY = Math.max(padding, posY);
+  
+  contextMenu.style.left = posX + 'px';
+  contextMenu.style.top = posY + 'px';
+  contextMenu.classList.add('show');
+  
+  // Update menu items based on selection state
+  updateContextMenuState();
+}
+
+function hideContextMenu() {
+  if (contextMenu) {
+    contextMenu.classList.remove('show');
+  }
+  contextMenuTarget = null;
+}
+
+function updateContextMenuState() {
+  if (!contextMenu) return;
+  
+  const items = contextMenu.querySelectorAll('.context-menu-item');
+  items.forEach(item => {
+    const action = item.dataset.action;
+    
+    // Disable delete if no marker selected
+    if (action === 'delete' && !selectedMarkerId) {
+      item.classList.add('disabled');
+    } else {
+      item.classList.remove('disabled');
+    }
+  });
+}
+
+function handleContextMenuAction(action) {
+  if (!contextMenuTarget) return;
+  
+  switch (action) {
+    case 'select':
+      onMarkerClick(contextMenuTarget);
+      break;
+    case 'edit':
+      // Open edit dialog for marker properties
+      editMarkerProperties(contextMenuTarget);
+      break;
+    case 'duplicate':
+      // Select the marker and duplicate it
+      selectedMarkerIds.clear();
+      selectedMarkerIds.add(contextMenuTarget);
+      selectedMarkerId = contextMenuTarget;
+      duplicateSelectedMarkers();
+      break;
+    case 'delete':
+      if (selectedMarkerIds.size > 0) {
+        deleteSelectedMarker();
+      }
+      break;
+    case 'add-comment':
+      selectedMarkerId = contextMenuTarget;
+      addComment();
+      break;
+    case 'view-comments':
+      selectedMarkerId = contextMenuTarget;
+      viewComments();
+      break;
+    case 'focus':
+      focusMarkerOnMap(contextMenuTarget);
+      break;
+  }
+}
+
+function editMarkerProperties(markerId) {
+  const marker = courseData.markers[markerId];
+  if (!marker) return;
+  
+  const newLabel = prompt('Marker label:', marker.label || marker.id);
+  if (newLabel !== null && newLabel.trim()) {
+    saveCurrentState();
+    marker.label = newLabel.trim();
+    render(false);
+    updateMarkersList();
+    notificationManager.success(`Marker ${markerId} updated`);
+  }
+}
+
+function focusMarkerOnMap(markerId) {
+  const marker = courseData.markers[markerId];
+  if (!marker) return;
+  
+  const latLng = [marker.lat, marker.lon];
+  map.setView(latLng, 16); // Zoom to marker
+  
+  // Select the marker
+  onMarkerClick(markerId);
+  notificationManager.info(`Focused on marker: ${markerId}`);
+}
+
+function showContextMenu(x, y, markerId) {
+  if (!contextMenu) return;
+  
+  contextMenuTarget = markerId;
+  
+  // Position context menu
+  const menuWidth = 180;
+  const menuHeight = contextMenu.offsetHeight || 200;
+  
+  // Keep menu within viewport
+  const padding = 10;
+  let posX = x;
+  let posY = y;
+  
+  if (posX + menuWidth > window.innerWidth - padding) {
+    posX = window.innerWidth - menuWidth - padding;
+  }
+  
+  if (posY + menuHeight > window.innerHeight - padding) {
+    posY = window.innerHeight - menuHeight - padding;
+  }
+  
+  posX = Math.max(padding, posX);
+  posY = Math.max(padding, posY);
+  
+  contextMenu.style.left = posX + 'px';
+  contextMenu.style.top = posY + 'px';
+  contextMenu.classList.add('show');
+  
+  // Update menu items based on selection state
+  updateContextMenuState();
+}
+
 function setupHelpSystem() {
   helpModal = document.getElementById('help-modal');
   tourOverlay = document.getElementById('tour-overlay');
   tourTooltip = document.getElementById('tour-tooltip');
+  
+  // Setup context menu
+  setupContextMenu();
   
   // Help button
   const helpButton = document.getElementById('help-button');
@@ -395,6 +583,16 @@ function updateSections(drawables) {
   });
 }
 
+function getCurrentTab() {
+  for (const t of ['course', 'map', 'sections', 'sim', 'yaml']) {
+    const content = document.getElementById(`tab-${t}-content`);
+    if (content && !content.classList.contains('hidden')) {
+      return t;
+    }
+  }
+  return 'course'; // Default fallback
+}
+
 function activateTab(which) {
   for (const t of ['course', 'map', 'sections', 'sim', 'yaml']) {
     const btn = document.getElementById(`tab-${t}`);
@@ -410,6 +608,16 @@ function activateTab(which) {
       btn.classList.add('bg-gray-800', 'text-gray-300');
     }
   }
+}
+
+function getCurrentTab() {
+  for (const t of ['course', 'map', 'sections', 'sim', 'yaml']) {
+    const content = document.getElementById(`tab-${t}-content`);
+    if (content && !content.classList.contains('hidden')) {
+      return t;
+    }
+  }
+  return 'course'; // Default fallback
 }
 
 function setupTabs() {
@@ -439,13 +647,96 @@ function onMarkerDrag(id, lat, lon, duringDrag = false) {
 }
 
 let selectedMarkerId = null;
+let selectedMarkerIds = new Set(); // Multi-select support
 let markerComments = new Map(); // Store comments per marker
+let markerGroups = new Map(); // Store marker groups: groupName -> Set of markerIds
 
-function onMarkerClick(id) {
-  selectedMarkerId = id;
+// Course templates
+const courseTemplates = {
+  'windward-leeward': {
+    name: 'Windward-Leeward',
+    description: 'Classic upwind-downwind course with two marks',
+    markers: [
+      { id: 'start', lat: 0, lon: 0, label: 'Start', icon: 'start' },
+      { id: 'windward', lat: 0.01, lon: 0, label: 'Windward', icon: 'buoy' },
+      { id: 'leeward', lat: -0.01, lon: 0, label: 'Leeward', icon: 'buoy' }
+    ],
+    sections: [
+      { from: 'start', to: 'windward', width: 20, color: '#4ade80' },
+      { from: 'windward', to: 'leeward', width: 20, color: '#4ade80' },
+      { from: 'leeward', to: 'start', width: 20, color: '#4ade80' }
+    ]
+  },
+  'triangle': {
+    name: 'Triangle Course',
+    description: 'Three-mark triangular course for tactical racing',
+    markers: [
+      { id: 'start', lat: 0, lon: 0, label: 'Start', icon: 'start' },
+      { id: 'mark1', lat: 0.01, lon: 0.005, label: 'Mark 1', icon: 'buoy' },
+      { id: 'mark2', lat: 0.005, lon: -0.01, label: 'Mark 2', icon: 'buoy' }
+    ],
+    sections: [
+      { from: 'start', to: 'mark1', width: 20, color: '#4ade80' },
+      { from: 'mark1', to: 'mark2', width: 20, color: '#4ade80' },
+      { from: 'mark2', to: 'start', width: 20, color: '#4ade80' }
+    ]
+  },
+  'olympic': {
+    name: 'Olympic Course',
+    description: 'Standard Olympic course with multiple legs',
+    markers: [
+      { id: 'start', lat: 0, lon: 0, label: 'Start', icon: 'start' },
+      { id: 'mark1', lat: 0.01, lon: 0, label: 'Mark 1', icon: 'buoy' },
+      { id: 'mark2', lat: 0.005, lon: 0.01, label: 'Mark 2', icon: 'buoy' },
+      { id: 'mark3', lat: -0.005, lon: 0.01, label: 'Mark 3', icon: 'buoy' },
+      { id: 'finish', lat: 0, lon: 0, label: 'Finish', icon: 'finish' }
+    ],
+    sections: [
+      { from: 'start', to: 'mark1', width: 20, color: '#4ade80' },
+      { from: 'mark1', to: 'mark2', width: 20, color: '#4ade80' },
+      { from: 'mark2', to: 'mark3', width: 20, color: '#4ade80' },
+      { from: 'mark3', to: 'finish', width: 20, color: '#4ade80' }
+    ]
+  },
+  'trapezoid': {
+    name: 'Trapezoid Course',
+    description: 'Four-mark trapezoid course for varied conditions',
+    markers: [
+      { id: 'start', lat: 0, lon: 0, label: 'Start', icon: 'start' },
+      { id: 'mark1', lat: 0.01, lon: 0.005, label: 'Mark 1', icon: 'buoy' },
+      { id: 'mark2', lat: 0.005, lon: -0.01, label: 'Mark 2', icon: 'buoy' },
+      { id: 'mark3', lat: -0.005, lon: -0.005, label: 'Mark 3', icon: 'buoy' }
+    ],
+    sections: [
+      { from: 'start', to: 'mark1', width: 20, color: '#4ade80' },
+      { from: 'mark1', to: 'mark2', width: 20, color: '#4ade80' },
+      { from: 'mark2', to: 'mark3', width: 20, color: '#4ade80' },
+      { from: 'mark3', to: 'start', width: 20, color: '#4ade80' }
+    ]
+  }
+};
+
+function onMarkerClick(id, event) {
+  // Handle multi-select with Ctrl/Cmd key
+  if (event && (event.ctrlKey || event.metaKey)) {
+    if (selectedMarkerIds.has(id)) {
+      selectedMarkerIds.delete(id);
+      notificationManager.info(`Deselected marker: ${id}`);
+    } else {
+      selectedMarkerIds.add(id);
+      notificationManager.info(`Selected marker: ${id} (${selectedMarkerIds.size} total)`);
+    }
+    // Update single selection to last selected
+    selectedMarkerId = id;
+  } else {
+    // Single selection
+    selectedMarkerIds.clear();
+    selectedMarkerIds.add(id);
+    selectedMarkerId = id;
+    notificationManager.info(`Selected marker: ${id}`);
+  }
   updateMarkersList();
   updateCommentsList();
-  notificationManager.info(`Selected marker: ${id}`);
 }
 
 function addMarker() {
@@ -472,20 +763,219 @@ function addMarker() {
 }
 
 function deleteSelectedMarker() {
-  if (!selectedMarkerId) {
+  if (selectedMarkerIds.size === 0) {
     notificationManager.error('No marker selected');
     return;
   }
   
-  saveCurrentState(); // Save state before modification
+  saveCurrentState();
   
-  delete courseData.markers[selectedMarkerId];
-  stateManager.updateMarkerOverride(selectedMarkerId, null);
+  const deletedCount = selectedMarkerIds.size;
+  selectedMarkerIds.forEach(id => {
+    delete courseData.markers[id];
+    stateManager.updateMarkerOverride(id, null);
+  });
   
+  selectedMarkerIds.clear();
   selectedMarkerId = null;
+  
   render(false);
   updateMarkersList();
-  notificationManager.success(`Deleted marker: ${selectedMarkerId}`);
+  updateSelectionCount();
+  notificationManager.success(`Deleted ${deletedCount} marker(s)`);
+}
+
+function duplicateSelectedMarkers() {
+  if (selectedMarkerIds.size === 0) {
+    notificationManager.error('No marker selected');
+    return;
+  }
+  
+  saveCurrentState();
+  
+  const duplicatedCount = selectedMarkerIds.size;
+  const offset = 0.0001; // Small offset to avoid exact overlap
+  let i = 0;
+  
+  selectedMarkerIds.forEach(originalId => {
+    const originalMarker = courseData.markers[originalId];
+    if (!originalMarker) return;
+    
+    const newId = 'marker_' + Date.now() + '_' + i++;
+    const newMarker = {
+      ...originalMarker,
+      id: newId,
+      lat: originalMarker.lat + (offset * i),
+      lon: originalMarker.lon + (offset * i),
+      label: (originalMarker.label || originalMarker.id) + ' (copy)'
+    };
+    
+    courseData.markers[newId] = newMarker;
+    stateManager.updateMarkerOverride(newId, { lat: newMarker.lat, lon: newMarker.lon });
+  });
+  
+  render(false);
+  updateMarkersList();
+  notificationManager.success(`Duplicated ${duplicatedCount} marker(s)`);
+}
+
+function clearMarkerSelection() {
+  selectedMarkerIds.clear();
+  selectedMarkerId = null;
+  updateMarkersList();
+  updateSelectionCount();
+  notificationManager.info('Selection cleared');
+}
+
+function updateSelectionCount() {
+  const countEl = document.getElementById('selection-count');
+  if (countEl) {
+    countEl.textContent = `${selectedMarkerIds.size} marker(s) selected`;
+  }
+}
+
+function selectAllMarkers() {
+  selectedMarkerIds.clear();
+  const markers = getMergedMarkers();
+  markers.forEach(m => selectedMarkerIds.add(m.id));
+  if (markers.length > 0) {
+    selectedMarkerId = markers[0].id;
+  }
+  updateMarkersList();
+  updateSelectionCount();
+  notificationManager.info(`Selected all ${markers.length} markers`);
+}
+
+function createMarkerGroup() {
+  if (selectedMarkerIds.size === 0) {
+    notificationManager.error('No markers selected to create group');
+    return;
+  }
+  
+  const groupName = prompt('Enter group name:');
+  if (!groupName || !groupName.trim()) return;
+  
+  const normalizedGroupName = groupName.trim();
+  if (markerGroups.has(normalizedGroupName)) {
+    notificationManager.error('Group already exists');
+    return;
+  }
+  
+  markerGroups.set(normalizedGroupName, new Set(selectedMarkerIds));
+  updateGroupsList();
+  notificationManager.success(`Created group: ${normalizedGroupName} with ${selectedMarkerIds.size} markers`);
+}
+
+function deleteMarkerGroup() {
+  if (markerGroups.size === 0) {
+    notificationManager.error('No groups to delete');
+    return;
+  }
+  
+  const groupNames = Array.from(markerGroups.keys());
+  const groupName = prompt(`Enter group name to delete:\n${groupNames.join(', ')}`);
+  if (!groupName || !groupName.trim()) return;
+  
+  const normalizedGroupName = groupName.trim();
+  if (markerGroups.has(normalizedGroupName)) {
+    markerGroups.delete(normalizedGroupName);
+    updateGroupsList();
+    notificationManager.success(`Deleted group: ${normalizedGroupName}`);
+  } else {
+    notificationManager.error('Group not found');
+  }
+}
+
+function selectGroup(groupName) {
+  const group = markerGroups.get(groupName);
+  if (!group) return;
+  
+  selectedMarkerIds.clear();
+  group.forEach(id => selectedMarkerIds.add(id));
+  if (group.size > 0) {
+    selectedMarkerId = Array.from(group)[0];
+  }
+  updateMarkersList();
+  updateSelectionCount();
+  notificationManager.info(`Selected group: ${groupName} (${group.size} markers)`);
+}
+
+function updateGroupsList() {
+  const groupsList = document.getElementById('groups-list');
+  if (!groupsList) return;
+  
+  groupsList.innerHTML = '';
+  
+  if (markerGroups.size === 0) {
+    groupsList.innerHTML = '<div class="text-gray-500 text-xs">No groups</div>';
+    return;
+  }
+  
+  markerGroups.forEach((markers, groupName) => {
+    const row = document.createElement('div');
+    row.className = 'flex items-center justify-between p-1 rounded cursor-pointer bg-blue-900 text-white hover:bg-blue-800';
+    row.innerHTML = `
+      <span class="text-xs">${groupName}</span>
+      <span class="text-xs text-blue-300">${markers.size} markers</span>
+    `;
+    row.onclick = () => selectGroup(groupName);
+    groupsList.appendChild(row);
+  });
+}
+
+function setupCourseTemplates() {
+  const templateSelect = document.getElementById('course-template');
+  const applyTemplateBtn = document.getElementById('btn-apply-template');
+  const templateInfo = document.getElementById('template-info');
+  
+  if (!templateSelect || !applyTemplateBtn || !templateInfo) return;
+  
+  // Update template info on selection
+  templateSelect.onchange = () => {
+    const templateId = templateSelect.value;
+    if (templateId && courseTemplates[templateId]) {
+      const template = courseTemplates[templateId];
+      templateInfo.textContent = `${template.description} (${template.markers.length} markers, ${template.sections.length} sections)`;
+    } else {
+      templateInfo.textContent = 'Select a template to see details';
+    }
+  };
+  
+  // Apply template
+  applyTemplateBtn.onclick = () => {
+    const templateId = templateSelect.value;
+    if (!templateId || !courseTemplates[templateId]) {
+      notificationManager.error('Please select a template');
+      return;
+    }
+    
+    const template = courseTemplates[templateId];
+    
+    if (!confirm(`Apply ${template.name} template? This will replace current markers and sections.`)) {
+      return;
+    }
+    
+    saveCurrentState();
+    
+    // Apply template markers
+    courseData.markers = {};
+    template.markers.forEach(marker => {
+      courseData.markers[marker.id] = { ...marker };
+    });
+    
+    // Apply template sections
+    courseData.course.sections = template.sections.map(section => ({ ...section }));
+    
+    // Clear selections and groups
+    selectedMarkerIds.clear();
+    selectedMarkerId = null;
+    markerGroups.clear();
+    
+    render(true);
+    updateMarkersList();
+    updateGroupsList();
+    notificationManager.success(`Applied ${template.name} template`);
+  };
 }
 
 function updateMarkersList() {
@@ -502,17 +992,34 @@ function updateMarkersList() {
   
   markers.forEach(m => {
     const row = document.createElement('div');
-    row.className = 'flex items-center justify-between p-1 rounded cursor-pointer hover:bg-gray-700';
-    if (m.id === selectedMarkerId) {
-      row.classList.add('bg-accent', 'text-white');
-    }
+    const isSelected = selectedMarkerIds.has(m.id);
+    row.className = `flex items-center justify-between p-1 rounded cursor-pointer hover:bg-gray-700 ${isSelected ? 'bg-accent text-white' : ''}`;
     row.innerHTML = `
       <span class="font-mono">${m.label || m.id}</span>
       <span class="text-gray-400 text-xs">${m.lat.toFixed(4)}, ${m.lon.toFixed(4)}</span>
     `;
-    row.onclick = () => onMarkerClick(m.id);
+    row.onclick = (e) => {
+      // Handle multi-select with Ctrl/Cmd key
+      if (e.ctrlKey || e.metaKey) {
+        if (selectedMarkerIds.has(m.id)) {
+          selectedMarkerIds.delete(m.id);
+        } else {
+          selectedMarkerIds.add(m.id);
+        }
+        selectedMarkerId = m.id;
+      } else {
+        selectedMarkerIds.clear();
+        selectedMarkerIds.add(m.id);
+        selectedMarkerId = m.id;
+      }
+      updateMarkersList();
+      updateSelectionCount();
+    };
     markersList.appendChild(row);
   });
+  
+  updateSelectionCount();
+  updateGroupsList();
 }
 
 let editingSectionKey = null;
@@ -856,7 +1363,7 @@ function updateCommentsList() {
 function render(fit = false) {
   const markers = getMergedMarkers();
   renderer.hidden = stateManager.getHidden();
-  const g = renderer.draw(courseData.course, markers, { onDrag: onMarkerDrag, onClick: onMarkerClick, fit });
+  const g = renderer.draw(courseData.course, markers, { onDrag: onMarkerDrag, onClick: onMarkerClick, onContextMenu: showContextMenu, fit });
   updatePanel(courseData.course, g);
   updateSections(renderer.lastDrawables);
   updateMarkersList();
@@ -988,6 +1495,31 @@ function setupCourseControls() {
     deleteMarkerBtn.onclick = deleteSelectedMarker;
   }
   
+  const duplicateMarkerBtn = document.getElementById('btn-duplicate-marker');
+  const clearSelectionBtn = document.getElementById('btn-clear-selection');
+  
+  if (duplicateMarkerBtn) {
+    duplicateMarkerBtn.onclick = duplicateSelectedMarkers;
+  }
+  
+  if (clearSelectionBtn) {
+    clearSelectionBtn.onclick = clearMarkerSelection;
+  }
+  
+  const createGroupBtn = document.getElementById('btn-create-group');
+  const deleteGroupBtn = document.getElementById('btn-delete-group');
+  
+  if (createGroupBtn) {
+    createGroupBtn.onclick = createMarkerGroup;
+  }
+  
+  if (deleteGroupBtn) {
+    deleteGroupBtn.onclick = deleteMarkerGroup;
+  }
+  
+  // Setup course templates
+  setupCourseTemplates();
+  
   // Setup section editing controls
   const saveSectionBtn = document.getElementById('btn-save-section');
   const cancelSectionBtn = document.getElementById('btn-cancel-section');
@@ -1058,6 +1590,80 @@ function setupCourseControls() {
     if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'z')) {
       e.preventDefault();
       redo();
+    }
+    // Ctrl+S for save
+    if (e.ctrlKey && e.key === 's') {
+      e.preventDefault();
+      const courseName = document.getElementById('course-name').value;
+      if (courseName) saveCourse(courseName);
+    }
+    // Ctrl+N for new marker
+    if (e.ctrlKey && e.key === 'n') {
+      e.preventDefault();
+      addMarker();
+    }
+    // Delete key for selected markers
+    if (e.key === 'Delete' && selectedMarkerIds.size > 0) {
+      e.preventDefault();
+      deleteSelectedMarker();
+    }
+    // Escape to deselect
+    if (e.key === 'Escape' && (selectedMarkerId || selectedMarkerIds.size > 0)) {
+      e.preventDefault();
+      clearMarkerSelection();
+    }
+    // Ctrl+E for export
+    if (e.ctrlKey && e.key === 'e') {
+      e.preventDefault();
+      exportCourse();
+    }
+    // Ctrl+I for import
+    if (e.ctrlKey && e.key === 'i') {
+      e.preventDefault();
+      importCourse();
+    }
+    // Ctrl+H for help
+    if (e.ctrlKey && e.key === 'h') {
+      e.preventDefault();
+      showHelpModal();
+    }
+    // F1 for help
+    if (e.key === 'F1') {
+      e.preventDefault();
+      showHelpModal();
+    }
+    // Ctrl+T for tour
+    if (e.ctrlKey && e.key === 't') {
+      e.preventDefault();
+      startGuidedTour();
+    }
+    // Ctrl+D for duplicate
+    if (e.ctrlKey && e.key === 'd') {
+      e.preventDefault();
+      if (selectedMarkerIds.size > 0) {
+        duplicateSelectedMarkers();
+      } else {
+        notificationManager.error('No marker selected to duplicate');
+      }
+    }
+    // Ctrl+A to select all markers
+    if (e.ctrlKey && e.key === 'a') {
+      e.preventDefault();
+      selectAllMarkers();
+    }
+    // Tab navigation
+    if (e.key === 'Tab' && !e.ctrlKey) {
+      const tabs = ['course', 'map', 'sections', 'sim', 'yaml'];
+      const currentTab = getCurrentTab();
+      const currentIndex = tabs.indexOf(currentTab);
+      const nextIndex = e.shiftKey ? (currentIndex - 1 + tabs.length) % tabs.length : (currentIndex + 1) % tabs.length;
+      e.preventDefault();
+      activateTab(tabs[nextIndex]);
+    }
+    // Ctrl+V for validation
+    if (e.ctrlKey && e.key === 'v') {
+      e.preventDefault();
+      showValidationResults();
     }
   });
 }

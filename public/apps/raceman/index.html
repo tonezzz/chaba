@@ -85,6 +85,18 @@
           <li><kbd>Ctrl+Z</kbd> - Undo last action</li>
           <li><kbd>Ctrl+Y</kbd> - Redo last action</li>
           <li><kbd>Ctrl+Shift+Z</kbd> - Redo last action (alternative)</li>
+          <li><kbd>Ctrl+S</kbd> - Save course</li>
+          <li><kbd>Ctrl+N</kbd> - Add new marker</li>
+          <li><kbd>Ctrl+D</kbd> - Duplicate selected marker(s)</li>
+          <li><kbd>Ctrl+A</kbd> - Select all markers</li>
+          <li><kbd>Delete</kbd> - Delete selected marker(s)</li>
+          <li><kbd>Escape</kbd> - Deselect marker(s) / Close dialogs</li>
+          <li><kbd>Ctrl+E</kbd> - Export course</li>
+          <li><kbd>Ctrl+I</kbd> - Import course</li>
+          <li><kbd>Ctrl+H</kbd> / <kbd>F1</kbd> - Open help</li>
+          <li><kbd>Ctrl+T</kbd> - Start guided tour</li>
+          <li><kbd>Tab</kbd> / <kbd>Shift+Tab</kbd> - Navigate tabs</li>
+          <li><kbd>Ctrl+V</kbd> - Validate course</li>
           <li><kbd>L</kbd> - Toggle leader focus in simulation</li>
         </ul>
       </div>
@@ -121,6 +133,44 @@
     </div>
   </div>
 
+  <!-- Context Menu -->
+  <div id="context-menu" class="context-menu">
+    <div class="context-menu-item" data-action="select">
+      <span class="icon">📍</span>
+      <span>Select Marker</span>
+      <span class="shortcut">Click</span>
+    </div>
+    <div class="context-menu-item" data-action="edit">
+      <span class="icon">✏️</span>
+      <span>Edit Properties</span>
+    </div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" data-action="duplicate">
+      <span class="icon">📋</span>
+      <span>Duplicate</span>
+      <span class="shortcut">Ctrl+D</span>
+    </div>
+    <div class="context-menu-item" data-action="delete">
+      <span class="icon">🗑️</span>
+      <span>Delete</span>
+      <span class="shortcut">Delete</span>
+    </div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" data-action="add-comment">
+      <span class="icon">💬</span>
+      <span>Add Comment</span>
+    </div>
+    <div class="context-menu-item" data-action="view-comments">
+      <span class="icon">📝</span>
+      <span>View Comments</span>
+    </div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" data-action="focus">
+      <span class="icon">🎯</span>
+      <span>Focus on Map</span>
+    </div>
+  </div>
+
   <div class="relative">
     <div id="map"></div>
     <div class="course-panel bg-card/95 border border-gray-700 rounded-lg p-4 shadow-lg w-80 text-sm">
@@ -144,8 +194,18 @@
           <h3 class="font-semibold text-white text-xs mb-2">Marker Management</h3>
           <div class="flex gap-1 mb-2">
             <button id="btn-add-marker" class="flex-1 px-2 py-1 text-xs rounded bg-green-700 text-white tooltip" title="Add new marker at map center">+ Add Marker</button>
-            <button id="btn-delete-marker" class="flex-1 px-2 py-1 text-xs rounded bg-red-700 text-white tooltip" title="Delete selected marker">Delete Selected</button>
+            <button id="btn-delete-marker" class="flex-1 px-2 py-1 text-xs rounded bg-red-700 text-white tooltip" title="Delete selected marker(s)">Delete Selected</button>
           </div>
+          <div class="flex gap-1 mb-2">
+            <button id="btn-duplicate-marker" class="flex-1 px-2 py-1 text-xs rounded bg-purple-700 text-white tooltip" title="Duplicate selected marker(s)">Duplicate</button>
+            <button id="btn-clear-selection" class="flex-1 px-2 py-1 text-xs rounded bg-gray-700 text-white tooltip" title="Clear marker selection">Clear Selection</button>
+          </div>
+          <div class="flex gap-1 mb-2">
+            <button id="btn-create-group" class="flex-1 px-2 py-1 text-xs rounded bg-blue-700 text-white tooltip" title="Create group from selected markers">Create Group</button>
+            <button id="btn-delete-group" class="flex-1 px-2 py-1 text-xs rounded bg-gray-700 text-white tooltip" title="Delete selected group">Delete Group</button>
+          </div>
+          <div id="selection-count" class="text-xs text-gray-400 mb-2">0 markers selected</div>
+          <div id="groups-list" class="space-y-1 text-xs max-h-16 overflow-y-auto mb-2">No groups</div>
           <div id="markers-list" class="space-y-1 text-xs max-h-32 overflow-y-auto">Loading...</div>
         </div>
         <div class="border-t border-gray-700 pt-2 mb-3">
@@ -167,6 +227,21 @@
           <h3 class="font-semibold text-white text-xs mb-2">Course Validation</h3>
           <button id="btn-validate" class="w-full px-2 py-1 text-xs rounded bg-blue-700 text-white tooltip" title="Check course for errors and warnings">Validate Course</button>
           <div id="validation-msg" class="text-xs text-accent min-h-[1em] mt-2"></div>
+        </div>
+        <div class="border-t border-gray-700 pt-3">
+          <h3 class="font-semibold text-white text-xs mb-2">Course Templates</h3>
+          <div class="flex gap-1 mb-2">
+            <select id="course-template" class="flex-1 px-2 py-1 text-xs rounded bg-gray-800 border border-gray-600 text-white tooltip" title="Select a course template">
+              <option value="">Select template...</option>
+              <option value="windward-leeward">Windward-Leeward</option>
+              <option value="triangle">Triangle Course</option>
+              <option value="olympic">Olympic Course</option>
+              <option value="trapezoid">Trapezoid Course</option>
+              <option value="custom">Custom</option>
+            </select>
+            <button id="btn-apply-template" class="px-2 py-1 text-xs rounded bg-blue-700 text-white tooltip" title="Apply selected template">Apply</button>
+          </div>
+          <div id="template-info" class="text-xs text-gray-400 mb-2">Select a template to see details</div>
         </div>
         <div class="border-t border-gray-700 pt-3">
           <h3 class="font-semibold text-white text-xs mb-2">Save / Load</h3>

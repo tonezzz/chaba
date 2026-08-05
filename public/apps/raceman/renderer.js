@@ -277,7 +277,7 @@ class CourseRenderer {
     L.marker(labelPos, { icon: this.lineLabelIcon(text, labelRot), interactive: false }).addTo(this.guideLayer);
   }
 
-  drawOne(d, onDrag) {
+  drawOne(d, onDrag, onClick, onContextMenu) {
     switch (d.kind) {
       case 'marker': {
         const pos = [d.m.lat, d.m.lon];
@@ -296,6 +296,24 @@ class CourseRenderer {
           marker.on('dragend', (e) => { 
             const ll = e.target.getLatLng(); 
             onDrag(d.m.id, ll.lat, ll.lng); 
+          });
+        }
+        
+        // Add click handler if provided
+        if (onClick) {
+          marker.on('click', (e) => {
+            L.DomEvent.stopPropagation(e);
+            onClick(d.m.id, e);
+          });
+        }
+        
+        // Add context menu handler if provided
+        if (onContextMenu) {
+          marker.on('contextmenu', (e) => {
+            L.DomEvent.stopPropagation(e);
+            L.DomEvent.preventDefault(e);
+            const containerPoint = map.latLngToContainerPoint(e.latlng, map);
+            onContextMenu(containerPoint.x, containerPoint.y, d.m.id);
           });
         }
         
@@ -397,7 +415,7 @@ class CourseRenderer {
     // Use requestAnimationFrame for smooth rendering
     requestAnimationFrame(() => {
       for (const d of visibleDrawables) {
-        this.theme.drawOne(d, this, options.onDrag, options.onClick);
+        this.theme.drawOne(d, this, options.onDrag, options.onClick, options.onContextMenu);
       }
     });
     
