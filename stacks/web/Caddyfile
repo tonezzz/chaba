@@ -280,11 +280,6 @@
 	@terminal_noslash path /apps/trade/terminal
 	redir @terminal_noslash /apps/trade/terminal/ 308
 
-	handle_path /apps/trade/terminal/api/trade/* {
-		uri strip_prefix /apps/trade/terminal/api/trade
-		reverse_proxy trade-api:8000
-	}
-
 	handle_path /apps/trade/terminal/* {
 		reverse_proxy trading-terminal:80
 	}
