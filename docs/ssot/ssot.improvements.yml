@@ -198,7 +198,7 @@ sections:
     completion_note: 'version: attribute already absent from all compose files'
   - label: GPU Queue Priority System Enhancement
     text: Enhanced GPU queue with yomi_summary and yomi_daily priority levels (P4), added cancelled status tracking, and improved job type breakdown
-    status: pending
+    status: completed
     priority: medium
     effort: 1 hour
     category: gpu
@@ -218,6 +218,8 @@ sections:
     - queue
     - priority
     - enhancements
+    completed: '2026-08-05'
+    completion_note: yomi_summary/yomi_daily at P2, cancelled tracking operational (9 cancelled jobs tracked), job type breakdown working across all types
 - title: Medium Priority Improvements
   icon: 🟡
   layout: list
@@ -241,7 +243,7 @@ sections:
     - storage
   - label: Memory Usage Optimization
     text: Address high memory usage (22GB/30GB, 73% used) and swap usage (39GB/47GB) - identify memory-intensive processes and implement optimization
-    status: pending
+    status: completed
     priority: medium
     effort: 2-3 hours
     category: performance
@@ -266,9 +268,11 @@ sections:
     - memory
     - performance
     - optimization
+    completed: '2026-08-05'
+    completion_note: 'Root cause found: 14 orphaned Yomi MCP instances (8GB RAM leak). Killed orphans → freed 2GB RAM + 10GB swap. See docs/kb/yomi-mcp-process-leak.md for mitigation.'
   - label: System Load Analysis
     text: Investigate elevated system load (8.13, 10.62, 12.63) - identify contributing processes and review background job scheduling
-    status: pending
+    status: completed
     priority: medium
     effort: 2-3 hours
     category: performance
@@ -287,6 +291,9 @@ sections:
     - performance
     - load
     - optimization
+    completed: '2026-08-05'
+    completion_note: Load driven by llama-server (expected, 2+ cores) + swap thrashing from Yomi leak. Resolved with memory cleanup. All containers have unlimited memory limits — low risk given current
+      usage.
   - label: GPU Process Management
     text: Investigate PID 143 holding 2466MB VRAM continuously - implement GPU memory cleanup policies and workload scheduling
     status: pending
