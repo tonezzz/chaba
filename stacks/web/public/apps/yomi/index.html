@@ -77,6 +77,19 @@
     #refresh-all:hover { border-color: var(--accent); color: var(--accent); }
     #refresh-all:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
     .refresh-status { font-size: .85rem; color: var(--accent); margin-left: .5rem; }
+    .sem-search-bar { max-width: 1100px; margin: .5rem auto 0; padding: 0 .75rem; display: flex; gap: .5rem; align-items: center; }
+    #sem-search-input { flex: 1; padding: .5rem .75rem; border: 1px solid #a5b4fc; border-radius: .375rem; font-size: .9rem; background: #faf5ff; }
+    #sem-search-input:focus { outline: 2px solid #7c3aed; border-color: #7c3aed; }
+    #sem-search-btn { padding: .5rem .9rem; background: #7c3aed; color: #fff; border: none; border-radius: .375rem; cursor: pointer; font-size: .9rem; white-space: nowrap; }
+    #sem-search-btn:hover { background: #6d28d9; }
+    #sem-search-btn:disabled { background: #a78bfa; cursor: not-allowed; }
+    #sem-results-panel { max-width: 1100px; margin: .5rem auto; padding: 0 .75rem; display: none; }
+    #sem-results-panel.open { display: block; }
+    .sem-result { background: #fff; border: 1px solid #e2e8f0; border-radius: .5rem; padding: .75rem 1rem; margin-bottom: .5rem; cursor: pointer; transition: border-color .15s; }
+    .sem-result:hover { border-color: #7c3aed; }
+    .sem-result-meta { font-size: .8rem; color: #64748b; margin-bottom: .25rem; display: flex; gap: .75rem; flex-wrap: wrap; }
+    .sem-result-text { font-size: .9rem; color: #1e293b; }
+    .sem-result-score { margin-left: auto; font-weight: 600; color: #7c3aed; }
     #sort { padding: .5rem .75rem; border: 1px solid #cbd5e1; border-radius: .375rem; background: #fff; font-size: .9rem; }
     .last-active { color: #94a3b8; font-size: .75rem; margin-left: .5rem; }
     .chat.hidden { display: none; }
@@ -166,6 +179,13 @@
     <button id="refresh-all" type="button" title="Refresh all conversations from LINE">Refresh All</button>
     <button id="refresh" type="button" title="Reload page">↻</button>
     <span id="refresh-status" class="refresh-status"></span>
+  </div>
+  <div class="sem-search-bar">
+    <input type="search" id="sem-search-input" placeholder="🔍 Semantic search messages (AI)…" autocomplete="off">
+    <button id="sem-search-btn" type="button">Search</button>
+  </div>
+  <div id="sem-results-panel">
+    <div id="sem-results-list"></div>
   </div>
   <dialog id="edit-dialog">
     <div class="config-content">
@@ -566,6 +586,51 @@
       updateChipStyles();
     }
     document.getElementById('search').addEventListener('input', filterChats);
+
+    // Semantic search
+    const semInput = document.getElementById('sem-search-input');
+    const semBtn = document.getElementById('sem-search-btn');
+    const semPanel = document.getElementById('sem-results-panel');
+    const semList = document.getElementById('sem-results-list');
+    async function doSemanticSearch() {
+      const q = semInput.value.trim();
+      if (!q) { semPanel.classList.remove('open'); semList.innerHTML = ''; return; }
+      semBtn.disabled = true;
+      semBtn.textContent = '…';
+      try {
+        const r = await fetch(`/api/yomi/search?q=${encodeURIComponent(q)}&limit=20`, { credentials: 'include' });
+        const data = await r.json();
+        const results = data.results || [];
+        if (results.length === 0) {
+          semList.innerHTML = '<p style="color:#64748b;padding:.5rem 0">No results found.</p>';
+        } else {
+          semList.innerHTML = results.map(r => `
+            <div class="sem-result" data-chat="${r.chatId}">
+              <div class="sem-result-meta">
+                <span>💬 ${escHtml(r.chatName || r.chatId)}</span>
+                <span>👤 ${escHtml(r.fromName || '')}</span>
+                <span>${r.deliveredTime ? new Date(r.deliveredTime).toLocaleDateString() : ''}</span>
+                <span class="sem-result-score">${r.similarity}</span>
+              </div>
+              <div class="sem-result-text">${escHtml((r.text || '').slice(0, 200))}</div>
+            </div>`).join('');
+        }
+        semPanel.classList.add('open');
+      } catch (e) {
+        semList.innerHTML = `<p style="color:#ef4444">Error: ${escHtml(e.message)}</p>`;
+        semPanel.classList.add('open');
+      } finally {
+        semBtn.disabled = false;
+        semBtn.textContent = 'Search';
+      }
+    }
+    function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    semBtn.addEventListener('click', doSemanticSearch);
+    semInput.addEventListener('keydown', e => { if (e.key === 'Enter') doSemanticSearch(); });
+    semList.addEventListener('click', e => {
+      const card = e.target.closest('.sem-result');
+      if (card && card.dataset.chat) window.location.href = `chat.html?id=${encodeURIComponent(card.dataset.chat)}`;
+    });
     document.getElementById('chips').addEventListener('click', handleChipClick);
     document.getElementById('sort').addEventListener('change', renderConversations);
     document.getElementById('refresh').addEventListener('click', () => location.reload());
@@ -614,18 +679,18 @@
       const type = String(m.mediaType || '').toLowerCase();
       if (type === 'image') {
         const src = mediaSrc(m, chatId);
-        if (!src) return '<span class="text-null">[image unavailable]</span>';
-        return `<img class="media-img" src="${encodeURI(src)}" alt="image" loading="lazy" onclick="openLightbox(this.src)" onerror="this.outerHTML='<span class=\"text-null\">[image unavailable]</span>'">`;
+        if (!src) return '';
+        return `<img class="media-img" src="${encodeURI(src)}" alt="image" loading="lazy" onclick="openLightbox(this.src)" onerror="this.style.display='none'">`;
       }
       if (type === 'video') {
         const src = mediaSrc(m, chatId);
-        if (!src) return '<span class="media-placeholder">[video unavailable]</span>';
-        return `<video class="media-video" src="${encodeURI(src)}" controls preload="metadata" onerror="this.outerHTML='<span class=\"media-placeholder\">[video unavailable]</span>'"></video>`;
+        if (!src) return '';
+        return `<video class="media-video" src="${encodeURI(src)}" controls preload="metadata" onerror="this.style.display='none'"></video>`;
       }
       if (type === 'audio') {
         const src = mediaSrc(m, chatId);
-        if (!src) return '<span class="media-placeholder">[audio unavailable]</span>';
-        return `<audio class="media-audio" src="${encodeURI(src)}" controls preload="metadata" onerror="this.outerHTML='<span class=\"media-placeholder\">[audio unavailable]</span>'"></audio>`;
+        if (!src) return '';
+        return `<audio class="media-audio" src="${encodeURI(src)}" controls preload="metadata" onerror="this.style.display='none'"></audio>`;
       }
       if (type === 'file') {
         const src = mediaSrc(m, chatId);
@@ -633,7 +698,7 @@
           const name = m.mediaFile ? m.mediaFile.split('/').pop() : 'download';
           return `<a class="media-file" href="${encodeURI(src)}" download="${escapeHtml(name)}" target="_blank" rel="noopener">⬇ ${escapeHtml(name)}</a>`;
         }
-        return '<span class="media-placeholder">[file]</span>';
+        return '';
       }
       if (type) {
         if (type === 'unavailable' && (m.e2eeDecrypted === false || m.e2eeIntegrityVerified === false)) {

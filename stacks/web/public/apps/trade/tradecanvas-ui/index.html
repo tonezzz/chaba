@@ -4,11 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TradeCanvas - Enhanced Trading UI</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
     <div class="container">
+        <!-- Navigation Menu -->
+        <nav class="nav-menu">
+            <ul class="nav-list">
+                <li class="nav-item"><a href="index.html" class="nav-link active">Trading Dashboard</a></li>
+                <li class="nav-item"><a href="compare.html" class="nav-link">Compare</a></li>
+                <li class="nav-item"><a href="compare2.html" class="nav-link">Compare2</a></li>
+            </ul>
+        </nav>
+
         <header class="header">
             <h1>TradeCanvas - USD/THB</h1>
             <div class="header-controls">
@@ -31,6 +41,8 @@
                 </select>
                 <button id="refresh-btn" class="btn">Refresh</button>
                 <button id="settings-btn" class="btn">Settings</button>
+                <button id="add-marker-btn" class="btn">Add Marker</button>
+                <button id="clear-markers-btn" class="btn">Clear Markers</button>
             </div>
         </header>
 
@@ -183,6 +195,24 @@
         </footer>
     </div>
 
-    <script src="app.js"></script>
+    <script src="chart-loader.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize chart with shared loader for full-featured dashboard
+            const chartLoader = new ChartLoader({
+                containerId: 'main-chart',
+                symbol: 'THB',
+                timeframe: 'all',
+                showVolume: true,
+                showIndicators: true,
+                enableControls: true,
+                enableWebSocket: true,
+                enableMarkers: true,
+                autoRefresh: true
+            });
+            
+            chartLoader.init();
+        });
+    </script>
 </body>
 </html>

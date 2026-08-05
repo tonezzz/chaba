@@ -12,7 +12,28 @@
     header h1 { margin: 0; font-size: 1.25rem; flex: 1; }
     #chat-select { padding: 0.5rem 0.75rem; border: 1px solid #334155; border-radius: 0.375rem; background: #1e293b; color: #f8fafc; font-size: 0.9rem; min-width: 200px; }
     main { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
-    .day-card { background: #fff; border-radius: 0.5rem; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    
+    /* Calendar styles */
+    .calendar-container { background: #fff; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .calendar-nav { display: flex; gap: 0.5rem; }
+    .calendar-nav button { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 0.25rem; padding: 0.25rem 0.75rem; cursor: pointer; font-size: 0.9rem; }
+    .calendar-nav button:hover { background: #e2e8f0; }
+    .calendar-nav button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .calendar-title { font-weight: 600; color: #0f172a; font-size: 1rem; }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.25rem; }
+    .calendar-day-header { text-align: center; font-size: 0.75rem; font-weight: 600; color: #64748b; padding: 0.5rem 0; }
+    .calendar-day { text-align: center; padding: 0.5rem; border-radius: 0.25rem; cursor: pointer; font-size: 0.9rem; }
+    .calendar-day:hover { background: #f1f5f9; }
+    .calendar-day.empty { cursor: default; }
+    .calendar-day.empty:hover { background: transparent; }
+    .calendar-day.has-summary { background: #dbeafe; color: #1e40af; font-weight: 500; }
+    .calendar-day.has-summary:hover { background: #bfdbfe; }
+    .calendar-day.selected { background: #3b82f6; color: #fff; }
+    .calendar-day.today { border: 2px solid #3b82f6; }
+    
+    /* Day card styles */
+    .day-card { background: #fff; border-radius: 0.5rem; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1; }
     .day-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
     .day-date { font-weight: 600; color: #0f172a; font-size: 1.1rem; }
     .day-count { color: #64748b; font-size: 0.85rem; }
@@ -27,6 +48,17 @@
     .view-chat { color: #3b82f6; text-decoration: none; font-size: 0.85rem; }
     .view-chat:hover { text-decoration: underline; }
     #status { text-align: center; color: #64748b; padding: 2rem; }
+    
+    /* Re-summarize button */
+    .resummarize-btn { background: #3b82f6; color: #fff; border: none; border-radius: 0.25rem; padding: 0.35rem 0.75rem; font-size: 0.85rem; cursor: pointer; }
+    .resummarize-btn:hover { background: #2563eb; }
+    .resummarize-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+    
+    /* Progress indicator */
+    .progress-container { margin-top: 0.5rem; padding: 0.5rem; background: #f1f5f9; border-radius: 0.25rem; font-size: 0.85rem; color: #64748b; }
+    .progress-spinner { display: inline-block; width: 1rem; height: 1rem; border: 2px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 0.5rem; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .progress-done { color: #166534; font-weight: 500; }
   </style>
 </head>
 <body>
@@ -35,9 +67,30 @@
     <h1>Daily Summaries</h1>
     <select id="chat-select"><option value="">Loading conversations...</option></select>
   </header>
-  <main id="app"><p id="status">Loading...</p></main>
+  <main id="app">
+    <p id="status">Loading...</p>
+    <div id="calendar-container" class="calendar-container" style="display: none;">
+      <div class="calendar-header">
+        <div class="calendar-nav">
+          <button id="prev-month">&laquo;</button>
+          <button id="prev-day">&lt;</button>
+        </div>
+        <div class="calendar-title" id="calendar-title">Month Year</div>
+        <div class="calendar-nav">
+          <button id="next-day">&gt;</button>
+          <button id="next-month">&raquo;</button>
+        </div>
+      </div>
+      <div class="calendar-grid" id="calendar-grid"></div>
+    </div>
+    <div id="day-content"></div>
+  </main>
   <script>
     const PAGE_LIMIT = 50;
+    let currentChatId = null;
+    let currentSummaries = [];
+    let currentMonth = new Date();
+    let selectedDate = null;
 
     async function loadConversations() {
       const res = await fetch('/api/yomi/conversations', { credentials: 'include' });
@@ -53,9 +106,25 @@
       return data.summaries || [];
     }
 
+    async function resummarizeDay(chatId, date) {
+      const res = await fetch('/api/yomi/resummarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ chatIds: [chatId], forceAll: false })
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return await res.json();
+    }
+
     function formatDate(dateStr) {
       const d = new Date(dateStr);
       return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+    }
+
+    function formatShortDate(dateStr) {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     }
 
     function renderTag(tag, type) {
@@ -74,11 +143,13 @@
 
     function renderDayCard(summary, chatId) {
       return `
-        <div class="day-card">
+        <div class="day-card" id="day-card-${summary.date}">
           <div class="day-header">
             <div class="day-date">${formatDate(summary.date)}</div>
             <div class="day-count">${summary.message_count} messages</div>
+            <button class="resummarize-btn" onclick="resummarizeDayUI('${chatId}', '${summary.date}')">Re-summarize</button>
           </div>
+          <div id="progress-${summary.date}"></div>
           ${renderSection('Events', summary.events, 'events')}
           ${renderSection('Actions', summary.actions, 'actions')}
           ${renderSection('Topics', summary.topics, 'topics')}
@@ -91,10 +162,127 @@
       return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     }
 
+    function buildCalendar(summaries) {
+      const grid = document.getElementById('calendar-grid');
+      const title = document.getElementById('calendar-title');
+      
+      // Get available dates
+      const availableDates = new Set(summaries.map(s => s.date));
+      
+      // Build calendar for current month
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+      
+      title.textContent = currentMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+      
+      // Day headers
+      const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      let html = dayHeaders.map(d => `<div class="calendar-day-header">${d}</div>`).join('');
+      
+      // Get first day of month and total days
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      
+      // Empty cells before first day
+      for (let i = 0; i < firstDay; i++) {
+        html += '<div class="calendar-day empty"></div>';
+      }
+      
+      // Day cells
+      const today = new Date().toISOString().split('T')[0];
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const hasSummary = availableDates.has(dateStr);
+        const isSelected = selectedDate === dateStr;
+        const isToday = dateStr === today;
+        
+        let classes = 'calendar-day';
+        if (hasSummary) classes += ' has-summary';
+        if (isSelected) classes += ' selected';
+        if (isToday) classes += ' today';
+        
+        html += `<div class="${classes}" data-date="${dateStr}" onclick="selectDate('${dateStr}')">${day}</div>`;
+      }
+      
+      grid.innerHTML = html;
+    }
+
+    function selectDate(dateStr) {
+      selectedDate = dateStr;
+      buildCalendar(currentSummaries);
+      showDaySummary(dateStr);
+      
+      // Update URL
+      const url = new URL(location.href);
+      url.searchParams.set('date', dateStr);
+      history.replaceState(null, '', url);
+    }
+
+    function showDaySummary(dateStr) {
+      const dayContent = document.getElementById('day-content');
+      const summary = currentSummaries.find(s => s.date === dateStr);
+      
+      if (summary) {
+        dayContent.innerHTML = renderDayCard(summary, currentChatId);
+      } else {
+        dayContent.innerHTML = `<p class="empty">No summary available for ${formatDate(dateStr)}</p>`;
+      }
+    }
+
+    function navigateMonth(delta) {
+      currentMonth.setMonth(currentMonth.getMonth() + delta);
+      buildCalendar(currentSummaries);
+    }
+
+    function navigateDay(delta) {
+      if (!selectedDate) return;
+      const date = new Date(selectedDate);
+      date.setDate(date.getDate() + delta);
+      const newDateStr = date.toISOString().split('T')[0];
+      
+      // Check if new date has a summary
+      if (currentSummaries.some(s => s.date === newDateStr)) {
+        selectDate(newDateStr);
+        // Update month if needed
+        if (date.getMonth() !== currentMonth.getMonth()) {
+          currentMonth = new Date(date);
+          buildCalendar(currentSummaries);
+        }
+      }
+    }
+
+    async function resummarizeDayUI(chatId, date) {
+      const progressDiv = document.getElementById(`progress-${date}`);
+      const btn = document.querySelector(`#day-card-${date} .resummarize-btn`);
+      
+      // Show progress
+      btn.disabled = true;
+      progressDiv.innerHTML = '<div class="progress-container"><span class="progress-spinner"></span>Re-summarizing...</div>';
+      
+      try {
+        await resummarizeDay(chatId, date);
+        
+        // Show done status
+        progressDiv.innerHTML = '<div class="progress-container progress-done">✓ Done - refreshing...</div>';
+        
+        // Reload summaries after a short delay
+        setTimeout(async () => {
+          currentSummaries = await loadDailySummaries(chatId);
+          buildCalendar(currentSummaries);
+          showDaySummary(date);
+        }, 1500);
+        
+      } catch (err) {
+        progressDiv.innerHTML = `<div class="progress-container" style="color: #dc2626;">Error: ${escapeHtml(err.message)}</div>`;
+        btn.disabled = false;
+      }
+    }
+
     async function init() {
       const app = document.getElementById('app');
       const status = document.getElementById('status');
       const select = document.getElementById('chat-select');
+      const calendarContainer = document.getElementById('calendar-container');
 
       try {
         const conversations = await loadConversations();
@@ -108,12 +296,14 @@
         ).join('');
 
         const chatParam = new URLSearchParams(location.search).get('chat');
+        const dateParam = new URLSearchParams(location.search).get('date');
+        
         if (chatParam) {
           select.value = chatParam;
-          await loadAndRender(chatParam);
+          await loadAndRender(chatParam, dateParam);
         } else if (conversations.length) {
           select.value = conversations[0].id;
-          await loadAndRender(conversations[0].id);
+          await loadAndRender(conversations[0].id, dateParam);
         }
 
         select.addEventListener('change', () => {
@@ -121,27 +311,60 @@
           if (chatId) {
             const url = new URL(location.href);
             url.searchParams.set('chat', chatId);
+            url.searchParams.delete('date');
             history.replaceState(null, '', url);
-            loadAndRender(chatId);
+            loadAndRender(chatId, null);
           }
         });
+        
+        // Calendar navigation
+        document.getElementById('prev-month').addEventListener('click', () => navigateMonth(-1));
+        document.getElementById('next-month').addEventListener('click', () => navigateMonth(1));
+        document.getElementById('prev-day').addEventListener('click', () => navigateDay(-1));
+        document.getElementById('next-day').addEventListener('click', () => navigateDay(1));
+        
       } catch (err) {
         app.innerHTML = `<p class="empty">Error: ${escapeHtml(err.message)}</p>`;
       }
     }
 
-    async function loadAndRender(chatId) {
+    async function loadAndRender(chatId, dateParam) {
       const app = document.getElementById('app');
-      app.innerHTML = '<p id="status">Loading summaries...</p>';
+      const status = document.getElementById('status');
+      const calendarContainer = document.getElementById('calendar-container');
+      const dayContent = document.getElementById('day-content');
+      
+      currentChatId = chatId;
+      status.style.display = 'block';
+      calendarContainer.style.display = 'none';
+      dayContent.innerHTML = '';
+      status.textContent = 'Loading summaries...';
 
       try {
-        const summaries = await loadDailySummaries(chatId);
-        if (!summaries.length) {
+        currentSummaries = await loadDailySummaries(chatId);
+        if (!currentSummaries.length) {
           app.innerHTML = '<p class="empty">No daily summaries yet. Refresh the conversation to generate them.</p>';
           return;
         }
 
-        app.innerHTML = summaries.map(s => renderDayCard(s, chatId)).join('');
+        status.style.display = 'none';
+        calendarContainer.style.display = 'block';
+        
+        // Set current month to most recent summary
+        if (currentSummaries.length > 0) {
+          const mostRecent = new Date(currentSummaries[0].date);
+          currentMonth = new Date(mostRecent.getFullYear(), mostRecent.getMonth(), 1);
+        }
+        
+        buildCalendar(currentSummaries);
+        
+        // Select date from param or most recent
+        if (dateParam && currentSummaries.some(s => s.date === dateParam)) {
+          selectDate(dateParam);
+        } else if (currentSummaries.length > 0) {
+          selectDate(currentSummaries[0].date);
+        }
+        
       } catch (err) {
         app.innerHTML = `<p class="empty">Error: ${escapeHtml(err.message)}</p>`;
       }

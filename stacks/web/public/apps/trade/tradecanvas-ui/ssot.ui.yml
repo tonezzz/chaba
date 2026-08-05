@@ -1,0 +1,124 @@
+pages:
+  index:
+    title: "TradeCanvas - Trading Dashboard"
+    symbol: "THB"
+    show_chart: true
+    show_indicators: true
+    show_volume: true
+    show_controls: true
+    
+  compare:
+    title: "TradeCanvas - Compare"
+    symbol: "THB"
+    show_chart: true
+    show_indicators: false
+    show_volume: false
+    show_controls: false
+    show_strategy_panel: true
+
+navigation:
+  - title: "Trading Dashboard"
+    url: "index.html"
+    active: true
+  - title: "Compare"
+    url: "compare.html"
+    active: false
+
+chart_settings:
+  default_timeframe: "1Y"
+  available_timeframes:
+    - "1D"
+    - "1W"
+    - "1M"
+    - "3M"
+    - "6M"
+    - "1Y"
+    - "2Y"
+  
+  default_symbol: "THB"
+  available_symbols:
+    - value: "THB"
+      label: "USD/THB"
+    - value: "EUR"
+      label: "EUR/USD"
+    - value: "GBP"
+      label: "GBP/USD"
+    - value: "JPY"
+      label: "USD/JPY"
+    - value: "DXY"
+      label: "DXY"
+    - value: "OIL"
+      label: "OIL"
+
+colors:
+  up: "#238636"
+  down: "#da3633"
+  background: "#21262d"
+  grid: "#30363d"
+  text: "#e6edf3"
+  accent: "#58a6ff"
+
+strategy_panel:
+  title: "Strategy Control & Results"
+  position: "side-panel"
+  default_enabled: true
+  strategies:
+    sma_crossover:
+      label: "SMA Crossover"
+      enabled: true
+      parameters:
+        short_period: 20
+        long_period: 50
+    ema_crossover:
+      label: "EMA Crossover"
+      enabled: false
+      parameters:
+        short_period: 12
+        long_period: 26
+    rsi_reversal:
+      label: "RSI Reversal"
+      enabled: false
+      parameters:
+        period: 14
+        oversold: 30
+        overbought: 70
+    macd_crossover:
+      label: "MACD Crossover"
+      enabled: false
+      parameters:
+        fast: 12
+        slow: 26
+        signal: 9
+    bollinger_reversion:
+      label: "Bollinger Reversion"
+      enabled: false
+      parameters:
+        period: 20
+        std_dev: 2.0
+  execution:
+    initial_capital: 10000
+    commission: 0.001
+    slippage: 0.0001
+    stop_loss:
+      enabled: true
+      type: "percentage"
+      value: 0.05
+    take_profit:
+      enabled: true
+      type: "percentage"
+      value: 0.10
+    position_sizing:
+      method: "percentage"
+      value: 0.1
+  metrics:
+    - "total_return"
+    - "total_trades"
+    - "win_rate"
+    - "profit_factor"
+    - "max_drawdown"
+    - "avg_win"
+    - "avg_loss"
+    - "final_capital"
+  display:
+    show_chart_markers: true
+    show_equity_curve: false

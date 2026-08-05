@@ -172,18 +172,18 @@
       const type = String(m.mediaType || '').toLowerCase();
       if (type === 'image') {
         const src = mediaSrc(m, chatId);
-        if (!src) return '<span class="text-null">[image unavailable]</span>';
-        return `<img class="media-img" src="${encodeURI(src)}" alt="image" loading="lazy" onclick="openLightbox(this.src)" onerror="this.outerHTML='<span class=\"text-null\">[image unavailable]</span>'">`;
+        if (!src) return '';
+        return `<img class="media-img" src="${encodeURI(src)}" alt="image" loading="lazy" onclick="openLightbox(this.src)" onerror="this.style.display='none'">`;
       }
       if (type === 'video') {
         const src = mediaSrc(m, chatId);
-        if (!src) return '<span class="media-placeholder">[video unavailable]</span>';
-        return `<video class="media-video" src="${encodeURI(src)}" controls preload="metadata" onerror="this.outerHTML='<span class=\"media-placeholder\">[video unavailable]</span>'"></video>`;
+        if (!src) return '';
+        return `<video class="media-video" src="${encodeURI(src)}" controls preload="metadata" onerror="this.style.display='none'"></video>`;
       }
       if (type === 'audio') {
         const src = mediaSrc(m, chatId);
-        if (!src) return '<span class="media-placeholder">[audio unavailable]</span>';
-        return `<audio class="media-audio" src="${encodeURI(src)}" controls preload="metadata" onerror="this.outerHTML='<span class=\"media-placeholder\">[audio unavailable]</span>'"></audio>`;
+        if (!src) return '';
+        return `<audio class="media-audio" src="${encodeURI(src)}" controls preload="metadata" onerror="this.style.display='none'"></audio>`;
       }
       if (type === 'file') {
         const src = mediaSrc(m, chatId);
@@ -191,7 +191,7 @@
           const name = m.mediaFile ? m.mediaFile.split('/').pop() : 'download';
           return `<a class="media-file" href="${encodeURI(src)}" download="${escapeHtml(name)}" target="_blank" rel="noopener">⬇ ${escapeHtml(name)}</a>`;
         }
-        return '<span class="media-placeholder">[file]</span>';
+        return '';
       }
       if (type) {
         if (type === 'unavailable' && (m.e2eeDecrypted === false || m.e2eeIntegrityVerified === false)) {

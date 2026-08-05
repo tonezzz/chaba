@@ -189,6 +189,46 @@
     }
     
     .view-chat:hover { text-decoration: underline; }
+    
+    /* Re-summarize button */
+    .resummarize-btn {
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 0.25rem;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      margin-top: 0.5rem;
+    }
+    
+    .resummarize-btn:hover { background: #2563eb; }
+    .resummarize-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+    
+    /* Progress indicator */
+    .progress-container {
+      margin-top: 0.5rem;
+      padding: 0.5rem;
+      background: #f1f5f9;
+      border-radius: 0.25rem;
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+    
+    .progress-spinner {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid #e2e8f0;
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 0.5rem;
+      vertical-align: middle;
+    }
+    
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .progress-done { color: #166534; font-weight: 500; }
   </style>
 </head>
 <body>
@@ -230,22 +270,85 @@
     let currentMonth = new Date();
     let selectedDate = null;
     let dailySummaries = [];
-    let availableDates = new Set();
+    
+    // Set current month to the most recent summary date's month for better UX
+    // This ensures the calendar shows the month with data
+    function setCurrentMonthToData() {
+      if (dailySummaries.length > 0) {
+        const mostRecent = new Date(dailySummaries[0].date);
+        // Browser is in UTC-7, so local date is 1 day behind Thailand date
+        // Add 1 day to get the intended Thailand date
+        const localYear = mostRecent.getFullYear();
+        const localMonth = mostRecent.getMonth();
+        const localDay = mostRecent.getDate() + 1;
+        currentMonth = new Date(localYear, localMonth, 1);
+      }
+    }
     
     const DAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     
     async function loadConversations() {
-      const res = await fetch('/api/yomi/conversations', { credentials: 'include' });
+      const res = await fetch('/api/yomi/conversations');
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const { conversations } = await res.json();
       return conversations || [];
     }
     
     async function loadDailySummaries(chatId) {
-      const res = await fetch(`/api/yomi/daily?chat=${encodeURIComponent(chatId)}`, { credentials: 'include' });
+      const res = await fetch(`/api/yomi/daily?chat=${encodeURIComponent(chatId)}`);
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
       return data.summaries || [];
+    }
+    
+    async function resummarizeDay(chatId, date) {
+      const res = await fetch('/api/yomi/resummarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatIds: [chatId], forceAll: false })
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return await res.json();
+    }
+    
+    async function resummarizeDayUI(chatId, date) {
+      const progressDiv = document.getElementById(`progress-${date}`);
+      const btn = document.querySelector(`.resummarize-btn`);
+      
+      if (!progressDiv || !btn) {
+        console.error('Progress div or button not found for date:', date);
+        return;
+      }
+      
+      // Show progress
+      btn.disabled = true;
+      progressDiv.innerHTML = '<div class="progress-container"><span class="progress-spinner"></span>Re-summarizing...</div>';
+      
+      try {
+        // Convert local date to UTC date for API
+        // Browser is in UTC-7, so local date is 1 day behind Thailand date
+        // Subtract 1 day to convert from local to UTC date format
+        const [localYear, localMonth, localDay] = date.split('-').map(Number);
+        const utcDateStr = `${localYear}-${String(localMonth).padStart(2, '0')}-${String(localDay - 1).padStart(2, '0')}`;
+        
+        await resummarizeDay(chatId, utcDateStr);
+        
+        // Show done status
+        progressDiv.innerHTML = '<div class="progress-container progress-done">✓ Done - refreshing...</div>';
+        
+        // Reload summaries after a short delay
+        setTimeout(async () => {
+          dailySummaries = await loadDailySummaries(chatId);
+          buildCalendar();
+          if (selectedDate) {
+            renderSummaryForDate(selectedDate);
+          }
+        }, 1500);
+        
+      } catch (err) {
+        progressDiv.innerHTML = `<div class="progress-container" style="color: #dc2626;">Error: ${escapeHtml(err.message)}</div>`;
+        btn.disabled = false;
+      }
     }
     
     function formatDate(dateStr) {
@@ -276,7 +379,24 @@
         return '<div class="empty-state">No summary available for this date</div>';
       }
       
+      // Use date-only format for the button and progress div IDs (local time)
+      // Database stores dates at 17:00:00 UTC, which is midnight in Thailand (UTC+7)
+      // Browser is in UTC-7, so local date is 1 day behind Thailand date
+      // Add 1 day to get the intended Thailand date
+      const utcDate = new Date(summary.date);
+      const localYear = utcDate.getFullYear();
+      const localMonth = utcDate.getMonth();
+      const localDay = utcDate.getDate() + 1;
+      const dateKey = `${localYear}-${String(localMonth + 1).padStart(2, '0')}-${String(localDay).padStart(2, '0')}`;
+      
       return `
+        <div class="summary-section">
+          <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Daily Summary</span>
+            <button class="resummarize-btn" onclick="resummarizeDayUI('${chatId}', '${dateKey}')">Re-summarize</button>
+          </div>
+          <div id="progress-${dateKey}"></div>
+        </div>
         ${renderSection('Events', summary.events, 'events')}
         ${renderSection('Actions', summary.actions, 'actions')}
         ${renderSection('Topics', summary.topics, 'topics')}
@@ -292,6 +412,21 @@
       const month = currentMonth.getMonth();
       
       title.textContent = currentMonth.toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
+      
+      // Update available dates to use date-only format for comparison (accounting for timezone)
+      // Database stores dates at 17:00:00 UTC, which is meant to represent midnight in Thailand (UTC+7)
+      // The browser is in UTC-7 timezone, so UTC 17:00 converts to local 10:00 AM same day
+      // We need to add 1 day to the browser's local date to get the intended Thailand date
+      availableDates = new Set(dailySummaries.map(s => {
+        if (!s.date) return null;
+        const utcDate = new Date(s.date);
+        // Browser converts UTC 17:00 to local 10:00 AM same day (UTC-7)
+        // Add 1 day to get the intended Thailand date (UTC+7 midnight)
+        const localYear = utcDate.getFullYear();
+        const localMonth = utcDate.getMonth();
+        const localDay = utcDate.getDate() + 1;
+        return `${localYear}-${String(localMonth + 1).padStart(2, '0')}-${String(localDay).padStart(2, '0')}`;
+      }).filter(Boolean));
       
       // Clear and rebuild entire grid including headers
       grid.innerHTML = '';
@@ -346,7 +481,16 @@
       el.className = 'calendar-day';
       if (isOtherMonth) el.classList.add('other-month');
       if (isToday) el.classList.add('today');
-      if (availableDates.has(dateStr)) el.classList.add('has-data');
+      
+      // Check if this date has data - convert local date to UTC for database matching
+      // Database stores dates at 17:00:00 UTC, which is midnight in Thailand (UTC+7)
+      // Browser is in UTC-7, so local date is 1 day behind Thailand date
+      // Subtract 1 day to convert from local to UTC date format
+      const [localYear, localMonth, localDay] = dateStr.split('-').map(Number);
+      const utcDateStr = `${localYear}-${String(localMonth).padStart(2, '0')}-${String(localDay - 1).padStart(2, '0')}`;
+      const hasData = dailySummaries.some(s => s.date && s.date.startsWith(utcDateStr));
+      if (hasData) el.classList.add('has-data');
+      
       if (selectedDate === dateStr) el.classList.add('selected');
       
       el.textContent = day;
@@ -355,7 +499,11 @@
     }
     
     function formatDateKey(date) {
-      return date.toISOString().split('T')[0];
+      // Format date as YYYY-MM-DD in local time (not UTC)
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1; // getMonth() returns 0-11
+      const day = date.getDate();
+      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     }
     
     function selectDate(dateStr) {
@@ -376,7 +524,14 @@
         return;
       }
       
-      const summary = dailySummaries.find(s => s.date === dateStr);
+      // Handle date comparison - convert local date to UTC for database matching
+      // Database stores dates at 17:00:00 UTC, which is midnight in Thailand (UTC+7)
+      // Browser is in UTC-7, so local date is 1 day behind Thailand date
+      // Subtract 1 day to convert from local to UTC date format
+      const [localYear, localMonth, localDay] = dateStr.split('-').map(Number);
+      const utcDateStr = `${localYear}-${String(localMonth).padStart(2, '0')}-${String(localDay - 1).padStart(2, '0')}`;
+      
+      const summary = dailySummaries.find(s => s.date && s.date.startsWith(utcDateStr));
       
       dateEl.textContent = formatDate(dateStr);
       countEl.textContent = summary ? `${summary.message_count} messages` : '';
@@ -439,23 +594,23 @@
     async function loadChatData(chatId) {
       currentChatId = chatId;
       dailySummaries = await loadDailySummaries(chatId);
-      availableDates = new Set(dailySummaries.map(s => s.date));
       
-      // Select today or the most recent date
-      const today = formatDateKey(new Date());
-      if (availableDates.has(today)) {
-        selectedDate = today;
-      } else if (dailySummaries.length > 0) {
-        selectedDate = dailySummaries[0].date;
-        // Set calendar to the month of the most recent summary
-        const mostRecent = new Date(dailySummaries[0].date);
-        currentMonth = new Date(mostRecent.getFullYear(), mostRecent.getMonth(), 1);
-      } else {
-        selectedDate = null;
-      }
+      // Set current month to the most recent summary date's month for better UX
+      setCurrentMonthToData();
       
       buildCalendar();
-      renderSummaryForDate(selectedDate);
+      
+      // Select most recent date if available
+      if (dailySummaries.length > 0) {
+        const mostRecent = new Date(dailySummaries[0].date);
+        // Browser is in UTC-7, so local date is 1 day behind Thailand date
+        // Add 1 day to get the intended Thailand date
+        const localYear = mostRecent.getFullYear();
+        const localMonth = mostRecent.getMonth();
+        const localDay = mostRecent.getDate() + 1;
+        const localDateStr = `${localYear}-${String(localMonth + 1).padStart(2, '0')}-${String(localDay).padStart(2, '0')}`;
+        selectDate(localDateStr);
+      }
     }
     
     init();
