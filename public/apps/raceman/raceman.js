@@ -45,6 +45,256 @@ let dragManager = new DragManager({
   onDrag: onMarkerDrag
 });
 
+// Help system
+let helpModal = null;
+let tourOverlay = null;
+let tourTooltip = null;
+let currentTourStep = 0;
+let tourSteps = [];
+
+function setupHelpSystem() {
+  helpModal = document.getElementById('help-modal');
+  tourOverlay = document.getElementById('tour-overlay');
+  tourTooltip = document.getElementById('tour-tooltip');
+  
+  // Help button
+  const helpButton = document.getElementById('help-button');
+  if (helpButton) {
+    helpButton.onclick = () => showHelpModal();
+  }
+  
+  // Help modal close
+  const helpModalClose = document.getElementById('help-modal-close');
+  if (helpModalClose) {
+    helpModalClose.onclick = () => hideHelpModal();
+  }
+  
+  // Help modal OK button
+  const helpModalOk = document.getElementById('help-modal-ok');
+  if (helpModalOk) {
+    helpModalOk.onclick = () => hideHelpModal();
+  }
+  
+  // Start tour button
+  const startTourBtn = document.getElementById('start-tour');
+  if (startTourBtn) {
+    startTourBtn.onclick = () => {
+      hideHelpModal();
+      startGuidedTour();
+    };
+  }
+  
+  // Tour buttons
+  const tourSkip = document.getElementById('tour-skip');
+  if (tourSkip) {
+    tourSkip.onclick = () => endTour();
+  }
+  
+  const tourPrev = document.getElementById('tour-prev');
+  if (tourPrev) {
+    tourPrev.onclick = () => showTourStep(currentTourStep - 1);
+  }
+  
+  const tourNext = document.getElementById('tour-next');
+  if (tourNext) {
+    tourNext.onclick = () => showTourStep(currentTourStep + 1);
+  }
+  
+  // Close modal on outside click
+  if (helpModal) {
+    helpModal.onclick = (e) => {
+      if (e.target === helpModal) {
+        hideHelpModal();
+      }
+    };
+  }
+  
+  // Keyboard shortcuts for help
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'F1') {
+      e.preventDefault();
+      showHelpModal();
+    }
+    if (e.key === 'Escape') {
+      hideHelpModal();
+      endTour();
+    }
+  });
+}
+
+function showHelpModal() {
+  if (helpModal) {
+    helpModal.classList.add('show');
+  }
+}
+
+function hideHelpModal() {
+  if (helpModal) {
+    helpModal.classList.remove('show');
+  }
+}
+
+function startGuidedTour() {
+  tourSteps = [
+    {
+      target: '#tab-course',
+      title: 'Course Tab',
+      description: 'View course information, manage markers, and access editing tools. This is your main control panel for course management.',
+      position: 'right'
+    },
+    {
+      target: '#btn-add-marker',
+      title: 'Add Marker',
+      description: 'Click this button to create a new marker at the center of the map. Markers define the key points of your race course.',
+      position: 'top'
+    },
+    {
+      target: '#btn-delete-marker',
+      title: 'Delete Marker',
+      description: 'Select a marker first, then click this button to remove it from the course.',
+      position: 'top'
+    },
+    {
+      target: '#btn-undo',
+      title: 'Undo',
+      description: 'Revert your last action. You can undo up to 50 changes. Also available via Ctrl+Z.',
+      position: 'top'
+    },
+    {
+      target: '#btn-redo',
+      title: 'Redo',
+      description: 'Restore a previously undone action. Also available via Ctrl+Y.',
+      position: 'top'
+    },
+    {
+      target: '#btn-validate',
+      title: 'Validate Course',
+      description: 'Check your course for errors and warnings. This ensures all markers, sections, and references are properly configured.',
+      position: 'top'
+    },
+    {
+      target: '#tab-sections',
+      title: 'Sections Tab',
+      description: 'Manage race sections that define the path between markers. You can edit section properties like width and color.',
+      position: 'right'
+    },
+    {
+      target: '#tab-sim',
+      title: 'Simulation Tab',
+      description: 'Configure wind conditions and run realistic race simulations with multiple boats.',
+      position: 'right'
+    },
+    {
+      target: '#tab-yaml',
+      title: 'YAML Tab',
+      description: 'Edit the course configuration directly in YAML format for advanced users.',
+      position: 'right'
+    }
+  ];
+  
+  currentTourStep = 0;
+  if (tourOverlay) {
+    tourOverlay.classList.add('show');
+  }
+  showTourStep(0);
+}
+
+function showTourStep(stepIndex) {
+  if (stepIndex < 0 || stepIndex >= tourSteps.length) {
+    endTour();
+    return;
+  }
+  
+  currentTourStep = stepIndex;
+  const step = tourSteps[stepIndex];
+  
+  // Remove previous highlight
+  document.querySelectorAll('.tour-highlight').forEach(el => {
+    el.classList.remove('tour-highlight');
+  });
+  
+  // Add highlight to current target
+  const target = document.querySelector(step.target);
+  if (target) {
+    target.classList.add('tour-highlight');
+  }
+  
+  // Update tooltip content
+  const tourTitle = document.getElementById('tour-title');
+  const tourDescription = document.getElementById('tour-description');
+  const tourPrev = document.getElementById('tour-prev');
+  const tourNext = document.getElementById('tour-next');
+  
+  if (tourTitle) tourTitle.textContent = step.title;
+  if (tourDescription) tourDescription.textContent = step.description;
+  
+  // Update button states
+  if (tourPrev) {
+    tourPrev.style.display = stepIndex > 0 ? 'block' : 'none';
+  }
+  
+  if (tourNext) {
+    tourNext.textContent = stepIndex === tourSteps.length - 1 ? 'Finish' : 'Next';
+  }
+  
+  // Position tooltip
+  if (tourTooltip && target) {
+    const targetRect = target.getBoundingClientRect();
+    const tooltipRect = tourTooltip.getBoundingClientRect();
+    
+    let top, left;
+    
+    switch (step.position) {
+      case 'top':
+        top = targetRect.top - tooltipRect.height - 10;
+        left = targetRect.left + (targetRect.width / 2) - (tooltipRect.width / 2);
+        break;
+      case 'right':
+        top = targetRect.top + (targetRect.height / 2) - (tooltipRect.height / 2);
+        left = targetRect.right + 10;
+        break;
+      case 'bottom':
+        top = targetRect.bottom + 10;
+        left = targetRect.left + (targetRect.width / 2) - (tooltipRect.width / 2);
+        break;
+      case 'left':
+        top = targetRect.top + (targetRect.height / 2) - (tooltipRect.height / 2);
+        left = targetRect.left - tooltipRect.width - 10;
+        break;
+      default:
+        top = targetRect.bottom + 10;
+        left = targetRect.left;
+    }
+    
+    // Keep tooltip within viewport
+    const padding = 20;
+    top = Math.max(padding, Math.min(top, window.innerHeight - tooltipRect.height - padding));
+    left = Math.max(padding, Math.min(left, window.innerWidth - tooltipRect.width - padding));
+    
+    tourTooltip.style.top = top + 'px';
+    tourTooltip.style.left = left + 'px';
+    tourTooltip.style.display = 'block';
+  }
+}
+
+function endTour() {
+  // Remove all highlights
+  document.querySelectorAll('.tour-highlight').forEach(el => {
+    el.classList.remove('tour-highlight');
+  });
+  
+  // Hide overlay and tooltip
+  if (tourOverlay) {
+    tourOverlay.classList.remove('show');
+  }
+  
+  if (tourTooltip) {
+    tourTooltip.style.display = 'none';
+  }
+  
+  currentTourStep = 0;
+}
+
 // State management functions (delegated to StateManager module)
 function getMergedMarkers() {
   return stateManager.getMergedMarkers(courseData);
@@ -189,10 +439,12 @@ function onMarkerDrag(id, lat, lon, duringDrag = false) {
 }
 
 let selectedMarkerId = null;
+let markerComments = new Map(); // Store comments per marker
 
 function onMarkerClick(id) {
   selectedMarkerId = id;
   updateMarkersList();
+  updateCommentsList();
   notificationManager.info(`Selected marker: ${id}`);
 }
 
@@ -473,6 +725,134 @@ function redo() {
   }
 }
 
+function exportCourse() {
+  if (!courseData || !courseData.course) {
+    notificationManager.error('No course data to export');
+    return;
+  }
+  
+  const yamlContent = jsyaml.dump(courseData.course);
+  const blob = new Blob([yamlContent], { type: 'text/yaml' });
+  const url = URL.createObjectURL(blob);
+  
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${courseId || 'course'}.yml`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  notificationManager.success(`Course exported: ${courseId}.yml`);
+}
+
+function importCourse() {
+  const fileInput = document.getElementById('import-file');
+  if (!fileInput) return;
+  
+  fileInput.click();
+}
+
+function handleImportFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const importedCourse = jsyaml.load(e.target.result);
+      
+      if (!importedCourse || typeof importedCourse !== 'object') {
+        throw new Error('Invalid YAML format');
+      }
+      
+      saveCurrentState(); // Save state before import
+      
+      courseData.course = importedCourse;
+      
+      // Reset markers if they exist in the imported course
+      if (importedCourse.markers) {
+        courseData.markers = importedCourse.markers;
+      }
+      
+      render(false);
+      notificationManager.success(`Course imported: ${file.name}`);
+      
+      // Clear file input
+      event.target.value = '';
+    } catch (error) {
+      console.error('Import error:', error);
+      notificationManager.error(`Failed to import course: ${error.message}`);
+    }
+  };
+  
+  reader.readAsText(file);
+}
+
+function addComment() {
+  if (!selectedMarkerId) {
+    notificationManager.error('No marker selected');
+    return;
+  }
+  
+  const comment = prompt(`Add comment for marker ${selectedMarkerId}:`);
+  if (!comment || !comment.trim()) return;
+  
+  if (!markerComments.has(selectedMarkerId)) {
+    markerComments.set(selectedMarkerId, []);
+  }
+  
+  const newComment = {
+    text: comment.trim(),
+    timestamp: new Date().toISOString(),
+    author: 'User'
+  };
+  
+  markerComments.get(selectedMarkerId).push(newComment);
+  updateCommentsList();
+  notificationManager.success(`Comment added to ${selectedMarkerId}`);
+}
+
+function viewComments() {
+  const commentsList = document.getElementById('comments-list');
+  if (!commentsList) return;
+  
+  commentsList.classList.toggle('hidden');
+  
+  if (!commentsList.classList.contains('hidden')) {
+    updateCommentsList();
+  }
+}
+
+function updateCommentsList() {
+  const commentsList = document.getElementById('comments-list');
+  if (!commentsList) return;
+  
+  commentsList.innerHTML = '';
+  
+  if (!selectedMarkerId) {
+    commentsList.innerHTML = '<div class="text-gray-500 text-xs">Select a marker to view comments</div>';
+    return;
+  }
+  
+  const comments = markerComments.get(selectedMarkerId) || [];
+  
+  if (comments.length === 0) {
+    commentsList.innerHTML = `<div class="text-gray-500 text-xs">No comments for ${selectedMarkerId}</div>`;
+    return;
+  }
+  
+  comments.forEach((comment, index) => {
+    const row = document.createElement('div');
+    row.className = 'p-2 rounded bg-gray-800 border border-gray-700';
+    row.innerHTML = `
+      <div class="text-white text-xs">${comment.text}</div>
+      <div class="text-gray-400 text-xs mt-1">${new Date(comment.timestamp).toLocaleString()} - ${comment.author}</div>
+    `;
+    commentsList.appendChild(row);
+  });
+}
+
 function render(fit = false) {
   const markers = getMergedMarkers();
   renderer.hidden = stateManager.getHidden();
@@ -595,6 +975,91 @@ function setupCourseControls() {
     });
   }
   courseManager.setupCourseControls();
+  
+  // Setup marker management controls
+  const addMarkerBtn = document.getElementById('btn-add-marker');
+  const deleteMarkerBtn = document.getElementById('btn-delete-marker');
+  
+  if (addMarkerBtn) {
+    addMarkerBtn.onclick = addMarker;
+  }
+  
+  if (deleteMarkerBtn) {
+    deleteMarkerBtn.onclick = deleteSelectedMarker;
+  }
+  
+  // Setup section editing controls
+  const saveSectionBtn = document.getElementById('btn-save-section');
+  const cancelSectionBtn = document.getElementById('btn-cancel-section');
+  
+  if (saveSectionBtn) {
+    saveSectionBtn.onclick = saveSection;
+  }
+  
+  if (cancelSectionBtn) {
+    cancelSectionBtn.onclick = cancelSectionEdit;
+  }
+  
+  // Setup validation controls
+  const validateBtn = document.getElementById('btn-validate');
+  if (validateBtn) {
+    validateBtn.onclick = showValidationResults;
+  }
+  
+  // Setup undo/redo controls
+  const undoBtn = document.getElementById('btn-undo');
+  const redoBtn = document.getElementById('btn-redo');
+  
+  if (undoBtn) {
+    undoBtn.onclick = undo;
+  }
+  
+  if (redoBtn) {
+    redoBtn.onclick = redo;
+  }
+  
+  // Setup export/import controls
+  const exportBtn = document.getElementById('btn-export');
+  const importBtn = document.getElementById('btn-import');
+  const importFile = document.getElementById('import-file');
+  
+  if (exportBtn) {
+    exportBtn.onclick = exportCourse;
+  }
+  
+  if (importBtn) {
+    importBtn.onclick = importCourse;
+  }
+  
+  if (importFile) {
+    importFile.onchange = handleImportFile;
+  }
+  
+  // Setup collaboration controls
+  const addCommentBtn = document.getElementById('btn-add-comment');
+  const viewCommentsBtn = document.getElementById('btn-view-comments');
+  
+  if (addCommentBtn) {
+    addCommentBtn.onclick = addComment;
+  }
+  
+  if (viewCommentsBtn) {
+    viewCommentsBtn.onclick = viewComments;
+  }
+  
+  // Setup keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    // Ctrl+Z for undo
+    if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      undo();
+    }
+    // Ctrl+Y or Ctrl+Shift+Z for redo
+    if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'z')) {
+      e.preventDefault();
+      redo();
+    }
+  });
 }
 
 // --- YAML editor (delegated to YamlEditor module) ---
@@ -680,6 +1145,9 @@ async function loadTheme(id) {
     if (renderer && renderer.theme && renderer.theme.installChrome) renderer.theme.installChrome(courseData);
     updateFocusStatus();
     applyLeaderFocus();
+    
+    // Setup help system
+    setupHelpSystem();
   } catch (err) {
     console.error('failed to load course data', err);
     document.getElementById('summary').textContent = 'Error loading course';

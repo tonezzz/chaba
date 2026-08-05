@@ -14,15 +14,122 @@
 <body class="bg-bg">
   <div id="app-nav"></div>
 
+  <!-- Help Button -->
+  <button id="help-button" class="help-button" title="Help">?</button>
+
+  <!-- Help Modal -->
+  <div id="help-modal" class="help-modal">
+    <div class="help-modal-content">
+      <div class="help-modal-header">
+        <h2 class="help-modal-title">Race Manager Help</h2>
+        <button class="help-modal-close" id="help-modal-close">&times;</button>
+      </div>
+      
+      <div class="help-modal-section">
+        <h3>Getting Started</h3>
+        <p>Welcome to Race Manager! This tool helps you create, edit, and simulate race courses for sailing competitions.</p>
+        <ul>
+          <li>Use the <strong>COURSE</strong> tab to view course information and manage markers</li>
+          <li>Use the <strong>MAP</strong> tab to toggle course elements visibility</li>
+          <li>Use the <strong>SECTIONS</strong> tab to manage race sections and their properties</li>
+          <li>Use the <strong>SIM</strong> tab to configure wind and run race simulations</li>
+          <li>Use the <strong>YAML</strong> tab to edit course configuration directly</li>
+        </ul>
+      </div>
+
+      <div class="help-modal-section">
+        <h3>Marker Management</h3>
+        <p>Markers define the key points of your race course:</p>
+        <ul>
+          <li><strong>Add Marker:</strong> Click "+ Add Marker" to create a new marker at map center</li>
+          <li><strong>Select Marker:</strong> Click on a marker in the list or on the map to select it</li>
+          <li><strong>Delete Marker:</strong> Select a marker and click "Delete Selected" to remove it</li>
+          <li><strong>Move Marker:</strong> Drag markers on the map to reposition them</li>
+        </ul>
+      </div>
+
+      <div class="help-modal-section">
+        <h3>Section Editing</h3>
+        <p>Sections define the race path between markers:</p>
+        <ul>
+          <li><strong>Edit Section:</strong> Click "Edit" next to a section to modify its properties</li>
+          <li><strong>Width:</strong> Adjust the corridor width for the section (1-100m)</li>
+          <li><strong>Color:</strong> Choose a color to highlight the section on the map</li>
+          <li><strong>Rounding:</strong> Set the rounding direction (starboard/port) for buoy sections</li>
+        </ul>
+      </div>
+
+      <div class="help-modal-section">
+        <h3>Course Validation</h3>
+        <p>Ensure your course is properly configured:</p>
+        <ul>
+          <li>Click "Validate Course" to check for errors and warnings</li>
+          <li>Validation checks marker coordinates, references, and orphaned markers</li>
+          <li>Results are shown in notifications and logged to the console</li>
+        </ul>
+      </div>
+
+      <div class="help-modal-section">
+        <h3>Undo/Redo</h3>
+        <p>Easily revert changes with undo/redo functionality:</p>
+        <ul>
+          <li><strong>Undo:</strong> Click "Undo" or press <kbd>Ctrl+Z</kbd></li>
+          <li><strong>Redo:</strong> Click "Redo" or press <kbd>Ctrl+Y</kbd></li>
+          <li>Up to 50 states are saved in history</li>
+        </ul>
+      </div>
+
+      <div class="help-modal-section">
+        <h3>Keyboard Shortcuts</h3>
+        <ul>
+          <li><kbd>Ctrl+Z</kbd> - Undo last action</li>
+          <li><kbd>Ctrl+Y</kbd> - Redo last action</li>
+          <li><kbd>Ctrl+Shift+Z</kbd> - Redo last action (alternative)</li>
+          <li><kbd>L</kbd> - Toggle leader focus in simulation</li>
+        </ul>
+      </div>
+
+      <div class="help-modal-section">
+        <h3>Simulation</h3>
+        <p>Run realistic race simulations:</p>
+        <ul>
+          <li>Configure wind direction, speed, and gust factor</li>
+          <li>Set number of racers and simulation speed</li>
+          <li>Click "Start" to begin the simulation</li>
+          <li>Use "Focus Leader" to track the leading boat</li>
+        </ul>
+      </div>
+
+      <div class="help-modal-footer">
+        <button class="btn-secondary" id="start-tour">Start Guided Tour</button>
+        <button class="btn-primary" id="help-modal-ok">Got it!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tour Overlay -->
+  <div id="tour-overlay" class="tour-overlay"></div>
+
+  <!-- Tour Tooltip -->
+  <div id="tour-tooltip" class="tour-tooltip" style="display: none;">
+    <h4 id="tour-title">Tour Title</h4>
+    <p id="tour-description">Tour description goes here</p>
+    <div class="tour-tooltip-buttons">
+      <button class="btn-skip" id="tour-skip">Skip Tour</button>
+      <button class="btn-prev" id="tour-prev" style="display: none;">Previous</button>
+      <button class="btn-next" id="tour-next">Next</button>
+    </div>
+  </div>
+
   <div class="relative">
     <div id="map"></div>
     <div class="course-panel bg-card/95 border border-gray-700 rounded-lg p-4 shadow-lg w-80 text-sm">
       <div class="flex gap-2 mb-3">
-        <button id="tab-course" class="flex-1 px-2 py-1 text-xs rounded bg-gray-800 text-gray-300">COURSE</button>
-        <button id="tab-map" class="flex-1 px-2 py-1 text-xs rounded bg-gray-800 text-gray-300">MAP</button>
-        <button id="tab-sections" class="flex-1 px-2 py-1 text-xs rounded bg-gray-800 text-gray-300">SECTIONS</button>
-        <button id="tab-sim" class="flex-1 px-2 py-1 text-xs rounded bg-gray-700 text-white">SIM</button>
-        <button id="tab-yaml" class="flex-1 px-2 py-1 text-xs rounded bg-gray-800 text-gray-300">YAML</button>
+        <button id="tab-course" class="flex-1 px-2 py-1 text-xs rounded bg-gray-800 text-gray-300 tooltip" title="View course information and manage markers">COURSE</button>
+        <button id="tab-map" class="flex-1 px-2 py-1 text-xs rounded bg-gray-800 text-gray-300 tooltip" title="Toggle course elements visibility">MAP</button>
+        <button id="tab-sections" class="flex-1 px-2 py-1 text-xs rounded bg-gray-800 text-gray-300 tooltip" title="Manage race sections and properties">SECTIONS</button>
+        <button id="tab-sim" class="flex-1 px-2 py-1 text-xs rounded bg-gray-700 text-white tooltip" title="Configure wind and run race simulation">SIM</button>
+        <button id="tab-yaml" class="flex-1 px-2 py-1 text-xs rounded bg-gray-800 text-gray-300 tooltip" title="Edit course configuration in YAML">YAML</button>
       </div>
 
       <div id="tab-course-content" class="hidden">
@@ -36,35 +143,48 @@
         <div class="border-t border-gray-700 pt-2 mb-3">
           <h3 class="font-semibold text-white text-xs mb-2">Marker Management</h3>
           <div class="flex gap-1 mb-2">
-            <button id="btn-add-marker" class="flex-1 px-2 py-1 text-xs rounded bg-green-700 text-white">+ Add Marker</button>
-            <button id="btn-delete-marker" class="flex-1 px-2 py-1 text-xs rounded bg-red-700 text-white">Delete Selected</button>
+            <button id="btn-add-marker" class="flex-1 px-2 py-1 text-xs rounded bg-green-700 text-white tooltip" title="Add new marker at map center">+ Add Marker</button>
+            <button id="btn-delete-marker" class="flex-1 px-2 py-1 text-xs rounded bg-red-700 text-white tooltip" title="Delete selected marker">Delete Selected</button>
           </div>
           <div id="markers-list" class="space-y-1 text-xs max-h-32 overflow-y-auto">Loading...</div>
         </div>
         <div class="border-t border-gray-700 pt-2 mb-3">
+          <h3 class="font-semibold text-white text-xs mb-2">Collaboration</h3>
+          <div class="flex gap-1 mb-2">
+            <button id="btn-add-comment" class="flex-1 px-2 py-1 text-xs rounded bg-purple-700 text-white tooltip" title="Add comment to selected marker">+ Add Comment</button>
+            <button id="btn-view-comments" class="flex-1 px-2 py-1 text-xs rounded bg-gray-700 text-white tooltip" title="View all comments">View Comments</button>
+          </div>
+          <div id="comments-list" class="space-y-1 text-xs max-h-24 overflow-y-auto hidden">No comments</div>
+        </div>
+        <div class="border-t border-gray-700 pt-2 mb-3">
           <h3 class="font-semibold text-white text-xs mb-2">Undo / Redo</h3>
           <div class="flex gap-1 mb-2">
-            <button id="btn-undo" class="flex-1 px-2 py-1 text-xs rounded bg-gray-700 text-white">Undo (Ctrl+Z)</button>
-            <button id="btn-redo" class="flex-1 px-2 py-1 text-xs rounded bg-gray-700 text-white">Redo (Ctrl+Y)</button>
+            <button id="btn-undo" class="flex-1 px-2 py-1 text-xs rounded bg-gray-700 text-white tooltip" title="Undo last action (Ctrl+Z)">Undo (Ctrl+Z)</button>
+            <button id="btn-redo" class="flex-1 px-2 py-1 text-xs rounded bg-gray-700 text-white tooltip" title="Redo last action (Ctrl+Y)">Redo (Ctrl+Y)</button>
           </div>
         </div>
         <div class="border-t border-gray-700 pt-3">
           <h3 class="font-semibold text-white text-xs mb-2">Course Validation</h3>
-          <button id="btn-validate" class="w-full px-2 py-1 text-xs rounded bg-blue-700 text-white">Validate Course</button>
+          <button id="btn-validate" class="w-full px-2 py-1 text-xs rounded bg-blue-700 text-white tooltip" title="Check course for errors and warnings">Validate Course</button>
           <div id="validation-msg" class="text-xs text-accent min-h-[1em] mt-2"></div>
         </div>
         <div class="border-t border-gray-700 pt-3">
           <h3 class="font-semibold text-white text-xs mb-2">Save / Load</h3>
           <div class="flex gap-1 mb-2">
-            <input id="course-name" type="text" placeholder="name" class="flex-1 px-2 py-1 text-xs rounded bg-gray-800 border border-gray-600 text-white" value="">
-            <button id="btn-save" class="px-2 py-1 text-xs rounded bg-accent text-white">Save</button>
+            <input id="course-name" type="text" placeholder="name" class="flex-1 px-2 py-1 text-xs rounded bg-gray-800 border border-gray-600 text-white tooltip" title="Course name for saving" value="">
+            <button id="btn-save" class="px-2 py-1 text-xs rounded bg-accent text-white tooltip" title="Save course to server">Save</button>
           </div>
           <div class="flex gap-1 mb-2">
-            <select id="course-select" class="flex-1 px-2 py-1 text-xs rounded bg-gray-800 border border-gray-600 text-white">
+            <select id="course-select" class="flex-1 px-2 py-1 text-xs rounded bg-gray-800 border border-gray-600 text-white tooltip" title="Select course to load">
               <option value="">Load course...</option>
             </select>
-            <button id="btn-load" class="px-2 py-1 text-xs rounded bg-gray-700 text-white">Load</button>
+            <button id="btn-load" class="px-2 py-1 text-xs rounded bg-gray-700 text-white tooltip" title="Load selected course">Load</button>
           </div>
+          <div class="flex gap-1 mb-2">
+            <button id="btn-export" class="flex-1 px-2 py-1 text-xs rounded bg-purple-700 text-white tooltip" title="Export course as YAML file">Export</button>
+            <button id="btn-import" class="flex-1 px-2 py-1 text-xs rounded bg-purple-700 text-white tooltip" title="Import course from YAML file">Import</button>
+          </div>
+          <input id="import-file" type="file" accept=".yml,.yaml" class="hidden">
           <div id="course-msg" class="text-xs text-accent min-h-[1em]"></div>
         </div>
       </div>
@@ -88,7 +208,7 @@
       <div id="tab-sim-content">
         <h3 class="font-semibold text-white text-xs mb-2">Race Simulation</h3>
         <div class="space-y-2 mb-3 text-xs">
-          <label class="flex items-center gap-2 cursor-pointer"><input id="toggle-focus-leader" type="checkbox" checked class="accent-accent"> Focus Leader (L)</label>
+          <label class="flex items-center gap-2 cursor-pointer"><input id="toggle-focus-leader" type="checkbox" checked class="accent-accent tooltip" title="Track the leading boat (L)"> Focus Leader (L)</label>
           <div id="focus-status" class="text-accent text-xs"></div>
         </div>
         <div class="border-t border-gray-700 pt-2 mb-3">
@@ -98,7 +218,7 @@
               <span>Direction</span>
               <span id="wind-direction-value" class="text-accent">180°</span>
             </div>
-            <input id="wind-direction" type="range" min="0" max="360" value="180" class="w-full accent-accent">
+            <input id="wind-direction" type="range" min="0" max="360" value="180" class="w-full accent-accent tooltip" title="Set wind direction (0-360 degrees)">
             <div class="flex items-center justify-between">
               <span id="wind-direction-label" class="text-gray-400">S</span>
               <span>Compass</span>
@@ -107,22 +227,22 @@
               <span>Speed</span>
               <span id="wind-speed-value" class="text-accent">15</span>
             </div>
-            <input id="wind-speed" type="range" min="5" max="30" value="15" class="w-full accent-accent">
+            <input id="wind-speed" type="range" min="5" max="30" value="15" class="w-full accent-accent tooltip" title="Set wind speed (5-30 knots)">
             <div class="flex items-center justify-between mt-2">
               <span>Gust Factor</span>
               <span id="wind-gust-value" class="text-accent">0.20</span>
             </div>
-            <input id="wind-gust" type="range" min="0" max="0.5" step="0.05" value="0.2" class="w-full accent-accent">
-            <button id="apply-wind" class="w-full mt-2 px-2 py-1 text-xs rounded bg-accent text-white">Apply Wind</button>
+            <input id="wind-gust" type="range" min="0" max="0.5" step="0.05" value="0.2" class="w-full accent-accent tooltip" title="Set wind gust variability (0-0.5)">
+            <button id="apply-wind" class="w-full mt-2 px-2 py-1 text-xs rounded bg-accent text-white tooltip" title="Apply wind configuration to simulation">Apply Wind</button>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-2 mb-3">
-          <button id="sim-start" class="px-2 py-1 text-xs rounded bg-green-700 text-white">Start</button>
-          <button id="sim-reset" class="px-2 py-1 text-xs rounded bg-gray-700 text-white">Reset</button>
+          <button id="sim-start" class="px-2 py-1 text-xs rounded bg-green-700 text-white tooltip" title="Start race simulation">Start</button>
+          <button id="sim-reset" class="px-2 py-1 text-xs rounded bg-gray-700 text-white tooltip" title="Reset simulation to initial state">Reset</button>
         </div>
         <div class="space-y-2 mb-3 text-xs">
-          <label class="flex items-center justify-between">Racers <input id="sim-racers" type="range" min="2" max="10" value="10" class="accent-accent"></label>
-          <label class="flex items-center justify-between">Speed <input id="sim-speed" type="range" min="0.5" max="3" step="0.5" value="1" class="accent-accent"></label>
+          <label class="flex items-center justify-between tooltip" title="Number of boats in simulation">Racers <input id="sim-racers" type="range" min="2" max="10" value="10" class="accent-accent"></label>
+          <label class="flex items-center justify-between tooltip" title="Simulation speed multiplier">Speed <input id="sim-speed" type="range" min="0.5" max="3" step="0.5" value="1" class="accent-accent"></label>
         </div>
         <div id="sim-standings" class="space-y-1 text-xs">Press Start to simulate</div>
       </div>
