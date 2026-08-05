@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading UI - Wick Integration</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Trading Dashboard</h1>
+            <div class="header-controls">
+                <select id="asset-selector" class="asset-selector">
+                    <option value="THB" selected>USD/THB</option>
+                    <option value="EUR">EUR/USD</option>
+                    <option value="GBP">GBP/USD</option>
+                    <option value="JPY">USD/JPY</option>
+                    <option value="DXY">Dollar Index</option>
+                    <option value="GOLD">Gold</option>
+                    <option value="OIL">Oil</option>
+                </select>
+                <select id="period-selector" class="period-selector">
+                    <option value="1m">1 Month</option>
+                    <option value="3m">3 Months</option>
+                    <option value="6m">6 Months</option>
+                    <option value="1y" selected>1 Year</option>
+                    <option value="2y">2 Years</option>
+                </select>
+                <button id="refresh-btn" class="btn btn-primary">Refresh</button>
+                <button id="add-marker-btn" class="btn btn-secondary">Add Marker</button>
+                <button id="clear-markers-btn" class="btn btn-secondary">Clear Markers</button>
+            </div>
+        </header>
+
+        <div class="dashboard-grid">
+            <!-- Price Ticker Section -->
+            <div class="card price-ticker-card">
+                <h2>Price Ticker</h2>
+                <div id="price-ticker" class="price-ticker">
+                    <div class="ticker-item">
+                        <span class="ticker-symbol">USD/THB</span>
+                        <span class="ticker-price" id="ticker-thb">--</span>
+                        <span class="ticker-change" id="ticker-thb-change">--</span>
+                    </div>
+                    <div class="ticker-item">
+                        <span class="ticker-symbol">EUR/USD</span>
+                        <span class="ticker-price" id="ticker-eur">--</span>
+                        <span class="ticker-change" id="ticker-eur-change">--</span>
+                    </div>
+                    <div class="ticker-item">
+                        <span class="ticker-symbol">GBP/USD</span>
+                        <span class="ticker-price" id="ticker-gbp">--</span>
+                        <span class="ticker-change" id="ticker-gbp-change">--</span>
+                    </div>
+                    <div class="ticker-item">
+                        <span class="ticker-symbol">USD/JPY</span>
+                        <span class="ticker-price" id="ticker-jpy">--</span>
+                        <span class="ticker-change" id="ticker-jpy-change">--</span>
+                    </div>
+                    <div class="ticker-item">
+                        <span class="ticker-symbol">DXY</span>
+                        <span class="ticker-price" id="ticker-dxy">--</span>
+                        <span class="ticker-change" id="ticker-dxy-change">--</span>
+                    </div>
+                    <div class="ticker-item">
+                        <span class="ticker-symbol">GOLD</span>
+                        <span class="ticker-price" id="ticker-gold">--</span>
+                        <span class="ticker-change" id="ticker-gold-change">--</span>
+                    </div>
+                    <div class="ticker-item">
+                        <span class="ticker-symbol">OIL</span>
+                        <span class="ticker-price" id="ticker-oil">--</span>
+                        <span class="ticker-change" id="ticker-oil-change">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Candlestick Chart Section -->
+            <div class="card chart-card">
+                <h2>Candlestick Chart</h2>
+                <div id="candlestick-chart" class="chart-container"></div>
+                <div class="chart-controls">
+                    <button class="chart-control-btn active" data-type="candlestick">Candles</button>
+                    <button class="chart-control-btn" data-type="line">Line</button>
+                    <button class="chart-control-btn" data-type="area">Area</button>
+                </div>
+            </div>
+
+            <!-- Depth Chart Section -->
+            <div class="card depth-card">
+                <h2>Market Depth</h2>
+                <div id="depth-chart" class="chart-container"></div>
+                <div class="depth-info">
+                    <div class="depth-stat">
+                        <span class="depth-label">Bid Volume:</span>
+                        <span class="depth-value" id="bid-volume">--</span>
+                    </div>
+                    <div class="depth-stat">
+                        <span class="depth-label">Ask Volume:</span>
+                        <span class="depth-value" id="ask-volume">--</span>
+                    </div>
+                    <div class="depth-stat">
+                        <span class="depth-label">Spread:</span>
+                        <span class="depth-value" id="spread-value">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trade Feed Section -->
+            <div class="card trade-feed-card">
+                <h2>Recent Trades</h2>
+                <div id="trade-feed" class="trade-feed">
+                    <div class="trade-header">
+                        <span>Price</span>
+                        <span>Size</span>
+                        <span>Time</span>
+                    </div>
+                    <div id="trade-list" class="trade-list">
+                        <!-- Trades will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Section -->
+            <div class="card stats-card">
+                <h2>Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Open</span>
+                        <span class="stat-value" id="stat-open">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">High</span>
+                        <span class="stat-value" id="stat-high">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Low</span>
+                        <span class="stat-value" id="stat-low">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Close</span>
+                        <span class="stat-value" id="stat-close">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Volume</span>
+                        <span class="stat-value" id="stat-volume">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Change %</span>
+                        <span class="stat-value" id="stat-change">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>Data provided by Trade API | <span id="last-update">Last update: --</span></p>
+        </footer>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
