@@ -110,7 +110,10 @@ function updateSections(drawables) {
           <input type="checkbox" class="accent-toggle" data-key="${s.key}" ${checked}>
           <span class="text-white">${i + 1}. ${s.text || s.key}</span>
         </label>
-        <button class="text-accent text-xs hover:underline" data-idx="${i}">Inspect</button>
+        <div class="flex gap-2">
+          <button class="text-accent text-xs hover:underline" data-idx="${i}">Inspect</button>
+          <button class="text-green-400 text-xs hover:underline" data-key="${s.key}">Edit</button>
+        </div>
       </div>
       <div class="text-gray-400 text-xs">${s.distance != null ? s.distance.toFixed(0) + ' m' : ''}</div>
     `;
@@ -120,10 +123,14 @@ function updateSections(drawables) {
       stateManager.saveOverrides();
       render(false);
     };
-    row.querySelector('button').onclick = (e) => {
+    row.querySelector('button[data-idx]').onclick = (e) => {
       e.stopPropagation();
       const pts = s.points.map(p => [p[0], p[1]]);
       if (pts.length) map.fitBounds(L.latLngBounds(pts).pad(0.25));
+    };
+    row.querySelector('button[data-key]').onclick = (e) => {
+      e.stopPropagation();
+      editSection(s.key);
     };
     row.onclick = () => {
       leaderFocus.setManualSection(s.key);
@@ -181,12 +188,298 @@ function onMarkerDrag(id, lat, lon, duringDrag = false) {
   }
 }
 
+let selectedMarkerId = null;
+
+function onMarkerClick(id) {
+  selectedMarkerId = id;
+  updateMarkersList();
+  notificationManager.info(`Selected marker: ${id}`);
+}
+
+function addMarker() {
+  saveCurrentState(); // Save state before modification
+  
+  const newId = 'marker_' + Date.now();
+  const center = map.getCenter();
+  
+  const newMarker = {
+    id: newId,
+    lat: center.lat,
+    lon: center.lng,
+    label: 'New',
+    icon: 'default',
+    description: 'New marker'
+  };
+  
+  courseData.markers[newId] = newMarker;
+  stateManager.updateMarkerOverride(newId, { lat: center.lat, lon: center.lng });
+  
+  render(false);
+  updateMarkersList();
+  notificationManager.success(`Added marker: ${newId}`);
+}
+
+function deleteSelectedMarker() {
+  if (!selectedMarkerId) {
+    notificationManager.error('No marker selected');
+    return;
+  }
+  
+  saveCurrentState(); // Save state before modification
+  
+  delete courseData.markers[selectedMarkerId];
+  stateManager.updateMarkerOverride(selectedMarkerId, null);
+  
+  selectedMarkerId = null;
+  render(false);
+  updateMarkersList();
+  notificationManager.success(`Deleted marker: ${selectedMarkerId}`);
+}
+
+function updateMarkersList() {
+  const markersList = document.getElementById('markers-list');
+  if (!markersList) return;
+  
+  const markers = getMergedMarkers();
+  markersList.innerHTML = '';
+  
+  if (markers.length === 0) {
+    markersList.innerHTML = '<div class="text-gray-500 text-xs">No markers</div>';
+    return;
+  }
+  
+  markers.forEach(m => {
+    const row = document.createElement('div');
+    row.className = 'flex items-center justify-between p-1 rounded cursor-pointer hover:bg-gray-700';
+    if (m.id === selectedMarkerId) {
+      row.classList.add('bg-accent', 'text-white');
+    }
+    row.innerHTML = `
+      <span class="font-mono">${m.label || m.id}</span>
+      <span class="text-gray-400 text-xs">${m.lat.toFixed(4)}, ${m.lon.toFixed(4)}</span>
+    `;
+    row.onclick = () => onMarkerClick(m.id);
+    markersList.appendChild(row);
+  });
+}
+
+let editingSectionKey = null;
+
+function editSection(key) {
+  editingSectionKey = key;
+  const section = courseData.course.sections[key];
+  if (!section) return;
+  
+  const editor = document.getElementById('section-editor');
+  if (!editor) return;
+  
+  document.getElementById('edit-section-id').value = key;
+  document.getElementById('edit-section-width').value = section.width || 8;
+  document.getElementById('edit-section-color').value = section.color || '#eab308';
+  document.getElementById('edit-section-rounding').value = section.rounding || 'starboard';
+  
+  editor.classList.remove('hidden');
+  notificationManager.info(`Editing section: ${key}`);
+}
+
+function saveSection() {
+  if (!editingSectionKey) return;
+  
+  saveCurrentState(); // Save state before modification
+  
+  const section = courseData.course.sections[editingSectionKey];
+  if (!section) return;
+  
+  section.width = parseInt(document.getElementById('edit-section-width').value) || 8;
+  section.color = document.getElementById('edit-section-color').value;
+  section.rounding = document.getElementById('edit-section-rounding').value;
+  
+  const savedKey = editingSectionKey;
+  editingSectionKey = null;
+  document.getElementById('section-editor').classList.add('hidden');
+  
+  render(false);
+  notificationManager.success(`Section saved: ${savedKey}`);
+}
+
+function cancelSectionEdit() {
+  editingSectionKey = null;
+  document.getElementById('section-editor').classList.add('hidden');
+  notificationManager.info('Section edit cancelled');
+}
+
+function validateCourse() {
+  const errors = [];
+  const warnings = [];
+  
+  if (!courseData || !courseData.course) {
+    errors.push('No course data loaded');
+    return { errors, warnings, valid: false };
+  }
+  
+  const course = courseData.course;
+  const markers = courseData.markers || {};
+  
+  // Validate markers
+  const markerIds = new Set();
+  for (const [id, marker] of Object.entries(markers)) {
+    if (markerIds.has(id)) {
+      errors.push(`Duplicate marker ID: ${id}`);
+    }
+    markerIds.add(id);
+    
+    if (typeof marker.lat !== 'number' || isNaN(marker.lat)) {
+      errors.push(`Invalid latitude for marker ${id}`);
+    }
+    if (typeof marker.lon !== 'number' || isNaN(marker.lon)) {
+      errors.push(`Invalid longitude for marker ${id}`);
+    }
+    if (marker.lat < -90 || marker.lat > 90) {
+      errors.push(`Latitude out of range for marker ${id}: ${marker.lat}`);
+    }
+    if (marker.lon < -180 || marker.lon > 180) {
+      errors.push(`Longitude out of range for marker ${id}: ${marker.lon}`);
+    }
+    if (!marker.label && !marker.id) {
+      warnings.push(`Marker ${id} has no label`);
+    }
+  }
+  
+  // Validate sections
+  const sections = course.sections || {};
+  for (const [key, section] of Object.entries(sections)) {
+    if (section.type === 'arrow-area') {
+      if (!section.from || !section.to) {
+        errors.push(`Section ${key} missing from/to references`);
+      } else {
+        if (!markers[section.from] && !sections[section.from]) {
+          errors.push(`Section ${key} references invalid marker: ${section.from}`);
+        }
+        if (!markers[section.to] && !sections[section.to]) {
+          errors.push(`Section ${key} references invalid marker: ${section.to}`);
+        }
+      }
+    } else if (section.type === 'round-bouy' || section.type === 'round-buoy') {
+      const zoneKey = section.bouy || section.buoy || section.zone || section.mark;
+      if (!zoneKey) {
+        errors.push(`Section ${key} missing buoy reference`);
+      } else if (!markers[zoneKey]) {
+        errors.push(`Section ${key} references invalid marker: ${zoneKey}`);
+      }
+      if (section.width && (section.width < 1 || section.width > 100)) {
+        warnings.push(`Section ${key} has unusual width: ${section.width}m`);
+      }
+    }
+  }
+  
+  // Validate annotations
+  const annotations = course.annotations || {};
+  for (const [key, annotation] of Object.entries(annotations)) {
+    if (annotation.type === 'line') {
+      if (!annotation.from || !annotation.to) {
+        errors.push(`Annotation ${key} missing from/to references`);
+      } else if (!markers[annotation.from] || !markers[annotation.to]) {
+        errors.push(`Annotation ${key} references invalid markers`);
+      }
+    } else if (annotation.type === 'zone') {
+      if (!annotation.mark) {
+        errors.push(`Annotation ${key} missing mark reference`);
+      } else if (!markers[annotation.mark]) {
+        errors.push(`Annotation ${key} references invalid marker: ${annotation.mark}`);
+      }
+    }
+  }
+  
+  // Check for orphaned markers
+  const referencedMarkers = new Set();
+  for (const section of Object.values(sections)) {
+    if (section.from) referencedMarkers.add(section.from);
+    if (section.to) referencedMarkers.add(section.to);
+    const zoneKey = section.bouy || section.buoy || section.zone || section.mark;
+    if (zoneKey) referencedMarkers.add(zoneKey);
+  }
+  for (const annotation of Object.values(annotations)) {
+    if (annotation.from) referencedMarkers.add(annotation.from);
+    if (annotation.to) referencedMarkers.add(annotation.to);
+    if (annotation.mark) referencedMarkers.add(annotation.mark);
+  }
+  
+  for (const id of markerIds) {
+    if (!referencedMarkers.has(id)) {
+      warnings.push(`Marker ${id} is not referenced in any section or annotation`);
+    }
+  }
+  
+  const valid = errors.length === 0;
+  return { errors, warnings, valid };
+}
+
+function showValidationResults() {
+  const result = validateCourse();
+  
+  let message = '';
+  if (result.valid) {
+    message = `✅ Course is valid`;
+    if (result.warnings.length > 0) {
+      message += ` (${result.warnings.length} warning${result.warnings.length > 1 ? 's' : ''})`;
+    }
+    notificationManager.success(message);
+  } else {
+    message = `❌ Course has ${result.errors.length} error${result.errors.length > 1 ? 's' : ''}`;
+    notificationManager.error(message);
+  }
+  
+  // Show details in console
+  console.log('Course Validation Results:', result);
+  
+  return result;
+}
+
+function saveCurrentState() {
+  const state = {
+    markers: JSON.parse(JSON.stringify(courseData.markers)),
+    sections: JSON.parse(JSON.stringify(courseData.course.sections)),
+    annotations: JSON.parse(JSON.stringify(courseData.course.annotations))
+  };
+  dragManager.saveState(state);
+}
+
+// Expose saveCurrentState globally for CourseManager
+window.saveCurrentState = saveCurrentState;
+
+function undo() {
+  const previousState = dragManager.undo();
+  if (previousState) {
+    courseData.markers = previousState.markers;
+    courseData.course.sections = previousState.sections;
+    courseData.course.annotations = previousState.annotations;
+    render(false);
+    notificationManager.info('Undo successful');
+  } else {
+    notificationManager.error('Nothing to undo');
+  }
+}
+
+function redo() {
+  const nextState = dragManager.redo();
+  if (nextState) {
+    courseData.markers = nextState.markers;
+    courseData.course.sections = nextState.sections;
+    courseData.course.annotations = nextState.annotations;
+    render(false);
+    notificationManager.info('Redo successful');
+  } else {
+    notificationManager.error('Nothing to redo');
+  }
+}
+
 function render(fit = false) {
   const markers = getMergedMarkers();
   renderer.hidden = stateManager.getHidden();
-  const g = renderer.draw(courseData.course, markers, { onDrag: onMarkerDrag, fit });
+  const g = renderer.draw(courseData.course, markers, { onDrag: onMarkerDrag, onClick: onMarkerClick, fit });
   updatePanel(courseData.course, g);
   updateSections(renderer.lastDrawables);
+  updateMarkersList();
 }
 
 function setupToggles() {
@@ -366,6 +659,10 @@ async function loadTheme(id) {
     
     // Load wind configuration from course YAML
     windSystem.loadFromCourse(courseData);
+    
+    // Save initial state for undo/redo
+    saveCurrentState();
+    
     let ThemeClass = DefaultTheme;
     if (themeId !== 'default') {
       try { ThemeClass = await loadTheme(themeId); } catch (e) { console.warn('theme load failed', e); }

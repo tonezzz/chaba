@@ -397,7 +397,7 @@ class CourseRenderer {
     // Use requestAnimationFrame for smooth rendering
     requestAnimationFrame(() => {
       for (const d of visibleDrawables) {
-        this.theme.drawOne(d, this, options.onDrag);
+        this.theme.drawOne(d, this, options.onDrag, options.onClick);
       }
     });
     
