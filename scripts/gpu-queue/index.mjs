@@ -120,13 +120,6 @@ async function handleRequest(req, res) {
       return;
     }
 
-    // GET /health - Health check
-    if (path[0] === 'health' && method === 'GET') {
-      const health = await monitoring.getQueueHealth();
-      sendJson(res, 200, health);
-      return;
-    }
-
     // GET /api/gpu-queue/monitoring/health - Detailed health check
     if (path[0] === 'api' && path[1] === 'gpu-queue' && path[2] === 'monitoring' && path[3] === 'health' && method === 'GET') {
       const health = await monitoring.getQueueHealth();
@@ -156,6 +149,13 @@ async function handleRequest(req, res) {
       return;
     }
 
+    // GET /health - Health check
+    if (path[0] === 'health' && method === 'GET') {
+      const health = await monitoring.getQueueHealth();
+      sendJson(res, 200, health);
+      return;
+    }
+
     // 404 for unknown paths
     sendJson(res, 404, { error: 'Not found' });
   } catch (error) {
@@ -176,6 +176,10 @@ server.listen(PORT, HOST, () => {
   console.log('  GET    /api/gpu-queue/jobs/:id    - Get job status');
   console.log('  DELETE /api/gpu-queue/jobs/:id    - Cancel job');
   console.log('  GET    /api/gpu-queue/status      - Queue status');
+  console.log('  GET    /api/gpu-queue/monitoring/health      - Monitoring health');
+  console.log('  GET    /api/gpu-queue/monitoring/performance  - Monitoring performance');
+  console.log('  GET    /api/gpu-queue/monitoring/activity     - Monitoring activity');
+  console.log('  GET    /api/gpu-queue/monitoring/overview     - Monitoring overview');
   console.log('  GET    /health                    - Health check');
   console.log('');
   console.log('Note: Queue processor disabled. Use orchestrator.mjs to process jobs with MCP tools.');
