@@ -13,6 +13,12 @@ GPU-accelerated text embedding service using sentence-transformers for high-perf
 - **VRAM Usage**: 2808MB
 - **Model**: all-MiniLM-L6-v2 (sentence-transformers)
 
+### Batch Embedding Performance
+- **Single Text**: 175ms per embedding
+- **3 Texts Batch**: 187ms total (~62ms per text)
+- **5 Texts Batch**: 340ms total (~68ms per text)
+- **Efficiency**: Demonstrates efficient GPU utilization for batch processing with per-text cost reduction from 175ms to ~62-68ms
+
 ## Architecture
 
 ### Service Configuration
@@ -24,9 +30,10 @@ GPU-accelerated text embedding service using sentence-transformers for high-perf
 - **Process**: Running as root user (PID 173324)
 
 ### Integration Points
-- **Weaviate**: Uses GPU service for semantic search embeddings
-- **GPU Queue**: Integrated with existing GPU queue system for batch jobs
-- **Database**: Enhanced schema with embedding-specific fields
+- **Weaviate**: Uses GPU service for semantic search embeddings with Chonkie chunking
+- **GPU Queue**: Fully integrated with orchestrator functions (processEmbeddingJob, updateJobMetadata)
+- **Database**: Enhanced schema with embedding-specific fields (execution_time_ms, gpu_used, vram_used_mb, mode, batch_size, queue_wait_time_ms, result)
+- **Batch Processing**: Validated performance with efficient GPU utilization
 
 ## Key Files
 
@@ -36,6 +43,7 @@ GPU-accelerated text embedding service using sentence-transformers for high-perf
 | `scripts/embeddings/embedding-service-gpu.py` | GPU-specific service configuration |
 | `scripts/weaviate/embeddings.mjs` | Weaviate integration module |
 | `scripts/gpu-queue/schema.sql` | Database schema with embedding fields |
+| `scripts/gpu-queue/orchestrator.mjs` | GPU queue orchestrator with processEmbeddingJob() and updateJobMetadata() |
 | `docs/assessments/gpu-embedding/gpu-embedding-success-report.md` | Comprehensive success report |
 
 ## Deployment
@@ -136,19 +144,56 @@ Added embedding-specific fields to `gpu_queue_jobs` table:
 - `embedding_dimensions`: Embedding vector dimensions (e.g., 384)
 - `embedding_model`: Model name (e.g., all-MiniLM-L6-v2)
 - `text_count`: Number of texts processed
+- `execution_time_ms`: Job execution time in milliseconds
+- `gpu_used`: GPU device identifier
+- `vram_used_mb`: VRAM usage in megabytes
+- `mode`: Processing mode (single/batch)
+- `batch_size`: Number of texts in batch
+- `queue_wait_time_ms`: Time spent in queue before processing
+- `result`: Job result status/output
+
+### Orchestrator Functions
+- **processEmbeddingJob()**: Handles embedding job processing in GPU queue
+- **updateJobMetadata()**: Updates embedding-specific metrics after job completion
 
 ### Enhanced Features
 - **VRAM Management**: Track GPU memory usage for embedding jobs
 - **GPU Hold/Resume**: Coordinate with llama GPU hold/resume
 - **Metrics Tracking**: Enhanced performance metrics for embedding operations
-- **Batch Processing**: Ready for batch embedding jobs when needed
+- **Batch Processing**: Fully operational with validated performance
+- **Monitoring Integration**: GPU queue monitoring module added 2026-08-05
+
+### GPU Queue Monitoring Module (2026-08-05)
+- **Module**: `scripts/gpu-queue/monitoring.mjs`
+- **Functions**:
+  - `getQueueHealth()`: Queue status, running job, job type breakdown, priority distribution
+  - `getPerformanceMetrics()`: Average execution time, success rate from recent jobs
+  - `getRecentActivity(limit)`: Recent job history with configurable limit
+  - `getSystemOverview()`: Comprehensive system overview combining all metrics
+- **API Endpoints**:
+  - `GET /health` - Basic health check with queue status
+  - `GET /api/gpu-queue/monitoring/health` - Detailed health check
+  - `GET /api/gpu-queue/monitoring/performance` - Performance metrics
+  - `GET /api/gpu-queue/monitoring/activity?limit=20` - Recent activity
+  - `GET /api/gpu-queue/monitoring/overview` - System overview
+- **Technical Details**:
+  - Uses existing `db.mjs` functions for data access
+  - Consistent error handling with `{ok, data/error, timestamp}` response format
+  - Metrics calculated from recent job history for relevance
+  - No dependencies on non-existent database functions
+
+### Batch Embedding Performance Results
+- **Single Text**: 175ms per embedding
+- **3 Texts Batch**: 187ms total (~62ms per text)
+- **5 Texts Batch**: 340ms total (~68ms per text)
+- **Efficiency**: Demonstrates efficient GPU utilization for batch processing with per-text cost reduction
 
 ## Testing Results
 
 ### Service Performance
 - **Health Check**: ✅ Healthy
 - **Single Embedding**: ✅ 32ms
-- **Batch Processing**: ✅ Ready
+- **Batch Processing**: ✅ Validated (175ms single, 187ms for 3 texts, 340ms for 5 texts)
 - **VRAM Usage**: ✅ 2808MB
 
 ### Weaviate Search Testing

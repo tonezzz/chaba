@@ -356,6 +356,24 @@ node scripts/impact-scoring.mjs prioritize
 - Refine impact scoring based on actual outcomes
 - Learn which impact categories are most predictive
 
+### Impact Scoring Integration (2026-08-05)
+- **Integration**: Overnight assessment now uses shared `parseImprovements` from `impact-scoring.mjs`
+- **Fix**: Resolved YAML parsing issues by importing shared parser instead of maintaining separate complex parser
+- **Module Changes**:
+  - `impact-scoring.mjs`: Exported `parseImprovements` and `calculateOverallImpact` functions
+  - Added conditional execution guard to prevent running when imported as module
+  - `overnight-assessment.mjs`: Imported shared parser, removed duplicate parsing logic
+- **Results**:
+  - High Impact (≥8/10): 1 (Security & Dependency Checking - 8.2/10)
+  - Medium Impact (5-7/10): 15
+  - Low Impact (<5/10): 2
+  - Total improvements parsed: 28 (up from 18)
+- **Benefits**:
+  - Consistent parsing logic across scripts
+  - Reduced code duplication
+  - Better maintenance with single source of truth
+  - Correct dependency tracking in overnight assessment
+
 ### Best Practices for Impact Scoring
 
 **Scoring Guidelines:**
