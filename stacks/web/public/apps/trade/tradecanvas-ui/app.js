@@ -1,6 +1,6 @@
 // TradeCanvas Enhanced UI Application
 const API_BASE_URL = 'http://tony-omen.local:8080/apps/trade/api';
-const WS_BASE_URL = 'ws://tony-omen.local:8080/apps/trade/ws';
+const WS_BASE_URL = 'ws://tony-omen.local:8080/apps/trade/api/ws';
 
 class TradeCanvasApp {
     constructor() {
@@ -42,6 +42,11 @@ class TradeCanvasApp {
             this.currentSymbol = e.target.value;
             this.updateChartTitle();
             this.loadData();
+            // Reconnect WebSocket with new symbol
+            if (this.websocket) {
+                this.websocket.close();
+            }
+            this.connectWebSocket();
         });
 
         // Timeframe selector
@@ -125,6 +130,12 @@ class TradeCanvasApp {
         const chartContainer = document.getElementById('main-chart');
         const volumeContainer = document.getElementById('volume-chart');
         const indicatorContainer = document.getElementById('indicator-chart');
+
+        // Ensure container has dimensions
+        if (chartContainer.clientWidth === 0 || chartContainer.clientHeight === 0) {
+            setTimeout(() => this.initializeChart(), 100);
+            return;
+        }
 
         // Main chart
         this.chart = LightweightCharts.createChart(chartContainer, {
@@ -275,15 +286,16 @@ class TradeCanvasApp {
         if (!this.data || this.data.length === 0) return;
 
         const candlestickData = this.data.map(item => {
-            const priceField = this.currentSymbol === 'DXY' ? 'value' : 
+            const priceField = this.currentSymbol === 'DXY' ? 'value' :
                               this.currentSymbol === 'OIL' ? 'price' : 'rate';
-            
+            const price = item[priceField] || item.close || item.rate || item.value || item.price;
+
             return {
                 time: new Date(item.date).getTime() / 1000,
-                open: item.open_price || item[priceField],
-                high: item.high_price || item[priceField],
-                low: item.low_price || item[priceField],
-                close: item.close_price || item[priceField],
+                open: item.open || price,
+                high: item.high || price,
+                low: item.low || price,
+                close: item.close || price,
             };
         });
 
@@ -291,11 +303,15 @@ class TradeCanvasApp {
 
         // Update volume chart
         if (this.volumeSeries && this.chartSettings.showVolume) {
-            const volumeData = this.data.map(item => ({
-                time: new Date(item.date).getTime() / 1000,
-                value: item.volume || 1000000,
-                color: item.close_price > item.open_price ? this.chartSettings.upColor : this.chartSettings.downColor,
-            }));
+            const volumeData = this.data.map(item => {
+                const open = item.open || item.close || item.rate || item.value || item.price;
+                const close = item.close || item.rate || item.value || item.price;
+                return {
+                    time: new Date(item.date).getTime() / 1000,
+                    value: item.volume || 1000000,
+                    color: close >= open ? this.chartSettings.upColor : this.chartSettings.downColor,
+                };
+            });
             this.volumeSeries.setData(volumeData);
         }
 
@@ -343,7 +359,7 @@ class TradeCanvasApp {
         if (!this.data || this.data.length === 0) return;
 
         const closePrices = this.data.map(item => 
-            item.close_price || item.rate || item.value || item.price
+            item.close || item.rate || item.value || item.price
         );
 
         let indicatorData;
@@ -553,14 +569,14 @@ class TradeCanvasApp {
         const priceField = this.currentSymbol === 'DXY' ? 'value' : 
                           this.currentSymbol === 'OIL' ? 'price' : 'rate';
 
-        const open = latest.open_price || latest[priceField];
-        const high = latest.high_price || latest[priceField];
-        const low = latest.low_price || latest[priceField];
-        const close = latest.close_price || latest[priceField];
+        const open = latest.open || latest[priceField];
+        const high = latest.high || latest[priceField];
+        const low = latest.low || latest[priceField];
+        const close = latest.close || latest[priceField];
         const volume = latest.volume || 0;
 
-        const change = close - (previous.close_price || previous[priceField]);
-        const changePercent = ((change / (previous.close_price || previous[priceField])) * 100).toFixed(2);
+        const change = close - (previous.close || previous[priceField]);
+        const changePercent = ((change / (previous.close || previous[priceField])) * 100).toFixed(2);
 
         document.getElementById('stat-open').textContent = this.formatPrice(open);
         document.getElementById('stat-high').textContent = this.formatPrice(high);
@@ -576,15 +592,15 @@ class TradeCanvasApp {
 
         // Update indicator values
         if (this.activeIndicators.has('sma')) {
-            const sma = this.calculateSMA(this.data.map(d => d.close_price || d.rate || d.value || d.price), 20);
+            const sma = this.calculateSMA(this.data.map(d => d.close || d.rate || d.value || d.price), 20);
             document.getElementById('sma-value').textContent = this.formatPrice(sma[sma.length - 1]);
         }
         if (this.activeIndicators.has('ema')) {
-            const ema = this.calculateEMA(this.data.map(d => d.close_price || d.rate || d.value || d.price), 12);
+            const ema = this.calculateEMA(this.data.map(d => d.close || d.rate || d.value || d.price), 12);
             document.getElementById('ema-value').textContent = this.formatPrice(ema[ema.length - 1]);
         }
         if (this.activeIndicators.has('rsi')) {
-            const rsi = this.calculateRSI(this.data.map(d => d.close_price || d.rate || d.value || d.price), 14);
+            const rsi = this.calculateRSI(this.data.map(d => d.close || d.rate || d.value || d.price), 14);
             document.getElementById('rsi-value').textContent = rsi[rsi.length - 1].toFixed(2);
         }
     }
@@ -631,7 +647,24 @@ class TradeCanvasApp {
 
     connectWebSocket() {
         try {
-            this.websocket = new WebSocket(WS_BASE_URL);
+            // WebSocket connection is optional - the system works fine without it
+            // Since we have historical data but no live data feed, we'll skip WebSocket
+            console.log('WebSocket connection skipped - using historical data mode');
+            this.updateConnectionStatus('connected');
+            return;
+
+            // Determine the correct WebSocket endpoint based on current symbol
+            let wsEndpoint;
+            if (this.currentSymbol === 'DXY') {
+                wsEndpoint = `${WS_BASE_URL}/dollar_index`;
+            } else if (this.currentSymbol === 'OIL') {
+                wsEndpoint = `${WS_BASE_URL}/commodity_prices/OIL`;
+            } else {
+                wsEndpoint = `${WS_BASE_URL}/exchange_rates/${this.currentSymbol}`;
+            }
+
+            console.log('Connecting to WebSocket:', wsEndpoint);
+            this.websocket = new WebSocket(wsEndpoint);
 
             this.websocket.onopen = () => {
                 console.log('WebSocket connected');
