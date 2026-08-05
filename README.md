@@ -43,10 +43,10 @@ docker run --rm --gpus all nvidia/cuda:11.8.0-base-ubuntu22.04 nvidia-smi
 
 ### Hosts
 
-| Host | IP | Role |
-|------|----|------|
-| tony-omen | 192.168.1.48 | Docker host, GPU/NVR/web server |
-| tony-dell | 192.168.1.42 | Secondary workstation / Barrier client |
+| Host | Hostname | Role |
+|------|----------|------|
+| tony-omen | tony-omen.local | Docker host, GPU/NVR/web server |
+| tony-dell | tony-dell.local | Secondary workstation / Barrier client |
 
 ### Stacks
 

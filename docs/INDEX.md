@@ -9,8 +9,10 @@ docs/
 ├── architecture/          # System architecture documentation
 ├── archive/               # Archived historical documents
 ├── assessments/           # Technology assessments and planning
+├── implementation/        # Implementation guides and reports
 ├── kb/                    # Knowledge Base (how-to guides)
 ├── overview/              # Project-specific configurations
+├── reports/               # System assessment and status reports
 ├── sessions/              # Development session archives
 └── ssot/                  # Single Source of Truth configurations
 ```
@@ -21,12 +23,16 @@ docs/
 Comprehensive guides for systems and workflows:
 
 - **[dependency-management.md](kb/dependency-management.md)** - Dependency management system for improvements
+- **[dns-resolution-libvirt-dnsmasq.md](kb/dns-resolution-libvirt-dnsmasq.md)** - DNS resolution troubleshooting (libvirt dnsmasq conflict)
+- **[e2e-test-automation-patterns.md](kb/e2e-test-automation-patterns.md)** - E2E testing patterns using Playwright
 - **[h3-pages.md](kb/h3-pages.md)** - chaba.h3 static pages deployment patterns
 - **[health-check.md](kb/health-check.md)** - Health check dashboard documentation
 - **[mcp-tools.md](kb/mcp-tools.md)** - MCP server inventory and maintenance
 - **[overnight-assessment.md](kb/overnight-assessment.md)** - Automated overnight system assessment
+- **[subagent-implementation-strategy.md](kb/subagent-implementation-strategy.md)** - Subagent creation and management patterns
 - **[weaviate.md](kb/weaviate.md)** - Weaviate vector database and Chonkie chunking
 - **[weaviate-rest-api-fix.md](kb/weaviate-rest-api-fix.md)** - Weaviate REST API implementation details
+- **[yaml-syntax-error-patterns.md](kb/yaml-syntax-error-patterns.md)** - Common YAML syntax errors and prevention
 - **[yomi-summary-corruption.md](kb/yomi-summary-corruption.md)** - Yomi summary corruption prevention and detection
 - **[yomi.md](kb/yomi.md)** - Yomi LINE web app comprehensive documentation
 
@@ -50,6 +56,18 @@ Technology evaluations and planning documents:
   - gpu-embedding-gap-analysis.md
   - gpu-embedding-revised-plan.md
   - gpu-sharing-data-collection.md
+
+### Implementation (`docs/implementation/`)
+Implementation guides and technical documentation:
+
+- **[mcp-config-sync-implementation.md](implementation/mcp-config-sync-implementation.md)** - MCP configuration synchronization implementation guide
+- **[ssot-config-manager-implementation.md](implementation/ssot-config-manager-implementation.md)** - SSOT configuration manager implementation report
+
+### Reports (`docs/reports/`)
+System assessment and status reports:
+
+- **[mcp-config-status-report.md](reports/mcp-config-status-report.md)** - MCP configuration status report
+- **[overnight-assessment-2026-08-04.md](reports/overnight-assessment-2026-08-04.md)** - Comprehensive overnight system assessment
 
 ### SSOT (`docs/ssot/`)
 Single Source of Truth configurations:
@@ -96,6 +114,7 @@ Project-specific configurations (not moved during restructuring):
 - Architecture and implementation details
 - Troubleshooting section with common issues
 - Cross-references to related SSOT files
+- Tags and metadata for categorization
 
 ### SSOT File Structure
 - Title, subtitle, and icon fields
@@ -141,6 +160,8 @@ Project-specific configurations (not moved during restructuring):
 - **scripts/overnight-assessment.mjs** - Automated system assessment
 - **scripts/dependency-graph.mjs** - Generate dependency graphs
 - **scripts/dependency-resolver.mjs** - Analyze dependencies
+- **scripts/generate-mcp-configs.py** - MCP configuration synchronization
+- **scripts/validate-configs.sh** - SSOT configuration validation
 
 ### Configuration
 - **.windsurfrules** - Project rules and conventions
