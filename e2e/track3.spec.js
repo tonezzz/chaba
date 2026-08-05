@@ -3,6 +3,9 @@ import { test, expect } from '@playwright/test';
 test('renders course with legs', async ({ page }) => {
   await page.goto('/apps/track3/', { waitUntil: 'domcontentloaded' });
 
+  // Activate the COURSE tab since it's hidden by default
+  await page.click('#tab-course');
+
   const summary = page.locator('#summary');
   await expect(summary).not.toHaveText('Loading...', { timeout: 15000 });
 
@@ -17,6 +20,10 @@ test('renders course with legs', async ({ page }) => {
 
 test('tracks dropdown is visible on hover', async ({ page }) => {
   await page.goto('/apps/track3/', { waitUntil: 'domcontentloaded' });
+  
+  // Activate the COURSE tab since it's hidden by default
+  await page.click('#tab-course');
+  
   const summary = page.locator('#summary');
   await expect(summary).not.toHaveText('Loading...', { timeout: 15000 });
 
