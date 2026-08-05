@@ -1,6 +1,6 @@
 # Gaussian Splat Files
 
-This directory contains 3D Gaussian Splat scene files for Track4 courses.
+This directory contains 3D Gaussian Splat scene files for Raceman courses.
 
 ## File Format
 
