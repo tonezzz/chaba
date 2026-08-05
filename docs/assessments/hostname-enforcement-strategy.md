@@ -1,6 +1,17 @@
 # Hostname Enforcement Strategy: tony-omen.local
 
-## Current State Analysis
+## Status: DNS RESOLVED (2026-08-05)
+
+`tony-omen.local` now reliably resolves to `192.168.1.48`.
+**Fix**: restricted Avahi daemon to `wlo1` only (`allow-interfaces=wlo1` in `/etc/avahi/avahi-daemon.conf`).
+See `docs/kb/dns-resolution-libvirt-dnsmasq.md` for full details.
+
+The previous workaround of using raw IPs instead of `.local` hostnames is no longer needed.
+Remaining raw-IP references in docs are network-reference context (host tables, subnet docs) — these are intentional and correct per workspace rules.
+
+---
+
+## Historical State Analysis (2026-08-04)
 
 ### Files with 192.168.1.48 (26 files found)
 
