@@ -199,6 +199,9 @@ async function processEmbeddingJob(job) {
   }
 }
 
+// Export functions for use by queue processor
+export { processNextJob, completeJob, getQueueStatus, processImagen2Job, processLlamaJob, processTxt2vidJob, processEmbeddingJob };
+
 // CLI interface
 const args = process.argv.slice(2);
 const command = args[0];
