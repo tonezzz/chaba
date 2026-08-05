@@ -29,24 +29,24 @@ sections:
       - label: GPU Queue & Monitoring System
         text: Cross-project GPU resource management, queue optimization, monitoring enhancements, and process management
         projects: [chaba, chaba-raceman, trade, tony-omen]
-        status: pending
+        status: active
         priority: high
         strategic_value: Critical infrastructure shared across all projects
         estimated_duration: Ongoing
         tags: [infrastructure, gpu, shared, monitoring]
         dependencies:
           - SSOT & Documentation Standards
+        current_context: Job cancellation analysis completed, critical improvements implemented (health checks, timeouts, retry logic, error classification)
       - label: SSOT & Documentation Standards
         text: SSOT structure, validation, documentation patterns, KB management, and cross-project documentation consistency
         projects: [chaba, chaba-h3, chaba-raceman, trade, tony-omen]
-        status: active
+        status: completed
         priority: medium
         strategic_value: Foundation for all project documentation and configuration management
         estimated_duration: Ongoing
         tags: [documentation, ssot, shared, standards]
         current_context: MCP config sync completed, validation patterns SSOT created, best practices guide completed - infrastructure operational
-current_context: MCP config sync completed, validation patterns SSOT created, best practices guide completed - infrastructure operational
-        
+
       - label: Subagent Framework & Automation
         text: Subagent profiles, skills development, automation patterns, cross-project agent standardization, and auto-kb workflow implementation
         projects: [chaba, chaba-raceman, trade, tony-omen]
@@ -72,9 +72,9 @@ current_context: MCP config sync completed, validation patterns SSOT created, be
         estimated_duration: 1-2 sessions
         tags: [infrastructure, chaba, completion]
         dependencies:
-          - SSOT & Documentation Standards  
+          - SSOT & Documentation Standards
       - label: Trade Subagent Implementation
-        text: Priority 1 subagents: SSOT Config Manager, Multi-Service Health Monitor, Documentation Cross-Reference Maintainer
+        text: "Priority 1 subagents: SSOT Config Manager, Multi-Service Health Monitor, Documentation Cross-Reference Maintainer"
         branch: trade
         status: pending
         priority: high
@@ -85,7 +85,7 @@ current_context: MCP config sync completed, validation patterns SSOT created, be
           - Subagent Framework & Automation
           - SSOT & Documentation Standards
         current_context: Being worked on in separate session
-          
+
       - label: Chaba-H3 Web Platform
         text: H3-specific page development, web platform maintenance, and content management
         branch: chaba-h3
@@ -94,7 +94,7 @@ current_context: MCP config sync completed, validation patterns SSOT created, be
         strategic_value: Maintains web presence for H3 project
         estimated_duration: Ongoing
         tags: [web, h3, platform]
-        
+
       - label: Raceman Course Editor Enhancement
         text: UI/UX improvements, course editing functionality, visualization enhancements, performance optimization, and E2E test maintenance
         branch: chaba-raceman
@@ -103,8 +103,8 @@ current_context: MCP config sync completed, validation patterns SSOT created, be
         strategic_value: Improves core raceman functionality, user experience, and system reliability
         estimated_duration: 2-3 sessions
         tags: [raceman, course-editor, ui-ux, enhancement, testing]
-        current_context: Visualization enhancements completed, drag-and-drop marker repositioning implemented and modularized. Next: marker creation/deletion UI, section editing interface, course validation, and E2E test expansion.
-        
+        current_context: Visualization enhancements completed, drag-and-drop marker repositioning implemented and modularized, E2E test expansion completed (40 tests passing). Next: marker creation/deletion UI, section editing interface, course validation.
+
       - label: Tony-Omen Preview Deployment
         text: Web server container deployment on tony-omen for testing & QA, providing production-like environment for final testing and validation across all projects
         branch: tony-omen
@@ -114,7 +114,8 @@ current_context: MCP config sync completed, validation patterns SSOT created, be
         estimated_duration: Ongoing
         tags: [deployment, testing, qa, production-readiness]
         dependencies:
-          - SSOT & Documentation Standards  - GPU Queue & Monitoring System
+          - SSOT & Documentation Standards
+          - GPU Queue & Monitoring System
           - Subagent Framework & Automation
 
   - title: Focus Management Rules
@@ -125,22 +126,22 @@ current_context: MCP config sync completed, validation patterns SSOT created, be
         text: Maximum 1 shared + 1 per-branch strategic focus active at any time to prevent strategic fragmentation
         enforcement: validation
         tags: [rules, focus, constraints]
-        
+
       - label: Strategic Priority Alignment
         text: High-priority strategic focuses take precedence over medium/low priorities across all branches
         enforcement: manual
         tags: [rules, priority, alignment]
-        
+
       - label: Dependency First Principle
         text: Strategic dependencies must be addressed before dependent focuses can become active
         enforcement: validation
         tags: [rules, dependencies, sequencing]
-        
+
       - label: Focus Duration Tracking
         text: Track time spent on each strategic focus to optimize resource allocation and identify bottlenecks
         enforcement: manual
         tags: [tracking, metrics, optimization]
-        
+
       - label: Strategic Handoff Documentation
         text: When switching strategic focuses, document current state, blockers, and next steps clearly
         enforcement: manual
@@ -156,7 +157,7 @@ current_context: MCP config sync completed, validation patterns SSOT created, be
         duration: 2 sessions
         outcome: 7 subagents created, 4 KB entries, 100% test pass rate
         tags: [completed, subagents, automation]
-        
+
       - label: Trade Project Assessment
         text: Comprehensive assessment of trade project for subagent opportunities
         date: 2026-08-05
@@ -191,6 +192,13 @@ current_context: MCP config sync completed, validation patterns SSOT created, be
         duration: 1 session
         outcome: Created DragManager class for centralized drag handling, created NotificationManager class for user feedback, extracted logic from renderer.js and themes/default.js, enhanced default theme with improved icons, foundation for undo/redo functionality
         tags: [completed, refactoring, raceman, modularization, code-organization]
+
+      - label: Raceman E2E Test Expansion
+        text: Expanded E2E test coverage for raceman course editor enhancements with 38 new tests across 5 test suites
+        date: 2026-08-05
+        duration: 1 session
+        outcome: Created drag-drop.spec.js (5 tests), notifications.spec.js (6 tests), responsive-design.spec.js (8 tests), wind-visualization.spec.js (9 tests), section-highlighting.spec.js (10 tests). All 40 tests passing with proper handling of course-specific features
+        tags: [completed, testing, raceman, e2e, quality-assurance]
 
 # Configuration and metadata
 config:
