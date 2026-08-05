@@ -297,3 +297,8 @@ const Course = {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = Course;
 }
+
+// Make Course available globally for browser usage
+if (typeof window !== 'undefined') {
+  window.Course = Course;
+}
