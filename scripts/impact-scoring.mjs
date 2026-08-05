@@ -130,6 +130,8 @@ function calculateOverallImpact(improvement) {
   return Math.round(overall * 10) / 10; // Round to 1 decimal place
 }
 
+export { parseImprovements, calculateOverallImpact };
+
 /**
  * Determine priority based on impact score
  */
@@ -483,5 +485,7 @@ function main() {
   }
 }
 
-// Run main function
-main();
+// Only run main() if this file is executed directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main();
+}
