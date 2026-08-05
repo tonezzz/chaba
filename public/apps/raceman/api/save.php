@@ -60,7 +60,7 @@ if (isset($data['hidden']) && is_array($data['hidden'])) {
     }
 }
 
-$dir = __DIR__ . '/../../../../apps_data/track4';
+$dir = __DIR__ . '/../../../../apps_data/raceman';
 if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
     http_response_code(500);
     echo json_encode(['error' => 'cannot create storage directory']);
@@ -69,7 +69,7 @@ if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
 
 $stateFile = $dir . '/state.json';
 
-$fh = @fopen($stateFile, 'c');
+$fh = @fopen($stateFile, 'c+');
 if ($fh === false) {
     http_response_code(500);
     echo json_encode(['error' => 'cannot open state file']);

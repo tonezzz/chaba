@@ -10,7 +10,7 @@ if ($course === '' || !preg_match('/^[a-zA-Z0-9_-]+$/', $course)) {
     exit;
 }
 
-$dir = __DIR__ . '/../../../../apps_data/track4';
+$dir = __DIR__ . '/../../../../apps_data/raceman';
 $stateFile = $dir . '/state.json';
 
 if (!is_dir($dir) || !file_exists($stateFile) || !is_readable($stateFile)) {

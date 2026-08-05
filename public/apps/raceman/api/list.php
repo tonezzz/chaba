@@ -4,7 +4,7 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 
 $coursesDir = __DIR__ . '/../courses';
-$stateFile = __DIR__ . '/../../../../apps_data/track4/state.json';
+$stateFile = __DIR__ . '/../../../../apps_data/raceman/state.json';
 
 $courses = [];
 

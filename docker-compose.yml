@@ -1,6 +1,14 @@
-version: '3.8'
-
 services:
+  raceman-php:
+    image: php:8.3-fpm
+    container_name: raceman-php
+    restart: unless-stopped
+    volumes:
+      - ./:/app
+    working_dir: /app/public
+    networks:
+      - raceman-network
+
   raceman-web:
     image: nginx:alpine
     container_name: raceman-web
@@ -8,10 +16,12 @@ services:
     ports:
       - "8083:80"
     volumes:
-      - ./public:/usr/share/nginx/html:ro
+      - ./:/app:ro
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - raceman-network
+    depends_on:
+      - raceman-php
 
 networks:
   raceman-network:
