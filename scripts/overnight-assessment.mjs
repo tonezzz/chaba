@@ -613,7 +613,7 @@ function checkImprovementsSSOT() {
   console.log('Checking improvements SSOT...');
   let content = '';
 
-  const ssotPath = '/home/tony/CascadeProjects/chaba/docs/ssot/improvements.yml';
+  const ssotPath = '/home/tony/CascadeProjects/chaba/docs/ssot/ssot.improvements.yml';
   if (existsSync(ssotPath)) {
     content += '**Improvements SSOT:** ✅ Found at ' + ssotPath + '\n\n';
     
@@ -757,10 +757,10 @@ function calculateOverallImpact(improvement) {
     cost_savings: 0.2
   };
   
-  const business = improvement.business_impact || 5;
-  const technical = improvement.technical_impact || 5;
-  const user_experience = improvement.user_experience_impact || 5;
-  const cost_savings = improvement.cost_savings_impact || 5;
+  const business = improvement.business_impact !== null ? improvement.business_impact : 5;
+  const technical = improvement.technical_impact !== null ? improvement.technical_impact : 5;
+  const user_experience = improvement.user_experience_impact !== null ? improvement.user_experience_impact : 5;
+  const cost_savings = improvement.cost_savings_impact !== null ? improvement.cost_savings_impact : 5;
   
   const overall = (
     (business * weights.business) +
@@ -769,7 +769,7 @@ function calculateOverallImpact(improvement) {
     (cost_savings * weights.cost_savings)
   );
   
-  return Math.round(overall);
+  return Math.round(overall * 10) / 10; // Round to 1 decimal place
 }
 
 function validateDependencies(ssotContent) {
@@ -837,10 +837,10 @@ function parseImprovements(ssotContent) {
     // Track current section
     if (line.startsWith('- title:')) {
       currentSection = line.split('title:')[1].trim();
-      skipSection = currentSection === 'Dependency Management Guide' || currentSection === 'Completed Improvements' || currentSection === 'Action Plan Timeline';
+      skipSection = currentSection === 'Dependency Management Guide' || currentSection === 'Completed Improvements' || currentSection === 'Action Plan Timeline' || currentSection === 'Configuration and metadata';
     }
     
-    if (line.startsWith('- label:')) {
+    if (line.includes('- label:')) {
       if (currentImprovement && !skipSection) {
         improvements.push(currentImprovement);
       }
@@ -852,43 +852,60 @@ function parseImprovements(ssotContent) {
         status: 'pending',
         category: 'general',
         effort: 'TBD',
-        business_impact: 5,
-        technical_impact: 5,
-        user_experience_impact: 5,
-        cost_savings_impact: 5
+        business_impact: null,
+        technical_impact: null,
+        user_experience_impact: null,
+        cost_savings_impact: null
+      };
+    } else if (line.startsWith('  - label:')) {
+      if (currentImprovement && !skipSection) {
+        improvements.push(currentImprovement);
+      }
+      currentImprovement = { 
+        label: line.split('label:')[1].trim(),
+        depends_on: [],
+        blocks: [],
+        priority: 'medium',
+        status: 'pending',
+        category: 'general',
+        effort: 'TBD',
+        business_impact: null,
+        technical_impact: null,
+        user_experience_impact: null,
+        cost_savings_impact: null
       };
     } else if (currentImprovement && !skipSection) {
-      if (line.startsWith('depends_on:')) {
+      if (line.startsWith('depends_on:') || line.startsWith('  depends_on:')) {
         const deps = line.split('depends_on:')[1].trim();
         if (deps.startsWith('[') && deps.endsWith(']')) {
           currentImprovement.depends_on = deps.slice(1, -1).split(',').map(d => d.trim()).filter(d => d);
         } else if (deps) {
           currentImprovement.depends_on = [deps];
         }
-      } else if (line.startsWith('blocks:')) {
+      } else if (line.startsWith('blocks:') || line.startsWith('  blocks:')) {
         const blocks = line.split('blocks:')[1].trim();
         if (blocks.startsWith('[') && blocks.endsWith(']')) {
           currentImprovement.blocks = blocks.slice(1, -1).split(',').map(d => d.trim()).filter(d => d);
         } else if (blocks) {
           currentImprovement.blocks = [blocks];
         }
-      } else if (line.startsWith('priority:')) {
+      } else if (line.startsWith('priority:') || line.startsWith('  priority:')) {
         currentImprovement.priority = line.split('priority:')[1].trim();
-      } else if (line.startsWith('status:')) {
+      } else if (line.startsWith('status:') || line.startsWith('  status:')) {
         currentImprovement.status = line.split('status:')[1].trim();
-      } else if (line.startsWith('category:')) {
+      } else if (line.startsWith('category:') || line.startsWith('  category:')) {
         currentImprovement.category = line.split('category:')[1].trim();
-      } else if (line.startsWith('effort:')) {
+      } else if (line.startsWith('effort:') || line.startsWith('  effort:')) {
         currentImprovement.effort = line.split('effort:')[1].trim();
-      } else if (line.startsWith('business_impact:')) {
-        currentImprovement.business_impact = parseInt(line.split('business_impact:')[1].trim()) || 5;
-      } else if (line.startsWith('technical_impact:')) {
-        currentImprovement.technical_impact = parseInt(line.split('technical_impact:')[1].trim()) || 5;
-      } else if (line.startsWith('user_experience_impact:')) {
-        currentImprovement.user_experience_impact = parseInt(line.split('user_experience_impact:')[1].trim()) || 5;
-      } else if (line.startsWith('cost_savings_impact:')) {
-        currentImprovement.cost_savings_impact = parseInt(line.split('cost_savings_impact:')[1].trim()) || 5;
-      } else if (line.startsWith('- label:') && currentImprovement.label) {
+      } else if (line.startsWith('business_impact:') || line.startsWith('  business_impact:')) {
+        currentImprovement.business_impact = parseInt(line.split('business_impact:')[1].trim());
+      } else if (line.startsWith('technical_impact:') || line.startsWith('  technical_impact:')) {
+        currentImprovement.technical_impact = parseInt(line.split('technical_impact:')[1].trim());
+      } else if (line.startsWith('user_experience_impact:') || line.startsWith('  user_experience_impact:')) {
+        currentImprovement.user_experience_impact = parseInt(line.split('user_experience_impact:')[1].trim());
+      } else if (line.startsWith('cost_savings_impact:') || line.startsWith('  cost_savings_impact:')) {
+        currentImprovement.cost_savings_impact = parseInt(line.split('cost_savings_impact:')[1].trim());
+      } else if ((line.startsWith('- label:') || line.startsWith('  - label:')) && currentImprovement.label) {
         if (!skipSection) {
           improvements.push(currentImprovement);
         }
