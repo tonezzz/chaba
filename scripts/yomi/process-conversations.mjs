@@ -21,6 +21,7 @@ const COMMERCIAL_EXCLUDE_LIST = [
   'ue72e27967c86078c23a010df435a1ab9', // Big C TH
   'ua23f988a25b95baa3f6d3be7c429bd12', // KEX Thailand
   'uce372f6ada1d1a0855973fefc2942f9a', // Krungthai Connext
+  'ufd4dfb9144e31d204fe8e0a5fd9697ac', // CP ALL 7-Eleven TH
   // Add more commercial service IDs as needed
 ];
 
@@ -44,7 +45,9 @@ function isCommercialService(chatId, name) {
     /KEX/i,
     /Krungthai/i,
     /LINE\s*GAME/i,
-    /Connext/i
+    /Connext/i,
+    /7-Eleven/i,
+    /CP\s*ALL/i
   ];
   
   for (const pattern of commercialPatterns) {
