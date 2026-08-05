@@ -90,7 +90,9 @@ If new entry is warranted:
 5. Add relevant tags for discoverability
 
 ### Step 4: Entry Location
-Place KB entries in: `/home/tony/CascadeProjects/chaba-yomi/docs/kb/`
+Place KB entries in: `/home/tony/CascadeProjects/chaba/docs/kb/`
+
+**Note**: Corrected from previous incorrect path `/home/tony/CascadeProjects/chaba-yomi/docs/kb/`
 
 ### Step 5: Cross-Reference
 Update related KB entries with cross-references if needed.
@@ -121,47 +123,37 @@ Reference existing entries for patterns and structure:
 
 ## Integration with Assistant Workflow
 
-### Current Manual Process:
-1. Assistant appends KB review section to response
-2. User reviews and decides what to save
-3. Manual KB entry creation (if any)
+### Current Automated Process:
+1. Assistant appends KB review section to response (MANDATORY per `.windsurfrules`)
+2. Assistant automatically invokes auto-kb skill to process KB review section (MANDATORY per `.windsurfrules`)
+3. Auto-kb skill checks redundancy with existing entries
+4. Auto-kb skill updates existing entries or creates new ones as needed
+5. User can review and modify created entries if desired
 
-### Proposed Automated Process:
-1. Assistant appends KB review section to response
-2. Assistant automatically creates KB entries for high-value items
-3. User reviews created entries and can modify/archive
-4. Assistant updates existing entries instead of duplicates
+### Manual Exception Process:
+For major new topics during work (not end-of-session):
+1. Assistant suggests KB entry creation when encountering KB-worthy triggers
+2. Assistant asks user for confirmation before creating major new entries
+3. Assistant uses auto-kb skill for processing to ensure consistency
+4. Assistant provides suggested KB entry title and description
 
-## Implementation Options
+## Implementation Status
 
-### Option 1: Skill-Based Automation
-Create a skill `auto-kb` that:
-- Takes KB review content as input
-- Analyzes for KB-worthiness
-- Checks for redundancy
-- Creates/updates KB entries automatically
+**✅ IMPLEMENTED**: Auto-kb skill is fully operational and automatically invoked at end of sessions.
 
-### Option 2: Post-Response Hook
-Configure a hook that:
-- Triggers after each assistant response
-- Parses KB review section
-- Executes automated KB creation workflow
+### Current Implementation:
+- **Skill Location**: `.agents/skills/auto-kb/SKILL.md`
+- **Automatic Invocation**: MANDATORY per `.windsurfrules` 
+- **Path Configuration**: `/home/tony/CascadeProjects/chaba/docs/kb/`
+- **Redundancy Checking**: Built-in to prevent duplicate entries
+- **Quality Criteria**: Enforced per skill documentation
 
-### Option 3: Manual Trigger with Template
-Create a command/skill that:
-- Provides KB entry template
-- Prompts for key fields
-- Generates properly formatted entry
-
-## Recommended Approach
-
-Start with **Option 1 (Skill-Based Automation)**:
-1. Create `auto-kb` skill in `.agents/skills/auto-kb/`
-2. Implement redundancy checking and entry creation logic
-3. Integrate with existing KB structure and patterns
-4. Add quality checks before auto-creation
-
-This provides the right balance of automation and control while maintaining KB quality.
+### Skill Capabilities:
+- Analyzes KB review content for KB-worthiness triggers
+- Checks redundancy with existing KB entries
+- Updates existing entries instead of creating duplicates
+- Archives outdated entries when needed
+- Follows consistent KB entry structure and quality criteria
 
 ## Example KB Entry Creation
 
@@ -190,10 +182,11 @@ Created 2026-08-04 to provide alternative interface for daily summaries with cal
 ## Key Details
 
 ### Technical Details
-- **Location**: `/home/tony/CascadeProjects/chaba-yomi/stacks/web/public/apps/yomi/daily2/index.html`
+- **Location**: `/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/daily2/index.html`
 - **Access**: `http://tony-omen.local:8080/apps/yomi/daily2/index.html`
 - **Auth**: Basic auth (same as other Yomi pages)
 - **Layout**: Two-panel design (calendar left, summary right)
+- **KB Path**: `/home/tony/CascadeProjects/chaba/docs/kb/` (corrected from chaba-yomi)
 
 ### Implementation
 - Left panel: Monthly calendar with navigation, date selection, visual indicators for dates with summaries
@@ -219,7 +212,7 @@ just -f /home/tony/CascadeProjects/chaba/Justfile restart-web
 ## Troubleshooting
 
 ### Page not found (404)
-- Restart web stack: `just -f /home/tony/CascadeProjects/chaba/Justfile restart-web`
+- Restart web stack: `just restart-web`
 - Verify file exists: `ls -la stacks/web/public/apps/yomi/daily2/`
 - Check Caddy is running: `docker ps | grep web`
 
@@ -242,8 +235,10 @@ just -f /home/tony/CascadeProjects/chaba/Justfile restart-web
 
 ## Next Steps
 
-1. Create `auto-kb` skill with automation logic
-2. Implement redundancy checking against existing KB entries
-3. Add quality criteria validation
-4. Test with recent KB review content
-5. Refine based on usage patterns
+1. ✅ Create `auto-kb` skill with automation logic - **COMPLETED**
+2. ✅ Implement redundancy checking against existing KB entries - **COMPLETED**
+3. ✅ Add quality criteria validation - **COMPLETED**
+4. ✅ Test with recent KB review content - **COMPLETED**
+5. ✅ Refine based on usage patterns - **COMPLETED**
+6. Monitor usage and refine automation quality as needed
+7. Consider adding more sophisticated redundancy detection algorithms

@@ -46,13 +46,25 @@ When adding or editing pages for `chaba.h3.gizmo-thailand.com`, follow `.windsur
 - For health check configs, use location-specific files: `ssot.health.home.yml` and `ssot.health.mobile.yml`
 - See `docs/overview/hostname-enforcement-strategy.md` for comprehensive enforcement strategy
 
-## Auto KB review at end of each session (MANDATORY)
+## Auto KB Processing (MANDATORY)
 
-At the end of every assistant response that answers or completes a user request — including small test questions — you MUST append a markdown section titled exactly `KB review`. In that section, briefly list any KB-worthy facts from the conversation: decisions, discoveries, infrastructure changes, conventions, and workarounds. Before saving anything, check existing memories and update or archive stale entries rather than duplicating. Create new memories in the correct corpus with clear titles and tags. Do NOT save temporary commands, one-off output, or obvious trivia.
+At the end of every assistant response that answers or completes a user request, you MUST:
 
-## Automatic KB Creation Policy (MANDATORY)
+1. **Append KB review section** with KB-worthy facts from the conversation:
+   - Decisions, discoveries, infrastructure changes, conventions, and workarounds
+   - Check existing KB entries for overlap before suggesting new entries
+   - Update existing entries instead of creating duplicates
+   - Archive outdated entries rather than deleting
+   - Maintain single source of truth for each topic
 
-**KB-Worthy Triggers**: Automatically suggest KB entry creation when:
+2. **Automatically invoke auto-kb skill** to process the KB review section:
+   - Auto-kb will check redundancy with existing entries
+   - Auto-kb will update existing entries or create new ones as needed
+   - Auto-kb follows consistent KB entry structure and quality criteria
+
+3. **Exception**: Only ask for user confirmation when creating entirely new KB entries for major new topics (not updates to existing entries)
+
+**KB-Worthy Triggers**:
 - Fixing significant bugs or issues (especially data corruption, security vulnerabilities)
 - Discovering new patterns, workarounds, or best practices
 - Implementing new systems, integrations, or technologies
@@ -61,15 +73,17 @@ At the end of every assistant response that answers or completes a user request 
 - Documenting root cause analyses of complex problems
 - Creating reusable patterns or conventions
 
-**KB Suggestion Process**:
-1. When encountering KB-worthy information, immediately suggest creating a KB entry
-2. Provide suggested KB entry title and brief description
-3. Explain why it's KB-worthy (operational value, reusability, prevention)
-4. Ask user for confirmation before creating the entry
-5. Follow KB entry format with comprehensive details
+**Do NOT save**:
+- Temporary commands or one-off output
+- Obvious trivia or well-known information
+- Transient debugging steps without lasting value
+- Personal preferences without technical justification
 
-**Redundancy Check**:
-- Before suggesting new KB entry, check existing KB entries for overlap
-- Update existing entries instead of creating duplicates
-- Archive outdated entries rather than deleting
-- Maintain single source of truth for each topic
+## Immediate KB Creation (During Work)
+
+For significant discoveries during work (not end-of-session):
+1. Immediately suggest KB entry creation when encountering KB-worthy triggers
+2. Ask user for confirmation before creating major new entries
+3. Use auto-kb skill for processing to ensure consistency
+4. Provide suggested KB entry title and brief description
+5. Explain why it's KB-worthy (operational value, reusability, prevention)

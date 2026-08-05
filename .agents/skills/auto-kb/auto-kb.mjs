@@ -10,7 +10,7 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync } from 'fs';
 import { join } from 'path';
 
-const KB_DIR = '/home/tony/CascadeProjects/chaba-yomi/docs/kb';
+const KB_DIR = '/home/tony/CascadeProjects/chaba/docs/kb';
 
 // KB-worthy triggers
 const KB_WORTHY_TRIGGERS = [

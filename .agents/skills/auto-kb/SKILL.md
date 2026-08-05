@@ -4,13 +4,15 @@ Automatically creates KB entries based on KB review sections from assistant resp
 
 ## What it does
 
-This skill analyzes KB review sections and automatically creates knowledge base entries for high-value information, reducing manual overhead while maintaining KB quality.
+This skill analyzes KB review sections from assistant responses and automatically creates knowledge base entries for high-value information, reducing manual overhead while maintaining KB quality.
+
+**Automatic Invocation**: This skill is automatically invoked at the end of every session that contains KB-worthy information in the KB review section, as per the mandatory KB processing rules in `.windsurfrules`.
 
 ## When to use
 
 Invoke this skill when:
-- A KB review section contains KB-worthy information
-- You want to automate KB entry creation
+- A KB review section contains KB-worthy information (automatic at end of sessions)
+- You want to automate KB entry creation during work (with user confirmation)
 - You need to check for redundancy with existing entries
 - You want to follow consistent KB entry structure
 
@@ -20,7 +22,7 @@ Input parameters:
 - `kb_review_content`: The KB review section text from an assistant response
 - `session_context`: Optional context about the session/work done
 
-## What it does
+## Processing steps
 
 1. **Analyzes KB review content** for KB-worthiness triggers:
    - Significant bug fixes (data corruption, security vulnerabilities)
@@ -46,7 +48,7 @@ Input parameters:
    - Tags
 
 4. **Places entries** in the correct location:
-   - `/home/tony/CascadeProjects/chaba-yomi/docs/kb/`
+   - `/home/tony/CascadeProjects/chaba/docs/kb/` (corrected from chaba-yomi)
 
 ## Quality criteria
 
