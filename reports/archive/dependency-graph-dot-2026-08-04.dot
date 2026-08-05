@@ -1,0 +1,49 @@
+digraph DependencyGraph {
+    rankdir=TB;
+    node [shape=box, style=rounded];
+    edge [dir=back];
+
+    "Dependency_Fields" [label="Dependency Fields", fillcolor="gold", style="filled,rounded", ];
+    "Dependency_Validation_Rules" [label="Dependency Validation Rules", fillcolor="gold", style="filled,rounded", ];
+    "Dependency_Best_Practices" [label="Dependency Best Practices", fillcolor="gold", style="filled,rounded", ];
+    "Impact_Scoring_Guide" [label="Impact Scoring Guide", fillcolor="gold", style="filled,rounded", ];
+    "GPU_Temperature_Elevated" [label="GPU Temperature Elevated", fillcolor="lightgreen", style="filled,rounded", shape=diamond];
+    "Docker_Compose_Configuration_Fix" [label="Docker Compose Configuration Fix", fillcolor="gold", style="filled,rounded", ];
+    "GPU_Queue_Priority_System_Enhancement" [label="GPU Queue Priority System Enhancement", fillcolor="gold", style="filled,rounded", ];
+    "Yomi_Summarization_Status_Investigation" [label="Yomi Summarization Status Investigation", fillcolor="lightgreen", style="filled,rounded", shape=diamond];
+    "GPU_Queue_Job_History_Verification" [label="GPU Queue Job History Verification", fillcolor="lightgreen", style="filled,rounded", shape=diamond];
+    "Memory_Usage_Optimization" [label="Memory Usage Optimization", fillcolor="gold", style="filled,rounded", ];
+    "System_Load_Analysis" [label="System Load Analysis", fillcolor="gold", style="filled,rounded", ];
+    "GPU_Monitoring_Enhancements" [label="GPU Monitoring Enhancements", fillcolor="lightgreen", style="filled,rounded", ];
+    "GPU_Process_Management" [label="GPU Process Management", fillcolor="gold", style="filled,rounded", ];
+    "Health_Check_API_Integration" [label="Health Check API Integration", fillcolor="lightgreen", style="filled,rounded", ];
+    "Yomi_Activity_Status_Enhancement" [label="Yomi Activity Status Enhancement", fillcolor="lightgreen", style="filled,rounded", ];
+    "Assessment_Enhancements" [label="Assessment Enhancements", fillcolor="gold", style="filled,rounded", ];
+    "Overnight_Assessment_Yomi_Smart_Wait" [label="Overnight Assessment Yomi Smart Wait", fillcolor="lightgreen", style="filled,rounded", ];
+    "Documentation_Cleanup" [label="Documentation Cleanup", fillcolor="gold", style="filled,rounded", ];
+    "Report_Archival_Strategy" [label="Report Archival Strategy", fillcolor="gold", style="filled,rounded", ];
+    "Monitoring___Alerting_System" [label="Monitoring & Alerting System", fillcolor="lightblue", style="filled,rounded", ];
+    "Performance_Baselines" [label="Performance Baselines", fillcolor="lightblue", style="filled,rounded", ];
+    "Security___Dependency_Checking" [label="Security & Dependency Checking", fillcolor="lightblue", style="filled,rounded", shape=diamond];
+    "Overnight_Assessment_GPU_Temp_Thresholds" [label="Overnight Assessment GPU Temp Thresholds", fillcolor="lightgreen", style="filled,rounded", ];
+    "Git_Hook_Hostname_Enforcement" [label="Git Hook Hostname Enforcement", fillcolor="lightgreen", style="filled,rounded", ];
+    "Embeddings_PyTorch_Upgrade" [label="Embeddings PyTorch Upgrade", fillcolor="lightgreen", style="filled,rounded", ];
+    "Immediate_Actions__This_Week_" [label="Immediate Actions (This Week)", fillcolor="lightblue", style="filled,rounded", ];
+    "Short_term_Actions__Next_Sprint_" [label="Short-term Actions (Next Sprint)", fillcolor="lightblue", style="filled,rounded", ];
+    "Long_term_Actions__Future_Sprints_" [label="Long-term Actions (Future Sprints)", fillcolor="lightblue", style="filled,rounded", ];
+    "GPU_Monitoring_Enhancements" -> "GPU_Queue_Priority_System_Enhancement" [label="depends on"];
+    "Memory_Usage_Optimization" -> "System_Load_Analysis" [label="depends on"];
+    "Memory_Usage_Optimization" -> "GPU_Process_Management" [label="depends on"];
+    "Assessment_Enhancements" -> "Monitoring___Alerting_System" [label="depends on"];
+    "Monitoring___Alerting_System" -> "Performance_Baselines" [label="depends on"];
+    "Docker_Compose_Configuration_Fix" -> "Security___Dependency_Checking" [label="depends on"];
+
+    // Legend
+    subgraph cluster_legend {
+        label = "Legend";
+        node [shape=box];
+        completed [label="Completed", fillcolor="lightgreen", style="filled"];
+        pending [label="Pending", fillcolor="gold", style="filled"];
+        planned [label="Planned", fillcolor="lightblue", style="filled"];
+    }
+}
