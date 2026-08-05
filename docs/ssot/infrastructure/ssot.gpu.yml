@@ -90,14 +90,26 @@ policy:
         - Added Caddy routing for /apps/gpu-queue/* and /api/gpu-queue/*
         - Enhanced queue status UI with job submission form and cancellation controls
         - Wrote unit tests for db.mjs (7 tests passing)
+        - Added embedding job support with GPU queue integration
+        - Enhanced error handling with retry logic and exponential backoff
+        - Implemented comprehensive monitoring system (health checks, performance metrics, error tracking)
+        - Added monitoring API endpoints (/api/gpu-queue/monitoring/*)
+        - Created automatic queue processor (auto-processor.mjs) with error handling
+        - Set up systemd services for auto-processor and daily Weaviate indexing
+        - Implemented performance benchmarking system (benchmark.mjs)
+        - Enhanced database schema with job statistics and cancellation rate tracking
       next_steps:
 
     deployment:
       directory: scripts/gpu-queue/
       files:
-        - index.mjs: Main queue service
-        - queue.mjs: Queue logic
-        - db.mjs: Postgres operations
+        - index.mjs: Main queue service with monitoring endpoints
+        - queue.mjs: Queue logic with timeout and retry handling
+        - db.mjs: Postgres operations with statistics functions
+        - orchestrator.mjs: Job processing functions (imagen2, llama, txt2vid, embedding)
+        - monitoring.mjs: Health checks and performance metrics
+        - benchmark.mjs: Performance benchmarking system
+        - auto-processor.mjs: Automatic queue processor
         - package.json: Dependencies
       docker_compose:
         service: gpu-queue
@@ -114,12 +126,30 @@ policy:
           - default
         restart: unless-stopped
       systemd:
-        file: ~/.config/systemd/user/gpu-queue.service
-        exec_start: /usr/bin/node /home/tony/CascadeProjects/chaba/scripts/gpu-queue/index.mjs
-        working_dir: /home/tony/CascadeProjects/chaba
-        restart: on-failure
-        environment:
-          - GPU_QUEUE_PORT=3001
+        gpu-queue:
+          file: ~/.config/systemd/user/gpu-queue.service
+          exec_start: /usr/bin/node /home/tony/CascadeProjects/chaba/scripts/gpu-queue/index.mjs
+          working_dir: /home/tony/CascadeProjects/chaba
+          restart: on-failure
+          environment:
+            - GPU_QUEUE_PORT=3001
+        gpu-queue-processor:
+          file: ~/.config/systemd/user/gpu-queue-processor.service
+          exec_start: /usr/bin/node /home/tony/CascadeProjects/chaba/scripts/gpu-queue/auto-processor.mjs
+          working_dir: /home/tony/CascadeProjects/chaba
+          restart: on-failure
+          environment:
+            - NODE_ENV=production
+        weaviate-index:
+          file: ~/.config/systemd/user/weaviate-index.service
+          exec_start: /usr/bin/node /home/tony/CascadeProjects/chaba/scripts/weaviate/auto-index.mjs
+          working_dir: /home/tony/CascadeProjects/chaba
+          environment:
+            - NODE_ENV=production
+        weaviate-index-timer:
+          file: ~/.config/systemd/user/weaviate-index.timer
+          description: Run Weaviate indexing daily at 2 AM
+          onCalendar: "*-*-* 02:00:00"
       caddy_routing:
         - reverse_proxy /api/gpu-queue/* host.docker.internal:3001
 

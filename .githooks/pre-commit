@@ -30,6 +30,38 @@ while IFS= read -r -d '' file; do
     esac
 done < <(git diff --cached --name-only -z --diff-filter=ACM)
 
+# Validate SSOT YAML files
+echo "Validating SSOT YAML files..."
+ssot_staged=$(git diff --cached --name-only --diff-filter=ACM | grep '^docs/ssot/.*\.yml$' || true)
+if [ -n "$ssot_staged" ]; then
+    ssot_errors=$(python3 -c "
+import yaml, sys
+files = '''$ssot_staged'''.strip().split('\n')
+errors = []
+for f in files:
+    if not f:
+        continue
+    try:
+        yaml.safe_load(open(f))
+    except yaml.YAMLError as e:
+        mark = e.problem_mark
+        errors.append(f'{f}:{mark.line+1}:{mark.column+1}: {e.problem}')
+for err in errors:
+    print(err)
+sys.exit(1 if errors else 0)
+" 2>&1 || true)
+    if [ -n "$ssot_errors" ]; then
+        echo "❌ ERROR: SSOT YAML parse errors:"
+        echo "$ssot_errors" | sed 's/^/  /'
+        echo ""
+        echo "Fix the YAML syntax errors before committing."
+        echo "To bypass this check, use: git commit --no-verify"
+        failed=1
+    else
+        echo "✅ SSOT YAML files are valid"
+    fi
+fi
+
 # Check for hardcoded IP addresses
 echo "Checking for hardcoded IP addresses..."
 staged_files=$(git diff --cached --name-only --diff-filter=ACM)

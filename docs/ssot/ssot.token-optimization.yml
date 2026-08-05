@@ -1,0 +1,291 @@
+title: Token Optimization Strategy
+subtitle: Comprehensive approach to reducing AI token costs across Devin and MCP infrastructure
+icon: 💰
+
+# Ideas and notes about token optimization
+# This SSOT file serves as the central repository for token optimization strategies
+ideas:
+- Reduce token consumption through multi-layered optimization approach
+- Implement filtering at MCP server level to reduce tool schema overhead
+- Add compression layer for data-heavy operations (database queries, file reads)
+- Optimize Devin configuration and usage patterns
+- Monitor and measure token usage to identify optimization opportunities
+- Balance cost reduction with operational efficiency
+
+# Validation rules for token optimization
+validation:
+  require_benchmark: true
+  require_rollback: true
+  require_testing: true
+  max_mcp_tools: 100
+  enable_monitoring: true
+
+# Main optimization sections
+sections:
+  - title: Token Optimization Tools
+    icon: 🛠️
+    layout: list
+    items:
+      - label: TokenShift
+        text: Local Go binary for 10-20% token reduction via real-time tool-result filtering, CLI output trimming, and context deduplication
+        type: endpoint-optimization
+        savings: 10-20%
+        installation: Single binary via MDM or manual
+        best_for: Teams using multiple coding agents needing governance
+        status: evaluated
+        priority: medium
+        implementation_effort: medium
+        pros:
+          - Cross-agent visibility and governance
+          - Per-team model policies and tool restrictions
+          - On-device security (only metrics leave machine)
+          - Admin console for spend tracking
+        cons:
+          - Commercial product (not open-source)
+          - Requires MDM or manual installation per endpoint
+          - Overkill for single-user setups
+        
+      - label: Headroom
+        text: Open-source proxy for 60-95% JSON reduction, 15-20% coding agent reduction, content-aware compression
+        type: compression-layer
+        savings: 15-95% (varies by content type)
+        installation: uv tool install --python 3.13 "headroom-ai[all]"
+        best_for: Data-heavy workflows, maximum compression
+        status: operational
+        priority: high
+        implementation_effort: low
+        pros:
+          - Open-source and free
+          - Transparent proxy (zero code changes)
+          - Content-aware compressors (JSON, code, logs, diffs)
+          - Reversible compression with caching
+          - Multiple deployment modes
+        cons:
+          - Requires Python 3.13
+          - Additional service to maintain
+          - Proxy adds slight latency
+        
+      - label: MCP Filters (mcp-filter)
+        text: Proxy MCP server for 72-91% reduction by filtering tool surfaces to only needed tools
+        type: mcp-optimization
+        savings: 72-91%
+        installation: pip install mcp-filter
+        best_for: Environments with many MCP servers/tools
+        status: operational
+        priority: high
+        implementation_effort: low
+        pros:
+          - Massive token reduction for MCP-heavy workflows
+          - Drop-in proxy for any MCP server
+          - Schema pruning for additional savings
+          - Safety guardrails with regex deny lists
+        cons:
+          - Requires configuration per MCP server
+          - Adds proxy layer to MCP connections
+
+  - title: Current MCP Server Analysis
+    icon: 📊
+    layout: list
+    items:
+      - label: Yomi MCP Server
+        text: LINE messaging integration with 15+ tools for conversations, messages, media, and insights
+        tool_count: 15+
+        estimated_token_overhead: 8-12k tokens
+        usage_pattern: High - frequently used for communication analysis
+        optimization_priority: high
+        recommended_action: Filter to essential tools (list_conversations, get_chat_messages, get_insight)
+        status: operational
+        current_state: Filtered to 4 tools (73% reduction)
+        
+      - label: PostgreSQL MCP Server
+        text: Database operations with 11 tools for query, execute, DDL operations, and schema management
+        tool_count: 11
+        estimated_token_overhead: 3-5k tokens
+        usage_pattern: Medium - used for GPU queue and application data
+        optimization_priority: medium
+        recommended_action: Filter to CRUD operations only (query, execute, insert, update, delete)
+        status: operational
+        current_state: Filtered to 6 tools (45% reduction)
+        
+      - label: GitHub MCP Server
+        text: GitHub integration with 20+ tools for issues, PRs, commits, files, and repository management
+        tool_count: 20+
+        estimated_token_overhead: 10-15k tokens
+        usage_pattern: Medium - used for git workflow automation
+        optimization_priority: medium
+        recommended_action: Filter to core workflow tools (issues, PRs, commits)
+        status: operational
+        current_state: Filtered to 8 tools (60% reduction)
+        
+      - label: GPU MCP Server
+        text: GPU management with 4 tools for status, llama control, and image generation
+        tool_count: 4
+        estimated_token_overhead: 1-2k tokens
+        usage_pattern: High - used for GPU queue operations
+        optimization_priority: low
+        recommended_action: No filtering needed (already minimal)
+        status: operational
+        current_state: Unfiltered (4 tools, already minimal)
+        
+      - label: Other MCP Servers
+        text: mcp-llama, remote-exec-tony-dell, playlive.tony-dell (disabled)
+        tool_count: TBD
+        estimated_token_overhead: TBD
+        usage_pattern: TBD
+        optimization_priority: TBD
+        recommended_action: Disabled due to low usage
+        status: disabled
+        current_state: Disabled (3 servers disabled)
+
+  - title: Devin-Specific Optimizations
+    icon: ⚡
+    layout: list
+    items:
+      - label: Adaptive Model
+        text: Enable Adaptive model for automatic model selection - routes simple tasks to cheaper models
+        type: configuration
+        savings: 20-40%
+        implementation_effort: trivial
+        status: pending
+        priority: high
+        action: Set Adaptive as default model in Devin Desktop settings
+        
+      - label: Free Models for Routine Tasks
+        text: Use SWE-1.6 or SWE-1.7 (free through Aug 8, 2026) for routine development tasks
+        type: usage_pattern
+        savings: 100% for routine tasks
+        implementation_effort: trivial
+        status: pending
+        priority: high
+        action: Select SWE-1.6 for routine code changes, debugging
+        
+      - label: Rules Optimization
+        text: Convert always_on rules to glob or model_decision where possible to reduce context overhead
+        type: configuration
+        savings: 15-25%
+        implementation_effort: low
+        status: pending
+        priority: medium
+        action: Audit .windsurfrules and convert conditional rules
+        
+      - label: MCP Server Cleanup
+        text: Disable unused MCP servers and tools to stay under 100-tool cap and reduce schema overhead
+        type: configuration
+        savings: 30-50% (MCP-related)
+        implementation_effort: low
+        status: completed
+        action: Audit MCP server usage and disable unused servers
+        
+      - label: Session Scoping
+        text: Use one task per session instead of marathon threads to reduce context accumulation
+        type: usage_pattern
+        savings: 20-30%
+        implementation_effort: behavioral
+        status: pending
+        priority: medium
+        action: Start new session for each distinct task
+        
+      - label: Precise Prompting
+        text: Be specific with instructions to avoid back-and-forth loops and reduce token waste
+        type: usage_pattern
+        savings: 15-20%
+        implementation_effort: behavioral
+        status: pending
+        priority: medium
+        action: Follow Devin prompting best practices
+
+  - title: Implementation Status
+    icon: 📋
+    layout: timeline
+    items:
+      - label: "Phase 1: Quick Wins (COMPLETED)"
+        text: Devin configuration changes and MCP server cleanup
+        date: 2026-08-05
+        duration: 1 session
+        items:
+          - Disabled 3 unused MCP servers
+          - MCP configuration optimization
+        expected_savings: 30-40%
+        status: completed
+        
+      - label: "Phase 2: MCP Filtering (COMPLETED)"
+        text: Implement mcp-filter for high-usage MCP servers
+        date: 2026-08-05
+        duration: 1 session
+        items:
+          - Installed mcp-filter
+          - Configured filtering for Yomi, PostgreSQL, GitHub
+          - Tested filtered MCP servers
+        expected_savings: 50-70% (MCP-related)
+        status: completed
+        
+      - label: "Phase 3: Compression Layer (COMPLETED)"
+        text: Install and configure Headroom proxy for data-heavy operations
+        date: 2026-08-05
+        duration: 1 session
+        items:
+          - Installed Headroom proxy
+          - Configured for Devin Desktop
+          - Tested compression effectiveness
+        expected_savings: 30-50% (data operations)
+        status: completed
+        
+      - label: "Phase 4: Advanced Optimization (PENDING)"
+        text: Evaluate TokenShift for governance and cross-agent optimization
+        date: TBD
+        duration: 1-2 sessions
+        items:
+          - Evaluate TokenShift for current setup
+          - Pilot with single endpoint
+          - Assess governance value
+          - Decide on rollout
+        expected_savings: 10-20% (additional)
+        status: pending
+
+  - title: Monitoring and Measurement
+    icon: 📈
+    layout: list
+    items:
+      - label: Token Usage Baseline
+        text: Establish baseline token usage before optimization implementation
+        metrics:
+          - Daily token consumption
+          - Per-session token usage
+          - MCP server token overhead
+          - Model-specific costs
+        status: established
+        priority: high
+        
+      - label: Optimization Tracking
+        text: Track token usage reduction after each optimization phase
+        metrics:
+          - Percentage reduction per phase
+          - Overall cost savings
+          - Performance impact (latency)
+          - Operational overhead
+        status: active
+        priority: high
+        
+      - label: Continuous Monitoring
+        text: Ongoing monitoring to identify new optimization opportunities
+        metrics:
+          - Token usage trends
+          - MCP server usage patterns
+          - Session length patterns
+          - Model selection efficiency
+        status: active
+        priority: medium
+
+# Configuration and metadata
+config:
+  version: 1
+  last_updated: 2026-08-05
+  maintainer: tony
+  validation_enabled: true
+  related_files:
+    - docs/kb/token-optimization-strategies.md
+    - docs/kb/token-optimization-implementation-plan.md
+    - docs/kb/token-optimization-summary.md
+    - docs/kb/token-optimization-testing.md
+    - docs/kb/token-optimization-monitoring-guide.md
+    - docs/kb/token-optimization-runbook.md
