@@ -13,6 +13,7 @@ Automated overnight system assessment that runs comprehensive health checks and 
 | `/etc/systemd/system/chaba-assessment.timer` | Systemd timer for scheduling |
 | `/etc/systemd/system/chaba-assessment.service` | Systemd service definition |
 | `chaba/reports/overnight-assessment-YYYY-MM-DD.md` | Generated assessment reports |
+| `chaba/reports/archive/` | Reports older than 30 days (auto-archived) |
 
 ## Assessment Areas
 
@@ -192,8 +193,17 @@ Current monitoring thresholds:
 - Review assessment reports weekly
 - Monitor for recurring issues
 - Update thresholds as needed
-- Archive old reports periodically
+- Archive old reports periodically (automated — see Report Archival below)
 - Adjust assessment scope based on infrastructure changes
+
+## Report Archival
+
+Reports are automatically archived at the end of every assessment run via `archiveOldReports()` in `scripts/overnight-assessment.mjs`.
+
+- **Retention:** 30 days in `reports/`
+- **Archive destination:** `reports/archive/`
+- **Trigger:** Runs automatically at the end of each assessment (no manual action needed)
+- Files older than 30 days are moved (not deleted) — recoverable if needed
 
 **Troubleshooting:**
 - Check logs in `logs/assessment-error.log` for failures
