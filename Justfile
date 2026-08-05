@@ -41,9 +41,9 @@ test-e2e:
     curl -s http://localhost:8123 >/dev/null 2>&1
     npx playwright test
 
-# Run a single Playwright test file (example: track3)
-test-e2e-track3:
-    npx playwright test e2e/track3.spec.js
+# Run a single Playwright test file (example: raceman)
+test-e2e-raceman:
+    npx playwright test e2e/raceman.spec.js
 
 # Show git status for deploy sanity check
 deploy-status:

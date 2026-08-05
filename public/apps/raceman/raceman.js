@@ -1,5 +1,5 @@
 const ROUND_DIST = 25;
-const DEFAULT_COURSE = 'tabsai-ws8-track3';
+const DEFAULT_COURSE = 'tabsai-ws8';
 let courseId = new URLSearchParams(window.location.search).get('course') || DEFAULT_COURSE;
 let courseData = null;
 let renderer = null;
