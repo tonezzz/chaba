@@ -5,6 +5,8 @@ Distilled from https://github.com/detailobsessed/awesome-devin
 TODO: Revisit this repo later to harvest more rules and prompts (memories/, tips, official links).
 
 ## Coding Principles
+
+### Core Principles
 - Favor clarity and maintainability over brevity or cleverness.
 - Respect language idioms; use descriptive, consistent naming and formatting.
 - Keep functions small and single-responsibility; keep components loosely coupled.
@@ -12,6 +14,37 @@ TODO: Revisit this repo later to harvest more rules and prompts (memories/, tips
 - Validate inputs; fail fast with clear, actionable error messages.
 - Write tests early and run them frequently; separate pure logic from side effects.
 - Profile before optimizing; manage resources properly (with, finally, RAII).
+
+### Write for Humans First
+- Code should be understandable at a glance, making it more approachable for collaborators and your future self.
+- Avoid obfuscation or over-optimization that sacrifices readability.
+
+### Future-Proof Your Design
+- Plan for growth and changing requirements, but do not overengineer.
+- Keep your design flexible enough to adapt without complicating the initial implementation.
+
+### Code Quality and Readability
+- **Clarity First**: Write straightforward code that conveys its intent clearly. Minimize abstraction layers that obscure readability.
+- **Descriptive Naming**: Use meaningful, consistent names for variables, functions, classes, and modules that reflect their purpose.
+- **Consistent Formatting**: Follow established style guides and use automated tools to maintain uniform formatting across the codebase.
+- **Comment Thoughtfully**: Provide comments or docstrings where necessary, but avoid restating what the code already expresses.
+
+### Architecture and Modularity
+- **Encapsulate Complexity**: Group related logic into self-contained modules or classes with clear, well-documented interfaces.
+- **Loose Coupling**: Design components to function independently, using abstraction layers or interfaces to reduce interdependencies.
+- **Apply DRY**: Refactor repetitive or duplicated code into shared utilities or functions to promote reuse and reduce bloat.
+- **Design for Extensibility**: Structure your codebase so you can add new features and functionalities without requiring major rewrites.
+
+### Error Handling and Testing
+- **Error Awareness**: Implement robust error handling with clear messages and safe fallback paths for smoother recoveries.
+- **Write Tests Early**: Create relevant tests at the outset of development to quickly capture edge cases and catch regressions.
+- **Iterative Validation**: Run your tests frequently to ensure ongoing stability and to identify potential issues as your code evolves.
+- **Proactive Debugging**: Leverage logging, tracing, and profiling to diagnose and resolve errors efficiently.
+
+### Performance and Resource Management
+- **Choose Efficient Solutions**: Adopt algorithms and data structures that suit your problem domain, optimizing for efficiency and scalability.
+- **Optimize When Necessary**: Maintain clarity in your codebase; address performance bottlenecks only after conducting proper profiling.
+- **Manage Resources Properly**: Follow best practices for handling external resources. For example, use `with` statements where applicable.
 
 ## Cascade Workflow
 - Use the project's configured tooling and scripts for linting, formatting, and checks instead of manual edits.
