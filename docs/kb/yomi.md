@@ -158,6 +158,7 @@ Parsed objects look like:
 - **Yomi API not responding** → Check `yomi-api.service` status: `systemctl status yomi-api.service`. Service auto-restarts on failure (added 2026-08-04).
 - **Variable daily summary quality** → Some conversations show rich extraction (events/actions/topics) while others have empty arrays despite having messages. Check `/api/yomi/summary-quality` for per-conversation metrics (2026-08-05).
 - **Systemd service failure** → If `yomi-api.service` fails but API runs manually, check logs: `journalctl -u yomi-api.service`. May need to restart service or fix configuration (2026-08-05).
+- **Database cleanup required** → Some conversations have `last_message_time: null` despite having messages, and duplicate entries with corrupted chat_id fields containing keyMaterial JSON. Use SQL to fix null timestamps and remove duplicates (2026-08-05).
 
 ## UI Improvements (Post-Improvement Session)
 
