@@ -1,0 +1,13 @@
+#!/usr/bin/env node
+import * as db from './db.mjs';
+import { pool } from './db.mjs';
+
+async function cancelOldEmbeddingJobs() {
+  const result = await pool.query(
+    "UPDATE gpu_queue_jobs SET status = 'cancelled' WHERE status = 'pending' AND type = 'embedding'"
+  );
+  console.log(`Cancelled ${result.rowCount} old pending embedding jobs`);
+  await pool.end();
+}
+
+cancelOldEmbeddingJobs();

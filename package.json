@@ -1,0 +1,30 @@
+{
+  "name": "chaba-workspace",
+  "version": "1.0.0",
+  "description": "Chaba workspace with quality check tools",
+  "private": true,
+  "devDependencies": {
+    "cspell": "^8.14.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "markdown-link-check": "^3.14.2",
+    "markdownlint-cli2": "^0.23.2",
+    "prettier": "^3.7.4"
+  },
+  "scripts": {
+    "postinstall": "husky",
+    "format": "prettier --write \"**/*.{js,json,md,yml,yaml,mjs}\"",
+    "format:check": "prettier --check \"**/*.{js,json,md,yml,yaml,mjs}\"",
+    "check-links": "find . -name '*.md' -not -path './node_modules/*' -not -path './.git/*' -not -path './scripts/*/node_modules/*' -print0 | xargs -0 -n1 npx markdown-link-check --verbose -c .markdown-link-check.json",
+    "fix:md": "markdownlint-cli2 --fix \"**/*.md\"",
+    "spell-check": "cspell \"**/*.md\"",
+    "lint:all": "npm run format:check && npm run fix:md && npm run spell-check"
+  },
+  "lint-staged": {
+    "*.{js,json,md,yml,yaml,mjs}": "prettier --write",
+    "*.md": [
+      "markdownlint-cli2",
+      "cspell"
+    ]
+  }
+}

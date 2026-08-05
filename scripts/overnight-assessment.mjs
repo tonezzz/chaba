@@ -262,9 +262,9 @@ function httpGetCustom(hostname, port, path, timeout = 5000) {
   });
 }
 
-function execCommand(command) {
+function execCommand(command, timeout = 10000) {
   try {
-    return { success: true, output: execSync(command, { encoding: 'utf8', timeout: 10000 }) };
+    return { success: true, output: execSync(command, { encoding: 'utf8', timeout: timeout }) };
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -607,6 +607,141 @@ function checkConfiguration() {
   }
 
   appendSection('Configuration Validation', content);
+}
+
+async function checkSecurityStatus() {
+  console.log('Checking security status...');
+  let content = '';
+
+  try {
+    const securityCheck = execCommand('node /home/tony/CascadeProjects/chaba/scripts/security-scan.mjs', 180000); // 3 minute timeout
+    
+    if (securityCheck.success) {
+      content += '**Security Scan Results:**\n\n';
+      
+      // Try to parse the security results
+      try {
+        const securityResultsPath = '/home/tony/CascadeProjects/chaba/security-results.json';
+        if (existsSync(securityResultsPath)) {
+          const securityData = JSON.parse(readFileSync(securityResultsPath, 'utf8'));
+          const summary = securityData.summary || {};
+          
+          content += `- **Total Vulnerabilities:** ${summary.totalVulnerabilities || 0}\n`;
+          content += `- **Docker Vulnerabilities:** ${summary.dockerVulnerabilities || 0}\n`;
+          content += `- **Python Vulnerabilities:** ${summary.pythonVulnerabilities || 0}\n`;
+          content += `- **Node.js Vulnerabilities:** ${summary.nodeVulnerabilities || 0}\n`;
+          content += `- **Stale Container Images:** ${summary.staleContainerImages || 0}\n`;
+          content += `- **Overall Status:** ${summary.overallStatus || 'unknown'}\n\n`;
+          
+          // Check for security issues
+          if (summary.totalVulnerabilities > 0) {
+            highIssues.push(`Security scan found ${summary.totalVulnerabilities} vulnerabilities`);
+            
+            // Create improvement if critical vulnerabilities found
+            if (summary.dockerVulnerabilities > 0) {
+              const improvementLabel = `Docker Container Security Vulnerabilities`;
+              if (!improvementExists(improvementLabel)) {
+                autoCreateImprovement(
+                  improvementLabel,
+                  `Docker containers have ${summary.dockerVulnerabilities} security vulnerabilities - update images to patch HIGH/CRITICAL issues`,
+                  'high',
+                  'security',
+                  [`docker-compose.yml`, `scripts/security-scan.mjs`]
+                );
+              }
+            }
+            
+            if (summary.nodeVulnerabilities > 0) {
+              const improvementLabel = `Node.js Security Vulnerabilities`;
+              if (!improvementExists(improvementLabel)) {
+                autoCreateImprovement(
+                  improvementLabel,
+                  `Node.js dependencies have ${summary.nodeVulnerabilities} security vulnerabilities - run npm audit fix`,
+                  'medium',
+                  'security',
+                  [`package.json`, `scripts/security-scan.mjs`]
+                );
+              }
+            }
+          }
+          
+          if (summary.staleContainerImages > 0) {
+            mediumIssues.push(`${summary.staleContainerImages} stale container images found (>90 days old)`);
+            
+            const improvementLabel = `Stale Container Images`;
+            if (!improvementExists(improvementLabel)) {
+              autoCreateImprovement(
+                improvementLabel,
+                `${summary.staleContainerImages} container images are older than 90 days - consider rebuilding with updated base images`,
+                'medium',
+                'security',
+                [`docker-compose.yml`, `scripts/security-scan.mjs`]
+              );
+            }
+          }
+          
+          // Show vulnerable Docker images
+          if (securityData.dockerImages && securityData.dockerImages.length > 0) {
+            const vulnerableImages = securityData.dockerImages.filter(img => img.vulnerable);
+            if (vulnerableImages.length > 0) {
+              content += '**Vulnerable Docker Images:**\n\n';
+              vulnerableImages.forEach(img => {
+                content += `- **${img.image}**: ${img.vulnerabilityCount} vulnerabilities\n`;
+              });
+              content += '\n';
+            }
+          }
+          
+          // Show vulnerable Python dependencies
+          if (securityData.pythonDependencies && securityData.pythonDependencies.length > 0) {
+            const vulnerableDeps = securityData.pythonDependencies.filter(dep => dep.vulnerable);
+            if (vulnerableDeps.length > 0) {
+              content += '**Vulnerable Python Dependencies:**\n\n';
+              vulnerableDeps.forEach(dep => {
+                content += `- **${dep.file}**: ${dep.vulnerabilityCount} vulnerabilities\n`;
+              });
+              content += '\n';
+            }
+          }
+          
+          // Show vulnerable Node.js dependencies
+          if (securityData.nodeDependencies && securityData.nodeDependencies.length > 0) {
+            const vulnerableDeps = securityData.nodeDependencies.filter(dep => dep.vulnerable);
+            if (vulnerableDeps.length > 0) {
+              content += '**Vulnerable Node.js Dependencies:**\n\n';
+              vulnerableDeps.forEach(dep => {
+                content += `- **${dep.directory}**: ${dep.vulnerabilityCount} vulnerabilities\n`;
+              });
+              content += '\n';
+            }
+          }
+          
+          // Show stale images
+          if (securityData.containerAges && securityData.containerAges.length > 0) {
+            const staleImages = securityData.containerAges.filter(img => img.stale);
+            if (staleImages.length > 0) {
+              content += '**Stale Container Images:**\n\n';
+              staleImages.forEach(img => {
+                content += `- **${img.image}**: ${img.ageInDays} days old\n`;
+              });
+              content += '\n';
+            }
+          }
+        }
+      } catch (parseError) {
+        content += 'Security scan completed but results could not be parsed.\n';
+        content += 'Raw output:\n```\n' + securityCheck.output + '\n```\n';
+      }
+    } else {
+      content += 'Security scan failed: ' + securityCheck.error + '\n';
+      mediumIssues.push('Security scan failed to execute');
+    }
+  } catch (error) {
+    content += 'Failed to run security scan: ' + error.message + '\n';
+    mediumIssues.push('Security scan encountered error');
+  }
+
+  appendSection('Security & Dependency Status', content);
 }
 
 function checkImprovementsSSOT() {
@@ -970,6 +1105,8 @@ function generateRecommendations() {
   recommendations += '- Review and clean up GPU queue failures\n';
   recommendations += '- Monitor disk usage growth patterns\n';
   recommendations += '- Track improvements in ssot.improvements.yml\n';
+  recommendations += '- Review security scan results and patch vulnerabilities\n';
+  recommendations += '- Monitor container image ages and update stale images\n';
 
   report += recommendations;
 }
@@ -1014,6 +1151,7 @@ async function runAssessment() {
     await checkYomiSystem();
     checkSystemResources();
     checkConfiguration();
+    await checkSecurityStatus();
     checkImprovementsSSOT();
 
     // Sync auto-created improvements to SSOT
