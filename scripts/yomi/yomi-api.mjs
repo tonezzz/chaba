@@ -8,6 +8,9 @@ const PORT = parseInt(process.env.YOMI_API_PORT || '3000', 10);
 const HOST = process.env.YOMI_API_HOST || '0.0.0.0';
 const SCRIPT_DIR = '/home/tony/CascadeProjects/chaba/scripts/yomi';
 const MEDIA_DIR = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/media';
+const WEAVIATE_SEARCH_URL = process.env.WEAVIATE_SEARCH_URL || 'http://localhost:3002';
+const WEAVIATE_URL = process.env.WEAVIATE_URL || 'http://localhost:8082';
+const EMBEDDING_URL = process.env.EMBEDDING_SERVICE_URL || 'http://localhost:5000';
 
 const EXT_TO_MIME = {
   jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif',
@@ -690,6 +693,72 @@ const server = createServer(async (req, res) => {
       await handleMessages(chatId, url, res);
     } catch (err) {
       sendJson(res, 500, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  if (url.pathname === '/api/yomi/search' && req.method === 'GET') {
+    try {
+      const q = url.searchParams.get('q') || '';
+      const limit = Math.min(parseInt(url.searchParams.get('limit') || '20', 10), 50);
+      const chatId = url.searchParams.get('chat') || '';
+      if (!q.trim()) { sendJson(res, 400, { error: 'q is required' }); return; }
+
+      // Embed the query
+      const embedRes = await fetch(`${EMBEDDING_URL}/embed-single`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: q }),
+      });
+      if (!embedRes.ok) throw new Error(`embedding service ${embedRes.status}`);
+      const { embedding } = await embedRes.json();
+
+      // Build optional where filter
+      const whereClause = chatId
+        ? `where:{path:["chatId"] operator:Equal valueText:${JSON.stringify(chatId)}}`
+        : '';
+
+      const gql = `{
+        Get {
+          YomiMessage(
+            hybrid: {
+              query: ${JSON.stringify(q)}
+              vector: ${JSON.stringify(embedding)}
+              alpha: 0.5
+            }
+            limit: ${limit}
+            ${whereClause}
+          ) {
+            messageId chatId chatName fromName text deliveredTime isGroup
+            _additional { score }
+          }
+        }
+      }`;
+
+      const wvRes = await fetch(`${WEAVIATE_URL}/v1/graphql`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: gql }),
+      });
+      if (!wvRes.ok) throw new Error(`Weaviate ${wvRes.status}`);
+      const wvData = await wvRes.json();
+      if (wvData.errors) throw new Error(wvData.errors.map(e => e.message).join('; '));
+
+      const raw = wvData.data?.Get?.YomiMessage || [];
+      const results = raw.map(r => ({
+        messageId:     r.messageId,
+        chatId:        r.chatId,
+        chatName:      r.chatName,
+        fromName:      r.fromName,
+        text:          r.text,
+        deliveredTime: r.deliveredTime,
+        isGroup:       r.isGroup,
+        similarity:    parseFloat(parseFloat(r._additional?.score || 0).toFixed(4)),
+      }));
+
+      sendJson(res, 200, { results, total: results.length });
+    } catch (e) {
+      sendJson(res, 500, { error: e.message });
     }
     return;
   }

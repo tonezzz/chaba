@@ -30,12 +30,16 @@ def chunk_text(text, chunk_size=512, chunk_overlap=50):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: chunk-text.py <text_to_chunk> [chunk_size] [chunk_overlap]")
+        print("Usage: chunk-text.py <input_file> [chunk_size] [chunk_overlap]")
         sys.exit(1)
     
-    text = sys.argv[1]
+    input_file = sys.argv[1]
     chunk_size = int(sys.argv[2]) if len(sys.argv) > 2 else 512
     chunk_overlap = int(sys.argv[3]) if len(sys.argv) > 3 else 50
+    
+    # Read text from file to avoid shell escaping issues
+    with open(input_file, 'r', encoding='utf-8') as f:
+        text = f.read()
     
     chunks = chunk_text(text, chunk_size, chunk_overlap)
     

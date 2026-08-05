@@ -7,11 +7,13 @@
  * for semantic search using all-MiniLM-L6-v2 model via GPU embedding service
  */
 
-import { readFile, readdir, stat } from 'fs/promises';
+import { readFile, readdir, stat, writeFile, unlink } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { mkdtemp, rmdir } from 'fs/promises';
+import { tmpdir } from 'os';
 
 const execAsync = promisify(exec);
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -134,9 +136,28 @@ function extractTags(content, type) {
   return tags;
 }
 
-// Chunk text using simple character-based chunking (for testing)
+// Chunk text using Chonkie Python script
 async function chunkText(content, chunkSize = 512, chunkOverlap = 50) {
   try {
+    // Create temporary file to avoid shell escaping issues
+    const tempDir = await mkdtemp(join(tmpdir(), 'chunk-'));
+    const tempFile = join(tempDir, 'input.txt');
+    await writeFile(tempFile, content, 'utf-8');
+    
+    const { stdout } = await execAsync(
+      `/home/tony/venv-embeddings/bin/python /home/tony/CascadeProjects/chaba/scripts/chunk-text.py "${tempFile}" ${chunkSize} ${chunkOverlap}`,
+      { timeout: 30000 }
+    );
+    
+    // Clean up temp file
+    await unlink(tempFile);
+    await rmdir(tempDir);
+    
+    const result = JSON.parse(stdout);
+    return result.chunks;
+  } catch (error) {
+    console.error('Error chunking text, falling back to simple chunking:', error.message);
+    // Fallback to simple character-based chunking
     if (content.length <= chunkSize) {
       return [content];
     }
@@ -150,9 +171,6 @@ async function chunkText(content, chunkSize = 512, chunkOverlap = 50) {
       if (start < 0) start = 0;
     }
     return chunks;
-  } catch (error) {
-    console.warn('Chunking failed, using original content:', error.message);
-    return [content]; // Fallback to original content
   }
 }
 
@@ -166,42 +184,48 @@ async function indexDocument(filePath, type, category) {
     
     console.log(`Content length: ${content.length} chars`);
     
-    // Use full content without chunking for testing
-    const chunkContent = content;
-    const embedding = await generateEmbedding(chunkContent);
+    // Use Chonkie chunking for better semantic search
+    const chunks = await chunkText(content, 512, 50);
+    console.log(`Document chunked into ${chunks.length} parts`);
     
-    console.log(`Embedding generated: ${embedding.length} dimensions`);
-    
-    const dataObj = {
-      class: 'SSOTDocument',
-      properties: {
-        title: title,
-        content: chunkContent,
-        path: filePath,
-        type,
-        category,
-        tags: [],
-        language: 'en',
-        lastModified: stats.mtime.toISOString(),
-        size: stats.size,
-        chunkIndex: null,
-        totalChunks: null,
-      },
-      vector: embedding,
-    };
-    
-    console.log(`Sending to Weaviate...`);
-    const response = await fetch(`${WEAVIATE_API}/objects`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(dataObj)
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to insert data: ${response.status}`);
+    // Index each chunk
+    for (let i = 0; i < chunks.length; i++) {
+      const chunkContent = chunks[i];
+      const embedding = await generateEmbedding(chunkContent);
+      
+      console.log(`Embedding generated for chunk ${i + 1}/${chunks.length}: ${embedding.length} dimensions`);
+      
+      const dataObj = {
+        class: 'SSOTDocument',
+        properties: {
+          title: title,
+          content: chunkContent,
+          path: filePath,
+          type,
+          category,
+          tags: [],
+          language: 'en',
+          lastModified: stats.mtime.toISOString(),
+          size: stats.size,
+          chunkIndex: i,
+          totalChunks: chunks.length,
+        },
+        vector: embedding,
+      };
+      
+      console.log(`Sending chunk ${i + 1}/${chunks.length} to Weaviate...`);
+      const response = await fetch(`${WEAVIATE_API}/objects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dataObj)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to insert chunk ${i + 1}: ${response.status}`);
+      }
     }
     
-    console.log(`Document indexed successfully`);
+    console.log(`Document indexed successfully (${chunks.length} chunks)`);
   } catch (error) {
     console.error(`Error indexing ${filePath}:`, error.message);
   }
@@ -239,13 +263,28 @@ async function main() {
     const documents = await findDocuments();
     console.log(`Found ${documents.length} documents to index`);
     
-    // Index all found documents
-    console.log(`Indexing ${documents.length} documents`);
-    for (const doc of documents) {
-      await indexDocument(doc.path, doc.type, doc.category);
+    // Index all found documents in batches to manage memory
+    console.log(`Indexing ${documents.length} documents in batches`);
+    const BATCH_SIZE = 10; // Process in batches to manage memory
+    
+    for (let i = 0; i < documents.length; i += BATCH_SIZE) {
+      const batch = documents.slice(i, i + BATCH_SIZE);
+      console.log(`\nProcessing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(documents.length / BATCH_SIZE)} (${batch.length} documents)`);
+      
+      for (const doc of batch) {
+        await indexDocument(doc.path, doc.type, doc.category);
+      }
+      
+      // Force garbage collection between batches
+      if (global.gc) {
+        console.log('Running garbage collection...');
+        global.gc();
+      }
+      
+      console.log(`Batch completed. ${i + batch.length}/${documents.length} documents processed.`);
     }
     
-    console.log('Indexing complete!');
+    console.log('\nIndexing complete!');
     
     // Show collection stats
     const response = await fetch(`${WEAVIATE_URL}/v1/schema/SSOTDocument`);

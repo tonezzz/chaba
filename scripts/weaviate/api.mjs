@@ -2,72 +2,82 @@
 
 /**
  * Weaviate Search API
- * 
- * Simple HTTP API for semantic search of SSOT documents
- * Currently using mock data for testing
+ *
+ * Hybrid semantic search (BM25 + vector) over SSOTDocument collection.
+ * Embeds the query via the local GPU embedding service, then runs
+ * Weaviate's hybrid search (alpha=0.5 balances keyword vs vector).
  */
 
 import { createServer } from 'http';
 
 const WEAVIATE_URL = process.env.WEAVIATE_URL || 'http://localhost:8082';
+const EMBEDDING_URL = process.env.EMBEDDING_SERVICE_URL || 'http://localhost:5000';
 const PORT = process.env.PORT || 3002;
 
 console.log('Weaviate Search API starting...');
 console.log('Weaviate URL:', WEAVIATE_URL);
+console.log('Embedding URL:', EMBEDDING_URL);
 
-// Mock search results for testing
-const mockResults = [
-  {
-    title: 'GPU Queue Management',
-    content: 'GPU queue system for efficient resource allocation across llama, imagen2, and txt2vid workloads',
-    path: 'docs/ssot/infrastructure/ssot.gpu.yml',
-    type: 'ssot',
-    category: 'infrastructure',
-    tags: ['gpu', 'queue', 'management'],
-    language: 'en',
-    similarity: 0.95
-  },
-  {
-    title: 'Weaviate Vector Database',
-    content: 'Vector database configuration for semantic search and RAG pipelines',
-    path: 'docs/ssot/ssot.test.weaviate.yml',
-    type: 'ssot',
-    category: 'infrastructure',
-    tags: ['weaviate', 'vector', 'search'],
-    language: 'en',
-    similarity: 0.88
-  },
-  {
-    title: 'Thai Legal Document Processing',
-    content: 'Thai legal document processing with multilingual support using Gemma model',
-    path: 'docs/overview/sessions/thai-legal.yml',
-    type: 'session',
-    category: 'sessions',
-    tags: ['thai', 'legal', 'gemma'],
-    language: 'th',
-    similarity: 0.82
-  },
-  {
-    title: 'Docker Configuration',
-    content: 'Docker compose configuration for web services and infrastructure',
-    path: 'stacks/web/docker-compose.yml',
-    type: 'docs',
-    category: 'infrastructure',
-    tags: ['docker', 'compose', 'web'],
-    language: 'en',
-    similarity: 0.75
-  },
-  {
-    title: 'Caddy Web Server',
-    content: 'Caddy reverse proxy configuration for routing and SSL',
-    path: 'stacks/web/Caddyfile',
-    type: 'docs',
-    category: 'infrastructure',
-    tags: ['caddy', 'proxy', 'routing'],
-    language: 'en',
-    similarity: 0.70
+async function embedQuery(text) {
+  const res = await fetch(`${EMBEDDING_URL}/embed-single`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+  if (!res.ok) throw new Error(`Embedding service error: ${res.status}`);
+  const data = await res.json();
+  return data.embedding;
+}
+
+async function hybridSearch(query, vector, limit, filters) {
+  const whereClause = buildWhereClause(filters);
+  const gql = `{
+    Get {
+      SSOTDocument(
+        hybrid: {
+          query: ${JSON.stringify(query)}
+          vector: ${JSON.stringify(vector)}
+          alpha: 0.5
+        }
+        limit: ${limit}
+        ${whereClause ? `where: ${whereClause}` : ''}
+      ) {
+        title
+        content
+        path
+        type
+        category
+        tags
+        language
+        _additional { score }
+      }
+    }
+  }`;
+
+  const res = await fetch(`${WEAVIATE_URL}/v1/graphql`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query: gql }),
+  });
+  if (!res.ok) throw new Error(`Weaviate error: ${res.status}`);
+  const data = await res.json();
+  if (data.errors) throw new Error(data.errors.map(e => e.message).join('; '));
+  return data.data.Get.SSOTDocument || [];
+}
+
+function buildWhereClause(filters) {
+  if (!filters || Object.keys(filters).length === 0) return '';
+  const operands = [];
+  if (filters.type) {
+    operands.push(`{path:["type"] operator:Equal valueText:${JSON.stringify(filters.type)}}`);
   }
-];
+  if (filters.category) {
+    operands.push(`{path:["category"] operator:Equal valueText:${JSON.stringify(filters.category)}}`);
+  }
+  if (operands.length === 0) return '';
+  if (operands.length === 1) return operands[0];
+  return `{operator:And operands:[${operands.join(',')}]}`;
+}
 
 async function handleSearch(req, res) {
   if (req.method !== 'POST') {
@@ -78,19 +88,31 @@ async function handleSearch(req, res) {
 
   try {
     const body = await getRequestBody(req);
-    const { query, limit = 20 } = JSON.parse(body);
+    const { query, limit = 20, filters = {} } = JSON.parse(body);
+    if (!query || !query.trim()) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'query is required' }));
+      return;
+    }
 
-    console.log('Search query:', query);
+    console.log('Search query:', query, filters);
 
-    // Return mock results filtered by query
-    const filteredResults = mockResults.filter(result =>
-      result.title.toLowerCase().includes(query.toLowerCase()) ||
-      result.content.toLowerCase().includes(query.toLowerCase()) ||
-      result.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))
-    ).slice(0, limit);
+    const vector = await embedQuery(query);
+    const raw = await hybridSearch(query, vector, limit, filters);
+
+    const results = raw.map(r => ({
+      title: r.title,
+      content: r.content,
+      path: r.path,
+      type: r.type,
+      category: r.category,
+      tags: r.tags || [],
+      language: r.language,
+      similarity: parseFloat(parseFloat(r._additional?.score || 0).toFixed(4)),
+    }));
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ results: filteredResults }));
+    res.end(JSON.stringify({ results, total: results.length, mode: 'hybrid' }));
 
   } catch (error) {
     console.error('Search error:', error);
@@ -100,12 +122,37 @@ async function handleSearch(req, res) {
 }
 
 async function handleHealth(req, res) {
+  let weaviateOk = false;
+  let embeddingOk = false;
+  let docCount = 0;
+
+  try {
+    const r = await fetch(`${WEAVIATE_URL}/v1/.well-known/ready`);
+    weaviateOk = r.ok;
+  } catch (_) {}
+
+  try {
+    const r = await fetch(`${EMBEDDING_URL}/health`);
+    embeddingOk = r.ok;
+  } catch (_) {}
+
+  try {
+    const r = await fetch(`${WEAVIATE_URL}/v1/graphql`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: '{Aggregate{SSOTDocument{meta{count}}}}' }),
+    });
+    const d = await r.json();
+    docCount = d?.data?.Aggregate?.SSOTDocument?.[0]?.meta?.count || 0;
+  } catch (_) {}
+
   res.writeHead(200, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({
-    status: 'healthy',
-    weaviate_url: WEAVIATE_URL,
-    mode: 'mock', // Using mock data for testing
-    total_documents: mockResults.length
+    status: weaviateOk && embeddingOk ? 'healthy' : 'degraded',
+    mode: 'hybrid',
+    weaviate: weaviateOk ? 'ok' : 'error',
+    embedding: embeddingOk ? 'ok' : 'error',
+    total_documents: docCount,
   }));
 }
 

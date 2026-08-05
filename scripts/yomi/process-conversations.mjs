@@ -248,6 +248,13 @@ function buildPrompt(name, messages) {
     const from = m.fromName || m.from || 'Unknown';
     const text = m.text || (m.mediaType ? `[${m.mediaType}]` : null);
     if (!text) return null;
+    
+    // Filter out messages that only contain encrypted keyMaterial/fileName data
+    // These are media metadata without actual conversation content
+    if (text.startsWith('{') && text.includes('keyMaterial')) {
+      return null;
+    }
+    
     return `${from}: ${String(text).replace(/\n/g, ' ')}`;
   }).filter(Boolean);
   
@@ -307,6 +314,13 @@ function buildDailyPrompt(date, messages, name) {
     const from = m.fromName || m.from || 'Unknown';
     const text = m.text || (m.mediaType ? `[${m.mediaType}]` : null);
     if (!text) return null;
+    
+    // Filter out messages that only contain encrypted keyMaterial/fileName data
+    // These are media metadata without actual conversation content
+    if (text.startsWith('{') && text.includes('keyMaterial')) {
+      return null;
+    }
+    
     return `${from}: ${String(text).replace(/\n/g, ' ')}`;
   }).filter(Boolean);
   if (lines.length === 0) return null;
@@ -382,6 +396,13 @@ function buildBatchDailyPrompt(dateGroups, name) {
       const from = m.fromName || m.from || 'Unknown';
       const text = m.text || (m.mediaType ? `[${m.mediaType}]` : null);
       if (!text) return null;
+      
+      // Filter out messages that only contain encrypted keyMaterial/fileName data
+      // These are media metadata without actual conversation content
+      if (text.startsWith('{') && text.includes('keyMaterial')) {
+        return null;
+      }
+      
       return `${from}: ${String(text).replace(/\n/g, ' ')}`;
     }).filter(Boolean);
     
