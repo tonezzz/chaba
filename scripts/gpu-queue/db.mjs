@@ -465,3 +465,58 @@ export async function getRecentJobsWithMetrics(limit = 50) {
   `, [limit]);
   return result.rows;
 }
+
+// Get job statistics for monitoring
+export async function getJobStats(hours = 24) {
+  const query = `
+    SELECT 
+      type,
+      status,
+      COUNT(*) as count,
+      AVG(execution_time_ms) as avg_execution_time_ms,
+      AVG(queue_wait_time_ms) as avg_queue_wait_time_ms,
+      AVG(retry_count) as avg_retry_count
+    FROM gpu_queue_jobs
+    WHERE created_at > NOW() - INTERVAL '${hours} hours'
+    GROUP BY type, status
+    ORDER BY type, status
+  `;
+  
+  const result = await pool.query(query);
+  return result.rows;
+}
+
+// Get cancellation rate for monitoring
+export async function getCancellationRate(hours = 24) {
+  const query = `
+    SELECT 
+      type,
+      COUNT(*) FILTER (WHERE status = 'cancelled') as cancelled,
+      COUNT(*) FILTER (WHERE status = 'completed') as completed,
+      COUNT(*) FILTER (WHERE status = 'failed') as failed,
+      COUNT(*) as total,
+      ROUND(COUNT(*) FILTER (WHERE status = 'cancelled')::numeric / COUNT(*) * 100, 2) as cancellation_rate
+    FROM gpu_queue_jobs
+    WHERE created_at > NOW() - INTERVAL '${hours} hours'
+    GROUP BY type
+    ORDER BY type
+  `;
+  
+  const result = await pool.query(query);
+  return result.rows;
+}
+
+// Get recent job failures for analysis
+export async function getRecentFailures(limit = 10) {
+  const query = `
+    SELECT id, type, status, error, created_at, started_at, completed_at, retry_count
+    FROM gpu_queue_jobs
+    WHERE status IN ('failed', 'cancelled')
+    ORDER BY created_at DESC
+    LIMIT $1
+  `;
+  
+  const result = await pool.query(query, [limit]);
+  return result.rows;
+}
+

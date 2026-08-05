@@ -2,6 +2,7 @@ import http from 'http';
 import * as db from './db.mjs';
 import * as queue from './queue.mjs';
 import * as monitoring from './monitoring.mjs';
+import * as orchestrator from './orchestrator.mjs';
 
 const PORT = process.env.GPU_QUEUE_PORT || 3001;
 const HOST = process.env.GPU_QUEUE_HOST || '0.0.0.0';
@@ -149,6 +150,30 @@ async function handleRequest(req, res) {
       return;
     }
 
+    // GET /api/gpu-queue/stats - Job statistics
+    if (path[0] === 'api' && path[1] === 'gpu-queue' && path[2] === 'stats' && method === 'GET') {
+      const hours = parseInt(new URL(req.url, `http://${HOST}`).searchParams.get('hours')) || 24;
+      const stats = await db.getJobStats(hours);
+      sendJson(res, 200, stats);
+      return;
+    }
+
+    // GET /api/gpu-queue/cancellation-rate - Cancellation rate monitoring
+    if (path[0] === 'api' && path[1] === 'gpu-queue' && path[2] === 'cancellation-rate' && method === 'GET') {
+      const hours = parseInt(new URL(req.url, `http://${HOST}`).searchParams.get('hours')) || 24;
+      const cancellationRate = await db.getCancellationRate(hours);
+      sendJson(res, 200, cancellationRate);
+      return;
+    }
+
+    // GET /api/gpu-queue/recent-failures - Recent job failures
+    if (path[0] === 'api' && path[1] === 'gpu-queue' && path[2] === 'recent-failures' && method === 'GET') {
+      const limit = parseInt(new URL(req.url, `http://${HOST}`).searchParams.get('limit')) || 10;
+      const failures = await db.getRecentFailures(limit);
+      sendJson(res, 200, failures);
+      return;
+    }
+
     // GET /health - Health check
     if (path[0] === 'health' && method === 'GET') {
       const health = await monitoring.getQueueHealth();
@@ -180,15 +205,58 @@ server.listen(PORT, HOST, () => {
   console.log('  GET    /api/gpu-queue/monitoring/performance  - Monitoring performance');
   console.log('  GET    /api/gpu-queue/monitoring/activity     - Monitoring activity');
   console.log('  GET    /api/gpu-queue/monitoring/overview     - Monitoring overview');
+  console.log('  GET    /api/gpu-queue/stats                 - Job statistics');
+  console.log('  GET    /api/gpu-queue/cancellation-rate    - Cancellation rate monitoring');
+  console.log('  GET    /api/gpu-queue/recent-failures      - Recent job failures');
   console.log('  GET    /health                    - Health check');
   console.log('');
-  console.log('Note: Queue processor disabled. Use orchestrator.mjs to process jobs with MCP tools.');
+  console.log('Queue processor enabled with direct API calls.');
 });
 
-// Queue processor disabled - use orchestrator.mjs instead
-// queue.startQueueProcessor().catch(error => {
-//   console.error('Queue processor failed:', error);
-// });
+// Start queue processor with direct API calls (no MCP required)
+async function startQueueProcessor() {
+  console.log('Starting queue processor...');
+  
+  while (true) {
+    try {
+      const job = await db.getNextPendingJob();
+      
+      if (job) {
+        console.log(`Processing job ${job.id}: ${job.type}`);
+        await db.updateJobStatus(job.id, 'running');
+        
+        try {
+          if (job.type === 'imagen2') {
+            await orchestrator.processImagen2Job(job);
+          } else if (job.type === 'txt2vid') {
+            await orchestrator.processTxt2vidJob(job);
+          } else if (job.type === 'embedding') {
+            await orchestrator.processEmbeddingJob(job);
+          } else if (job.type === 'llama') {
+            await orchestrator.processLlamaJob(job);
+          } else {
+            console.log(`Unknown job type: ${job.type}`);
+            await db.updateJobStatus(job.id, 'failed', `Unknown job type: ${job.type}`);
+          }
+        } catch (error) {
+          console.error(`Job ${job.id} processing failed:`, error);
+          await db.updateJobStatus(job.id, 'failed', error.message);
+        }
+      }
+      
+      // Wait 5 seconds before checking for next job
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    } catch (error) {
+      console.error('Queue processor error:', error);
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+  }
+}
+
+// Start queue processor in background
+startQueueProcessor().catch(error => {
+  console.error('Queue processor failed:', error);
+});
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
