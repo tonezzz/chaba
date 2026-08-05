@@ -1,0 +1,183 @@
+title: Strategic Focus Management
+subtitle: Shared vs per-branch strategic focus tracking
+icon: 🎯
+
+# Ideas and notes about strategic focus management
+# This SSOT file serves as the central repository for strategic focus areas
+ideas:
+  - Maintain clear separation between shared infrastructure and branch-specific strategic work
+  - Prevent context fragmentation by defining explicit strategic focus areas
+  - Track focus history to understand resource allocation patterns across projects
+  - Support dependency management between shared and branch-specific strategic initiatives
+  - Enable strategic planning by identifying high-impact focus areas
+  - Validate focus constraints to prevent over-commitment
+
+# Validation rules for focus management
+validation:
+  max_active_shared_focus: 1
+  max_active_branch_focus: 1
+  require_priority: true
+  require_tags: true
+  allow_focus_overlap: false  # Prevent same focus in multiple categories
+
+# Main focus sections
+sections:
+  - title: Shared Strategic Focus Areas
+    icon: 🌐
+    layout: list
+    items:
+      - label: GPU Queue & Monitoring System
+        text: Cross-project GPU resource management, queue optimization, monitoring enhancements, and process management
+        projects: [chaba, chaba-raceman, trade, tony-omen]
+        status: pending
+        priority: high
+        strategic_value: Critical infrastructure shared across all projects
+        estimated_duration: Ongoing
+        tags: [infrastructure, gpu, shared, monitoring]
+        dependencies:
+          - SSOT & Documentation Standards
+        
+      - label: SSOT & Documentation Standards
+        text: SSOT structure, validation, documentation patterns, KB management, and cross-project documentation consistency
+        projects: [chaba, chaba-h3, chaba-raceman, trade, tony-omen]
+        status: pending
+        priority: medium
+        strategic_value: Foundation for all project documentation and configuration management
+        estimated_duration: Ongoing
+        tags: [documentation, ssot, shared, standards]
+        
+      - label: Subagent Framework & Automation
+        text: Subagent profiles, skills development, automation patterns, and cross-project agent standardization
+        projects: [chaba, chaba-raceman, trade, tony-omen]
+        status: active
+        priority: high
+        strategic_value: Multiplies efficiency across all projects through automation
+        estimated_duration: Ongoing
+        tags: [automation, subagents, shared, efficiency]
+        dependencies:
+          - SSOT & Documentation Standards
+
+  - title: Per-Branch Strategic Focus Areas
+    icon: 🔀
+    layout: list
+    items:
+      - label: Chaba Infrastructure Completion
+        text: DNS resolution fix, README.md hostname updates, documentation index creation, and infrastructure hardening
+        branch: chaba
+        status: pending
+        priority: high
+        strategic_value: Completes foundational infrastructure for chaba project
+        estimated_duration: 1-2 sessions
+        tags: [infrastructure, chaba, completion]
+        dependencies:
+          - SSOT & Documentation Standards
+          
+      - label: Trade Subagent Implementation
+        text: Priority 1 subagents: SSOT Config Manager, Multi-Service Health Monitor, Documentation Cross-Reference Maintainer
+        branch: trade
+        status: active
+        priority: high
+        strategic_value: Leverages existing trade infrastructure for significant efficiency gains
+        estimated_duration: 2-3 weeks
+        tags: [subagents, trade, automation]
+        dependencies:
+          - Subagent Framework & Automation
+          - SSOT & Documentation Standards
+          
+      - label: Chaba-H3 Web Platform
+        text: H3-specific page development, web platform maintenance, and content management
+        branch: chaba-h3
+        status: pending
+        priority: medium
+        strategic_value: Maintains web presence for H3 project
+        estimated_duration: Ongoing
+        tags: [web, h3, platform]
+        
+      - label: Raceman Course Editor Enhancement
+        text: UI/UX improvements, course editing functionality, visualization enhancements, performance optimization, and E2E test maintenance
+        branch: chaba-raceman
+        status: active
+        priority: medium
+        strategic_value: Improves core raceman functionality, user experience, and system reliability
+        estimated_duration: 2-3 sessions
+        tags: [raceman, course-editor, ui-ux, enhancement, testing]
+        dependencies:
+          - SSOT & Documentation Standards
+        
+      - label: Tony-Omen Preview Deployment
+        text: Web server container deployment on tony-omen for testing & QA, providing production-like environment for final testing and validation across all projects
+        branch: tony-omen
+        status: pending
+        priority: high
+        strategic_value: Production readiness through reliable preview deployments for all projects
+        estimated_duration: Ongoing
+        tags: [deployment, testing, qa, production-readiness]
+        dependencies:
+          - SSOT & Documentation Standards
+          - GPU Queue & Monitoring System
+          - Subagent Framework & Automation
+
+  - title: Focus Management Rules
+    icon: 📋
+    layout: list
+    items:
+      - label: Single Active Focus Rule
+        text: Maximum 1 shared + 1 per-branch strategic focus active at any time to prevent strategic fragmentation
+        enforcement: validation
+        tags: [rules, focus, constraints]
+        
+      - label: Strategic Priority Alignment
+        text: High-priority strategic focuses take precedence over medium/low priorities across all branches
+        enforcement: manual
+        tags: [rules, priority, alignment]
+        
+      - label: Dependency First Principle
+        text: Strategic dependencies must be addressed before dependent focuses can become active
+        enforcement: validation
+        tags: [rules, dependencies, sequencing]
+        
+      - label: Focus Duration Tracking
+        text: Track time spent on each strategic focus to optimize resource allocation and identify bottlenecks
+        enforcement: manual
+        tags: [tracking, metrics, optimization]
+        
+      - label: Strategic Handoff Documentation
+        text: When switching strategic focuses, document current state, blockers, and next steps clearly
+        enforcement: manual
+        tags: [rules, handoff, documentation]
+
+  - title: Strategic Focus History
+    icon: 📊
+    layout: timeline
+    items:
+      - label: Subagent Framework Implementation
+        text: Comprehensive subagent implementation across chaba and chaba-raceman projects
+        date: 2026-08-04
+        duration: 2 sessions
+        outcome: 7 subagents created, 4 KB entries, 100% test pass rate
+        tags: [completed, subagents, automation]
+        
+      - label: Trade Project Assessment
+        text: Comprehensive assessment of trade project for subagent opportunities
+        date: 2026-08-05
+        duration: 1 session
+        outcome: 8 subagent opportunities identified, prioritized implementation plan
+        tags: [completed, assessment, trade]
+
+      - label: Raceman Worktree Refactoring
+        text: Focused raceman worktree on race management tools, removed unrelated applications, created comprehensive KB documentation
+        date: 2026-08-05
+        duration: 1 session
+        outcome: 701 files removed, 2 KB entries created, raceman branch pushed to remote
+        tags: [completed, refactoring, raceman, documentation]
+
+# Configuration and metadata
+config:
+  version: 1
+  last_updated: 2026-08-05
+  maintainer: tony
+  validation_enabled: true
+  related_files:
+    - docs/ssot/ssot.improvements.yml
+    - docs/overview/ssot.kb.yml
+    - .devin/agents/AGENTS.md
