@@ -34,6 +34,8 @@ GPU-accelerated text embedding service using sentence-transformers for high-perf
 - **GPU Queue**: Fully integrated with orchestrator functions (processEmbeddingJob, updateJobMetadata)
 - **Database**: Enhanced schema with embedding-specific fields (execution_time_ms, gpu_used, vram_used_mb, mode, batch_size, queue_wait_time_ms, result)
 - **Batch Processing**: Validated performance with efficient GPU utilization
+- **Monitoring System**: Comprehensive health checks, performance metrics, error tracking via monitoring.mjs
+- **Automation**: Automatic queue processor (auto-processor.mjs) and daily Weaviate indexing (systemd timers)
 
 ## Key Files
 
@@ -44,7 +46,11 @@ GPU-accelerated text embedding service using sentence-transformers for high-perf
 | `scripts/weaviate/embeddings.mjs` | Weaviate integration module |
 | `scripts/gpu-queue/schema.sql` | Database schema with embedding fields |
 | `scripts/gpu-queue/orchestrator.mjs` | GPU queue orchestrator with processEmbeddingJob() and updateJobMetadata() |
+| `scripts/gpu-queue/monitoring.mjs` | Health checks and performance metrics |
+| `scripts/gpu-queue/benchmark.mjs` | Performance benchmarking system |
+| `scripts/gpu-queue/auto-processor.mjs` | Automatic queue processor |
 | `docs/assessments/gpu-embedding/gpu-embedding-success-report.md` | Comprehensive success report |
+| `docs/assessments/gpu-embedding/gpu-sharing-analysis.md` | GPU sharing analysis and optimization recommendations |
 
 ## Deployment
 
@@ -190,22 +196,40 @@ Added embedding-specific fields to `gpu_queue_jobs` table:
 
 ## Testing Results
 
-### Service Performance
+### Service Performance (Updated 2026-08-05)
 - **Health Check**: ✅ Healthy
-- **Single Embedding**: ✅ 32ms
-- **Batch Processing**: ✅ Validated (175ms single, 187ms for 3 texts, 340ms for 5 texts)
-- **VRAM Usage**: ✅ 2808MB
+- **Single Embedding**: ✅ Avg 73.2ms (Min 55ms, Max 120ms)
+- **Batch Processing**: ✅ Avg 68ms for 5 texts (13.6ms per text)
+- **VRAM Usage**: ✅ 2822MB average
+- **Queue Completion Rate**: 54.5% (12/22 embedding jobs completed)
+- **Average Queue Wait**: 4275ms for completed jobs
 
-### Weaviate Search Testing
+### Monitoring System
 ```bash
-node search.mjs "What is the GPU queue system"
-# Results: 5 relevant documents with semantic similarity
-# Embedding generation: 28ms
+# Health check with alerts
+curl http://localhost:3001/health
+
+# Job statistics (last 24h)
+curl http://localhost:3001/api/gpu-queue/stats?hours=24
+
+# Cancellation rate monitoring
+curl http://localhost:3001/api/gpu-queue/cancellation-rate?hours=24
+
+# Recent failures analysis
+curl http://localhost:3001/api/gpu-queue/recent-failures?limit=10
 ```
+
+### Automation Status
+- **GPU Queue Processor**: ✅ Running as systemd service (gpu-queue-processor.service)
+- **Weaviate Indexer**: ✅ Scheduled daily at 2 AM (weaviate-index.timer)
+- **Error Handling**: ✅ Automatic retry with exponential backoff (3 attempts)
+- **Service Health Checks**: ✅ Pre-flight validation before job execution
 
 ### Integration Testing
 - **Weaviate Connection**: ✅ Working
-- **Embedding Generation**: ✅ 28-32ms
+- **Embedding Generation**: ✅ 55-120ms (GPU-accelerated)
+- **Queue Processing**: ✅ Automatic with error handling
+- **Monitoring Endpoints**: ✅ Operational
 - **Search Quality**: ✅ Good relevance scores
 - **Performance**: ✅ Consistent
 
