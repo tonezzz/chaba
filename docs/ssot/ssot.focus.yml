@@ -36,27 +36,26 @@ sections:
         tags: [infrastructure, gpu, shared, monitoring]
         dependencies:
           - SSOT & Documentation Standards
-        
       - label: SSOT & Documentation Standards
         text: SSOT structure, validation, documentation patterns, KB management, and cross-project documentation consistency
         projects: [chaba, chaba-h3, chaba-raceman, trade, tony-omen]
-        status: pending
+        status: active
         priority: medium
         strategic_value: Foundation for all project documentation and configuration management
         estimated_duration: Ongoing
         tags: [documentation, ssot, shared, standards]
+        current_context: MCP config sync completed, validation patterns SSOT created, best practices guide completed - infrastructure operational
         
       - label: Subagent Framework & Automation
         text: Subagent profiles, skills development, automation patterns, cross-project agent standardization, and auto-kb workflow implementation
         projects: [chaba, chaba-raceman, trade, tony-omen]
-        status: active
+        status: pending
         priority: high
         strategic_value: Multiplies efficiency across all projects through automation and KB management
         estimated_duration: Ongoing
         tags: [automation, subagents, shared, efficiency, kb-management]
         dependencies:
-          - SSOT & Documentation Standards
-        current_context: Auto-kb skill operational, subagent profiles implemented for chaba and trade projects
+          - SSOT & Documentation Standardscurrent_context: Auto-kb skill operational, subagent profiles implemented for chaba and trade projects
 
   - title: Per-Branch Strategic Focus Areas
     icon: 🔀
@@ -71,12 +70,11 @@ sections:
         estimated_duration: 1-2 sessions
         tags: [infrastructure, chaba, completion]
         dependencies:
-          - SSOT & Documentation Standards
-          
+          - SSOT & Documentation Standards  
       - label: Trade Subagent Implementation
         text: Priority 1 subagents: SSOT Config Manager, Multi-Service Health Monitor, Documentation Cross-Reference Maintainer
         branch: trade
-        status: active
+        status: pending
         priority: high
         strategic_value: Leverages existing trade infrastructure for significant efficiency gains
         estimated_duration: 2-3 weeks
@@ -84,6 +82,7 @@ sections:
         dependencies:
           - Subagent Framework & Automation
           - SSOT & Documentation Standards
+        current_context: Being worked on in separate session
           
       - label: Chaba-H3 Web Platform
         text: H3-specific page development, web platform maintenance, and content management
@@ -102,8 +101,7 @@ sections:
         strategic_value: Improves core raceman functionality, user experience, and system reliability
         estimated_duration: 2-3 sessions
         tags: [raceman, course-editor, ui-ux, enhancement, testing]
-        dependencies:
-          - SSOT & Documentation Standards
+        current_context: Visualization enhancements completed (section highlighting, wind visualization, marker rendering, performance optimization, responsive design). Next: course editing functionality improvements and E2E test expansion.
         
       - label: Tony-Omen Preview Deployment
         text: Web server container deployment on tony-omen for testing & QA, providing production-like environment for final testing and validation across all projects
@@ -114,8 +112,7 @@ sections:
         estimated_duration: Ongoing
         tags: [deployment, testing, qa, production-readiness]
         dependencies:
-          - SSOT & Documentation Standards
-          - GPU Queue & Monitoring System
+          - SSOT & Documentation Standards  - GPU Queue & Monitoring System
           - Subagent Framework & Automation
 
   - title: Focus Management Rules
@@ -171,6 +168,13 @@ sections:
         duration: 1 session
         outcome: 701 files removed, 2 KB entries created, raceman branch pushed to remote
         tags: [completed, refactoring, raceman, documentation]
+
+      - label: Raceman Course Editor Visualization
+        text: Enhanced course editor visualization with improved section highlighting, wind visualization, marker rendering, performance optimization, and responsive design
+        date: 2026-08-05
+        duration: 1 session
+        outcome: Enhanced section highlighting with glow effects, improved wind visualization with color-coded indicators, enhanced marker rendering, optimized rendering performance, responsive design for all screen sizes
+        tags: [completed, visualization, raceman, ui-ux, performance]
 
 # Configuration and metadata
 config:
