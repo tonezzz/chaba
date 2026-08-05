@@ -255,6 +255,11 @@ function buildPrompt(name, messages) {
       return null;
     }
     
+    // Also filter out messages that only contain fileName (no actual conversation)
+    if (text.startsWith('{') && text.includes('fileName') && !text.includes('keyMaterial')) {
+      return null;
+    }
+    
     return `${from}: ${String(text).replace(/\n/g, ' ')}`;
   }).filter(Boolean);
   
@@ -318,6 +323,11 @@ function buildDailyPrompt(date, messages, name) {
     // Filter out messages that only contain encrypted keyMaterial/fileName data
     // These are media metadata without actual conversation content
     if (text.startsWith('{') && text.includes('keyMaterial')) {
+      return null;
+    }
+    
+    // Also filter out messages that only contain fileName (no actual conversation)
+    if (text.startsWith('{') && text.includes('fileName') && !text.includes('keyMaterial')) {
       return null;
     }
     
@@ -400,6 +410,11 @@ function buildBatchDailyPrompt(dateGroups, name) {
       // Filter out messages that only contain encrypted keyMaterial/fileName data
       // These are media metadata without actual conversation content
       if (text.startsWith('{') && text.includes('keyMaterial')) {
+        return null;
+      }
+      
+      // Also filter out messages that only contain fileName (no actual conversation)
+      if (text.startsWith('{') && text.includes('fileName') && !text.includes('keyMaterial')) {
         return null;
       }
       
