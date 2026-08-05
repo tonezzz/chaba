@@ -41,7 +41,53 @@ class SectionHighlighter {
     this._pts = pts;
     const color = d.color || '#ffffff';
     this._color = color;
-    L.polyline(pts, { color, weight: 2, opacity: 0.55, lineCap: 'round', lineJoin: 'round', interactive: false, pane: this.paneName }).addTo(this.layer);
+
+    // Enhanced base line with glow effect
+    L.polyline(pts, { 
+      color, 
+      weight: 4, 
+      opacity: 0.7, 
+      lineCap: 'round', 
+      lineJoin: 'round', 
+      interactive: false, 
+      pane: this.paneName,
+      className: 'highlight-section-line'
+    }).addTo(this.layer);
+
+    // Add glow effect layer
+    L.polyline(pts, { 
+      color, 
+      weight: 8, 
+      opacity: 0.3, 
+      lineCap: 'round', 
+      lineJoin: 'round', 
+      interactive: false, 
+      pane: this.paneName,
+      className: 'highlight-section-glow'
+    }).addTo(this.layer);
+
+    // Add section endpoints
+    if (pts.length >= 2) {
+      this._startPoint = L.circleMarker(pts[0], {
+        radius: 8,
+        color: color,
+        fillColor: color,
+        fillOpacity: 0.5,
+        weight: 2,
+        pane: this.paneName,
+        className: 'highlight-section-endpoint'
+      }).addTo(this.layer);
+
+      this._endPoint = L.circleMarker(pts[pts.length - 1], {
+        radius: 8,
+        color: color,
+        fillColor: color,
+        fillOpacity: 0.5,
+        weight: 2,
+        pane: this.paneName,
+        className: 'highlight-section-endpoint'
+      }).addTo(this.layer);
+    }
 
     this._arrowColor = '#facc15';
     const h = Course.bearing(pts[0], pts[1] || pts[0]);
@@ -87,6 +133,8 @@ class SectionHighlighter {
     }
     this._movingArrow = null;
     this._pts = null;
+    this._startPoint = null;
+    this._endPoint = null;
     this.layer.clearLayers();
   }
 }

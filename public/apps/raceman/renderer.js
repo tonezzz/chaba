@@ -12,14 +12,64 @@ class CourseRenderer {
     }
     this.hidden = new Set();
     this.theme = options.theme || (typeof DefaultTheme !== 'undefined' ? new DefaultTheme() : {});
+    
+    // Performance optimization: Debounce render operations
+    this.renderPending = false;
+    this.renderTimeout = null;
+    this.lastDrawables = null;
+  }
+
+  // Debounced render for performance optimization
+  debouncedRender(callback, delay = 100) {
+    if (this.renderTimeout) {
+      clearTimeout(this.renderTimeout);
+    }
+    this.renderTimeout = setTimeout(() => {
+      this.renderPending = false;
+      if (callback) callback();
+    }, delay);
+    this.renderPending = true;
   }
 
   markerIcon(name, label) {
-    const svg = this.icons[name] || '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#64748b" stroke="#fff" stroke-width="2"/></svg>';
-    return L.divIcon({ className: 'marker-icon', html: svg, iconSize: [28, 28], iconAnchor: [14, 14] });
+    const svg = this.icons[name] || this.defaultMarkerIcon(name);
+    return L.divIcon({ className: 'marker-icon enhanced-marker', html: svg, iconSize: [32, 32], iconAnchor: [16, 16] });
+  }
+
+  defaultMarkerIcon(name) {
+    const colors = {
+      'start': '#22c55e',
+      'finish': '#ef4444', 
+      '1': '#3b82f6',
+      '2': '#a855f7',
+      '3': '#f59e0b',
+      '4': '#06b6d4',
+      '5': '#ec4899',
+      'default': '#64748b'
+    };
+    const color = colors[name] || colors['default'];
+    return `<svg viewBox="0 0 24 24">
+      <defs>
+        <filter id="marker-glow-${name}">
+          <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <circle cx="12" cy="12" r="10" fill="${color}" stroke="#fff" stroke-width="2" filter="url(#marker-glow-${name})"/>
+      <circle cx="12" cy="12" r="4" fill="#fff" opacity="0.8"/>
+      <text x="12" y="16" text-anchor="middle" fill="#fff" font-size="8" font-weight="bold">${name}</text>
+    </svg>`;
   }
   markerLabelIcon(label) {
-    return L.divIcon({ className: 'marker-label', html: `<span>${label}</span>`, iconSize: [60, 14], iconAnchor: [30, 0] });
+    return L.divIcon({ 
+      className: 'marker-label enhanced-marker-label', 
+      html: `<span class="label-text">${label}</span>`, 
+      iconSize: [70, 18], 
+      iconAnchor: [35, 0] 
+    });
   }
   lineLabelIcon(text, rotation = 0) {
     const style = `position:absolute;left:50%;top:50%;white-space:nowrap;transform:translate(-50%,-50%) rotate(${rotation.toFixed(1)}deg);`;
@@ -33,8 +83,34 @@ class CourseRenderer {
     return L.divIcon({ className: 'arrow-icon course-arrow', html: `<svg viewBox="0 0 24 24" fill="#38bdf8" style="transform: rotate(${heading}deg)"><path d="M12 2l10 18H2z"/></svg>`, iconSize: [16, 16], iconAnchor: [8, 8] });
   }
   windIcon(heading, speed) {
-    const text = speed != null ? `<text x="12" y="22" text-anchor="middle" fill="#e0f2fe" font-size="7" font-family="sans-serif">${speed} kt</text>` : '';
-    return L.divIcon({ className: 'wind-icon', html: `<svg viewBox="0 0 24 24" style="transform: rotate(${heading}deg)"><path d="M12 2l10 18H2z" fill="#0ea5e9"/></svg>${text}`, iconSize: [28, 28], iconAnchor: [14, 14] });
+    const text = speed != null ? `<text x="12" y="22" text-anchor="middle" fill="#e0f2fe" font-size="7" font-family="sans-serif" font-weight="bold">${speed} kt</text>` : '';
+    const speedColor = this.getWindSpeedColor(speed);
+    return L.divIcon({ 
+      className: 'wind-icon enhanced-wind-icon', 
+      html: `<svg viewBox="0 0 24 24" style="transform: rotate(${heading}deg)">
+        <defs>
+          <filter id="wind-glow-${speed}">
+            <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        <path d="M12 2l10 18H2z" fill="${speedColor}" filter="url(#wind-glow-${speed})" stroke="#fff" stroke-width="0.5"/>
+        <circle cx="12" cy="12" r="2" fill="#fff" opacity="0.8"/>
+      </svg>${text}`, 
+      iconSize: [32, 32], 
+      iconAnchor: [16, 16] 
+    });
+  }
+
+  getWindSpeedColor(speed) {
+    if (speed == null) return '#0ea5e9';
+    if (speed < 10) return '#22c55e'; // Light wind - green
+    if (speed < 15) return '#eab308'; // Moderate wind - yellow
+    if (speed < 20) return '#f97316'; // Strong wind - orange
+    return '#ef4444'; // Very strong wind - red
   }
 
   clear() {
@@ -288,14 +364,28 @@ class CourseRenderer {
   }
 
   draw(course, markers, options = {}) {
+    // Performance optimization: Use requestAnimationFrame for smooth rendering
+    if (this.renderPending) {
+      return this.debouncedRender(() => this.draw(course, markers, options));
+    }
+
     this.clear();
     const { drawables, g } = this.buildDrawables(markers, course);
     this.lastDrawables = drawables;
     this.guide = g;
-    for (const d of drawables) {
-      if (this.hidden.size && d.key && this.hidden.has(d.key)) continue;
-      this.theme.drawOne(d, this, options.onDrag);
-    }
+    
+    // Batch rendering for better performance
+    const visibleDrawables = drawables.filter(d => 
+      !this.hidden.size || !d.key || !this.hidden.has(d.key)
+    );
+    
+    // Use requestAnimationFrame for smooth rendering
+    requestAnimationFrame(() => {
+      for (const d of visibleDrawables) {
+        this.theme.drawOne(d, this, options.onDrag);
+      }
+    });
+    
     if (options.fit) {
       const allPts = markers.map(m => [m.lat, m.lon]);
       this.map.fitBounds(L.latLngBounds(allPts).pad(0.25));
