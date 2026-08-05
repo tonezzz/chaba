@@ -1,8 +1,18 @@
-# DNS Resolution: libvirt dnsmasq Conflict
+# DNS Resolution: Avahi Interface Restriction Fix
 
-## What it is
+## Status: RESOLVED (2026-08-05)
 
-DNS resolution issue where `tony-omen.local` resolves to a libvirt/VM network IP address instead of the Docker host IP (192.168.1.48), causing service connection failures.
+**Fix applied**: Restricted Avahi to `wlo1` interface only via `/etc/avahi/avahi-daemon.conf`:
+```
+allow-interfaces=wlo1
+```
+`tony-omen.local` now resolves to `192.168.1.48` correctly.
+
+---
+
+## Original Issue
+
+DNS resolution issue where `tony-omen.local` resolved to a Docker bridge IP (172.20.0.x) or libvirt/VM network IP instead of the actual host IP (192.168.1.48), causing service connection failures.
 
 ## Context/Background
 

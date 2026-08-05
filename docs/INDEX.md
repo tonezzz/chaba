@@ -22,17 +22,31 @@ docs/
 ### Knowledge Base (`docs/kb/`)
 Comprehensive guides for systems and workflows:
 
+- **[caddyfile-syntax-errors.md](kb/caddyfile-syntax-errors.md)** - Caddyfile syntax error patterns and fixes
 - **[dependency-management.md](kb/dependency-management.md)** - Dependency management system for improvements
-- **[dns-resolution-libvirt-dnsmasq.md](kb/dns-resolution-libvirt-dnsmasq.md)** - DNS resolution troubleshooting (libvirt dnsmasq conflict)
+- **[dns-resolution-libvirt-dnsmasq.md](kb/dns-resolution-libvirt-dnsmasq.md)** - DNS resolution fix: Avahi restricted to wlo1, tony-omen.local → 192.168.1.48 (resolved 2026-08-05)
 - **[e2e-test-automation-patterns.md](kb/e2e-test-automation-patterns.md)** - E2E testing patterns using Playwright
 - **[h3-pages.md](kb/h3-pages.md)** - chaba.h3 static pages deployment patterns
+- **[gpu-embedding-service.md](kb/gpu-embedding-service.md)** - GPU embedding service architecture and implementation
 - **[health-check.md](kb/health-check.md)** - Health check dashboard documentation
+- **[impact-scoring-system.md](kb/impact-scoring-system.md)** - Impact scoring system for improvements
+- **[mcp-server-audit.md](kb/mcp-server-audit.md)** - MCP server audit and optimization
 - **[mcp-tools.md](kb/mcp-tools.md)** - MCP server inventory and maintenance
 - **[overnight-assessment.md](kb/overnight-assessment.md)** - Automated overnight system assessment
+- **[playlive-authentication.md](kb/playlive-authentication.md)** - PlayLive authentication troubleshooting
+- **[playwright-vs-playlive.md](kb/playwright-vs-playlive.md)** - Playwright vs PlayLive comparison
+- **[raceman-worktree-scope.md](kb/raceman-worktree-scope.md)** - Raceman worktree scope and refactoring
 - **[subagent-implementation-strategy.md](kb/subagent-implementation-strategy.md)** - Subagent creation and management patterns
+- **[token-optimization-summary.md](kb/token-optimization-summary.md)** - Token optimization implementation overview
+- **[token-optimization-monitoring-guide.md](kb/token-optimization-monitoring-guide.md)** - Token optimization monitoring procedures
+- **[token-optimization-runbook.md](kb/token-optimization-runbook.md)** - Token optimization operational procedures
+- **[token-optimization-testing.md](kb/token-optimization-testing.md)** - Token optimization testing procedures
+- **[headroom-integration-monitoring-summary.md](kb/headroom-integration-monitoring-summary.md)** - Headroom proxy integration monitoring
+- **[headroom-test-results.md](kb/headroom-test-results.md)** - Headroom proxy test results
 - **[weaviate.md](kb/weaviate.md)** - Weaviate vector database and Chonkie chunking
 - **[weaviate-rest-api-fix.md](kb/weaviate-rest-api-fix.md)** - Weaviate REST API implementation details
 - **[yaml-syntax-error-patterns.md](kb/yaml-syntax-error-patterns.md)** - Common YAML syntax errors and prevention
+- **[yomi-daily2-calendar.md](kb/yomi-daily2-calendar.md)** - Yomi daily calendar integration
 - **[yomi-summary-corruption.md](kb/yomi-summary-corruption.md)** - Yomi summary corruption prevention and detection
 - **[yomi.md](kb/yomi.md)** - Yomi LINE web app comprehensive documentation
 
@@ -70,20 +84,22 @@ System assessment and status reports:
 - **[overnight-assessment-2026-08-04.md](reports/overnight-assessment-2026-08-04.md)** - Comprehensive overnight system assessment
 
 ### SSOT (`docs/ssot/`)
-Single Source of Truth configurations:
+Single Source of Truth configurations — see **[ssot.index.yml](ssot/ssot.index.yml)** for the master index:
 
+- **[ssot.index.yml](ssot/ssot.index.yml)** - **Master index** of all 30 SSOT files with descriptions
 - **[template.yml](ssot/template.yml)** - Template for new SSOT files
-- **[ssot.improvements.yml](ssot/ssot.improvements.yml)** - System improvements tracking
-- **[apps/](ssot/apps/)** - Application-specific SSOT files
-  - ssot.apps.yml (central app registry)
-  - ssot.apps.aihub.yml, ssot.apps.cams.yml, ssot.apps.chaba.yml, etc.
+- **[ssot.improvements.yml](ssot/ssot.improvements.yml)** - Active system improvements tracking (pending/in-progress only)
+- **[ssot.improvements.archive.yml](ssot/ssot.improvements.archive.yml)** - Completed improvements archive
+- **[ssot.focus.yml](ssot/ssot.focus.yml)** - Strategic focus areas and history
+- **[ssot.token-optimization.yml](ssot/ssot.token-optimization.yml)** - Token optimization strategy and implementation
+- **[apps/](ssot/apps/)** - Application-specific SSOT files (ssot.apps.yml + per-app files)
 - **[infrastructure/](ssot/infrastructure/)** - Infrastructure configurations
   - ssot.health.yml, ssot.health.home.yml, ssot.health.mobile.yml
   - ssot.gpu.yml, ssot.services.yml
 - **Domain-specific SSOT files**
   - ssot.devin.tools.yml, ssot.diagrams.yml, ssot.docs.yml
   - ssot.libs.yml, ssot.mysystem.home.yml, ssot.mysystem.mobile.yml
-  - ssot.test.weaviate.yml, ssot.ui.yml
+  - ssot.test.weaviate.yml, ssot.ui.yml, ssot.validation-patterns.yml
 
 ### Sessions (`docs/sessions/`)
 Development session archives (timestamped YAML files):
@@ -105,6 +121,7 @@ Project-specific configurations (not moved during restructuring):
 - hosts.*.yml - Host configuration files
 - lab.plan-brief.yml - Lab planning brief
 - sso.apps.dev.yml - SSO configuration
+- ssot.token-optimization.yml - Token optimization strategy (served copy)
 
 ## Key Documentation Patterns
 
@@ -192,5 +209,8 @@ For new contributors:
 
 ---
 
-Last updated: 2026-08-04
-Documentation restructuring completed
+Last updated: 2026-08-05
+- Added token optimization documentation (6 new KB entries)
+- Updated SSOT section with token optimization configuration
+- Added new KB entries for GPU embedding, impact scoring, MCP audit
+- Updated KB index with recent additions
