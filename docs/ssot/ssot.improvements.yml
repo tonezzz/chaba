@@ -406,7 +406,7 @@ sections:
   items:
   - label: Monitoring & Alerting System
     text: Implement proactive alerting for critical issues - email/Slack notifications for GPU temperature, disk usage, service failures
-    status: planned
+    status: completed
     priority: medium
     effort: 4-8 hours
     category: monitoring
@@ -434,6 +434,9 @@ sections:
     - monitoring
     - alerting
     - notifications
+    completed: '2026-08-05'
+    completion_note: Implemented scripts/health-monitor.sh (checks memory, swap, disk, CPU/GPU temp, Yomi process leak, 3 key services). Installed as systemd user timer (every 10 min). Sends notify-send
+      desktop alerts + logs to logs/health-monitor.log. No external API keys required.
   - label: Performance Baselines
     text: Establish baseline metrics for all services and implement trend analysis with anomaly detection
     status: planned
