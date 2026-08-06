@@ -19,9 +19,9 @@ import { geminiConversationSummary, geminiDailySummary, geminiBatchDailySummary 
 //   End: 2026-08-04T16:59:59.000Z (23:59:59 Thailand time)
 //
 // CONVERSION RULES:
-// 1. UTC → Thailand calendar date (for grouping): ADD 7 hours
-//    Reason: Convert UTC to Thailand time (UTC+7) and extract date
-//    Example: 2026-07-17T00:15:59Z → 2026-07-17T07:15:59Z → "2026-07-17"
+// 1. UTC → Thailand calendar date (for grouping): SUBTRACT 7 hours
+//    Reason: Align with Thailand calendar day start (17:00 UTC)
+//    Example: 2026-08-04T13:02:33Z → 2026-08-03 (in Thailand calendar day 2026-08-03)
 //
 // 2. Thailand calendar date → UTC storage: Use 17:00 UTC
 //    Reason: Store Thailand calendar date as UTC 17:00 (midnight Thailand time)
@@ -620,9 +620,10 @@ function groupMessagesByDate(messages) {
     const normalizedTime = normalizeTimestamp(m.deliveredTime);
     if (!normalizedTime) continue;
     // Group by Thailand calendar day (UTC+7)
-    // Add 7 hours to convert UTC to Thailand time
-    const thailandTime = new Date(normalizedTime + (7 * 60 * 60 * 1000));
-    const date = thailandTime.toISOString().split('T')[0];
+    // Thailand calendar day = 17:00 UTC to 16:59:59 UTC next day
+    // SUBTRACT 7 hours to align with Thailand calendar day start (17:00 UTC)
+    const thailandCalendarDate = new Date(normalizedTime - (7 * 60 * 60 * 1000));
+    const date = thailandCalendarDate.toISOString().split('T')[0];
     if (!byDate.has(date)) byDate.set(date, []);
     byDate.get(date).push(m);
   }
