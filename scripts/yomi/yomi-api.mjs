@@ -538,30 +538,31 @@ async function handleMessages(chatId, url, res) {
   const startDate = url.searchParams.get('startDate');
   const endDate = url.searchParams.get('endDate');
   
-  let query = `
-    SELECT data, media_analysis FROM messages
-    WHERE chat_id = $1
-      AND ($2::bigint IS NULL OR delivered_time < $2)
-  `;
-  let params = [chatId, before ? parseInt(before, 10) : null];
-  let paramIndex = 3;
+  let query = `SELECT data, media_analysis FROM messages WHERE chat_id = $1`;
+  let params = [chatId];
+  let paramIndex = 2;
   
+  // Add date range filtering for daily2 page
   if (startDate) {
     query += ` AND delivered_time >= $${paramIndex}`;
-    params.push(startDate);
+    params.push(parseInt(startDate, 10));
     paramIndex++;
   }
   
   if (endDate) {
     query += ` AND delivered_time <= $${paramIndex}`;
-    params.push(endDate);
+    params.push(parseInt(endDate, 10));
     paramIndex++;
   }
   
-  query += `
-    ORDER BY delivered_time DESC
-    LIMIT $${paramIndex}
-  `;
+  // Only add before clause if it's provided (for pagination)
+  if (before) {
+    query += ` AND delivered_time < $${paramIndex}`;
+    params.push(parseInt(before, 10));
+    paramIndex++;
+  }
+  
+  query += ` ORDER BY delivered_time DESC LIMIT $${paramIndex}`;
   params.push(limit);
   
   const { rows } = await pool.query(query, params);
