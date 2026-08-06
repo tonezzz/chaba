@@ -6,8 +6,13 @@ const DAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 let currentMonth = new Date();
 let selectedDate = null;
-let dailySummaries = [];
 let availableDates = new Set();
+
+// Shared dailySummaries - initialized once globally
+if (!window.dailySummaries) {
+  window.dailySummaries = [];
+}
+let dailySummaries = window.dailySummaries;
 
 /**
  * Set current month to the most recent summary date's month for better UX

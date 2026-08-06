@@ -3,8 +3,13 @@
 // ============================================================================
 
 let currentChatId = null;
-let dailySummaries = [];
 let onRefreshCallback = null;
+
+// Shared dailySummaries - initialized once globally
+if (!window.dailySummaries) {
+  window.dailySummaries = [];
+}
+let dailySummaries = window.dailySummaries;
 
 /**
  * Load daily summaries from API
