@@ -18,7 +18,10 @@ export function detectLanguage(text) {
   const thaiRatio = thaiChars ? thaiChars.length / totalChars : 0;
   
   // Adjusted thresholds for better mixed detection
-  if (thaiRatio > 0.5) return 'thai';
+  // Thai dominant: > 60% Thai characters
+  // Mixed: 5-60% Thai characters
+  // English: < 5% Thai characters
+  if (thaiRatio > 0.6) return 'thai';
   if (thaiRatio > 0.05) return 'mixed';
   return 'english';
 }
@@ -30,7 +33,12 @@ export function detectLanguage(text) {
  */
 export function detectConversationLanguage(messages) {
   const textContent = messages
-    .map(m => m.text || '')
+    .map(m => {
+      const text = m.text || '';
+      // Filter out null strings and actual "null" text values
+      if (text === 'null' || text === 'undefined' || !text.trim()) return '';
+      return text;
+    })
     .filter(Boolean)
     .join(' ');
   

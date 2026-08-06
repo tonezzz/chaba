@@ -133,6 +133,11 @@ export async function geminiBatchDailySummary(chatId, dates, prompt, language = 
  */
 export async function testGeminiConnection() {
   try {
+    if (!GEMINI_API_KEY) {
+      console.error('GEMINI_API_KEY environment variable not set');
+      return false;
+    }
+    
     await waitForRateLimit();
     initializeGemini();
     console.log(`Testing with model: ${GEMINI_MODEL}`);
