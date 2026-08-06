@@ -11,21 +11,22 @@ import { geminiConversationSummary, geminiDailySummary, geminiBatchDailySummary 
 
 // ============================================================================
 // CRITICAL: Thailand calendar date handling
-// Thailand calendar day = 17:00 UTC to 16:59:59 UTC next day
-// This means Thailand midnight = 17:00 UTC previous day
+// Database stores delivered_time as Thailand time (milliseconds since epoch)
+// Thailand calendar day = 00:00 to 23:59:59 Thailand time
+// This means Thailand calendar date directly matches the Thailand time date
 //
 // Example: Thailand calendar date "2026-08-03" spans:
-//   Start: 2026-08-03T17:00:00.000Z (midnight Thailand time)
-//   End: 2026-08-04T16:59:59.000Z (23:59:59 Thailand time)
+//   Start: 2026-08-03T00:00:00.000Z (midnight Thailand time)
+//   End: 2026-08-03T23:59:59.000Z (23:59:59 Thailand time)
 //
 // CONVERSION RULES:
-// 1. UTC → Thailand calendar date (for grouping): SUBTRACT 7 hours
-//    Reason: Align with Thailand calendar day start (17:00 UTC)
-//    Example: 2026-08-04T13:02:33Z → 2026-08-03 (in Thailand calendar day 2026-08-03)
+// 1. Thailand time → Thailand calendar date: Extract date directly
+//    Database stores Thailand time, so no conversion needed
+//    Example: 2026-08-03T15:29:28Z → "2026-08-03"
 //
-// 2. Thailand calendar date → UTC storage: Use 17:00 UTC
-//    Reason: Store Thailand calendar date as UTC 17:00 (midnight Thailand time)
-//    Example: "2026-08-03" → 2026-08-03T17:00:00.000Z
+// 2. Thailand calendar date → Thailand time range: 00:00 to 23:59:59
+//    For API filtering, use simple date range in Thailand time
+//    Example: "2026-08-03" → 2026-08-03T00:00:00Z to 2026-08-03T23:59:59Z
 //
 // See: docs/kb/thailand-timezone-standard.md for comprehensive documentation
 // ============================================================================
@@ -620,23 +621,12 @@ function groupMessagesByDate(messages) {
     const normalizedTime = normalizeTimestamp(m.deliveredTime);
     if (!normalizedTime) continue;
     
-    // Group by Thailand calendar day (UTC+7)
-    // Thailand calendar day = 17:00 UTC to 16:59:59 UTC next day
-    // Thailand midnight = UTC date + 17 hours
-    const utcDate = new Date(normalizedTime);
-    const thailandMidnight = new Date(Date.UTC(
-      utcDate.getUTCFullYear(),
-      utcDate.getUTCMonth(),
-      utcDate.getUTCDate(),
-      17, 0, 0
-    ));
+    // Database stores delivered_time as Thailand time (milliseconds since epoch)
+    // Thailand calendar day = 00:00 to 23:59:59 Thailand time
+    // Extract date directly from Thailand time
+    const thailandTime = new Date(normalizedTime);
+    const date = thailandTime.toISOString().split('T')[0];
     
-    // If message time is before Thailand midnight, it's in previous Thailand calendar day
-    if (utcDate < thailandMidnight) {
-      thailandMidnight.setDate(thailandMidnight.getDate() - 1);
-    }
-    
-    const date = thailandMidnight.toISOString().split('T')[0];
     if (!byDate.has(date)) byDate.set(date, []);
     byDate.get(date).push(m);
   }

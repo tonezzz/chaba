@@ -24,17 +24,17 @@ Implemented on 2026-08-06 to resolve date handling inconsistencies in Yomi daily
 - Consistent year-round offset
 
 **Thailand Calendar Day Definition:**
-- **Start:** 17:00 UTC (midnight Thailand time)
-- **End:** 16:59:59 UTC next day (23:59:59 Thailand time)
-- **Example:** Thailand calendar date "2026-08-03" = 2026-08-03T17:00:00Z to 2026-08-04T16:59:59Z
+- **Start:** 00:00 Thailand time (midnight)
+- **End:** 23:59:59 Thailand time
+- **Example:** Thailand calendar date "2026-08-03" = 2026-08-03T00:00:00Z to 2026-08-03T23:59:59Z (Thailand time)
 
 ### Database Storage Format
 
 **Messages Table:**
 ```sql
--- delivered_time stored as bigint (Unix seconds × 1000)
--- Example: 1784205597875 = 1784205597 seconds = 2026-07-16T12:39:57.000Z UTC
-SELECT message_id, delivered_time, to_timestamp(delivered_time / 1000) as utc_time
+-- delivered_time stored as bigint (Thailand time in milliseconds since epoch)
+-- Example: 1785745768491 = 2026-08-03T15:29:28.491Z Thailand time
+SELECT message_id, delivered_time, to_timestamp(delivered_time / 1000) as thailand_time
 FROM messages WHERE chat_id = $1;
 ```
 
@@ -48,39 +48,34 @@ FROM daily_summaries WHERE chat_id = $1;
 
 ### Conversion Formulas
 
-**IMPORTANT:** There are TWO different conversions depending on the use case:
+**IMPORTANT:** Database stores delivered_time as Thailand time (milliseconds since epoch)
 
-#### 1. UTC Timestamp → Thailand Calendar Date (for filtering/grouping)
+#### 1. Thailand Time → Thailand Calendar Date (for filtering/grouping)
 ```javascript
-// Thailand calendar date: 17:00 UTC to 16:59:59 UTC next day
-// To convert UTC timestamp to Thailand calendar date:
-// Compare message time with Thailand midnight (17:00 UTC)
-// - Get message date in UTC
-// - Get Thailand midnight for that date (UTC date + 17 hours)
-// - If message time < Thailand midnight, previous day; else same day
-function utcToThailandCalendarDate(isoTimestamp) {
-  const utcDate = new Date(isoTimestamp);
-  
-  // Get Thailand midnight for the message's UTC date
-  const thailandMidnight = new Date(Date.UTC(
-    utcDate.getUTCFullYear(),
-    utcDate.getUTCMonth(),
-    utcDate.getUTCDate(),
-    17, 0, 0
-  ));
-  
-  // If message time is before Thailand midnight, it's in previous Thailand calendar day
-  if (utcDate < thailandMidnight) {
-    thailandMidnight.setDate(thailandMidnight.getDate() - 1);
-  }
-  
-  return thailandMidnight.toISOString().split('T')[0];
+// Database stores Thailand time, so extract date directly
+// Thailand calendar day = 00:00 to 23:59:59 Thailand time
+function thailandTimeToCalendarDate(isoTimestamp) {
+  const thailandTime = new Date(isoTimestamp);
+  return thailandTime.toISOString().split('T')[0];
 }
 
-// Example: 2026-08-03T08:30:21.661Z UTC
-// Thailand midnight for Aug 3: 2026-08-03T17:00:00.000Z
-// Message (08:30 UTC) < Thailand midnight (17:00 UTC) → previous day
-// Output: "2026-08-02" (Thailand calendar date)
+// Example: 2026-08-03T15:29:28.491Z Thailand time → "2026-08-03"
+```
+
+#### 2. Thailand Calendar Date → Thailand Time Range (for API filtering)
+```javascript
+// Thailand calendar date in Thailand time: 00:00 to 23:59:59
+function getThailandDateRange(dateStr) {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const startDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+  const endDate = new Date(Date.UTC(year, month - 1, day, 23, 59, 59));
+  return {
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString()
+  };
+}
+
+// Example: "2026-08-03" → 2026-08-03T00:00:00Z to 2026-08-03T23:59:59Z
 ```
 
 #### 2. UTC Timestamp → Thailand Time (for display)
