@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#2563eb">
+  <title>Test PWA</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.svg">
+  <link rel="icon" type="image/svg+xml" href="icon-192.svg">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Test PWA</h1>
+      <p class="subtitle">Progressive Web App Demo</p>
+    </header>
+    
+    <main>
+      <div class="status-card">
+        <h2>App Status</h2>
+        <div class="status-item">
+          <span class="label">PWA Installed:</span>
+          <span id="pwa-status" class="value">Checking...</span>
+        </div>
+        <div class="status-item">
+          <span class="label">Display Mode:</span>
+          <span id="display-mode" class="value">Checking...</span>
+        </div>
+        <div class="status-item">
+          <span class="label">Online:</span>
+          <span id="online-status" class="value">Checking...</span>
+        </div>
+      </div>
+
+      <div class="interactive-card">
+        <h2>Interactive Demo</h2>
+        <button id="counter-btn" class="btn">Tap Count: <span id="counter">0</span></button>
+        <button id="color-btn" class="btn">Change Theme</button>
+        <button id="reset-btn" class="btn btn-secondary">Reset</button>
+      </div>
+
+      <div class="info-card">
+        <h2>Installation</h2>
+        <p>To install this PWA on iPad:</p>
+        <ol>
+          <li>Open this page in Safari</li>
+          <li>Tap the Share button</li>
+          <li>Select "Add to Home Screen"</li>
+          <li>Launch from home screen for full-screen experience</li>
+        </ol>
+      </div>
+    </main>
+
+    <footer>
+      <p>Test PWA - Running in standalone mode</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
