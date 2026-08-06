@@ -127,6 +127,22 @@ const DateUtils = {
   },
   
   /**
+   * Format date as YYYY-MM-DD in Thailand time
+   * @param {Date} date - Date object (in local time)
+   * @returns {string} YYYY-MM-DD format in Thailand time
+   */
+  formatDateKeyThailand(date) {
+    // Convert local date to UTC, then add 7 hours for Thailand time
+    const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const thailandDate = new Date(utcDate.getTime() + (this.THAILAND_OFFSET_HOURS * 60 * 60 * 1000));
+    
+    const year = thailandDate.getFullYear();
+    const month = thailandDate.getMonth() + 1;
+    const day = thailandDate.getDate();
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  },
+  
+  /**
    * Convert ISO timestamp to Unix timestamp in seconds
    * @param {string} isoTimestamp - ISO timestamp string
    * @returns {number} Unix timestamp in seconds

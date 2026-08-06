@@ -65,13 +65,13 @@ function buildCalendar() {
   const startDay = firstDay.getDay();
   const totalDays = lastDay.getDate();
   
-  // Get previous month's days for padding
+  // Add previous month's days for padding
   const prevMonthLastDay = new Date(year, month, 0).getDate();
   
   // Add previous month's days
   for (let i = startDay - 1; i >= 0; i--) {
     const day = prevMonthLastDay - i;
-    const dateStr = DateUtils.formatDateKey(new Date(year, month - 1, day));
+    const dateStr = DateUtils.formatDateKeyThailand(new Date(year, month - 1, day));
     const dayEl = createDayElement(day, dateStr, true);
     grid.appendChild(dayEl);
   }
@@ -80,7 +80,7 @@ function buildCalendar() {
   const today = new Date();
   for (let day = 1; day <= totalDays; day++) {
     const date = new Date(year, month, day);
-    const dateStr = DateUtils.formatDateKey(date);
+    const dateStr = DateUtils.formatDateKeyThailand(date);
     const isToday = date.toDateString() === today.toDateString();
     const dayEl = createDayElement(day, dateStr, false, isToday);
     grid.appendChild(dayEl);
@@ -90,7 +90,7 @@ function buildCalendar() {
   const totalCells = startDay + totalDays;
   const remainingCells = totalCells <= 35 ? 35 - totalCells : 42 - totalCells;
   for (let day = 1; day <= remainingCells; day++) {
-    const dateStr = DateUtils.formatDateKey(new Date(year, month + 1, day));
+    const dateStr = DateUtils.formatDateKeyThailand(new Date(year, month + 1, day));
     const dayEl = createDayElement(day, dateStr, true);
     grid.appendChild(dayEl);
   }
