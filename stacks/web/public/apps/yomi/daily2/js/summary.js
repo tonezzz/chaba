@@ -5,7 +5,7 @@
 let currentChatId = null;
 let onRefreshCallback = null;
 
-// Shared dailySummaries - initialized once globally
+// Initialize shared dailySummaries once globally
 if (!window.dailySummaries) {
   window.dailySummaries = [];
 }

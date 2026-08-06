@@ -8,11 +8,8 @@ let currentMonth = new Date();
 let selectedDate = null;
 let availableDates = new Set();
 
-// Shared dailySummaries - initialized once globally
-if (!window.dailySummaries) {
-  window.dailySummaries = [];
-}
-let dailySummaries = window.dailySummaries;
+// Reference to shared dailySummaries (managed by summary module)
+let dailySummaries = window.dailySummaries || [];
 
 /**
  * Set current month to the most recent summary date's month for better UX
