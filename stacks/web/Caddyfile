@@ -116,6 +116,14 @@
 		file_server
 	}
 
+	# Yomi API proxy
+	@yomi_api path /api/yomi/*
+	handle @yomi_api {
+		reverse_proxy host.docker.internal:3000 {
+			header_up Host localhost
+		}
+	}
+
 	@chatlocal path /apps/chatlocal /apps/chatlocal/*
 	handle @chatlocal {
 		reverse_proxy host.docker.internal:3000 {
