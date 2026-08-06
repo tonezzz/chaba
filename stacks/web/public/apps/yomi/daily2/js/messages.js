@@ -2,68 +2,44 @@
 // MESSAGES MODULE - Message list functionality
 // ============================================================================
 
-// Cache for messages to avoid repeated API calls
-let messagesCache = null;
-let cachedChatId = null;
-
 /**
  * Load messages for a specific date
  */
 async function loadMessagesForDate(chatId, dateStr) {
   console.log('messages.js: loadMessagesForDate called with chatId:', chatId, 'dateStr:', dateStr);
   
-  // Check cache first
-  if (messagesCache && cachedChatId === chatId) {
-    console.log('messages.js: Using cached messages:', messagesCache.length);
-  } else {
-    // Load all messages (API doesn't support date filtering)
-    const url = `/api/yomi/messages?chat=${encodeURIComponent(chatId)}&limit=1000`;
-    console.log('messages.js: Fetching URL:', url);
-    
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    messagesCache = data.messages || [];
-    cachedChatId = chatId;
-    console.log('messages.js: Loaded and cached total messages:', messagesCache.length);
-  }
+  // Get date range for Thailand calendar day
+  const { startDate, endDate } = DateUtils.getThailandDateRange(dateStr);
+  console.log('messages.js: Date range (ISO):', startDate, 'to', endDate);
   
-  // Filter messages client-side by Thailand calendar date
-  const filteredMessages = messagesCache.filter(message => {
-    const timestamp = message.deliveredTime || message.createdTime;
-    if (!timestamp) {
-      console.log('messages.js: Skipping message without timestamp:', message.id);
-      return false;
-    }
-    
-    // Convert millisecond timestamp to ISO, then to Thailand date
-    const isoTimestamp = DateUtils.msToIso(timestamp);
-    const thailandDate = DateUtils.utcToThailandDate(isoTimestamp);
-    
-    // Check if message's Thailand date matches selected date
-    const matches = thailandDate === dateStr;
-    if (!matches) {
-      console.log('messages.js: Message Thailand date', thailandDate, '!= selected', dateStr);
-    }
-    return matches;
-  });
+  // Convert to Unix milliseconds for API (database stores delivered_time as bigint in milliseconds)
+  const startMs = DateUtils.isoToUnix(startDate) * 1000;
+  const endMs = DateUtils.isoToUnix(endDate) * 1000;
+  console.log('messages.js: Date range (Unix ms):', startMs, 'to', endMs);
   
-  console.log('messages.js: Filtered to', filteredMessages.length, 'messages for date', dateStr);
+  // Use API date filtering
+  const url = `/api/yomi/messages?chat=${encodeURIComponent(chatId)}&startDate=${startMs}&endDate=${endMs}&limit=1000`;
+  console.log('messages.js: Fetching URL:', url);
+  
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  console.log('messages.js: Loaded', data.messages?.length || 0, 'messages');
   
   // Log first and last message timestamps for debugging
-  if (filteredMessages.length > 0) {
-    const firstTimestamp = filteredMessages[0].deliveredTime || filteredMessages[0].createdTime;
-    const lastTimestamp = filteredMessages[filteredMessages.length - 1].deliveredTime || filteredMessages[filteredMessages.length - 1].createdTime;
+  if (data.messages && data.messages.length > 0) {
+    const firstTimestamp = data.messages[0].deliveredTime || data.messages[0].createdTime;
+    const lastTimestamp = data.messages[data.messages.length - 1].deliveredTime || data.messages[data.messages.length - 1].createdTime;
     
-    console.log('messages.js: First message deliveredTime:', filteredMessages[0].deliveredTime);
-    console.log('messages.js: First message createdTime:', filteredMessages[0].createdTime);
+    console.log('messages.js: First message deliveredTime:', data.messages[0].deliveredTime);
+    console.log('messages.js: First message createdTime:', data.messages[0].createdTime);
     console.log('messages.js: First message Thailand date:', DateUtils.utcToThailandDate(DateUtils.msToIso(firstTimestamp)));
-    console.log('messages.js: Last message deliveredTime:', filteredMessages[filteredMessages.length - 1].deliveredTime);
-    console.log('messages.js: Last message createdTime:', filteredMessages[filteredMessages.length - 1].createdTime);
+    console.log('messages.js: Last message deliveredTime:', data.messages[data.messages.length - 1].deliveredTime);
+    console.log('messages.js: Last message createdTime:', data.messages[data.messages.length - 1].createdTime);
     console.log('messages.js: Last message Thailand date:', DateUtils.utcToThailandDate(DateUtils.msToIso(lastTimestamp)));
   }
   
-  return filteredMessages;
+  return data.messages || [];
 }
 
 /**
