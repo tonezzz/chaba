@@ -2,11 +2,17 @@
 
 ## What it is
 
-Standardized approach for handling Thailand calendar dates across the Yomi system using UTC 17:00 (midnight Thailand time) as the canonical storage format. This ensures consistent date representation and display across different timezones and locales.
+Standardized approach for handling Thailand calendar dates across the Yomi system using **Thailand calendar day definition (17:00 UTC to 16:59:59 UTC next day)**. This ensures consistent date representation and display across different timezones and locales.
 
 ## Context/Background
 
 Implemented on 2026-08-06 to resolve date handling inconsistencies in Yomi daily summaries and calendar views. Previous implementations had timezone conversion issues causing date misalignment between storage, processing, and display layers.
+
+**Critical Discovery (2026-08-06):**
+- Database stores `delivered_time` as Unix seconds × 1000 (pseudo-milliseconds) in UTC
+- Thailand calendar date is defined as: **17:00 UTC to 16:59:59 UTC next day**
+- This means Thailand midnight = 17:00 UTC previous day
+- Example: Thailand calendar date "2026-08-03" spans 2026-08-03T17:00:00Z to 2026-08-04T16:59:59Z
 
 ## Key Details
 
@@ -17,198 +23,255 @@ Implemented on 2026-08-06 to resolve date handling inconsistencies in Yomi daily
 - No daylight saving time
 - Consistent year-round offset
 
-**The Problem:**
-- Database stores UTC timestamps
-- UI displays Thailand calendar dates
-- Conversion logic was inconsistent across components
-- Midnight Thailand = 17:00 UTC previous day
+**Thailand Calendar Day Definition:**
+- **Start:** 17:00 UTC (midnight Thailand time)
+- **End:** 16:59:59 UTC next day (23:59:59 Thailand time)
+- **Example:** Thailand calendar date "2026-08-03" = 2026-08-03T17:00:00Z to 2026-08-04T16:59:59Z
 
-### The Standard: UTC 17:00
+### Database Storage Format
 
-**Canonical Storage Format:**
-- Thailand calendar date "2026-08-03" stored as "2026-08-02T17:00:00.000Z"
-- This represents midnight Thailand time in UTC
-- 17:00 UTC = 00:00 Thailand (next day)
+**Messages Table:**
+```sql
+-- delivered_time stored as bigint (Unix seconds × 1000)
+-- Example: 1784205597875 = 1784205597 seconds = 2026-07-16T12:39:57.000Z UTC
+SELECT message_id, delivered_time, to_timestamp(delivered_time / 1000) as utc_time
+FROM messages WHERE chat_id = $1;
+```
 
-**Conversion Formula:**
+**Daily Summaries Table:**
+```sql
+-- date stored as DATE type (YYYY-MM-DD)
+-- Represents Thailand calendar date, not UTC timestamp
+SELECT chat_id, date, message_count
+FROM daily_summaries WHERE chat_id = $1;
+```
+
+### Conversion Formulas
+
+**IMPORTANT:** There are TWO different conversions depending on the use case:
+
+#### 1. UTC Timestamp → Thailand Calendar Date (for filtering/grouping)
 ```javascript
-// Thailand calendar date to UTC 17:00
-const [year, month, day] = thailandDate.split('-').map(Number);
-const utcDate = new Date(Date.UTC(year, month - 1, day, 17, 0, 0));
-const utcDateStr = utcDate.toISOString();
+// Thailand calendar date: 17:00 UTC to 16:59:59 UTC next day
+// To convert UTC timestamp to Thailand calendar date:
+// SUBTRACT 7 hours to align with Thailand calendar day start (17:00 UTC)
+function utcToThailandCalendarDate(isoTimestamp) {
+  const utcDate = new Date(isoTimestamp);
+  const thailandCalendarDate = new Date(utcDate.getTime() - (7 * 60 * 60 * 1000));
+  return thailandCalendarDate.toISOString().split('T')[0];
+}
 
-// UTC 17:00 to Thailand calendar date
-const utcDate = new Date(summary.date);
-const thailandDate = new Date(utcDate.getTime() + (7 * 60 * 60 * 1000)); // Add 7 hours
-const thailandDateStr = thailandDate.toISOString().split('T')[0];
+// Example: 2026-07-17T00:15:59.619Z UTC → 2026-07-16 (in July 16 Thailand calendar day)
+// Reason: 00:15:59 UTC is after 17:00 UTC previous day, so it's in next Thailand calendar day
+```
+
+#### 2. UTC Timestamp → Thailand Time (for display)
+```javascript
+// Convert UTC timestamp to Thailand time (UTC+7) for display
+function utcToThailandTime(isoTimestamp) {
+  const utcDate = new Date(isoTimestamp);
+  const thailandTime = new Date(utcDate.getTime() + (7 * 60 * 60 * 1000));
+  return thailandTime.toISOString();
+}
+
+// Example: 2026-07-17T00:15:59.619Z UTC → 2026-07-17T07:15:59.619Z Thailand
+```
+
+#### 3. Thailand Calendar Date → UTC Range (for API filtering)
+```javascript
+// Convert Thailand calendar date to UTC range for database queries
+function getThailandDateRange(dateStr) {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  
+  // Thailand calendar date starts at 17:00 UTC
+  const startDate = new Date(Date.UTC(year, month - 1, day, 17, 0, 0));
+  
+  // Thailand calendar date ends at 16:59:59 UTC next day
+  const endDate = new Date(Date.UTC(year, month - 1, day + 1, 16, 59, 59));
+  
+  return {
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString()
+  };
+}
+
+// Example: "2026-08-03" → 
+//   startDate: 2026-08-03T17:00:00.000Z
+//   endDate: 2026-08-04T16:59:59.000Z
 ```
 
 ### Implementation Locations
 
-**Files Updated:**
-- `scripts/yomi/process-conversations.mjs` - Date grouping for Thailand calendar
-- `scripts/yomi/update-conversations.mjs` - Database storage with UTC 17:00
-- `stacks/web/public/apps/yomi/daily2/index.html` - UI date conversion and display
+**Frontend (daily2):**
+- `stacks/web/public/apps/yomi/daily2/js/date-utils.js` - Date conversion utilities
+- `stacks/web/public/apps/yomi/daily2/js/calendar.js` - Calendar date generation
+- `stacks/web/public/apps/yomi/daily2/js/messages.js` - Message filtering by date
+- `stacks/web/public/apps/yomi/daily2/js/summary.js` - Summary display
 
-**Database Storage:**
-```sql
--- Daily summaries table stores Thailand calendar dates as UTC 17:00
-INSERT INTO daily_summaries (chat_id, date, events, actions, topics, message_count)
-VALUES ($1, $2, $3, $4, $5, $6)
--- $2 is UTC 17:00 timestamp for Thailand midnight
-```
+**Backend (yomi):**
+- `scripts/yomi/update-conversations.mjs` - Message grouping and summary generation
+- `scripts/yomi/yomi-api.mjs` - API date filtering
 
 ### Date Grouping Logic
 
-**Process-Changes (Message Grouping):**
+**Backend (update-conversations.mjs):**
 ```javascript
-// Group messages by Thailand calendar day
+// Group messages by Thailand calendar day (UTC+7)
+// Add 7 hours to convert UTC to Thailand time
 function groupMessagesByDate(messages) {
   for (const m of messages) {
-    const timestamp = normalizeTimestamp(m.deliveredTime);
-    // Group by Thailand calendar day (UTC+7)
-    const thailandDate = new Date(timestamp + (7 * 60 * 60 * 1000));
-    const date = thailandDate.toISOString().split('T')[0];
+    const normalizedTime = normalizeTimestamp(m.deliveredTime);
+    // Add 7 hours for Thailand timezone
+    const thailandTime = new Date(normalizedTime + (7 * 60 * 60 * 1000));
+    const date = thailandTime.toISOString().split('T')[0];
     // ... group by date
   }
 }
 ```
 
-**Update-Conversations (Database Storage):**
+**Frontend (date-utils.js):**
 ```javascript
-async function saveDailySummary(chatId, date, events, actions, topics, messageCount) {
-  // Store Thailand calendar date as 17:00 UTC (midnight Thailand time)
-  const [year, month, day] = date.split('-').map(Number);
-  const utcDate = new Date(Date.UTC(year, month - 1, day, 17, 0, 0));
-  const dateWithTime = utcDate.toISOString();
-  
-  await pool.query(`
-    INSERT INTO daily_summaries (chat_id, date, events, actions, topics, message_count)
-    VALUES ($1, $2, $3, $4, $5, $6)
-  `, [chatId, dateWithTime, events, actions, topics, messageCount]);
+// Convert UTC timestamp to Thailand calendar date
+// SUBTRACT 7 hours to align with Thailand calendar day start (17:00 UTC)
+utcToThailandDate(isoTimestamp) {
+  const utcDate = new Date(isoTimestamp);
+  const thailandCalendarDate = new Date(utcDate.getTime() - (7 * 60 * 60 * 1000));
+  return thailandCalendarDate.toISOString().split('T')[0];
 }
 ```
 
-### UI Display Logic
+### API Filtering
 
-**Daily2 Calendar (Date Display):**
+**Messages API (yomi-api.mjs):**
 ```javascript
-// Database stores Thailand calendar dates as 17:00 UTC
-// Convert UTC 17:00 to Thailand calendar date for display
-const utcDate = new Date(summary.date);
-const thailandDate = new Date(utcDate.getTime() + (7 * 60 * 60 * 1000));
-const localYear = thailandDate.getFullYear();
-const localMonth = thailandDate.getMonth();
-const localDay = thailandDate.getDate();
-const dateKey = `${localYear}-${String(localMonth + 1).padStart(2, '0')}-${String(localDay).padStart(2, '0')}`;
+// API expects milliseconds for date filtering
+// Database stores delivered_time as bigint (seconds × 1000)
+async function handleMessages(chatId, url, res) {
+  const startDate = url.searchParams.get('startDate'); // milliseconds
+  const endDate = url.searchParams.get('endDate'); // milliseconds
+  
+  let query = `
+    SELECT data, media_analysis FROM messages
+    WHERE chat_id = $1
+      AND delivered_time >= $2
+      AND delivered_time <= $3
+  `;
+  // ... execute query
+}
 ```
 
-**Daily2 Calendar (Re-summarization):**
+**Frontend (messages.js):**
 ```javascript
-// Convert Thailand calendar date to UTC 17:00 for API
-const [localYear, localMonth, localDay] = date.split('-').map(Number);
-const utcDate = new Date(Date.UTC(localYear, localMonth - 1, localDay, 17, 0, 0));
-const utcDateStr = utcDate.toISOString();
+// Convert Thailand calendar date to UTC range in milliseconds
+const { startDate, endDate } = DateUtils.getThailandDateRange(dateStr);
+const startMs = DateUtils.isoToUnix(startDate) * 1000;
+const endMs = DateUtils.isoToUnix(endDate) * 1000;
 
-await resummarizeDay(chatId, utcDateStr);
+const url = `/api/yomi/messages?chat=${chatId}&startDate=${startMs}&endDate=${endMs}`;
 ```
 
 ## Usage
 
 ### Standard Conversion Pattern
 
-**Thailand Date → UTC Storage:**
+**UTC Timestamp → Thailand Calendar Date (for filtering):**
 ```javascript
-function thailandToUTC(thailandDate) {
-  const [year, month, day] = thailandDate.split('-').map(Number);
-  return new Date(Date.UTC(year, month - 1, day, 17, 0, 0)).toISOString();
-}
-
-// Example: "2026-08-03" → "2026-08-02T17:00:00.000Z"
+// Message at 2026-07-17T00:15:59.619Z UTC
+// Convert to Thailand calendar date: SUBTRACT 7 hours
+const thailandCalendarDate = utcToThailandCalendarDate('2026-07-17T00:15:59.619Z');
+// Result: "2026-07-16" (in July 16 Thailand calendar day)
+// Reason: 00:15:59 UTC is after 17:00 UTC previous day
 ```
 
-**UTC Storage → Thailand Display:**
+**Thailand Calendar Date → UTC Range (for API):**
 ```javascript
-function utcToThailand(utcTimestamp) {
-  const utcDate = new Date(utcTimestamp);
-  const thailandDate = new Date(utcDate.getTime() + (7 * 60 * 60 * 1000));
-  return thailandDate.toISOString().split('T')[0];
-}
+// Thailand calendar date "2026-08-03"
+const range = getThailandDateRange('2026-08-03');
+// Result: {
+//   startDate: "2026-08-03T17:00:00.000Z",
+//   endDate: "2026-08-04T16:59:59.000Z"
+// }
+```
 
-// Example: "2026-08-02T17:00:00.000Z" → "2026-08-03"
+**UTC Timestamp → Thailand Time (for display):**
+```javascript
+// Message at 2026-07-17T00:15:59.619Z UTC
+// Convert to Thailand time: ADD 7 hours
+const thailandTime = utcToThailandTime('2026-07-17T00:15:59.619Z');
+// Result: "2026-07-17T07:15:59.619Z"
 ```
 
 ### Database Queries
 
 **Query by Thailand Date:**
 ```sql
--- Query daily summaries for Thailand date "2026-08-03"
-SELECT * FROM daily_summaries 
-WHERE date >= '2026-08-02T17:00:00.000Z' 
-  AND date < '2026-08-03T17:00:00.000Z'
+-- Query messages for Thailand calendar date "2026-08-03"
+-- Convert to UTC range: 2026-08-03T17:00:00Z to 2026-08-04T16:59:59Z
+SELECT * FROM messages 
+WHERE delivered_time >= 1785776400000  -- 2026-08-03T17:00:00.000Z in ms
+  AND delivered_time <= 1785862799000  -- 2026-08-04T16:59:59.000Z in ms
   AND chat_id = $1;
 ```
 
-**Date Range Queries:**
+**Query Daily Summaries:**
 ```sql
--- Query summaries for Thailand date range
+-- Daily summaries store Thailand calendar dates as DATE type
+-- Direct date comparison works
 SELECT * FROM daily_summaries 
-WHERE date >= '2026-08-01T17:00:00.000Z' 
-  AND date < '2026-08-04T17:00:00.000Z'
-  AND chat_id = $1
-ORDER BY date;
+WHERE chat_id = $1
+  AND date >= '2026-08-01'
+  AND date <= '2026-08-31'
+ORDER BY date DESC;
 ```
 
 ## Validation
 
 ### Consistency Checks
 
-**Verify Storage Format:**
-```sql
--- Check that all daily summaries use UTC 17:00 pattern
-SELECT 
-  chat_id,
-  date,
-  EXTRACT(HOUR FROM date) as hour,
-  EXTRACT(MINUTE FROM date) as minute
-FROM daily_summaries
-WHERE EXTRACT(HOUR FROM date) != 17 
-   OR EXTRACT(MINUTE FROM date) != 0;
+**Verify Thailand Calendar Date Conversion:**
+```javascript
+// Test: Message at 2026-07-17T00:15:59.619Z UTC
+// Expected: Thailand calendar date "2026-07-16"
+const result = utcToThailandCalendarDate('2026-07-17T00:15:59.619Z');
+console.assert(result === '2026-07-16', 'Conversion failed');
 ```
 
-**Verify Display Conversion:**
+**Verify Date Range Conversion:**
 ```javascript
-// Test conversion round-trip
-const original = "2026-08-03";
-const utc = thailandToUTC(original);
-const back = utcToThailand(utc);
-console.assert(original === back, "Conversion round-trip failed");
+// Test: Thailand calendar date "2026-08-03"
+// Expected: 2026-08-03T17:00:00Z to 2026-08-04T16:59:59Z
+const range = getThailandDateRange('2026-08-03');
+console.assert(range.startDate === '2026-08-03T17:00:00.000Z');
+console.assert(range.endDate === '2026-08-04T16:59:59.000Z');
 ```
 
 ### Common Issues
 
 **Date Off by One Day:**
-- Cause: Using local time instead of UTC 17:00
-- Fix: Ensure all conversions use Date.UTC() with hour=17
+- **Cause:** Using wrong conversion (add vs subtract 7 hours)
+- **Fix:** Use SUBTRACT 7 hours for Thailand calendar date, ADD 7 hours for Thailand time
+- **Check:** Verify which conversion you need (filtering vs display)
 
-**Inconsistent Display:**
-- Cause: Mixed conversion logic across components
-- Fix: Standardize on UTC 17:00 → Thailand date pattern
+**API Filtering Returns Wrong Messages:**
+- **Cause:** Using wrong timestamp units (seconds vs milliseconds)
+- **Fix:** Database stores seconds × 1000, API expects milliseconds
+- **Check:** Multiply Unix seconds by 1000 for API calls
 
-**Database Query Issues:**
-- Cause: Querying by date string instead of UTC range
-- Fix: Use UTC 17:00 ranges for date-based queries
+**Calendar Shows Wrong Date:**
+- **Cause:** Calendar generating dates in local time instead of Thailand calendar dates
+- **Fix:** Use simple date generation (formatDateKey) without timezone conversion
+- **Check:** Calendar dates should match database Thailand calendar dates
 
 ## Advantages
 
 **Consistency:**
-- Single canonical format across all components
-- No ambiguity in date representation
+- Single Thailand calendar day definition across all components
+- Clear distinction between Thailand calendar date and Thailand time
 - Predictable conversion behavior
 
 **Timezone Independence:**
 - Database stores in UTC (timezone-agnostic)
-- UI converts to local timezone for display
+- UI converts to Thailand calendar dates for display
 - Works correctly from any location
 
 **Query Performance:**
@@ -218,10 +281,15 @@ console.assert(original === back, "Conversion round-trip failed");
 
 ## Best Practices
 
-**Always Use UTC 17:00:**
-- Never store Thailand dates as local time
-- Always convert to UTC 17:00 before database storage
-- Always convert from UTC 17:00 for display
+**Know Which Conversion to Use:**
+- **Thailand calendar date (filtering/grouping):** SUBTRACT 7 hours
+- **Thailand time (display):** ADD 7 hours
+- **Date range (API):** Use getThailandDateRange() function
+
+**Always Use Thailand Calendar Day Definition:**
+- Thailand calendar day = 17:00 UTC to 16:59:59 UTC next day
+- This is the canonical definition for all date operations
+- Document the rationale in code comments
 
 **Use Date.UTC():**
 - Avoid local Date constructor for UTC calculations
@@ -240,12 +308,12 @@ console.assert(original === back, "Conversion round-trip failed");
 
 ## Related Documentation
 
-- `scripts/yomi/process-conversations.mjs` - Message date grouping
-- `scripts/yomi/update-conversations.mjs` - Database date storage
-- `stacks/web/public/apps/yomi/daily2/index.html` - UI date display
+- `scripts/yomi/update-conversations.mjs` - Message grouping and summary generation
+- `scripts/yomi/yomi-api.mjs` - API date filtering
+- `stacks/web/public/apps/yomi/daily2/js/date-utils.js` - Date conversion utilities
 - `docs/kb/yomi.md` - Yomi system overview
 - `docs/kb/yomi-daily2-calendar.md` - Daily2 calendar implementation
 
 ## Tags
 
-thailand, timezone, date-handling, utc-conversion, yomi, daily-summaries, calendar, timestamp, utc17, standardization
+thailand, timezone, date-handling, utc-conversion, yomi, daily-summaries, calendar, timestamp, thailand-calendar-day, utc17, standardization

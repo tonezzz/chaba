@@ -9,6 +9,27 @@ import { submitSummaryJob, submitDailySummaryJob, submitBatchDailySummaryJob, wa
 import pool from './db.mjs';
 import { geminiConversationSummary, geminiDailySummary, geminiBatchDailySummary } from './gemini-integration.mjs';
 
+// ============================================================================
+// CRITICAL: Thailand calendar date handling
+// Thailand calendar day = 17:00 UTC to 16:59:59 UTC next day
+// This means Thailand midnight = 17:00 UTC previous day
+//
+// Example: Thailand calendar date "2026-08-03" spans:
+//   Start: 2026-08-03T17:00:00.000Z (midnight Thailand time)
+//   End: 2026-08-04T16:59:59.000Z (23:59:59 Thailand time)
+//
+// CONVERSION RULES:
+// 1. UTC → Thailand calendar date (for grouping): ADD 7 hours
+//    Reason: Convert UTC to Thailand time (UTC+7) and extract date
+//    Example: 2026-07-17T00:15:59Z → 2026-07-17T07:15:59Z → "2026-07-17"
+//
+// 2. Thailand calendar date → UTC storage: Use 17:00 UTC
+//    Reason: Store Thailand calendar date as UTC 17:00 (midnight Thailand time)
+//    Example: "2026-08-03" → 2026-08-03T17:00:00.000Z
+//
+// See: docs/kb/thailand-timezone-standard.md for comprehensive documentation
+// ============================================================================
+
 const USE_GEMINI = process.env.USE_GEMINI === 'true' || process.env.USE_GEMINI === '1'; // Default to false (use Llama)
 
 const GEMINI_MAX_DATES = parseInt(process.env.GEMINI_MAX_DATES || '10', 10); // Limit dates per run for Gemini
