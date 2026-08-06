@@ -341,7 +341,9 @@ function groupMessagesByDate(messages) {
         timestamp = Math.floor(timestamp / 1000);
       }
       
-      const date = new Date(timestamp).toISOString().split('T')[0];
+      // Group by Thailand calendar day (UTC+7)
+      const thailandDate = new Date(timestamp + (7 * 60 * 60 * 1000)); // Add 7 hours for Thailand timezone
+      const date = thailandDate.toISOString().split('T')[0];
       if (!byDate.has(date)) byDate.set(date, []);
       byDate.get(date).push(m);
     } catch (err) {

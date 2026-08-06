@@ -381,12 +381,10 @@
       
       // Use date-only format for the button and progress div IDs (local time)
       // Database stores dates at 17:00:00 UTC, which is midnight in Thailand (UTC+7)
-      // Browser is in UTC-7, so local date is 1 day behind Thailand date
-      // Add 1 day to get the intended Thailand date
       const utcDate = new Date(summary.date);
       const localYear = utcDate.getFullYear();
       const localMonth = utcDate.getMonth();
-      const localDay = utcDate.getDate() + 1;
+      const localDay = utcDate.getDate();
       const dateKey = `${localYear}-${String(localMonth + 1).padStart(2, '0')}-${String(localDay).padStart(2, '0')}`;
       
       return `

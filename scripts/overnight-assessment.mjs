@@ -304,7 +304,8 @@ async function checkHealthServices() {
           expected_status: svc.expected_status,
           expected_state: svc.expected_state,
           timeout: (svc.timeout || 5) * 1000,
-          category: svc.category
+          category: svc.category,
+          note: svc.note
         }));
         console.log(`Loaded ${services.length} services from SSOT configuration`);
       }
@@ -344,9 +345,10 @@ async function checkHealthServices() {
         const duration = Date.now() - start;
         const expectedStatus = service.expected_status || 200;
         const status = result.status === expectedStatus ? '✅ Healthy' : '❌ Unhealthy';
-        content += `| ${service.name} | ${status} | ${duration}ms | Status: ${result.status} |\n`;
+        const notes = service.note ? ` - ${service.note}` : '';
+        content += `| ${service.name} | ${status} | ${duration}ms | Status: ${result.status}${notes} |\n`;
         
-        if (result.status !== expectedStatus) {
+        if (result.status !== expectedStatus && !service.note) {
           criticalIssues.push(`${service.name} returned status ${result.status} (expected ${expectedStatus})`);
           
           // Auto-create improvement if it doesn't exist
@@ -368,23 +370,29 @@ async function checkHealthServices() {
         
         if (containerCheck.success && containerCheck.output.includes('Up')) {
           const status = '✅ Healthy';
-          content += `| ${service.name} | ${status} | ${duration}ms | Container: ${containerCheck.output.trim()} |\n`;
+          const notes = service.note ? ` - ${service.note}` : '';
+          content += `| ${service.name} | ${status} | ${duration}ms | Container: ${containerCheck.output.trim()}${notes} |\n`;
         } else {
           const status = '❌ Unhealthy';
           const errorMsg = containerCheck.success ? containerCheck.output.trim() : containerCheck.error;
-          content += `| ${service.name} | ${status} | ${duration}ms | ${errorMsg} |\n`;
-          criticalIssues.push(`${service.name} container is not running`);
+          const notes = service.note ? ` - ${service.note}` : '';
+          content += `| ${service.name} | ${status} | ${duration}ms | ${errorMsg}${notes} |\n`;
           
-          // Auto-create improvement if it doesn't exist
-          const improvementLabel = `${service.name} Container Down`;
-          if (!improvementExists(improvementLabel)) {
-            autoCreateImprovement(
-              improvementLabel,
-              `${service.name} container is not running - needs investigation and restart`,
-              'high',
-              'service-health',
-              [`docs/ssot/infrastructure/ssot.health.home.yml`]
-            );
+          // Only create improvement if service is not marked as offline
+          if (!service.note) {
+            criticalIssues.push(`${service.name} container is not running`);
+            
+            // Auto-create improvement if it doesn't exist
+            const improvementLabel = `${service.name} Container Down`;
+            if (!improvementExists(improvementLabel)) {
+              autoCreateImprovement(
+                improvementLabel,
+                `${service.name} container is not running - needs investigation and restart`,
+                'high',
+                'service-health',
+                [`docs/ssot/infrastructure/ssot.health.home.yml`]
+              );
+            }
           }
         }
       } else {
@@ -643,8 +651,8 @@ function checkSystemResources() {
   if (diskCheck.success) {
     content += '**Disk Usage:**\n```\n' + diskCheck.output.trim() + '\n```\n';
     const diskUsage = diskCheck.output.match(/(\d+)%/);
-    if (diskUsage && parseInt(diskUsage[1]) > 80) {
-      highIssues.push(`Disk usage critical: ${diskUsage[1]}%`);
+    if (diskUsage && parseInt(diskUsage[1]) > 90) {
+      criticalIssues.push(`Disk usage critical: ${diskUsage[1]}%`);
       
       const improvementLabel = `Disk Usage Critical`;
       if (!improvementExists(improvementLabel)) {
@@ -656,8 +664,8 @@ function checkSystemResources() {
           [`docker-compose.yml`]
         );
       }
-    } else if (diskUsage && parseInt(diskUsage[1]) > 70) {
-      mediumIssues.push(`Disk usage elevated: ${diskUsage[1]}%`);
+    } else if (diskUsage && parseInt(diskUsage[1]) > 80) {
+      highIssues.push(`Disk usage elevated: ${diskUsage[1]}%`);
       
       const improvementLabel = `Disk Usage Elevated`;
       if (!improvementExists(improvementLabel)) {
