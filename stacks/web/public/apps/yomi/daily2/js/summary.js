@@ -4,14 +4,16 @@
 
 console.log('summary.js: Loading module...');
 
-var currentChatId = null;
-var onRefreshCallback = null;
-
-// Initialize shared dailySummaries once globally
+// Initialize shared state on window object
 if (!window.dailySummaries) {
   window.dailySummaries = [];
 }
-var dailySummaries = window.dailySummaries;
+if (!window.currentChatId) {
+  window.currentChatId = null;
+}
+if (!window.onRefreshCallback) {
+  window.onRefreshCallback = null;
+}
 
 console.log('summary.js: window.dailySummaries initialized');
 
@@ -69,8 +71,8 @@ async function resummarizeDayUI(chatId, date, btnElement) {
     
     progressDiv.innerHTML = '<div class="loading">✓ Done - refreshing...</div>';
     
-    if (onRefreshCallback) {
-      setTimeout(() => onRefreshCallback(), 1000);
+    if (window.onRefreshCallback) {
+      setTimeout(() => window.onRefreshCallback(), 1000);
     }
   } catch (error) {
     progressDiv.innerHTML = `<div class="loading" style="color: red;">Error: ${error.message}</div>`;
@@ -84,7 +86,7 @@ async function resummarizeDayUI(chatId, date, btnElement) {
  * Render summary for a specific date
  */
 function renderSummaryForDate(dateStr) {
-  const summary = dailySummaries.find(s => {
+  const summary = window.dailySummaries.find(s => {
     const thailandDate = DateUtils.utcToThailandDate(s.date);
     return thailandDate === dateStr;
   });
@@ -124,9 +126,9 @@ function renderSummaryForDate(dateStr) {
   }
   
   const thailandDate = DateUtils.formatDate(dateStr);
-  html += `<a class="view-chat" href="/apps/yomi/chat.html?chat=${currentChatId}&date=${dateStr}">View conversation</a>`;
+  html += `<a class="view-chat" href="/apps/yomi/chat.html?chat=${window.currentChatId}&date=${dateStr}">View conversation</a>`;
   
-  html += `<button class="resummarize-btn" onclick="window.resummarizeDayUI('${currentChatId}', '${dateStr}', this)">Re-summarize</button>`;
+  html += `<button class="resummarize-btn" onclick="window.resummarizeDayUI('${window.currentChatId}', '${dateStr}', this)">Re-summarize</button>`;
   html += `<div id="progress-${dateStr}"></div>`;
   
   return html;
@@ -174,7 +176,6 @@ function renderSummary(summary) {
  */
 function setDailySummaries(summaries) {
   console.log('summary.js: setDailySummaries called with', summaries.length, 'summaries');
-  dailySummaries = summaries;
   window.dailySummaries = summaries;
 }
 
@@ -182,7 +183,7 @@ function setDailySummaries(summaries) {
  * Get daily summaries
  */
 function getDailySummaries() {
-  return dailySummaries;
+  return window.dailySummaries;
 }
 
 /**
@@ -190,21 +191,21 @@ function getDailySummaries() {
  */
 function setCurrentChatId(chatId) {
   console.log('summary.js: setCurrentChatId called with', chatId);
-  currentChatId = chatId;
+  window.currentChatId = chatId;
 }
 
 /**
  * Get current chat ID
  */
 function getCurrentChatId() {
-  return currentChatId;
+  return window.currentChatId;
 }
 
 /**
  * Set refresh callback
  */
 function setRefreshCallback(callback) {
-  onRefreshCallback = callback;
+  window.onRefreshCallback = callback;
 }
 
 // Make functions available globally for inter-module communication
@@ -216,7 +217,6 @@ window.setDailySummaries = setDailySummaries;
 window.setRefreshCallback = setRefreshCallback;
 window.setCurrentChatId = setCurrentChatId;
 window.getDailySummaries = getDailySummaries;
-window.currentChatId = currentChatId;
 console.log('summary.js: Functions exported successfully');
 
 // Export for use in other modules

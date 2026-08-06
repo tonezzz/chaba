@@ -24,7 +24,7 @@ async function loadConversations() {
  * Load chat data (summaries and calendar)
  */
 async function loadChatData(chatId) {
-  currentChatId = chatId;
+  window.currentChatId = chatId;
   
   // Set chat ID in summary module
   if (window.setCurrentChatId) {

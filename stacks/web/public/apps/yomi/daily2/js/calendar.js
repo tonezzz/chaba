@@ -9,16 +9,19 @@ let selectedDate = null;
 let availableDates = new Set();
 
 // Reference to shared dailySummaries (managed by summary module)
-// Will be initialized by summary module
-let dailySummaries = window.dailySummaries;
+// Use window.dailySummaries directly
+function getDailySummaries() {
+  return window.dailySummaries || [];
+}
 
 /**
  * Set current month to the most recent summary date's month for better UX
  * This ensures the calendar shows the month with data
  */
 function setCurrentMonthToData() {
-  if (dailySummaries.length > 0) {
-    const thailandDateStr = DateUtils.utcToThailandDate(dailySummaries[0].date);
+  const summaries = getDailySummaries();
+  if (summaries.length > 0) {
+    const thailandDateStr = DateUtils.utcToThailandDate(summaries[0].date);
     if (thailandDateStr) {
       const [year, month, day] = thailandDateStr.split('-').map(Number);
       currentMonth = new Date(year, month - 1, 1);
@@ -39,7 +42,8 @@ function buildCalendar() {
   title.textContent = currentMonth.toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
   
   // Update available dates to use Thailand calendar date format
-  availableDates = new Set(dailySummaries.map(s => {
+  const summaries = getDailySummaries();
+  availableDates = new Set(summaries.map(s => {
     if (!s.date) return null;
     return DateUtils.utcToThailandDate(s.date);
   }).filter(Boolean));
@@ -102,7 +106,8 @@ function createDayElement(day, dateStr, isOtherMonth, isToday = false) {
   if (isToday) el.classList.add('today');
   
   // Check if this date has data by converting to UTC for database matching
-  const hasData = dailySummaries.some(s => {
+  const summaries = getDailySummaries();
+  const hasData = summaries.some(s => {
     if (!s.date) return false;
     const thailandDate = DateUtils.utcToThailandDate(s.date);
     return thailandDate === dateStr;
@@ -150,14 +155,14 @@ function navigateNextMonth() {
  * Update daily summaries data
  */
 function setDailySummaries(summaries) {
-  dailySummaries = summaries;
+  window.dailySummaries = summaries;
 }
 
 /**
  * Update daily summaries data (alias for app.js)
  */
 function setCalendarDailySummaries(summaries) {
-  dailySummaries = summaries;
+  window.dailySummaries = summaries;
 }
 
 /**
