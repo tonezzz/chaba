@@ -124,6 +124,30 @@ const DateUtils = {
     const month = date.getMonth() + 1; // getMonth() returns 0-11
     const day = date.getDate();
     return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  },
+  
+  /**
+   * Convert ISO timestamp to Unix timestamp in seconds
+   * @param {string} isoTimestamp - ISO timestamp string
+   * @returns {number} Unix timestamp in seconds
+   */
+  isoToUnix(isoTimestamp) {
+    if (!isoTimestamp) return null;
+    const date = new Date(isoTimestamp);
+    if (isNaN(date.getTime())) return null;
+    return Math.floor(date.getTime() / 1000);
+  },
+  
+  /**
+   * Convert Unix timestamp in seconds to ISO timestamp
+   * @param {number} unixTimestamp - Unix timestamp in seconds
+   * @returns {string} ISO timestamp
+   */
+  unixToIso(unixTimestamp) {
+    if (!unixTimestamp) return null;
+    const date = new Date(unixTimestamp * 1000);
+    if (isNaN(date.getTime())) return null;
+    return date.toISOString();
   }
 };
 
@@ -131,3 +155,6 @@ const DateUtils = {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = DateUtils;
 }
+
+// Make DateUtils available globally
+window.DateUtils = DateUtils;
