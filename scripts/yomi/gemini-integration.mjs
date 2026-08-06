@@ -96,7 +96,7 @@ export async function geminiConversationSummary(chatId, prompt) {
  * @returns {Promise<string>} - Generated daily summary JSON
  */
 export async function geminiDailySummary(chatId, date, prompt, language = 'english') {
-  const systemPrompt = language === 'thai' 
+  const systemPrompt = (language === 'thai' || language === 'mixed')
     ? 'คุณแยกข้อมูลที่มีโครงสร้างจากข้อความ LINE และคืนค่า JSON ที่ถูกต้องที่มี events, actions, และ topics arrays เป็นภาษาไทย'
     : 'You extract structured information from LINE messages and return valid JSON with events, actions, and topics arrays.';
   
@@ -116,7 +116,7 @@ export async function geminiDailySummary(chatId, date, prompt, language = 'engli
  * @returns {Promise<string>} - Generated batch daily summary JSON
  */
 export async function geminiBatchDailySummary(chatId, dates, prompt, language = 'english') {
-  const systemPrompt = language === 'thai'
+  const systemPrompt = (language === 'thai' || language === 'mixed')
     ? 'คุณแยกข้อมูลที่มีโครงสร้างจากข้อความ LINE หลายวันและคืนค่า JSON ที่ถูกต้องที่มี date keys และ events, actions, และ topics arrays เป็นภาษาไทย'
     : 'You extract structured information from LINE messages across multiple dates and return valid JSON with date keys containing events, actions, and topics arrays.';
   
