@@ -26,20 +26,27 @@ async function loadMessagesForDate(chatId, dateStr) {
   const data = await res.json();
   console.log('messages.js: Loaded', data.messages?.length || 0, 'messages');
   
+  // Sort messages descending (newest first)
+  const messages = (data.messages || []).sort((a, b) => {
+    const timeA = a.deliveredTime || a.createdTime || 0;
+    const timeB = b.deliveredTime || b.createdTime || 0;
+    return timeB - timeA;
+  });
+  
   // Log first and last message timestamps for debugging
-  if (data.messages && data.messages.length > 0) {
-    const firstTimestamp = data.messages[0].deliveredTime || data.messages[0].createdTime;
-    const lastTimestamp = data.messages[data.messages.length - 1].deliveredTime || data.messages[data.messages.length - 1].createdTime;
+  if (messages.length > 0) {
+    const firstTimestamp = messages[0].deliveredTime || messages[0].createdTime;
+    const lastTimestamp = messages[messages.length - 1].deliveredTime || messages[messages.length - 1].createdTime;
     
-    console.log('messages.js: First message deliveredTime:', data.messages[0].deliveredTime);
-    console.log('messages.js: First message createdTime:', data.messages[0].createdTime);
+    console.log('messages.js: First message deliveredTime:', messages[0].deliveredTime);
+    console.log('messages.js: First message createdTime:', messages[0].createdTime);
     console.log('messages.js: First message Thailand time:', DateUtils.msToIso(firstTimestamp));
-    console.log('messages.js: Last message deliveredTime:', data.messages[data.messages.length - 1].deliveredTime);
-    console.log('messages.js: Last message createdTime:', data.messages[data.messages.length - 1].createdTime);
+    console.log('messages.js: Last message deliveredTime:', messages[messages.length - 1].deliveredTime);
+    console.log('messages.js: Last message createdTime:', messages[messages.length - 1].createdTime);
     console.log('messages.js: Last message Thailand time:', DateUtils.msToIso(lastTimestamp));
   }
   
-  return data.messages || [];
+  return messages;
 }
 
 /**
@@ -67,9 +74,9 @@ function renderMessage(message) {
   let content = '';
   
   // Handle media with thumbnail
-  if (message.mediaType && message.id) {
+  if (message.mediaType && message.mediaFile) {
     // Use mediaFile field for the filename
-    const mediaFilename = message.mediaFile || message.id;
+    const mediaFilename = message.mediaFile;
     const mediaUrl = `/api/yomi/media/${window.currentChatId}/${mediaFilename}`;
     const isImage = ['image', 'photo', 'sticker'].includes(message.mediaType.toLowerCase());
     
