@@ -139,10 +139,6 @@ function renderSummaryForDate(dateStr) {
     html += `<div class="summary-count">${summary.messageCount} messages</div>`;
   }
   
-  const thailandDate = DateUtils.formatDate(dateStr);
-  html += `<a class="view-chat" href="/apps/yomi/chat.html?chat=${window.currentChatId}&date=${dateStr}">View conversation</a>`;
-  
-  html += `<button class="resummarize-btn" onclick="window.resummarizeDayUI('${window.currentChatId}', '${dateStr}', this)">Re-summarize</button>`;
   html += `<div id="progress-${dateStr}"></div>`;
   
   console.log('summary.js: Generated HTML for date', dateStr);

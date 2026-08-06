@@ -73,6 +73,7 @@ function handleDateSelected(dateStr) {
   const summaryContent = document.getElementById('summary-content');
   const summaryDate = document.getElementById('summary-date');
   const summaryCount = document.getElementById('summary-count');
+  const headerResummarizeBtn = document.getElementById('header-resummarize-btn');
   
   if (summaryDate) {
     summaryDate.textContent = DateUtils.formatDate(dateStr);
@@ -96,6 +97,16 @@ function handleDateSelected(dateStr) {
     summaryCount.textContent = `${summary.messageCount || 0} messages`;
   } else if (summaryCount) {
     summaryCount.textContent = '';
+  }
+  
+  // Show/hide header re-summarize button
+  if (headerResummarizeBtn) {
+    if (summary) {
+      headerResummarizeBtn.style.display = 'inline-block';
+      headerResummarizeBtn.onclick = () => window.resummarizeDayUI(window.currentChatId, dateStr, headerResummarizeBtn);
+    } else {
+      headerResummarizeBtn.style.display = 'none';
+    }
   }
   
   // Render messages
