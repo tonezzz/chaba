@@ -50,12 +50,12 @@ function serveCached(chatId, messageId, res) {
   return true;
 }
 
-function spawnNode(script, args) {
+function spawnNode(script, args, options = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn('/usr/bin/node', [script, ...args], {
       cwd: SCRIPT_DIR,
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: process.env,
+      env: options.env || process.env,
     });
     let out = '';
     let err = '';
@@ -183,13 +183,15 @@ async function handleResummarize(req, res) {
   const { chatIds, forceAll } = data;
   
   try {
-    // Trigger re-summarization by calling update-conversations
+    // Trigger re-summarization by calling update-conversations with Gemini enabled
+    const env = { ...process.env, USE_GEMINI: '1' };
     const { code, out, err } = await spawnNode(`${SCRIPT_DIR}/update-conversations.mjs`, 
-      chatIds ? chatIds.map(id => ['--chat', id]).flat() : (forceAll ? [] : ['--recent'])
+      chatIds ? chatIds.map(id => ['--chat', id]).flat() : (forceAll ? [] : ['--recent']),
+      { env }
     );
     
     if (code === 0) {
-      sendJson(res, 200, { ok: true, message: 'Re-summarization initiated' });
+      sendJson(res, 200, { ok: true, message: 'Re-summarization initiated with Gemini' });
     } else {
       sendJson(res, 500, { ok: false, error: err.trim() || 're-summarization failed' });
     }

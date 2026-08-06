@@ -3,6 +3,7 @@ import { categorize } from './categorize-conversations.mjs';
 import { evaluateSummaryQuality, isMeaningfulSummary, retryWithBackoff, generateCacheKey, parseCacheKey, validateAndTruncateContext, getContextLengthStatus, LLAMA_REQUEST_TIMEOUT } from './summary-utils.mjs';
 import { summaryRateLimiter, dailyRateLimiter, summaryCircuitBreaker, dailyCircuitBreaker } from './llama-rate-limiter.mjs';
 import { submitSummaryJob, submitDailySummaryJob, submitBatchDailySummaryJob, waitForJob, directLlamaCall } from './gpu-queue-integration.mjs';
+import { geminiConversationSummary, geminiDailySummary, geminiBatchDailySummary, testGeminiConnection } from './gemini-integration.mjs';
 import pool from './db.mjs';
 
 const FETCH_DIR = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/fetch-data';
@@ -10,6 +11,7 @@ const SUMMARY_CACHE = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/y
 const STATUS_FILE = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/process-status.json';
 const LLAMA_URL = process.env.LLAMA_URL || 'http://localhost:8001/v1/chat/completions';
 const BATCH_SIZE = parseInt(process.env.YOMI_BATCH_SIZE || '10', 10);
+const USE_GEMINI = process.env.USE_GEMINI === 'true' || process.env.USE_GEMINI === '1'; // Default to false (use Llama)
 
 // Commercial/automated services to exclude from daily summarization
 const COMMERCIAL_EXCLUDE_LIST = [
@@ -182,6 +184,12 @@ async function getSummary(chatId, messages, name, forceRefresh = false) {
 }
 
 async function summarizeWithLlama(prompt, chatId = 'unknown') {
+  // Use Gemini if enabled
+  if (USE_GEMINI) {
+    console.log(`Using Gemini for summary of ${chatId}`);
+    return await geminiConversationSummary(chatId, prompt);
+  }
+
   // Validate and truncate context length before API call
   const validatedPrompt = validateAndTruncateContext(prompt, chatId);
   const contextStatus = getContextLengthStatus(prompt);
@@ -341,9 +349,7 @@ function groupMessagesByDate(messages) {
         timestamp = Math.floor(timestamp / 1000);
       }
       
-      // Group by Thailand calendar day (UTC+7)
-      const thailandDate = new Date(timestamp + (7 * 60 * 60 * 1000)); // Add 7 hours for Thailand timezone
-      const date = thailandDate.toISOString().split('T')[0];
+      const date = new Date(timestamp).toISOString().split('T')[0];
       if (!byDate.has(date)) byDate.set(date, []);
       byDate.get(date).push(m);
     } catch (err) {
@@ -554,6 +560,16 @@ ${baseContent}`;
 }
 
 async function extractDailyWithLlama(prompt, chatId = 'unknown', date = 'unknown') {
+  // Use Gemini if enabled
+  if (USE_GEMINI) {
+    console.log(`Using Gemini for daily summary of ${chatId} on ${date}`);
+    const response = await geminiDailySummary(chatId, date, prompt);
+    // Parse JSON response from Gemini
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('no json in response');
+    return JSON.parse(jsonMatch[0]);
+  }
+
   // Validate and truncate context length before API call
   const validatedPrompt = validateAndTruncateContext(prompt, chatId);
   const contextStatus = getContextLengthStatus(prompt);
@@ -622,6 +638,16 @@ async function extractDailyWithLlama(prompt, chatId = 'unknown', date = 'unknown
 }
 
 async function extractBatchDailyWithLlama(prompt, chatId = 'unknown', dates = []) {
+  // Use Gemini if enabled
+  if (USE_GEMINI) {
+    console.log(`Using Gemini for batch daily summary of ${chatId} (${dates.length} dates)`);
+    const response = await geminiBatchDailySummary(chatId, dates, prompt);
+    // Parse JSON response from Gemini
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('no json in response');
+    return JSON.parse(jsonMatch[0]);
+  }
+
   // Validate and truncate context length before API call
   const validatedPrompt = validateAndTruncateContext(prompt, chatId);
   const contextStatus = getContextLengthStatus(prompt);

@@ -5,6 +5,10 @@ import * as db from './db.mjs';
 // This script processes jobs from the queue using MCP tools
 // Run this from Cascade or a cron job
 
+// Llama server URL - using direct IP to avoid Docker DNS issues
+// Container IP: 172.19.0.14 (thai-legal-inference in web_default network)
+const LLAMA_URL = 'http://172.19.0.14:8000/v1/chat/completions';
+
 async function processNextJob() {
   // Get next pending job
   const job = await db.getNextPendingJob();
@@ -199,40 +203,99 @@ async function processEmbeddingJob(job) {
   }
 }
 
+// Improved context management with smart chunking
+function manageContextLength(prompt, jobType = 'default') {
+  const MAX_CONTEXT_LENGTH = 6000;
+  const WARNING_THRESHOLD = 5000;
+  
+  if (prompt.length <= MAX_CONTEXT_LENGTH) {
+    return { prompt, truncated: false, originalLength: prompt.length };
+  }
+  
+  console.log(`Context length ${prompt.length} exceeds ${MAX_CONTEXT_LENGTH}, applying smart chunking`);
+  
+  // For daily summaries, prioritize recent messages
+  if (jobType === 'yomi_daily' || jobType === 'yomi_daily_batch') {
+    // Split by date sections and keep most recent
+    const dateSections = prompt.split(/(\d{4}-\d{2}-\d{2}:)/);
+    const recentSections = dateSections.slice(-10); // Keep last 10 sections
+    const chunked = recentSections.join('');
+    
+    if (chunked.length <= MAX_CONTEXT_LENGTH) {
+      return { prompt: chunked, truncated: true, originalLength: prompt.length };
+    }
+    
+    // If still too long, truncate from end
+    return { 
+      prompt: chunked.slice(-MAX_CONTEXT_LENGTH), 
+      truncated: true, 
+      originalLength: prompt.length 
+    };
+  }
+  
+  // For summaries, keep most recent content
+  return { 
+    prompt: prompt.slice(-MAX_CONTEXT_LENGTH), 
+    truncated: true, 
+    originalLength: prompt.length 
+  };
+}
+
 // Process Yomi summary job
 async function processYomiSummaryJob(job) {
   console.log(`Processing Yomi summary job ${job.id}`);
 
   try {
     const params = job.params;
-    const llamaUrl = 'http://localhost:8001/v1/chat/completions';
+    const llamaUrl = LLAMA_URL;
+    
+    // Smart context management
+    const { prompt: validatedPrompt, truncated, originalLength } = manageContextLength(params.prompt, 'yomi_summary');
+    
+    if (truncated) {
+      console.log(`Context truncated from ${originalLength} to ${validatedPrompt.length} characters`);
+    }
     
     console.log(`Calling Llama API for chat ${params.chatId}`);
     
-    const response = await fetch(llamaUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: params.model || 'Phi-3-mini-4k-instruct-q4',
-        messages: [{ role: 'user', content: params.prompt }],
-        max_tokens: params.maxTokens || 50,
-        temperature: params.temperature || 0.3,
-      }),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    
+    try {
+      const response = await fetch(llamaUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'Phi-3-mini-4k-instruct-q4',
+          messages: [{ role: 'user', content: validatedPrompt }],
+          max_tokens: params.maxTokens || 50,
+          temperature: params.temperature || 0.3,
+        }),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeout);
+      
+      if (!response.ok) {
+        throw new Error(`Llama API failed: ${response.status} ${response.statusText}`);
+      }
 
-    if (!response.ok) {
-      throw new Error(`Llama API failed: ${response.status} ${response.statusText}`);
+      const data = await response.json();
+      const result = data.choices?.[0]?.message?.content?.trim() || null;
+      
+      console.log(`Summary generated for chat ${params.chatId}`);
+      
+      // Store result using updateJobMetrics
+      await db.updateJobMetrics(job.id, { result });
+      await completeJob(job.id, true);
+      return result;
+    } catch (error) {
+      clearTimeout(timeout);
+      if (error.name === 'AbortError') {
+        throw new Error('Llama API timeout after 60s');
+      }
+      throw error;
     }
-
-    const data = await response.json();
-    const result = data.choices?.[0]?.message?.content?.trim() || null;
-    
-    console.log(`Summary generated for chat ${params.chatId}`);
-    
-    // Store result using updateJobMetrics
-    await db.updateJobMetrics(job.id, { result });
-    await completeJob(job.id, true);
-    return result;
   } catch (error) {
     console.error('Yomi summary job failed:', error);
     await completeJob(job.id, false, error.message);
@@ -246,44 +309,65 @@ async function processYomiDailyJob(job) {
 
   try {
     const params = job.params;
-    const llamaUrl = 'http://localhost:8001/v1/chat/completions';
+    const llamaUrl = LLAMA_URL;
+    
+    // Smart context management for daily summaries
+    const { prompt: validatedPrompt, truncated, originalLength } = manageContextLength(params.prompt, 'yomi_daily');
+    
+    if (truncated) {
+      console.log(`Context truncated from ${originalLength} to ${validatedPrompt.length} characters`);
+    }
     
     console.log(`Calling Llama API for daily summary of ${params.chatId} on ${params.date}`);
     
-    const response = await fetch(llamaUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: params.model || 'Phi-3-mini-4k-instruct-q4',
-        messages: [
-          { role: 'system', content: 'You extract structured information from chat conversations and return valid JSON.' },
-          { role: 'user', content: params.prompt }
-        ],
-        max_tokens: params.maxTokens || 300,
-        temperature: params.temperature || 0.3,
-        stop: ['\n\n']
-      }),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000); // 60 second timeout for daily summaries
+    
+    try {
+      const response = await fetch(llamaUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'Phi-3-mini-4k-instruct-q4',
+          messages: [
+            { role: 'system', content: 'You extract structured information from chat conversations and return valid JSON.' },
+            { role: 'user', content: validatedPrompt }
+          ],
+          max_tokens: params.maxTokens || 300,
+          temperature: params.temperature || 0.3,
+          stop: ['\n\n']
+        }),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeout);
+      
+      if (!response.ok) {
+        throw new Error(`Llama API failed: ${response.status} ${response.statusText}`);
+      }
 
-    if (!response.ok) {
-      throw new Error(`Llama API failed: ${response.status} ${response.statusText}`);
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content?.trim();
+      if (!content) throw new Error('empty llama response');
+      
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('no json in response');
+      
+      const result = JSON.parse(jsonMatch[0]);
+      
+      console.log(`Daily summary generated for ${params.chatId} on ${params.date}`);
+      
+      // Store result using updateJobMetrics
+      await db.updateJobMetrics(job.id, { result: JSON.stringify(result) });
+      await completeJob(job.id, true);
+      return result;
+    } catch (error) {
+      clearTimeout(timeout);
+      if (error.name === 'AbortError') {
+        throw new Error('Llama API timeout after 60s');
+      }
+      throw error;
     }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content?.trim();
-    if (!content) throw new Error('empty llama response');
-    
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('no json in response');
-    
-    const result = JSON.parse(jsonMatch[0]);
-    
-    console.log(`Daily summary generated for ${params.chatId} on ${params.date}`);
-    
-    // Store result using updateJobMetrics
-    await db.updateJobMetrics(job.id, { result: JSON.stringify(result) });
-    await completeJob(job.id, true);
-    return result;
   } catch (error) {
     console.error('Yomi daily summary job failed:', error);
     await completeJob(job.id, false, error.message);
@@ -297,44 +381,65 @@ async function processYomiDailyBatchJob(job) {
 
   try {
     const params = job.params;
-    const llamaUrl = 'http://localhost:8001/v1/chat/completions';
+    const llamaUrl = LLAMA_URL;
+    
+    // Smart context management for batch daily summaries
+    const { prompt: validatedPrompt, truncated, originalLength } = manageContextLength(params.prompt, 'yomi_daily_batch');
+    
+    if (truncated) {
+      console.log(`Context truncated from ${originalLength} to ${validatedPrompt.length} characters`);
+    }
     
     console.log(`Calling Llama API for batch daily summary of ${params.chatId} (${params.dates?.length || 0} dates)`);
     
-    const response = await fetch(llamaUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: params.model || 'Phi-3-mini-4k-instruct-q4',
-        messages: [
-          { role: 'system', content: 'You extract structured information from chat conversations and return valid JSON with date keys.' },
-          { role: 'user', content: params.prompt }
-        ],
-        max_tokens: params.maxTokens || 600,
-        temperature: params.temperature || 0.3,
-        stop: ['\n\n']
-      }),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90000); // 90 second timeout for batch summaries
+    
+    try {
+      const response = await fetch(llamaUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'Phi-3-mini-4k-instruct-q4',
+          messages: [
+            { role: 'system', content: 'You extract structured information from chat conversations and return valid JSON with date keys.' },
+            { role: 'user', content: validatedPrompt }
+          ],
+          max_tokens: params.maxTokens || 600,
+          temperature: params.temperature || 0.3,
+          stop: ['\n\n']
+        }),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeout);
+      
+      if (!response.ok) {
+        throw new Error(`Llama API failed: ${response.status} ${response.statusText}`);
+      }
 
-    if (!response.ok) {
-      throw new Error(`Llama API failed: ${response.status} ${response.statusText}`);
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content?.trim();
+      if (!content) throw new Error('empty llama response');
+      
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('no json in response');
+      
+      const result = JSON.parse(jsonMatch[0]);
+      
+      console.log(`Batch daily summary generated for ${params.chatId}`);
+      
+      // Store result using updateJobMetrics
+      await db.updateJobMetrics(job.id, { result: JSON.stringify(result) });
+      await completeJob(job.id, true);
+      return result;
+    } catch (error) {
+      clearTimeout(timeout);
+      if (error.name === 'AbortError') {
+        throw new Error('Llama API timeout after 90s');
+      }
+      throw error;
     }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content?.trim();
-    if (!content) throw new Error('empty llama response');
-    
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('no json in response');
-    
-    const result = JSON.parse(jsonMatch[0]);
-    
-    console.log(`Batch daily summary generated for ${params.chatId}`);
-    
-    // Store result using updateJobMetrics
-    await db.updateJobMetrics(job.id, { result: JSON.stringify(result) });
-    await completeJob(job.id, true);
-    return result;
   } catch (error) {
     console.error('Yomi batch daily summary job failed:', error);
     await completeJob(job.id, false, error.message);

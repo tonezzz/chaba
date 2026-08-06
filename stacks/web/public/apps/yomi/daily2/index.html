@@ -325,11 +325,11 @@
       progressDiv.innerHTML = '<div class="progress-container"><span class="progress-spinner"></span>Re-summarizing...</div>';
       
       try {
-        // Convert local date to UTC date for API
-        // Browser is in UTC-7, so local date is 1 day behind Thailand date
-        // Subtract 1 day to convert from local to UTC date format
+        // Database stores Thailand calendar dates as 17:00 UTC (midnight Thailand time)
+        // Convert Thailand calendar date to UTC 17:00 for API
         const [localYear, localMonth, localDay] = date.split('-').map(Number);
-        const utcDateStr = `${localYear}-${String(localMonth).padStart(2, '0')}-${String(localDay - 1).padStart(2, '0')}`;
+        const utcDate = new Date(Date.UTC(localYear, localMonth - 1, localDay, 17, 0, 0));
+        const utcDateStr = utcDate.toISOString();
         
         await resummarizeDay(chatId, utcDateStr);
         
@@ -379,12 +379,13 @@
         return '<div class="empty-state">No summary available for this date</div>';
       }
       
-      // Use date-only format for the button and progress div IDs (local time)
-      // Database stores dates at 17:00:00 UTC, which is midnight in Thailand (UTC+7)
+      // Database stores Thailand calendar dates as 17:00 UTC (midnight Thailand time)
+      // Convert UTC 17:00 to Thailand calendar date for display
       const utcDate = new Date(summary.date);
-      const localYear = utcDate.getFullYear();
-      const localMonth = utcDate.getMonth();
-      const localDay = utcDate.getDate();
+      const thailandDate = new Date(utcDate.getTime() + (7 * 60 * 60 * 1000)); // Add 7 hours
+      const localYear = thailandDate.getFullYear();
+      const localMonth = thailandDate.getMonth();
+      const localDay = thailandDate.getDate();
       const dateKey = `${localYear}-${String(localMonth + 1).padStart(2, '0')}-${String(localDay).padStart(2, '0')}`;
       
       return `
@@ -522,14 +523,13 @@
         return;
       }
       
-      // Handle date comparison - convert local date to UTC for database matching
-      // Database stores dates at 17:00:00 UTC, which is midnight in Thailand (UTC+7)
-      // Browser is in UTC-7, so local date is 1 day behind Thailand date
-      // Subtract 1 day to convert from local to UTC date format
+      // Database stores Thailand calendar dates as 17:00 UTC (midnight Thailand time)
+      // Convert Thailand calendar date to UTC 17:00 for database lookup
       const [localYear, localMonth, localDay] = dateStr.split('-').map(Number);
-      const utcDateStr = `${localYear}-${String(localMonth).padStart(2, '0')}-${String(localDay - 1).padStart(2, '0')}`;
+      const utcDate = new Date(Date.UTC(localYear, localMonth - 1, localDay, 17, 0, 0));
+      const utcDateStr = utcDate.toISOString();
       
-      const summary = dailySummaries.find(s => s.date && s.date.startsWith(utcDateStr));
+      const summary = dailySummaries.find(s => s.date === utcDateStr);
       
       dateEl.textContent = formatDate(dateStr);
       countEl.textContent = summary ? `${summary.message_count} messages` : '';

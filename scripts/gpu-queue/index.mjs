@@ -53,7 +53,7 @@ async function handleRequest(req, res) {
         return sendJson(res, 400, { error: 'Missing type or params' });
       }
 
-      const validTypes = ['llama', 'imagen2', 'txt2vid', 'embedding'];
+      const validTypes = ['llama', 'imagen2', 'txt2vid', 'embedding', 'yomi_summary', 'yomi_daily', 'yomi_daily_batch'];
       if (!validTypes.includes(type)) {
         return sendJson(res, 400, { error: `Invalid type. Must be one of: ${validTypes.join(', ')}` });
       }
@@ -213,15 +213,92 @@ server.listen(PORT, HOST, () => {
   console.log('Queue processor enabled with direct API calls.');
 });
 
+// GPU-aware queue processor with backpressure
+let isProcessing = false;
+let consecutiveFailures = 0;
+const MAX_CONSECUTIVE_FAILURES = 5;
+const BACKPRESSURE_DELAY = 30000; // 30 seconds on backpressure
+
+// Job-specific rate limiting
+const jobLimits = {
+  yomi_summary: { maxConcurrent: 1, lastProcessed: 0 },
+  yomi_daily: { maxConcurrent: 1, lastProcessed: 0 },
+  yomi_daily_batch: { maxConcurrent: 1, lastProcessed: 0 },
+  embedding: { maxConcurrent: 2, lastProcessed: 0 },
+  imagen2: { maxConcurrent: 1, lastProcessed: 0 },
+  txt2vid: { maxConcurrent: 1, lastProcessed: 0 },
+  llama: { maxConcurrent: 1, lastProcessed: 0 }
+};
+
+// Check if job type can be processed based on rate limits
+function canProcessJobType(jobType) {
+  const limit = jobLimits[jobType];
+  if (!limit) return true;
+  
+  const now = Date.now();
+  const timeSinceLastProcess = now - limit.lastProcessed;
+  
+  // Allow processing if enough time has passed (minimum 3 seconds between same job types)
+  return timeSinceLastProcess > 3000;
+}
+
+// Mark job type as processed
+function markJobTypeProcessed(jobType) {
+  const limit = jobLimits[jobType];
+  if (limit) {
+    limit.lastProcessed = Date.now();
+  }
+}
+
+// GPU monitoring
+async function checkGPUStatus() {
+  try {
+    const response = await fetch('http://host.docker.internal:19999/api/v1/gpu');
+    if (!response.ok) return { available: true, memoryPercent: 0 };
+    
+    const data = await response.json();
+    const gpu = data?.gpu?.[0];
+    if (!gpu) return { available: true, memoryPercent: 0 };
+    
+    const memoryPercent = (gpu.memory_used_mb / gpu.memory_total_mb) * 100;
+    return {
+      available: memoryPercent < 80, // Only process if GPU < 80% utilized
+      memoryPercent,
+      memoryUsed: gpu.memory_used_mb,
+      memoryTotal: gpu.memory_total_mb
+    };
+  } catch (error) {
+    console.log('GPU monitoring failed, assuming available:', error.message);
+    return { available: true, memoryPercent: 0 };
+  }
+}
+
 // Start queue processor with direct API calls (no MCP required)
 async function startQueueProcessor() {
-  console.log('Starting queue processor...');
+  console.log('Starting GPU-aware queue processor...');
   
   while (true) {
     try {
+      // Check GPU status before processing
+      const gpuStatus = await checkGPUStatus();
+      console.log(`GPU Status: ${gpuStatus.memoryPercent.toFixed(1)}% used, Available: ${gpuStatus.available}`);
+      
+      if (!gpuStatus.available) {
+        console.log(`GPU under high load (${gpuStatus.memoryPercent.toFixed(1)}%), waiting...`);
+        await new Promise(resolve => setTimeout(resolve, BACKPRESSURE_DELAY));
+        continue;
+      }
+      
       const job = await db.getNextPendingJob();
       
       if (job) {
+        // Check rate limits for job type
+        if (!canProcessJobType(job.type)) {
+          console.log(`Rate limit reached for ${job.type}, skipping`);
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          continue;
+        }
+        
         console.log(`Processing job ${job.id}: ${job.type}`);
         await db.updateJobStatus(job.id, 'running');
         
@@ -234,18 +311,40 @@ async function startQueueProcessor() {
             await orchestrator.processEmbeddingJob(job);
           } else if (job.type === 'llama') {
             await orchestrator.processLlamaJob(job);
+          } else if (job.type === 'yomi_summary') {
+            await orchestrator.processYomiSummaryJob(job);
+          } else if (job.type === 'yomi_daily') {
+            await orchestrator.processYomiDailyJob(job);
+          } else if (job.type === 'yomi_daily_batch') {
+            await orchestrator.processYomiDailyBatchJob(job);
           } else {
             console.log(`Unknown job type: ${job.type}`);
             await db.updateJobStatus(job.id, 'failed', `Unknown job type: ${job.type}`);
           }
+          
+          // Mark job type as processed
+          markJobTypeProcessed(job.type);
+          
+          // Reset failure counter on success
+          consecutiveFailures = 0;
         } catch (error) {
-          console.error(`Job ${job.id} processing failed:`, error);
+          consecutiveFailures++;
+          console.error(`Job ${job.id} processing failed (attempt ${consecutiveFailures}/${MAX_CONSECUTIVE_FAILURES}):`, error);
+          
+          // Implement circuit breaker
+          if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+            console.log(`Circuit breaker triggered after ${consecutiveFailures} failures, waiting ${BACKPRESSURE_DELAY/1000}s`);
+            await new Promise(resolve => setTimeout(resolve, BACKPRESSURE_DELAY));
+            consecutiveFailures = 0;
+          }
+          
           await db.updateJobStatus(job.id, 'failed', error.message);
         }
       }
       
-      // Wait 5 seconds before checking for next job
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      // Adaptive wait time based on GPU load
+      const waitTime = gpuStatus.memoryPercent > 60 ? 10000 : 5000;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
     } catch (error) {
       console.error('Queue processor error:', error);
       await new Promise(resolve => setTimeout(resolve, 5000));

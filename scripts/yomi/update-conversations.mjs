@@ -3,10 +3,13 @@ import { StdioClientTransport } from '/home/tony/.yomi/mcpb/node_modules/@modelc
 import { writeFileSync, readFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { categorize } from './categorize-conversations.mjs';
-import { evaluateSummaryQuality, isMeaningfulSummary, retryWithBackoff, generateCacheKey, parseCacheKey, validateAndTruncateContext, getContextLengthStatus, LLAMA_REQUEST_TIMEOUT } from './summary-utils.mjs';
+import { evaluateSummaryQuality, isMeaningfulSummary, retryWithBackoff, generateCacheKey, parseCacheKey } from './summary-utils.mjs';
 import { summaryRateLimiter, dailyRateLimiter, summaryCircuitBreaker, dailyCircuitBreaker } from './llama-rate-limiter.mjs';
 import { submitSummaryJob, submitDailySummaryJob, submitBatchDailySummaryJob, waitForJob } from './gpu-queue-integration.mjs';
 import pool from './db.mjs';
+import { geminiConversationSummary, geminiDailySummary, geminiBatchDailySummary } from './gemini-integration.mjs';
+
+const USE_GEMINI = process.env.USE_GEMINI === 'true' || process.env.USE_GEMINI === '1'; // Default to false (use Llama)
 
 // Filter out messages that only contain encrypted keyMaterial/fileName data
 function shouldFilterMessage(text) {
@@ -681,6 +684,18 @@ ${dateSections.join('\n\n')}`;
 }
 
 async function extractDailyWithLlama(prompt, chatId = 'unknown', date = 'unknown') {
+  // Use Gemini if enabled
+  if (USE_GEMINI) {
+    console.log(`Using Gemini for daily summary of ${chatId} on ${date}`);
+    // Detect language from prompt
+    const language = detectLanguage(prompt);
+    const response = await geminiDailySummary(chatId, date, prompt, language);
+    // Parse JSON response from Gemini
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('no json in response');
+    return JSON.parse(jsonMatch[0]);
+  }
+
   // Validate and truncate context length before API call
   const validatedPrompt = validateAndTruncateContext(prompt, chatId);
   const contextStatus = getContextLengthStatus(prompt);
@@ -749,6 +764,19 @@ async function extractDailyWithLlama(prompt, chatId = 'unknown', date = 'unknown
 }
 
 async function extractBatchDailyWithLlama(prompt, chatId = 'unknown', dates = []) {
+  // Use Gemini if enabled
+  if (USE_GEMINI) {
+    console.log(`Using Gemini for batch daily summary of ${chatId} (${dates.length} dates)`);
+    // Detect language from prompt
+    const language = detectLanguage(prompt);
+    console.log(`Detected language: ${language}`);
+    const response = await geminiBatchDailySummary(chatId, dates, prompt, language);
+    // Parse JSON response from Gemini
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('no json in response');
+    return JSON.parse(jsonMatch[0]);
+  }
+
   // Validate and truncate context length before API call
   const validatedPrompt = validateAndTruncateContext(prompt, chatId);
   const contextStatus = getContextLengthStatus(prompt);
@@ -817,6 +845,14 @@ async function extractBatchDailyWithLlama(prompt, chatId = 'unknown', dates = []
 }
 
 async function saveDailySummary(chatId, date, events, actions, topics, messageCount) {
+  // Store Thailand calendar date as 17:00 UTC (midnight Thailand time)
+  // date is Thailand calendar date (e.g., "2026-08-03")
+  // Thailand midnight = UTC 17:00 previous day
+  const [year, month, day] = date.split('-').map(Number);
+  // Create date as if it were UTC, then subtract 7 hours to get Thailand midnight in UTC
+  const utcDate = new Date(Date.UTC(year, month - 1, day, 17, 0, 0)); // 17:00 UTC = midnight Thailand
+  const dateWithTime = utcDate.toISOString();
+  
   await pool.query(`
     INSERT INTO daily_summaries (chat_id, date, events, actions, topics, message_count)
     VALUES ($1, $2, $3, $4, $5, $6)
@@ -826,7 +862,7 @@ async function saveDailySummary(chatId, date, events, actions, topics, messageCo
       topics = EXCLUDED.topics,
       message_count = EXCLUDED.message_count,
       updated_at = NOW()
-  `, [chatId, date, events, actions, topics, messageCount]);
+  `, [chatId, dateWithTime, events, actions, topics, messageCount]);
 }
 
 async function generateDailySummaries(chatId, messages, name) {
