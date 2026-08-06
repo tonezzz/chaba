@@ -1,0 +1,147 @@
+title: Raceman
+subtitle: Race management system with course editor, simulation, and comprehensive visualization tools.
+icon: 🏁
+sections:
+  - title: Core Features
+    icon: ✅
+    layout: list
+    items:
+      - label: Course editor
+        text: 'Interactive course editor with buoy placement, start/finish gates, and guide lines'
+      - label: Simulation
+        text: 'Race simulation with physics-based boat movement, wind effects, and collision detection'
+      - label: Visualization
+        text: 'Comprehensive visualization with leader focus, section highlighting, and 3D splat viewer'
+      - label: YAML support
+        text: 'Course persistence via YAML format with validation and loading capabilities'
+
+  - title: Technical Architecture
+    icon: ⚙️
+    layout: list
+    items:
+      - label: Modular JavaScript
+        text: 'Organized into focused modules: course-manager, simulation, renderer, state-manager, wind-system'
+      - label: State management
+        text: 'Centralized state management with reactivity and easier debugging'
+      - label: Wind system
+        text: 'Configurable wind direction, speed, gusts, and variability affecting boat physics'
+      - label: Bezier curves
+        text: 'Guide path generation using Bezier curves for smooth course boundaries'
+      - label: Section highlighting
+        text: 'Dynamic highlighting of course sections with leader focus capability'
+
+  - title: Files & Modules
+    icon: 📁
+    layout: list
+    items:
+      - label: index.html
+        text: 'Main HTML structure with course editor interface and simulation controls'
+      - label: raceman.js
+        text: 'Main application logic and orchestration'
+      - label: course.js
+        text: 'Course data structures and validation logic'
+      - label: course-manager.js
+        text: 'Course loading, saving, and YAML persistence'
+      - label: simulation.js
+        text: 'Physics-based race simulation with wind effects'
+      - label: renderer.js
+        text: 'Canvas rendering for course elements and boats'
+      - label: state-manager.js
+        text: 'Centralized state management with reactivity'
+      - label: wind-system.js
+        text: 'Wind configuration and physics integration'
+      - label: sections.js
+        text: 'Course section management and highlighting'
+      - label: section-highlighter.js
+        text: 'Dynamic section highlighting with leader focus'
+      - label: leader-focus.js
+        text: 'Leader tracking and focus camera controls'
+      - label: yaml-editor.js
+        text: 'YAML editing interface with validation'
+      - label: guide-path.js
+        text: 'Bezier curve guide path generation'
+      - label: raceman.css
+        text: 'Styling for course editor and simulation interface'
+
+  - title: Course Editor Features
+    icon: 🎨
+    layout: list
+    items:
+      - label: Buoy placement
+        text: 'Interactive buoy placement with drag-and-drop positioning'
+      - label: Start/finish gates
+        text: 'Configurable start and finish gates with line settings'
+      - label: Guide lines
+        text: 'Bezier curve guide lines for smooth course boundaries'
+      - label: Course validation
+        text: 'Real-time validation of course structure and rules'
+      - label: YAML export/import
+        text: 'Course persistence via YAML format with schema validation'
+
+  - title: Simulation Features
+    icon: 🏎️
+    layout: list
+    items:
+      - label: Physics engine
+        text: 'Realistic boat physics with wind effects and collision detection'
+      - label: Wind simulation
+        text: 'Configurable wind direction, speed, gusts, and variability'
+      - label: Leader tracking
+        text: 'Automatic leader detection and focus camera controls'
+      - label: Section timing
+        text: 'Section-by-section timing and performance analysis'
+      - label: Replay support
+        text: 'Recording and playback functionality for race analysis'
+
+  - title: Deployment
+    icon: 🚀
+    layout: list
+    items:
+      - label: Location
+        text: 'chaba-h3/public/apps/raceman/ and chaba-raceman/public/apps/raceman/'
+      - label: URLs
+        text: 'https://chaba.h3.gizmo-thailand.com/apps/raceman/ (main), http://tony-omen.local:8083/apps/raceman/ (raceman worktree)'
+      - label: Registry
+        text: 'Listed in apps.yml with 🏁 icon and race management description'
+      - label: Branches
+        text: 'chaba.h3 (main), raceman (dedicated worktree)'
+
+  - title: Testing
+    icon: 🧪
+    layout: list
+    items:
+      - label: Unit tests
+        text: 'course.test.js with validation and data structure tests'
+      - label: Integration testing
+        text: 'Manual testing of course editor, simulation, and visualization features'
+      - label: Bezier demo
+        text: 'bezier-demo.html for testing Bezier curve generation'
+
+  - title: Integration
+    icon: 🔗
+    layout: list
+    items:
+      - label: Track4 compatibility
+        text: 'Shares course format and simulation patterns with Track4'
+      - label: Wind integration
+        text: 'Compatible with wind forecast data from Wind app'
+      - label: Map3D integration
+        text: '3D visualization support via Map3D splat viewer'
+      - label: YAML standardization
+        text: 'Uses standardized YAML format for course exchange'
+
+  - title: Known Issues
+    icon: ⚠️
+    layout: list
+    items:
+      - label: 3D Gaussian Splat
+        text: 'Library compatibility issues similar to Track4 - currently using basic splat viewer'
+      - label: Performance
+        text: 'Large courses with many buoys may impact rendering performance'
+
+config:
+  version: 1
+  created: 2026-08-06
+  maintainer: tony
+  status: active
+  deployment: chaba-h3, chaba-raceman
