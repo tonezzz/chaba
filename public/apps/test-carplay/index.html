@@ -11,6 +11,7 @@
   <link rel="apple-touch-icon" href="icon-192.svg">
   <link rel="icon" type="image/svg+xml" href="icon-192.svg">
   <link rel="stylesheet" href="carplay.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
   <div class="carplay-container">
@@ -69,15 +70,12 @@
           <button class="back-btn" onclick="goHome()">←</button>
           <div class="screen-title">Maps</div>
         </div>
-        <div class="map-placeholder">
-          <div class="map-bg">
-            <div class="map-road"></div>
-            <div class="map-location">📍</div>
-            <div class="map-route-line"></div>
-          </div>
-          <div class="map-info">
-            <div class="map-destination">Home</div>
-            <div class="map-time">25 min</div>
+        <div class="map-container">
+          <div id="carplay-map" class="carplay-map"></div>
+          <div id="route-info" class="route-info"></div>
+          <div class="map-controls">
+            <button class="map-control-btn" onclick="clearRoute()">Clear Route</button>
+            <button class="map-control-btn" onclick="centerOnCurrentLocation()">My Location</button>
           </div>
         </div>
       </div>
@@ -213,6 +211,9 @@
     </div>
   </div>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="gps-module.js"></script>
+  <script src="map-module.js"></script>
   <script src="carplay.js"></script>
 </body>
 </html>

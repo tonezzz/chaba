@@ -1,6 +1,7 @@
 // State
 let currentScreen = 'home';
 let isPlaying = false;
+let mapInitialized = false;
 
 // Update time
 function updateTime() {
@@ -28,6 +29,16 @@ function openApp(appName) {
   if (screen) {
     screen.style.display = 'flex';
     currentScreen = appName;
+
+    // Initialize map when opening maps app
+    if (appName === 'maps' && !mapInitialized) {
+      setTimeout(() => {
+        if (typeof initMap === 'function') {
+          initMap();
+          mapInitialized = true;
+        }
+      }, 100);
+    }
   }
 }
 
@@ -56,3 +67,20 @@ document.querySelectorAll('.app-icon, .dock-icon, .control-btn, .keypad-btn, .me
 
 // Initialize on load
 document.addEventListener('DOMContentLoaded', init);
+
+// Map helper functions
+function centerOnCurrentLocation() {
+  if (typeof centerOnLocation === 'function') {
+    const currentLoc = getCurrentLocation();
+    if (currentLoc) {
+      // Center on current GPS location (pass null for current)
+      centerOnLocation(null);
+    }
+  }
+}
+
+function clearRoute() {
+  if (typeof clearRoute === 'function') {
+    clearRoute();
+  }
+}
