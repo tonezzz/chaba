@@ -230,6 +230,14 @@ function setRefreshCallback(callback) {
   onRefreshCallback = callback;
 }
 
+// Make functions available globally for inter-module communication
+window.loadDailySummaries = loadDailySummaries;
+window.resummarizeDayUI = resummarizeDayUI;
+window.renderSummaryForDate = renderSummaryForDate;
+window.setDailySummaries = setDailySummaries;
+window.setRefreshCallback = setRefreshCallback;
+window.setCurrentChatId = setCurrentChatId;
+
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {

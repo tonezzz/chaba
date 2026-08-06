@@ -1,0 +1,170 @@
+// ============================================================================
+// APP MODULE - Main application initialization and coordination
+// ============================================================================
+
+let currentChatId = null;
+
+/**
+ * Load conversations from API
+ */
+async function loadConversations() {
+  const res = await fetch('/api/yomi/conversations');
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const { conversations } = await res.json();
+  return conversations || [];
+}
+
+/**
+ * Load chat data (summaries and calendar)
+ */
+async function loadChatData(chatId) {
+  currentChatId = chatId;
+  
+  // Set chat ID in summary module
+  if (window.setCurrentChatId) {
+    window.setCurrentChatId(chatId);
+  }
+  
+  // Load daily summaries
+  const summaries = await window.loadDailySummaries(chatId);
+  
+  // Update both calendar and summary modules with summaries
+  if (window.setDailySummaries) {
+    window.setDailySummaries(summaries);
+  }
+  if (window.setCalendarDailySummaries) {
+    window.setCalendarDailySummaries(summaries);
+  }
+  
+  // Set current month to most recent summary date
+  if (window.setCurrentMonthToData) {
+    window.setCurrentMonthToData();
+  }
+  
+  // Build calendar
+  if (window.buildCalendar) {
+    window.buildCalendar();
+  }
+  
+  // Select most recent date if available
+  if (summaries.length > 0) {
+    const thailandDateStr = DateUtils.utcToThailandDate(summaries[0].date);
+    if (thailandDateStr) {
+      if (window.selectDate) {
+        window.selectDate(thailandDateStr);
+      }
+    }
+  }
+}
+
+/**
+ * Handle date selection
+ */
+function handleDateSelected(dateStr) {
+  // Render summary
+  if (window.renderSummaryForDate) {
+    window.renderSummaryForDate(dateStr);
+  }
+  
+  // Render messages
+  if (window.renderMessagesForDate) {
+    window.renderMessagesForDate(currentChatId, dateStr);
+  }
+}
+
+/**
+ * Handle refresh after re-summarization
+ */
+function handleRefresh() {
+  // Update calendar with new data
+  if (window.buildCalendar) {
+    window.buildCalendar();
+  }
+}
+
+/**
+ * Initialize the application
+ */
+async function init() {
+  const select = document.getElementById('chat-select');
+  
+  try {
+    const conversations = await loadConversations();
+    if (!conversations.length) {
+      document.getElementById('app').innerHTML = '<div class="empty-state">No conversations found.</div>';
+      return;
+    }
+    
+    // Populate chat selector
+    select.innerHTML = conversations.map(c => 
+      `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`
+    ).join('');
+    
+    // Load chat from URL parameter or first available
+    const chatParam = new URLSearchParams(location.search).get('chat');
+    if (chatParam) {
+      select.value = chatParam;
+      await loadChatData(chatParam);
+    } else if (conversations.length) {
+      select.value = conversations[0].id;
+      await loadChatData(conversations[0].id);
+    }
+    
+    // Set up event listeners
+    select.addEventListener('change', () => {
+      const chatId = select.value;
+      if (chatId) {
+        const url = new URL(location.href);
+        url.searchParams.set('chat', chatId);
+        history.replaceState(null, '', url);
+        loadChatData(chatId);
+      }
+    });
+    
+    document.getElementById('prev-month').addEventListener('click', () => {
+      if (window.navigatePrevMonth) {
+        window.navigatePrevMonth();
+      }
+    });
+    
+    document.getElementById('next-month').addEventListener('click', () => {
+      if (window.navigateNextMonth) {
+        window.navigateNextMonth();
+      }
+    });
+    
+    // Set up callbacks
+    window.onDateSelected = handleDateSelected;
+    if (window.setRefreshCallback) {
+      window.setRefreshCallback(handleRefresh);
+    }
+    
+  } catch (err) {
+    document.getElementById('app').innerHTML = `<div class="empty-state">Error: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+/**
+ * Escape HTML to prevent XSS
+ */
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+// Start the application when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+
+// Export for testing
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    loadConversations,
+    loadChatData,
+    handleDateSelected,
+    handleRefresh,
+    init
+  };
+}

@@ -123,6 +123,8 @@ function selectDate(dateStr) {
   if (window.onDateSelected) {
     window.onDateSelected(dateStr);
   }
+  // Also make it available globally for other modules
+  window.getSelectedDate = getSelectedDate;
 }
 
 /**
@@ -145,6 +147,13 @@ function navigateNextMonth() {
  * Update daily summaries data
  */
 function setDailySummaries(summaries) {
+  dailySummaries = summaries;
+}
+
+/**
+ * Update daily summaries data (alias for app.js)
+ */
+function setCalendarDailySummaries(summaries) {
   dailySummaries = summaries;
 }
 
@@ -176,6 +185,19 @@ function setCurrentMonth(date) {
   currentMonth = date;
 }
 
+// Make functions available globally for inter-module communication
+window.buildCalendar = buildCalendar;
+window.selectDate = selectDate;
+window.navigatePrevMonth = navigatePrevMonth;
+window.navigateNextMonth = navigateNextMonth;
+window.setDailySummaries = setDailySummaries;
+window.setCalendarDailySummaries = setCalendarDailySummaries;
+window.getSelectedDate = getSelectedDate;
+window.setSelectedDate = setSelectedDate;
+window.getCurrentMonth = getCurrentMonth;
+window.setCurrentMonth = setCurrentMonth;
+window.setCurrentMonthToData = setCurrentMonthToData;
+
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -184,6 +206,7 @@ if (typeof module !== 'undefined' && module.exports) {
     navigatePrevMonth,
     navigateNextMonth,
     setDailySummaries,
+    setCalendarDailySummaries,
     getSelectedDate,
     setSelectedDate,
     getCurrentMonth,
