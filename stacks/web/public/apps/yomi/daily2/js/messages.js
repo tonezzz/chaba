@@ -82,11 +82,8 @@ function renderMessage(message) {
     
     if (isImage) {
       content = `
-        <div class="message-media">
-          <img src="${mediaUrl}" alt="${escapeHtml(message.mediaType)}" 
-               class="message-thumbnail" 
-               onclick="window.openImage('${mediaUrl}')"
-               onerror="this.style.display='none'">
+        <div class="message-media-link" onclick="window.openImagePopup('${mediaUrl}')">
+          📷 Image
         </div>
       `;
     } else {
@@ -165,11 +162,37 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
+/**
+ * Open image popup
+ */
+function openImagePopup(imageUrl) {
+  const popup = document.getElementById('image-popup');
+  const img = document.getElementById('image-popup-img');
+  
+  if (popup && img) {
+    img.src = imageUrl;
+    popup.classList.add('active');
+  }
+}
+
+/**
+ * Close image popup
+ */
+function closeImagePopup() {
+  const popup = document.getElementById('image-popup');
+  const img = document.getElementById('image-popup-img');
+  
+  if (popup && img) {
+    popup.classList.remove('active');
+    img.src = '';
+  }
+}
+
 // Make functions available globally for inter-module communication
 window.renderMessagesForDate = renderMessagesForDate;
-window.openImage = function(url) {
-  window.open(url, '_blank');
-};
+window.openImage = openImagePopup;
+window.openImagePopup = openImagePopup;
+window.closeImagePopup = closeImagePopup;
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
