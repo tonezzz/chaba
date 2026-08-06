@@ -2,6 +2,7 @@
 let currentScreen = 'home';
 let isPlaying = false;
 let mapInitialized = false;
+let routeInputInitialized = false;
 
 // Update time
 function updateTime() {
@@ -36,6 +37,11 @@ function openApp(appName) {
         if (typeof initMap === 'function') {
           initMap();
           mapInitialized = true;
+        }
+        // Initialize route input panel
+        if (typeof initRouteInput === 'function' && !routeInputInitialized) {
+          initRouteInput();
+          routeInputInitialized = true;
         }
       }, 100);
     }
