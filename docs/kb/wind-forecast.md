@@ -5,7 +5,7 @@ tags: [wind, forecast, weather, track4, race-management, meteorology]
 created: 2026-08-06
 updated: 2026-08-06
 category: implementation
-related: [ssot.apps.wind.yml, ssot.apps.track4.yml, h3-pages.md]
+related: [ssot.apps.wind.yml, ssot.apps.track4.yml, h3-pages.md, app-ssot-standards.md]
 search_keywords: [wind-forecast, weather-api, open-meteo, race-weather, meteorology]
 ---
 

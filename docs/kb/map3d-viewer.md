@@ -5,7 +5,7 @@ tags: [3d, visualization, map3d, point-clouds, gaussian-splat, webgl, race-manag
 created: 2026-08-06
 updated: 2026-08-06
 category: implementation
-related: [ssot.apps.map3d.yml, ssot.apps.track4.yml, h3-pages.md]
+related: [ssot.apps.map3d.yml, ssot.apps.track4.yml, h3-pages.md, app-ssot-standards.md]
 search_keywords: [3d-map, point-cloud, gaussian-splat, webgl, visualization, course-visualization]
 ---
 

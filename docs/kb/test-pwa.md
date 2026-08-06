@@ -5,7 +5,7 @@ tags: [pwa, ipad, mobile, testing, web-development, chaba-h3]
 created: 2026-08-06
 updated: 2026-08-06
 category: implementation
-related: [ssot.apps.test-pwa.yml, h3-pages.md]
+related: [ssot.apps.test-pwa.yml, h3-pages.md, app-ssot-standards.md]
 search_keywords: [progressive-web-app, ipad-fullscreen, mobile-testing, pwa-manifest, standalone-mode]
 ---
 
