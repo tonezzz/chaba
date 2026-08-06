@@ -27,6 +27,12 @@
   
   <script src="../js/date-utils.js"></script>
   <script>
+    // Initialize shared state for testing
+    if (!window.dailySummaries) {
+      window.dailySummaries = [];
+    }
+  </script>
+  <script>
     let totalTests = 0;
     let passedTests = 0;
     let failedTests = 0;
@@ -133,14 +139,34 @@
       document.getElementById('results').appendChild(group);
       
       // Test that window.dailySummaries is defined
-      assert(typeof window.dailySummaries !== 'undefined', 'window.dailySummaries defined', 'Global dailySummaries should exist');
+      assert(
+        typeof window.dailySummaries !== 'undefined',
+        'window.dailySummaries defined',
+        'Global dailySummaries should exist'
+      );
       
       // Test that it's an array
-      assert(Array.isArray(window.dailySummaries), 'window.dailySummaries is array', 'Should be an array');
+      assert(
+        Array.isArray(window.dailySummaries),
+        'window.dailySummaries is array',
+        'Should be an array'
+      );
+      
+      // Test that DateUtils is available
+      assert(
+        typeof DateUtils !== 'undefined',
+        'DateUtils available',
+        'DateUtils should be defined'
+      );
     }
     
     // Run all tests
     function runAllTests() {
+      // Initialize shared state first
+      if (!window.dailySummaries) {
+        window.dailySummaries = [];
+      }
+      
       testModuleLoading();
       testDateUtils();
       testVariableConflicts();

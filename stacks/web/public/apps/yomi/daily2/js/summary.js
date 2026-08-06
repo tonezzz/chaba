@@ -242,6 +242,7 @@ window.renderSummaryForDate = renderSummaryForDate;
 window.setDailySummaries = setDailySummaries;
 window.setRefreshCallback = setRefreshCallback;
 window.setCurrentChatId = setCurrentChatId;
+window.getDailySummaries = getDailySummaries;
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
