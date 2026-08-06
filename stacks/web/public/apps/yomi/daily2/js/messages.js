@@ -2,32 +2,34 @@
 // MESSAGES MODULE - Message list functionality
 // ============================================================================
 
+// Cache for messages to avoid repeated API calls
+let messagesCache = null;
+let cachedChatId = null;
+
 /**
  * Load messages for a specific date
  */
 async function loadMessagesForDate(chatId, dateStr) {
   console.log('messages.js: loadMessagesForDate called with chatId:', chatId, 'dateStr:', dateStr);
   
-  // Get date range for Thailand calendar day
-  const { startDate, endDate } = DateUtils.getThailandDateRange(dateStr);
-  console.log('messages.js: Date range (ISO):', startDate, 'to', endDate);
-  
-  // Convert to Unix timestamps for comparison
-  const startUnix = DateUtils.isoToUnix(startDate);
-  const endUnix = DateUtils.isoToUnix(endDate);
-  console.log('messages.js: Date range (Unix seconds):', startUnix, 'to', endUnix);
-  
-  // Load all messages (API doesn't support date filtering)
-  const url = `/api/yomi/messages?chat=${encodeURIComponent(chatId)}&limit=1000`;
-  console.log('messages.js: Fetching URL:', url);
-  
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  const data = await res.json();
-  console.log('messages.js: Loaded total messages:', data.messages?.length || 0);
+  // Check cache first
+  if (messagesCache && cachedChatId === chatId) {
+    console.log('messages.js: Using cached messages:', messagesCache.length);
+  } else {
+    // Load all messages (API doesn't support date filtering)
+    const url = `/api/yomi/messages?chat=${encodeURIComponent(chatId)}&limit=1000`;
+    console.log('messages.js: Fetching URL:', url);
+    
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    messagesCache = data.messages || [];
+    cachedChatId = chatId;
+    console.log('messages.js: Loaded and cached total messages:', messagesCache.length);
+  }
   
   // Filter messages client-side by Thailand calendar date
-  const filteredMessages = (data.messages || []).filter(message => {
+  const filteredMessages = messagesCache.filter(message => {
     const timestamp = message.deliveredTime || message.createdTime;
     if (!timestamp) {
       console.log('messages.js: Skipping message without timestamp:', message.id);
