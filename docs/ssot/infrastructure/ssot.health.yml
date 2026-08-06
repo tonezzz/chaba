@@ -44,6 +44,23 @@ services:
     timeout: 5
     category: api
 
+  # Trading Services
+  - id: trade-api
+    name: Trade API
+    type: container
+    container: trade-api
+    expected_state: running
+    timeout: 5
+    category: api
+
+  - id: trading-terminal
+    name: Trading Terminal
+    type: container
+    container: trading-terminal
+    expected_state: running
+    timeout: 5
+    category: api
+
   # Data Services
   - id: redis
     name: Redis
@@ -71,12 +88,13 @@ services:
 
   # GPU Services
   - id: thai-legal
-    name: Thai Legal LLM
+    name: Llama Router (Phi-3 only)
     type: http
     url: http://tony-omen.local:8001/health
     expected_status: 200
     timeout: 10
     category: gpu
+    note: Thai legal model offline (2026-08-06) due to GPU memory constraints
 
   - id: imagen2
     name: Imagen2
@@ -85,6 +103,7 @@ services:
     expected_status: 200
     timeout: 10
     category: gpu
+    note: Offline (2026-08-06) due to GPU memory constraints
 
   - id: txt2vid
     name: Txt2Vid
@@ -93,6 +112,7 @@ services:
     expected_status: 200
     timeout: 10
     category: gpu
+    note: Offline (2026-08-06) due to GPU memory constraints
 
   # Queue Services
   - id: gpu-queue
@@ -118,6 +138,14 @@ services:
     url: http://tony-omen.local:8080/frigate/api/version
     expected_status: 200
     timeout: 10
+    category: optional
+
+  - id: camera-control
+    name: Camera Control
+    type: http
+    url: http://tony-omen.local:8090/
+    expected_status: 200
+    timeout: 5
     category: optional
 
 # Recovery suggestions for common failure modes
