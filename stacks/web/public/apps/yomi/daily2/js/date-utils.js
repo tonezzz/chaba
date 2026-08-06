@@ -40,15 +40,17 @@ const DateUtils = {
     const utcDate = new Date(isoTimestamp);
     if (isNaN(utcDate.getTime())) return null;
     
-    // Add 7 hours to convert UTC to Thailand time
-    const thailandDate = new Date(utcDate.getTime() + (this.THAILAND_OFFSET_HOURS * 60 * 60 * 1000));
+    // Thailand calendar date: 17:00 UTC to 16:59:59 UTC next day
+    // To convert UTC timestamp to Thailand calendar date:
+    // Add 7 hours to convert UTC to Thailand time, then extract date
+    const thailandTime = new Date(utcDate.getTime() + (this.THAILAND_OFFSET_HOURS * 60 * 60 * 1000));
     
-    const year = thailandDate.getFullYear();
-    const month = thailandDate.getMonth() + 1;
-    const day = thailandDate.getDate();
-    
+    const year = thailandTime.getFullYear();
+    const month = thailandTime.getMonth() + 1;
+    const day = thailandTime.getDate();
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    console.log('date-utils: utcToThailandDate', isoTimestamp, '->', dateStr);
+    
+    console.log('date-utils: utcToThailandDate', isoTimestamp, '-> Thailand time:', thailandTime.toISOString(), '-> Thailand calendar date:', dateStr);
     return dateStr;
   },
   
@@ -134,16 +136,14 @@ const DateUtils = {
    * @returns {string} YYYY-MM-DD format in Thailand time
    */
   formatDateKeyThailand(date) {
-    // Direct conversion: local date + 7 hours = Thailand time
-    // Extract the date from Thailand time
-    const thailandTime = new Date(date.getTime() + (this.THAILAND_OFFSET_HOURS * 60 * 60 * 1000));
-    
-    const year = thailandTime.getFullYear();
-    const month = thailandTime.getMonth() + 1;
-    const day = thailandTime.getDate();
+    // Calendar should generate Thailand calendar dates directly
+    // No conversion needed - use the date as-is
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     
-    console.log('date-utils: formatDateKeyThailand', date.toISOString(), '-> Thailand time:', thailandTime.toISOString(), '-> dateStr:', dateStr);
+    console.log('date-utils: formatDateKeyThailand', date.toISOString(), '-> dateStr:', dateStr);
     return dateStr;
   },
   
