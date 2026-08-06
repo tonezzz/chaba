@@ -82,9 +82,10 @@ function renderMessage(message) {
     
     if (isImage) {
       content = `
-        <div class="message-media-link" onclick="window.openImagePopup('${mediaUrl}')">
-          📷 Image
-        </div>
+        <img src="${mediaUrl}" alt="${escapeHtml(message.mediaType)}" 
+             class="message-thumbnail" 
+             onclick="window.openImagePopup('${mediaUrl}')"
+             onerror="this.style.display='none'">
       `;
     } else {
       content = `<div class="message-media-type">[${escapeHtml(message.mediaType).toUpperCase()}]</div>`;
