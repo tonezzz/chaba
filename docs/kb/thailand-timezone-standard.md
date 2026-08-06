@@ -54,16 +54,33 @@ FROM daily_summaries WHERE chat_id = $1;
 ```javascript
 // Thailand calendar date: 17:00 UTC to 16:59:59 UTC next day
 // To convert UTC timestamp to Thailand calendar date:
-// ADD 7 hours to convert UTC to Thailand time, then extract date
-// This matches backend logic in update-conversations.mjs
+// Compare message time with Thailand midnight (17:00 UTC)
+// - Get message date in UTC
+// - Get Thailand midnight for that date (UTC date + 17 hours)
+// - If message time < Thailand midnight, previous day; else same day
 function utcToThailandCalendarDate(isoTimestamp) {
   const utcDate = new Date(isoTimestamp);
-  const thailandTime = new Date(utcDate.getTime() + (7 * 60 * 60 * 1000));
-  return thailandTime.toISOString().split('T')[0];
+  
+  // Get Thailand midnight for the message's UTC date
+  const thailandMidnight = new Date(Date.UTC(
+    utcDate.getUTCFullYear(),
+    utcDate.getUTCMonth(),
+    utcDate.getUTCDate(),
+    17, 0, 0
+  ));
+  
+  // If message time is before Thailand midnight, it's in previous Thailand calendar day
+  if (utcDate < thailandMidnight) {
+    thailandMidnight.setDate(thailandMidnight.getDate() - 1);
+  }
+  
+  return thailandMidnight.toISOString().split('T')[0];
 }
 
-// Example: 2026-07-17T00:15:59.619Z UTC → 2026-07-17T07:15:59.619Z Thailand → "2026-07-17"
-// Reason: Convert to Thailand time (UTC+7) and extract date
+// Example: 2026-08-03T08:30:21.661Z UTC
+// Thailand midnight for Aug 3: 2026-08-03T17:00:00.000Z
+// Message (08:30 UTC) < Thailand midnight (17:00 UTC) → previous day
+// Output: "2026-08-02" (Thailand calendar date)
 ```
 
 #### 2. UTC Timestamp → Thailand Time (for display)

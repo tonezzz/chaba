@@ -11,13 +11,13 @@
 //   End: 2026-08-04T16:59:59.000Z (23:59:59 Thailand time)
 //
 // CONVERSION RULES:
-// 1. UTC → Thailand calendar date (for filtering/grouping): SUBTRACT 7 hours
-//    Reason: Align with Thailand calendar day start (17:00 UTC)
-//    Example: 2026-08-04T13:02:33Z → 2026-08-03 (in Thailand calendar day 2026-08-03)
+// 1. UTC → Thailand calendar date (for filtering/grouping): Compare with Thailand midnight
+//    Get Thailand midnight (UTC date + 17 hours), if message < midnight, previous day
+//    Example: 2026-08-03T08:30:21Z < 2026-08-03T17:00:00Z → "2026-08-02"
 //
 // 2. UTC → Thailand time (for display): ADD 7 hours
 //    Reason: Convert UTC to Thailand time (UTC+7)
-//    Example: 2026-08-04T13:02:33Z → 2026-08-04T20:02:33Z
+//    Example: 2026-08-03T08:30:21Z → 2026-08-03T15:30:21Z
 //
 // 3. Thailand calendar date → UTC range (for API): Use getThailandDateRange()
 //    Example: "2026-08-03" → 2026-08-03T17:00:00Z to 2026-08-04T16:59:59Z
@@ -58,13 +58,16 @@ const DateUtils = {
    * CRITICAL: This is for FILTERING/GROUPING by Thailand calendar date
    * Thailand calendar day = 17:00 UTC to 16:59:59 UTC next day
    * 
-   * Conversion: SUBTRACT 7 hours to align with Thailand calendar day start (17:00 UTC)
-   * This matches the backend logic in update-conversations.mjs
+   * Conversion: Compare message time with Thailand midnight (17:00 UTC)
+   * - Get message date in UTC
+   - Get Thailand midnight for that date (UTC date + 17 hours)
+   - If message time < Thailand midnight, previous day; else same day
    * 
    * Example:
-   *   Input: 2026-08-04T13:02:33.543Z UTC
-   *   Output: "2026-08-03" (Thailand calendar date)
-   *   Reason: 13:02:33 UTC is in Thailand calendar day 2026-08-03 (17:00 UTC to 16:59:59 UTC next day)
+   *   Input: 2026-08-03T08:30:21.661Z UTC
+   *   Thailand midnight for Aug 3: 2026-08-03T17:00:00.000Z
+   *   Message (08:30 UTC) < Thailand midnight (17:00 UTC) → previous day
+   *   Output: "2026-08-02" (Thailand calendar date)
    * 
    * @param {string} isoTimestamp - ISO timestamp string
    * @returns {string} Thailand calendar date in YYYY-MM-DD format
@@ -75,15 +78,23 @@ const DateUtils = {
     const utcDate = new Date(isoTimestamp);
     if (isNaN(utcDate.getTime())) return null;
     
-    // Thailand calendar date: 17:00 UTC to 16:59:59 UTC next day
-    // To convert UTC timestamp to Thailand calendar date:
-    // SUBTRACT 7 hours to align with Thailand calendar day start (17:00 UTC)
-    // This matches backend logic in update-conversations.mjs
-    const thailandCalendarDate = new Date(utcDate.getTime() - (this.THAILAND_OFFSET_HOURS * 60 * 60 * 1000));
+    // Get Thailand midnight for the message's UTC date
+    // Thailand midnight = UTC date + 17 hours
+    const thailandMidnight = new Date(Date.UTC(
+      utcDate.getUTCFullYear(),
+      utcDate.getUTCMonth(),
+      utcDate.getUTCDate(),
+      17, 0, 0
+    ));
     
-    const year = thailandCalendarDate.getFullYear();
-    const month = thailandCalendarDate.getMonth() + 1;
-    const day = thailandCalendarDate.getDate();
+    // If message time is before Thailand midnight, it's in previous Thailand calendar day
+    if (utcDate < thailandMidnight) {
+      thailandMidnight.setDate(thailandMidnight.getDate() - 1);
+    }
+    
+    const year = thailandMidnight.getFullYear();
+    const month = thailandMidnight.getMonth() + 1;
+    const day = thailandMidnight.getDate();
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     
     console.log('date-utils: utcToThailandDate', isoTimestamp, '-> Thailand calendar date:', dateStr);

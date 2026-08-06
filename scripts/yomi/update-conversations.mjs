@@ -619,11 +619,24 @@ function groupMessagesByDate(messages) {
   for (const m of messages) {
     const normalizedTime = normalizeTimestamp(m.deliveredTime);
     if (!normalizedTime) continue;
+    
     // Group by Thailand calendar day (UTC+7)
     // Thailand calendar day = 17:00 UTC to 16:59:59 UTC next day
-    // SUBTRACT 7 hours to align with Thailand calendar day start (17:00 UTC)
-    const thailandCalendarDate = new Date(normalizedTime - (7 * 60 * 60 * 1000));
-    const date = thailandCalendarDate.toISOString().split('T')[0];
+    // Thailand midnight = UTC date + 17 hours
+    const utcDate = new Date(normalizedTime);
+    const thailandMidnight = new Date(Date.UTC(
+      utcDate.getUTCFullYear(),
+      utcDate.getUTCMonth(),
+      utcDate.getUTCDate(),
+      17, 0, 0
+    ));
+    
+    // If message time is before Thailand midnight, it's in previous Thailand calendar day
+    if (utcDate < thailandMidnight) {
+      thailandMidnight.setDate(thailandMidnight.getDate() - 1);
+    }
+    
+    const date = thailandMidnight.toISOString().split('T')[0];
     if (!byDate.has(date)) byDate.set(date, []);
     byDate.get(date).push(m);
   }
