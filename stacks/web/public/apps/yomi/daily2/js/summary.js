@@ -87,9 +87,14 @@ async function resummarizeDayUI(chatId, date, btnElement) {
  */
 function renderSummaryForDate(dateStr) {
   console.log('summary.js: renderSummaryForDate called with', dateStr);
+  console.log('summary.js: Available summaries:', window.dailySummaries.map(s => ({
+    originalDate: s.date,
+    thailandDate: DateUtils.utcToThailandDate(s.date)
+  })));
   
   const summary = window.dailySummaries.find(s => {
     const thailandDate = DateUtils.utcToThailandDate(s.date);
+    console.log('summary.js: Checking summary:', s.date, '-> Thailand:', thailandDate, 'vs selected:', dateStr);
     return thailandDate === dateStr;
   });
   

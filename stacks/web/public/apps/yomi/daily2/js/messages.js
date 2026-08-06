@@ -12,28 +12,45 @@ async function loadMessagesForDate(chatId, dateStr) {
   const { startDate, endDate } = DateUtils.getThailandDateRange(dateStr);
   console.log('messages.js: Date range (ISO):', startDate, 'to', endDate);
   
-  // Convert ISO timestamps to Unix timestamps (seconds) for API using DateUtils
+  // Convert to Unix timestamps for comparison
   const startUnix = DateUtils.isoToUnix(startDate);
   const endUnix = DateUtils.isoToUnix(endDate);
   console.log('messages.js: Date range (Unix seconds):', startUnix, 'to', endUnix);
   
-  const url = `/api/yomi/messages?chat=${encodeURIComponent(chatId)}&startDate=${startUnix}&endDate=${endUnix}&limit=1000`;
+  // Load all messages (API doesn't support date filtering)
+  const url = `/api/yomi/messages?chat=${encodeURIComponent(chatId)}&limit=1000`;
   console.log('messages.js: Fetching URL:', url);
   
   const res = await fetch(url);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const data = await res.json();
-  console.log('messages.js: Loaded', data.messages?.length || 0, 'messages');
+  console.log('messages.js: Loaded total messages:', data.messages?.length || 0);
+  
+  // Filter messages client-side by Thailand calendar date
+  const filteredMessages = (data.messages || []).filter(message => {
+    const timestamp = message.deliveredTime || message.createdTime;
+    if (!timestamp) return false;
+    
+    // Check if timestamp falls within the Thailand calendar day range
+    return timestamp >= startUnix && timestamp <= endUnix;
+  });
+  
+  console.log('messages.js: Filtered to', filteredMessages.length, 'messages for date', dateStr);
   
   // Log first and last message timestamps for debugging
-  if (data.messages && data.messages.length > 0) {
-    console.log('messages.js: First message timestamp:', data.messages[0].timestamp);
-    console.log('messages.js: First message Thailand time:', DateUtils.utcToThailandDate(DateUtils.unixToIso(data.messages[0].timestamp)));
-    console.log('messages.js: Last message timestamp:', data.messages[data.messages.length - 1].timestamp);
-    console.log('messages.js: Last message Thailand time:', DateUtils.utcToThailandDate(DateUtils.unixToIso(data.messages[data.messages.length - 1].timestamp)));
+  if (filteredMessages.length > 0) {
+    const firstTimestamp = filteredMessages[0].deliveredTime || filteredMessages[0].createdTime;
+    const lastTimestamp = filteredMessages[filteredMessages.length - 1].deliveredTime || filteredMessages[filteredMessages.length - 1].createdTime;
+    
+    console.log('messages.js: First message deliveredTime:', filteredMessages[0].deliveredTime);
+    console.log('messages.js: First message createdTime:', filteredMessages[0].createdTime);
+    console.log('messages.js: First message Thailand time:', DateUtils.utcToThailandDate(DateUtils.unixToIso(firstTimestamp)));
+    console.log('messages.js: Last message deliveredTime:', filteredMessages[filteredMessages.length - 1].deliveredTime);
+    console.log('messages.js: Last message createdTime:', filteredMessages[filteredMessages.length - 1].createdTime);
+    console.log('messages.js: Last message Thailand time:', DateUtils.utcToThailandDate(DateUtils.unixToIso(lastTimestamp)));
   }
   
-  return data.messages || [];
+  return filteredMessages;
 }
 
 /**
@@ -60,7 +77,9 @@ function renderMessage(message) {
   
   // Handle media with thumbnail
   if (message.mediaType && message.id) {
-    const mediaUrl = `/api/yomi/media/${window.currentChatId}/${message.id}`;
+    // Use mediaFile field for the filename
+    const mediaFilename = message.mediaFile || message.id;
+    const mediaUrl = `/api/yomi/media/${window.currentChatId}/${mediaFilename}`;
     const isImage = ['image', 'photo', 'sticker'].includes(message.mediaType.toLowerCase());
     
     if (isImage) {
@@ -81,9 +100,9 @@ function renderMessage(message) {
     content = escapeHtml(text);
   }
   
-  // Format time in Thailand timezone
-  const timeStr = message.deliveredTime || message.timestamp;
-  const formattedTime = timeStr ? DateUtils.formatTime(timeStr) : '';
+  // Format time in Thailand timezone using deliveredTime or createdTime
+  const timeStr = message.deliveredTime || message.createdTime;
+  const formattedTime = timeStr ? DateUtils.formatTime(DateUtils.unixToIso(timeStr)) : '';
   
   return `
     <div class="message-item ${isSystem ? 'system' : ''}">
