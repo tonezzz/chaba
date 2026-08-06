@@ -161,12 +161,33 @@ async function handleSendMessage(req, res) {
 async function handleDailySummaries(url, res) {
   const chatId = url.searchParams.get('chat');
   if (!chatId) return sendJson(res, 400, { ok: false, error: 'chat parameter required' });
-  const { rows } = await pool.query(`
+  
+  const startDate = url.searchParams.get('startDate');
+  const endDate = url.searchParams.get('endDate');
+  
+  let query = `
     SELECT date, events, actions, topics, message_count, updated_at
     FROM daily_summaries
     WHERE chat_id = $1
-    ORDER BY date DESC
-  `, [chatId]);
+  `;
+  let params = [chatId];
+  let paramIndex = 2;
+  
+  if (startDate) {
+    query += ` AND date >= $${paramIndex}`;
+    params.push(startDate);
+    paramIndex++;
+  }
+  
+  if (endDate) {
+    query += ` AND date <= $${paramIndex}`;
+    params.push(endDate);
+    paramIndex++;
+  }
+  
+  query += ` ORDER BY date DESC`;
+  
+  const { rows } = await pool.query(query, params);
   sendJson(res, 200, { chatId, summaries: rows });
 }
 
