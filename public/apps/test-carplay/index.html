@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#000000">
+  <title>CarPlay Simulation</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.svg">
+  <link rel="icon" type="image/svg+xml" href="icon-192.svg">
+  <link rel="stylesheet" href="carplay.css">
+</head>
+<body>
+  <div class="carplay-container">
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <div class="status-time" id="status-time">9:41</div>
+      <div class="status-icons">
+        <span class="status-icon">📶</span>
+        <span class="status-icon">🔋</span>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content" id="main-content">
+      <!-- Home Screen -->
+      <div class="screen home-screen" id="home-screen">
+        <div class="app-grid">
+          <div class="app-icon" onclick="openApp('maps')">
+            <div class="app-icon-inner">🗺️</div>
+            <div class="app-label">Maps</div>
+          </div>
+          <div class="app-icon" onclick="openApp('music')">
+            <div class="app-icon-inner">🎵</div>
+            <div class="app-label">Music</div>
+          </div>
+          <div class="app-icon" onclick="openApp('phone')">
+            <div class="app-icon-inner">📞</div>
+            <div class="app-label">Phone</div>
+          </div>
+          <div class="app-icon" onclick="openApp('messages')">
+            <div class="app-icon-inner">💬</div>
+            <div class="app-label">Messages</div>
+          </div>
+          <div class="app-icon" onclick="openApp('calendar')">
+            <div class="app-icon-inner">📅</div>
+            <div class="app-label">Calendar</div>
+          </div>
+          <div class="app-icon" onclick="openApp('settings')">
+            <div class="app-icon-inner">⚙️</div>
+            <div class="app-label">Settings</div>
+          </div>
+          <div class="app-icon" onclick="openApp('podcasts')">
+            <div class="app-icon-inner">🎙️</div>
+            <div class="app-label">Podcasts</div>
+          </div>
+          <div class="app-icon" onclick="openApp('audiobooks')">
+            <div class="app-icon-inner">📚</div>
+            <div class="app-label">Audiobooks</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Maps Screen -->
+      <div class="screen maps-screen" id="maps-screen" style="display: none;">
+        <div class="screen-header">
+          <button class="back-btn" onclick="goHome()">←</button>
+          <div class="screen-title">Maps</div>
+        </div>
+        <div class="map-placeholder">
+          <div class="map-bg">
+            <div class="map-road"></div>
+            <div class="map-location">📍</div>
+            <div class="map-route-line"></div>
+          </div>
+          <div class="map-info">
+            <div class="map-destination">Home</div>
+            <div class="map-time">25 min</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Music Screen -->
+      <div class="screen music-screen" id="music-screen" style="display: none;">
+        <div class="screen-header">
+          <button class="back-btn" onclick="goHome()">←</button>
+          <div class="screen-title">Music</div>
+        </div>
+        <div class="music-content">
+          <div class="album-art">🎵</div>
+          <div class="song-info">
+            <div class="song-title">Now Playing</div>
+            <div class="artist-name">Artist Name</div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 35%;"></div>
+          </div>
+          <div class="time-info">
+            <span class="current-time">1:23</span>
+            <span class="total-time">3:45</span>
+          </div>
+          <div class="controls">
+            <button class="control-btn">⏮️</button>
+            <button class="control-btn play-btn">▶️</button>
+            <button class="control-btn">⏭️</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Phone Screen -->
+      <div class="screen phone-screen" id="phone-screen" style="display: none;">
+        <div class="screen-header">
+          <button class="back-btn" onclick="goHome()">←</button>
+          <div class="screen-title">Phone</div>
+        </div>
+        <div class="phone-content">
+          <div class="keypad">
+            <div class="keypad-row">
+              <button class="keypad-btn">1</button>
+              <button class="keypad-btn">2</button>
+              <button class="keypad-btn">3</button>
+            </div>
+            <div class="keypad-row">
+              <button class="keypad-btn">4</button>
+              <button class="keypad-btn">5</button>
+              <button class="keypad-btn">6</button>
+            </div>
+            <div class="keypad-row">
+              <button class="keypad-btn">7</button>
+              <button class="keypad-btn">8</button>
+              <button class="keypad-btn">9</button>
+            </div>
+            <div class="keypad-row">
+              <button class="keypad-btn">*</button>
+              <button class="keypad-btn">0</button>
+              <button class="keypad-btn">#</button>
+            </div>
+          </div>
+          <button class="call-btn">📞 Call</button>
+        </div>
+      </div>
+
+      <!-- Messages Screen -->
+      <div class="screen messages-screen" id="messages-screen" style="display: none;">
+        <div class="screen-header">
+          <button class="back-btn" onclick="goHome()">←</button>
+          <div class="screen-title">Messages</div>
+        </div>
+        <div class="messages-content">
+          <div class="message-item">
+            <div class="message-avatar">👤</div>
+            <div class="message-text">
+              <div class="message-name">John</div>
+              <div class="message-preview">Hey, how are you?</div>
+            </div>
+          </div>
+          <div class="message-item">
+            <div class="message-avatar">👩</div>
+            <div class="message-text">
+              <div class="message-name">Sarah</div>
+              <div class="message-preview">See you tomorrow!</div>
+            </div>
+          </div>
+          <div class="message-item">
+            <div class="message-avatar">👨</div>
+            <div class="message-text">
+              <div class="message-name">Mike</div>
+              <div class="message-preview">Meeting at 3pm</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Screen -->
+      <div class="screen settings-screen" id="settings-screen" style="display: none;">
+        <div class="screen-header">
+          <button class="back-btn" onclick="goHome()">←</button>
+          <div class="screen-title">Settings</div>
+        </div>
+        <div class="settings-content">
+          <div class="setting-item">
+            <div class="setting-label">General</div>
+            <div class="setting-arrow">›</div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-label">Display</div>
+            <div class="setting-arrow">›</div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-label">Sounds</div>
+            <div class="setting-arrow">›</div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-label">Siri</div>
+            <div class="setting-arrow">›</div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-label">CarPlay</div>
+            <div class="setting-arrow">›</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Dock -->
+    <div class="dock">
+      <div class="dock-icon" onclick="openApp('phone')">📞</div>
+      <div class="dock-icon" onclick="openApp('maps')">🗺️</div>
+      <div class="dock-icon" onclick="openApp('music')">🎵</div>
+      <div class="dock-icon" onclick="openApp('messages')">💬</div>
+    </div>
+  </div>
+
+  <script src="carplay.js"></script>
+</body>
+</html>

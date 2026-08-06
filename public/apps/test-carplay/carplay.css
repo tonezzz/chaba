@@ -1,0 +1,516 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg-color: #000000;
+  --text-color: #ffffff;
+  --accent-color: #007aff;
+  --secondary-bg: #1c1c1e;
+  --tertiary-bg: #2c2c2e;
+  --dock-bg: rgba(28, 28, 30, 0.8);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-color);
+  color: var(--text-color);
+  min-height: 100vh;
+  overflow: hidden;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+.carplay-container {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-color);
+}
+
+/* Status Bar */
+.status-bar {
+  height: 44px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  background: var(--bg-color);
+}
+
+.status-time {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.status-icons {
+  display: flex;
+  gap: 8px;
+}
+
+.status-icon {
+  font-size: 16px;
+}
+
+/* Main Content */
+.main-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Home Screen */
+.home-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 30px;
+  padding: 40px;
+  max-width: 600px;
+}
+
+.app-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.app-icon:active {
+  transform: scale(0.95);
+}
+
+.app-icon-inner {
+  width: 70px;
+  height: 70px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #3a3a3c 0%, #2c2c2e 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  margin-bottom: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.app-label {
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  color: #ffffff;
+}
+
+/* Screen Headers */
+.screen-header {
+  height: 50px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  background: var(--bg-color);
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--accent-color);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 40px;
+}
+
+.screen-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-left: 10px;
+}
+
+/* Maps Screen */
+.map-placeholder {
+  flex: 1;
+  position: relative;
+  background: #1a1a1a;
+}
+
+.map-bg {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+}
+
+.map-road {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  height: 4px;
+  background: #4a4a4a;
+  border-radius: 2px;
+}
+
+.map-location {
+  position: absolute;
+  top: 40%;
+  left: 60%;
+  font-size: 32px;
+}
+
+.map-route-line {
+  position: absolute;
+  top: 40%;
+  left: 60%;
+  width: 100px;
+  height: 3px;
+  background: var(--accent-color);
+  transform: rotate(-30deg);
+  border-radius: 2px;
+}
+
+.map-info {
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--dock-bg);
+  backdrop-filter: blur(20px);
+  padding: 20px 30px;
+  border-radius: 16px;
+  text-align: center;
+  min-width: 200px;
+}
+
+.map-destination {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.map-time {
+  font-size: 14px;
+  color: #8e8e93;
+}
+
+/* Music Screen */
+.music-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.album-art {
+  width: 200px;
+  height: 200px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #3a3a3c 0%, #2c2c2e 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 64px;
+  margin-bottom: 30px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.song-info {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.song-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.artist-name {
+  font-size: 16px;
+  color: #8e8e93;
+}
+
+.progress-bar {
+  width: 100%;
+  max-width: 300px;
+  height: 4px;
+  background: var(--tertiary-bg);
+  border-radius: 2px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--text-color);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.time-info {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 300px;
+  margin-bottom: 30px;
+  font-size: 12px;
+  color: #8e8e93;
+}
+
+.controls {
+  display: flex;
+  gap: 40px;
+  align-items: center;
+}
+
+.control-btn {
+  background: none;
+  border: none;
+  font-size: 32px;
+  cursor: pointer;
+  padding: 10px;
+  transition: transform 0.2s ease;
+}
+
+.control-btn:active {
+  transform: scale(0.9);
+}
+
+.play-btn {
+  font-size: 48px;
+}
+
+/* Phone Screen */
+.phone-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.keypad {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.keypad-row {
+  display: flex;
+  gap: 15px;
+}
+
+.keypad-btn {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: var(--secondary-bg);
+  border: none;
+  color: var(--text-color);
+  font-size: 28px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.keypad-btn:active {
+  background: var(--tertiary-bg);
+}
+
+.call-btn {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #34c759;
+  border: none;
+  color: white;
+  font-size: 32px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.call-btn:active {
+  transform: scale(0.95);
+}
+
+/* Messages Screen */
+.messages-content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.message-item {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  border-radius: 12px;
+  background: var(--secondary-bg);
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.message-item:active {
+  background: var(--tertiary-bg);
+}
+
+.message-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: var(--tertiary-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin-right: 15px;
+}
+
+.message-text {
+  flex: 1;
+}
+
+.message-name {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.message-preview {
+  font-size: 14px;
+  color: #8e8e93;
+}
+
+/* Settings Screen */
+.settings-content {
+  flex: 1;
+  padding: 20px;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-radius: 12px;
+  background: var(--secondary-bg);
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.setting-item:active {
+  background: var(--tertiary-bg);
+}
+
+.setting-label {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.setting-arrow {
+  font-size: 24px;
+  color: #8e8e93;
+}
+
+/* Bottom Dock */
+.dock {
+  height: 90px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+  background: var(--dock-bg);
+  backdrop-filter: blur(20px);
+  padding: 0 40px;
+}
+
+.dock-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #3a3a3c 0%, #2c2c2e 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dock-icon:active {
+  transform: scale(0.95);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .app-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    padding: 20px;
+  }
+
+  .app-icon-inner {
+    width: 60px;
+    height: 60px;
+    font-size: 28px;
+  }
+
+  .album-art {
+    width: 150px;
+    height: 150px;
+    font-size: 48px;
+  }
+
+  .dock {
+    height: 70px;
+    gap: 20px;
+  }
+
+  .dock-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    padding: 15px;
+  }
+
+  .app-icon-inner {
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+  }
+
+  .screen-title {
+    font-size: 20px;
+  }
+}
