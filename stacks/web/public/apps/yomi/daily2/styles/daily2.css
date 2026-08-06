@@ -106,6 +106,8 @@ header h1 { margin: 0; font-size: 1.1rem; flex: 1; }
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  border-right: 1px solid var(--border);
+  min-width: 300px;
 }
 
 .summary-header {
@@ -214,14 +216,13 @@ header h1 { margin: 0; font-size: 1.1rem; flex: 1; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .progress-done { color: #166534; font-weight: 500; }
 
-/* Message list panel */
+/* Message list panel - 3rd column */
 .message-list-panel {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-top: 1px solid var(--border);
-  min-height: 200px;
+  min-width: 300px;
 }
 
 .message-list-header {
@@ -294,12 +295,14 @@ header h1 { margin: 0; font-size: 1.1rem; flex: 1; }
 }
 
 .message-thumbnail {
-  max-width: 100px;
-  max-height: 100px;
+  max-width: 150px;
+  max-height: 150px;
   border-radius: 0.375rem;
   cursor: pointer;
   object-fit: cover;
   transition: transform 0.2s ease;
+  display: block;
+  margin: 0.5rem 0;
 }
 
 .message-thumbnail:hover {
