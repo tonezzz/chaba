@@ -732,7 +732,7 @@ async function checkSecurityStatus() {
   let content = '';
 
   try {
-    const securityCheck = execCommand('node /home/tony/CascadeProjects/chaba/scripts/security-scan.mjs', 180000); // 3 minute timeout
+    const securityCheck = execCommand('node /home/tony/CascadeProjects/chaba/scripts/security-scan.mjs', 300000); // 5 minute timeout
     
     if (securityCheck.success) {
       content += '**Security Scan Results:**\n\n';
