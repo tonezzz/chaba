@@ -8,10 +8,15 @@ let currentChatId = null;
  * Load conversations from API
  */
 async function loadConversations() {
-  const res = await fetch('/api/yomi/conversations');
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  const { conversations } = await res.json();
-  return conversations || [];
+  try {
+    const res = await fetch('/api/yomi/conversations');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const { conversations } = await res.json();
+    return conversations || [];
+  } catch (error) {
+    console.error('Failed to load conversations:', error);
+    return [];
+  }
 }
 
 /**

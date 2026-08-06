@@ -48,6 +48,13 @@ docs/ssot/
 - **Descriptive**: Names should clearly indicate the file's purpose
 - **Consistent**: Follow established patterns for similar files
 
+### Cross-Reference Standards
+- **SSOT to KB**: Each SSOT file should reference related KB entries
+- **KB to SSOT**: Each KB entry should reference related SSOT files
+- **Related Documentation**: Include links to related documentation in both directions
+- **SSOT Index**: All new SSOT files must be registered in ssot.index.yml
+- **Consistent Format**: Use standardized related documentation section format
+
 ## SSOT File Structure
 
 ### Standard SSOT File Template
@@ -85,6 +92,29 @@ config:
     - ssot.related-file.yml
     - docs/related-documentation.md
 ```
+
+### Cross-Reference Requirements
+
+**SSOT Files**:
+- Must include `related_files` in config section when applicable
+- Should reference related SSOT files and KB entries
+- Use relative paths from docs/ root
+
+**KB Entries**:
+- Must include `related` field in frontmatter
+- Should reference related SSOT files and documentation
+- Use markdown link format for external resources
+
+**SSOT Index**:
+- All new SSOT files must be registered in ssot.index.yml
+- Include descriptive text for discoverability
+- Use appropriate section grouping
+
+**App SSOT Standards**:
+- Follow `docs/ssot/apps/template.app.yml` structure
+- Use standardized section icons and naming
+- Include required sections: Core Features, Technical Architecture, Files & Modules, Deployment
+- Reference `docs/kb/app-ssot-standards.md` for detailed guidelines
 
 ### Configuration-Type Files
 Files like `ssot.health.yml`, `ssot.gpu.yml`, `ssot.services.yml` have flexible structures relevant to their specific domain.
