@@ -105,7 +105,7 @@ const DateUtils = {
    * @returns {boolean} True if valid
    */
   isValidDate(dateStr) {
-    return dateStr && dateStr.match(/^\d{4}-\d{2}-\d{2}$/);
+    return dateStr && !!dateStr.match(/^\d{4}-\d{2}-\d{2}$/);
   },
   
   /**
