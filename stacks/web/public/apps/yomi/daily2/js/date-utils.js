@@ -134,13 +134,17 @@ const DateUtils = {
    * @returns {string} YYYY-MM-DD format in Thailand time
    */
   formatDateKeyThailand(date) {
-    // Convert local date to Thailand time by adding 7 hours
+    // Direct conversion: local date + 7 hours = Thailand time
+    // Extract the date from Thailand time
     const thailandTime = new Date(date.getTime() + (this.THAILAND_OFFSET_HOURS * 60 * 60 * 1000));
     
     const year = thailandTime.getFullYear();
     const month = thailandTime.getMonth() + 1;
     const day = thailandTime.getDate();
-    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    
+    console.log('date-utils: formatDateKeyThailand', date.toISOString(), '-> Thailand time:', thailandTime.toISOString(), '-> dateStr:', dateStr);
+    return dateStr;
   },
   
   /**
