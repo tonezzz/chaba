@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Yomi Weaviate Message Indexing
+Requires=yomi-index-weaviate.service
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+AccuracySec=1h
+
+[Install]
+WantedBy=timers.target

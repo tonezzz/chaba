@@ -11,6 +11,8 @@ import { geminiConversationSummary, geminiDailySummary, geminiBatchDailySummary 
 
 const USE_GEMINI = process.env.USE_GEMINI === 'true' || process.env.USE_GEMINI === '1'; // Default to false (use Llama)
 
+const GEMINI_MAX_DATES = parseInt(process.env.GEMINI_MAX_DATES || '10', 10); // Limit dates per run for Gemini
+const GEMINI_PRIORITY_MODE = process.env.GEMINI_PRIORITY_MODE || 'recent'; // 'recent', 'high-activity', 'all'
 // Filter out messages that only contain encrypted keyMaterial/fileName data
 function shouldFilterMessage(text) {
   if (!text) return true;
@@ -865,9 +867,43 @@ async function saveDailySummary(chatId, date, events, actions, topics, messageCo
   `, [chatId, dateWithTime, events, actions, topics, messageCount]);
 }
 
-async function generateDailySummaries(chatId, messages, name) {
+/**
+ * Prioritize dates for Gemini summarization based on mode
+ * @param {Array} datesArray - Array of [date, messages] tuples
+ * @param {string} mode - Priority mode: 'recent', 'high-activity', 'all'
+ * @param {number} limit - Maximum number of dates to process
+ * @returns {Array} - Prioritized dates array
+ */
+function prioritizeDates(datesArray, mode, limit) {
+  if (mode === 'all') {
+    return datesArray.sort((a, b) => a[0].localeCompare(b[0]));
+  }
+  
+  if (mode === 'recent') {
+    // Sort by date descending (most recent first)
+    return datesArray
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .slice(0, limit);
+  }
+  
+  if (mode === 'high-activity') {
+    // Sort by message count descending (most active first)
+    return datesArray
+      .sort((a, b) => b[1].length - a[1].length)
+      .slice(0, limit);
+  }
+  
+  // Default: chronological
+  return datesArray.sort((a, b) => a[0].localeCompare(b[0]));
+}
+
+async function generateDailySummaries(chatId, messages, name, targetDate = null) {
   const byDate = groupMessagesByDate(messages);
   console.log(`generateDailySummaries for ${chatId}: ${byDate.size} dates with messages`);
+  console.log(`Available dates: ${Array.from(byDate.keys()).join(', ')}`);
+  if (targetDate) {
+    console.log(`Target date requested: ${targetDate}`);
+  }
   let processed = 0;
   
   // Filter to only process dates within last 30 days
@@ -883,9 +919,32 @@ async function generateDailySummaries(chatId, messages, name) {
   }
   
   console.log(`Filtered to ${filteredDates.size} dates within last 30 days (skipped ${byDate.size - filteredDates.size} older dates)`);
+  console.log(`Filtered dates: ${Array.from(filteredDates.keys()).join(', ')}`);
   
-  // Convert to array and sort by date
-  const datesArray = Array.from(filteredDates.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  // If targetDate specified, only process that date
+  if (targetDate) {
+    const targetKey = targetDate.split('T')[0]; // Extract date part if ISO string
+    const targetMessages = filteredDates.get(targetKey);
+    if (targetMessages) {
+      console.log(`Processing single date: ${targetKey} (${targetMessages.length} messages)`);
+      filteredDates.clear();
+      filteredDates.set(targetKey, targetMessages);
+    } else {
+      console.log(`Target date ${targetKey} not found in messages. Available dates: ${Array.from(filteredDates.keys()).join(', ')}`);
+      // Don't return - still process other dates if target not found
+      console.log(`Target date not found, processing all available dates instead`);
+    }
+  }
+  
+  // Apply Gemini-specific prioritization if enabled
+  let datesArray = Array.from(filteredDates.entries());
+  if (USE_GEMINI && GEMINI_PRIORITY_MODE !== 'all') {
+    datesArray = prioritizeDates(datesArray, GEMINI_PRIORITY_MODE, GEMINI_MAX_DATES);
+    console.log(`Gemini priority mode: ${GEMINI_PRIORITY_MODE}, processing ${datesArray.length} dates (limit: ${GEMINI_MAX_DATES})`);
+  } else {
+    // Sort by date chronologically
+    datesArray.sort((a, b) => a[0].localeCompare(b[0]));
+  }
   
   // Process in batches of 3-5 dates to reduce API calls
   const batchSize = 4;
@@ -1095,7 +1154,7 @@ async function saveConversation(conv) {
 
 const isMain = process.argv[1] === new URL(import.meta.url).pathname;
 
-async function refreshSingle(chatId, forceRefresh = false) {
+async function refreshSingle(chatId, forceRefresh = false, targetDate = null) {
   const messages = mergeMessages(await loadMessages(chatId), await getChatMessages(chatId, 100));
   await saveMessages(chatId, messages);
   const conv = await loadConversation(chatId);
@@ -1110,7 +1169,7 @@ async function refreshSingle(chatId, forceRefresh = false) {
     const result = categorize(conv);
     conv.category = result.category;
     conv.categorySource = result.source;
-    await generateDailySummaries(chatId, messages, conv.name);
+    await generateDailySummaries(chatId, messages, conv.name, targetDate);
     conv.isGroup = result.isGroup;
     await saveConversation(conv);
   }
@@ -1195,9 +1254,11 @@ async function main() {
   const singleChat = i !== -1 ? process.argv[i + 1] : null;
   const forceIdx = process.argv.indexOf('--force');
   const forceRefresh = forceIdx !== -1;
+  const dateIdx = process.argv.indexOf('--date');
+  const targetDate = dateIdx !== -1 ? process.argv[dateIdx + 1] : null;
   
   if (singleChat) {
-    await refreshSingle(singleChat, forceRefresh);
+    await refreshSingle(singleChat, forceRefresh, targetDate);
   } else {
     await exportAll();
   }

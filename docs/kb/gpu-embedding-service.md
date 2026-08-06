@@ -1,8 +1,25 @@
+---
+title: GPU Embedding Service
+description: GPU-accelerated text embedding service using sentence-transformers for high-performance vector generation with 34x performance improvement over CPU baseline
+tags: [gpu, embeddings, vector-generation, sentence-transformers, cuda, weaviate]
+created: 2026-08-04
+updated: 2026-08-06
+category: operations
+related: [ssot.test.weaviate.yml, weaviate.md, ssot.gpu.yml]
+search_keywords: [GPU embeddings, vector generation, sentence-transformers, CUDA, Weaviate, performance optimization]
+---
+
 # GPU Embedding Service
 
-## What it is
+**Abstract**: GPU-accelerated text embedding service using sentence-transformers for high-performance vector generation, achieving 34x performance improvement over CPU baseline through CUDA acceleration with comprehensive GPU queue integration and monitoring.
+
+## Overview
 
 GPU-accelerated text embedding service using sentence-transformers for high-performance vector generation. Achieves 34x performance improvement over CPU baseline by leveraging CUDA acceleration for embedding operations.
+
+## Purpose
+
+Provides high-performance text embedding capabilities for semantic search and vector operations, integrated with Weaviate vector database and GPU queue system for efficient resource management and monitoring.
 
 ## Performance Metrics
 
@@ -205,10 +222,11 @@ function manageContextLength(prompt, jobType = 'default') {
 
 ## Related Documentation
 
-**Success Report**: `docs/assessments/gpu-embedding/gpu-embedding-success-report.md`  
-**Archived Assessments**: `docs/assessments/gpu-embedding/archived/` (action plan, feasibility assessment, gap analysis, sharing analysis)  
-**GPU Queue Schema**: `scripts/gpu-queue/schema.sql`  
-**Weaviate Configuration**: `docs/ssot/infrastructure/ssot.test.weaviate.yml`
+- **GPU Success Report**: `docs/assessments/gpu-embedding/archived/gpu-embedding-success-report.md` - Implementation success analysis
+- **GPU Queue Schema**: `scripts/gpu-queue/schema.sql` - Database schema with embedding fields
+- **Weaviate Configuration**: `docs/ssot/infrastructure/ssot.test.weaviate.yml` - Vector database setup
+- **SSOT GPU Configuration**: `docs/ssot/infrastructure/ssot.gpu.yml` - GPU policy and queue implementation
+- **Health Check Dashboard**: `docs/kb/health-check.md` - GPU monitoring integration
 
 ## Change History
 
@@ -216,4 +234,5 @@ function manageContextLength(prompt, jobType = 'default') {
 |------|--------|--------|
 | 2026-08-04 | Initial deployment | tony |
 | 2026-08-05 | GPU queue monitoring integration | tony |
-| 2026-08-06 | Consolidated documentation (removed duplicate sections) | devin |
+| 2026-08-06 | GPU queue backpressure system documentation | tony |
+| 2026-08-06 | Added frontmatter metadata, standardized structure | devin |

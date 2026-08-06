@@ -145,6 +145,41 @@ Parsed objects look like:
 }
 ```
 
+## Model Configuration
+
+### Current Summarization Model
+- **Model**: Phi-3-mini-4k-instruct-q4 (2.3GB)
+- **GPU**: NVIDIA GTX 1650 (4GB VRAM)
+- **API Endpoint**: `http://tony-omen.local:8001/v1/chat/completions`
+- **Context Window**: 4K tokens
+- **Status**: Active but overloaded (2944MB/4096MB GPU used, 72%)
+
+### Alternative Model
+- **Model**: thai-legal-gemma-4b-cpt.Q4_K_M.gguf (5.0GB)
+- **Location**: `/data/gguf/` (available but offline)
+- **Specialization**: Thai legal content, better Thai language understanding
+- **Status**: **Offline as of 2026-08-06** - Removed from docker-compose alias to save GPU resources
+- **Reason**: GPU memory constraints (5GB model vs 4GB available VRAM)
+
+### Model Switching Constraints
+- Thai legal model (5GB) exceeds available GPU memory (4GB)
+- Removed from docker-compose alias (2026-08-06) to prevent load attempts
+- Phi-3-mini (2.3GB) now the only active model
+- Context size exceeded errors indicate Phi-3 overload under current request volume
+- Thai legal model can be re-enabled by adding back to docker-compose alias if GPU upgraded
+
+### Model Management
+```bash
+# Check loaded models
+curl http://tony-omen.local:8001/v1/models | jq .
+
+# Check GPU memory usage
+docker exec thai-legal-inference nvidia-smi
+
+# Check Llama server health
+curl http://tony-omen.local:8001/health
+```
+
 ## Troubleshooting
 
 - `mcp0_list_conversations` / script fails with "No persisted LINE session" → the Yomi MCP server is not pointing at the data dir with the LINE credentials. Check the `mcpServers` config and restart the client.
@@ -152,10 +187,44 @@ Parsed objects look like:
 - If messages look garbled after a Yomi update, inspect the raw `get_chat_messages` output and adjust the CSV tokenizer in `fetch-conversations.mjs`.
 - Process status stuck in "processing" → Check `process-status.json` and clear if needed: `rm /home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/process-status.json`
 - Summaries not generating → Check Llama API is accessible at `http://localhost:8001/v1/chat/completions` and GPU is available
+- **GPU memory exhaustion** → Phi-3 using 2944MB/4096MB (72%). Thai legal model (5GB) cannot load. Context size exceeded errors indicate model overload. Consider rate limiting or GPU upgrade (2026-08-06).
 - Daily summaries empty → Ensure `process-conversations.mjs` includes `generateDailySummaries()` call (added in 2026-08-03 fix). Previously only available in legacy `update-conversations.mjs`.
 - Summary language mismatch → Language-aware summarization implemented (2026-08-03) with Thai/English/mixed detection. Some encoding issues remain for certain conversations.
 - Frequent Llama API 500 errors → Rate limiting and circuit breakers implemented (2026-08-03) to manage GPU load. Check `/api/yomi/rate-limiter-status` for current state.
 - **Yomi API not responding** → Check `yomi-api.service` status: `systemctl status yomi-api.service`. Service auto-restarts on failure (added 2026-08-04).
+- **LINE API rate limit (code 103)** → Authentication temporarily restricted. Wait 1-24 hours for restriction to lift, then re-login with `npx @rikaidev/yomi login`. Implement exponential backoff for login retries to prevent future rate limits. (2026-08-06)
+
+## LINE API Rate Limit Management (2026-08-06)
+
+### Rate Limit Code 103
+- **Error Message**: `認証が一時的に制限されています。しばらく経ってからもう一度お試してください。`
+- **Translation**: "Authentication is temporarily restricted. Please try again later."
+- **Cause**: Too many login attempts in short period
+- **Duration**: Typically 1-24 hours
+- **Impact**: yomi-fetch.timer finds 0 conversations, cannot download new messages
+
+### Mitigation Strategies
+1. **Wait for restriction to lift** - Monitor periodically, attempt login every 2 hours
+2. **Exponential backoff** - Implement retry logic with increasing delays (1min, 5min, 15min, 1hr, 4hr)
+3. **Rate limit detection** - Parse error codes and trigger automatic retry logic
+4. **Login attempt throttling** - Limit login attempts to once per hour maximum
+5. **Session persistence** - Maintain valid session longer to reduce login frequency
+
+### Implementation Plan
+- Add rate limit detection to `fetch-conversations.mjs`
+- Implement exponential backoff for login retries
+- Add login attempt logging to track frequency
+- Monitor session validity and proactively refresh before expiry
+- Document LINE API rate limit policies
+
+### Current Status
+- **Rate Limit Active**: Yes (2026-08-06)
+- **Last Login Attempt**: Failed with code 103
+- **Next Action**: Wait for restriction to lift, then re-login
+- **Improvement**: LINE API Rate Limit Mitigation added to ssot.improvements.yml
+- **Variable daily summary quality** → Some conversations show rich extraction (events/actions/topics) while others have empty arrays despite having messages. Check `/api/yomi/summary-quality` for per-conversation metrics (2026-08-05).
+- **Systemd service failure** → If `yomi-api.service` fails but API runs manually, check logs: `journalctl -u yomi-api.service`. May need to restart service or fix configuration (2026-08-05).
+- **Database cleanup required** → Some conversations have `last_message_time: null` despite having messages, and duplicate entries with corrupted chat_id fields containing keyMaterial JSON. Use SQL to fix null timestamps and remove duplicates (2026-08-05).
 
 ## UI Improvements (Post-Improvement Session)
 
@@ -194,13 +263,12 @@ Yomi is integrated into the health check system with comprehensive monitoring:
 - **Timeout**: 5 seconds
 - **Config**: `docs/ssot/infrastructure/ssot.health.home.yml`
 
-### GPU Load Management (2026-08-03, Updated 2026-08-04, Validated 2026-08-05)
+### GPU Load Management (2026-08-03, Updated 2026-08-04)
 - **Rate Limiting**: Optimized settings (3 concurrent for daily summaries, 1 for regular summaries) to balance speed and GPU load
 - **Circuit Breakers**: Automatic protection when GPU overloaded (2-5 failures trigger open state)
 - **Queue Management**: Prevents request pile-up with configurable timeouts
 - **GPU Monitoring**: Real-time GPU utilization, memory, and temperature tracking
 - **Alerting**: Automatic detection of circuit breaker triggers, high GPU load, and temperature issues
-- **Validation**: Rate limiting and circuit breaker implementation validated during 2026-08-05 session
 
 ### Rate Limiter Status (Updated 2026-08-04)
 - **Summary Rate Limiter**: 1 concurrent, 2min queue timeout

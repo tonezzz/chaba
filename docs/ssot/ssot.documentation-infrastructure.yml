@@ -1,0 +1,229 @@
+title: Documentation Infrastructure SSOT
+subtitle: Disaster recovery and backup configuration for documentation system, MCP servers, and search infrastructure
+icon: 💾
+
+ideas:
+  - Single source of truth for documentation infrastructure disaster recovery
+  - Critical for recovering documentation search capabilities after system failure
+  - Includes backup procedures, recovery steps, and verification processes
+  - Documents both automated and manual recovery procedures
+
+sections:
+  - title: Critical Infrastructure Components
+    icon: 🏗️
+    layout: list
+    items:
+      - label: Documentation Files
+        text: docs/ directory with KB entries, SSOT files, architecture docs, assessments
+        path: /home/tony/CascadeProjects/chaba/docs
+        backup_priority: critical
+        recovery_priority: critical
+
+      - label: MCP Configuration
+        text: Devin/Windsurf MCP server configuration including docs MCP server
+        path: /home/tony/.config/devin/mcp_config.json
+        backup_priority: critical
+        recovery_priority: critical
+
+      - label: Skills Configuration
+        text: Devin skills including ssot-search, auto-kb, and other project skills
+        path: /home/tony/.config/devin/skills
+        backup_priority: high
+        recovery_priority: high
+
+      - label: SSOT YAML Files
+        text: All SSOT configuration files in docs/ssot/ directory
+        path: /home/tony/CascadeProjects/chaba/docs/ssot
+        backup_priority: critical
+        recovery_priority: critical
+
+      - label: Documentation Templates
+        text: KB template, SSOT summary templates, maintenance standards
+        path: /home/tony/CascadeProjects/chaba/docs/kb/.template.md
+        backup_priority: high
+        recovery_priority: high
+
+      - label: Search Index Cache
+        text: MCP docs server Flexsearch index in .docs-mcp/ directory
+        path: /home/tony/CascadeProjects/chaba/.docs-mcp
+        backup_priority: low
+        recovery_priority: low
+        note: Can be rebuilt automatically, not critical for backup
+
+  - title: Backup Strategy
+    icon: 🔄
+    layout: list
+    items:
+      - label: Git Version Control
+        text: Primary backup method for all documentation files in chaba repository
+        backup_method: git
+        frequency: automatic on commit
+        retention: permanent history
+        recovery: git clone or git pull
+
+      - label: Configuration Backup Script
+        text: Automated backup of MCP configs and skills to repository
+        backup_method: custom script
+        frequency: daily via cron
+        retention: 30 days
+        recovery: manual restore from backup
+
+      - label: System-Level Backup
+        text: Full system backup including /home/tony/.config/devin/ directory
+        backup_method: Timeshift or similar
+        frequency: weekly
+        retention: 4 weeks
+        recovery: system restore from snapshot
+
+  - title: Recovery Procedures
+    icon: 🚑
+    layout: list
+    items:
+      - label: Documentation Recovery
+        text: Restore docs/ directory from git repository
+        recovery_command: git clone https://github.com/your-repo/chaba.git
+        recovery_time: 5-10 minutes
+        verification: Check file count and key files exist
+
+      - label: MCP Configuration Recovery
+        text: Restore MCP config from backup or manual reconfiguration
+        recovery_command: cp backup/mcp_config.json ~/.config/devin/mcp_config.json
+        recovery_time: 2-5 minutes
+        verification: mcp_list_servers shows expected servers
+
+      - label: Skills Recovery
+        text: Restore skills from backup or repository
+        recovery_command: cp -r backup/skills/* ~/.config/devin/skills/
+        recovery_time: 5-10 minutes
+        verification: skill list shows expected skills
+
+      - label: Search Index Rebuild
+        text: Rebuild MCP docs server index automatically
+        recovery_command: Automatic on first MCP docs server use
+        recovery_time: 30-60 seconds
+        verification: mcp_call_tool docs list_sections returns data
+
+  - title: Backup Automation
+    icon: ⚙️
+    layout: list
+    items:
+      - label: Daily Configuration Backup
+        text: Script to backup MCP configs and skills to chaba repository
+        script_path: /home/tony/CascadeProjects/chaba/scripts/backup-configs.sh
+        schedule: daily at 3 AM via cron
+        backup_location: chaba/docs/backups/configs/
+
+      - label: Weekly Documentation Verification
+        text: Script to verify documentation integrity and search functionality
+        script_path: /home/tony/CascadeProjects/chaba/scripts/verify-docs.sh
+        schedule: weekly on Sunday at 2 AM via cron
+        verification_checks: file count, MCP server status, search functionality
+
+      - label: Monthly Recovery Test
+        text: Simulated disaster recovery test on non-production system
+        test_procedure: Restore from backup on test system
+        schedule: monthly first Sunday
+        success_criteria: All services functional, search working
+
+  - title: Verification Procedures
+    icon: ✅
+    layout: list
+    items:
+      - label: Documentation Integrity Check
+        text: Verify all critical files exist and are not corrupted
+        verification_command: find docs/ -type f -name "*.md" -o -name "*.yml" | wc -l
+        expected_result: 100+ files
+        frequency: weekly
+
+      - label: MCP Server Verification
+        text: Verify all expected MCP servers are available
+        verification_command: mcp_list_servers
+        expected_servers: docs, github, yomi, postgres, mcp-gpu, mcp-llama
+        frequency: daily
+
+      - label: Search Functionality Test
+        text: Test both ssot-search and MCP docs server search
+        verification_command: mcp_call_tool docs search_docs "GPU memory" 3
+        expected_result: 3 relevant search results
+        frequency: weekly
+
+      - label: Configuration Consistency Check
+        text: Verify MCP config matches expected state
+        verification_command: diff ~/.config/devin/mcp_config.json docs/backups/configs/mcp_config.json
+        expected_result: No differences or documented changes
+        frequency: weekly
+
+  - title: Disaster Recovery Scenarios
+    icon: 🔥
+    layout: list
+    items:
+      - label: Complete System Loss
+        text: Total system failure requiring full restore from backup
+        recovery_steps:
+          - 1. Restore system from Timeshift snapshot
+          - 2. Clone chaba repository from GitHub
+          - 3. Restore MCP configs from backup
+          - 4. Restore skills from backup
+          - 5. Restart Devin Desktop
+          - 6. Verify MCP servers with mcp_list_servers
+          - 7. Test search functionality
+        estimated_recovery_time: 30-60 minutes
+        data_loss_potential: minimal (daily backups)
+
+      - label: Documentation Corruption
+        text: Documentation files corrupted or accidentally deleted
+        recovery_steps:
+          - 1. Git checkout clean version from repository
+          - 2. Verify file integrity
+          - 3. Test search functionality
+          - 4. Commit restored version if needed
+        estimated_recovery_time: 5-10 minutes
+        data_loss_potential: minimal (git history)
+
+      - label: MCP Configuration Loss
+        text: MCP config file corrupted or deleted
+        recovery_steps:
+          - 1. Restore from daily backup
+          - 2. Restart Devin Desktop
+          - 3. Verify MCP servers with mcp_list_servers
+          - 4. Test docs MCP server functionality
+        estimated_recovery_time: 5-10 minutes
+        data_loss_potential: minimal (daily backups)
+
+      - label: Repository Loss
+        text: GitHub repository lost or corrupted
+        recovery_steps:
+          - 1. Restore from local system backup
+          - 2. Create new GitHub repository
+          - 3. Push restored content
+          - 4. Update remote URLs
+          - 5. Verify all branches and tags
+        estimated_recovery_time: 20-30 minutes
+        data_loss_potential: minimal (local backups)
+
+  - title: Recovery Contact Information
+    icon: 📞
+    layout: list
+    items:
+      - label: Primary Contact
+        text: System administrator for recovery coordination
+        contact: tony
+        availability: during business hours
+
+      - label: GitHub Repository
+        text: Primary remote repository for documentation
+        url: https://github.com/your-org/chaba
+        backup_remotes: gitlab, bitbucket
+
+      - label: Backup Storage
+        text: Secondary backup location for critical configurations
+        location: /home/tony/CascadeProjects/chaba/docs/backups/
+        retention_policy: 30 days
+
+config:
+  version: 1
+  last_updated: 2026-08-06
+  maintainer: tony
+  recovery_priority: high
+  backup_frequency: daily
+  test_frequency: monthly

@@ -1,0 +1,13 @@
+[Unit]
+Description=Yomi Weaviate Message Indexing
+After=network.target postgres.service weaviate.service
+
+[Service]
+Type=oneshot
+User=tony
+WorkingDirectory=/home/tony/CascadeProjects/chaba
+ExecStart=/usr/bin/node scripts/yomi/index-yomi-weaviate.mjs --since 1
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target

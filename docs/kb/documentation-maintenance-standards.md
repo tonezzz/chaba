@@ -1,8 +1,158 @@
+---
+title: Documentation Maintenance Standards
+description: Systematic approach to documentation maintenance with standardized templates, frontmatter metadata, and MCP search optimization
+tags: [documentation, maintenance, standards, templates, MCP search]
+created: 2026-08-06
+updated: 2026-08-06
+category: operations
+related: [documentation-search.md, ssot-documentation-standards.md, kb/.template.md]
+search_keywords: [documentation maintenance, templates, frontmatter, MCP optimization, KB standards]
+---
+
 # Documentation Maintenance Standards
 
-## What it is
+**Abstract**: Systematic approach to documentation maintenance with standardized templates, frontmatter metadata for MCP search optimization, and consolidation strategies to prevent bloat while ensuring long-term maintainability.
+
+## Overview
 
 Systematic approach to documentation maintenance that prevents bloat, reduces redundancy, and ensures long-term maintainability while preserving essential operational information and historical context.
+
+## Purpose
+
+Standardizes documentation creation and maintenance with:
+- Consistent frontmatter metadata for MCP search optimization
+- Standardized templates for KB entries and SSOT summaries
+- Consolidation strategies to prevent documentation bloat
+- Archive policies for historical document preservation
+- MCP search optimization through structured metadata
+
+## Standardized Templates (2026-08-06)
+
+### KB Entry Template
+
+All new KB entries must use the standardized template with frontmatter:
+
+```markdown
+---
+title: [Descriptive Title]
+description: [1-2 sentence description]
+tags: [primary-tag, secondary-tag, domain]
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+category: [operations|architecture|implementation|troubleshooting|assessment]
+related: [related-file.md, ssot.file.yml]
+search_keywords: [keyword1, keyword2, synonym, related-term]
+---
+
+# [Title]
+
+**Abstract**: [2-3 sentence summary for search relevance]
+
+## Overview
+[What it is - 2-3 sentences]
+
+## Purpose
+[What it accomplishes]
+
+## Key Files
+[File table]
+
+## Implementation/Architecture
+[Technical details]
+
+## Operational Procedures
+[Step-by-step procedures if applicable]
+
+## Troubleshooting
+[Common issues if applicable]
+
+## Related Documentation
+[Cross-references]
+
+## Change History
+[Date, change, author]
+```
+
+**Template Location**: `docs/kb/.template.md`
+
+### Frontmatter Requirements
+
+**Required Fields**:
+- `title`: Descriptive title for search optimization
+- `description`: 1-2 sentence description for relevance
+- `tags`: Array of relevant tags for categorization
+- `created`: Creation date (YYYY-MM-DD)
+- `updated`: Last update date (YYYY-MM-DD)
+- `category`: One of: operations, architecture, implementation, troubleshooting, assessment
+
+**Optional Fields**:
+- `related`: Array of related documentation files
+- `search_keywords`: Array of search terms and synonyms
+
+### SSOT Summary Template
+
+SSOT YAML files should have accompanying Markdown summaries for MCP search:
+
+```markdown
+---
+title: SSOT [Name] Summary
+description: [Description of SSOT configuration]
+tags: [ssot, configuration, domain]
+ssot_source: docs/ssot/path/to/file.yml
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+category: configuration
+related: [related-docs.md, other-ssot.yml]
+search_keywords: [relevant search terms]
+---
+
+# SSOT [Name] Summary
+
+**Abstract**: [2-3 sentence summary]
+
+## Overview
+[What this SSOT file configures]
+
+## Purpose
+[What it accomplishes in the system]
+
+## Key Configuration Elements
+[Main configuration patterns]
+
+## Integration Points
+[How this integrates with other systems]
+
+## Full Configuration
+[Reference to authoritative YAML source]
+```
+
+**Summary Location**: `docs/ssot-summaries/`
+
+## MCP Search Optimization (2026-08-06)
+
+### Frontmatter Benefits
+- **Better search relevance**: Tags and keywords improve ranking
+- **Filterable metadata**: Category, date, related files for filtering
+- **Consistent structure**: Standardized format for AI processing
+- **Cross-reference mapping**: Related files field for context
+
+### Search Keywords Strategy
+- **Primary terms**: Main domain terms and concepts
+- **Secondary terms**: Related concepts and synonyms
+- **Use cases**: Common search scenarios
+- **Related concepts**: Broader domain connections
+
+### Section Standardization
+- **Abstract**: 2-3 sentence summary for search excerpts
+- **Overview**: What it is (2-3 sentences)
+- **Purpose**: What it accomplishes
+- **Consistent headings**: Standard section names across all docs
+
+### SSOT Searchability
+- **Markdown summaries**: SSOT YAML files accompanied by Markdown summaries
+- **Authoritative sources**: Summaries link to YAML source files
+- **Search coverage**: Makes SSOT content searchable via MCP docs server
+- **Single source of truth**: YAML remains authoritative, summaries for search
 
 ## Context/Background
 
@@ -228,8 +378,18 @@ docs/archive/                        # Historical planning documents
 
 ## Related Documentation
 
-- `docs/kb/ssot-documentation-standards.md` - SSOT file standards
-- `docs/kb/token-optimization.md` - Consolidated operational guide example
+- **Documentation Search**: `docs/kb/documentation-search.md` - Dual search methods guide
+- **Search Index**: `docs/SEARCH_INDEX.md` - Comprehensive documentation search index
+- **KB Template**: `docs/kb/.template.md` - Standardized KB entry template
+- **SSOT Documentation Standards**: `docs/kb/ssot-documentation-standards.md` - SSOT file standards
+- **Token Optimization**: `docs/kb/token-optimization.md` - Consolidated operational guide example
+
+## Change History
+
+| Date | Change | Author |
+|------|--------|--------|
+| 2026-08-06 | Initial documentation maintenance standards | devin |
+| 2026-08-06 | Added MCP search optimization and template requirements | devin | example
 - `docs/kb/gpu-embedding-service.md` - Consolidated service documentation example
 - `.windsurf/workflows/auto-kb-creation.md` - KB entry creation workflow
 

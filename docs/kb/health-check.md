@@ -1,8 +1,25 @@
+---
+title: Health Check Dashboard
+description: Real-time system health monitoring dashboard with GPU, Yomi, and service status tabs with auto-refresh and category-based filtering
+tags: [monitoring, health-check, gpu, yomi, dashboard, services]
+created: 2026-08-01
+updated: 2026-08-06
+category: operations
+related: [ssot.health.yml, ssot.health.home.yml, ssot.health.mobile.yml, gpu-embedding-service.md]
+search_keywords: [health monitoring, service status, GPU tab, Yomi API, dashboard, auto-refresh, troubleshooting]
+---
+
 # Health Check Dashboard
+
+**Abstract**: Real-time system health monitoring dashboard providing unified view of service status, GPU metrics, and Yomi API health with auto-refresh, category-based filtering, and location-specific configuration support.
 
 ## Overview
 
 Real-time system health monitoring dashboard served from `http://tony-omen.local:8080/apps/health-check/` (home) or `http://localhost:8080/apps/health-check/` (mobile).
+
+## Purpose
+
+Provides unified real-time monitoring of all Chaba infrastructure services with category-based filtering, automatic location detection, and comprehensive troubleshooting guidance for service failures.
 
 ## Key files
 
@@ -303,14 +320,18 @@ Using `handle_path` causes 404 errors because it strips the path prefix before p
 
 ---
 
-## Tags
+## Related Documentation
 
-- **health-check**: Real-time system health monitoring dashboard
-- **gpu-monitoring**: GPU hardware status, queue monitoring, service health
-- **yomi-monitoring**: Yomi API health, summarization status, rate limiter status
-- **location-detection**: Auto-detection of home vs mobile network
-- **api-endpoints**: Status API, Yomi API, GPU Queue API
-- **caddy-routing**: Reverse proxy configuration for API routing
-- **troubleshooting**: Common issues and resolution steps
-- **gpu-services**: Imagen2, Thai Legal LLM, Txt2Vid health monitoring
-- **queue-monitoring**: Job type breakdown, recent jobs, priority distribution
+- **SSOT Health Configuration**: `docs/ssot/infrastructure/ssot.health.yml` - Service definitions and recovery actions
+- **GPU Embedding Service**: `docs/kb/gpu-embedding-service.md` - GPU service integration and monitoring
+- **System Automation**: `docs/kb/system-automation.md` - Automated monitoring and maintenance scripts
+- **SSOT GPU Configuration**: `docs/ssot/infrastructure/ssot.gpu.yml` - GPU policy and queue implementation
+
+## Change History
+
+| Date | Change | Author |
+|------|--------|--------|
+| 2026-08-01 | Initial creation | tony |
+| 2026-08-03 | GPU service health checks, Txt2Vid migration | tony |
+| 2026-08-03 | Enhanced GPU queue monitoring with job type breakdown | tony |
+| 2026-08-06 | Added frontmatter metadata, standardized structure | devin |

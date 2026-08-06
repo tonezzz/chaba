@@ -540,6 +540,39 @@ sections:
     completed: '2026-08-05'
     completion_note: 'npm: 0 vulns across all 4 packages. starlette 0.40.0 CVEs (CVE-2026-48710, CVE-2026-54282, GHSA-7f5h-v6xp-fcq8) fixed — upgraded thai-legal-inference to fastapi 0.141.1 + starlette
       1.3.x. Docker images mostly recent. NVIDIA 595.71.05 already patches all driver CVEs (595.84 is bugs-only).'
+  - label: LINE API Rate Limit Mitigation
+    text: Resolve LINE API authentication rate limit (code 103) preventing Yomi message downloads and implement retry logic to prevent future rate limit issues
+    status: in_progress
+    priority: high
+    effort: 2-4 hours
+    category: yomi
+    discovered: 2026-08-06
+    assessment_ref: yomi-gemini-migration
+    business_impact: 8
+    technical_impact: 7
+    user_experience_impact: 9
+    cost_savings_impact: 5
+    impact_summary: Restores Yomi message download capability and prevents future rate limit disruptions
+    action_items:
+    - Wait for LINE API rate limit to lift (code 103 restriction)
+    - Re-login with `npx @rikaidev/yomi login` when restriction clears
+    - Implement exponential backoff for login retries
+    - Add rate limit detection and automatic retry logic
+    - Monitor login attempt frequency to prevent future rate limits
+    - Document LINE API rate limit policies and best practices
+    related_files:
+    - scripts/yomi/fetch-conversations.mjs
+    - /etc/systemd/system/yomi-fetch.service
+    - /etc/systemd/system/yomi-fetch.timer
+    - docs/ssot/infrastructure/ssot.services.yml
+    blocks:
+    - Yomi Gemini Migration Completion
+    blocking_reason: Cannot download new messages or process updates until LINE session restored
+    tags:
+    - yomi
+    - rate-limit
+    - line-api
+    - authentication
 - title: Action Plan Timeline
   icon: 📅
   layout: timeline

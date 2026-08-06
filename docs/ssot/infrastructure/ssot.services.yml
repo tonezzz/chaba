@@ -17,3 +17,87 @@ tony-omen:
     container: postgres
     image: postgres:16-alpine
     port: 5432
+  gemini-api:
+    service: Google Gemini API
+    provider: Google Cloud
+    models:
+      - gemma-4-31b-it (30.7B params, 256K context, frontier performance)
+      - gemma-4-26b-a4b-it (25.2B params, 3.8B active, MoE architecture)
+      - gemma-4-12b-unified (11.95B params, 256K context)
+      - gemini-1.5-flash (fallback model)
+    api_key: GEMINI_API_KEY environment variable
+    current_key: AQ.Ab8RN6IdyXzbZT6Inpiaf5yQG_RrVrKey7G07gYbQW6ghNUxvQ
+    rate_limit: 15 requests/minute (conservative default, varies by model)
+    usage: Yomi summarization (conversation and daily summaries)
+    integration: gemini-integration.mjs
+    status: implemented (2026-08-06), enabled via USE_GEMINI environment variable
+    functions:
+      - geminiConversationSummary() - Generate conversation summaries
+      - geminiDailySummary() - Generate daily summaries
+      - geminiBatchDailySummary() - Generate batch daily summaries
+      - testGeminiConnection() - Test API connectivity
+    language_support:
+      - Thai system prompts for Thai/mixed content
+      - English system prompts for English content
+      - Language detection via detectLanguage() function
+    priority_system:
+      - GEMINI_MAX_DATES: Maximum dates per run (default: 10)
+      - GEMINI_PRIORITY_MODE: recent, high-activity, all (default: recent)
+      - prioritizeDates() function for selective re-summarization
+    migration_status:
+      phase: Phase 1 - High-activity chats
+      progress: Processing top 5 high-activity chats
+      test_chat_1: u494a728e423a3d45182ad44bd1003cf6 (KKGT @DAY) - 20 daily summaries completed
+      test_chat_2: cc8589a45e890e38942825d3c13ec3439 (🅱️🅱️🅱️งานส่วนกลาง โนเบิลพาร์ค) - 5/24 dates processed (high-activity mode)
+      test_chat_3: cf367cfd41323eca3742ee007932ccfcd (Windsurf ผีทะเล) - 10/23 dates completed
+      test_chat_4: c2fa250d3ff0564bce19c5942295140b1 (ผีวิ่ง..เอามันส์) - 10/23 dates completed
+      test_chat_5: ccf38efbf85344dc14edcdcacd7c43e9b (Windsurf Private room) - 10/23 dates completed
+      total_chats: 70 conversations in database
+      chats_with_summaries: 56 chats have daily summaries
+      total_summaries: 438 daily summaries in database
+      high_activity_chats:
+        - cc8589a45e890e38942825d3c13ec3439 (2202 messages) - 🅱️🅱️🅱️งานส่วนกลาง โนเบิลพาร์ค
+        - cf367cfd41323eca3742ee007932ccfcd (1245 messages) - Windsurf ผีทะเล
+        - c2fa250d3ff0564bce19c5942295140b1 (615 messages) - ผีวิ่ง..เอามันส์
+        - u494a728e423a3d45182ad44bd1003cf6 (471 messages) - KKGT @DAY
+        - ccf38efbf85344dc14edcdcacd7c43e9b (461 messages) - Windsurf Private room
+      completed: 55 daily summaries with Thai language output (5 chats)
+      timezone_fix: Thailand calendar dates stored as UTC 17:00 (midnight Thailand time)
+      keymaterial_filtering: Working correctly
+      priority_system: Working (high-activity mode with GEMINI_MAX_DATES=10)
+      batch_efficiency: 4 dates per API call (75% reduction)
+      production_enabled: true (systemd service updated with Gemini environment variables)
+      line_session_status: RATE_LIMITED (code 103 - temporary authentication restriction)
+      line_session_action: Wait for restriction to lift, then run `npx @rikaidev/yomi login`
+      systemd_config:
+        - yomi-process.service updated with USE_GEMINI=true
+        - GEMINI_MAX_DATES=10, GEMINI_PRIORITY_MODE=high-activity
+        - Override file: /etc/systemd/system/yomi-process.service.d/override.conf
+        - Timer: yomi-process.timer (midnight-7AM hourly)
+      next_steps:
+        - Wait for LINE rate limit to lift (code 103) - BLOCKING
+        - Re-login with `npx @rikaidev/yomi login` when restriction clears
+        - Verify yomi-fetch.timer starts downloading messages
+        - Monitor yomi-process.timer for Gemini summarization at midnight
+        - Process remaining 65 chats with high-activity mode (after session restored)
+        - Switch to recent mode for broader coverage (after high-activity complete)
+      adjusted_plan:
+        phase_1_blocked: LINE API rate limit (code 103) preventing message downloads
+        current_action: Monitoring for rate limit to lift (typically 1-24 hours)
+        contingency_plan:
+          - Manual login attempt every 2 hours until restriction lifts
+          - Process existing database data while waiting (no new messages)
+          - Continue testing Gemini with existing data
+          - Document rate limit duration for future reference
+        post_restoration_actions:
+          - Re-login immediately when restriction lifts
+          - Verify yomi-fetch.timer downloads new messages
+          - Run full sync for all 70 conversations
+          - Resume high-activity chat processing with Gemini
+          - Monitor quota and quality during full sync
+    notes:
+      - Gemma 4 models offer frontier-level performance with higher free tier limits
+      - Model availability varies by account age and project status
+      - Check AI Studio for specific model limits: https://aistudio.google.com/app/apikey
+      - Free tier TPM limit: 250K tokens/minute (except 2.5 models which support 1M)
+      - Batch processing: 4 dates per API call (75% reduction in API calls)

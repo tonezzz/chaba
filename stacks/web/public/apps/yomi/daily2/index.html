@@ -134,7 +134,8 @@
     }
     
     .summary-content {
-      flex: 1;
+      flex: 0 0 auto;
+      max-height: 50%;
       overflow-y: auto;
       padding: 1.5rem;
     }
@@ -229,6 +230,81 @@
     
     @keyframes spin { to { transform: rotate(360deg); } }
     .progress-done { color: #166534; font-weight: 500; }
+    
+    /* Message list panel */
+    .message-list-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-top: 1px solid var(--border);
+      min-height: 200px;
+    }
+    
+    .message-list-header {
+      padding: 0.75rem 1.5rem;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .message-list-title {
+      font-weight: 600;
+      color: #334155;
+      font-size: 0.9rem;
+    }
+    
+    .message-list-count {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    
+    .message-list-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      background: #f8fafc;
+    }
+    
+    .message-item {
+      background: var(--card);
+      border-radius: 0.375rem;
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem;
+      border: 1px solid var(--border);
+    }
+    
+    .message-time {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 0.25rem;
+    }
+    
+    .message-text {
+      font-size: 0.85rem;
+      color: var(--text);
+      line-height: 1.4;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    
+    .message-sender {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 0.25rem;
+    }
+    
+    .message-item.system {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+    
+    .message-item.system .message-sender {
+      color: #94a3b8;
+    }
   </style>
 </head>
 <body>
@@ -261,6 +337,15 @@
       </div>
       <div class="summary-content" id="summary-content">
         <div class="empty-state">Select a date from the calendar to view the daily summary</div>
+      </div>
+      <div class="message-list-panel">
+        <div class="message-list-header">
+          <div class="message-list-title">Messages</div>
+          <div class="message-list-count" id="message-list-count"></div>
+        </div>
+        <div class="message-list-content" id="message-list-content">
+          <div class="empty-state" style="padding: 1rem;">Select a date to view messages</div>
+        </div>
       </div>
     </div>
   </div>
@@ -305,54 +390,103 @@
       const res = await fetch('/api/yomi/resummarize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chatIds: [chatId], forceAll: false })
+        body: JSON.stringify({ chatIds: [chatId], forceAll: false, targetDate: date })
       });
       if (!res.ok) throw new Error('HTTP ' + res.status);
-      return await res.json();
+      const result = await res.json();
+      if (!result.ok) throw new Error(result.error || 'Re-summarization failed');
+      return result;
     }
     
-    async function resummarizeDayUI(chatId, date) {
-      const progressDiv = document.getElementById(`progress-${date}`);
-      const btn = document.querySelector(`.resummarize-btn`);
+    async function loadMessagesForDate(chatId, dateStr) {
+      // Convert Thailand calendar date to UTC timestamps for filtering
+      // Database stores Thailand calendar dates as 17:00 UTC (midnight Thailand time)
+      const [localYear, localMonth, localDay] = dateStr.split('-').map(Number);
+      const startDate = new Date(Date.UTC(localYear, localMonth - 1, localDay, 17, 0, 0));
+      const endDate = new Date(Date.UTC(localYear, localMonth - 1, localDay + 1, 16, 59, 59));
       
-      if (!progressDiv || !btn) {
+      const url = `/api/yomi/messages?chat=${encodeURIComponent(chatId)}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}&limit=1000`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      return data.messages || [];
+    }
+    
+    async function resummarizeDayUI(chatId, date, btnElement) {
+      const progressDiv = document.getElementById(`progress-${date}`);
+      
+      if (!progressDiv || !btnElement) {
         console.error('Progress div or button not found for date:', date);
         return;
       }
       
+      // Validate date format
+      if (!date || !date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        progressDiv.innerHTML = `<div class="progress-container" style="color: #dc2626;">Error: Invalid date format: ${escapeHtml(date)}</div>`;
+        return;
+      }
+      
       // Show progress
-      btn.disabled = true;
-      progressDiv.innerHTML = '<div class="progress-container"><span class="progress-spinner"></span>Re-summarizing...</div>';
+      btnElement.disabled = true;
+      const originalText = btnElement.textContent;
+      btnElement.textContent = 'Processing...';
+      
+      const updateProgress = (message) => {
+        progressDiv.innerHTML = `<div class="progress-container"><span class="progress-spinner"></span>${escapeHtml(message)}</div>`;
+      };
+      
+      const actionText = originalText === 'Summarize' ? 'Generating summary...' : 'Re-summarizing...';
+      updateProgress(actionText);
       
       try {
         // Database stores Thailand calendar dates as 17:00 UTC (midnight Thailand time)
         // Convert Thailand calendar date to UTC 17:00 for API
         const [localYear, localMonth, localDay] = date.split('-').map(Number);
         const utcDate = new Date(Date.UTC(localYear, localMonth - 1, localDay, 17, 0, 0));
+        
+        if (isNaN(utcDate.getTime())) {
+          throw new Error(`Invalid date: ${date}`);
+        }
+        
         const utcDateStr = utcDate.toISOString();
         
-        await resummarizeDay(chatId, utcDateStr);
+        // Step 1: Fetching messages
+        updateProgress('Fetching messages...');
+        await new Promise(resolve => setTimeout(resolve, 500)); // Brief delay to show progress
         
-        // Show done status
-        progressDiv.innerHTML = '<div class="progress-container progress-done">✓ Done - refreshing...</div>';
+        // Step 2: Generating summary
+        updateProgress(actionText);
+        // Send the full ISO date string for backend matching
+        const result = await resummarizeDay(chatId, utcDateStr);
         
-        // Reload summaries after a short delay
-        setTimeout(async () => {
-          dailySummaries = await loadDailySummaries(chatId);
-          buildCalendar();
-          if (selectedDate) {
-            renderSummaryForDate(selectedDate);
-          }
-        }, 1500);
+        // Check if the operation was successful
+        if (result.ok) {
+          // Show done status
+          progressDiv.innerHTML = '<div class="progress-container progress-done">✓ Done - refreshing...</div>';
+          
+          // Reload summaries after a short delay
+          setTimeout(async () => {
+            dailySummaries = await loadDailySummaries(chatId);
+            buildCalendar();
+            if (selectedDate) {
+              renderSummaryForDate(selectedDate);
+            }
+          }, 1500);
+        } else {
+          throw new Error(result.error || 'Re-summarization failed');
+        }
         
       } catch (err) {
         progressDiv.innerHTML = `<div class="progress-container" style="color: #dc2626;">Error: ${escapeHtml(err.message)}</div>`;
-        btn.disabled = false;
+        btnElement.disabled = false;
+        btnElement.textContent = originalText;
       }
     }
     
     function formatDate(dateStr) {
+      if (!dateStr) return 'Invalid date';
       const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return 'Invalid date';
       return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
     }
     
@@ -374,9 +508,60 @@
       `;
     }
     
+    function formatMessageTime(timestamp) {
+      if (!timestamp) return '';
+      const d = new Date(timestamp);
+      return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    }
+    
+    function renderMessage(message) {
+      const isSystem = message.type === 'system' || message.fromType === 'system';
+      const sender = message.sender || message.fromName || (isSystem ? 'System' : 'Unknown');
+      const text = message.text || message.content || '';
+      
+      if (!text && !message.mediaType) {
+        return ''; // Skip empty messages without media
+      }
+      
+      let content = '';
+      if (message.mediaType) {
+        content = `[${message.mediaType.toUpperCase()}]`;
+      } else {
+        content = escapeHtml(text);
+      }
+      
+      return `
+        <div class="message-item ${isSystem ? 'system' : ''}">
+          <div class="message-sender">${escapeHtml(sender)}</div>
+          <div class="message-time">${formatMessageTime(message.deliveredTime || message.timestamp)}</div>
+          <div class="message-text">${content}</div>
+        </div>
+      `;
+    }
+    
+    function renderMessageList(messages) {
+      if (!messages || !messages.length) {
+        return '<div class="empty-state" style="padding: 1rem;">No messages for this date</div>';
+      }
+      
+      return messages.map(m => renderMessage(m)).join('');
+    }
+    
     function renderSummary(summary, chatId) {
+      // Use the globally selected date, or fall back to today
+      const dateStr = selectedDate || formatDate(new Date().toISOString().split('T')[0]);
+      
       if (!summary) {
-        return '<div class="empty-state">No summary available for this date</div>';
+        return `
+          <div class="summary-section">
+            <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+              <span>Daily Summary</span>
+              <button class="resummarize-btn" onclick="resummarizeDayUI('${chatId}', '${dateStr}', this)">Summarize</button>
+            </div>
+            <div id="progress-${dateStr}"></div>
+            <div class="empty-state">No summary available for this date. Click Summarize to generate one.</div>
+          </div>
+        `;
       }
       
       // Database stores Thailand calendar dates as 17:00 UTC (midnight Thailand time)
@@ -392,7 +577,7 @@
         <div class="summary-section">
           <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
             <span>Daily Summary</span>
-            <button class="resummarize-btn" onclick="resummarizeDayUI('${chatId}', '${dateKey}')">Re-summarize</button>
+            <button class="resummarize-btn" onclick="resummarizeDayUI('${chatId}', '${dateKey}', this)">Re-summarize</button>
           </div>
           <div id="progress-${dateKey}"></div>
         </div>
@@ -513,13 +698,17 @@
     
     function renderSummaryForDate(dateStr) {
       const content = document.getElementById('summary-content');
+      const messageContent = document.getElementById('message-list-content');
       const dateEl = document.getElementById('summary-date');
       const countEl = document.getElementById('summary-count');
+      const messageCountEl = document.getElementById('message-list-count');
       
       if (!dateStr) {
         content.innerHTML = '<div class="empty-state">Select a date from the calendar to view the daily summary</div>';
+        messageContent.innerHTML = '<div class="empty-state" style="padding: 1rem;">Select a date to view messages</div>';
         dateEl.textContent = 'Select a date';
         countEl.textContent = '';
+        messageCountEl.textContent = '';
         return;
       }
       
@@ -534,10 +723,21 @@
       dateEl.textContent = formatDate(dateStr);
       countEl.textContent = summary ? `${summary.message_count} messages` : '';
       content.innerHTML = '<div class="loading">Loading...</div>';
+      messageContent.innerHTML = '<div class="loading">Loading messages...</div>';
       
       // Small delay to allow UI to update
-      setTimeout(() => {
+      setTimeout(async () => {
         content.innerHTML = renderSummary(summary, currentChatId);
+        
+        // Load messages for the selected date
+        try {
+          const messages = await loadMessagesForDate(currentChatId, dateStr);
+          messageCountEl.textContent = `${messages.length} messages`;
+          messageContent.innerHTML = renderMessageList(messages);
+        } catch (err) {
+          messageContent.innerHTML = `<div class="empty-state" style="padding: 1rem; color: #dc2626;">Error loading messages: ${escapeHtml(err.message)}</div>`;
+          messageCountEl.textContent = '';
+        }
       }, 50);
     }
     

@@ -1,0 +1,161 @@
+title: Chaba System Automation
+description: Automated monitoring and maintenance schedules for Chaba infrastructure
+version: 1
+
+automation:
+  gpu_monitoring:
+    script: scripts/gpu-monitor.mjs
+    schedule: "*/5 * * * *"
+    frequency: every 5 minutes
+    log_file: logs/automation/gpu-monitor.log
+    data_dir: data/gpu-monitor
+    thresholds:
+      vram_warning: 80
+      vram_critical: 90
+      temp_warning: 75
+      temp_critical: 85
+    features:
+      - real-time gpu monitoring
+      - historical data logging
+      - alert generation
+      - statistics calculation
+    status: active (2026-08-06)
+
+  system_maintenance:
+    script: scripts/system-maintenance.mjs
+    schedule: "0 3 * * *"
+    frequency: daily at 3 AM
+    log_file: logs/automation/system-maintenance.log
+    tasks:
+      - docker cleanup (images, containers, volumes, cache)
+      - journal cleanup (limit to 500M)
+      - log cleanup (>30 days)
+      - disk space monitoring
+      - docker health check
+      - gpu monitoring integration
+    status: active (2026-08-06)
+
+  overnight_assessment:
+    script: scripts/overnight-assessment.mjs
+    schedule: "0 2 * * *"
+    frequency: daily at 2 AM
+    log_file: logs/automation/overnight-assessment.log
+    report_dir: reports/
+    report_retention: 30 days
+    features:
+      - health check integration
+      - gpu & queue analysis
+      - yomi system health
+      - database & cache performance
+      - application log analysis
+      - configuration validation
+      - security & dependency checks
+      - performance trend analysis
+      - auto-improvement creation
+    status: active (2026-08-06)
+
+monitoring:
+  gpu:
+    metrics:
+      - memory_used
+      - memory_total
+      - memory_percent
+      - utilization
+      - temperature
+    retention: indefinite
+    alerting:
+      - vram_usage_thresholds
+      - temperature_thresholds
+      - historical_anomaly_detection
+
+  system:
+    metrics:
+      - disk_usage
+      - docker_container_health
+      - resource_utilization
+    retention: 30 days (logs), indefinite (alerts)
+    alerting:
+      - disk_space_thresholds
+      - container_health_status
+      - maintenance_task_failures
+
+data_locations:
+  gpu_monitoring:
+    usage_log: data/gpu-monitor/gpu-usage.log
+    alert_log: data/gpu-monitor/gpu-alerts.log
+    historical_data: 24 hours retention
+
+  system_maintenance:
+    maintenance_log: logs/maintenance/maintenance.log
+    automation_log: logs/automation/system-maintenance.log
+
+  overnight_assessment:
+    reports: reports/overnight-assessment-YYYY-MM-DD-HH-MM-SS.md
+    archive: reports/archive/
+    improvements: docs/ssot/ssot.improvements.yml
+
+integration:
+  status_api:
+    gpu_monitoring: true
+    system_health: true
+    dashboard_support: true
+
+  gpu_queue:
+    resource_allocation: true
+    priority_management: true
+    load_balancing: true
+
+  ssot:
+    auto_improvement_creation: true
+    configuration_validation: true
+    dependency_tracking: true
+
+troubleshooting:
+  common_issues:
+    - nvidia-smi not available
+    - docker daemon not running
+    - insufficient permissions
+    - cron service not running
+    - log directory permissions
+
+  log_locations:
+    automation: logs/automation/
+    maintenance: logs/maintenance/
+    gpu_data: data/gpu-monitor/
+    reports: reports/
+
+security:
+  permissions:
+    gpu_monitoring: standard user
+    system_maintenance: sudo for journal cleanup
+    docker_operations: docker group access
+
+  data_protection:
+    - log files should be protected from unauthorized access
+    - gpu monitoring data contains system information
+    - maintenance logs may contain sensitive system information
+
+maintenance:
+  log_rotation:
+    automation_logs: monthly review
+    maintenance_logs: monthly review
+    gpu_monitoring_logs: quarterly review
+    assessment_reports: 30-day auto-archive
+
+  data_cleanup:
+    gpu_monitoring: manual review before cleanup
+    system_logs: automated (>30 days)
+    assessment_reports: automated (>30 days)
+
+performance_impact:
+  gpu_monitoring: minimal (<1 second per check)
+  system_maintenance: variable (1-5 minutes depending on cleanup)
+  overnight_assessment: ~3 minutes comprehensive check
+
+future_enhancements:
+  - web-based monitoring dashboard
+  - email/SMS alert notifications
+  - predictive maintenance using historical data
+  - integration with monitoring services (Prometheus, Grafana)
+  - automated remediation for common issues
+  - resource usage forecasting
