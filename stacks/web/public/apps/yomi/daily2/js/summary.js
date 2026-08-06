@@ -2,22 +2,28 @@
 // SUMMARY MODULE - Summary rendering and re-summarization
 // ============================================================================
 
-let currentChatId = null;
-let onRefreshCallback = null;
+console.log('summary.js: Loading module...');
+
+var currentChatId = null;
+var onRefreshCallback = null;
 
 // Initialize shared dailySummaries once globally
 if (!window.dailySummaries) {
   window.dailySummaries = [];
 }
-let dailySummaries = window.dailySummaries;
+var dailySummaries = window.dailySummaries;
+
+console.log('summary.js: window.dailySummaries initialized');
 
 /**
  * Load daily summaries from API
  */
 async function loadDailySummaries(chatId) {
+  console.log('summary.js: loadDailySummaries called with chatId:', chatId);
   const res = await fetch(`/api/yomi/daily?chat=${encodeURIComponent(chatId)}`);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const data = await res.json();
+  console.log('summary.js: loadDailySummaries returning:', data.summaries);
   return data.summaries || [];
 }
 
@@ -48,162 +54,142 @@ async function resummarizeDayUI(chatId, date, btnElement) {
   }
   
   // Validate date format
-  if (!DateUtils.isValidDate(date)) {
-    progressDiv.innerHTML = `<div class="progress-container" style="color: #dc2626;">Error: Invalid date format: ${escapeHtml(date)}</div>`;
+  if (!date || !date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    console.error('Invalid date format:', date);
     return;
   }
   
-  // Show progress
   btnElement.disabled = true;
-  const originalText = btnElement.textContent;
   btnElement.textContent = 'Processing...';
   
-  const updateProgress = (message) => {
-    progressDiv.innerHTML = `<div class="progress-container"><span class="progress-spinner"></span>${escapeHtml(message)}</div>`;
-  };
-  
-  const actionText = originalText === 'Summarize' ? 'Generating summary...' : 'Re-summarizing...';
-  updateProgress(actionText);
-  
   try {
-    // Convert Thailand calendar date to UTC timestamp for API
-    const utcDateStr = DateUtils.thailandDateToUtc(date);
+    progressDiv.innerHTML = '<div class="loading">Starting re-summarization...</div>';
     
-    // Step 1: Fetching messages
-    updateProgress('Fetching messages...');
-    await new Promise(resolve => setTimeout(resolve, 500)); // Brief delay to show progress
+    const result = await resummarizeDay(chatId, date);
     
-    // Step 2: Generating summary
-    updateProgress(actionText);
-    const result = await resummarizeDay(chatId, utcDateStr);
+    progressDiv.innerHTML = '<div class="loading">✓ Done - refreshing...</div>';
     
-    // Check if the operation was successful
-    if (result.ok) {
-      // Show done status
-      progressDiv.innerHTML = '<div class="progress-container progress-done">✓ Done - refreshing...</div>';
-      
-      // Reload summaries after a short delay
-      setTimeout(async () => {
-        dailySummaries = await loadDailySummaries(chatId);
-        // Trigger refresh callback
-        if (onRefreshCallback) {
-          onRefreshCallback();
-        }
-        // Re-render summary for selected date
-        const selectedDate = window.getSelectedDate ? window.getSelectedDate() : date;
-        if (window.renderSummaryForDate) {
-          window.renderSummaryForDate(selectedDate);
-        }
-      }, 1500);
-    } else {
-      throw new Error(result.error || 'Re-summarization failed');
+    if (onRefreshCallback) {
+      setTimeout(() => onRefreshCallback(), 1000);
     }
-    
-  } catch (err) {
-    progressDiv.innerHTML = `<div class="progress-container" style="color: #dc2626;">Error: ${escapeHtml(err.message)}</div>`;
+  } catch (error) {
+    progressDiv.innerHTML = `<div class="loading" style="color: red;">Error: ${error.message}</div>`;
+  } finally {
     btnElement.disabled = false;
-    btnElement.textContent = originalText;
+    btnElement.textContent = 'Re-summarize';
   }
-}
-
-/**
- * Render summary section
- */
-function renderSummary(summary, chatId) {
-  // Use the globally selected date, or fall back to today
-  const dateStr = window.getSelectedDate ? window.getSelectedDate() : DateUtils.formatDateKey(new Date());
-  
-  if (!summary) {
-    return `
-      <div class="summary-section">
-        <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-          <span>Daily Summary</span>
-          <button class="resummarize-btn" onclick="resummarizeDayUI('${chatId}', '${dateStr}', this)">Summarize</button>
-        </div>
-        <div id="progress-${dateStr}"></div>
-        <div class="empty-state">No summary available for this date. Click Summarize to generate one.</div>
-      </div>
-    `;
-  }
-  
-  // Convert UTC timestamp to Thailand calendar date for display
-  const dateKey = DateUtils.utcToThailandDate(summary.date);
-  
-  return `
-    <div class="summary-section">
-      <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-        <span>Daily Summary</span>
-        <button class="resummarize-btn" onclick="resummarizeDayUI('${chatId}', '${dateKey}', this)">Re-summarize</button>
-      </div>
-      <div id="progress-${dateKey}"></div>
-    </div>
-    ${renderSection('Events', summary.events, 'events')}
-    ${renderSection('Actions', summary.actions, 'actions')}
-    ${renderSection('Topics', summary.topics, 'topics')}
-    <a class="view-chat" href="/apps/yomi/chat.html?chat=${encodeURIComponent(chatId)}">View conversation</a>
-  `;
-}
-
-/**
- * Render a summary section (events, actions, topics)
- */
-function renderSection(title, items, type) {
-  if (!items || !items.length) return '';
-  return `
-    <div class="summary-section">
-      <div class="section-title">${title}</div>
-      <div class="tag-list">${items.map(t => renderTag(t, type)).join('')}</div>
-    </div>
-  `;
-}
-
-/**
- * Render a tag
- */
-function renderTag(tag, type) {
-  return `<span class="tag ${type}">${escapeHtml(tag)}</span>`;
 }
 
 /**
  * Render summary for a specific date
  */
 function renderSummaryForDate(dateStr) {
-  const content = document.getElementById('summary-content');
-  const dateEl = document.getElementById('summary-date');
-  const countEl = document.getElementById('summary-count');
+  const summary = dailySummaries.find(s => {
+    const thailandDate = DateUtils.utcToThailandDate(s.date);
+    return thailandDate === dateStr;
+  });
   
-  if (!dateStr) {
-    content.innerHTML = '<div class="empty-state">Select a date from the calendar to view the daily summary</div>';
-    dateEl.textContent = 'Select a date';
-    countEl.textContent = '';
-    return;
+  if (!summary) {
+    return '<div class="empty-state">No summary available for this date</div>';
   }
   
-  // Convert Thailand calendar date to UTC timestamp for database lookup
-  const utcDateStr = DateUtils.thailandDateToUtc(dateStr);
-  const summary = dailySummaries.find(s => s.date === utcDateStr);
+  let html = '';
   
-  dateEl.textContent = DateUtils.formatDate(dateStr);
-  countEl.textContent = summary ? `${summary.message_count} messages` : '';
-  content.innerHTML = '<div class="loading">Loading...</div>';
+  if (summary.events && summary.events.length > 0) {
+    html += '<div class="summary-section"><div class="section-title">Events</div><div class="tag-list">';
+    summary.events.forEach(event => {
+      html += `<span class="tag events">${event}</span>`;
+    });
+    html += '</div></div>';
+  }
   
-  // Small delay to allow UI to update
-  setTimeout(() => {
-    content.innerHTML = renderSummary(summary, currentChatId);
-  }, 50);
+  if (summary.actions && summary.actions.length > 0) {
+    html += '<div class="summary-section"><div class="section-title">Actions</div><div class="tag-list">';
+    summary.actions.forEach(action => {
+      html += `<span class="tag actions">${action}</span>`;
+    });
+    html += '</div></div>';
+  }
+  
+  if (summary.topics && summary.topics.length > 0) {
+    html += '<div class="summary-section"><div class="section-title">Topics</div><div class="tag-list">';
+    summary.topics.forEach(topic => {
+      html += `<span class="tag topics">${topic}</span>`;
+    });
+    html += '</div></div>';
+  }
+  
+  if (summary.messageCount) {
+    html += `<div class="summary-count">${summary.messageCount} messages</div>`;
+  }
+  
+  const thailandDate = DateUtils.formatDate(dateStr);
+  html += `<a class="view-chat" href="/apps/yomi/chat.html?chat=${currentChatId}&date=${dateStr}">View conversation</a>`;
+  
+  html += `<button class="resummarize-btn" onclick="window.resummarizeDayUI('${currentChatId}', '${dateStr}', this)">Re-summarize</button>`;
+  html += `<div id="progress-${dateStr}"></div>`;
+  
+  return html;
 }
 
 /**
- * Escape HTML to prevent XSS
+ * Render summary content
  */
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function renderSummary(summary) {
+  if (!summary) {
+    return '<div class="empty-state">No summary available</div>';
+  }
+  
+  let html = '';
+  
+  if (summary.events && summary.events.length > 0) {
+    html += '<div class="summary-section"><div class="section-title">Events</div><div class="tag-list">';
+    summary.events.forEach(event => {
+      html += `<span class="tag events">${event}</span>`;
+    });
+    html += '</div></div>';
+  }
+  
+  if (summary.actions && summary.actions.length > 0) {
+    html += '<div class="summary-section"><div class="section-title">Actions</div><div class="tag-list">';
+    summary.actions.forEach(action => {
+      html += `<span class="tag actions">${action}</span>`;
+    });
+    html += '</div></div>';
+  }
+  
+  if (summary.topics && summary.topics.length > 0) {
+    html += '<div class="summary-section"><div class="section-title">Topics</div><div class="tag-list">';
+    summary.topics.forEach(topic => {
+      html += `<span class="tag topics">${topic}</span>`;
+    });
+    html += '</div></div>';
+  }
+  
+  return html;
+}
+
+/**
+ * Set daily summaries
+ */
+function setDailySummaries(summaries) {
+  console.log('summary.js: setDailySummaries called with', summaries.length, 'summaries');
+  dailySummaries = summaries;
+  window.dailySummaries = summaries;
+}
+
+/**
+ * Get daily summaries
+ */
+function getDailySummaries() {
+  return dailySummaries;
 }
 
 /**
  * Set current chat ID
  */
 function setCurrentChatId(chatId) {
+  console.log('summary.js: setCurrentChatId called with', chatId);
   currentChatId = chatId;
 }
 
@@ -215,20 +201,6 @@ function getCurrentChatId() {
 }
 
 /**
- * Set daily summaries
- */
-function setDailySummaries(summaries) {
-  dailySummaries = summaries;
-}
-
-/**
- * Get daily summaries
- */
-function getDailySummaries() {
-  return dailySummaries;
-}
-
-/**
  * Set refresh callback
  */
 function setRefreshCallback(callback) {
@@ -236,6 +208,7 @@ function setRefreshCallback(callback) {
 }
 
 // Make functions available globally for inter-module communication
+console.log('summary.js: Exporting functions to window...');
 window.loadDailySummaries = loadDailySummaries;
 window.resummarizeDayUI = resummarizeDayUI;
 window.renderSummaryForDate = renderSummaryForDate;
@@ -243,6 +216,7 @@ window.setDailySummaries = setDailySummaries;
 window.setRefreshCallback = setRefreshCallback;
 window.setCurrentChatId = setCurrentChatId;
 window.getDailySummaries = getDailySummaries;
+console.log('summary.js: Functions exported successfully');
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {

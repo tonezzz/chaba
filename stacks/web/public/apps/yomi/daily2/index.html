@@ -52,9 +52,20 @@
   
   <!-- Load modules in dependency order -->
   <script src="js/init.js?v=1"></script>
+  <script src="js/test-window.js?v=1"></script>
   <script src="js/date-utils.js?v=2"></script>
   <script src="js/calendar.js?v=2"></script>
-  <script src="js/summary.js?v=2"></script>
+  <script>
+    // Load summary.js dynamically to ensure it executes
+    fetch('js/summary.js?v=2')
+      .then(r => r.text())
+      .then(code => {
+        console.log('Dynamically loading summary.js...');
+        eval(code);
+        console.log('summary.js loaded, window.loadDailySummaries =', typeof window.loadDailySummaries);
+      })
+      .catch(e => console.error('Failed to load summary.js:', e));
+  </script>
   <script src="js/messages.js?v=2"></script>
   <script src="js/app.js?v=2"></script>
 </body>
