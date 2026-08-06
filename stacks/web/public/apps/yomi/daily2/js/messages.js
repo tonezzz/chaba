@@ -74,10 +74,10 @@ function renderMessage(message) {
   let content = '';
   
   // Handle media with thumbnail
-  if (message.mediaType && message.mediaFile) {
-    // Use mediaFile field for the filename
-    const mediaFilename = message.mediaFile;
-    const mediaUrl = `/api/yomi/media/${window.currentChatId}/${mediaFilename}`;
+  if (message.mediaType && message.id) {
+    // Use direct file path instead of API proxy
+    // Files are served directly by Caddy at /apps/yomi/media/
+    const mediaUrl = `/apps/yomi/media/${window.currentChatId}/${message.id}.jpg`;
     const isImage = ['image', 'photo', 'sticker'].includes(message.mediaType.toLowerCase());
     
     if (isImage) {
