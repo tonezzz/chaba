@@ -67,14 +67,39 @@ async function loadChatData(chatId) {
  * Handle date selection
  */
 function handleDateSelected(dateStr) {
-  // Render summary
+  console.log('app.js: handleDateSelected called with', dateStr);
+  
+  // Update summary panel
+  const summaryContent = document.getElementById('summary-content');
+  const summaryDate = document.getElementById('summary-date');
+  const summaryCount = document.getElementById('summary-count');
+  
+  if (summaryDate) {
+    summaryDate.textContent = DateUtils.formatDate(dateStr);
+  }
+  
   if (window.renderSummaryForDate) {
-    window.renderSummaryForDate(dateStr);
+    const summaryHtml = window.renderSummaryForDate(dateStr);
+    if (summaryContent) {
+      summaryContent.innerHTML = summaryHtml;
+    }
+  }
+  
+  // Update message count
+  const summary = window.dailySummaries.find(s => {
+    const thailandDate = DateUtils.utcToThailandDate(s.date);
+    return thailandDate === dateStr;
+  });
+  
+  if (summaryCount && summary) {
+    summaryCount.textContent = `${summary.messageCount || 0} messages`;
+  } else if (summaryCount) {
+    summaryCount.textContent = '';
   }
   
   // Render messages
   if (window.renderMessagesForDate) {
-    window.renderMessagesForDate(currentChatId, dateStr);
+    window.renderMessagesForDate(window.currentChatId, dateStr);
   }
 }
 

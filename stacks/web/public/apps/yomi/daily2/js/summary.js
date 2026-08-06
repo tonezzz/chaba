@@ -86,14 +86,19 @@ async function resummarizeDayUI(chatId, date, btnElement) {
  * Render summary for a specific date
  */
 function renderSummaryForDate(dateStr) {
+  console.log('summary.js: renderSummaryForDate called with', dateStr);
+  
   const summary = window.dailySummaries.find(s => {
     const thailandDate = DateUtils.utcToThailandDate(s.date);
     return thailandDate === dateStr;
   });
   
   if (!summary) {
+    console.log('summary.js: No summary found for date', dateStr);
     return '<div class="empty-state">No summary available for this date</div>';
   }
+  
+  console.log('summary.js: Found summary for date', dateStr, summary);
   
   let html = '';
   
@@ -131,6 +136,7 @@ function renderSummaryForDate(dateStr) {
   html += `<button class="resummarize-btn" onclick="window.resummarizeDayUI('${window.currentChatId}', '${dateStr}', this)">Re-summarize</button>`;
   html += `<div id="progress-${dateStr}"></div>`;
   
+  console.log('summary.js: Generated HTML for date', dateStr);
   return html;
 }
 
