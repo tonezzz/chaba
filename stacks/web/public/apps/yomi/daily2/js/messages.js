@@ -10,15 +10,29 @@ async function loadMessagesForDate(chatId, dateStr) {
   
   // Get date range for Thailand calendar day
   const { startDate, endDate } = DateUtils.getThailandDateRange(dateStr);
-  console.log('messages.js: Date range:', startDate, 'to', endDate);
+  console.log('messages.js: Date range (ISO):', startDate, 'to', endDate);
   
-  const url = `/api/yomi/messages?chat=${encodeURIComponent(chatId)}&startDate=${startDate}&endDate=${endDate}&limit=1000`;
+  // Convert ISO timestamps to Unix timestamps (seconds) for API
+  const startUnix = Math.floor(new Date(startDate).getTime() / 1000);
+  const endUnix = Math.floor(new Date(endDate).getTime() / 1000);
+  console.log('messages.js: Date range (Unix seconds):', startUnix, 'to', endUnix);
+  
+  const url = `/api/yomi/messages?chat=${encodeURIComponent(chatId)}&startDate=${startUnix}&endDate=${endUnix}&limit=1000`;
   console.log('messages.js: Fetching URL:', url);
   
   const res = await fetch(url);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const data = await res.json();
   console.log('messages.js: Loaded', data.messages?.length || 0, 'messages');
+  
+  // Log first and last message timestamps for debugging
+  if (data.messages && data.messages.length > 0) {
+    console.log('messages.js: First message timestamp:', data.messages[0].timestamp);
+    console.log('messages.js: First message Thailand time:', DateUtils.utcToThailandDate(new Date(data.messages[0].timestamp * 1000).toISOString()));
+    console.log('messages.js: Last message timestamp:', data.messages[data.messages.length - 1].timestamp);
+    console.log('messages.js: Last message Thailand time:', DateUtils.utcToThailandDate(new Date(data.messages[data.messages.length - 1].timestamp * 1000).toISOString()));
+  }
+  
   return data.messages || [];
 }
 

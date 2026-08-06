@@ -56,14 +56,20 @@ const DateUtils = {
    * @returns {object} { startDate: ISO timestamp, endDate: ISO timestamp }
    */
   getThailandDateRange(dateStr) {
+    console.log('date-utils: getThailandDateRange called with', dateStr);
+    
     const startDate = this.thailandDateToUtc(dateStr);
+    console.log('date-utils: startDate (UTC 17:00):', startDate);
     
     const [year, month, day] = dateStr.split('-').map(Number);
+    // End of Thailand day is 16:59:59 UTC the next day
     const endDate = new Date(Date.UTC(year, month - 1, day + 1, 16, 59, 59));
+    const endDateStr = endDate.toISOString();
+    console.log('date-utils: endDate (UTC 16:59:59 next day):', endDateStr);
     
     return {
       startDate,
-      endDate: endDate.toISOString()
+      endDate: endDateStr
     };
   },
   
