@@ -11,9 +11,9 @@
 //   End: 2026-08-04T16:59:59.000Z (23:59:59 Thailand time)
 //
 // CONVERSION RULES:
-// 1. UTC → Thailand calendar date (for filtering/grouping): SUBTRACT 7 hours
-//    Reason: Align with Thailand calendar day start (17:00 UTC)
-//    Example: 2026-07-17T00:15:59Z → 2026-07-16 (in July 16 Thailand calendar day)
+// 1. UTC → Thailand calendar date (for filtering/grouping): ADD 7 hours
+//    Reason: Convert UTC to Thailand time (UTC+7) and extract date
+//    Example: 2026-07-17T00:15:59Z → 2026-07-17T07:15:59Z → "2026-07-17"
 //
 // 2. UTC → Thailand time (for display): ADD 7 hours
 //    Reason: Convert UTC to Thailand time (UTC+7)
@@ -58,12 +58,13 @@ const DateUtils = {
    * CRITICAL: This is for FILTERING/GROUPING by Thailand calendar date
    * Thailand calendar day = 17:00 UTC to 16:59:59 UTC next day
    * 
-   * Conversion: SUBTRACT 7 hours to align with Thailand calendar day start (17:00 UTC)
+   * Conversion: ADD 7 hours to convert UTC to Thailand time, then extract date
+   * This matches the backend logic in update-conversations.mjs
    * 
    * Example:
    *   Input: 2026-07-17T00:15:59.619Z UTC
-   *   Output: "2026-07-16" (in July 16 Thailand calendar day)
-   *   Reason: 00:15:59 UTC is after 17:00 UTC previous day, so it's in next Thailand calendar day
+   *   Output: "2026-07-17" (Thailand calendar date)
+   *   Reason: 00:15:59 UTC + 7h = 07:15:59 Thailand time → date "2026-07-17"
    * 
    * @param {string} isoTimestamp - ISO timestamp string
    * @returns {string} Thailand calendar date in YYYY-MM-DD format
@@ -76,15 +77,16 @@ const DateUtils = {
     
     // Thailand calendar date: 17:00 UTC to 16:59:59 UTC next day
     // To convert UTC timestamp to Thailand calendar date:
-    // SUBTRACT 7 hours to align with Thailand calendar day start (17:00 UTC)
-    const thailandCalendarDate = new Date(utcDate.getTime() - (this.THAILAND_OFFSET_HOURS * 60 * 60 * 1000));
+    // ADD 7 hours to convert UTC to Thailand time, then extract date
+    // This matches backend logic in update-conversations.mjs
+    const thailandTime = new Date(utcDate.getTime() + (this.THAILAND_OFFSET_HOURS * 60 * 60 * 1000));
     
-    const year = thailandCalendarDate.getFullYear();
-    const month = thailandCalendarDate.getMonth() + 1;
-    const day = thailandCalendarDate.getDate();
+    const year = thailandTime.getFullYear();
+    const month = thailandTime.getMonth() + 1;
+    const day = thailandTime.getDate();
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     
-    console.log('date-utils: utcToThailandDate', isoTimestamp, '-> Thailand calendar date:', dateStr);
+    console.log('date-utils: utcToThailandDate', isoTimestamp, '-> Thailand time:', thailandTime.toISOString(), '-> Thailand calendar date:', dateStr);
     return dateStr;
   },
   

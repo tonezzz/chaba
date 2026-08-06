@@ -54,15 +54,16 @@ FROM daily_summaries WHERE chat_id = $1;
 ```javascript
 // Thailand calendar date: 17:00 UTC to 16:59:59 UTC next day
 // To convert UTC timestamp to Thailand calendar date:
-// SUBTRACT 7 hours to align with Thailand calendar day start (17:00 UTC)
+// ADD 7 hours to convert UTC to Thailand time, then extract date
+// This matches backend logic in update-conversations.mjs
 function utcToThailandCalendarDate(isoTimestamp) {
   const utcDate = new Date(isoTimestamp);
-  const thailandCalendarDate = new Date(utcDate.getTime() - (7 * 60 * 60 * 1000));
-  return thailandCalendarDate.toISOString().split('T')[0];
+  const thailandTime = new Date(utcDate.getTime() + (7 * 60 * 60 * 1000));
+  return thailandTime.toISOString().split('T')[0];
 }
 
-// Example: 2026-07-17T00:15:59.619Z UTC → 2026-07-16 (in July 16 Thailand calendar day)
-// Reason: 00:15:59 UTC is after 17:00 UTC previous day, so it's in next Thailand calendar day
+// Example: 2026-07-17T00:15:59.619Z UTC → 2026-07-17T07:15:59.619Z Thailand → "2026-07-17"
+// Reason: Convert to Thailand time (UTC+7) and extract date
 ```
 
 #### 2. UTC Timestamp → Thailand Time (for display)
