@@ -91,13 +91,15 @@ function renderSummaryForDate(dateStr) {
   console.log('summary.js: renderSummaryForDate called with', dateStr);
   console.log('summary.js: Available summaries:', window.dailySummaries.map(s => ({
     originalDate: s.date,
-    thailandDate: DateUtils.utcToThailandDate(s.date)
+    datePart: s.date.split('T')[0]
   })));
   
   const summary = window.dailySummaries.find(s => {
-    const thailandDate = DateUtils.utcToThailandDate(s.date);
-    console.log('summary.js: Checking summary:', s.date, '-> Thailand:', thailandDate, 'vs selected:', dateStr);
-    return thailandDate === dateStr;
+    // API returns dates as "2026-08-03T17:00:00.000Z" (Thailand calendar date start time)
+    // Extract just the date part for comparison
+    const datePart = s.date.split('T')[0];
+    console.log('summary.js: Checking summary:', s.date, '-> datePart:', datePart, 'vs selected:', dateStr);
+    return datePart === dateStr;
   });
   
   if (!summary) {

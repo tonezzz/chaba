@@ -47,7 +47,9 @@ const DateUtils = {
     const month = thailandDate.getMonth() + 1;
     const day = thailandDate.getDate();
     
-    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    console.log('date-utils: utcToThailandDate', isoTimestamp, '->', dateStr);
+    return dateStr;
   },
   
   /**
