@@ -4,7 +4,11 @@
 
 const DAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+// Initialize current month in Thailand time
 let currentMonth = new Date();
+// Convert to Thailand time
+currentMonth = new Date(currentMonth.getTime() + (DateUtils.THAILAND_OFFSET_HOURS * 60 * 60 * 1000));
+
 let selectedDate = null;
 let availableDates = new Set();
 
@@ -71,7 +75,8 @@ function buildCalendar() {
   // Add previous month's days
   for (let i = startDay - 1; i >= 0; i--) {
     const day = prevMonthLastDay - i;
-    const dateStr = DateUtils.formatDateKeyThailand(new Date(year, month - 1, day));
+    const date = new Date(year, month - 1, day);
+    const dateStr = DateUtils.formatDateKeyThailand(date);
     const dayEl = createDayElement(day, dateStr, true);
     grid.appendChild(dayEl);
   }
@@ -90,7 +95,8 @@ function buildCalendar() {
   const totalCells = startDay + totalDays;
   const remainingCells = totalCells <= 35 ? 35 - totalCells : 42 - totalCells;
   for (let day = 1; day <= remainingCells; day++) {
-    const dateStr = DateUtils.formatDateKeyThailand(new Date(year, month + 1, day));
+    const date = new Date(year, month + 1, day);
+    const dateStr = DateUtils.formatDateKeyThailand(date);
     const dayEl = createDayElement(day, dateStr, true);
     grid.appendChild(dayEl);
   }

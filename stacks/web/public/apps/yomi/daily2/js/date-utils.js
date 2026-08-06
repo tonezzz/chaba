@@ -132,13 +132,12 @@ const DateUtils = {
    * @returns {string} YYYY-MM-DD format in Thailand time
    */
   formatDateKeyThailand(date) {
-    // Convert local date to UTC, then add 7 hours for Thailand time
-    const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    const thailandDate = new Date(utcDate.getTime() + (this.THAILAND_OFFSET_HOURS * 60 * 60 * 1000));
+    // Convert local date to Thailand time by adding 7 hours
+    const thailandTime = new Date(date.getTime() + (this.THAILAND_OFFSET_HOURS * 60 * 60 * 1000));
     
-    const year = thailandDate.getFullYear();
-    const month = thailandDate.getMonth() + 1;
-    const day = thailandDate.getDate();
+    const year = thailandTime.getFullYear();
+    const month = thailandTime.getMonth() + 1;
+    const day = thailandTime.getDate();
     return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   },
   
