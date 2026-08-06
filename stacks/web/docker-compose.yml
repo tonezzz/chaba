@@ -18,6 +18,12 @@ services:
       - .env
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     networks:
       - default
       - frigate_default
@@ -125,6 +131,9 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+        limits:
+          cpus: '4'
+          memory: 8G
     networks:
       - default
 
@@ -150,6 +159,9 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+        limits:
+          cpus: '4'
+          memory: 8G
     networks:
       - default
 
@@ -182,6 +194,9 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+        limits:
+          cpus: '4'
+          memory: 8G
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -246,8 +261,10 @@ services:
     volumes:
       - ./activepieces-index.html:/usr/src/app/dist/packages/web/index.html:ro
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - default
 
