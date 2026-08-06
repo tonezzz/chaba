@@ -9,7 +9,8 @@ let selectedDate = null;
 let availableDates = new Set();
 
 // Reference to shared dailySummaries (managed by summary module)
-let dailySummaries = window.dailySummaries || [];
+// Will be initialized by summary module
+let dailySummaries = window.dailySummaries;
 
 /**
  * Set current month to the most recent summary date's month for better UX

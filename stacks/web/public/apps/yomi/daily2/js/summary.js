@@ -216,6 +216,7 @@ window.setDailySummaries = setDailySummaries;
 window.setRefreshCallback = setRefreshCallback;
 window.setCurrentChatId = setCurrentChatId;
 window.getDailySummaries = getDailySummaries;
+window.currentChatId = currentChatId;
 console.log('summary.js: Functions exported successfully');
 
 // Export for use in other modules

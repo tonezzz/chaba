@@ -2,7 +2,8 @@
 // APP MODULE - Main application initialization and coordination
 // ============================================================================
 
-let currentChatId = null;
+// Reference to currentChatId from summary module
+let currentChatId = window.currentChatId || null;
 
 /**
  * Load conversations from API
