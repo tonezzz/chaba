@@ -7,6 +7,8 @@ Successfully implemented comprehensive token optimization strategy achieving 60-
 **Implementation Date**: 2026-08-05  
 **Status**: ✅ COMPLETE
 
+**Note**: Archived implementation plans, monitoring guides, and runbooks have been consolidated into this operational guide. See SSOT `ssot.token-optimization.yml` for detailed configuration.
+
 ## Current Status
 
 ### Operational Components
