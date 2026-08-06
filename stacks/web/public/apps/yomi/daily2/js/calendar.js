@@ -25,9 +25,9 @@ function getDailySummaries() {
 function setCurrentMonthToData() {
   const summaries = getDailySummaries();
   if (summaries.length > 0) {
-    const thailandDateStr = DateUtils.utcToThailandDate(summaries[0].date);
-    if (thailandDateStr) {
-      const [year, month, day] = thailandDateStr.split('-').map(Number);
+    const dateStr = summaries[0].date;
+    if (dateStr) {
+      const [year, month, day] = dateStr.split('-').map(Number);
       currentMonth = new Date(year, month - 1, 1);
     }
   }
@@ -49,7 +49,9 @@ function buildCalendar() {
   const summaries = getDailySummaries();
   availableDates = new Set(summaries.map(s => {
     if (!s.date) return null;
-    return DateUtils.utcToThailandDate(s.date);
+    // Database returns Thailand calendar date as YYYY-MM-DD string
+    // No conversion needed
+    return s.date;
   }).filter(Boolean));
   
   // Clear and rebuild entire grid including headers
@@ -111,12 +113,13 @@ function createDayElement(day, dateStr, isOtherMonth, isToday = false) {
   if (isOtherMonth) el.classList.add('other-month');
   if (isToday) el.classList.add('today');
   
-  // Check if this date has data by converting to UTC for database matching
+  // Check if this date has data
+  // Database returns Thailand calendar date as YYYY-MM-DD string
+  // No conversion needed - direct string comparison
   const summaries = getDailySummaries();
   const hasData = summaries.some(s => {
     if (!s.date) return false;
-    const thailandDate = DateUtils.utcToThailandDate(s.date);
-    return thailandDate === dateStr;
+    return s.date === dateStr;
   });
   if (hasData) el.classList.add('has-data');
   

@@ -33,10 +33,10 @@ async function loadMessagesForDate(chatId, dateStr) {
     
     console.log('messages.js: First message deliveredTime:', data.messages[0].deliveredTime);
     console.log('messages.js: First message createdTime:', data.messages[0].createdTime);
-    console.log('messages.js: First message Thailand date:', DateUtils.utcToThailandDate(DateUtils.msToIso(firstTimestamp)));
+    console.log('messages.js: First message Thailand time:', DateUtils.msToIso(firstTimestamp));
     console.log('messages.js: Last message deliveredTime:', data.messages[data.messages.length - 1].deliveredTime);
     console.log('messages.js: Last message createdTime:', data.messages[data.messages.length - 1].createdTime);
-    console.log('messages.js: Last message Thailand date:', DateUtils.utcToThailandDate(DateUtils.msToIso(lastTimestamp)));
+    console.log('messages.js: Last message Thailand time:', DateUtils.msToIso(lastTimestamp));
   }
   
   return data.messages || [];
@@ -46,8 +46,10 @@ async function loadMessagesForDate(chatId, dateStr) {
  * Format message time for display
  */
 function formatMessageTime(timestamp) {
-  const thailandTime = DateUtils.utcToThailandDate(timestamp);
-  return DateUtils.formatTime(timestamp);
+  // Database stores Thailand time in milliseconds
+  // Convert to ISO timestamp for formatting
+  const thailandTime = DateUtils.msToIso(timestamp);
+  return DateUtils.formatTime(thailandTime);
 }
 
 /**
@@ -137,7 +139,7 @@ async function renderMessagesForDate(chatId, dateStr) {
     // Log first few messages for debugging
     if (messages.length > 0) {
       console.log('messages.js: First message timestamp:', messages[0].timestamp);
-      console.log('messages.js: First message Thailand time:', DateUtils.utcToThailandDate(messages[0].timestamp));
+      console.log('messages.js: First message Thailand time:', DateUtils.msToIso(messages[0].timestamp));
     }
     
     messageCountEl.textContent = `${messages.length} messages`;

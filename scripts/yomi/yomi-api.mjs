@@ -189,10 +189,11 @@ async function handleDailySummaries(url, res) {
   
   const { rows } = await pool.query(query, params);
   
-  // Convert date strings to ISO timestamps for consistency with frontend expectations
+  // Database stores Thailand calendar dates as DATE type (YYYY-MM-DD)
+  // No conversion needed - return date as-is
   const summaries = rows.map(r => ({
     ...r,
-    date: `${r.date}T17:00:00.000Z` // Add time component for Thailand calendar date
+    date: r.date // Return Thailand calendar date as-is
   }));
   
   sendJson(res, 200, { chatId, summaries });

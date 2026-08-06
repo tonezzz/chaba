@@ -54,10 +54,10 @@ async function loadChatData(chatId) {
   
   // Select most recent date if available
   if (summaries.length > 0) {
-    const thailandDateStr = DateUtils.utcToThailandDate(summaries[0].date);
-    if (thailandDateStr) {
+    const dateStr = summaries[0].date;
+    if (dateStr) {
       if (window.selectDate) {
-        window.selectDate(thailandDateStr);
+        window.selectDate(dateStr);
       }
     }
   }
@@ -86,9 +86,10 @@ function handleDateSelected(dateStr) {
   }
   
   // Update message count
+  // Database returns Thailand calendar date as YYYY-MM-DD string
+  // No conversion needed - direct string comparison
   const summary = window.dailySummaries.find(s => {
-    const thailandDate = DateUtils.utcToThailandDate(s.date);
-    return thailandDate === dateStr;
+    return s.date === dateStr;
   });
   
   if (summaryCount && summary) {
