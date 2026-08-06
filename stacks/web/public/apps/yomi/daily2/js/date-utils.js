@@ -148,6 +148,28 @@ const DateUtils = {
     const date = new Date(unixTimestamp * 1000);
     if (isNaN(date.getTime())) return null;
     return date.toISOString();
+  },
+  
+  /**
+   * Convert millisecond timestamp to ISO timestamp
+   * @param {number} msTimestamp - Timestamp in milliseconds
+   * @returns {string} ISO timestamp
+   */
+  msToIso(msTimestamp) {
+    if (!msTimestamp) return null;
+    const date = new Date(msTimestamp);
+    if (isNaN(date.getTime())) return null;
+    return date.toISOString();
+  },
+  
+  /**
+   * Convert millisecond timestamp to Unix timestamp in seconds
+   * @param {number} msTimestamp - Timestamp in milliseconds
+   * @returns {number} Unix timestamp in seconds
+   */
+  msToUnix(msTimestamp) {
+    if (!msTimestamp) return null;
+    return Math.floor(msTimestamp / 1000);
   }
 };
 

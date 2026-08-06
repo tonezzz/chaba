@@ -29,10 +29,20 @@ async function loadMessagesForDate(chatId, dateStr) {
   // Filter messages client-side by Thailand calendar date
   const filteredMessages = (data.messages || []).filter(message => {
     const timestamp = message.deliveredTime || message.createdTime;
-    if (!timestamp) return false;
+    if (!timestamp) {
+      console.log('messages.js: Skipping message without timestamp:', message.id);
+      return false;
+    }
+    
+    // Convert milliseconds to seconds for comparison
+    const timestampSeconds = Math.floor(timestamp / 1000);
     
     // Check if timestamp falls within the Thailand calendar day range
-    return timestamp >= startUnix && timestamp <= endUnix;
+    const inRange = timestampSeconds >= startUnix && timestampSeconds <= endUnix;
+    if (!inRange) {
+      console.log('messages.js: Message timestamp', timestampSeconds, 'outside range', startUnix, '-', endUnix);
+    }
+    return inRange;
   });
   
   console.log('messages.js: Filtered to', filteredMessages.length, 'messages for date', dateStr);
@@ -44,10 +54,10 @@ async function loadMessagesForDate(chatId, dateStr) {
     
     console.log('messages.js: First message deliveredTime:', filteredMessages[0].deliveredTime);
     console.log('messages.js: First message createdTime:', filteredMessages[0].createdTime);
-    console.log('messages.js: First message Thailand time:', DateUtils.utcToThailandDate(DateUtils.unixToIso(firstTimestamp)));
+    console.log('messages.js: First message Thailand time:', DateUtils.utcToThailandDate(new Date(firstTimestamp).toISOString()));
     console.log('messages.js: Last message deliveredTime:', filteredMessages[filteredMessages.length - 1].deliveredTime);
     console.log('messages.js: Last message createdTime:', filteredMessages[filteredMessages.length - 1].createdTime);
-    console.log('messages.js: Last message Thailand time:', DateUtils.utcToThailandDate(DateUtils.unixToIso(lastTimestamp)));
+    console.log('messages.js: Last message Thailand time:', DateUtils.utcToThailandDate(new Date(lastTimestamp).toISOString()));
   }
   
   return filteredMessages;
@@ -102,7 +112,7 @@ function renderMessage(message) {
   
   // Format time in Thailand timezone using deliveredTime or createdTime
   const timeStr = message.deliveredTime || message.createdTime;
-  const formattedTime = timeStr ? DateUtils.formatTime(DateUtils.unixToIso(timeStr)) : '';
+  const formattedTime = timeStr ? DateUtils.formatTime(new Date(timeStr).toISOString()) : '';
   
   return `
     <div class="message-item ${isSystem ? 'system' : ''}">
