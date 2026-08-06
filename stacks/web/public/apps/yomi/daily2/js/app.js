@@ -143,6 +143,12 @@ async function init() {
       `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`
     ).join('');
     
+    // Set up callbacks BEFORE loading chat data
+    window.onDateSelected = handleDateSelected;
+    if (window.setRefreshCallback) {
+      window.setRefreshCallback(handleRefresh);
+    }
+    
     // Load chat from URL parameter or first available
     const chatParam = new URLSearchParams(location.search).get('chat');
     if (chatParam) {
@@ -175,12 +181,6 @@ async function init() {
         window.navigateNextMonth();
       }
     });
-    
-    // Set up callbacks
-    window.onDateSelected = handleDateSelected;
-    if (window.setRefreshCallback) {
-      window.setRefreshCallback(handleRefresh);
-    }
     
   } catch (err) {
     document.getElementById('app').innerHTML = `<div class="empty-state">Error: ${escapeHtml(err.message)}</div>`;
