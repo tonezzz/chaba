@@ -599,10 +599,9 @@ function groupMessagesByDate(messages) {
     const normalizedTime = normalizeTimestamp(m.deliveredTime);
     if (!normalizedTime) continue;
     // Group by Thailand calendar day (UTC+7)
-    // Thailand calendar date: 17:00 UTC to 16:59:59 UTC next day
-    // Subtract 7 hours to align with Thailand calendar day start (17:00 UTC)
-    const thailandCalendarDate = new Date(normalizedTime - (7 * 60 * 60 * 1000));
-    const date = thailandCalendarDate.toISOString().split('T')[0];
+    // Add 7 hours to convert UTC to Thailand time
+    const thailandTime = new Date(normalizedTime + (7 * 60 * 60 * 1000));
+    const date = thailandTime.toISOString().split('T')[0];
     if (!byDate.has(date)) byDate.set(date, []);
     byDate.get(date).push(m);
   }
