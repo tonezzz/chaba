@@ -23,6 +23,8 @@ sections:
         text: Real Chrome is chrome-monitor.service on tony-dell at 127.0.0.1:9223.
       - label: Playwright relationship
         text: PlayLive is built on Playwright - see docs/kb/playwright-vs-playlive.md for detailed comparison.
+      - label: Default mode (2026-08-06)
+        text: Now defaults to headless Playwright (local) for better performance (~50-100MB RAM savings, faster startup). Use chrome-live/playwright-chrome for visual debugging.
 
   - title: Hosts & endpoints
     icon: 🌐
@@ -61,8 +63,10 @@ sections:
     items:
       - label: Start daemon
         text: Start playlived on tony-dell.
-      - label: Create session
-        text: playlive_create_chrome_live creates a remote CDP session.
+      - label: Create session (default)
+        text: playlive_create_playwright now defaults to headless local mode for better performance.
+      - label: Create session (live)
+        text: Use playlive_create_chrome_live or playlive_create_playwright_chrome for visual debugging with remote CDP.
       - label: Navigate
         text: playlive_navigate to the target URL (default page.goto timeout 15s).
       - label: Authenticated access
@@ -82,6 +86,8 @@ sections:
         text: Reload Windsurf after mcp_config.json changes for tools to appear.
       - label: Screen power management
         text: "DPMS screen off causes browser session closure. Screen timeout scheduler configured: 15 min (7am-10pm) for PlayLive compatibility, 1 min otherwise."
+      - label: Remote Chrome availability
+        text: chrome-live/playwright-chrome require remote Chrome CDP (127.0.0.1:9223) which may not be available if chrome-monitor.service is not running.
 config:
   version: 1
   maintainer: tony
