@@ -166,7 +166,7 @@ async function handleDailySummaries(url, res) {
   const endDate = url.searchParams.get('endDate');
   
   let query = `
-    SELECT date, events, actions, topics, message_count, updated_at
+    SELECT date::text, events, actions, topics, message_count, updated_at
     FROM daily_summaries
     WHERE chat_id = $1
   `;
@@ -188,7 +188,14 @@ async function handleDailySummaries(url, res) {
   query += ` ORDER BY date DESC`;
   
   const { rows } = await pool.query(query, params);
-  sendJson(res, 200, { chatId, summaries: rows });
+  
+  // Convert date strings to ISO timestamps for consistency with frontend expectations
+  const summaries = rows.map(r => ({
+    ...r,
+    date: `${r.date}T17:00:00.000Z` // Add time component for Thailand calendar date
+  }));
+  
+  sendJson(res, 200, { chatId, summaries });
 }
 
 async function handleResummarize(req, res) {

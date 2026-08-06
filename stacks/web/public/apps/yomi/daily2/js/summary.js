@@ -20,17 +20,11 @@ console.log('summary.js: window.dailySummaries initialized');
 /**
  * Load daily summaries from API
  */
-async function loadDailySummaries(chatId, dateRange = null) {
-  console.log('summary.js: loadDailySummaries called with chatId:', chatId, 'dateRange:', dateRange);
+async function loadDailySummaries(chatId) {
+  console.log('summary.js: loadDailySummaries called with chatId:', chatId);
   
-  let url = `/api/yomi/daily?chat=${encodeURIComponent(chatId)}`;
-  
-  // If dateRange specified, filter by date range
-  if (dateRange && dateRange.startDate && dateRange.endDate) {
-    url += `&startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`;
-  }
-  
-  const res = await fetch(url);
+  // Load all summaries for the calendar to show which dates have data
+  const res = await fetch(`/api/yomi/daily?chat=${encodeURIComponent(chatId)}`);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const data = await res.json();
   console.log('summary.js: loadDailySummaries returning:', data.summaries);
