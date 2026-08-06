@@ -1,5 +1,7 @@
 # chaba Lab Plan Brief
 
+> **Note**: This is a historical planning document from 2026-08-05. Some information may be outdated, including TODO items, branch references, and infrastructure details. Current status should be verified in SSOT files and recent documentation.
+
 ## 1. Goal
 Build and maintain a self-hosted lab on `tony-omen` that covers 3D Gaussian Splatting research, AI-powered IP-camera surveillance, a static Plesk web presence (`chaba.h3`), local LLM/AI endpoints, and a LINE conversation archive.
 
@@ -20,7 +22,7 @@ Rule: `chaba.h3` stays static-only. Do not commit Node/Docker backend files, `.e
 
 ## 3. Infrastructure (Deployed)
 
-- **Host** `tony-omen` @ `192.168.1.48`, Ubuntu/Debian, NVIDIA GPU, Docker 24+ with nvidia-container-toolkit.
+- **Host** `tony-omen.local`, Ubuntu/Debian, NVIDIA GPU, Docker 24+ with nvidia-container-toolkit.
 - **Web**: Caddy on `8080` (`stacks/web`) and `8081` full-parity preview for `chaba-h3/public`. PHP dev server on `8123` for local Plesk-style tests.
 - **NVR**: Frigate on `5000` with `frigate/cameras.json` as the single source of truth; `generate_config.py` produces `config.yml` and `camera-map.html`.
 - **AI**: `mcp-llama` on `localhost:8008` (Phi-3-mini Q4_K_M, 2 GPU layers), exposed as OpenAI-compatible `/v1/chat/completions`.
@@ -29,7 +31,7 @@ Rule: `chaba.h3` stays static-only. Do not commit Node/Docker backend files, `.e
 ## 4. Cameras & NVR
 
 - 34 cameras in `cameras.json`, 4 groups, heading metadata for direction arrows on the map.
-- VSTARCAM on `192.168.1.41:10554` (`/tcp/av0_0`) transcoded from H.265 to H.264; audio dropped.
+- VSTARCAM on `tony-dell.local:10554` (`/tcp/av0_0`) transcoded from H.265 to H.264; audio dropped.
 - DOH Wowza streams use direct IPs `180.180.242.207/208` because the domain names fail TLS/SNI.
 - Camera map (`camera-map.html`) has popup HLS/snapshot players, draggable pinned panels, fullscreen, follow-map, and off-screen hiding.
 - Camera control panel runs at `:8090` for enable/disable/discover.

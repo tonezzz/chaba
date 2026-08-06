@@ -17,6 +17,7 @@ const PRIORITY = {
   imagen2: 2,
   yomi_summary: 2,
   yomi_daily: 2,
+  yomi_daily_batch: 2,
   llama: 1,
 };
 
@@ -174,6 +175,19 @@ export async function updateJobMetrics(id, metrics) {
   `;
 
   const dbResult = await pool.query(query, values);
+  return dbResult.rows[0];
+}
+
+// Update job result (for storing job output)
+export async function updateJobResult(id, result) {
+  const query = `
+    UPDATE gpu_queue_jobs
+    SET result = $1
+    WHERE id = $2
+    RETURNING *
+  `;
+  
+  const dbResult = await pool.query(query, [result, id]);
   return dbResult.rows[0];
 }
 

@@ -2,6 +2,13 @@
  * Summary quality validation and retry utilities
  */
 
+// Context length limits (in characters, approximate)
+export const MAX_CONTEXT_LENGTH = 6000; // Conservative limit for 8K context model (increased from 3000 for 4K)
+export const WARNING_CONTEXT_LENGTH = 5000; // Warning threshold (increased from 2500)
+
+// Request timeout for Llama API calls
+export const LLAMA_REQUEST_TIMEOUT = 30000; // 30 seconds
+
 // Generic error patterns that indicate failed summarization
 const ERROR_PATTERNS = [
   /conversation unavailable/i,
@@ -171,4 +178,48 @@ export function parseCacheKey(key) {
   const match = key.match(/^(.+):v(\d+)$/);
   if (!match) return { chatId: key, version: 1 };
   return { chatId: match[1], version: parseInt(match[2], 10) };
+}
+
+/**
+ * Validate context length and truncate if necessary
+ */
+export function validateAndTruncateContext(text, chatId = 'unknown') {
+  if (!text || typeof text !== 'string') return text;
+  
+  const length = text.length;
+  
+  if (length > MAX_CONTEXT_LENGTH) {
+    console.log(`Context length ${length} exceeds limit ${MAX_CONTEXT_LENGTH} for ${chatId}, truncating`);
+    // Truncate from the beginning, keeping the most recent messages
+    const truncated = text.slice(-MAX_CONTEXT_LENGTH);
+    console.log(`Truncated to ${truncated.length} characters for ${chatId}`);
+    return truncated;
+  }
+  
+  if (length > WARNING_CONTEXT_LENGTH) {
+    console.log(`Context length ${length} approaching limit ${MAX_CONTEXT_LENGTH} for ${chatId}`);
+  }
+  
+  return text;
+}
+
+/**
+ * Get context length validation status
+ */
+export function getContextLengthStatus(text) {
+  if (!text || typeof text !== 'string') {
+    return { valid: true, length: 0, status: 'empty' };
+  }
+  
+  const length = text.length;
+  
+  if (length > MAX_CONTEXT_LENGTH) {
+    return { valid: false, length, status: 'exceeded', limit: MAX_CONTEXT_LENGTH };
+  }
+  
+  if (length > WARNING_CONTEXT_LENGTH) {
+    return { valid: true, length, status: 'warning', limit: MAX_CONTEXT_LENGTH };
+  }
+  
+  return { valid: true, length, status: 'ok', limit: MAX_CONTEXT_LENGTH };
 }

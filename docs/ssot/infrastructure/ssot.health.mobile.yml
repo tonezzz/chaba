@@ -55,12 +55,13 @@ services:
 
   # GPU Services (limited external access)
   - id: thai-legal
-    name: Thai Legal LLM (External)
+    name: Llama Router (Phi-3 only, External)
     type: http
     url: http://tony-omen.local:8001/health
     expected_status: 200
     timeout: 15
     category: gpu
+    note: Thai legal model offline (2026-08-06) due to GPU memory constraints
 
   - id: txt2vid
     name: Txt2Vid (External)

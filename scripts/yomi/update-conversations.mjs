@@ -3,9 +3,23 @@ import { StdioClientTransport } from '/home/tony/.yomi/mcpb/node_modules/@modelc
 import { writeFileSync, readFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { categorize } from './categorize-conversations.mjs';
-import { evaluateSummaryQuality, isMeaningfulSummary, retryWithBackoff, generateCacheKey, parseCacheKey } from './summary-utils.mjs';
+import { evaluateSummaryQuality, isMeaningfulSummary, retryWithBackoff, generateCacheKey, parseCacheKey, validateAndTruncateContext, getContextLengthStatus, LLAMA_REQUEST_TIMEOUT } from './summary-utils.mjs';
 import { summaryRateLimiter, dailyRateLimiter, summaryCircuitBreaker, dailyCircuitBreaker } from './llama-rate-limiter.mjs';
+import { submitSummaryJob, submitDailySummaryJob, submitBatchDailySummaryJob, waitForJob } from './gpu-queue-integration.mjs';
 import pool from './db.mjs';
+
+// Filter out messages that only contain encrypted keyMaterial/fileName data
+function shouldFilterMessage(text) {
+  if (!text) return true;
+  if (text.startsWith('{') && text.includes('keyMaterial')) {
+    return true;
+  }
+  // Also filter out messages that only contain fileName (no actual conversation)
+  if (text.startsWith('{') && text.includes('fileName') && !text.includes('keyMaterial')) {
+    return true;
+  }
+  return false;
+}
 
 function normalizeTimestamp(deliveredTime) {
   if (!deliveredTime) return null;
@@ -406,6 +420,12 @@ function buildPrompt(name, messages) {
     const from = m.fromName || m.from || 'Unknown';
     const text = m.text || mediaLabel(m);
     if (!text) return null;
+    
+    // Filter out messages that only contain encrypted keyMaterial/fileName data
+    if (shouldFilterMessage(text)) {
+      return null;
+    }
+    
     return `${from}: ${String(text).replace(/\n/g, ' ')}`;
   }).filter(Boolean);
   
@@ -434,30 +454,66 @@ function buildPrompt(name, messages) {
   return getLanguageSpecificPrompt(language, name, textOnlyLines);
 }
 
-async function summarizeWithLlama(prompt) {
-  return await summaryRateLimiter.run(async () => {
-    return await summaryCircuitBreaker.run(async () => {
-      const res = await fetch(LLAMA_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'Phi-3-mini-4k-instruct-q4',
-          messages: [
-            { role: 'system', content: 'You write concise one-sentence summaries of chat conversations.' },
-            { role: 'user', content: prompt }
-          ],
-          temperature: 0.4,
-          max_tokens: 60,
-          stop: ['\n']
-        })
+async function summarizeWithLlama(prompt, chatId = 'unknown') {
+  // Validate and truncate context length before API call
+  const validatedPrompt = validateAndTruncateContext(prompt, chatId);
+  const contextStatus = getContextLengthStatus(prompt);
+  
+  if (!contextStatus.valid) {
+    console.error(`Context length validation failed: ${contextStatus.length} > ${contextStatus.limit}`);
+    throw new Error(`Context length ${contextStatus.length} exceeds maximum ${contextStatus.limit}`);
+  }
+  
+  // Try GPU queue first, fallback to direct API
+  try {
+    console.log(`Attempting GPU queue for summary of ${chatId}`);
+    const jobId = await submitSummaryJob(chatId, validatedPrompt, 'yomi_summary');
+    const { result } = await waitForJob(jobId, 120000); // 2 minute timeout for queue
+    console.log(`GPU queue completed summary for ${chatId}`);
+    return result;
+  } catch (queueError) {
+    console.log(`GPU queue failed for ${chatId}: ${queueError.message}, falling back to direct API`);
+    
+    // Fallback to direct API with rate limiting
+    return await summaryRateLimiter.run(async () => {
+      return await summaryCircuitBreaker.run(async () => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), LLAMA_REQUEST_TIMEOUT);
+        
+        try {
+          const res = await fetch(LLAMA_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'Phi-3-mini-4k-instruct-q4',
+              messages: [
+                { role: 'system', content: 'You write concise one-sentence summaries of chat conversations.' },
+                { role: 'user', content: validatedPrompt }
+              ],
+              temperature: 0.4,
+              max_tokens: 60,
+              stop: ['\n']
+            }),
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeout);
+          
+          if (!res.ok) throw new Error('llama ' + res.status);
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content?.trim();
+          if (!content) throw new Error('empty llama response');
+          return content.replace(/\\n/g, ' ').replace(/\s+/g, ' ');
+        } catch (error) {
+          clearTimeout(timeout);
+          if (error.name === 'AbortError') {
+            throw new Error(`Llama API timeout after ${LLAMA_REQUEST_TIMEOUT}ms`);
+          }
+          throw error;
+        }
       });
-      if (!res.ok) throw new Error('llama ' + res.status);
-      const data = await res.json();
-      const content = data.choices?.[0]?.message?.content?.trim();
-      if (!content) throw new Error('empty llama response');
-      return content.replace(/\\n/g, ' ').replace(/\s+/g, ' ');
     });
-  });
+  }
 }
 
 async function getSummary(chatId, messages, name, forceRefresh = false) {
@@ -549,6 +605,12 @@ function buildDailyPrompt(date, messages, name) {
     const from = m.fromName || m.from || 'Unknown';
     const text = m.text || mediaLabel(m);
     if (!text) return null;
+    
+    // Filter out messages that only contain encrypted keyMaterial/fileName data
+    if (shouldFilterMessage(text)) {
+      return null;
+    }
+    
     return `${from}: ${String(text).replace(/\n/g, ' ')}`;
   }).filter(Boolean);
   if (lines.length === 0) return null;
@@ -575,6 +637,12 @@ function buildBatchDailyPrompt(dateGroups, name) {
       const from = m.fromName || m.from || 'Unknown';
       const text = m.text || mediaLabel(m);
       if (!text) return null;
+      
+      // Filter out messages that only contain encrypted keyMaterial/fileName data
+      if (shouldFilterMessage(text)) {
+        return null;
+      }
+      
       return `${from}: ${String(text).replace(/\n/g, ' ')}`;
     }).filter(Boolean);
     
@@ -610,68 +678,140 @@ Messages:
 ${dateSections.join('\n\n')}`;
 }
 
-async function extractDailyWithLlama(prompt) {
-  return await dailyRateLimiter.run(async () => {
-    return await dailyCircuitBreaker.run(async () => {
-      const res = await fetch(LLAMA_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'Phi-3-mini-4k-instruct-q4',
-          messages: [
-            { role: 'system', content: 'You extract structured information from chat conversations and return valid JSON.' },
-            { role: 'user', content: prompt }
-          ],
-          temperature: 0.3,
-          max_tokens: 300,
-          stop: ['\n\n']
-        })
+async function extractDailyWithLlama(prompt, chatId = 'unknown', date = 'unknown') {
+  // Validate and truncate context length before API call
+  const validatedPrompt = validateAndTruncateContext(prompt, chatId);
+  const contextStatus = getContextLengthStatus(prompt);
+  
+  if (!contextStatus.valid) {
+    console.error(`Context length validation failed: ${contextStatus.length} > ${contextStatus.limit}`);
+    throw new Error(`Context length ${contextStatus.length} exceeds maximum ${contextStatus.limit}`);
+  }
+  
+  // Try GPU queue first, fallback to direct API
+  try {
+    console.log(`Attempting GPU queue for daily summary of ${chatId} on ${date}`);
+    const jobId = await submitDailySummaryJob(chatId, date, validatedPrompt, 'yomi_daily');
+    const { result } = await waitForJob(jobId, 180000); // 3 minute timeout for daily summaries
+    console.log(`GPU queue completed daily summary for ${chatId} on ${date}`);
+    return result;
+  } catch (queueError) {
+    console.log(`GPU queue failed for daily summary ${chatId} on ${date}: ${queueError.message}, falling back to direct API`);
+    
+    // Fallback to direct API with rate limiting
+    return await dailyRateLimiter.run(async () => {
+      return await dailyCircuitBreaker.run(async () => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), LLAMA_REQUEST_TIMEOUT);
+        
+        try {
+          const res = await fetch(LLAMA_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'Phi-3-mini-4k-instruct-q4',
+              messages: [
+                { role: 'system', content: 'You extract structured information from chat conversations and return valid JSON.' },
+                { role: 'user', content: validatedPrompt }
+              ],
+              temperature: 0.3,
+              max_tokens: 300,
+              stop: ['\n\n']
+            }),
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeout);
+          
+          if (!res.ok) throw new Error('llama ' + res.status);
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content?.trim();
+          if (!content) throw new Error('empty llama response');
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          if (!jsonMatch) throw new Error('no json in response');
+          try {
+            return JSON.parse(jsonMatch[0]);
+          } catch {
+            throw new Error('invalid json in response');
+          }
+        } catch (error) {
+          clearTimeout(timeout);
+          if (error.name === 'AbortError') {
+            throw new Error(`Llama API timeout after ${LLAMA_REQUEST_TIMEOUT}ms`);
+          }
+          throw error;
+        }
       });
-      if (!res.ok) throw new Error('llama ' + res.status);
-      const data = await res.json();
-      const content = data.choices?.[0]?.message?.content?.trim();
-      if (!content) throw new Error('empty llama response');
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('no json in response');
-      try {
-        return JSON.parse(jsonMatch[0]);
-      } catch {
-        throw new Error('invalid json in response');
-      }
     });
-  });
+  }
 }
 
-async function extractBatchDailyWithLlama(prompt) {
-  return await dailyRateLimiter.run(async () => {
-    return await dailyCircuitBreaker.run(async () => {
-      const res = await fetch(LLAMA_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'Phi-3-mini-4k-instruct-q4',
-          messages: [
-            { role: 'system', content: 'You extract structured information from chat conversations and return valid JSON with date keys.' },
-            { role: 'user', content: prompt }
-          ],
-          temperature: 0.3,
-          max_tokens: 600,
-          stop: ['\n\n']
-        })
+async function extractBatchDailyWithLlama(prompt, chatId = 'unknown', dates = []) {
+  // Validate and truncate context length before API call
+  const validatedPrompt = validateAndTruncateContext(prompt, chatId);
+  const contextStatus = getContextLengthStatus(prompt);
+  
+  if (!contextStatus.valid) {
+    console.error(`Context length validation failed: ${contextStatus.length} > ${contextStatus.limit}`);
+    throw new Error(`Context length ${contextStatus.length} exceeds maximum ${contextStatus.limit}`);
+  }
+  
+  // Try GPU queue first, fallback to direct API
+  try {
+    console.log(`Attempting GPU queue for batch daily summary of ${chatId} (${dates.length} dates)`);
+    const jobId = await submitBatchDailySummaryJob(chatId, dates, validatedPrompt, 'yomi_daily_batch');
+    const { result } = await waitForJob(jobId, 300000); // 5 minute timeout for batch summaries
+    console.log(`GPU queue completed batch daily summary for ${chatId}`);
+    return result;
+  } catch (queueError) {
+    console.log(`GPU queue failed for batch daily summary ${chatId}: ${queueError.message}, falling back to direct API`);
+    
+    // Fallback to direct API with rate limiting
+    return await dailyRateLimiter.run(async () => {
+      return await dailyCircuitBreaker.run(async () => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), LLAMA_REQUEST_TIMEOUT);
+        
+        try {
+          const res = await fetch(LLAMA_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'Phi-3-mini-4k-instruct-q4',
+              messages: [
+                { role: 'system', content: 'You extract structured information from chat conversations and return valid JSON with date keys.' },
+                { role: 'user', content: validatedPrompt }
+              ],
+              temperature: 0.3,
+              max_tokens: 600,
+              stop: ['\n\n']
+            }),
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeout);
+          
+          if (!res.ok) throw new Error('llama ' + res.status);
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content?.trim();
+          if (!content) throw new Error('empty llama response');
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          if (!jsonMatch) throw new Error('no json in response');
+          try {
+            return JSON.parse(jsonMatch[0]);
+          } catch {
+            throw new Error('invalid json in response');
+          }
+        } catch (error) {
+          clearTimeout(timeout);
+          if (error.name === 'AbortError') {
+            throw new Error(`Llama API timeout after ${LLAMA_REQUEST_TIMEOUT}ms`);
+          }
+          throw error;
+        }
       });
-      if (!res.ok) throw new Error('llama ' + res.status);
-      const data = await res.json();
-      const content = data.choices?.[0]?.message?.content?.trim();
-      if (!content) throw new Error('empty llama response');
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('no json in response');
-      try {
-        return JSON.parse(jsonMatch[0]);
-      } catch {
-        throw new Error('invalid json in response');
-      }
     });
-  });
+  }
 }
 
 async function saveDailySummary(chatId, date, events, actions, topics, messageCount) {

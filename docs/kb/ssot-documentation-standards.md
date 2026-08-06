@@ -1,9 +1,19 @@
-# SSOT Best Practices and Standards
+# SSOT Documentation Standards
 
-## Overview
-This document outlines the best practices and standards for maintaining Single Source of Truth (SSOT) YAML files across the chaba project ecosystem.
+## What it is
 
-## File Structure and Organization
+Comprehensive standards and operational procedures for maintaining Single Source of Truth (SSOT) YAML files across the chaba project ecosystem, ensuring consistency across multiple documentation locations and maintaining documentation quality through systematic validation.
+
+## Context/Background
+
+Implemented on 2026-08-05 to address significant SSOT drift where 10+ files had diverged from source across three locations (docs/ssot/, public/docs/overview/, stacks/web/web/public/). This drift created inconsistency risks and potential operational confusion.
+
+## Key Details
+
+### SSOT Locations
+- **Primary Source**: `docs/ssot/` - authoritative SSOT files
+- **Public Documentation**: `public/docs/overview/` - public-facing documentation
+- **Web Stack**: `stacks/web/web/public/` - web application public files
 
 ### Directory Structure
 ```
@@ -77,24 +87,10 @@ config:
 ```
 
 ### Configuration-Type Files
-Files like `ssot.health.yml`, `ssot.gpu.yml`, `ssot.services.yml` have flexible structures:
-```yaml
-# Configuration files can have custom structures
-# relevant to their specific domain
-key: value
-nested:
-  configuration:
-    items: here
-```
+Files like `ssot.health.yml`, `ssot.gpu.yml`, `ssot.services.yml` have flexible structures relevant to their specific domain.
 
 ### Apps Data Files
-Files in the `apps/` subdirectory contain simple data structures:
-```yaml
-app_name:
-  url: https://example.com
-  description: App description
-  status: active
-```
+Files in the `apps/` subdirectory contain simple data structures for app configurations.
 
 ## Validation Rules
 
@@ -148,6 +144,27 @@ app_name:
 - Be consistent with tag terminology
 - Use descriptive tags (e.g., `infrastructure`, `automation`, `shared`)
 
+## Synchronization Process
+
+### Consistency Check Process
+1. Compare SSOT files across all three locations
+2. Identify diverged files using content comparison
+3. Sync from primary source (docs/ssot/) to downstream locations
+4. Verify missing files and add to all locations
+5. Validate critical documentation cross-location consistency
+
+### Synchronization Strategy
+- **Primary Source**: `docs/ssot/` is always the authoritative source
+- **Downstream Sync**: Changes propagate to public and web locations
+- **Validation**: Cross-location verification for critical documentation
+- **Archive Policy**: Completed implementation plans moved to archived/
+
+### Cross-File Consistency
+- SSOT files in `docs/ssot/` are the source of truth
+- Served copies in `stacks/web/public/` should match
+- Public copies in `public/docs/overview/` should match
+- Run validation to check for differences
+
 ## Maintenance Workflow
 
 ### Before Making Changes
@@ -167,54 +184,6 @@ app_name:
 2. **Commit with clear message**: Use conventional commit format
 3. **Update served copies**: If applicable, sync to public/served directories
 4. **Document changes**: Update relevant documentation
-
-## Common Patterns
-
-### Dependency Management
-```yaml
-- label: Dependent Focus
-  text: Description of dependent work
-  dependencies:
-    - Prerequisite Focus
-  dependency_reason: Why this dependency exists
-```
-
-### Impact Scoring
-```yaml
-- label: High Impact Improvement
-  text: Description of improvement
-  business_impact: 8  # 1-10 scale
-  technical_impact: 7  # 1-10 scale
-  user_experience_impact: 6  # 1-10 scale
-  cost_savings_impact: 5  # 1-10 scale
-```
-
-### Progress Tracking
-```yaml
-- label: Ongoing Work
-  text: Description of work in progress
-  status: active
-  current_context: What's currently being done
-  estimated_completion: 2026-08-10
-```
-
-## Cross-File Consistency
-
-### SSOT to Served Files
-- SSOT files in `docs/ssot/` are the source of truth
-- Served copies in `stacks/web/public/` should match
-- Public copies in `public/docs/overview/` should match
-- Run validation to check for differences
-
-### SSOT to Generated Configs
-- MCP configs generated from `ssot.devin.tools.yml`
-- Run `python3 scripts/generate-mcp-configs.py` to sync
-- Validate generated configs before deployment
-
-### SSOT to Documentation
-- KB entries should reference relevant SSOT files
-- Documentation should reflect current SSOT state
-- Update docs when SSOT structure changes
 
 ## Tools and Automation
 
@@ -236,68 +205,24 @@ app_name:
 - **Duplicate entries**: Rename or remove duplicates
 - **Hostname violations**: Replace IPs with `.local` hostnames
 
+### SSOT Drift Recurrence
+- If drift recurs, identify source of changes in downstream locations
+- Establish change control process for downstream locations
+- Consider automated synchronization for frequently changed files
+- Review access permissions to prevent unauthorized modifications
+
 ### Cross-Reference Issues
 - **Invalid reference**: Check if referenced file/section exists
 - **Broken links**: Update references when files move
 - **Circular dependencies**: Restructure to remove cycles
 
-### Sync Issues
-- **Served copy differs**: Re-copy from SSOT source
-- **Generated config outdated**: Re-run generation script
-- **Validation fails**: Fix validation errors before syncing
+## Related Documentation
 
-## Documentation Standards
+- `docs/ssot/` - Primary SSOT file location
+- `public/docs/overview/` - Public documentation location
+- `stacks/web/web/public/` - Web stack public files
+- `docs/kb/subagent-implementation-strategy.md` - Subagent implementation patterns
 
-### SSOT File Documentation
-- Include clear `title` and `subtitle`
-- Use `ideas` section for context and plans
-- Add `config` section for metadata
-- Document exceptions to standard patterns
+## Tags
 
-### External Documentation
-- Reference SSOT files in relevant docs
-- Keep documentation aligned with SSOT changes
-- Use SSOT as source of truth for system state
-- Document SSOT structure and patterns
-
-## Quality Assurance
-
-### Review Checklist
-- [ ] Validation passes without errors
-- [ ] No hostname violations (except allowed exceptions)
-- [ ] Cross-references are valid
-- [ ] Structure follows established patterns
-- [ ] Content is clear and accurate
-- [ ] Related files are updated
-- [ ] Documentation is current
-
-### Testing Considerations
-- Test generated configs after SSOT changes
-- Validate served copies match SSOT source
-- Test tools/scripts that depend on SSOT
-- Verify cross-file references work correctly
-
-## Evolution and Improvement
-
-### Pattern Evolution
-- Review and update validation patterns regularly
-- Add new patterns as SSOT structure evolves
-- Deprecate outdated patterns gracefully
-- Document pattern changes clearly
-
-### Continuous Improvement
-- Gather feedback on SSOT usability
-- Identify common validation failures
-- Automate repetitive validation tasks
-- Improve error messages and guidance
-
-## Conclusion
-
-Following these best practices ensures:
-- **Consistency**: Uniform structure across all SSOT files
-- **Reliability**: Validation catches errors early
-- **Maintainability**: Clear patterns make updates easier
-- **Collaboration**: Standards help team coordination
-- **Automation**: Structured data enables tooling
-
-SSOT files are a critical part of the project infrastructure - treat them with the same care as production code.
+ssot, documentation, synchronization, standards, validation, consistency, quality-control, infrastructure, maintenance, yaml, configuration

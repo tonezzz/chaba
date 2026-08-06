@@ -1,10 +1,10 @@
-# Overnight System Assessment Report - 2026-08-05
+# Overnight System Assessment Report - 2026-08-06 08-53-12
 
 ## Executive Summary
 
 **Overall Health Score:** 100/100
 
-**Assessment Time:** 2026-08-05T19:00:04.950Z
+**Assessment Time:** 2026-08-06T01:53:12.957Z
 
 **Total Issues Found:** 0
 
@@ -18,14 +18,24 @@ No critical or high priority issues found. System is operating normally.
 
 | Service | Status | Response Time | Notes |
 |---------|--------|---------------|-------|
-| Status API | ✅ Healthy | 147ms | Status: 200 |
-| Yomi API | ✅ Healthy | 5ms | Status: 200 |
-| Yomi Summarization | ✅ Healthy | 29ms | Status: 200 |
-| Yomi Rate Limiter | ✅ Healthy | 61ms | Status: 200 |
-| Weaviate | ✅ Healthy | 53ms | Status: 200 |
-| Thai Legal LLM | ✅ Healthy | 8ms | Status: 200 |
-| Imagen2 | ✅ Healthy | 14ms | Status: 200 |
-| GPU Queue | ✅ Healthy | 24ms | Status: 200 |
+| Caddy | ✅ Healthy | 180ms | Status: 200 |
+| BServer | ✅ Healthy | 22ms | Status: 200 |
+| Status API | ✅ Healthy | 7ms | Status: 200 |
+| Yomi API | ✅ Healthy | 3ms | Status: 200 |
+| Yomi Summarization | ✅ Healthy | 23ms | Status: 200 |
+| Yomi Rate Limiter | ✅ Healthy | 78ms | Status: 200 |
+| Trade API | ✅ Healthy | 160ms | Container: Up 24 hours |
+| Trading Terminal | ✅ Healthy | 135ms | Container: Up 37 hours |
+| Redis | ✅ Healthy | 90ms | Container: Up 37 hours (healthy) |
+| Postgres | ✅ Healthy | 97ms | Container: Up 37 hours (healthy) |
+| Weaviate | ✅ Healthy | 65ms | Status: 200 |
+| Llama Router (Phi-3 only) | ✅ Healthy | 6ms | Status: 200 |
+| Imagen2 | ✅ Healthy | 9ms | Status: 200 |
+| Txt2Vid | ✅ Healthy | 172ms | Status: 200 |
+| GPU Queue | ✅ Healthy | 18ms | Status: 200 |
+| Activepieces | ✅ Healthy | 242ms | Container: Up 37 hours |
+| Frigate NVR | ❌ Unhealthy | 18ms | Status: 502 |
+| Camera Control | ✅ Healthy | 11ms | Status: 200 |
 
 ### Docker Containers
 
@@ -38,15 +48,15 @@ NAME      IMAGE     COMMAND   SERVICE   CREATED   STATUS    PORTS
 
 **GPU Model:** NVIDIA GeForce GTX 1650
 
-**VRAM Usage:** 2914MB / 4096MB (71%)
+**VRAM Usage:** 2716MB / 4096MB (66%)
 
-**GPU Utilization:** 11%
+**GPU Utilization:** 17%
 
-**Temperature:** 70°C
+**Temperature:** 71°C
 
 **Active GPU Processes:**
 
-- PID 71: PID:71 (2352MB)
+- PID 103: PID:103 (2124MB)
 
 
 **GPU Queue Status:**
@@ -69,11 +79,11 @@ NAME      IMAGE     COMMAND   SERVICE   CREATED   STATUS    PORTS
 **Summarization Status:**
 
 - Total Conversations: 70
-- With Summaries: 40
-- Average Quality: 45%
-- Daily Summaries: 382
+- With Summaries: 39
+- Average Quality: 44%
+- Daily Summaries: 391
 - Conversations with Daily Summaries: 56
-- Last Daily Summary Update: 2026-08-05T18:56:25.880Z
+- Last Daily Summary Update: 2026-08-06T01:52:37.790Z
 - Latest Summary Date: 2026-08-04T17:00:00.000Z
 
 
@@ -81,19 +91,19 @@ NAME      IMAGE     COMMAND   SERVICE   CREATED   STATUS    PORTS
 
 **Disk Usage:**
 ```
-/dev/nvme0n1p6   98G   69G   28G  72% /
+/dev/nvme0n1p6   98G   87G   11G  90% /
 ```
 
 **Memory Usage:**
 ```
 total        used        free      shared  buff/cache   available
-Mem:            30Gi        23Gi       2.6Gi       1.0Gi       6.1Gi       7.2Gi
-Swap:           47Gi        34Gi        13Gi
+Mem:            30Gi        15Gi        10Gi       1.0Gi       6.1Gi        14Gi
+Swap:           47Gi        40Gi       7.6Gi
 ```
 
 **System Load:**
 ```
-02:00:06 up 1 day,  7:10,  2 users,  load average: 7.79, 7.08, 8.04
+08:53:15 up 1 day, 14:03,  2 users,  load average: 18.26, 14.55, 13.58
 ```
 
 
@@ -121,8 +131,8 @@ Swap:           47Gi        34Gi        13Gi
 
 **Security Scan Results:**
 
-- **Total Vulnerabilities:** 5
-- **Docker Vulnerabilities:** 5
+- **Total Vulnerabilities:** 55
+- **Docker Vulnerabilities:** 55
 - **Python Vulnerabilities:** 0
 - **Node.js Vulnerabilities:** 0
 - **Stale Container Images:** 0
@@ -131,6 +141,7 @@ Swap:           47Gi        34Gi        13Gi
 **Vulnerable Docker Images:**
 
 - **caddy:2-alpine**: 5 vulnerabilities
+- **pgvector/pgvector:pg16**: 50 vulnerabilities
 
 
 
@@ -140,7 +151,7 @@ Swap:           47Gi        34Gi        13Gi
 
 **Improvement Status:**
 
-- Pending: 1
+- Pending: 3
 - Planned: 4
 - Completed: 9
 
@@ -157,7 +168,7 @@ Swap:           47Gi        34Gi        13Gi
 **Impact Analysis:**
 
 - High Impact (≥8/10): 0
-- Medium Impact (5-7/10): 9
+- Medium Impact (5-7/10): 11
 - Low Impact (<5/10): 0
 
 **Medium Impact Improvements:**
@@ -166,6 +177,8 @@ Swap:           47Gi        34Gi        13Gi
 - **Dependency Validation Rules** (5/10)
 - **Dependency Best Practices** (5/10)
 - **Impact Scoring Guide** (5/10)
+- **Frigate NVR Service Failure** (5/10)
+- **Docker Container Security Vulnerabilities** (5/10)
 - **Assessment Enhancements** (5.5/10)
 - **Performance Baselines** (5/10)
 - **Immediate Actions (This Week)** (5/10)
@@ -180,14 +193,19 @@ Swap:           47Gi        34Gi        13Gi
 
 The following improvements were automatically created and added to ssot.improvements.yml:
 
-- **Docker Container Security Vulnerabilities** (high priority): Docker containers have 5 security vulnerabilities - update images to patch HIGH/CRITICAL issues (Auto-generated by overnight assessment on 2026-08-05T19:02:48.509Z)
+- **Disk Usage Critical** (high priority): Disk usage critical at 90% - immediate cleanup and storage management required (Auto-generated by overnight assessment on 2026-08-06T01:53:15.286Z)
 
 
 ## Improvement Recommendations
 
+### Immediate Actions Required
+
+- Investigate and resolve: Frigate NVR returned status 502 (expected 200)
+
 ### Next Sprint Priorities
 
-- Address: Security scan found 5 vulnerabilities
+- Address: Disk usage critical: 90%
+- Address: Security scan found 55 vulnerabilities
 - Address: Critical dependency issues found: 1
 
 ### Ongoing Maintenance
@@ -203,6 +221,6 @@ The following improvements were automatically created and added to ssot.improvem
 
 ---
 
-**Assessment Duration:** 164s
+**Assessment Duration:** 181s
 **Generated by:** Automated Overnight Assessment System
-**Report Location:** /home/tony/CascadeProjects/chaba/reports/overnight-assessment-2026-08-05.md
+**Report Location:** /home/tony/CascadeProjects/chaba/reports/overnight-assessment-2026-08-06-08-53-12.md

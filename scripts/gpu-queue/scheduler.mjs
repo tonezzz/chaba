@@ -18,7 +18,7 @@ const SCHEDULERS = {
   adaptive: 'adaptive'      // Adaptive based on performance
 };
 
-let currentScheduler = SCHEDULERS.priority;
+let currentScheduler = SCHEDULERS.sjf; // Use SJF for better Yomi job scheduling
 let timeSlice = 10000; // 10 seconds for round robin
 
 /**
@@ -60,7 +60,10 @@ async function estimateExecutionTime(type, params) {
     imagen2: 15000,
     txt2vid: 60000,
     cogvideo: 60000,
-    llama: 3000
+    llama: 3000,
+    yomi_summary: 5000,
+    yomi_daily: 8000,
+    yomi_daily_batch: 15000
   };
 
   return estimates[type] || 10000;

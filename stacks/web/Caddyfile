@@ -328,12 +328,13 @@
 		}
 	}
 
-	@thai_legal_noslash path /apps/thai-legal
-	redir @thai_legal_noslash /apps/thai-legal/ 308
+	# Thai legal model offline (2026-08-06) due to GPU memory constraints
+	# @thai_legal_noslash path /apps/thai-legal
+	# redir @thai_legal_noslash /apps/thai-legal/ 308
 
-	handle_path /apps/thai-legal/api/* {
-		reverse_proxy thai-legal-inference:8000
-	}
+	# handle_path /apps/thai-legal/api/* {
+	# 	reverse_proxy thai-legal-inference:8000
+	# }
 
 	handle_path /apps/thai-legal/* {
 		root * /srv/public/apps/thai-legal

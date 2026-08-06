@@ -117,7 +117,7 @@ class CircuitBreaker {
 
 // Create singleton instances
 const summaryRateLimiter = new RateLimiter(1, 120000); // Conservative: 1 concurrent for summaries, 2min queue timeout
-const dailyRateLimiter = new RateLimiter(3, 180000); // Optimized: 3 concurrent for daily summaries, 3min queue timeout
+const dailyRateLimiter = new RateLimiter(1, 180000); // Conservative: 1 concurrent for daily summaries, 3min queue timeout (reduced from 3 for GPU optimization)
 const summaryCircuitBreaker = new CircuitBreaker(2, 180000); // Open after 2 failures, 3min timeout
 const dailyCircuitBreaker = new CircuitBreaker(5, 240000); // More tolerant: Open after 5 failures, 4min timeout
 

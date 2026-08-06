@@ -89,13 +89,13 @@ components:
     detail: Automation platform, depends on Postgres + Redis
 
   - id: thai-legal
-    label: Thai Legal LLM
+    label: Llama Router (Phi-3 only)
     type: gpu
     x: 150
     y: 500
     status: healthy
     url: http://tony-omen.local:8001/health
-    detail: llama.cpp server-cuda, Phi-3-mini + Thai-legal-gemma models
+    detail: llama.cpp server-cuda, Phi-3-mini active (Thai-legal offline 2026-08-06)
 
   - id: imagen2
     label: Imagen2
@@ -177,7 +177,7 @@ connections:
   - id: caddy-thai-legal
     from: caddy
     to: thai-legal
-    label: /v1/* /apps/chatllama
+    label: /v1/* /apps/chatllama (Thai-legal API offline)
 
   - id: caddy-imagen2
     from: caddy
@@ -215,6 +215,7 @@ connections:
     label: container stats
 
 events:
+  - { time: '2026-08-06 08:40:00', component: thai-legal, level: info, message: 'Thai-legal model taken offline due to GPU memory constraints (5GB vs 4GB available)' }
   - { time: '2026-08-03 02:50:00', component: weaviate-search, level: info, message: 'Weaviate Search API deployed as Docker container' }
   - { time: '2026-08-02 13:16:00', component: weaviate, level: info, message: 'Weaviate v1.38.8 deployed for semantic search and RAG' }
   - { time: '2026-07-31 16:40:00', component: caddy, level: info, message: 'Container recreated for sysdiag deployment' }

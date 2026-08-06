@@ -2,17 +2,17 @@ tony-omen:
   llama-router:
     container: thai-legal-inference
     image: ghcr.io/ggml-org/llama.cpp:server-cuda
-    mode: router (--models-dir, --models-max 2, --models-autoload)
+    mode: router (--models-dir, --models-max 1, --models-autoload)
     models:
-      - thai-legal-gemma-4b-cpt.Q4_K_M.gguf (5GB)
       - Phi-3-mini-4k-instruct-q4.gguf (2.3GB)
+      - thai-legal-gemma-4b-cpt.Q4_K_M.gguf (5GB, offline - resource constraints)
     port: 8001 (host), 8000 (internal)
     vram_overhead: ~70MB (vs 4.8GB for separate container)
     routing:
-      - /apps/thai-legal/api/* → thai-legal-gemma-4b-cpt.Q4_K_M
       - /v1/*, /apps/chatllama/* → Phi-3-mini-4k-instruct-q4
       - MCP llama server → http://localhost:8001
-    status: implemented (2026-07-31)
+      - /apps/thai-legal/api/* → thai-legal-gemma-4b-cpt.Q4_K_M (offline)
+    status: implemented (2026-07-31), thai-legal offline (2026-08-06)
   postgres:
     container: postgres
     image: postgres:16-alpine

@@ -28,9 +28,9 @@ policy:
     reason: Single llama.cpp router serves multiple models with ~70MB overhead
     tools: mcp2_hold_llama, mcp2_resume_llama (for CPU fallback during GPU contention)
     models:
-      - thai-legal-gemma-4b-cpt.Q4_K_M.gguf (5GB, CPU-only for legal app)
-      - Phi-3-mini-4k-instruct-q4.gguf (2.3GB, MCP/chatllama)
-    implemented: 2026-07-31
+      - Phi-3-mini-4k-instruct-q4.gguf (2.3GB, MCP/chatllama, active)
+      - thai-legal-gemma-4b-cpt.Q4_K_M.gguf (5GB, offline - GPU memory constraints)
+    implemented: 2026-07-31, thai-legal offline (2026-08-06)
 
   implementation:
     queue_manager:
@@ -217,7 +217,7 @@ current_state:
     - /app/llama-server (2442 MB)
     - /opt/conda/bin/python3.11 (58 MB)
     - /opt/conda/bin/python (58 MB)
-  note: Llama router on port 8001, models loaded on-demand, thai-legal CPU-only
+  note: Llama router on port 8001, Phi-3 active, thai-legal offline (2026-08-06)
 
 monitoring:
   netdata:
@@ -246,7 +246,7 @@ monitoring:
 
   health_checks:
     gpu_services:
-      - thai-legal (http://tony-omen.local:8001/health)
+      - llama-router (http://tony-omen.local:8001/health, Phi-3 only)
       - imagen2 (http://tony-omen.local:8000/health)
       - txt2vid (container state: txt2vid-inference)
     use_case: Service availability monitoring

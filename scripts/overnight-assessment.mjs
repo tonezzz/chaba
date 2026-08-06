@@ -6,6 +6,10 @@ import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync, rename
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const yaml = require('js-yaml');
 
 const REPORT_DIR = '/home/tony/CascadeProjects/chaba/reports';
 const REPORT_ARCHIVE_DIR = join(REPORT_DIR, 'archive');
@@ -18,11 +22,13 @@ if (!existsSync(REPORT_ARCHIVE_DIR)) mkdirSync(REPORT_ARCHIVE_DIR, { recursive: 
 if (!existsSync(LOG_DIR)) mkdirSync(LOG_DIR, { recursive: true });
 
 const HOST = 'tony-omen.local';
-const reportDate = new Date().toISOString().split('T')[0];
-const reportPath = join(REPORT_DIR, `overnight-assessment-${reportDate}.md`);
+const now = new Date();
+const reportDate = now.toISOString().split('T')[0];
+const reportTime = now.toTimeString().split(' ')[0].replace(/:/g, '-');
+const reportPath = join(REPORT_DIR, `overnight-assessment-${reportDate}-${reportTime}.md`);
 const ssotImprovementsPath = '/home/tony/CascadeProjects/chaba/docs/ssot/ssot.improvements.yml';
 
-let report = `# Overnight System Assessment Report - ${reportDate}\n\n`;
+let report = `# Overnight System Assessment Report - ${reportDate} ${reportTime}\n\n`;
 let criticalIssues = [];
 let highIssues = [];
 let mediumIssues = [];
@@ -278,66 +284,116 @@ async function checkHealthServices() {
   let content = '| Service | Status | Response Time | Notes |\n';
   content += '|---------|--------|---------------|-------|\n';
 
-  const services = [
-    { name: 'Status API', path: '/api/health' },
-    { name: 'Yomi API', path: '/api/yomi/health' },
-    { name: 'Yomi Summarization', path: '/api/yomi/summarization-status' },
-    { name: 'Yomi Rate Limiter', path: '/api/yomi/rate-limiter-status' },
-    { name: 'Weaviate', path: '/api/weaviate/v1/nodes' },
-  ];
+  // Read SSOT health configuration
+  const ssotHealthPath = '/home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.health.home.yml';
+  let services = [];
+  
+  if (existsSync(ssotHealthPath)) {
+    try {
+      const ssotContent = readFileSync(ssotHealthPath, 'utf8');
+      const yaml = require('js-yaml');
+      const config = yaml.load(ssotContent);
+      
+      if (config && config.services) {
+        services = config.services.map(svc => ({
+          name: svc.name,
+          id: svc.id,
+          type: svc.type,
+          url: svc.url,
+          container: svc.container,
+          expected_status: svc.expected_status,
+          expected_state: svc.expected_state,
+          timeout: (svc.timeout || 5) * 1000,
+          category: svc.category
+        }));
+        console.log(`Loaded ${services.length} services from SSOT configuration`);
+      }
+    } catch (e) {
+      console.error(`Failed to parse SSOT health configuration: ${e.message}`);
+      // Fallback to hardcoded services
+      services = [
+        { name: 'Status API', path: '/api/health' },
+        { name: 'Yomi API', path: '/api/yomi/health' },
+        { name: 'Yomi Summarization', path: '/api/yomi/summarization-status' },
+        { name: 'Yomi Rate Limiter', path: '/api/yomi/rate-limiter-status' },
+        { name: 'Weaviate', path: '/api/weaviate/v1/nodes' },
+      ];
+    }
+  } else {
+    console.log('SSOT health configuration not found, using hardcoded services');
+    services = [
+      { name: 'Status API', path: '/api/health' },
+      { name: 'Yomi API', path: '/api/yomi/health' },
+      { name: 'Yomi Summarization', path: '/api/yomi/summarization-status' },
+      { name: 'Yomi Rate Limiter', path: '/api/yomi/rate-limiter-status' },
+      { name: 'Weaviate', path: '/api/weaviate/v1/nodes' },
+    ];
+  }
 
   for (const service of services) {
     const start = Date.now();
     try {
-      const result = await httpGet(service.path);
-      const duration = Date.now() - start;
-      const status = result.status === 200 ? '✅ Healthy' : '❌ Unhealthy';
-      content += `| ${service.name} | ${status} | ${duration}ms | Status: ${result.status} |\n`;
-      
-      if (result.status !== 200) {
-        criticalIssues.push(`${service.name} returned status ${result.status}`);
+      if (service.type === 'http') {
+        // Parse URL to get hostname, port, and path
+        const url = new URL(service.url);
+        const host = url.hostname;
+        const port = parseInt(url.port) || (url.protocol === 'https:' ? 443 : 80);
+        const path = url.pathname + url.search;
         
-        // Auto-create improvement if it doesn't exist
-        const improvementLabel = `${service.name} Service Failure`;
-        if (!improvementExists(improvementLabel)) {
-          autoCreateImprovement(
-            improvementLabel,
-            `${service.name} returned status ${result.status} - service is unhealthy and needs investigation`,
-            'high',
-            'service-health',
-            [`docs/ssot/health.home.yml`]
-          );
+        const result = await httpGetCustom(host, port, path, service.timeout);
+        const duration = Date.now() - start;
+        const expectedStatus = service.expected_status || 200;
+        const status = result.status === expectedStatus ? '✅ Healthy' : '❌ Unhealthy';
+        content += `| ${service.name} | ${status} | ${duration}ms | Status: ${result.status} |\n`;
+        
+        if (result.status !== expectedStatus) {
+          criticalIssues.push(`${service.name} returned status ${result.status} (expected ${expectedStatus})`);
+          
+          // Auto-create improvement if it doesn't exist
+          const improvementLabel = `${service.name} Service Failure`;
+          if (!improvementExists(improvementLabel)) {
+            autoCreateImprovement(
+              improvementLabel,
+              `${service.name} returned status ${result.status} (expected ${expectedStatus}) - service is unhealthy and needs investigation`,
+              'high',
+              'service-health',
+              [`docs/ssot/infrastructure/ssot.health.home.yml`]
+            );
+          }
         }
+      } else if (service.type === 'container') {
+        // Check container status via Docker
+        const containerCheck = execCommand(`docker ps --filter "name=${service.container}" --format "{{.Status}}"`);
+        const duration = Date.now() - start;
+        
+        if (containerCheck.success && containerCheck.output.includes('Up')) {
+          const status = '✅ Healthy';
+          content += `| ${service.name} | ${status} | ${duration}ms | Container: ${containerCheck.output.trim()} |\n`;
+        } else {
+          const status = '❌ Unhealthy';
+          const errorMsg = containerCheck.success ? containerCheck.output.trim() : containerCheck.error;
+          content += `| ${service.name} | ${status} | ${duration}ms | ${errorMsg} |\n`;
+          criticalIssues.push(`${service.name} container is not running`);
+          
+          // Auto-create improvement if it doesn't exist
+          const improvementLabel = `${service.name} Container Down`;
+          if (!improvementExists(improvementLabel)) {
+            autoCreateImprovement(
+              improvementLabel,
+              `${service.name} container is not running - needs investigation and restart`,
+              'high',
+              'service-health',
+              [`docs/ssot/infrastructure/ssot.health.home.yml`]
+            );
+          }
+        }
+      } else {
+        content += `| ${service.name} | ❓ Unknown | ${Date.now() - start}ms | Unknown service type: ${service.type} |\n`;
       }
     } catch (error) {
       const duration = Date.now() - start;
       content += `| ${service.name} | ❌ Error | ${duration}ms | ${error.message} |\n`;
       criticalIssues.push(`${service.name} failed: ${error.message}`);
-    }
-  }
-
-  // Check GPU services on different ports
-  const gpuServices = [
-    { name: 'Thai Legal LLM', host: HOST, port: 8001, path: '/health' },
-    { name: 'Imagen2', host: HOST, port: 8000, path: '/health' },
-    { name: 'GPU Queue', host: HOST, port: 3001, path: '/health' },
-  ];
-
-  for (const service of gpuServices) {
-    const start = Date.now();
-    try {
-      const result = await httpGetCustom(service.host, service.port, service.path);
-      const duration = Date.now() - start;
-      const status = result.status === 200 ? '✅ Healthy' : '❌ Unhealthy';
-      content += `| ${service.name} | ${status} | ${duration}ms | Status: ${result.status} |\n`;
-      
-      if (result.status !== 200) {
-        highIssues.push(`${service.name} returned status ${result.status}`);
-      }
-    } catch (error) {
-      const duration = Date.now() - start;
-      content += `| ${service.name} | ❌ Error | ${duration}ms | ${error.message} |\n`;
-      highIssues.push(`${service.name} failed: ${error.message}`);
     }
   }
 

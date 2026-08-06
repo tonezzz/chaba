@@ -199,8 +199,151 @@ async function processEmbeddingJob(job) {
   }
 }
 
+// Process Yomi summary job
+async function processYomiSummaryJob(job) {
+  console.log(`Processing Yomi summary job ${job.id}`);
+
+  try {
+    const params = job.params;
+    const llamaUrl = 'http://localhost:8001/v1/chat/completions';
+    
+    console.log(`Calling Llama API for chat ${params.chatId}`);
+    
+    const response = await fetch(llamaUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: params.model || 'Phi-3-mini-4k-instruct-q4',
+        messages: [{ role: 'user', content: params.prompt }],
+        max_tokens: params.maxTokens || 50,
+        temperature: params.temperature || 0.3,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Llama API failed: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const result = data.choices?.[0]?.message?.content?.trim() || null;
+    
+    console.log(`Summary generated for chat ${params.chatId}`);
+    
+    // Store result using updateJobMetrics
+    await db.updateJobMetrics(job.id, { result });
+    await completeJob(job.id, true);
+    return result;
+  } catch (error) {
+    console.error('Yomi summary job failed:', error);
+    await completeJob(job.id, false, error.message);
+    throw error;
+  }
+}
+
+// Process Yomi daily summary job
+async function processYomiDailyJob(job) {
+  console.log(`Processing Yomi daily summary job ${job.id}`);
+
+  try {
+    const params = job.params;
+    const llamaUrl = 'http://localhost:8001/v1/chat/completions';
+    
+    console.log(`Calling Llama API for daily summary of ${params.chatId} on ${params.date}`);
+    
+    const response = await fetch(llamaUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: params.model || 'Phi-3-mini-4k-instruct-q4',
+        messages: [
+          { role: 'system', content: 'You extract structured information from chat conversations and return valid JSON.' },
+          { role: 'user', content: params.prompt }
+        ],
+        max_tokens: params.maxTokens || 300,
+        temperature: params.temperature || 0.3,
+        stop: ['\n\n']
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Llama API failed: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content?.trim();
+    if (!content) throw new Error('empty llama response');
+    
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('no json in response');
+    
+    const result = JSON.parse(jsonMatch[0]);
+    
+    console.log(`Daily summary generated for ${params.chatId} on ${params.date}`);
+    
+    // Store result using updateJobMetrics
+    await db.updateJobMetrics(job.id, { result: JSON.stringify(result) });
+    await completeJob(job.id, true);
+    return result;
+  } catch (error) {
+    console.error('Yomi daily summary job failed:', error);
+    await completeJob(job.id, false, error.message);
+    throw error;
+  }
+}
+
+// Process Yomi batch daily summary job
+async function processYomiDailyBatchJob(job) {
+  console.log(`Processing Yomi batch daily summary job ${job.id}`);
+
+  try {
+    const params = job.params;
+    const llamaUrl = 'http://localhost:8001/v1/chat/completions';
+    
+    console.log(`Calling Llama API for batch daily summary of ${params.chatId} (${params.dates?.length || 0} dates)`);
+    
+    const response = await fetch(llamaUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: params.model || 'Phi-3-mini-4k-instruct-q4',
+        messages: [
+          { role: 'system', content: 'You extract structured information from chat conversations and return valid JSON with date keys.' },
+          { role: 'user', content: params.prompt }
+        ],
+        max_tokens: params.maxTokens || 600,
+        temperature: params.temperature || 0.3,
+        stop: ['\n\n']
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Llama API failed: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content?.trim();
+    if (!content) throw new Error('empty llama response');
+    
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('no json in response');
+    
+    const result = JSON.parse(jsonMatch[0]);
+    
+    console.log(`Batch daily summary generated for ${params.chatId}`);
+    
+    // Store result using updateJobMetrics
+    await db.updateJobMetrics(job.id, { result: JSON.stringify(result) });
+    await completeJob(job.id, true);
+    return result;
+  } catch (error) {
+    console.error('Yomi batch daily summary job failed:', error);
+    await completeJob(job.id, false, error.message);
+    throw error;
+  }
+}
+
 // Export functions for use by queue processor
-export { processNextJob, completeJob, getQueueStatus, processImagen2Job, processLlamaJob, processTxt2vidJob, processEmbeddingJob };
+export { processNextJob, completeJob, getQueueStatus, processImagen2Job, processLlamaJob, processTxt2vidJob, processEmbeddingJob, processYomiSummaryJob, processYomiDailyJob, processYomiDailyBatchJob };
 
 // CLI interface
 const args = process.argv.slice(2);
@@ -239,6 +382,12 @@ switch (command) {
           processTxt2vidJob(job);
         } else if (job.type === 'embedding') {
           processEmbeddingJob(job);
+        } else if (job.type === 'yomi_summary') {
+          processYomiSummaryJob(job);
+        } else if (job.type === 'yomi_daily') {
+          processYomiDailyJob(job);
+        } else if (job.type === 'yomi_daily_batch') {
+          processYomiDailyBatchJob(job);
         } else {
           console.log(`Unknown job type: ${job.type}`);
           completeJob(job.id, false, `Unknown job type: ${job.type}`);

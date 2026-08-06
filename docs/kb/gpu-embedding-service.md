@@ -17,7 +17,7 @@ GPU-accelerated text embedding service using sentence-transformers for high-perf
 - **Single Text**: 175ms per embedding
 - **3 Texts Batch**: 187ms total (~62ms per text)
 - **5 Texts Batch**: 340ms total (~68ms per text)
-- **Efficiency**: Demonstrates efficient GPU utilization for batch processing with per-text cost reduction from 175ms to ~62-68ms
+- **Efficiency**: Demonstrates efficient GPU utilization for batch processing
 
 ## Architecture
 
@@ -32,7 +32,7 @@ GPU-accelerated text embedding service using sentence-transformers for high-perf
 ### Integration Points
 - **Weaviate**: Uses GPU service for semantic search embeddings with Chonkie chunking
 - **GPU Queue**: Fully integrated with orchestrator functions (processEmbeddingJob, updateJobMetadata)
-- **Database**: Enhanced schema with embedding-specific fields (execution_time_ms, gpu_used, vram_used_mb, mode, batch_size, queue_wait_time_ms, result)
+- **Database**: Enhanced schema with embedding-specific fields
 - **Batch Processing**: Validated performance with efficient GPU utilization
 - **Monitoring System**: Comprehensive health checks, performance metrics, error tracking via monitoring.mjs
 - **Automation**: Automatic queue processor (auto-processor.mjs) and daily Weaviate indexing (systemd timers)
@@ -49,10 +49,8 @@ GPU-accelerated text embedding service using sentence-transformers for high-perf
 | `scripts/gpu-queue/monitoring.mjs` | Health checks and performance metrics |
 | `scripts/gpu-queue/benchmark.mjs` | Performance benchmarking system |
 | `scripts/gpu-queue/auto-processor.mjs` | Automatic queue processor |
-| `docs/assessments/gpu-embedding/gpu-embedding-success-report.md` | Comprehensive success report |
-| `docs/assessments/gpu-embedding/gpu-sharing-analysis.md` | GPU sharing analysis and optimization recommendations |
 
-## Deployment
+## Operational Procedures
 
 ### Service Startup
 ```bash
@@ -80,68 +78,6 @@ The Weaviate embeddings module is configured to use the GPU service:
 ```javascript
 const EMBEDDING_SERVICE_URL = process.env.EMBEDDING_SERVICE_URL || 'http://localhost:5000';
 ```
-
-## Docker Build Lessons
-
-### Challenges Encountered
-1. **PyTorch/NumPy Compatibility**: NumPy 2.x incompatibility with PyTorch
-2. **CUDA Base Images**: Issues with official CUDA base images
-3. **Pip Dependency Resolution**: sentence-transformers 2.7.0 dependency conflicts
-4. **Build Complexity**: Extended build times and complex dependency trees
-5. **PyTorch Version Compatibility**: PyTorch 2.1.0 incompatible with transformers 4.57.6
-6. **API Method Changes**: sentence-transformers API method name changes
-
-### Successful Approach
-- **Pre-built Images**: Use gperdrizet/llms-gpu:latest (pre-configured with PyTorch and CUDA)
-- **Direct Deployment**: Run service directly without Docker containerization
-- **Dependency Management**: NumPy version compatibility is critical for PyTorch
-- **PyTorch Version**: Use torch 2.0.1+cu118 for compatibility with transformers 4.35.0
-- **Transformers Version**: Use transformers 4.35.0 for compatibility with PyTorch 2.0.1
-- **API Method**: Use get_sentence_embedding_dimension() instead of get_embedding_dimension()
-
-### Dockerfile Configuration (Alternative Approach)
-For containerized deployment, use this configuration:
-```dockerfile
-FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
-
-WORKDIR /app
-
-# Install Python
-RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-pip \
-    && rm -rf /var/lib/apt/lists/*
-
-# Upgrade pip and install wheel first
-RUN pip3 install --upgrade pip setuptools wheel
-
-# Install GPU PyTorch first (compatible version)
-RUN pip3 install --no-cache-dir torch==2.0.1+cu118 -f https://download.pytorch.org/whl/torch_stable.html
-
-# Verify PyTorch installation
-RUN python3 -c "import torch; print(f'PyTorch version: {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}')"
-
-# Install other dependencies (compatible transformers version)
-COPY requirements.txt .
-RUN pip3 install --no-cache-dir flask==3.0.0 sentence-transformers==2.7.0 transformers==4.35.0
-
-# Copy GPU service
-COPY embedding-service-gpu.py embedding-service.py
-
-# Expose port
-EXPOSE 5000
-
-# Run service
-CMD ["python3", "embedding-service.py"]
-```
-
-### Key Insights
-- Pre-configured GPU images save significant build time
-- Direct deployment can be more efficient than complex Docker builds for GPU services
-- NumPy version compatibility is critical for PyTorch environments
-- PyTorch version must be compatible with transformers version
-- sentence-transformers API methods may change between versions
-- Use handle_path with strip_prefix for Caddyfile API routing
 
 ## GPU Queue Integration
 
@@ -182,104 +118,38 @@ Added embedding-specific fields to `gpu_queue_jobs` table:
   - `GET /api/gpu-queue/monitoring/performance` - Performance metrics
   - `GET /api/gpu-queue/monitoring/activity?limit=20` - Recent activity
   - `GET /api/gpu-queue/monitoring/overview` - System overview
-- **Technical Details**:
-  - Uses existing `db.mjs` functions for data access
-  - Consistent error handling with `{ok, data/error, timestamp}` response format
-  - Metrics calculated from recent job history for relevance
-  - No dependencies on non-existent database functions
-
-### Batch Embedding Performance Results
-- **Single Text**: 175ms per embedding
-- **3 Texts Batch**: 187ms total (~62ms per text)
-- **5 Texts Batch**: 340ms total (~68ms per text)
-- **Efficiency**: Demonstrates efficient GPU utilization for batch processing with per-text cost reduction
-
-## Testing Results
-
-### Service Performance (Updated 2026-08-05)
-- **Health Check**: ✅ Healthy
-- **Single Embedding**: ✅ Avg 73.2ms (Min 55ms, Max 120ms)
-- **Batch Processing**: ✅ Avg 68ms for 5 texts (13.6ms per text)
-- **VRAM Usage**: ✅ 2822MB average
-- **Queue Completion Rate**: 54.5% (12/22 embedding jobs completed)
-- **Average Queue Wait**: 4275ms for completed jobs
-
-### Monitoring System
-```bash
-# Health check with alerts
-curl http://localhost:3001/health
-
-# Job statistics (last 24h)
-curl http://localhost:3001/api/gpu-queue/stats?hours=24
-
-# Cancellation rate monitoring
-curl http://localhost:3001/api/gpu-queue/cancellation-rate?hours=24
-
-# Recent failures analysis
-curl http://localhost:3001/api/gpu-queue/recent-failures?limit=10
-```
-
-### Automation Status
-- **GPU Queue Processor**: ✅ Running as systemd service (gpu-queue-processor.service)
-- **Weaviate Indexer**: ✅ Scheduled daily at 2 AM (weaviate-index.timer)
-- **Error Handling**: ✅ Automatic retry with exponential backoff (3 attempts)
-- **Service Health Checks**: ✅ Pre-flight validation before job execution
-
-### Integration Testing
-- **Weaviate Connection**: ✅ Working
-- **Embedding Generation**: ✅ 55-120ms (GPU-accelerated)
-- **Queue Processing**: ✅ Automatic with error handling
-- **Monitoring Endpoints**: ✅ Operational
-- **Search Quality**: ✅ Good relevance scores
-- **Performance**: ✅ Consistent
 
 ## Troubleshooting
 
-### Service Not Responding
-**Check**:
-```bash
-ps aux | grep embedding-service
-curl http://localhost:5000/health
-nvidia-smi  # Check GPU status
-```
+### Service Not Starting
+- Check port 5000 is not in use: `lsof -i :5000`
+- Verify Python virtual environment is intact
+- Check CUDA is available: `nvidia-smi`
+- Review service logs for errors
 
-### CUDA Out of Memory
-**Symptoms**: Service crashes or returns errors
-**Solutions**:
-- Reduce batch size
-- Monitor VRAM usage with `nvidia-smi`
-- Check for other GPU processes
-- Restart service to clear GPU memory
-
-### Connection Issues
-**Symptoms**: Weaviate cannot connect to embedding service
-**Solutions**:
-- Verify service is running on port 5000
-- Check firewall settings
-- Verify EMBEDDING_SERVICE_URL environment variable
-- Test with curl: `curl http://localhost:5000/health`
-
-### Performance Degradation
-**Symptoms**: Embedding times increase significantly
-**Solutions**:
-- Check GPU utilization with `nvidia-smi`
+### Performance Issues
+- Check GPU memory usage: `nvidia-smi`
 - Verify CUDA device is available
-- Check for other GPU-intensive processes
-- Monitor VRAM usage for memory leaks
+- Check for other GPU processes consuming resources
+- Review batch size configuration
+
+### Integration Issues
+- Verify Weaviate embeddings module configuration
+- Check GPU queue database schema is updated
+- Test service health endpoint independently
+- Review orchestrator logs for errors
 
 ## Related Documentation
 
-- **[GPU Embedding Success Report](../assessments/gpu-embedding/gpu-embedding-success-report.md)** - Comprehensive deployment report
-- **[GPU Queue Integration](../assessments/gpu-embedding/gpu-queue-integration.md)** - GPU queue system details
-- **[Weaviate Configuration](../ssot/ssot.test.weaviate.yml)** - Weaviate service configuration
-- **[weaviate.md](weaviate.md)** - Weaviate vector database documentation
+**Success Report**: `docs/assessments/gpu-embedding/gpu-embedding-success-report.md`  
+**Archived Assessments**: `docs/assessments/gpu-embedding/archived/` (action plan, feasibility assessment, gap analysis, sharing analysis)  
+**GPU Queue Schema**: `scripts/gpu-queue/schema.sql`  
+**Weaviate Configuration**: `docs/ssot/infrastructure/ssot.test.weaviate.yml`
 
-## Tags
+## Change History
 
-- **gpu**: GPU-accelerated services
-- **embeddings**: Text vector embeddings
-- **sentence-transformers**: ML embedding models
-- **cuda**: NVIDIA GPU computing
-- **weaviate**: Vector database integration
-- **performance**: High-performance computing
-- **machine-learning**: ML model deployment
+| Date | Change | Author |
+|------|--------|--------|
+| 2026-08-04 | Initial deployment | tony |
+| 2026-08-05 | GPU queue monitoring integration | tony |
+| 2026-08-06 | Consolidated documentation (removed duplicate sections) | devin |
