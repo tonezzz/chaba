@@ -6,8 +6,7 @@ let routeInputState = {
   startLocation: null,
   destinationLocation: null,
   isSearching: false,
-  searchResults: [],
-  activeTab: 'saved' // 'saved' or 'search'
+  searchResults: []
 };
 
 // Debounce function for search
@@ -42,7 +41,7 @@ function initRouteInput() {
         <input 
           type="text" 
           class="route-input-field start-field" 
-          placeholder="Choose starting point"
+          placeholder="Search for a location"
           id="route-start"
           autocomplete="off"
         >
@@ -54,7 +53,7 @@ function initRouteInput() {
         <input 
           type="text" 
           class="route-input-field dest-field" 
-          placeholder="Choose destination"
+          placeholder="Search for a location"
           id="route-destination"
           autocomplete="off"
         >
@@ -79,7 +78,7 @@ function initRouteInput() {
     startInput.addEventListener('input', debounce((e) => {
       console.log('Start input changed:', e.target.value);
       handleLocationInput('start', e.target.value);
-    }, 300));
+    }, 100));
   }
   
   if (destInput) {
@@ -90,7 +89,7 @@ function initRouteInput() {
     destInput.addEventListener('input', debounce((e) => {
       console.log('Destination input changed:', e.target.value);
       handleLocationInput('destination', e.target.value);
-    }, 300));
+    }, 100));
   }
 
   // Add route input button to map controls
@@ -114,7 +113,6 @@ function openRouteInput() {
     document.getElementById('route-destination').value = '';
     routeInputState.startLocation = null;
     routeInputState.destinationLocation = null;
-    routeInputState.activeTab = 'saved';
     // Automatically show suggestions for start field
     setTimeout(() => {
       showLocationSuggestions('start');
@@ -153,33 +151,78 @@ function useCurrentLocation(field) {
 
 // Handle location input
 function handleLocationInput(field, value) {
-  if (value.length < 2) {
-    // Show saved locations when input is short
+  // Search immediately on any input
+  searchAllLocations(field, value);
+}
+
+// Search all locations (saved + map) and merge results
+async function searchAllLocations(field, query) {
+  const suggestionsPanel = document.getElementById(`route-suggestions-${field}`);
+  
+  if (!query || query.length === 0) {
+    // Show saved locations when input is empty
     showLocationSuggestions(field);
     return;
   }
 
-  // Auto-switch to search tab and search map
-  searchMapLocations(field, value);
-}
-
-// Search map locations using Nominatim (OpenStreetMap)
-async function searchMapLocations(field, query) {
-  const suggestionsPanel = document.getElementById(`route-suggestions-${field}`);
-  
   // Show loading state
   suggestionsPanel.innerHTML = `
-    <div class="route-suggestions-tabs">
-      <button class="suggestion-tab" onclick="switchTab('${field}', 'saved')">Saved</button>
-      <button class="suggestion-tab active" onclick="switchTab('${field}', 'search')">Search Map</button>
-    </div>
     <div class="route-suggestions-content">
-      <div class="suggestion-loading">Searching map...</div>
+      <div class="suggestion-loading">Searching...</div>
     </div>
   `;
   suggestionsPanel.style.display = 'block';
   suggestionsPanel.style.visibility = 'visible';
 
+  try {
+    // Search both saved locations and map in parallel
+    const [savedResults, mapResults] = await Promise.all([
+      Promise.resolve(searchLocation(query)),
+      searchMapLocationsOnly(query)
+    ]);
+
+    // Prioritize map results, then saved results
+    const allResults = [...mapResults, ...savedResults];
+    
+    // Store map results for selection
+    routeInputState.searchResults = mapResults;
+    
+    if (allResults.length === 0) {
+      suggestionsPanel.innerHTML = `
+        <div class="route-suggestions-content">
+          <div class="route-suggestion-item no-results">
+            <div class="suggestion-text">
+              <div class="suggestion-name">No results found</div>
+              <div class="suggestion-address">Try a different search term</div>
+            </div>
+          </div>
+        </div>
+      `;
+      suggestionsPanel.style.display = 'block';
+      suggestionsPanel.style.visibility = 'visible';
+      return;
+    }
+
+    showSuggestions(field, allResults);
+  } catch (error) {
+    console.error('Search failed:', error);
+    suggestionsPanel.innerHTML = `
+      <div class="route-suggestions-content">
+        <div class="route-suggestion-item no-results">
+          <div class="suggestion-text">
+            <div class="suggestion-name">Search failed</div>
+            <div class="suggestion-address">${error.message}</div>
+          </div>
+        </div>
+      </div>
+    `;
+    suggestionsPanel.style.display = 'block';
+    suggestionsPanel.style.visibility = 'visible';
+  }
+}
+
+// Search map locations only (without UI)
+async function searchMapLocationsOnly(query) {
   try {
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`,
@@ -199,23 +242,7 @@ async function searchMapLocations(field, query) {
     console.log('Nominatim results:', results);
     
     if (!results || results.length === 0) {
-      suggestionsPanel.innerHTML = `
-        <div class="route-suggestions-tabs">
-          <button class="suggestion-tab" onclick="switchTab('${field}', 'saved')">Saved</button>
-          <button class="suggestion-tab active" onclick="switchTab('${field}', 'search')">Search Map</button>
-        </div>
-        <div class="route-suggestions-content">
-          <div class="route-suggestion-item no-results">
-            <div class="suggestion-text">
-              <div class="suggestion-name">No results found</div>
-              <div class="suggestion-address">Try a different search term</div>
-            </div>
-          </div>
-        </div>
-      `;
-      suggestionsPanel.style.display = 'block';
-      suggestionsPanel.style.visibility = 'visible';
-      return;
+      return [];
     }
     
     const locations = results.map(result => ({
@@ -227,68 +254,26 @@ async function searchMapLocations(field, query) {
       type: 'map'
     }));
     
-    console.log('Processed locations:', locations);
-    
-    // Store search results for selection
-    routeInputState.searchResults = locations;
-    routeInputState.activeTab = 'search';
-    
-    showSuggestions(field, locations, 'search');
+    console.log('Processed map locations:', locations);
+    return locations;
   } catch (error) {
     console.error('Map search failed:', error);
-    suggestionsPanel.innerHTML = `
-      <div class="route-suggestions-tabs">
-        <button class="suggestion-tab" onclick="switchTab('${field}', 'saved')">Saved</button>
-        <button class="suggestion-tab active" onclick="switchTab('${field}', 'search')">Search Map</button>
-      </div>
-      <div class="route-suggestions-content">
-        <div class="route-suggestion-item no-results">
-          <div class="suggestion-text">
-            <div class="suggestion-name">Search failed</div>
-            <div class="suggestion-address">${error.message}</div>
-          </div>
-        </div>
-      </div>
-    `;
-    suggestionsPanel.style.display = 'block';
-    suggestionsPanel.style.visibility = 'visible';
+    return [];
   }
 }
 
-// Switch between saved and search tabs
-function switchTab(field, tab) {
-  routeInputState.activeTab = tab;
-  
-  if (tab === 'saved') {
-    showLocationSuggestions(field);
-  } else if (tab === 'search') {
-    const inputField = document.getElementById(`route-${field}`);
-    const query = inputField.value;
-    if (query.length >= 2) {
-      searchMapLocations(field, query);
-    } else {
-      // Show placeholder for empty search
-      showSuggestions(field, [], 'search');
-    }
-  }
-}
-
-// Show location suggestions with tabs
-function showSuggestions(field, results, activeTab = 'saved') {
+// Show location suggestions (no tabs, merged results)
+function showSuggestions(field, results) {
   const suggestionsPanel = document.getElementById(`route-suggestions-${field}`);
   if (!suggestionsPanel) {
     console.log('Suggestions panel not found for field:', field);
     return;
   }
 
-  console.log('Showing suggestions for field:', field, 'results:', results, 'tab:', activeTab);
+  console.log('Showing suggestions for field:', field, 'results:', results);
 
-  if (results.length === 0 && activeTab === 'search') {
+  if (results.length === 0) {
     suggestionsPanel.innerHTML = `
-      <div class="route-suggestions-tabs">
-        <button class="suggestion-tab" onclick="switchTab('${field}', 'saved')">Saved</button>
-        <button class="suggestion-tab active" onclick="switchTab('${field}', 'search')">Search Map</button>
-      </div>
       <div class="route-suggestions-content">
         <div class="route-suggestion-item no-results">
           <div class="suggestion-text">
@@ -300,12 +285,6 @@ function showSuggestions(field, results, activeTab = 'saved') {
     `;
   } else {
     suggestionsPanel.innerHTML = `
-      <div class="route-suggestions-tabs">
-        <button class="suggestion-tab ${activeTab === 'saved' ? 'active' : ''}" 
-                onclick="switchTab('${field}', 'saved')">Saved</button>
-        <button class="suggestion-tab ${activeTab === 'search' ? 'active' : ''}" 
-                onclick="switchTab('${field}', 'search')">Search Map</button>
-      </div>
       <div class="route-suggestions-content">
         ${results.map(result => `
           <div class="route-suggestion-item" onclick="selectLocation('${field}', '${result.id}')">
@@ -363,8 +342,6 @@ window.showSuggestions = showSuggestions;
 window.selectLocation = selectLocation;
 window.useCurrentLocation = useCurrentLocation;
 window.calculateRouteFromInput = calculateRouteFromInput;
-window.switchTab = switchTab;
-window.searchMapLocations = searchMapLocations;
 
 // Get location icon based on type
 function getLocationIcon(type) {
@@ -433,9 +410,8 @@ function showLocationSuggestions(field) {
     type: 'current'
   });
   
-  routeInputState.activeTab = 'saved';
   console.log('Showing suggestions for field:', field, 'locations:', locations);
-  showSuggestions(field, locations, 'saved');
+  showSuggestions(field, locations);
 }
 
 // Calculate route from input
@@ -494,8 +470,6 @@ if (typeof module !== 'undefined' && module.exports) {
     useCurrentLocation,
     handleLocationInput,
     selectLocation,
-    calculateRouteFromInput,
-    switchTab,
-    searchMapLocations
+    calculateRouteFromInput
   };
 }
