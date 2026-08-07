@@ -659,8 +659,34 @@ async function handleMediaAnalysis(req, res) {
   const jobId = jobRows[0].id;
   
   // Trigger background analysis
+  // Configuration defaults documented in docs/overview/apps.yomi.yml
+  const envVars = {
+    ...process.env,
+    JOB_ID: String(jobId),
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    GEMINI_VISION_MODEL_PRIMARY: process.env.GEMINI_VISION_MODEL_PRIMARY || 'gemma-4-31b-it',
+    GEMINI_VISION_MODEL_FALLBACK: process.env.GEMINI_VISION_MODEL_FALLBACK || 'gemma-4-26b-a4b-it',
+    CONTEXT_MESSAGES_BEFORE: process.env.CONTEXT_MESSAGES_BEFORE || '3',
+    CONTEXT_MESSAGES_AFTER: process.env.CONTEXT_MESSAGES_AFTER || '3',
+    POSTGRES_USER: process.env.POSTGRES_USER,
+    POSTGRES_PASSWORD: process.env.POSTGRES_PASSWORD,
+    POSTGRES_DB: process.env.POSTGRES_DB,
+    POSTGRES_HOST: process.env.POSTGRES_HOST,
+    POSTGRES_PORT: process.env.POSTGRES_PORT
+  };
+  
+  console.log('Spawning analyze-media with env:', {
+    GEMINI_API_KEY: envVars.GEMINI_API_KEY ? 'SET' : 'NOT SET',
+    GEMINI_VISION_MODEL_PRIMARY: envVars.GEMINI_VISION_MODEL_PRIMARY,
+    GEMINI_VISION_MODEL_FALLBACK: envVars.GEMINI_VISION_MODEL_FALLBACK,
+    CONTEXT_MESSAGES_BEFORE: envVars.CONTEXT_MESSAGES_BEFORE,
+    CONTEXT_MESSAGES_AFTER: envVars.CONTEXT_MESSAGES_AFTER,
+    POSTGRES_USER: envVars.POSTGRES_USER,
+    POSTGRES_DB: envVars.POSTGRES_DB
+  });
+  
   spawnNode(`${SCRIPT_DIR}/analyze-media.mjs`, [String(jobId)], { 
-    env: { ...process.env, JOB_ID: String(jobId) } 
+    env: envVars
   }).catch(err => {
     console.error(`Media analysis job ${jobId} failed to start:`, err);
   });
@@ -693,6 +719,24 @@ async function handleMediaAnalysisStatus(jobId, res) {
     });
   }
   
+  // If job is still running, return pending status
+  if (job.status === 'running' || job.status === 'pending') {
+    return sendJson(res, 200, {
+      ok: true,
+      job: {
+        id: job.id,
+        chatId: job.chat_id,
+        messageId: job.message_id,
+        mediaType: job.media_type,
+        status: job.status,
+        startedAt: job.started_at,
+        createdAt: job.created_at,
+        updatedAt: job.updated_at
+      }
+    });
+  }
+  
+  // Job completed successfully
   sendJson(res, 200, {
     ok: true,
     job: {
@@ -883,11 +927,20 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  const mediaMatch = url.pathname.match(/^\/api\/yomi\/media\/([^/]+)\/([^/]+)$/);
-  if (mediaMatch && req.method === 'GET') {
-    const [, chatId, messageId] = mediaMatch;
+  if (url.pathname === '/api/yomi/media/analyze' && req.method === 'POST') {
     try {
-      await handleMedia(chatId, messageId, res);
+      await handleMediaAnalysis(req, res);
+    } catch (err) {
+      sendJson(res, 500, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  if (url.pathname === '/api/yomi/media/analyze/status' && req.method === 'GET') {
+    const jobId = url.searchParams.get('job');
+    if (!jobId) return sendJson(res, 400, { error: 'job parameter required' });
+    try {
+      await handleMediaAnalysisStatus(jobId, res);
     } catch (err) {
       sendJson(res, 500, { ok: false, error: err.message });
     }
@@ -928,6 +981,17 @@ const server = createServer(async (req, res) => {
     if (!jobId) return sendJson(res, 400, { error: 'job parameter required' });
     try {
       await handleMediaAnalysisStatus(jobId, res);
+    } catch (err) {
+      sendJson(res, 500, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  const mediaMatch = url.pathname.match(/^\/api\/yomi\/media\/([^/]+)\/([^/]+)$/);
+  if (mediaMatch && req.method === 'GET') {
+    const [, chatId, messageId] = mediaMatch;
+    try {
+      await handleMedia(chatId, messageId, res);
     } catch (err) {
       sendJson(res, 500, { ok: false, error: err.message });
     }

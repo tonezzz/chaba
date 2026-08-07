@@ -56,3 +56,16 @@ sections:
         text: Category filter chips, per-chat refetch, on-demand non-image media, category preservation across exports.
       - label: Todo
         text: Image captioning, audio transcription (faster-whisper), and video frame captioning.
+
+  - title: Media Analysis Configuration
+    icon: 🔧
+    layout: list
+    items:
+      - label: Primary Model
+        text: gemma-4-31b-it (default, can be overridden via GEMINI_VISION_MODEL_PRIMARY env var)
+      - label: Fallback Model
+        text: gemma-4-26b-a4b-it (default, can be overridden via GEMINI_VISION_MODEL_FALLBACK env var)
+      - label: Context Window
+        text: 3 messages before and after (configurable via CONTEXT_MESSAGES_BEFORE/AFTER env vars)
+      - label: Environment Variables
+        text: GEMINI_API_KEY, GEMINI_VISION_MODEL_PRIMARY, GEMINI_VISION_MODEL_FALLBACK, CONTEXT_MESSAGES_BEFORE, CONTEXT_MESSAGES_AFTER
