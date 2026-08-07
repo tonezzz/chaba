@@ -236,3 +236,17 @@ if (typeof module !== 'undefined' && module.exports) {
     setCurrentLocation
   };
 }
+
+// Export to window for browser environment
+if (typeof window !== 'undefined') {
+  window.initGPS = initGPS;
+  window.startTracking = startTracking;
+  window.stopTracking = stopTracking;
+  window.getCurrentLocation = getCurrentLocation;
+  window.getDistance = getDistance;
+  window.getBearing = getBearing;
+  window.calculateRoute = calculateRoute;
+  window.getAllLocations = getAllLocations;
+  window.getLocation = getLocation;
+  window.setCurrentLocation = setCurrentLocation;
+}
