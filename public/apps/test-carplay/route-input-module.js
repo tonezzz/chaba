@@ -75,9 +75,9 @@ function initRouteInput() {
       console.log('Start input focused');
       showLocationSuggestions('start');
     });
-    startInput.addEventListener('input', debounce((e) => {
+    startInput.addEventListener('input', debounce(async (e) => {
       console.log('Start input changed:', e.target.value);
-      handleLocationInput('start', e.target.value);
+      await handleLocationInput('start', e.target.value);
     }, 100));
   }
   
@@ -86,9 +86,9 @@ function initRouteInput() {
       console.log('Destination input focused');
       showLocationSuggestions('destination');
     });
-    destInput.addEventListener('input', debounce((e) => {
+    destInput.addEventListener('input', debounce(async (e) => {
       console.log('Destination input changed:', e.target.value);
-      handleLocationInput('destination', e.target.value);
+      await handleLocationInput('destination', e.target.value);
     }, 100));
   }
 
@@ -150,9 +150,9 @@ function useCurrentLocation(field) {
 }
 
 // Handle location input
-function handleLocationInput(field, value) {
+async function handleLocationInput(field, value) {
   // Search immediately on any input
-  searchAllLocations(field, value);
+  await searchAllLocations(field, value);
 }
 
 // Search all locations (saved + map) and merge results
@@ -177,7 +177,7 @@ async function searchAllLocations(field, query) {
   try {
     // Search both saved locations and map in parallel
     const [savedResults, mapResults] = await Promise.all([
-      Promise.resolve(searchLocation(query)),
+      Promise.resolve(searchSavedLocations(query)),
       searchMapLocationsOnly(query)
     ]);
 
@@ -314,7 +314,7 @@ function hideSuggestions() {
 }
 
 // Search for location (local implementation - saved locations only)
-function searchLocation(query) {
+function searchSavedLocations(query) {
   const locations = getAllLocations();
   const results = [];
   const lowerQuery = query.toLowerCase().trim();
@@ -329,19 +329,6 @@ function searchLocation(query) {
   
   return results;
 }
-
-// Export functions to window object for global access
-window.initRouteInput = initRouteInput;
-window.openRouteInput = openRouteInput;
-window.closeRouteInput = closeRouteInput;
-window.handleLocationInput = handleLocationInput;
-window.showLocationSuggestions = showLocationSuggestions;
-window.hideSuggestions = hideSuggestions;
-window.searchLocation = searchLocation;
-window.showSuggestions = showSuggestions;
-window.selectLocation = selectLocation;
-window.useCurrentLocation = useCurrentLocation;
-window.calculateRouteFromInput = calculateRouteFromInput;
 
 // Get location icon based on type
 function getLocationIcon(type) {
@@ -469,7 +456,30 @@ if (typeof module !== 'undefined' && module.exports) {
     closeRouteInput,
     useCurrentLocation,
     handleLocationInput,
+    showLocationSuggestions,
+    hideSuggestions,
+    searchSavedLocations,
+    searchAllLocations,
+    searchMapLocationsOnly,
+    showSuggestions,
     selectLocation,
     calculateRouteFromInput
   };
 }
+
+// Export functions to window object for global access
+console.log('Loading route-input-module functions...');
+window.initRouteInput = initRouteInput;
+window.openRouteInput = openRouteInput;
+window.closeRouteInput = closeRouteInput;
+window.handleLocationInput = handleLocationInput;
+window.showLocationSuggestions = showLocationSuggestions;
+window.hideSuggestions = hideSuggestions;
+window.searchSavedLocations = searchSavedLocations;
+window.searchAllLocations = searchAllLocations;
+window.searchMapLocationsOnly = searchMapLocationsOnly;
+window.showSuggestions = showSuggestions;
+window.selectLocation = selectLocation;
+window.useCurrentLocation = useCurrentLocation;
+window.calculateRouteFromInput = calculateRouteFromInput;
+console.log('route-input-module functions loaded:', { searchAllLocations: typeof window.searchAllLocations, searchMapLocationsOnly: typeof window.searchMapLocationsOnly });
