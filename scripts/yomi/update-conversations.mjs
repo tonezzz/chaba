@@ -5,7 +5,48 @@ import { dirname } from 'node:path';
 import { categorize } from './categorize-conversations.mjs';
 import { evaluateSummaryQuality, isMeaningfulSummary, retryWithBackoff, generateCacheKey, parseCacheKey } from './summary-utils.mjs';
 import { summaryRateLimiter, dailyRateLimiter, summaryCircuitBreaker, dailyCircuitBreaker } from './llama-rate-limiter.mjs';
+import { submitSummaryJob, submitDailySummaryJob, submitBatchDailySummaryJob, waitForJob } from './gpu-queue-integration.mjs';
 import pool from './db.mjs';
+import { geminiConversationSummary, geminiDailySummary, geminiBatchDailySummary } from './gemini-integration.mjs';
+
+// ============================================================================
+// CRITICAL: Thailand calendar date handling
+// Database stores delivered_time as Thailand time (milliseconds since epoch)
+// Thailand calendar day = 00:00 to 23:59:59 Thailand time
+// This means Thailand calendar date directly matches the Thailand time date
+//
+// Example: Thailand calendar date "2026-08-03" spans:
+//   Start: 2026-08-03T00:00:00.000Z (midnight Thailand time)
+//   End: 2026-08-03T23:59:59.000Z (23:59:59 Thailand time)
+//
+// CONVERSION RULES:
+// 1. Thailand time → Thailand calendar date: Extract date directly
+//    Database stores Thailand time, so no conversion needed
+//    Example: 2026-08-03T15:29:28Z → "2026-08-03"
+//
+// 2. Thailand calendar date → Thailand time range: 00:00 to 23:59:59
+//    For API filtering, use simple date range in Thailand time
+//    Example: "2026-08-03" → 2026-08-03T00:00:00Z to 2026-08-03T23:59:59Z
+//
+// See: docs/kb/thailand-timezone-standard.md for comprehensive documentation
+// ============================================================================
+
+const USE_GEMINI = process.env.USE_GEMINI === 'true' || process.env.USE_GEMINI === '1'; // Default to false (use Llama)
+
+const GEMINI_MAX_DATES = parseInt(process.env.GEMINI_MAX_DATES || '10', 10); // Limit dates per run for Gemini
+const GEMINI_PRIORITY_MODE = process.env.GEMINI_PRIORITY_MODE || 'recent'; // 'recent', 'high-activity', 'all'
+// Filter out messages that only contain encrypted keyMaterial/fileName data
+function shouldFilterMessage(text) {
+  if (!text) return true;
+  if (text.startsWith('{') && text.includes('keyMaterial')) {
+    return true;
+  }
+  // Also filter out messages that only contain fileName (no actual conversation)
+  if (text.startsWith('{') && text.includes('fileName') && !text.includes('keyMaterial')) {
+    return true;
+  }
+  return false;
+}
 
 function normalizeTimestamp(deliveredTime) {
   if (!deliveredTime) return null;
@@ -406,6 +447,12 @@ function buildPrompt(name, messages) {
     const from = m.fromName || m.from || 'Unknown';
     const text = m.text || mediaLabel(m);
     if (!text) return null;
+    
+    // Filter out messages that only contain encrypted keyMaterial/fileName data
+    if (shouldFilterMessage(text)) {
+      return null;
+    }
+    
     return `${from}: ${String(text).replace(/\n/g, ' ')}`;
   }).filter(Boolean);
   
@@ -434,30 +481,66 @@ function buildPrompt(name, messages) {
   return getLanguageSpecificPrompt(language, name, textOnlyLines);
 }
 
-async function summarizeWithLlama(prompt) {
-  return await summaryRateLimiter.run(async () => {
-    return await summaryCircuitBreaker.run(async () => {
-      const res = await fetch(LLAMA_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'Phi-3-mini-4k-instruct-q4',
-          messages: [
-            { role: 'system', content: 'You write concise one-sentence summaries of chat conversations.' },
-            { role: 'user', content: prompt }
-          ],
-          temperature: 0.4,
-          max_tokens: 60,
-          stop: ['\n']
-        })
+async function summarizeWithLlama(prompt, chatId = 'unknown') {
+  // Validate and truncate context length before API call
+  const validatedPrompt = validateAndTruncateContext(prompt, chatId);
+  const contextStatus = getContextLengthStatus(prompt);
+  
+  if (!contextStatus.valid) {
+    console.error(`Context length validation failed: ${contextStatus.length} > ${contextStatus.limit}`);
+    throw new Error(`Context length ${contextStatus.length} exceeds maximum ${contextStatus.limit}`);
+  }
+  
+  // Try GPU queue first, fallback to direct API
+  try {
+    console.log(`Attempting GPU queue for summary of ${chatId}`);
+    const jobId = await submitSummaryJob(chatId, validatedPrompt, 'yomi_summary');
+    const { result } = await waitForJob(jobId, 120000); // 2 minute timeout for queue
+    console.log(`GPU queue completed summary for ${chatId}`);
+    return result;
+  } catch (queueError) {
+    console.log(`GPU queue failed for ${chatId}: ${queueError.message}, falling back to direct API`);
+    
+    // Fallback to direct API with rate limiting
+    return await summaryRateLimiter.run(async () => {
+      return await summaryCircuitBreaker.run(async () => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), LLAMA_REQUEST_TIMEOUT);
+        
+        try {
+          const res = await fetch(LLAMA_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'Phi-3-mini-4k-instruct-q4',
+              messages: [
+                { role: 'system', content: 'You write concise one-sentence summaries of chat conversations.' },
+                { role: 'user', content: validatedPrompt }
+              ],
+              temperature: 0.4,
+              max_tokens: 60,
+              stop: ['\n']
+            }),
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeout);
+          
+          if (!res.ok) throw new Error('llama ' + res.status);
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content?.trim();
+          if (!content) throw new Error('empty llama response');
+          return content.replace(/\\n/g, ' ').replace(/\s+/g, ' ');
+        } catch (error) {
+          clearTimeout(timeout);
+          if (error.name === 'AbortError') {
+            throw new Error(`Llama API timeout after ${LLAMA_REQUEST_TIMEOUT}ms`);
+          }
+          throw error;
+        }
       });
-      if (!res.ok) throw new Error('llama ' + res.status);
-      const data = await res.json();
-      const content = data.choices?.[0]?.message?.content?.trim();
-      if (!content) throw new Error('empty llama response');
-      return content.replace(/\\n/g, ' ').replace(/\s+/g, ' ');
     });
-  });
+  }
 }
 
 async function getSummary(chatId, messages, name, forceRefresh = false) {
@@ -537,7 +620,15 @@ function groupMessagesByDate(messages) {
   for (const m of messages) {
     const normalizedTime = normalizeTimestamp(m.deliveredTime);
     if (!normalizedTime) continue;
-    const date = new Date(normalizedTime).toISOString().split('T')[0];
+    
+    // Database stores delivered_time as Thailand time (milliseconds since epoch)
+    // Thailand calendar day = 00:00 to 23:59:59 Thailand time
+    // Extract date directly from Thailand time
+    const thailandTime = new Date(normalizedTime);
+    const date = thailandTime.toISOString().split('T')[0];
+    
+    console.log(`groupMessagesByDate: timestamp=${normalizedTime}, date=${date}, text=${m.text?.substring(0, 30)}`);
+    
     if (!byDate.has(date)) byDate.set(date, []);
     byDate.get(date).push(m);
   }
@@ -549,6 +640,12 @@ function buildDailyPrompt(date, messages, name) {
     const from = m.fromName || m.from || 'Unknown';
     const text = m.text || mediaLabel(m);
     if (!text) return null;
+    
+    // Filter out messages that only contain encrypted keyMaterial/fileName data
+    if (shouldFilterMessage(text)) {
+      return null;
+    }
+    
     return `${from}: ${String(text).replace(/\n/g, ' ')}`;
   }).filter(Boolean);
   if (lines.length === 0) return null;
@@ -575,6 +672,12 @@ function buildBatchDailyPrompt(dateGroups, name) {
       const from = m.fromName || m.from || 'Unknown';
       const text = m.text || mediaLabel(m);
       if (!text) return null;
+      
+      // Filter out messages that only contain encrypted keyMaterial/fileName data
+      if (shouldFilterMessage(text)) {
+        return null;
+      }
+      
       return `${from}: ${String(text).replace(/\n/g, ' ')}`;
     }).filter(Boolean);
     
@@ -610,71 +713,263 @@ Messages:
 ${dateSections.join('\n\n')}`;
 }
 
-async function extractDailyWithLlama(prompt) {
-  return await dailyRateLimiter.run(async () => {
-    return await dailyCircuitBreaker.run(async () => {
-      const res = await fetch(LLAMA_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'Phi-3-mini-4k-instruct-q4',
-          messages: [
-            { role: 'system', content: 'You extract structured information from chat conversations and return valid JSON.' },
-            { role: 'user', content: prompt }
-          ],
-          temperature: 0.3,
-          max_tokens: 300,
-          stop: ['\n\n']
-        })
-      });
-      if (!res.ok) throw new Error('llama ' + res.status);
-      const data = await res.json();
-      const content = data.choices?.[0]?.message?.content?.trim();
-      if (!content) throw new Error('empty llama response');
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('no json in response');
-      try {
-        return JSON.parse(jsonMatch[0]);
-      } catch {
-        throw new Error('invalid json in response');
+async function extractDailyWithLlama(prompt, chatId = 'unknown', date = 'unknown') {
+  // Use Gemini if enabled
+  if (USE_GEMINI) {
+    console.log(`Using Gemini for daily summary of ${chatId} on ${date}`);
+    // Detect language from prompt
+    const language = detectLanguage(prompt);
+    const response = await geminiDailySummary(chatId, date, prompt, language);
+    // Parse JSON response from Gemini with better error handling
+    console.log(`Gemini response (first 200 chars): ${response.substring(0, 200)}`);
+    
+    // Remove markdown code blocks if present
+    const cleanedResponse = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    try {
+      // Try to parse cleaned response as-is first
+      return JSON.parse(cleanedResponse);
+    } catch (e) {
+      // If that fails, try to extract the FIRST complete JSON object
+      // Match from first { to the matching closing brace
+      let braceCount = 0;
+      let startIndex = -1;
+      let endIndex = -1;
+      
+      for (let i = 0; i < cleanedResponse.length; i++) {
+        const char = cleanedResponse[i];
+        if (char === '{') {
+          if (braceCount === 0) {
+            startIndex = i;
+          }
+          braceCount++;
+        } else if (char === '}') {
+          braceCount--;
+          if (braceCount === 0 && startIndex !== -1) {
+            endIndex = i + 1;
+            break;
+          }
+        }
       }
+      
+      if (startIndex !== -1 && endIndex !== -1) {
+        const jsonStr = cleanedResponse.substring(startIndex, endIndex);
+        try {
+          return JSON.parse(jsonStr);
+        } catch (e2) {
+          console.error('Failed to parse extracted JSON:', e2.message);
+          console.error('Extracted JSON:', jsonStr);
+          throw new Error('invalid json in response');
+        }
+      }
+      
+      console.error('No valid JSON found in Gemini response');
+      throw new Error('no json in response');
+    }
+  }
+
+  // Validate and truncate context length before API call
+  const validatedPrompt = validateAndTruncateContext(prompt, chatId);
+  const contextStatus = getContextLengthStatus(prompt);
+  
+  if (!contextStatus.valid) {
+    console.error(`Context length validation failed: ${contextStatus.length} > ${contextStatus.limit}`);
+    throw new Error(`Context length ${contextStatus.length} exceeds maximum ${contextStatus.limit}`);
+  }
+  
+  // Try GPU queue first, fallback to direct API
+  try {
+    console.log(`Attempting GPU queue for daily summary of ${chatId} on ${date}`);
+    const jobId = await submitDailySummaryJob(chatId, date, validatedPrompt, 'yomi_daily');
+    const { result } = await waitForJob(jobId, 180000); // 3 minute timeout for daily summaries
+    console.log(`GPU queue completed daily summary for ${chatId} on ${date}`);
+    return result;
+  } catch (queueError) {
+    console.log(`GPU queue failed for daily summary ${chatId} on ${date}: ${queueError.message}, falling back to direct API`);
+    
+    // Fallback to direct API with rate limiting
+    return await dailyRateLimiter.run(async () => {
+      return await dailyCircuitBreaker.run(async () => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), LLAMA_REQUEST_TIMEOUT);
+        
+        try {
+          const res = await fetch(LLAMA_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'Phi-3-mini-4k-instruct-q4',
+              messages: [
+                { role: 'system', content: 'You extract structured information from chat conversations and return valid JSON.' },
+                { role: 'user', content: validatedPrompt }
+              ],
+              temperature: 0.3,
+              max_tokens: 300,
+              stop: ['\n\n']
+            }),
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeout);
+          
+          if (!res.ok) throw new Error('llama ' + res.status);
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content?.trim();
+          if (!content) throw new Error('empty llama response');
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          if (!jsonMatch) throw new Error('no json in response');
+          try {
+            return JSON.parse(jsonMatch[0]);
+          } catch {
+            throw new Error('invalid json in response');
+          }
+        } catch (error) {
+          clearTimeout(timeout);
+          if (error.name === 'AbortError') {
+            throw new Error(`Llama API timeout after ${LLAMA_REQUEST_TIMEOUT}ms`);
+          }
+          throw error;
+        }
+      });
     });
-  });
+  }
 }
 
-async function extractBatchDailyWithLlama(prompt) {
-  return await dailyRateLimiter.run(async () => {
-    return await dailyCircuitBreaker.run(async () => {
-      const res = await fetch(LLAMA_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'Phi-3-mini-4k-instruct-q4',
-          messages: [
-            { role: 'system', content: 'You extract structured information from chat conversations and return valid JSON with date keys.' },
-            { role: 'user', content: prompt }
-          ],
-          temperature: 0.3,
-          max_tokens: 600,
-          stop: ['\n\n']
-        })
-      });
-      if (!res.ok) throw new Error('llama ' + res.status);
-      const data = await res.json();
-      const content = data.choices?.[0]?.message?.content?.trim();
-      if (!content) throw new Error('empty llama response');
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('no json in response');
-      try {
-        return JSON.parse(jsonMatch[0]);
-      } catch {
-        throw new Error('invalid json in response');
+async function extractBatchDailyWithLlama(prompt, chatId = 'unknown', dates = []) {
+  // Use Gemini if enabled
+  if (USE_GEMINI) {
+    console.log(`Using Gemini for batch daily summary of ${chatId} (${dates.length} dates)`);
+    // Detect language from prompt
+    const language = detectLanguage(prompt);
+    console.log(`Detected language: ${language}`);
+    const response = await geminiBatchDailySummary(chatId, dates, prompt, language);
+    // Parse JSON response from Gemini with better error handling
+    console.log(`Gemini batch response (first 200 chars): ${response.substring(0, 200)}`);
+    
+    // Remove markdown code blocks if present
+    const cleanedResponse = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    try {
+      // Try to parse cleaned response as-is first
+      return JSON.parse(cleanedResponse);
+    } catch (e) {
+      // If that fails, try to extract the FIRST complete JSON object
+      // Match from first { to the matching closing brace
+      let braceCount = 0;
+      let startIndex = -1;
+      let endIndex = -1;
+      
+      for (let i = 0; i < cleanedResponse.length; i++) {
+        const char = cleanedResponse[i];
+        if (char === '{') {
+          if (braceCount === 0) {
+            startIndex = i;
+          }
+          braceCount++;
+        } else if (char === '}') {
+          braceCount--;
+          if (braceCount === 0 && startIndex !== -1) {
+            endIndex = i + 1;
+            break;
+          }
+        }
       }
+      
+      if (startIndex !== -1 && endIndex !== -1) {
+        const jsonStr = cleanedResponse.substring(startIndex, endIndex);
+        try {
+          return JSON.parse(jsonStr);
+        } catch (e2) {
+          console.error('Failed to parse extracted JSON:', e2.message);
+          console.error('Extracted JSON:', jsonStr);
+          throw new Error('invalid json in response');
+        }
+      }
+      
+      console.error('No valid JSON found in Gemini batch response');
+      throw new Error('no json in response');
+    }
+  }
+
+  // Validate and truncate context length before API call
+  const validatedPrompt = validateAndTruncateContext(prompt, chatId);
+  const contextStatus = getContextLengthStatus(prompt);
+  
+  if (!contextStatus.valid) {
+    console.error(`Context length validation failed: ${contextStatus.length} > ${contextStatus.limit}`);
+    throw new Error(`Context length ${contextStatus.length} exceeds maximum ${contextStatus.limit}`);
+  }
+  
+  // Try GPU queue first, fallback to direct API
+  try {
+    console.log(`Attempting GPU queue for batch daily summary of ${chatId} (${dates.length} dates)`);
+    const jobId = await submitBatchDailySummaryJob(chatId, dates, validatedPrompt, 'yomi_daily_batch');
+    const { result } = await waitForJob(jobId, 300000); // 5 minute timeout for batch summaries
+    console.log(`GPU queue completed batch daily summary for ${chatId}`);
+    return result;
+  } catch (queueError) {
+    console.log(`GPU queue failed for batch daily summary ${chatId}: ${queueError.message}, falling back to direct API`);
+    
+    // Fallback to direct API with rate limiting
+    return await dailyRateLimiter.run(async () => {
+      return await dailyCircuitBreaker.run(async () => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), LLAMA_REQUEST_TIMEOUT);
+        
+        try {
+          const res = await fetch(LLAMA_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'Phi-3-mini-4k-instruct-q4',
+              messages: [
+                { role: 'system', content: 'You extract structured information from chat conversations and return valid JSON with date keys.' },
+                { role: 'user', content: validatedPrompt }
+              ],
+              temperature: 0.3,
+              max_tokens: 600,
+              stop: ['\n\n']
+            }),
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeout);
+          
+          if (!res.ok) throw new Error('llama ' + res.status);
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content?.trim();
+          if (!content) throw new Error('empty llama response');
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          if (!jsonMatch) throw new Error('no json in response');
+          try {
+            return JSON.parse(jsonMatch[0]);
+          } catch {
+            throw new Error('invalid json in response');
+          }
+        } catch (error) {
+          clearTimeout(timeout);
+          if (error.name === 'AbortError') {
+            throw new Error(`Llama API timeout after ${LLAMA_REQUEST_TIMEOUT}ms`);
+          }
+          throw error;
+        }
+      });
     });
-  });
+  }
 }
 
 async function saveDailySummary(chatId, date, events, actions, topics, messageCount) {
+  // Store Thailand calendar date as 17:00 UTC (midnight Thailand time)
+  // date is Thailand calendar date (e.g., "2026-08-03")
+  // Thailand midnight = UTC 17:00 previous day
+  const [year, month, day] = date.split('-').map(Number);
+  // Create date as if it were UTC, then subtract 7 hours to get Thailand midnight in UTC
+  const utcDate = new Date(Date.UTC(year, month - 1, day, 17, 0, 0)); // 17:00 UTC = midnight Thailand
+  const dateWithTime = utcDate.toISOString();
+  
+  console.log(`saveDailySummary: chatId=${chatId}, date=${date}, dateWithTime=${dateWithTime}`);
+  console.log(`saveDailySummary: events=${events.length}, actions=${actions.length}, topics=${topics.length}, messageCount=${messageCount}`);
+
   await pool.query(`
     INSERT INTO daily_summaries (chat_id, date, events, actions, topics, message_count)
     VALUES ($1, $2, $3, $4, $5, $6)
@@ -684,12 +979,48 @@ async function saveDailySummary(chatId, date, events, actions, topics, messageCo
       topics = EXCLUDED.topics,
       message_count = EXCLUDED.message_count,
       updated_at = NOW()
-  `, [chatId, date, events, actions, topics, messageCount]);
+  `, [chatId, dateWithTime, events, actions, topics, messageCount]);
+  
+  console.log(`saveDailySummary: Saved successfully for ${dateWithTime}`);
 }
 
-async function generateDailySummaries(chatId, messages, name) {
+/**
+ * Prioritize dates for Gemini summarization based on mode
+ * @param {Array} datesArray - Array of [date, messages] tuples
+ * @param {string} mode - Priority mode: 'recent', 'high-activity', 'all'
+ * @param {number} limit - Maximum number of dates to process
+ * @returns {Array} - Prioritized dates array
+ */
+function prioritizeDates(datesArray, mode, limit) {
+  if (mode === 'all') {
+    return datesArray.sort((a, b) => a[0].localeCompare(b[0]));
+  }
+  
+  if (mode === 'recent') {
+    // Sort by date descending (most recent first)
+    return datesArray
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .slice(0, limit);
+  }
+  
+  if (mode === 'high-activity') {
+    // Sort by message count descending (most active first)
+    return datesArray
+      .sort((a, b) => b[1].length - a[1].length)
+      .slice(0, limit);
+  }
+  
+  // Default: chronological
+  return datesArray.sort((a, b) => a[0].localeCompare(b[0]));
+}
+
+async function generateDailySummaries(chatId, messages, name, targetDate = null) {
   const byDate = groupMessagesByDate(messages);
   console.log(`generateDailySummaries for ${chatId}: ${byDate.size} dates with messages`);
+  console.log(`Available dates: ${Array.from(byDate.keys()).join(', ')}`);
+  if (targetDate) {
+    console.log(`Target date requested: ${targetDate}`);
+  }
   let processed = 0;
   
   // Filter to only process dates within last 30 days
@@ -705,9 +1036,32 @@ async function generateDailySummaries(chatId, messages, name) {
   }
   
   console.log(`Filtered to ${filteredDates.size} dates within last 30 days (skipped ${byDate.size - filteredDates.size} older dates)`);
+  console.log(`Filtered dates: ${Array.from(filteredDates.keys()).join(', ')}`);
   
-  // Convert to array and sort by date
-  const datesArray = Array.from(filteredDates.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  // If targetDate specified, only process that date
+  if (targetDate) {
+    const targetKey = targetDate.split('T')[0]; // Extract date part if ISO string
+    const targetMessages = filteredDates.get(targetKey);
+    if (targetMessages) {
+      console.log(`Processing single date: ${targetKey} (${targetMessages.length} messages)`);
+      filteredDates.clear();
+      filteredDates.set(targetKey, targetMessages);
+    } else {
+      console.log(`Target date ${targetKey} not found in messages. Available dates: ${Array.from(filteredDates.keys()).join(', ')}`);
+      // Don't return - still process other dates if target not found
+      console.log(`Target date not found, processing all available dates instead`);
+    }
+  }
+  
+  // Apply Gemini-specific prioritization if enabled
+  let datesArray = Array.from(filteredDates.entries());
+  if (USE_GEMINI && GEMINI_PRIORITY_MODE !== 'all') {
+    datesArray = prioritizeDates(datesArray, GEMINI_PRIORITY_MODE, GEMINI_MAX_DATES);
+    console.log(`Gemini priority mode: ${GEMINI_PRIORITY_MODE}, processing ${datesArray.length} dates (limit: ${GEMINI_MAX_DATES})`);
+  } else {
+    // Sort by date chronologically
+    datesArray.sort((a, b) => a[0].localeCompare(b[0]));
+  }
   
   // Process in batches of 3-5 dates to reduce API calls
   const batchSize = 4;
@@ -917,7 +1271,7 @@ async function saveConversation(conv) {
 
 const isMain = process.argv[1] === new URL(import.meta.url).pathname;
 
-async function refreshSingle(chatId, forceRefresh = false) {
+async function refreshSingle(chatId, forceRefresh = false, targetDate = null) {
   const messages = mergeMessages(await loadMessages(chatId), await getChatMessages(chatId, 100));
   await saveMessages(chatId, messages);
   const conv = await loadConversation(chatId);
@@ -932,7 +1286,7 @@ async function refreshSingle(chatId, forceRefresh = false) {
     const result = categorize(conv);
     conv.category = result.category;
     conv.categorySource = result.source;
-    await generateDailySummaries(chatId, messages, conv.name);
+    await generateDailySummaries(chatId, messages, conv.name, targetDate);
     conv.isGroup = result.isGroup;
     await saveConversation(conv);
   }
@@ -1017,9 +1371,11 @@ async function main() {
   const singleChat = i !== -1 ? process.argv[i + 1] : null;
   const forceIdx = process.argv.indexOf('--force');
   const forceRefresh = forceIdx !== -1;
+  const dateIdx = process.argv.indexOf('--date');
+  const targetDate = dateIdx !== -1 ? process.argv[dateIdx + 1] : null;
   
   if (singleChat) {
-    await refreshSingle(singleChat, forceRefresh);
+    await refreshSingle(singleChat, forceRefresh, targetDate);
   } else {
     await exportAll();
   }

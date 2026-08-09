@@ -20,14 +20,22 @@ docs/
 ### Knowledge Base (`docs/kb/`)
 Comprehensive guides for systems and workflows:
 
+- **[caddyfile-syntax-errors.md](kb/caddyfile-syntax-errors.md)** - Caddyfile syntax error troubleshooting and fixes
 - **[dependency-management.md](kb/dependency-management.md)** - Dependency management system for improvements
+- **[gemini-api-limits.md](kb/gemini-api-limits.md)** - Gemini API free tier limits and model specifications
 - **[h3-pages.md](kb/h3-pages.md)** - chaba.h3 static pages deployment patterns
 - **[health-check.md](kb/health-check.md)** - Health check dashboard documentation
+- **[llm-container-configuration.md](kb/llm-container-configuration.md)** - LLM container configuration and deployment
 - **[mcp-tools.md](kb/mcp-tools.md)** - MCP server inventory and maintenance
 - **[overnight-assessment.md](kb/overnight-assessment.md)** - Automated overnight system assessment
+- **[playlive-authentication.md](kb/playlive-authentication.md)** - PlayLive basic authentication implementation
+- **[playlive-daily2-testing.md](kb/playlive-daily2-testing.md)** - PlayLive browser automation testing for daily2 interface
 - **[weaviate.md](kb/weaviate.md)** - Weaviate vector database and Chonkie chunking
 - **[weaviate-rest-api-fix.md](kb/weaviate-rest-api-fix.md)** - Weaviate REST API implementation details
+- **[yomi-daily-calendar-timezone.md](kb/yomi-daily-calendar-timezone.md)** - Thailand timezone handling in Yomi daily calendar
+- **[yomi-media-analysis-http500.md](kb/yomi-media-analysis-http500.md)** - Fixing HTTP 500 errors in daily2 media analysis (missing GEMINI_API_KEY)
 - **[yomi-summary-corruption.md](kb/yomi-summary-corruption.md)** - Yomi summary corruption prevention and detection
+- **[yomi-thai-language-default.md](kb/yomi-thai-language-default.md)** - Defaulting Yomi language detection to Thai instead of English
 - **[yomi.md](kb/yomi.md)** - Yomi LINE web app comprehensive documentation
 
 ### Architecture (`docs/architecture/`)
@@ -171,5 +179,5 @@ For new contributors:
 
 ---
 
-Last updated: 2026-08-04
+Last updated: 2026-08-08
 Documentation restructuring completed

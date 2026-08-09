@@ -51,6 +51,7 @@ just -f /home/tony/CascadeProjects/chaba/Justfile restart-web
 ## Related Documentation
 
 - **[yomi.md](yomi.md)** - Yomi LINE web app comprehensive documentation
+- **[yomi-media-analysis-http500.md](yomi-media-analysis-http500.md)** - Media analysis HTTP 500 error troubleshooting
 - **[auto-kb-creation.md](../../.windsurf/workflows/auto-kb-creation.md)** - Automated KB creation workflow
 
 ## Tags

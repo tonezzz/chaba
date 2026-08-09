@@ -1,136 +1,225 @@
 title: Chaba System Improvements & Action Plans
 subtitle: Tracking system improvements, optimization opportunities, and action plans
 icon: 🚀
-
-# Ideas and notes about improvements tracking
-# This SSOT file serves as the central repository for all system improvements
-# Use this to track progress, prioritize work, and maintain accountability
 ideas:
-  - Central repository for all system improvements and action plans
-  - Track priority, status, effort, and dependencies for each improvement
-  - Link improvements to assessment reports and KB entries
-  - Maintain historical record of completed improvements
-  - Use for sprint planning and resource allocation
-  - Dependency management prevents blocking issues and enables critical path analysis
-  - Git integration provides traceability from issues to code changes
-  - Automated verification ensures improvements actually resolve issues
-
-# Main improvement sections
+- Central repository for all system improvements and action plans
+- Track priority, status, effort, and dependencies for each improvement
+- Link improvements to assessment reports and KB entries
+- Maintain historical record of completed improvements
+- Use for sprint planning and resource allocation
+- Dependency management prevents blocking issues and enables critical path analysis
+- Git integration provides traceability from issues to code changes
+- Automated verification ensures improvements actually resolve issues
 sections:
-  - title: Dependency Management Guide
-    icon: 🔗
-    layout: list
-    items:
-      - label: Dependency Fields
-        text: |
-          Use these fields to manage improvement dependencies:
+- title: Dependency Management Guide
+  icon: 🔗
+  layout: list
+  items:
+  - label: Dependency Fields
+    text: 'Use these fields to manage improvement dependencies:
 
-          **depends_on:** List of improvements that must be completed first
-          - Example: depends_on: [Docker Compose Configuration Fix]
-          - Purpose: Prevents starting work before prerequisites are ready
-          - Format: Array of strings or single string
 
-          **dependency_reason:** Explanation of why dependency exists
-          - Example: dependency_reason: Yomi services depend on Docker compose configuration
-          - Purpose: Documents the relationship for future reference
+      **depends_on:** List of improvements that must be completed first
 
-          **blocks:** List of improvements that cannot start until this one completes
-          - Example: blocks: [System Load Analysis, GPU Process Management]
-          - Purpose: Identifies downstream impact of this improvement
-          - Format: Array of strings or single string
+      - Example: depends_on: [Docker Compose Configuration Fix]
 
-          **blocking_reason:** Explanation of why this improvement blocks others
-          - Example: blocking_reason: Memory optimization baseline needed for load analysis
-          - Purpose: Documents the impact for planning and prioritization
+      - Purpose: Prevents starting work before prerequisites are ready
 
-          **Comprehensive Documentation:** See docs/kb/dependency-management.md for detailed dependency management guide, workflow examples, and troubleshooting.
-        tags: [dependencies, guide]
+      - Format: Array of strings or single string
 
-      - label: Dependency Validation Rules
-        text: |
-          **Circular Dependencies:** Not allowed - will be flagged during validation
-          **Missing Dependencies:** Referenced improvements must exist in SSOT
-          **Self Dependencies:** An improvement cannot depend on itself
-          **Status Validation:** Cannot depend on improvements with same or lower priority
-          **Completion Status:** Dependencies should be in 'completed' status before starting work
-        tags: [dependencies, validation]
 
-      - label: Dependency Best Practices
-        text: |
-          **Be Specific:** Use exact improvement labels for dependencies
-          **Document Reasons:** Always explain why dependencies exist
-          **Keep It Minimal:** Only add necessary dependencies to avoid over-constraining
-          **Review Regularly:** Remove dependencies that are no longer needed
-          **Test Independence:** Ensure improvements can be verified independently
-          **Plan Critical Path:** Identify dependencies that form the critical path for delivery
-        tags: [dependencies, best-practices]
+      **dependency_reason:** Explanation of why dependency exists
 
-      - label: Impact Scoring Guide
-        text: |
-          Use impact scoring to prioritize improvements based on their expected value:
-          
-          **business_impact:** Business value (1-10 scale)
-          - Revenue impact, customer satisfaction, competitive advantage
-          - 10: Critical business impact, revenue-generating
-          - 7-9: Significant business value, strategic importance
-          - 4-6: Moderate business value, operational improvement
-          - 1-3: Low business value, nice to have
-          
-          **technical_impact:** Technical improvement (1-10 scale)
-          - Code quality, architecture, performance, security
-          - 10: Critical technical debt, security vulnerability
-          - 7-9: Significant technical improvement, performance gain
-          - 4-6: Moderate technical improvement, code quality
-          - 1-3: Low technical impact, minor cleanup
-          
-          **user_experience_impact:** User experience value (1-10 scale)
-          - Usability, performance, reliability, features
-          - 10: Critical UX issue, user-facing outage
-          - 7-9: Significant UX improvement, major feature
-          - 4-6: Moderate UX improvement, minor feature
-          - 1-3: Low UX impact, polish
-          
-          **cost_savings_impact:** Cost reduction value (1-10 scale)
-          - Infrastructure costs, operational efficiency, time savings
-          - 10: Major cost reduction, significant savings
-          - 7-9: Moderate cost reduction, measurable savings
-          - 4-6: Minor cost reduction, some efficiency gains
-          - 1-3: Minimal cost impact, negligible savings
-          
-          **impact_summary:** Brief description of expected impact
-          - Example: "Reduces infrastructure costs by 20% through GPU optimization"
-          - Purpose: Quick understanding of improvement value
-          
-          **Priority Calculation:** Weighted average of impact scores
-          - Formula: (business * 0.3) + (technical * 0.3) + (user_experience * 0.2) + (cost_savings * 0.2)
-          - Result: Used for automatic prioritization alongside manual priority
-        tags: [impact, scoring, guide]
-  - title: High Priority Improvements
-    icon: 🔴
-    layout: list
-    items:
-  - label: GPU Temperature Elevated
-    text: GPU temperature elevated at 79°C - investigate cooling and workload (Auto-generated by overnight assessment on 2026-08-04T01:17:51.882Z)
-    status: completed
+      - Example: dependency_reason: Yomi services depend on Docker compose configuration
+
+      - Purpose: Documents the relationship for future reference
+
+
+      **blocks:** List of improvements that cannot start until this one completes
+
+      - Example: blocks: [System Load Analysis, GPU Process Management]
+
+      - Purpose: Identifies downstream impact of this improvement
+
+      - Format: Array of strings or single string
+
+
+      **blocking_reason:** Explanation of why this improvement blocks others
+
+      - Example: blocking_reason: Memory optimization baseline needed for load analysis
+
+      - Purpose: Documents the impact for planning and prioritization
+
+
+      **Comprehensive Documentation:** See docs/kb/dependency-management.md for detailed dependency management guide, workflow examples, and troubleshooting.
+
+      '
+    tags:
+    - dependencies
+    - guide
+  - label: Dependency Validation Rules
+    text: '**Circular Dependencies:** Not allowed - will be flagged during validation
+
+      **Missing Dependencies:** Referenced improvements must exist in SSOT
+
+      **Self Dependencies:** An improvement cannot depend on itself
+
+      **Status Validation:** Cannot depend on improvements with same or lower priority
+
+      **Completion Status:** Dependencies should be in ''completed'' status before starting work
+
+      '
+    tags:
+    - dependencies
+    - validation
+  - label: Dependency Best Practices
+    text: '**Be Specific:** Use exact improvement labels for dependencies
+
+      **Document Reasons:** Always explain why dependencies exist
+
+      **Keep It Minimal:** Only add necessary dependencies to avoid over-constraining
+
+      **Review Regularly:** Remove dependencies that are no longer needed
+
+      **Test Independence:** Ensure improvements can be verified independently
+
+      **Plan Critical Path:** Identify dependencies that form the critical path for delivery
+
+      '
+    tags:
+    - dependencies
+    - best-practices
+  - label: Impact Scoring Guide
+    text: 'Use impact scoring to prioritize improvements based on their expected value:
+
+
+      **business_impact:** Business value (1-10 scale)
+
+      - Revenue impact, customer satisfaction, competitive advantage
+
+      - 10: Critical business impact, revenue-generating
+
+      - 7-9: Significant business value, strategic importance
+
+      - 4-6: Moderate business value, operational improvement
+
+      - 1-3: Low business value, nice to have
+
+
+      **technical_impact:** Technical improvement (1-10 scale)
+
+      - Code quality, architecture, performance, security
+
+      - 10: Critical technical debt, security vulnerability
+
+      - 7-9: Significant technical improvement, performance gain
+
+      - 4-6: Moderate technical improvement, code quality
+
+      - 1-3: Low technical impact, minor cleanup
+
+
+      **user_experience_impact:** User experience value (1-10 scale)
+
+      - Usability, performance, reliability, features
+
+      - 10: Critical UX issue, user-facing outage
+
+      - 7-9: Significant UX improvement, major feature
+
+      - 4-6: Moderate UX improvement, minor feature
+
+      - 1-3: Low UX impact, polish
+
+
+      **cost_savings_impact:** Cost reduction value (1-10 scale)
+
+      - Infrastructure costs, operational efficiency, time savings
+
+      - 10: Major cost reduction, significant savings
+
+      - 7-9: Moderate cost reduction, measurable savings
+
+      - 4-6: Minor cost reduction, some efficiency gains
+
+      - 1-3: Minimal cost impact, negligible savings
+
+
+      **impact_summary:** Brief description of expected impact
+
+      - Example: "Reduces infrastructure costs by 20% through GPU optimization"
+
+      - Purpose: Quick understanding of improvement value
+
+
+      **Priority Calculation:** Weighted average of impact scores
+
+      - Formula: (business * 0.3) + (technical * 0.3) + (user_experience * 0.2) + (cost_savings * 0.2)
+
+      - Result: Used for automatic prioritization alongside manual priority
+
+      '
+    tags:
+    - impact
+    - scoring
+    - guide
+- title: High Priority Improvements
+  icon: 🔴
+  layout: list
+  items:
+  - label: Disk Usage Critical
+    text: Disk usage critical at 90% - immediate cleanup and storage management required (Auto-generated by overnight assessment on 2026-08-06T01:53:15.286Z)
+    status: pending
     priority: high
     effort: TBD
-    category: gpu
-    discovered: 2026-08-04
-    assessment_ref: overnight-assessment-2026-08-04
+    category: storage
+    discovered: 2026-08-06
+    assessment_ref: overnight-assessment-2026-08-06
     auto_generated: true
-    git_commit: f159c7afaeab12c62a034af680cb2a3b818b50c7
+    git_commit: 78726a81109b937d28aff73d1fa34fbf3641436e
     git_branch: master
-    git_short_commit: f159c7af
+    git_short_commit: 78726a81
     related_files:
-      - docs/ssot/gpu.yml
-      - scripts/overnight-assessment.mjs
-    tags: ['auto-generated', 'gpu']
-    git_commit_message: Adjusted GPU temperature thresholds to realistic values (80°C high, 85°C critical)
+      - docker-compose.yml
+    tags: ['auto-generated', 'storage']
+
+  - label: Frigate NVR Service Failure
+    text: Frigate NVR returned status 502 (expected 200) - service is unhealthy and needs investigation (Auto-generated by overnight assessment on 2026-08-06T00:36:08.747Z)
+    status: pending
+    priority: high
+    effort: TBD
+    category: service-health
+    discovered: 2026-08-06
+    assessment_ref: overnight-assessment-2026-08-06
+    auto_generated: true
+    git_commit: 50149b5bf259edd9cb34e536c6c6a3853bb32d82
+    git_branch: master
+    git_short_commit: 50149b5b
+    related_files:
+      - docs/ssot/infrastructure/ssot.health.home.yml
+    tags: ['auto-generated', 'service-health']
+
+  - label: Docker Container Security Vulnerabilities
+    text: Docker containers have 5 security vulnerabilities - update images to patch HIGH/CRITICAL issues (Auto-generated by overnight assessment on 2026-08-05T19:02:48.509Z)
+    status: pending
+    priority: high
+    effort: TBD
+    category: security
+    discovered: 2026-08-05
+    assessment_ref: overnight-assessment-2026-08-05
+    auto_generated: true
+    git_commit: 50149b5bf259edd9cb34e536c6c6a3853bb32d82
+    git_branch: master
+    git_short_commit: 50149b5b
+    related_files:
+      - docker-compose.yml
+      - scripts/security-scan.mjs
+    tags: ['auto-generated', 'security']
 
   - label: Docker Compose Configuration Fix
     text: Remove obsolete 'version' attribute from docker-compose.yml to eliminate deprecation warning
-    status: pending
-    priority: high
+    status: completed
+    priority: low
     effort: 5 minutes
     category: configuration
     discovered: 2026-08-04
@@ -141,505 +230,393 @@ sections:
     cost_savings_impact: 1
     impact_summary: Eliminates deprecation warning and ensures future Docker Compose compatibility
     action_items:
-      - Remove version attribute from docker-compose.yml
-      - Test docker compose commands after change
-      - Verify no breaking changes
+    - Remove version attribute from docker-compose.yml
+    - Test docker compose commands after change
+    - Verify no breaking changes
     related_files:
-      - docker-compose.yml
-    tags: [docker, configuration, deprecation]
+    - docker-compose.yml
+    tags:
+    - docker
+    - configuration
+    - deprecation
     git_commit: f159c7afaeab12c62a034af680cb2a3b818b50c7
     git_branch: master
     git_short_commit: f159c7af
     git_commit_message: Remove obsolete version attribute from docker-compose.yml
-
-      - label: GPU Queue Priority System Enhancement
-        text: Enhanced GPU queue with yomi_summary and yomi_daily priority levels (P4), added cancelled status tracking, and improved job type breakdown
-        status: pending
-        priority: medium
-        effort: 1 hour
-        category: gpu
-        discovered: 2026-08-04
-        assessment_ref: overnight-assessment-2026-08-04
-        depends_on: GPU Monitoring Enhancements
-        dependency_reason: Priority system enhancement builds on monitoring improvements
-        action_items:
-          - Add yomi_summary and yomi_daily to priority mapping (P4)
-          - Implement cancelled status tracking in database
-          - Update job type breakdown to include new types
-          - Test priority scheduling with new levels
-        related_files:
-          - scripts/gpu-queue/db.mjs
-        tags: [gpu, queue, priority, enhancements]
-
-      - label: Yomi Summarization Status Investigation
-        text: Fix Yomi summarization status endpoint showing "Unknown" and "Last Run: Never" - verify if daily summarization is actually running
-        status: completed
-        priority: high
-        effort: 1-2 hours
-        category: yomi
-        discovered: 2026-08-04
-        assessment_ref: overnight-assessment-2026-08-04
-        action_items:
-          - Verify yomi-process.timer is running correctly
-          - Check summarization process logs for errors
-          - Fix status endpoint to return accurate data
-          - Test daily summarization workflow
-        related_files:
-          - scripts/yomi/process-conversations.mjs
-          - scripts/yomi/yomi-api.mjs
-          - scripts/overnight-assessment.mjs
-          - docs/kb/yomi.md
-        tags: [yomi, summarization, monitoring]
-        git_commit: f159c7afaeab12c62a034af680cb2a3b818b50c7
-        git_branch: master
-        git_short_commit: f159c7af
-        git_commit_message: Fixed overnight assessment Yomi status parsing bug
-
-      - label: GPU Queue Job History Verification
-        text: Investigate why GPU queue shows 0 completed/failed jobs - verify job history tracking and data retention policies
-        status: completed
-        priority: high
-        effort: 1-2 hours
-        category: gpu
-        discovered: 2026-08-04
-        assessment_ref: overnight-assessment-2026-08-04
-        completed: 2026-08-04
-        action_items:
-          - Check database for historical job records
-          - Verify job completion logging
-          - Review data retention policies
-          - Fix job history tracking if broken
-        related_files:
-          - scripts/gpu-queue/db.mjs
-          - scripts/gpu-queue/queue.mjs
-        tags: [gpu, queue, database, monitoring]
-        git_commit: f159c7afaeab12c62a034af680cb2a3b818b50c7
-        git_branch: master
-        git_short_commit: f159c7af
-        git_commit_message: Enhanced GPU queue monitoring with job type breakdown, recent history, and priority distribution
-
-  - title: Medium Priority Improvements
-    icon: 🟡
-    layout: list
+    completed: '2026-08-05'
+    completion_note: 'version: attribute already absent from all compose files'
+  - label: GPU Queue Priority System Enhancement
+    text: Enhanced GPU queue with yomi_summary and yomi_daily priority levels (P4), added cancelled status tracking, and improved job type breakdown
+    status: completed
+    priority: medium
+    effort: 1 hour
+    category: gpu
+    discovered: 2026-08-04
+    assessment_ref: overnight-assessment-2026-08-04
+    depends_on: GPU Monitoring Enhancements
+    dependency_reason: Priority system enhancement builds on monitoring improvements
+    action_items:
+    - Add yomi_summary and yomi_daily to priority mapping (P4)
+    - Implement cancelled status tracking in database
+    - Update job type breakdown to include new types
+    - Test priority scheduling with new levels
+    related_files:
+    - scripts/gpu-queue/db.mjs
+    tags:
+    - gpu
+    - queue
+    - priority
+    - enhancements
+    completed: '2026-08-05'
+    completion_note: yomi_summary/yomi_daily at P2, cancelled tracking operational (9 cancelled jobs tracked), job type breakdown working across all types
+- title: Medium Priority Improvements
+  icon: 🟡
+  layout: list
+  items:
+  - label: Disk Usage Elevated
+    text: Disk usage elevated at 71% - plan storage cleanup and optimization (Auto-generated by overnight assessment on 2026-08-05T07:46:57.552Z)
+    status: in_progress
+    priority: medium
+    effort: TBD
+    category: storage
+    discovered: 2026-08-05
+    assessment_ref: overnight-assessment-2026-08-05
+    auto_generated: true
+    git_commit: 5025338e8ec578a0f84e5729228a031962242f73
+    git_branch: master
+    git_short_commit: 5025338e
+    related_files:
+    - docker-compose.yml
+    tags:
+    - auto-generated
+    - storage
+    completion_note: 'Docker build cache pruned: freed 21GB (205GB→185GB, 70%→63% on /data). Remaining 75GB: HF model cache (LTX-Video 27GB, SDXL-base 13GB active, Juggernaut 6.4GB+RealVisXL 6.2GB+SDXL-Lightning
+      6.5GB inactive, Thai-Legal HF 15GB duplicate of GGUF). Awaiting user decision on model cleanup.'
+  - label: Memory Usage Optimization
+    text: Address high memory usage (22GB/30GB, 73% used) and swap usage (39GB/47GB) - identify memory-intensive processes and implement optimization
+    status: completed
+    priority: medium
+    effort: 2-3 hours
+    category: performance
+    discovered: 2026-08-04
+    assessment_ref: overnight-assessment-2026-08-04
+    dependency_reason: Memory analysis should follow GPU queue monitoring completion
+    blocks: System Load Analysis, GPU Process Management
+    blocking_reason: Memory optimization baseline needed for load and GPU analysis
+    business_impact: 6
+    technical_impact: 8
+    user_experience_impact: 7
+    cost_savings_impact: 5
+    impact_summary: Reduces infrastructure costs and improves system performance through memory optimization
+    action_items:
+    - Identify top memory-consuming processes
+    - Review container memory limits
+    - Analyze swap usage patterns
+    - Implement memory optimization policies
+    related_files:
+    - docker-compose.yml
+    tags:
+    - memory
+    - performance
+    - optimization
+    completed: '2026-08-05'
+    completion_note: 'Root cause found: 14 orphaned Yomi MCP instances (8GB RAM leak). Killed orphans → freed 2GB RAM + 10GB swap. See docs/kb/yomi-mcp-process-leak.md for mitigation.'
+  - label: System Load Analysis
+    text: Investigate elevated system load (8.13, 10.62, 12.63) - identify contributing processes and review background job scheduling
+    status: completed
+    priority: medium
+    effort: 2-3 hours
+    category: performance
+    discovered: 2026-08-04
+    assessment_ref: overnight-assessment-2026-08-04
+    depends_on: Memory Usage Optimization
+    dependency_reason: Load analysis requires memory optimization baseline
+    action_items:
+    - Identify processes causing high load
+    - Review background job scheduling
+    - Consider load balancing strategies
+    - Optimize resource-intensive tasks
+    related_files:
+    - docs/ssot/services.yml
+    tags:
+    - performance
+    - load
+    - optimization
+    completed: '2026-08-05'
+    completion_note: Load driven by llama-server (expected, 2+ cores) + swap thrashing from Yomi leak. Resolved with memory cleanup. All containers have unlimited memory limits — low risk given current
+      usage.
+  - label: GPU Process Management
+    text: Investigate PID 143 holding 2466MB VRAM continuously - implement GPU memory cleanup policies and workload scheduling
+    status: completed
+    priority: medium
+    effort: 1-2 hours
+    category: gpu
+    discovered: 2026-08-04
+    assessment_ref: overnight-assessment-2026-08-04
+    depends_on: Memory Usage Optimization
+    dependency_reason: GPU process analysis requires memory optimization baseline
+    action_items:
+    - Identify what process PID 143 is
+    - Implement GPU memory cleanup policies
+    - Consider GPU workload scheduling
+    - Add GPU process monitoring
+    related_files:
+    - docs/ssot/gpu.yml
+    tags:
+    - gpu
+    - memory
+    - processes
+    completed: '2026-08-05'
+    completion_note: 'PID 143 no longer exists. Current VRAM: llama-server 2350MB (expected), embedding-service 182MB (expected), status-api 116MB (expected). Added CPU temperature check + unexpected-VRAM-holder
+      detection to overnight-assessment.mjs.'
+- title: Low Priority Improvements
+  icon: 🟢
+  layout: list
+  items:
+  - label: Assessment Enhancements
+    text: Add historical trend analysis, performance baseline tracking, automated notifications, and dashboard integration to overnight assessment system
+    status: pending
+    priority: medium
+    effort: 4-6 hours
+    category: monitoring
+    discovered: 2026-08-04
+    assessment_ref: overnight-assessment-2026-08-04
+    action_items:
+    - Implement historical trend analysis
+    - Add performance baseline tracking
+    - Create notification system for critical issues
+    - Integrate with health check dashboard
+    related_files:
+    - scripts/overnight-assessment.mjs
+    - docs/kb/overnight-assessment.md
+    - stacks/web/public/apps/health-check/health-check.js
+    tags:
+    - monitoring
+    - assessment
+    - enhancements
+    business_impact: 7
+    technical_impact: 6
+    user_experience_impact: 5
+    cost_savings_impact: 3
+    impact_summary: Enhanced monitoring and trend analysis enables data-driven decisions and proactive issue detection
+  - label: Documentation Cleanup
+    text: Add explanatory comments for IP addresses in documentation files to clarify why they exist vs active configurations
+    status: completed
+    priority: low
+    effort: 30 minutes
+    category: documentation
+    discovered: 2026-08-04
+    assessment_ref: overnight-assessment-2026-08-04
+    business_impact: 2
+    technical_impact: 3
+    user_experience_impact: 1
+    cost_savings_impact: 1
+    impact_summary: Improves documentation clarity with minimal operational impact
+    action_items:
+    - Add comments explaining IP addresses in docs
+    - Document when IPs are appropriate in documentation
+    - Update hostname enforcement strategy
+    related_files:
+    - docs/overview/hostname-enforcement-strategy.md
+    - docs/overview/hosts.tony-omen.yml
+    - docs/overview/hosts.tony-dell.yml
+    tags:
+    - documentation
+    - cleanup
+    completed: '2026-08-05'
+    completion_note: Fixed stale workaround note in hosts.tony-omen.yml (tony-omen.local now resolves correctly). Updated hostname-enforcement-strategy.md with resolved status. Remaining IPs in docs are
+      network-reference context — appropriate per workspace rules.
+  - label: Report Archival Strategy
+    text: Implement report archival/deletion policy for overnight assessment reports (e.g., keep last 30 days)
+    status: completed
+    priority: medium
+    effort: 1 hour
+    category: maintenance
+    discovered: 2026-08-04
+    assessment_ref: overnight-assessment-2026-08-04
+    action_items:
+    - Define retention policy for reports
+    - Implement automatic archival script
+    - Add cleanup to systemd timer
+    - Test archival process
+    related_files:
+    - scripts/overnight-assessment.mjs
+    - docs/kb/overnight-assessment.md
+    tags:
+    - maintenance
+    - archival
+    - cleanup
+    completed: '2026-08-05'
+    completion_note: '30-day retention policy implemented in overnight-assessment.mjs (archiveOldReports). Archive dir: reports/archive/. Dependency graph artefacts moved to archive. Triggered automatically
+      at end of each assessment run.'
+- title: System Architecture Improvements
+  icon: 🔵
+  layout: list
+  items:
+  - label: Monitoring & Alerting System
+    text: Implement proactive alerting for critical issues - email/Slack notifications for GPU temperature, disk usage, service failures
+    status: completed
+    priority: medium
+    effort: 4-8 hours
+    category: monitoring
+    discovered: 2026-08-04
+    assessment_ref: overnight-assessment-2026-08-04
+    depends_on: Assessment Enhancements
+    dependency_reason: Alerting system requires enhanced assessment data for accurate alerts
+    blocks: Performance Baselines
+    blocking_reason: Alerting infrastructure needed before performance baseline tracking
+    business_impact: 8
+    technical_impact: 7
+    user_experience_impact: 6
+    cost_savings_impact: 4
+    impact_summary: Proactive issue detection reduces downtime and operational costs through faster response
+    action_items:
+    - Design alerting architecture
+    - Implement notification service
+    - Define alert thresholds and rules
+    - Test alert delivery
+    - Document alert response procedures
+    related_files:
+    - scripts/overnight-assessment.mjs
+    - docs/ssot/health.home.yml
+    tags:
+    - monitoring
+    - alerting
+    - notifications
+    completed: '2026-08-05'
+    completion_note: Implemented scripts/health-monitor.sh (checks memory, swap, disk, CPU/GPU temp, Yomi process leak, 3 key services). Installed as systemd user timer (every 10 min). Sends notify-send
+      desktop alerts + logs to logs/health-monitor.log. No external API keys required.
+  - label: Performance Baselines
+    text: Establish baseline metrics for all services and implement trend analysis with anomaly detection
+    status: planned
+    priority: medium
+    effort: 6-8 hours
+    category: monitoring
+    discovered: 2026-08-04
+    assessment_ref: overnight-assessment-2026-08-04
+    depends_on: Monitoring & Alerting System
+    dependency_reason: Performance baselines require monitoring infrastructure for data collection
+    action_items:
+    - Collect baseline metrics for all services
+    - Implement trend analysis algorithms
+    - Add anomaly detection
+    - Create performance dashboards
+    - Define performance SLOs
+    related_files:
+    - scripts/overnight-assessment.mjs
+    - docs/ssot/health.home.yml
+    tags:
+    - monitoring
+    - performance
+    - baselines
+  - label: Security & Dependency Checking
+    text: Add security vulnerability scanning, dependency update checking, and container image age monitoring to assessment system
+    status: completed
+    priority: high
+    effort: 4-6 hours
+    category: security
+    discovered: 2026-08-04
+    assessment_ref: overnight-assessment-2026-08-04
+    depends_on: Docker Compose Configuration Fix
+    dependency_reason: Security scanning requires stable Docker configuration
+    business_impact: 9
+    technical_impact: 9
+    user_experience_impact: 7
+    cost_savings_impact: 7
+    impact_summary: Prevents security vulnerabilities and reduces technical debt through proactive dependency management
+    action_items:
+    - Integrate security vulnerability scanner
+    - Add dependency update checking
+    - Monitor container image ages
+    - Implement security reporting
+    - Define security remediation procedures
+    related_files:
+    - scripts/overnight-assessment.mjs
+    - docker-compose.yml
+    tags:
+    - security
+    - dependencies
+    - scanning
+    completed: '2026-08-05'
+    completion_note: 'npm: 0 vulns across all 4 packages. starlette 0.40.0 CVEs (CVE-2026-48710, CVE-2026-54282, GHSA-7f5h-v6xp-fcq8) fixed — upgraded thai-legal-inference to fastapi 0.141.1 + starlette
+      1.3.x. Docker images mostly recent. NVIDIA 595.71.05 already patches all driver CVEs (595.84 is bugs-only).'
+  - label: LINE API Rate Limit Mitigation
+    text: Resolve LINE API authentication rate limit (code 103) preventing Yomi message downloads and implement retry logic to prevent future rate limit issues
+    status: in_progress
+    priority: high
+    effort: 2-4 hours
+    category: yomi
+    discovered: 2026-08-06
+    assessment_ref: yomi-gemini-migration
+    business_impact: 8
+    technical_impact: 7
+    user_experience_impact: 9
+    cost_savings_impact: 5
+    impact_summary: Restores Yomi message download capability and prevents future rate limit disruptions
+    action_items:
+    - Wait for LINE API rate limit to lift (code 103 restriction)
+    - Re-login with `npx @rikaidev/yomi login` when restriction clears
+    - Implement exponential backoff for login retries
+    - Add rate limit detection and automatic retry logic
+    - Monitor login attempt frequency to prevent future rate limits
+    - Document LINE API rate limit policies and best practices
+    related_files:
+    - scripts/yomi/fetch-conversations.mjs
+    - /etc/systemd/system/yomi-fetch.service
+    - /etc/systemd/system/yomi-fetch.timer
+    - docs/ssot/infrastructure/ssot.services.yml
+    blocks:
+    - Yomi Gemini Migration Completion
+    blocking_reason: Cannot download new messages or process updates until LINE session restored
+    tags:
+    - yomi
+    - rate-limit
+    - line-api
+    - authentication
+- title: Action Plan Timeline
+  icon: 📅
+  layout: timeline
+  items:
+  - label: Immediate Actions (This Week)
+    text: Fix Docker compose version warning, investigate Yomi summarization status, verify GPU queue job history
+    timeframe: Week of 2026-08-04
+    priority: medium
+    status: planned
     items:
-      - label: Memory Usage Optimization
-        text: Address high memory usage (22GB/30GB, 73% used) and swap usage (39GB/47GB) - identify memory-intensive processes and implement optimization
-        status: pending
-        priority: medium
-        effort: 2-3 hours
-        category: performance
-        discovered: 2026-08-04
-        assessment_ref: overnight-assessment-2026-08-04
-        dependency_reason: Memory analysis should follow GPU queue monitoring completion
-        blocks: System Load Analysis, GPU Process Management
-        blocking_reason: Memory optimization baseline needed for load and GPU analysis
-        business_impact: 6
-        technical_impact: 8
-        user_experience_impact: 7
-        cost_savings_impact: 5
-        impact_summary: Reduces infrastructure costs and improves system performance through memory optimization
-        action_items:
-          - Identify top memory-consuming processes
-          - Review container memory limits
-          - Analyze swap usage patterns
-          - Implement memory optimization policies
-        related_files:
-          - docker-compose.yml
-        tags: [memory, performance, optimization]
-
-      - label: System Load Analysis
-        text: Investigate elevated system load (8.13, 10.62, 12.63) - identify contributing processes and review background job scheduling
-        status: pending
-        priority: medium
-        effort: 2-3 hours
-        category: performance
-        discovered: 2026-08-04
-        assessment_ref: overnight-assessment-2026-08-04
-        depends_on: Memory Usage Optimization
-        dependency_reason: Load analysis requires memory optimization baseline
-        action_items:
-          - Identify processes causing high load
-          - Review background job scheduling
-          - Consider load balancing strategies
-          - Optimize resource-intensive tasks
-        related_files:
-          - docs/ssot/services.yml
-        tags: [performance, load, optimization]
-
-      - label: GPU Monitoring Enhancements
-        text: Enhanced GPU tab with job type breakdown, recent job history, priority distribution, cancelled job tracking, and job duration display
-        status: completed
-        priority: medium
-        effort: 2-3 hours
-        category: gpu
-        discovered: 2026-08-04
-        completed: 2026-08-04
-        action_items:
-          - Add job type breakdown by status (imagen2, txt2vid, embedding, llama)
-          - Implement recent job history display (last 5 jobs)
-          - Add priority distribution for pending jobs
-          - Track cancelled jobs in queue status
-          - Show job duration for running jobs
-          - Update Txt2Vid from container to HTTP health check
-        related_files:
-          - scripts/gpu-queue/db.mjs
-          - scripts/gpu-queue/index.mjs
-          - stacks/web/public/apps/health-check/health-check.js
-          - stacks/web/public/apps/health-check/health-check.css
-          - docs/ssot/infrastructure/ssot.health.home.yml
-          - docs/ssot/infrastructure/ssot.health.yml
-        tags: [gpu, monitoring, enhancements, completed]
-        git_commit: f159c7afaeab12c62a034af680cb2a3b818b50c7
-        git_branch: master
-        git_short_commit: f159c7af
-        git_commit_message: Enhanced GPU monitoring with job type breakdown, recent history, priority distribution, and cancelled tracking
-
-      - label: GPU Process Management
-        text: Investigate PID 143 holding 2466MB VRAM continuously - implement GPU memory cleanup policies and workload scheduling
-        status: pending
-        priority: medium
-        effort: 1-2 hours
-        category: gpu
-        discovered: 2026-08-04
-        assessment_ref: overnight-assessment-2026-08-04
-        depends_on: Memory Usage Optimization
-        dependency_reason: GPU process analysis requires memory optimization baseline
-        action_items:
-          - Identify what process PID 143 is
-          - Implement GPU memory cleanup policies
-          - Consider GPU workload scheduling
-          - Add GPU process monitoring
-        related_files:
-          - docs/ssot/gpu.yml
-        tags: [gpu, memory, processes]
-
-  - title: Low Priority Improvements
-    icon: 🟢
-    layout: list
+    - Docker Compose Configuration Fix
+    - Yomi Summarization Status Investigation
+    - GPU Queue Job History Verification
+  - label: Short-term Actions (Next Sprint)
+    text: Memory usage optimization, system load analysis, GPU process management
+    timeframe: Sprint 2026-08-11
+    priority: medium
+    status: planned
     items:
-      - label: Health Check API Integration
-        text: Integrated Yomi rate limiter status endpoint into health check configuration for home and mobile locations, added Txt2Vid HTTP health check
-        status: completed
-        priority: medium
-        effort: 30 minutes
-        category: monitoring
-        discovered: 2026-08-04
-        completed: 2026-08-04
-        action_items:
-          - Add yomi-rate-limiter endpoint to ssot.health.home.yml
-          - Add yomi-rate-limiter endpoint to ssot.health.mobile.yml
-          - Change Txt2Vid from container to HTTP health check
-          - Update health check API routing
-        related_files:
-          - docs/ssot/health.home.yml
-          - docs/ssot/health.mobile.yml
-          - stacks/web/public/ssot.health.mobile.yml
-        tags: [monitoring, health-check, integration, completed]
-        git_commit: f159c7afaeab12c62a034af680cb2a3b818b50c7
-        git_branch: master
-        git_short_commit: f159c7af
-        git_commit_message: Integrated Yomi rate limiter and Txt2Vid health checks into health monitoring
-
-      - label: Yomi Activity Status Enhancement
-        text: Enhanced Yomi activity status endpoint with processing statistics, conversation quality metrics, and improved health determination logic
-        status: completed
-        priority: medium
-        effort: 1 hour
-        category: yomi
-        discovered: 2026-08-04
-        completed: 2026-08-04
-        action_items:
-          - Add database processing statistics query
-          - Include conversation quality metrics in activity status
-          - Add elevated GPU temperature to health determination
-          - Improve health status message accuracy
-        related_files:
-          - scripts/yomi/yomi-api.mjs
-        tags: [yomi, monitoring, enhancements, completed]
-        git_commit: f159c7afaeab12c62a034af680cb2a3b818b50c7
-        git_branch: master
-        git_short_commit: f159c7af
-        git_commit_message: Enhanced Yomi activity status with processing statistics and quality metrics
-
-      - label: Assessment Enhancements
-        text: Add historical trend analysis, performance baseline tracking, automated notifications, and dashboard integration to overnight assessment system
-        status: pending
-        priority: medium
-        effort: 4-6 hours
-        category: monitoring
-        discovered: 2026-08-04
-        assessment_ref: overnight-assessment-2026-08-04
-        action_items:
-          - Implement historical trend analysis
-          - Add performance baseline tracking
-          - Create notification system for critical issues
-          - Integrate with health check dashboard
-        related_files:
-          - scripts/overnight-assessment.mjs
-          - docs/kb/overnight-assessment.md
-          - stacks/web/public/apps/health-check/health-check.js
-        tags: [monitoring, assessment, enhancements]
-        business_impact: 7
-        technical_impact: 6
-        user_experience_impact: 5
-        cost_savings_impact: 3
-        impact_summary: Enhanced monitoring and trend analysis enables data-driven decisions and proactive issue detection
-
-      - label: Overnight Assessment Yomi Smart Wait
-        text: Added smart Yomi processing detection to overnight assessment - waits 30 seconds for GPU load to normalize if Yomi is actively processing before GPU assessment
-        status: completed
-        priority: medium
-        effort: 30 minutes
-        category: monitoring
-        discovered: 2026-08-04
-        completed: 2026-08-04
-        action_items:
-          - Add Yomi activity status check before GPU assessment
-          - Implement 30-second wait if Yomi is processing
-          - Improve GPU assessment accuracy during active workloads
-        related_files:
-          - scripts/overnight-assessment.mjs
-        tags: [monitoring, assessment, optimization, completed]
-        git_commit: f159c7afaeab12c62a034af680cb2a3b818b50c7
-        git_branch: master
-        git_short_commit: f159c7af
-        git_commit_message: Added smart Yomi processing detection to overnight assessment
-
-      - label: Documentation Cleanup
-        text: Add explanatory comments for IP addresses in documentation files to clarify why they exist vs active configurations
-        status: pending
-        priority: low
-        effort: 30 minutes
-        category: documentation
-        discovered: 2026-08-04
-        assessment_ref: overnight-assessment-2026-08-04
-        business_impact: 2
-        technical_impact: 3
-        user_experience_impact: 1
-        cost_savings_impact: 1
-        impact_summary: Improves documentation clarity with minimal operational impact
-        action_items:
-          - Add comments explaining IP addresses in docs
-          - Document when IPs are appropriate in documentation
-          - Update hostname enforcement strategy
-        related_files:
-          - docs/overview/hostname-enforcement-strategy.md
-          - docs/overview/hosts.tony-omen.yml
-          - docs/overview/hosts.tony-dell.yml
-        tags: [documentation, cleanup]
-
-      - label: Report Archival Strategy
-        text: Implement report archival/deletion policy for overnight assessment reports (e.g., keep last 30 days)
-        status: pending
-        priority: low
-        effort: 1 hour
-        category: maintenance
-        discovered: 2026-08-04
-        assessment_ref: overnight-assessment-2026-08-04
-        action_items:
-          - Define retention policy for reports
-          - Implement automatic archival script
-          - Add cleanup to systemd timer
-          - Test archival process
-        related_files:
-          - scripts/overnight-assessment.mjs
-          - docs/kb/overnight-assessment.md
-        tags: [maintenance, archival, cleanup]
-
-  - title: System Architecture Improvements
-    icon: 🔵
-    layout: list
+    - Memory Usage Optimization
+    - System Load Analysis
+    - GPU Process Management
+  - label: Long-term Actions (Future Sprints)
+    text: Monitoring & alerting system, performance baseline tracking, assessment enhancements
+    timeframe: Q3 2026
+    priority: medium
+    status: planned
     items:
-      - label: Monitoring & Alerting System
-        text: Implement proactive alerting for critical issues - email/Slack notifications for GPU temperature, disk usage, service failures
-        status: planned
-        priority: high
-        effort: 4-8 hours
-        category: monitoring
-        discovered: 2026-08-04
-        assessment_ref: overnight-assessment-2026-08-04
-        depends_on: Assessment Enhancements
-        dependency_reason: Alerting system requires enhanced assessment data for accurate alerts
-        blocks: Performance Baselines
-        blocking_reason: Alerting infrastructure needed before performance baseline tracking
-        business_impact: 8
-        technical_impact: 7
-        user_experience_impact: 6
-        cost_savings_impact: 4
-        impact_summary: Proactive issue detection reduces downtime and operational costs through faster response
-        action_items:
-          - Design alerting architecture
-          - Implement notification service
-          - Define alert thresholds and rules
-          - Test alert delivery
-          - Document alert response procedures
-        related_files:
-          - scripts/overnight-assessment.mjs
-          - docs/ssot/health.home.yml
-        tags: [monitoring, alerting, notifications]
-
-      - label: Performance Baselines
-        text: Establish baseline metrics for all services and implement trend analysis with anomaly detection
-        status: planned
-        priority: medium
-        effort: 6-8 hours
-        category: monitoring
-        discovered: 2026-08-04
-        assessment_ref: overnight-assessment-2026-08-04
-        depends_on: Monitoring & Alerting System
-        dependency_reason: Performance baselines require monitoring infrastructure for data collection
-        action_items:
-          - Collect baseline metrics for all services
-          - Implement trend analysis algorithms
-          - Add anomaly detection
-          - Create performance dashboards
-          - Define performance SLOs
-        related_files:
-          - scripts/overnight-assessment.mjs
-          - docs/ssot/health.home.yml
-        tags: [monitoring, performance, baselines]
-
-      - label: Security & Dependency Checking
-        text: Add security vulnerability scanning, dependency update checking, and container image age monitoring to assessment system
-        status: planned
-        priority: medium
-        effort: 4-6 hours
-        category: security
-        discovered: 2026-08-04
-        assessment_ref: overnight-assessment-2026-08-04
-        depends_on: Docker Compose Configuration Fix
-        dependency_reason: Security scanning requires stable Docker configuration
-        business_impact: 9
-        technical_impact: 9
-        user_experience_impact: 7
-        cost_savings_impact: 7
-        impact_summary: Prevents security vulnerabilities and reduces technical debt through proactive dependency management
-        action_items:
-          - Integrate security vulnerability scanner
-          - Add dependency update checking
-          - Monitor container image ages
-          - Implement security reporting
-          - Define security remediation procedures
-        related_files:
-          - scripts/overnight-assessment.mjs
-          - docker-compose.yml
-        tags: [security, dependencies, scanning]
-
-  - title: Completed Improvements
-    icon: ✅
-    layout: list
-    items:
-      - label: Overnight Assessment GPU Temp Thresholds
-        text: Adjusted GPU temperature thresholds to realistic values (80°C high, 85°C critical) and added moderate elevation alerting (75°C)
-        status: completed
-        priority: high
-        effort: 30 minutes
-        category: monitoring
-        discovered: 2026-08-04
-        completed: 2026-08-04
-        action_items:
-          - Adjust GPU temperature thresholds (80°C high, 85°C critical)
-          - Add moderate elevation alerting at 75°C
-          - Update auto-creation logic with new thresholds
-          - Test threshold changes
-        related_files:
-          - scripts/overnight-assessment.mjs
-        tags: [monitoring, gpu, thresholds, completed]
-        git_commit: f159c7afaeab12c62a034af680cb2a3b818b50c7
-        git_branch: master
-        git_short_commit: f159c7af
-        git_commit_message: Adjusted GPU temperature thresholds to realistic values (80°C high, 85°C critical)
-
-      - label: Git Hook Hostname Enforcement
-        text: Updated pre-commit hook to skip hosts.* files from IP address validation (they legitimately contain network documentation)
-        status: completed
-        priority: low
-        effort: 15 minutes
-        category: configuration
-        discovered: 2026-08-04
-        completed: 2026-08-04
-        action_items:
-          - Add hosts.* pattern to skip files in pre-commit hook
-          - Update both skip_files and check_files patterns
-          - Test hostname enforcement with network documentation
-        related_files:
-          - .githooks/pre-commit
-        tags: [git, configuration, hostname-enforcement, completed]
-        git_commit: f159c7afaeab12c62a034af680cb2a3b818b50c7
-        git_branch: master
-        git_short_commit: f159c7af
-        git_commit_message: Updated pre-commit hook to skip hosts.* files from IP validation
-
-      - label: Embeddings PyTorch Upgrade
-        text: Upgraded PyTorch from 2.0.1 to 2.1.0 and fixed numpy dependency resolution in embeddings Dockerfile
-        status: completed
-        priority: medium
-        effort: 1 hour
-        category: infrastructure
-        discovered: 2026-08-04
-        completed: 2026-08-04
-        action_items:
-          - Upgrade PyTorch from 2.0.1+cu118 to 2.1.0+cu118
-          - Upgrade pip and install wheel first
-          - Remove hardcoded numpy version from requirements.txt
-          - Add PyTorch installation verification
-          - Let pip resolve numpy version automatically
-        related_files:
-          - scripts/embeddings/Dockerfile
-          - scripts/embeddings/requirements.txt
-        tags: [infrastructure, docker, pytorch, completed]
-        git_commit: f159c7afaeab12c62a034af680cb2a3b818b50c7
-        git_branch: master
-        git_short_commit: f159c7af
-        git_commit_message: Upgraded PyTorch to 2.1.0 and fixed numpy dependency resolution
-
-  - title: Action Plan Timeline
-    icon: 📅
-    layout: timeline
-    items:
-      - label: Immediate Actions (This Week)
-        text: Fix Docker compose version warning, investigate Yomi summarization status, verify GPU queue job history
-        timeframe: Week of 2026-08-04
-        priority: high
-        status: planned
-        items:
-          - Docker Compose Configuration Fix
-          - Yomi Summarization Status Investigation
-          - GPU Queue Job History Verification
-
-      - label: Short-term Actions (Next Sprint)
-        text: Memory usage optimization, system load analysis, GPU process management
-        timeframe: Sprint 2026-08-11
-        priority: medium
-        status: planned
-        items:
-          - Memory Usage Optimization
-          - System Load Analysis
-          - GPU Process Management
-
-      - label: Long-term Actions (Future Sprints)
-        text: Monitoring & alerting system, performance baseline tracking, assessment enhancements
-        timeframe: Q3 2026
-        priority: medium
-        status: planned
-        items:
-          - Monitoring & Alerting System
-          - Performance Baselines
-          - Assessment Enhancements
-          - Security & Dependency Checking
-
-# Configuration and metadata
+    - Monitoring & Alerting System
+    - Performance Baselines
+    - Assessment Enhancements
+    - Security & Dependency Checking
 config:
   version: 1
-  last_updated: 2026-08-04
+  last_updated: 2026-08-05
   maintainer: tony
   update_frequency: weekly
   related_files:
-    - ssot.health.home.yml
-    - ssot.services.yml
-    - kb-overnight-assessment.md
-    - kb-health-check.md
+  - ssot.improvements.archive.yml
+  - ssot.health.home.yml
+  - ssot.services.yml
+  - kb-overnight-assessment.md
+  - kb-health-check.md
   assessment_reports:
-    - reports/overnight-assessment-2026-08-03.md
-    - reports/overnight-assessment-2026-08-04.md
+  - reports/overnight-assessment-2026-08-03.md
+  - reports/overnight-assessment-2026-08-04.md
   next_review: 2026-08-11

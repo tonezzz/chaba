@@ -8,6 +8,9 @@ const PORT = parseInt(process.env.YOMI_API_PORT || '3000', 10);
 const HOST = process.env.YOMI_API_HOST || '0.0.0.0';
 const SCRIPT_DIR = '/home/tony/CascadeProjects/chaba/scripts/yomi';
 const MEDIA_DIR = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/media';
+const WEAVIATE_SEARCH_URL = process.env.WEAVIATE_SEARCH_URL || 'http://localhost:3002';
+const WEAVIATE_URL = process.env.WEAVIATE_URL || 'http://localhost:8082';
+const EMBEDDING_URL = process.env.EMBEDDING_SERVICE_URL || 'http://localhost:5000';
 
 const EXT_TO_MIME = {
   jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif',
@@ -47,12 +50,12 @@ function serveCached(chatId, messageId, res) {
   return true;
 }
 
-function spawnNode(script, args) {
+function spawnNode(script, args, options = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn('/usr/bin/node', [script, ...args], {
       cwd: SCRIPT_DIR,
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: process.env,
+      env: options.env || process.env,
     });
     let out = '';
     let err = '';
@@ -158,13 +161,42 @@ async function handleSendMessage(req, res) {
 async function handleDailySummaries(url, res) {
   const chatId = url.searchParams.get('chat');
   if (!chatId) return sendJson(res, 400, { ok: false, error: 'chat parameter required' });
-  const { rows } = await pool.query(`
-    SELECT date, events, actions, topics, message_count, updated_at
+  
+  const startDate = url.searchParams.get('startDate');
+  const endDate = url.searchParams.get('endDate');
+  
+  let query = `
+    SELECT date::text, events, actions, topics, message_count, updated_at
     FROM daily_summaries
     WHERE chat_id = $1
-    ORDER BY date DESC
-  `, [chatId]);
-  sendJson(res, 200, { chatId, summaries: rows });
+  `;
+  let params = [chatId];
+  let paramIndex = 2;
+  
+  if (startDate) {
+    query += ` AND date >= $${paramIndex}`;
+    params.push(startDate);
+    paramIndex++;
+  }
+  
+  if (endDate) {
+    query += ` AND date <= $${paramIndex}`;
+    params.push(endDate);
+    paramIndex++;
+  }
+  
+  query += ` ORDER BY date DESC`;
+  
+  const { rows } = await pool.query(query, params);
+  
+  // Database stores Thailand calendar dates as DATE type (YYYY-MM-DD)
+  // No conversion needed - return date as-is
+  const summaries = rows.map(r => ({
+    ...r,
+    date: r.date // Return Thailand calendar date as-is
+  }));
+  
+  sendJson(res, 200, { chatId, summaries });
 }
 
 async function handleResummarize(req, res) {
@@ -177,16 +209,22 @@ async function handleResummarize(req, res) {
     return sendJson(res, 400, { ok: false, error: 'invalid JSON' });
   }
   
-  const { chatIds, forceAll } = data;
+  const { chatIds, forceAll, targetDate } = data;
   
   try {
-    // Trigger re-summarization by calling update-conversations
-    const { code, out, err } = await spawnNode(`${SCRIPT_DIR}/update-conversations.mjs`, 
-      chatIds ? chatIds.map(id => ['--chat', id]).flat() : (forceAll ? [] : ['--recent'])
-    );
+    // Trigger re-summarization by calling update-conversations with Gemini enabled
+    const env = { ...process.env, USE_GEMINI: '1' };
+    const args = chatIds ? chatIds.map(id => ['--chat', id]).flat() : (forceAll ? [] : ['--recent']);
+    
+    // Add target date if specified
+    if (targetDate) {
+      args.push('--date', targetDate);
+    }
+    
+    const { code, out, err } = await spawnNode(`${SCRIPT_DIR}/update-conversations.mjs`, args, { env });
     
     if (code === 0) {
-      sendJson(res, 200, { ok: true, message: 'Re-summarization initiated' });
+      sendJson(res, 200, { ok: true, message: 'Re-summarization initiated with Gemini' });
     } else {
       sendJson(res, 500, { ok: false, error: err.trim() || 're-summarization failed' });
     }
@@ -497,14 +535,47 @@ async function handleRateLimiterStatus(res) {
 async function handleMessages(chatId, url, res) {
   const before = url.searchParams.get('before');
   const limit = Math.min(parseInt(url.searchParams.get('limit') || '10000', 10), 10000);
-  const { rows } = await pool.query(`
-    SELECT data FROM messages
+  const startDate = url.searchParams.get('startDate');
+  const endDate = url.searchParams.get('endDate');
+  
+  let query = `
+    SELECT data, media_analysis FROM messages
     WHERE chat_id = $1
       AND ($2::bigint IS NULL OR delivered_time < $2)
+  `;
+  let params = [chatId, before ? parseInt(before, 10) : null];
+  let paramIndex = 3;
+  
+  if (startDate) {
+    query += ` AND delivered_time >= $${paramIndex}`;
+    params.push(startDate);
+    paramIndex++;
+  }
+  
+  if (endDate) {
+    query += ` AND delivered_time <= $${paramIndex}`;
+    params.push(endDate);
+    paramIndex++;
+  }
+  
+  query += `
     ORDER BY delivered_time DESC
-    LIMIT $3
-  `, [chatId, before ? parseInt(before, 10) : null, limit]);
-  sendJson(res, 200, { generatedAt: new Date().toISOString(), messages: rows.map(r => r.data) });
+    LIMIT $${paramIndex}
+  `;
+  params.push(limit);
+  
+  const { rows } = await pool.query(query, params);
+  
+  // Merge media_analysis into data objects
+  const messages = rows.map(r => {
+    const data = r.data;
+    if (r.media_analysis && !data.mediaAnalysis) {
+      data.mediaAnalysis = r.media_analysis;
+    }
+    return data;
+  });
+  
+  sendJson(res, 200, { generatedAt: new Date().toISOString(), messages });
 }
 
 async function handleMedia(chatId, messageId, res) {
@@ -541,6 +612,154 @@ async function handleMedia(chatId, messageId, res) {
     'Cache-Control': 'public, max-age=31536000, immutable',
   });
   createReadStream(filePath).pipe(res);
+}
+
+async function handleMediaAnalysis(req, res) {
+  const body = await new Promise(resolve => {
+    let data = '';
+    req.on('data', chunk => data += chunk);
+    req.on('end', () => resolve(data));
+  });
+  
+  let params;
+  try {
+    params = JSON.parse(body);
+  } catch {
+    return sendJson(res, 400, { ok: false, error: 'invalid JSON body' });
+  }
+  
+  const { chatId, messageId, mediaType } = params;
+  if (!chatId || !messageId || !mediaType) {
+    return sendJson(res, 400, { ok: false, error: 'chatId, messageId, and mediaType required' });
+  }
+  
+  // Check if message exists and has media
+  const { rows } = await pool.query(
+    'SELECT media_type, media_path FROM messages WHERE message_id = $1 AND chat_id = $2',
+    [messageId, chatId]
+  );
+  
+  if (rows.length === 0) {
+    return sendJson(res, 404, { ok: false, error: 'message not found' });
+  }
+  
+  if (!rows[0].media_type || !rows[0].media_path) {
+    return sendJson(res, 400, { ok: false, error: 'message has no media' });
+  }
+  
+  // Create job record
+  const { rows: jobRows } = await pool.query(
+    `INSERT INTO media_analysis_jobs (chat_id, message_id, media_type, status)
+     VALUES ($1, $2, $3, 'pending')
+     RETURNING id`,
+    [chatId, messageId, mediaType]
+  );
+  
+  const jobId = jobRows[0].id;
+  
+  // Trigger background analysis
+  spawnNode(`${SCRIPT_DIR}/analyze-media.mjs`, [String(jobId)], { 
+    env: { ...process.env, JOB_ID: String(jobId) } 
+  }).catch(err => {
+    console.error(`Media analysis job ${jobId} failed to start:`, err);
+  });
+  
+  sendJson(res, 200, { ok: true, jobId, status: 'pending' });
+}
+
+async function handleMediaAnalysisStatus(jobId, res) {
+  const { rows } = await pool.query(
+    'SELECT * FROM media_analysis_jobs WHERE id = $1',
+    [parseInt(jobId, 10)]
+  );
+  
+  if (rows.length === 0) {
+    return sendJson(res, 404, { ok: false, error: 'job not found' });
+  }
+  
+  const job = rows[0];
+  
+  // If job failed, return error response
+  if (job.status === 'failed') {
+    return sendJson(res, 500, { 
+      ok: false, 
+      error: job.error_message || 'Analysis failed',
+      job: {
+        id: job.id,
+        status: job.status,
+        errorMessage: job.error_message
+      }
+    });
+  }
+  
+  sendJson(res, 200, {
+    ok: true,
+    job: {
+      id: job.id,
+      chatId: job.chat_id,
+      messageId: job.message_id,
+      mediaType: job.media_type,
+      status: job.status,
+      analysisResult: job.analysis_result,
+      modelUsed: job.model_used,
+      startedAt: job.started_at,
+      completedAt: job.completed_at,
+      errorMessage: job.error_message,
+      tokensUsed: job.tokens_used,
+      costUsd: job.cost_usd,
+      createdAt: job.created_at,
+      updatedAt: job.updated_at
+    }
+  });
+}
+
+async function handleMediaAnalysisJobs(url, res) {
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || '50', 10), 200);
+  const status = url.searchParams.get('status');
+  const chatId = url.searchParams.get('chat');
+  
+  let query = 'SELECT * FROM media_analysis_jobs';
+  const params = [];
+  const conditions = [];
+  
+  if (status) {
+    conditions.push('status = $' + (params.length + 1));
+    params.push(status);
+  }
+  
+  if (chatId) {
+    conditions.push('chat_id = $' + (params.length + 1));
+    params.push(chatId);
+  }
+  
+  if (conditions.length > 0) {
+    query += ' WHERE ' + conditions.join(' AND ');
+  }
+  
+  query += ' ORDER BY created_at DESC LIMIT $' + (params.length + 1);
+  params.push(limit);
+  
+  const { rows } = await pool.query(query, params);
+  
+  sendJson(res, 200, {
+    ok: true,
+    jobs: rows.map(job => ({
+      id: job.id,
+      chatId: job.chat_id,
+      messageId: job.message_id,
+      mediaType: job.media_type,
+      status: job.status,
+      analysisResult: job.analysis_result,
+      modelUsed: job.model_used,
+      startedAt: job.started_at,
+      completedAt: job.completed_at,
+      errorMessage: job.error_message,
+      tokensUsed: job.tokens_used,
+      costUsd: job.cost_usd,
+      createdAt: job.created_at,
+      updatedAt: job.updated_at
+    }))
+  });
 }
 
 const server = createServer(async (req, res) => {
@@ -690,6 +909,101 @@ const server = createServer(async (req, res) => {
       await handleMessages(chatId, url, res);
     } catch (err) {
       sendJson(res, 500, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  if (url.pathname === '/api/yomi/media/analyze' && req.method === 'POST') {
+    try {
+      await handleMediaAnalysis(req, res);
+    } catch (err) {
+      sendJson(res, 500, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  if (url.pathname === '/api/yomi/media/analyze/status' && req.method === 'GET') {
+    const jobId = url.searchParams.get('job');
+    if (!jobId) return sendJson(res, 400, { error: 'job parameter required' });
+    try {
+      await handleMediaAnalysisStatus(jobId, res);
+    } catch (err) {
+      sendJson(res, 500, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  if (url.pathname === '/api/yomi/media/analyze/jobs' && req.method === 'GET') {
+    try {
+      await handleMediaAnalysisJobs(url, res);
+    } catch (err) {
+      sendJson(res, 500, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  if (url.pathname === '/api/yomi/search' && req.method === 'GET') {
+    try {
+      const q = url.searchParams.get('q') || '';
+      const limit = Math.min(parseInt(url.searchParams.get('limit') || '20', 10), 50);
+      const chatId = url.searchParams.get('chat') || '';
+      if (!q.trim()) { sendJson(res, 400, { error: 'q is required' }); return; }
+
+      // Embed the query
+      const embedRes = await fetch(`${EMBEDDING_URL}/embed-single`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: q }),
+      });
+      if (!embedRes.ok) throw new Error(`embedding service ${embedRes.status}`);
+      const { embedding } = await embedRes.json();
+
+      // Build optional where filter
+      const whereClause = chatId
+        ? `where:{path:["chatId"] operator:Equal valueText:${JSON.stringify(chatId)}}`
+        : '';
+
+      const gql = `{
+        Get {
+          YomiMessage(
+            hybrid: {
+              query: ${JSON.stringify(q)}
+              vector: ${JSON.stringify(embedding)}
+              alpha: 0.5
+            }
+            limit: ${limit}
+            ${whereClause}
+          ) {
+            messageId chatId chatName fromName text deliveredTime isGroup
+            _additional { score }
+          }
+        }
+      }`;
+
+      const wvRes = await fetch(`${WEAVIATE_URL}/v1/graphql`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: gql }),
+      });
+      if (!wvRes.ok) throw new Error(`Weaviate ${wvRes.status}`);
+      const wvData = await wvRes.json();
+      if (wvData.errors) throw new Error(wvData.errors.map(e => e.message).join('; '));
+
+      const raw = wvData.data?.Get?.YomiMessage || [];
+      const results = raw.map(r => ({
+        messageId:     r.messageId,
+        chatId:        r.chatId,
+        chatName:      r.chatName,
+        fromName:      r.fromName,
+        text:          r.text,
+        deliveredTime: r.deliveredTime,
+        isGroup:       r.isGroup,
+        similarity:    parseFloat(parseFloat(r._additional?.score || 0).toFixed(4)),
+      }));
+
+      sendJson(res, 200, { results, total: results.length });
+    } catch (e) {
+      sendJson(res, 500, { error: e.message });
     }
     return;
   }

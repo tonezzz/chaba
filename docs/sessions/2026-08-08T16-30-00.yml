@@ -1,0 +1,70 @@
+title: Fixed Daily2 Media Analysis HTTP 500 and Implemented Thai Language Defaults
+date: 2026-08-08
+timestamp: 2026-08-08T16:30:00.000Z
+summary: 'Fixed daily2 media analysis HTTP 500 errors by adding missing GEMINI_API_KEY to the yomi-api systemd service override. Updated Yomi language detection across four files to default to Thai instead of English, reflecting the majority-Thai content in the system. Verified fixes by testing the daily2 interface via PlayLive MCP server using both Chrome remote debugging and headless Playwright modes. Created three new KB entries and updated docs/INDEX.md.'
+project: chaba-yomi
+project_root: /home/tony/CascadeProjects/chaba-yomi
+project_type: chaba-yomi
+sections:
+  - title: Details
+    icon: 📝
+    layout: list
+    items:
+      - label: Summary
+        text: 'Fixed daily2 media analysis HTTP 500 errors by adding missing GEMINI_API_KEY to the yomi-api systemd service override. Updated Yomi language detection across four files to default to Thai instead of English, reflecting the majority-Thai content in the system. Verified fixes by testing the daily2 interface via PlayLive MCP server using both Chrome remote debugging and headless Playwright modes.'
+      - label: Project
+        text: 'chaba-yomi'
+      - label: Date
+        text: '2026-08-08'
+      - label: Project Root
+        text: '/home/tony/CascadeProjects/chaba-yomi'
+  - title: Problems Fixed
+    icon: 🐛
+    layout: list
+    items:
+      - label: Media Analysis HTTP 500
+        text: 'daily2 media analysis was failing with HTTP 500 because GEMINI_API_KEY was missing from the yomi-api systemd service, even though it existed for yomi-process. Root cause: the override was never replicated when media analysis was added to yomi-api.'
+      - label: English Language Default
+        text: 'Language detection defaulted unknown/empty content to English, causing suboptimal AI processing for the majority-Thai LINE conversations in the system.'
+  - title: Changes Made
+    icon: 🔧
+    layout: list
+    items:
+      - label: Systemd Override Created
+        text: 'Created /etc/systemd/system/yomi-api.service.d/override.conf with GEMINI_API_KEY (matching yomi-process.service.d/override.conf), then ran systemctl daemon-reload and restarted yomi-api.service'
+      - label: Language Detection Updated
+        text: 'Changed default language from "english" to "thai" for empty/unknown text in scripts/yomi/analyze-media.mjs, scripts/yomi/language-detection.mjs, scripts/yomi/update-conversations.mjs, and scripts/yomi/process-conversations.mjs (Thai character ratio thresholds >60%/5-60%/<5% unchanged)'
+      - label: Testing Tooling
+        text: 'Installed Playwright browsers (npx playwright install chrome chrome-headless-shell) to enable headless testing via the playlive.tony-dell MCP server, in addition to Chrome remote debugging (port 9222) testing'
+  - title: Verification
+    icon: ✅
+    layout: list
+    items:
+      - label: Chrome Remote Debugging Test
+        text: 'Attached Playwright to Chrome via remote debugging port 9222 against http://tony-omen.local:8080/apps/yomi/daily2/index.html - page load, chat selection (70 conversations), calendar, message loading, and media analysis all verified working with no HTTP 500'
+      - label: Headless Playwright Test
+        text: 'Repeated the same verification in headless mode (no GUI) via PlayLive MCP server, including screenshot capture, confirming identical results and faster execution suitable for CI/automation'
+      - label: yomi-api Service
+        text: 'Restarted successfully after override.conf change; media_analysis_jobs no longer fail with "GEMINI_API_KEY environment variable not set"'
+  - title: Documentation Created
+    icon: 📚
+    layout: list
+    items:
+      - label: yomi-media-analysis-http500.md
+        text: 'docs/kb/yomi-media-analysis-http500.md - root cause, systemd override pattern, diagnosis/fix commands, prevention guidance'
+      - label: yomi-thai-language-default.md
+        text: 'docs/kb/yomi-thai-language-default.md - rationale, files modified, code change patterns, impact, rollback plan'
+      - label: playlive-daily2-testing.md
+        text: 'docs/kb/playlive-daily2-testing.md - PlayLive MCP server testing approaches (Chrome remote debugging vs headless Playwright) for daily2 interface'
+      - label: INDEX.md
+        text: 'docs/INDEX.md updated with links to the three new KB entries under Knowledge Base section'
+  - title: Next Steps
+    icon: ➡️
+    layout: list
+    items:
+      - label: Monitor English Content
+        text: 'Watch for extraction quality degradation on the minority of pure-English conversations now defaulting to Thai prompts'
+      - label: Retry Failed Jobs
+        text: 'Consider manually retrying any media_analysis_jobs that failed prior to the GEMINI_API_KEY fix'
+      - label: Document Override Inventory
+        text: 'Maintain a list of which systemd services have .service.d/override.conf files and what sensitive variables they contain, to prevent recurrence'
