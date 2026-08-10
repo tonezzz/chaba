@@ -1,13 +1,13 @@
 title: Chaba Health Check Configuration (Home)
 description: Health check endpoints for local/home network access
-version: 1
+version: 2
 
 services:
   # Web Stack Services (8080/8081)
   - id: caddy
     name: Caddy
     type: http
-    url: http://tony-omen.local:8080/apps/
+    url: http://192.168.1.52:8080/apps/
     expected_status: 200
     timeout: 5
     category: web
@@ -15,7 +15,7 @@ services:
   - id: bserver
     name: BServer
     type: http
-    url: http://tony-omen.local:8080/
+    url: http://192.168.1.52:8080/
     expected_status: 200
     timeout: 5
     category: web
@@ -23,7 +23,7 @@ services:
   - id: status-api
     name: Status API
     type: http
-    url: http://tony-omen.local:8080/api/health
+    url: http://192.168.1.52:8080/api/health
     expected_status: 200
     timeout: 5
     category: api
@@ -31,7 +31,7 @@ services:
   - id: yomi-api
     name: Yomi API
     type: http
-    url: http://tony-omen.local:8080/api/yomi/health
+    url: http://192.168.1.52:8080/api/yomi/health
     expected_status: 200
     timeout: 5
     category: api
@@ -39,7 +39,7 @@ services:
   - id: yomi-summarization
     name: Yomi Summarization
     type: http
-    url: http://tony-omen.local:8080/api/yomi/summarization-status
+    url: http://192.168.1.52:8080/api/yomi/summarization-status
     expected_status: 200
     timeout: 5
     category: api
@@ -47,7 +47,7 @@ services:
   - id: yomi-rate-limiter
     name: Yomi Rate Limiter
     type: http
-    url: http://tony-omen.local:8080/api/yomi/rate-limiter-status
+    url: http://192.168.1.52:8080/api/yomi/rate-limiter-status
     expected_status: 200
     timeout: 5
     category: api
@@ -89,44 +89,44 @@ services:
   - id: weaviate
     name: Weaviate
     type: http
-    url: http://tony-omen.local:8080/api/weaviate/v1/nodes
+    url: http://192.168.1.52:8080/api/weaviate/v1/nodes
     expected_status: 200
     timeout: 5
     category: datastore
 
-  # GPU Services
+  # GPU Services (All offline due to GTX 1650 4GB VRAM constraints)
   - id: thai-legal
     name: Llama Router (Phi-3 only)
     type: http
-    url: http://tony-omen.local:8001/health
+    url: http://192.168.1.52:8001/health
     expected_status: 200
     timeout: 10
     category: gpu
-    note: Thai legal model offline (2026-08-06) due to GPU memory constraints
+    note: Offline (2026-08-09) - GTX 1650 4GB cannot run multiple GPU services concurrently. Use mcp1_hold_llama and run one GPU workload at a time.
 
   - id: imagen2
     name: Imagen2
     type: http
-    url: http://tony-omen.local:8000/health
+    url: http://192.168.1.52:8000/health
     expected_status: 200
     timeout: 10
     category: gpu
-    note: Offline (2026-08-06) due to GPU memory constraints
+    note: Offline (2026-08-09) - GPU memory constraints. Start manually when needed: docker compose -f stacks/gpu/docker-compose.yml up imagen2-inference
 
   - id: txt2vid
     name: Txt2Vid
     type: http
-    url: http://tony-omen.local:8002/health
+    url: http://192.168.1.52:8002/health
     expected_status: 200
     timeout: 10
     category: gpu
-    note: Offline (2026-08-06) due to GPU memory constraints
+    note: Offline (2026-08-09) - GPU memory constraints. Start manually when needed: docker compose -f stacks/gpu/docker-compose.yml up txt2vid-inference
 
   # Queue Services
   - id: gpu-queue
     name: GPU Queue
     type: http
-    url: http://tony-omen.local:3001/health
+    url: http://192.168.1.52:3001/health
     expected_status: 200
     timeout: 5
     category: queue
@@ -139,20 +139,20 @@ services:
     expected_state: running
     timeout: 5
     category: optional
+    note: Container not running - start with: docker compose -f stacks/activepieces/docker-compose.yml up -d
 
   - id: frigate
     name: Frigate NVR
     type: http
-    url: http://tony-omen.local:8080/frigate/api/version
+    url: http://192.168.1.52:8080/frigate/api/version
     expected_status: 200
     timeout: 10
     category: optional
-    note: Offline (2026-08-06) due to 502 errors - needs investigation
 
   - id: camera-control
     name: Camera Control
     type: http
-    url: http://tony-omen.local:8090/
+    url: http://192.168.1.52:8090/
     expected_status: 200
     timeout: 5
     category: optional
@@ -170,7 +170,7 @@ recovery_actions:
     - Restart GPU service
 
   gpu_vram_high:
-    - Check Netdata GPU dashboard: http://tony-omen.local:8080/apps/netdata/
+    - Check Netdata GPU dashboard: http://192.168.1.52:8080/apps/netdata/
     - Identify processes using GPU memory
     - Hold llama if needed: mcp1_hold_llama
     - Check for stuck jobs in GPU queue
@@ -184,13 +184,14 @@ recovery_actions:
 # Testing and debugging guidance
 debugging_guidance:
   web_testing:
-    - Use direct hostname URLs (e.g., http://tony-dell.local:8080/apps/health-check/)
+    - Use direct IP URLs (e.g., http://192.168.1.52:8080/apps/health-check/) for reliability
+    - Hostname tony-omen.local resolves to 192.168.1.52 (fixed in /etc/hosts)
     - Avoid browser preview for local testing - use regular browser instead
     - Browser preview is only for isolated environments or when direct access unavailable
     - Test in multiple browsers for compatibility issues
 
   location_testing:
-    - At Home: Use tony-dell.local for direct local network access
+    - At Home: Use 192.168.1.52 or tony-omen.local for direct local network access
     - On Mobile: Use localhost if testing on the same machine
     - External: Use VPN or external domain when away from home network
 
@@ -199,3 +200,10 @@ debugging_guidance:
     - Check service logs: docker compose logs <service>
     - Verify port accessibility: netstat -tlnp | grep <port>
     - Test API endpoints with proper HTTP methods
+
+  network_troubleshooting:
+    - Check current IPs: ip addr show
+    - Check routing: ip route show
+    - Renew DHCP: sudo dhclient -r eno1 && sudo dhclient eno1
+    - Verify hostname: nslookup tony-omen.local
+    - Check /etc/hosts if hostname resolution fails

@@ -258,6 +258,45 @@ The raceman project's Playwright installation is independent of the PlayLive dae
 - **No direct dependency**: Changes to one don't affect the other
 - **Resource isolation**: Separate browser caches and configurations
 
+## Operational Considerations
+
+### Session Management
+
+PlayLive requires proper session management for effective testing:
+- Sessions persist across operations and must be explicitly cleaned up
+- Multiple AI agents can share sessions, requiring coordination
+- Session state must be managed to prevent conflicts
+- Use session IDs to track and manage individual sessions
+
+### Playwright Reinstallation
+
+After system updates or PlayLive daemon updates, Playwright may need reinstallation:
+```bash
+# Reinstall Playwright browsers
+npx playwright install
+
+# Or reinstall with dependencies
+npx playwright install --with-deps
+```
+
+**Symptoms**:
+- PlayLive fails to start browser sessions
+- CDP connection errors
+- Browser crashes on session creation
+
+**Causes**:
+- System updates affecting Playwright binaries
+- Playwright version mismatches
+- Missing browser dependencies after system updates
+
+### Testing Effectiveness
+
+PlayLive is effective for testing web applications when:
+- Proper session management is implemented
+- Sessions are cleaned up after testing
+- Playwright binaries are up-to-date
+- Network connectivity to target applications is verified
+
 ## Related Documentation
 
 - `docs/kb/playlive-authentication.md` - PlayLive authentication implementation

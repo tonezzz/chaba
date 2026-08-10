@@ -212,10 +212,15 @@ The MCP docs server automatically:
 ## Troubleshooting
 
 ### MCP docs server not responding
+**IMPORTANT: Always suggest fixing MCP docs server issues before falling back to traditional tools**
+
 - Check MCP config: `/home/tony/.config/devin/mcp_config.json`
 - Verify docs path is correct: `/home/tony/CascadeProjects/chaba/docs`
 - Restart Devin Desktop to reload MCP configuration
 - Check index exists: `.docs-mcp/documents.json`
+- Test MCP server: `mcp_list_tools docs` to verify connectivity
+- Reinstall docs MCP: `npx -y @devista/docs-mcp --docs /home/tony/CascadeProjects/chaba/docs`
+- **Do not silently fall back to grep/read without suggesting MCP fix first**
 
 ### ssot-search not finding expected results
 - Verify search term matches YAML content exactly
@@ -229,6 +234,16 @@ The MCP docs server automatically:
 - Use broader terms
 - Try the other search method (SSOT vs MCP)
 - Verify documentation files exist in expected locations
+
+### Assistant workflow guidelines
+**When performing documentation searches:**
+1. **First choice**: Use MCP docs server (`mcp_call_tool docs search_docs`) for broad searches
+2. **Second choice**: Use ssot-search skill for SSOT YAML pattern matching
+3. **Fallback**: Only use traditional tools (grep, read, find) after:
+   - Attempting MCP docs server and identifying the specific issue
+   - Suggesting the fix to the user
+   - Getting user confirmation to proceed with fallback
+4. **Never silently fall back** without explaining the MCP issue and proposed fix
 
 ## Related Documentation
 

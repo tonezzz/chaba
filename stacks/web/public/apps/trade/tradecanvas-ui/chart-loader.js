@@ -81,7 +81,9 @@ class ChartLoader {
 
         // Force dimensions
         chartContainer.style.width = '100%';
-        chartContainer.style.height = '500px';
+        if (!chartContainer.style.height || chartContainer.style.height === '0px') {
+            chartContainer.style.height = '400px';
+        }
 
         if (typeof LightweightCharts === 'undefined') {
             console.error('LightweightCharts library not loaded');
@@ -158,7 +160,7 @@ class ChartLoader {
             
             const csvFile = symbolFiles[this.config.symbol];
             if (csvFile) {
-                const csvUrl = `http://tony-omen.local:8080/apps/trade/data/imported/${csvFile}`;
+                const csvUrl = `../data/imported/${csvFile}`;
                 console.log('Fetching CSV from:', csvUrl);
                 
                 const response = await fetch(csvUrl);

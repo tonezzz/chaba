@@ -1,101 +1,118 @@
 title: Chaba Health Check Configuration (Mobile)
 description: Health check endpoints for external/mobile access (VPN or external domain)
-version: 1
+version: 2
+
+# Network Configuration
+network:
+  current_wifi: TONY-IP (mobile network)
+  access_method: current IP or DDNS hostname
+  placeholder: [CURRENT-IP] - replace with actual IP when running health checks
+  home_alternative: Use ssot.health.home.yml when on home network
 
 services:
   # Web Stack Services (External access only)
   - id: caddy
     name: Caddy (External)
     type: http
-    url: http://tony-omen.local:8080/apps/
+    url: http://[CURRENT-IP]:8080/apps/
     expected_status: 200
     timeout: 10
     category: web
+    note: Replace [CURRENT-IP] with actual IP or DDNS hostname
 
   - id: status-api
     name: Status API (External)
     type: http
-    url: http://tony-omen.local:8080/api/health
+    url: http://[CURRENT-IP]:8080/api/health
     expected_status: 200
     timeout: 10
     category: api
+    note: Replace [CURRENT-IP] with actual IP or DDNS hostname
 
   - id: yomi-api
     name: Yomi API (External)
     type: http
-    url: http://tony-omen.local:8080/api/yomi/health
+    url: http://[CURRENT-IP]:8080/api/yomi/health
     expected_status: 200
     timeout: 10
     category: api
+    note: Replace [CURRENT-IP] with actual IP or DDNS hostname
 
   - id: yomi-summarization
     name: Yomi Summarization (External)
     type: http
-    url: http://tony-omen.local:8080/api/yomi/summarization-status
+    url: http://[CURRENT-IP]:8080/api/yomi/summarization-status
     expected_status: 200
     timeout: 10
     category: api
+    note: Replace [CURRENT-IP] with actual IP or DDNS hostname
 
   - id: yomi-rate-limiter
     name: Yomi Rate Limiter (External)
     type: http
-    url: http://tony-omen.local:8080/api/yomi/rate-limiter-status
+    url: http://[CURRENT-IP]:8080/api/yomi/rate-limiter-status
     expected_status: 200
     timeout: 10
     category: api
+    note: Replace [CURRENT-IP] with actual IP or DDNS hostname
 
   # Data Services (via external API)
   - id: weaviate
     name: Weaviate (External)
     type: http
-    url: http://tony-omen.local:8080/api/weaviate/v1/nodes
+    url: http://[CURRENT-IP]:8080/api/weaviate/v1/nodes
     expected_status: 200
     timeout: 10
     category: datastore
+    note: Replace [CURRENT-IP] with actual IP or DDNS hostname
 
   # GPU Services (limited external access)
   - id: thai-legal
     name: Llama Router (Phi-3 only, External)
     type: http
-    url: http://tony-omen.local:8001/health
+    url: http://[CURRENT-IP]:8001/health
     expected_status: 200
     timeout: 15
     category: gpu
-    note: Thai legal model offline (2026-08-06) due to GPU memory constraints
+    note: Thai legal model offline (2026-08-06) due to GPU memory constraints. Replace [CURRENT-IP] with actual IP or DDNS hostname
 
   - id: txt2vid
     name: Txt2Vid (External)
     type: http
-    url: http://tony-omen.local:8002/health
+    url: http://[CURRENT-IP]:8002/health
     expected_status: 200
     timeout: 15
     category: gpu
+    note: Replace [CURRENT-IP] with actual IP or DDNS hostname
 
   - id: imagen2
     name: Imagen2 (External)
     type: http
-    url: http://tony-omen.local:8000/health
+    url: http://[CURRENT-IP]:8000/health
     expected_status: 200
     timeout: 15
     category: gpu
+    note: Replace [CURRENT-IP] with actual IP or DDNS hostname
 
   # Queue Services
   - id: gpu-queue
     name: GPU Queue (External)
     type: http
-    url: http://tony-omen.local:3001/health
+    url: http://[CURRENT-IP]:3001/health
     expected_status: 200
     timeout: 10
     category: queue
+    note: Replace [CURRENT-IP] with actual IP or DDNS hostname
 
   # Optional Services
   - id: frigate
     name: Frigate NVR (External)
     type: http
-    url: http://tony-omen.local:8080/frigate/api/version
+    url: http://[CURRENT-IP]:8080/frigate/api/version
     expected_status: 200
     timeout: 15
     category: optional
+    note: Replace [CURRENT-IP] with actual IP or DDNS hostname
 
 # Recovery suggestions for common failure modes (mobile-specific)
 recovery_actions:
@@ -104,24 +121,33 @@ recovery_actions:
     - Verify home network is accessible
     - Check mobile data connection
     - Try switching between WiFi and mobile data
+    - Verify [CURRENT-IP] placeholder is replaced with actual IP
 
   timeout:
     - External access may be slower than local
     - Check if home network has bandwidth issues
     - VPN connection may be slow
     - Consider using local network when at home
+    - Increase timeout values for mobile networks
 
   service_unavailable:
     - Some services may not be exposed externally
     - Check if service requires local network access
     - Container checks may not work externally
     - Use Status API for container status when available
+    - Verify service is running on home network
 
   vpn_required:
     - Some services require VPN for external access
     - Connect to home VPN first
     - Verify VPN credentials
     - Check VPN server status
+
+  profile_switch:
+    - When returning home, switch to ssot.health.home.yml
+    - Update [CURRENT-IP] placeholders with actual IP
+    - Use .local hostnames when on home network
+    - Consider DDNS hostname for stable external access
 
 # Testing and debugging guidance (mobile-specific)
 debugging_guidance:
@@ -132,18 +158,28 @@ debugging_guidance:
     - Test mobile viewport responsiveness using browser dev tools
 
   location_testing:
-    - On Mobile: Use localhost if testing on the same machine
+    - On Mobile (TONY-IP): Use [CURRENT-IP] after replacing placeholder
     - External: Use VPN or external domain when away from home network
-    - At Home: Switch to tony-omen.local for better performance
+    - At Home: Switch to ssot.health.home.yml and use tony-omen.local
+    - Profile switching: Update health check config when changing networks
 
   network_testing:
     - Test VPN connectivity before accessing services
     - Check mobile signal strength and data connection
     - Test both WiFi and mobile data for comparison
     - Use browser dev tools network throttling to simulate poor connections
+    - Verify [CURRENT-IP] placeholder is replaced with actual IP
 
   service_testing:
     - External access has longer timeouts - be patient
     - Some services may be limited or unavailable externally
     - Use Status API for container status when direct checks fail
     - Test critical services first when connection is unstable
+    - Replace [CURRENT-IP] placeholders before running health checks
+
+  profile_switching:
+    - From Mobile to Home: Connect to home WiFi, switch to ssot.health.home.yml
+    - From Home to Mobile: Connect to external WiFi, switch to ssot.health.mobile.yml
+    - Update URLs: Replace .local hostnames with [CURRENT-IP] when mobile
+    - Update URLs: Replace [CURRENT-IP] with .local hostnames when home
+    - Reference: ssot.mysystem.mobile.yml and ssot.mysystem.home.yml

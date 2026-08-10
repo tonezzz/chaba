@@ -222,6 +222,33 @@ Files in the `apps/` subdirectory contain simple data structures for app configu
 - **Focus Validation**: `node scripts/validate-focus.mjs`
 - **MCP Config Generation**: `python3 scripts/generate-mcp-configs.py`
 
+### Documentation Search Standards
+**IMPORTANT: Assistant workflow for documentation searches**
+
+1. **Primary Method**: Use MCP docs server for all documentation searches
+   - `mcp_call_tool docs search_docs "query" limit` for broad searches
+   - `mcp_call_tool docs get_page "path"` for specific page retrieval
+   - `mcp_call_tool docs list_sections` for browsing structure
+
+2. **Secondary Method**: Use ssot-search skill for SSOT YAML pattern matching
+   - Exact YAML structure queries
+   - SSOT-specific searches
+   - When you know exact terms to search for
+
+3. **Fallback Guidelines**: Only use traditional tools (grep, read, find) after:
+   - Attempting MCP docs server and identifying specific issue
+   - Suggesting the fix to the user (e.g., reinstall MCP server, check config)
+   - Getting user confirmation to proceed with fallback
+   - **Never silently fall back** without explaining the issue and proposed fix
+
+4. **MCP Troubleshooting**: When MCP docs server fails:
+   - Check MCP config: `/home/tony/.config/devin/mcp_config.json`
+   - Test connectivity: `mcp_list_tools docs`
+   - Suggest specific fix based on error
+   - Reinstall if needed: `npx -y @devista/docs-mcp --docs /path/to/docs`
+
+**Reference**: See `docs/kb/documentation-search.md` for comprehensive search methods guide
+
 ### Automation Integration
 - Consider git hooks for pre-commit validation
 - CI/CD integration for automated validation

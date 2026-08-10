@@ -7,6 +7,22 @@ ideas:
   - Two workstations with shared input via Barrier
   - Multiple services and apps deployed across machines
   - Local network with .local hostname resolution
+  - Profile switching capability from mobile networks
+
+sections:
+  - title: Current Network Session
+    icon: 📡
+    layout: list
+    items:
+      - label: Home WiFi
+        text: Home network (192.168.1.0/24 subnet)
+        status: available
+      - label: Network Type
+        text: Local network with .local hostname resolution
+      - label: Access Method
+        text: Direct .local hostname access (tony-omen.local, tony-dell.local)
+      - label: Profile Switching
+        text: Switch from mobile profile when returning to home network
 
 sections:
   - title: Workstations
@@ -139,11 +155,33 @@ sections:
         text: External/mobile health check configuration
         url: file:///home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.health.mobile.yml
 
+  - title: Profile Switching Guide
+    icon: 🔄
+    layout: list
+    items:
+      - label: Current Profile
+        text: Home network profile (192.168.1.0/24 subnet)
+        status: active_when_on_home_wifi
+      - label: Switch to Mobile Profile
+        text: Connect to external network (e.g., TONY-IP), use current IP or DDNS
+        steps:
+          - Connect to external WiFi network
+          - Use ssot.mysystem.mobile.yml for configuration
+          - Use ssot.health.mobile.yml for health checks
+          - Access services via current IP or DDNS hostname
+      - label: Mobile Profile Reference
+        text: See ssot.mysystem.mobile.yml for mobile network configuration
+        url: file:///home/tony/CascadeProjects/chaba/docs/ssot/ssot.mysystem.mobile.yml
+
 config:
-  version: 1
-  last_updated: 2026-08-03
+  version: 2
+  last_updated: 2026-08-07
+  current_network: 192.168.1.0/24 (home WiFi)
+  current_profile: home
   maintainer: tony
   related_files:
+    - ssot.mysystem.mobile.yml (mobile profile)
     - ssot.services.yml
     - ssot.apps.yml
-    - ssot.health.yml
+    - infrastructure/ssot.health.home.yml (home health checks)
+    - infrastructure/ssot.health.mobile.yml (mobile health checks)

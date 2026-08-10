@@ -85,18 +85,26 @@ class StrategyPanel {
         html += '</div>';
 
         html += '<button id="run-backtest" class="btn" style="width:100%; margin-top:6px; padding:8px; font-size:12px;">Run Backtest</button>';
-        html += '<button id="run-all" class="btn" style="width:100%; margin-top:4px; padding:8px; font-size:12px;" onclick="window.runAllWithFeedback()">Run All & Compare</button>';
+        html += '<button id="run-walkforward" class="btn" style="width:100%; margin-top:4px; padding:8px; font-size:12px; background:#8957e5; border-color:#8957e5;">Walk-Forward Analysis</button>';
+        html += '<button id="run-all" class="btn" style="width:100%; margin-top:4px; padding:8px; font-size:12px;">Run All & Compare</button>';
 
         this.controlsContainer.innerHTML = html;
 
-        // Hide SL/TP for hindsight strategies on initial load
+        // Setup event listeners
+        document.getElementById('run-backtest').addEventListener('click', () => this.runBacktest());
+        document.getElementById('run-walkforward').addEventListener('click', () => this.runWalkForward());
+        document.getElementById('run-all').addEventListener('click', () => this.runAll());
+
+        // Hide SL/TP and Pos % for hindsight strategies on initial load
         const initialKey = document.getElementById('strategy-select').value;
-        const hindsightStrategies = ['manual_perfect', 'hindsight_01', 'hindsight_02'];
+        const hindsightStrategies = ['hindsight_01', 'hindsight_02'];
         if (hindsightStrategies.includes(initialKey)) {
             const stopField = document.getElementById('strategy-stop');
             const tpField = document.getElementById('strategy-tp');
+            const posField = document.getElementById('strategy-position');
             if (stopField) stopField.parentElement.style.display = 'none';
             if (tpField) tpField.parentElement.style.display = 'none';
+            if (posField) posField.parentElement.style.display = 'none';
         }
 
         document.getElementById('strategy-select').addEventListener('change', () => {
@@ -104,18 +112,20 @@ class StrategyPanel {
             // Handle chart clicking for manual strategy
             const key = document.getElementById('strategy-select').value;
             
-            // Hide SL/TP for hindsight strategies
+            // Hide SL/TP and Pos % for hindsight strategies
             const stopField = document.getElementById('strategy-stop');
             const tpField = document.getElementById('strategy-tp');
-            const hindsightStrategies = ['manual_perfect', 'hindsight_01', 'hindsight_02'];
+            const posField = document.getElementById('strategy-position');
+            const hindsightStrategies = ['hindsight_01', 'hindsight_02'];
             if (hindsightStrategies.includes(key)) {
                 if (stopField) stopField.parentElement.style.display = 'none';
                 if (tpField) tpField.parentElement.style.display = 'none';
-                this.enableChartClicking();
+                if (posField) posField.parentElement.style.display = 'none';
+                // No chart clicking for automatic strategies
             } else {
                 if (stopField) stopField.parentElement.style.display = 'flex';
                 if (tpField) tpField.parentElement.style.display = 'flex';
-                this.disableChartClicking();
+                if (posField) posField.parentElement.style.display = 'flex';
                 // Clear manual point markers when switching away
                 if (this.chartLoader.candlestickSeries) {
                     this.chartLoader.candlestickSeries.setMarkers([]);
@@ -124,7 +134,6 @@ class StrategyPanel {
         });
         
         this.renderParams();
-        document.getElementById('run-backtest').addEventListener('click', () => this.runBacktest());
     }
     
     compactNumberInput(label, id, value, step) {
@@ -147,7 +156,7 @@ class StrategyPanel {
         const container = document.getElementById('strategy-params');
         
         // Special handling for hindsight strategies
-        const hindsightStrategies = ['manual_perfect', 'hindsight_01', 'hindsight_02'];
+        const hindsightStrategies = ['hindsight_01', 'hindsight_02'];
         if (hindsightStrategies.includes(key)) {
             this.renderHindsightParams(container, key);
             return;
@@ -166,71 +175,75 @@ class StrategyPanel {
 
     renderHindsightParams(container, key) {
         const descriptions = {
-            'manual_perfect': '🎯 Perfect Mode: Manual override with sensitive detection',
-            'hindsight_01': '🎯 Hindsight-01: Conservative 3-point trend confirmation',
+            'hindsight_01': '🎯 Hindsight-01: Peak/valley detection with future knowledge',
             'hindsight_02': '🎯 Hindsight-02: Sensitive day-by-day trend detection'
         };
         
         let html = '<div style="font-size:11px; color:#a8d5ff; margin-bottom:4px;">';
         html += `<p style="margin:0 0 4px 0;">${descriptions[key]}</p>`;
-        html += '<p style="margin:0 0 4px 0;">• Auto-detects on every run</p>';
-        html += '<p style="margin:0 0 4px 0;">• Buy at bottoms, sell at tops</p>';
-        html += '<p style="margin:0 0 8px 0;">• Manual: Click chart to override</p>';
+        html += '<p style="margin:0 0 4px 0;">• Auto-detects buy/sell points automatically</p>';
+        html += '<p style="margin:0 0 4px 0;">• Uses 100% position sizing</p>';
+        html += '<p style="margin:0 0 8px 0;">• No stop loss or take profit</p>';
         html += '</div>';
+        
+        // Add min change parameter for Hindsight-01
+        if (key === 'hindsight_01') {
+            html += '<div style="display:flex; gap:4px; align-items:center; margin-bottom:4px;">';
+            html += `<label style="min-width:50px; font-size:11px; color:#a8d5ff;">Min %:</label>`;
+            html += `<input type="number" id="min-change-pct" value="1.0" min="0.1" max="10" step="0.1" style="flex:1; padding:4px; font-size:11px; background:#21262d; border:1px solid #30363d; border-radius:3px; color:#e6edf3;">`;
+            html += '</div>';
+        }
         
         html += '<div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px; margin-bottom:4px;">';
         html += `<div class="setting-group" style="display:flex; gap:4px; align-items:center;">
             <label style="min-width:50px; font-size:11px; color:#a8d5ff;">Buy pts:</label>
-            <span id="buy-count" style="flex:1; padding:4px; font-size:11px; background:#21262d; border:1px solid #30363d; border-radius:3px; color:#e6edf3;">0</span>
+            <span id="buy-count" style="flex:1; padding:4px; font-size:11px; background:#21262d; border:1px solid #30363d; border-radius:3px; color:#e6edf3;">Auto</span>
         </div>`;
         html += `<div class="setting-group" style="display:flex; gap:4px; align-items:center;">
             <label style="min-width:50px; font-size:11px; color:#a8d5ff;">Sell pts:</label>
-            <span id="sell-count" style="flex:1; padding:4px; font-size:11px; background:#21262d; border:1px solid #30363d; border-radius:3px; color:#e6edf3;">0</span>
+            <span id="sell-count" style="flex:1; padding:4px; font-size:11px; background:#21262d; border:1px solid #30363d; border-radius:3px; color:#e6edf3;">Auto</span>
         </div>`;
-        html += '</div>';
-        
-        html += '<div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px; margin-bottom:4px;">';
-        html += '<button id="redetect-points" class="btn" style="width:100%; padding:6px; font-size:11px; background:#238636; border-color:#238636;">Re-detect All</button>';
-        html += '<button id="clear-points" class="btn" style="width:100%; padding:6px; font-size:11px; background:#da3633; border-color:#da3633;">Clear Manual</button>';
         html += '</div>';
         
         container.innerHTML = html;
         
-        // Setup event listeners
-        document.getElementById('clear-points').addEventListener('click', () => this.clearManualPoints());
-        document.getElementById('redetect-points').addEventListener('click', () => {
-            this.manualBuyPoints = [];
-            this.manualSellPoints = [];
-            this.updateManualPointCounts();
-            this.updateManualPointMarkers();
-        });
+        // Min change listener for Hindsight-01
+        if (key === 'hindsight_01') {
+            document.getElementById('min-change-pct').addEventListener('change', (e) => {
+                this.minChangePct = parseFloat(e.target.value) / 100 || 0.01;
+            });
+        }
         
-        // Auto-detect always runs on backtest
+        // Auto-detect always runs on backtest - no manual controls needed
         this.autoDetect = true;
-        
-        // Update counts with auto-detected points
-        this.updateManualPointCounts();
-        
-        // Enable chart clicking for manual overrides
-        this.enableChartClicking();
     }
 
     getSelected() {
         const key = document.getElementById('strategy-select').value;
         
         // Special handling for hindsight strategies
-        const hindsightStrategies = ['manual_perfect', 'hindsight_01', 'hindsight_02'];
+        const hindsightStrategies = ['hindsight_01', 'hindsight_02'];
         if (hindsightStrategies.includes(key)) {
-            return { 
-                key, 
-                params: {
-                    buy_points: this.manualBuyPoints,
-                    sell_points: this.manualSellPoints,
-                    auto_detect: true  // Always auto-detect on every run
-                }
+            const params = {
+                buy_points: [],  // Empty - let strategy auto-detect
+                sell_points: [], // Empty - let strategy auto-detect
+                auto_detect: true  // Always auto-detect on every run
             };
+            
+            // Add min_change_pct for Hindsight-01
+            if (key === 'hindsight_01') {
+                const minChangeInput = document.getElementById('min-change-pct');
+                if (minChangeInput) {
+                    params.min_change_pct = parseFloat(minChangeInput.value) / 100 || 0.01;
+                } else {
+                    params.min_change_pct = 0.01;
+                }
+            }
+            
+            return { key, params };
         }
         
+        // For non-hindsight strategies, get parameters from inputs
         const inputs = document.querySelectorAll('.strategy-param');
         const params = {};
         inputs.forEach(input => {
@@ -255,13 +268,16 @@ class StrategyPanel {
             commission: parseFloat(document.getElementById('strategy-commission').value) || 0.001,
             slippage: parseFloat(document.getElementById('strategy-slippage').value) || 0.0001
         };
-        
-        // For hindsight strategies, set SL/TP to 0 (they won't be used)
-        const hindsightStrategies = ['manual_perfect', 'hindsight_01', 'hindsight_02'];
+
+        // For hindsight strategies, always use 100% position sizing
+        const hindsightStrategies = ['hindsight_01', 'hindsight_02'];
         if (hindsightStrategies.includes(key)) {
+            settings.positionPct = 1.0;
             settings.stopPct = 0;
             settings.tpPct = 0;
         }
+        
+        // For hindsight strategies, set SL/TP to 0 (they won't be used)
 
         // Special handling for hindsight strategies - always auto-detect
         if (hindsightStrategies.includes(key)) {
@@ -295,6 +311,28 @@ class StrategyPanel {
                 this.setMarkers(result.trades);
             }
         }
+    }
+
+    runWalkForward() {
+        const { key, params } = this.getSelected();
+        const settings = {
+            capital: parseFloat(document.getElementById('strategy-capital').value) || this.config.execution.initial_capital,
+            positionPct: parseFloat(document.getElementById('strategy-position').value) || 0.1,
+            stopPct: parseFloat(document.getElementById('strategy-stop').value) || 0.05,
+            tpPct: parseFloat(document.getElementById('strategy-tp').value) || 0.10,
+            commission: parseFloat(document.getElementById('strategy-commission').value) || 0.001,
+            slippage: parseFloat(document.getElementById('strategy-slippage').value) || 0.0001
+        };
+
+        // For hindsight strategies, always use 100% position sizing
+        const hindsightStrategies = ['hindsight_01', 'hindsight_02'];
+        if (hindsightStrategies.includes(key)) {
+            settings.positionPct = 1.0;
+            settings.stopPct = 0;
+            settings.tpPct = 0;
+        }
+
+        this.runWalkForwardAnalysis(key, params, settings);
     }
 
     getStrategy(key, params) {
@@ -524,16 +562,18 @@ class StrategyPanel {
             commission: parseFloat(document.getElementById('strategy-commission').value) || 0.001,
             slippage: parseFloat(document.getElementById('strategy-slippage').value) || 0.0001
         };
+
         this.backtests = [];
         for (const [key, strat] of Object.entries(this.config.strategies)) {
             let params = { ...strat.parameters };
             
-            // For hindsight strategies, set SL/TP to 0 (they won't be used)
+            // For hindsight strategies, set SL/TP to 0 and use 100% position sizing
             let strategySettings = { ...settings };
-            const hindsightStrategies = ['manual_perfect', 'hindsight_01', 'hindsight_02'];
+            const hindsightStrategies = ['hindsight_01', 'hindsight_02'];
             if (hindsightStrategies.includes(key)) {
                 strategySettings.stopPct = 0;
                 strategySettings.tpPct = 0;
+                strategySettings.positionPct = 1.0;
                 
                 // Create a temporary strategy instance to run auto-detect
                 const tempStrategy = StrategyFactory.create(key, params);
@@ -789,9 +829,254 @@ class StrategyPanel {
 
         this.chartLoader.candlestickSeries.setMarkers(markers);
     }
+
+    runWalkForwardAnalysis(key, params, settings) {
+        if (!this.data || this.data.length === 0) {
+            this.singleResult.innerHTML = '<p style="color:#da3633;">No chart data loaded yet.</p>';
+            return;
+        }
+
+        // Walk-forward parameters
+        const trainingPeriodMonths = 6;  // 6 months training
+        const testingPeriodMonths = 1;   // 1 month testing
+        const stepMonths = 1;             // Move forward 1 month at a time
+        
+        // Convert months to data points (assuming ~20 trading days per month)
+        const trainingSize = trainingPeriodMonths * 20;
+        const testingSize = testingPeriodMonths * 20;
+        const stepSize = stepMonths * 20;
+        
+        const totalData = this.data.length;
+        if (totalData < trainingSize + testingSize) {
+            this.singleResult.innerHTML = '<p style="color:#da3633;">Not enough data for walk-forward analysis. Need at least ' + (trainingSize + testingSize) + ' data points.</p>';
+            return;
+        }
+
+        this.singleResult.innerHTML = '<p style="color:#a8d5ff; font-size:11px;">Running walk-forward analysis...</p>';
+        
+        const results = [];
+        let currentPosition = 0;
+        
+        while (currentPosition + trainingSize + testingSize <= totalData) {
+            // Training period
+            const trainingStart = currentPosition;
+            const trainingEnd = currentPosition + trainingSize;
+            const trainingData = this.data.slice(trainingStart, trainingEnd);
+            
+            // Testing period  
+            const testingStart = trainingEnd;
+            const testingEnd = trainingEnd + testingSize;
+            const testingData = this.data.slice(testingStart, testingEnd);
+            
+            // Optimize parameters on training data
+            const optimizedParams = this.optimizeParameters(key, params, trainingData, settings);
+            
+            // Test on testing data
+            const testResult = this.runStrategyOnData(key, optimizedParams, testingData, settings);
+            
+            results.push({
+                trainingPeriod: { start: trainingStart, end: trainingEnd },
+                testingPeriod: { start: testingStart, end: testingEnd },
+                optimizedParams: optimizedParams,
+                testResult: testResult
+            });
+            
+            currentPosition += stepSize;
+        }
+        
+        // Aggregate results
+        const aggregated = this.aggregateWalkForwardResults(results);
+        
+        // Display results
+        this.displayWalkForwardResults(results, aggregated);
+    }
+
+    optimizeParameters(key, baseParams, trainingData, settings) {
+        // Simple parameter optimization - can be enhanced
+        // For now, return base params (can add grid search, genetic algorithms, etc.)
+        
+        if (key === 'hindsight_01') {
+            // Optimize min_change_pct for Hindsight-01
+            const testValues = [0.005, 0.01, 0.015, 0.02, 0.025];
+            let bestParams = { ...baseParams };
+            let bestSharpe = -Infinity;
+            
+            for (const minChange of testValues) {
+                const testParams = { ...baseParams, min_change_pct: minChange };
+                const result = this.runStrategyOnData(key, testParams, trainingData, settings);
+                const sharpe = this.calculateSharpeRatio(result);
+                
+                if (sharpe > bestSharpe) {
+                    bestSharpe = sharpe;
+                    bestParams = testParams;
+                }
+            }
+            
+            return bestParams;
+        }
+        
+        // For other strategies, return base params
+        return { ...baseParams };
+    }
+
+    runStrategyOnData(key, params, data, settings) {
+        const strategy = StrategyFactory.create(key, params);
+        strategy.setData(data);
+        strategy.calculateIndicators(data);
+        
+        let cash = settings.capital;
+        let shares = 0;
+        let inPosition = false;
+        const trades = [];
+        
+        for (let i = 0; i < data.length; i++) {
+            const signal = strategy.getSignal(i, {});
+            
+            if (!inPosition && signal.buy) {
+                const buyPrice = data[i].close * (1 + settings.commission + settings.slippage);
+                const positionValue = cash * settings.positionPct;
+                const qty = positionValue / buyPrice;
+                const cost = qty * buyPrice;
+                
+                if (cost <= cash) {
+                    cash -= cost;
+                    shares = qty;
+                    inPosition = true;
+                    trades.push({ type: 'buy', index: i, price: buyPrice, qty });
+                }
+            } else if (inPosition && signal.sell) {
+                const sellPrice = data[i].close * (1 - settings.commission - settings.slippage);
+                const proceeds = shares * sellPrice;
+                cash += proceeds;
+                
+                const lastBuy = trades[trades.length - 1];
+                trades.push({ 
+                    type: 'sell', 
+                    index: i, 
+                    price: sellPrice, 
+                    qty: shares,
+                    profit: proceeds - (lastBuy.qty * lastBuy.price)
+                });
+                
+                shares = 0;
+                inPosition = false;
+            }
+        }
+        
+        // Close final position if still open
+        if (inPosition) {
+            const finalPrice = data[data.length - 1].close * (1 - settings.commission - settings.slippage);
+            const proceeds = shares * finalPrice;
+            cash += proceeds;
+            
+            const lastBuy = trades[trades.length - 1];
+            trades.push({ 
+                type: 'sell', 
+                index: data.length - 1, 
+                price: finalPrice, 
+                qty: shares,
+                profit: proceeds - (lastBuy.qty * lastBuy.price)
+            });
+        }
+        
+        const totalReturn = (cash - settings.capital) / settings.capital;
+        const winningTrades = trades.filter(t => t.type === 'sell' && t.profit > 0).length;
+        const totalTrades = trades.filter(t => t.type === 'sell').length;
+        const winRate = totalTrades > 0 ? winningTrades / totalTrades : 0;
+        
+        return {
+            finalCapital: cash,
+            totalReturn: totalReturn,
+            trades: trades,
+            winRate: winRate,
+            totalTrades: totalTrades
+        };
+    }
+
+    calculateSharpeRatio(result) {
+        if (result.trades.length < 2) return 0;
+        
+        const returns = result.trades
+            .filter(t => t.type === 'sell')
+            .map(t => t.profit / (result.trades.find(b => b.index < t.index && b.type === 'buy')?.price * t.qty || 1));
+        
+        if (returns.length === 0) return 0;
+        
+        const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
+        const stdDev = Math.sqrt(returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length);
+        
+        return stdDev > 0 ? avgReturn / stdDev : 0;
+    }
+
+    aggregateWalkForwardResults(results) {
+        const totalReturn = results.reduce((sum, r) => sum + r.testResult.totalReturn, 0);
+        const avgReturn = totalReturn / results.length;
+        
+        const allWinRates = results.map(r => r.testResult.winRate);
+        const avgWinRate = allWinRates.reduce((a, b) => a + b, 0) / allWinRates.length;
+        
+        const allTrades = results.reduce((sum, r) => sum + r.testResult.totalTrades, 0);
+        
+        const profitablePeriods = results.filter(r => r.testResult.totalReturn > 0).length;
+        const consistency = profitablePeriods / results.length;
+        
+        return {
+            totalReturn: totalReturn,
+            avgReturn: avgReturn,
+            avgWinRate: avgWinRate,
+            totalTrades: allTrades,
+            consistency: consistency,
+            periods: results.length
+        };
+    }
+
+    displayWalkForwardResults(results, aggregated) {
+        let html = '<div style="font-size:11px; color:#e6edf3;">';
+        html += '<h4 style="margin:0 0 8px 0; color:#58a6ff;">Walk-Forward Analysis Results</h4>';
+        
+        html += '<div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px; margin-bottom:8px;">';
+        html += `<div style="background:#21262d; padding:4px; border-radius:3px;">
+            <span style="color:#a8d5ff; font-size:10px;">Total Return:</span>
+            <span style="color:#e6edf3; font-weight:600;">${(aggregated.totalReturn * 100).toFixed(2)}%</span>
+        </div>`;
+        html += `<div style="background:#21262d; padding:4px; border-radius:3px;">
+            <span style="color:#a8d5ff; font-size:10px;">Avg Return/Period:</span>
+            <span style="color:#e6edf3; font-weight:600;">${(aggregated.avgReturn * 100).toFixed(2)}%</span>
+        </div>`;
+        html += `<div style="background:#21262d; padding:4px; border-radius:3px;">
+            <span style="color:#a8d5ff; font-size:10px;">Avg Win Rate:</span>
+            <span style="color:#e6edf3; font-weight:600;">${(aggregated.avgWinRate * 100).toFixed(1)}%</span>
+        </div>`;
+        html += `<div style="background:#21262d; padding:4px; border-radius:3px;">
+            <span style="color:#a8d5ff; font-size:10px;">Consistency:</span>
+            <span style="color:#e6edf3; font-weight:600;">${(aggregated.consistency * 100).toFixed(1)}%</span>
+        </div>`;
+        html += '</div>';
+        
+        html += '<h5 style="margin:8px 0 4px 0; color:#58a6ff; font-size:11px;">Period Details</h5>';
+        html += '<div style="max-height:200px; overflow-y:auto; font-size:10px;">';
+        html += '<table style="width:100%; border-collapse:collapse;">';
+        html += '<tr style="background:#30363d;"><th style="padding:4px; text-align:left;">Period</th><th style="padding:4px; text-align:right;">Return</th><th style="padding:4px; text-align:right;">Win Rate</th><th style="padding:4px; text-align:right;">Trades</th></tr>';
+        
+        results.forEach((r, i) => {
+            const rowColor = r.testResult.totalReturn >= 0 ? '#238636' : '#da3633';
+            html += `<tr style="border-bottom:1px solid #30363d;">
+                <td style="padding:4px;">${i + 1}</td>
+                <td style="padding:4px; text-align:right; color:${rowColor};">${(r.testResult.totalReturn * 100).toFixed(2)}%</td>
+                <td style="padding:4px; text-align:right;">${(r.testResult.winRate * 100).toFixed(1)}%</td>
+                <td style="padding:4px; text-align:right;">${r.testResult.totalTrades}</td>
+            </tr>`;
+        });
+        
+        html += '</table></div></div>';
+        
+        this.singleResult.innerHTML = html;
+    }
 }
 
 function initComparePanel(chartLoader) {
+    console.log('initComparePanel called');
+    
     // Register hindsight strategies from separate module
     if (typeof Hindsight01Strategy !== 'undefined') {
         StrategyFactory.register('hindsight_01', Hindsight01Strategy);
@@ -803,6 +1088,8 @@ function initComparePanel(chartLoader) {
     }
 
     const yaml = (typeof jsyaml !== 'undefined' && jsyaml.load) ? jsyaml : null;
+    console.log('jsyaml available:', !!yaml);
+    
     const fallBack = () => {
         document.getElementById('strategy-controls').innerHTML = 'Failed to load strategy configuration.';
     };
@@ -813,19 +1100,27 @@ function initComparePanel(chartLoader) {
         return;
     }
 
+    console.log('Fetching ssot.ui.yml...');
     fetch('ssot.ui.yml')
         .then(response => {
+            console.log('Fetch response status:', response.status);
             if (!response.ok) throw new Error('ssot.ui.yml not found');
             return response.text();
         })
         .then(text => {
+            console.log('YAML text length:', text.length);
+            console.log('YAML text preview:', text.substring(0, 200));
             const doc = yaml.load(text);
+            console.log('YAML parsed, doc keys:', Object.keys(doc || {}));
             if (!doc || !doc.strategy_panel) throw new Error('strategy_panel not found in ssot.ui.yml');
+            console.log('Creating StrategyPanel...');
             const panel = new StrategyPanel(chartLoader, doc.strategy_panel);
+            console.log('Initializing StrategyPanel...');
             panel.init();
         })
         .catch(error => {
             console.error('Strategy panel init failed:', error);
+            console.error('Error details:', error.message, error.stack);
             fallBack();
         });
 }

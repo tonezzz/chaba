@@ -7,8 +7,8 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background-color: #0d1117;
-    color: #e6edf3;
+    background-color: #161b22;
+    color: #f0f6fc;
     line-height: 1.6;
 }
 
@@ -59,12 +59,12 @@ body {
 }
 
 .nav-link {
-    color: #8b949e;
+    color: #a8d5ff;
     text-decoration: none;
     font-size: 14px;
     font-weight: 500;
     padding: 8px 12px;
-    border-radius: 4px;
+    border-radius: 8px;
     transition: all 0.2s;
 }
 
@@ -79,20 +79,20 @@ body {
 }
 
 .selector {
-    padding: 8px 12px;
+    padding: 16px 24px;
     background-color: #21262d;
     border: 1px solid #30363d;
-    border-radius: 6px;
+    border-radius: 12px;
     color: #e6edf3;
     font-size: 14px;
     cursor: pointer;
 }
 
 .btn {
-    padding: 8px 16px;
+    padding: 16px 32px;
     background-color: #238636;
     border: none;
-    border-radius: 6px;
+    border-radius: 12px;
     color: white;
     font-size: 14px;
     cursor: pointer;
@@ -154,8 +154,8 @@ body {
 }
 
 .status {
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: 8px 16px;
+    border-radius: 8px;
     font-size: 12px;
     font-weight: 600;
 }
@@ -211,10 +211,10 @@ body {
 .chart-type-btn,
 .indicator-btn,
 .zoom-btn {
-    padding: 6px 12px;
+    padding: 12px 24px;
     background-color: #21262d;
     border: 1px solid #30363d;
-    border-radius: 4px;
+    border-radius: 8px;
     color: #e6edf3;
     font-size: 12px;
     cursor: pointer;
@@ -234,8 +234,8 @@ body {
 }
 
 .zoom-btn {
-    width: 32px;
-    height: 32px;
+    width: 64px;
+    height: 64px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -275,7 +275,7 @@ body {
 }
 
 .stat-label {
-    color: #8b949e;
+    color: #a8d5ff;
 }
 
 .stat-value {
@@ -295,7 +295,7 @@ body {
 }
 
 .indicator-label {
-    color: #8b949e;
+    color: #a8d5ff;
 }
 
 .indicator-value {
@@ -314,9 +314,9 @@ body {
     display: flex;
     justify-content: space-between;
     font-size: 12px;
-    padding: 6px;
+    padding: 12px;
     background-color: #21262d;
-    border-radius: 4px;
+    border-radius: 8px;
 }
 
 .trade-item.buy {
@@ -409,11 +409,11 @@ body {
 }
 
 .setting-group input[type="number"] {
-    width: 80px;
-    padding: 6px;
+    width: 160px;
+    padding: 12px;
     background-color: #21262d;
     border: 1px solid #30363d;
-    border-radius: 4px;
+    border-radius: 8px;
     color: #e6edf3;
     font-size: 13px;
 }
@@ -433,6 +433,227 @@ body {
     text-align: center;
     font-size: 12px;
     color: #8b949e;
+}
+
+/* Compact Design Styles */
+.header-compact {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background-color: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.header-compact h1 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    color: #e6edf3;
+}
+
+.nav-compact {
+    display: flex;
+    gap: 12px;
+}
+
+.nav-compact .nav-link {
+    color: #8b949e;
+    text-decoration: none;
+    font-size: 13px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.nav-compact .nav-link:hover {
+    color: #e6edf3;
+    background-color: #21262d;
+}
+
+.nav-compact .nav-link.active {
+    color: #58a6ff;
+    background-color: #21262d;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.pair-label {
+    font-size: 12px;
+    color: #8b949e;
+    font-weight: 600;
+}
+
+.price-display {
+    font-size: 16px;
+    font-weight: 600;
+    color: #e6edf3;
+}
+
+.price-change {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.price-change.positive {
+    color: #3fb950;
+}
+
+.price-change.negative {
+    color: #da3633;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #8b949e;
+}
+
+.status-dot.connected {
+    background-color: #3fb950;
+}
+
+.status-dot.disconnected {
+    background-color: #da3633;
+}
+
+.main-content-compact {
+    display: grid;
+    grid-template-columns: 1fr 30%;
+    gap: 20px;
+    height: calc(100vh - 180px);
+}
+
+.chart-section-compact {
+    background-color: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-container-compact {
+    flex: 1;
+    min-height: 300px;
+    height: 400px;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+}
+
+.side-panel-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.panel-section-compact {
+    background-color: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 16px;
+    padding: 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    max-height: calc(100vh - 200px);
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.panel-header h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    color: #a8d5ff;
+}
+
+.toggle-btn {
+    background: none;
+    border: none;
+    color: #8b949e;
+    font-size: 10px;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+
+.toggle-btn:hover {
+    color: #e6edf3;
+}
+
+.strategy-controls-compact {
+    overflow: visible;
+}
+
+.strategy-results-compact {
+    margin-top: 8px;
+    flex: 1;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 200px;
+}
+
+.footer-compact {
+    text-align: center;
+    padding: 12px 0;
+    font-size: 11px;
+    color: #8b949e;
+    border-top: 1px solid #30363d;
+    margin-top: 15px;
+}
+
+/* Compact form styles */
+.strategy-controls-compact .setting-group {
+    margin-bottom: 12px;
+}
+
+.strategy-controls-compact .setting-group label {
+    font-size: 11px;
+    margin-bottom: 4px;
+    display: block;
+    color: #a8d5ff;
+}
+
+.strategy-controls-compact .setting-group input,
+.strategy-controls-compact .setting-group select {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 12px;
+}
+
+.strategy-controls-compact .btn {
+    padding: 8px 12px;
+    font-size: 12px;
+    margin-top: 8px;
+}
+
+/* Compact table styles */
+.strategy-results-compact table {
+    font-size: 12px;
+}
+
+.strategy-results-compact th,
+.strategy-results-compact td {
+    padding: 4px 6px;
 }
 
 /* Responsive Design */

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strategy System Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #21262d; color: #e6edf3; }
+        .test-result { margin: 10px 0; padding: 10px; border: 1px solid #30363d; }
+        .pass { border-color: #238636; background: #1a2f23; }
+        .fail { border-color: #da3633; background: #2f1a1a; }
+        .error { border-color: #f85149; background: #2f1a1a; }
+    </style>
+</head>
+<body>
+    <h1>Strategy System Test</h1>
+    <div id="results"></div>
+
+    <script src="strategies.js"></script>
+    <script>
+        const results = document.getElementById('results');
+
+        function addResult(test, passed, message) {
+            const div = document.createElement('div');
+            div.className = `test-result ${passed ? 'pass' : 'fail'}`;
+            div.innerHTML = `<strong>${test}:</strong> ${passed ? 'PASS' : 'FAIL'} - ${message}`;
+            results.appendChild(div);
+        }
+
+        function addError(test, message) {
+            const div = document.createElement('div');
+            div.className = 'test-result error';
+            div.innerHTML = `<strong>${test}:</strong> ERROR - ${message}`;
+            results.appendChild(div);
+        }
+
+        // Test 1: StrategyFactory exists
+        try {
+            addResult('StrategyFactory exists', typeof StrategyFactory !== 'undefined', 'StrategyFactory is available');
+        } catch (e) {
+            addError('StrategyFactory exists', e.message);
+        }
+
+        // Test 2: Get available strategies
+        try {
+            const strategies = StrategyFactory.getAvailableStrategies();
+            addResult('Get available strategies', strategies.length > 0, `Found ${strategies.length} strategies: ${strategies.join(', ')}`);
+        } catch (e) {
+            addError('Get available strategies', e.message);
+        }
+
+        // Test 3: Create SMA strategy
+        try {
+            const smaStrategy = StrategyFactory.create('sma_crossover', { short_period: 20, long_period: 50 });
+            addResult('Create SMA strategy', smaStrategy instanceof Strategy, 'SMA strategy instance created');
+        } catch (e) {
+            addError('Create SMA strategy', e.message);
+        }
+
+        // Test 4: Create EMA strategy
+        try {
+            const emaStrategy = StrategyFactory.create('ema_crossover', { short_period: 12, long_period: 26 });
+            addResult('Create EMA strategy', emaStrategy instanceof Strategy, 'EMA strategy instance created');
+        } catch (e) {
+            addError('Create EMA strategy', e.message);
+        }
+
+        // Test 5: Create RSI strategy
+        try {
+            const rsiStrategy = StrategyFactory.create('rsi_reversal', { period: 14, oversold: 30, overbought: 70 });
+            addResult('Create RSI strategy', rsiStrategy instanceof Strategy, 'RSI strategy instance created');
+        } catch (e) {
+            addError('Create RSI strategy', e.message);
+        }
+
+        // Test 6: Create MACD strategy
+        try {
+            const macdStrategy = StrategyFactory.create('macd_crossover', { fast: 12, slow: 26, signal: 9 });
+            addResult('Create MACD strategy', macdStrategy instanceof Strategy, 'MACD strategy instance created');
+        } catch (e) {
+            addError('Create MACD strategy', e.message);
+        }
+
+        // Test 7: Create Bollinger strategy
+        try {
+            const bollingerStrategy = StrategyFactory.create('bollinger_reversion', { period: 20, std_dev: 2.0 });
+            addResult('Create Bollinger strategy', bollingerStrategy instanceof Strategy, 'Bollinger strategy instance created');
+        } catch (e) {
+            addError('Create Bollinger strategy', e.message);
+        }
+
+        // Test 8: Strategy has required methods
+        try {
+            const strategy = StrategyFactory.create('sma_crossover', { short_period: 20, long_period: 50 });
+            const hasMethods = typeof strategy.calculateIndicators === 'function' && 
+                              typeof strategy.getSignal === 'function';
+            addResult('Strategy has required methods', hasMethods, 'calculateIndicators and getSignal methods exist');
+        } catch (e) {
+            addError('Strategy has required methods', e.message);
+        }
+
+        // Test 9: Strategy calculates indicators
+        try {
+            const strategy = StrategyFactory.create('sma_crossover', { short_period: 20, long_period: 50 });
+            const testData = Array.from({ length: 100 }, (_, i) => ({ close: 100 + Math.random() * 10 }));
+            const indicators = strategy.calculateIndicators(testData);
+            const hasIndicators = indicators.short && indicators.long;
+            addResult('Strategy calculates indicators', hasIndicators, 'Indicators calculated successfully');
+        } catch (e) {
+            addError('Strategy calculates indicators', e.message);
+        }
+
+        // Test 10: Invalid strategy key throws error
+        try {
+            const invalidStrategy = StrategyFactory.create('invalid_strategy', {});
+            addResult('Invalid strategy throws error', false, 'Should have thrown error for invalid strategy');
+        } catch (e) {
+            addResult('Invalid strategy throws error', true, 'Correctly threw error: ' + e.message);
+        }
+
+        // Test 11: Strategy registration
+        try {
+            class TestStrategy extends Strategy {
+                constructor(parameters = {}) {
+                    super("Test Strategy", parameters);
+                }
+                calculateIndicators(data) { return {}; }
+                getSignal(i, indicators) { return { buy: false, sell: false }; }
+            }
+            StrategyFactory.register('test_strategy', TestStrategy);
+            const testStrategy = StrategyFactory.create('test_strategy', {});
+            addResult('Strategy registration', testStrategy instanceof TestStrategy, 'Custom strategy registered and created');
+        } catch (e) {
+            addError('Strategy registration', e.message);
+        }
+
+        // Test 12: Perfect strategy single-pass algorithm
+        try {
+            const perfectStrategy = StrategyFactory.create('manual_perfect', { auto_detect: true });
+            // Test data: [100, 95, 90, 85, 90, 95, 100, 105, 100, 95]
+            const testData = [
+                { close: 100 }, { close: 95 }, { close: 90 }, { close: 85 },
+                { close: 90 }, { close: 95 }, { close: 100 }, { close: 105 },
+                { close: 100 }, { close: 95 }
+            ];
+            perfectStrategy.setData(testData);
+            perfectStrategy.calculateIndicators(testData);
+            
+            // Expected: Buy at index 3 (price 85), Sell at index 7 (price 105), Buy at index 9 (price 95)
+            const expectedBuyPoints = [3, 9];
+            const expectedSellPoints = [7];
+            
+            const buyMatch = JSON.stringify(perfectStrategy.buyPoints) === JSON.stringify(expectedBuyPoints);
+            const sellMatch = JSON.stringify(perfectStrategy.sellPoints) === JSON.stringify(expectedSellPoints);
+            
+            addResult('Perfect strategy single-pass algorithm', buyMatch && sellMatch, 
+                `Buy points: ${perfectStrategy.buyPoints} (expected ${expectedBuyPoints}), ` +
+                `Sell points: ${perfectStrategy.sellPoints} (expected ${expectedSellPoints})`);
+        } catch (e) {
+            addError('Perfect strategy single-pass algorithm', e.message);
+        }
+
+        console.log('All tests completed');
+    </script>
+</body>
+</html>

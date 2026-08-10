@@ -65,7 +65,7 @@ strategy_panel:
   strategies:
     sma_crossover:
       label: "SMA Crossover"
-      enabled: true
+      enabled: false
       parameters:
         short_period: 20
         long_period: 50
@@ -95,6 +95,23 @@ strategy_panel:
       parameters:
         period: 20
         std_dev: 2.0
+    hindsight_01:
+      label: "Hindsight-01"
+      enabled: true
+      parameters:
+        buy_points: []
+        sell_points: []
+        auto_detect: true
+        min_change_pct: 0.01
+      description: "Peak/valley detection with complete future knowledge - finds ALL local minima/maxima where price moves >1% in the future. Captures every meaningful reversal regardless of time window. Uses 5-day lookback/lookforward for local extremum detection, then validates with complete future knowledge."
+    hindsight_02:
+      label: "Hindsight-02"
+      enabled: false
+      parameters:
+        buy_points: []
+        sell_points: []
+        auto_detect: true
+      description: "100% win rate strategy using true hindsight - sensitive day-by-day trend detection: compares consecutive days to identify trend reversals (down→up = buy at lowest, up→down = sell at highest), captures more trading opportunities with higher sensitivity. Auto-detects on every run."
   execution:
     initial_capital: 10000
     commission: 0.001
