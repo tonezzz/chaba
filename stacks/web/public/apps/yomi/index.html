@@ -210,6 +210,14 @@
     <button id="lightbox-close" class="close" type="button" aria-label="Close">×</button>
     <img id="lightbox-img" src="" alt="Full-size image">
   </div>
+  
+  <!-- Load shared utilities -->
+  <script src="/apps/shared/js/date-utils.js?v=1"></script>
+  <script src="/apps/shared/js/date-utils-thailand.js?v=1"></script>
+  <script src="/apps/shared/js/api-utils.js?v=1"></script>
+  <script src="/apps/shared/js/api-yomi.js?v=1"></script>
+  <script src="/apps/shared/js/ui-utils.js?v=1"></script>
+  
   <script>
     let allConversations = [];
     let lastServerUpdated = null;
@@ -220,18 +228,14 @@
       const app = document.getElementById('app');
       const updated = document.getElementById('updated');
       try {
-        const [convRes, timeRes] = await Promise.all([
-          fetch('/api/yomi/conversations', { credentials: 'include' }),
-          fetch('/api/yomi/last-updated', { credentials: 'include' })
-        ]);
-        if (!convRes.ok) throw new Error('HTTP ' + convRes.status);
-        const { generatedAt, conversations } = await convRes.json();
-        if (timeRes.ok) {
-          const { lastUpdated } = await timeRes.json();
-          lastServerUpdated = lastUpdated;
-          updateUpdatedDisplay(lastUpdated);
+        const conversations = await YomiApi.loadConversations();
+        const lastUpdatedData = await YomiApi.getLastUpdated().catch(() => null);
+        
+        if (lastUpdatedData && lastUpdatedData.lastUpdated) {
+          lastServerUpdated = lastUpdatedData.lastUpdated;
+          updateUpdatedDisplay(lastUpdatedData.lastUpdated);
         } else {
-          updateUpdatedDisplay(generatedAt);
+          updateUpdatedDisplay(new Date().toISOString());
         }
         app.innerHTML = '';
         if (!conversations || !conversations.length) {
@@ -257,7 +261,7 @@
         indicator.style.display = 'inline-block';
         indicator.classList.add('active');
         updated.classList.add('refreshing');
-        const res = await fetch('/api/yomi/last-updated', { credentials: 'include' });
+        const res = await YomiApi.getLastUpdated();
         if (!res.ok) {
           console.warn('Auto-refresh check returned', res.status);
           return;
@@ -331,9 +335,8 @@
     async function loadMessages(id, panel) {
       panel.innerHTML = '<p class="text-null">Loading messages…</p>';
       try {
-        const res = await fetch(`/api/yomi/messages?chat=${encodeURIComponent(id)}&limit=20`, { credentials: 'include' });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const { messages } = await res.json();
+        const response = await YomiApi.loadMessagesPaginated(id, 20);
+        const messages = response;
         panel.innerHTML = '';
         if (!messages || !messages.length) {
           panel.innerHTML = '<p class="text-null">No messages.</p>';
@@ -598,8 +601,7 @@
       semBtn.disabled = true;
       semBtn.textContent = '…';
       try {
-        const r = await fetch(`/api/yomi/search?q=${encodeURIComponent(q)}&limit=20`, { credentials: 'include' });
-        const data = await r.json();
+        const data = await YomiApi.searchMessages(q, 20);
         const results = data.results || [];
         if (results.length === 0) {
           semList.innerHTML = '<p style="color:#64748b;padding:.5rem 0">No results found.</p>';
@@ -648,9 +650,8 @@
         
         try {
           // Step 1: Fetch from LINE
-          const fetchRes = await fetch('/api/yomi/fetch', { method: 'POST' });
-          const fetchData = await fetchRes.json();
-          if (!fetchRes.ok || !fetchData.ok) {
+          const fetchData = await YomiApi.fetchAllConversations();
+          if (!fetchData.ok) {
             throw new Error(fetchData.error || 'Fetch failed');
           }
           
@@ -658,9 +659,8 @@
           if (statusEl) statusEl.textContent = 'Processing and summarizing...';
           
           // Step 2: Process and summarize
-          const processRes = await fetch('/api/yomi/process', { method: 'POST' });
-          const processData = await processRes.json();
-          if (!processRes.ok || !processData.ok) {
+          const processData = await YomiApi.processAllConversations();
+          if (!processData.ok) {
             throw new Error(processData.error || 'Process failed');
           }
           

@@ -1,0 +1,316 @@
+# SSOT: MCP Infrastructure Configuration
+title: MCP Infrastructure Configuration
+subtitle: Single source of truth for MCP server configuration and profile management
+icon: 🔧
+
+# Profile definitions for different network environments
+profiles:
+  home:
+    name: Home Network Profile
+    network: 192.168.1.0/24
+    hostname_pattern: .local
+    description: Home network with stable .local hostname resolution
+    base_urls:
+      tony_omen: tony-omen.local
+      tony_dell: tony-dell.local
+    service_urls:
+      llama_url: http://tony-omen.local:8008
+      imagen_url: http://tony-omen.local:8080/apps/imagen2/api
+      playlive_url: http://tony-omen.local:9231
+      weaviate_url: http://tony-omen.local:3002
+      postgres_url: postgresql://tony-omen.local:5432
+    health_config: infrastructure/ssot.health.home.yml
+    system_config: ssot.mysystem.home.yml
+
+  mobile:
+    name: Mobile Network Profile
+    network: dynamic
+    hostname_pattern: [CURRENT-IP]
+    description: Mobile/external network with dynamic IP addressing
+    base_urls:
+      tony_omen: [CURRENT-IP]
+      tony_dell: [CURRENT-IP]
+    service_urls:
+      llama_url: http://[CURRENT-IP]:8001
+      imagen_url: http://[CURRENT-IP]:8080/apps/imagen2/api
+      playlive_url: http://[CURRENT-IP]:9231
+      weaviate_url: http://[CURRENT-IP]:3002
+      postgres_url: postgresql://[CURRENT-IP]:5432
+    health_config: infrastructure/ssot.health.mobile.yml
+    system_config: ssot.mysystem.mobile.yml
+    placeholder_instructions: Replace [CURRENT-IP] with actual IP or DDNS hostname
+
+# MCP server definitions
+servers:
+  github:
+    name: GitHub Integration
+    description: GitHub API integration for workflow automation
+    implementation: docker ghcr.io/github/github-mcp-server:latest
+    wrapper: run-github-mcp.sh
+    filter: none
+    filtered_tools:
+      - search_issues
+      - create_issue
+      - add_issue_comment
+      - create_pull_request
+      - list_pull_requests
+      - add_comment_to_pending_review
+      - list_commits
+      - get_file_contents
+    env:
+      GITHUB_PERSONAL_ACCESS_TOKEN: ~/.config/secrets/github-mcp.env
+    single_instance: false
+    status: operational
+    config_files:
+      - devin: true
+      - windsurf: true
+
+  mcp-gpu:
+    name: GPU Management
+    description: GPU control and queue management
+    implementation: python /home/tony/CascadeProjects/chaba-omen/mcp/mcp-gpu/server.py
+    wrapper: mcp-single-instance.sh
+    pattern: mcp-gpu/server.py
+    filter: none
+    env:
+      IMAGEN_URL: profile.service_urls.imagen_url
+      LLAMA_URL: profile.service_urls.llama_url
+    single_instance: true
+    status: operational
+    config_files:
+      - devin: true
+      - windsurf: true
+
+  mcp-llama:
+    name: Llama.cpp Server
+    description: LLM inference server interface
+    implementation: python /home/tony/CascadeProjects/chaba-omen/mcp/mcp-llama/server.py
+    wrapper: run-llama-mcp.sh
+    filter: none
+    env:
+      LLAMA_URL: profile.service_urls.llama_url
+    single_instance: true
+    status: operational
+    config_files:
+      - devin: true
+      - windsurf: true
+
+  postgres:
+    name: PostgreSQL Database
+    description: Database operations and management
+    implementation: local /home/tony/.local/postgres-mcp/node_modules/.bin/enhanced-postgres-mcp
+    wrapper: run-postgres-crud-mcp.sh
+    filter: none
+    filtered_tools:
+      - query
+      - execute
+      - insert
+      - update
+      - delete
+    env:
+      DATABASE_URL: profile.service_urls.postgres_url
+      DATABASE_URL_FILE: ~/.config/secrets/postgres-mcp.env
+    single_instance: false
+    status: operational
+    config_files:
+      - devin: true
+      - windsurf: false
+
+  yomi:
+    name: Yomi LINE Integration
+    description: LINE conversation archive and viewer
+    implementation: node /home/tony/.yomi/mcpb/run.mjs
+    wrapper: none
+    filter: none
+    filtered_tools:
+      - list_conversations
+      - get_chat_messages
+      - get_insight
+    single_instance: false
+    status: operational
+    config_files:
+      - devin: true
+      - windsurf: true
+
+  playlive.local:
+    name: Playlive Browser Automation (Local)
+    description: Browser automation for local testing
+    implementation: python /home/tony/CascadeProjects/chaba-omen/mcp/mcp-playlive/playlive-server.py
+    wrapper: none
+    filter: none
+    env:
+      PLAYLIVE_URL: profile.service_urls.playlive_url
+    single_instance: false
+    status: operational
+    config_files:
+      - devin: true
+      - windsurf: false
+
+  playlive.tony-dell:
+    name: Playlive Browser Automation (Tony Dell)
+    description: Browser automation on remote workstation
+    implementation: python /home/tony/CascadeProjects/chaba-omen/mcp/mcp-playlive/playlive-server.py
+    wrapper: mcp-single-instance.sh
+    pattern: mcp-playlive/playlive-server.py
+    filter: none
+    env:
+      PLAYLIVE_URL: http://tony-dell.local:9230
+    single_instance: true
+    status: disabled
+    config_files:
+      - devin: true
+      - windsurf: false
+
+  remote-exec-tony-dell:
+    name: Remote Execution (Tony Dell)
+    description: Remote command execution on tony-dell
+    implementation: bash /home/tony/CascadeProjects/trade/.devin/remote-exec-wrapper.sh
+    wrapper: none
+    filter: none
+    single_instance: false
+    status: operational
+    config_files:
+      - devin: true
+      - windsurf: false
+
+  alphavantage:
+    name: Alpha Vantage Financial Data
+    description: Financial market data API integration
+    implementation: https://mcp.alphavantage.co/mcp
+    wrapper: none
+    filter: none
+    url: https://mcp.alphavantage.co/mcp?apikey=KUTH6I3J1OORWZI8
+    single_instance: false
+    status: operational
+    config_files:
+      - devin: true
+      - windsurf: false
+
+  docs:
+    name: Documentation Search (Chaba)
+    description: Full-text search across chaba project documentation
+    implementation: npx @devista/docs-mcp
+    wrapper: none
+    filter: none
+    args:
+      - -y
+      - --docs
+      - /home/tony/CascadeProjects/chaba/docs
+    single_instance: false
+    status: operational
+    config_files:
+      - devin: true
+      - windsurf: false
+
+  docs-trade:
+    name: Documentation Search (Trade)
+    description: Full-text search across trade project documentation
+    implementation: npx @devista/docs-mcp
+    wrapper: none
+    filter: none
+    args:
+      - -y
+      - --docs
+      - /home/tony/CascadeProjects/trade/docs
+      - --cache-dir
+      - /home/tony/CascadeProjects/trade/.docs-mcp
+    single_instance: false
+    status: operational
+    config_files:
+      - devin: true
+      - windsurf: false
+
+  # Windsurf-specific servers
+  cdp-tony-dell:
+    name: Chrome DevTools Protocol (Tony Dell)
+    description: Chrome DevTools Protocol for browser automation
+    implementation: python /home/tony/CascadeProjects/chaba-omen/mcp/mcp-cdp-controller/server.py
+    wrapper: none
+    filter: none
+    single_instance: false
+    status: operational
+    config_files:
+      - devin: false
+      - windsurf: true
+
+  mcp-weaviate:
+    name: Weaviate Vector Database
+    description: Vector database integration for embeddings
+    implementation: python /home/tony/CascadeProjects/chaba-omen/mcp/mcp-weaviate/server.py
+    wrapper: none
+    filter: none
+    env:
+      WEAVIATE_SEARCH_URL: profile.service_urls.weaviate_url
+    single_instance: false
+    status: operational
+    config_files:
+      - devin: false
+      - windsurf: true
+
+# Script locations (centralized)
+scripts:
+  base_dir: ~/.config/devin/mcp-scripts
+  wrappers:
+    mcp-single-instance: mcp-single-instance.sh
+    run-github: run-github-mcp.sh
+    run-postgres-crud: run-postgres-crud-mcp.sh
+    run-llama: run-llama-mcp.sh
+  utilities:
+    switch-profile: switch-profile.sh
+
+# Architectural Decisions
+decisions:
+  mcp_filter_disabled:
+    date: 2026-08-07
+    reason: "Compatibility issues with mcp-filter implementation"
+    details:
+      - "Original Python venv approach (/tmp/mcp-filter-venv/) did not exist on system"
+      - "Attempted npx version but encountered different CLI syntax (mcp-filter run vs mcp-filter --)"
+      - "Filtering layer caused connectivity issues and empty tool lists"
+      - "Decision: Disable filtering layer for reliable operation"
+    impact:
+      - "All MCP servers now expose full tool sets (no token optimization)"
+      - "Simplified configuration and improved reliability"
+      - "Larger context usage due to unfiltered tool schemas"
+    future_consideration: "Re-enable filtering once mcp-filter npx compatibility is resolved"
+    status: "disabled"
+  implementations:
+    mcp-gpu: /home/tony/CascadeProjects/chaba-omen/mcp/mcp-gpu/server.py
+    mcp-llama: /home/tony/CascadeProjects/chaba-omen/mcp/mcp-llama/server.py
+    mcp-playlive: /home/tony/CascadeProjects/chaba-omen/mcp/mcp-playlive/playlive-server.py
+    mcp-cdp: /home/tony/CascadeProjects/chaba-omen/mcp/mcp-cdp-controller/server.py
+    mcp-weaviate: /home/tony/CascadeProjects/chaba-omen/mcp/mcp-weaviate/server.py
+    remote-exec: /home/tony/CascadeProjects/trade/.devin/remote-exec-wrapper.sh
+    yomi: /home/tony/.yomi/mcpb/run.mjs
+
+# Configuration generation settings
+generation:
+  output_dir: ~/.config/devin
+  backup_dir: ~/.config/devin/mcp-backups
+  config_files:
+    devin: mcp_config.json
+    windsurf: mcp_config.json
+  default_profile: home
+  profile_detection:
+    method: network
+    home_networks:
+      - 192.168.1.0/24
+    mobile_indicator:
+      - TONY-IP
+
+# Validation rules
+validation:
+  require_profile: true
+  validate_urls: true
+  validate_scripts: true
+  check_env_files: true
+  max_servers: 20
+
+# Related files
+related_files:
+  - ssot.devin.tools.yml
+  - ssot.mysystem.home.yml
+  - ssot.mysystem.mobile.yml
+  - infrastructure/ssot.health.home.yml
+  - infrastructure/ssot.health.mobile.yml
+  - ssot.token-optimization.yml

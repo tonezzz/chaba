@@ -10,10 +10,7 @@ let currentChatId = window.currentChatId || null;
  */
 async function loadConversations() {
   try {
-    const res = await fetch('/api/yomi/conversations');
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const { conversations } = await res.json();
-    return conversations || [];
+    return await YomiApi.loadConversations();
   } catch (error) {
     console.error('Failed to load conversations:', error);
     return [];
@@ -191,7 +188,7 @@ async function init() {
  * Escape HTML to prevent XSS
  */
 function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  return UiUtils.escapeHtml(s);
 }
 
 // Start the application when DOM is ready

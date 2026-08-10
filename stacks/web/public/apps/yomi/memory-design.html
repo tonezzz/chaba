@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Collective Memory UI Design</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #fff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #06b6d4;
+      --accent-dark: #0891b2;
+      --border: #e2e8f0;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+    
+    * { box-sizing: border-box; }
+    body { 
+      font-family: system-ui, -apple-system, sans-serif; 
+      background: var(--bg); 
+      color: var(--text); 
+      margin: 0; 
+      padding: 2rem;
+    }
+    
+    .design-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    .design-header h1 {
+      margin: 0;
+      color: var(--text);
+    }
+    
+    .design-header p {
+      color: var(--muted);
+      margin-top: 0.5rem;
+    }
+    
+    .design-section {
+      margin-bottom: 3rem;
+    }
+    
+    .design-section h2 {
+      color: var(--text);
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .mockup {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .mockup-header {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 0.75rem 1rem;
+      border-radius: 0.375rem;
+      margin: -1.5rem -1.5rem 1rem -1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .mockup-header .back {
+      color: #f8fafc;
+      text-decoration: none;
+      font-size: 1.1rem;
+    }
+    
+    .mockup-header h1 {
+      margin: 0;
+      font-size: 1rem;
+      flex: 1;
+    }
+    
+    /* Main Layout */
+    .memory-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr 320px;
+      gap: 1rem;
+      min-height: 600px;
+    }
+    
+    /* Left Panel - Filters */
+    .filters-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      padding: 1rem;
+    }
+    
+    .filter-section {
+      margin-bottom: 1.5rem;
+    }
+    
+    .filter-section h3 {
+      margin: 0 0 0.75rem 0;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .filter-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+    }
+    
+    .filter-checkbox input {
+      width: 16px;
+      height: 16px;
+    }
+    
+    .date-range {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .date-range input {
+      padding: 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 0.25rem;
+      font-size: 0.85rem;
+    }
+    
+    .search-box {
+      padding: 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 0.25rem;
+      font-size: 0.85rem;
+      width: 100%;
+    }
+    
+    /* Center Panel - Timeline */
+    .timeline-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+    
+    .timeline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .timeline-title {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+    
+    .timeline-controls {
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .timeline-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 0.25rem;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    
+    .timeline-btn:hover {
+      background: var(--border);
+    }
+    
+    .timeline-btn.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+    
+    .timeline {
+      position: relative;
+      padding-left: 2rem;
+    }
+    
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 0.5rem;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--border);
+    }
+    
+    .timeline-period {
+      position: relative;
+      margin-bottom: 2rem;
+    }
+    
+    .timeline-period-marker {
+      position: absolute;
+      left: -2rem;
+      width: 12px;
+      height: 12px;
+      background: var(--accent);
+      border-radius: 50%;
+      border: 2px solid var(--card);
+    }
+    
+    .timeline-period-header {
+      background: var(--bg);
+      padding: 0.75rem 1rem;
+      border-radius: 0.375rem;
+      margin-bottom: 1rem;
+    }
+    
+    .timeline-period-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+    
+    .timeline-period-subtitle {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 0.25rem;
+    }
+    
+    .memory-cluster {
+      background: var(--bg);
+      border-radius: 0.375rem;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      border-left: 3px solid var(--accent);
+    }
+    
+    .memory-cluster-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+    
+    .memory-cluster-title {
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+    
+    .memory-cluster-meta {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    
+    .memory-cluster-topics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .topic-tag {
+      background: #dbeafe;
+      color: #1e40af;
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+    }
+    
+    .memory-cluster-summary {
+      font-size: 0.85rem;
+      color: var(--text);
+      line-height: 1.4;
+    }
+    
+    .memory-cluster-sources {
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--border);
+    }
+    
+    .source-chip {
+      display: inline-block;
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.25rem;
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-right: 0.35rem;
+    }
+    
+    /* Right Panel - Insights */
+    .insights-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+    
+    .insight-card {
+      background: var(--bg);
+      border-radius: 0.375rem;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .insight-card h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    
+    .insight-card-content {
+      font-size: 0.8rem;
+      color: var(--text);
+      line-height: 1.4;
+    }
+    
+    .insight-card.highlight {
+      border-left: 3px solid var(--warning);
+    }
+    
+    .insight-card.pattern {
+      border-left: 3px solid var(--success);
+    }
+    
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .stat-item {
+      background: var(--bg);
+      padding: 0.75rem;
+      border-radius: 0.375rem;
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    
+    .stat-label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    /* Design Notes */
+    .design-notes {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 0.375rem;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .design-notes h3 {
+      margin: 0 0 0.5rem 0;
+      color: #92400e;
+      font-size: 0.9rem;
+    }
+    
+    .design-notes ul {
+      margin: 0;
+      padding-left: 1.25rem;
+      font-size: 0.85rem;
+      color: #92400e;
+    }
+    
+    .design-notes li {
+      margin-bottom: 0.25rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="design-header">
+    <h1>Collective Memory UI Design</h1>
+    <p>Cross-conversation analysis and timeline visualization</p>
+  </div>
+
+  <div class="design-section">
+    <h2>Main Layout</h2>
+    <div class="mockup">
+      <div class="mockup-header">
+        <a class="back" href="#">&larr; Back</a>
+        <h1>Collective Memory</h1>
+      </div>
+      
+      <div class="memory-layout">
+        <!-- Left Panel: Filters -->
+        <div class="filters-panel">
+          <div class="filter-section">
+            <h3>Search</h3>
+            <input type="text" class="search-box" placeholder="Search memories...">
+          </div>
+          
+          <div class="filter-section">
+            <h3>Date Range</h3>
+            <div class="date-range">
+              <input type="date" placeholder="Start date">
+              <input type="date" placeholder="End date">
+            </div>
+          </div>
+          
+          <div class="filter-section">
+            <h3>Conversations</h3>
+            <div class="filter-group">
+              <label class="filter-checkbox">
+                <input type="checkbox" checked> Family Group
+              </label>
+              <label class="filter-checkbox">
+                <input type="checkbox" checked> Work Chat
+              </label>
+              <label class="filter-checkbox">
+                <input type="checkbox"> Personal
+              </label>
+              <label class="filter-checkbox">
+                <input type="checkbox"> Promotions
+              </label>
+            </div>
+          </div>
+          
+          <div class="filter-section">
+            <h3>Topics</h3>
+            <div class="filter-group">
+              <label class="filter-checkbox">
+                <input type="checkbox" checked> Health
+              </label>
+              <label class="filter-checkbox">
+                <input type="checkbox" checked> Finance
+              </label>
+              <label class="filter-checkbox">
+                <input type="checkbox"> Travel
+              </label>
+              <label class="filter-checkbox">
+                <input type="checkbox"> Work Projects
+              </label>
+            </div>
+          </div>
+          
+          <div class="filter-section">
+            <h3>Memory Types</h3>
+            <div class="filter-group">
+              <label class="filter-checkbox">
+                <input type="checkbox" checked> Events
+              </label>
+              <label class="filter-checkbox">
+                <input type="checkbox" checked> Decisions
+              </label>
+              <label class="filter-checkbox">
+                <input type="checkbox" checked> Patterns
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Center Panel: Timeline -->
+        <div class="timeline-panel">
+          <div class="timeline-header">
+            <div class="timeline-title">Memory Timeline</div>
+            <div class="timeline-controls">
+              <button class="timeline-btn active">Timeline</button>
+              <button class="timeline-btn">Clusters</button>
+              <button class="timeline-btn">Network</button>
+            </div>
+          </div>
+          
+          <div class="timeline">
+            <!-- Period 1 -->
+            <div class="timeline-period">
+              <div class="timeline-period-marker"></div>
+              <div class="timeline-period-header">
+                <div class="timeline-period-title">August 2026 - Week 1</div>
+                <div class="timeline-period-subtitle">3 conversations • 12 key memories</div>
+              </div>
+              
+              <div class="memory-cluster">
+                <div class="memory-cluster-header">
+                  <div class="memory-cluster-title">Health Decision</div>
+                  <div class="memory-cluster-meta">Aug 3 • Family Group</div>
+                </div>
+                <div class="memory-cluster-topics">
+                  <span class="topic-tag">Health</span>
+                  <span class="topic-tag">Family</span>
+                </div>
+                <div class="memory-cluster-summary">
+                  Discussed mom's health check results and decided on new treatment plan involving specialist consultation in Bangkok.
+                </div>
+                <div class="memory-cluster-sources">
+                  <span class="source-chip">Family Group</span>
+                  <span class="source-chip">Work Chat</span>
+                </div>
+              </div>
+              
+              <div class="memory-cluster">
+                <div class="memory-cluster-header">
+                  <div class="memory-cluster-title">Project Milestone</div>
+                  <div class="memory-cluster-meta">Aug 5 • Work Chat</div>
+                </div>
+                <div class="memory-cluster-topics">
+                  <span class="topic-tag">Work</span>
+                  <span class="topic-tag">Finance</span>
+                </div>
+                <div class="memory-cluster-summary">
+                  Completed major project milestone ahead of schedule. Team celebration planned and bonus discussions initiated.
+                </div>
+                <div class="memory-cluster-sources">
+                  <span class="source-chip">Work Chat</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Period 2 -->
+            <div class="timeline-period">
+              <div class="timeline-period-marker"></div>
+              <div class="timeline-period-header">
+                <div class="timeline-period-title">July 2026 - Week 4</div>
+                <div class="timeline-period-subtitle">2 conversations • 8 key memories</div>
+              </div>
+              
+              <div class="memory-cluster">
+                <div class="memory-cluster-header">
+                  <div class="memory-cluster-title">Travel Planning</div>
+                  <div class="memory-cluster-meta">Jul 28 • Family Group</div>
+                </div>
+                <div class="memory-cluster-topics">
+                  <span class="topic-tag">Travel</span>
+                  <span class="topic-tag">Family</span>
+                </div>
+                <div class="memory-cluster-summary">
+                  Finalized Chiang Mai trip dates and booked accommodations. Discussed itinerary and budget allocation.
+                </div>
+                <div class="memory-cluster-sources">
+                  <span class="source-chip">Family Group</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Right Panel: Insights -->
+        <div class="insights-panel">
+          <div class="stat-grid">
+            <div class="stat-item">
+              <div class="stat-value">156</div>
+              <div class="stat-label">Total Memories</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">5</div>
+              <div class="stat-label">Conversations</div>
+            </div>
+          </div>
+          
+          <div class="insight-card highlight">
+            <h3>🔥 Key Insight</h3>
+            <div class="insight-card-content">
+              Health-related discussions increased 40% in August compared to July, coinciding with family health concerns.
+            </div>
+          </div>
+          
+          <div class="insight-card pattern">
+            <h3>📊 Pattern Detected</h3>
+            <div class="insight-card-content">
+              Major decisions tend to be made on weekends, with follow-up discussions occurring on Monday mornings.
+            </div>
+          </div>
+          
+          <div class="insight-card">
+            <h3>🏷️ Trending Topics</h3>
+            <div class="insight-card-content">
+              <div class="memory-cluster-topics">
+                <span class="topic-tag">Health</span>
+                <span class="topic-tag">Finance</span>
+                <span class="topic-tag">Travel</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="insight-card">
+            <h3>📅 Recent Activity</h3>
+            <div class="insight-card-content">
+              <div style="font-size: 0.75rem; color: var(--muted);">
+                <div>• Aug 9: Work project discussion</div>
+                <div>• Aug 8: Family dinner planning</div>
+                <div>• Aug 7: Health update shared</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="design-notes">
+        <h3>🎨 Design Notes</h3>
+        <ul>
+          <li><strong>Three-column layout:</strong> Filters (left), Timeline (center), Insights (right)</li>
+          <li><strong>Timeline view:</strong> Organized by time periods with memory clusters, not daily calendar</li>
+          <li><strong>Cross-conversation:</strong> Shows sources from multiple conversations in each memory</li>
+          <li><strong>Visual hierarchy:</strong> Time periods → Memory clusters → Individual memories</li>
+          <li><strong>Insights panel:</strong> Real-time analysis of patterns, trends, and key insights</li>
+          <li><strong>Filter-driven:</strong> Extensive filtering by date, conversations, topics, and memory types</li>
+          <li><strong>Multiple views:</strong> Timeline, Clusters, Network views for different analysis perspectives</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="design-section">
+    <h2>Alternative: Cluster View</h2>
+    <div class="mockup">
+      <div class="mockup-header">
+        <a class="back" href="#">&larr; Back</a>
+        <h1>Collective Memory - Clusters</h1>
+      </div>
+      
+      <div style="padding: 1rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+          <!-- Cluster Card 1 -->
+          <div style="background: var(--bg); border-radius: 0.375rem; padding: 1rem; border-left: 4px solid var(--accent);">
+            <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem;">Health & Wellness</div>
+            <div style="font-size: 0.75rem; color: var(--muted); margin-bottom: 0.75rem;">12 memories • 3 conversations • Aug 2026</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.5rem;">
+              <span class="topic-tag">Health</span>
+              <span class="topic-tag">Family</span>
+              <span class="topic-tag">Medical</span>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text); line-height: 1.4;">
+              Cluster of health-related discussions including doctor visits, treatment decisions, and family health updates.
+            </div>
+          </div>
+          
+          <!-- Cluster Card 2 -->
+          <div style="background: var(--bg); border-radius: 0.375rem; padding: 1rem; border-left: 4px solid var(--success);">
+            <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem;">Work Projects</div>
+            <div style="font-size: 0.75rem; color: var(--muted); margin-bottom: 0.75rem;">8 memories • 2 conversations • Jul-Aug 2026</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.5rem;">
+              <span class="topic-tag">Work</span>
+              <span class="topic-tag">Finance</span>
+              <span class="topic-tag">Projects</span>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text); line-height: 1.4;">
+              Project milestones, team coordination, and achievement discussions across multiple work conversations.
+            </div>
+          </div>
+          
+          <!-- Cluster Card 3 -->
+          <div style="background: var(--bg); border-radius: 0.375rem; padding: 1rem; border-left: 4px solid var(--warning);">
+            <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem;">Travel Planning</div>
+            <div style="font-size: 0.75rem; color: var(--muted); margin-bottom: 0.75rem;">5 memories • 1 conversation • Jul 2026</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.5rem;">
+              <span class="topic-tag">Travel</span>
+              <span class="topic-tag">Family</span>
+              <span class="topic-tag">Budget</span>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text); line-height: 1.4;">
+              Chiang Mai trip planning, accommodation booking, and itinerary discussions.
+            </div>
+          </div>
+          
+          <!-- Cluster Card 4 -->
+          <div style="background: var(--bg); border-radius: 0.375rem; padding: 1rem; border-left: 4px solid var(--danger);">
+            <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem;">Financial Decisions</div>
+            <div style="font-size: 0.75rem; color: var(--muted); margin-bottom: 0.75rem;">6 memories • 2 conversations • Jul-Aug 2026</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.5rem;">
+              <span class="topic-tag">Finance</span>
+              <span class="topic-tag">Investments</span>
+              <span class="topic-tag">Budget</span>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text); line-height: 1.4;">
+              Investment decisions, budget allocations, and financial planning discussions.
+            </div>
+          </div>
+        </div>
+        
+        <div class="design-notes">
+          <h3>🎨 Cluster View Notes</h3>
+          <ul>
+            <li><strong>Topic-based grouping:</strong> Memories clustered by themes rather than time</li>
+            <li><strong>Card-based layout:</strong> Each cluster shows key info at a glance</li>
+            <li><strong>Color coding:</strong> Border colors indicate cluster type/category</li>
+            <li><strong>Quick filters:</strong> Easy to see patterns across different topic areas</li>
+            <li><strong>Scalable:</strong> Grid layout adapts to different screen sizes</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="design-section">
+    <h2>Key Design Decisions</h2>
+    <div class="mockup" style="background: var(--bg);">
+      <div style="padding: 1.5rem;">
+        <h3 style="margin-top: 0;">Why This Design?</h3>
+        
+        <div style="margin-bottom: 1.5rem;">
+          <h4 style="margin-bottom: 0.5rem; color: var(--accent-dark);">1. Different from Daily Calendar</h4>
+          <p style="font-size: 0.9rem; color: var(--text); line-height: 1.5; margin: 0;">
+            Unlike daily2 which focuses on single-conversation daily summaries, collective memory is designed for <strong>cross-conversation analysis</strong>. The timeline shows patterns across multiple conversations, and clusters group related memories regardless of which conversation they came from.
+          </p>
+        </div>
+        
+        <div style="margin-bottom: 1.5rem;">
+          <h4 style="margin-bottom: 0.5rem; color: var(--accent-dark);">2. Multi-Day Span Support</h4>
+          <p style="font-size: 0.9rem; color: var(--text); line-height: 1.5; margin: 0;">
+            The timeline is organized by <strong>periods (weeks/months)</strong> rather than individual days, making it easier to see longer-term patterns and multi-day conversations that span across calendar boundaries.
+          </p>
+        </div>
+        
+        <div style="margin-bottom: 1.5rem;">
+          <h4 style="margin-bottom: 0.5rem; color: var(--accent-dark);">3. Source Tracking</h4>
+          <p style="font-size: 0.9rem; color: var(--text); line-height: 1.5; margin: 0;">
+            Each memory cluster shows <strong>source conversations</strong> as chips, making it clear which conversations contributed to each memory and enabling cross-referencing.
+          </p>
+        </div>
+        
+        <div style="margin-bottom: 1.5rem;">
+          <h4 style="margin-bottom: 0.5rem; color: var(--accent-dark);">4. Real-Time Insights</h4>
+          <p style="font-size: 0.9rem; color: var(--text); line-height: 1.5; margin: 0;">
+            The right panel provides <strong>automated insights</strong> - key highlights, detected patterns, trending topics, and recent activity - giving users immediate value without manual analysis.
+          </p>
+        </div>
+        
+        <div>
+          <h4 style="margin-bottom: 0.5rem; color: var(--accent-dark);">5. Multiple View Options</h4>
+          <p style="font-size: 0.9rem; color: var(--text); line-height: 1.5; margin: 0;">
+            Users can switch between <strong>Timeline</strong> (chronological), <strong>Clusters</strong> (topic-based), and <strong>Network</strong> (relationship-based) views to analyze memories from different perspectives.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="design-section">
+    <h2>Implementation Priority</h2>
+    <div class="mockup" style="background: var(--bg);">
+      <div style="padding: 1.5rem;">
+        <h3 style="margin-top: 0;">Phase 1: Core Timeline View</h3>
+        <ul style="font-size: 0.9rem; line-height: 1.6;">
+          <li>Basic three-column layout with filters, timeline, and insights</li>
+          <li>Time period organization (weeks/months)</li>
+          <li>Memory cluster display with sources</li>
+          <li>Basic filtering by date range and conversations</li>
+        </ul>
+        
+        <h3 style="margin-top: 1.5rem;">Phase 2: Enhanced Features</h3>
+        <ul style="font-size: 0.9rem; line-height: 1.6;">
+          <li>Advanced filtering (topics, memory types)</li>
+          <li>Search functionality</li>
+          <li>Real-time insights panel</li>
+          <li>Statistics and metrics</li>
+        </ul>
+        
+        <h3 style="margin-top: 1.5rem;">Phase 3: Alternative Views</h3>
+        <ul style="font-size: 0.9rem; line-height: 1.6;">
+          <li>Cluster view implementation</li>
+          <li>Network view (conversation relationships)</li>
+          <li>Export and sharing features</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

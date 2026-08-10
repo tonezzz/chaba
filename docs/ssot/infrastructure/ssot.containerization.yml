@@ -1,0 +1,151 @@
+title: Service Containerization Strategy
+subtitle: Migration plan for host services to Docker containers for better resource management and deployment consistency
+icon: 🐳
+
+ideas:
+  - Central tracking of containerization progress for host services
+  - Resource management and deployment consistency improvements
+  - Dependency management between containerized services
+  - Integration with existing Docker Compose stacks
+  - Systemd service replacement with containerized equivalents
+
+sections:
+  - title: Current Service Distribution
+    icon: 📊
+    layout: list
+    items:
+      - label: Host System Services (systemd --user)
+        text: 'Total: 30 running services (after containerization)
+
+          **Containerized (3):**
+          - yomi-api.service → yomi-api container
+          - gpu-queue.service → gpu-queue container
+          - gpu-queue-processor.service → gpu-queue-processor container
+
+          **Retained on host (4):**
+          - playlived.service - Shared browser session daemon (Playwright complexity)
+          - barriers.service - Barrier KVM server (input device access)
+          - clip-sync-dell.service - Clipboard sync (X11 dependencies)
+          - rclone-gdrive.service - Google Drive mount (FUSE requirements)
+
+          **System/Desktop services (23):**
+          - GNOME/XFCE desktop services, PipeWire audio, D-Bus services, etc.'
+        status: current_state
+        tags: ['systemd', 'host-services', 'post-containerization']
+
+      - label: Docker Containers
+        text: 'Total: 18 running containers (after containerization)
+
+          **Chaba web stack (12):**
+          - web (caddy) - Reverse proxy
+          - bserver - Backend server
+          - status-api - Status API
+          - camera-control - Camera control service
+          - redis - Cache/queue
+          - postgres - Database with pgvector
+          - weaviate - Vector database
+          - netdata - Monitoring
+          - trading-terminal - Trading interface
+          - yomi-api - Yomi API server (NEWLY CONTAINERIZED)
+          - gpu-queue - GPU Queue Manager (NEWLY CONTAINERIZED)
+          - gpu-queue-processor - GPU Queue Processor (NEWLY CONTAINERIZED)
+
+          **Chaba raceman stack (2):**
+          - raceman-web (nginx)
+          - raceman-php (PHP-FPM)
+
+          **Other services (4):**
+          - frigate - NVR/camera system
+          - imagen2-inference - Image generation (GPU)
+          - txt2vid-inference - Video generation (GPU)
+          - thai-legal-inference - LLM inference (GPU)'
+        status: current_state
+        tags: ['docker', 'containers', 'post-containerization']
+
+  - title: Phase 1: Easy Wins (Completed)
+    icon: ✅
+    layout: list
+    items:
+      - label: Clean up GitHub MCP containers
+        text: Removed 8 duplicate GitHub MCP server containers that accumulated due to docker run -i --rm not cleaning up properly.
+        status: completed
+        priority: high
+        effort: low
+        completed: 2026-08-09
+        tags: ['cleanup', 'mcp', 'docker', 'completed']
+
+      - label: Containerize Yomi API
+        text: Successfully containerized Yomi API with host networking for LINE integration, health checks, and proper environment configuration.
+        status: completed
+        priority: high
+        effort: medium
+        completed: 2026-08-09
+        tags: ['containerization', 'yomi', 'nodejs', 'completed']
+
+      - label: Containerize GPU Queue services
+        text: Successfully containerized both gpu-queue and gpu-queue-processor with host networking for GPU monitoring and proper service dependencies.
+        status: completed
+        priority: high
+        effort: medium
+        completed: 2026-08-09
+        tags: ['containerization', 'gpu', 'queue', 'completed']
+
+  - title: Phase 2: Moderate Effort (Completed)
+    icon: ✅
+    layout: list
+    items:
+      - label: Evaluate Playlived containerization
+        text: NOT RECOMMENDED - Playwright complexity, CDP networking, display access requirements outweigh benefits.
+        status: completed
+        priority: medium
+        effort: high
+        completed: 2026-08-09
+        tags: ['containerization', 'playlive', 'mcp', 'not-recommended', 'completed']
+
+      - label: Consider Clip Sync containerization
+        text: NOT RECOMMENDED - X11 dependencies, SSH key management, and low benefit make containerization unnecessary.
+        status: completed
+        priority: medium
+        effort: low
+        completed: 2026-08-09
+        tags: ['containerization', 'sync', 'network', 'not-recommended', 'completed']
+
+  - title: Phase 3: Advanced (Completed)
+    icon: ✅
+    layout: list
+    items:
+      - label: Evaluate Barriers containerization
+        text: NOT RECOMMENDED - Input device access, X11 dependencies, sudo requirements make containerization impractical.
+        status: completed
+        priority: low
+        effort: very_high
+        completed: 2026-08-09
+        tags: ['containerization', 'kvm', 'input', 'not-recommended', 'completed']
+
+      - label: Keep Rclone on host
+        text: NOT RECOMMENDED - FUSE requirements, privileged containers, and security implications make containerization impractical.
+        status: completed
+        priority: low
+        effort: very_high
+        completed: 2026-08-09
+        tags: ['host-service', 'fuse', 'mount', 'not-recommended', 'completed']
+
+  - title: Services to Keep on Host
+    icon: 🖥️
+    layout: list
+    items:
+      - label: Desktop/System Services
+        text: Core desktop functionality stays on host for proper integration (GNOME, PipeWire, D-Bus, etc.)
+        tags: ['host-services', 'desktop', 'system']
+
+config:
+  version: 2
+  last_updated: 2026-08-09
+  status: completed
+  maintainer: tony
+  summary: Successfully containerized 3 high-value services (Yomi API, GPU Queue services) and appropriately retained 4 complex/low-benefit services on host (Playlived, Clip Sync, Barriers, Rclone)
+  related_files:
+    - docs/ssot/ssot.improvements.yml
+    - docs/ssot/infrastructure/ssot.services.yml
+    - docs/ssot/infrastructure/ssot.health.home.yml
+    - /home/tony/CascadeProjects/chaba/stacks/web/docker-compose.yml

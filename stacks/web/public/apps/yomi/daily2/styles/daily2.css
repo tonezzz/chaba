@@ -316,6 +316,10 @@ header h1 { margin: 0; font-size: 1.1rem; flex: 1; }
   border: 1px solid var(--border);
 }
 
+.message-item.media-only {
+  padding: 0.35rem 0.5rem;
+}
+
 .message-time {
   font-size: 0.7rem;
   color: var(--muted);
@@ -351,8 +355,8 @@ header h1 { margin: 0; font-size: 1.1rem; flex: 1; }
 }
 
 .message-thumbnail {
-  max-width: 60px;
-  max-height: 60px;
+  max-width: 135px;
+  max-height: 135px;
   border-radius: 0.25rem;
   cursor: pointer;
   object-fit: cover;
@@ -363,4 +367,138 @@ header h1 { margin: 0; font-size: 1.1rem; flex: 1; }
 
 .message-thumbnail:hover {
   transform: scale(1.05);
+}
+
+/* Media analysis wrapper - image and button in same div */
+.message-media-wrapper {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+/* Analyze button - very compact and aligned */
+.analyze-btn {
+  background: #8b5cf6;
+  color: #fff;
+  border: none;
+  border-radius: 2px;
+  padding: 1px 4px;
+  font-size: 0.6rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  white-space: nowrap;
+  line-height: 1.2;
+  height: 16px;
+}
+
+.analyze-btn:hover {
+  background: #7c3aed;
+}
+
+.analyze-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.analyze-btn.re-analyze {
+  background: #64748b;
+  font-size: 0.6rem;
+  padding: 1px 4px;
+}
+
+.analyze-btn.re-analyze:hover {
+  background: #475569;
+}
+
+/* Media analysis result */
+.media-analysis-result {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 4px;
+  padding: 0.5rem;
+  font-size: 0.8rem;
+  min-height: 2rem;
+  width: fit-content;
+  max-width: 300px;
+}
+
+.analysis-text {
+  color: #166534;
+  line-height: 1.4;
+  margin: 0;
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  white-space: pre-wrap;
+}
+
+.analysis-toggle {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.toggle-btn {
+  background: #e2e8f0;
+  color: #475569;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.toggle-btn:hover {
+  background: #cbd5e1;
+}
+
+.toggle-btn.active {
+  background: #8b5cf6;
+  color: white;
+}
+
+.analysis-content {
+  width: fit-content;
+  max-width: 300px;
+}
+
+.media-analysis-result.loading {
+  background: #fef3c7;
+  border-color: #fcd34d;
+}
+
+.media-analysis-result.loading .analysis-text {
+  color: #92400e;
+}
+
+.media-analysis-result.error {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
+.media-analysis-result.error .analysis-text {
+  color: #dc2626;
+}
+
+/* Batch analyze button */
+.batch-analyze-btn {
+  background: #8b5cf6;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  margin-left: auto;
+  transition: background 0.2s ease;
+}
+
+.batch-analyze-btn:hover {
+  background: #7c3aed;
+}
+
+.batch-analyze-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
 }

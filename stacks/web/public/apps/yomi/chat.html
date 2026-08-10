@@ -138,6 +138,14 @@
     <button type="button" data-dir="down" aria-label="Page down">Down</button>
     <button type="button" data-dir="last" aria-label="Newest messages">Last</button>
   </div>
+  
+  <!-- Load shared utilities -->
+  <script src="/apps/shared/js/date-utils.js?v=1"></script>
+  <script src="/apps/shared/js/date-utils-thailand.js?v=1"></script>
+  <script src="/apps/shared/js/api-utils.js?v=1"></script>
+  <script src="/apps/shared/js/api-yomi.js?v=1"></script>
+  <script src="/apps/shared/js/ui-utils.js?v=1"></script>
+  
   <script>
     const PAGE_LIMIT = 50;
     let allMessages = [];
@@ -221,12 +229,7 @@
     }
 
     async function fetchMessages(chatId, before) {
-      let url = `/api/yomi/messages?chat=${encodeURIComponent(chatId)}&limit=${PAGE_LIMIT}`;
-      if (before) url += `&before=${encodeURIComponent(before)}`;
-      const res = await fetch(url, { credentials: 'include' });
-      if (!res.ok) throw new Error('Messages ' + res.status);
-      const { messages } = await res.json();
-      return messages || [];
+      return await YomiApi.loadMessagesPaginated(chatId, PAGE_LIMIT, before);
     }
 
     function appendMessages(messages, chatId, toStart) {
@@ -338,9 +341,7 @@
         return;
       }
       try {
-        const convRes = await fetch('/api/yomi/conversations', { credentials: 'include' });
-        if (!convRes.ok) throw new Error('Conversations ' + convRes.status);
-        const { conversations } = await convRes.json();
+        const conversations = await YomiApi.loadConversations();
         const conv = conversations.find(c => c.id === id);
         const title = conv?.name || id;
         document.title = `Yomi — ${title}`;
@@ -411,9 +412,9 @@
     async function checkForUpdates() {
       if (!chatId) return;
       try {
-        const res = await fetch('/api/yomi/last-updated', { credentials: 'include' });
-        if (!res.ok) return;
-        const { lastUpdated } = await res.json();
+        const lastUpdatedData = await YomiApi.getLastUpdated();
+        if (!lastUpdatedData) return;
+        const { lastUpdated } = lastUpdatedData;
         if (lastUpdated && lastServerUpdated && new Date(lastUpdated) > new Date(lastServerUpdated)) {
           location.reload();
         }
@@ -436,19 +437,15 @@
       
       try {
         // Step 1: Fetch from LINE
-        const fetchUrl = '/api/yomi/fetch?chat=' + encodeURIComponent(chatId);
-        const fetchRes = await fetch(fetchUrl, { method: 'POST' });
-        const fetchData = await fetchRes.json();
-        if (!fetchRes.ok || !fetchData.ok) throw new Error(fetchData.error || 'Fetch failed');
+        const fetchData = await YomiApi.fetchFromLine(chatId);
+        if (!fetchData.ok) throw new Error(fetchData.error || 'Fetch failed');
         
         if (statusBar) statusBar.textContent = 'Processing...';
         if (refetch) refetch.textContent = 'Processing...';
         
         // Step 2: Process and summarize
-        const processUrl = '/api/yomi/process?chat=' + encodeURIComponent(chatId) + (force ? '&force=true' : '');
-        const processRes = await fetch(processUrl, { method: 'POST' });
-        const processData = await processRes.json();
-        if (!processRes.ok || !processData.ok) throw new Error(processData.error || 'Process failed');
+        const processData = await YomiApi.processMessages(chatId, force);
+        if (!processData.ok) throw new Error(processData.error || 'Process failed');
         
         if (statusBar) statusBar.textContent = 'Updated. Reloading…';
         location.reload();
@@ -474,9 +471,9 @@
     async function initAutoRefresh() {
       if (!chatId) return;
       try {
-        const res = await fetch('/api/yomi/last-updated', { credentials: 'include' });
-        if (res.ok) {
-          const { lastUpdated } = await res.json();
+        const lastUpdatedData = await YomiApi.getLastUpdated();
+        if (lastUpdatedData) {
+          const { lastUpdated } = lastUpdatedData;
           lastServerUpdated = lastUpdated;
           startAutoRefresh();
         }
@@ -498,15 +495,9 @@
         replySend.disabled = true;
         replySend.textContent = 'Sending...';
         try {
-          const res = await fetch('/api/yomi/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chatId, text }),
-            credentials: 'include'
-          });
-          const data = await res.json();
-          if (!res.ok || !data.ok) {
-            throw new Error(data.error || res.statusText);
+          const data = await YomiApi.sendMessage(chatId, text);
+          if (!data.ok) {
+            throw new Error(data.error || 'Send failed');
           }
           replyInput.value = '';
           if (statusBar) {

@@ -24,24 +24,16 @@ async function loadDailySummaries(chatId) {
   console.log('summary.js: loadDailySummaries called with chatId:', chatId);
   
   // Load all summaries for the calendar to show which dates have data
-  const res = await fetch(`/api/yomi/daily?chat=${encodeURIComponent(chatId)}`);
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  const data = await res.json();
-  console.log('summary.js: loadDailySummaries returning:', data.summaries);
-  return data.summaries || [];
+  const summaries = await YomiApi.loadDailySummaries(chatId);
+  console.log('summary.js: loadDailySummaries returning:', summaries);
+  return summaries;
 }
 
 /**
  * Trigger re-summarization for a specific date
  */
 async function resummarizeDay(chatId, date) {
-  const res = await fetch('/api/yomi/resummarize', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chatIds: [chatId], forceAll: false, targetDate: date })
-  });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  const result = await res.json();
+  const result = await YomiApi.resummarize([chatId], false, date);
   if (!result.ok) throw new Error(result.error || 'Re-summarization failed');
   return result;
 }

@@ -44,6 +44,7 @@
       <div class="message-list-header">
         <div class="message-list-title">Messages</div>
         <div class="message-list-count" id="message-list-count"></div>
+        <button class="batch-analyze-btn" id="batch-analyze-btn" onclick="analyzeBatchMedia(this)" style="display: none;">Batch Analyze</button>
       </div>
       <div class="message-list-content" id="message-list-content">
         <div class="empty-state" style="padding: 1rem;">Select a date to view messages</div>
@@ -59,12 +60,18 @@
     </div>
   </div>
   
-  <!-- Load modules in dependency order -->
-  <script src="js/init.js?v=21"></script>
-  <script src="js/date-utils.js?v=21"></script>
-  <script src="js/calendar.js?v=21"></script>
-  <script src="js/summary.js?v=21"></script>
-  <script src="js/messages.js?v=21"></script>
-  <script src="js/app.js?v=21"></script>
+  <!-- Load shared utilities in dependency order -->
+  <script src="/apps/shared/js/date-utils.js?v=1"></script>
+  <script src="/apps/shared/js/date-utils-thailand.js?v=1"></script>
+  <script src="/apps/shared/js/api-utils.js?v=1"></script>
+  <script src="/apps/shared/js/api-yomi.js?v=1"></script>
+  <script src="/apps/shared/js/ui-utils.js?v=1"></script>
+  
+  <!-- Load app modules in dependency order -->
+  <script src="js/init.js?v=45"></script>
+  <script src="js/calendar.js?v=45"></script>
+  <script src="js/summary.js?v=45"></script>
+  <script src="js/messages.js?v=45"></script>
+  <script src="js/app.js?v=45"></script>
 </body>
 </html>

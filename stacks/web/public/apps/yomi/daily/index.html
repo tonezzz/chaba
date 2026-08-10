@@ -85,6 +85,14 @@
     </div>
     <div id="day-content"></div>
   </main>
+  
+  <!-- Load shared utilities -->
+  <script src="/apps/shared/js/date-utils.js?v=1"></script>
+  <script src="/apps/shared/js/date-utils-thailand.js?v=1"></script>
+  <script src="/apps/shared/js/api-utils.js?v=1"></script>
+  <script src="/apps/shared/js/api-yomi.js?v=1"></script>
+  <script src="/apps/shared/js/ui-utils.js?v=1"></script>
+  
   <script>
     const PAGE_LIMIT = 50;
     let currentChatId = null;
@@ -93,33 +101,19 @@
     let selectedDate = null;
 
     async function loadConversations() {
-      const res = await fetch('/api/yomi/conversations', { credentials: 'include' });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const { conversations } = await res.json();
-      return conversations || [];
+      return await YomiApi.loadConversations();
     }
 
     async function loadDailySummaries(chatId) {
-      const res = await fetch(`/api/yomi/daily?chat=${encodeURIComponent(chatId)}`, { credentials: 'include' });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
-      return data.summaries || [];
+      return await YomiApi.loadDailySummaries(chatId);
     }
 
     async function resummarizeDay(chatId, date) {
-      const res = await fetch('/api/yomi/resummarize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ chatIds: [chatId], forceAll: false })
-      });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      return await res.json();
+      return await YomiApi.resummarize([chatId], false, date);
     }
 
     function formatDate(dateStr) {
-      const d = new Date(dateStr);
-      return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+      return DateUtils.formatDate(dateStr);
     }
 
     function formatShortDate(dateStr) {
@@ -159,7 +153,7 @@
     }
 
     function escapeHtml(s) {
-      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+      return UiUtils.escapeHtml(s);
     }
 
     function buildCalendar(summaries) {
