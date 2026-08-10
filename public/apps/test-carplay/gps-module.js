@@ -208,7 +208,117 @@ function generateRouteSteps(from, to, bearing, distance) {
 
 // Get all locations
 function getAllLocations() {
-  return LOCATIONS;
+  // Return all locations including workstations and additional useful places
+  return {
+    ...LOCATIONS,
+    // Real places
+    starbucks: {
+      name: "Starbucks Coffee",
+      lat: 13.7561,
+      lon: 100.5016,
+      address: "321 Coffee Lane",
+      type: "cafe",
+      category: "nearby"
+    },
+    wholeFoods: {
+      name: "Whole Foods Market",
+      lat: 13.7562,
+      lon: 100.5017,
+      address: "555 Fresh Street",
+      type: "grocery",
+      category: "nearby"
+    },
+    shellGas: {
+      name: "Shell Gas Station",
+      lat: 13.7563,
+      lon: 100.5018,
+      address: "0.5 mi away",
+      type: "gas",
+      category: "nearby"
+    },
+    centralPark: {
+      name: "Central Park",
+      lat: 13.7564,
+      lon: 100.5019,
+      address: "1.2 mi away",
+      type: "park",
+      category: "nearby"
+    },
+    thaiRestaurant: {
+      name: "Thai Restaurant",
+      lat: 13.7565,
+      lon: 100.5020,
+      address: "0.8 mi away",
+      type: "restaurant",
+      category: "nearby"
+    },
+    shoppingMall: {
+      name: "Shopping Mall",
+      lat: 13.7566,
+      lon: 100.5021,
+      address: "2.1 mi away",
+      type: "shopping",
+      category: "nearby"
+    },
+    // Personal favorites
+    gym: {
+      name: "Fitness Center",
+      lat: 13.7567,
+      lon: 100.5022,
+      address: "789 Health Blvd",
+      type: "gym",
+      category: "favorites"
+    },
+    work: {
+      name: "Office",
+      lat: 13.7562,
+      lon: 100.5017,
+      address: "456 Business Ave",
+      type: "work",
+      category: "favorites"
+    },
+    favoriteRestaurant: {
+      name: "Italian Bistro",
+      lat: 13.7568,
+      lon: 100.5023,
+      address: "456 Taste Avenue",
+      type: "restaurant",
+      category: "favorites"
+    },
+    library: {
+      name: "Public Library",
+      lat: 13.7569,
+      lon: 100.5024,
+      address: "789 Book Street",
+      type: "library",
+      category: "favorites"
+    },
+    // Work-related
+    conferenceRoom: {
+      name: "Conference Room A",
+      lat: 13.7570,
+      lon: 100.5025,
+      address: "Office Building, Floor 3",
+      type: "work",
+      category: "recent"
+    },
+    breakRoom: {
+      name: "Break Room",
+      lat: 13.7571,
+      lon: 100.5026,
+      address: "Office Building, Floor 2",
+      type: "work",
+      category: "recent"
+    },
+    parking: {
+      name: "Office Parking",
+      lat: 13.7572,
+      lon: 100.5027,
+      address: "Building B, Level 1",
+      type: "parking",
+      category: "recent"
+    }
+  };
 }
 
 // Get location by ID

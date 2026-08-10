@@ -1,0 +1,62 @@
+title: Chaba-h3 Health Check Configuration (Mobile)
+description: Health check endpoints for external/mobile access for chaba-h3 web application
+version: 1
+
+services:
+  # Web Stack Services (External access only)
+  - id: raceman-web
+    name: Raceman Web Application (External)
+    type: http
+    url: http://tony-omen.local:8083/
+    expected_status: 200
+    timeout: 10
+    category: web
+
+# Recovery suggestions for common failure modes (mobile-specific)
+recovery_actions:
+  network_unreachable:
+    - Check if VPN is connected
+    - Verify home network is accessible
+    - Check mobile data connection
+    - Try switching between WiFi and mobile data
+
+  timeout:
+    - External access may be slower than local
+    - Check if home network has bandwidth issues
+    - VPN connection may be slow
+    - Consider using local network when at home
+
+  service_unavailable:
+    - Check if raceman-php and raceman-web containers are running
+    - Verify docker-compose is up on tony-omen
+    - Check nginx configuration
+
+  vpn_required:
+    - External access requires VPN for home network access
+    - Connect to home VPN first
+    - Verify VPN credentials
+    - Check VPN server status
+
+# Testing and debugging guidance (mobile-specific)
+debugging_guidance:
+  web_testing:
+    - Use localhost for testing on the same machine: http://localhost:8083/
+    - Avoid browser preview for local testing - use regular browser instead
+    - Browser preview is only for isolated environments or when direct access unavailable
+    - Test mobile viewport responsiveness using browser dev tools
+
+  location_testing:
+    - On Mobile: Use localhost if testing on the same machine
+    - External: Use VPN or external domain when away from home network
+    - At Home: Switch to tony-omen.local for better performance
+
+  network_testing:
+    - Test VPN connectivity before accessing services
+    - Check mobile signal strength and data connection
+    - Test both WiFi and mobile data for comparison
+    - Use browser dev tools network throttling to simulate poor connections
+
+  service_testing:
+    - External access has longer timeouts - be patient
+    - Check docker container status if web service fails
+    - Verify nginx and PHP-FPM are running correctly
