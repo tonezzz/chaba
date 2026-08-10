@@ -381,6 +381,194 @@ header h1 {
   padding: 2rem;
 }
 
+/* Cluster View */
+.cluster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.cluster-card {
+  background: var(--bg);
+  border-radius: 0.375rem;
+  padding: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.cluster-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.cluster-card-header {
+  margin-bottom: 0.75rem;
+}
+
+.cluster-card-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text);
+  margin-bottom: 0.25rem;
+}
+
+.cluster-card-meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.cluster-card-date {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+
+.cluster-card-topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.cluster-card-summary {
+  font-size: 0.8rem;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+/* Memory Detail Modal */
+.memory-detail-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.memory-detail-content {
+  background: var(--card);
+  border-radius: 0.5rem;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.memory-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.memory-detail-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--text);
+}
+
+.memory-detail-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.memory-detail-close:hover {
+  color: var(--text);
+}
+
+.memory-detail-body {
+  padding: 1.5rem;
+}
+
+.memory-detail-section {
+  margin-bottom: 1.5rem;
+}
+
+.memory-detail-section:last-child {
+  margin-bottom: 0;
+}
+
+.memory-detail-section h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.memory-detail-section p {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.memory-detail-section ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.memory-detail-section li {
+  margin-bottom: 0.25rem;
+}
+
+.memory-detail-btn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.memory-detail-btn:hover {
+  background: var(--accent-dark);
+}
+
+.memory-detail-btn:active {
+  transform: translateY(1px);
+}
+
+/* Export Buttons */
+.export-btn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.export-btn:hover {
+  background: var(--accent-dark);
+}
+
+.export-btn:active {
+  transform: translateY(1px);
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .memory-layout {
@@ -394,6 +582,10 @@ header h1 {
   
   .insights-panel {
     max-height: 200px;
+  }
+  
+  .cluster-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   }
 }
 
@@ -413,5 +605,9 @@ header h1 {
   
   .timeline-controls {
     flex-wrap: wrap;
+  }
+  
+  .cluster-grid {
+    grid-template-columns: 1fr;
   }
 }

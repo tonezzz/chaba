@@ -40,22 +40,119 @@ function detectPatterns(memories) {
     return 'Need more memories to detect patterns.';
   }
   
-  // Simple pattern detection: check for weekend vs weekday activity
+  const patterns = [];
+  
+  // Pattern 1: Weekend vs weekday activity
   const weekendActivity = memories.filter(m => {
     const date = new Date(m.timestamp);
     const day = date.getDay();
-    return day === 0 || day === 6; // Sunday or Saturday
+    return day === 0 || day === 6;
   }).length;
   
   const weekdayActivity = memories.length - weekendActivity;
   
   if (weekendActivity > weekdayActivity * 1.5) {
-    return 'Higher activity detected on weekends, suggesting this is primarily personal/social time.';
+    patterns.push('Higher activity on weekends (personal/social focus)');
   } else if (weekdayActivity > weekendActivity * 1.5) {
-    return 'Higher activity detected on weekdays, suggesting work-related conversations dominate.';
+    patterns.push('Higher activity on weekdays (work-related focus)');
   }
   
-  return 'Balanced activity across weekdays and weekends.';
+  // Pattern 2: Time of day analysis
+  const morningActivity = memories.filter(m => {
+    const hour = new Date(m.timestamp).getHours();
+    return hour >= 6 && hour < 12;
+  }).length;
+  
+  const afternoonActivity = memories.filter(m => {
+    const hour = new Date(m.timestamp).getHours();
+    return hour >= 12 && hour < 18;
+  }).length;
+  
+  const eveningActivity = memories.filter(m => {
+    const hour = new Date(m.timestamp).getHours();
+    return hour >= 18 && hour < 24;
+  }).length;
+  
+  const peakTime = Math.max(morningActivity, afternoonActivity, eveningActivity);
+  if (peakTime === morningActivity && morningActivity > memories.length * 0.4) {
+    patterns.push('Peak activity in morning hours');
+  } else if (peakTime === afternoonActivity && afternoonActivity > memories.length * 0.4) {
+    patterns.push('Peak activity in afternoon hours');
+  } else if (peakTime === eveningActivity && eveningActivity > memories.length * 0.4) {
+    patterns.push('Peak activity in evening hours');
+  }
+  
+  // Pattern 3: Topic evolution over time
+  const topicEvolution = analyzeTopicEvolution(memories);
+  if (topicEvolution) {
+    patterns.push(topicEvolution);
+  }
+  
+  // Pattern 4: Conversation diversity
+  const uniqueConversations = new Set(memories.flatMap(m => m.sources || [])).size;
+  if (uniqueConversations > 3) {
+    patterns.push(`High conversation diversity (${uniqueConversations} conversations)`);
+  } else if (uniqueConversations === 1) {
+    patterns.push('Single conversation focus');
+  }
+  
+  if (patterns.length === 0) {
+    return 'Balanced activity patterns detected across time and topics.';
+  }
+  
+  return patterns.join('; ');
+}
+
+/**
+ * Analyze topic evolution over time
+ */
+function analyzeTopicEvolution(memories) {
+  if (memories.length < 5) return null;
+  
+  // Sort memories by date
+  const sortedMemories = [...memories].sort((a, b) => 
+    new Date(a.timestamp) - new Date(b.timestamp)
+  );
+  
+  // Split into first half and second half
+  const midPoint = Math.floor(sortedMemories.length / 2);
+  const firstHalf = sortedMemories.slice(0, midPoint);
+  const secondHalf = sortedMemories.slice(midPoint);
+  
+  // Get topic frequencies for each half
+  const firstTopics = getTopicFrequencies(firstHalf);
+  const secondTopics = getTopicFrequencies(secondHalf);
+  
+  // Find emerging topics (new in second half)
+  const emergingTopics = Object.keys(secondTopics).filter(topic => 
+    !firstTopics[topic] || secondTopics[topic] > firstTopics[topic] * 1.5
+  );
+  
+  // Find declining topics (decreased in second half)
+  const decliningTopics = Object.keys(firstTopics).filter(topic => 
+    secondTopics[topic] && firstTopics[topic] > secondTopics[topic] * 1.5
+  );
+  
+  if (emergingTopics.length > 0) {
+    return `Emerging focus: ${emergingTopics.slice(0, 2).join(', ')}`;
+  } else if (decliningTopics.length > 0) {
+    return `Declining focus: ${decliningTopics.slice(0, 2).join(', ')}`;
+  }
+  
+  return null;
+}
+
+/**
+ * Get topic frequencies from memories
+ */
+function getTopicFrequencies(memories) {
+  const frequencies = {};
+  memories.forEach(memory => {
+    (memory.topics || []).forEach(topic => {
+      frequencies[topic] = (frequencies[topic] || 0) + 1;
+    });
+  });
+  return frequencies;
 }
 
 /**

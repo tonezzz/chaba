@@ -60,6 +60,9 @@ async function loadCollectiveMemory() {
  */
 async function init() {
   try {
+    // Set API base URL for Yomi API
+    ApiUtils.baseUrl = 'http://tony-omen.local:3000';
+    
     // Load conversation filters
     await loadConversationFilters();
     
@@ -159,10 +162,11 @@ function setupEventListeners() {
           timelineContent.innerHTML = renderTimeline(memories);
         }
       } else if (view === 'clusters') {
-        // Show clusters view (placeholder for now)
+        // Show clusters view
+        const memories = window.memoryState.memories;
         const timelineContent = document.getElementById('timeline-content');
         if (timelineContent) {
-          timelineContent.innerHTML = '<div class="empty-state">Cluster view coming soon</div>';
+          timelineContent.innerHTML = renderClusterView(memories);
         }
       } else if (view === 'network') {
         // Show network view (placeholder for now)
