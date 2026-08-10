@@ -10,7 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY ../../scripts/embeddings/embedding-service.py .
 
 # Expose port
-EXPOSE 5000
+EXPOSE 5001
 
 # Run service
 CMD ["python", "embedding-service.py"]

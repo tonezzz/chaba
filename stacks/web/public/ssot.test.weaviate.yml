@@ -71,7 +71,7 @@ services:
     image: gperdrizet/llms-gpu:latest
     model: all-MiniLM-L6-v2
     dimensions: 384
-    port: 5000
+    port: 5001
     purpose: GPU-accelerated text embeddings for Weaviate
     performance: 32ms per embedding (34x faster than CPU baseline)
 
@@ -92,9 +92,9 @@ endpoints:
     - http://localhost:8082/v1/schema
     - http://localhost:8082/v1/nodes
   embedding_service:
-    - http://localhost:5000/health
-    - http://localhost:5000/model-info
-    - http://localhost:5000/embed
+    - http://localhost:5001/health
+    - http://localhost:5001/model-info
+    - http://localhost:5001/embed
   weaviate_search:
     - http://localhost:3002/health
     - http://localhost:3002/search
