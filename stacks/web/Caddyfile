@@ -4,6 +4,15 @@
 	@tony_omen_temp_bare path /apps/tony-omen-temp
 	redir @tony_omen_temp_bare /apps/tony-omen-temp/ 308
 
+	# Disable caching for CarPlay development files
+	@carplay_files path /apps/test-carplay/*.js
+	handle @carplay_files {
+		header Cache-Control "no-cache, no-store, must-revalidate"
+		header Pragma "no-cache"
+		header Expires "0"
+		file_server
+	}
+
 	# Docs serving for health check config
 	handle /docs/* {
 		root * /srv/docs
@@ -57,6 +66,64 @@
 		}
 	}
 
+	# Trade API proxy - /apps/trade/api/* to trade-api (must come before UI files)
+	@trade_api_apps path /apps/trade/api/*
+	handle @trade_api_apps {
+		reverse_proxy trade-api:8000 {
+			header_up Host localhost
+			header_up X-Forwarded-Prefix /apps/trade
+		}
+	}
+
+	# Trade WebSocket proxy - /apps/trade/api/ws/* to trade-api (must come before UI files)
+	@trade_ws_apps path /apps/trade/api/ws/*
+	handle @trade_ws_apps {
+		reverse_proxy trade-api:8000 {
+			header_up Host localhost
+			header_up X-Forwarded-Prefix /apps/trade
+			header_up Connection {>Connection}
+			header_up Upgrade {>Upgrade}
+		}
+	}
+
+	# Trade UI files (must come after API routes)
+	handle_path /apps/trade/* {
+		root * /srv/public/apps/trade
+		file_server
+	}
+
+	# Trade WebSocket proxy - direct /api/ws/* to trade-api
+	@trade_ws path /api/ws/*
+	handle @trade_ws {
+		reverse_proxy trade-api:8000 {
+			header_up Host localhost
+			header_up Connection {>Connection}
+			header_up Upgrade {>Upgrade}
+		}
+	}
+
+	# Weaviate API proxy (must come before catchall)
+	handle_path /api/weaviate/* {
+		reverse_proxy weaviate:8080 {
+			header_up Host localhost
+		}
+	}
+
+	# Yomi API proxy (must come before catchall)
+	handle_path /api/yomi/* {
+		reverse_proxy host.docker.internal:3000 {
+			header_up Host localhost
+		}
+	}
+
+	# Status API proxy - /api/* catchall to status-api
+	@status_api path /api/*
+	handle @status_api {
+		reverse_proxy status-api:8000 {
+			header_up Host localhost
+		}
+	}
+
 	file_server
 
 	# Docs serving for health check config
@@ -67,7 +134,6 @@
 
 	# Pretty URLs: /cameras → /cameras.json
 	rewrite /cameras /cameras.json
-
 
 	@root path /
 	handle @root {
@@ -116,10 +182,10 @@
 		file_server
 	}
 
-	# Yomi API proxy
-	@yomi_api path /api/yomi/*
-	handle @yomi_api {
-		reverse_proxy host.docker.internal:3000 {
+	# Frigate proxy
+	@frigate path /frigate/*
+	handle @frigate {
+		reverse_proxy host.docker.internal:5000 {
 			header_up Host localhost
 		}
 	}
