@@ -102,16 +102,16 @@
 		}
 	}
 
-	# Weaviate API proxy (must come before catchall)
-	handle_path /api/weaviate/* {
-		reverse_proxy weaviate:8080 {
+	# Yomi API proxy (must come before catchall)
+	handle_path /api/yomi/* {
+		reverse_proxy yomi-api:3000 {
 			header_up Host localhost
 		}
 	}
 
-	# Yomi API proxy (must come before catchall)
-	handle_path /api/yomi/* {
-		reverse_proxy host.docker.internal:3000 {
+	# Weaviate API proxy (must come before catchall)
+	handle_path /api/weaviate/* {
+		reverse_proxy weaviate:8080 {
 			header_up Host localhost
 		}
 	}
@@ -169,7 +169,7 @@
 	}
 
 	handle_path /chatlocal/* {
-		reverse_proxy host.docker.internal:3000 {
+		reverse_proxy yomi-api:3000 {
 			header_up Host localhost:3000
 		}
 	}
@@ -192,7 +192,7 @@
 
 	@chatlocal path /apps/chatlocal /apps/chatlocal/*
 	handle @chatlocal {
-		reverse_proxy host.docker.internal:3000 {
+		reverse_proxy yomi-api:3000 {
 			header_up Host localhost:3000
 		}
 	}
