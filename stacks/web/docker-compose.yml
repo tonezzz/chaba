@@ -65,6 +65,7 @@ services:
       - DB_NAME=trade
       - DB_USER=chaba
       - DB_PASSWORD=chabapass
+      - ROOT_PATH=/apps/trade
     networks:
       - default
     depends_on:
@@ -273,14 +274,17 @@ services:
     image: node:20-alpine
     restart: unless-stopped
     working_dir: /app/gpu-queue
-    command: npm start
+    command: sh -c "npm install && npm start"
     volumes:
       - ../../scripts/gpu-queue:/app/gpu-queue
+      - gpu_queue_node_modules:/app/gpu-queue/node_modules
     environment:
       - DATABASE_URL=postgres://chaba:chabapass@postgres:5432/chaba
       - GPU_QUEUE_PORT=3001
     ports:
       - "3001:3001"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
       interval: 10s
@@ -292,6 +296,82 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    profiles:
+      - gpu-services
+
+  gpu-queue-processor:
+    container_name: gpu-queue-processor
+    image: node:20-alpine
+    restart: unless-stopped
+    working_dir: /app/gpu-queue
+    command: sh -c "npm install && node auto-processor.mjs"
+    volumes:
+      - ../../scripts/gpu-queue:/app/gpu-queue
+      - gpu_queue_node_modules:/app/gpu-queue/node_modules
+    environment:
+      - DATABASE_URL=postgres://chaba:chabapass@postgres:5432/chaba
+      - GPU_QUEUE_PORT=3001
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - default
+    depends_on:
+      - gpu-queue
+      - postgres
+    profiles:
+      - gpu-services
+
+  yomi-api:
+    container_name: yomi-api
+    image: node:20-alpine
+    restart: unless-stopped
+    working_dir: /app/yomi
+    command: sh -c "npm install && node yomi-api.mjs"
+    volumes:
+      - ../../scripts/yomi:/app/yomi
+      - ../../stacks/web/public/apps/yomi/media:/app/media
+      - /home/tony/.yomi:/home/tony/.yomi:ro
+      - yomi_node_modules:/app/yomi/node_modules
+      - /home/tony/.yomi/mcpb/node_modules/@modelcontextprotocol:/home/tony/.yomi/mcpb/node_modules/@modelcontextprotocol:ro
+    environment:
+      - YOMI_API_PORT=3000
+      - YOMI_API_HOST=0.0.0.0
+      - GEMINI_VISION_MODEL_PRIMARY=gemma-4-31b-it
+      - GEMINI_VISION_MODEL_FALLBACK=gemma-4-26b-a4b-it
+      - CONTEXT_MESSAGES_BEFORE=3
+      - CONTEXT_MESSAGES_AFTER=3
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - POSTGRES_USER=chaba
+      - POSTGRES_PASSWORD=chabapass
+      - POSTGRES_DB=chaba
+      - NODE_BINARY_PATH=/usr/local/bin/node
+      - SCRIPT_DIR=/app/yomi
+      - YOMI_MCP_PATH=/home/tony/.yomi/mcpb/run.mjs
+      - SUMMARY_CACHE=/app/media/summaries.json
+      - MEDIA_DIR=/app/media
+      - LLAMA_URL=http://thai-legal-inference:8000/v1/chat/completions
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - WEAVIATE_SEARCH_URL=http://weaviate:8080
+      - WEAVIATE_URL=http://weaviate:8080
+      - EMBEDDING_SERVICE_URL=http://imagen2-inference:8000
+    ports:
+      - "3000:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/yomi/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - default
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - gpu-services
 
   weaviate:
     container_name: weaviate
@@ -386,6 +466,8 @@ volumes:
   netdata_config:
   netdata_lib:
   netdata_cache:
+  yomi_node_modules:
+  gpu_queue_node_modules:
 
 networks:
   frigate_default:

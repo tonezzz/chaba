@@ -20,10 +20,10 @@ export function detectLanguage(text) {
   // Adjusted thresholds for better mixed detection
   // Thai dominant: > 60% Thai characters
   // Mixed: 5-60% Thai characters
-  // English: < 5% Thai characters
+  // Default to Thai for LINE conversations: < 5% Thai characters
   if (thaiRatio > 0.6) return 'thai';
   if (thaiRatio > 0.05) return 'mixed';
-  return 'english';
+  return 'thai'; // Default to Thai for LINE conversations
 }
 
 /**
@@ -42,7 +42,7 @@ export function detectConversationLanguage(messages) {
     .filter(Boolean)
     .join(' ');
   
-  if (!textContent) return 'english';
+  if (!textContent) return 'thai'; // Default to Thai for LINE conversations
   
   return detectLanguage(textContent);
 }
@@ -59,6 +59,7 @@ export function getLanguageSpecificPrompt(language, name, lines) {
   
   switch (language) {
     case 'thai':
+    case 'unknown': // Default to Thai for unknown language
       return `สรุปการสนทนา LINE กับ ${name} เป็นประโยคเดียวสั้นๆ (ไม่เกิน 20 คำ) เน้นหัวข้อหลัก คำถาม หรือการตัดสินใจ\n\n${baseContent}\n\nสรุป:`;
     
     case 'mixed':
@@ -83,6 +84,7 @@ export function getLanguageSpecificDailyPrompt(language, date, name, lines) {
   
   switch (language) {
     case 'thai':
+    case 'unknown': // Default to Thai for unknown language
       return `สกัดข้อมูลจากข้อความ LINE วันที่ ${date} ในการสนทนากับ ${name}:
 - เหตุการณ์ (สิ่งที่เกิดขึ้น)
 - การกระทำ (สิ่งที่คนทำหรือวางแผนจะทำ)
@@ -146,6 +148,7 @@ export function getLanguageSpecificBatchDailyPrompt(language, name, dates, dateS
   
   switch (language) {
     case 'thai':
+    case 'unknown': // Default to Thai for unknown language
       return `สกัดข้อมูลจากข้อความ LINE หลายวัน (${dates}) ในการสนทนากับ ${name}:
 - เหตุการณ์ (สิ่งที่เกิดขึ้น)
 - การกระทำ (สิ่งที่คนทำหรือวางแผนจะทำ)

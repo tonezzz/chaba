@@ -255,9 +255,10 @@ function detectLanguage(text) {
   const thaiRatio = thaiChars ? thaiChars.length / totalChars : 0;
   
   // Adjusted thresholds for better mixed detection
+  // Default to Thai for LINE conversations
   if (thaiRatio > 0.5) return 'thai';
   if (thaiRatio > 0.05) return 'mixed';
-  return 'english';
+  return 'thai'; // Default to Thai for LINE conversations
 }
 
 function detectConversationLanguage(messages) {
@@ -266,7 +267,7 @@ function detectConversationLanguage(messages) {
     .filter(Boolean)
     .join(' ');
   
-  if (!textContent) return 'english';
+  if (!textContent) return 'thai'; // Default to Thai for LINE conversations
   
   return detectLanguage(textContent);
 }
@@ -276,6 +277,7 @@ function getLanguageSpecificPrompt(language, name, lines) {
   
   switch (language) {
     case 'thai':
+    case 'unknown': // Default to Thai for unknown language
       return `สรุปการสนทนา LINE กับ ${name} เป็นประโยคเดียวสั้นๆ (ไม่เกิน 20 คำ) เน้นหัวข้อหลัก คำถาม หรือการตัดสินใจ\n\n${baseContent}\n\nสรุป:`;
     
     case 'mixed':

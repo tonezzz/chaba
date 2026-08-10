@@ -16,9 +16,9 @@ function loadEnv(path) {
 
 loadEnv(ENV_PATH);
 
-const user = process.env.POSTGRES_USER || 'yomi';
-const password = process.env.POSTGRES_PASSWORD || 'yomi';
-const db = process.env.POSTGRES_DB || 'yomi';
+const user = process.env.POSTGRES_USER || 'chaba';
+const password = process.env.POSTGRES_PASSWORD || 'chabapass';
+const db = process.env.POSTGRES_DB || 'chaba';
 const host = process.env.POSTGRES_HOST || '127.0.0.1';
 const port = process.env.POSTGRES_PORT || '5432';
 

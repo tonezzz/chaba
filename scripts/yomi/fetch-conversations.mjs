@@ -24,10 +24,12 @@ function normalizeTimestamp(deliveredTime) {
 const FETCH_DIR = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/fetch-data';
 const BATCH_SIZE = 10;
 const BATCH_DELAY_MS = 2000;
+const YOMI_MCP_PATH = process.env.YOMI_MCP_PATH || '/home/tony/.yomi/mcpb/run.mjs';
 
+const nodePath = process.env.NODE_BINARY_PATH || '/usr/local/bin/node';
 const transport = new StdioClientTransport({
-  command: '/usr/bin/node',
-  args: ['/home/tony/.yomi/mcpb/run.mjs'],
+  command: nodePath,
+  args: [YOMI_MCP_PATH],
 });
 
 const client = new Client({ name: 'yomi-conversations-fetch', version: '0.1' });

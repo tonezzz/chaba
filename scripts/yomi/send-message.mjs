@@ -1,9 +1,11 @@
 import { Client } from '/home/tony/.yomi/mcpb/node_modules/@modelcontextprotocol/sdk/dist/esm/client/index.js';
 import { StdioClientTransport } from '/home/tony/.yomi/mcpb/node_modules/@modelcontextprotocol/sdk/dist/esm/client/stdio.js';
 
+const YOMI_MCP_PATH = process.env.YOMI_MCP_PATH || '/home/tony/.yomi/mcpb/run.mjs';
+const nodePath = process.env.NODE_BINARY_PATH || '/usr/local/bin/node';
 const transport = new StdioClientTransport({
-  command: '/usr/bin/node',
-  args: ['/home/tony/.yomi/mcpb/run.mjs'],
+  command: nodePath,
+  args: [YOMI_MCP_PATH],
 });
 
 const client = new Client({ name: 'yomi-send-message', version: '0.1' });

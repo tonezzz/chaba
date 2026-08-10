@@ -76,9 +76,10 @@ function detectLanguage(text) {
   const thaiRatio = thaiChars ? thaiChars.length / totalChars : 0;
   
   // Adjusted thresholds for better mixed detection
+  // Default to Thai for LINE conversations
   if (thaiRatio > 0.5) return 'thai';
   if (thaiRatio > 0.05) return 'mixed';
-  return 'english';
+  return 'thai'; // Default to Thai for LINE conversations
 }
 
 function detectConversationLanguage(messages) {
@@ -87,7 +88,7 @@ function detectConversationLanguage(messages) {
     .filter(Boolean)
     .join(' ');
   
-  if (!textContent) return 'english';
+  if (!textContent) return 'thai'; // Default to Thai for LINE conversations
   
   return detectLanguage(textContent);
 }
@@ -111,12 +112,14 @@ function getLanguageSpecificPrompt(language, name, lines) {
 const OUT = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/conversations.json';
 const MESSAGES_DIR = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/messages';
 const MEDIA_DIR = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/media';
-const SUMMARY_CACHE = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/summaries.json';
+const SUMMARY_CACHE = process.env.SUMMARY_CACHE || '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/summaries.json';
 const LLAMA_URL = process.env.LLAMA_URL || 'http://localhost:8001/v1/chat/completions';
+const YOMI_MCP_PATH = process.env.YOMI_MCP_PATH || '/home/tony/.yomi/mcpb/run.mjs';
 
+const nodePath = process.env.NODE_BINARY_PATH || '/usr/local/bin/node';
 const transport = new StdioClientTransport({
-  command: '/usr/bin/node',
-  args: ['/home/tony/.yomi/mcpb/run.mjs'],
+  command: nodePath,
+  args: [YOMI_MCP_PATH],
 });
 
 const client = new Client({ name: 'yomi-conversations-export', version: '0.1' });
@@ -627,6 +630,8 @@ function groupMessagesByDate(messages) {
     const thailandTime = new Date(normalizedTime);
     const date = thailandTime.toISOString().split('T')[0];
     
+    console.log(`groupMessagesByDate: timestamp=${normalizedTime}, date=${date}, text=${m.text?.substring(0, 30)}`);
+    
     if (!byDate.has(date)) byDate.set(date, []);
     byDate.get(date).push(m);
   }
@@ -718,10 +723,52 @@ async function extractDailyWithLlama(prompt, chatId = 'unknown', date = 'unknown
     // Detect language from prompt
     const language = detectLanguage(prompt);
     const response = await geminiDailySummary(chatId, date, prompt, language);
-    // Parse JSON response from Gemini
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('no json in response');
-    return JSON.parse(jsonMatch[0]);
+    // Parse JSON response from Gemini with better error handling
+    console.log(`Gemini response (first 200 chars): ${response.substring(0, 200)}`);
+    
+    // Remove markdown code blocks if present
+    const cleanedResponse = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    try {
+      // Try to parse cleaned response as-is first
+      return JSON.parse(cleanedResponse);
+    } catch (e) {
+      // If that fails, try to extract the FIRST complete JSON object
+      // Match from first { to the matching closing brace
+      let braceCount = 0;
+      let startIndex = -1;
+      let endIndex = -1;
+      
+      for (let i = 0; i < cleanedResponse.length; i++) {
+        const char = cleanedResponse[i];
+        if (char === '{') {
+          if (braceCount === 0) {
+            startIndex = i;
+          }
+          braceCount++;
+        } else if (char === '}') {
+          braceCount--;
+          if (braceCount === 0 && startIndex !== -1) {
+            endIndex = i + 1;
+            break;
+          }
+        }
+      }
+      
+      if (startIndex !== -1 && endIndex !== -1) {
+        const jsonStr = cleanedResponse.substring(startIndex, endIndex);
+        try {
+          return JSON.parse(jsonStr);
+        } catch (e2) {
+          console.error('Failed to parse extracted JSON:', e2.message);
+          console.error('Extracted JSON:', jsonStr);
+          throw new Error('invalid json in response');
+        }
+      }
+      
+      console.error('No valid JSON found in Gemini response');
+      throw new Error('no json in response');
+    }
   }
 
   // Validate and truncate context length before API call
@@ -799,10 +846,52 @@ async function extractBatchDailyWithLlama(prompt, chatId = 'unknown', dates = []
     const language = detectLanguage(prompt);
     console.log(`Detected language: ${language}`);
     const response = await geminiBatchDailySummary(chatId, dates, prompt, language);
-    // Parse JSON response from Gemini
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('no json in response');
-    return JSON.parse(jsonMatch[0]);
+    // Parse JSON response from Gemini with better error handling
+    console.log(`Gemini batch response (first 200 chars): ${response.substring(0, 200)}`);
+    
+    // Remove markdown code blocks if present
+    const cleanedResponse = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    try {
+      // Try to parse cleaned response as-is first
+      return JSON.parse(cleanedResponse);
+    } catch (e) {
+      // If that fails, try to extract the FIRST complete JSON object
+      // Match from first { to the matching closing brace
+      let braceCount = 0;
+      let startIndex = -1;
+      let endIndex = -1;
+      
+      for (let i = 0; i < cleanedResponse.length; i++) {
+        const char = cleanedResponse[i];
+        if (char === '{') {
+          if (braceCount === 0) {
+            startIndex = i;
+          }
+          braceCount++;
+        } else if (char === '}') {
+          braceCount--;
+          if (braceCount === 0 && startIndex !== -1) {
+            endIndex = i + 1;
+            break;
+          }
+        }
+      }
+      
+      if (startIndex !== -1 && endIndex !== -1) {
+        const jsonStr = cleanedResponse.substring(startIndex, endIndex);
+        try {
+          return JSON.parse(jsonStr);
+        } catch (e2) {
+          console.error('Failed to parse extracted JSON:', e2.message);
+          console.error('Extracted JSON:', jsonStr);
+          throw new Error('invalid json in response');
+        }
+      }
+      
+      console.error('No valid JSON found in Gemini batch response');
+      throw new Error('no json in response');
+    }
   }
 
   // Validate and truncate context length before API call
@@ -881,6 +970,9 @@ async function saveDailySummary(chatId, date, events, actions, topics, messageCo
   const utcDate = new Date(Date.UTC(year, month - 1, day, 17, 0, 0)); // 17:00 UTC = midnight Thailand
   const dateWithTime = utcDate.toISOString();
   
+  console.log(`saveDailySummary: chatId=${chatId}, date=${date}, dateWithTime=${dateWithTime}`);
+  console.log(`saveDailySummary: events=${events.length}, actions=${actions.length}, topics=${topics.length}, messageCount=${messageCount}`);
+
   await pool.query(`
     INSERT INTO daily_summaries (chat_id, date, events, actions, topics, message_count)
     VALUES ($1, $2, $3, $4, $5, $6)
@@ -891,6 +983,8 @@ async function saveDailySummary(chatId, date, events, actions, topics, messageCo
       message_count = EXCLUDED.message_count,
       updated_at = NOW()
   `, [chatId, dateWithTime, events, actions, topics, messageCount]);
+  
+  console.log(`saveDailySummary: Saved successfully for ${dateWithTime}`);
 }
 
 /**
