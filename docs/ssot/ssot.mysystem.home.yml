@@ -35,6 +35,39 @@ sections:
       - label: tony-dell
         text: Secondary workstation (tony-dell.local, 192.168.1.42)
         tags: [secondary, testing, barrier-client]
+      - label: macbook
+        text: MacBook Pro (KKs-MacBook-Pro.local, 192.168.1.50)
+        tags: [macos, laptop, remote-access]
+        url: file:///home/tony/CascadeProjects/chaba/docs/ssot/ssot.mysystem.macbook.yml
+
+  - title: Power Management
+    icon: 🔋
+    layout: list
+    items:
+      - label: Screen Timeout Schedule
+        text: Automatic screen timeout adjustment based on time of day
+        status: active
+        tags: [power, automation, screen-timeout]
+      - label: Nighttime Hours (10pm-8am)
+        text: Screen timeout: 1 minute (aggressive power saving)
+        status: scheduled
+      - label: Daytime Hours (8am-10pm)
+        text: Screen timeout: 10 minutes (normal operation)
+        status: scheduled
+      - label: tony-omen Scripts
+        text: /home/tony/scripts/screen-timeout-night.sh, /home/tony/scripts/screen-timeout-day.sh
+      - label: tony-dell Scripts
+        text: /home/tony/scripts/screen-timeout-night.sh, /home/tony/scripts/screen-timeout-day.sh
+      - label: Cron Schedule
+        text: "0 22 * * * (nighttime), 0 8 * * * (daytime)"
+      - label: Log Location
+        text: /home/tony/logs/screen-timeout.log
+      - label: Current Settings (tony-omen)
+        text: Screen timeout: 600s, DPMS: Standby 3600s, Suspend 0s, Off 900s
+      - label: Current Settings (tony-dell)
+        text: Screen timeout: 0s (disabled), DPMS: Disabled
+      - label: Implementation Date
+        text: 2026-08-11
 
   - title: Network
     icon: 🌐
@@ -55,9 +88,8 @@ sections:
         text: Runs on tony-omen (tony-omen.local:24800) with physical mouse/keyboard
       - label: Barrier Client
         text: Runs on tony-dell, connects to tony-omen.local:24800
-        url: file:///home/tony/.config/autostart/barrierc.desktop
       - label: Client Binary
-        text: /usr/bin/barrierc (not ~/.local/bin/barrierc)
+        text: /usr/bin/barrierc
       - label: Start Command
         text: nohup /usr/bin/barrierc --disable-crypto --name tony-dell --restart tony-omen.local > /tmp/barrier-client.log 2>&1 &
       - label: Health Check
@@ -175,10 +207,38 @@ sections:
 
 config:
   version: 2
-  last_updated: 2026-08-07
+  last_updated: 2026-08-11
   current_network: 192.168.1.0/24 (home WiFi)
   current_profile: home
   maintainer: tony
+  partitions:
+    - label: ubuntu-working (primary)
+      device: /dev/nvme0n1p6
+      mount: /
+      size: 100G
+      usage: 91% (88G/100G)
+      boot: true
+      boot_name: ubuntu-working
+    - label: ubuntu-home
+      device: /dev/nvme0n1p3
+      mount: /home
+      size: 100G
+      usage: 71% (62G/92G)
+      boot: false
+    - label: ubuntu-data
+      device: /dev/nvme0n1p7
+      mount: /data
+      size: 300G
+      usage: 59% (172G/295G)
+      boot: false
+    - label: ubuntu-000
+      device: /dev/nvme0n1p5
+      mount: (not mounted)
+      size: 64.9G
+      usage: minimal
+      boot: true
+      boot_name: Ubuntu 26.04 LTS
+      purpose: partition job/testing
   related_files:
     - ssot.mysystem.mobile.yml (mobile profile)
     - ssot.services.yml

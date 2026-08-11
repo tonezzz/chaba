@@ -1,0 +1,288 @@
+name: home-profile-health-check
+description: Comprehensive health check for all services in home network profile
+version: "1.0"
+author: Chaba Team
+tags: [health, monitoring, home-profile, services]
+
+inputs:
+  profile:
+    type: str
+    description: Network profile to check
+    default: "home"
+    required: false
+  timeout:
+    type: num
+    description: Per-service timeout in seconds
+    default: 5
+    required: false
+  skip_optional:
+    type: bool
+    description: Skip optional services in health check
+    default: false
+    required: false
+
+blocks:
+  - id: check_web_services
+    type: Shell
+    description: "Check web stack services (Caddy, BServer) with hostname resolution verification"
+    inputs:
+      command: |
+        #!/bin/bash
+        echo "Checking Web Services..."
+        
+        # Verify hostname resolution before checking services
+        echo "Verifying hostname resolution..."
+        RESOLVED_IP=$(nslookup tony-omen.local 2>/dev/null | grep -A 1 "Name:" | tail -1 | awk '{print $2}')
+        LOCAL_IP=$(ip addr show | grep "inet " | grep -v "127.0.0.1" | head -1 | awk '{print $2}' | cut -d'/' -f1)
+        
+        if [ -n "$RESOLVED_IP" ]; then
+          echo "tony-omen.local resolves to: $RESOLVED_IP"
+          if [ -n "$LOCAL_IP" ]; then
+            echo "Local machine IP: $LOCAL_IP"
+            if [ "$RESOLVED_IP" != "$LOCAL_IP" ]; then
+              echo "⚠️ WARNING: Hostname resolves to different IP than local machine"
+              echo "⚠️ Check /etc/hosts for correct IP mapping"
+            fi
+          fi
+        else
+          echo "⚠️ WARNING: Could not resolve tony-omen.local"
+        fi
+        echo ""
+        
+        # Check Caddy using hostname
+        echo -n "Caddy: "
+        if curl -s -o /dev/null -w "%{http_code}" --max-time {{inputs.timeout}} http://tony-omen.local:8080/apps/ | grep -q "200"; then
+          echo "✅ Healthy"
+        else
+          echo "❌ Unhealthy"
+        fi
+        
+        # Check BServer using hostname
+        echo -n "BServer: "
+        if curl -s -o /dev/null -w "%{http_code}" --max-time {{inputs.timeout}} http://tony-omen.local:8080/ | grep -q "200"; then
+          echo "✅ Healthy"
+        else
+          echo "❌ Unhealthy"
+        fi
+      timeout: 30
+
+  - id: check_api_services
+    type: Shell
+    description: "Check API services (Status API, Yomi API, Trade API) using hostname"
+    inputs:
+      command: |
+        #!/bin/bash
+        echo "Checking API Services..."
+        
+        # Check Status API using hostname
+        echo -n "Status API: "
+        if curl -s -o /dev/null -w "%{http_code}" --max-time {{inputs.timeout}} http://tony-omen.local:8080/api/health | grep -q "200"; then
+          echo "✅ Healthy"
+        else
+          echo "❌ Unhealthy"
+        fi
+        
+        # Check Yomi API using hostname
+        echo -n "Yomi API: "
+        if curl -s -o /dev/null -w "%{http_code}" --max-time {{inputs.timeout}} http://tony-omen.local:8080/api/yomi/health | grep -q "200"; then
+          echo "✅ Healthy"
+        else
+          echo "❌ Unhealthy"
+        fi
+        
+        # Check Yomi Summarization using hostname
+        echo -n "Yomi Summarization: "
+        if curl -s -o /dev/null -w "%{http_code}" --max-time {{inputs.timeout}} http://tony-omen.local:8080/api/yomi/summarization-status | grep -q "200"; then
+          echo "✅ Healthy"
+        else
+          echo "❌ Unhealthy"
+        fi
+        
+        # Check Yomi Rate Limiter using hostname
+        echo -n "Yomi Rate Limiter: "
+        if curl -s -o /dev/null -w "%{http_code}" --max-time {{inputs.timeout}} http://tony-omen.local:8080/api/yomi/rate-limiter-status | grep -q "200"; then
+          echo "✅ Healthy"
+        else
+          echo "❌ Unhealthy"
+        fi
+      timeout: 60
+    depends_on:
+      - check_web_services
+
+  - id: check_data_services
+    type: Shell
+    description: "Check data services (Redis, Postgres, Weaviate) using hostname"
+    inputs:
+      command: |
+        #!/bin/bash
+        echo "Checking Data Services..."
+        
+        # Check Redis container
+        echo -n "Redis: "
+        if docker inspect redis >/dev/null 2>&1 && docker inspect redis | grep -q '"Status": "running"'; then
+          echo "✅ Running"
+        else
+          echo "❌ Not running"
+        fi
+        
+        # Check Postgres container
+        echo -n "Postgres: "
+        if docker inspect postgres >/dev/null 2>&1 && docker inspect postgres | grep -q '"Status": "running"'; then
+          echo "✅ Running"
+        else
+          echo "❌ Not running"
+        fi
+        
+        # Check Weaviate using hostname
+        echo -n "Weaviate: "
+        if curl -s -o /dev/null -w "%{http_code}" --max-time {{inputs.timeout}} http://tony-omen.local:8080/api/weaviate/v1/nodes | grep -q "200"; then
+          echo "✅ Healthy"
+        else
+          echo "❌ Unhealthy"
+        fi
+      timeout: 30
+    depends_on:
+      - check_api_services
+
+  - id: check_queue_services
+    type: Shell
+    description: "Check queue services (GPU Queue) using hostname"
+    inputs:
+      command: |
+        #!/bin/bash
+        echo "Checking Queue Services..."
+        
+        # Check GPU Queue using hostname
+        echo -n "GPU Queue: "
+        if curl -s -o /dev/null -w "%{http_code}" --max-time {{inputs.timeout}} http://tony-omen.local:3001/health | grep -q "200"; then
+          echo "✅ Healthy"
+        else
+          echo "❌ Unhealthy"
+        fi
+      timeout: 15
+    depends_on:
+      - check_data_services
+
+  - id: check_gpu_services
+    type: Shell
+    description: "Check GPU services (Llama Router, Imagen2, Txt2Vid) using hostname"
+    inputs:
+      command: |
+        #!/bin/bash
+        echo "Checking GPU Services (may be offline due to VRAM constraints)..."
+        
+        # Check Llama Router using hostname
+        echo -n "Llama Router: "
+        if curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://tony-omen.local:8001/health | grep -q "200"; then
+          echo "✅ Healthy"
+        else
+          echo "⚠️ Offline (expected - GPU VRAM constraints)"
+        fi
+        
+        # Check Imagen2 using hostname
+        echo -n "Imagen2: "
+        if curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://tony-omen.local:8000/health | grep -q "200"; then
+          echo "✅ Healthy"
+        else
+          echo "⚠️ Offline (expected - GPU VRAM constraints)"
+        fi
+        
+        # Check Txt2Vid using hostname
+        echo -n "Txt2Vid: "
+        if curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://tony-omen.local:8002/health | grep -q "200"; then
+          echo "✅ Healthy"
+        else
+          echo "⚠️ Offline (expected - GPU VRAM constraints)"
+        fi
+      timeout: 45
+    depends_on:
+      - check_queue_services
+
+  - id: check_optional_services
+    type: Shell
+    description: "Check optional services (Activepieces, Frigate, Camera Control) using hostname"
+    inputs:
+      command: |
+        #!/bin/bash
+        echo "Checking Optional Services..."
+        
+        # Check Activepieces container
+        echo -n "Activepieces: "
+        if docker inspect activepieces >/dev/null 2>&1 && docker inspect activepieces | grep -q '"Status": "running"'; then
+          echo "✅ Running"
+        else
+          echo "⚠️ Not running (optional)"
+        fi
+        
+        # Check Frigate using hostname
+        echo -n "Frigate NVR: "
+        if curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://tony-omen.local:8080/frigate/api/version | grep -q "200"; then
+          echo "✅ Healthy"
+        else
+          echo "⚠️ Unhealthy (optional)"
+        fi
+        
+        # Check Camera Control using hostname
+        echo -n "Camera Control: "
+        if curl -s -o /dev/null -w "%{http_code}" --max-time {{inputs.timeout}} http://tony-omen.local:8090/ | grep -q "200"; then
+          echo "✅ Healthy"
+        else
+          echo "⚠️ Unhealthy (optional)"
+        fi
+      timeout: 45
+    depends_on:
+      - check_gpu_services
+
+  - id: check_system_services
+    type: Shell
+    description: "Check system services (Barrier client, screen timeout cron) for workstation health"
+    inputs:
+      command: |
+        #!/bin/bash
+        echo "Checking System Services..."
+        
+        # Check Barrier client
+        echo -n "Barrier Client: "
+        if ps -ef | grep barrierc | grep -v grep | grep -q "tony-dell"; then
+          echo "✅ Running"
+        else
+          echo "❌ Not running - Start with: nohup /usr/bin/barrierc --disable-crypto --name tony-dell --restart tony-omen.local > /tmp/barrier-client.log 2>&1 &"
+        fi
+        
+        # Check screen timeout cron jobs
+        echo -n "Screen Timeout Cron: "
+        if crontab -l | grep -q "screen-timeout"; then
+          echo "✅ Scheduled"
+        else
+          echo "⚠️ Not scheduled"
+        fi
+      timeout: 15
+    depends_on:
+      - check_system_services
+
+  - id: generate_summary
+    type: Shell
+    description: "Generate health check summary"
+    inputs:
+      command: |
+        #!/bin/bash
+        echo ""
+        echo "=========================================="
+        echo "Home Profile Health Check Summary"
+        echo "=========================================="
+        echo "Profile: {{inputs.profile}}"
+        echo "Timestamp: $(date)"
+        echo ""
+        echo "For detailed recovery actions, see:"
+        echo "docs/ssot/infrastructure/ssot.health.home.yml"
+      timeout: 5
+    depends_on:
+      - check_system_services
+
+outputs:
+  profile:
+    value: "{{inputs.profile}}"
+  status:
+    value: "Health check completed for {{inputs.profile}} profile"
+  timestamp:
+    value: "{{blocks.generate_summary.outputs.stdout}}"

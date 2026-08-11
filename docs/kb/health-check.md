@@ -10,8 +10,16 @@ search_keywords: [health monitoring, service status, GPU tab, Yomi API, dashboar
 ---
 
 # Health Check Dashboard
+## What it is
+
+title: Health Check Dashboard
+
 
 **Abstract**: Real-time system health monitoring dashboard providing unified view of service status, GPU metrics, and Yomi API health with auto-refresh, category-based filtering, and location-specific configuration support.
+## Context/Background
+
+Created 2026-08-04 as part of Chaba infrastructure documentation.
+
 
 ## Overview
 
@@ -36,10 +44,30 @@ Provides unified real-time monitoring of all Chaba infrastructure services with 
 
 ### Services Tab
 - Overall system status summary
-- Individual service health checks (HTTP, container)
-- Category filtering (web, api, datastore, gpu, queue, optional)
+- Individual service health checks (HTTP, container, local)
+- Category filtering (web, api, datastore, gpu, queue, optional, system)
 - Recovery actions for common failure modes
 - Auto-refresh support (30s interval)
+
+### System Services Category (August 11, 2026)
+
+**New Category Added:**
+- **Purpose**: Monitor workstation-level services like Barrier client and cron jobs
+- **Check Type**: Local process monitoring using `ps -ef | grep <process> | grep -v grep`
+- **Services Monitored**:
+  - **Barrier Client**: Input sharing between tony-omen and tony-dell workstations
+    - Binary: `/usr/bin/barrierc`
+    - Startup: `nohup /usr/bin/barrierc --disable-crypto --name tony-dell --restart tony-omen.local > /tmp/barrier-client.log 2>&1 &`
+    - Autostart: `~/.config/autostart/barrierc.desktop`
+    - Health check: `ps -ef | grep barrierc | grep -v grep`
+  - **Screen Timeout Cron**: Power management automation
+    - Check: `crontab -l | grep screen-timeout`
+    - Scripts: `/home/tony/scripts/screen-timeout-night.sh`, `/home/tony/scripts/screen-timeout-day.sh`
+
+**Configuration:**
+- SSOT: `docs/ssot/infrastructure/ssot.health.home.yml`
+- Workflow: `workflows/monitoring/home-profile-health-check.yml`
+- Recovery commands provided in health check output
 
 ### GPU Tab
 - Real-time GPU hardware status from mcp-gpu
@@ -335,3 +363,33 @@ Using `handle_path` causes 404 errors because it strips the path prefix before p
 | 2026-08-03 | GPU service health checks, Txt2Vid migration | tony |
 | 2026-08-03 | Enhanced GPU queue monitoring with job type breakdown | tony |
 | 2026-08-06 | Added frontmatter metadata, standardized structure | devin |
+
+## Tags
+
+- **docker**: docker
+- **containers**: containers
+- **containerization**: containerization
+- **gpu**: gpu
+- **nvidia**: nvidia
+- **cuda**: cuda
+- **ml**: ml
+- **ai**: ai
+- **yomi**: yomi
+- **line**: line
+- **messaging**: messaging
+- **conversations**: conversations
+- **api**: api
+- **rest**: rest
+- **http**: http
+- **web**: web
+- **monitoring**: monitoring
+- **health**: health
+- **metrics**: metrics
+- **logging**: logging
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **ssot**: ssot
+- **configuration**: configuration
+- **infrastructure**: infrastructure
+- **2026**: 2026
