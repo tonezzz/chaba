@@ -322,6 +322,50 @@ sections:
       - docs/ssot/infrastructure/ssot.mcp.yml
     tags: ['mcp', 'health-monitoring', 'telemetry', 'enhancement']
 
+  - label: Playlive Service Reliability Enhancement
+    text: 'Improve playlived service reliability to prevent recurring Playwright browser installation issues that cause HTTP 500 errors.
+
+    **Recurring Issue** (2026-08-12):
+    - Playlived service returns HTTP 500 errors when Playwright browsers are not installed
+    - Applications trying to create browser sessions fail with "Executable doesn''t exist" errors
+    - Issue repeats after Playwright updates or system changes
+    - No automated detection or remediation in current health checks
+
+    **Root Cause**:
+    - Playwright browsers (Chrome, Firefox, WebKit) must be installed separately via `npx playwright install`
+    - Browser installation not part of systemd service startup or dependency management
+    - Health checks only verify playlived daemon is running, not browser availability
+    - No automated remediation when browsers are missing
+
+    **Implemented Solutions**:
+    - Added playlived to health check configuration with browser installation verification
+    - Added specific recovery actions for missing Playwright browsers
+    - Updated service criticality to "important" for better monitoring priority
+    - Added automation service group for better dependency tracking
+
+    **Future Enhancements**:
+    - Add systemd service dependency on Playwright browser installation
+    - Create automated browser installation check at service startup
+    - Add browser version tracking and update notifications
+    - Implement pre-flight checks before session creation attempts
+
+    status: completed
+    priority: high
+    effort: low
+    category: infrastructure
+    discovered: 2026-08-12
+    completed: 2026-08-12
+    business_impact: 4
+    technical_impact: 5
+    user_experience_impact: 4
+    cost_savings_impact: 2
+    impact_summary: Prevents recurring HTTP 500 errors from missing Playwright browsers, improves service reliability and automated detection
+    related_files:
+      - docs/ssot/infrastructure/ssot.health.yml
+      - docs/ssot/apps/ssot.apps.playlive.yml
+      - /home/tony/.local/playlive/playlived.mjs
+    tags: ['playlive', 'playwright', 'service-reliability', 'health-monitoring', 'completed']
+
   - label: Infrastructure Containerization Complete
     text: Full infrastructure containerization assessment completed. Successfully containerized high-value services (Yomi API, GPU Queue) and appropriately kept complex/low-benefit services on host (Playlived, Clip Sync, Barriers, Rclone).
     status: completed

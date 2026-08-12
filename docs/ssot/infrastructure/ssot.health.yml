@@ -37,7 +37,7 @@ alerts:
   
   service_criticality:
     critical: [caddy, postgres, gpu-queue]
-    important: [yomi-api, status-api, trade-api, mddb-api]
+    important: [yomi-api, status-api, trade-api, mddb-api, playlived]
     optional: [redis, weaviate, activepieces, frigate, camera-control, imagen2, txt2vid, thai-legal]
 
 # Service groups for dependency tracking
@@ -47,6 +47,7 @@ groups:
   datastore: [redis, postgres, weaviate, mddb-api]
   trading: [trade-api, trading-terminal]
   optional: [activepieces, frigate, camera-control]
+  automation: [playlived]
 
 # Service dependencies
 dependencies:
@@ -54,6 +55,7 @@ dependencies:
   status-api: [postgres]
   gpu-queue: [postgres]
   activepieces: [postgres, redis]
+  playlived: []
 
 services:
   # Web Stack Services (8080/8081)
@@ -148,6 +150,23 @@ services:
     timeout: 5
     category: api
     profiles: [home, mobile]
+
+  - id: playlived
+    name: Playlived
+    type: http
+    url: http://tony-omen.local:9230/sessions
+    expected_status: 200
+    timeout: 5
+    category: api
+    profiles: [home]
+    verification:
+      - "Test sessions: curl -s http://tony-omen.local:9230/sessions"
+      - "Check browsers: npx playwright install --dry-run"
+      - "Check service: systemctl --user status playlived.service"
+    recovery_actions:
+      - "Install browsers: cd /home/tony/.local/playlive && npx playwright install"
+      - "Restart service: systemctl --user restart playlived.service"
+      - "Fix port: ss -tulpn | grep 9230 && kill conflicting process"
 
   # Trading Services
   - id: trade-api
@@ -369,12 +388,25 @@ recovery_actions:
     - Verify MCP server connection is healthy
     - "Test with list_conversations after re-login"
 
+  playlived_browsers_missing:
+    - "Install Playwright browsers: cd /home/tony/.local/playlive && npx playwright install"
+    - "Verify browser installation: npx playwright install --dry-run"
+    - "Check browser cache: ls -la ~/.cache/ms-playwright/"
+    - "Test session creation: curl -s -X POST http://tony-omen.local:9230/sessions -H 'Content-Type: application/json' -d '{\"type\":\"playwright-headless\",\"target\":\"local\"}'"
+    - "Restart playlived service: systemctl --user restart playlived.service"
+
   raceman_service_down:
     - "Check raceman containers: cd /home/tony/CascadeProjects/chaba-raceman && docker compose ps"
     - "Restart raceman services: cd /home/tony/CascadeProjects/chaba-raceman && docker compose restart"
     - "Check raceman logs: cd /home/tony/CascadeProjects/chaba-raceman && docker compose logs"
     - "Verify nginx config: cat /home/tony/CascadeProjects/chaba-raceman/nginx.conf"
     - "Test direct access: curl -s http://tony-omen.local:8083/apps/raceman/"
+
+  playlived_browsers_missing:
+    - "Install browsers: cd /home/tony/.local/playlive && npx playwright install"
+    - "Verify install: npx playwright install --dry-run"
+    - "Restart service: systemctl --user restart playlived.service"
+    - "Test session: curl -s http://tony-omen.local:9230/sessions"
 
   network_connectivity_home:
     - "Check if tony-omen.local is reachable: ping -c 2 tony-omen.local"
