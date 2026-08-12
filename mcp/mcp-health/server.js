@@ -215,8 +215,9 @@ async function processAlerts(config, serviceName, status, previousStatus, error)
 }
 
 // Enhanced error context with troubleshooting steps
-function getEnhancedErrorContext(service, status, error, serviceType) {
+function getEnhancedErrorContext(service, status, error, serviceType, serviceUrl) {
   const troubleshootingSteps = [];
+  const url = serviceUrl || service;
   
   // Service-specific troubleshooting
   if (serviceType === 'container') {
@@ -235,10 +236,10 @@ function getEnhancedErrorContext(service, status, error, serviceType) {
     );
   } else if (serviceType === 'http') {
     troubleshootingSteps.push(
-      `Test endpoint directly: curl -v ${service}`,
-      `Check network connectivity: ping -c 2 $(echo ${service} | sed 's|.*://||' | cut -d'/' -f1)`,
-      `Check DNS resolution: nslookup $(echo ${service} | sed 's|.*://||' | cut -d'/' -f1)`,
-      `Check port availability: ss -tulpn | grep $(echo ${service} | sed 's|.*://||' | cut -d'/' -f2 | cut -d':' -f1)`
+      `Test endpoint directly: curl -v ${url}`,
+      `Check network connectivity: ping -c 2 $(echo ${url} | sed 's|.*://||' | cut -d'/' -f1)`,
+      `Check DNS resolution: nslookup $(echo ${url} | sed 's|.*://||' | cut -d'/' -f1)`,
+      `Check port availability: ss -tulpn | grep $(echo ${url} | sed 's|.*://||' | cut -d'/' -f2 | cut -d':' -f1)`
     );
   }
   
@@ -276,6 +277,7 @@ function getEnhancedErrorContext(service, status, error, serviceType) {
     status,
     error,
     service_type: serviceType,
+    service_url: url,
     troubleshooting_steps: troubleshootingSteps,
     common_solutions: getCommonSolutions(status, error)
   };
@@ -1546,6 +1548,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           service.type || 'unknown'
         );
         
+        // Use actual service URL for troubleshooting steps
+        const serviceUrl = service.url || 'unknown';
+        const enhancedTroubleshooting = {
+          ...troubleshootingInfo,
+          service_url: serviceUrl,
+          troubleshooting_steps: troubleshootingInfo.troubleshooting_steps.map(step => 
+            step.replace(service, serviceUrl).replace('curl -v Yomi API', `curl -v ${serviceUrl}`)
+          )
+        };
+        
         return {
           content: [{
             type: 'text',
@@ -1553,8 +1565,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               service: args.service_name,
               current_status: lastCheck?.status || 'unknown',
               service_type: service.type || 'unknown',
+              service_url: serviceUrl,
               last_checked: lastCheck?.timestamp || null,
-              troubleshooting_info: troubleshootingInfo
+              troubleshooting_info: enhancedTroubleshooting
             }, null, 2)
           }]
         };
