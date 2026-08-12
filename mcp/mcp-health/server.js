@@ -29,12 +29,18 @@ db.exec(`
     expected_state TEXT,
     active_state TEXT,
     sub_state TEXT,
-    is_timer BOOLEAN,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
   );
   CREATE INDEX IF NOT EXISTS idx_service_timestamp ON health_checks(service_name, timestamp);
   CREATE INDEX IF NOT EXISTS idx_status ON health_checks(status);
   
+  // Migration: Add is_timer column if it doesn't exist
+  try {
+    db.exec(`ALTER TABLE health_checks ADD COLUMN is_timer BOOLEAN DEFAULT 0`);
+  } catch (error) {
+    // Column likely already exists, ignore error
+    console.error('Migration note: is_timer column may already exist');
+  }
   CREATE TABLE IF NOT EXISTS alerts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     service_name TEXT NOT NULL,
