@@ -215,24 +215,24 @@ async function processAlerts(config, serviceName, status, previousStatus, error)
 }
 
 // Enhanced error context with troubleshooting steps
-function getEnhancedErrorContext(service, status, error, serviceType, serviceUrl) {
+function getEnhancedErrorContext(serviceName, status, error, serviceType, serviceUrl) {
   const troubleshootingSteps = [];
-  const url = serviceUrl || service;
+  const url = serviceUrl || serviceName;
   
   // Service-specific troubleshooting
   if (serviceType === 'container') {
     troubleshootingSteps.push(
-      `Check container status: docker ps -a | grep ${service}`,
-      `View container logs: docker logs ${service}`,
-      `Restart container: docker restart ${service}`,
-      `Inspect container: docker inspect ${service}`
+      `Check container status: docker ps -a | grep ${serviceName}`,
+      `View container logs: docker logs ${serviceName}`,
+      `Restart container: docker restart ${serviceName}`,
+      `Inspect container: docker inspect ${serviceName}`
     );
   } else if (serviceType === 'systemd') {
     troubleshootingSteps.push(
-      `Check service status: systemctl --user status ${service}`,
-      `View service logs: journalctl --user -xeu ${service}`,
-      `Restart service: systemctl --user restart ${service}`,
-      `Check service configuration: systemctl --user show ${service}`
+      `Check service status: systemctl --user status ${serviceName}`,
+      `View service logs: journalctl --user -xeu ${serviceName}`,
+      `Restart service: systemctl --user restart ${serviceName}`,
+      `Check service configuration: systemctl --user show ${serviceName}`
     );
   } else if (serviceType === 'http') {
     troubleshootingSteps.push(
@@ -273,7 +273,7 @@ function getEnhancedErrorContext(service, status, error, serviceType, serviceUrl
   }
   
   return {
-    service,
+    service: serviceName,
     status,
     error,
     service_type: serviceType,
@@ -1542,14 +1542,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const lastCheck = stmt.get(args.service_name);
         
         // Use the resolved URL from config (after profile substitution)
+        // The service.url should already be resolved by loadHealthConfig
         const serviceUrl = service.url || 'unknown';
         
         const troubleshootingInfo = getEnhancedErrorContext(
-          args.service_name,
-          lastCheck?.status || 'unknown',
-          lastCheck?.error || null,
-          service.type || 'unknown',
-          serviceUrl
+          args.service_name,  // serviceName
+          lastCheck?.status || 'unknown',  // status
+          lastCheck?.error || null,  // error
+          service.type || 'unknown',  // serviceType
+          serviceUrl  // serviceUrl
         );
         
         return {
