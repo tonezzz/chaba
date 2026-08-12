@@ -26,7 +26,7 @@ const BATCH_SIZE = 10;
 const BATCH_DELAY_MS = 2000;
 const YOMI_MCP_PATH = process.env.YOMI_MCP_PATH || '/home/tony/.yomi/mcpb/run.mjs';
 
-const nodePath = process.env.NODE_BINARY_PATH || '/usr/local/bin/node';
+const nodePath = process.env.NODE_BINARY_PATH || '/usr/bin/node';
 const transport = new StdioClientTransport({
   command: nodePath,
   args: [YOMI_MCP_PATH],
@@ -216,8 +216,41 @@ async function fetchAll(limit = 200) {
   return metadata;
 }
 
+async function shouldSkipFetch() {
+  const skipIntervalMinutes = parseInt(process.env.YOMI_FETCH_SKIP_MINUTES || '30', 10);
+  const metadataPath = `${FETCH_DIR}/fetch-metadata.json`;
+  
+  if (!existsSync(metadataPath)) {
+    return false;
+  }
+  
+  const metadata = JSON.parse(readFileSync(metadataPath, 'utf-8'));
+  
+  if (!metadata || !metadata.fetchedAt) {
+    return false;
+  }
+  
+  const lastFetchTime = new Date(metadata.fetchedAt);
+  const now = new Date();
+  const minutesSinceLastFetch = (now - lastFetchTime) / (1000 * 60);
+  
+  if (minutesSinceLastFetch < skipIntervalMinutes) {
+    console.log(`Skipping fetch - last successful fetch was ${Math.floor(minutesSinceLastFetch)} minutes ago (skip interval: ${skipIntervalMinutes} minutes)`);
+    return true;
+  }
+  
+  return false;
+}
+
 async function main() {
   const args = process.argv.slice(2);
+  const forceIdx = args.indexOf('--force');
+  
+  // Skip fetch if recent successful fetch exists, unless --force is specified
+  if (forceIdx === -1 && await shouldSkipFetch()) {
+    return;
+  }
+  
   const chatIdx = args.indexOf('--chat');
   const limitIdx = args.indexOf('--limit');
   

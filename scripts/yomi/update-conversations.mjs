@@ -31,7 +31,7 @@ import { geminiConversationSummary, geminiDailySummary, geminiBatchDailySummary 
 // See: docs/kb/thailand-timezone-standard.md for comprehensive documentation
 // ============================================================================
 
-const USE_GEMINI = process.env.USE_GEMINI === 'true' || process.env.USE_GEMINI === '1'; // Default to false (use Llama)
+const USE_GEMINI = process.env.USE_GEMINI !== 'false' && process.env.USE_GEMINI !== '0'; // Default to true (use Gemini)
 
 const GEMINI_MAX_DATES = parseInt(process.env.GEMINI_MAX_DATES || '10', 10); // Limit dates per run for Gemini
 const GEMINI_PRIORITY_MODE = process.env.GEMINI_PRIORITY_MODE || 'recent'; // 'recent', 'high-activity', 'all'

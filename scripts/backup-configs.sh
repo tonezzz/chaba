@@ -100,3 +100,8 @@ echo "✓ Latest symlinks created"
 echo "Backup completed successfully: $TIMESTAMP"
 echo "Backup location: $BACKUP_DIR"
 echo "Total size: $(du -sh $BACKUP_DIR | cut -f1)"
+
+# Backup MDDB to Google Drive
+echo "Backing up MDDB to Google Drive..."
+/home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb/sync-to-gdrive.sh
+echo "✓ MDDB backup to Google Drive completed"

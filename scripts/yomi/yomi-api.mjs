@@ -35,6 +35,9 @@ function sendJson(res, status, obj) {
   res.writeHead(status, {
     'Content-Type': 'application/json',
     'Content-Length': Buffer.byteLength(body),
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   });
   res.end(body);
 }
@@ -50,6 +53,7 @@ function serveCached(chatId, messageId, res) {
   res.writeHead(200, {
     'Content-Type': mime,
     'Cache-Control': 'public, max-age=31536000, immutable',
+    'Access-Control-Allow-Origin': '*',
   });
   createReadStream(filePath).pipe(res);
   return true;
@@ -617,6 +621,7 @@ async function handleMedia(chatId, messageId, res) {
   res.writeHead(200, {
     'Content-Type': mime,
     'Cache-Control': 'public, max-age=31536000, immutable',
+    'Access-Control-Allow-Origin': '*',
   });
   createReadStream(filePath).pipe(res);
 }
@@ -627,6 +632,18 @@ async function handleMedia(chatId, messageId, res) {
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+
+  // Handle CORS pre-flight requests
+  if (req.method === 'OPTIONS') {
+    res.writeHead(200, {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400',
+    });
+    res.end();
+    return;
+  }
 
   if (url.pathname === '/api/yomi/health') {
     return sendJson(res, 200, { ok: true });

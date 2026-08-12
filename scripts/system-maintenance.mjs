@@ -124,6 +124,59 @@ function gpuMonitorCheck() {
   return result.success;
 }
 
+function hostnameResolutionCheck() {
+  log('=== Hostname Resolution Check ===');
+  
+  // Check /etc/hosts mapping for tony-omen.local
+  const hostsResult = execCommand('cat /etc/hosts | grep tony-omen.local', 'Check /etc/hosts mapping');
+  
+  if (hostsResult.success) {
+    log(`/etc/hosts mapping: ${hostsResult.output.trim()}`);
+    
+    // Get resolved IP
+    const nslookupResult = execCommand('nslookup tony-omen.local 2>/dev/null | grep -A 1 "Name:" | tail -1 | awk \'{print $2}\'', 'Get resolved IP');
+    
+    if (nslookupResult.success) {
+      const resolvedIP = nslookupResult.output.trim();
+      log(`Resolved IP: ${resolvedIP}`);
+      
+      // Get local IP using routing table (most reliable)
+      const localIPResult = execCommand('ip route get 1.1.1.1 2>/dev/null | awk \'{print $7}\' | head -1', 'Get local IP');
+      
+      if (localIPResult.success) {
+        const localIP = localIPResult.output.trim();
+        log(`Local IP: ${localIP}`);
+        
+        // Compare IPs
+        if (resolvedIP !== localIP && localIP && resolvedIP) {
+          log('⚠️  WARNING: Hostname resolution mismatch detected');
+          log(`⚠️  tony-omen.local resolves to ${resolvedIP} but local IP is ${localIP}`);
+          log('⚠️  Check /etc/hosts file for correct IP mapping');
+          log('⚠️  Fix: sudo sed -i "s/' + resolvedIP + ' tony-omen.local/' + localIP + ' tony-omen.local/" /etc/hosts');
+        } else {
+          log('✅ Hostname resolution correct');
+        }
+      }
+    }
+  } else {
+    log('⚠️  No tony-omen.local entry found in /etc/hosts');
+  }
+  
+  // Test HTTP connectivity
+  const httpResult = execCommand('curl -s -o /dev/null -w "%{http_code}" --max-time 3 http://tony-omen.local:8080/', 'Test HTTP connectivity');
+  
+  if (httpResult.success) {
+    const statusCode = httpResult.output.trim();
+    if (statusCode === '200') {
+      log('✅ HTTP connectivity to tony-omen.local:8080 successful');
+    } else {
+      log(`⚠️  HTTP connectivity returned status ${statusCode}`);
+    }
+  }
+  
+  return hostsResult.success;
+}
+
 function generateReport(results) {
   log('=== Maintenance Report ===');
   
@@ -136,7 +189,8 @@ function generateReport(results) {
       logCleanup: results.logCleanup,
       diskCheck: results.diskCheck,
       dockerHealthCheck: results.dockerHealthCheck,
-      gpuMonitorCheck: results.gpuMonitorCheck
+      gpuMonitorCheck: results.gpuMonitorCheck,
+      hostnameResolutionCheck: results.hostnameResolutionCheck
     },
     summary: {
       total: Object.keys(results).length,
@@ -159,7 +213,8 @@ function main() {
     logCleanup: logCleanup(),
     diskCheck: diskCheck(),
     dockerHealthCheck: dockerHealthCheck(),
-    gpuMonitorCheck: gpuMonitorCheck()
+    gpuMonitorCheck: gpuMonitorCheck(),
+    hostnameResolutionCheck: hostnameResolutionCheck()
   };
   
   const report = generateReport(results);
