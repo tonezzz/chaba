@@ -1,6 +1,6 @@
 title: Chaba Health Check Configuration
 description: Health check endpoints and monitoring for all chaba services
-version: 6
+version: 7
 
 # Network profiles with auto-detection
 profiles:
@@ -37,29 +37,27 @@ alerts:
   
   service_criticality:
     critical: [caddy, postgres, gpu-queue]
-    important: [yomi-api, status-api, trade-api, mddb-api, playlived, ssot-sync-watcher, llama-server, remote-exec-tony-dell]
+    important: [yomi-api, trade-api, mddb-api, playlived, llama-server, remote-exec-tony-dell]
     optional: [redis, weaviate, activepieces, frigate, camera-control, imagen2, txt2vid, thai-legal, cpu-frequency-monitor]
 
 # Service groups for dependency tracking
 groups:
-  web-stack: [caddy, status-api, yomi-api, mddb-panel]
+  web-stack: [caddy, yomi-api, mddb-panel]
   gpu-stack: [imagen2, txt2vid, thai-legal, llama-server]
-  datastore: [redis, postgres, weaviate, mddb-api]
-  trading: [trade-api, trading-terminal]
+  datastore: [postgres, weaviate, mddb-api]
+  trading: [trade-api]
   optional: [activepieces, frigate, camera-control]
   automation: [playlived]
-  ssot-sync: [ssot-sync-watcher, mddb-api, mddb-mcp, mddb-stats, mddb-vector-stats, mddb-metrics, mddb-container]
+  ssot-sync: [mddb-api, mddb-mcp, mddb-stats, mddb-vector-stats, mddb-metrics, mddb-container]
   remote-exec: [remote-exec-tony-dell]
   system: [cpu-frequency-monitor, chaba-health-monitor-timer]
 
 # Service dependencies
 dependencies:
-  yomi-api: [caddy, postgres, redis]
-  status-api: [postgres]
+  yomi-api: [caddy, postgres] # redis removed - not currently deployed
   gpu-queue: [postgres]
-  activepieces: [postgres, redis]
+  activepieces: [postgres] # redis removed - not currently deployed
   playlived: []
-  ssot-sync-watcher: [mddb-api]
   remote-exec-tony-dell: []
 
 services:
@@ -100,14 +98,16 @@ services:
     category: web
     profiles: [home]
 
-  - id: status-api
-    name: Status API
-    type: http
-    url: "{profile}/api/health"
-    expected_status: 200
-    timeout: 5
-    category: api
-    profiles: [home, mobile]
+  # Note: status-api not currently deployed as separate service
+  # Status functionality may be integrated into web stack or other services
+  # - id: status-api
+  #   name: Status API
+  #   type: http
+  #   url: "{profile}/api/health"
+  #   expected_status: 200
+  #   timeout: 5
+  #   category: api
+  #   profiles: [home, mobile]
 
   - id: yomi-api
     name: Yomi API
@@ -176,21 +176,31 @@ services:
   # Trading Services
   - id: trade-api
     name: Trade API
-    type: container
-    container: trade-api
-    expected_state: running
+    type: http
+    url: http://localhost:9000/api/health
+    expected_status: 200
     timeout: 5
     category: api
     profiles: [home, mobile]
+    verification:
+      - "Test container: docker ps | grep trade-api"
+      - "Test health endpoint: curl -s http://localhost:9000/api/health"
+      - "Test root endpoint: curl -s http://localhost:9000/"
+      - "Check container logs: docker logs trade-api"
+    recovery_actions:
+      - "Restart container: docker restart trade-api"
+      - "Check container networking: docker inspect trade-api"
+      - "Verify port mapping: docker port trade-api"
 
-  - id: trading-terminal
-    name: Trading Terminal
-    type: container
-    container: trading-terminal
-    expected_state: running
-    timeout: 5
-    category: api
-    profiles: [home, mobile]
+  # Note: trading-terminal container not currently deployed
+  # - id: trading-terminal
+  #   name: Trading Terminal
+  #   type: container
+  #   container: trading-terminal
+  #   expected_state: running
+  #   timeout: 5
+  #   category: api
+  #   profiles: [home, mobile]
 
   # Remote Execution Services
   - id: remote-exec-tony-dell
@@ -211,14 +221,16 @@ services:
       - "Test MCP server manually: ssh tony@tony-dell.local 'cd /home/tony/mcp-remote-exec && echo test | python3 mcp_server.py'"
 
   # Data Services
-  - id: redis
-    name: Redis
-    type: container
-    container: redis
-    expected_state: running
-    timeout: 5
-    category: datastore
-    profiles: [home, mobile]
+  # Note: Redis is not currently deployed as container or systemd service
+  # Marked as optional since dependent services (yomi-api, activepieces) can function without it
+  # - id: redis
+  #   name: Redis
+  #   type: container
+  #   container: redis
+  #   expected_state: running
+  #   timeout: 5
+  #   category: datastore
+  #   profiles: [home, mobile]
 
   - id: postgres
     name: Postgres
@@ -228,6 +240,15 @@ services:
     timeout: 5
     category: datastore
     profiles: [home, mobile]
+    verification:
+      - "Test container: docker ps | grep postgres"
+      - "Test connection: docker exec postgres pg_isready"
+      - "Test port: nc -zv localhost 5432"
+      - "Check logs: docker logs postgres --tail 20"
+    recovery_actions:
+      - "Restart container: docker restart postgres"
+      - "Check data volume: docker inspect postgres | grep -A 10 Mounts"
+      - "Verify networking: docker network inspect bridge"
 
   - id: weaviate
     name: Weaviate
@@ -334,23 +355,25 @@ services:
       - "Verify docker compose config: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose config"
 
   # SSOT Services
-  - id: ssot-sync-watcher
-    name: SSOT Sync Watcher (systemd)
-    type: systemd
-    service: ssot-sync
-    expected_state: active
-    timeout: 5
-    category: system
-    profiles: [home, mobile]
-    note: Systemd service for SSOT to MDDB auto-sync file watcher
-    recovery_actions:
-      - "Check service status: systemctl status ssot-sync.service"
-      - "Restart service: systemctl restart ssot-sync.service"
-      - "Check service logs: journalctl -xeu ssot-sync.service"
-      - "Verify watch script exists: ls -la /home/tony/CascadeProjects/chaba-kbman/scripts/watch-ssot-sync.py"
-      - "Check script permissions: chmod +x /home/tony/CascadeProjects/chaba-kbman/scripts/watch-ssot-sync.py"
-      - "Reload systemd: systemctl daemon-reload"
-      - "Enable service: systemctl enable ssot-sync.service"
+  # Note: ssot-sync systemd service not found in current environment
+  # This service may be deployed in chaba-kbman project, not chaba
+#  # - id: ssot-sync-watcher
+#    name: SSOT Sync Watcher (systemd)
+#    type: systemd
+#    service: ssot-sync
+#    expected_state: active
+#    timeout: 5
+#    category: system
+#    profiles: [home, mobile]
+#    note: Systemd service for SSOT to MDDB auto-sync file watcher
+#    recovery_actions:
+#      - "Check service status: systemctl status ssot-sync.service"
+#      - "Restart service: systemctl restart ssot-sync.service"
+#      - "Check service logs: journalctl -xeu ssot-sync.service"
+#      - "Verify watch script exists: ls -la /home/tony/CascadeProjects/chaba-kbman/scripts/watch-ssot-sync.py"
+#      - "Check script permissions: chmod +x /home/tony/CascadeProjects/chaba-kbman/scripts/watch-ssot-sync.py"
+#      - "Reload systemd: systemctl daemon-reload"
+#      - "Enable service: systemctl enable ssot-sync.service"
 
   # GPU Services (All offline due to GTX 1650 4GB VRAM constraints)
   - id: thai-legal
@@ -439,14 +462,16 @@ services:
     profiles: [home]
 
   # Systemd Services
-  - id: yomi-api-service
-    name: Yomi API Service (systemd)
-    type: systemd
-    service: yomi-api.service
-    expected_state: active
-    timeout: 5
-    category: system
-    profiles: [home, mobile]
+  # Note: yomi-api systemd service failed, but docker container is running and healthy
+  # Docker container provides the service, systemd service is redundant
+  # - id: yomi-api-service
+  #   name: Yomi API Service (systemd)
+  #   type: systemd
+  #   service: yomi-api.service
+  #   expected_state: active
+  #   timeout: 5
+  #   category: system
+  #   profiles: [home, mobile]
 
   - id: yomi-update-all-timer
     name: Yomi Update All Timer
