@@ -1,0 +1,280 @@
+title: SSOT Maintenance Framework
+subtitle: Systematic maintenance schedule, quality metrics, and change tracking for SSOT files
+icon: 🔧
+
+ideas:
+  - Ensure SSOT files remain accurate, consistent, and valuable over time
+  - Prevent drift between SSOT and actual system state
+  - Maintain high quality standards for SSOT content
+  - Provide systematic approach to SSOT updates and reviews
+  - Enable rollback capability for critical changes
+
+maintenance_schedule:
+  - title: Daily Automated Checks
+    icon: 📅
+    frequency: daily
+    automated: true
+    owner: system
+    tasks:
+      - label: YAML Syntax Validation
+        description: Run automated YAML syntax check on all SSOT files
+        tool: pre-commit hook
+        failure_action: block commit
+      - label: Hostname Compliance Check
+        description: Check for IP addresses vs .local hostnames
+        tool: pre-commit hook
+        failure_action: warning
+      - label: URL Placeholder Validation
+        description: Ensure URL placeholders are properly quoted
+        tool: pre-commit hook
+        failure_action: block commit
+      - label: Cross-Reference Validation
+        description: Validate references between SSOT files
+        tool: ssot-validate skill
+        failure_action: warning
+
+  - title: Weekly Quality Review
+    icon: 📊
+    frequency: weekly
+    automated: false
+    owner: tony
+    tasks:
+      - label: SSOT Health Check
+        description: Review SSOT file health, completeness, and consistency
+        metrics:
+          - File count and growth rate
+          - Validation error rate
+          - Outdated entry count
+          - Cross-reference accuracy
+      - label: Content Freshness Check
+        description: Review and update outdated entries, archive completed items
+        focus:
+          - Completed improvements in ssot.improvements.yml
+          - Outdated service configurations
+          - Stale documentation references
+      - label: Index Consistency Check
+        description: Ensure ssot.index.yml reflects actual file structure
+        validation: compare index entries with actual files
+
+  - title: Monthly Comprehensive Review
+    icon: 🔄
+    frequency: monthly
+    automated: false
+    owner: tony
+    tasks:
+      - label: Architecture Alignment Review
+        description: Ensure SSOT reflects current system architecture
+        checks:
+          - Service configurations match actual deployments
+          - Health check endpoints are accurate
+          - MCP server definitions are current
+          - Network profiles are valid
+      - label: Dependency Analysis
+        description: Review and update dependency relationships
+        focus:
+          - Service dependencies in health config
+          - SSOT file cross-references
+          - Tool and service dependencies
+      - label: Documentation Sync
+        description: Ensure SSOT and KB documentation are consistent
+        validation: cross-reference SSOT with KB entries
+
+  - title: Quarterly Strategic Review
+    icon: 🎯
+    frequency: quarterly
+    automated: false
+    owner: tony
+    tasks:
+      - label: SSOT Structure Evaluation
+        description: Review SSOT organization and suggest improvements
+        analysis:
+          - File organization effectiveness
+          - Information accessibility
+          - Search result quality
+          - User satisfaction metrics
+      - label: Tool and Process Improvement
+        description: Evaluate and improve SSOT maintenance tools
+        focus:
+          - Validation tool effectiveness
+          - Automation coverage
+          - Maintenance efficiency
+          - User experience
+
+quality_metrics:
+  - title: File Health Metrics
+    icon: 📈
+    metrics:
+      - label: YAML Syntax Validity
+        target: 100%
+        measurement: percentage of files with valid YAML syntax
+        tracking: automated
+      - label: Required Fields Coverage
+        target: 100%
+        measurement: percentage of files with all required fields
+        tracking: automated
+      - label: Hostname Compliance
+        target: 95%
+        measurement: percentage of hostnames using .local format
+        tracking: automated
+      - label: Cross-Reference Accuracy
+        target: 95%
+        measurement: percentage of valid cross-references
+        tracking: manual
+
+  - title: Content Quality Metrics
+    icon: ✨
+    metrics:
+      - label: Content Freshness
+        target: 90%
+        measurement: percentage of entries updated in last 6 months
+        tracking: manual
+      - label: Completeness
+        target: 85%
+        measurement: percentage of entries with complete information
+        tracking: manual
+      - label: Consistency
+        target: 90%
+        measurement: percentage of entries following SSOT patterns
+        tracking: manual
+      - label: Accuracy
+        target: 95%
+        measurement: percentage of entries matching actual system state
+        tracking: manual
+
+change_tracking:
+  - title: Change Management Process
+    icon: 📝
+    process:
+      - label: Pre-Change Validation
+        steps:
+          - Run automated validation (pre-commit hook)
+          - Review impact on dependent SSOT files
+          - Check for breaking changes
+          - Plan rollback strategy if needed
+      - label: Change Documentation
+        steps:
+          - Update ssot.improvements.yml for significant changes
+          - Document rationale and expected impact
+          - Update related KB entries
+          - Note any migration requirements
+      - label: Post-Change Verification
+        steps:
+          - Validate all SSOT files pass validation
+          - Test cross-references and dependencies
+          - Verify index consistency
+          - Run health checks if service config changed
+
+  - title: Backup Strategy
+    icon: 💾
+    strategy:
+      - label: Git-Based Versioning
+        description: Use git for all SSOT file versioning
+        benefits:
+          - Complete change history
+          - Easy rollback capability
+          - Branch-based development
+          - Automatic backup with every commit
+      - label: Critical File Protection
+        description: Additional protection for critical SSOT files
+        files:
+          - docs/ssot/infrastructure/ssot.health.yml
+          - docs/ssot/infrastructure/ssot.mcp.yml
+          - docs/ssot/ssot.improvements.yml
+        protection:
+          - Create backup tags before major changes
+          - Maintain change log for critical modifications
+          - Test changes in staging environment if applicable
+
+  - title: Rollback Procedures
+    icon: ↩️
+    procedures:
+      - label: Git Rollback
+        steps:
+          - Identify commit to rollback to: git log --oneline docs/ssot/
+          - Create backup branch: git branch backup-$(date +%Y%m%d)
+          - Rollback changes: git revert <commit-hash>
+          - Validate rollback: run validation checks
+      - label: Single File Recovery
+        steps:
+          - Find previous version: git log --follow --oneline <file>
+          - Checkout specific version: git checkout <commit-hash> -- <file>
+          - Validate recovered file
+          - Commit restored version
+
+automation_tools:
+  - title: Pre-Commit Hook
+    icon: 🔗
+    location: .git/hooks/pre-commit
+    features:
+      - YAML syntax validation
+      - Hostname compliance checking
+      - URL placeholder validation
+      - Required fields verification
+    status: implemented
+
+  - label: SSOT Validation Skill
+    icon: 🛠️
+    location: .agents/skills/ssot-validate/SKILL.md
+    features:
+      - Cross-file validation
+      - Dependency checking
+      - Pattern validation
+      - Quality scoring
+    status: available
+
+  - label: SSOT Search Skill
+    icon: 🔍
+    location: .agents/skills/ssot-search/SKILL.md
+    features:
+      - Pattern-based SSOT search
+      - Cross-reference discovery
+      - Content analysis
+    status: available
+
+alerting:
+  - title: Validation Failures
+    icon: 🚨
+    conditions:
+      - label: Critical Validation Failure
+        severity: critical
+        action: block commit, notify user
+        examples:
+          - YAML syntax errors
+          - Missing required fields
+          - Invalid cross-references
+      - label: Warning Level Issues
+        severity: warning
+        action: allow commit with warning
+        examples:
+          - Hostname compliance issues
+          - Trailing whitespace
+          - Minor formatting issues
+
+  - title: Quality Degradation
+    icon: 📉
+    conditions:
+      - label: Metric Threshold Breach
+        severity: warning
+        action: add to ssot.improvements.yml
+        triggers:
+          - YAML validity below 100%
+          - Cross-reference accuracy below 90%
+          - Content freshness below 80%
+
+documentation:
+  - title: Maintenance Documentation
+    icon: 📚
+    files:
+      - label: SSOT Validation Patterns
+        path: docs/ssot/ssot.validation-patterns.yml
+        purpose: Validation rules and best practices
+      - label: SSOT Index
+        path: docs/ssot/ssot.index.yml
+        purpose: Master index of all SSOT files
+      - label: This File
+        path: docs/ssot/ssot.maintenance.yml
+        purpose: Maintenance framework and schedule
+
+next_review: 2026-09-12
+last_updated: 2026-08-12
+maintainer: tony

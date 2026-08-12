@@ -35,6 +35,10 @@ sections:
         text: Validation rules, file-type classifications, and best practices for the SSOT system itself
         path: docs/ssot/ssot.validation-patterns.yml
 
+      - label: ssot.maintenance.yml
+        text: SSOT maintenance framework — systematic schedule, quality metrics, change tracking, and automation tools
+        path: docs/ssot/ssot.maintenance.yml
+
       - label: ssot.token-optimization.yml
         text: MCP filter config, Headroom proxy, Devin usage patterns — strategies for reducing AI token costs
         path: docs/ssot/ssot.token-optimization.yml
@@ -51,20 +55,16 @@ sections:
         text: Mobile/remote environment — device setup and service access from outside home network
         path: docs/ssot/ssot.mysystem.mobile.yml
 
+      - label: ssot.mysystem.macbook.yml
+        text: MacBook Pro workstation — system configuration, remote access (Chrome Remote Desktop + SSH), network integration
+        path: docs/ssot/ssot.mysystem.macbook.yml
+
       - label: infrastructure/ssot.health.yml
-        text: Health check endpoint definitions and recovery guidance for all services (location-agnostic)
+        text: Health check endpoint definitions and recovery guidance for all services with profile-based configuration (home/mobile)
         path: docs/ssot/infrastructure/ssot.health.yml
 
-      - label: infrastructure/ssot.health.home.yml
-        text: Home-specific health check config (uses tony-omen.local hostnames)
-        path: docs/ssot/infrastructure/ssot.health.home.yml
-
-      - label: infrastructure/ssot.health.mobile.yml
-        text: Mobile/remote health check config (uses localhost or VPN paths)
-        path: docs/ssot/infrastructure/ssot.health.mobile.yml
-
       - label: infrastructure/ssot.mcp.yml
-        text: MCP infrastructure SSOT — server definitions, profile switching, configuration generation
+        text: MCP infrastructure SSOT — server definitions, profile switching, configuration generation. Includes mcp-health server for centralized health monitoring.
         path: docs/ssot/infrastructure/ssot.mcp.yml
 
       - label: infrastructure/ssot.gpu.yml
@@ -116,7 +116,7 @@ sections:
         path: docs/ssot/apps/ssot.apps.raceman.yml
 
       - label: apps/ssot.apps.playlive.yml
-        text: Playlive browser automation — sessions, tools, caveats, screen management
+        text: Playlive browser automation — consolidated daemon, local/remote sessions, tools, systemd reliability
         path: docs/ssot/apps/ssot.apps.playlive.yml
 
       - label: apps/ssot.apps.track4.yml
@@ -174,6 +174,10 @@ sections:
       - label: ssot.test.weaviate.yml
         text: Weaviate vector database — embedding service setup, test plans, and optimization notes
         path: docs/ssot/ssot.test.weaviate.yml
+
+      - label: mcp/mcp-health/
+        text: MCP health monitoring server — centralized health checks, historical tracking, dependency analysis, recovery suggestions
+        path: mcp/mcp-health/
 
       - label: hibernation-troubleshooting.md
         text: Hibernation troubleshooting guide — kernel parameter mismatch, swap configuration, verification commands
