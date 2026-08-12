@@ -1543,7 +1543,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         
         // Use the resolved URL from config (after profile substitution)
         // The service.url should already be resolved by loadHealthConfig
-        const serviceUrl = service.url || 'unknown';
+        let serviceUrl = service.url || 'unknown';
+        
+        // If URL still contains placeholder, resolve it manually
+        if (serviceUrl.includes('{profile}')) {
+          const baseUrl = config.detectedBaseUrl || 'http://tony-omen.local:8080';
+          serviceUrl = serviceUrl.replace('{profile}', baseUrl);
+        }
         
         const troubleshootingInfo = getEnhancedErrorContext(
           args.service_name,  // serviceName
