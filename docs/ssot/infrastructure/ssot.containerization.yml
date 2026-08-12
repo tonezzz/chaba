@@ -23,7 +23,7 @@ sections:
           - gpu-queue-processor.service → gpu-queue-processor container
 
           **Retained on host (4):**
-          - playlived.service - Shared browser session daemon (Playwright complexity)
+          - playlived - Shared browser session daemon (Playwright complexity, systemd service for reliability)
           - barriers.service - Barrier KVM server (input device access)
           - clip-sync-dell.service - Clipboard sync (X11 dependencies)
           - rclone-gdrive.service - Google Drive mount (FUSE requirements)
@@ -62,7 +62,7 @@ sections:
         status: current_state
         tags: ['docker', 'containers', 'post-containerization']
 
-  - title: Phase 1: Easy Wins (Completed)
+  - title: "Phase 1: Easy Wins (Completed)"
     icon: ✅
     layout: list
     items:
@@ -90,7 +90,7 @@ sections:
         completed: 2026-08-09
         tags: ['containerization', 'gpu', 'queue', 'completed']
 
-  - title: Phase 2: Moderate Effort (Completed)
+  - title: "Phase 2: Moderate Effort (Completed)"
     icon: ✅
     layout: list
     items:
@@ -110,7 +110,7 @@ sections:
         completed: 2026-08-09
         tags: ['containerization', 'sync', 'network', 'not-recommended', 'completed']
 
-  - title: Phase 3: Advanced (Completed)
+  - title: "Phase 3: Advanced (Completed)"
     icon: ✅
     layout: list
     items:

@@ -98,13 +98,13 @@ sections:
     layout: list
     items:
       - label: Location
-        text: 'chaba-h3/public/apps/raceman/ and chaba-raceman/public/apps/raceman/'
+        text: 'chaba-h3/public/apps/raceman/ (static files), chaba-raceman/ (docker-compose services)'
       - label: URLs
-        text: 'https://chaba.h3.gizmo-thailand.com/apps/raceman/ (main), http://tony-omen.local:8083/apps/raceman/ (raceman worktree)'
+        text: 'https://chaba.h3.gizmo-thailand.com/apps/raceman/ (static), http://tony-omen.local:8083/apps/raceman/ (docker services)'
       - label: Registry
         text: 'Listed in apps.yml with 🏁 icon and race management description'
       - label: Branches
-        text: 'chaba.h3 (main), raceman (dedicated worktree)'
+        text: 'chaba.h3 (static files), raceman (docker services - only active deployment)'
 
   - title: Testing
     icon: 🧪
@@ -144,8 +144,7 @@ config:
   created: 2026-08-06
   maintainer: tony
   status: active
-  deployment: chaba-h3, chaba-raceman
+  deployment: chaba-raceman (docker services), chaba-h3 (static files only)
   related_files:
-    - docs/kb/raceman-worktree-scope.md
     - docs/kb/app-ssot-standards.md
     - docs/ssot/apps/ssot.apps.track4.yml

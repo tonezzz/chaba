@@ -1,6 +1,6 @@
 title: Chaba System Automation
 description: Automated monitoring and maintenance schedules for Chaba infrastructure
-version: 1
+version: 2
 
 automation:
   gpu_monitoring:
@@ -23,6 +23,7 @@ automation:
 
   system_maintenance:
     script: scripts/system-maintenance.mjs
+    workflow: workflows/maintenance/system-cleanup.yml
     schedule: "0 3 * * *"
     frequency: daily at 3 AM
     log_file: logs/automation/system-maintenance.log
@@ -49,6 +50,9 @@ automation:
       - database & cache performance
       - application log analysis
       - configuration validation
+      - hostname resolution verification
+      - /etc/hosts mapping validation
+      - network connectivity checks
       - security & dependency checks
       - performance trend analysis
       - auto-improvement creation
@@ -117,6 +121,8 @@ troubleshooting:
     - insufficient permissions
     - cron service not running
     - log directory permissions
+    - hostname resolution failures (/etc/hosts misconfiguration)
+    - network connectivity issues (DNS vs HTTP discrepancy)
 
   log_locations:
     automation: logs/automation/
@@ -159,3 +165,25 @@ future_enhancements:
   - integration with monitoring services (Prometheus, Grafana)
   - automated remediation for common issues
   - resource usage forecasting
+
+workflow_automation:
+  implementation: workflows-mcp (YAML-based workflow orchestration)
+  workflow_directory: /home/tony/CascadeProjects/chaba/workflows
+  categories:
+    - automation: General automation workflows
+    - maintenance: System maintenance workflows
+    - monitoring: Health monitoring workflows
+    - interactive: Interactive workflows with user prompts
+  capabilities:
+    - YAML workflow definitions
+    - Dependency-aware execution
+    - Interactive prompts with pause/resume
+    - Async job management with queue visibility
+    - Server-side secrets management
+    - Integration with existing MCP servers
+  status: operational (2026-08-10)
+  examples:
+    - gpu-health-check: GPU monitoring with thresholds and historical stats
+    - system-cleanup: System maintenance with Docker, journal, logs, disk, and GPU checks
+    - universal-health-check: Auto-detecting health check for home/mobile profiles
+    - example-health-check: Basic health check template

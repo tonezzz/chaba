@@ -2,6 +2,7 @@
 title: MCP Infrastructure Configuration
 subtitle: Single source of truth for MCP server configuration and profile management
 icon: 🔧
+version: 2
 
 # Profile definitions for different network environments
 profiles:
@@ -132,31 +133,16 @@ servers:
       - devin: true
       - windsurf: true
 
-  playlive.local:
-    name: Playlive Browser Automation (Local)
-    description: Browser automation for local testing
+  playlive:
+    name: Playlive Browser Automation
+    description: Consolidated browser automation for local and remote testing
     implementation: python /home/tony/CascadeProjects/chaba-omen/mcp/mcp-playlive/playlive-server.py
     wrapper: none
     filter: none
     env:
-      PLAYLIVE_URL: profile.service_urls.playlive_url
+      PLAYLIVE_URL: http://tony-omen.local:9231
     single_instance: false
     status: operational
-    config_files:
-      - devin: true
-      - windsurf: false
-
-  playlive.tony-dell:
-    name: Playlive Browser Automation (Tony Dell)
-    description: Browser automation on remote workstation
-    implementation: python /home/tony/CascadeProjects/chaba-omen/mcp/mcp-playlive/playlive-server.py
-    wrapper: mcp-single-instance.sh
-    pattern: mcp-playlive/playlive-server.py
-    filter: none
-    env:
-      PLAYLIVE_URL: http://tony-dell.local:9230
-    single_instance: true
-    status: disabled
     config_files:
       - devin: true
       - windsurf: false
@@ -220,18 +206,7 @@ servers:
       - devin: true
       - windsurf: false
 
-  # Windsurf-specific servers
-  cdp-tony-dell:
-    name: Chrome DevTools Protocol (Tony Dell)
-    description: Chrome DevTools Protocol for browser automation
-    implementation: python /home/tony/CascadeProjects/chaba-omen/mcp/mcp-cdp-controller/server.py
-    wrapper: none
-    filter: none
-    single_instance: false
-    status: operational
-    config_files:
-      - devin: false
-      - windsurf: true
+
 
   mcp-weaviate:
     name: Weaviate Vector Database
@@ -246,6 +221,43 @@ servers:
     config_files:
       - devin: false
       - windsurf: true
+
+  workflows:
+    name: Workflows Automation
+    description: YAML-based workflow orchestration and automation
+    implementation: workflows-mcp (pipx)
+    wrapper: none
+    filter: none
+    env:
+      WORKFLOWS_TEMPLATE_PATHS: /home/tony/CascadeProjects/chaba/workflows
+      WORKFLOWS_LOG_LEVEL: INFO
+    single_instance: false
+    status: operational
+    config_files:
+      - devin: true
+      - windsurf: false
+
+  mcp-health:
+    name: Health Monitoring
+    description: Centralized health check and telemetry orchestrator
+    implementation: node /home/tony/CascadeProjects/chaba/mcp/mcp-health/server.js
+    wrapper: none
+    filter: none
+    env:
+      HEALTH_CONFIG: infrastructure/ssot.health.yml
+      HEALTH_SKILL: .agents/skills/health-check/SKILL.md
+    single_instance: true
+    status: operational
+    config_files:
+      - devin: true
+      - windsurf: true
+    notes: |
+      Phase 1 (MVP): Complete - Basic health check orchestration
+      Phase 2: Complete - SQLite persistence for health history and trends
+      Phase 1+2 (Real Health Checks): Complete - HTTP, container, systemd checks with categorization
+      Phase 3: Pending - Add alerting and notification capabilities
+      Features: 4-level status categorization, profile filtering, dependency analysis, recovery suggestions
+      See ssot.improvements.yml for detailed implementation plan
 
 # Script locations (centralized)
 scripts:

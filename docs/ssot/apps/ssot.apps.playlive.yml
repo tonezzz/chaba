@@ -15,25 +15,24 @@ sections:
     icon: 🏗️
     layout: list
     items:
-      - label: Daemon
-        text: playlived (chaba-omen/mcp/mcp-playlive/playlived.mjs) runs on the browser host (tony-dell) and owns all session state.
+      - label: Daemon (consolidated 2026-08-10)
+        text: playlived (chaba-omen/mcp/mcp-playlive/playlived.mjs) runs on tony-omen.local:9231 and manages both local and remote browser sessions.
       - label: MCP client
-        text: mcp-playlive (chaba-omen/mcp/mcp-playlive/playlive-server.py) forwards tool calls from Windsurf to the daemon.
-      - label: CDP target
-        text: Real Chrome is chrome-monitor.service on tony-dell at 127.0.0.1:9223.
+        text: mcp-playlive (chaba-omen/mcp/mcp-playlive/playlive-server.py) forwards tool calls from Windsurf to the daemon via single "playlive" MCP server.
+      - label: Target flexibility
+        text: Single daemon supports local headless Playwright (default) and remote CDP-attached Chrome sessions via target parameter.
       - label: Playwright relationship
         text: PlayLive is built on Playwright - see docs/kb/playwright-vs-playlive.md for detailed comparison.
-      - label: Default mode (2026-08-06)
-        text: Now defaults to headless Playwright (local) for better performance (~50-100MB RAM savings, faster startup). Use chrome-live/playwright-chrome for visual debugging.
+      - label: Default mode
+        text: Defaults to headless Playwright (local) for better performance (~50-100MB RAM savings, faster startup). Use chrome-live/playwright-chrome for visual debugging.
 
   - title: Hosts & endpoints
     icon: 🌐
     layout: table
     headers: [Name, Host, Endpoint, Purpose]
     rows:
-      - [playlived, tony-dell, http://tony-dell.local:9230, Session daemon]
-      - [chrome-monitor, tony-dell, http://127.0.0.1:9223, Real Chrome CDP endpoint]
-      - [cdp-controller, tony-dell, http://tony-dell.local:9224, Legacy Node CDP controller]
+      - [playlived, tony-omen, http://tony-omen.local:9231, Consolidated session daemon]
+      - [chrome-remote, tony-dell, http://127.0.0.1:9222, Real Chrome CDP for live debugging]
 
   - title: Authentication
     icon: 🔐
@@ -62,11 +61,11 @@ sections:
     layout: list
     items:
       - label: Start daemon
-        text: Start playlived on tony-dell.
+        text: playlived runs on tony-omen.local:9231 via systemd service for auto-restart reliability.
       - label: Create session (default)
-        text: playlive_create_playwright now defaults to headless local mode for better performance.
+        text: playlive_create_playwright defaults to headless local mode for better performance.
       - label: Create session (live)
-        text: Use playlive_create_chrome_live or playlive_create_playwright_chrome for visual debugging with remote CDP.
+        text: Use playlive_create_chrome_live or playlive_create_playwright_chrome with target="remote" for visual debugging with remote CDP.
       - label: Navigate
         text: playlive_navigate to the target URL (default page.goto timeout 15s).
       - label: Authenticated access
@@ -81,15 +80,15 @@ sections:
       - label: Security
         text: CDP and playlived are unauthenticated on the LAN; basic auth is for target page access only, not daemon security. Do not expose to untrusted networks.
       - label: Resource contention
-        text: Browser automation shares tony-dell with GPU/interactive workloads.
+        text: Browser automation shares tony-omen with GPU/interactive workloads.
       - label: Windsurf reload
         text: Reload Windsurf after mcp_config.json changes for tools to appear.
-      - label: Screen power management
-        text: "DPMS screen off causes browser session closure. Screen timeout scheduler configured: 15 min (7am-10pm) for PlayLive compatibility, 1 min otherwise."
       - label: Remote Chrome availability
-        text: chrome-live/playwright-chrome require remote Chrome CDP (127.0.0.1:9223) which may not be available if chrome-monitor.service is not running.
+        text: chrome-live/playwright-chrome require remote Chrome CDP (tony-dell:9222) which may not be available if Chrome is not running with remote debugging enabled.
+      - label: Consolidated architecture
+        text: Single playlive MCP server replaces previous dual-server setup (playlive.local + playlive.tony-dell) for streamlined operation.
 config:
-  version: 1
+  version: 2
   maintainer: tony
   status: active
   related_files:

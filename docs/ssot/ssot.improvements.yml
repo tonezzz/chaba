@@ -231,6 +231,54 @@ sections:
       - docker-compose.yml
     tags: ['auto-generated', 'storage']
 
+  - label: MCP Health Server Implementation
+    text: 'Create a streamlined MCP health server for centralized health check and telemetry tasks. The server will act as an orchestrator that calls the existing health-check skill, aggregates results, and provides unified MCP tools for health monitoring.
+
+    **Architecture**: Hybrid model - MCP as orchestrator, not executor. Leverages existing health-check skill and ssot.health.yml configuration.
+
+    **Phase 1 (MVP)**: ✅ Complete - Minimal MCP server with tools for running health checks and aggregating results
+    **Phase 2**: ✅ Complete - Add state persistence (SQLite) for health history and trends
+    **Phase 1+2 (Real Health Checks)**: ✅ Complete - Implement actual health check logic
+    **Expected Status/State Validation**: ✅ Complete - Use SSOT config expectations for accurate health determination
+    **Phase 3**: Pending - Add alerting and notification capabilities
+
+    **Phase 1+2 Completed Features** (2026-08-12):
+    - ✅ Real HTTP health checks using curl with expected_status validation from SSOT config
+    - ✅ Container health checks using docker ps with expected_state validation from SSOT config
+    - ✅ Systemd health checks using systemctl with expected_state validation from SSOT config
+    - ✅ 4-level status categorization (healthy, degraded, error, unknown)
+    - ✅ Profile filtering for home/mobile networks
+    - ✅ Category grouping in health reports (web, api, datastore, gpu, queue, optional, system)
+    - ✅ Recovery action suggestions from SSOT config
+    - ✅ Dependency analysis and cascading failure detection
+    - ✅ Enhanced database schema with detailed health metrics including expected values
+
+    **Critical Gap Fixed** (2026-08-12): Implemented expected_status and expected_state validation from SSOT configuration. Previously hardcoded expectations (200 for HTTP, "running" for containers, "active" for systemd) now use config-specified values for accurate health determination across 15 HTTP services and 11 container/systemd services.
+
+    **Current Status**: Fully functional health monitoring with real checks, accurate validation, categorization, and analysis. Testing shows proper expected status/state validation working correctly.
+
+    **Benefits**: Standardized health check interface, state management, historical analysis, MCP ecosystem integration, dependency analysis, accurate validation based on SSOT config
+    **Approach**: Incremental development starting with minimal viable server, reusing existing infrastructure'
+    status: completed
+    priority: high
+    effort: medium
+    category: infrastructure
+    discovered: 2026-08-12
+    completed: 2026-08-12
+    business_impact: 5
+    technical_impact: 7
+    user_experience_impact: 6
+    cost_savings_impact: 4
+    impact_summary: Centralizes health monitoring with historical tracking, real health checks, accurate validation, and dependency analysis
+    related_files:
+      - docs/ssot/infrastructure/ssot.mcp.yml
+      - docs/ssot/infrastructure/ssot.health.yml
+      - stacks/web/health-api.mjs
+      - .agents/skills/health-check/SKILL.md
+      - mcp/mcp-health/server.js
+      - mcp/mcp-health/README.md
+    tags: ['mcp', 'health-monitoring', 'telemetry', 'completed']
+
   - label: Infrastructure Containerization Complete
     text: Full infrastructure containerization assessment completed. Successfully containerized high-value services (Yomi API, GPU Queue) and appropriately kept complex/low-benefit services on host (Playlived, Clip Sync, Barriers, Rclone).
     status: completed
