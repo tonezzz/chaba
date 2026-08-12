@@ -65,7 +65,7 @@ async function loadHealthConfig() {
     
     try {
       const { execSync } = await import('child_process');
-      execSync('ping -c 1 -W 1 tony-omen.local', { stdio: 'ignore' });
+      execSync('ping -c 1 -W 2 tony-omen.local', { stdio: 'ignore' });
     } catch {
       profile = 'mobile';
       try {
