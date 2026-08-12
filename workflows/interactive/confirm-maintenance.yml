@@ -1,0 +1,72 @@
+name: confirm-maintenance
+description: Interactive workflow for confirming system maintenance operations
+version: "1.0"
+author: Chaba Team
+tags: [interactive, maintenance, confirmation]
+inputs:
+  operation:
+    type: str
+    description: Type of maintenance operation to perform
+    default: "docker-cleanup"
+    required: false
+  dry_run:
+    type: bool
+    description: Perform dry run without making changes
+    default: "true"
+    required: false
+blocks:
+  - id: show_operation_details
+    type: Log
+    description: "Display operation details"
+    inputs:
+      message: "Preparing to perform maintenance operation: {{inputs.operation}} (dry_run: {{inputs.dry_run}})"
+  - id: user_confirmation
+    type: Prompt
+    description: "Request user confirmation before proceeding"
+    inputs:
+      message: "Do you want to proceed with {{inputs.operation}}? (yes/no)"
+      default: "no"
+    depends_on:
+      - show_operation_details
+  - id: execute_operation
+    type: Shell
+    description: "Execute the maintenance operation"
+    inputs:
+      command: |
+        {% if inputs.operation == "docker-cleanup" %}
+        {% if inputs.dry_run %}
+        echo "DRY RUN: Would execute docker system prune -f"
+        {% else %}
+        docker system prune -f
+        {% endif %}
+        {% elif inputs.operation == "disk-check" %}
+        df -h
+        {% else %}
+        echo "Unknown operation: {{inputs.operation}}"
+        {% endif %}
+      timeout: 60
+    depends_on:
+      - user_confirmation
+    condition: "{{blocks.user_confirmation.outputs.response == 'yes'}}"
+  - id: log_result
+    type: Log
+    description: "Log operation result"
+    inputs:
+      message: "Maintenance operation {{inputs.operation}} completed"
+    depends_on:
+      - execute_operation
+  - id: cancel_notification
+    type: Log
+    description: "Notify user of cancellation"
+    inputs:
+      message: "Maintenance operation cancelled by user"
+    depends_on:
+      - user_confirmation
+    condition: "{{blocks.user_confirmation.outputs.response != 'yes'}}"
+outputs:
+  operation:
+    value: "{{inputs.operation}}"
+  status:
+    value: "{% if blocks.user_confirmation.outputs.response == 'yes' %}completed{% else %}cancelled{% endif %}"
+  user_response:
+    value: "{{blocks.user_confirmation.outputs.response}}"

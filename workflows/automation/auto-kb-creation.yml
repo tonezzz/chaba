@@ -1,0 +1,187 @@
+name: auto-kb-creation
+description: Automatically create KB entries for significant system issues
+version: "1.0"
+author: Chaba Team
+tags: [kb, automation, documentation, knowledge-base]
+
+inputs:
+  issue_type:
+    type: str
+    description: Type of issue (hostname-resolution, gpu-vram, disk-space, api-errors, container-failures)
+    required: true
+  issue_title:
+    type: str
+    description: Title for the KB entry
+    required: true
+  issue_description:
+    type: str
+    description: Detailed description of the issue
+    required: true
+  related_issues:
+    type: str
+    description: Related issues or error messages
+    required: false
+    default: ""
+  tags:
+    type: str
+    description: Comma-separated tags for the KB entry
+    required: false
+    default: ""
+
+blocks:
+  - id: validate_input
+    type: Shell
+    description: "Validate input parameters"
+    inputs:
+      command: |
+        #!/bin/bash
+        if [ -z "{{inputs.issue_type}}" ]; then
+          echo "ERROR: issue_type is required"
+          exit 1
+        fi
+        if [ -z "{{inputs.issue_title}}" ]; then
+          echo "ERROR: issue_title is required"
+          exit 1
+        fi
+        if [ -z "{{inputs.issue_description}}" ]; then
+          echo "ERROR: issue_description is required"
+          exit 1
+        fi
+        echo "Input validation passed"
+        echo "ISSUE_TYPE={{inputs.issue_type}}"
+        echo "ISSUE_TITLE={{inputs.issue_title}}"
+        echo "ISSUE_DESCRIPTION={{inputs.issue_description}}"
+        echo "RELATED_ISSUES={{inputs.related_issues}}"
+        echo "TAGS={{inputs.tags}}"
+      timeout: 5
+
+  - id: check_existing_kb
+    type: Shell
+    description: "Check if KB entry already exists"
+    inputs:
+      command: |
+        #!/bin/bash
+        KB_DIR="/home/tony/CascadeProjects/chaba-yomi/docs/kb"
+        
+        if [ ! -d "$KB_DIR" ]; then
+          echo "KB directory does not exist"
+          echo "KB_EXISTS=false"
+          exit 0
+        fi
+        
+        # Check for existing entry with similar title
+        if find "$KB_DIR" -name "*.md" -exec grep -l "{{inputs.issue_title}}" {} \; 2>/dev/null | grep -q .; then
+          echo "KB entry already exists with similar title"
+          echo "KB_EXISTS=true"
+        else
+          echo "KB_EXISTS=false"
+        fi
+      timeout: 10
+    depends_on:
+      - validate_input
+
+  - id: create_kb_entry
+    type: Shell
+    description: "Create KB entry if it doesn't exist"
+    inputs:
+      command: |
+        #!/bin/bash
+        eval "$(echo "{{blocks.validate_input.outputs.stdout}}" | grep -E '^[A-Z_]+=')"
+        
+        if [ "$KB_EXISTS" = "true" ]; then
+          echo "KB entry already exists, skipping creation"
+          exit 0
+        fi
+        
+        KB_DIR="/home/tony/CascadeProjects/chaba-yomi/docs/kb"
+        TIMESTAMP=$(date -Iseconds)
+        DATE=$(date +%Y-%m-%d)
+        SAFE_TITLE=$(echo "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/-\+/-/g')
+        FILENAME="${SAFE_TITLE}-${DATE}.md"
+        FILEPATH="$KB_DIR/$FILENAME"
+        
+        # Create KB entry content using echo
+        echo "# Test KB Entry" > "$FILEPATH"
+        echo "" >> "$FILEPATH"
+        echo "## Context" >> "$FILEPATH"
+        echo "" >> "$FILEPATH"
+        echo "Auto-generated KB entry created on $TIMESTAMP" >> "$FILEPATH"
+        echo "Issue type: $ISSUE_TYPE" >> "$FILEPATH"
+        echo "" >> "$FILEPATH"
+        echo "## Problem" >> "$FILEPATH"
+        echo "" >> "$FILEPATH"
+        echo "$ISSUE_DESCRIPTION" >> "$FILEPATH"
+        echo "" >> "$FILEPATH"
+        
+        # Add related issues if provided
+        if [ -n "$RELATED_ISSUES" ]; then
+          echo "## Related Issues" >> "$FILEPATH"
+          echo "" >> "$FILEPATH"
+          echo "$RELATED_ISSUES" >> "$FILEPATH"
+          echo "" >> "$FILEPATH"
+        fi
+        
+        # Add tags
+        echo "## Tags" >> "$FILEPATH"
+        echo "" >> "$FILEPATH"
+        if [ -n "$TAGS" ]; then
+          echo "$TAGS, auto-generated, kb-automation" >> "$FILEPATH"
+        else
+          echo "auto-generated, kb-automation, $ISSUE_TYPE" >> "$FILEPATH"
+        fi
+        echo "" >> "$FILEPATH"
+        
+        # Add metadata
+        echo "## Metadata" >> "$FILEPATH"
+        echo "" >> "$FILEPATH"
+        echo "- Created: $TIMESTAMP" >> "$FILEPATH"
+        echo "- Issue Type: $ISSUE_TYPE" >> "$FILEPATH"
+        echo "- Auto-generated: true" >> "$FILEPATH"
+        echo "- Assessment Reference: manual-workflow-trigger" >> "$FILEPATH"
+        echo "" >> "$FILEPATH"
+        echo "## Related Documentation" >> "$FILEPATH"
+        echo "" >> "$FILEPATH"
+        echo "- SSOT Health Configuration: docs/ssot/infrastructure/ssot.health.yml" >> "$FILEPATH"
+        echo "- System Maintenance: scripts/system-maintenance.mjs" >> "$FILEPATH"
+        echo "- Overnight Assessment: scripts/overnight-assessment.mjs" >> "$FILEPATH"
+        
+        echo "KB entry created: $FILEPATH"
+        echo "KB_CREATED=true"
+        echo "KB_FILEPATH=$FILEPATH"
+      timeout: 10
+    depends_on:
+      - check_existing_kb
+
+  - id: generate_summary
+    type: Shell
+    description: "Generate summary of KB creation"
+    inputs:
+      command: |
+        #!/bin/bash
+        eval "$(echo "{{blocks.validate_input.outputs.stdout}}" | grep -E '^[A-Z_]+=')"
+        eval "$(echo "{{blocks.create_kb_entry.outputs.stdout}}" | grep -E '^[A-Z_]+=')"
+        
+        echo ""
+        echo "KB Creation Summary"
+        echo "=================="
+        echo "Issue Type: $ISSUE_TYPE"
+        echo "Issue Title: $ISSUE_TITLE"
+        echo ""
+        
+        if [ "$KB_EXISTS" = "true" ]; then
+          echo "Status: Skipped (entry already exists)"
+        elif [ "$KB_CREATED" = "true" ]; then
+          echo "Status: Created successfully"
+          echo "File: $KB_FILEPATH"
+        else
+          echo "Status: Failed to create"
+        fi
+      timeout: 5
+    depends_on:
+      - create_kb_entry
+
+outputs:
+  kb_status:
+    value: "{{blocks.create_kb_entry.outputs.stdout}}"
+  kb_summary:
+    value: "{{blocks.generate_summary.outputs.stdout}}"
