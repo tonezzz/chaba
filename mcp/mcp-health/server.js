@@ -29,6 +29,7 @@ db.exec(`
     expected_state TEXT,
     active_state TEXT,
     sub_state TEXT,
+    is_timer BOOLEAN,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
   );
   CREATE INDEX IF NOT EXISTS idx_service_timestamp ON health_checks(service_name, timestamp);
@@ -56,10 +57,7 @@ async function loadHealthConfig() {
   const configPath = process.env.HEALTH_CONFIG || join(process.cwd(), 'docs/ssot/infrastructure/ssot.health.yml');
   console.error(`Loading health config from: ${configPath}`);
   try {
-    const file = readFileSync(configPath, 'utf8');
-    const config = yaml.parse(file);
-    
-    // Auto-detect network profile
+    // Auto-detect network profile first
     let profile = 'home';
     let baseUrl = 'http://tony-omen.local:8080';
     
@@ -78,6 +76,20 @@ async function loadHealthConfig() {
     }
     
     console.error(`Detected profile: ${profile}, base URL: ${baseUrl}`);
+    
+    // Try to load profile-specific config first
+    let file;
+    try {
+      const profileConfigPath = configPath.replace('ssot.health.yml', `ssot.health.${profile}.yml`);
+      file = readFileSync(profileConfigPath, 'utf8');
+      console.error(`Using profile-specific config: ${profileConfigPath}`);
+    } catch {
+      // Fallback to main config
+      file = readFileSync(configPath, 'utf8');
+      console.error(`Using main config: ${configPath}`);
+    }
+    
+    const config = yaml.parse(file);
     
     // Substitute {profile} placeholders in service URLs
     if (config.services) {
@@ -712,11 +724,25 @@ async function checkSystemService(service) {
     const activeState = lines.find(l => l.startsWith('ActiveState='))?.split('=')[1] || 'unknown';
     const subState = lines.find(l => l.startsWith('SubState='))?.split('=')[1] || 'unknown';
     
-    // Status categorization based on expected state
+    // Check if this is a timer service
+    let isTimer = false;
+    try {
+      const serviceType = execSync(`systemctl --user show ${service.service} --property=Type --value`, { encoding: 'utf8' });
+      isTimer = serviceType.trim() === 'oneshot' || serviceType.trim() === 'simple';
+      const unitFile = execSync(`systemctl --user show ${service.service} --property=Id --value`, { encoding: 'utf8' });
+      isTimer = isTimer || unitFile.trim().includes('.timer');
+    } catch {
+      // Assume not a timer if we can't check
+    }
+    
+    // Enhanced timer status categorization
     let status = 'healthy';
-    if (activeState === expectedState) {
+    if (isTimer && subState === 'waiting' && activeState === 'active') {
+      // Timer in waiting state is normal/healthy
+      status = 'healthy';
+    } else if (activeState === expectedState) {
       // For active state, also check sub-state
-      if (expectedState === 'active' && (subState === 'running' || subState === 'exited')) {
+      if (expectedState === 'active' && (subState === 'running' || subState === 'exited' || subState === 'waiting')) {
         status = 'healthy';
       } else if (expectedState === 'active') {
         status = 'degraded';
@@ -737,6 +763,7 @@ async function checkSystemService(service) {
       active_state: activeState,
       sub_state: subState,
       expected_state: expectedState,
+      is_timer: isTimer,
       error: null
     };
   } catch (error) {
@@ -994,8 +1021,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           
           // Store in database
           const stmt = db.prepare(`
-            INSERT INTO health_checks (service_name, status, response_time, error, http_status, expected_status, container_state, expected_state, active_state, sub_state)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO health_checks (service_name, status, response_time, error, http_status, expected_status, container_state, expected_state, active_state, sub_state, is_timer)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `);
           stmt.run(
             serviceName, 
@@ -1007,7 +1034,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             checkResult.container_state || null,
             checkResult.expected_state || null,
             checkResult.active_state || null,
-            checkResult.sub_state || null
+            checkResult.sub_state || null,
+            checkResult.is_timer || null
           );
           
           // Process alerts based on status changes

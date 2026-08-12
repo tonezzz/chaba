@@ -1,6 +1,6 @@
 ---
 name: health-check
-description: Check health of all services defined in ssot.health.yml with auto network detection
+description: Check health of all services defined in ssot.health.yml with auto network detection (DEPRECATED - use MCP health server tools)
 allowed-tools:
   - read
   - exec
@@ -10,49 +10,48 @@ triggers:
   - model
 ---
 
-Check health of all services defined in SSOT health configuration:
+**DEPRECATED**: This skill is deprecated in favor of the MCP health server tools. Please use the MCP health server tools directly:
+- `mcp-health:check_health` - Run health checks for all services
+- `mcp-health:get_health_status` - Get current health status
+- `mcp-health:get_health_history` - Get historical health data
+- `mcp-health:get_health_summary` - Get health summary and trends
+- `mcp-health:analyze_dependencies` - Analyze service dependencies
+- `mcp-health:get_alerts` - Get active and historical alerts
+- `mcp-health:acknowledge_alert` - Acknowledge alerts
+- `mcp-health:get_alert_config` - Get alert configuration
+- `mcp-health:check_port_conflicts` - Check for port conflicts
+- `mcp-health:validate_proxy_config` - Validate Caddy proxy configuration
+- `mcp-health:restart_service` - Safely restart services
+- `mcp-health:get_troubleshooting_info` - Get enhanced troubleshooting information
 
-1. Read the SSOT health configuration file:
-   - File: chaba/docs/ssot/infrastructure/ssot.health.yml
-   - Parse profiles section for network configuration
-   - Parse services list to get all monitored services
+**Migration Guide**:
+1. Replace skill invocation with `mcp-health:check_health` tool call
+2. Use `mcp-health:get_troubleshooting_info` for recovery guidance
+3. Use `mcp-health:analyze_dependencies` for dependency analysis
+4. Use `mcp-health:get_alerts` for alert management
 
-2. Auto-detect network profile:
-   - Check if tony-omen.local resolves successfully → use home profile
-   - If tony-omen.local fails → use mobile profile with IP detection
-   - Get current IP for mobile profile: ip route get 1.1.1.1 | awk '{print $7}'
-   - Replace {profile} placeholder with appropriate base URL
+**Legacy Implementation** (for backward compatibility):
 
-3. For each service in the configuration:
-   - Check if service has profiles field and matches current profile
-   - Extract the service type (http, container, systemd)
-   - Get the appropriate check parameters (url, container name, service name, expected status/state)
-   - Replace {profile} placeholder in URLs with detected base URL
-   - Perform the health check based on type:
-     * For http services: curl the URL and check HTTP status code
-     * For container services: check docker compose status for the container
-     * For systemd services: check systemctl --user status for the service
+This skill now acts as a convenience wrapper for the MCP health server. The MCP server provides:
+- Enhanced capabilities (historical tracking, alerts, advanced monitoring)
+- Better performance (database persistence, optimized queries)
+- Standardized interface (MCP protocol integration)
+- Advanced features (port conflict detection, proxy validation, automated recovery)
 
-4. Categorize results:
-   - ✅ Healthy: HTTP 200-299, container state "running", or systemd state "active"
-   - ⚠️ Degraded: Slow response (>3s) or container restarting
-   - ❌ Error: HTTP 4xx/5xx, container stopped/exited, or systemd inactive
-   - ❓ Unknown: Timeout, connection refused, or no response
+The MCP health server is the authoritative source for health monitoring. This skill is maintained for backward compatibility and will be removed in a future update.
 
-5. Generate a structured report:
-   - Show detected network profile and base URL
-   - Group by category (web, api, datastore, gpu, queue, optional, system)
-   - Show overall health summary (total, healthy, degraded, error, unknown)
-   - List each service with its status and response time
-   - Highlight any services that need attention
-   - Show dependency status if dependencies are defined
+**Direct MCP Tool Usage Example**:
+Instead of invoking this skill, use:
+```
+Call tool: mcp-health:check_health
+Parameters: {} (for all services) or {"service": "Caddy"} (for specific service)
+```
 
-6. If any services are unhealthy:
-   - Suggest recovery actions based on the failure type
-   - Reference the recovery_actions section from ssot.health.yml
-   - Provide specific commands to diagnose and fix the issue
-   - Check if dependencies are also failing
-
-7. Exit with summary:
-   - If all services healthy: "All systems operational"
-   - If issues found: "X services need attention" with details
+**Benefits of MCP Health Server**:
+- Historical tracking and trend analysis
+- Alert system with notifications
+- Port conflict detection
+- Proxy configuration validation
+- Enhanced dependency analysis
+- Automated service recovery
+- Enhanced troubleshooting guidance with SSOT recovery actions
