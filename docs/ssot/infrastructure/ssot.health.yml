@@ -402,12 +402,6 @@ recovery_actions:
     - "Verify nginx config: cat /home/tony/CascadeProjects/chaba-raceman/nginx.conf"
     - "Test direct access: curl -s http://tony-omen.local:8083/apps/raceman/"
 
-  playlived_browsers_missing:
-    - "Install browsers: cd /home/tony/.local/playlive && npx playwright install"
-    - "Verify install: npx playwright install --dry-run"
-    - "Restart service: systemctl --user restart playlived.service"
-    - "Test session: curl -s http://tony-omen.local:9230/sessions"
-
   network_connectivity_home:
     - "Check if tony-omen.local is reachable: ping -c 2 tony-omen.local"
     - "Test HTTP connectivity: curl -s -o /dev/null -w '%{http_code}' http://tony-omen.local:8080/"
