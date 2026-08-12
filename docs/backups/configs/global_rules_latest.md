@@ -1,1 +1,0 @@
-/home/tony/CascadeProjects/chaba/docs/backups/configs/global_rules_20260807_030001.md
