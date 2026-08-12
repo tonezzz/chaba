@@ -1551,6 +1551,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           serviceUrl = serviceUrl.replace('{profile}', baseUrl);
         }
         
+        console.error(`Troubleshooting for ${args.service_name}: URL=${serviceUrl}, Type=${service.type}`);
+        
         const troubleshootingInfo = getEnhancedErrorContext(
           args.service_name,  // serviceName
           lastCheck?.status || 'unknown',  // status
