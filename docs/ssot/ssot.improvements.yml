@@ -746,6 +746,36 @@ sections:
     user_experience_impact: 6
     cost_savings_impact: 4
     impact_summary: Proactive performance monitoring enables early detection of degradation and optimization opportunities
+  - label: CPU Frequency Monitoring
+    text: Add CPU frequency monitoring and throttling detection to health monitoring system
+    status: completed
+    priority: medium
+    effort: 1-2 hours
+    category: monitoring
+    discovered: 2026-08-12
+    completed: '2026-08-12'
+    completion_note: 'Enhanced health-monitor.sh with CPU frequency and throttling detection. Added checks for current vs max frequency, thermal throttling under load, CPU governor state, and minimum frequency detection. Documented CPU specifications in ssot.mysystem.home.yml (Intel i7-9750H @ 2.60GHz max, 800MHz min). Enhanced chaba-health-monitor-timer in ssot.health.yml with CPU frequency verification and recovery actions. System now detects when CPU is throttled or stuck at low frequency under load.'
+    action_items:
+    - Add CPU frequency monitoring to health-monitor.sh
+    - Implement throttling detection (frequency drops under load)
+    - Check CPU governor state
+    - Document CPU specifications in SSOT
+    - Add verification and recovery actions to health check config
+    related_files:
+    - scripts/health-monitor.sh
+    - docs/ssot/ssot.mysystem.home.yml
+    - docs/ssot/infrastructure/ssot.health.yml
+    tags:
+    - monitoring
+    - cpu
+    - performance
+    - throttling
+    - completed
+    business_impact: 6
+    technical_impact: 7
+    user_experience_impact: 5
+    cost_savings_impact: 3
+    impact_summary: CPU throttling detection prevents performance degradation and identifies thermal/cooling issues early
   - label: Security & Dependency Checking
     text: Add security vulnerability scanning, dependency update checking, and container image age monitoring to assessment system
     status: completed
@@ -837,6 +867,7 @@ sections:
     - MCP Health Server Streamlining
     - Overnight Assessment MCP Integration
     - Performance Baselines
+    - CPU Frequency Monitoring
     - Infrastructure Containerization Complete
     - Monitoring & Alerting System
     - Security & Dependency Checking

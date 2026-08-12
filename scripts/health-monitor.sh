@@ -66,6 +66,39 @@ if [[ $load_pct -gt 200 ]]; then
     alert warning "CPU Load High" "Load ${load1} (${load_pct}% of ${nproc} cores)"
 fi
 
+# ── CPU frequency and throttling ─────────────────────────────────────────────
+if [[ -d /sys/devices/system/cpu/cpu0/cpufreq ]]; then
+    # Get current and max CPU frequency
+    current_freq=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq 2>/dev/null || echo 0)
+    max_freq=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 2>/dev/null || echo 0)
+    
+    if [[ $current_freq -gt 0 && $max_freq -gt 0 ]]; then
+        current_mhz=$(( current_freq / 1000 ))
+        max_mhz=$(( max_freq / 1000 ))
+        freq_pct=$(( (current_freq * 100) / max_freq ))
+        
+        # Check if CPU is significantly below max frequency under load
+        if [[ $load_pct -gt 50 && $freq_pct -lt 80 ]]; then
+            alert warning "CPU Throttling Detected" "CPU at ${current_mhz}MHz (${freq_pct}% of ${max_mhz}MHz) under ${load_pct}% load"
+        fi
+        
+        # Check if CPU is stuck at minimum frequency
+        min_freq=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq 2>/dev/null || echo 0)
+        if [[ $min_freq -gt 0 ]]; then
+            min_mhz=$(( min_freq / 1000 ))
+            if [[ $current_mhz -le $((min_mhz + 100)) && $load_pct -gt 10 ]]; then
+                alert warning "CPU Frequency Low" "CPU stuck at ${current_mhz}MHz (near min ${min_mhz}MHz) under load"
+            fi
+        fi
+    fi
+    
+    # Check CPU frequency scaling governor
+    governor=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo "unknown")
+    if [[ "$governor" == "powersave" || "$governor" == "conservative" ]]; then
+        alert info "CPU Governor" "Using ${governor} governor (may limit performance)"
+    fi
+fi
+
 # ── GPU temperature ─────────────────────────────────────────────────────────
 if command -v nvidia-smi &>/dev/null; then
     gpu_temp=$(nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader 2>/dev/null | head -1 | tr -d ' ')

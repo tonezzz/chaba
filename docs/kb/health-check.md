@@ -1,12 +1,12 @@
 ---
 title: Health Check Dashboard
 description: Real-time system health monitoring dashboard with GPU, Yomi, and service status tabs with auto-refresh and category-based filtering
-tags: [monitoring, health-check, gpu, yomi, dashboard, services]
+tags: [monitoring, health-check, gpu, yomi, dashboard, services, cpu-frequency]
 created: 2026-08-01
-updated: 2026-08-06
+updated: 2026-08-12
 category: operations
-related: [ssot.health.yml, ssot.health.home.yml, ssot.health.mobile.yml, gpu-embedding-service.md]
-search_keywords: [health monitoring, service status, GPU tab, Yomi API, dashboard, auto-refresh, troubleshooting]
+related: [ssot.health.yml, ssot.health.home.yml, ssot.health.mobile.yml, gpu-embedding-service.md, ssot.mysystem.home.yml]
+search_keywords: [health monitoring, service status, GPU tab, Yomi API, dashboard, auto-refresh, troubleshooting, cpu frequency, throttling, cpu governor]
 ---
 
 # Health Check Dashboard
@@ -68,6 +68,51 @@ Provides unified real-time monitoring of all Chaba infrastructure services with 
 - SSOT: `docs/ssot/infrastructure/ssot.health.home.yml`
 - Workflow: `workflows/monitoring/home-profile-health-check.yml`
 - Recovery commands provided in health check output
+
+### CPU Frequency Monitoring (August 12, 2026)
+
+**New Monitoring Capability:**
+- **Purpose**: Detect CPU throttling and performance limitations due to thermal/power constraints
+- **Implementation**: Enhanced `scripts/health-monitor.sh` with CPU frequency monitoring
+- **Monitoring Script**: Runs every 10 minutes via `chaba-health-monitor.timer` systemd service
+
+**CPU Specifications (tony-omen):**
+- **Model**: Intel Core i7-9750H
+- **Max Frequency**: 2.60GHz (2600 MHz)
+- **Min Frequency**: 800 MHz
+- **Cores/Threads**: 6 cores / 12 threads
+- **Documented in**: `docs/ssot/ssot.mysystem.home.yml`
+
+**Monitoring Capabilities:**
+- **Current Frequency**: Reads from `/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq`
+- **Max Frequency**: Reads from `/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq`
+- **Throttling Detection**: Alerts when CPU <80% of max frequency under load (>50% CPU load)
+- **Minimum Frequency Detection**: Alerts when CPU stuck at min frequency under load
+- **Governor Monitoring**: Checks CPU governor state (powersave, performance, etc.)
+
+**Alert Conditions:**
+- **CPU Throttling**: CPU frequency <80% of max under high load
+- **CPU Frequency Low**: CPU stuck at minimum frequency under load
+- **CPU Governor**: Using powersave/conservative governor (may limit performance)
+
+**Recovery Actions:**
+- Check thermal throttling: `watch -n 1 'cat /sys/class/thermal/thermal_zone*/temp'`
+- Check CPU temperature: `sensors` or thermal zone files
+- Change CPU governor: `echo performance | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor`
+- Check cooling: clean fans, verify airflow, check thermal paste
+- Review system load: `htop` or `top` to identify CPU-intensive processes
+
+**Verification Commands:**
+- Check current frequency: `cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq`
+- Check max frequency: `cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq`
+- Check CPU governor: `cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor`
+- Monitor log: `tail -f /home/tony/CascadeProjects/chaba/logs/health-monitor.log`
+
+**Configuration:**
+- SSOT: `docs/ssot/infrastructure/ssot.health.yml` (chaba-health-monitor-timer)
+- Script: `scripts/health-monitor.sh`
+- Log: `logs/health-monitor.log`
+- Systemd timer: `chaba-health-monitor.timer` (every 10 minutes)
 
 ### GPU Tab
 - Real-time GPU hardware status from mcp-gpu

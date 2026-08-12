@@ -13,6 +13,43 @@ This file tracks significant changes to SSOT files for audit trail and rollback 
 ## Recent Changes
 
 ### 2026-08-12
+- **File**: docs/ssot/ssot.mysystem.home.yml
+- **Change Type**: minor
+- **Description**: Added hardware specifications section with CPU (Intel i7-9750H @ 2.60GHz max, 800MHz min), GPU, and memory details. Added CPU frequency monitoring status.
+- **Impact**: SSOT now documents system hardware specifications and CPU monitoring capabilities
+- **Rollback**: Remove hardware specifications section
+
+- **File**: scripts/health-monitor.sh
+- **Change Type**: minor
+- **Description**: Enhanced with CPU frequency and throttling detection. Added checks for current vs max frequency, thermal throttling under load, CPU governor state, and minimum frequency detection.
+- **Impact**: Health monitoring now detects CPU throttling and performance limitations with alerting
+- **Rollback**: Revert to previous health-monitor.sh version
+
+- **File**: docs/ssot/infrastructure/ssot.health.yml
+- **Change Type**: minor
+- **Description**: Enhanced chaba-health-monitor-timer with CPU frequency verification and recovery actions. Added system service group for CPU monitoring. Updated service criticality to include cpu-frequency-monitor as optional.
+- **Impact**: Health check configuration now includes CPU frequency monitoring with troubleshooting guidance
+- **Rollback**: Remove CPU frequency monitoring enhancements
+
+- **File**: docs/ssot/ssot.improvements.yml
+- **Change Type**: minor
+- **Description**: Added CPU Frequency Monitoring improvement entry with completion status and technical details. Updated completed work timeline to include CPU monitoring.
+- **Impact**: SSOT improvements now document CPU frequency monitoring implementation
+- **Rollback**: Remove CPU Frequency Monitoring improvement entry
+
+- **File**: docs/kb/health-check.md
+- **Change Type**: minor
+- **Description**: Added CPU frequency monitoring section with specifications, monitoring capabilities, alert conditions, recovery actions, and verification commands. Updated frontmatter with CPU-related tags.
+- **Impact**: Health check KB now includes comprehensive CPU monitoring documentation
+- **Rollback**: Remove CPU frequency monitoring section
+
+- **File**: docs/ssot/ssot.index.yml
+- **Change Type**: patch
+- **Description**: Updated ssot.mysystem.home.yml description to include hardware specifications. Updated infrastructure/ssot.health.yml description to mention CPU frequency monitoring.
+- **Impact**: SSOT index now reflects hardware documentation and CPU monitoring capabilities
+- **Rollback**: Revert index descriptions
+
+### 2026-08-12
 - **File**: docs/ssot/infrastructure/ssot.mcp.yml
 - **Change Type**: minor
 - **Description**: Added mddb MCP server entry with configuration details, updated mcp-health notes to include Phase 4 completion and new tools

@@ -38,7 +38,7 @@ alerts:
   service_criticality:
     critical: [caddy, postgres, gpu-queue]
     important: [yomi-api, status-api, trade-api, mddb-api, playlived, ssot-sync-watcher, llama-server, remote-exec-tony-dell]
-    optional: [redis, weaviate, activepieces, frigate, camera-control, imagen2, txt2vid, thai-legal]
+    optional: [redis, weaviate, activepieces, frigate, camera-control, imagen2, txt2vid, thai-legal, cpu-frequency-monitor]
 
 # Service groups for dependency tracking
 groups:
@@ -50,6 +50,7 @@ groups:
   automation: [playlived]
   ssot-sync: [ssot-sync-watcher, mddb-api, mddb-mcp, mddb-stats, mddb-vector-stats, mddb-metrics, mddb-container]
   remote-exec: [remote-exec-tony-dell]
+  system: [cpu-frequency-monitor, chaba-health-monitor-timer]
 
 # Service dependencies
 dependencies:
@@ -482,6 +483,19 @@ services:
     timeout: 5
     category: system
     profiles: [home, mobile]
+    note: "Runs health-monitor.sh every 10 minutes (CPU frequency, temperature, memory, disk, services)"
+    verification:
+      - "Check timer status: systemctl --user status chaba-health-monitor.timer"
+      - "Check monitor log: tail -f /home/tony/CascadeProjects/chaba/logs/health-monitor.log"
+      - "Test script manually: bash /home/tony/CascadeProjects/chaba/scripts/health-monitor.sh"
+      - "Check CPU frequency: cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq"
+      - "Check CPU governor: cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
+    recovery_actions:
+      - "Restart timer: systemctl --user restart chaba-health-monitor.timer"
+      - "Check script permissions: chmod +x /home/tony/CascadeProjects/chaba/scripts/health-monitor.sh"
+      - "Monitor CPU frequency: watch -n 1 'cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq'"
+      - "Change CPU governor: echo performance | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
+      - "Check thermal throttling: watch -n 1 'cat /sys/class/thermal/thermal_zone*/temp'"
 
 # Recovery suggestions for common failure modes
 recovery_actions:
