@@ -1541,22 +1541,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         `);
         const lastCheck = stmt.get(args.service_name);
         
+        // Use the resolved URL from config (after profile substitution)
+        const serviceUrl = service.url || 'unknown';
+        
         const troubleshootingInfo = getEnhancedErrorContext(
           args.service_name,
           lastCheck?.status || 'unknown',
           lastCheck?.error || null,
-          service.type || 'unknown'
+          service.type || 'unknown',
+          serviceUrl
         );
-        
-        // Use actual service URL for troubleshooting steps
-        const serviceUrl = service.url || 'unknown';
-        const enhancedTroubleshooting = {
-          ...troubleshootingInfo,
-          service_url: serviceUrl,
-          troubleshooting_steps: troubleshootingInfo.troubleshooting_steps.map(step => 
-            step.replace(service, serviceUrl).replace('curl -v Yomi API', `curl -v ${serviceUrl}`)
-          )
-        };
         
         return {
           content: [{
@@ -1567,7 +1561,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               service_type: service.type || 'unknown',
               service_url: serviceUrl,
               last_checked: lastCheck?.timestamp || null,
-              troubleshooting_info: enhancedTroubleshooting
+              troubleshooting_info: troubleshootingInfo
             }, null, 2)
           }]
         };
