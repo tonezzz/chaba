@@ -1,6 +1,14 @@
 # System Automation
+## What it is
 
 Automated monitoring and maintenance scripts for Chaba infrastructure.
+
+
+Automated monitoring and maintenance scripts for Chaba infrastructure.
+## Context/Background
+
+Created 2026-08-06 as part of Chaba infrastructure documentation.
+
 
 ## Scripts
 
@@ -201,3 +209,38 @@ Monitoring data can be exposed via the status API for web dashboard integration.
 - [ ] Integration with monitoring services (Prometheus, Grafana)
 - [ ] Automated remediation for common issues
 - [ ] Resource usage forecasting
+## Tags
+
+- **docker**: docker
+- **containers**: containers
+- **containerization**: containerization
+- **gpu**: gpu
+- **nvidia**: nvidia
+- **cuda**: cuda
+- **ml**: ml
+- **ai**: ai
+- **api**: api
+- **rest**: rest
+- **http**: http
+- **web**: web
+- **monitoring**: monitoring
+- **health**: health
+- **metrics**: metrics
+- **logging**: logging
+- **security**: security
+- **auth**: auth
+- **encryption**: encryption
+- **ssl**: ssl
+- **deployment**: deployment
+- **ci**: ci
+- **cd**: cd
+- **performance**: performance
+- **optimization**: optimization
+- **caching**: caching
+- **testing**: testing
+- **e2e**: e2e
+- **automation**: automation
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **2026**: 2026

@@ -3,6 +3,10 @@
 ## What it is
 
 Caddyfile syntax errors that prevent the Caddy web server from starting, causing connection failures for all web services.
+## Context/Background
+
+Created 2026-08-04 as part of Chaba infrastructure documentation.
+
 
 ## Context
 
@@ -159,4 +163,14 @@ handle_path /apps/example/* {
 
 ## Tags
 
-caddy, caddyfile, syntax-error, web-stack, troubleshooting, configuration
+- **docker**: docker
+- **containers**: containers
+- **containerization**: containerization
+- **api**: api
+- **rest**: rest
+- **http**: http
+- **web**: web
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **2026**: 2026

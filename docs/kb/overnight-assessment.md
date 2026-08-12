@@ -1,4 +1,12 @@
 # Overnight System Assessment
+## What it is
+
+Automated overnight system assessment that runs comprehensive health checks and performance analysis of the Chaba infrastructure. Scheduled to run daily at 2:00 AM via systemd timer, generating detailed reports for system administrators.
+
+## Context/Background
+
+Created 2026-08-05 as part of Chaba infrastructure documentation.
+
 
 ## Overview
 
@@ -762,3 +770,49 @@ node scripts/link-improvement-to-git.mjs "Docker Compose Configuration Fix" "Rem
 - Data-driven prioritization
 - Historical impact analysis
 - Process optimization over time
+## Tags
+
+- **docker**: docker
+- **containers**: containers
+- **containerization**: containerization
+- **gpu**: gpu
+- **nvidia**: nvidia
+- **cuda**: cuda
+- **ml**: ml
+- **ai**: ai
+- **yomi**: yomi
+- **line**: line
+- **messaging**: messaging
+- **conversations**: conversations
+- **api**: api
+- **rest**: rest
+- **http**: http
+- **web**: web
+- **database**: database
+- **postgres**: postgres
+- **redis**: redis
+- **mongodb**: mongodb
+- **sql**: sql
+- **monitoring**: monitoring
+- **health**: health
+- **metrics**: metrics
+- **logging**: logging
+- **security**: security
+- **auth**: auth
+- **encryption**: encryption
+- **ssl**: ssl
+- **performance**: performance
+- **optimization**: optimization
+- **caching**: caching
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **workflow**: workflow
+- **automation**: automation
+- **mcp**: mcp
+- **weaviate**: weaviate
+- **vector**: vector
+- **ssot**: ssot
+- **configuration**: configuration
+- **infrastructure**: infrastructure
+- **2026**: 2026

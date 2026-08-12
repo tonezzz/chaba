@@ -3,6 +3,10 @@
 ## What it is
 
 PlayLive browser automation daemon extended with basic authentication support to enable verification of Caddy-protected pages like Yomi web interface.
+## Context/Background
+
+Created 2026-08-04 as part of Chaba infrastructure documentation.
+
 
 ## Context
 
@@ -183,4 +187,29 @@ handle_path /apps/yomi/* {
 
 ## Tags
 
-playlive, authentication, basic-auth, browser-automation, caddy, yomi, security
+- **docker**: docker
+- **containers**: containers
+- **containerization**: containerization
+- **yomi**: yomi
+- **line**: line
+- **messaging**: messaging
+- **conversations**: conversations
+- **security**: security
+- **scanning**: scanning
+- **vulnerability**: vulnerability
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **workflow**: workflow
+- **automation**: automation
+- **mcp**: mcp
+- **ssot**: ssot
+- **configuration**: configuration
+- **infrastructure**: infrastructure
+- **playwright**: playwright
+- **testing**: testing
+- **playlive**: playlive
+- **browser**: browser
+- **yaml**: yaml
+- **syntax**: syntax
+- **2026**: 2026

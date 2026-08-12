@@ -10,8 +10,16 @@ search_keywords: [progressive-web-app, ipad-fullscreen, mobile-testing, pwa-mani
 ---
 
 # Test PWA - iPad Progressive Web App
+## What it is
+
+title: Test PWA - iPad Progressive Web App
+
 
 **Abstract**: A Progressive Web App (PWA) demo application for testing iPad full-screen capabilities, featuring interactive elements, theme switching, local storage persistence, and comprehensive status detection for PWA installation and display modes.
+## Context/Background
+
+Created 2026-08-06 as part of Chaba infrastructure documentation.
+
 
 ## Overview
 
@@ -170,3 +178,28 @@ The Test PWA is deployed on the chaba-h3 Plesk static site:
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-08-06 | Initial creation with full PWA implementation and documentation | tony |
+
+## Tags
+
+- **deployment**: deployment
+- **ci**: ci
+- **cd**: cd
+- **docker**: docker
+- **performance**: performance
+- **optimization**: optimization
+- **caching**: caching
+- **testing**: testing
+- **e2e**: e2e
+- **automation**: automation
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **workflow**: workflow
+- **mcp**: mcp
+- **h3**: h3
+- **gizmo**: gizmo
+- **thailand**: thailand
+- **ssot**: ssot
+- **configuration**: configuration
+- **infrastructure**: infrastructure
+- **2026**: 2026

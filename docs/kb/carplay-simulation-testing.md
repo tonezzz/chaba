@@ -10,8 +10,16 @@ search_keywords: [carplay simulation, ipad testing, gps tracking, route planning
 ---
 
 # CarPlay Simulation Testing
+## What it is
+
+title: CarPlay Simulation Testing
+
 
 **Abstract**: CarPlay-style simulation interface for iPad testing that provides GPS tracking, route planning, and navigation simulation capabilities using iOS-inspired design patterns and modular architecture.
+## Context/Background
+
+Created 2026-08-07 as part of Chaba infrastructure documentation.
+
 
 ## Overview
 
@@ -151,3 +159,38 @@ Test CarPlay is a simulation interface designed for iPad testing that replicates
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-08-06 | Initial CarPlay simulation testing documentation | devin |
+
+## Tags
+
+- **api**: api
+- **rest**: rest
+- **http**: http
+- **web**: web
+- **database**: database
+- **postgres**: postgres
+- **redis**: redis
+- **mongodb**: mongodb
+- **sql**: sql
+- **deployment**: deployment
+- **ci**: ci
+- **cd**: cd
+- **docker**: docker
+- **performance**: performance
+- **optimization**: optimization
+- **caching**: caching
+- **testing**: testing
+- **e2e**: e2e
+- **automation**: automation
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **h3**: h3
+- **gizmo**: gizmo
+- **thailand**: thailand
+- **carplay**: carplay
+- **apple**: apple
+- **automotive**: automotive
+- **ssot**: ssot
+- **configuration**: configuration
+- **infrastructure**: infrastructure
+- **2026**: 2026

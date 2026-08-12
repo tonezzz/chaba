@@ -10,8 +10,16 @@ search_keywords: [async, await, event-handlers, function-exports, module.exports
 ---
 
 # JavaScript Best Practices - Async Functions and Module Exports
+## What it is
+
+title: JavaScript Best Practices - Async Functions and Module Exports
+
 
 **Abstract**: JavaScript best practices for handling async operations in event handlers and managing function exports across modules to prevent conflicts and ensure proper execution order.
+## Context/Background
+
+Created 2026-08-07 as part of Chaba infrastructure documentation.
+
 
 ## Overview
 
@@ -323,3 +331,23 @@ if (typeof module !== 'undefined' && module.exports) {
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-01-15 | Initial creation with async patterns and export best practices | tony |
+
+## Tags
+
+- **deployment**: deployment
+- **ci**: ci
+- **cd**: cd
+- **docker**: docker
+- **testing**: testing
+- **e2e**: e2e
+- **automation**: automation
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **h3**: h3
+- **gizmo**: gizmo
+- **thailand**: thailand
+- **carplay**: carplay
+- **apple**: apple
+- **automotive**: automotive
+- **2026**: 2026

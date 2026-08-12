@@ -2,80 +2,59 @@
 
 ## What it is
 
-The raceman worktree is a focused Git worktree dedicated exclusively to race management tools, separated from the broader chaba-h3 application ecosystem to maintain clear project boundaries and reduce maintenance overhead.
+The raceman worktree is a focused Git worktree dedicated to raceman docker services (raceman-php, raceman-web), separated from the broader chaba-h3 application ecosystem to maintain clear deployment boundaries.
+
+## Context/Background
+
+Created 2026-08-05 as part of Chaba infrastructure documentation. Updated 2026-08-11 to reflect current deployment scope.
 
 ## Context
 
-The raceman worktree was created as an isolated environment for race management development, but initially contained unrelated applications (AI tools, watersports booking, system monitoring) that diluted its purpose. A cleanup was performed to focus the worktree exclusively on race-related functionality.
+The raceman worktree contains the docker-compose configuration for raceman services (PHP-FPM and Nginx containers). Static files are maintained in chaba-h3/public/apps/raceman/ and deployed to Plesk shared hosting.
 
 ## Scope Definition
 
-### Included Applications (Race Management Focus)
-- **Track2**: Windsurf race simulation with buoys, start/finish, and leaderboard
-- **Track3**: Race course guide with start/finish, buoy rounding, and guide lines
-- **Track4**: Windsurf race course editor and simulator with YAML support
-- **Raceman**: Race management system with course editor and simulation
-- **Wind**: Wind forecast map and hourly table for race locations
-- **Map3D**: 3D map viewer with point clouds and tiltable overlays for course visualization
-- **Test Splat**: 3D Gaussian Splat test page for library experimentation
+### Included Services (Docker Containers)
+- **raceman-php**: PHP 8.3-FPM service for PHP API endpoints
+- **raceman-web**: Nginx alpine serving on port 8083
+- **Network**: raceman-network (bridge network)
 
-### Excluded Applications (Maintained in chaba-h3)
-- **AI Tools**: imagen, imagen2, imagen3, raj, txt2vid (image/video generation)
-- **Watersports**: reefriders, reefriders-01 (booking sites)
-- **System Tools**: cams, gpu-queue, docs, overview, shared (monitoring/documentation)
-- **Legacy**: track (superseded by track2/3/4)
+### Static Files (Maintained in chaba-h3)
+- **Raceman static files**: chaba-h3/public/apps/raceman/ deployed to Plesk shared hosting
+- **URL**: https://chaba.h3.gizmo-thailand.com/apps/raceman/
+
+### Deployment Scope
+- **Docker services**: chaba-raceman worktree (active)
+- **Static files**: chaba-h3 worktree (deployed to Plesk)
+- **Docker services in chaba-h3**: Not running (containers exist but not started)
 
 ## Implementation
 
-### Files Removed
-- **E2E Tests**: imagen2.spec.js, reeferiders.spec.js (unrelated test suites)
-- **AI Apps**: public/apps/imagen/, public/apps/imagen2/, public/apps/imagen3/, public/apps/raj/, public/apps/txt2vid/
-- **Watersports**: public/apps/reefriders/, public/apps/reefriders-01/
-- **System**: public/apps/cams/, public/apps/gpu-queue/, public/apps/docs/, public/apps/overview/, public/apps/shared/
-- **Scripts**: scripts/reefriders/, scripts/reefriders-01/
+### Docker Configuration
+- **docker-compose.yml**: Defines raceman-php and raceman-web services
+- **nginx.conf**: Nginx configuration for PHP routing
+- **Port**: 8083 (mapped to container port 80)
+- **Network**: raceman-network (bridge network)
 
-### apps.yml Changes
-Updated to focus on race management:
-```yaml
-title: Race Management
-nav:
-  - label: Dashboard
-    href: /
-  - label: Tracks
-    href: /apps/track4/
-    children:
-      - label: Track2
-        href: /apps/track2/
-      - label: Track3
-        href: /apps/track3/
-      - label: Track4
-        href: /apps/track4/
-  - label: Raceman
-    href: /apps/raceman/
-  - label: Wind
-    href: /apps/wind/
-  - label: Map3D
-    href: /apps/map3d/
-```
+### Static Files
+- **Location**: chaba-h3/public/apps/raceman/
+- **Deployment**: Plesk shared hosting at chaba.h3.gizmo-thailand.com
+- **URL**: https://chaba.h3.gizmo-thailand.com/apps/raceman/
 
 ## Benefits
 
-### 1. Clear Purpose
-Raceman worktree now exclusively focused on race management tools, eliminating confusion about project scope and purpose.
+### 1. Clear Deployment Separation
+Docker services (raceman-php, raceman-web) are isolated in raceman worktree, while static files remain in chaba-h3 for Plesk deployment.
 
-### 2. Reduced Maintenance
-Fewer applications to update, test, and maintain in the raceman worktree. Only race-related changes need to be tracked here.
+### 2. Simplified Management
+Docker services can be managed independently without affecting the main chaba-h3 web stack.
 
-### 3. Cleaner E2E Testing
-E2E test suite now only contains track3.spec.js (2/2 passing), eliminating failures from unrelated applications.
+### 3. Flexible Development
+Local development with docker services (port 8083) while maintaining production static deployment.
 
-### 4. Better Organization
-Related applications are grouped logically in appropriate worktrees:
-- **raceman**: Race management tools
-- **chaba-h3**: Full application ecosystem (AI tools, watersports, system tools)
-
-### 5. Smaller Deployments
-Faster container builds and deployments due to reduced codebase size (701 files removed, 52,916 deletions).
+### 4. Clear Service Boundaries
+- **chaba-raceman**: Docker services only
+- **chaba-h3**: Static files and full application ecosystem
 
 ## Git Branch Information
 
@@ -91,7 +70,7 @@ The raceman worktree runs isolated containers:
 - **raceman-php**: PHP 8.3-FPM service for PHP API endpoints
 - **raceman-web**: Nginx alpine serving on port 8083
 - **Network**: raceman-network (bridge network)
-- **Data**: apps_data/raceman/ for course persistence
+- **Status**: Currently running (up 34 minutes as of 2026-08-11)
 
 ## Related Worktrees
 
@@ -103,54 +82,64 @@ The raceman worktree runs isolated containers:
 ## Usage
 
 ### Development Workflow
-1. Work in raceman worktree for race management features
-2. Test changes locally with raceman containers
+1. Work in raceman worktree for docker service changes
+2. Test changes locally with raceman containers (port 8083)
 3. Commit to raceman branch
 4. Push to origin/raceman
-5. Merge to chaba.h3 when ready for integration
+5. Static file changes go to chaba-h3 for Plesk deployment
 
 ### Testing
 ```bash
-# Run E2E tests
-npx playwright test e2e/track3.spec.js
-
 # Start containers
+cd /home/tony/CascadeProjects/chaba-raceman
 docker compose up -d
 
 # Check container status
 docker compose ps
+
+# Test service
+curl -s http://tony-omen.local:8083/apps/raceman/
+
+# View logs
+docker compose logs raceman-web
+docker compose logs raceman-php
 ```
 
-## Migration Notes
+## Deployment
 
-Applications removed from raceman remain available in chaba-h3:
-- imagen2, imagen3, raj, txt2vid → Available via main web stack
-- reefriders, reefriders-01 → Available via main web stack
-- cams, gpu-queue, docs, overview → Available via main web stack
+### Docker Services (chaba-raceman)
+- **Local URL**: http://tony-omen.local:8083/apps/raceman/
+- **Status**: Active and running
+- **Management**: docker compose in chaba-raceman worktree
 
-No functionality was lost - only moved to the appropriate worktree.
+### Static Files (chaba-h3)
+- **Production URL**: https://chaba.h3.gizmo-thailand.com/apps/raceman/
+- **Status**: Deployed to Plesk shared hosting
+- **Management**: Git push to chaba.h3 branch
 
 ## Troubleshooting
-
-### Missing Applications
-If you need applications that were removed from raceman:
-1. Switch to chaba-h3 worktree: `cd /home/tony/CascadeProjects/chaba-h3`
-2. Applications are available in the main worktree
-3. Consider if they should be added back to raceman if race-related
-
-### Branch Tracking
-If branch tracking is lost:
-```bash
-git branch --set-upstream-to=origin/raceman raceman
-```
 
 ### Container Issues
 If raceman containers have issues:
 ```bash
+cd /home/tony/CascadeProjects/chaba-raceman
 docker compose logs raceman-web
 docker compose logs raceman-php
 docker compose restart
 ```
+
+### Service Not Responding
+If port 8083 is not accessible:
+1. Check if containers are running: `docker compose ps`
+2. Check port mapping: `docker compose ps` should show 0.0.0.0:8083->80
+3. Test locally: `curl -s http://localhost:8083/apps/raceman/`
+4. Check hostname resolution: `ping tony-omen.local`
+
+### Static File Changes
+If static file changes aren't appearing:
+1. Ensure changes are in chaba-h3/public/apps/raceman/
+2. Commit and push to chaba.h3 branch
+3. Plesk deployment is automatic via git push
 
 ## Related Documentation
 
@@ -161,4 +150,25 @@ docker compose restart
 
 ## Tags
 
-raceman, worktree, scope, race-management, git, project-organization, cleanup, refactoring
+- **docker**: docker
+- **containers**: containers
+- **containerization**: containerization
+- **php**: php
+- **nginx**: nginx
+- **web**: web
+- **deployment**: deployment
+- **worktree**: worktree
+- **git**: git
+- **branching**: branching
+- **raceman**: raceman
+- **plesk**: plesk
+- **shared-hosting**: shared-hosting
+- **health**: health
+- **monitoring**: monitoring
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **h3**: h3
+- **gizmo**: gizmo
+- **thailand**: thailand
+- **2026**: 2026

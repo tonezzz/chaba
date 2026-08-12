@@ -136,6 +136,94 @@ pipx inject workflows-mcp "mcp<2.0.0" --force  # MCP 2.0 compatibility
 
 **Documentation**: See `meta/mcp-kbman-architecture.md` for detailed architecture
 
+## mcp-health Server
+
+**Purpose**: Centralized health monitoring and telemetry orchestrator for Chaba infrastructure
+
+**Location**: `/home/tony/CascadeProjects/chaba/mcp/mcp-health/`
+
+**Configuration**:
+```json
+{
+  "mcpServers": {
+    "mcp-health": {
+      "command": "/usr/bin/node",
+      "args": ["/home/tony/CascadeProjects/chaba/mcp/mcp-health/server.js"],
+      "env": {
+        "HEALTH_CONFIG": "/home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.health.yml",
+        "HEALTH_SKILL": "/home/tony/CascadeProjects/chaba/.agents/skills/health-check/SKILL.md"
+      }
+    }
+  }
+}
+```
+
+**Key Tools**:
+- `check_health(service?)` - Run health checks for all or specific services
+- `get_health_status()` - Get current health status from database
+- `get_health_history(service_name?, limit?)` - Get historical health data
+- `get_health_summary(service_name?)` - Get uptime statistics and trends
+
+**Features**:
+- Hybrid orchestrator model (MCP as coordinator, not executor)
+- Network profile auto-detection (home vs mobile)
+- SQLite persistence for health history
+- Integration with existing health-check skill
+- Reads from SSOT health configuration
+
+**Architecture**:
+- MCP Layer: Standardized tools and interfaces
+- Execution Layer: Calls existing health-check skill
+- Persistence Layer: SQLite database (health-history.db)
+- Configuration Layer: SSOT health configuration files
+
+**Database Schema**:
+```sql
+CREATE TABLE health_checks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  service_name TEXT NOT NULL,
+  status TEXT NOT NULL,
+  response_time REAL,
+  error TEXT,
+  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Network Profile Detection**:
+- Home Profile: If `tony-omen.local` resolves, uses home network config
+- Mobile Profile: If home unavailable, detects current IP via `ip route get 1.1.1.1`
+- URL Substitution: Automatically replaces `{profile}` placeholders with detected base URL
+
+**Development Status**:
+- Phase 1 (MVP): ✅ Complete - Basic health check orchestration
+- Phase 2: ✅ Complete - SQLite persistence for health history and trends
+- Phase 1+2 (Real Health Checks): ✅ Complete - HTTP, container, systemd checks with categorization
+- Phase 3: ⏳ Pending - Alerting and notification capabilities
+
+**Completed Features (Phase 1+2)**:
+- Real HTTP health checks using curl with expected_status validation from SSOT config
+- Container health checks using docker ps with expected_state validation from SSOT config
+- Systemd health checks using systemctl with expected_state validation from SSOT config
+- 4-level status categorization (healthy, degraded, error, unknown)
+- Profile filtering for home/mobile networks
+- Category grouping in health reports (web, api, datastore, gpu, queue, optional, system)
+- Recovery action suggestions from SSOT config
+- Dependency analysis and cascading failure detection
+- Enhanced database schema with detailed health metrics including expected values
+
+**Critical Gap Fixed**: Implemented expected_status and expected_state validation from SSOT configuration. Previously hardcoded expectations (200 for HTTP, "running" for containers, "active" for systemd) now use config-specified values for accurate health determination across 15 HTTP services and 11 container/systemd services.
+
+**Documentation**: See `mcp/mcp-health/README.md` for detailed usage and troubleshooting
+
+**YAML Syntax Note**: URL placeholders in SSOT health config must be quoted to avoid parsing errors:
+```yaml
+# Correct
+url: "{profile}/api/health"
+
+# Incorrect (causes "Unexpected scalar" error)
+url: {profile}/api/health
+```
+
 ## Tags
 
 - **yomi**: yomi

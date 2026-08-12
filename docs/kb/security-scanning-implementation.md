@@ -283,4 +283,27 @@ const nodeDirectories = [
 
 ## Tags
 
-security, vulnerability-scanning, trivy, pip-audit, npm-audit, docker, python, nodejs, timeout-fix, buffer-overflow, dependencies, vulnerabilities, security-patching
+- **docker**: docker
+- **containers**: containers
+- **containerization**: containerization
+- **gpu**: gpu
+- **nvidia**: nvidia
+- **cuda**: cuda
+- **ml**: ml
+- **ai**: ai
+- **security**: security
+- **scanning**: scanning
+- **vulnerability**: vulnerability
+- **performance**: performance
+- **optimization**: optimization
+- **caching**: caching
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **weaviate**: weaviate
+- **vector**: vector
+- **database**: database
+- **ssot**: ssot
+- **configuration**: configuration
+- **infrastructure**: infrastructure
+- **2026**: 2026

@@ -1,4 +1,8 @@
 # DNS Resolution: Avahi Interface Restriction Fix
+## What it is
+
+**Fix applied**: Restricted Avahi to `wlo1` interface only via `/etc/avahi/avahi-daemon.conf`:
+
 
 ## Status: RESOLVED (2026-08-05)
 

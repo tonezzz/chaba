@@ -1,4 +1,12 @@
 # Playwright vs PlayLive Comparison
+## What it is
+
+Playwright and PlayLive serve different purposes in the browser automation ecosystem. Playwright is a browser automation library primarily for testing, while PlayLive is a session management daemon built on Playwright for AI-driven interactive workflows.
+
+## Context/Background
+
+Created 2026-08-05 as part of Chaba infrastructure documentation.
+
 
 ## Overview
 
@@ -306,4 +314,39 @@ PlayLive is effective for testing web applications when:
 
 ## Tags
 
-playwright, playlive, browser-automation, testing, ai-agents, mcp, session-management, comparison, architecture
+- **api**: api
+- **rest**: rest
+- **http**: http
+- **web**: web
+- **monitoring**: monitoring
+- **health**: health
+- **metrics**: metrics
+- **logging**: logging
+- **deployment**: deployment
+- **ci**: ci
+- **cd**: cd
+- **docker**: docker
+- **performance**: performance
+- **optimization**: optimization
+- **caching**: caching
+- **testing**: testing
+- **e2e**: e2e
+- **automation**: automation
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **workflow**: workflow
+- **mcp**: mcp
+- **ssot**: ssot
+- **configuration**: configuration
+- **infrastructure**: infrastructure
+- **raceman**: raceman
+- **php**: php
+- **worktree**: worktree
+- **playwright**: playwright
+- **playlive**: playlive
+- **browser**: browser
+- **language**: language
+- **detection**: detection
+- **nlp**: nlp
+- **2026**: 2026

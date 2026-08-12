@@ -1,4 +1,12 @@
 # Disk Space Management
+## What it is
+
+`/data` is the primary storage volume for Docker images, build cache, model weights, and HuggingFace downloads. It fills up faster than the OS disk. Two main reclaim targets: Docker build cache and HuggingFace model cache.
+
+## Context/Background
+
+Created 2026-08-05 as part of Chaba infrastructure documentation.
+
 
 ## Overview
 
@@ -80,5 +88,25 @@ GGUF quantised models live at `/data/gguf/` and are managed independently from t
 
 ---
 
+## Related Documentation
+
+- **Home Directory Cleanup**: `home-directory-cleanup.md` - Partition migration cleanup methodology and root partition space recovery
+
 ## Tags
-- disk, storage, docker, build-cache, huggingface, models, cleanup, /data
+
+- **docker**: docker
+- **containers**: containers
+- **containerization**: containerization
+- **gpu**: gpu
+- **nvidia**: nvidia
+- **cuda**: cuda
+- **ml**: ml
+- **ai**: ai
+- **api**: api
+- **rest**: rest
+- **http**: http
+- **web**: web
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **2026**: 2026

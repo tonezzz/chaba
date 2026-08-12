@@ -3,6 +3,10 @@
 ## What it is
 
 Each Devin/Windsurf session spawns multiple Yomi MCP server processes (`~/.yomi/mcpb/run.mjs`). When the session ends, these processes are NOT killed — they become orphaned (reparented to PID 1/systemd) and continue running, consuming RAM and CPU indefinitely.
+## Context/Background
+
+Created 2026-08-05 as part of Chaba infrastructure documentation.
+
 
 ## Impact
 
@@ -64,3 +68,17 @@ This ensures only one instance runs and it restarts cleanly across sessions.
 
 - `ssot.devin.tools.yml` — MCP server configuration
 - `ssot.token-optimization.yml` — MCP server overhead reduction
+
+## Tags
+
+- **yomi**: yomi
+- **line**: line
+- **messaging**: messaging
+- **conversations**: conversations
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **ssot**: ssot
+- **configuration**: configuration
+- **infrastructure**: infrastructure
+- **2026**: 2026

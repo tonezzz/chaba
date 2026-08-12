@@ -282,4 +282,15 @@ Files in the `apps/` subdirectory contain simple data structures for app configu
 
 ## Tags
 
-ssot, documentation, synchronization, standards, validation, consistency, quality-control, infrastructure, maintenance, yaml, configuration
+- **ssot**: Single source of truth configuration
+- **documentation**: Documentation standards and procedures
+- **synchronization**: File synchronization across locations
+- **standards**: Documentation quality standards
+- **validation**: SSOT validation procedures
+- **consistency**: Maintaining consistency across locations
+- **quality-control**: Documentation quality control
+- **infrastructure**: Infrastructure documentation
+- **maintenance**: Documentation maintenance procedures
+- **yaml**: YAML configuration files
+- **configuration**: Configuration management
+- **2026**: Year tag

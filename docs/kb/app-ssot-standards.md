@@ -10,8 +10,16 @@ search_keywords: [app-ssot, ssot-template, app-documentation, standardization, c
 ---
 
 # Application SSOT Standards
+## What it is
+
+title: Application SSOT Standards
+
 
 **Abstract**: Standardized structure and conventions for application SSOT (Single Source of Truth) files to ensure consistency across the chaba project ecosystem, making documentation easier to create, maintain, and search.
+## Context/Background
+
+Created 2026-08-06 as part of Chaba infrastructure documentation.
+
 
 ## Overview
 
@@ -194,3 +202,27 @@ ssot-validate docs/ssot/apps/
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-08-06 | Initial creation with template and standards | tony |
+
+## Tags
+
+- **api**: api
+- **rest**: rest
+- **http**: http
+- **web**: web
+- **deployment**: deployment
+- **ci**: ci
+- **cd**: cd
+- **docker**: docker
+- **performance**: performance
+- **optimization**: optimization
+- **caching**: caching
+- **testing**: testing
+- **e2e**: e2e
+- **automation**: automation
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **ssot**: ssot
+- **configuration**: configuration
+- **infrastructure**: infrastructure
+- **2026**: 2026

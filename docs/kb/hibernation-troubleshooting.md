@@ -1,4 +1,12 @@
 # Hibernation Troubleshooting - Kernel Parameter Mismatch
+## What it is
+
+System hibernation was failing with error "Sleep verb 'hibernate' is not configured or configuration is not supported by kernel" despite having correct swap configuration and GRUB parameters.
+
+## Context/Background
+
+Created 2026-08-07 as part of Chaba infrastructure documentation.
+
 
 ## Context
 System hibernation was failing with error "Sleep verb 'hibernate' is not configured or configuration is not supported by kernel" despite having correct swap configuration and GRUB parameters.
@@ -152,9 +160,18 @@ cat /sys/power/state
 - `docs/ssot/ssot.health.home.yml` - System health monitoring configuration
 
 ## Tags
-- `hibernation`
-- `kernel`
-- `troubleshooting`
-- `power-management`
-- `grub`
-- `swap`
+
+- **monitoring**: monitoring
+- **health**: health
+- **metrics**: metrics
+- **logging**: logging
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **ssot**: ssot
+- **configuration**: configuration
+- **infrastructure**: infrastructure
+- **hibernation**: hibernation
+- **power**: power
+- **system**: system
+- **2026**: 2026

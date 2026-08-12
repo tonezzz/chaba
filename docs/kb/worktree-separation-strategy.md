@@ -3,6 +3,10 @@
 ## What it is
 
 Git worktree separation strategy for organizing the chaba project into focused worktrees based on functional domains, enabling parallel development while maintaining clear project boundaries.
+## Context/Background
+
+Created 2026-08-05 as part of Chaba infrastructure documentation.
+
 
 ## Context
 
@@ -254,4 +258,48 @@ Different worktrees may use the same ports. Configure different ports in docker-
 
 ## Tags
 
-worktree, git, project-organization, separation-strategy, parallel-development, domain-driven-design, branching-strategy
+- **docker**: docker
+- **containers**: containers
+- **containerization**: containerization
+- **gpu**: gpu
+- **nvidia**: nvidia
+- **cuda**: cuda
+- **ml**: ml
+- **ai**: ai
+- **yomi**: yomi
+- **line**: line
+- **messaging**: messaging
+- **conversations**: conversations
+- **api**: api
+- **rest**: rest
+- **http**: http
+- **web**: web
+- **monitoring**: monitoring
+- **health**: health
+- **metrics**: metrics
+- **logging**: logging
+- **deployment**: deployment
+- **ci**: ci
+- **cd**: cd
+- **testing**: testing
+- **e2e**: e2e
+- **automation**: automation
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **workflow**: workflow
+- **mcp**: mcp
+- **h3**: h3
+- **gizmo**: gizmo
+- **thailand**: thailand
+- **ssot**: ssot
+- **configuration**: configuration
+- **infrastructure**: infrastructure
+- **worktree**: worktree
+- **git**: git
+- **branching**: branching
+- **raceman**: raceman
+- **php**: php
+- **playlive**: playlive
+- **browser**: browser
+- **2026**: 2026

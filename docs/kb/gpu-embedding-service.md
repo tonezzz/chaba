@@ -10,8 +10,16 @@ search_keywords: [GPU embeddings, vector generation, sentence-transformers, CUDA
 ---
 
 # GPU Embedding Service
+## What it is
+
+title: GPU Embedding Service
+
 
 **Abstract**: GPU-accelerated text embedding service using sentence-transformers for high-performance vector generation, achieving 34x performance improvement over CPU baseline through CUDA acceleration with comprehensive GPU queue integration and monitoring.
+## Context/Background
+
+Created 2026-08-05 as part of Chaba infrastructure documentation.
+
 
 ## Overview
 
@@ -236,3 +244,44 @@ function manageContextLength(prompt, jobType = 'default') {
 | 2026-08-05 | GPU queue monitoring integration | tony |
 | 2026-08-06 | GPU queue backpressure system documentation | tony |
 | 2026-08-06 | Added frontmatter metadata, standardized structure | devin |
+
+## Tags
+
+- **gpu**: gpu
+- **nvidia**: nvidia
+- **cuda**: cuda
+- **ml**: ml
+- **ai**: ai
+- **yomi**: yomi
+- **line**: line
+- **messaging**: messaging
+- **conversations**: conversations
+- **api**: api
+- **rest**: rest
+- **http**: http
+- **web**: web
+- **database**: database
+- **postgres**: postgres
+- **redis**: redis
+- **mongodb**: mongodb
+- **sql**: sql
+- **monitoring**: monitoring
+- **health**: health
+- **metrics**: metrics
+- **logging**: logging
+- **deployment**: deployment
+- **ci**: ci
+- **cd**: cd
+- **docker**: docker
+- **performance**: performance
+- **optimization**: optimization
+- **caching**: caching
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **weaviate**: weaviate
+- **vector**: vector
+- **ssot**: ssot
+- **configuration**: configuration
+- **infrastructure**: infrastructure
+- **2026**: 2026

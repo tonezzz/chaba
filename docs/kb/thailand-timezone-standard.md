@@ -329,4 +329,26 @@ console.assert(range.endDate === '2026-08-04T16:59:59.000Z');
 
 ## Tags
 
-thailand, timezone, date-handling, utc-conversion, yomi, daily-summaries, calendar, timestamp, thailand-calendar-day, utc17, standardization
+- **yomi**: yomi
+- **line**: line
+- **messaging**: messaging
+- **conversations**: conversations
+- **api**: api
+- **rest**: rest
+- **http**: http
+- **web**: web
+- **database**: database
+- **postgres**: postgres
+- **redis**: redis
+- **mongodb**: mongodb
+- **sql**: sql
+- **performance**: performance
+- **optimization**: optimization
+- **caching**: caching
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **thailand**: thailand
+- **timezone**: timezone
+- **locale**: locale
+- **2026**: 2026

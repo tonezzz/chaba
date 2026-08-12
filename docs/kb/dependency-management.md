@@ -1,4 +1,12 @@
 # Dependency Management System
+## What it is
+
+The dependency management system provides structured tracking of improvement dependencies in the SSOT (Single Source of Truth) configuration. It enables critical path analysis, prevents blocking issues, and ensures improvements are implemented in the correct order.
+
+## Context/Background
+
+Created 2026-08-04 as part of Chaba infrastructure documentation.
+
 
 ## Overview
 
@@ -418,3 +426,35 @@ node scripts/dependency-graph.mjs text
 - Dependency import/export
 - Dependency versioning
 - Conditional dependencies (only apply in certain contexts)
+
+## Tags
+
+- **docker**: docker
+- **containers**: containers
+- **containerization**: containerization
+- **gpu**: gpu
+- **nvidia**: nvidia
+- **cuda**: cuda
+- **ml**: ml
+- **ai**: ai
+- **yomi**: yomi
+- **line**: line
+- **messaging**: messaging
+- **conversations**: conversations
+- **monitoring**: monitoring
+- **health**: health
+- **metrics**: metrics
+- **logging**: logging
+- **performance**: performance
+- **optimization**: optimization
+- **caching**: caching
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **workflow**: workflow
+- **automation**: automation
+- **mcp**: mcp
+- **ssot**: ssot
+- **configuration**: configuration
+- **infrastructure**: infrastructure
+- **2026**: 2026

@@ -82,6 +82,30 @@ message: 'This is a "quoted" string with issues'
 - Use single quotes for strings with double quotes inside
 - Use double quotes for escape sequences
 
+#### 6. Placeholder Variable Quoting
+
+**Error**: Unquoted placeholder variables in URL values
+```yaml
+# INCORRECT - causes "Unexpected scalar at node end" error
+url: {profile}/api/health
+url: {profile}/apps/
+
+# CORRECT - quoted placeholder variables
+url: "{profile}/api/health"
+url: "{profile}/apps/"
+```
+
+**Root Cause**: YAML interprets unquoted `{variable}` as potential flow collection syntax, causing parsing errors when followed by path segments.
+
+**Detection**: Parser reports "Unexpected scalar at node end" with caret pointing to the placeholder variable.
+
+**Prevention**:
+- Always quote URL values containing placeholder variables
+- Use double quotes for placeholders that will be substituted
+- Apply consistently across all SSOT configuration files
+
+**Real-World Example**: Fixed in `docs/ssot/infrastructure/ssot.health.yml` (2026-08-12) - 8 URL entries required quoting to enable MCP health server configuration parsing.
+
 #### 4. List Format Errors
 
 **Error**: Incorrect list item formatting

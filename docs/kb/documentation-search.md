@@ -10,8 +10,16 @@ search_keywords: [documentation search, SSOT search, MCP docs server, grep, Flex
 ---
 
 # Documentation Search Methods
+## What it is
+
+title: Documentation Search Methods
+
 
 **Abstract**: Comprehensive guide to dual search methods for Chaba infrastructure documentation - ssot-search skill for exact SSOT YAML pattern matching and MCP docs server for full-text search with relevance ranking across 58+ documentation files.
+## Context/Background
+
+Created 2026-08-06 as part of Chaba infrastructure documentation.
+
 
 ## Overview
 
@@ -96,6 +104,50 @@ mcp_call_tool docs list_sections
 
 **Performance**: Fast (cached Flexsearch index)
 
+### 3. mcp-kbman Multi-Source Search
+
+**Purpose**: Multi-source full-text search across Personal KB and Project Docs with background caching
+
+**Best for**:
+- Searching across both Personal KB (Google Drive) and Project Docs (local)
+- High-performance search with background pre-generation
+- Source-aware results with relevance ranking
+- When you need unified search across different storage locations
+- Background task management for periodic indexing
+
+**Search scope**: 
+- Personal KB: `/home/tony/GoogleDrive/Tony AI/KB` (28 documents)
+- Project Docs: `/home/tony/CascadeProjects/chaba/docs` (186 documents)
+- Total: 214 documents with source tagging
+
+**How to use**:
+```
+mcp_call_tool mcp-kbman search_kb "query" 10
+mcp_call_tool mcp-kbman get_index_status
+mcp_call_tool mcp-kbman rebuild_index
+```
+
+**Example searches**:
+- "hardware" - finds hardware-related content from both Personal KB and Project Docs
+- "chaba" - finds Chaba-related documentation across both sources
+- "workflow" - finds workflow-related content with source identification
+
+**Output format**:
+- Ranked by relevance
+- Source identification (Personal KB vs Project Docs)
+- Excerpts with context snippets
+- File paths for easy navigation
+- Deduplication of results
+
+**Performance**: Fast (0.1-0.3s typical, 90%+ improvement with background caching)
+
+**Key Features**:
+- **Background pre-generation**: Periodic indexing (60s file index, 300s search index)
+- **Search caching**: TTL-based cache for frequently used queries
+- **Source awareness**: Results tagged with source identification
+- **Deduplication**: Removes duplicate results across sources
+- **Modular architecture**: Separate DocumentIndexer, SearchEngine, SearchCache, SearchManager
+
 ## MCP Docs Server Tools
 
 ### search_docs
@@ -151,11 +203,20 @@ mcp_call_tool("docs", "list_sections", {})
 - AI assistant queries
 - Need excerpts and context snippets
 
+### When to use mcp-kbman (multi-source search)
+- Need to search across Personal KB and Project Docs simultaneously
+- Want source-aware results with source identification
+- Need high-performance search with background caching
+- Searching across different storage locations (Google Drive + local)
+- Want periodic background indexing for fresh results
+- Need deduplication across multiple sources
+
 ### Hybrid approach
-1. Start with MCP docs server for broad search
-2. Use ssot-search for exact SSOT pattern matching
-3. Use get_page to retrieve full content from MCP results
-4. Cross-reference between KB entries and SSOT configurations
+1. Start with MCP docs server for broad project documentation search
+2. Use mcp-kbman for multi-source search across Personal KB + Project Docs
+3. Use ssot-search for exact SSOT pattern matching
+4. Use get_page to retrieve full content from MCP results
+5. Cross-reference between KB entries and SSOT configurations
 
 ## Documentation Structure
 
@@ -199,15 +260,17 @@ The MCP docs server automatically:
 
 ## Performance Comparison
 
-| Metric | ssot-search (grep) | MCP docs server |
-|--------|-------------------|-----------------|
-| Search scope | SSOT YAML only (40+ files) | All docs (58 files) |
-| File types | YAML only | Markdown/MDX only |
-| Search type | Pattern matching | Full-text index |
-| Context | Line context (-A 2 -B 2) | Excerpts with ranking |
-| Performance | Very fast (0.006s) | Fast (cached index) |
-| Results | Sequential by file | Ranked by relevance |
-| Structure | Flat file list | Browseable sections |
+| Metric | ssot-search (grep) | MCP docs server | mcp-kbman |
+|--------|-------------------|-----------------|-----------|
+| Search scope | SSOT YAML only (40+ files) | All docs (58 files) | Multi-source (214 docs) |
+| File types | YAML only | Markdown/MDX only | Markdown, text, JSON, YAML |
+| Search type | Pattern matching | Full-text index | Full-text index (Whoosh) |
+| Context | Line context (-A 2 -B 2) | Excerpts with ranking | Excerpts with ranking |
+| Performance | Very fast (0.006s) | Fast (cached index) | Fast (0.1-0.3s with caching) |
+| Results | Sequential by file | Ranked by relevance | Ranked by relevance + source |
+| Structure | Flat file list | Browseable sections | Source-aware with deduplication |
+| Background tasks | None | Auto-indexing | Periodic pre-generation |
+| Caching | None | Flexsearch index | Search cache + pre-generation |
 
 ## Troubleshooting
 
@@ -259,3 +322,37 @@ The MCP docs server automatically:
 | 2026-08-06 | Initial documentation - dual search methods | devin |
 | 2026-08-06 | Updated ssot-search skill to support both methods | devin |
 | 2026-08-06 | Added frontmatter metadata, standardized structure | devin |
+
+## Tags
+
+- **gpu**: gpu
+- **nvidia**: nvidia
+- **cuda**: cuda
+- **ml**: ml
+- **ai**: ai
+- **yomi**: yomi
+- **line**: line
+- **messaging**: messaging
+- **conversations**: conversations
+- **database**: database
+- **postgres**: postgres
+- **redis**: redis
+- **mongodb**: mongodb
+- **sql**: sql
+- **monitoring**: monitoring
+- **health**: health
+- **metrics**: metrics
+- **logging**: logging
+- **performance**: performance
+- **optimization**: optimization
+- **caching**: caching
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **workflow**: workflow
+- **automation**: automation
+- **mcp**: mcp
+- **ssot**: ssot
+- **configuration**: configuration
+- **infrastructure**: infrastructure
+- **2026**: 2026

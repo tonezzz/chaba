@@ -1,4 +1,12 @@
 # CarPlay Map Module Integration
+## What it is
+
+Enhanced the CarPlay simulation for iPad PWA with functional GPS tracking, interactive map capabilities, and Google Maps-style route planning using Leaflet.js and browser Geolocation API.
+
+## Context/Background
+
+Created 2026-08-06 as part of Chaba infrastructure documentation.
+
 
 ## Context
 Enhanced the CarPlay simulation for iPad PWA with functional GPS tracking, interactive map capabilities, and Google Maps-style route planning using Leaflet.js and browser Geolocation API.
@@ -138,3 +146,37 @@ Located in `route-input-module.js`:
 - Implement voice guidance simulation
 - Add more location types and custom icons
 - Integrate with actual GPS hardware for real CarPlay
+
+## Tags
+
+- **api**: api
+- **rest**: rest
+- **http**: http
+- **web**: web
+- **database**: database
+- **postgres**: postgres
+- **redis**: redis
+- **mongodb**: mongodb
+- **sql**: sql
+- **deployment**: deployment
+- **ci**: ci
+- **cd**: cd
+- **docker**: docker
+- **testing**: testing
+- **e2e**: e2e
+- **automation**: automation
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **workflow**: workflow
+- **mcp**: mcp
+- **h3**: h3
+- **gizmo**: gizmo
+- **thailand**: thailand
+- **carplay**: carplay
+- **apple**: apple
+- **automotive**: automotive
+- **ssot**: ssot
+- **configuration**: configuration
+- **infrastructure**: infrastructure
+- **2026**: 2026

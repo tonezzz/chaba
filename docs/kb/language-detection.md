@@ -283,4 +283,27 @@ console.assert(detectConversationLanguage(mixedConversation) === 'mixed');
 
 ## Tags
 
-language-detection, thai, english, mixed-language, nlp, text-classification, yomi, summarization, prompts, unicode, regex, thresholds
+- **yomi**: yomi
+- **line**: line
+- **messaging**: messaging
+- **conversations**: conversations
+- **api**: api
+- **rest**: rest
+- **http**: http
+- **web**: web
+- **performance**: performance
+- **optimization**: optimization
+- **caching**: caching
+- **testing**: testing
+- **e2e**: e2e
+- **automation**: automation
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **language**: language
+- **detection**: detection
+- **nlp**: nlp
+- **gemini**: gemini
+- **ai**: ai
+- **google**: google
+- **2026**: 2026

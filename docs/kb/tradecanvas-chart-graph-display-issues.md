@@ -1,4 +1,12 @@
 # TradeCanvas Chart Graph Display Issues
+## What it is
+
+TradeCanvas UI charts may fail to display or appear blank due to several configuration issues. This entry covers common causes and fixes for chart graph display problems in the compare2.html and other TradeCanvas pages.
+
+## Context/Background
+
+Created 2026-08-07 as part of Chaba infrastructure documentation.
+
 
 ## Context
 TradeCanvas UI charts may fail to display or appear blank due to several configuration issues. This entry covers common causes and fixes for chart graph display problems in the compare2.html and other TradeCanvas pages.
@@ -160,4 +168,16 @@ This syncs files to the web server and tests deployment.
 - CSV data import process
 
 ## Tags
-`tradecanvas` `chart` `graph` `display` `timeframe` `csv` `lightweight-charts` `debugging`
+
+- **api**: api
+- **rest**: rest
+- **http**: http
+- **web**: web
+- **deployment**: deployment
+- **ci**: ci
+- **cd**: cd
+- **docker**: docker
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **2026**: 2026

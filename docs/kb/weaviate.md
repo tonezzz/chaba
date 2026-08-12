@@ -5,6 +5,10 @@
 Weaviate is a vector database for semantic search and RAG (Retrieval-Augmented Generation) pipelines. It provides AI-native vector storage with hybrid search capabilities (BM25 + vector search), built-in vectorization, and multi-tenancy support.
 
 **Note**: Archived REST API implementation details have been consolidated into this operational guide. The REST API approach resolved gRPC client compatibility issues and provides simpler HTTP-based interaction.
+## Context/Background
+
+Created 2026-08-04 as part of Chaba infrastructure documentation.
+
 
 ## Architecture
 

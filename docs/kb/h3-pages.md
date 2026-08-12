@@ -1,6 +1,14 @@
 # chaba.h3 Static Pages
+## What it is
 
 `chaba.h3.gizmo-thailand.com` is a Node.js proxy server running under Plesk. It is **not** the same as the main `chaba` Caddy / `bserver` stack. These notes capture the deployment pattern we learned while building `/apps/cams` so we do not repeat the 404 / path mistakes.
+
+
+`chaba.h3.gizmo-thailand.com` is a Node.js proxy server running under Plesk. It is **not** the same as the main `chaba` Caddy / `bserver` stack. These notes capture the deployment pattern we learned while building `/apps/cams` so we do not repeat the 404 / path mistakes.
+## Context/Background
+
+Created 2026-08-04 as part of Chaba infrastructure documentation.
+
 
 ## Static root
 
@@ -132,3 +140,29 @@ Track4 was successfully modularized from a monolithic 1003-line `track.js` into 
 - Unit tests: 10 tests in `course.test.js` (haversine, midpoint, resolveSide, buildGuide, buildRoundedGuide)
 - Integration: Module loading, course loading, racer rendering, simulation, layers, UI controls
 - Code quality: Pre-commit hooks for JS syntax, all modules pass `node --check`
+
+## Tags
+
+- **docker**: docker
+- **containers**: containers
+- **containerization**: containerization
+- **api**: api
+- **rest**: rest
+- **http**: http
+- **web**: web
+- **deployment**: deployment
+- **ci**: ci
+- **cd**: cd
+- **testing**: testing
+- **e2e**: e2e
+- **automation**: automation
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **h3**: h3
+- **gizmo**: gizmo
+- **thailand**: thailand
+- **ssot**: ssot
+- **configuration**: configuration
+- **infrastructure**: infrastructure
+- **2026**: 2026

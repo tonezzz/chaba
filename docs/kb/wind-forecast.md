@@ -10,8 +10,16 @@ search_keywords: [wind-forecast, weather-api, open-meteo, race-weather, meteorol
 ---
 
 # Wind Forecast App
+## What it is
+
+title: Wind Forecast App
+
 
 **Abstract**: A minimal wind forecast application providing map visualization and hourly wind data tables for Track4 race course locations using the Open-Meteo forecast API.
+## Context/Background
+
+Created 2026-08-06 as part of Chaba infrastructure documentation.
+
 
 ## Overview
 
@@ -139,3 +147,27 @@ Open-Meteo API → Wind Forecast App → Manual Entry → Track4 Simulation
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-08-06 | Initial creation with implementation details and limitations | tony |
+
+## Tags
+
+- **api**: api
+- **rest**: rest
+- **http**: http
+- **web**: web
+- **deployment**: deployment
+- **ci**: ci
+- **cd**: cd
+- **docker**: docker
+- **performance**: performance
+- **optimization**: optimization
+- **caching**: caching
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **h3**: h3
+- **gizmo**: gizmo
+- **thailand**: thailand
+- **ssot**: ssot
+- **configuration**: configuration
+- **infrastructure**: infrastructure
+- **2026**: 2026

@@ -127,4 +127,33 @@ node scripts/yomi/process-conversations.mjs
 
 ## Tags
 
-yomi, filtering, commercial, regex, daily-summaries, optimization, signal-to-noise, performance, data-processing
+- **yomi**: yomi
+- **line**: line
+- **messaging**: messaging
+- **conversations**: conversations
+- **api**: api
+- **rest**: rest
+- **http**: http
+- **web**: web
+- **database**: database
+- **postgres**: postgres
+- **redis**: redis
+- **mongodb**: mongodb
+- **sql**: sql
+- **deployment**: deployment
+- **ci**: ci
+- **cd**: cd
+- **docker**: docker
+- **performance**: performance
+- **optimization**: optimization
+- **caching**: caching
+- **testing**: testing
+- **e2e**: e2e
+- **automation**: automation
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **commercial**: commercial
+- **filtering**: filtering
+- **content**: content
+- **2026**: 2026

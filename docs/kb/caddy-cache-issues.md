@@ -10,8 +10,16 @@ search_keywords: [cache, javascript, docker, caddy, version, script-tag, cache-c
 ---
 
 # Caddy Cache Issues - Docker-Based JavaScript Caching
+## What it is
+
+title: Caddy Cache Issues - Docker-Based JavaScript Caching
+
 
 **Abstract**: Docker-based Caddy caching can prevent JavaScript changes from being picked up during development, requiring cache clearing or version parameter solutions to ensure updated code is served.
+## Context/Background
+
+Created 2026-08-07 as part of Chaba infrastructure documentation.
+
 
 ## Overview
 
@@ -194,3 +202,33 @@ header {
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-01-15 | Initial creation with cache clearing solutions and best practices | tony |
+
+## Tags
+
+- **docker**: docker
+- **containers**: containers
+- **containerization**: containerization
+- **api**: api
+- **rest**: rest
+- **http**: http
+- **web**: web
+- **monitoring**: monitoring
+- **health**: health
+- **metrics**: metrics
+- **logging**: logging
+- **deployment**: deployment
+- **ci**: ci
+- **cd**: cd
+- **performance**: performance
+- **optimization**: optimization
+- **caching**: caching
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **workflow**: workflow
+- **automation**: automation
+- **mcp**: mcp
+- **h3**: h3
+- **gizmo**: gizmo
+- **thailand**: thailand
+- **2026**: 2026

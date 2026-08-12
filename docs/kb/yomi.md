@@ -4,6 +4,10 @@
 
 A static web view served from `http://tony-omen.local:8080/apps/yomi/`.
 It lists LINE conversations from the Yomi MCP server and lets you click a title to see recent messages. Each conversation also has an `↗` icon that opens a full single-conversation view (`chat.html?chat=<chatId>`) in a new tab.
+## Context/Background
+
+Created 2026-08-04 as part of Chaba infrastructure documentation.
+
 
 ## Architecture (Post-Improvement)
 
@@ -19,12 +23,12 @@ Yomi has been split into a two-stage pipeline for better reliability and monitor
 
 ### Stage 2: Process (`process-conversations.mjs`)
 - Reads from `fetch-data/` directory
-- Generates AI summaries using Llama (Phi-3-mini-4k-instruct-q4)
+- Generates AI summaries using Gemini API (gemma-4-31b-it) with language detection (Thai/English/mixed)
 - Categorizes conversations
 - Generates daily summaries (events, actions, topics per date)
 - Updates summaries and categories in PostgreSQL
 - Tracks processing status in `process-status.json`
-- Runs every 5 minutes via systemd timer
+- Runs via systemd timer with flexible scheduling for intermittent PC usage
 
 ### API Server (`yomi-api.mjs`)
 - HTTP API on port 3000 (default)
@@ -78,17 +82,21 @@ Yomi uses systemd timers for automated operation:
 - **Status**: Active (added 2026-08-04)
 
 ### Fetch Timer (`yomi-fetch.timer`)
-- **Frequency**: Every 15 minutes (`*:0/15`)
+- **Frequency**: Every 30 minutes (`*:0/30`) (updated 2026-08-11 for intermittent PC usage)
 - **Service**: `yomi-fetch.service`
 - **Location**: `/etc/systemd/system/yomi-fetch.timer`
 - **Enabled**: Yes (symlinked in `timers.target.wants`)
+- **Skip Logic**: Skips fetch if last successful fetch was within 30 minutes (configurable via `YOMI_FETCH_SKIP_MINUTES`)
+- **Boot Service**: `yomi-fetch-on-boot.service` runs forced fetch on system boot if last fetch was too long ago
 
 ### Process Timer (`yomi-process.timer`)
-- **Frequency**: Every minute during midnight to 7 AM (`*-*-* 00,01,02,03,04,05,06,07:*:0/1`)
+- **Frequency**: Every hour during midnight to 7 AM, plus 12PM, 6PM, 8PM (`*-*-* 00,01,02,03,04,05,06,07,12,18,20:*:0/1`) (updated 2026-08-11 for intermittent PC usage)
 - **Service**: `yomi-process.service`
 - **Location**: `/etc/systemd/system/yomi-process.timer`
 - **Enabled**: Yes (symlinked in `timers.target.wants`)
-- **Time-Restricted Execution**: Configured to run only during overnight hours (00:00-07:00) to avoid GPU resource contention during daytime usage (updated 2026-08-04)
+- **Skip Logic**: Skips processing if last successful processing was within 12 hours (configurable via `YOMI_PROCESS_SKIP_HOURS`)
+- **Boot Service**: `yomi-process-on-boot.service` runs forced processing on system boot if last processing was too long ago
+- **Flexible Scheduling**: Added daytime processing windows (12PM, 6PM, 8PM) to handle PC being off during overnight hours
 
 ### Management Commands
 ```bash
@@ -148,11 +156,19 @@ Parsed objects look like:
 ## Model Configuration
 
 ### Current Summarization Model
+- **Primary Model**: Gemini API (gemma-4-31b-it) with language detection (Thai/English/mixed)
+- **API Key**: Configured via `GEMINI_API_KEY` environment variable
+- **Environment**: `USE_GEMINI=true` by default (set to `false` to use Llama fallback)
+- **Fallback**: Local Llama (Phi-3-mini-4k-instruct-q4) available when `USE_GEMINI=false`
+- **Language Support**: Native Thai language prompts, better mixed-language handling
+- **Status**: Active default (updated 2026-08-11 to make Gemini the default)
+
+### Legacy Local Model
 - **Model**: Phi-3-mini-4k-instruct-q4 (2.3GB)
 - **GPU**: NVIDIA GTX 1650 (4GB VRAM)
 - **API Endpoint**: `http://tony-omen.local:8001/v1/chat/completions`
 - **Context Window**: 4K tokens
-- **Status**: Active but overloaded (2944MB/4096MB GPU used, 72%)
+- **Status**: Available as fallback, not actively used in production
 
 ### Alternative Model
 - **Model**: thai-legal-gemma-4b-cpt.Q4_K_M.gguf (5.0GB)
@@ -193,6 +209,7 @@ curl http://tony-omen.local:8001/health
 - Frequent Llama API 500 errors → Rate limiting and circuit breakers implemented (2026-08-03) to manage GPU load. Check `/api/yomi/rate-limiter-status` for current state.
 - **Yomi API not responding** → Check `yomi-api.service` status: `systemctl status yomi-api.service`. Service auto-restarts on failure (added 2026-08-04).
 - **LINE API rate limit (code 103)** → Authentication temporarily restricted. Wait 1-24 hours for restriction to lift, then re-login with `npx @rikaidev/yomi login`. Implement exponential backoff for login retries to prevent future rate limits. (2026-08-06)
+- **Intermittent PC usage** → Yomi timers configured with skip logic and boot services to handle PC being off for extended periods. Fetch skips if last successful fetch within 30 minutes, processing skips if last successful processing within 12 hours. Boot services run forced operations on startup if needed. (2026-08-11)
 
 ## LINE API Rate Limit Management (2026-08-06)
 

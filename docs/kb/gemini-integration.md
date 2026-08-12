@@ -222,4 +222,31 @@ return 'english';
 
 ## Tags
 
-gemini, yomi, summarization, language-detection, thai, english, mixed-language, api-integration, llm-alternative, rate-limiting
+- **gpu**: gpu
+- **nvidia**: nvidia
+- **cuda**: cuda
+- **ml**: ml
+- **ai**: ai
+- **yomi**: yomi
+- **line**: line
+- **messaging**: messaging
+- **conversations**: conversations
+- **api**: api
+- **rest**: rest
+- **http**: http
+- **web**: web
+- **performance**: performance
+- **optimization**: optimization
+- **caching**: caching
+- **testing**: testing
+- **e2e**: e2e
+- **automation**: automation
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **language**: language
+- **detection**: detection
+- **nlp**: nlp
+- **gemini**: gemini
+- **google**: google
+- **2026**: 2026

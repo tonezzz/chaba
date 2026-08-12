@@ -3,6 +3,10 @@
 ## What it is
 
 Root cause analysis and prevention strategies for Yomi conversation summary corruption issues. Covers detection patterns, fixes implemented, and ongoing prevention measures for LLM-generated summaries.
+## Context/Background
+
+Created 2026-08-04 as part of Chaba infrastructure documentation.
+
 
 ## Context
 

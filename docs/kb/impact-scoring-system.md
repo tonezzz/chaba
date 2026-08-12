@@ -3,6 +3,10 @@
 ## What it is
 
 Data-driven improvement prioritization system that quantifies expected value using weighted impact scores across business, technical, user experience, and cost savings dimensions. Enables objective prioritization decisions and resource allocation.
+## Context/Background
+
+Created 2026-08-04 as part of Chaba infrastructure documentation.
+
 
 ## Impact Categories
 

@@ -10,8 +10,16 @@ search_keywords: [3d-map, point-cloud, gaussian-splat, webgl, visualization, cou
 ---
 
 # Map3D Viewer
+## What it is
+
+title: Map3D Viewer
+
 
 **Abstract**: A 3D map visualization application supporting point clouds, Gaussian splats, and tiltable overlays for race course visualization and geographic analysis.
+## Context/Background
+
+Created 2026-08-06 as part of Chaba infrastructure documentation.
+
 
 ## Overview
 
@@ -188,3 +196,26 @@ Track4 Course Data → Map3D Visualization → Geographic Analysis
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-08-06 | Initial creation with 3D rendering details and integration notes | tony |
+
+## Tags
+
+- **deployment**: deployment
+- **ci**: ci
+- **cd**: cd
+- **docker**: docker
+- **performance**: performance
+- **optimization**: optimization
+- **caching**: caching
+- **testing**: testing
+- **e2e**: e2e
+- **automation**: automation
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **h3**: h3
+- **gizmo**: gizmo
+- **thailand**: thailand
+- **ssot**: ssot
+- **configuration**: configuration
+- **infrastructure**: infrastructure
+- **2026**: 2026

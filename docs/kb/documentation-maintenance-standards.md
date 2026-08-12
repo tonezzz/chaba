@@ -10,6 +10,10 @@ search_keywords: [documentation maintenance, templates, frontmatter, MCP optimiz
 ---
 
 # Documentation Maintenance Standards
+## What it is
+
+title: Documentation Maintenance Standards
+
 
 **Abstract**: Systematic approach to documentation maintenance with standardized templates, frontmatter metadata for MCP search optimization, and consolidation strategies to prevent bloat while ensuring long-term maintainability.
 
@@ -395,4 +399,24 @@ docs/archive/                        # Historical planning documents
 
 ## Tags
 
-documentation, maintenance, consolidation, archive, standards, bloat-reduction, redundancy, operational-excellence, knowledge-management
+- **gpu**: gpu
+- **nvidia**: nvidia
+- **cuda**: cuda
+- **ml**: ml
+- **ai**: ai
+- **monitoring**: monitoring
+- **health**: health
+- **metrics**: metrics
+- **logging**: logging
+- **documentation**: documentation
+- **kb**: kb
+- **knowledge-base**: knowledge-base
+- **workflow**: workflow
+- **automation**: automation
+- **mcp**: mcp
+- **ssot**: ssot
+- **configuration**: configuration
+- **infrastructure**: infrastructure
+- **yaml**: yaml
+- **syntax**: syntax
+- **2026**: 2026
