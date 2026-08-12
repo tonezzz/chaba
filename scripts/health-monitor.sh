@@ -1,26 +1,22 @@
 #!/usr/bin/env bash
 # Health monitor — runs as a systemd user timer every 10 minutes.
-# Sends desktop notifications for critical issues, logs to logs/health-monitor.log
+# Multi-channel alerting for critical issues, logs to logs/health-monitor.log
 
 set -euo pipefail
 
 ALERT_LOG="/home/tony/CascadeProjects/chaba/logs/health-monitor.log"
 mkdir -p "$(dirname "$ALERT_LOG")"
 
+# Source notification plugins
+SCRIPT_DIR="$(dirname "$0")"
+source "$SCRIPT_DIR/health-monitor-notifications.sh"
+
 ISSUES=()
 ts=$(date '+%Y-%m-%d %H:%M:%S')
 
 alert() {
     local severity="$1" title="$2" body="$3"
-    local icon="dialog-warning"
-    [[ "$severity" == "critical" ]] && icon="dialog-error"
-    echo "[$ts] $severity: $title — $body" >> "$ALERT_LOG"
-    # Desktop notification (works for the current X session)
-    DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus" \
-        notify-send --urgency="${severity/critical/critical}" \
-            --icon="$icon" \
-            --expire-time=15000 \
-            "🔔 $title" "$body" 2>/dev/null || true
+    send_notification "$severity" "$title" "$body"
     ISSUES+=("$severity: $title")
 }
 
