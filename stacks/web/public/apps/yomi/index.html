@@ -91,8 +91,17 @@
     .sem-result-text { font-size: .9rem; color: #1e293b; }
     .sem-result-score { margin-left: auto; font-weight: 600; color: #7c3aed; }
     #sort { padding: .5rem .75rem; border: 1px solid #cbd5e1; border-radius: .375rem; background: #fff; font-size: .9rem; }
-    .last-active { color: #94a3b8; font-size: .75rem; margin-left: .5rem; }
+    .last-active { color: #64748b; font-size: .8rem; font-weight: 500; margin-left: .5rem; }
     .chat.hidden { display: none; }
+    .help-btn { background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 1.1rem; padding: 0 .5rem; margin-left: .5rem; }
+    .help-btn:hover { color: var(--accent); }
+    .help-dialog { max-width: 420px; }
+    .help-content { padding: 1.25rem; line-height: 1.6; }
+    .help-content h3 { margin-top: 0; margin-bottom: .75rem; font-size: 1.1rem; color: var(--text); }
+    .help-content p { margin: .5rem 0; color: #475569; font-size: .9rem; }
+    .help-content ul { margin: .5rem 0; padding-left: 1.25rem; color: #475569; font-size: .9rem; }
+    .help-content li { margin: .25rem 0; }
+    .help-content strong { color: var(--text); }
     #lightbox {
       position: fixed;
       inset: 0;
@@ -157,6 +166,7 @@
     <h1>LINE Conversations</h1>
     <span class="updated" id="updated"></span>
     <span class="refresh-indicator" id="refresh-indicator" style="display:none"></span>
+    <button class="help-btn" id="help-btn" type="button" aria-label="Help">❓</button>
   </header>
   <div class="controls">
     <input type="search" id="search" placeholder="Search conversations…" autocomplete="off">
@@ -203,6 +213,43 @@
         <button id="edit-save" type="button" style="padding:.4rem .75rem;border:1px solid #cbd5e1;border-radius:.25rem;background:var(--accent);color:#fff;cursor:pointer">Save</button>
         <button id="edit-reset" type="button" style="padding:.4rem .75rem;border:1px solid #cbd5e1;border-radius:.25rem;background:#f1f5f9;cursor:pointer">Reset</button>
       </div>
+    </div>
+  </dialog>
+  <dialog id="help-dialog" class="help-dialog">
+    <div class="help-content">
+      <div class="config-header">
+        <h2 class="config-title">Help</h2>
+        <button id="help-close" class="config-close" type="button">Close</button>
+      </div>
+      <h3>Conversation List</h3>
+      <p>This page shows all your LINE conversations with unread counts, categories, and last message times.</p>
+      <ul>
+        <li><strong>Click a name</strong> to expand and show recent messages inline</li>
+        <li><strong>↗ button</strong> opens the full chat in a new tab</li>
+        <li><strong>⚙️ button</strong> lets you edit the category or mark as group/room chat</li>
+        <li><strong>📅 button</strong> opens daily summaries for that conversation</li>
+        <li><strong>Last active</strong> shows when the last message was sent (e.g., "2h ago")</li>
+      </ul>
+      <h3>Categories</h3>
+      <p>Conversations are auto-categorized by the Yomi backend. Use the chips to filter by category:</p>
+      <ul>
+        <li><strong>Family</strong> - Personal family conversations</li>
+        <li><strong>Work</strong> - Work-related chats</li>
+        <li><strong>Promo</strong> - Promotional messages and offers</li>
+        <li><strong>Official</strong> - Official brand accounts</li>
+        <li><strong>Group</strong> - Group chats and rooms</li>
+        <li><strong>Personal</strong> - Personal 1:1 conversations</li>
+        <li><strong>Other</strong> - Uncategorized conversations</li>
+      </ul>
+      <h3>Sorting</h3>
+      <p>Sort conversations by:</p>
+      <ul>
+        <li><strong>Unread</strong> - Most unread messages first (default)</li>
+        <li><strong>Last active</strong> - Most recently active first</li>
+        <li><strong>Name</strong> - Alphabetical by name</li>
+      </ul>
+      <h3>Semantic Search</h3>
+      <p>Use the purple search bar to find messages by meaning, not just exact words. Results show the conversation, sender, date, and similarity score.</p>
     </div>
   </dialog>
   <main id="app"><p id="status">Loading…</p></main>
@@ -384,8 +431,8 @@
         const preview = displayPreview == null
           ? '<div class="preview preview-null">No preview</div>'
           : `<div class="${previewClass}" title="${escapeHtml(displayPreview)}">${linkify(truncate(displayPreview, 90))}</div>`;
-        const lastActive = c.lastMessageTime
-          ? `<span class="last-active" title="${new Date(c.lastMessageTime).toLocaleString()}">${timeAgo(new Date(c.lastMessageTime))} ago</span>`
+        const lastActive = c.lastMessageTime && c.lastMessageTime > 1000000000
+          ? `<span class="last-active" title="${new Date(c.lastMessageTime).toLocaleString()}">🕐 ${timeAgo(new Date(c.lastMessageTime))} ago</span>`
           : '';
         div.innerHTML = `
           <div class="chat-header">
@@ -539,6 +586,8 @@
       document.getElementById('edit-category').appendChild(opt);
     });
     document.getElementById('edit-close').addEventListener('click', () => document.getElementById('edit-dialog').close());
+    document.getElementById('help-close').addEventListener('click', () => document.getElementById('help-dialog').close());
+    document.getElementById('help-btn').addEventListener('click', () => document.getElementById('help-dialog').showModal());
     document.getElementById('edit-save').addEventListener('click', () => {
       const id = document.getElementById('edit-dialog').dataset.id;
       if (!id) return;
