@@ -33,6 +33,22 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_service_timestamp ON health_checks(service_name, timestamp);
   CREATE INDEX IF NOT EXISTS idx_status ON health_checks(status);
+  
+  CREATE TABLE IF NOT EXISTS alerts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    service_name TEXT NOT NULL,
+    alert_type TEXT NOT NULL,
+    severity TEXT NOT NULL,
+    message TEXT NOT NULL,
+    acknowledged BOOLEAN DEFAULT 0,
+    acknowledged_at DATETIME,
+    resolved BOOLEAN DEFAULT 0,
+    resolved_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_alerts_service ON alerts(service_name);
+  CREATE INDEX IF NOT EXISTS idx_alerts_severity ON alerts(severity);
+  CREATE INDEX IF NOT EXISTS idx_alerts_resolved ON alerts(resolved);
 `);
 
 // Read health configuration
@@ -95,6 +111,105 @@ function getRecoveryActions(config, failureType) {
     return actions;
   }
   return [];
+}
+
+// Alert generation and management
+function generateAlert(serviceName, alertType, severity, message) {
+  const stmt = db.prepare(`
+    INSERT INTO alerts (service_name, alert_type, severity, message)
+    VALUES (?, ?, ?, ?)
+  `);
+  const result = stmt.run(serviceName, alertType, severity, message);
+  return result.lastInsertRowid;
+}
+
+function checkExistingAlert(serviceName, alertType, resolved = false) {
+  const stmt = db.prepare(`
+    SELECT id FROM alerts 
+    WHERE service_name = ? AND alert_type = ? AND resolved = ?
+    ORDER BY created_at DESC 
+    LIMIT 1
+  `);
+  const alert = stmt.get(serviceName, alertType, resolved ? 1 : 0);
+  return alert;
+}
+
+function logAlert(serviceName, alertType, severity, message) {
+  const { execSync } = require('child_process');
+  const timestamp = new Date().toISOString();
+  const logMessage = `[MCP-HEALTH-ALERT] ${timestamp} | ${severity.toUpperCase()} | ${serviceName} | ${alertType} | ${message}`;
+  
+  try {
+    execSync(`logger -t mcp-health "${logMessage}"`, { stdio: 'pipe' });
+  } catch (error) {
+    console.error(`Failed to log alert: ${error.message}`);
+  }
+  
+  console.error(logMessage);
+}
+
+function processAlerts(config, serviceName, status, previousStatus, error) {
+  if (!config.alerts || !config.alerts.enabled) return;
+  
+  const thresholds = config.alerts.thresholds || {};
+  const criticality = config.alerts.service_criticality || {};
+  
+  // Determine service criticality
+  let serviceCriticality = 'optional';
+  if (criticality.critical?.includes(serviceName)) {
+    serviceCriticality = 'critical';
+  } else if (criticality.important?.includes(serviceName)) {
+    serviceCriticality = 'important';
+  }
+  
+  // Generate alerts based on status changes
+  if (status === 'error' && previousStatus !== 'error') {
+    const severity = serviceCriticality === 'critical' ? 'critical' : 'error';
+    const message = error || `Service ${serviceName} is in error state`;
+    
+    // Check for existing unresolved alert
+    const existingAlert = checkExistingAlert(serviceName, 'service_failure');
+    if (!existingAlert) {
+      const alertId = generateAlert(serviceName, 'service_failure', severity, message);
+      
+      // Log alert based on configured channels
+      if (config.alerts.channels) {
+        config.alerts.channels.forEach(channel => {
+          if (channel.enabled && channel.severity?.includes(severity)) {
+            if (channel.type === 'log') {
+              logAlert(serviceName, 'service_failure', severity, message);
+            }
+          }
+        });
+      }
+    }
+  }
+  
+  // Recovery notification
+  if (status === 'healthy' && previousStatus === 'error' && thresholds.recovery_notification) {
+    const existingAlert = checkExistingAlert(serviceName, 'service_failure');
+    if (existingAlert) {
+      // Mark alert as resolved
+      const stmt = db.prepare(`
+        UPDATE alerts 
+        SET resolved = 1, resolved_at = CURRENT_TIMESTAMP 
+        WHERE id = ?
+      `);
+      stmt.run(existingAlert.id);
+      
+      logAlert(serviceName, 'service_recovery', 'info', `Service ${serviceName} has recovered`);
+    }
+  }
+  
+  // Performance degradation alert
+  if (status === 'degraded') {
+    const existingAlert = checkExistingAlert(serviceName, 'performance_degradation');
+    if (!existingAlert) {
+      const message = `Service ${serviceName} is experiencing performance degradation`;
+      generateAlert(serviceName, 'performance_degradation', 'degraded', message);
+      logAlert(serviceName, 'performance_degradation', 'degraded', message);
+    }
+  }
 }
 
 // HTTP health check
@@ -355,6 +470,53 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             }
           }
         }
+      },
+      {
+        name: 'get_alerts',
+        description: 'Get active and historical alerts',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            service_name: {
+              type: 'string',
+              description: 'Optional service name to filter alerts'
+            },
+            severity: {
+              type: 'string',
+              description: 'Optional severity level to filter (critical, error, degraded, info)'
+            },
+            resolved: {
+              type: 'boolean',
+              description: 'Optional filter for resolved vs unresolved alerts'
+            },
+            limit: {
+              type: 'number',
+              description: 'Maximum number of alerts to return (default: 50)'
+            }
+          }
+        }
+      },
+      {
+        name: 'acknowledge_alert',
+        description: 'Acknowledge an alert to prevent duplicate notifications',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            alert_id: {
+              type: 'number',
+              description: 'Alert ID to acknowledge'
+            }
+          },
+          required: ['alert_id']
+        }
+      },
+      {
+        name: 'get_alert_config',
+        description: 'Get current alert configuration from SSOT',
+        inputSchema: {
+          type: 'object',
+          properties: {}
+        }
       }
     ]
   };
@@ -400,6 +562,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             };
           }
           
+          // Get previous status for alert processing
+          const previousStatusStmt = db.prepare(`
+            SELECT status FROM health_checks 
+            WHERE service_name = ? 
+            ORDER BY timestamp DESC 
+            LIMIT 1
+          `);
+          const previousStatus = previousStatusStmt.get(serviceName)?.status || 'unknown';
+          
           // Store in database
           const stmt = db.prepare(`
             INSERT INTO health_checks (service_name, status, response_time, error, http_status, expected_status, container_state, expected_state, active_state, sub_state)
@@ -417,6 +588,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             checkResult.active_state || null,
             checkResult.sub_state || null
           );
+          
+          // Process alerts based on status changes
+          processAlerts(config, serviceName, checkResult.status, previousStatus, checkResult.error);
           
           results.push({
             service: serviceName,
@@ -709,6 +883,90 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               dependency_analysis: dependencyAnalysis,
               total_services: statusResults.length,
               services_with_dependencies: Object.keys(dependencies).length
+            }, null, 2)
+          }]
+        };
+      }
+
+      case 'get_alerts': {
+        const config = await loadHealthConfig();
+        const limit = args.limit || 50;
+        let query = 'SELECT * FROM alerts';
+        const params = [];
+        const conditions = [];
+        
+        if (args.service_name) {
+          conditions.push('service_name = ?');
+          params.push(args.service_name);
+        }
+        
+        if (args.severity) {
+          conditions.push('severity = ?');
+          params.push(args.severity);
+        }
+        
+        if (args.resolved !== undefined) {
+          conditions.push('resolved = ?');
+          params.push(args.resolved ? 1 : 0);
+        }
+        
+        if (conditions.length > 0) {
+          query += ' WHERE ' + conditions.join(' AND ');
+        }
+        
+        query += ' ORDER BY created_at DESC LIMIT ?';
+        params.push(limit);
+        
+        const stmt = db.prepare(query);
+        const alerts = stmt.all(...params);
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              alerts: alerts,
+              total: alerts.length,
+              alert_config: config.alerts
+            }, null, 2)
+          }]
+        };
+      }
+
+      case 'acknowledge_alert': {
+        const stmt = db.prepare(`
+          UPDATE alerts 
+          SET acknowledged = 1, acknowledged_at = CURRENT_TIMESTAMP 
+          WHERE id = ?
+        `);
+        const result = stmt.run(args.alert_id);
+        
+        if (result.changes === 0) {
+          throw new Error(`Alert ${args.alert_id} not found`);
+        }
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              success: true,
+              message: `Alert ${args.alert_id} acknowledged`,
+              alert_id: args.alert_id
+            }, null, 2)
+          }]
+        };
+      }
+
+      case 'get_alert_config': {
+        const config = await loadHealthConfig();
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              alert_config: config.alerts,
+              service_criticality: config.alerts?.service_criticality || {},
+              thresholds: config.alerts?.thresholds || {},
+              channels: config.alerts?.channels || []
             }, null, 2)
           }]
         };

@@ -1,6 +1,6 @@
 title: Chaba Health Check Configuration
 description: Health check endpoints and monitoring for all chaba services
-version: 3
+version: 4
 
 # Network profiles with auto-detection
 profiles:
@@ -14,6 +14,31 @@ profiles:
     base_url: http://[CURRENT-IP]:8080
     description: Mobile/external network with IP placeholder
     note: Replace [CURRENT-IP] with actual IP or DDNS hostname
+
+# Alert configuration
+alerts:
+  enabled: true
+  channels:
+    - type: log
+      enabled: true
+      severity: [critical, error, degraded]
+      description: Log alerts to system journal
+    - type: webhook
+      enabled: false
+      url: ""
+      severity: [critical]
+      description: Webhook for external monitoring systems
+  
+  thresholds:
+    critical_services_down: 3
+    sustained_failure_minutes: 5
+    recovery_notification: true
+    response_time_threshold_ms: 5000
+  
+  service_criticality:
+    critical: [caddy, postgres, gpu-queue]
+    important: [yomi-api, status-api, trade-api, mddb-api]
+    optional: [redis, weaviate, activepieces, frigate, camera-control, imagen2, txt2vid, thai-legal]
 
 # Service groups for dependency tracking
 groups:

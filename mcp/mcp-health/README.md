@@ -150,6 +150,118 @@ Analyze service dependencies and detect cascading failures.
 }
 ```
 
+### `get_alerts`
+Get active and historical alerts.
+
+**Parameters:**
+- `service_name` (optional): Service name to filter alerts
+- `severity` (optional): Severity level to filter (critical, error, degraded, info)
+- `resolved` (optional): Filter for resolved vs unresolved alerts
+- `limit` (optional): Maximum number of alerts to return (default: 50)
+
+**Returns:**
+```json
+{
+  "alerts": [
+    {
+      "id": 1,
+      "service_name": "Yomi API",
+      "alert_type": "service_failure",
+      "severity": "critical",
+      "message": "Service Yomi API is in error state",
+      "acknowledged": false,
+      "acknowledged_at": null,
+      "resolved": false,
+      "resolved_at": null,
+      "created_at": "2026-08-12 06:00:00"
+    }
+  ],
+  "total": 1,
+  "alert_config": {...}
+}
+```
+
+### `acknowledge_alert`
+Acknowledge an alert to prevent duplicate notifications.
+
+**Parameters:**
+- `alert_id` (required): Alert ID to acknowledge
+
+**Returns:**
+```json
+{
+  "success": true,
+  "message": "Alert 1 acknowledged",
+  "alert_id": 1
+}
+```
+
+### `get_alert_config`
+Get current alert configuration from SSOT.
+
+**Returns:**
+```json
+{
+  "alert_config": {
+    "enabled": true,
+    "channels": [...],
+    "thresholds": {...},
+    "service_criticality": {...}
+  },
+  "service_criticality": {...},
+  "thresholds": {...},
+  "channels": [...]
+}
+```
+
+## Alert Configuration
+
+Alerts are configured in the SSOT health configuration file under the `alerts` section:
+
+```yaml
+alerts:
+  enabled: true
+  channels:
+    - type: log
+      enabled: true
+      severity: [critical, error, degraded]
+      description: Log alerts to system journal
+    - type: webhook
+      enabled: false
+      url: "https://monitoring.example.com/webhook"
+      severity: [critical]
+      description: Webhook for external monitoring systems
+  
+  thresholds:
+    critical_services_down: 3
+    sustained_failure_minutes: 5
+    recovery_notification: true
+    response_time_threshold_ms: 5000
+  
+  service_criticality:
+    critical: [caddy, postgres, gpu-queue]
+    important: [yomi-api, status-api, trade-api, mddb-api]
+    optional: [redis, weaviate, activepieces, frigate, camera-control, imagen2, txt2vid, thai-legal]
+```
+
+### Alert Types
+
+- **service_failure**: Generated when a service transitions to error state
+- **service_recovery**: Generated when a service recovers from error to healthy
+- **performance_degradation**: Generated when response times exceed thresholds
+
+### Severity Levels
+
+- **critical**: Service failures for critical infrastructure
+- **error**: Service failures for important services
+- **degraded**: Performance issues or non-critical failures
+- **info**: Recovery notifications and informational alerts
+
+### Alert Channels
+
+- **log**: Writes alerts to system journal via `logger` command
+- **webhook**: Sends alerts to external monitoring systems (future enhancement)
+
 ## Network Profile Detection
 
 The server automatically detects the network profile:
@@ -169,7 +281,26 @@ CREATE TABLE health_checks (
   status TEXT NOT NULL,
   response_time REAL,
   error TEXT,
+  http_status INTEGER,
+  expected_status INTEGER,
+  container_state TEXT,
+  expected_state TEXT,
+  active_state TEXT,
+  sub_state TEXT,
   timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE alerts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  service_name TEXT NOT NULL,
+  alert_type TEXT NOT NULL,
+  severity TEXT NOT NULL,
+  message TEXT NOT NULL,
+  acknowledged BOOLEAN DEFAULT 0,
+  acknowledged_at DATETIME,
+  resolved BOOLEAN DEFAULT 0,
+  resolved_at DATETIME,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
@@ -178,7 +309,7 @@ CREATE TABLE health_checks (
 - **Phase 1 (MVP)**: ✅ Complete - Basic health check orchestration
 - **Phase 2**: ✅ Complete - SQLite persistence for health history and trends
 - **Phase 1+2 (Real Health Checks)**: ✅ Complete - HTTP, container, systemd checks with categorization
-- **Phase 3**: ⏳ Pending - Alerting and notification capabilities
+- **Phase 3**: ✅ Complete - Alerting and notification capabilities
 
 **Completed Features (Phase 1+2)**:
 - Real HTTP health checks using curl with expected_status validation from SSOT config
@@ -190,6 +321,18 @@ CREATE TABLE health_checks (
 - Recovery action suggestions from SSOT config
 - Dependency analysis and cascading failure detection
 - Enhanced database schema with detailed health metrics including expected values
+
+**Completed Features (Phase 3)**:
+- Alert generation based on service status changes
+- Service criticality levels (critical, important, optional)
+- Alert deduplication to prevent spam
+- Recovery notifications when services return to healthy state
+- Performance degradation alerts for slow response times
+- Log-based alerting integration with system journal
+- Alert acknowledgment and resolution tracking
+- Historical alert analysis and filtering
+- Configurable alert thresholds and channels
+- Alert configuration via SSOT health config
 
 **Critical Gap Fixed**: Implemented expected_status and expected_state validation from SSOT configuration. Previously hardcoded expectations (200 for HTTP, "running" for containers, "active" for systemd) now use config-specified values for accurate health determination across 15 HTTP services and 11 container/systemd services.
 
