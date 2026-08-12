@@ -19,6 +19,18 @@
 		file_server
 	}
 
+	# MDDB Panel
+	handle_path /apps/mddb/* {
+		reverse_proxy 172.19.0.6:3000
+		encode gzip
+	}
+
+	# MDDB API
+	handle /api/mddb/* {
+		reverse_proxy mddb:11023
+		encode gzip
+	}
+
 	# Raceman assets (must come before Activepieces to avoid conflicts)
 	handle /assets/* {
 		reverse_proxy host.docker.internal:8083 {
@@ -103,10 +115,16 @@
 	}
 
 	# Yomi API proxy (must come before catchall)
-	handle_path /api/yomi/* {
-		reverse_proxy yomi-api:3000 {
+	handle /api/yomi/* {
+		reverse_proxy host.docker.internal:3000 {
 			header_up Host localhost
 		}
+	}
+
+	# Shared JS files for all apps
+	handle_path /apps/shared/* {
+		root * /srv/public/apps/shared
+		file_server
 	}
 
 	# Weaviate API proxy (must come before catchall)
@@ -114,36 +132,6 @@
 		reverse_proxy weaviate:8080 {
 			header_up Host localhost
 		}
-	}
-
-	# Status API proxy - /api/* catchall to status-api
-	@status_api path /api/*
-	handle @status_api {
-		reverse_proxy status-api:8000 {
-			header_up Host localhost
-		}
-	}
-
-	file_server
-
-	# Docs serving for health check config
-	handle /docs/* {
-		root * /srv/docs
-		file_server
-	}
-
-	# Pretty URLs: /cameras → /cameras.json
-	rewrite /cameras /cameras.json
-
-	@root path /
-	handle @root {
-		reverse_proxy bserver:8092 {
-			header_up Host bserver.local
-		}
-	}
-
-	handle /new {
-		redir /new/ 308
 	}
 
 	handle_path /new/* {
@@ -169,8 +157,8 @@
 	}
 
 	handle_path /chatlocal/* {
-		reverse_proxy yomi-api:3000 {
-			header_up Host localhost:3000
+		reverse_proxy host.docker.internal:3000 {
+			header_up Host localhost
 		}
 	}
 
@@ -192,8 +180,40 @@
 
 	@chatlocal path /apps/chatlocal /apps/chatlocal/*
 	handle @chatlocal {
-		reverse_proxy yomi-api:3000 {
+		reverse_proxy host.docker.internal:3000 {
 			header_up Host localhost:3000
 		}
+	}
+
+	# Focus app static files
+	handle_path /apps/focus/* {
+		root * /srv/public/chaba-h3/apps/focus
+		file_server
+	}
+
+	# Focus Activity API proxy
+	handle_path /api/focus/* {
+		reverse_proxy host.docker.internal:3005 {
+			header_up Host localhost
+		}
+	}
+
+	# Health check API proxy
+	handle /api/health {
+		reverse_proxy host.docker.internal:3006 {
+			header_up Host localhost
+		}
+	}
+
+	# SSOT focus file serving
+	handle /ssot.focus.yml {
+		root * /srv/public
+		file_server
+	}
+
+	# General catchall for other apps static files
+	handle_path /apps/* {
+		root * /srv/public/apps
+		file_server
 	}
 }
