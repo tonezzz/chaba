@@ -720,7 +720,7 @@ sections:
       desktop alerts + logs to logs/health-monitor.log. No external API keys required.
   - label: Performance Baselines
     text: Establish baseline metrics for all services and implement trend analysis with anomaly detection
-    status: planned
+    status: completed
     priority: medium
     effort: 6-8 hours
     category: monitoring
@@ -728,6 +728,8 @@ sections:
     assessment_ref: overnight-assessment-2026-08-04
     depends_on: Monitoring & Alerting System
     dependency_reason: Performance baselines require monitoring infrastructure for data collection
+    completed: '2026-08-12'
+    completion_note: 'Implemented performance baseline collection script (scripts/collect-performance-baselines.mjs) using MCP health server. Established baselines for 18 services with response time statistics (mean, median, p95, p99, std_dev). Added baseline analysis to overnight assessment with anomaly detection (>50% deviation triggers alerts). Baselines saved to docs/ssot/infrastructure/performance-baselines.yml. Low confidence baselines marked for future improvement with more data.'
     action_items:
     - Collect baseline metrics for all services
     - Implement trend analysis algorithms
@@ -735,12 +737,21 @@ sections:
     - Create performance dashboards
     - Define performance SLOs
     related_files:
+    - scripts/collect-performance-baselines.mjs
     - scripts/overnight-assessment.mjs
-    - docs/ssot/health.home.yml
+    - docs/ssot/infrastructure/performance-baselines.yml
+    - mcp/mcp-health/server.js
     tags:
     - monitoring
     - performance
     - baselines
+    - anomaly-detection
+    - completed
+    business_impact: 8
+    technical_impact: 7
+    user_experience_impact: 6
+    cost_savings_impact: 4
+    impact_summary: Proactive performance monitoring enables early detection of degradation and optimization opportunities
   - label: Security & Dependency Checking
     text: Add security vulnerability scanning, dependency update checking, and container image age monitoring to assessment system
     status: completed

@@ -82,6 +82,166 @@ async function closeMCPClient(client) {
   }
 }
 
+// Performance Baseline Analysis Functions
+function loadPerformanceBaselines() {
+  const baselinePath = '/home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/performance-baselines.yml';
+  
+  if (!existsSync(baselinePath)) {
+    console.log('Performance baselines file not found, skipping baseline analysis');
+    return null;
+  }
+
+  try {
+    const baselineContent = readFileSync(baselinePath, 'utf8');
+    const baselineData = yaml.load(baselineContent);
+    return baselineData.baselines || null;
+  } catch (error) {
+    console.error(`Failed to load performance baselines: ${error.message}`);
+    return null;
+  }
+}
+
+function analyzePerformanceAgainstBaselines(currentHealth, baselines) {
+  if (!baselines || !currentHealth) {
+    return null;
+  }
+
+  const analysis = {
+    services_analyzed: 0,
+    anomalies: [],
+    performance_degradation: [],
+    performance_improvement: [],
+    within_baseline: []
+  };
+
+  Object.keys(currentHealth).forEach(serviceName => {
+    const baseline = baselines[serviceName];
+    const current = currentHealth[serviceName];
+
+    if (!baseline || !current) {
+      return;
+    }
+
+    analysis.services_analyzed++;
+
+    // Skip low confidence baselines
+    if (baseline.data_quality.confidence === 'low') {
+      analysis.within_baseline.push({
+        service_name: serviceName,
+        reason: 'Low confidence baseline (insufficient data)'
+      });
+      return;
+    }
+
+    // Compare response times
+    const baselineMedian = baseline.response_time.median;
+    const currentMedian = current.avg_response_time;
+    
+    if (currentMedian > 0) {
+      const deviation = ((currentMedian - baselineMedian) / baselineMedian) * 100;
+      
+      // Anomaly detection: >50% deviation from baseline
+      if (Math.abs(deviation) > 50) {
+        analysis.anomalies.push({
+          service_name: serviceName,
+          baseline_median: baselineMedian,
+          current_median: currentMedian,
+          deviation: deviation.toFixed(1),
+          severity: Math.abs(deviation) > 100 ? 'critical' : 'warning'
+        });
+      } else if (deviation > 20) {
+        analysis.performance_degradation.push({
+          service_name: serviceName,
+          baseline_median: baselineMedian,
+          current_median: currentMedian,
+          degradation: deviation.toFixed(1)
+        });
+      } else if (deviation < -20) {
+        analysis.performance_improvement.push({
+          service_name: serviceName,
+          baseline_median: baselineMedian,
+          current_median: currentMedian,
+          improvement: Math.abs(deviation).toFixed(1)
+        });
+      } else {
+        analysis.within_baseline.push({
+          service_name: serviceName,
+          baseline_median: baselineMedian,
+          current_median: currentMedian,
+          deviation: deviation.toFixed(1)
+        });
+      }
+    }
+  });
+
+  return analysis;
+}
+
+function generateBaselineAnalysisReport(analysis) {
+  if (!analysis) {
+    return 'No baseline analysis available - baselines not established or insufficient data.';
+  }
+
+  let content = `**Services Analyzed:** ${analysis.services_analyzed}\n\n`;
+
+  if (analysis.anomalies.length > 0) {
+    content += '### ⚠️ Performance Anomalies Detected\n\n';
+    content += '| Service | Baseline (ms) | Current (ms) | Deviation | Severity |\n';
+    content += '|---------|---------------|-------------|-----------|----------|\n';
+    analysis.anomalies.forEach(anomaly => {
+      const deviation = anomaly.deviation > 0 ? `+${anomaly.deviation}%` : `${anomaly.deviation}%`;
+      const severity = anomaly.severity === 'critical' ? '🔴 CRITICAL' : '🟡 WARNING';
+      content += `| ${anomaly.service_name} | ${anomaly.baseline_median} | ${anomaly.current_median} | ${deviation} | ${severity} |\n`;
+    });
+    content += '\n';
+  }
+
+  if (analysis.performance_degradation.length > 0) {
+    content += '### 📉 Performance Degradation\n\n';
+    content += '| Service | Baseline (ms) | Current (ms) | Degradation |\n';
+    content += '|---------|---------------|-------------|-------------|\n';
+    analysis.performance_degradation.forEach(degradation => {
+      content += `| ${degradation.service_name} | ${degradation.baseline_median} | ${degradation.current_median} | +${degradation.degradation}% |\n`;
+    });
+    content += '\n';
+  }
+
+  if (analysis.performance_improvement.length > 0) {
+    content += '### 📈 Performance Improvements\n\n';
+    content += '| Service | Baseline (ms) | Current (ms) | Improvement |\n';
+    content += '|---------|---------------|-------------|-------------|\n';
+    analysis.performance_improvement.forEach(improvement => {
+      content += `| ${improvement.service_name} | ${improvement.baseline_median} | ${improvement.current_median} | -${improvement.improvement}% |\n`;
+    });
+    content += '\n';
+  }
+
+  if (analysis.within_baseline.length > 0) {
+    content += '### ✅ Within Baseline\n\n';
+    content += `**${analysis.within_baseline.length} services** performing within expected baselines.\n\n`;
+    
+    // Show a few examples
+    const examples = analysis.within_baseline.slice(0, 5);
+    if (examples.length > 0) {
+      content += '| Service | Baseline (ms) | Current (ms) | Deviation |\n';
+      content += '|---------|---------------|-------------|-----------|\n';
+      examples.forEach(example => {
+        const deviation = example.deviation > 0 ? `+${example.deviation}%` : `${example.deviation}%`;
+        content += `| ${example.service_name} | ${example.baseline_median} | ${example.current_median} | ${deviation} |\n`;
+      });
+      if (analysis.within_baseline.length > 5) {
+        content += `... and ${analysis.within_baseline.length - 5} more\n`;
+      }
+      content += '\n';
+    }
+  }
+
+  if (analysis.anomalies.length === 0 && analysis.performance_degradation.length === 0) {
+    content += '### ✅ Overall Status: Healthy\n\nAll services are performing within expected baselines. No performance anomalies detected.\n\n';
+  }
+
+  return content;
+}
 // MCP Health Server Integration Functions
 async function getMCPHealthHistory(client, days = 7) {
   if (!client) {
@@ -1731,6 +1891,13 @@ async function runAssessment() {
     const alerts = await getMCPAlerts(mcpClient, 7); // Last 7 days
     const historicalTrendReport = generateHistoricalTrendReport(healthHistory, alerts);
     appendSection('Historical Trend Analysis (MCP Health Server)', historicalTrendReport);
+
+    // Add Performance Baseline Analysis
+    console.log('Analyzing performance against baselines...');
+    const baselines = loadPerformanceBaselines();
+    const baselineAnalysis = analyzePerformanceAgainstBaselines(healthHistory, baselines);
+    const baselineReport = generateBaselineAnalysisReport(baselineAnalysis);
+    appendSection('Performance Baseline Analysis', baselineReport);
     
     // Check if Yomi is actively processing before GPU assessment
     let yomiProcessing = false;
