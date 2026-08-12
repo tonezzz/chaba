@@ -159,6 +159,13 @@
     .config-close { background: #f1f5f9; border: none; border-radius: .25rem; padding: .25rem .5rem; cursor: pointer; font-size: .85rem; }
     .config-close:hover { background: #e2e8f0; }
     .config-section { margin-top: .75rem; }
+    .session-status { font-size: .8rem; font-weight: 600; padding: .25rem .5rem; border-radius: .25rem; margin-left: .5rem; }
+    .session-status.valid { background: #dcfce7; color: #166534; }
+    .session-status.invalid { background: #fee2e2; color: #991b1b; }
+    .session-status.checking { background: #fef3c7; color: #92400e; }
+    #login-btn { padding: .5rem .75rem; border: 1px solid #cbd5e1; border-radius: .375rem; background: #fff; cursor: pointer; font-size: .9rem; }
+    #login-btn:hover { border-color: var(--accent); color: var(--accent); }
+    #login-btn:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -166,6 +173,8 @@
     <h1>LINE Conversations</h1>
     <span class="updated" id="updated"></span>
     <span class="refresh-indicator" id="refresh-indicator" style="display:none"></span>
+    <span class="session-status checking" id="session-status">Checking…</span>
+    <button id="login-btn" type="button" style="display:none">Login</button>
     <button class="help-btn" id="help-btn" type="button" aria-label="Help">❓</button>
   </header>
   <div class="controls">
@@ -270,6 +279,87 @@
     let lastServerUpdated = null;
     let refreshInterval = null;
     let timeUpdateInterval = null;
+
+    async function checkSessionStatus() {
+      const statusEl = document.getElementById('session-status');
+      const loginBtn = document.getElementById('login-btn');
+      
+      try {
+        const res = await fetch('/api/yomi/session-status');
+        const data = await res.json();
+        
+        if (data.valid) {
+          statusEl.className = 'session-status valid';
+          statusEl.textContent = '✓ Connected';
+          loginBtn.style.display = 'none';
+        } else {
+          statusEl.className = 'session-status invalid';
+          statusEl.textContent = '✗ Session expired';
+          loginBtn.style.display = 'inline-block';
+          loginBtn.disabled = !data.canAttemptLogin;
+          if (!data.canAttemptLogin) {
+            loginBtn.textContent = `Login blocked (${data.recentLoginAttempts}/${data.maxLoginAttemptsPerHour}/hr)`;
+          } else {
+            loginBtn.textContent = 'Login';
+          }
+        }
+      } catch (err) {
+        statusEl.className = 'session-status checking';
+        statusEl.textContent = '? Unknown';
+        loginBtn.style.display = 'inline-block';
+        loginBtn.textContent = 'Login';
+      }
+    }
+
+    async function handleLogin() {
+      const loginBtn = document.getElementById('login-btn');
+      const statusEl = document.getElementById('session-status');
+      
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Starting...';
+      statusEl.textContent = 'Starting login...';
+      
+      try {
+        const res = await fetch('/api/yomi/login', { method: 'POST' });
+        const data = await res.json();
+        
+        if (data.ok) {
+          statusEl.textContent = 'Check your phone for PIN';
+          loginBtn.textContent = 'Waiting for PIN...';
+          
+          // Poll for session status
+          const pollInterval = setInterval(async () => {
+            try {
+              const statusRes = await fetch('/api/yomi/session-status');
+              const statusData = await statusRes.json();
+              
+              if (statusData.valid) {
+                clearInterval(pollInterval);
+                statusEl.className = 'session-status valid';
+                statusEl.textContent = '✓ Connected';
+                loginBtn.style.display = 'none';
+                location.reload();
+              }
+            } catch (err) {
+              console.error('Session status check failed:', err);
+            }
+          }, 3000);
+          
+          // Stop polling after 3 minutes
+          setTimeout(() => clearInterval(pollInterval), 180000);
+        } else {
+          statusEl.className = 'session-status invalid';
+          statusEl.textContent = '✗ Login failed';
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Retry';
+        }
+      } catch (err) {
+        statusEl.className = 'session-status invalid';
+        statusEl.textContent = '✗ Error: ' + err.message;
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Retry';
+      }
+    }
 
     async function load() {
       const app = document.getElementById('app');
@@ -685,6 +775,10 @@
     document.getElementById('chips').addEventListener('click', handleChipClick);
     document.getElementById('sort').addEventListener('change', renderConversations);
     document.getElementById('refresh').addEventListener('click', () => location.reload());
+    document.getElementById('login-btn').addEventListener('click', handleLogin);
+    
+    // Check session status on load
+    checkSessionStatus();
     
     // Refresh all conversations from LINE
     const refreshAllBtn = document.getElementById('refresh-all');

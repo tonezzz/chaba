@@ -16,8 +16,8 @@ sections:
   layout: list
   items:
   - label: Dependency Fields
-    text: 'Use these fields to manage improvement dependencies:
-
+    text: |
+      Use these fields to manage improvement dependencies:
 
       **depends_on:** List of improvements that must be completed first
 
@@ -58,7 +58,8 @@ sections:
     - dependencies
     - guide
   - label: Dependency Validation Rules
-    text: '**Circular Dependencies:** Not allowed - will be flagged during validation
+    text: |
+      **Circular Dependencies:** Not allowed - will be flagged during validation
 
       **Missing Dependencies:** Referenced improvements must exist in SSOT
 
@@ -66,14 +67,13 @@ sections:
 
       **Status Validation:** Cannot depend on improvements with same or lower priority
 
-      **Completion Status:** Dependencies should be in ''completed'' status before starting work
-
-      '
+      **Completion Status:** Dependencies should be in "completed" status before starting work
     tags:
     - dependencies
     - validation
   - label: Dependency Best Practices
-    text: '**Be Specific:** Use exact improvement labels for dependencies
+    text: |
+      **Be Specific:** Use exact improvement labels for dependencies
 
       **Document Reasons:** Always explain why dependencies exist
 
@@ -84,14 +84,12 @@ sections:
       **Test Independence:** Ensure improvements can be verified independently
 
       **Plan Critical Path:** Identify dependencies that form the critical path for delivery
-
-      '
     tags:
     - dependencies
     - best-practices
   - label: Impact Scoring Guide
-    text: 'Use impact scoring to prioritize improvements based on their expected value:
-
+    text: |
+      Use impact scoring to prioritize improvements based on their expected value:
 
       **business_impact:** Business value (1-10 scale)
 
@@ -105,7 +103,6 @@ sections:
 
       - 1-3: Low business value, nice to have
 
-
       **technical_impact:** Technical improvement (1-10 scale)
 
       - Code quality, architecture, performance, security
@@ -117,7 +114,6 @@ sections:
       - 4-6: Moderate technical improvement, code quality
 
       - 1-3: Low technical impact, minor cleanup
-
 
       **user_experience_impact:** User experience value (1-10 scale)
 
@@ -131,7 +127,6 @@ sections:
 
       - 1-3: Low UX impact, polish
 
-
       **cost_savings_impact:** Cost reduction value (1-10 scale)
 
       - Infrastructure costs, operational efficiency, time savings
@@ -144,21 +139,17 @@ sections:
 
       - 1-3: Minimal cost impact, negligible savings
 
-
       **impact_summary:** Brief description of expected impact
 
       - Example: "Reduces infrastructure costs by 20% through GPU optimization"
 
       - Purpose: Quick understanding of improvement value
 
-
       **Priority Calculation:** Weighted average of impact scores
 
       - Formula: (business * 0.3) + (technical * 0.3) + (user_experience * 0.2) + (cost_savings * 0.2)
 
       - Result: Used for automatic prioritization alongside manual priority
-
-      '
     tags:
     - impact
     - scoring
@@ -234,33 +225,34 @@ sections:
     tags: ['auto-generated', 'storage']
 
   - label: MCP Health Server Implementation
-    text: 'Create a streamlined MCP health server for centralized health check and telemetry tasks. The server will act as an orchestrator that calls the existing health-check skill, aggregates results, and provides unified MCP tools for health monitoring.
+    text: |
+      Create a streamlined MCP health server for centralized health check and telemetry tasks. The server will act as an orchestrator that calls the existing health-check skill, aggregates results, and provides unified MCP tools for health monitoring.
 
-    **Architecture**: Hybrid model - MCP as orchestrator, not executor. Leverages existing health-check skill and ssot.health.yml configuration.
+      **Architecture**: Hybrid model - MCP as orchestrator, not executor. Leverages existing health-check skill and ssot.health.yml configuration.
 
-    **Phase 1 (MVP)**: ✅ Complete - Minimal MCP server with tools for running health checks and aggregating results
-    **Phase 2**: ✅ Complete - Add state persistence (SQLite) for health history and trends
-    **Phase 1+2 (Real Health Checks)**: ✅ Complete - Implement actual health check logic
-    **Expected Status/State Validation**: ✅ Complete - Use SSOT config expectations for accurate health determination
-    **Phase 3**: Pending - Add alerting and notification capabilities
+      **Phase 1 (MVP)**: ✅ Complete - Minimal MCP server with tools for running health checks and aggregating results
+      **Phase 2**: ✅ Complete - Add state persistence (SQLite) for health history and trends
+      **Phase 1+2 (Real Health Checks)**: ✅ Complete - Implement actual health check logic
+      **Expected Status/State Validation**: ✅ Complete - Use SSOT config expectations for accurate health determination
+      **Phase 3**: Pending - Add alerting and notification capabilities
 
-    **Phase 1+2 Completed Features** (2026-08-12):
-    - ✅ Real HTTP health checks using curl with expected_status validation from SSOT config
-    - ✅ Container health checks using docker ps with expected_state validation from SSOT config
-    - ✅ Systemd health checks using systemctl with expected_state validation from SSOT config
-    - ✅ 4-level status categorization (healthy, degraded, error, unknown)
-    - ✅ Profile filtering for home/mobile networks
-    - ✅ Category grouping in health reports (web, api, datastore, gpu, queue, optional, system)
-    - ✅ Recovery action suggestions from SSOT config
-    - ✅ Dependency analysis and cascading failure detection
-    - ✅ Enhanced database schema with detailed health metrics including expected values
+      **Phase 1+2 Completed Features** (2026-08-12):
+      - ✅ Real HTTP health checks using curl with expected_status validation from SSOT config
+      - ✅ Container health checks using docker ps with expected_state validation from SSOT config
+      - ✅ Systemd health checks using systemctl with expected_state validation from SSOT config
+      - ✅ 4-level status categorization (healthy, degraded, error, unknown)
+      - ✅ Profile filtering for home/mobile networks
+      - ✅ Category grouping in health reports (web, api, datastore, gpu, queue, optional, system)
+      - ✅ Recovery action suggestions from SSOT config
+      - ✅ Dependency analysis and cascading failure detection
+      - ✅ Enhanced database schema with detailed health metrics including expected values
 
-    **Critical Gap Fixed** (2026-08-12): Implemented expected_status and expected_state validation from SSOT configuration. Previously hardcoded expectations (200 for HTTP, "running" for containers, "active" for systemd) now use config-specified values for accurate health determination across 15 HTTP services and 11 container/systemd services.
+      **Critical Gap Fixed** (2026-08-12): Implemented expected_status and expected_state validation from SSOT configuration. Previously hardcoded expectations (200 for HTTP, "running" for containers, "active" for systemd) now use config-specified values for accurate health determination across 15 HTTP services and 11 container/systemd services.
 
-    **Current Status**: Fully functional health monitoring with real checks, accurate validation, categorization, and analysis. Testing shows proper expected status/state validation working correctly.
+      **Current Status**: Fully functional health monitoring with real checks, accurate validation, categorization, and analysis. Testing shows proper expected status/state validation working correctly.
 
-    **Benefits**: Standardized health check interface, state management, historical analysis, MCP ecosystem integration, dependency analysis, accurate validation based on SSOT config
-    **Approach**: Incremental development starting with minimal viable server, reusing existing infrastructure'
+      **Benefits**: Standardized health check interface, state management, historical analysis, MCP ecosystem integration, dependency analysis, accurate validation based on SSOT config
+      **Approach**: Incremental development starting with minimal viable server, reusing existing infrastructure
     status: completed
     priority: high
     effort: medium
@@ -282,28 +274,29 @@ sections:
     tags: ['mcp', 'health-monitoring', 'telemetry', 'completed']
 
   - label: MCP Health Server Phase 3 - Enhanced Monitoring
-    text: 'Enhance mcp-health server with advanced monitoring capabilities based on operational learnings from Yomi API troubleshooting.
+    text: |
+      Enhance mcp-health server with advanced monitoring capabilities based on operational learnings from Yomi API troubleshooting.
 
-    **Learned Issues** (2026-08-12):
-    - Proxy configuration gaps: Caddy `handle` vs `handle_path` issues not detected by health checks
-    - Service state conflicts: Port conflicts (EADDRINUSE) not caught before systemd restart attempts
-    - Dependency analysis limitations: Doesn''t account for systemd vs container deployment conflicts
-    - Manual intervention required: Service recovery needed manual process killing and systemd restart
+      **Learned Issues** (2026-08-12):
+      - Proxy configuration gaps: Caddy `handle` vs `handle_path` issues not detected by health checks
+      - Service state conflicts: Port conflicts (EADDRINUSE) not caught before systemd restart attempts
+      - Dependency analysis limitations: Doesn't account for systemd vs container deployment conflicts
+      - Manual intervention required: Service recovery needed manual process killing and systemd restart
 
-    **Phase 3 Enhancements**:
-    - Proxy configuration validation: Detect Caddy proxy misconfigurations (handle vs handle_path)
-    - Port conflict detection: Pre-check port availability before service restart attempts
-    - Enhanced dependency analysis: Account for deployment method conflicts (systemd vs container)
-    - Automated service recovery: Safe service restart with conflict resolution
-    - Real-time state validation: Better detection of running vs configured services
-    - Enhanced error context: Detailed error messages with specific troubleshooting steps
+      **Phase 3 Enhancements**:
+      - Proxy configuration validation: Detect Caddy proxy misconfigurations (handle vs handle_path)
+      - Port conflict detection: Pre-check port availability before service restart attempts
+      - Enhanced dependency analysis: Account for deployment method conflicts (systemd vs container)
+      - Automated service recovery: Safe service restart with conflict resolution
+      - Real-time state validation: Better detection of running vs configured services
+      - Enhanced error context: Detailed error messages with specific troubleshooting steps
 
-    **Implementation Priority**:
-    1. Port conflict detection (high - prevents service restart loops)
-    2. Proxy configuration validation (high - catches routing issues early)
-    3. Enhanced dependency analysis (medium - improves cascading failure detection)
-    4. Automated service recovery (medium - reduces manual intervention)
-    5. Enhanced error context (low - improves user experience)
+      **Implementation Priority**:
+      1. Port conflict detection (high - prevents service restart loops)
+      2. Proxy configuration validation (high - catches routing issues early)
+      3. Enhanced dependency analysis (medium - improves cascading failure detection)
+      4. Automated service recovery (medium - reduces manual intervention)
+      5. Enhanced error context (low - improves user experience)
 
     status: completed
     priority: high
@@ -324,31 +317,32 @@ sections:
     tags: ['mcp', 'health-monitoring', 'telemetry', 'enhancement', 'completed']
 
   - label: Playlive Service Reliability Enhancement
-    text: 'Improve playlived service reliability to prevent recurring Playwright browser installation issues that cause HTTP 500 errors.
+    text: |
+      Improve playlived service reliability to prevent recurring Playwright browser installation issues that cause HTTP 500 errors.
 
-    **Recurring Issue** (2026-08-12):
-    - Playlived service returns HTTP 500 errors when Playwright browsers are not installed
-    - Applications trying to create browser sessions fail with "Executable doesn''t exist" errors
-    - Issue repeats after Playwright updates or system changes
-    - No automated detection or remediation in current health checks
+      **Recurring Issue** (2026-08-12):
+      - Playlived service returns HTTP 500 errors when Playwright browsers are not installed
+      - Applications trying to create browser sessions fail with "Executable doesn't exist" errors
+      - Issue repeats after Playwright updates or system changes
+      - No automated detection or remediation in current health checks
 
-    **Root Cause**:
-    - Playwright browsers (Chrome, Firefox, WebKit) must be installed separately via `npx playwright install`
-    - Browser installation not part of systemd service startup or dependency management
-    - Health checks only verify playlived daemon is running, not browser availability
-    - No automated remediation when browsers are missing
+      **Root Cause**:
+      - Playwright browsers (Chrome, Firefox, WebKit) must be installed separately via `npx playwright install`
+      - Browser installation not part of systemd service startup or dependency management
+      - Health checks only verify playlived daemon is running, not browser availability
+      - No automated remediation when browsers are missing
 
-    **Implemented Solutions**:
-    - Added playlived to health check configuration with browser installation verification
-    - Added specific recovery actions for missing Playwright browsers
-    - Updated service criticality to "important" for better monitoring priority
-    - Added automation service group for better dependency tracking
+      **Implemented Solutions**:
+      - Added playlived to health check configuration with browser installation verification
+      - Added specific recovery actions for missing Playwright browsers
+      - Updated service criticality to "important" for better monitoring priority
+      - Added automation service group for better dependency tracking
 
-    **Future Enhancements**:
-    - Add systemd service dependency on Playwright browser installation
-    - Create automated browser installation check at service startup
-    - Add browser version tracking and update notifications
-    - Implement pre-flight checks before session creation attempts
+      **Future Enhancements**:
+      - Add systemd service dependency on Playwright browser installation
+      - Create automated browser installation check at service startup
+      - Add browser version tracking and update notifications
+      - Implement pre-flight checks before session creation attempts
 
     status: completed
     priority: high
@@ -784,22 +778,23 @@ sections:
     completion_note: 'npm: 0 vulns across all 4 packages. starlette 0.40.0 CVEs (CVE-2026-48710, CVE-2026-54282, GHSA-7f5h-v6xp-fcq8) fixed — upgraded thai-legal-inference to fastapi 0.141.1 + starlette
       1.3.x. Docker images mostly recent. NVIDIA 595.71.05 already patches all driver CVEs (595.84 is bugs-only).'
   - label: LINE API Rate Limit Mitigation
-    text: 'Resolve LINE API authentication rate limit (code 103) preventing Yomi message downloads and implement retry logic to prevent future rate limit issues
+    text: |
+      Resolve LINE API authentication rate limit (code 103) preventing Yomi message downloads and implement retry logic to prevent future rate limit issues
 
-    **Root Cause**: Previous LINE session was rate-limited (code 103) due to too many login attempts, blocking message downloads.
+      **Root Cause**: Previous LINE session was rate-limited (code 103) due to too many login attempts, blocking message downloads.
 
-    **Resolution** (2026-08-12):
-    - Backed up old credentials and re-authenticated with `npx @rikaidev/yomi login`
-    - Session restored successfully (mid: ufdd2c3dfe084d111ed702c9c76bf6a21, displayName: Tonezzz)
-    - Verified message fetching works (66/67 conversations fetched successfully)
+      **Resolution** (2026-08-12):
+      - Backed up old credentials and re-authenticated with `npx @rikaidev/yomi login`
+      - Session restored successfully (mid: ufdd2c3dfe084d111ed702c9c76bf6a21, displayName: Tonezzz)
+      - Verified message fetching works (66/67 conversations fetched successfully)
 
-    **Implemented Mitigations** in `fetch-conversations.mjs`:
-    - **Exponential backoff retry logic**: 1min, 5min, 15min, 1hr, 4hr delays for rate limit errors
-    - **Rate limit detection**: Parses error codes (103, "rate limit", "temporarily restricted", Japanese error message)
-    - **Login attempt throttling**: Maximum 1 login attempt per hour tracked in `login-attempts.json`
-    - **Retry on both list and single fetch**: Protects against rate limits at any API call point
+      **Implemented Mitigations** in `fetch-conversations.mjs`:
+      - **Exponential backoff retry logic**: 1min, 5min, 15min, 1hr, 4hr delays for rate limit errors
+      - **Rate limit detection**: Parses error codes (103, "rate limit", "temporarily restricted", Japanese error message)
+      - **Login attempt throttling**: Maximum 1 login attempt per hour tracked in `login-attempts.json`
+      - **Retry on both list and single fetch**: Protects against rate limits at any API call point
 
-    **Benefits**: Prevents future rate limit disruptions, automatic recovery from temporary restrictions, reduced manual intervention'
+      **Benefits**: Prevents future rate limit disruptions, automatic recovery from temporary restrictions, reduced manual intervention
     status: completed
     priority: high
     effort: 2-4 hours
@@ -814,6 +809,9 @@ sections:
     impact_summary: Restores Yomi message download capability and prevents future rate limit disruptions
     related_files:
       - scripts/yomi/fetch-conversations.mjs
+      - /etc/systemd/system/yomi-fetch.service
+      - /etc/systemd/system/yomi-fetch.timer
+      - docs/ssot/infrastructure/ssot.services.yml
     tags: ['yomi', 'rate-limit', 'retry-logic', 'completed']
     action_items:
     - Wait for LINE API rate limit to lift (code 103 restriction)
@@ -822,63 +820,51 @@ sections:
     - Add rate limit detection and automatic retry logic
     - Monitor login attempt frequency to prevent future rate limits
     - Document LINE API rate limit policies and best practices
-    related_files:
-    - scripts/yomi/fetch-conversations.mjs
-    - /etc/systemd/system/yomi-fetch.service
-    - /etc/systemd/system/yomi-fetch.timer
-    - docs/ssot/infrastructure/ssot.services.yml
     blocks:
     - Yomi Gemini Migration Completion
     blocking_reason: Cannot download new messages or process updates until LINE session restored
-    tags:
-    - yomi
-    - rate-limit
-    - line-api
-    - authentication
 - title: Action Plan Timeline
   icon: 📅
   layout: timeline
   items:
-  - label: Immediate Actions (This Week)
-    text: Fix Docker compose version warning, investigate Yomi summarization status, verify GPU queue job history
-    timeframe: Week of 2026-08-04
-    priority: medium
-    status: planned
+  - label: Completed Work (August 2026)
+    text: MCP health server implementation, overnight assessment integration, performance baseline system, infrastructure containerization
+    timeframe: August 2026
+    priority: completed
+    status: completed
     items:
-    - Docker Compose Configuration Fix
-    - Yomi Summarization Status Investigation
-    - GPU Queue Job History Verification
-  - label: Short-term Actions (Next Sprint)
-    text: Memory usage optimization, system load analysis, GPU process management
-    timeframe: Sprint 2026-08-11
-    priority: medium
-    status: planned
-    items:
-    - Memory Usage Optimization
-    - System Load Analysis
-    - GPU Process Management
-  - label: Long-term Actions (Future Sprints)
-    text: Monitoring & alerting system, performance baseline tracking, assessment enhancements
-    timeframe: Q3 2026
-    priority: medium
-    status: planned
-    items:
-    - Monitoring & Alerting System
+    - MCP Health Server Implementation
+    - MCP Health Server Streamlining
+    - Overnight Assessment MCP Integration
     - Performance Baselines
-    - Assessment Enhancements
+    - Infrastructure Containerization Complete
+    - Monitoring & Alerting System
     - Security & Dependency Checking
+    - LINE API Rate Limit Mitigation
+  - label: Future Improvements (Q4 2026)
+    text: Enhanced monitoring, dashboard integration, automated alerting, performance optimization
+    timeframe: Q4 2026
+    priority: medium
+    status: planned
+    items:
+    - Real-time performance monitoring dashboard
+    - Automated alerting via email/Slack
+    - Enhanced baseline confidence with more data
+    - Predictive performance modeling
+    - Service dependency visualization
+    - Automated service recovery
+    - Enhanced error context and troubleshooting
 config:
   version: 1
-  last_updated: 2026-08-05
+  last_updated: 2026-08-12
   maintainer: tony
   update_frequency: weekly
   related_files:
   - ssot.improvements.archive.yml
-  - ssot.health.home.yml
-  - ssot.services.yml
-  - kb-overnight-assessment.md
-  - kb-health-check.md
-  assessment_reports:
-  - reports/overnight-assessment-2026-08-03.md
-  - reports/overnight-assessment-2026-08-04.md
-  next_review: 2026-08-11
+  - docs/ssot/infrastructure/ssot.health.yml
+  - docs/ssot/infrastructure/ssot.services.yml
+  - docs/kb/overnight-assessment.md
+  - docs/kb/health-check.md
+  - docs/kb/performance-baselines.md
+  - docs/kb/mcp-health-vs-old-skill-comparison.md
+  next_review: 2026-08-19

@@ -88,7 +88,7 @@ function serveCached(chatId, messageId, res) {
 
 function spawnNode(script, args, options = {}) {
   return new Promise((resolve, reject) => {
-    const nodePath = process.env.NODE_BINARY_PATH || '/usr/local/bin/node';
+    const nodePath = process.env.NODE_BINARY_PATH || 'node';
     const child = spawn(nodePath, [script, ...args], {
       cwd: SCRIPT_DIR,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -302,6 +302,60 @@ async function handleSummaryQuality(res) {
     sendJson(res, 200, {
       overall: overallStats[0] || {},
       conversations: qualityStats,
+      generatedAt: new Date().toISOString()
+    });
+  } catch (err) {
+    sendJson(res, 500, { ok: false, error: err.message });
+  }
+}
+
+async function handleSessionStatus(res) {
+  try {
+    const { code, out, err } = await spawnNode(`${SCRIPT_DIR}/fetch-conversations.mjs`, ['--limit', '1']);
+    
+    let sessionValid = false;
+    let sessionInfo = {};
+    
+    if (code === 0) {
+      // Check if output contains session validation errors
+      const output = out.toLowerCase();
+      sessionValid = !output.includes('session validation failed') && 
+                    !output.includes('no persisted line session') &&
+                    !output.includes('authentication');
+      
+      // Extract profile info if available
+      const profileMatch = out.match(/displayName="([^"]+)"/);
+      const midMatch = out.match(/mid="([^"]+)"/);
+      
+      if (profileMatch || midMatch) {
+        sessionInfo = {
+          displayName: profileMatch?.[1] || null,
+          mid: midMatch?.[1] || null
+        };
+      }
+    }
+    
+    // Check login attempts file
+    let loginAttempts = [];
+    const LOGIN_ATTEMPT_FILE = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/fetch-data/login-attempts.json';
+    try {
+      const { existsSync, readFileSync } = await import('node:fs');
+      if (existsSync(LOGIN_ATTEMPT_FILE)) {
+        loginAttempts = JSON.parse(readFileSync(LOGIN_ATTEMPT_FILE, 'utf-8'));
+        // Filter to last hour
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        loginAttempts = loginAttempts.filter(t => new Date(t) > oneHourAgo);
+      }
+    } catch (err) {
+      // Ignore errors reading login attempts
+    }
+    
+    sendJson(res, 200, {
+      valid: sessionValid,
+      info: sessionInfo,
+      recentLoginAttempts: loginAttempts.length,
+      maxLoginAttemptsPerHour: 1,
+      canAttemptLogin: loginAttempts.length < 1,
       generatedAt: new Date().toISOString()
     });
   } catch (err) {
@@ -674,6 +728,32 @@ const server = createServer(async (req, res) => {
 
   if (url.pathname === '/api/yomi/health') {
     return sendJson(res, 200, { ok: true });
+  }
+
+  if (url.pathname === '/api/yomi/session-status' && req.method === 'GET') {
+    try {
+      await handleSessionStatus(res);
+    } catch (err) {
+      sendJson(res, 500, { ok: false, error: err.message });
+    }
+    return;
+  }
+
+  if (url.pathname === '/api/yomi/login' && req.method === 'POST') {
+    try {
+      const { code, out, err } = await spawnNode('node', ['/home/tony/.local/share/npm-global/node_modules/@rikaidev/yomi/bin/yomi.js', 'login'], {
+        env: { ...process.env, YOMI_MCP_PATH: '/home/tony/.yomi/mcpb/run.mjs' }
+      });
+      
+      if (code === 0) {
+        sendJson(res, 200, { ok: true, output: out });
+      } else {
+        sendJson(res, 500, { ok: false, error: err.trim() || 'login failed', output: out });
+      }
+    } catch (err) {
+      sendJson(res, 500, { ok: false, error: err.message });
+    }
+    return;
   }
 
   if (url.pathname === '/api/yomi/last-updated' && req.method === 'GET') {

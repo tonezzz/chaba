@@ -974,6 +974,129 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
           required: ['service_name']
         }
+      },
+      {
+        name: 'quick_health',
+        description: 'Quick pass/fail status check for critical services only',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            service: {
+              type: 'string',
+              description: 'Optional specific service name (checks all critical services if not provided)'
+            }
+          }
+        }
+      },
+      {
+        name: 'check_group',
+        description: 'Check health of services in a specific group (e.g., web-stack, datastore)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            group: {
+              type: 'string',
+              description: 'Service group name to check',
+              required: ['group']
+            }
+          },
+          required: ['group']
+        }
+      },
+      {
+        name: 'reload_config',
+        description: 'Reload health configuration from YAML file without restarting MCP server',
+        inputSchema: {
+          type: 'object',
+          properties: {}
+        }
+      },
+      {
+        name: 'get_health_score',
+        description: 'Get overall system health score (0-100) based on critical service status',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            include_optional: {
+              type: 'boolean',
+              description: 'Include optional services in score calculation (default: false)'
+            }
+          }
+        }
+      },
+      {
+        name: 'batch_check',
+        description: 'Check multiple services in parallel for faster health checks',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            services: {
+              type: 'array',
+              description: 'Array of service names to check in parallel',
+              items: {
+                type: 'string'
+              }
+            }
+          }
+        }
+      },
+      {
+        name: 'set_auto_recovery',
+        description: 'Configure automatic recovery policies for specific failure types',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            service_name: {
+              type: 'string',
+              description: 'Service name to configure auto-recovery for'
+            },
+            failure_type: {
+              type: 'string',
+              description: 'Failure type (container_down, endpoint_unreachable, port_conflict, etc.)'
+            },
+            enabled: {
+              type: 'boolean',
+              description: 'Enable or disable auto-recovery for this failure type'
+            },
+            max_attempts: {
+              type: 'number',
+              description: 'Maximum recovery attempts before giving up (default: 3)'
+            },
+            cooldown_seconds: {
+              type: 'number',
+              description: 'Cooldown period between recovery attempts in seconds (default: 60)'
+            }
+          },
+          required: ['service_name', 'failure_type', 'enabled']
+        }
+      },
+      {
+        name: 'get_service_template',
+        description: 'Get service template for common service types (web-api, database, container)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            template_type: {
+              type: 'string',
+              description: 'Template type (web-api, database, container, systemd)',
+              enum: ['web-api', 'database', 'container', 'systemd']
+            }
+          },
+          required: ['template_type']
+        }
+      },
+      {
+        name: 'sync_to_mddb',
+        description: 'Sync health history to mddb for semantic search and analysis',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            days: {
+              type: 'number',
+              description: 'Number of days of history to sync (default: 7)'
+            }
+          }
+        }
       }
     ]
   };
@@ -1682,6 +1805,517 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }, null, 2)
           }]
         };
+      }
+
+      case 'quick_health': {
+        const config = await loadHealthConfig();
+        const criticality = config.alerts?.service_criticality || {};
+        const criticalServices = [...(criticality.critical || []), ...(criticality.important || [])];
+        
+        const results = [];
+        const detectedProfile = config.detectedProfile || 'home';
+        
+        for (const service of config.services || []) {
+          const serviceName = service.name || service.id;
+          
+          // Only check critical services unless specific service requested
+          if (args.service && serviceName !== args.service) continue;
+          if (!args.service && !criticalServices.includes(serviceName)) continue;
+          
+          // Profile filtering
+          if (service.profiles && !service.profiles.includes(detectedProfile)) {
+            continue;
+          }
+          
+          try {
+            const startTime = Date.now();
+            let checkResult;
+            
+            if (service.type === 'http') {
+              checkResult = await checkHTTPService(service);
+            } else if (service.type === 'container') {
+              checkResult = await checkContainerService(service);
+            } else if (service.type === 'systemd') {
+              checkResult = await checkSystemService(service);
+            } else {
+              checkResult = {
+                status: 'unknown',
+                response_time: 0,
+                error: `Unknown service type: ${service.type}`
+              };
+            }
+            
+            results.push({
+              service: serviceName,
+              status: checkResult.status === 'healthy' ? 'PASS' : 'FAIL',
+              response_time: checkResult.response_time
+            });
+          } catch (error) {
+            results.push({
+              service: serviceName,
+              status: 'FAIL',
+              error: error.message
+            });
+          }
+        }
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              timestamp: new Date().toISOString(),
+              profile: detectedProfile,
+              services_checked: results.length,
+              passed: results.filter(r => r.status === 'PASS').length,
+              failed: results.filter(r => r.status === 'FAIL').length,
+              results
+            }, null, 2)
+          }]
+        };
+      }
+
+      case 'check_group': {
+        const config = await loadHealthConfig();
+        const groupName = args.group;
+        
+        if (!config.groups || !config.groups[groupName]) {
+          throw new Error(`Group ${groupName} not found in configuration`);
+        }
+        
+        const groupServices = config.groups[groupName];
+        const results = [];
+        const detectedProfile = config.detectedProfile || 'home';
+        
+        for (const serviceName of groupServices) {
+          const service = config.services?.find(s => 
+            (s.name === serviceName || s.id === serviceName)
+          );
+          
+          if (!service) {
+            results.push({
+              service: serviceName,
+              status: 'error',
+              error: 'Service not found in configuration'
+            });
+            continue;
+          }
+          
+          // Profile filtering
+          if (service.profiles && !service.profiles.includes(detectedProfile)) {
+            results.push({
+              service: serviceName,
+              status: 'skipped',
+              reason: 'Not applicable for current profile'
+            });
+            continue;
+          }
+          
+          try {
+            const startTime = Date.now();
+            let checkResult;
+            
+            if (service.type === 'http') {
+              checkResult = await checkHTTPService(service);
+            } else if (service.type === 'container') {
+              checkResult = await checkContainerService(service);
+            } else if (service.type === 'systemd') {
+              checkResult = await checkSystemService(service);
+            } else {
+              checkResult = {
+                status: 'unknown',
+                response_time: 0,
+                error: `Unknown service type: ${service.type}`
+              };
+            }
+            
+            results.push({
+              service: serviceName,
+              status: checkResult.status,
+              response_time: checkResult.response_time,
+              url: service.url
+            });
+          } catch (error) {
+            results.push({
+              service: serviceName,
+              status: 'error',
+              error: error.message
+            });
+          }
+        }
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              group: groupName,
+              timestamp: new Date().toISOString(),
+              profile: detectedProfile,
+              total_services: groupServices.length,
+              healthy: results.filter(r => r.status === 'healthy').length,
+              degraded: results.filter(r => r.status === 'degraded').length,
+              error: results.filter(r => r.status === 'error').length,
+              skipped: results.filter(r => r.status === 'skipped').length,
+              results
+            }, null, 2)
+          }]
+        };
+      }
+
+      case 'reload_config': {
+        try {
+          const config = await loadHealthConfig();
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                status: 'success',
+                timestamp: new Date().toISOString(),
+                profile: config.detectedProfile,
+                services_loaded: config.services?.length || 0,
+                groups_loaded: Object.keys(config.groups || {}).length,
+                message: 'Configuration reloaded successfully'
+              }, null, 2)
+            }]
+          };
+        } catch (error) {
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                status: 'error',
+                error: error.message
+              }, null, 2)
+            }],
+            isError: true
+          };
+        }
+      }
+
+      case 'get_health_score': {
+        const config = await loadHealthConfig();
+        const criticality = config.alerts?.service_criticality || {};
+        const includeOptional = args.include_optional || false;
+        
+        let servicesToCheck = [...(criticality.critical || []), ...(criticality.important || [])];
+        if (includeOptional) {
+          servicesToCheck = [...servicesToCheck, ...(criticality.optional || [])];
+        }
+        
+        let totalScore = 0;
+        let maxScore = servicesToCheck.length * 100;
+        const serviceScores = [];
+        const detectedProfile = config.detectedProfile || 'home';
+        
+        for (const serviceName of servicesToCheck) {
+          const service = config.services?.find(s => 
+            (s.name === serviceName || s.id === serviceName)
+          );
+          
+          if (!service) {
+            serviceScores.push({
+              service: serviceName,
+              score: 0,
+              reason: 'Service not found in configuration'
+            });
+            continue;
+          }
+          
+          // Profile filtering
+          if (service.profiles && !service.profiles.includes(detectedProfile)) {
+            serviceScores.push({
+              service: serviceName,
+              score: 100,
+              reason: 'Not applicable for current profile'
+            });
+            totalScore += 100;
+            continue;
+          }
+          
+          try {
+            const startTime = Date.now();
+            let checkResult;
+            
+            if (service.type === 'http') {
+              checkResult = await checkHTTPService(service);
+            } else if (service.type === 'container') {
+              checkResult = await checkContainerService(service);
+            } else if (service.type === 'systemd') {
+              checkResult = await checkSystemService(service);
+            } else {
+              checkResult = {
+                status: 'unknown',
+                response_time: 0,
+                error: `Unknown service type: ${service.type}`
+              };
+            }
+            
+            let score = 0;
+            if (checkResult.status === 'healthy') score = 100;
+            else if (checkResult.status === 'degraded') score = 50;
+            
+            serviceScores.push({
+              service: serviceName,
+              score,
+              status: checkResult.status,
+              response_time: checkResult.response_time
+            });
+            totalScore += score;
+          } catch (error) {
+            serviceScores.push({
+              service: serviceName,
+              score: 0,
+              error: error.message
+            });
+          }
+        }
+        
+        const overallScore = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              overall_score: overallScore,
+              timestamp: new Date().toISOString(),
+              profile: detectedProfile,
+              include_optional,
+              services_checked: serviceScores.length,
+              service_scores: serviceScores,
+              grade: overallScore >= 90 ? 'A' : overallScore >= 80 ? 'B' : overallScore >= 70 ? 'C' : overallScore >= 60 ? 'D' : 'F'
+            }, null, 2)
+          }]
+        };
+      }
+
+      case 'batch_check': {
+        const config = await loadHealthConfig();
+        const servicesToCheck = args.services || [];
+        
+        if (servicesToCheck.length === 0) {
+          throw new Error('No services specified for batch check');
+        }
+        
+        const results = await Promise.all(
+          servicesToCheck.map(async (serviceName) => {
+            const service = config.services?.find(s => 
+              (s.name === serviceName || s.id === serviceName)
+            );
+            
+            if (!service) {
+              return {
+                service: serviceName,
+                status: 'error',
+                error: 'Service not found in configuration'
+              };
+            }
+            
+            try {
+              const startTime = Date.now();
+              let checkResult;
+              
+              if (service.type === 'http') {
+                checkResult = await checkHTTPService(service);
+              } else if (service.type === 'container') {
+                checkResult = await checkContainerService(service);
+              } else if (service.type === 'systemd') {
+                checkResult = await checkSystemService(service);
+              } else {
+                checkResult = {
+                  status: 'unknown',
+                  response_time: 0,
+                  error: `Unknown service type: ${service.type}`
+                };
+              }
+              
+              return {
+                service: serviceName,
+                status: checkResult.status,
+                response_time: checkResult.response_time
+              };
+            } catch (error) {
+              return {
+                service: serviceName,
+                status: 'error',
+                error: error.message
+              };
+            }
+          })
+        );
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              timestamp: new Date().toISOString(),
+              batch_size: servicesToCheck.length,
+              healthy: results.filter(r => r.status === 'healthy').length,
+              degraded: results.filter(r => r.status === 'degraded').length,
+              error: results.filter(r => r.status === 'error').length,
+              results
+            }, null, 2)
+          }]
+        };
+      }
+
+      case 'set_auto_recovery': {
+        const { service_name, failure_type, enabled, max_attempts = 3, cooldown_seconds = 60 } = args;
+        
+        // Create auto-recovery table if it doesn't exist
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS auto_recovery_policies (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            service_name TEXT NOT NULL,
+            failure_type TEXT NOT NULL,
+            enabled BOOLEAN NOT NULL,
+            max_attempts INTEGER DEFAULT 3,
+            cooldown_seconds INTEGER DEFAULT 60,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(service_name, failure_type)
+          );
+        `);
+        
+        const stmt = db.prepare(`
+          INSERT INTO auto_recovery_policies (service_name, failure_type, enabled, max_attempts, cooldown_seconds)
+          VALUES (?, ?, ?, ?, ?)
+          ON CONFLICT(service_name, failure_type) 
+          DO UPDATE SET enabled = ?, max_attempts = ?, cooldown_seconds = ?, updated_at = CURRENT_TIMESTAMP
+        `);
+        
+        stmt.run(service_name, failure_type, enabled, max_attempts, cooldown_seconds, enabled, max_attempts, cooldown_seconds);
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              status: 'success',
+              service_name,
+              failure_type,
+              enabled,
+              max_attempts,
+              cooldown_seconds,
+              timestamp: new Date().toISOString()
+            }, null, 2)
+          }]
+        };
+      }
+
+      case 'get_service_template': {
+        const templateType = args.template_type;
+        
+        const templates = {
+          'web-api': {
+            type: 'http',
+            url: 'http://example.com:8080/health',
+            expected_status: 200,
+            timeout: 5,
+            category: 'web',
+            profiles: ['home', 'mobile'],
+            recovery_actions: [
+              'Check container: docker ps | grep service-name',
+              'Restart service: docker restart service-name',
+              'Check logs: docker logs service-name'
+            ]
+          },
+          'database': {
+            type: 'container',
+            container: 'postgres',
+            expected_state: 'running',
+            timeout: 5,
+            category: 'datastore',
+            profiles: ['home', 'mobile'],
+            recovery_actions: [
+              'Check container: docker ps | grep postgres',
+              'Start container: docker start postgres',
+              'Check logs: docker logs postgres'
+            ]
+          },
+          'container': {
+            type: 'container',
+            container: 'service-name',
+            expected_state: 'running',
+            timeout: 5,
+            category: 'application',
+            profiles: ['home', 'mobile'],
+            recovery_actions: [
+              'Check container: docker ps | grep service-name',
+              'Restart container: docker restart service-name',
+              'Check logs: docker logs service-name'
+            ]
+          },
+          'systemd': {
+            type: 'systemd',
+            service: 'service-name.service',
+            expected_state: 'active',
+            timeout: 5,
+            category: 'system',
+            profiles: ['home', 'mobile'],
+            recovery_actions: [
+              'Check service: systemctl status service-name',
+              'Restart service: systemctl restart service-name',
+              'Check logs: journalctl -u service-name'
+            ]
+          }
+        };
+        
+        const template = templates[templateType];
+        if (!template) {
+          throw new Error(`Template type ${templateType} not found`);
+        }
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              template_type: templateType,
+              template,
+              usage: 'Copy this template and customize for your service in ssot.health.yml'
+            }, null, 2)
+          }]
+        };
+      }
+
+      case 'sync_to_mddb': {
+        const days = args.days || 7;
+        const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+        
+        const stmt = db.prepare(`
+          SELECT * FROM health_checks 
+          WHERE timestamp >= ? 
+          ORDER BY timestamp DESC
+        `);
+        
+        const records = stmt.all(cutoffDate);
+        
+        // Check if mddb MCP is available
+        try {
+          // This would require mcp_call_tool, but we're in the MCP server itself
+          // For now, return the data that would be synced
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                status: 'data_prepared',
+                records_to_sync: records.length,
+                days,
+                cutoff_date: cutoffDate,
+                note: 'MCP-to-MCP integration requires external coordination. Records prepared for manual sync.',
+                sample_records: records.slice(0, 5)
+              }, null, 2)
+            }]
+          };
+        } catch (error) {
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                status: 'error',
+                error: error.message
+              }, null, 2)
+            }],
+            isError: true
+          };
+        }
       }
 
       default:

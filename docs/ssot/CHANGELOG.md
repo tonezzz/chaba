@@ -13,6 +13,37 @@ This file tracks significant changes to SSOT files for audit trail and rollback 
 ## Recent Changes
 
 ### 2026-08-12
+- **File**: docs/ssot/infrastructure/ssot.mcp.yml
+- **Change Type**: minor
+- **Description**: Added mddb MCP server entry with configuration details, updated mcp-health notes to include Phase 4 completion and new tools
+- **Impact**: SSOT now documents mddb MCP server configuration and mcp-health Phase 4 enhancements
+- **Rollback**: Remove mddb entry and revert mcp-health notes
+
+- **File**: mcp/mcp-health/server.js
+- **Change Type**: major
+- **Description**: Added 8 new MCP health server tools for streamlined health monitoring: quick_health (pass/fail for critical services), check_group (group-based checks), reload_config (YAML config reload), get_health_score (overall system metric 0-100), batch_check (parallel service checks), set_auto_recovery (automated recovery policies), get_service_template (service templates), sync_to_mddb (health history integration)
+- **Impact**: Health monitoring now provides quick status checks, group-based operations, config reload without restart, health scoring, parallel processing, auto-recovery, service templates, and mddb integration
+- **Rollback**: Revert to previous server.js version
+
+- **File**: docs/ssot/ssot.improvements.yml
+- **Change Type**: minor
+- **Description**: Added MCP Health Server Phase 4 - Predictive Analytics as future enhancement with ML-based failure prediction, advanced alerting, webhook notifications, and integration with monitoring services
+- **Impact**: Documents future roadmap for predictive health monitoring and advanced alerting capabilities
+- **Rollback**: Remove Phase 4 improvement entry
+
+- **File**: docs/ssot/infrastructure/ssot.health.yml
+- **Change Type**: minor
+- **Description**: Added mddb-mcp health check endpoint to monitor MCP server connectivity, added to ssot-sync service group for dependency tracking
+- **Impact**: Health monitoring now includes mddb MCP endpoint with recovery actions for configuration issues
+- **Rollback**: Remove mddb-mcp health check entry
+
+- **File**: docs/kb/mddb-mcp-configuration.md
+- **Change Type**: major
+- **Description**: Created comprehensive KB entry for mddb MCP server configuration including port mapping, path requirements, troubleshooting, and health monitoring integration
+- **Impact**: Documents correct mddb MCP configuration and provides troubleshooting guidance for future issues
+- **Rollback**: Delete KB entry
+
+### 2026-08-12
 - **File**: docs/ssot/infrastructure/ssot.health.yml
 - **Change Type**: minor
 - **Description**: Added playlived service to health monitoring with browser installation verification, updated service criticality to include playlived as important service, added automation service group

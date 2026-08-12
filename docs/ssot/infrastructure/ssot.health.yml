@@ -1,6 +1,6 @@
 title: Chaba Health Check Configuration
 description: Health check endpoints and monitoring for all chaba services
-version: 5
+version: 6
 
 # Network profiles with auto-detection
 profiles:
@@ -37,7 +37,7 @@ alerts:
   
   service_criticality:
     critical: [caddy, postgres, gpu-queue]
-    important: [yomi-api, status-api, trade-api, mddb-api, playlived, ssot-sync-watcher, llama-server]
+    important: [yomi-api, status-api, trade-api, mddb-api, playlived, ssot-sync-watcher, llama-server, remote-exec-tony-dell]
     optional: [redis, weaviate, activepieces, frigate, camera-control, imagen2, txt2vid, thai-legal]
 
 # Service groups for dependency tracking
@@ -49,6 +49,7 @@ groups:
   optional: [activepieces, frigate, camera-control]
   automation: [playlived]
   ssot-sync: [ssot-sync-watcher, mddb-api, mddb-mcp, mddb-stats, mddb-vector-stats, mddb-metrics, mddb-container]
+  remote-exec: [remote-exec-tony-dell]
 
 # Service dependencies
 dependencies:
@@ -58,6 +59,7 @@ dependencies:
   activepieces: [postgres, redis]
   playlived: []
   ssot-sync-watcher: [mddb-api]
+  remote-exec-tony-dell: []
 
 services:
   # Web Stack Services (8080/8081)
@@ -188,6 +190,24 @@ services:
     timeout: 5
     category: api
     profiles: [home, mobile]
+
+  # Remote Execution Services
+  - id: remote-exec-tony-dell
+    name: Remote Execution MCP (Tony Dell)
+    type: mcp
+    server: remote-exec-tony-dell
+    timeout: 10
+    category: api
+    profiles: [home]
+    verification:
+      - "Test SSH connectivity: ssh -o ConnectTimeout=5 tony@tony-dell.local 'echo OK'"
+      - "Test MCP server: echo '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\"}' | timeout 5 /home/tony/CascadeProjects/trade/.devin/remote-exec-wrapper.sh"
+      - "Check wrapper script: cat /home/tony/CascadeProjects/trade/.devin/remote-exec-wrapper.sh"
+    recovery_actions:
+      - "Test SSH: ssh tony@tony-dell.local 'echo test'"
+      - "Check remote server: ssh tony@tony-dell.local 'ls -la /home/tony/mcp-remote-exec/'"
+      - "Verify Python dependencies: ssh tony@tony-dell.local 'cd /home/tony/mcp-remote-exec && python3 -c import yaml, psutil'"
+      - "Test MCP server manually: ssh tony@tony-dell.local 'cd /home/tony/mcp-remote-exec && echo test | python3 mcp_server.py'"
 
   # Data Services
   - id: redis

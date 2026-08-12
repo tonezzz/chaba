@@ -237,6 +237,24 @@ servers:
       - devin: true
       - windsurf: false
 
+  mddb:
+    name: MDDB Knowledge Base
+    description: Personal Knowledge Base system with document management and semantic search
+    implementation: docker tradik/mddb:latest (container mddb)
+    wrapper: none
+    filter: none
+    url: http://localhost:9001/mcp
+    single_instance: false
+    status: operational
+    config_files:
+      - devin: true
+      - windsurf: false
+    notes: |
+      MCP endpoint requires /mcp path suffix (http://localhost:9001/mcp)
+      Docker container maps internal port 9000 to host port 9001
+      Provides document management, semantic search, and aggregation capabilities
+      See docs/kb/mddb-mcp-configuration.md for configuration details
+
   mcp-health:
     name: Health Monitoring
     description: Centralized health check and telemetry orchestrator
@@ -257,8 +275,11 @@ servers:
       Phase 1+2 (Real Health Checks): Complete - HTTP, container, systemd checks with categorization
       Phase 3: Complete - Alerting and notification capabilities with enhanced monitoring
       Phase 3 Enhanced: Complete - Port conflict detection, proxy validation, automated recovery, enhanced error context
+      Phase 4: Complete - Streamlined health monitoring with advanced features (2026-08-12)
       Features: 4-level status categorization, profile filtering, dependency analysis, recovery suggestions, alert system
-      New Tools: check_port_conflicts, validate_proxy_config, restart_service, get_troubleshooting_info
+      Phase 3 Tools: check_port_conflicts, validate_proxy_config, restart_service, get_troubleshooting_info
+      Phase 4 Tools: quick_health (pass/fail for critical services), check_group (group-based checks), reload_config (YAML reload), get_health_score (system metric 0-100), batch_check (parallel checks), set_auto_recovery (automated policies), get_service_template (service templates), sync_to_mddb (health history integration)
+      Phase 4 Future: ML-based failure prediction and webhook notifications documented in ssot.improvements.yml
       See ssot.improvements.yml for detailed implementation plan
 
 # Script locations (centralized)

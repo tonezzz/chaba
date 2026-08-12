@@ -25,6 +25,8 @@ const FETCH_DIR = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/
 const BATCH_SIZE = 10;
 const BATCH_DELAY_MS = 2000;
 const YOMI_MCP_PATH = process.env.YOMI_MCP_PATH || '/home/tony/.yomi/mcpb/run.mjs';
+const LOGIN_ATTEMPT_FILE = `${FETCH_DIR}/login-attempts.json`;
+const MAX_LOGIN_ATTEMPTS_PER_HOUR = 1;
 
 const nodePath = process.env.NODE_BINARY_PATH || '/usr/bin/node';
 const transport = new StdioClientTransport({
@@ -126,8 +128,10 @@ async function saveConversationToDB(conv) {
   `, [conv.id, conv.name, conv.isGroup, conv.category, conv.categorySource, conv.unread, conv.lastMessageTime, conv.lastPreview, conv.summary, conv.summaryQuality, conv.summaryGeneratedAt || new Date(), JSON.stringify(conv.meta || {})]);
 }
 
-async function fetchSingle(chatId) {
+async function fetchSingle(chatId, retryCount = 0, maxRetries = 5) {
   console.log(`Fetching conversation ${chatId}...`);
+  
+  const backoffDelays = [60000, 300000, 900000, 3600000, 14400000]; // 1min, 5min, 15min, 1hr, 4hr
   
   try {
     const messages = await getChatMessages(chatId, 100);
@@ -145,75 +149,97 @@ async function fetchSingle(chatId) {
     
     return { success: true, messageCount: messages.length, lastMessageTime };
   } catch (err) {
+    if (isRateLimitError(err) && retryCount < maxRetries) {
+      const delay = backoffDelays[Math.min(retryCount, backoffDelays.length - 1)];
+      console.error(`Rate limit detected for ${chatId}. Retrying in ${Math.floor(delay / 60000)} minutes (attempt ${retryCount + 1}/${maxRetries})...`);
+      await sleep(delay);
+      return fetchSingle(chatId, retryCount + 1, maxRetries);
+    }
+    
     console.error(`Failed to fetch ${chatId}: ${err.message}`);
     return { success: false, error: err.message };
   }
 }
 
-async function fetchAll(limit = 200) {
+async function fetchAll(limit = 200, retryCount = 0, maxRetries = 5) {
   console.log('Fetching conversation list...');
-  const result = await client.callTool({ name: 'list_conversations', arguments: { limit } });
-  const text = result.content?.[0]?.text ?? '';
+  
+  const backoffDelays = [60000, 300000, 900000, 3600000, 14400000]; // 1min, 5min, 15min, 1hr, 4hr
+  
+  try {
+    const result = await client.callTool({ name: 'list_conversations', arguments: { limit } });
+    const text = result.content?.[0]?.text ?? '';
 
-  const records = [];
-  let header = true;
-  for (const line of text.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    if (header) {
-      if (trimmed.includes('{id,lastMessagePreview,name,unreadCount}')) {
-        header = false;
+    const records = [];
+    let header = true;
+    for (const line of text.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      if (header) {
+        if (trimmed.includes('{id,lastMessagePreview,name,unreadCount}')) {
+          header = false;
+        }
+        continue;
       }
-      continue;
+      const match = trimmed.match(/^(\S+),(null|"(?:[^"\\]|\\.)*"|[^,]+),(.*),(\d+)$/);
+      if (!match) continue;
+      const [, id, rawPreview, rawName, unread] = match;
+      let preview;
+      try {
+        preview = rawPreview === 'null' ? null : JSON.parse(rawPreview);
+      } catch {
+        preview = rawPreview;
+      }
+      records.push({ id, name: rawName.trim(), unread: parseInt(unread, 10), preview });
     }
-    const match = trimmed.match(/^(\S+),(null|"(?:[^"\\]|\\.)*"|[^,]+),(.*),(\d+)$/);
-    if (!match) continue;
-    const [, id, rawPreview, rawName, unread] = match;
-    let preview;
-    try {
-      preview = rawPreview === 'null' ? null : JSON.parse(rawPreview);
-    } catch {
-      preview = rawPreview;
-    }
-    records.push({ id, name: rawName.trim(), unread: parseInt(unread, 10), preview });
-  }
 
-  console.log(`Found ${records.length} conversations to fetch`);
-  
-  let successCount = 0;
-  let failCount = 0;
-  
-  for (let i = 0; i < records.length; i += BATCH_SIZE) {
-    const batch = records.slice(i, i + BATCH_SIZE);
-    console.log(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(records.length / BATCH_SIZE)}...`);
+    console.log(`Found ${records.length} conversations to fetch`);
     
-    const results = await Promise.all(batch.map(c => fetchSingle(c.id)));
+    let successCount = 0;
+    let failCount = 0;
     
-    results.forEach(r => {
-      if (r.success) successCount++;
-      else failCount++;
-    });
-    
-    if (i + BATCH_SIZE < records.length) {
-      console.log(`Waiting ${BATCH_DELAY_MS}ms before next batch...`);
-      await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
+    for (let i = 0; i < records.length; i += BATCH_SIZE) {
+      const batch = records.slice(i, i + BATCH_SIZE);
+      console.log(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(records.length / BATCH_SIZE)}...`);
+      
+      const results = await Promise.all(batch.map(c => fetchSingle(c.id)));
+      
+      results.forEach(r => {
+        if (r.success) successCount++;
+        else failCount++;
+      });
+      
+      if (i + BATCH_SIZE < records.length) {
+        console.log(`Waiting ${BATCH_DELAY_MS}ms before next batch...`);
+        await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
+      }
     }
+    
+    console.log(`Fetch complete: ${successCount} succeeded, ${failCount} failed`);
+    
+    // Save fetch metadata
+    const metadata = {
+      fetchedAt: new Date().toISOString(),
+      totalConversations: records.length,
+      successCount,
+      failCount
+    };
+    
+    mkdirSync(FETCH_DIR, { recursive: true });
+    writeFileSync(`${FETCH_DIR}/fetch-metadata.json`, JSON.stringify(metadata, null, 2));
+    
+    return metadata;
+  } catch (err) {
+    if (isRateLimitError(err) && retryCount < maxRetries) {
+      const delay = backoffDelays[Math.min(retryCount, backoffDelays.length - 1)];
+      console.error(`Rate limit detected fetching conversation list. Retrying in ${Math.floor(delay / 60000)} minutes (attempt ${retryCount + 1}/${maxRetries})...`);
+      await sleep(delay);
+      return fetchAll(limit, retryCount + 1, maxRetries);
+    }
+    
+    console.error(`Failed to fetch conversation list: ${err.message}`);
+    throw err;
   }
-  
-  console.log(`Fetch complete: ${successCount} succeeded, ${failCount} failed`);
-  
-  // Save fetch metadata
-  const metadata = {
-    fetchedAt: new Date().toISOString(),
-    totalConversations: records.length,
-    successCount,
-    failCount
-  };
-  
-  mkdirSync(FETCH_DIR, { recursive: true });
-  writeFileSync(`${FETCH_DIR}/fetch-metadata.json`, JSON.stringify(metadata, null, 2));
-  
-  return metadata;
 }
 
 async function shouldSkipFetch() {
@@ -242,9 +268,96 @@ async function shouldSkipFetch() {
   return false;
 }
 
+function recordLoginAttempt() {
+  mkdirSync(FETCH_DIR, { recursive: true });
+  const now = new Date().toISOString();
+  let attempts = [];
+  
+  if (existsSync(LOGIN_ATTEMPT_FILE)) {
+    attempts = JSON.parse(readFileSync(LOGIN_ATTEMPT_FILE, 'utf-8'));
+  }
+  
+  // Remove attempts older than 1 hour
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  attempts = attempts.filter(t => new Date(t) > oneHourAgo);
+  
+  attempts.push(now);
+  writeFileSync(LOGIN_ATTEMPT_FILE, JSON.stringify(attempts, null, 2));
+}
+
+function shouldAttemptLogin() {
+  if (!existsSync(LOGIN_ATTEMPT_FILE)) {
+    return true;
+  }
+  
+  const attempts = JSON.parse(readFileSync(LOGIN_ATTEMPT_FILE, 'utf-8'));
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const recentAttempts = attempts.filter(t => new Date(t) > oneHourAgo);
+  
+  if (recentAttempts.length >= MAX_LOGIN_ATTEMPTS_PER_HOUR) {
+    console.log(`Skipping login - ${recentAttempts.length} login attempts in the last hour (max: ${MAX_LOGIN_ATTEMPTS_PER_HOUR})`);
+    return false;
+  }
+  
+  return true;
+}
+
+function isRateLimitError(error) {
+  if (!error) return false;
+  const errorStr = error.toString().toLowerCase();
+  return errorStr.includes('103') || 
+         errorStr.includes('rate limit') || 
+         errorStr.includes('temporarily restricted') ||
+         errorStr.includes('認証が一時的に制限されています');
+}
+
+async function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function sendNotification(title, message) {
+  try {
+    const { exec } = await import('node:child_process');
+    exec(`notify-send "${title}" "${message}"`, (err) => {
+      if (err) console.warn('Failed to send desktop notification:', err.message);
+    });
+  } catch (err) {
+    console.warn('notify-send not available:', err.message);
+  }
+}
+
+async function validateSession() {
+  try {
+    const result = await client.callTool({ name: 'list_conversations', arguments: { limit: 1 } });
+    const text = result.content?.[0]?.text ?? '';
+    // If we get a response (even empty), session is valid
+    return true;
+  } catch (err) {
+    const errorStr = err.toString().toLowerCase();
+    if (errorStr.includes('no persisted line session') || 
+        errorStr.includes('logged out') ||
+        errorStr.includes('authentication')) {
+      console.error('Session validation failed: LINE session is invalid or expired');
+      console.error('Please re-login manually: npx @rikaidev/yomi login');
+      await sendNotification('Yomi Session Expired', 'LINE session expired. Run: npx @rikaidev/yomi login');
+      return false;
+    }
+    // Other errors might be transient, try to proceed
+    console.warn('Session validation encountered non-auth error, proceeding:', err.message);
+    return true;
+  }
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const forceIdx = args.indexOf('--force');
+  
+  // Validate session before attempting fetch
+  const sessionValid = await validateSession();
+  if (!sessionValid) {
+    console.error('Aborting fetch due to invalid session');
+    process.exit(1);
+  }
   
   // Skip fetch if recent successful fetch exists, unless --force is specified
   if (forceIdx === -1 && await shouldSkipFetch()) {
