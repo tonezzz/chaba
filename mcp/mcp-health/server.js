@@ -1027,8 +1027,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           
           // Store in database
           const stmt = db.prepare(`
-            INSERT INTO health_checks (service_name, status, response_time, error, http_status, expected_status, container_state, expected_state, active_state, sub_state, is_timer)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO health_checks (service_name, status, response_time, error, http_status, expected_status, container_state, expected_state, active_state, sub_state)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `);
           stmt.run(
             serviceName, 
@@ -1040,8 +1040,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             checkResult.container_state || null,
             checkResult.expected_state || null,
             checkResult.active_state || null,
-            checkResult.sub_state || null,
-            checkResult.is_timer || null
+            checkResult.sub_state || null
           );
           
           // Process alerts based on status changes
