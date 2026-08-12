@@ -9,6 +9,7 @@ mkdir -p "$(dirname "$ALERT_LOG")"
 
 # Source notification plugins
 SCRIPT_DIR="$(dirname "$0")"
+export SCRIPT_DIR
 source "$SCRIPT_DIR/health-monitor-notifications.sh"
 
 ISSUES=()
