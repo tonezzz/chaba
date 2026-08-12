@@ -219,6 +219,8 @@ function getEnhancedErrorContext(serviceName, status, error, serviceType, servic
   const troubleshootingSteps = [];
   const url = serviceUrl || serviceName;
   
+  console.error(`getEnhancedErrorContext called: serviceName=${serviceName}, serviceUrl=${serviceUrl}, url=${url}`);
+  
   // Service-specific troubleshooting
   if (serviceType === 'container') {
     troubleshootingSteps.push(
