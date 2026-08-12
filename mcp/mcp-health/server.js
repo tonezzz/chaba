@@ -134,21 +134,23 @@ function checkExistingAlert(serviceName, alertType, resolved = false) {
   return alert;
 }
 
-function logAlert(serviceName, alertType, severity, message) {
-  const { execSync } = require('child_process');
+async function logAlert(serviceName, alertType, severity, message) {
   const timestamp = new Date().toISOString();
   const logMessage = `[MCP-HEALTH-ALERT] ${timestamp} | ${severity.toUpperCase()} | ${serviceName} | ${alertType} | ${message}`;
   
+  // Log to stderr for MCP server logs
+  console.error(logMessage);
+  
+  // Try to log to system journal
   try {
+    const { execSync } = await import('child_process');
     execSync(`logger -t mcp-health "${logMessage}"`, { stdio: 'pipe' });
   } catch (error) {
-    console.error(`Failed to log alert: ${error.message}`);
+    // Ignore logging errors
   }
-  
-  console.error(logMessage);
 }
 
-function processAlerts(config, serviceName, status, previousStatus, error) {
+async function processAlerts(config, serviceName, status, previousStatus, error) {
   if (!config.alerts || !config.alerts.enabled) return;
   
   const thresholds = config.alerts.thresholds || {};
@@ -590,7 +592,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           );
           
           // Process alerts based on status changes
-          processAlerts(config, serviceName, checkResult.status, previousStatus, checkResult.error);
+          await processAlerts(config, serviceName, checkResult.status, previousStatus, checkResult.error);
           
           results.push({
             service: serviceName,
