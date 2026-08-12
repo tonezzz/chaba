@@ -281,6 +281,47 @@ sections:
       - mcp/mcp-health/README.md
     tags: ['mcp', 'health-monitoring', 'telemetry', 'completed']
 
+  - label: MCP Health Server Phase 3 - Enhanced Monitoring
+    text: 'Enhance mcp-health server with advanced monitoring capabilities based on operational learnings from Yomi API troubleshooting.
+
+    **Learned Issues** (2026-08-12):
+    - Proxy configuration gaps: Caddy `handle` vs `handle_path` issues not detected by health checks
+    - Service state conflicts: Port conflicts (EADDRINUSE) not caught before systemd restart attempts
+    - Dependency analysis limitations: Doesn''t account for systemd vs container deployment conflicts
+    - Manual intervention required: Service recovery needed manual process killing and systemd restart
+
+    **Phase 3 Enhancements**:
+    - Proxy configuration validation: Detect Caddy proxy misconfigurations (handle vs handle_path)
+    - Port conflict detection: Pre-check port availability before service restart attempts
+    - Enhanced dependency analysis: Account for deployment method conflicts (systemd vs container)
+    - Automated service recovery: Safe service restart with conflict resolution
+    - Real-time state validation: Better detection of running vs configured services
+    - Enhanced error context: Detailed error messages with specific troubleshooting steps
+
+    **Implementation Priority**:
+    1. Port conflict detection (high - prevents service restart loops)
+    2. Proxy configuration validation (high - catches routing issues early)
+    3. Enhanced dependency analysis (medium - improves cascading failure detection)
+    4. Automated service recovery (medium - reduces manual intervention)
+    5. Enhanced error context (low - improves user experience)
+
+    status: pending
+    priority: high
+    effort: medium
+    category: infrastructure
+    discovered: 2026-08-12
+    business_impact: 4
+    technical_impact: 6
+    user_experience_impact: 5
+    cost_savings_impact: 3
+    impact_summary: Prevents service restart loops, catches proxy configuration issues early, reduces manual intervention for common service failures
+    depends_on: [MCP Health Server Implementation]
+    related_files:
+      - mcp/mcp-health/server.js
+      - docs/ssot/infrastructure/ssot.health.yml
+      - docs/ssot/infrastructure/ssot.mcp.yml
+    tags: ['mcp', 'health-monitoring', 'telemetry', 'enhancement']
+
   - label: Infrastructure Containerization Complete
     text: Full infrastructure containerization assessment completed. Successfully containerized high-value services (Yomi API, GPU Queue) and appropriately kept complex/low-benefit services on host (Playlived, Clip Sync, Barriers, Rclone).
     status: completed

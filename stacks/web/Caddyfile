@@ -19,7 +19,13 @@
 		file_server
 	}
 
-	# MDDB Panel (includes internal API proxy)
+	# MDDB API (for panel proxy) - must come before panel route
+	handle /apps/mddb/v1/* {
+		reverse_proxy 172.19.0.7:11023
+		encode gzip
+	}
+
+	# MDDB Panel (UI only)
 	handle_path /apps/mddb/* {
 		reverse_proxy 172.19.0.6:3000
 		encode gzip
