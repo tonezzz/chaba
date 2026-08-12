@@ -88,6 +88,57 @@ When adding or editing pages for `chaba.h3.gizmo-thailand.com`, follow `.windsur
 - See `docs/kb/documentation-search.md` for comprehensive guide on dual search methods
 - MCP docs server auto-indexes docs/ directory with Flexsearch, cached in .docs-mcp/
 
+## Service Failure and Fallback Procedures (MANDATORY)
+
+**CRITICAL: User Notification Before Fallback Actions**
+
+Before taking any fallback or workaround actions due to service failures, API key issues, or service unavailability, you MUST:
+
+1. **Notify the user immediately** with:
+   - What service/API is failing
+   - Specific error message or symptoms
+   - Proposed fallback/workaround action
+   - Impact of the fallback action
+   - Request for confirmation before proceeding
+
+2. **Never silently apply workarounds** for:
+   - API key expiration or authentication failures (Gemini, OpenAI, etc.)
+   - Service downtime or unavailability (Llama Router, Weaviate, etc.)
+   - Configuration changes that affect core functionality
+   - Service disabling or enabling (systemd services, Docker containers)
+
+3. **Examples requiring user notification:**
+   - ❌ "Disabling Gemini API due to 401 errors" → Ask first
+   - ❌ "Switching to fallback service" → Ask first
+   - ❌ "Removing service configuration" → Ask first
+   - ❌ "Stopping systemd service" → Ask first
+   - ✅ "Gemini API returning 401 errors. Proposed action: switch to Llama Router. Impact: uses local model instead of Google API. Confirm?"
+
+### Chaba-Specific Service Monitoring
+
+**Critical Services:**
+- **Yomi Services**: yomi-fetch.service, yomi-process.service
+- **AI Services**: Llama Router (thai-legal-inference), Gemini API
+- **Data Services**: Weaviate, PostgreSQL, Redis
+- **Web Services**: Caddy, Status API, Trade API
+
+**Common Failure Patterns:**
+- API key expiration (401/403 errors)
+- Service container failures (Docker health checks)
+- Network connectivity issues (mobile vs home profile)
+- Resource exhaustion (GPU memory, disk space)
+
+### Escalation Procedure
+
+1. **Detect Issue:** Identify service failure or API key problem
+2. **Assess Impact:** Determine what functionality is affected
+3. **Propose Solution:** Suggest specific fallback or fix
+4. **Notify User:** Present findings and proposed action clearly
+5. **Await Confirmation:** Do not proceed without user approval
+6. **Implement Solution:** Execute approved action
+7. **Verify Resolution:** Confirm the fix works
+8. **Document:** Update relevant documentation/KB
+
 ## Auto KB Processing (MANDATORY)
 
 At the end of every assistant response that answers or completes a user request, you MUST:
