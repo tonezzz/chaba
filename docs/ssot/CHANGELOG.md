@@ -13,6 +13,43 @@ This file tracks significant changes to SSOT files for audit trail and rollback 
 ## Recent Changes
 
 ### 2026-08-12
+- **File**: docs/ssot/infrastructure/ssot.health.yml
+- **Change Type**: minor
+- **Description**: Added playlived service to health monitoring with browser installation verification, updated service criticality to include playlived as important service, added automation service group
+- **Impact**: Health monitoring now includes playlived service with specific recovery actions for Playwright browser issues
+- **Rollback**: Remove playlived service entry from health config
+
+- **File**: docs/ssot/infrastructure/ssot.health.yml
+- **Change Type**: patch
+- **Description**: Fixed duplicate playlived_browsers_missing key in recovery_actions section
+- **Impact**: YAML syntax error resolved, health config now valid
+- **Rollback**: Revert duplicate key removal
+
+- **File**: docs/ssot/infrastructure/ssot.mcp.yml
+- **Change Type**: major
+- **Description**: Updated MCP health server status to Phase 3 complete with enhanced monitoring capabilities, added new tools (check_port_conflicts, validate_proxy_config, restart_service, get_troubleshooting_info)
+- **Impact**: MCP health server now provides advanced monitoring with port conflict detection, proxy validation, automated recovery, and enhanced troubleshooting
+- **Rollback**: Revert to previous MCP health server status
+
+- **File**: docs/ssot/ssot.improvements.yml
+- **Change Type**: major
+- **Description**: Marked MCP Health Server Phase 3 Enhanced Monitoring as completed, added Playlive Service Reliability Enhancement as completed
+- **Impact**: Accurate tracking of completed infrastructure improvements with detailed implementation notes
+- **Rollback**: Revert improvement entries to previous status
+
+- **File**: .agents/skills/health-check/SKILL.md
+- **Change Type**: major
+- **Description**: Deprecated old health-check skill in favor of MCP health server tools, added migration guide and deprecation notice
+- **Impact**: Health monitoring now uses MCP tools as authoritative interface, old skill maintained for backward compatibility
+- **Rollback**: Restore original skill implementation
+
+- **File**: docs/kb/mcp-health-vs-old-skill-comparison.md
+- **Change Type**: major
+- **Description**: Created comprehensive feature comparison between MCP health server and old health-check skill with parity assessment and migration benefits
+- **Impact**: Complete analysis of MCP health server capabilities and migration justification
+- **Rollback**: Delete comparison document
+
+### 2026-08-12 (Earlier)
 - **File**: docs/ssot/ssot.index.yml
 - **Change Type**: patch
 - **Description**: Fixed index inconsistencies - removed references to non-existent ssot.health.home.yml and ssot.health.mobile.yml, added mcp-health server documentation, added ssot.maintenance.yml reference
