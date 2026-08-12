@@ -603,12 +603,14 @@ sections:
   items:
   - label: Assessment Enhancements
     text: Add historical trend analysis, performance baseline tracking, automated notifications, and dashboard integration to overnight assessment system
-    status: pending
+    status: completed
     priority: medium
     effort: 4-6 hours
     category: monitoring
     discovered: 2026-08-04
     assessment_ref: overnight-assessment-2026-08-04
+    completed: '2026-08-12'
+    completion_note: 'Integrated overnight assessment with MCP health server historical data and alerts. Added historical trend analysis section to assessment reports using MCP health server database. Assessment now reads 7-day health history and alert data from MCP health server for comprehensive trend analysis. Graceful fallback if MCP database unavailable.'
     action_items:
     - Implement historical trend analysis
     - Add performance baseline tracking
@@ -617,11 +619,13 @@ sections:
     related_files:
     - scripts/overnight-assessment.mjs
     - docs/kb/overnight-assessment.md
-    - stacks/web/public/apps/health-check/health-check.js
+    - mcp/mcp-health/server.js
+    - mcp/mcp-health/health-history.db
     tags:
     - monitoring
     - assessment
     - enhancements
+    - mcp-integration
     business_impact: 7
     technical_impact: 6
     user_experience_impact: 5
@@ -769,18 +773,37 @@ sections:
     completion_note: 'npm: 0 vulns across all 4 packages. starlette 0.40.0 CVEs (CVE-2026-48710, CVE-2026-54282, GHSA-7f5h-v6xp-fcq8) fixed — upgraded thai-legal-inference to fastapi 0.141.1 + starlette
       1.3.x. Docker images mostly recent. NVIDIA 595.71.05 already patches all driver CVEs (595.84 is bugs-only).'
   - label: LINE API Rate Limit Mitigation
-    text: Resolve LINE API authentication rate limit (code 103) preventing Yomi message downloads and implement retry logic to prevent future rate limit issues
-    status: in_progress
+    text: 'Resolve LINE API authentication rate limit (code 103) preventing Yomi message downloads and implement retry logic to prevent future rate limit issues
+
+    **Root Cause**: Previous LINE session was rate-limited (code 103) due to too many login attempts, blocking message downloads.
+
+    **Resolution** (2026-08-12):
+    - Backed up old credentials and re-authenticated with `npx @rikaidev/yomi login`
+    - Session restored successfully (mid: ufdd2c3dfe084d111ed702c9c76bf6a21, displayName: Tonezzz)
+    - Verified message fetching works (66/67 conversations fetched successfully)
+
+    **Implemented Mitigations** in `fetch-conversations.mjs`:
+    - **Exponential backoff retry logic**: 1min, 5min, 15min, 1hr, 4hr delays for rate limit errors
+    - **Rate limit detection**: Parses error codes (103, "rate limit", "temporarily restricted", Japanese error message)
+    - **Login attempt throttling**: Maximum 1 login attempt per hour tracked in `login-attempts.json`
+    - **Retry on both list and single fetch**: Protects against rate limits at any API call point
+
+    **Benefits**: Prevents future rate limit disruptions, automatic recovery from temporary restrictions, reduced manual intervention'
+    status: completed
     priority: high
     effort: 2-4 hours
     category: yomi
     discovered: 2026-08-06
+    completed: 2026-08-12
     assessment_ref: yomi-gemini-migration
     business_impact: 8
     technical_impact: 7
     user_experience_impact: 9
     cost_savings_impact: 5
     impact_summary: Restores Yomi message download capability and prevents future rate limit disruptions
+    related_files:
+      - scripts/yomi/fetch-conversations.mjs
+    tags: ['yomi', 'rate-limit', 'retry-logic', 'completed']
     action_items:
     - Wait for LINE API rate limit to lift (code 103 restriction)
     - Re-login with `npx @rikaidev/yomi login` when restriction clears

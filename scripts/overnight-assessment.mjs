@@ -41,6 +41,230 @@ function appendSection(title, content) {
   report += `## ${title}\n\n${content}\n\n`;
 }
 
+// MCP Health Server Integration Functions
+async function getMCPHealthHistory(days = 7) {
+  const mcpHealthDb = '/home/tony/CascadeProjects/chaba/mcp/mcp-health/health-history.db';
+  
+  if (!existsSync(mcpHealthDb)) {
+    console.log('MCP health database not found, skipping historical analysis');
+    return null;
+  }
+
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    const cutoffTimestamp = cutoffDate.toISOString();
+
+    // Use node with better-sqlite3 to read database
+    const nodeScript = `
+      const Database = require('better-sqlite3');
+      const db = new Database('${mcpHealthDb}', { readonly: true });
+      const stmt = db.prepare(\`
+        SELECT service_name, status, AVG(response_time) as avg_response_time, COUNT(*) as check_count,
+        SUM(CASE WHEN status = 'healthy' THEN 1 ELSE 0 END) as healthy_count,
+        SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as error_count,
+        SUM(CASE WHEN status = 'degraded' THEN 1 ELSE 0 END) as degraded_count,
+        SUM(CASE WHEN status = 'unknown' THEN 1 ELSE 0 END) as unknown_count,
+        MIN(timestamp) as first_check, MAX(timestamp) as last_check
+        FROM health_checks
+        WHERE timestamp >= ?
+        GROUP BY service_name, status
+        ORDER BY service_name, last_check DESC
+      \`);
+      const results = stmt.all('${cutoffTimestamp}');
+      console.log(JSON.stringify(results));
+      db.close();
+    `;
+
+    const result = execSync(`node -e "${nodeScript}"`, { encoding: 'utf8' });
+    
+    if (!result.trim()) {
+      console.log('No MCP health history data found for the specified period');
+      return null;
+    }
+
+    const historyData = JSON.parse(result.trim());
+    const byService = {};
+
+    historyData.forEach(row => {
+      if (!byService[row.service_name]) {
+        byService[row.service_name] = {
+          service_name: row.service_name,
+          total_checks: 0,
+          healthy_count: 0,
+          error_count: 0,
+          degraded_count: 0,
+          unknown_count: 0,
+          avg_response_time: 0,
+          first_check: row.first_check,
+          last_check: row.last_check,
+          status_history: []
+        };
+      }
+      byService[row.service_name].total_checks += row.check_count;
+      byService[row.service_name].healthy_count += row.healthy_count;
+      byService[row.service_name].error_count += row.error_count;
+      byService[row.service_name].degraded_count += row.degraded_count;
+      byService[row.service_name].unknown_count += row.unknown_count;
+      byService[row.service_name].avg_response_time += row.avg_response_time * row.check_count;
+      byService[row.service_name].status_history.push({
+        status: row.status,
+        avg_response_time: row.avg_response_time,
+        check_count: row.check_count
+      });
+    });
+
+    // Calculate overall averages
+    Object.values(byService).forEach(service => {
+      if (service.total_checks > 0) {
+        service.avg_response_time = service.avg_response_time / service.total_checks;
+        service.healthy_percentage = (service.healthy_count / service.total_checks) * 100;
+      }
+    });
+
+    return byService;
+  } catch (error) {
+    console.error(`Failed to read MCP health history: ${error.message}`);
+    return null;
+  }
+}
+
+async function getMCPAlerts(days = 7) {
+  const mcpHealthDb = '/home/tony/CascadeProjects/chaba/mcp/mcp-health/health-history.db';
+  
+  if (!existsSync(mcpHealthDb)) {
+    console.log('MCP health database not found, skipping alert analysis');
+    return null;
+  }
+
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    const cutoffTimestamp = cutoffDate.toISOString();
+
+    // Use node with better-sqlite3 to read database
+    const nodeScript = `
+      const Database = require('better-sqlite3');
+      const db = new Database('${mcpHealthDb}', { readonly: true });
+      const stmt = db.prepare(\`
+        SELECT service_name, alert_type, severity, COUNT(*) as alert_count,
+        SUM(CASE WHEN resolved = 1 THEN 1 ELSE 0 END) as resolved_count,
+        SUM(CASE WHEN acknowledged = 1 THEN 1 ELSE 0 END) as acknowledged_count,
+        MIN(created_at) as first_alert, MAX(created_at) as last_alert
+        FROM alerts
+        WHERE created_at >= ?
+        GROUP BY service_name, alert_type, severity
+        ORDER BY last_alert DESC
+      \`);
+      const results = stmt.all('${cutoffTimestamp}');
+      console.log(JSON.stringify(results));
+      db.close();
+    `;
+
+    const result = execSync(`node -e "${nodeScript}"`, { encoding: 'utf8' });
+    
+    if (!result.trim()) {
+      console.log('No MCP alert data found for the specified period');
+      return null;
+    }
+
+    const alertsData = JSON.parse(result.trim());
+    const byService = {};
+
+    alertsData.forEach(row => {
+      if (!byService[row.service_name]) {
+        byService[row.service_name] = {
+          service_name: row.service_name,
+          total_alerts: 0,
+          resolved_count: 0,
+          acknowledged_count: 0,
+          unresolved_count: 0,
+          first_alert: row.first_alert,
+          last_alert: row.last_alert,
+          alert_types: {}
+        };
+      }
+      byService[row.service_name].total_alerts += row.alert_count;
+      byService[row.service_name].resolved_count += row.resolved_count;
+      byService[row.service_name].acknowledged_count += row.acknowledged_count;
+      byService[row.service_name].unresolved_count += row.alert_count - row.resolved_count;
+      
+      if (!byService[row.service_name].alert_types[row.alert_type]) {
+        byService[row.service_name].alert_types[row.alert_type] = {
+          count: 0,
+          severity: row.severity
+        };
+      }
+      byService[row.service_name].alert_types[row.alert_type].count += row.alert_count;
+    });
+
+    return byService;
+  } catch (error) {
+    console.error(`Failed to read MCP alerts: ${error.message}`);
+    return null;
+  }
+}
+
+function generateHistoricalTrendReport(healthHistory, alerts) {
+  if (!healthHistory) {
+    return 'Historical trend analysis unavailable - MCP health database not found.';
+  }
+
+  let content = '## Historical Trend Analysis (Last 7 Days)\n\n';
+  
+  const services = Object.values(healthHistory);
+  const totalServices = services.length;
+  const healthyServices = services.filter(s => s.healthy_percentage >= 95).length;
+  const degradedServices = services.filter(s => s.healthy_percentage >= 80 && s.healthy_percentage < 95).length;
+  const unhealthyServices = services.filter(s => s.healthy_percentage < 80).length;
+
+  content += `### Overall Health Trend\n\n`;
+  content += `- **Total Services Monitored:** ${totalServices}\n`;
+  content += `- **Healthy (>95% uptime):** ${healthyServices} (${((healthyServices/totalServices)*100).toFixed(1)}%)\n`;
+  content += `- **Degraded (80-95% uptime):** ${degradedServices} (${((degradedServices/totalServices)*100).toFixed(1)}%)\n`;
+  content += `- **Unhealthy (<80% uptime):** ${unhealthyServices} (${((unhealthyServices/totalServices)*100).toFixed(1)}%)\n\n`;
+
+  content += `### Services with Health Issues\n\n`;
+  const problematicServices = services.filter(s => s.healthy_percentage < 95);
+  
+  if (problematicServices.length === 0) {
+    content += 'No significant health issues detected in the last 7 days.\n\n';
+  } else {
+    problematicServices.forEach(service => {
+      content += `#### ${service.service_name}\n`;
+      content += `- **Health Score:** ${service.healthy_percentage.toFixed(1)}%\n`;
+      content += `- **Total Checks:** ${service.total_checks}\n`;
+      content += `- **Healthy:** ${service.healthy_count} | **Error:** ${service.error_count} | **Degraded:** ${service.degraded_count} | **Unknown:** ${service.unknown_count}\n`;
+      content += `- **Avg Response Time:** ${service.avg_response_time.toFixed(0)}ms\n`;
+      content += `- **Last Check:** ${new Date(service.last_check).toLocaleString()}\n\n`;
+    });
+  }
+
+  if (alerts) {
+    content += `### Alert History (Last 7 Days)\n\n`;
+    const alertServices = Object.values(alerts);
+    const totalAlerts = alertServices.reduce((sum, s) => sum + s.total_alerts, 0);
+    const unresolvedAlerts = alertServices.reduce((sum, s) => sum + s.unresolved_count, 0);
+
+    content += `- **Total Alerts:** ${totalAlerts}\n`;
+    content += `- **Resolved:** ${totalAlerts - unresolvedAlerts}\n`;
+    content += `- **Unresolved:** ${unresolvedAlerts}\n\n`;
+
+    const criticalAlerts = alertServices.filter(s => s.unresolved_count > 0);
+    if (criticalAlerts.length > 0) {
+      content += `### Services with Unresolved Alerts\n\n`;
+      criticalAlerts.forEach(service => {
+        content += `#### ${service.service_name}\n`;
+        content += `- **Unresolved Alerts:** ${service.unresolved_count}\n`;
+        content += `- **Alert Types:** ${Object.entries(service.alert_types).map(([type, info]) => `${type} (${info.severity})`).join(', ')}\n`;
+        content += `- **Last Alert:** ${new Date(service.last_alert).toLocaleString()}\n\n`;
+      });
+    }
+  }
+
+  return content;
+}
+
 // Automated Issue Creation Functions
 function autoCreateImprovement(label, text, priority, category, relatedFiles = []) {
   const improvement = {
@@ -1447,6 +1671,13 @@ async function runAssessment() {
   try {
     generateSummary();
     await checkHealthServices();
+    
+    // Add MCP Health Server Historical Analysis
+    console.log('Integrating MCP health server historical data...');
+    const healthHistory = await getMCPHealthHistory(7); // Last 7 days
+    const alerts = await getMCPAlerts(7); // Last 7 days
+    const historicalTrendReport = generateHistoricalTrendReport(healthHistory, alerts);
+    appendSection('Historical Trend Analysis (MCP Health Server)', historicalTrendReport);
     
     // Check if Yomi is actively processing before GPU assessment
     let yomiProcessing = false;
