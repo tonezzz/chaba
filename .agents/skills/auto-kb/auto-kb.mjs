@@ -7,10 +7,11 @@
  * for high-value information while checking for redundancy.
  */
 
-import { readFileSync, writeFileSync, readdirSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync, unlinkSync } from 'fs';
 import { join } from 'path';
 
 const KB_DIR = '/home/tony/CascadeProjects/chaba/docs/kb';
+const LOCK_FILE = '/tmp/auto-kb.lock';
 
 // KB-worthy triggers
 const KB_WORTHY_TRIGGERS = [
@@ -21,6 +22,49 @@ const KB_WORTHY_TRIGGERS = [
   'root cause', 'investigation', 'resolution',
   'convention', 'template', 'best practice'
 ];
+
+/**
+ * Check if auto-kb is already running (concurrency protection)
+ */
+function isRunning() {
+  if (existsSync(LOCK_FILE)) {
+    const lockTime = parseInt(readFileSync(LOCK_FILE, 'utf8'));
+    const now = Date.now();
+    // Lock expires after 5 minutes
+    if (now - lockTime < 300000) {
+      return true;
+    } else {
+      // Stale lock, remove it
+      try {
+        unlinkSync(LOCK_FILE);
+      } catch (e) {
+        // Ignore errors
+      }
+      return false;
+    }
+  }
+  return false;
+}
+
+/**
+ * Create lock file
+ */
+function createLock() {
+  writeFileSync(LOCK_FILE, Date.now().toString(), 'utf8');
+}
+
+/**
+ * Remove lock file
+ */
+function removeLock() {
+  if (existsSync(LOCK_FILE)) {
+    try {
+      unlinkSync(LOCK_FILE);
+    } catch (e) {
+      // Ignore errors
+    }
+  }
+}
 
 /**
  * Check if content is KB-worthy
@@ -44,7 +88,7 @@ function checkRedundancy(content) {
 
   for (const file of files) {
     const filePath = join(KB_DIR, file);
-    const existingContent = readFileSync(filePath, 'utf-8').toLowerCase();
+    const existingContent = readFileSync(filePath, 'utf8').toLowerCase();
     
     // Check for significant content overlap
     const words = contentLower.split(/\s+/);
@@ -113,61 +157,73 @@ ${content}
  * Main execution
  */
 function main() {
-  const args = process.argv.slice(2);
-  if (args.length === 0) {
-    console.error('Usage: auto-kb.mjs <kb-review-content> [context]');
-    process.exit(1);
-  }
-
-  const content = args[0];
-  const context = args[1] || '';
-
-  console.log('Analyzing KB review content...');
-  
-  // Check if KB-worthy
-  if (!isKBWorthy(content)) {
-    console.log('Content does not meet KB-worthy criteria.');
-    console.log('Consider manual creation if this is important.');
+  // Concurrency protection
+  if (isRunning()) {
+    console.log('Auto-kb is already running. Skipping duplicate invocation.');
     return;
   }
+  
+  createLock();
+  
+  try {
+    const args = process.argv.slice(2);
+    if (args.length === 0) {
+      console.error('Usage: auto-kb.mjs <kb-review-content> [context]');
+      process.exit(1);
+    }
 
-  console.log('Content is KB-worthy. Checking for redundancy...');
-  
-  // Check redundancy
-  const redundancyCheck = checkRedundancy(content);
-  
-  if (redundancyCheck.hasRedundancy) {
-    console.log('High redundancy detected with existing entries:');
-    redundancyCheck.similarEntries.forEach(entry => {
-      console.log(`  - ${entry.file} (${entry.relevance} relevance, ${entry.overlapCount} overlapping words)`);
-    });
-    console.log('Consider updating existing entries instead of creating new ones.');
-    return;
+    const content = args[0];
+    const context = args[1] || '';
+
+    console.log('Analyzing KB review content...');
+    
+    // Check if KB-worthy
+    if (!isKBWorthy(content)) {
+      console.log('Content does not meet KB-worthy criteria.');
+      console.log('Consider manual creation if this is important.');
+      return;
+    }
+
+    console.log('Content is KB-worthy. Checking for redundancy...');
+    
+    // Check redundancy
+    const redundancyCheck = checkRedundancy(content);
+    
+    if (redundancyCheck.hasRedundancy) {
+      console.log('High redundancy detected with existing entries:');
+      redundancyCheck.similarEntries.forEach(entry => {
+        console.log(`  - ${entry.file} (${entry.relevance} relevance, ${entry.overlapCount} overlapping words)`);
+      });
+      console.log('Consider updating existing entries instead of creating new ones.');
+      return;
+    }
+
+    if (redundancyCheck.similarEntries.length > 0) {
+      console.log('Some similarity detected with existing entries:');
+      redundancyCheck.similarEntries.forEach(entry => {
+        console.log(`  - ${entry.file} (${entry.relevance} relevance, ${entry.overlapCount} overlapping words)`);
+      });
+    }
+
+    console.log('Generating KB entry...');
+    
+    // Generate entry
+    const entry = generateKBEntry(content, context);
+    
+    // Generate filename
+    const timestamp = Date.now();
+    const filename = `auto-kb-${timestamp}.md`;
+    const filepath = join(KB_DIR, filename);
+    
+    // Write entry
+    writeFileSync(filepath, entry, 'utf8');
+    
+    console.log(`KB entry created: ${filename}`);
+    console.log(`Location: ${filepath}`);
+    console.log('Please review and refine the entry as needed.');
+  } finally {
+    removeLock();
   }
-
-  if (redundancyCheck.similarEntries.length > 0) {
-    console.log('Some similarity detected with existing entries:');
-    redundancyCheck.similarEntries.forEach(entry => {
-      console.log(`  - ${entry.file} (${entry.relevance} relevance, ${entry.overlapCount} overlapping words)`);
-    });
-  }
-
-  console.log('Generating KB entry...');
-  
-  // Generate entry
-  const entry = generateKBEntry(content, context);
-  
-  // Generate filename
-  const timestamp = Date.now();
-  const filename = `auto-kb-${timestamp}.md`;
-  const filepath = join(KB_DIR, filename);
-  
-  // Write entry
-  writeFileSync(filepath, entry, 'utf-8');
-  
-  console.log(`KB entry created: ${filename}`);
-  console.log(`Location: ${filepath}`);
-  console.log('Please review and refine the entry as needed.');
 }
 
 main();
