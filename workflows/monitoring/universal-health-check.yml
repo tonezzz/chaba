@@ -1,0 +1,315 @@
+name: universal-health-check
+description: Universal health check with automatic profile detection and adaptive service checking
+version: "3.0"
+author: Chaba Team
+tags: [health, monitoring, universal, profile-detection]
+
+inputs:
+  profile:
+    type: str
+    description: Force specific profile home/mobile/auto. Default auto-detect
+    default: "auto"
+    required: false
+  timeout:
+    type: num
+    description: Base timeout in seconds auto-adjusted by profile
+    default: 5
+    required: false
+  skip_optional:
+    type: bool
+    description: Skip optional services
+    default: false
+    required: false
+  parallel:
+    type: bool
+    description: Run service checks in parallel for efficiency
+    default: true
+    required: false
+
+blocks:
+  - id: detect_and_configure
+    type: Shell
+    description: "Auto-detect profile and configure settings with hostname-based HTTP connectivity check"
+    inputs:
+      command: |
+        #!/bin/bash
+        if [ "{{inputs.profile}}" = "auto" ]; then
+          # Use hostname-based HTTP check for more accurate connectivity detection
+          if curl -s -o /dev/null -w "%{http_code}" --max-time 3 "http://tony-omen.local:8080/" | grep -q "200"; then
+            PROFILE="home"
+            BASE_URL="tony-omen.local"
+            TIMEOUT="{{inputs.timeout}}"
+            CHECK_CONTAINERS="true"
+            CONNECTIVITY_STATUS="home_ok"
+            
+            # Verify hostname resolution is correct (get primary network interface IP)
+            RESOLVED_IP=$(nslookup tony-omen.local 2>/dev/null | grep -A 1 "Name:" | tail -1 | awk '{print $2}')
+            # Get IP from interface with default route (most reliable)
+            LOCAL_IP=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $7}' | head -1)
+            if [ -z "$LOCAL_IP" ]; then
+              # Fallback to first non-loopback, non-link-local interface
+              LOCAL_IP=$(ip addr show | grep "inet " | grep -v "127.0.0.1" | grep -v "169.254" | head -1 | awk '{print $2}' | cut -d'/' -f1)
+            fi
+            if [ "$RESOLVED_IP" != "$LOCAL_IP" ] && [ -n "$LOCAL_IP" ] && [ -n "$RESOLVED_IP" ]; then
+              echo "HOSTNAME_CHECK: tony-omen.local resolves to $RESOLVED_IP but local IP is $LOCAL_IP"
+              echo "HOSTNAME_CHECK: Check /etc/hosts file for correct IP mapping"
+            fi
+          else
+            # Fallback to mobile profile if home HTTP check fails
+            PROFILE="mobile"
+            BASE_URL="localhost"
+            TIMEOUT="10"
+            CHECK_CONTAINERS="false"
+            CONNECTIVITY_STATUS="home_failed"
+            echo "NOTICE: Home server HTTP check failed, using mobile profile"
+          fi
+        else
+          PROFILE="{{inputs.profile}}"
+          if [ "$PROFILE" = "home" ]; then
+            BASE_URL="tony-omen.local"
+            TIMEOUT="{{inputs.timeout}}"
+            CHECK_CONTAINERS="true"
+            # Verify HTTP connectivity when home profile is forced
+            if curl -s -o /dev/null -w "%{http_code}" --max-time 3 "http://$BASE_URL:8080/" | grep -q "200"; then
+              CONNECTIVITY_STATUS="home_ok"
+            else
+              CONNECTIVITY_STATUS="home_failed"
+              echo "WARNING: Home profile selected but HTTP connectivity to $BASE_URL:8080 failed"
+            fi
+          else
+            BASE_URL="localhost"
+            TIMEOUT="10"
+            CHECK_CONTAINERS="false"
+            CONNECTIVITY_STATUS="mobile_profile"
+          fi
+        fi
+        
+        # Export configuration for subsequent blocks (only variable assignments)
+        echo "PROFILE=$PROFILE"
+        echo "BASE_URL=$BASE_URL"
+        echo "TIMEOUT=$TIMEOUT"
+        echo "CHECK_CONTAINERS=$CHECK_CONTAINERS"
+        echo "PARALLEL={{inputs.parallel}}"
+        echo "SKIP_OPTIONAL={{inputs.skip_optional}}"
+        echo "CONNECTIVITY_STATUS=$CONNECTIVITY_STATUS"
+      timeout: 10
+
+  - id: parallel_health_check
+    type: Shell
+    description: "Run all HTTP service checks"
+    inputs:
+      command: |
+        #!/bin/bash
+        # Parse configuration from previous block (filter out non-variable lines)
+        eval "$(echo "{{blocks.detect_and_configure.outputs.stdout}}" | grep -E '^[A-Z_]+=')"
+        
+        echo "Running health checks for $PROFILE profile..."
+        echo "Base URL: $BASE_URL | Timeout: ${TIMEOUT}s"
+        echo ""
+        
+        # Show hostname check warnings if present
+        echo "{{blocks.detect_and_configure.outputs.stdout}}" | grep "HOSTNAME_CHECK:" && echo ""
+        
+        # Show connectivity status if available
+        if [ -n "$CONNECTIVITY_STATUS" ]; then
+          if [ "$CONNECTIVITY_STATUS" = "home_failed" ]; then
+            echo "NOTICE: Home server connectivity check failed, using mobile profile"
+            echo ""
+          fi
+        fi
+        
+        # Run HTTP checks sequentially for reliability
+        start=$(date +%s.%N)
+        status_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time "$TIMEOUT" "http://$BASE_URL:8080/apps/")
+        end=$(date +%s.%N)
+        duration=$(echo "$end - $start" | bc)
+        if echo "$status_code" | grep -q "200"; then
+          echo "✅ Caddy: Healthy (${duration}s)"
+        else
+          echo "❌ Caddy: Unhealthy (HTTP $status_code, ${duration}s)"
+        fi
+        
+        start=$(date +%s.%N)
+        status_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time "$TIMEOUT" "http://$BASE_URL:8080/api/health")
+        end=$(date +%s.%N)
+        duration=$(echo "$end - $start" | bc)
+        if echo "$status_code" | grep -q "200"; then
+          echo "✅ Status API: Healthy (${duration}s)"
+        else
+          echo "❌ Status API: Unhealthy (HTTP $status_code, ${duration}s)"
+        fi
+        
+        start=$(date +%s.%N)
+        status_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time "$TIMEOUT" "http://$BASE_URL:8080/api/yomi/health")
+        end=$(date +%s.%N)
+        duration=$(echo "$end - $start" | bc)
+        if echo "$status_code" | grep -q "200"; then
+          echo "✅ Yomi API: Healthy (${duration}s)"
+        else
+          echo "❌ Yomi API: Unhealthy (HTTP $status_code, ${duration}s)"
+        fi
+        
+        start=$(date +%s.%N)
+        status_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time "$TIMEOUT" "http://$BASE_URL:8080/api/weaviate/v1/nodes")
+        end=$(date +%s.%N)
+        duration=$(echo "$end - $start" | bc)
+        if echo "$status_code" | grep -q "200"; then
+          echo "✅ Weaviate: Healthy (${duration}s)"
+        else
+          echo "❌ Weaviate: Unhealthy (HTTP $status_code, ${duration}s)"
+        fi
+        
+        start=$(date +%s.%N)
+        status_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time "$TIMEOUT" "http://$BASE_URL:3001/health")
+        end=$(date +%s.%N)
+        duration=$(echo "$end - $start" | bc)
+        if echo "$status_code" | grep -q "200"; then
+          echo "✅ GPU Queue: Healthy (${duration}s)"
+        else
+          echo "❌ GPU Queue: Unhealthy (HTTP $status_code, ${duration}s)"
+        fi
+      timeout: 30
+    depends_on:
+      - detect_and_configure
+
+  - id: container_check
+    type: Shell
+    description: "Check container services only for home profile"
+    inputs:
+      command: |
+        #!/bin/bash
+        # Parse configuration from previous block (filter out non-variable lines)
+        eval "$(echo "{{blocks.detect_and_configure.outputs.stdout}}" | grep -E '^[A-Z_]+=')"
+        
+        if [ "$CHECK_CONTAINERS" = "true" ]; then
+          echo "Checking container services..."
+          
+          CONTAINER_TOTAL=0
+          CONTAINER_HEALTHY=0
+          
+          # Check Redis
+          CONTAINER_TOTAL=$((CONTAINER_TOTAL + 1))
+          if docker inspect redis >/dev/null 2>&1 && docker inspect redis | grep -q '"Status": "running"'; then
+            echo "✅ Redis: Running"
+            CONTAINER_HEALTHY=$((CONTAINER_HEALTHY + 1))
+          else
+            echo "❌ Redis: Not running"
+          fi
+          
+          # Check Postgres
+          CONTAINER_TOTAL=$((CONTAINER_TOTAL + 1))
+          if docker inspect postgres >/dev/null 2>&1 && docker inspect postgres | grep -q '"Status": "running"'; then
+            echo "✅ Postgres: Running"
+            CONTAINER_HEALTHY=$((CONTAINER_HEALTHY + 1))
+          else
+            echo "❌ Postgres: Not running"
+          fi
+          
+          # Check Activepieces (optional)
+          if [ "$SKIP_OPTIONAL" = "false" ]; then
+            CONTAINER_TOTAL=$((CONTAINER_TOTAL + 1))
+            if docker inspect activepieces >/dev/null 2>&1 && docker inspect activepieces | grep -q '"Status": "running"'; then
+              echo "✅ Activepieces: Running (optional)"
+              CONTAINER_HEALTHY=$((CONTAINER_HEALTHY + 1))
+            else
+              echo "⚠️ Activepieces: Not running (optional)"
+            fi
+          fi
+          
+          echo "CONTAINER_METRICS: TOTAL=$CONTAINER_TOTAL HEALTHY=$CONTAINER_HEALTHY"
+        else
+          echo "Container checks skipped (mobile profile)"
+          echo "CONTAINER_METRICS: TOTAL=0 HEALTHY=0"
+        fi
+      timeout: 15
+    depends_on:
+      - detect_and_configure
+
+  - id: generate_report
+    type: Shell
+    description: "Generate structured JSON and human-readable summary"
+    inputs:
+      command: |
+        #!/bin/bash
+        # Parse configuration from previous block (filter out non-variable lines)
+        eval "$(echo "{{blocks.detect_and_configure.outputs.stdout}}" | grep -E '^[A-Z_]+=')"
+        
+        # Count services from actual output
+        HTTP_OUTPUT="{{blocks.parallel_health_check.outputs.stdout}}"
+        CONTAINER_OUTPUT="{{blocks.container_check.outputs.stdout}}"
+        
+        HTTP_TOTAL=$(echo "$HTTP_OUTPUT" | grep -c "✅\|❌\|⚠️" || echo "0")
+        HTTP_HEALTHY=$(echo "$HTTP_OUTPUT" | grep -c "✅" || echo "0")
+        HTTP_UNHEALTHY=$(echo "$HTTP_OUTPUT" | grep -c "❌" || echo "0")
+        
+        CONTAINER_TOTAL=$(echo "$CONTAINER_OUTPUT" | grep -c "✅\|❌\|⚠️" || echo "0")
+        CONTAINER_HEALTHY=$(echo "$CONTAINER_OUTPUT" | grep -c "✅" || echo "0")
+        
+        TOTAL_SERVICES=$((HTTP_TOTAL + CONTAINER_TOTAL))
+        TOTAL_HEALTHY=$((HTTP_HEALTHY + CONTAINER_HEALTHY))
+        TOTAL_UNHEALTHY=$((HTTP_UNHEALTHY + (CONTAINER_TOTAL - CONTAINER_HEALTHY)))
+        
+        # Calculate health score
+        if [ "$TOTAL_SERVICES" -gt 0 ]; then
+          HEALTH_SCORE=$((TOTAL_HEALTHY * 100 / TOTAL_SERVICES))
+        else
+          HEALTH_SCORE=0
+        fi
+        
+        # Determine overall status
+        if [ "$HEALTH_SCORE" -eq 100 ]; then
+          OVERALL_STATUS="operational"
+        elif [ "$HEALTH_SCORE" -ge 75 ]; then
+          OVERALL_STATUS="degraded"
+        else
+          OVERALL_STATUS="critical"
+        fi
+        
+        # Generate human-readable summary
+        echo ""
+        echo "=========================================="
+        echo "Universal Health Check Summary"
+        echo "=========================================="
+        echo "Profile: $PROFILE"
+        echo "Base URL: $BASE_URL"
+        echo "Execution: $PARALLEL"
+        echo "Timestamp: $(date)"
+        echo ""
+        echo "Health Score: ${HEALTH_SCORE}%"
+        echo "Overall Status: $OVERALL_STATUS"
+        echo ""
+        echo "Service Statistics:"
+        echo "  - Total Services: $TOTAL_SERVICES"
+        echo "  - Healthy: $TOTAL_HEALTHY"
+        echo "  - Unhealthy: $TOTAL_UNHEALTHY"
+        echo ""
+        echo "Configuration:"
+        echo "  - Timeout: ${TIMEOUT}s"
+        echo "  - Container Checks: $CHECK_CONTAINERS"
+        echo "  - Optional Services: $SKIP_OPTIONAL"
+        echo ""
+        echo "For detailed recovery actions, see:"
+        echo "  - Home: docs/ssot/infrastructure/ssot.health.home.yml"
+        echo "  - Mobile: docs/ssot/infrastructure/ssot.health.mobile.yml"
+        echo ""
+        echo "=========================================="
+        echo "JSON Output"
+        echo "=========================================="
+        
+        # Generate JSON output
+        echo '{"profile":"'"$PROFILE"'","base_url":"'"$BASE_URL"'","timestamp":"'"$(date -Iseconds)"'","health_score":'"$HEALTH_SCORE"',"overall_status":"'"$OVERALL_STATUS"'","configuration":{"timeout":'"$TIMEOUT"',"container_checks":'"$CHECK_CONTAINERS"',"optional_services":'"$SKIP_OPTIONAL"',"parallel_execution":'"$PARALLEL"'},"services":{"total":'"$TOTAL_SERVICES"',"healthy":'"$TOTAL_HEALTHY"',"unhealthy":'"$TOTAL_UNHEALTHY"',"http_checks":{"total":'"$HTTP_TOTAL"',"healthy":'"$HTTP_HEALTHY"',"unhealthy":'"$HTTP_UNHEALTHY"'},"container_checks":{"total":'"$CONTAINER_TOTAL"',"healthy":'"$CONTAINER_HEALTHY"',"unhealthy":'"$((CONTAINER_TOTAL - CONTAINER_HEALTHY))"'}}}'
+      timeout: 5
+    depends_on:
+      - parallel_health_check
+
+outputs:
+  detected_profile:
+    value: "{{blocks.detect_and_configure.outputs.stdout}}"
+  health_score:
+    value: "{{blocks.generate_report.outputs.stdout}}"
+  json_report:
+    value: "{{blocks.generate_report.outputs.stdout}}"
+  full_results:
+    value: "{{blocks.parallel_health_check.outputs.stdout}}\n{{blocks.container_check.outputs.stdout}}\n{{blocks.generate_report.outputs.stdout}}"
+  kb_creation_trigger:
+    value: "{{blocks.detect_and_configure.outputs.stdout}}"
