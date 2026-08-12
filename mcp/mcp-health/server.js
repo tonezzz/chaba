@@ -215,14 +215,46 @@ async function processAlerts(config, serviceName, status, previousStatus, error)
 }
 
 // Port conflict detection
-async function checkPortAvailability(port) {
+async function checkPortAvailability(port, serviceProcessName = null) {
   try {
     const { execSync } = await import('child_process');
     const result = execSync(`ss -tulpn | grep :${port} || true`, { encoding: 'utf8' });
-    return result.trim() === ''; // Return true if port is available (no output)
+    
+    if (result.trim() === '') {
+      return { available: true, process: null };
+    }
+    
+    // Parse the process information
+    const lines = result.trim().split('\n');
+    const processes = [];
+    
+    for (const line of lines) {
+      const parts = line.trim().split(/\s+/);
+      if (parts.length >= 7) {
+        const processName = parts[6];
+        const pid = parts[1].split('/')[0];
+        processes.push({ name: processName, pid: pid });
+      }
+    }
+    
+    // If service process name is provided, check if it's the expected process
+    if (serviceProcessName) {
+      const isExpectedProcess = processes.some(p => 
+        p.name.toLowerCase().includes(serviceProcessName.toLowerCase()) ||
+        p.name.includes('node') || p.name.includes('docker')
+      );
+      
+      return {
+        available: !isExpectedProcess,
+        processes: processes,
+        isExpectedService: isExpectedProcess
+      };
+    }
+    
+    return { available: false, processes: processes };
   } catch (error) {
     // If command fails, assume port is unavailable for safety
-    return false;
+    return { available: false, error: error.message };
   }
 }
 
@@ -339,9 +371,9 @@ async function checkHTTPService(service) {
   let portConflictInfo = null;
   
   if (port) {
-    const portAvailable = await checkPortAvailability(port);
-    if (!portAvailable) {
-      portConflictInfo = `Port ${port} is already in use by another process`;
+    const portCheck = await checkPortAvailability(port);
+    if (!portCheck.available && !portCheck.isExpectedService) {
+      portConflictInfo = `Port ${port} is in use by ${portCheck.processes?.map(p => p.name).join(', ') || 'another process'}`;
     }
   }
   
@@ -456,9 +488,9 @@ async function checkContainerService(service) {
             if (hostBindings && hostBindings.length > 0) {
               const hostPort = hostBindings[0].HostPort;
               if (hostPort) {
-                const portAvailable = await checkPortAvailability(hostPort);
-                if (!portAvailable) {
-                  portConflictInfo = `Port ${hostPort} (container port ${containerPort}) is in use by another process, preventing container startup`;
+                const portCheck = await checkPortAvailability(hostPort);
+                if (!portCheck.available && !portCheck.isExpectedService) {
+                  portConflictInfo = `Port ${hostPort} (container port ${containerPort}) is in use by ${portCheck.processes?.map(p => p.name).join(', ') || 'another process'}`;
                 }
               }
             }
@@ -1015,7 +1047,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const dependencies = config.dependencies || {};
         const detectedProfile = config.detectedProfile || 'home';
         
-        // Get current health status
+        // Get current health status with deployment method info
         const statusResults = [];
         for (const service of config.services || []) {
           const serviceName = service.name || service.id;
@@ -1036,11 +1068,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           statusResults.push({
             service: serviceName,
             status: lastCheck?.status || 'unknown',
-            category: service.category || 'uncategorized'
+            category: service.category || 'uncategorized',
+            type: service.type || 'unknown',
+            deployment_method: service.type === 'systemd' ? 'systemd' : 
+                             service.type === 'container' ? 'container' : 'http'
           });
         }
         
-        // Analyze dependencies
+        // Analyze dependencies with deployment method conflicts
         const dependencyAnalysis = {};
         
         Object.entries(dependencies).forEach(([service, deps]) => {
@@ -1049,18 +1084,32 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             const depStatus = statusResults.find(s => s.service === dep);
             return {
               service: dep,
-              status: depStatus?.status || 'unknown'
+              status: depStatus?.status || 'unknown',
+              type: depStatus?.type || 'unknown',
+              deployment_method: depStatus?.deployment_method || 'unknown'
             };
           });
           
           const failingDeps = depStatuses.filter(d => d.status !== 'healthy');
           
+          // Check for deployment method conflicts
+          const serviceDeployment = serviceStatus?.deployment_method || 'unknown';
+          const deploymentConflicts = depStatuses.filter(d => 
+            d.deployment_method !== 'unknown' && 
+            d.deployment_method !== serviceDeployment &&
+            d.status === 'healthy'
+          );
+          
           dependencyAnalysis[service] = {
             current_status: serviceStatus?.status || 'unknown',
+            deployment_method: serviceDeployment,
             dependencies: depStatuses,
             failing_dependencies: failingDeps,
+            deployment_conflicts: deploymentConflicts,
             potential_cascading_failure: serviceStatus?.status !== 'healthy' && failingDeps.length > 0,
-            dependency_failure_cause: failingDeps.length > 0 ? failingDeps.map(d => d.service).join(', ') : null
+            dependency_failure_cause: failingDeps.length > 0 ? failingDeps.map(d => d.service).join(', ') : null,
+            deployment_conflict_warning: deploymentConflicts.length > 0 ? 
+              `Mixed deployment methods detected: ${deploymentConflicts.map(d => `${d.service}(${d.deployment_method})`).join(', ')}` : null
           };
         });
         
@@ -1070,7 +1119,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             text: JSON.stringify({
               dependency_analysis: dependencyAnalysis,
               total_services: statusResults.length,
-              services_with_dependencies: Object.keys(dependencies).length
+              services_with_dependencies: Object.keys(dependencies).length,
+              deployment_conflicts_detected: Object.values(dependencyAnalysis).filter(d => d.deployment_conflicts.length > 0).length
             }, null, 2)
           }]
         };
@@ -1166,25 +1216,37 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         
         if (args.port) {
           // Check specific port
-          const portAvailable = await checkPortAvailability(args.port);
-          conflicts.push({
-            port: args.port,
-            available: portAvailable,
-            conflict: !portAvailable ? `Port ${args.port} is in use` : null
-          });
+          const portCheck = await checkPortAvailability(args.port);
+          if (!portCheck.available && !portCheck.isExpectedService) {
+            conflicts.push({
+              port: args.port,
+              available: false,
+              processes: portCheck.processes,
+              conflict: `Port ${args.port} is in use by ${portCheck.processes?.map(p => p.name).join(', ') || 'another process'}`
+            });
+          } else {
+            conflicts.push({
+              port: args.port,
+              available: true,
+              processes: portCheck.processes
+            });
+          }
         } else {
           // Check all service ports
           for (const service of config.services || []) {
             if (service.url && service.type === 'http') {
               const port = extractPortFromUrl(service.url);
               if (port) {
-                const portAvailable = await checkPortAvailability(port);
-                if (!portAvailable) {
+                const serviceName = service.name || service.id;
+                const portCheck = await checkPortAvailability(port, serviceName);
+                
+                if (!portCheck.available && !portCheck.isExpectedService) {
                   conflicts.push({
-                    service: service.name || service.id,
+                    service: serviceName,
                     port: port,
                     url: service.url,
-                    conflict: `Port ${port} is in use by another process`
+                    processes: portCheck.processes,
+                    conflict: `Port ${port} is in use by ${portCheck.processes?.map(p => p.name).join(', ') || 'another process'}`
                   });
                 }
               }
@@ -1197,7 +1259,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             type: 'text',
             text: JSON.stringify({
               conflicts: conflicts,
-              total_conflicts: conflicts.length,
+              total_conflicts: conflicts.filter(c => c.conflict).length,
               checked_port: args.port || 'all service ports'
             }, null, 2)
           }]
