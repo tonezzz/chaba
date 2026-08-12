@@ -120,6 +120,8 @@ const summaryRateLimiter = new RateLimiter(1, 120000); // Conservative: 1 concur
 const dailyRateLimiter = new RateLimiter(1, 180000); // Conservative: 1 concurrent for daily summaries, 3min queue timeout (reduced from 3 for GPU optimization)
 const summaryCircuitBreaker = new CircuitBreaker(2, 180000); // Open after 2 failures, 3min timeout
 const dailyCircuitBreaker = new CircuitBreaker(5, 240000); // More tolerant: Open after 5 failures, 4min timeout
+const embeddingRateLimiter = new RateLimiter(1, 60000); // Gemini free tier: 15 req/min, so 1 concurrent with 1min queue timeout
+const embeddingCircuitBreaker = new CircuitBreaker(3, 120000); // Open after 3 failures, 2min timeout
 
 export {
   RateLimiter,
@@ -127,5 +129,7 @@ export {
   summaryRateLimiter,
   dailyRateLimiter,
   summaryCircuitBreaker,
-  dailyCircuitBreaker
+  dailyCircuitBreaker,
+  embeddingRateLimiter,
+  embeddingCircuitBreaker
 };

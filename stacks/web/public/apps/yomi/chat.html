@@ -14,12 +14,21 @@
     main { max-width: 700px; width: 100%; margin: 0 auto; padding: 0 1rem; flex: 1; overflow: hidden; display: flex; flex-direction: column; }
     .back { color: #fff; text-decoration: none; font-size: .85rem; white-space: nowrap; }
     .back:hover { text-decoration: underline; }
+    .icon-btn { background: transparent; border: none; color: #fff; cursor: pointer; font-size: 1.1rem; padding: 0.4rem 0.6rem; border-radius: 6px; transition: background 0.15s; }
+    .icon-btn:hover { background: rgba(255,255,255,0.1); }
+    .icon-btn:disabled { color: #64748b; cursor: not-allowed; }
     .refetch-btn { background: #0ea5e9; color: #0f172a; border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
     .refetch-btn:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; }
     .refetch-force { background: #f59e0b; color: #0f172a; border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-weight: 600; font-size: 0.85rem; margin-left: 0.5rem; }
     .refetch-force:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; }
-    .msg-search { padding: 4px 8px; border: 1px solid #334155; border-radius: 6px; background: #0f172a; color: #fff; font-size: 0.85rem; min-width: 120px; max-width: 180px; }
+    .msg-search { padding: 4px 8px; border: 1px solid #334155; border-radius: 6px; background: #0f172a; color: #fff; font-size: 0.85rem; min-width: 120px; max-width: 180px; display: none; }
     .msg-search::placeholder { color: #94a3b8; }
+    .msg-search.active { display: block; }
+    .search-wrapper { position: relative; display: none; }
+    .search-wrapper.active { display: block; }
+    .search-clear { position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 1rem; padding: 0.25rem; }
+    .search-clear:hover { color: #fff; }
+    .search-count { color: #94a3b8; font-size: 0.75rem; margin-left: 0.5rem; }
     .message-match { background: #fef9c3 !important; border-color: #f59e0b !important; }
     .chat { background: var(--card); border-radius: .5rem; padding: 0.75rem; box-shadow: 0 1px 2px rgba(15,23,42,.05); flex: 1; display: flex; flex-direction: column; overflow: hidden; }
     .day-header {
@@ -49,12 +58,19 @@
       margin-bottom: 0.4rem;
       box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      position: relative;
     }
     .message:hover {
       border-color: #cbd5e1;
       box-shadow: 0 2px 5px rgba(15, 23, 42, 0.06);
     }
-    .meta { color: #94a3b8; font-size: .75rem; margin-bottom: .1rem; }
+    .message:hover .quick-actions { opacity: 1; }
+    .meta { color: #94a3b8; font-size: .75rem; margin-bottom: .1rem; display: flex; justify-content: space-between; align-items: center; }
+    .time-short { color: #94a3b8; font-size: .7rem; font-weight: 500; }
+    .quick-actions { opacity: 0; transition: opacity 0.15s; display: flex; gap: 0.25rem; margin-top: 0.25rem; }
+    .quick-actions button { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 0.25rem; padding: 0.2rem 0.5rem; font-size: 0.75rem; cursor: pointer; color: #64748b; }
+    .quick-actions button:hover { background: #e2e8f0; color: #0f172a; }
+    .unread-dot { width: 8px; height: 8px; background: #3b82f6; border-radius: 50%; display: inline-block; margin-right: 0.5rem; }
     .text { white-space: pre-wrap; word-break: break-word; font-size: .9rem; color: var(--text); }
     .text-null { color: #94a3b8; font-style: italic; }
     .media-img { max-width: 100%; max-height: 300px; border-radius: .5rem; margin-top: .25rem; display: block; cursor: pointer; }
@@ -93,21 +109,27 @@
       color: #f8fafc;
       border: none;
       border-radius: .35rem;
-      width: 2rem;
-      height: 2rem;
-      font-size: 1.25rem;
+      width: 2.5rem;
+      height: 2.5rem;
+      font-size: 1.5rem;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     #lightbox .close:hover { background: #334155; }
+    #lightbox .lightbox-actions { position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%); display: flex; gap: 0.5rem; }
+    #lightbox .lightbox-actions button { background: rgba(15, 23, 42, 0.9); color: #f8fafc; border: none; border-radius: .35rem; width: 2.5rem; height: 2.5rem; font-size: 1.25rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    #lightbox .lightbox-actions button:hover { background: #334155; }
     #scroll-ctrls { position: fixed; right: 1rem; bottom: 5rem; display: flex; flex-direction: column; gap: 0.35rem; z-index: 1000; }
-    #scroll-ctrls button { padding: 0.35rem 0.6rem; border: none; border-radius: 0.375rem; background: #0f172a; color: #fff; font-size: 0.75rem; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.2); opacity: 0.75; transition: opacity .15s; }
+    #scroll-ctrls button { padding: 0.5rem 0.75rem; border: none; border-radius: 0.375rem; background: #0f172a; color: #fff; font-size: 0.85rem; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.2); opacity: 0.75; transition: opacity .15s; }
     #scroll-ctrls button:hover { opacity: 1; }
     #status-bar { display: none; background: #0f172a; color: #fff; padding: .25rem .75rem; text-align: center; font-size: .8rem; flex-shrink: 0; }
     #status-bar.active { display: block; }
     #reply-form { display: flex; gap: 0.5rem; padding: 0.75rem; background: #f8fafc; border-top: 1px solid #e2e8f0; position: sticky; bottom: 0; }
     #reply-input { flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.375rem; font-size: 0.9rem; resize: none; min-height: 2.5rem; max-height: 8rem; }
     #reply-input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
-    #reply-send { padding: 0.5rem 1rem; border: none; border-radius: 0.375rem; background: var(--accent); color: #fff; font-size: 0.9rem; cursor: pointer; white-space: nowrap; }
+    #reply-send { padding: 0.5rem 0.75rem; border: none; border-radius: 0.375rem; background: var(--accent); color: #fff; font-size: 1.1rem; cursor: pointer; white-space: nowrap; display: flex; align-items: center; justify-content: center; }
     #reply-send:hover { opacity: 0.9; }
     #reply-send:disabled { opacity: 0.5; cursor: not-allowed; }
   </style>
@@ -116,27 +138,37 @@
   <header>
     <a class="back" href="/apps/yomi/">&larr; Back</a>
     <h1 id="chat-name">LINE Conversation</h1>
-    <input type="search" id="msg-search" class="msg-search" placeholder="Find in chat…" autocomplete="off">
-    <button id="refetch" class="refetch-btn" title="Refresh this conversation from LINE">Refresh</button>
-    <button id="refetch-force" class="refetch-force" title="Force refresh (bypass cache)">Force</button>
+    <button id="search-toggle" class="icon-btn" title="Search in chat" aria-label="Search">🔍</button>
+    <div class="search-wrapper" id="search-wrapper">
+      <input type="search" id="msg-search" class="msg-search" placeholder="Find in chat…" autocomplete="off">
+      <button id="search-clear" class="search-clear" aria-label="Clear search">×</button>
+    </div>
+    <span id="search-count" class="search-count"></span>
+    <button id="refetch" class="refetch-btn" title="Refresh this conversation from LINE">🔄</button>
+    <button id="refetch-force" class="refetch-force" title="Force refresh (bypass cache)">⚡</button>
   </header>
   <div id="status-bar"></div>
   <main id="app"><p id="status">Loading…</p></main>
   <form id="reply-form">
     <textarea id="reply-input" placeholder="Type a message…" rows="1"></textarea>
-    <button type="submit" id="reply-send">Send</button>
+    <button type="submit" id="reply-send">➤</button>
   </form>
   <div id="lightbox" role="dialog" aria-modal="true" aria-label="Full-size image">
-    <button id="lightbox-close" class="close" type="button" aria-label="Close">×</button>
-    <button id="lightbox-prev" class="close" type="button" aria-label="Previous image" style="right:auto;left:1rem">‹</button>
-    <button id="lightbox-next" class="close" type="button" aria-label="Next image">›</button>
+    <button id="lightbox-close" class="close" type="button" aria-label="Close">✕</button>
+    <button id="lightbox-prev" class="close" type="button" aria-label="Previous image" style="right:auto;left:1rem">←</button>
+    <button id="lightbox-next" class="close" type="button" aria-label="Next image">→</button>
     <img id="lightbox-img" src="" alt="Full-size image">
+    <div class="lightbox-actions">
+      <button id="lightbox-zoom-out" type="button" aria-label="Zoom out">−</button>
+      <button id="lightbox-download" type="button" aria-label="Download">⬇</button>
+      <button id="lightbox-zoom-in" type="button" aria-label="Zoom in">+</button>
+    </div>
   </div>
   <div id="scroll-ctrls" aria-label="Message scroll controls">
-    <button type="button" data-dir="top" aria-label="Oldest messages">Top</button>
-    <button type="button" data-dir="up" aria-label="Page up">Up</button>
-    <button type="button" data-dir="down" aria-label="Page down">Down</button>
-    <button type="button" data-dir="last" aria-label="Newest messages">Last</button>
+    <button type="button" data-dir="top" aria-label="Oldest messages">⬆️</button>
+    <button type="button" data-dir="up" aria-label="Page up">⬇️</button>
+    <button type="button" data-dir="down" aria-label="Page down">⬇️</button>
+    <button type="button" data-dir="last" aria-label="Jump to newest">⬇️</button>
   </div>
   
   <!-- Load shared utilities -->
@@ -221,9 +253,20 @@
       bubble.className = 'message';
       if (m.id) bubble.dataset.id = m.id;
       const time = m.deliveredTime ? ' · ' + new Date(m.deliveredTime).toLocaleString() : '';
+      const timeShort = m.deliveredTime ? new Date(m.deliveredTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      // Mark as unread if message is from last 24 hours
+      const isUnread = m.deliveredTime && (Date.now() - m.deliveredTime) < 86400000;
+      const unreadHtml = isUnread ? '<span class="unread-dot"></span>' : '';
       bubble.innerHTML = `
-        <div class="meta">${escapeHtml(m.fromName || m.from || 'Unknown')}${time}</div>
+        <div class="meta">
+          <span>${unreadHtml}${escapeHtml(m.fromName || m.from || 'Unknown')}${time}</span>
+          <span class="time-short">${timeShort}</span>
+        </div>
         ${renderContent(m, chatId)}
+        <div class="quick-actions">
+          <button data-action="reply" title="Reply">↩</button>
+          <button data-action="copy" title="Copy text">📋</button>
+        </div>
       `;
       return bubble;
     }
@@ -359,8 +402,12 @@
     const lightboxClose = document.getElementById('lightbox-close');
     const lightboxPrev = document.getElementById('lightbox-prev');
     const lightboxNext = document.getElementById('lightbox-next');
+    const lightboxZoomIn = document.getElementById('lightbox-zoom-in');
+    const lightboxZoomOut = document.getElementById('lightbox-zoom-out');
+    const lightboxDownload = document.getElementById('lightbox-download');
     let gallery = [];
     let galleryIndex = -1;
+    let currentZoom = 1;
 
     function refreshGallery() {
       gallery = [...document.querySelectorAll('.media-img')].map(img => img.src);
@@ -369,39 +416,99 @@
       if (i < 0 || i >= gallery.length) return;
       galleryIndex = i;
       lightboxImg.src = gallery[i];
+      lightboxImg.style.transform = `scale(${currentZoom})`;
       lightboxPrev.hidden = i === 0;
       lightboxNext.hidden = i === gallery.length - 1;
       lightbox.classList.add('active');
     }
     function openLightbox(src) {
       refreshGallery();
+      currentZoom = 1;
       const i = gallery.indexOf(src);
       showLightboxAt(i >= 0 ? i : 0);
     }
-    function closeLightbox() { lightboxImg.src = ''; lightbox.classList.remove('active'); }
+    function closeLightbox() { lightboxImg.src = ''; lightboxImg.style.transform = 'scale(1)'; currentZoom = 1; lightbox.classList.remove('active'); }
     lightboxClose.addEventListener('click', closeLightbox);
     lightboxPrev.addEventListener('click', (e) => { e.stopPropagation(); showLightboxAt(galleryIndex - 1); });
     lightboxNext.addEventListener('click', (e) => { e.stopPropagation(); showLightboxAt(galleryIndex + 1); });
-    lightbox.addEventListener('click', (e) => { if (e.target !== lightboxImg && e.target !== lightboxClose && e.target !== lightboxPrev && e.target !== lightboxNext) closeLightbox(); });
+    if (lightboxZoomIn) {
+      lightboxZoomIn.addEventListener('click', (e) => { e.stopPropagation(); currentZoom = Math.min(currentZoom + 0.25, 3); lightboxImg.style.transform = `scale(${currentZoom})`; });
+    }
+    if (lightboxZoomOut) {
+      lightboxZoomOut.addEventListener('click', (e) => { e.stopPropagation(); currentZoom = Math.max(currentZoom - 0.25, 0.5); lightboxImg.style.transform = `scale(${currentZoom})`; });
+    }
+    if (lightboxDownload) {
+      lightboxDownload.addEventListener('click', (e) => { e.stopPropagation(); const a = document.createElement('a'); a.href = lightboxImg.src; a.download = ''; a.click(); });
+    }
+    lightbox.addEventListener('click', (e) => { if (e.target !== lightboxImg && e.target !== lightboxClose && e.target !== lightboxPrev && e.target !== lightboxNext && e.target !== lightboxZoomIn && e.target !== lightboxZoomOut && e.target !== lightboxDownload) closeLightbox(); });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeLightbox();
       if (e.key === 'ArrowLeft' && !lightboxPrev.hidden) showLightboxAt(galleryIndex - 1);
       if (e.key === 'ArrowRight' && !lightboxNext.hidden) showLightboxAt(galleryIndex + 1);
+      if (e.key === '+' || e.key === '=') { currentZoom = Math.min(currentZoom + 0.25, 3); lightboxImg.style.transform = `scale(${currentZoom})`; }
+      if (e.key === '-') { currentZoom = Math.max(currentZoom - 0.25, 0.5); lightboxImg.style.transform = `scale(${currentZoom})`; }
     });
 
     const msgSearch = document.getElementById('msg-search');
+    const searchToggle = document.getElementById('search-toggle');
+    const searchWrapper = document.getElementById('search-wrapper');
+    const searchClear = document.getElementById('search-clear');
+    const searchCount = document.getElementById('search-count');
+    if (searchToggle && searchWrapper) {
+      searchToggle.addEventListener('click', () => {
+        searchWrapper.classList.toggle('active');
+        if (searchWrapper.classList.contains('active')) {
+          msgSearch.focus();
+        }
+      });
+    }
+    if (searchClear && msgSearch) {
+      searchClear.addEventListener('click', () => {
+        msgSearch.value = '';
+        msgSearch.dispatchEvent(new Event('input'));
+        msgSearch.focus();
+      });
+    }
     if (msgSearch) {
       msgSearch.addEventListener('input', () => {
         const term = msgSearch.value.trim().toLowerCase();
         document.querySelectorAll('.message').forEach(el => {
           el.classList.toggle('message-match', term.length > 0 && el.textContent.toLowerCase().includes(term));
         });
-        if (term) {
-          const first = document.querySelector('.message-match');
-          if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const matches = document.querySelectorAll('.message-match');
+        if (searchCount) {
+          searchCount.textContent = term ? `${matches.length} match${matches.length !== 1 ? 'es' : ''}` : '';
+        }
+        if (term && matches.length > 0) {
+          matches[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       });
     }
+
+    // Quick actions (Reply, Copy)
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.quick-actions button');
+      if (!btn) return;
+      const action = btn.dataset.action;
+      const message = btn.closest('.message');
+      if (!message) return;
+      const textEl = message.querySelector('.text');
+      const text = textEl ? textEl.textContent : '';
+      
+      if (action === 'copy') {
+        navigator.clipboard.writeText(text).then(() => {
+          btn.textContent = '✓';
+          setTimeout(() => btn.textContent = '📋', 1000);
+        });
+      }
+      if (action === 'reply') {
+        const replyInput = document.getElementById('reply-input');
+        if (replyInput) {
+          replyInput.value = `> ${text.split('\n').join('\n> ')}\n\n`;
+          replyInput.focus();
+        }
+      }
+    });
 
     const refetch = document.getElementById('refetch');
     const chatId = new URLSearchParams(location.search).get('chat');

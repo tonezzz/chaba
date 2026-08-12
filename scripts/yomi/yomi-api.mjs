@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import { spawn, execSync } from 'node:child_process';
 import { existsSync, createReadStream, readdirSync } from 'node:fs';
-import { summaryRateLimiter, dailyRateLimiter, summaryCircuitBreaker, dailyCircuitBreaker } from './llama-rate-limiter.mjs';
+import { summaryRateLimiter, dailyRateLimiter, summaryCircuitBreaker, dailyCircuitBreaker, embeddingRateLimiter, embeddingCircuitBreaker } from './llama-rate-limiter.mjs';
 import { 
   handleMediaAnalysis, 
   handleMediaAnalysisStatus, 
@@ -16,6 +16,8 @@ const MEDIA_DIR = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/
 const WEAVIATE_SEARCH_URL = process.env.WEAVIATE_SEARCH_URL || 'http://localhost:3002';
 const WEAVIATE_URL = process.env.WEAVIATE_URL || 'http://localhost:8082';
 const EMBEDDING_URL = process.env.EMBEDDING_SERVICE_URL || 'http://localhost:5000';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || 'text-embedding-004';
 
 const EXT_TO_MIME = {
   jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif',
@@ -27,6 +29,31 @@ const EXT_TO_MIME = {
 
 function mimeFromExt(ext) {
   return EXT_TO_MIME[(ext || '').toLowerCase()] || 'application/octet-stream';
+}
+
+async function getGeminiEmbedding(text) {
+  if (!GEMINI_API_KEY) {
+    throw new Error('GEMINI_API_KEY not configured');
+  }
+  
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_EMBEDDING_MODEL}:embedContent?key=${GEMINI_API_KEY}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      content: {
+        parts: [{ text }]
+      }
+    })
+  });
+  
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Gemini embedding API error: ${response.status} - ${error}`);
+  }
+  
+  const data = await response.json();
+  return data.embedding.values;
 }
 
 function sendJson(res, status, obj) {
@@ -829,14 +856,12 @@ const server = createServer(async (req, res) => {
       const chatId = url.searchParams.get('chat') || '';
       if (!q.trim()) { sendJson(res, 400, { error: 'q is required' }); return; }
 
-      // Embed the query
-      const embedRes = await fetch(`${EMBEDDING_URL}/embed-single`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: q }),
+      // Embed the query using Gemini with rate limiting
+      const embedding = await embeddingRateLimiter.run(async () => {
+        return await embeddingCircuitBreaker.run(async () => {
+          return await getGeminiEmbedding(q);
+        });
       });
-      if (!embedRes.ok) throw new Error(`embedding service ${embedRes.status}`);
-      const { embedding } = await embedRes.json();
 
       // Build optional where filter
       const whereClause = chatId
