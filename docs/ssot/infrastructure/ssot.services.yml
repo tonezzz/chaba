@@ -1,3 +1,7 @@
+title: Chaba Services Configuration
+subtitle: Service definitions and configurations for Chaba infrastructure
+version: 2
+
 tony-omen:
   llama-router:
     container: thai-legal-inference
@@ -17,6 +21,25 @@ tony-omen:
     container: postgres
     image: postgres:16-alpine
     port: 5432
+  mddb:
+    container: mddb
+    image: tradik/mddb:latest
+    port: 11023 (API), 9000 (web)
+    container_ip: 172.19.0.5
+    status: implemented (2026-08-12)
+    routing:
+      - /api/mddb/* → mddb:11023 (Caddy reverse proxy)
+      - /apps/mddb/* → 172.19.0.6:3000 (mddb-panel direct IP)
+    notes: Personal Knowledge Base system with panel and API services
+  mddb-panel:
+    container: mddb-panel
+    image: tradik/mddb:panel-latest
+    port: 3002 (host), 3000 (internal)
+    container_ip: 172.19.0.6
+    status: implemented (2026-08-12)
+    routing:
+      - /apps/mddb/* → 172.19.0.6:3000 (direct IP routing in Caddy)
+    notes: MDDB web panel interface, uses direct container IP for routing
   gemini-api:
     service: Google Gemini API
     provider: Google Cloud
@@ -41,9 +64,9 @@ tony-omen:
       - English system prompts for English content
       - Language detection via detectLanguage() function
     priority_system:
-      - GEMINI_MAX_DATES: Maximum dates per run (default: 10)
-      - GEMINI_PRIORITY_MODE: recent, high-activity, all (default: recent)
-      - prioritizeDates() function for selective re-summarization
+      - "GEMINI_MAX_DATES: Maximum dates per run (default: 10)"
+      - "GEMINI_PRIORITY_MODE: recent, high-activity, all (default: recent)"
+      - "prioritizeDates() function for selective re-summarization"
     migration_status:
       phase: Phase 1 - High-activity chats
       progress: Processing top 5 high-activity chats

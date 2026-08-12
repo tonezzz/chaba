@@ -55,6 +55,18 @@ This file tracks significant changes to SSOT files for audit trail and rollback 
 - **Impact**: Accurate tracking of completed infrastructure improvements
 - **Rollback**: Revert improvement entry to previous status
 
+- **File**: docs/ssot/infrastructure/ssot.services.yml
+- **Change Type**: minor
+- **Description**: Added MDDB services (mddb and mddb-panel containers) with configuration details, ports, container IPs, and routing information
+- **Impact**: SSOT now documents MDDB Personal Knowledge Base system
+- **Rollback**: Remove mddb and mddb-panel entries from services config
+
+- **File**: docs/ssot/infrastructure/ssot.health.yml
+- **Change Type**: minor
+- **Description**: Added MDDB API and MDDB Panel health check endpoints, updated service groups to include MDDB services
+- **Impact**: Health monitoring now includes MDDB services
+- **Rollback**: Remove mddb-api and mddb-panel health check entries
+
 ## Change Categories
 
 ### Major Changes

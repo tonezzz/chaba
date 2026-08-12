@@ -1,48 +1,128 @@
 title: Chaba Health Check Configuration
 description: Health check endpoints and monitoring for all chaba services
-version: 1
+version: 3
+
+# Network profiles with auto-detection
+profiles:
+  default: auto-detect
+  home:
+    hostname: tony-omen.local
+    base_url: http://tony-omen.local:8080
+    description: Home network with local hostname
+  mobile:
+    hostname: [CURRENT-IP]
+    base_url: http://[CURRENT-IP]:8080
+    description: Mobile/external network with IP placeholder
+    note: Replace [CURRENT-IP] with actual IP or DDNS hostname
+
+# Service groups for dependency tracking
+groups:
+  web-stack: [caddy, status-api, yomi-api, mddb-panel]
+  gpu-stack: [imagen2, txt2vid, thai-legal]
+  datastore: [redis, postgres, weaviate, mddb-api]
+  trading: [trade-api, trading-terminal]
+  optional: [activepieces, frigate, camera-control]
+
+# Service dependencies
+dependencies:
+  yomi-api: [caddy, postgres, redis]
+  status-api: [postgres]
+  gpu-queue: [postgres]
+  activepieces: [postgres, redis]
 
 services:
   # Web Stack Services (8080/8081)
   - id: caddy
     name: Caddy
     type: http
-    url: http://tony-omen.local:8080/apps/
+    url: "{profile}/apps/"
     expected_status: 200
     timeout: 5
     category: web
+    profiles: [home, mobile]
 
   - id: bserver
     name: BServer
     type: http
-    url: http://tony-omen.local:8080/
+    url: "{profile}/"
     expected_status: 200
     timeout: 5
     category: web
+    profiles: [home, mobile]
+
+  - id: raceman-web
+    name: Raceman Web
+    type: http
+    url: http://tony-omen.local:8083/apps/raceman/
+    expected_status: 200
+    timeout: 5
+    category: web
+    profiles: [home]
+
+  - id: raceman-php
+    name: Raceman PHP
+    type: container
+    container: raceman-php
+    expected_state: running
+    timeout: 5
+    category: web
+    profiles: [home]
 
   - id: status-api
     name: Status API
     type: http
-    url: http://tony-omen.local:8080/api/health
+    url: "{profile}/api/health"
     expected_status: 200
     timeout: 5
     category: api
+    profiles: [home, mobile]
 
   - id: yomi-api
     name: Yomi API
     type: http
-    url: http://tony-omen.local:8080/api/yomi/health
+    url: "{profile}/api/yomi/health"
     expected_status: 200
     timeout: 5
     category: api
+    profiles: [home, mobile]
+    verification:
+      - "Test direct container access: docker exec web wget -qO- http://host.docker.internal:3000/api/yomi/health"
+      - "Test Caddy proxy: curl -s {profile}/api/yomi/health"
+      - "Test chat page: curl -s {profile}/apps/yomi/chat.html?chat=test"
+      - "Verify container networking: docker exec web ping -c 2 host.docker.internal"
+      - "Check Caddy proxy configuration uses handle_path not handle for /api/yomi/*"
 
   - id: yomi-summarization
     name: Yomi Summarization
     type: http
-    url: http://tony-omen.local:8080/api/yomi/summarization-status
+    url: "{profile}/api/yomi/summarization-status"
     expected_status: 200
     timeout: 5
     category: api
+    profiles: [home, mobile]
+    verification:
+      - "Test API endpoint: curl -s {profile}/api/yomi/summarization-status"
+      - "Test chat page with valid chat ID: curl -s {profile}/apps/yomi/chat.html?chat=valid_chat_id"
+      - "Verify API returns JSON response with status information"
+      - "Check browser console for API errors when loading chat page"
+
+  - id: yomi-rate-limiter
+    name: Yomi Rate Limiter
+    type: http
+    url: "{profile}/api/yomi/rate-limiter-status"
+    expected_status: 200
+    timeout: 5
+    category: api
+    profiles: [home, mobile]
+
+  - id: yomi-activity-status
+    name: Yomi Activity Status
+    type: http
+    url: "{profile}/api/yomi/activity-status"
+    expected_status: 200
+    timeout: 5
+    category: api
+    profiles: [home, mobile]
 
   # Trading Services
   - id: trade-api
@@ -52,6 +132,7 @@ services:
     expected_state: running
     timeout: 5
     category: api
+    profiles: [home, mobile]
 
   - id: trading-terminal
     name: Trading Terminal
@@ -60,6 +141,7 @@ services:
     expected_state: running
     timeout: 5
     category: api
+    profiles: [home, mobile]
 
   # Data Services
   - id: redis
@@ -69,6 +151,7 @@ services:
     expected_state: running
     timeout: 5
     category: datastore
+    profiles: [home, mobile]
 
   - id: postgres
     name: Postgres
@@ -77,16 +160,36 @@ services:
     expected_state: running
     timeout: 5
     category: datastore
+    profiles: [home, mobile]
 
   - id: weaviate
     name: Weaviate
     type: http
-    url: http://tony-omen.local:8080/api/weaviate/v1/nodes
+    url: "{profile}/api/weaviate/v1/nodes"
     expected_status: 200
     timeout: 5
     category: datastore
+    profiles: [home, mobile]
 
-  # GPU Services
+  - id: mddb-api
+    name: MDDB API
+    type: http
+    url: "{profile}/api/mddb/health"
+    expected_status: 200
+    timeout: 5
+    category: datastore
+    profiles: [home, mobile]
+
+  - id: mddb-panel
+    name: MDDB Panel
+    type: http
+    url: "{profile}/apps/mddb/"
+    expected_status: 200
+    timeout: 5
+    category: web
+    profiles: [home, mobile]
+
+  # GPU Services (All offline due to GTX 1650 4GB VRAM constraints)
   - id: thai-legal
     name: Llama Router (Phi-3 only)
     type: http
@@ -94,7 +197,8 @@ services:
     expected_status: 200
     timeout: 10
     category: gpu
-    note: Thai legal model offline (2026-08-06) due to GPU memory constraints
+    profiles: [home]
+    note: Offline (2026-08-09) - GTX 1650 4GB cannot run multiple GPU services concurrently. Use mcp1_hold_llama and run one GPU workload at a time.
 
   - id: imagen2
     name: Imagen2
@@ -103,7 +207,8 @@ services:
     expected_status: 200
     timeout: 10
     category: gpu
-    note: Offline (2026-08-06) due to GPU memory constraints
+    profiles: [home]
+    note: "Offline (2026-08-09) - GPU memory constraints. Start manually when needed: docker compose -f stacks/gpu/docker-compose.yml up imagen2-inference"
 
   - id: txt2vid
     name: Txt2Vid
@@ -112,7 +217,8 @@ services:
     expected_status: 200
     timeout: 10
     category: gpu
-    note: Offline (2026-08-06) due to GPU memory constraints
+    profiles: [home]
+    note: "Offline (2026-08-09) - GPU memory constraints. Start manually when needed: docker compose -f stacks/gpu/docker-compose.yml up txt2vid-inference"
 
   # Queue Services
   - id: gpu-queue
@@ -122,6 +228,7 @@ services:
     expected_status: 200
     timeout: 5
     category: queue
+    profiles: [home]
 
   # Optional Services
   - id: activepieces
@@ -131,15 +238,17 @@ services:
     expected_state: running
     timeout: 5
     category: optional
+    profiles: [home, mobile]
+    note: "Container not running - start with: docker compose -f stacks/activepieces/docker-compose.yml up -d"
 
   - id: frigate
     name: Frigate NVR
     type: http
-    url: http://tony-omen.local:8080/frigate/api/version
+    url: "{profile}/frigate/api/version"
     expected_status: 200
     timeout: 10
     category: optional
-    note: Offline (2026-08-06) due to 502 errors - needs investigation
+    profiles: [home, mobile]
 
   - id: camera-control
     name: Camera Control
@@ -148,12 +257,60 @@ services:
     expected_status: 200
     timeout: 5
     category: optional
+    profiles: [home]
+
+  # Systemd Services
+  - id: yomi-api-service
+    name: Yomi API Service (systemd)
+    type: systemd
+    service: yomi-api.service
+    expected_state: active
+    timeout: 5
+    category: system
+    profiles: [home, mobile]
+
+  - id: yomi-update-all-timer
+    name: Yomi Update All Timer
+    type: systemd
+    service: yomi-update-all.timer
+    expected_state: active
+    timeout: 5
+    category: system
+    profiles: [home, mobile]
+
+  - id: yomi-update-active-timer
+    name: Yomi Update Active Timer
+    type: systemd
+    service: yomi-update-active.timer
+    expected_state: active
+    timeout: 5
+    category: system
+    profiles: [home, mobile]
+
+  - id: weaviate-index-timer
+    name: Weaviate Index Timer
+    type: systemd
+    service: weaviate-index.timer
+    expected_state: active
+    timeout: 5
+    category: system
+    profiles: [home, mobile]
+
+  - id: chaba-health-monitor-timer
+    name: Chaba Health Monitor Timer
+    type: systemd
+    service: chaba-health-monitor.timer
+    expected_state: active
+    timeout: 5
+    category: system
+    profiles: [home, mobile]
 
 # Recovery suggestions for common failure modes
 recovery_actions:
-  container_down: "Check docker compose status: `docker compose ps`, Restart container: `docker compose restart <container>`, Check logs: `docker compose logs <container>`"
-  http_error: "Check if service is running: `docker compose ps`, Check service logs for errors, Verify port is accessible: `curl -v <url>`, Restart service if needed"
-  timeout: "Check if service is overloaded, Check system resources: `htop` or `docker stats`, Consider restarting the service"
+  container_down: "Check docker compose status: docker compose ps, Restart container: docker compose restart <container>, Check logs: docker compose logs <container>"
+  http_error: "Check if service is running: docker compose ps, Check service logs for errors, Verify port is accessible: curl -v <url>, Restart service if needed"
+  timeout: "Check if service is overloaded, Check system resources: htop or docker stats, Consider restarting the service"
+  systemd_service_down: "Check service status: systemctl --user status <service>, Restart service: systemctl --user restart <service>, Check logs: journalctl --user -xeu <service>"
   gpu_service_down:
     - Check GPU status with mcp1_gpu_status
     - Check if llama is holding GPU: mcp2_status
@@ -161,16 +318,55 @@ recovery_actions:
     - Restart GPU service
 
   gpu_vram_high:
-    - Check Netdata GPU dashboard: http://tony-omen.local:8080/apps/netdata/
+    - Check GPU memory with nvidia-smi or mcp1_gpu_status
     - Identify processes using GPU memory
     - Hold llama if needed: mcp1_hold_llama
     - Check for stuck jobs in GPU queue
 
   gpu_overheating:
-    - Check GPU temperature in Netdata dashboard
+    - Check GPU temperature with nvidia-smi
     - Check system cooling and airflow
     - Reduce GPU workload if needed
     - Monitor for thermal throttling
+
+  yomi_api_404_error:
+    - "Check Caddyfile uses handle_path not handle for /api/yomi/* routes"
+    - "Restart web container after Caddyfile changes: docker compose restart web"
+    - "Verify container networking: docker exec web ping -c 2 host.docker.internal"
+    - "Test direct container access: docker exec web wget -qO- http://host.docker.internal:3000/api/yomi/health"
+    - "Check yomi-api systemd service: systemctl --user status yomi-api.service"
+    - "Verify yomi-api is listening on port 3000: ss -tlnp | grep 3000"
+
+  yomi_line_session_expired:
+    - "Re-login to LINE via Yomi MCP server: call login tool"
+    - Check if LINE account logged in elsewhere (causes session revocation)
+    - Verify MCP server connection is healthy
+    - "Test with list_conversations after re-login"
+
+  raceman_service_down:
+    - "Check raceman containers: cd /home/tony/CascadeProjects/chaba-raceman && docker compose ps"
+    - "Restart raceman services: cd /home/tony/CascadeProjects/chaba-raceman && docker compose restart"
+    - "Check raceman logs: cd /home/tony/CascadeProjects/chaba-raceman && docker compose logs"
+    - "Verify nginx config: cat /home/tony/CascadeProjects/chaba-raceman/nginx.conf"
+    - "Test direct access: curl -s http://tony-omen.local:8083/apps/raceman/"
+
+  network_connectivity_home:
+    - "Check if tony-omen.local is reachable: ping -c 2 tony-omen.local"
+    - "Test HTTP connectivity: curl -s -o /dev/null -w '%{http_code}' http://tony-omen.local:8080/"
+    - "Test localhost access: curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/"
+    - "Check network interface status: ip addr show"
+    - "Verify DNS resolution: nslookup tony-omen.local"
+    - "Check firewall rules: sudo iptables -L -n"
+    - "Test if on home network vs mobile profile"
+
+  hostname_resolution_issues:
+    - "Verify /etc/hosts mapping: cat /etc/hosts | grep tony-omen.local"
+    - "Check resolved IP vs local IP: nslookup tony-omen.local and compare with ip addr show"
+    - "Get reliable local IP: ip route get 1.1.1.1 | awk '{print $7}'"
+    - "Fix incorrect /etc/hosts: sudo sed -i 's/OLD_IP/NEW_IP/' /etc/hosts"
+    - "Verify hostname-based HTTP: curl -s http://tony-omen.local:8080/"
+    - "Universal health check now includes hostname resolution verification"
+    - "Health workflows use hostname-based checks instead of hardcoded IPs"
 
 # Testing and debugging guidance
 debugging_guidance:
@@ -184,9 +380,21 @@ debugging_guidance:
     - At Home: Use tony-omen.local for direct local network access
     - On Mobile: Use localhost if testing on the same machine
     - External: Use VPN or external domain when away from home network
+    - Network connectivity issues: DNS may resolve but HTTP may fail (ping vs curl discrepancy)
+    - Universal health check uses HTTP connectivity detection instead of ping for accuracy
 
   service_testing:
-    - 'Use curl for quick endpoint checks: `curl -v <url>`'
-    - 'Check service logs: `docker compose logs <service>`'
-    - 'Verify port accessibility: `netstat -tlnp | grep <port>`'
+    - "Use curl for quick endpoint checks: curl -v <url>"
+    - "Check service logs: docker compose logs <service>"
+    - "Verify port accessibility: ss -tlnp | grep <port>"
     - Test API endpoints with proper HTTP methods
+
+  yomi_chat_testing:
+    - "Test health endpoint: curl -s http://tony-omen.local:8080/api/yomi/health"
+    - "Test chat page load: curl -s http://tony-omen.local:8080/apps/yomi/chat.html?chat=test_id"
+    - "Verify Caddy proxy uses handle_path not handle for /api/yomi/* routes"
+    - "Check container networking: docker exec web ping -c 2 host.docker.internal"
+    - "Test direct container access: docker exec web wget -qO- http://host.docker.internal:3000/api/yomi/health"
+    - Verify LINE session is active via Yomi MCP server (call list_conversations)
+    - Check browser console for API errors when loading chat page
+    - Test with valid chat ID from Yomi conversations list
