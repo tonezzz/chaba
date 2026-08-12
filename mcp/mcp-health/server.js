@@ -215,11 +215,9 @@ async function processAlerts(config, serviceName, status, previousStatus, error)
 }
 
 // Enhanced error context with troubleshooting steps
-function getEnhancedErrorContext(serviceName, status, error, serviceType, serviceUrl) {
+function getEnhancedErrorContext(serviceName, status, error, serviceType, serviceUrl, config) {
   const troubleshootingSteps = [];
   const url = serviceUrl || serviceName;
-  
-  console.error(`getEnhancedErrorContext called: serviceName=${serviceName}, serviceUrl=${serviceUrl}, url=${url}`);
   
   // Service-specific troubleshooting
   if (serviceType === 'container') {
@@ -274,6 +272,15 @@ function getEnhancedErrorContext(serviceName, status, error, serviceType, servic
     );
   }
   
+  // Add SSOT recovery actions if available
+  const ssotRecoveryActions = getSSOTRecoveryActions(serviceName, status, error, config);
+  if (ssotRecoveryActions.length > 0) {
+    troubleshootingSteps.push(
+      '--- SSOT Recovery Actions ---',
+      ...ssotRecoveryActions
+    );
+  }
+  
   return {
     service: serviceName,
     status,
@@ -281,8 +288,47 @@ function getEnhancedErrorContext(serviceName, status, error, serviceType, servic
     service_type: serviceType,
     service_url: url,
     troubleshooting_steps: troubleshootingSteps,
-    common_solutions: getCommonSolutions(status, error)
+    common_solutions: getCommonSolutions(status, error),
+    ssot_recovery_actions: ssotRecoveryActions
   };
+}
+
+// Get SSOT recovery actions based on service and error
+function getSSOTRecoveryActions(serviceName, status, error, config) {
+  const recoveryActions = config.recovery_actions || {};
+  const serviceId = serviceName.toLowerCase().replace(/\s+/g, '_');
+  
+  // Try to find matching recovery action key
+  let matchingKey = null;
+  
+  // Direct match by service ID
+  if (recoveryActions[serviceId]) {
+    matchingKey = serviceId;
+  }
+  
+  // Error-based matching
+  if (!matchingKey && error) {
+    if (error.includes('timeout')) {
+      matchingKey = 'timeout_issues';
+    } else if (error.includes('port') || error.includes('EADDRINUSE')) {
+      matchingKey = 'port_conflicts';
+    } else if (error.includes('connection refused')) {
+      matchingKey = 'connection_issues';
+    } else if (error.includes('not found')) {
+      matchingKey = 'service_not_found';
+    }
+  }
+  
+  // Status-based matching
+  if (!matchingKey) {
+    if (status === 'error') {
+      matchingKey = 'general_service_failure';
+    } else if (status === 'degraded') {
+      matchingKey = 'performance_issues';
+    }
+  }
+  
+  return matchingKey ? (recoveryActions[matchingKey] || []) : [];
 }
 
 function getCommonSolutions(status, error) {
@@ -527,35 +573,60 @@ async function checkContainerService(service) {
   const expectedState = service.expected_state || 'running';
   
   try {
-    // Try docker ps first (more reliable for individual containers)
-    const output = execSync(`docker ps -a --filter "name=${service.container}" --format "{{.Status}}"`, { 
-      encoding: 'utf8',
-      stdio: 'pipe'
-    });
+    // Try docker compose first (old method) for better docker-compose.yml integration
+    let output;
+    try {
+      output = execSync(`docker compose ps -a ${service.container} 2>/dev/null || true`, { 
+        encoding: 'utf8',
+        stdio: 'pipe'
+      });
+    } catch {
+      // Fallback to docker ps if docker compose fails
+      output = execSync(`docker ps -a --filter "name=${service.container}" --format "{{.Status}}"`, { 
+        encoding: 'utf8',
+        stdio: 'pipe'
+      });
+    }
+    
     const responseTime = Date.now() - startTime;
     
-    if (!output.trim()) {
+    // Parse docker compose output or docker ps output
+    let status = '';
+    let state = 'unknown';
+    
+    if (output.includes('Up') || output.includes('running')) {
+      state = 'running';
+      status = output;
+    } else if (output.includes('Restarting')) {
+      state = 'restarting';
+      status = output;
+    } else if (output.includes('Exited') || output.includes('exited')) {
+      state = 'exited';
+      status = output;
+    } else if (output.includes('Dead') || output.includes('dead')) {
+      state = 'dead';
+      status = output;
+    } else if (!output.trim()) {
+      // Container not found
       return {
         status: 'error',
         response_time: responseTime,
         container_state: 'not found',
         expected_state: expectedState,
-        error: `Container ${service.container} not found`
+        error: `Container ${service.container} not found. Check: docker ps -a | grep ${service.container}`
       };
-    }
-    
-    const status = output.trim();
-    
-    // Parse docker status
-    let state = 'unknown';
-    if (status.includes('Up')) {
-      state = 'running';
-    } else if (status.includes('Restarting')) {
-      state = 'restarting';
-    } else if (status.includes('Exited')) {
-      state = 'exited';
-    } else if (status.includes('Dead')) {
-      state = 'dead';
+    } else {
+      // Parse docker ps format output
+      status = output.trim();
+      if (status.includes('Up')) {
+        state = 'running';
+      } else if (status.includes('Restarting')) {
+        state = 'restarting';
+      } else if (status.includes('Exited')) {
+        state = 'exited';
+      } else if (status.includes('Dead')) {
+        state = 'dead';
+      }
     }
     
     // Status categorization based on expected state
@@ -1558,7 +1629,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           lastCheck?.status || 'unknown',  // status
           lastCheck?.error || null,  // error
           service.type || 'unknown',  // serviceType
-          serviceUrl  // serviceUrl
+          serviceUrl,  // serviceUrl
+          config  // config for SSOT recovery actions
         );
         
         return {
