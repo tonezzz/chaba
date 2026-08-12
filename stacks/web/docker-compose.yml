@@ -435,27 +435,6 @@ services:
               count: 1
               capabilities: [gpu]
 
-  netdata:
-    container_name: netdata
-    image: netdata/netdata:stable
-    hostname: netdata
-    ports:
-      - "19999:19999"
-    volumes:
-      - netdata_config:/etc/netdata
-      - netdata_lib:/var/lib/netdata
-      - netdata_cache:/var/cache/netdata
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    cap_add:
-      - SYS_PTRACE
-      - SYS_ADMIN
-    security_opt:
-      - apparmor:unconfined
-    restart: unless-stopped
-    networks:
-      - default
 
 volumes:
   caddy_data:
@@ -463,9 +442,6 @@ volumes:
   postgres_data:
   redis_data:
   weaviate_data:
-  netdata_config:
-  netdata_lib:
-  netdata_cache:
   yomi_node_modules:
   gpu_queue_node_modules:
 
