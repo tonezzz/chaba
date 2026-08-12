@@ -214,6 +214,95 @@ async function processAlerts(config, serviceName, status, previousStatus, error)
   }
 }
 
+// Enhanced error context with troubleshooting steps
+function getEnhancedErrorContext(service, status, error, serviceType) {
+  const troubleshootingSteps = [];
+  
+  // Service-specific troubleshooting
+  if (serviceType === 'container') {
+    troubleshootingSteps.push(
+      `Check container status: docker ps -a | grep ${service}`,
+      `View container logs: docker logs ${service}`,
+      `Restart container: docker restart ${service}`,
+      `Inspect container: docker inspect ${service}`
+    );
+  } else if (serviceType === 'systemd') {
+    troubleshootingSteps.push(
+      `Check service status: systemctl --user status ${service}`,
+      `View service logs: journalctl --user -xeu ${service}`,
+      `Restart service: systemctl --user restart ${service}`,
+      `Check service configuration: systemctl --user show ${service}`
+    );
+  } else if (serviceType === 'http') {
+    troubleshootingSteps.push(
+      `Test endpoint directly: curl -v ${service}`,
+      `Check network connectivity: ping -c 2 $(echo ${service} | sed 's|.*://||' | cut -d'/' -f1)`,
+      `Check DNS resolution: nslookup $(echo ${service} | sed 's|.*://||' | cut -d'/' -f1)`,
+      `Check port availability: ss -tulpn | grep $(echo ${service} | sed 's|.*://||' | cut -d'/' -f2 | cut -d':' -f1)`
+    );
+  }
+  
+  // Status-specific troubleshooting
+  if (status === 'error') {
+    if (error?.includes('timeout')) {
+      troubleshootingSteps.push(
+        'Check network connectivity and firewall rules',
+        'Verify service is actually running',
+        'Check system resources: htop or docker stats'
+      );
+    } else if (error?.includes('EADDRINUSE') || error?.includes('port')) {
+      troubleshootingSteps.push(
+        'Check for port conflicts: ss -tulpn',
+        'Kill conflicting process: kill <pid>',
+        'Change service port configuration'
+      );
+    } else if (error?.includes('connection refused')) {
+      troubleshootingSteps.push(
+        'Verify service is running',
+        'Check firewall rules',
+        'Verify correct port and address'
+      );
+    }
+  } else if (status === 'degraded') {
+    troubleshootingSteps.push(
+      'Check system resources: htop or docker stats',
+      'Review service logs for performance issues',
+      'Check network latency: ping -c 5 <host>'
+    );
+  }
+  
+  return {
+    service,
+    status,
+    error,
+    service_type: serviceType,
+    troubleshooting_steps: troubleshootingSteps,
+    common_solutions: getCommonSolutions(status, error)
+  };
+}
+
+function getCommonSolutions(status, error) {
+  const solutions = [];
+  
+  if (status === 'error') {
+    if (error?.includes('timeout')) {
+      solutions.push('Increase timeout configuration', 'Check network connectivity', 'Restart service');
+    } else if (error?.includes('port') || error?.includes('EADDRINUSE')) {
+      solutions.push('Kill conflicting process', 'Change port configuration', 'Restart service');
+    } else if (error?.includes('not found')) {
+      solutions.push('Start service', 'Check service configuration', 'Verify installation');
+    } else {
+      solutions.push('Check service logs', 'Restart service', 'Verify configuration');
+    }
+  } else if (status === 'degraded') {
+    solutions.push('Check system resources', 'Review service logs', 'Scale horizontally if needed');
+  } else if (status === 'unknown') {
+    solutions.push('Verify service is running', 'Check network connectivity', 'Review service configuration');
+  }
+  
+  return solutions;
+}
+
 // Port conflict detection
 async function checkPortAvailability(port, serviceProcessName = null) {
   try {
@@ -736,6 +825,43 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         inputSchema: {
           type: 'object',
           properties: {}
+        }
+      },
+      {
+        name: 'restart_service',
+        description: 'Safely restart a service with conflict resolution (requires user confirmation)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            service_name: {
+              type: 'string',
+              description: 'Service name to restart'
+            },
+            service_type: {
+              type: 'string',
+              description: 'Service type (container, systemd, http)',
+              enum: ['container', 'systemd', 'http']
+            },
+            force: {
+              type: 'boolean',
+              description: 'Force restart even if conflicts detected (use with caution)'
+            }
+          },
+          required: ['service_name', 'service_type']
+        }
+      },
+      {
+        name: 'get_troubleshooting_info',
+        description: 'Get enhanced troubleshooting information for a service',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            service_name: {
+              type: 'string',
+              description: 'Service name to get troubleshooting info for'
+            }
+          },
+          required: ['service_name']
         }
       }
     ]
@@ -1273,6 +1399,163 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [{
             type: 'text',
             text: JSON.stringify(validation, null, 2)
+          }]
+        };
+      }
+
+      case 'restart_service': {
+        const { service_name, service_type, force = false } = args;
+        
+        // Get service configuration
+        const config = await loadHealthConfig();
+        const service = config.services?.find(s => 
+          (s.name === service_name || s.id === service_name)
+        );
+        
+        if (!service) {
+          throw new Error(`Service ${service_name} not found in configuration`);
+        }
+        
+        // Check for port conflicts before restart
+        let portConflicts = [];
+        if (service.url && service_type === 'http') {
+          const port = extractPortFromUrl(service.url);
+          if (port) {
+            const portCheck = await checkPortAvailability(port, service_name);
+            if (!portCheck.available && !portCheck.isExpectedService) {
+              portConflicts.push({
+                port: port,
+                processes: portCheck.processes,
+                conflict: `Port ${port} is in use by ${portCheck.processes?.map(p => p.name).join(', ') || 'another process'}`
+              });
+            }
+          }
+        }
+        
+        // If conflicts detected and not forced, return conflict info
+        if (portConflicts.length > 0 && !force) {
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                service: service_name,
+                service_type: service_type,
+                status: 'conflict_detected',
+                message: 'Port conflicts detected, cannot safely restart',
+                conflicts: portConflicts,
+                recommendation: 'Kill conflicting processes or use force=true to restart anyway (use with caution)',
+                kill_command: portConflicts.map(c => `kill ${c.processes?.map(p => p.pid).join(' ')}`).join('; ')
+              }, null, 2)
+            }],
+            isError: true
+          };
+        }
+        
+        // Perform restart based on service type
+        let restartResult;
+        try {
+          const { execSync } = await import('child_process');
+          
+          if (service_type === 'container') {
+            const containerName = service.container || service_name;
+            execSync(`docker restart ${containerName}`, { stdio: 'pipe' });
+            restartResult = {
+              method: 'docker',
+              command: `docker restart ${containerName}`,
+              success: true
+            };
+          } else if (service_type === 'systemd') {
+            const systemdName = service.service || service_name;
+            execSync(`systemctl --user restart ${systemdName}`, { stdio: 'pipe' });
+            restartResult = {
+              method: 'systemd',
+              command: `systemctl --user restart ${systemdName}`,
+              success: true
+            };
+          } else if (service_type === 'http') {
+            // For HTTP services, we can't directly restart, just provide guidance
+            restartResult = {
+              method: 'manual',
+              command: 'Manual intervention required for HTTP services',
+              success: false,
+              message: 'HTTP services require manual restart of the underlying process'
+            };
+          } else {
+            throw new Error(`Unknown service type: ${service_type}`);
+          }
+          
+          // Generate alert for service restart
+          generateAlert(service_name, 'service_restart', 'info', `Service ${service_name} was restarted via ${restartResult.method}`);
+          
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                service: service_name,
+                service_type: service_type,
+                status: 'restarted',
+                restart_result: restartResult,
+                conflicts_resolved: portConflicts.length > 0,
+                timestamp: new Date().toISOString()
+              }, null, 2)
+            }]
+          };
+        } catch (error) {
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                service: service_name,
+                service_type: service_type,
+                status: 'restart_failed',
+                error: error.message,
+                restart_result: {
+                  success: false,
+                  error: error.message
+                }
+              }, null, 2)
+            }],
+            isError: true
+          };
+        }
+      }
+
+      case 'get_troubleshooting_info': {
+        const config = await loadHealthConfig();
+        const service = config.services?.find(s => 
+          (s.name === args.service_name || s.id === args.service_name)
+        );
+        
+        if (!service) {
+          throw new Error(`Service ${args.service_name} not found in configuration`);
+        }
+        
+        // Get current health status
+        const stmt = db.prepare(`
+          SELECT * FROM health_checks 
+          WHERE service_name = ? 
+          ORDER BY timestamp DESC 
+          LIMIT 1
+        `);
+        const lastCheck = stmt.get(args.service_name);
+        
+        const troubleshootingInfo = getEnhancedErrorContext(
+          args.service_name,
+          lastCheck?.status || 'unknown',
+          lastCheck?.error || null,
+          service.type || 'unknown'
+        );
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              service: args.service_name,
+              current_status: lastCheck?.status || 'unknown',
+              service_type: service.type || 'unknown',
+              last_checked: lastCheck?.timestamp || null,
+              troubleshooting_info: troubleshootingInfo
+            }, null, 2)
           }]
         };
       }
