@@ -1,0 +1,14 @@
+[Unit]
+Description=SSOT to MDDB Auto-Sync Service
+After=network.target
+
+[Service]
+Type=simple
+User=tony
+WorkingDirectory=/home/tony/CascadeProjects/chaba-kbman
+ExecStart=/usr/bin/python3 /home/tony/CascadeProjects/chaba-kbman/scripts/watch-ssot-sync.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
