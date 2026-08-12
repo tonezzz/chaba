@@ -174,11 +174,12 @@ services:
   - id: mddb-api
     name: MDDB API
     type: http
-    url: "{profile}/api/mddb/health"
+    url: "http://tony-omen.local:11023/health"
     expected_status: 200
     timeout: 5
     category: datastore
     profiles: [home, mobile]
+    note: Direct port access for health check, bypasses Caddy routing
 
   - id: mddb-panel
     name: MDDB Panel
