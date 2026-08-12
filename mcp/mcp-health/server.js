@@ -176,13 +176,13 @@ async function processAlerts(config, serviceName, status, previousStatus, error)
       
       // Log alert based on configured channels
       if (config.alerts.channels) {
-        config.alerts.channels.forEach(channel => {
+        for (const channel of config.alerts.channels) {
           if (channel.enabled && channel.severity?.includes(severity)) {
             if (channel.type === 'log') {
-              logAlert(serviceName, 'service_failure', severity, message);
+              await logAlert(serviceName, 'service_failure', severity, message);
             }
           }
-        });
+        }
       }
     }
   }
@@ -199,7 +199,7 @@ async function processAlerts(config, serviceName, status, previousStatus, error)
       `);
       stmt.run(existingAlert.id);
       
-      logAlert(serviceName, 'service_recovery', 'info', `Service ${serviceName} has recovered`);
+      await logAlert(serviceName, 'service_recovery', 'info', `Service ${serviceName} has recovered`);
     }
   }
   
@@ -209,7 +209,7 @@ async function processAlerts(config, serviceName, status, previousStatus, error)
     if (!existingAlert) {
       const message = `Service ${serviceName} is experiencing performance degradation`;
       generateAlert(serviceName, 'performance_degradation', 'degraded', message);
-      logAlert(serviceName, 'performance_degradation', 'degraded', message);
+      await logAlert(serviceName, 'performance_degradation', 'degraded', message);
     }
   }
 }
