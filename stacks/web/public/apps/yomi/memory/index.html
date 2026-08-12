@@ -75,8 +75,14 @@
         </div>
       </div>
       
+      <!-- Center Panel: Network View (hidden by default) -->
+      <div class="network-viz" id="network-panel" style="display: none;">
+        <div class="network-canvas" id="network-canvas" style="min-height: 500px;">
+        </div>
+      </div>
+      
       <!-- Right Panel: Insights -->
-      <div class="insights-panel">
+      <div class="insights-panel" id="insights-panel">
         <div class="stat-grid">
           <div class="stat-item">
             <div class="stat-value" id="total-memories">0</div>
@@ -125,6 +131,85 @@
           </div>
         </div>
       </div>
+      
+      <!-- Right Panel: Network Controls (hidden by default) -->
+      <div class="network-controls" id="network-controls-panel" style="display: none;">
+        <div class="control-section">
+          <h3>Relationship Strength</h3>
+          <div class="slider-control">
+            <label>Minimum Edge Weight</label>
+            <input type="range" id="min-edge-weight" min="0" max="100" value="30">
+            <div class="slider-value" id="min-edge-value">30%</div>
+          </div>
+        </div>
+        
+        <div class="control-section">
+          <h3>Node Size</h3>
+          <div class="slider-control">
+            <label>Size By</label>
+            <select id="node-size-by" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 0.25rem;">
+              <option value="memory">Memory Count</option>
+              <option value="message">Message Count</option>
+              <option value="connection">Connection Count</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="control-section">
+          <h3>Relationship Types</h3>
+          <div class="checkbox-group">
+            <label class="checkbox-item">
+              <input type="checkbox" checked id="rel-topic"> Topic Overlap
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" checked id="rel-time"> Time Proximity
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" id="rel-participant"> Participant Overlap
+            </label>
+          </div>
+        </div>
+        
+        <div class="control-section">
+          <h3>Legend</h3>
+          <div class="legend">
+            <div class="legend-item">
+              <div class="legend-color" style="background: var(--success);"></div>
+              <span>Family</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: var(--accent);"></div>
+              <span>Work</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: var(--warning);"></div>
+              <span>Personal</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: var(--danger);"></div>
+              <span>Promo</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #8b5cf6;"></div>
+              <span>Official</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #f97316;"></div>
+              <span>Group</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Right Panel: Network Details (hidden by default) -->
+      <div class="network-details" id="network-details-panel" style="display: none;">
+        <div class="detail-card">
+          <h3>Selected Node</h3>
+          <div class="detail-content">
+            <div class="loading">Select a node to view details</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   
@@ -136,11 +221,12 @@
   <script src="/apps/shared/js/ui-utils.js?v=1"></script>
   
   <!-- Load app modules in dependency order -->
-  <script src="js/init.js?v=1"></script>
-  <script src="js/timeline.js?v=1"></script>
-  <script src="js/filters.js?v=1"></script>
-  <script src="js/insights.js?v=1"></script>
-  <script src="js/export.js?v=1"></script>
-  <script src="js/app.js?v=1"></script>
+  <script src="js/init.js?v=8"></script>
+  <script src="js/timeline.js?v=8"></script>
+  <script src="js/filters.js?v=8"></script>
+  <script src="js/insights.js?v=8"></script>
+  <script src="js/network.js?v=8"></script>
+  <script src="js/export.js?v=8"></script>
+  <script src="js/app.js?v=8"></script>
 </body>
 </html>

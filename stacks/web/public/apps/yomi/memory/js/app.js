@@ -60,8 +60,8 @@ async function loadCollectiveMemory() {
  */
 async function init() {
   try {
-    // Set API base URL for Yomi API
-    ApiUtils.baseUrl = 'http://tony-omen.local:3000';
+    // Set API base URL for Yomi API (use relative path to leverage Caddy proxy)
+    ApiUtils.baseUrl = '/api/yomi';
     
     // Load conversation filters
     await loadConversationFilters();
@@ -161,6 +161,17 @@ function setupEventListeners() {
         if (timelineContent) {
           timelineContent.innerHTML = renderTimeline(memories);
         }
+        
+        // Remove network-view class
+        document.querySelector('.memory-layout').classList.remove('network-view');
+        
+        // Show timeline panel, hide network panel
+        document.querySelector('.timeline-panel').style.display = 'block';
+        document.getElementById('network-panel').style.display = 'none';
+        document.getElementById('insights-panel').style.display = 'block';
+        document.getElementById('network-controls-panel').style.display = 'none';
+        document.getElementById('network-details-panel').style.display = 'none';
+        
       } else if (view === 'clusters') {
         // Show clusters view
         const memories = window.memoryState.memories;
@@ -168,12 +179,39 @@ function setupEventListeners() {
         if (timelineContent) {
           timelineContent.innerHTML = renderClusterView(memories);
         }
+        
+        // Remove network-view class
+        document.querySelector('.memory-layout').classList.remove('network-view');
+        
+        // Show timeline panel, hide network panel
+        document.querySelector('.timeline-panel').style.display = 'block';
+        document.getElementById('network-panel').style.display = 'none';
+        document.getElementById('insights-panel').style.display = 'block';
+        document.getElementById('network-controls-panel').style.display = 'none';
+        document.getElementById('network-details-panel').style.display = 'none';
+        
       } else if (view === 'network') {
-        // Show network view (placeholder for now)
-        const timelineContent = document.getElementById('timeline-content');
-        if (timelineContent) {
-          timelineContent.innerHTML = '<div class="empty-state">Network view coming soon</div>';
+        // Show network view
+        const conversations = window.memoryState.conversations;
+        const memories = window.memoryState.memories;
+        const networkCanvas = document.getElementById('network-canvas');
+        if (networkCanvas) {
+          // Clear the canvas first
+          networkCanvas.innerHTML = '';
+          // Render the network view directly into the canvas
+          const networkHTML = renderNetworkView(conversations, memories);
+          networkCanvas.innerHTML = networkHTML;
         }
+        
+        // Add network-view class to layout
+        document.querySelector('.memory-layout').classList.add('network-view');
+        
+        // Show network panel, hide timeline panel
+        document.querySelector('.timeline-panel').style.display = 'none';
+        document.getElementById('network-panel').style.display = 'block';
+        document.getElementById('insights-panel').style.display = 'none';
+        document.getElementById('network-controls-panel').style.display = 'block';
+        document.getElementById('network-details-panel').style.display = 'block';
       }
     });
   });
