@@ -49,6 +49,8 @@ Yomi has been split into a two-stage pipeline for better reliability and monitor
   - `/api/yomi/summary-quality` - Detailed quality metrics per conversation
   - `/api/yomi/resummarize` - Trigger re-summarization of conversations
   - `/api/yomi/rate-limiter-status` - Rate limiter and circuit breaker status
+  - `/api/yomi/session-status` - LINE session validation and login attempt tracking
+  - `/api/yomi/login` - Trigger LINE login process (POST)
 
 ## Key files
 
@@ -688,6 +690,73 @@ Yomi integrates with the GPU queue system for managed GPU workload scheduling:
 - **Parallel Processing**: Process 3 conversations simultaneously for daily summaries
 - **Extended Window**: Processing timer increased from 5min to 10min for more complete cycles
 - **GPU Queue Integration**: Ready for integration with existing GPU queue system (priority 2 for Yomi workloads)
+
+## LINE API Rate Limit Mitigation (2026-08-12)
+
+### Problem
+LINE API authentication rate limit (code 103) was preventing Yomi message downloads due to too many login attempts.
+
+### Solution Implemented
+
+**Exponential Backoff Retry Logic:**
+- Delays: 1min, 5min, 15min, 1hr, 4hr for rate limit errors
+- Applied to both conversation list fetching and single conversation fetching
+- Maximum 5 retry attempts before giving up
+
+**Rate Limit Detection:**
+- Parses error codes: 103, "rate limit", "temporarily restricted", Japanese error message
+- Detects LINE session validation failures
+- Identifies authentication-related errors
+
+**Login Attempt Throttling:**
+- Maximum 1 login attempt per hour tracked in `login-attempts.json`
+- Prevents automated login attempts from triggering rate limits
+- Session validation before attempting fetch operations
+
+**Session Management:**
+- New API endpoint: `GET /api/yomi/session-status` - validates LINE session and tracks login attempts
+- New API endpoint: `POST /api/yomi/login` - triggers LINE login process with proper throttling
+- UI integration: Session status indicator and login button in Yomi web interface
+- Desktop notifications for session expiration events
+
+### Implementation Details
+
+**File**: `scripts/yomi/fetch-conversations.mjs`
+- Added `isRateLimitError()` function for error detection
+- Added `recordLoginAttempt()` and `shouldAttemptLogin()` for throttling
+- Added `validateSession()` for pre-fetch session validation
+- Modified `fetchSingle()` and `fetchAll()` to support retry logic with exponential backoff
+
+**File**: `scripts/yomi/yomi-api.mjs`
+- Added `handleSessionStatus()` endpoint for session validation
+- Added login endpoint that invokes Yomi CLI with proper environment setup
+- Changed default Node executable from `/usr/local/bin/node` to `node` for portability
+
+**File**: `stacks/web/public/apps/yomi/index.html`
+- Added session status indicator (valid/invalid/checking states)
+- Added login button with throttling status display
+- Implemented polling for session status after login initiation
+- Added desktop notification integration for session events
+
+### Benefits
+- Prevents future rate limit disruptions
+- Automatic recovery from temporary restrictions
+- Reduced manual intervention for session management
+- Better user experience with visible session status
+- Configurable throttling limits to prevent API abuse
+
+### Configuration
+```bash
+# Login attempt tracking file
+LOGIN_ATTEMPT_FILE: /home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/fetch-data/login-attempts.json
+
+# Rate limiting
+MAX_LOGIN_ATTEMPTS_PER_HOUR: 1
+
+# Retry configuration
+MAX_RETRIES: 5
+BACKOFF_DELAYS: [60000, 300000, 900000, 3600000, 14400000] # 1min, 5min, 15min, 1hr, 4hr
+```
 
 ## Process Status Tracking
 

@@ -82,7 +82,35 @@ message: 'This is a "quoted" string with issues'
 - Use single quotes for strings with double quotes inside
 - Use double quotes for escape sequences
 
-#### 6. Placeholder Variable Quoting
+#### 6. Multi-line Text Field Pattern
+
+**Error**: Multi-line text fields using single quotes cause YAML parsing errors
+```yaml
+# INCORRECT - causes "Missing closing quote" error
+text: 'This is a multi-line
+  text field that spans
+  multiple lines'
+
+# CORRECT - use block scalar syntax
+text: |
+  This is a multi-line
+  text field that spans
+  multiple lines
+```
+
+**Root Cause**: YAML single-quoted strings cannot span multiple lines. Multi-line content requires block scalar syntax (`|` for literal, `>` for folded).
+
+**Detection**: Parser reports "Missing closing quote" or "unexpected scalar" errors at the line where the multi-line content begins.
+
+**Prevention**:
+- Use `text: |` for literal multi-line strings (preserves newlines)
+- Use `text: >` for folded multi-line strings (converts newlines to spaces)
+- Indent content consistently under the block scalar marker
+- Avoid single quotes for multi-line content
+
+**Real-World Example**: Fixed in `docs/ssot/ssot.improvements.yml` (2026-08-12) - 8 text fields converted from single quotes to block scalars to resolve YAML parsing errors.
+
+#### 7. Placeholder Variable Quoting
 
 **Error**: Unquoted placeholder variables in URL values
 ```yaml
@@ -106,7 +134,7 @@ url: "{profile}/apps/"
 
 **Real-World Example**: Fixed in `docs/ssot/infrastructure/ssot.health.yml` (2026-08-12) - 8 URL entries required quoting to enable MCP health server configuration parsing.
 
-#### 4. List Format Errors
+#### 8. List Format Errors
 
 **Error**: Incorrect list item formatting
 ```yaml
@@ -132,7 +160,7 @@ services:
 - Ensure hyphen is at correct indentation level
 - Use YAML linter to validate list structures
 
-#### 5. Comment Placement
+#### 9. Comment Placement
 
 **Error**: Comments in invalid locations
 ```yaml
