@@ -36,6 +36,7 @@ sections:
         path: /home/tony/CascadeProjects/chaba/docs/ssot
         backup_priority: critical
         recovery_priority: critical
+        note: Direct YAML editing preserved, auto-synced to MDDB for search
 
       - label: Documentation Templates
         text: KB template, SSOT summary templates, maintenance standards
@@ -96,6 +97,39 @@ sections:
         recovery_command: cp -r backup/skills/* ~/.config/devin/skills/
         recovery_time: 5-10 minutes
         verification: skill list shows expected skills
+
+  - title: SSOT-MDDB Integration Policy
+    icon: 🔄
+    layout: list
+    items:
+      - label: Direct YAML Editing Policy
+        text: SSOT YAML files are edited directly as the primary workflow
+        policy: direct_yaml_editing
+        reason: YAML is source of truth, direct editing is familiar and efficient
+        tools: text editors, IDEs, direct file manipulation
+        note: This policy is critical and must be preserved
+
+      - label: Automatic MDDB Sync
+        text: SSOT YAML files are automatically synced to MDDB for semantic search
+        policy: auto_sync_to_mddb
+        mechanism: file watcher (watch-ssot-sync.py) monitors docs/ssot/ directory
+        trigger: YAML file modifications trigger sync within 2 seconds
+        service: ssot-sync.service (systemd background service)
+        note: Sync is automatic and transparent to editing workflow
+
+      - label: MDDB Search Interface
+        text: MDDB provides semantic search across SSOT content
+        benefit: AI-powered search with Ollama embeddings (nomic-embed-text)
+        collections: ssot-infrastructure, ssot-apps, ssot-general
+        access: Web UI (http://tony-omen.local:3002/), MCP integration, REST API
+        relevance: 0.54-0.72 scores, 110-143ms response times
+
+      - label: SSOT Workflow Summary
+        text: Edit YAML directly → Auto-sync to MDDB → Search via MDDB
+        primary: Direct YAML editing (docs/ssot/*.yml)
+        secondary: MDDB search (semantic search across SSOT)
+        monitoring: mcp-health monitors file watcher and MDDB health
+        recovery: File watcher restart, manual sync, YAML validation
 
       - label: Search Index Rebuild
         text: Rebuild MCP docs server index automatically

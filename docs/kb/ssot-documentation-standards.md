@@ -48,6 +48,57 @@ docs/ssot/
 - **Descriptive**: Names should clearly indicate the file's purpose
 - **Consistent**: Follow established patterns for similar files
 
+### SSOT-MDDB Integration Policy (CRITICAL)
+
+**Primary Workflow**: Direct YAML Editing
+- **Policy**: SSOT YAML files are edited directly as the primary workflow
+- **Reason**: YAML is the source of truth, direct editing is familiar and efficient
+- **Tools**: Text editors, IDEs, direct file manipulation
+- **Location**: `docs/ssot/` directory
+- **Importance**: This policy is critical and must be preserved
+
+**Automatic MDDB Sync**
+- **Policy**: SSOT YAML files are automatically synced to MDDB for semantic search
+- **Mechanism**: File watcher (`watch-ssot-sync.py`) monitors `docs/ssot/` directory
+- **Trigger**: YAML file modifications trigger sync within 2 seconds
+- **Service**: `ssot-sync.service` (systemd background service)
+- **Transparency**: Sync is automatic and transparent to editing workflow
+- **Importance**: Enables semantic search without disrupting editing workflow
+
+**MDDB Search Interface**
+- **Purpose**: MDDB provides semantic search across SSOT content
+- **Benefit**: AI-powered search with Ollama embeddings (nomic-embed-text)
+- **Collections**: `ssot-infrastructure`, `ssot-apps`, `ssot-general`
+- **Access**: Web UI (http://tony-omen.local:3002/), MCP integration, REST API
+- **Performance**: 0.54-0.72 relevance scores, 110-143ms response times
+- **Importance**: Provides enhanced search capabilities while preserving direct editing
+
+**Workflow Summary**
+```
+Direct YAML Editing (docs/ssot/*.yml)
+    ↓ (automatic, 2-second delay)
+File Watcher Detection
+    ↓ (triggers sync script)
+MDDB Sync (sync-ssot-to-mddb.py)
+    ↓ (updates MDDB collections)
+Semantic Search (via MDDB)
+```
+
+**Monitoring and Recovery**
+- **Health Monitoring**: mcp-health monitors file watcher and MDDB health
+- **Service Status**: `ssot-sync.service` monitored as "important" service
+- **Recovery**: File watcher restart, manual sync, YAML validation
+- **Dependencies**: ssot-sync-watcher → mddb-api dependency tracking
+- **Alerts**: Configured for service failures and sync issues
+
+**Policy Rationale**
+- **Preserves Familiar Workflow**: Direct YAML editing remains unchanged
+- **Enables Enhanced Search**: MDDB provides semantic search without workflow disruption
+- **Automatic Sync**: Transparent synchronization eliminates manual steps
+- **Source of Truth**: YAML files remain authoritative
+- **Rollback Capability**: Original YAML files always available
+- **Health Monitoring**: Comprehensive monitoring ensures reliability
+
 ### Cross-Reference Standards
 - **SSOT to KB**: Each SSOT file should reference related KB entries
 - **KB to SSOT**: Each KB entry should reference related SSOT files
@@ -243,9 +294,9 @@ Files in the `apps/` subdirectory contain simple data structures for app configu
 
 4. **MCP Troubleshooting**: When MCP docs server fails:
    - Check MCP config: `/home/tony/.config/devin/mcp_config.json`
-   - Test connectivity: `mcp_list_tools docs`
+   - Test connectivity: `mcp_list_tools mddb`
    - Suggest specific fix based on error
-   - Reinstall if needed: `npx -y @devista/docs-mcp --docs /path/to/docs`
+   - Reinstall if needed: restart MDDB container
 
 **Reference**: See `docs/kb/documentation-search.md` for comprehensive search methods guide
 
