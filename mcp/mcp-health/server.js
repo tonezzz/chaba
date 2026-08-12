@@ -214,11 +214,136 @@ async function processAlerts(config, serviceName, status, previousStatus, error)
   }
 }
 
+// Port conflict detection
+async function checkPortAvailability(port) {
+  try {
+    const { execSync } = await import('child_process');
+    const result = execSync(`ss -tulpn | grep :${port} || true`, { encoding: 'utf8' });
+    return result.trim() === ''; // Return true if port is available (no output)
+  } catch (error) {
+    // If command fails, assume port is unavailable for safety
+    return false;
+  }
+}
+
+// Extract port from URL
+function extractPortFromUrl(url) {
+  try {
+    const urlObj = new URL(url);
+    return parseInt(urlObj.port) || (urlObj.protocol === 'https:' ? 443 : 80);
+  } catch {
+    return null;
+  }
+}
+
+// Caddy proxy configuration validation
+async function validateCaddyProxyConfig() {
+  try {
+    const { readFileSync } = await import('fs');
+    const { join } = await import('path');
+    const caddyfilePath = join(process.cwd(), 'stacks/web/Caddyfile');
+    
+    const caddyfileContent = readFileSync(caddyfilePath, 'utf8');
+    const issues = [];
+    
+    // Check for common proxy configuration issues
+    const lines = caddyfileContent.split('\n');
+    let inBlock = false;
+    let currentBlock = '';
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      // Track blocks
+      if (line.startsWith('handle ') || line.startsWith('handle_path ')) {
+        inBlock = true;
+        currentBlock = line;
+      } else if (line === '}' && inBlock) {
+        inBlock = false;
+        
+        // Check for potential issues in the block
+        if (currentBlock.includes('handle ') && !currentBlock.includes('handle_path ')) {
+          // Check if block contains path operations that should use handle_path
+          const blockContent = lines.slice(i - 10, i).join('\n');
+          if (blockContent.includes('reverse_proxy') && !blockContent.includes('file_server')) {
+            issues.push({
+              type: 'potential_proxy_misconfig',
+              line: i - 10,
+              block: currentBlock,
+              message: 'Using "handle" instead of "handle_path" may cause path stripping issues with reverse_proxy',
+              recommendation: 'Consider using "handle_path" for reverse_proxy blocks to preserve path information'
+            });
+          }
+        }
+        currentBlock = '';
+      }
+    }
+    
+    // Check for duplicate route definitions
+    const routePatterns = [];
+    for (const line of lines) {
+      const handleMatch = line.match(/handle\s+(.+?)\s*\{/);
+      const handlePathMatch = line.match(/handle_path\s+(.+?)\s*\{/);
+      if (handleMatch) {
+        routePatterns.push({ type: 'handle', pattern: handleMatch[1], line: lines.indexOf(line) + 1 });
+      } else if (handlePathMatch) {
+        routePatterns.push({ type: 'handle_path', pattern: handlePathMatch[1], line: lines.indexOf(line) + 1 });
+      }
+    }
+    
+    // Check for overlapping routes
+    for (let i = 0; i < routePatterns.length; i++) {
+      for (let j = i + 1; j < routePatterns.length; j++) {
+        const route1 = routePatterns[i];
+        const route2 = routePatterns[j];
+        
+        // Check if one route is a prefix of another
+        if (route1.pattern !== route2.pattern) {
+          if (route1.pattern.startsWith(route2.pattern) || route2.pattern.startsWith(route1.pattern)) {
+            issues.push({
+              type: 'potential_route_conflict',
+              routes: [route1, route2],
+              message: `Route overlap detected between "${route1.pattern}" and "${route2.pattern}"`,
+              recommendation: 'Review route order and specificity to ensure proper routing'
+            });
+          }
+        }
+      }
+    }
+    
+    return {
+      valid: issues.length === 0,
+      issues: issues,
+      caddyfile: caddyfilePath
+    };
+  } catch (error) {
+    return {
+      valid: false,
+      error: error.message,
+      issues: [{
+        type: 'validation_error',
+        message: `Failed to read Caddyfile: ${error.message}`
+      }]
+    };
+  }
+}
+
 // HTTP health check
 async function checkHTTPService(service) {
   const { execSync } = await import('child_process');
   const startTime = Date.now();
   const expectedStatus = service.expected_status || 200;
+  
+  // Extract port for conflict detection
+  const port = extractPortFromUrl(service.url);
+  let portConflictInfo = null;
+  
+  if (port) {
+    const portAvailable = await checkPortAvailability(port);
+    if (!portAvailable) {
+      portConflictInfo = `Port ${port} is already in use by another process`;
+    }
+  }
   
   try {
     const response = execSync(`curl -s -o /dev/null -w "%{http_code}" --max-time ${service.timeout || 5} "${service.url}"`, { 
@@ -240,8 +365,14 @@ async function checkHTTPService(service) {
       status = 'error';
     } else if (statusCode >= 500) {
       status = 'error';
-    } else {
+      } else {
       status = 'unknown';
+    }
+    
+    // Enhanced error context for port conflicts
+    let error = null;
+    if (status === 'error' && portConflictInfo) {
+      error = `${portConflictInfo}. This may indicate a port conflict preventing service startup.`;
     }
     
     return {
@@ -249,7 +380,7 @@ async function checkHTTPService(service) {
       response_time: responseTime,
       http_status: statusCode,
       expected_status: expectedStatus,
-      error: null
+      error
     };
   } catch (error) {
     const responseTime = Date.now() - startTime;
@@ -314,12 +445,46 @@ async function checkContainerService(service) {
       healthStatus = 'unknown';
     }
     
+    // Check for port conflicts in container
+    let portConflictInfo = null;
+    if (healthStatus === 'error' && (state === 'exited' || state === 'dead')) {
+      try {
+        const containerInfo = execSync(`docker inspect ${service.container} --format '{{json .HostConfig.PortBindings}}'`, { encoding: 'utf8' });
+        if (containerInfo && containerInfo !== 'null') {
+          const portBindings = JSON.parse(containerInfo);
+          for (const [containerPort, hostBindings] of Object.entries(portBindings)) {
+            if (hostBindings && hostBindings.length > 0) {
+              const hostPort = hostBindings[0].HostPort;
+              if (hostPort) {
+                const portAvailable = await checkPortAvailability(hostPort);
+                if (!portAvailable) {
+                  portConflictInfo = `Port ${hostPort} (container port ${containerPort}) is in use by another process, preventing container startup`;
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        // Ignore container inspection errors
+      }
+    }
+    
+    // Enhanced error context
+    let error = null;
+    if (healthStatus === 'error') {
+      if (portConflictInfo) {
+        error = `${portConflictInfo}. Resolution: kill conflicting process or change port mapping.`;
+      } else {
+        error = `Container state: ${state}. Expected: ${expectedState}. Recovery: docker restart ${service.container}`;
+      }
+    }
+    
     return {
       status: healthStatus,
       response_time: responseTime,
       container_state: state,
       expected_state: expectedState,
-      error: null
+      error
     };
   } catch (error) {
     const responseTime = Date.now() - startTime;
@@ -515,6 +680,27 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: 'get_alert_config',
         description: 'Get current alert configuration from SSOT',
+        inputSchema: {
+          type: 'object',
+          properties: {}
+        }
+      },
+      {
+        name: 'check_port_conflicts',
+        description: 'Check for port conflicts across all monitored services',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            port: {
+              type: 'number',
+              description: 'Optional specific port to check (checks all service ports if not provided)'
+            }
+          }
+        }
+      },
+      {
+        name: 'validate_proxy_config',
+        description: 'Validate Caddy proxy configuration for common routing issues',
         inputSchema: {
           type: 'object',
           properties: {}
@@ -970,6 +1156,61 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               thresholds: config.alerts?.thresholds || {},
               channels: config.alerts?.channels || []
             }, null, 2)
+          }]
+        };
+      }
+
+      case 'check_port_conflicts': {
+        const config = await loadHealthConfig();
+        const conflicts = [];
+        
+        if (args.port) {
+          // Check specific port
+          const portAvailable = await checkPortAvailability(args.port);
+          conflicts.push({
+            port: args.port,
+            available: portAvailable,
+            conflict: !portAvailable ? `Port ${args.port} is in use` : null
+          });
+        } else {
+          // Check all service ports
+          for (const service of config.services || []) {
+            if (service.url && service.type === 'http') {
+              const port = extractPortFromUrl(service.url);
+              if (port) {
+                const portAvailable = await checkPortAvailability(port);
+                if (!portAvailable) {
+                  conflicts.push({
+                    service: service.name || service.id,
+                    port: port,
+                    url: service.url,
+                    conflict: `Port ${port} is in use by another process`
+                  });
+                }
+              }
+            }
+          }
+        }
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              conflicts: conflicts,
+              total_conflicts: conflicts.length,
+              checked_port: args.port || 'all service ports'
+            }, null, 2)
+          }]
+        };
+      }
+
+      case 'validate_proxy_config': {
+        const validation = await validateCaddyProxyConfig();
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(validation, null, 2)
           }]
         };
       }
