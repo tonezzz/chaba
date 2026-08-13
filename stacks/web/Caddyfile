@@ -1,12 +1,22 @@
 :8080 {
 	root * /srv/public
 
-	@tony_omen_temp_bare path /apps/tony-omen-temp
-	redir @tony_omen_temp_bare /apps/tony-omen-temp/ 308
-
 	# MDDB API (for panel proxy) - must come before panel route
 	handle /api/mddb/* {
 		reverse_proxy mddb:11023
+		encode gzip
+	}
+
+	# MDDB Panel assets - specific asset files (MUST BE BEFORE GENERAL ASSETS)
+	@mddb_js path /assets/index-CBZ21U7I.js
+	handle @mddb_js {
+		reverse_proxy mddb-panel:3000
+		encode gzip
+	}
+
+	@mddb_css path /assets/index-DxB2kvlE.css
+	handle @mddb_css {
+		reverse_proxy mddb-panel:3000
 		encode gzip
 	}
 
@@ -16,19 +26,8 @@
 		encode gzip
 	}
 
-	# MDDB Panel assets - handle root-relative asset requests from panel
-	@mddb_from_panel header Referer *apps/mddb*
-	handle @mddb_from_panel {
-		reverse_proxy mddb-panel:3000
-		encode gzip
-	}
-
-	# Static asset caching - CSS, JS, images
-	@static_assets path /assets/* *.css *.js *.png *.jpg *.jpeg *.gif *.svg *.ico *.woff *.woff2
-	handle @static_assets {
-		header Cache-Control "public, max-age=31536000, immutable"
-		file_server
-	}
+	@tony_omen_temp_bare path /apps/tony-omen-temp
+	redir @tony_omen_temp_bare /apps/tony-omen-temp/308
 
 	@static_html path *.html
 	handle @static_html {
@@ -49,13 +48,6 @@
 	handle /docs/* {
 		root * /srv/docs
 		file_server
-	}
-
-	# Raceman assets (must come before Activepieces to avoid conflicts)
-	handle /assets/* {
-		reverse_proxy host.docker.internal:8083 {
-			header_up Host localhost
-		}
 	}
 
 	handle /apps/common.css {
