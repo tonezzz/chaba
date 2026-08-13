@@ -7,23 +7,16 @@
 		encode gzip
 	}
 
-	# MDDB Panel assets - specific asset files (MUST BE BEFORE GENERAL ASSETS)
-	@mddb_js path /assets/index-CBZ21U7I.js
-	handle @mddb_js {
+	# MDDB Panel (dedicated path to avoid asset conflicts)
+	handle /mddb/* {
 		reverse_proxy mddb-panel:3000
 		encode gzip
 	}
 
-	@mddb_css path /assets/index-DxB2kvlE.css
-	handle @mddb_css {
-		reverse_proxy mddb-panel:3000
-		encode gzip
-	}
-
-	# MDDB Panel (UI only) - preserve full path for assets
-	handle /apps/mddb/* {
-		reverse_proxy mddb-panel:3000
-		encode gzip
+	# MDDB Panel at /apps/mddb (redirect to dedicated path)
+	@apps_mddb path /apps/mddb*
+	handle @apps_mddb {
+		redir /mddb{uri} 308
 	}
 
 	@tony_omen_temp_bare path /apps/tony-omen-temp

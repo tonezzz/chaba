@@ -35,12 +35,12 @@ tony-omen:
     container: mddb-panel
     image: tradik/mddb:panel-latest
     port: 3002 (host), 3000 (internal)
-    status: implemented (2026-08-13), Caddy routing updated
+    status: implemented (2026-08-13), resolved with dedicated path routing
     routing:
-      - /apps/mddb/* → mddb-panel:3000 (container name routing in Caddy)
+      - /mddb/* → mddb-panel:3000 (dedicated path to avoid asset conflicts)
+      - /apps/mddb/* → /mddb/* (redirect to dedicated path)
       - /api/mddb/* → mddb:11023 (Caddy reverse proxy for API)
-      - SPA assets: Referer-based routing for /assets/* requests from MDDB panel
-    notes: MDDB web panel interface, uses container name for routing. Updated Caddy routing to use handle directive (preserves full path) instead of handle_path for SPA asset loading. Uses Referer-based asset routing to handle root-relative asset requests from the panel.
+    notes: MDDB web panel interface, resolved asset routing conflicts by using dedicated /mddb/ path instead of /apps/mddb/. Panel SPA uses root-relative assets which conflicted with other services' /assets/* handlers.
   gemini-api:
     service: Google Gemini API
     provider: Google Cloud
