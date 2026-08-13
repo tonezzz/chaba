@@ -10,20 +10,19 @@
 		encode gzip
 	}
 
-	# MDDB Panel assets - strip /mddb prefix for proper asset loading
-	handle_path /mddb/assets/* {
+	# MDDB Panel (UI only) - preserve full path for assets
+	handle /apps/mddb/* {
 		reverse_proxy mddb-panel:3000
 		encode gzip
 	}
 
-	# MDDB Panel (UI only) - strip /mddb prefix
-	handle_path /mddb/* {
+	# MDDB Panel assets - handle root-relative asset requests from panel
+	@mddb_root_assets path /assets/*
+	@mddb_from_panel header Referer *apps/mddb*
+	handle @mddb_root_assets @mddb_from_panel {
 		reverse_proxy mddb-panel:3000
 		encode gzip
 	}
-
-	# Redirect /apps/mddb to /mddb for convenience
-	redir /apps/mddb /mddb 308
 
 	# Static asset caching - CSS, JS, images
 	@static_assets path /assets/* *.css *.js *.png *.jpg *.jpeg *.gif *.svg *.ico *.woff *.woff2
