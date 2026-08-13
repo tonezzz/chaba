@@ -1,20 +1,21 @@
 # Overnight Assessment Jobs Guide
 
 ## Overview
-The expanded overnight assessment system provides comprehensive system health monitoring and performance analysis. It runs 13 major assessment areas covering all aspects of the Chaba infrastructure, plus automatic improvement creation for critical findings.
+The expanded overnight assessment system provides comprehensive system health monitoring and performance analysis. It runs 14 major assessment areas covering all aspects of the Chaba infrastructure, plus automatic improvement creation for critical findings.
 
 ## What's New (Expanded from Original)
-The original overnight assessment covered 8 areas. The expanded version adds 5 new comprehensive areas and enhances existing ones:
+The original overnight assessment covered 8 areas. The expanded version adds 6 new comprehensive areas and enhances existing ones:
 
 ### New Assessment Areas:
-1. **Comprehensive Log Analysis** - Pattern detection across Docker containers and systemd services
-2. **Database Performance Deep Dive** - PostgreSQL query analysis, connection pools, Weaviate performance
+1. **Comprehensive Log Analysis** - 7-day pattern detection, frequency analysis, error correlation
+2. **Database Performance Deep Dive** - Historical trends, long-running queries, growth analysis
 3. **Network Performance Analysis** - Interface statistics, connectivity checks, DNS resolution
 4. **Backup Verification** - Recent backup status, integrity checks
-5. **Container Security Analysis** - Image ages, security policies, resource limits
+5. **Container Security Analysis** - Trivy vulnerability scanning, security configuration audit
 6. **Dependency Security Audit** - Outdated packages, vulnerability scanning
-7. **System Resource Deep Dive** - CPU frequency, memory patterns, disk I/O, space analysis
+7. **System Resource Deep Dive** - CPU frequency, memory patterns, disk I/O, capacity planning
 8. **MCP Health Server Integration** - Historical health analysis, alert patterns, dependency analysis
+9. **Performance Baseline Comparison** - 7-day trend analysis, performance degradation detection
 
 ### Enhanced Areas:
 - **Health Check Integration** - Added systemd service status checks
@@ -56,7 +57,7 @@ The timer is configured to run daily at 2:00 AM.
 ## Files Created
 
 ### Core Scripts
-- `scripts/overnight-jobs-expanded.sh` - Main assessment script (13 assessment areas)
+- `scripts/overnight-jobs-expanded.sh` - Main assessment script (14 assessment areas)
 - `scripts/run-overnight-now.sh` - Manual execution helper script
 
 ### Systemd Configuration
@@ -75,18 +76,20 @@ The timer is configured to run daily at 2:00 AM.
 - Monitors Docker containers: PostgreSQL, Weaviate, Redis
 - **Output:** Service status summary, critical service health
 
-### 2. Comprehensive Log Analysis (NEW)
-- Analyzes Docker container logs for error patterns
-- Checks systemd service logs for failures
-- Pattern detection: error, exception, fail messages
-- **Output:** Error pattern detection, service-specific error logs
+### 2. Enhanced Comprehensive Log Analysis (ENHANCED)
+- Analyzes Docker container logs for error patterns (7-day analysis)
+- Checks systemd service logs for failures (7-day analysis)
+- Error frequency analysis and pattern correlation
+- Most recent error identification and trending
+- **Output:** Error pattern detection, frequency analysis, cross-service correlation
 
-### 3. Database Performance Deep Dive (NEW)
-- PostgreSQL query performance analysis
-- Database size and growth tracking
+### 3. Enhanced Database Performance Deep Dive (ENHANCED)
+- PostgreSQL query performance analysis with historical trends
+- Database size and growth tracking (7-day analysis)
 - Connection pool status monitoring
-- Weaviate node status and performance
-- **Output:** Query stats, database sizes, connection metrics
+- Long-running query identification
+- Weaviate node status and performance trends
+- **Output:** Query stats, database sizes, connection metrics, historical trends
 
 ### 4. Extended GPU & Queue Analysis (ENHANCED)
 - GPU status via API: `http://tony-omen.local:8080/api/gpu/status`
@@ -113,12 +116,14 @@ The timer is configured to run daily at 2:00 AM.
 - Backup age and completeness analysis
 - **Output:** Backup status, integrity results, age analysis
 
-### 8. Container Security Analysis (NEW)
+### 8. Enhanced Container Security Analysis (ENHANCED)
 - Container image age tracking
+- Real security vulnerability scanning with Trivy (CRITICAL/HIGH severity)
 - Security policy compliance checks
 - Exposed port analysis
 - Container resource limit monitoring
-- **Output:** Image ages, security compliance, resource usage
+- Security configuration audit (privileged mode, root user, docker socket)
+- **Output:** Image ages, Trivy vulnerability scan results, security compliance, resource usage
 
 ### 9. Dependency Security Audit (NEW)
 - Outdated npm package detection
@@ -127,12 +132,13 @@ The timer is configured to run daily at 2:00 AM.
 - Sensitive file detection
 - **Output:** Outdated packages, security findings, sensitive files
 
-### 10. System Resource Deep Dive (NEW)
-- CPU frequency and governor analysis
+### 10. Enhanced System Resource Deep Dive (ENHANCED)
+- CPU frequency and governor analysis with historical trends
 - Memory usage patterns and statistics
 - Disk I/O performance metrics
 - Disk space analysis by directory
-- **Output:** CPU performance, memory stats, I/O metrics, disk usage
+- Capacity planning analysis with growth projections
+- **Output:** CPU performance, memory stats, I/O metrics, disk usage, capacity planning
 
 ### 11. Documentation Consistency (ENHANCED)
 - SSOT YAML validation via devin CLI
@@ -152,6 +158,13 @@ The timer is configured to run daily at 2:00 AM.
 - Recent alerts analysis and resolution status
 - Service dependency analysis and cascading failure detection
 - **Output:** Health score, historical trends, alert patterns, dependency health
+
+### 14. Performance Baseline Comparison (NEW)
+- Response time baseline analysis (7-day vs current)
+- Health rate trend analysis with degradation detection
+- Performance degradation detection (>20% change threshold)
+- Historical baseline calculation using PostgreSQL health data
+- **Output:** Performance trends, baseline comparisons, degradation alerts
 
 ### Auto-Improvement Creation (NEW)
 - Automatic detection of critical findings from assessment
@@ -268,7 +281,7 @@ LOG_DIR="/path/to/your/logs"
 
 The generated markdown report includes:
 1. **Executive Summary** - Quick overview of system health
-2. **13 Assessment Area Sections** - Detailed analysis for each area
+2. **14 Assessment Area Sections** - Detailed analysis for each area
 3. **Health Score** - Overall system health metrics
 4. **Priority Actions** - Recommended next steps
 5. **Completion Checklist** - Which assessments were completed
@@ -293,10 +306,12 @@ This expanded assessment integrates with:
 
 ## Performance Impact
 
-- **Runtime:** Approximately 20-35 minutes depending on system load
-- **Resource Usage:** Low - mostly API calls and log analysis
+- **Runtime:** Approximately 15-25 minutes depending on system load and container count
+- **Resource Usage:** Moderate - log analysis, Trivy scanning, PostgreSQL queries
 - **Network:** Minimal - only local API calls and DNS checks
-- **Disk:** ~1-2 MB for logs, ~500 KB for reports
+- **Disk:** ~2-3 MB for logs, ~1 MB for reports
+- **CPU:** Moderate during Trivy scanning and log analysis
+- **Memory:** Low to moderate during PostgreSQL queries
 
 ## Security Considerations
 

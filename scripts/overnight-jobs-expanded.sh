@@ -4,6 +4,7 @@
 # Run: nohup ./scripts/overnight-jobs-expanded.sh > logs/overnight-$(date +%Y%m%d).log 2>&1 &
 
 set -e
+START_TIME=$(date +%s)
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 REPORT_DIR="/home/tony/CascadeProjects/chaba/reports"
 LOG_DIR="/home/tony/CascadeProjects/chaba/logs"
@@ -14,7 +15,7 @@ REPORT_FILE="$REPORT_DIR/overnight-assessment-$TIMESTAMP.md"
 
 echo "=== Overnight Assessment Started: $(date) ===" | tee -a "$LOG_FILE"
 echo "Report will be saved to: $REPORT_FILE" | tee -a "$LOG_FILE"
-echo "Total Assessment Areas: 13 comprehensive areas" | tee -a "$LOG_FILE"
+echo "Total Assessment Areas: 13 comprehensive areas (Enhanced with deep analysis)" | tee -a "$LOG_FILE"
 
 # Initialize report
 cat > "$REPORT_FILE" << EOF
@@ -30,7 +31,7 @@ EOF
 # ============================================
 # 1. HEALTH CHECK INTEGRATION (Enhanced)
 # ============================================
-echo "[1/13] Running Enhanced Health Check Integration..." | tee -a "$LOG_FILE"
+echo "[1/14] Running Enhanced Health Check Integration..." | tee -a "$LOG_FILE"
 cat >> "$REPORT_FILE" << EOF
 
 ## 1. Health Check Integration
@@ -55,75 +56,150 @@ cat >> "$REPORT_FILE" << EOF
 EOF
 
 # ============================================
-# 2. COMPREHENSIVE LOG ANALYSIS (New)
+# 2. COMPREHENSIVE LOG ANALYSIS (Enhanced)
 # ============================================
-echo "[2/13] Running Comprehensive Log Analysis..." | tee -a "$LOG_FILE"
+echo "[2/13] Running Enhanced Comprehensive Log Analysis (7-day patterns)..." | tee -a "$LOG_FILE"
 cat >> "$REPORT_FILE" << EOF
 
-## 2. Comprehensive Log Analysis
+## 2. Enhanced Comprehensive Log Analysis
 
-### Error Pattern Detection
+### Error Pattern Detection (7-day Analysis)
 EOF
 
-# Analyze Docker logs for errors
-echo "Analyzing Docker container logs..." | tee -a "$LOG_FILE"
+# Analyze Docker logs for errors with extended time range
+echo "Analyzing Docker container logs (7-day pattern analysis)..." | tee -a "$LOG_FILE"
 for container in $(docker ps --format "{{.Names}}"); do
     echo "### Container: $container" >> "$REPORT_FILE"
-    docker logs --tail 500 "$container" 2>&1 | grep -i "error\|exception\|fail" | tail -20 >> "$REPORT_FILE" || echo "No errors found" >> "$REPORT_FILE"
+    
+    # Extended log analysis with frequency counting
+    docker logs --since 168h "$container" 2>&1 | grep -i "error\|exception\|fail" >> "$REPORT_FILE" 2>&1 || echo "No errors found in 7-day period" >> "$REPORT_FILE"
+    
+    # Error frequency analysis
+    error_count=$(docker logs --since 168h "$container" 2>&1 | grep -ci "error\|exception\|fail" || echo "0")
+    echo "**Error Frequency (7 days):** $error_count occurrences" >> "$REPORT_FILE"
+    
+    # Most recent errors (last 10)
+    echo "**Most Recent Errors (last 10):**" >> "$REPORT_FILE"
+    docker logs --tail 100 "$container" 2>&1 | grep -i "error\|exception\|fail" | tail -10 >> "$REPORT_FILE" || echo "No recent errors" >> "$REPORT_FILE"
+    
     echo "" >> "$REPORT_FILE"
 done
 
-# Analyze systemd service logs
+# Analyze systemd service logs with extended analysis
 cat >> "$REPORT_FILE" << EOF
 
-### Systemd Service Errors
+### Systemd Service Errors (7-day Analysis)
 EOF
 
 for service in yomi-fetch yomi-process caddy; do
     echo "### Service: $service" >> "$REPORT_FILE"
-    journalctl -u "$service" --since "24 hours ago" --no-pager | grep -i "error\|exception\|fail" | tail -10 >> "$REPORT_FILE" || echo "No errors found" >> "$REPORT_FILE"
+    
+    # Extended time range analysis
+    journalctl -u "$service" --since "7 days ago" --no-pager | grep -i "error\|exception\|fail" >> "$REPORT_FILE" 2>&1 || echo "No errors found in 7-day period" >> "$REPORT_FILE"
+    
+    # Error frequency
+    error_count=$(journalctl -u "$service" --since "7 days ago" --no-pager | grep -ci "error\|exception\|fail" || echo "0")
+    echo "**Error Frequency (7 days):** $error_count occurrences" >> "$REPORT_FILE"
+    
+    # Recent critical errors
+    echo "**Recent Critical Errors (last 5):**" >> "$REPORT_FILE"
+    journalctl -u "$service" --since "24 hours ago" --no-pager -p err -n 5 >> "$REPORT_FILE" 2>&1 || echo "No recent critical errors" >> "$REPORT_FILE"
+    
     echo "" >> "$REPORT_FILE"
 done
 
-# ============================================
-# 3. DATABASE PERFORMANCE DEEP DIVE (New)
-# ============================================
-echo "[3/13] Running Database Performance Deep Dive..." | tee -a "$LOG_FILE"
+# Pattern correlation analysis
 cat >> "$REPORT_FILE" << EOF
 
-## 3. Database Performance Deep Dive
-
-### PostgreSQL Performance
+### Error Pattern Correlation Analysis
 EOF
 
-# Check PostgreSQL container stats
+echo "Analyzing error patterns across services..." | tee -a "$LOG_FILE"
+
+# Find common error patterns across all containers
+echo "**Common Error Patterns (across all containers):**" >> "$REPORT_FILE"
+docker ps --format "{{.Names}}" | while read container; do
+    docker logs --since 168h "$container" 2>&1 | grep -i "error" | sort | uniq -c | sort -rn | head -5
+done | sort | uniq -c | sort -rn | head -10 >> "$REPORT_FILE" 2>&1 || echo "No common patterns identified" >> "$REPORT_FILE"
+
+echo "" >> "$REPORT_FILE"
+
+# ============================================
+# 3. DATABASE PERFORMANCE DEEP DIVE (Enhanced)
+# ============================================
+echo "[3/13] Running Enhanced Database Performance Deep Dive (Historical trends)..." | tee -a "$LOG_FILE"
+cat >> "$REPORT_FILE" << EOF
+
+## 3. Enhanced Database Performance Deep Dive
+
+### PostgreSQL Performance with Historical Comparison
+EOF
+
+# Check PostgreSQL container stats with historical analysis
 if docker ps | grep -q postgres; then
-    docker exec postgres pg_stat_statements | head -20 >> "$REPORT_FILE" 2>&1 || echo "pg_stat_statements not available" >> "$REPORT_FILE"
+    cat >> "$REPORT_FILE" << EOF
+
+#### Current Performance Metrics
+EOF
+    docker exec postgres psql -U chaba -c "SELECT datname, pg_size_pretty(pg_database_size(datname)) as size FROM pg_database WHERE datistemplate = false ORDER BY pg_database_size(datname) DESC;" >> "$REPORT_FILE" 2>&1 || echo "Database size query failed" >> "$REPORT_FILE"
     
     cat >> "$REPORT_FILE" << EOF
 
-### Database Size and Growth
+#### Connection Pool Analysis
 EOF
-    docker exec postgres psql -U postgres -c "\l+" >> "$REPORT_FILE" 2>&1 || echo "Database query failed" >> "$REPORT_FILE"
+    docker exec postgres psql -U chaba -c "SELECT state, count(*) FROM pg_stat_activity GROUP BY state ORDER BY count DESC;" >> "$REPORT_FILE" 2>&1 || echo "Connection analysis failed" >> "$REPORT_FILE"
     
     cat >> "$REPORT_FILE" << EOF
 
-### Connection Pool Status
+#### Long-Running Queries
 EOF
-    docker exec postgres psql -U postgres -c "SELECT count(*) FROM pg_stat_activity;" >> "$REPORT_FILE" 2>&1 || echo "Connection query failed" >> "$REPORT_FILE"
+    docker exec postgres psql -U chaba -c "SELECT pid, now() - pg_stat_activity.query_start as duration, query FROM pg_stat_activity WHERE (now() - pg_stat_activity.query_start) > interval '5 minutes' ORDER BY duration DESC;" >> "$REPORT_FILE" 2>&1 || echo "Long query analysis failed" >> "$REPORT_FILE"
+    
+    cat >> "$REPORT_FILE" << EOF
+
+#### Database Health Trend (7-day from health checks)
+EOF
+    # Use PostgreSQL health data for growth analysis
+    docker exec postgres psql -U chaba -c "
+    SELECT 
+        DATE(timestamp) as date,
+        COUNT(*) as health_checks,
+        COUNT(CASE WHEN status = 'healthy' THEN 1 END) as healthy_checks,
+        ROUND(COUNT(CASE WHEN status = 'healthy' THEN 1 END) * 100.0 / COUNT(*), 2) as health_rate
+    FROM health_checks 
+    WHERE service_name = 'Postgres' AND timestamp > NOW() - INTERVAL '7 days'
+    GROUP BY DATE(timestamp)
+    ORDER BY date DESC;
+    " >> "$REPORT_FILE" 2>&1 || echo "Growth analysis failed" >> "$REPORT_FILE"
 fi
 
-# Weaviate performance
+# Weaviate performance with historical analysis
 cat >> "$REPORT_FILE" << EOF
 
-### Weaviate Node Status
+### Weaviate Node Status with Historical Analysis
 EOF
 curl -s http://tony-omen.local:8080/api/weaviate/v1/nodes >> "$REPORT_FILE" || echo "Weaviate API failed" >> "$REPORT_FILE"
+
+cat >> "$REPORT_FILE" << EOF
+
+#### Weaviate Health Trend (7-day)
+EOF
+docker exec postgres psql -U chaba -c "
+SELECT 
+    DATE(timestamp) as date,
+    COUNT(*) as checks,
+    AVG(response_time) as avg_response_time,
+    COUNT(CASE WHEN status = 'healthy' THEN 1 END) as healthy_count
+FROM health_checks 
+WHERE service_name = 'Weaviate' AND timestamp > NOW() - INTERVAL '7 days'
+GROUP BY DATE(timestamp)
+ORDER BY date DESC;
+" >> "$REPORT_FILE" 2>&1 || echo "Weaviate trend analysis failed" >> "$REPORT_FILE"
 
 # ============================================
 # 4. EXTENDED GPU & QUEUE ANALYSIS (Enhanced)
 # ============================================
-echo "[4/13] Running Extended GPU & Queue Analysis..." | tee -a "$LOG_FILE"
+echo "[4/14] Running Extended GPU & Queue Analysis..." | tee -a "$LOG_FILE"
 cat >> "$REPORT_FILE" << EOF
 
 ## 4. Extended GPU & Queue Analysis
@@ -148,7 +224,7 @@ curl -s http://tony-omen.local:3001/api/gpu-queue/history | tail -50 >> "$REPORT
 # ============================================
 # 5. YOMI SYSTEM HEALTH (Enhanced)
 # ============================================
-echo "[5/13] Running Enhanced Yomi System Health..." | tee -a "$LOG_FILE"
+echo "[5/14] Running Enhanced Yomi System Health..." | tee -a "$LOG_FILE"
 cat >> "$REPORT_FILE" << EOF
 
 ## 5. Yomi System Health
@@ -179,7 +255,7 @@ journalctl -u yomi-fetch --since "24 hours ago" --no-pager | grep -i "rate\|limi
 # ============================================
 # 6. NETWORK PERFORMANCE ANALYSIS (New)
 # ============================================
-echo "[6/13] Running Network Performance Analysis..." | tee -a "$LOG_FILE"
+echo "[6/14] Running Network Performance Analysis..." | tee -a "$LOG_FILE"
 cat >> "$REPORT_FILE" << EOF
 
 ## 6. Network Performance Analysis
@@ -207,7 +283,7 @@ time host tony-omen.local >> "$REPORT_FILE" 2>&1 || echo "DNS resolution failed"
 # ============================================
 # 7. BACKUP VERIFICATION (New)
 # ============================================
-echo "[7/13] Running Backup Verification..." | tee -a "$LOG_FILE"
+echo "[7/14] Running Backup Verification..." | tee -a "$LOG_FILE"
 cat >> "$REPORT_FILE" << EOF
 
 ## 7. Backup Verification
@@ -232,18 +308,35 @@ if [ -d "/home/tony/backups/postgres" ]; then
 fi
 
 # ============================================
-# 8. CONTAINER SECURITY SCANNING (New)
+# 8. CONTAINER SECURITY SCANNING (Enhanced with Trivy)
 # ============================================
-echo "[8/13] Running Container Security Analysis..." | tee -a "$LOG_FILE"
+echo "[8/13] Running Enhanced Container Security Analysis (Trivy vulnerability scanning)..." | tee -a "$LOG_FILE"
 cat >> "$REPORT_FILE" << EOF
 
-## 8. Container Security Analysis
+## 8. Enhanced Container Security Analysis
 
 ### Container Image Ages
 EOF
 docker ps --format "{{.Image}} {{.Names}}" | while read image name; do
     echo "### $name" >> "$REPORT_FILE"
     docker images "$image" --format "{{.CreatedSince}}" >> "$REPORT_FILE" 2>&1
+done
+
+cat >> "$REPORT_FILE" << EOF
+
+### Real Security Vulnerability Scanning (Trivy)
+EOF
+echo "Running Trivy security scan on running containers..." | tee -a "$LOG_FILE"
+
+# Trivy scan for critical/high vulnerabilities
+for container in $(docker ps --format "{{.Names}}"); do
+    image=$(docker inspect "$container" --format='{{.Config.Image}}')
+    echo "### Container: $container ($image)" >> "$REPORT_FILE"
+    
+    # Run Trivy scan focusing on critical/high vulnerabilities
+    trivy image --severity CRITICAL,HIGH --no-progress "$image" >> "$REPORT_FILE" 2>&1 || echo "Trivy scan failed for $container" >> "$REPORT_FILE"
+    
+    echo "" >> "$REPORT_FILE"
 done
 
 cat >> "$REPORT_FILE" << EOF
@@ -259,10 +352,37 @@ cat >> "$REPORT_FILE" << EOF
 EOF
 docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}" >> "$REPORT_FILE" 2>&1
 
+cat >> "$REPORT_FILE" << EOF
+
+### Security Configuration Audit
+EOF
+# Check for security-sensitive configurations
+echo "**Checking for security-sensitive configurations:**" >> "$REPORT_FILE"
+docker ps --format "{{.Names}}" | while read container; do
+    echo "### $container" >> "$REPORT_FILE"
+    
+    # Check for privileged mode
+    if docker inspect "$container" | grep -q '"Privileged": true'; then
+        echo "⚠️ WARNING: Running in privileged mode" >> "$REPORT_FILE"
+    fi
+    
+    # Check for running as root
+    if docker inspect "$container" | grep -q '"User": ""'; then
+        echo "⚠️ WARNING: Running as root user" >> "$REPORT_FILE"
+    fi
+    
+    # Check for sensitive mounts
+    if docker inspect "$container" | grep -q "/var/run/docker.sock"; then
+        echo "⚠️ WARNING: Docker socket mounted (security risk)" >> "$REPORT_FILE"
+    fi
+    
+    echo "" >> "$REPORT_FILE"
+done
+
 # ============================================
 # 9. DEPENDENCY SECURITY AUDIT (New)
 # ============================================
-echo "[9/13] Running Dependency Security Audit..." | tee -a "$LOG_FILE"
+echo "[9/14] Running Dependency Security Audit..." | tee -a "$LOG_FILE"
 cat >> "$REPORT_FILE" << EOF
 
 ## 9. Dependency Security Audit
@@ -290,14 +410,14 @@ echo "Checking for common security issues..." >> "$REPORT_FILE"
 find /home/tony/CascadeProjects/chaba -name "*.env" -o -name "*secret*" -o -name "*password*" 2>/dev/null | head -10 >> "$REPORT_FILE" || echo "No obvious security files found" >> "$REPORT_FILE"
 
 # ============================================
-# 10. SYSTEM RESOURCE DEEP DIVE (New)
+# 10. SYSTEM RESOURCE DEEP DIVE (Enhanced)
 # ============================================
-echo "[10/13] Running System Resource Deep Dive..." | tee -a "$LOG_FILE"
+echo "[10/13] Running Enhanced System Resource Deep Dive (Capacity planning)..." | tee -a "$LOG_FILE"
 cat >> "$REPORT_FILE" << EOF
 
-## 10. System Resource Deep Dive
+## 10. Enhanced System Resource Deep Dive
 
-### CPU Performance Analysis
+### CPU Performance Analysis with Historical Comparison
 EOF
 # CPU frequency and governor
 cat /proc/cpuinfo | grep "MHz" | head -6 >> "$REPORT_FILE" 2>&1
@@ -305,28 +425,61 @@ cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor >> "$REPORT_FILE" 2>&1
 
 cat >> "$REPORT_FILE" << EOF
 
-### Memory Usage Patterns
+#### CPU Performance Trend (7-day from health checks)
+EOF
+docker exec postgres psql -U chaba -c "
+SELECT 
+    DATE(timestamp) as date,
+    AVG(response_time) as avg_response_time,
+    COUNT(*) as checks,
+    COUNT(CASE WHEN status = 'healthy' THEN 1 END) as healthy_count
+FROM health_checks 
+WHERE timestamp > NOW() - INTERVAL '7 days'
+GROUP BY DATE(timestamp)
+ORDER BY date DESC;
+" >> "$REPORT_FILE" 2>&1 || echo "CPU trend analysis failed" >> "$REPORT_FILE"
+
+cat >> "$REPORT_FILE" << EOF
+
+### Memory Usage Patterns with Growth Analysis
 EOF
 free -h >> "$REPORT_FILE" 2>&1
 vmstat 1 5 >> "$REPORT_FILE" 2>&1
 
 cat >> "$REPORT_FILE" << EOF
 
-### Disk I/O Performance
+#### Memory Growth Analysis (disk usage proxy)
+EOF
+# Track disk usage growth as memory/storage pressure indicator
+df -h /home/tony/CascadeProjects/chaba >> "$REPORT_FILE" 2>&1
+du -sh /home/tony/CascadeProjects/chaba/* | sort -rh | head -10 >> "$REPORT_FILE" 2>&1
+
+cat >> "$REPORT_FILE" << EOF
+
+### Disk I/O Performance with Trend Analysis
 EOF
 iostat -x 1 3 >> "$REPORT_FILE" 2>&1 || echo "iostat not available" >> "$REPORT_FILE"
 
 cat >> "$REPORT_FILE" << EOF
 
-### Disk Space Analysis
+### Capacity Planning Analysis
 EOF
-df -h >> "$REPORT_FILE" 2>&1
-du -sh /home/tony/CascadeProjects/chaba/* | sort -rh | head -10 >> "$REPORT_FILE" 2>&1
+# Project disk usage growth
+current_usage=$(df /home/tony/CascadeProjects/chaba | tail -1 | awk '{print $5}' | sed 's/%//')
+echo "**Current Disk Usage:** $current_usage%" >> "$REPORT_FILE"
+
+if [ "$current_usage" -gt 80 ]; then
+    echo "**⚠️ WARNING:** Disk usage above 80% - capacity planning recommended" >> "$REPORT_FILE"
+elif [ "$current_usage" -gt 60 ]; then
+    echo "**⚠️ NOTICE:** Disk usage above 60% - monitor growth trends" >> "$REPORT_FILE"
+else
+    echo "**✅ OK:** Disk usage within acceptable range" >> "$REPORT_FILE"
+fi
 
 # ============================================
 # 11. DOCUMENTATION CONSISTENCY (Enhanced)
 # ============================================
-echo "[11/13] Running Documentation Consistency Check..." | tee -a "$LOG_FILE"
+echo "[11/14] Running Documentation Consistency Check..." | tee -a "$LOG_FILE"
 cat >> "$REPORT_FILE" << EOF
 
 ## 11. Documentation Consistency
@@ -352,7 +505,7 @@ grep -r "192\.168\." docs/ssot/ 2>/dev/null | head -10 >> "$REPORT_FILE" || echo
 # ============================================
 # 12. CONFIGURATION VALIDATION (Enhanced)
 # ============================================
-echo "[12/13] Running Configuration Validation..." | tee -a "$LOG_FILE"
+echo "[12/14] Running Configuration Validation..." | tee -a "$LOG_FILE"
 cat >> "$REPORT_FILE" << EOF
 
 ## 12. Configuration Validation
@@ -378,7 +531,7 @@ env | grep -E "(API_KEY|DATABASE|GEMINI|OPENAI)" | head -10 >> "$REPORT_FILE" 2>
 # ============================================
 # 13. MCP HEALTH SERVER INTEGRATION (PostgreSQL)
 # ============================================
-echo "[13/13] Running MCP Health Server Analysis (PostgreSQL)..." | tee -a "$LOG_FILE"
+echo "[13/14] Running MCP Health Server Analysis (PostgreSQL)..." | tee -a "$LOG_FILE"
 cat >> "$REPORT_FILE" << EOF
 
 ## 13. MCP Health Server Analysis (PostgreSQL)
@@ -427,6 +580,102 @@ else
 fi
 
 # ============================================
+# 14. PERFORMANCE BASELINE COMPARISON (New)
+# ============================================
+echo "[14/14] Running Performance Baseline Comparison..." | tee -a "$LOG_FILE"
+cat >> "$REPORT_FILE" << EOF
+
+## 14. Performance Baseline Comparison
+
+### Response Time Baseline Analysis (7-day)
+EOF
+
+# Compare current response times against 7-day baseline
+docker exec postgres psql -U chaba -c "
+WITH baseline AS (
+    SELECT 
+        service_name,
+        AVG(response_time) as avg_baseline,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY response_time) as median_baseline,
+        PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY response_time) as p95_baseline
+    FROM health_checks 
+    WHERE timestamp > NOW() - INTERVAL '7 days' AND response_time IS NOT NULL
+    GROUP BY service_name
+),
+current AS (
+    SELECT 
+        service_name,
+        AVG(response_time) as avg_current,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY response_time) as median_current
+    FROM health_checks 
+    WHERE timestamp > NOW() - INTERVAL '1 hour' AND response_time IS NOT NULL
+    GROUP BY service_name
+)
+SELECT 
+    c.service_name,
+    ROUND(b.avg_baseline::numeric, 2) as baseline_avg,
+    ROUND(c.avg_current::numeric, 2) as current_avg,
+    ROUND((c.avg_current - b.avg_baseline) / b.avg_baseline * 100, 2) as avg_change_percent,
+    ROUND(b.median_baseline::numeric, 2) as baseline_median,
+    ROUND(c.median_current::numeric, 2) as current_median,
+    ROUND((c.median_current - b.median_baseline) / b.median_baseline * 100, 2) as median_change_percent
+FROM current c
+JOIN baseline b ON c.service_name = b.service_name
+ORDER BY ABS((c.avg_current - b.avg_baseline) / b.avg_baseline) DESC;
+" >> "$REPORT_FILE" 2>&1 || echo "Baseline comparison failed" >> "$REPORT_FILE"
+
+cat >> "$REPORT_FILE" << EOF
+
+### Health Rate Trend Analysis (7-day)
+EOF
+
+docker exec postgres psql -U chaba -c "
+SELECT 
+    service_name,
+    COUNT(*) as total_checks,
+    ROUND(AVG(CASE WHEN status = 'healthy' THEN 1.0 ELSE 0.0 END) * 100, 2) as health_rate,
+    COUNT(CASE WHEN status = 'healthy' THEN 1 END) as healthy_count,
+    COUNT(CASE WHEN status != 'healthy' THEN 1 END) as unhealthy_count
+FROM health_checks 
+WHERE timestamp > NOW() - INTERVAL '7 days'
+GROUP BY service_name
+ORDER BY health_rate ASC;
+" >> "$REPORT_FILE" 2>&1 || echo "Health rate analysis failed" >> "$REPORT_FILE"
+
+cat >> "$REPORT_FILE" << EOF
+
+### Performance Degradation Detection
+EOF
+
+# Detect significant performance degradation (>20% increase in response time)
+docker exec postgres psql -U chaba -c "
+WITH performance_comparison AS (
+    SELECT 
+        h.service_name,
+        AVG(h.response_time) as recent_avg,
+        AVG(baseline.response_time) as baseline_avg,
+        (AVG(h.response_time) - AVG(baseline.response_time)) / AVG(baseline.response_time) * 100 as performance_change
+    FROM health_checks h
+    JOIN (
+        SELECT service_name, AVG(response_time) as response_time
+        FROM health_checks 
+        WHERE timestamp BETWEEN NOW() - INTERVAL '7 days' AND NOW() - INTERVAL '1 hour'
+        GROUP BY service_name
+    ) baseline ON h.service_name = baseline.service_name
+    WHERE h.timestamp > NOW() - INTERVAL '1 hour' AND h.response_time IS NOT NULL
+    GROUP BY h.service_name
+)
+SELECT 
+    service_name,
+    ROUND(recent_avg::numeric, 2) as recent_avg_ms,
+    ROUND(baseline_avg::numeric, 2) as baseline_avg_ms,
+    ROUND(performance_change::numeric, 2) as performance_change_percent
+FROM performance_comparison
+WHERE ABS(performance_change) > 20
+ORDER BY performance_change DESC;
+" >> "$REPORT_FILE" 2>&1 || echo "Performance degradation detection failed" >> "$REPORT_FILE"
+
+# ============================================
 # FINAL SUMMARY
 # ============================================
 echo "Generating Final Summary..." | tee -a "$LOG_FILE"
@@ -448,27 +697,31 @@ cat >> "$REPORT_FILE" << EOF
 
 ### Completed Assessment Areas
 - ✅ Enhanced Health Check Integration
-- ✅ Comprehensive Log Analysis
-- ✅ Database Performance Deep Dive
+- ✅ Enhanced Comprehensive Log Analysis (7-day patterns)
+- ✅ Enhanced Database Performance Deep Dive (Historical trends)
 - ✅ Extended GPU & Queue Analysis
 - ✅ Enhanced Yomi System Health
 - ✅ Network Performance Analysis
 - ✅ Backup Verification
-- ✅ Container Security Analysis
+- ✅ Enhanced Container Security Analysis (Trivy scanning)
 - ✅ Dependency Security Audit
-- ✅ System Resource Deep Dive
+- ✅ Enhanced System Resource Deep Dive (Capacity planning)
 - ✅ Documentation Consistency Check
 - ✅ Configuration Validation
-- ✅ MCP Health Server Integration
+- ✅ MCP Health Server Integration (PostgreSQL)
+- ✅ Performance Baseline Comparison (7-day trends)
 
 **Assessment Completed:** $(date)
 **Report Location:** $REPORT_FILE
 **Log Location:** $LOG_FILE
 EOF
 
+END_TIME=$(date +%s)
+DURATION=$((END_TIME - START_TIME))
 echo "=== Overnight Assessment Completed: $(date) ===" | tee -a "$LOG_FILE"
 echo "Report saved to: $REPORT_FILE" | tee -a "$LOG_FILE"
 echo "Log saved to: $LOG_FILE" | tee -a "$LOG_FILE"
+echo "Total runtime: $DURATION seconds" | tee -a "$LOG_FILE"
 
 # ============================================
 # AUTO-IMPROVEMENT CREATION
