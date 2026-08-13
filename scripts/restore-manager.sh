@@ -7,7 +7,7 @@
 set -euo pipefail
 
 # Configuration
-BACKUP_ROOT="/home/tony/backups/chaba"
+BACKUP_ROOT="/home/tony/GoogleDrive/Tony AI/backup/chaba"
 RESTORE_LOG="/var/log/chaba-restore.log"
 
 # Logging function

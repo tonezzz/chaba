@@ -7,7 +7,7 @@
 set -euo pipefail
 
 # Configuration
-BACKUP_ROOT="/home/tony/backups/chaba"
+BACKUP_ROOT="/home/tony/GoogleDrive/Tony AI/backup/chaba"
 BACKUP_DATE=$(date +%Y%m%d_%H%M%S)
 BACKUP_LOG="/var/log/chaba-backup.log"
 BACKUP_RETENTION_DAYS=30
