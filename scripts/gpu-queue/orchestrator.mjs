@@ -5,9 +5,9 @@ import * as db from './db.mjs';
 // This script processes jobs from the queue using MCP tools
 // Run this from Cascade or a cron job
 
-// Llama server URL - using direct IP to avoid Docker DNS issues
-// Container IP: 172.19.0.14 (thai-legal-inference in web_default network)
-const LLAMA_URL = 'http://172.19.0.14:8000/v1/chat/completions';
+// Llama server URL - using container name to follow hostname standards
+// Container: ai-llama-server-1 in ai_default network (external network connection)
+const LLAMA_URL = 'http://ai-llama-server-1:8008/v1/chat/completions';
 
 async function processNextJob() {
   // Get next pending job

@@ -297,6 +297,7 @@ services:
       start_period: 10s
     networks:
       - default
+      - ai_default
     depends_on:
       postgres:
         condition: service_healthy
@@ -319,6 +320,7 @@ services:
       - "host.docker.internal:host-gateway"
     networks:
       - default
+      - ai_default
     depends_on:
       - gpu-queue
       - postgres
@@ -452,4 +454,6 @@ volumes:
 
 networks:
   frigate_default:
+    external: true
+  ai_default:
     external: true
