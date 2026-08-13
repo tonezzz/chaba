@@ -17,9 +17,8 @@
 	}
 
 	# MDDB Panel assets - handle root-relative asset requests from panel
-	@mddb_root_assets path /assets/*
 	@mddb_from_panel header Referer *apps/mddb*
-	handle @mddb_root_assets @mddb_from_panel {
+	handle @mddb_from_panel {
 		reverse_proxy mddb-panel:3000
 		encode gzip
 	}
