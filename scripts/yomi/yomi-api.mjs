@@ -8,6 +8,7 @@ import {
   handleMediaAnalysisJobs 
 } from './media-analysis.mjs';
 import pool from './db.mjs';
+import { cacheMiddleware, invalidateConversationsCache, invalidateMessagesCache, invalidateDailyCache, getCacheStats } from './cached-api.mjs';
 
 const PORT = parseInt(process.env.YOMI_API_PORT || '3000', 10);
 const HOST = process.env.YOMI_API_HOST || '0.0.0.0';
@@ -111,6 +112,9 @@ async function handleRefresh(chatId, res, force = false) {
   
   const { code, err } = await spawnNode(`${SCRIPT_DIR}/update-conversations.mjs`, args);
   if (code === 0) {
+    // Invalidate cache for this chat
+    await invalidateMessagesCache(chatId);
+    await invalidateConversationsCache();
     sendJson(res, 200, { ok: true, forced: force });
   } else {
     sendJson(res, 500, { ok: false, error: err.trim() || 'export failed' });
@@ -149,6 +153,13 @@ async function handleProcess(chatId, res, force = false) {
   
   const { code, out, err } = await spawnNode(`${SCRIPT_DIR}/process-conversations.mjs`, args);
   if (code === 0) {
+    // Invalidate cache for affected data
+    if (chatId) {
+      await invalidateDailyCache(chatId);
+      await invalidateConversationsCache();
+    } else {
+      await invalidateAllYomiCache();
+    }
     sendJson(res, 200, { ok: true, forced: force, output: out });
   } else {
     sendJson(res, 500, { ok: false, error: err.trim() || 'process failed' });
@@ -156,13 +167,18 @@ async function handleProcess(chatId, res, force = false) {
 }
 
 async function handleConversations(res) {
-  const { rows } = await pool.query(`
-    SELECT chat_id AS id, name, is_group AS "isGroup", category, category_source AS "categorySource",
-           unread, last_message_time AS "lastMessageTime", last_preview AS "lastPreview", summary
-    FROM conversations
-    ORDER BY last_message_time DESC NULLS LAST
-  `);
-  sendJson(res, 200, { generatedAt: new Date().toISOString(), conversations: rows });
+  const { data, cached } = await withCache('conversations', 'list', async () => {
+    const { rows } = await pool.query(`
+      SELECT chat_id AS id, name, is_group AS "isGroup", category, category_source AS "categorySource",
+             unread, last_message_time AS "lastMessageTime", last_preview AS "lastPreview", summary
+      FROM conversations
+      ORDER BY last_message_time DESC NULLS LAST
+    `);
+    return { generatedAt: new Date().toISOString(), conversations: rows };
+  }, 300);
+  
+  res.setHeader('X-Cache', cached ? 'HIT' : 'MISS');
+  sendJson(res, 200, data);
 }
 
 async function handleLastUpdated(res) {
@@ -629,45 +645,53 @@ async function handleMessages(chatId, url, res) {
   const startDate = url.searchParams.get('startDate');
   const endDate = url.searchParams.get('endDate');
   
-  let query = `SELECT data, media_analysis FROM messages WHERE chat_id = $1`;
-  let params = [chatId];
-  let paramIndex = 2;
+  // Create cache key from all parameters
+  const cacheKey = `${chatId}:${before || 'none'}:${limit}:${startDate || 'none'}:${endDate || 'none'}`;
   
-  // Add date range filtering for daily2 page
-  if (startDate) {
-    query += ` AND delivered_time >= $${paramIndex}`;
-    params.push(parseInt(startDate, 10));
-    paramIndex++;
-  }
-  
-  if (endDate) {
-    query += ` AND delivered_time <= $${paramIndex}`;
-    params.push(parseInt(endDate, 10));
-    paramIndex++;
-  }
-  
-  // Only add before clause if it's provided (for pagination)
-  if (before) {
-    query += ` AND delivered_time < $${paramIndex}`;
-    params.push(parseInt(before, 10));
-    paramIndex++;
-  }
-  
-  query += ` ORDER BY delivered_time DESC LIMIT $${paramIndex}`;
-  params.push(limit);
-  
-  const { rows } = await pool.query(query, params);
-  
-  // Merge media_analysis into data objects
-  const messages = rows.map(r => {
-    const data = r.data;
-    if (r.media_analysis && !data.mediaAnalysis) {
-      data.mediaAnalysis = r.media_analysis;
+  const { data, cached } = await withCache('messages', cacheKey, async () => {
+    let query = `SELECT data, media_analysis FROM messages WHERE chat_id = $1`;
+    let params = [chatId];
+    let paramIndex = 2;
+    
+    // Add date range filtering for daily2 page
+    if (startDate) {
+      query += ` AND delivered_time >= $${paramIndex}`;
+      params.push(parseInt(startDate, 10));
+      paramIndex++;
     }
-    return data;
-  });
+    
+    if (endDate) {
+      query += ` AND delivered_time <= $${paramIndex}`;
+      params.push(parseInt(endDate, 10));
+      paramIndex++;
+    }
+    
+    // Only add before clause if it's provided (for pagination)
+    if (before) {
+      query += ` AND delivered_time < $${paramIndex}`;
+      params.push(parseInt(before, 10));
+      paramIndex++;
+    }
+    
+    query += ` ORDER BY delivered_time DESC LIMIT $${paramIndex}`;
+    params.push(limit);
+    
+    const { rows } = await pool.query(query, params);
+    
+    // Merge media_analysis into data objects
+    const messages = rows.map(r => {
+      const data = r.data;
+      if (r.media_analysis && !data.mediaAnalysis) {
+        data.mediaAnalysis = r.media_analysis;
+      }
+      return data;
+    });
+    
+    return { generatedAt: new Date().toISOString(), messages };
+  }, 60); // 1 minute cache for messages
   
-  sendJson(res, 200, { generatedAt: new Date().toISOString(), messages });
+  res.setHeader('X-Cache', cached ? 'HIT' : 'MISS');
+  sendJson(res, 200, data);
 }
 
 async function handleMedia(chatId, messageId, res) {
@@ -727,7 +751,7 @@ const server = createServer(async (req, res) => {
   }
 
   if (url.pathname === '/api/yomi/health') {
-    return sendJson(res, 200, { ok: true });
+    return sendJson(res, 200, { ok: true, cacheStats: getCacheStats() });
   }
 
   if (url.pathname === '/api/yomi/session-status' && req.method === 'GET') {
@@ -900,7 +924,10 @@ const server = createServer(async (req, res) => {
 
   if (url.pathname === '/api/yomi/conversations' && req.method === 'GET') {
     try {
-      await handleConversations(res);
+      // Apply cache middleware with 5-minute TTL
+      await cacheMiddleware(300)(req, res, async () => {
+        await handleConversations(res);
+      });
     } catch (err) {
       sendJson(res, 500, { ok: false, error: err.message });
     }
