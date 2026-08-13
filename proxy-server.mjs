@@ -31,12 +31,38 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  if (pathname === '/api/health') {
+    // Proxy health check request to chaba health API
+    try {
+      const healthResponse = await fetch('http://tony-omen.local:3006/api/health');
+      if (healthResponse.ok) {
+        const healthData = await healthResponse.json();
+        response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        response.end(JSON.stringify(healthData));
+      } else {
+        response.writeHead(healthResponse.status, { 'Content-Type': 'application/json; charset=utf-8' });
+        response.end(JSON.stringify({ error: 'Health check failed', status: healthResponse.status }));
+      }
+    } catch (error) {
+      response.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
+      response.end(JSON.stringify({ error: 'Unable to reach health check service', message: error.message }));
+    }
+    return;
+  }
+
   const requestedPath = pathname === '/' ? 'index.html' : pathname.slice(1);
   let filePath = normalize(join(publicDirectory, requestedPath));
 
   if (!filePath.startsWith(publicDirectory)) {
     response.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
     response.end('Forbidden');
+    return;
+  }
+
+  // Bypass PHP files - let Plesk's PHP processor handle them
+  if (extname(filePath).toLowerCase() === '.php') {
+    response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+    response.end('Not found');
     return;
   }
 
