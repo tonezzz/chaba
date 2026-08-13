@@ -1,6 +1,6 @@
 title: Chaba Health Check Configuration
 description: Health check endpoints and monitoring for all chaba services
-version: 7
+version: 8
 
 # Network profiles with auto-detection
 profiles:
@@ -37,12 +37,12 @@ alerts:
   
   service_criticality:
     critical: [caddy, postgres, gpu-queue]
-    important: [yomi-api, trade-api, mddb-api, playlived, llama-server, remote-exec-tony-dell]
+    important: [yomi-api, status-api, trade-api, mddb-api, playlived, llama-server, remote-exec-tony-dell]
     optional: [redis, weaviate, activepieces, frigate, camera-control, imagen2, txt2vid, thai-legal, cpu-frequency-monitor]
 
 # Service groups for dependency tracking
 groups:
-  web-stack: [caddy, yomi-api, mddb-panel]
+  web-stack: [caddy, status-api, yomi-api, mddb-panel]
   gpu-stack: [imagen2, txt2vid, thai-legal, llama-server]
   datastore: [postgres, weaviate, mddb-api]
   trading: [trade-api]
@@ -55,6 +55,7 @@ groups:
 # Service dependencies
 dependencies:
   yomi-api: [caddy, postgres] # redis removed - not currently deployed
+  status-api: [caddy]
   gpu-queue: [postgres]
   activepieces: [postgres] # redis removed - not currently deployed
   playlived: []
