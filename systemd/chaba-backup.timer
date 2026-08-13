@@ -1,0 +1,12 @@
+[Unit]
+Description=Chaba Infrastructure Backup Timer
+Requires=chaba-backup.service
+
+[Timer]
+OnCalendar=daily
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+RandomizedDelaySec=1800
+
+[Install]
+WantedBy=timers.target

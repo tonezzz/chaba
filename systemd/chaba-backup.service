@@ -1,0 +1,15 @@
+[Unit]
+Description=Chaba Infrastructure Backup Service
+After=network.target docker.service postgres.service
+
+[Service]
+Type=oneshot
+User=tony
+Group=tony
+ExecStart=/home/tony/CascadeProjects/chaba/scripts/backup-manager.sh full
+WorkingDirectory=/home/tony/CascadeProjects/chaba
+StandardOutput=append:/var/log/chaba-backup.log
+StandardError=append:/var/log/chaba-backup.log
+
+[Install]
+WantedBy=multi-user.target
