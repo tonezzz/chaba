@@ -221,16 +221,23 @@ services:
       - "Test MCP server manually: ssh tony@tony-dell.local 'cd /home/tony/mcp-remote-exec && echo test | python3 mcp_server.py'"
 
   # Data Services
-  # Note: Redis is not currently deployed as container or systemd service
-  # Marked as optional since dependent services (yomi-api, activepieces) can function without it
-  # - id: redis
-  #   name: Redis
-  #   type: container
-  #   container: redis
-  #   expected_state: running
-  #   timeout: 5
-  #   category: datastore
-  #   profiles: [home, mobile]
+  - id: redis
+    name: Redis
+    type: container
+    container: redis
+    expected_state: running
+    timeout: 5
+    category: datastore
+    profiles: [home, mobile]
+    verification:
+      - "Test container: docker ps | grep redis"
+      - "Test connection: docker exec redis redis-cli ping"
+      - "Test memory: docker exec redis redis-cli info memory"
+      - "Check logs: docker logs redis --tail 20"
+    recovery_actions:
+      - "Restart container: docker restart redis"
+      - "Check data volume: docker inspect redis | grep -A 10 Mounts"
+      - "Verify networking: docker network inspect bridge"
 
   - id: postgres
     name: Postgres
