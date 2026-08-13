@@ -6,7 +6,7 @@
  * and provides optimization recommendations.
  */
 
-import pool from './db-optimized.mjs';
+import pool, { getQueryMetrics, analyzeSlowQueries } from './db-optimized.mjs';
 
 /**
  * Analyze database table sizes and row counts
@@ -15,16 +15,14 @@ export async function analyzeTableSizes() {
   try {
     const result = await pool.query(`
       SELECT 
-        schemaname,
-        relname as tablename,
-        pg_size_pretty(pg_total_relation_size(schemaname||'.'||relname)) as size,
-        pg_total_relation_size(schemaname||'.'||relname) as size_bytes,
-        (SELECT n_live_tup FROM pg_stat_user_tables 
-         WHERE schemaname = pg_stat_user_tables.schemaname 
-         AND relname = pg_stat_user_tables.relname) as row_count
-      FROM pg_stat_user_tables
-      WHERE schemaname = 'public'
-      ORDER BY pg_total_relation_size(schemaname||'.'||relname) DESC
+        pst.schemaname,
+        pst.relname as tablename,
+        pg_size_pretty(pg_total_relation_size(pst.schemaname||'.'||pst.relname)) as size,
+        pg_total_relation_size(pst.schemaname||'.'||pst.relname) as size_bytes,
+        pst.n_live_tup as row_count
+      FROM pg_stat_user_tables pst
+      WHERE pst.schemaname = 'public'
+      ORDER BY pg_total_relation_size(pst.schemaname||'.'||pst.relname) DESC
     `);
     
     return result.rows;
@@ -88,7 +86,7 @@ export async function findUnusedIndexes() {
 /**
  * Analyze slow queries from pg_stat_statements
  */
-export async function analyzeSlowQueries() {
+export async function analyzeSlowQueriesFromStats() {
   try {
     // Check if pg_stat_statements is enabled
     const extensionCheck = await pool.query(`
@@ -207,12 +205,12 @@ export async function generateOptimizationReport() {
     const [tableSizes, unusedIndexes, slowQueries, missingIndexes, queryMetrics] = await Promise.all([
       analyzeTableSizes(),
       findUnusedIndexes(),
-      analyzeSlowQueries(),
+      analyzeSlowQueriesFromStats(),
       suggestMissingIndexes(),
-      Promise.resolve(pool.getQueryMetrics())
+      Promise.resolve(getQueryMetrics())
     ]);
     
-    const queryAnalysis = pool.analyzeSlowQueries();
+    const queryAnalysis = analyzeSlowQueries();
     
     const report = {
       timestamp: new Date().toISOString(),

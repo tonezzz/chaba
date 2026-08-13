@@ -68,6 +68,7 @@ backup_database() {
     
     local backup_file="$BACKUP_ROOT/daily/postgres_${BACKUP_DATE}.sql.gz"
     local container_name="postgres"
+    local start_time=$(date +%s)
     
     # Check if PostgreSQL container is running
     if ! docker ps | grep -q "$container_name"; then
@@ -77,12 +78,18 @@ backup_database() {
     
     # Perform backup
     if docker exec "$container_name" pg_dump -U chaba chaba | gzip > "$backup_file"; then
+        local end_time=$(date +%s)
+        local duration=$((end_time - start_time))
         local backup_size=$(du -h "$backup_file" | cut -f1)
-        log "INFO" "PostgreSQL backup completed: $backup_file ($backup_size)"
+        log "INFO" "PostgreSQL backup completed: $backup_file ($backup_size) in ${duration}s"
         
         # Verify backup integrity
         if gzip -t "$backup_file" 2>/dev/null; then
             log "INFO" "PostgreSQL backup integrity verified"
+            
+            # Store backup metrics
+            echo "$BACKUP_DATE,$duration,$backup_size" >> "$BACKUP_ROOT/logs/postgres_backup_metrics.log"
+            
             return 0
         else
             log "ERROR" "PostgreSQL backup integrity check failed"

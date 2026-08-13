@@ -192,7 +192,7 @@ export async function healthCheck() {
 /**
  * Analyze slow queries and suggest optimizations
  */
-function analyzeSlowQueries() {
+export function analyzeSlowQueries() {
   const metrics = getQueryMetrics();
   const suggestions = [];
   

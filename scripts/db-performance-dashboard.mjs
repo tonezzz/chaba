@@ -6,7 +6,7 @@
  * integrating with the optimization tools and caching system.
  */
 
-import pool, { healthCheck, getPoolStats } from './db-optimized.mjs';
+import pool, { healthCheck, getPoolStats, getQueryMetrics } from './db-optimized.mjs';
 import { analyzeTableSizes, analyzeIndexUsage, findUnusedIndexes, generateOptimizationReport } from './db-optimizer.mjs';
 import cacheManager from './cache-manager.mjs';
 
@@ -62,8 +62,8 @@ export async function getDatabasePerformanceDashboard() {
  * Get real-time query performance
  */
 export async function getRealTimeQueryPerformance() {
-  const queryMetrics = pool.getQueryMetrics();
-  const poolStats = await pool.getPoolStats();
+  const queryMetrics = getQueryMetrics();
+  const poolStats = await getPoolStats();
   
   return {
     timestamp: new Date().toISOString(),
@@ -99,7 +99,7 @@ export async function getDatabaseHealthStatus() {
 export async function getCacheEffectiveness() {
   try {
     const cacheStats = cacheManager.getStats();
-    const queryMetrics = pool.getQueryMetrics();
+    const queryMetrics = getQueryMetrics();
     
     const cacheHitRate = parseFloat(cacheStats.hitRate) || 0;
     const queryEfficiency = queryMetrics.totalQueries > 0 
@@ -120,7 +120,7 @@ export async function getCacheEffectiveness() {
     return {
       timestamp: new Date().toISOString(),
       error: 'Cache not available',
-      database: pool.getQueryMetrics(),
+      database: getQueryMetrics(),
       effectiveness: {
         cacheHitRate: 'N/A',
         queryEfficiency: 'N/A',

@@ -8,7 +8,7 @@
 
 import { createClient } from 'redis';
 
-const REDIS_URL = process.env.REDIS_URL || 'redis://host.docker.internal:6379';
+const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 const CACHE_PREFIX = 'chaba:';
 const DEFAULT_TTL = 300; // 5 minutes
 
