@@ -238,6 +238,8 @@ services:
       --maxmemory-policy noeviction
     volumes:
       - redis_data:/data
+    ports:
+      - "6379:6379"
     networks:
       - default
     healthcheck:
