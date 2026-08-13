@@ -209,6 +209,16 @@ which curl docker journalctl ip host
 sudo apt-get install curl iproute2 iputils-ping sysstat
 ```
 
+### MCP Health Server Integration
+The MCP Health Server integration (Area 13) requires MCP client setup to function fully:
+```bash
+# Check if MCP client is available
+which mcp_call_tool
+
+# If not available, the script will skip MCP integration with a graceful fallback
+# To enable full MCP integration, ensure MCP client is properly configured
+```
+
 ### Systemd Timer Issues
 ```bash
 # Check timer status
@@ -268,7 +278,7 @@ This expanded assessment integrates with:
 
 ## Performance Impact
 
-- **Runtime:** Approximately 15-30 minutes depending on system load
+- **Runtime:** Approximately 20-35 minutes depending on system load
 - **Resource Usage:** Low - mostly API calls and log analysis
 - **Network:** Minimal - only local API calls and DNS checks
 - **Disk:** ~1-2 MB for logs, ~500 KB for reports

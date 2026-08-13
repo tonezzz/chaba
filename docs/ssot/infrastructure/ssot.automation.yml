@@ -1,6 +1,6 @@
 title: Chaba System Automation
 description: Automated monitoring and maintenance schedules for Chaba infrastructure
-version: 2
+version: 3
 
 automation:
   gpu_monitoring:
@@ -37,26 +37,26 @@ automation:
     status: active (2026-08-06)
 
   overnight_assessment:
-    script: scripts/overnight-assessment.mjs
+    script: scripts/overnight-jobs-expanded.sh
     schedule: "0 2 * * *"
     frequency: daily at 2 AM
-    log_file: logs/automation/overnight-assessment.log
+    log_file: logs/overnight-TIMESTAMP.log
     report_dir: reports/
     report_retention: 30 days
     features:
-      - health check integration
-      - gpu & queue analysis
-      - yomi system health
-      - database & cache performance
-      - application log analysis
-      - configuration validation
-      - hostname resolution verification
-      - /etc/hosts mapping validation
-      - network connectivity checks
-      - security & dependency checks
-      - performance trend analysis
-      - auto-improvement creation
-    status: active (2026-08-06)
+      - enhanced health check integration (12 comprehensive areas)
+      - comprehensive log analysis (Docker + systemd error patterns)
+      - database performance deep dive (PostgreSQL + Weaviate)
+      - extended GPU & queue analysis (job history + patterns)
+      - enhanced Yomi system health (rate limit analysis)
+      - network performance analysis (interface stats + connectivity)
+      - backup verification (status + integrity checks)
+      - container security analysis (image ages + compliance)
+      - dependency security audit (outdated packages + vulnerabilities)
+      - system resource deep dive (CPU + memory + disk I/O)
+      - documentation consistency (SSOT validation + hostname checks)
+      - configuration validation (YAML + environment variables)
+    status: active (2026-08-13)
 
 monitoring:
   gpu:
@@ -156,7 +156,7 @@ maintenance:
 performance_impact:
   gpu_monitoring: minimal (<1 second per check)
   system_maintenance: variable (1-5 minutes depending on cleanup)
-  overnight_assessment: ~3 minutes comprehensive check
+  overnight_assessment: 15-30 minutes (12 comprehensive assessment areas)
 
 future_enhancements:
   - web-based monitoring dashboard
