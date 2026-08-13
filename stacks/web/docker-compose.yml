@@ -27,6 +27,8 @@ services:
     networks:
       - default
       - frigate_default
+    profiles:
+      - production
 
   status-api:
     container_name: status-api
@@ -60,6 +62,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
+      - NODE_ENV=production
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=trade
@@ -68,6 +71,28 @@ services:
       - ROOT_PATH=/apps/trade
     ports:
       - "9000:8000"
+    networks:
+      - default
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - production
+
+  helm:
+    container_name: helm
+    build:
+      context: /home/tony/CascadeProjects/helm
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://chaba:chabapass@postgres:5432/projects
+      - PROJECTS_PATH=/home/tony/CascadeProjects
+    ports:
+      - "3003:3000"
+    volumes:
+      - /home/tony/CascadeProjects:/home/tony/CascadeProjects:ro
     networks:
       - default
     depends_on:
@@ -253,6 +278,7 @@ services:
     image: ghcr.io/activepieces/activepieces:latest
     restart: unless-stopped
     environment:
+      - NODE_ENV=production
       - AP_DB_TYPE=POSTGRES
       - AP_POSTGRES_DATABASE=activepieces
       - AP_POSTGRES_USERNAME=activepieces
@@ -270,6 +296,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    profiles:
+      - production
     networks:
       - default
 
@@ -283,6 +311,7 @@ services:
       - ../../scripts/gpu-queue:/app/gpu-queue
       - gpu_queue_node_modules:/app/gpu-queue/node_modules
     environment:
+      - NODE_ENV=production
       - DATABASE_URL=postgres://chaba:chabapass@postgres:5432/chaba
       - GPU_QUEUE_PORT=3001
     ports:
@@ -303,6 +332,7 @@ services:
         condition: service_healthy
     profiles:
       - gpu-services
+      - production
 
   gpu-queue-processor:
     container_name: gpu-queue-processor
@@ -314,6 +344,7 @@ services:
       - ../../scripts/gpu-queue:/app/gpu-queue
       - gpu_queue_node_modules:/app/gpu-queue/node_modules
     environment:
+      - NODE_ENV=production
       - DATABASE_URL=postgres://chaba:chabapass@postgres:5432/chaba
       - GPU_QUEUE_PORT=3001
     extra_hosts:
@@ -326,6 +357,7 @@ services:
       - postgres
     profiles:
       - gpu-services
+      - production
 
   yomi-api:
     container_name: yomi-api
@@ -340,6 +372,7 @@ services:
       - yomi_node_modules:/app/yomi/node_modules
       - /home/tony/.yomi/mcpb/node_modules/@modelcontextprotocol:/home/tony/.yomi/mcpb/node_modules/@modelcontextprotocol:ro
     environment:
+      - NODE_ENV=production
       - YOMI_API_PORT=3000
       - YOMI_API_HOST=0.0.0.0
       - REDIS_URL=redis://redis:6379

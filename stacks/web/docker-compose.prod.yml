@@ -1,0 +1,67 @@
+# Production Docker Compose Configuration
+# This file extends the base docker-compose.yml with production-specific overrides
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile production up -d
+
+services:
+  web:
+    profiles:
+      - production
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./public:/srv/public:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      # Remove development-specific mounts:
+      # - /home/tony/CascadeProjects/chaba-omen/stacks/web/public/tony-omen:/srv/public/tony-omen
+      # - /home/tony/CascadeProjects/chaba-h3/public:/srv/public/chaba-h3
+      # - /home/tony/CascadeProjects/chaba/docs:/srv/docs
+
+  yomi-api:
+    profiles:
+      - production
+    volumes:
+      - ./public/apps/yomi/media:/app/media:ro
+      - yomi_node_modules:/app/yomi/node_modules
+      # Remove development-specific mounts:
+      # - ../../scripts/yomi:/app/yomi
+      # - /home/tony/.yomi:/home/tony/.yomi:ro
+      # - /home/tony/.yomi/mcpb/node_modules/@modelcontextprotocol:/home/tony/.yomi/mcpb/node_modules/@modelcontextprotocol:ro
+    environment:
+      - NODE_ENV=production
+      - YOMI_MCP_PATH=/app/yomi/mcpb/run.mjs  # Use container path instead of host path
+      - SUMMARY_CACHE=/app/media/summaries.json
+
+  gpu-queue:
+    profiles:
+      - production
+    volumes:
+      - gpu_queue_node_modules:/app/gpu-queue/node_modules
+      # Remove development-specific mount:
+      # - ../../scripts/gpu-queue:/app/gpu-queue
+    # In production, the GPU queue code should be built into the image
+    # or mounted from a production build directory
+
+  gpu-queue-processor:
+    profiles:
+      - production
+    volumes:
+      - gpu_queue_node_modules:/app/gpu-queue/node_modules
+      # Remove development-specific mount:
+      # - ../../scripts/gpu-queue:/app/gpu-queue
+
+  helm:
+    profiles:
+      - production
+    volumes:
+      - ./public:/app/public:ro
+      # Remove development-specific mount:
+      # - /home/tony/CascadeProjects:/home/tony/CascadeProjects:ro
+    environment:
+      - NODE_ENV=production
+      - PROJECTS_PATH=/app/projects  # Use container path instead of host path
+
+  # In production, additional services would be added here:
+  # - Monitoring (Prometheus, Grafana)
+  # - Log aggregation (ELK stack, Loki)
+  # - Backup services
+  # - SSL/TLS termination
