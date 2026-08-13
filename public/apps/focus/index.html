@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Focus Tracker - Strategic Focus Management</title>
+  <style>
+    body { font-family: sans-serif; margin: 0; padding: 20px; background: #f8fafc; }
+    .app-container { max-width: 1200px; margin: 0 auto; }
+    .app-header { text-align: center; margin-bottom: 40px; padding: 20px; background: linear-gradient(135deg, #2563eb, #3b82f6); color: white; border-radius: 12px; }
+    .app-header h1 { margin: 0 0 8px 0; font-size: 2.5rem; }
+    .subtitle { margin: 0; font-size: 1.1rem; opacity: 0.9; }
+    .focus-section { background: white; border-radius: 12px; padding: 24px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .focus-section h2 { margin: 0 0 20px 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; }
+    .current-focus { border-left: 4px solid #2563eb; background: linear-gradient(to right, #eff6ff, white); }
+    .focus-card { background: #f8fafc; border-radius: 8px; padding: 16px; margin-bottom: 16px; border: 1px solid #e2e8f0; }
+    .focus-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .focus-title { font-size: 1.2rem; font-weight: 600; margin: 0; }
+    .focus-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+    .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; text-transform: uppercase; }
+    .status-active { background: #dbeafe; color: #1e40af; }
+    .status-completed { background: #d1fae5; color: #065f46; }
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .priority-high { background: #fee2e2; color: #991b1b; }
+    .priority-medium { background: #fef3c7; color: #92400e; }
+    .priority-low { background: #e5e7eb; color: #374151; }
+    .tag { background: #e0e7ff; color: #3730a3; font-size: 0.75rem; }
+    .focus-description { color: #64748b; line-height: 1.6; margin: 0 0 12px 0; }
+    .focus-meta { display: flex; gap: 20px; flex-wrap: wrap; font-size: 0.9rem; color: #64748b; }
+    .meta-label { font-weight: 500; color: #1e293b; }
+    .focus-context { background: #f0f9ff; border-left: 3px solid #2563eb; padding: 12px; margin-top: 12px; border-radius: 4px; font-size: 0.9rem; color: #64748b; }
+    .focus-dependencies { margin-top: 12px; padding: 8px 12px; background: #fef2f2; border-radius: 4px; font-size: 0.85rem; }
+    .dependency-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    .dependency-item { background: white; padding: 2px 8px; border-radius: 4px; border: 1px solid #fecaca; }
+    .empty-state { text-align: center; padding: 40px; color: #64748b; }
+    .app-footer { text-align: center; margin-top: 40px; padding: 20px; color: #64748b; font-size: 0.9rem; }
+    
+    /* Activity Timeline Styles */
+    .timeline-date { margin-bottom: 24px; }
+    .timeline-date h3 { margin: 0 0 16px 0; color: #1e293b; font-size: 1.1rem; }
+    .timeline-activities { display: flex; flex-direction: column; gap: 12px; }
+    .activity-item { display: flex; gap: 12px; padding: 12px; background: #f8fafc; border-radius: 6px; border-left: 3px solid #e2e8f0; }
+    .activity-time { font-size: 0.85rem; color: #64748b; min-width: 80px; }
+    .activity-content { flex: 1; }
+    .activity-type { font-weight: 500; color: #1e293b; font-size: 0.9rem; }
+    .activity-focus { color: #64748b; font-size: 0.85rem; margin-top: 4px; }
+    .activity-message { color: #475569; font-size: 0.85rem; margin-top: 4px; font-style: italic; }
+    .activity-impact { padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 0.85rem; min-width: 40px; text-align: center; }
+    .score-high { background: #fee2e2; color: #991b1b; }
+    .score-medium { background: #fef3c7; color: #92400e; }
+    .score-low { background: #e5e7eb; color: #374151; }
+    
+    /* Activity Summary Styles */
+    .summary-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: #f8fafc; padding: 16px; border-radius: 8px; text-align: center; border: 1px solid #e2e8f0; }
+    .stat-value { font-size: 2rem; font-weight: 700; color: #2563eb; margin-bottom: 4px; }
+    .stat-label { font-size: 0.85rem; color: #64748b; }
+    .summary-section { margin-bottom: 24px; }
+    .summary-section h4 { margin: 0 0 12px 0; color: #1e293b; font-size: 1rem; }
+    .summary-bars { display: flex; flex-direction: column; gap: 8px; }
+    .summary-bar { display: flex; align-items: center; gap: 12px; }
+    .bar-label { min-width: 200px; font-size: 0.85rem; color: #475569; }
+    .bar-track { flex: 1; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; background: linear-gradient(90deg, #2563eb, #3b82f6); border-radius: 4px; transition: width 0.3s ease; }
+    .bar-value { min-width: 80px; font-size: 0.85rem; color: #64748b; text-align: right; }
+    
+    /* Interactive Controls Styles */
+    .focus-controls { display: flex; gap: 8px; margin-top: 12px; }
+    .control-button { padding: 6px 12px; border: none; border-radius: 6px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease; }
+    .control-button:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .btn-activate { background: #dbeafe; color: #1e40af; }
+    .btn-activate:hover { background: #bfdbfe; }
+    .btn-complete { background: #d1fae5; color: #065f46; }
+    .btn-complete:hover { background: #a7f3d0; }
+    .btn-pause { background: #fef3c7; color: #92400e; }
+    .btn-pause:hover { background: #fde68a; }
+    .dependency-warning { background: #fef2f2; color: #991b1b; padding: 8px; border-radius: 4px; margin-top: 8px; font-size: 0.85rem; border: 1px solid #fecaca; }
+    
+    /* Health Section Styles */
+    .health-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .health-summary-badge { font-size: 0.85rem; font-weight: 600; padding: 4px 12px; border-radius: 20px; background: #e2e8f0; color: #475569; margin-left: 12px; }
+    .health-summary-badge.healthy { background: #d1fae5; color: #065f46; }
+    .health-summary-badge.degraded { background: #fef3c7; color: #92400e; }
+    .health-summary-badge.error { background: #fee2e2; color: #991b1b; }
+    .health-controls { display: flex; gap: 8px; }
+    .health-status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+    .health-status-card { background: #f8fafc; padding: 20px; border-radius: 12px; border: 2px solid #e2e8f0; text-align: center; transition: all 0.2s ease; }
+    .health-status-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .health-status-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .health-status-value { font-size: 2rem; font-weight: 700; margin-bottom: 4px; }
+    .health-status-label { font-size: 0.9rem; color: #64748b; font-weight: 500; }
+    .health-status-healthy { color: #059669; border-color: #10b981; }
+    .health-status-degraded { color: #d97706; border-color: #f59e0b; }
+    .health-status-error { color: #dc2626; border-color: #ef4444; }
+    .health-services-list { display: flex; flex-direction: column; gap: 12px; }
+    .health-service-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
+    .health-service-name { font-size: 0.95rem; font-weight: 600; }
+    .health-service-status { font-size: 0.85rem; padding: 4px 12px; border-radius: 20px; font-weight: 600; }
+    .health-service-status.healthy { background: #d1fae5; color: #065f46; }
+    .health-service-status.degraded { background: #fef3c7; color: #92400e; }
+    .health-service-status.error { background: #fee2e2; color: #991b1b; }
+    .health-last-checked { font-size: 0.85rem; color: #64748b; margin-top: 16px; text-align: right; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <h1>🎯 Focus Tracker</h1>
+      <p class="subtitle">Strategic Focus Management Dashboard</p>
+    </header>
+
+    <main>
+      <!-- Current Focus Section -->
+      <section class="focus-section current-focus">
+        <h2>Current Focus</h2>
+        <div id="current-focus-container">
+          <div class="focus-card">
+            <div class="focus-header">
+              <h3 class="focus-title">🌐 Shared GPU Queue & Monitoring System</h3>
+              <div class="focus-badges">
+                <span class="badge status-active">active</span>
+                <span class="badge priority-high">high</span>
+              </div>
+            </div>
+            <p class="focus-description">Cross-project GPU resource management, queue optimization, monitoring enhancements, and process management</p>
+            <div class="focus-meta">
+              <div class="meta-item">
+                <span class="meta-label">Strategic Value:</span>
+                <span>Critical infrastructure shared across all projects</span>
+              </div>
+            </div>
+            <div class="focus-meta">
+              <div class="meta-item">
+                <span class="meta-label">Duration:</span>
+                <span>Ongoing</span>
+              </div>
+            </div>
+            <div class="focus-badges" style="margin-top: 12px;">
+              <span class="badge tag">infrastructure</span>
+              <span class="badge tag">gpu</span>
+              <span class="badge tag">shared</span>
+              <span class="badge tag">monitoring</span>
+            </div>
+            <div class="focus-context">
+              <strong>Current Context:</strong> Job cancellation analysis completed, critical improvements implemented
+            </div>
+            <div class="focus-dependencies">
+              <strong>Dependencies:</strong>
+              <div class="dependency-list">
+                <span class="dependency-item">SSOT & Documentation Standards</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- System Health Section -->
+      <section class="focus-section health-section">
+        <div class="health-header">
+          <h2>🏥 System Health <span id="health-summary-badge" class="health-summary-badge">Loading...</span></h2>
+          <div class="health-controls">
+            <button class="control-button btn-activate" onclick="focusTracker.runHealthCheck()">🔄 Refresh</button>
+            <button class="control-button btn-pause" onclick="focusTracker.toggleHealthDetails()">📋 Details</button>
+          </div>
+        </div>
+        <div id="health-status-container">
+          <div class="empty-state">
+            <div class="empty-state-icon">🏥</div>
+            <p>Loading system health status...</p>
+          </div>
+        </div>
+        <div id="health-details-container" style="display: none;">
+          <div class="empty-state">
+            <div class="empty-state-icon">📋</div>
+            <p>Run health check to see detailed service status</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Activity Summary Section -->
+      <section class="focus-section">
+        <h2>📊 Activity Summary (7 Days)</h2>
+        <div id="activity-summary-container">
+          <div class="empty-state">
+            <div class="empty-state-icon">📊</div>
+            <p>Loading activity data from focus automation system...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Activity Timeline Section -->
+      <section class="focus-section">
+        <h2>📈 Activity Timeline (7 Days)</h2>
+        <div id="activity-timeline-container">
+          <div class="empty-state">
+            <div class="empty-state-icon">📈</div>
+            <p>Loading activity timeline from focus automation system...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Shared Focus Areas -->
+      <section class="focus-section">
+        <h2>🌐 Shared Strategic Focus Areas</h2>
+        <div id="shared-focus-container">
+          <div class="focus-card">
+            <div class="focus-header">
+              <h3 class="focus-title">SSOT & Documentation Standards</h3>
+              <div class="focus-badges">
+                <span class="badge status-completed">completed</span>
+                <span class="badge priority-medium">medium</span>
+              </div>
+            </div>
+            <p class="focus-description">SSOT structure, validation, documentation patterns, KB management, and cross-project documentation consistency</p>
+            <div class="focus-meta">
+              <div class="meta-item">
+                <span class="meta-label">Strategic Value:</span>
+                <span>Foundation for all project documentation and configuration management</span>
+              </div>
+            </div>
+            <div class="focus-meta">
+              <div class="meta-item">
+                <span class="meta-label">Duration:</span>
+                <span>Ongoing</span>
+              </div>
+            </div>
+            <div class="focus-badges" style="margin-top: 12px;">
+              <span class="badge tag">documentation</span>
+              <span class="badge tag">ssot</span>
+              <span class="badge tag">shared</span>
+              <span class="badge tag">standards</span>
+            </div>
+            <div class="focus-context">
+              <strong>Current Context:</strong> MCP config sync completed, validation patterns SSOT created
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Branch Focus Areas -->
+      <section class="focus-section">
+        <h2>🔀 Per-Branch Strategic Focus Areas</h2>
+        <div id="branch-focus-container">
+          <div class="focus-card">
+            <div class="focus-header">
+              <h3 class="focus-title">Chaba Infrastructure Completion</h3>
+              <div class="focus-badges">
+                <span class="badge status-pending">pending</span>
+                <span class="badge priority-high">high</span>
+              </div>
+            </div>
+            <p class="focus-description">DNS resolution fix, README.md hostname updates, documentation index creation, and infrastructure hardening</p>
+            <div class="focus-meta">
+              <div class="meta-item">
+                <span class="meta-label">Branch:</span>
+                <span>chaba</span>
+              </div>
+            </div>
+            <div class="focus-meta">
+              <div class="meta-item">
+                <span class="meta-label">Strategic Value:</span>
+                <span>Completes foundational infrastructure for chaba project</span>
+              </div>
+            </div>
+            <div class="focus-meta">
+              <div class="meta-item">
+                <span class="meta-label">Duration:</span>
+                <span>1-2 sessions</span>
+              </div>
+            </div>
+            <div class="focus-badges" style="margin-top: 12px;">
+              <span class="badge tag">infrastructure</span>
+              <span class="badge tag">chaba</span>
+              <span class="badge tag">completion</span>
+            </div>
+            <div class="focus-dependencies">
+              <strong>Dependencies:</strong>
+              <div class="dependency-list">
+                <span class="dependency-item">SSOT & Documentation Standards</span>
+              </div>
+            </div>
+          </div>
+          <div class="focus-card">
+            <div class="focus-header">
+              <h3 class="focus-title">Trade Subagent Implementation</h3>
+              <div class="focus-badges">
+                <span class="badge status-pending">pending</span>
+                <span class="badge priority-high">high</span>
+              </div>
+            </div>
+            <p class="focus-description">Priority 1 subagents: SSOT Config Manager, Multi-Service Health Monitor, Documentation Cross-Reference Maintainer</p>
+            <div class="focus-meta">
+              <div class="meta-item">
+                <span class="meta-label">Branch:</span>
+                <span>trade</span>
+              </div>
+            </div>
+            <div class="focus-meta">
+              <div class="meta-item">
+                <span class="meta-label">Strategic Value:</span>
+                <span>Leverages existing trade infrastructure for significant efficiency gains</span>
+              </div>
+            </div>
+            <div class="focus-meta">
+              <div class="meta-item">
+                <span class="meta-label">Duration:</span>
+                <span>2-3 weeks</span>
+              </div>
+            </div>
+            <div class="focus-badges" style="margin-top: 12px;">
+              <span class="badge tag">subagents</span>
+              <span class="badge tag">trade</span>
+              <span class="badge tag">automation</span>
+            </div>
+            <div class="focus-dependencies">
+              <strong>Dependencies:</strong>
+              <div class="dependency-list">
+                <span class="dependency-item">Subagent Framework & Automation</span>
+                <span class="dependency-item">SSOT & Documentation Standards</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Focus Rules -->
+      <section class="focus-section">
+        <h2>📋 Focus Management Rules</h2>
+        <div id="rules-container">
+          <div class="focus-card">
+            <div class="focus-header">
+              <h3 class="focus-title">Single Active Focus Rule</h3>
+              <div class="focus-badges">
+                <span class="badge tag">validation</span>
+              </div>
+            </div>
+            <p class="focus-description">Maximum 1 shared + 1 per-branch strategic focus active at any time to prevent strategic fragmentation</p>
+            <div class="focus-badges">
+              <span class="badge tag">rules</span>
+              <span class="badge tag">focus</span>
+              <span class="badge tag">constraints</span>
+            </div>
+          </div>
+          <div class="focus-card">
+            <div class="focus-header">
+              <h3 class="focus-title">Strategic Priority Alignment</h3>
+              <div class="focus-badges">
+                <span class="badge tag">manual</span>
+              </div>
+            </div>
+            <p class="focus-description">High-priority strategic focuses take precedence over medium/low priorities across all branches</p>
+            <div class="focus-badges">
+              <span class="badge tag">rules</span>
+              <span class="badge tag">priority</span>
+              <span class="badge tag">alignment</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>Last updated: <span id="last-updated">Loading...</span></p>
+    </footer>
+  </div>
+
+  <script src="/apps/focus/focus.js"></script>
+</body>
+</html>/* Interactive Controls Styles */
+.focus-controls { display: flex; gap: 8px; margin-top: 12px; }
+.control-button { padding: 6px 12px; border: none; border-radius: 6px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease; }
+.control-button:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.btn-activate { background: #dbeafe; color: #1e40af; }
+.btn-activate:hover { background: #bfdbfe; }
+.btn-complete { background: #d1fae5; color: #065f46; }
+.btn-complete:hover { background: #a7f3d0; }
+.btn-pause { background: #fef3c7; color: #92400e; }
+.btn-pause:hover { background: #fde68a; }
+.dependency-warning { background: #fef2f2; color: #991b1b; padding: 8px; border-radius: 4px; margin-top: 8px; font-size: 0.85rem; border: 1px solid #fecaca; }

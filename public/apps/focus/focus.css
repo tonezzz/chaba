@@ -1,0 +1,460 @@
+/* Focus Tracker Styles */
+
+:root {
+  --primary-color: #2563eb;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --danger-color: #ef4444;
+  --neutral-color: #6b7280;
+  --bg-color: #f8fafc;
+  --card-bg: #ffffff;
+  --border-color: #e2e8f0;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+}
+
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.app-header {
+  text-align: center;
+  margin-bottom: 40px;
+  padding: 20px;
+  background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+  color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.app-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.app-main {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.focus-section {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-color);
+}
+
+.focus-section h2 {
+  margin: 0 0 20px 0;
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 12px;
+}
+
+.current-focus {
+  border-left: 4px solid var(--primary-color);
+  background: linear-gradient(to right, #eff6ff, var(--card-bg));
+}
+
+.focus-card {
+  background: var(--bg-color);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.focus-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.focus-card:last-child {
+  margin-bottom: 0;
+}
+
+.focus-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.focus-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.focus-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.badge.status-active {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.badge.status-completed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.badge.status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge.priority-high {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge.priority-medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge.priority-low {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.badge.tag {
+  background: #e0e7ff;
+  color: #3730a3;
+  font-size: 0.75rem;
+}
+
+.focus-description {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.focus-meta {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.meta-label {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.focus-context {
+  background: #f0f9ff;
+  border-left: 3px solid var(--primary-color);
+  padding: 12px;
+  margin-top: 12px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.focus-dependencies {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #fef2f2;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.focus-dependencies strong {
+  color: var(--danger-color);
+}
+
+.dependency-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.dependency-item {
+  background: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid #fecaca;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.error {
+  background: #fef2f2;
+  color: #991b1b;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-secondary);
+}
+
+.empty-state-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+.app-footer {
+  text-align: center;
+  margin-top: 40px;
+  padding: 20px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Health Section Styles */
+.health-section {
+  background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+  border-left: 4px solid #22c55e;
+}
+
+.health-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.health-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.health-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.health-status-card {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.health-status-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+.health-status-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.health-status-value.health-status-healthy {
+  color: #22c55e;
+}
+
+.health-status-value.health-status-degraded {
+  color: #f59e0b;
+}
+
+.health-status-value.health-status-error {
+  color: #ef4444;
+}
+
+.health-status-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.health-services-list {
+  margin-top: 24px;
+}
+
+.health-category-group {
+  margin-bottom: 24px;
+}
+
+.health-category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.health-category-name {
+  font-size: 0.95rem;
+}
+
+.health-category-count {
+  background: var(--bg-secondary);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.health-service-item {
+  background: white;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-left: 3px solid #e5e7eb;
+}
+
+.health-service-item .health-service-status.healthy ~ .health-service-item {
+  border-left-color: #22c55e;
+}
+
+.health-service-item .health-service-status.degraded ~ .health-service-item {
+  border-left-color: #f59e0b;
+}
+
+.health-service-item .health-service-status.error ~ .health-service-item {
+  border-left-color: #ef4444;
+}
+
+.health-service-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.health-service-type {
+  font-size: 1.1rem;
+}
+
+.health-service-name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.health-service-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.health-service-response-time {
+  color: var(--text-secondary);
+  font-family: monospace;
+}
+
+.health-service-status {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.health-service-status.healthy {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.health-service-status.degraded {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.health-service-status.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.health-service-error {
+  font-size: 0.8rem;
+  color: #ef4444;
+  margin-top: 4px;
+  padding: 4px 8px;
+  background: #fef2f2;
+  border-radius: 4px;
+}
+
+.health-last-checked {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 12px;
+  }
+
+  .app-header h1 {
+    font-size: 1.8rem;
+  }
+
+  .focus-section {
+    padding: 16px;
+  }
+
+  .focus-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .focus-badges {
+    width: 100%;
+  }
+
+  .focus-meta {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
