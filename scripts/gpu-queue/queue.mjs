@@ -1,5 +1,6 @@
 import * as db from './db.mjs';
 import * as scheduler from './scheduler.mjs';
+import { processYomiSummaryJob, processYomiDailyJob, processYomiDailyBatchJob } from './orchestrator.mjs';
 
 // MCP tool call helpers (will be called via stdio MCP interface)
 // For now, we'll use placeholder functions that will be replaced with actual MCP calls
@@ -202,6 +203,18 @@ async function executeJobProcessing(job) {
       mode = job.params.mode || 'cpu';
       gpuUsed = mode === 'gpu';
       result = await processEmbeddingJob(job);
+      break;
+    case 'yomi_summary':
+      mode = 'cpu';
+      result = await processYomiSummaryJob(job);
+      break;
+    case 'yomi_daily':
+      mode = 'cpu';
+      result = await processYomiDailyJob(job);
+      break;
+    case 'yomi_daily_batch':
+      mode = 'cpu';
+      result = await processYomiDailyBatchJob(job);
       break;
     default:
       throw new Error(`Unknown job type: ${job.type}`);
