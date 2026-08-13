@@ -210,28 +210,28 @@ grep "API failed" logs/overnight-manual-TIMESTAMP.log
 The script uses standard Linux tools. If something is missing:
 ```bash
 # Check for required tools
-which curl docker journalctl ip host sqlite3
+which curl docker journalctl ip host
 
 # Install missing tools on Ubuntu/Debian
-sudo apt-get install curl iproute2 iputils-ping sysstat sqlite3
+sudo apt-get install curl iproute2 iputils-ping sysstat
 ```
 
 ### MCP Health Server Integration
-The MCP Health Server integration (Area 13) uses direct database queries for historical analysis:
+The MCP Health Server integration (Area 13) uses PostgreSQL for historical analysis:
 ```bash
-# Check if sqlite3 is available for database queries
-which sqlite3
+# Check if PostgreSQL container is running
+docker ps | grep postgres
 
-# If not available, the script will skip historical analysis with a graceful fallback
-# To enable full historical analysis, install sqlite3:
-sudo apt-get install sqlite3
+# If not running, the script will skip historical analysis with a graceful fallback
+# PostgreSQL should be running as part of the Chaba infrastructure
 ```
 
-**Database Fallback Approach:**
-- Direct SQLite queries to MCP health database (`mcp/mcp-health/health-history.db`)
+**PostgreSQL Integration:**
+- Direct PostgreSQL queries to chaba database (health_checks, alerts tables)
 - Provides 7-day health trends, failure rates, and alert analysis
 - No MCP client dependency required
-- Graceful fallback if database or sqlite3 unavailable
+- Graceful fallback if PostgreSQL container unavailable
+- Unified database architecture with application data
 
 ### Systemd Timer Issues
 ```bash

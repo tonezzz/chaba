@@ -9,57 +9,144 @@ import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import yaml from 'yaml';
-import Database from 'better-sqlite3';
+import pg from 'pg';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Database setup for health history
-const db = new Database(join(__dirname, 'health-history.db'));
-db.exec(`
-  CREATE TABLE IF NOT EXISTS health_checks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    service_name TEXT NOT NULL,
-    status TEXT NOT NULL,
-    response_time REAL,
-    error TEXT,
-    http_status INTEGER,
-    expected_status INTEGER,
-    container_state TEXT,
-    expected_state TEXT,
-    active_state TEXT,
-    sub_state TEXT,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-  CREATE INDEX IF NOT EXISTS idx_service_timestamp ON health_checks(service_name, timestamp);
-  CREATE INDEX IF NOT EXISTS idx_status ON health_checks(status);
-`);
+// PostgreSQL connection setup
+const { Pool } = pg;
+const pool = new Pool({
+  host: 'localhost',
+  port: 5432,
+  database: 'chaba',
+  user: 'chaba',
+  password: process.env.POSTGRES_PASSWORD || 'chabapass',
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
 
-// Migration: Add is_timer column if it doesn't exist
-try {
-  db.exec(`ALTER TABLE health_checks ADD COLUMN is_timer BOOLEAN DEFAULT 0`);
-} catch (error) {
-  // Column likely already exists, ignore error
-  console.error('Migration note: is_timer column may already exist');
+// Database initialization
+async function initializeDatabase() {
+  const client = await pool.connect();
+  try {
+    // Create health_checks table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS health_checks (
+        id SERIAL PRIMARY KEY,
+        service_name TEXT NOT NULL,
+        status TEXT NOT NULL,
+        response_time REAL,
+        error TEXT,
+        http_status INTEGER,
+        expected_status INTEGER,
+        container_state TEXT,
+        expected_state TEXT,
+        active_state TEXT,
+        sub_state TEXT,
+        is_timer BOOLEAN DEFAULT FALSE,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create indexes
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_health_checks_service_timestamp 
+      ON health_checks(service_name, timestamp);
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_health_checks_status 
+      ON health_checks(status);
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_health_checks_timer 
+      ON health_checks(is_timer);
+    `);
+
+    // Create alerts table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS alerts (
+        id SERIAL PRIMARY KEY,
+        service_name TEXT NOT NULL,
+        alert_type TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        message TEXT NOT NULL,
+        acknowledged BOOLEAN DEFAULT FALSE,
+        acknowledged_at TIMESTAMP,
+        resolved BOOLEAN DEFAULT FALSE,
+        resolved_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create indexes for alerts
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_alerts_service 
+      ON alerts(service_name);
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_alerts_severity 
+      ON alerts(severity);
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_alerts_resolved 
+      ON alerts(resolved);
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_alerts_acknowledged 
+      ON alerts(acknowledged);
+    `);
+
+    console.error('Database initialized successfully');
+  } catch (error) {
+    console.error('Database initialization error:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS alerts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    service_name TEXT NOT NULL,
-    alert_type TEXT NOT NULL,
-    severity TEXT NOT NULL,
-    message TEXT NOT NULL,
-    acknowledged BOOLEAN DEFAULT 0,
-    acknowledged_at DATETIME,
-    resolved BOOLEAN DEFAULT 0,
-    resolved_at DATETIME,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-  CREATE INDEX IF NOT EXISTS idx_alerts_service ON alerts(service_name);
-  CREATE INDEX IF NOT EXISTS idx_alerts_severity ON alerts(severity);
-  CREATE INDEX IF NOT EXISTS idx_alerts_resolved ON alerts(resolved);
-`);
+// Initialize database on startup
+initializeDatabase().catch(error => {
+  console.error('Failed to initialize database:', error);
+  process.exit(1);
+});
+
+// Helper functions to mimic SQLite API with PostgreSQL
+async function query(text, params) {
+  const start = Date.now();
+  try {
+    const res = await pool.query(text, params);
+    const duration = Date.now() - start;
+    console.error('Executed query', { text, duration, rows: res.rowCount });
+    return res;
+  } catch (error) {
+    console.error('Database query error:', error);
+    throw error;
+  }
+}
+
+// Simplified SQLite-like interface for compatibility
+const db = {
+  prepare: (sql) => ({
+    all: async (...params) => {
+      const result = await pool.query(sql, params);
+      return result.rows;
+    },
+    get: async (...params) => {
+      const result = await pool.query(sql, params);
+      return result.rows[0] || null;
+    },
+    run: async (...params) => {
+      await pool.query(sql, params);
+      return { lastInsertRowid: 0 }; // PostgreSQL doesn't return lastInsertRowid
+    },
+    exec: async (sql) => {
+      await pool.query(sql);
+    }
+  })
+};
 
 // Read health configuration
 async function loadHealthConfig() {
@@ -135,23 +222,24 @@ function getRecoveryActions(config, failureType) {
 }
 
 // Alert generation and management
-function generateAlert(serviceName, alertType, severity, message) {
+async function generateAlert(serviceName, alertType, severity, message) {
   const stmt = db.prepare(`
     INSERT INTO alerts (service_name, alert_type, severity, message)
-    VALUES (?, ?, ?, ?)
+    VALUES ($1, $2, $3, $4)
+    RETURNING id
   `);
-  const result = stmt.run(serviceName, alertType, severity, message);
-  return result.lastInsertRowid;
+  const result = await stmt.run(serviceName, alertType, severity, message);
+  return result.rows[0]?.id;
 }
 
-function checkExistingAlert(serviceName, alertType, resolved = false) {
+async function checkExistingAlert(serviceName, alertType, resolved = false) {
   const stmt = db.prepare(`
     SELECT id FROM alerts 
-    WHERE service_name = ? AND alert_type = ? AND resolved = ?
+    WHERE service_name = $1 AND alert_type = $2 AND resolved = $3
     ORDER BY created_at DESC 
     LIMIT 1
   `);
-  const alert = stmt.get(serviceName, alertType, resolved ? 1 : 0);
+  const alert = await stmt.get(serviceName, alertType, resolved ? 1 : 0);
   return alert;
 }
 

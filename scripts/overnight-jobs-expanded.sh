@@ -376,59 +376,54 @@ EOF
 env | grep -E "(API_KEY|DATABASE|GEMINI|OPENAI)" | head -10 >> "$REPORT_FILE" 2>&1 || echo "No critical env vars exposed" >> "$REPORT_FILE"
 
 # ============================================
-# 13. MCP HEALTH SERVER INTEGRATION (Database Fallback)
+# 13. MCP HEALTH SERVER INTEGRATION (PostgreSQL)
 # ============================================
-echo "[13/13] Running MCP Health Server Analysis (Database Fallback)..." | tee -a "$LOG_FILE"
+echo "[13/13] Running MCP Health Server Analysis (PostgreSQL)..." | tee -a "$LOG_FILE"
 cat >> "$REPORT_FILE" << EOF
 
-## 13. MCP Health Server Analysis (Database Fallback)
+## 13. MCP Health Server Analysis (PostgreSQL)
 
 ### System Health Score (7-day Analysis)
 EOF
 
-# Query MCP health database directly for historical analysis
-MCP_DB="/home/tony/CascadeProjects/chaba/mcp/mcp-health/health-history.db"
-
-if [ -f "$MCP_DB" ] && command -v sqlite3 &> /dev/null; then
-    echo "Querying MCP health database for 7-day trends..." | tee -a "$LOG_FILE"
+# Query PostgreSQL for historical analysis
+if docker ps | grep -q postgres; then
+    echo "Querying PostgreSQL for 7-day health trends..." | tee -a "$LOG_FILE"
     
     cat >> "$REPORT_FILE" << EOF
 
 #### Recent Health Check Results (Last 50 checks)
 EOF
-    sqlite3 "$MCP_DB" "SELECT service_name, status, timestamp, response_time FROM health_checks ORDER BY timestamp DESC LIMIT 50" >> "$REPORT_FILE" 2>&1 || echo "Database query failed" >> "$REPORT_FILE"
+    docker exec postgres psql -U chaba -d chaba -c "SELECT service_name, status, timestamp, response_time FROM health_checks ORDER BY timestamp DESC LIMIT 50" >> "$REPORT_FILE" 2>&1 || echo "Database query failed" >> "$REPORT_FILE"
     
     cat >> "$REPORT_FILE" << EOF
 
 #### Service Health Summary (7-day)
 EOF
-    sqlite3 "$MCP_DB" "SELECT service_name, status, COUNT(*) as check_count, AVG(response_time) as avg_response_time FROM health_checks WHERE timestamp > datetime('now', '-7 days') GROUP BY service_name, status ORDER BY service_name, status" >> "$REPORT_FILE" 2>&1 || echo "Summary query failed" >> "$REPORT_FILE"
+    docker exec postgres psql -U chaba -d chaba -c "SELECT service_name, status, COUNT(*) as check_count, ROUND(AVG(response_time)::numeric, 2) as avg_response_time FROM health_checks WHERE timestamp > NOW() - INTERVAL '7 days' GROUP BY service_name, status ORDER BY service_name, status" >> "$REPORT_FILE" 2>&1 || echo "Summary query failed" >> "$REPORT_FILE"
     
     cat >> "$REPORT_FILE" << EOF
 
 #### Failure Rate Analysis (7-day)
 EOF
-    sqlite3 "$MCP_DB" "SELECT service_name, COUNT(*) as total_checks, SUM(CASE WHEN status != 'healthy' THEN 1 ELSE 0 END) as failures, ROUND(SUM(CASE WHEN status != 'healthy' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as failure_rate FROM health_checks WHERE timestamp > datetime('now', '-7 days') GROUP BY service_name HAVING failures > 0 ORDER BY failure_rate DESC" >> "$REPORT_FILE" 2>&1 || echo "Failure analysis failed" >> "$REPORT_FILE"
+    docker exec postgres psql -U chaba -d chaba -c "SELECT service_name, COUNT(*) as total_checks, SUM(CASE WHEN status != 'healthy' THEN 1 ELSE 0 END) as failures, ROUND(SUM(CASE WHEN status != 'healthy' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as failure_rate FROM health_checks WHERE timestamp > NOW() - INTERVAL '7 days' GROUP BY service_name HAVING SUM(CASE WHEN status != 'healthy' THEN 1 ELSE 0 END) > 0 ORDER BY failure_rate DESC" >> "$REPORT_FILE" 2>&1 || echo "Failure analysis failed" >> "$REPORT_FILE"
     
     cat >> "$REPORT_FILE" << EOF
 
 #### Recent Critical Alerts (Last 20)
 EOF
-    sqlite3 "$MCP_DB" "SELECT id, service_name, severity, message, resolved, created_at FROM alerts WHERE severity IN ('critical', 'error') ORDER BY created_at DESC LIMIT 20" >> "$REPORT_FILE" 2>&1 || echo "Alerts query failed" >> "$REPORT_FILE"
+    docker exec postgres psql -U chaba -d chaba -c "SELECT id, service_name, severity, message, resolved, created_at FROM alerts WHERE severity IN ('critical', 'error') ORDER BY created_at DESC LIMIT 20" >> "$REPORT_FILE" 2>&1 || echo "Alerts query failed" >> "$REPORT_FILE"
     
     cat >> "$REPORT_FILE" << EOF
 
 #### Unresolved Alerts
 EOF
-    sqlite3 "$MCP_DB" "SELECT id, service_name, severity, message, created_at FROM alerts WHERE resolved = 0 ORDER BY severity DESC, created_at" >> "$REPORT_FILE" 2>&1 || echo "Unresolved alerts query failed" >> "$REPORT_FILE"
+    docker exec postgres psql -U chaba -d chaba -c "SELECT id, service_name, severity, message, created_at FROM alerts WHERE resolved = FALSE ORDER BY severity DESC, created_at" >> "$REPORT_FILE" 2>&1 || echo "Unresolved alerts query failed" >> "$REPORT_FILE"
     
-    echo "MCP health database analysis completed" | tee -a "$LOG_FILE"
-elif [ -f "$MCP_DB" ]; then
-    echo "MCP health database found but sqlite3 not available" | tee -a "$LOG_FILE"
-    echo "MCP health database available but sqlite3 command not found - install sqlite3 for historical analysis" >> "$REPORT_FILE"
+    echo "PostgreSQL health analysis completed" | tee -a "$LOG_FILE"
 else
-    echo "MCP health database not found at $MCP_DB" | tee -a "$LOG_FILE"
-    echo "MCP health database not available - skipping historical analysis" >> "$REPORT_FILE"
+    echo "PostgreSQL container not running" | tee -a "$LOG_FILE"
+    echo "PostgreSQL not available - skipping historical analysis" >> "$REPORT_FILE"
 fi
 
 # ============================================
