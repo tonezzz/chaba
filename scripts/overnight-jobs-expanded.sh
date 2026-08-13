@@ -786,10 +786,17 @@ fi
 if [ ${#CRITICAL_FINDINGS[@]} -gt 0 ]; then
     echo "Found ${#CRITICAL_FINDINGS[@]} critical findings - creating improvement entries" | tee -a "$LOG_FILE"
     
-    # Find the High Priority section and append before it
+    # Find the items: array under High Priority section and append to it
     if grep -q "High Priority Improvements" "$IMPROVEMENTS_FILE"; then
-        # Insert before High Priority section
-        sed -i '/High Priority Improvements/r '"$IMPROVEMENTS_FILE.tmp" "$IMPROVEMENTS_FILE"
+        # Find the line number of "items:" under High Priority section
+        items_line=$(awk '/High Priority Improvements/{found=1} found && /items:/{print NR; exit}' "$IMPROVEMENTS_FILE")
+        if [ -n "$items_line" ]; then
+            # Insert after the items: line
+            sed -i "${items_line}r $IMPROVEMENTS_FILE.tmp" "$IMPROVEMENTS_FILE"
+        else
+            # Fallback: append to end
+            cat "$IMPROVEMENTS_FILE.tmp" >> "$IMPROVEMENTS_FILE"
+        fi
     else
         # Append to end of file
         cat "$IMPROVEMENTS_FILE.tmp" >> "$IMPROVEMENTS_FILE"
