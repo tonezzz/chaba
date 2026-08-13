@@ -6,11 +6,11 @@
 
 // Configuration - adjust these for your PostgreSQL setup
 $db_config = [
-    'host' => 'host.docker.internal', // Connect to host from container
+    'host' => '172.17.0.1', // Docker bridge gateway (host.docker.internal alternative)
     'port' => '5432',
     'dbname' => 'chaba', // Main chaba database
     'user' => 'chaba', // Database user
-    'password' => '' // Password should be set via environment or pg_hba.conf
+    'password' => 'chabapass' // Default password from chaba infrastructure
 ];
 
 // Test results storage
@@ -106,16 +106,11 @@ function testWritePerformance($conn) {
         return ['error' => 'Write operations failed'];
     }
     
-    $avg_write_time = array_sum($times) / count($times);
-    
-    // Cleanup
-    pg_query($conn, "DROP TABLE performance_test");
-    
     return [
-        'avg_write_time_ms' => $avg_write_time,
+        'avg_write_time_ms' => array_sum($times) / count($times),
         'min_write_time_ms' => min($times),
         'max_write_time_ms' => max($times),
-        'writes_per_second' => 1000 / $avg_write_time,
+        'writes_per_second' => 1000 / (array_sum($times) / count($times)),
         'iterations' => $iterations
     ];
 }
@@ -124,13 +119,13 @@ function testWritePerformance($conn) {
  * Test 4: Read Performance
  */
 function testReadPerformance($conn) {
-    // Create test table with sample data
+    // Create test table with data
     pg_query($conn, "DROP TABLE IF EXISTS read_test");
-    pg_query($conn, "CREATE TABLE read_test (id SERIAL, data TEXT, value INTEGER)");
+    pg_query($conn, "CREATE TABLE read_test (id SERIAL, value INTEGER, data TEXT)");
     
-    // Insert sample data
+    // Insert 1000 rows
     for ($i = 0; $i < 1000; $i++) {
-        pg_query($conn, "INSERT INTO read_test (data, value) VALUES ('data $i', $i)");
+        pg_query($conn, "INSERT INTO read_test (value, data) VALUES ($i, 'data $i')");
     }
     
     $times = [];
@@ -146,57 +141,47 @@ function testReadPerformance($conn) {
     }
     
     if (empty($times)) {
-        pg_query($conn, "DROP TABLE read_test");
         return ['error' => 'Read operations failed'];
     }
     
-    $avg_read_time = array_sum($times) / count($times);
-    
-    // Cleanup
-    pg_query($conn, "DROP TABLE read_test");
-    
     return [
-        'avg_read_time_ms' => $avg_read_time,
+        'avg_read_time_ms' => array_sum($times) / count($times),
         'min_read_time_ms' => min($times),
         'max_read_time_ms' => max($times),
-        'reads_per_second' => 1000 / $avg_read_time,
+        'reads_per_second' => 1000 / (array_sum($times) / count($times)),
         'iterations' => $iterations
     ];
 }
 
 /**
- * Test 5: Concurrent Operations Simulation
+ * Test 5: Concurrent Operations
  */
 function testConcurrentOperations($conn) {
     // Create test table
     pg_query($conn, "DROP TABLE IF EXISTS concurrent_test");
-    pg_query($conn, "CREATE TABLE concurrent_test (id SERIAL, operation_type TEXT, timestamp TIMESTAMP DEFAULT NOW())");
+    pg_query($conn, "CREATE TABLE concurrent_test (id SERIAL, operation_type TEXT, data TEXT, created_at TIMESTAMP DEFAULT NOW())");
     
-    $operations = 50;
     $times = [];
+    $operations = 50;
     
     for ($i = 0; $i < $operations; $i++) {
         $start = microtime(true);
         
-        // Mix of reads and writes
+        // Mix of read and write operations
         if ($i % 2 == 0) {
-            pg_query($conn, "INSERT INTO concurrent_test (operation_type) VALUES ('write')");
+            pg_query($conn, "INSERT INTO concurrent_test (operation_type, data) VALUES ('write', 'data $i')");
         } else {
-            pg_query($conn, "SELECT COUNT(*) FROM concurrent_test");
+            pg_query($conn, "SELECT * FROM concurrent_test LIMIT 10");
         }
         
-        $times[] = (microtime(true) - $start) * 1000;
+        $times[] = (microtime(true) - $start) * 1000; // Convert to ms
     }
     
     if (empty($times)) {
-        pg_query($conn, "DROP TABLE concurrent_test");
         return ['error' => 'Concurrent operations failed'];
     }
     
     $avg_time = array_sum($times) / count($times);
-    
-    // Cleanup
-    pg_query($conn, "DROP TABLE concurrent_test");
     
     return [
         'avg_operation_time_ms' => $avg_time,
@@ -233,7 +218,10 @@ function getDatabaseSize($conn) {
     return ['error' => 'Could not get database size'];
 }
 
-// Main execution
+// Main execution - auto-run for GET requests or CLI
+$run_tests = isset($_POST['run_tests']) || isset($_GET['run_tests']) || (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'GET') || (php_sapi_name() === 'cli');
+
+// Output HTML wrapper
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -308,232 +296,144 @@ function getDatabaseSize($conn) {
             border-radius: 4px;
             border: 1px solid #c3e6cb;
         }
-        .config-warning {
-            background: #fff3cd;
-            color: #856404;
-            padding: 15px;
-            border-radius: 4px;
-            border: 1px solid #ffeeba;
-            margin: 20px 0;
-        }
-        .run-button {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            margin: 10px 0;
-        }
-        .run-button:hover {
-            background: #0056b3;
-        }
-        .comparison {
-            background: #e7f3ff;
-            padding: 15px;
-            border-radius: 4px;
-            border: 1px solid #b8daff;
-            margin: 20px 0;
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🚀 chaba-h3 PostgreSQL Performance Test</h1>
-        
-        <div class="config-warning">
-            <strong>⚠️ Configuration Required:</strong> 
-            Please update the database configuration in this script with your actual 
-            PostgreSQL credentials before running the tests.
-        </div>
+<?php
 
-        <form method="post">
-            <button type="submit" name="run_tests" class="run-button">🧪 Run Performance Tests</button>
-        </form>
-
-        <?php if (isset($_POST['run_tests'])): ?>
-            <?php
-            // Update configuration from form if provided
-            if (!empty($_POST['db_host'])) $db_config['host'] = $_POST['db_host'];
-            if (!empty($_POST['db_port'])) $db_config['port'] = $_POST['db_port'];
-            if (!empty($_POST['db_name'])) $db_config['dbname'] = $_POST['db_name'];
-            if (!empty($_POST['db_user'])) $db_config['user'] = $_POST['db_user'];
-            if (!empty($_POST['db_password'])) $db_config['password'] = $_POST['db_password'];
-            
-            // Connect to database
-            try {
-                $conn = pg_connect(
-                    "host={$db_config['host']} " .
-                    "port={$db_config['port']} " .
-                    "dbname={$db_config['dbname']} " .
-                    "user={$db_config['user']} " .
-                    "password={$db_config['password']}"
-                );
-                
-                if (!$conn) {
-                    throw new Exception("Failed to connect to PostgreSQL");
-                }
-                
-                echo '<div class="success">✅ Successfully connected to PostgreSQL</div>';
-                
-                // Get PostgreSQL info
-                $results['postgres_info'] = getPostgresInfo($conn);
-                $results['database_size'] = getDatabaseSize($conn);
-                
-                // Run performance tests
-                echo '<div class="test-section">';
-                echo '<h2>Test 1: Connection Latency</h2>';
-                $results['connection_latency'] = testConnectionLatency($db_config);
-                if (isset($results['connection_latency']['error'])) {
-                    echo '<div class="error">❌ ' . $results['connection_latency']['error'] . '</div>';
-                } else {
-                    echo '<div class="result">';
-                    echo '<div class="metric"><span class="metric-label">Average Latency:</span><span class="metric-value">' . number_format($results['connection_latency']['avg_latency_ms'], 3) . ' ms</span></div>';
-                    echo '<div class="metric"><span class="metric-label">Min Latency:</span><span class="metric-value">' . number_format($results['connection_latency']['min_latency_ms'], 3) . ' ms</span></div>';
-                    echo '<div class="metric"><span class="metric-label">Max Latency:</span><span class="metric-value">' . number_format($results['connection_latency']['max_latency_ms'], 3) . ' ms</span></div>';
-                    echo '<div class="metric"><span class="metric-label">Iterations:</span><span class="metric-value">' . $results['connection_latency']['iterations'] . '</span></div>';
-                    echo '</div>';
-                }
-                echo '</div>';
-                
-                echo '<div class="test-section">';
-                echo '<h2>Test 2: Simple Query Performance</h2>';
-                $results['simple_query'] = testSimpleQuery($conn);
-                if (isset($results['simple_query']['error'])) {
-                    echo '<div class="error">❌ ' . $results['simple_query']['error'] . '</div>';
-                } else {
-                    echo '<div class="result">';
-                    echo '<div class="metric"><span class="metric-label">Average Query Time:</span><span class="metric-value">' . number_format($results['simple_query']['avg_query_time_ms'], 3) . ' ms</span></div>';
-                    echo '<div class="metric"><span class="metric-label">Min Query Time:</span><span class="metric-value">' . number_format($results['simple_query']['min_query_time_ms'], 3) . ' ms</span></div>';
-                    echo '<div class="metric"><span class="metric-label">Max Query Time:</span><span class="metric-value">' . number_format($results['simple_query']['max_query_time_ms'], 3) . ' ms</span></div>';
-                    echo '<div class="metric"><span class="metric-label">Queries/Second:</span><span class="metric-value">' . number_format($results['simple_query']['queries_per_second'], 1) . '</span></div>';
-                    echo '</div>';
-                }
-                echo '</div>';
-                
-                echo '<div class="test-section">';
-                echo '<h2>Test 3: Write Performance</h2>';
-                $results['write_performance'] = testWritePerformance($conn);
-                if (isset($results['write_performance']['error'])) {
-                    echo '<div class="error">❌ ' . $results['write_performance']['error'] . '</div>';
-                } else {
-                    echo '<div class="result">';
-                    echo '<div class="metric"><span class="metric-label">Average Write Time:</span><span class="metric-value">' . number_format($results['write_performance']['avg_write_time_ms'], 3) . ' ms</span></div>';
-                    echo '<div class="metric"><span class="metric-label">Min Write Time:</span><span class="metric-value">' . number_format($results['write_performance']['min_write_time_ms'], 3) . ' ms</span></div>';
-                    echo '<div class="metric"><span class="metric-label">Max Write Time:</span><span class="metric-value">' . number_format($results['write_performance']['max_write_time_ms'], 3) . ' ms</span></div>';
-                    echo '<div class="metric"><span class="metric-label">Writes/Second:</span><span class="metric-value">' . number_format($results['write_performance']['writes_per_second'], 1) . '</span></div>';
-                    echo '</div>';
-                }
-                echo '</div>';
-                
-                echo '<div class="test-section">';
-                echo '<h2>Test 4: Read Performance (1000 rows)</h2>';
-                $results['read_performance'] = testReadPerformance($conn);
-                if (isset($results['read_performance']['error'])) {
-                    echo '<div class="error">❌ ' . $results['read_performance']['error'] . '</div>';
-                } else {
-                    echo '<div class="result">';
-                    echo '<div class="metric"><span class="metric-label">Average Read Time:</span><span class="metric-value">' . number_format($results['read_performance']['avg_read_time_ms'], 3) . ' ms</span></div>';
-                    echo '<div class="metric"><span class="metric-label">Min Read Time:</span><span class="metric-value">' . number_format($results['read_performance']['min_read_time_ms'], 3) . ' ms</span></div>';
-                    echo '<div class="metric"><span class="metric-label">Max Read Time:</span><span class="metric-value">' . number_format($results['read_performance']['max_read_time_ms'], 3) . ' ms</span></div>';
-                    echo '<div class="metric"><span class="metric-label">Reads/Second:</span><span class="metric-value">' . number_format($results['read_performance']['reads_per_second'], 1) . '</span></div>';
-                    echo '</div>';
-                }
-                echo '</div>';
-                
-                echo '<div class="test-section">';
-                echo '<h2>Test 5: Concurrent Operations (Mixed Read/Write)</h2>';
-                $results['concurrent_ops'] = testConcurrentOperations($conn);
-                if (isset($results['concurrent_ops']['error'])) {
-                    echo '<div class="error">❌ ' . $results['concurrent_ops']['error'] . '</div>';
-                } else {
-                    echo '<div class="result">';
-                    echo '<div class="metric"><span class="metric-label">Average Operation Time:</span><span class="metric-value">' . number_format($results['concurrent_ops']['avg_operation_time_ms'], 3) . ' ms</span></div>';
-                    echo '<div class="metric"><span class="metric-label">Min Operation Time:</span><span class="metric-value">' . number_format($results['concurrent_ops']['min_operation_time_ms'], 3) . ' ms</span></div>';
-                    echo '<div class="metric"><span class="metric-label">Max Operation Time:</span><span class="metric-value">' . number_format($results['concurrent_ops']['max_operation_time_ms'], 3) . ' ms</span></div>';
-                    echo '<div class="metric"><span class="metric-label">Operations/Second:</span><span class="metric-value">' . number_format($results['concurrent_ops']['operations_per_second'], 1) . '</span></div>';
-                    echo '</div>';
-                }
-                echo '</div>';
-                
-                // Database info
-                echo '<div class="test-section">';
-                echo '<h2>Database Information</h2>';
-                echo '<div class="result">';
-                if (isset($results['postgres_info']['version'])) {
-                    echo '<div class="metric"><span class="metric-label">PostgreSQL Version:</span><span class="metric-value">' . htmlspecialchars($results['postgres_info']['version']) . '</span></div>';
-                }
-                if (isset($results['database_size']['size'])) {
-                    echo '<div class="metric"><span class="metric-label">Database Size:</span><span class="metric-value">' . htmlspecialchars($results['database_size']['size']) . '</span></div>';
-                }
-                echo '</div>';
-                echo '</div>';
-                
-                pg_close($conn);
-                
-            } catch (Exception $e) {
-                echo '<div class="error">❌ Error: ' . htmlspecialchars($e->getMessage()) . '</div>';
-            }
-            ?>
-            
-            <div class="comparison">
-                <h3>📊 Performance Comparison Notes</h3>
-                <p><strong>Expected Local PostgreSQL Performance:</strong></p>
-                <ul>
-                    <li>Simple Query: ~0.4ms</li>
-                    <li>Write Operations: ~0.3ms</li>
-                    <li>Read Operations: ~1.2ms (100 rows)</li>
-                    <li>Concurrent Operations: ~3ms (100 ops)</li>
-                </ul>
-                <p><strong>Shared Hosting Considerations:</strong></p>
-                <ul>
-                    <li>Performance may vary based on server load</li>
-                    <li>Resource contention with other hosted sites</li>
-                    <li>Network latency even for localhost connections</li>
-                    <li>Connection pool limitations</li>
-                </ul>
-            </div>
-            
-            <div class="test-section">
-                <h2>🔧 Configuration Form</h2>
-                <form method="post">
-                    <div class="metric">
-                        <label class="metric-label">Host:</label>
-                        <input type="text" name="db_host" value="<?php echo htmlspecialchars($db_config['host']); ?>">
-                    </div>
-                    <div class="metric">
-                        <label class="metric-label">Port:</label>
-                        <input type="text" name="db_port" value="<?php echo htmlspecialchars($db_config['port']); ?>">
-                    </div>
-                    <div class="metric">
-                        <label class="metric-label">Database Name:</label>
-                        <input type="text" name="db_name" value="<?php echo htmlspecialchars($db_config['dbname']); ?>">
-                    </div>
-                    <div class="metric">
-                        <label class="metric-label">Username:</label>
-                        <input type="text" name="db_user" value="<?php echo htmlspecialchars($db_config['user']); ?>">
-                    </div>
-                    <div class="metric">
-                        <label class="metric-label">Password:</label>
-                        <input type="password" name="db_password" value="">
-                    </div>
-                    <button type="submit" name="run_tests" class="run-button">🧪 Run Tests with New Configuration</button>
-                </form>
-            </div>
-            
-        <?php endif; ?>
+if ($run_tests) {
+    // Connect to database
+    try {
+        $conn = pg_connect(
+            "host={$db_config['host']} " .
+            "port={$db_config['port']} " .
+            "dbname={$db_config['dbname']} " .
+            "user={$db_config['user']} " .
+            "password={$db_config['password']}"
+        );
         
-        <div class="test-section">
-            <h2>📋 Test Descriptions</h2>
-            <div class="result">
-                <p><strong>Test 1 - Connection Latency:</strong> Measures the time to establish 10 database connections and calculates average, min, and max latency.</p>
-                <p><strong>Test 2 - Simple Query:</strong> Executes 100 simple SELECT 1 queries to measure basic query performance.</p>
-                <p><strong>Test 3 - Write Performance:</strong> Performs 50 INSERT operations to measure write performance.</p>
-                <p><strong>Test 4 - Read Performance:</strong> Creates a table with 1000 rows and performs 100 SELECT queries with random values.</p>
-                <p><strong>Test 5 - Concurrent Operations:</strong> Simulates 50 mixed read/write operations to test concurrent performance.</p>
-            </div>
-        </div>
+        if (!$conn) {
+            throw new Exception("Failed to connect to PostgreSQL");
+        }
+        
+        echo '<div class="success">✅ Successfully connected to PostgreSQL</div>';
+        
+        // Get PostgreSQL info
+        $results['postgres_info'] = getPostgresInfo($conn);
+        $results['database_size'] = getDatabaseSize($conn);
+        
+        // Run performance tests
+        echo '<div class="test-section">';
+        echo '<h2>Test 1: Connection Latency</h2>';
+        $results['connection_latency'] = testConnectionLatency($db_config);
+        if (isset($results['connection_latency']['error'])) {
+            echo '<div class="error">❌ ' . $results['connection_latency']['error'] . '</div>';
+        } else {
+            echo '<div class="result">';
+            echo '<div class="metric"><span class="metric-label">Average Latency:</span><span class="metric-value">' . number_format($results['connection_latency']['avg_latency_ms'], 3) . ' ms</span></div>';
+            echo '<div class="metric"><span class="metric-label">Min Latency:</span><span class="metric-value">' . number_format($results['connection_latency']['min_latency_ms'], 3) . ' ms</span></div>';
+            echo '<div class="metric"><span class="metric-label">Max Latency:</span><span class="metric-value">' . number_format($results['connection_latency']['max_latency_ms'], 3) . ' ms</span></div>';
+            echo '<div class="metric"><span class="metric-label">Iterations:</span><span class="metric-value">' . $results['connection_latency']['iterations'] . '</span></div>';
+            echo '</div>';
+        }
+        echo '</div>';
+        
+        // Reconnect for remaining tests
+        $conn = pg_connect(
+            "host={$db_config['host']} " .
+            "port={$db_config['port']} " .
+            "dbname={$db_config['dbname']} " .
+            "user={$db_config['user']} " .
+            "password={$db_config['password']}"
+        );
+        
+        if (!$conn) {
+            throw new Exception("Failed to reconnect to PostgreSQL");
+        }
+        
+        echo '<div class="test-section">';
+        echo '<h2>Test 2: Simple Query Performance</h2>';
+        $results['simple_query'] = testSimpleQuery($conn);
+        if (isset($results['simple_query']['error'])) {
+            echo '<div class="error">❌ ' . $results['simple_query']['error'] . '</div>';
+        } else {
+            echo '<div class="result">';
+            echo '<div class="metric"><span class="metric-label">Average Query Time:</span><span class="metric-value">' . number_format($results['simple_query']['avg_query_time_ms'], 3) . ' ms</span></div>';
+            echo '<div class="metric"><span class="metric-label">Min Query Time:</span><span class="metric-value">' . number_format($results['simple_query']['min_query_time_ms'], 3) . ' ms</span></div>';
+            echo '<div class="metric"><span class="metric-label">Max Query Time:</span><span class="metric-value">' . number_format($results['simple_query']['max_query_time_ms'], 3) . ' ms</span></div>';
+            echo '<div class="metric"><span class="metric-label">Queries Per Second:</span><span class="metric-value">' . number_format($results['simple_query']['queries_per_second'], 2) . '</span></div>';
+            echo '<div class="metric"><span class="metric-label">Iterations:</span><span class="metric-value">' . $results['simple_query']['iterations'] . '</span></div>';
+            echo '</div>';
+        }
+        echo '</div>';
+        
+        echo '<div class="test-section">';
+        echo '<h2>Test 3: Write Performance</h2>';
+        $results['write_performance'] = testWritePerformance($conn);
+        if (isset($results['write_performance']['error'])) {
+            echo '<div class="error">❌ ' . $results['write_performance']['error'] . '</div>';
+        } else {
+            echo '<div class="result">';
+            echo '<div class="metric"><span class="metric-label">Average Write Time:</span><span class="metric-value">' . number_format($results['write_performance']['avg_write_time_ms'], 3) . ' ms</span></div>';
+            echo '<div class="metric"><span class="metric-label">Min Write Time:</span><span class="metric-value">' . number_format($results['write_performance']['min_write_time_ms'], 3) . ' ms</span></div>';
+            echo '<div class="metric"><span class="metric-label">Max Write Time:</span><span class="metric-value">' . number_format($results['write_performance']['max_write_time_ms'], 3) . ' ms</span></div>';
+            echo '<div class="metric"><span class="metric-label">Writes Per Second:</span><span class="metric-value">' . number_format($results['write_performance']['writes_per_second'], 2) . '</span></div>';
+            echo '<div class="metric"><span class="metric-label">Iterations:</span><span class="metric-value">' . $results['write_performance']['iterations'] . '</span></div>';
+            echo '</div>';
+        }
+        echo '</div>';
+        
+        echo '<div class="test-section">';
+        echo '<h2>Test 4: Read Performance</h2>';
+        $results['read_performance'] = testReadPerformance($conn);
+        if (isset($results['read_performance']['error'])) {
+            echo '<div class="error">❌ ' . $results['read_performance']['error'] . '</div>';
+        } else {
+            echo '<div class="result">';
+            echo '<div class="metric"><span class="metric-label">Average Read Time:</span><span class="metric-value">' . number_format($results['read_performance']['avg_read_time_ms'], 3) . ' ms</span></div>';
+            echo '<div class="metric"><span class="metric-label">Min Read Time:</span><span class="metric-value">' . number_format($results['read_performance']['min_read_time_ms'], 3) . ' ms</span></div>';
+            echo '<div class="metric"><span class="metric-label">Max Read Time:</span><span class="metric-value">' . number_format($results['read_performance']['max_read_time_ms'], 3) . ' ms</span></div>';
+            echo '<div class="metric"><span class="metric-label">Reads Per Second:</span><span class="metric-value">' . number_format($results['read_performance']['reads_per_second'], 2) . '</span></div>';
+            echo '<div class="metric"><span class="metric-label">Iterations:</span><span class="metric-value">' . $results['read_performance']['iterations'] . '</span></div>';
+            echo '</div>';
+        }
+        echo '</div>';
+        
+        echo '<div class="test-section">';
+        echo '<h2>Test 5: Concurrent Operations</h2>';
+        $results['concurrent_operations'] = testConcurrentOperations($conn);
+        if (isset($results['concurrent_operations']['error'])) {
+            echo '<div class="error">❌ ' . $results['concurrent_operations']['error'] . '</div>';
+        } else {
+            echo '<div class="result">';
+            echo '<div class="metric"><span class="metric-label">Average Operation Time:</span><span class="metric-value">' . number_format($results['concurrent_operations']['avg_operation_time_ms'], 3) . ' ms</span></div>';
+            echo '<div class="metric"><span class="metric-label">Min Operation Time:</span><span class="metric-value">' . number_format($results['concurrent_operations']['min_operation_time_ms'], 3) . ' ms</span></div>';
+            echo '<div class="metric"><span class="metric-label">Max Operation Time:</span><span class="metric-value">' . number_format($results['concurrent_operations']['max_operation_time_ms'], 3) . ' ms</span></div>';
+            echo '<div class="metric"><span class="metric-label">Operations Per Second:</span><span class="metric-value">' . number_format($results['concurrent_operations']['operations_per_second'], 2) . '</span></div>';
+            echo '<div class="metric"><span class="metric-label">Total Operations:</span><span class="metric-value">' . $results['concurrent_operations']['total_operations'] . '</span></div>';
+            echo '</div>';
+        }
+        echo '</div>';
+        
+        echo '<div class="test-section">';
+        echo '<h2>PostgreSQL Information</h2>';
+        echo '<div class="result">';
+        echo '<div class="metric"><span class="metric-label">Version:</span><span class="metric-value">' . htmlspecialchars($results['postgres_info']['version']) . '</span></div>';
+        echo '<div class="metric"><span class="metric-label">Database Size:</span><span class="metric-value">' . htmlspecialchars($results['database_size']['size']) . '</span></div>';
+        echo '</div>';
+        echo '</div>';
+        
+        pg_close($conn);
+        
+    } catch (Exception $e) {
+        echo '<div class="error">❌ Database Error: ' . htmlspecialchars($e->getMessage()) . '</div>';
+    }
+} else {
+    echo '<div class="error">❌ Please submit the form to run tests</div>';
+}
+?>
     </div>
 </body>
 </html>
