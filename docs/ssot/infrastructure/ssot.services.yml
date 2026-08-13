@@ -37,7 +37,8 @@ tony-omen:
     status: implemented (2026-08-12)
     routing:
       - /apps/mddb/* → mddb-panel:3000 (container name routing in Caddy)
-    notes: MDDB web panel interface, uses container name for routing
+      - /api/mddb/* → mddb:11023 (Caddy reverse proxy for API)
+    notes: MDDB web panel interface, uses container name for routing. Current implementation uses Referer-based asset routing for SPA assets. Recommended improvement: Configure MDDB panel build to use /apps/mddb/assets/* instead of root-relative /assets/* to avoid Caddy routing conflicts with other services (Activepieces, Raceman).
   gemini-api:
     service: Google Gemini API
     provider: Google Cloud
