@@ -146,7 +146,7 @@ for name in "${!SERVICE_URLS[@]}"; do
 done
 
 # ── Google Drive backup mount ───────────────────────────────────────────────
-if ! mount | grep -q "gdrive on /home/tony/GoogleDrive"; then
+if ! mount | grep -q "gdrive.*on /home/tony/GoogleDrive"; then
     alert critical "Google Drive Not Mounted" "Backup storage unavailable — remount with: rclone mount gdrive: /home/tony/GoogleDrive --daemon"
 fi
 
