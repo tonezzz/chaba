@@ -17,12 +17,12 @@ BACKUP_RETENTION_MONTHS=6
 # Backup types
 BACKUP_TYPES=("database" "docker-volumes" "configurations" "documentation")
 
-# Create backup directories
-mkdir -p "$BACKUP_ROOT/daily"
-mkdir -p "$BACKUP_ROOT/weekly"
-mkdir -p "$BACKUP_ROOT/monthly"
-mkdir -p "$BACKUP_ROOT/logs"
-mkdir -p "$(dirname "$BACKUP_LOG")"
+# Create backup directories (handle existing gracefully)
+mkdir -p "$BACKUP_ROOT/daily" 2>/dev/null || true
+mkdir -p "$BACKUP_ROOT/weekly" 2>/dev/null || true
+mkdir -p "$BACKUP_ROOT/monthly" 2>/dev/null || true
+mkdir -p "$BACKUP_ROOT/logs" 2>/dev/null || true
+mkdir -p "$(dirname "$BACKUP_LOG")" 2>/dev/null || true
 
 # Logging function
 log() {
@@ -98,91 +98,124 @@ backup_database() {
 # Docker volumes backup
 backup_docker_volumes() {
     log "INFO" "Starting Docker volumes backup..."
-    
+
     local volumes=("postgres_data" "redis_data" "weaviate_data")
-    local backup_dir="$BACKUP_ROOT/daily/volumes_${BACKUP_DATE}"
-    mkdir -p "$backup_dir"
-    
+    local local_backup_dir="/tmp/chaba_volumes_${BACKUP_DATE}"
+    local final_backup_dir="$BACKUP_ROOT/daily/volumes_${BACKUP_DATE}"
+
+    # Use local temporary directory for Docker backups (FUSE mount compatibility)
+    mkdir -p "$local_backup_dir"
+    mkdir -p "$final_backup_dir"
+
     for volume in "${volumes[@]}"; do
         log "INFO" "Backing up volume: $volume"
-        
-        local volume_backup="$backup_dir/${volume}.tar.gz"
-        
-        # Create temporary container for backup
-        if docker run --rm -v "$volume:/volume_data" -v "$backup_dir:/backup" \
+
+        local volume_backup="$local_backup_dir/${volume}.tar.gz"
+
+        # Create temporary container for backup to local directory
+        if docker run --rm -v "$volume:/volume_data" -v "$local_backup_dir:/backup" \
             alpine tar czf "/backup/${volume}.tar.gz" -C /volume_data .; then
             local backup_size=$(du -h "$volume_backup" | cut -f1)
             log "INFO" "Volume backup completed: $volume ($backup_size)"
+
+            # Copy to Google Drive after successful backup
+            cp "$volume_backup" "$final_backup_dir/"
+            log "INFO" "Volume backup copied to Google Drive: $volume"
         else
             log "ERROR" "Volume backup failed: $volume"
         fi
     done
-    
+
+    # Cleanup local temporary directory
+    rm -rf "$local_backup_dir"
+
     log "INFO" "Docker volumes backup completed"
 }
 
 # Configuration files backup
 backup_configurations() {
     log "INFO" "Starting configuration files backup..."
-    
-    local backup_dir="$BACKUP_ROOT/daily/configs_${BACKUP_DATE}"
-    mkdir -p "$backup_dir"
+
+    local local_backup_dir="/tmp/chaba_configs_${BACKUP_DATE}"
+    local final_backup_dir="$BACKUP_ROOT/daily/configs_${BACKUP_DATE}"
+
+    # Use local temporary directory for compatibility
+    mkdir -p "$local_backup_dir"
+    mkdir -p "$final_backup_dir"
     
     # Docker Compose files
     local compose_dirs=("/home/tony/CascadeProjects/chaba/stacks/web")
     for dir in "${compose_dirs[@]}"; do
         if [ -d "$dir" ]; then
             local dir_name=$(basename "$dir")
-            tar czf "$backup_dir/${dir_name}.tar.gz" -C "$(dirname "$dir")" "$dir_name"
+            tar czf "$local_backup_dir/${dir_name}.tar.gz" -C "$(dirname "$dir")" "$dir_name"
             log "INFO" "Backed up: $dir"
         fi
     done
-    
+
     # Environment files
     local env_files=(
         "/home/tony/CascadeProjects/chaba/stacks/web/.env"
         "/home/tony/CascadeProjects/chaba/stacks/web/.env.production"
     )
-    
+
     for env_file in "${env_files[@]}"; do
         if [ -f "$env_file" ]; then
-            cp "$env_file" "$backup_dir/"
+            cp "$env_file" "$local_backup_dir/"
             log "INFO" "Backed up: $env_file"
         fi
     done
-    
+
     # SSOT files
     local ssot_dir="/home/tony/CascadeProjects/chaba/docs/ssot"
     if [ -d "$ssot_dir" ]; then
-        tar czf "$backup_dir/ssot.tar.gz" -C "$(dirname "$ssot_dir")" "ssot"
+        tar czf "$local_backup_dir/ssot.tar.gz" -C "$(dirname "$ssot_dir")" "ssot"
         log "INFO" "Backed up: SSOT files"
     fi
-    
+
     # System configuration
     local systemd_dir="/home/tony/CascadeProjects/chaba/systemd"
     if [ -d "$systemd_dir" ]; then
-        tar czf "$backup_dir/systemd.tar.gz" -C "$(dirname "$systemd_dir")" "systemd"
+        tar czf "$local_backup_dir/systemd.tar.gz" -C "$(dirname "$systemd_dir")" "systemd"
         log "INFO" "Backed up: Systemd files"
     fi
-    
+
+    # Copy all configuration backups to Google Drive
+    cp -r "$local_backup_dir"/* "$final_backup_dir/"
+    log "INFO" "Configuration backups copied to Google Drive"
+
+    # Cleanup local temporary directory
+    rm -rf "$local_backup_dir"
+
     log "INFO" "Configuration files backup completed"
 }
 
 # Documentation backup
 backup_documentation() {
     log "INFO" "Starting documentation backup..."
-    
-    local backup_dir="$BACKUP_ROOT/daily/docs_${BACKUP_DATE}"
-    mkdir -p "$backup_dir"
-    
+
+    local local_backup_dir="/tmp/chaba_docs_${BACKUP_DATE}"
+    local final_backup_dir="$BACKUP_ROOT/daily/docs_${BACKUP_DATE}"
+
+    # Use local temporary directory for compatibility
+    mkdir -p "$local_backup_dir"
+    mkdir -p "$final_backup_dir"
+
     local docs_dir="/home/tony/CascadeProjects/chaba/docs"
     if [ -d "$docs_dir" ]; then
-        tar czf "$backup_dir/docs.tar.gz" -C "$(dirname "$docs_dir")" "docs"
-        local backup_size=$(du -h "$backup_dir/docs.tar.gz" | cut -f1)
+        tar czf "$local_backup_dir/docs.tar.gz" -C "$(dirname "$docs_dir")" "docs"
+        local backup_size=$(du -h "$local_backup_dir/docs.tar.gz" | cut -f1)
         log "INFO" "Documentation backup completed ($backup_size)"
+
+        # Copy to Google Drive
+        cp "$local_backup_dir/docs.tar.gz" "$final_backup_dir/"
+        log "INFO" "Documentation backup copied to Google Drive"
     else
         log "WARN" "Documentation directory not found"
     fi
+
+    # Cleanup local temporary directory
+    rm -rf "$local_backup_dir"
 }
 
 # Backup rotation
@@ -247,7 +280,7 @@ verify_backups() {
     local verification_failed=0
     
     # Verify latest database backup
-    local latest_db_backup=$(ls -t "$BACKUP_ROOT/daily/postgres_*.sql.gz" 2>/dev/null | head -1)
+    local latest_db_backup=$(find "$BACKUP_ROOT/daily" -name "postgres_*.sql.gz" -type f 2>/dev/null | sort -r | head -1)
     if [ -n "$latest_db_backup" ]; then
         if gzip -t "$latest_db_backup" 2>/dev/null; then
             log "INFO" "Database backup verified: $latest_db_backup"
@@ -256,9 +289,9 @@ verify_backups() {
             verification_failed=1
         fi
     fi
-    
+
     # Verify latest volume backups
-    local latest_volume_backup=$(ls -t "$BACKUP_ROOT/daily/volumes_*.tar.gz" 2>/dev/null | head -1)
+    local latest_volume_backup=$(find "$BACKUP_ROOT/daily" -name "*.tar.gz" -path "*/volumes_*" -type f 2>/dev/null | sort -r | head -1)
     if [ -n "$latest_volume_backup" ]; then
         if tar -tzf "$latest_volume_backup" > /dev/null 2>&1; then
             log "INFO" "Volume backup verified: $latest_volume_backup"
@@ -279,10 +312,11 @@ verify_backups() {
 
 # Generate backup report
 generate_backup_report() {
+    local verification_status="${1:-0}"  # Default to success (0)
     log "INFO" "Generating backup report..."
-    
+
     local report_file="$BACKUP_ROOT/logs/backup_report_${BACKUP_DATE}.txt"
-    
+
     cat > "$report_file" << EOF
 Chaba Infrastructure Backup Report
 ===================================
@@ -293,11 +327,11 @@ Backup Summary:
 ---------------
 EOF
     
-    # Count backups by type
-    local db_count=$(ls -1 "$BACKUP_ROOT/daily/postgres_*.sql.gz" 2>/dev/null | wc -l)
-    local volume_count=$(ls -1 "$BACKUP_ROOT/daily/volumes_*.tar.gz" 2>/dev/null | wc -l)
-    local config_count=$(ls -1 "$BACKUP_ROOT/daily/configs_*.tar.gz" 2>/dev/null | wc -l)
-    local docs_count=$(ls -1 "$BACKUP_ROOT/daily/docs_*.tar.gz" 2>/dev/null | wc -l)
+    # Count backups by type (looking in subdirectories)
+    local db_count=$(find "$BACKUP_ROOT/daily" -name "postgres_*.sql.gz" 2>/dev/null | wc -l)
+    local volume_count=$(find "$BACKUP_ROOT/daily" -name "*.tar.gz" -path "*/volumes_*" 2>/dev/null | wc -l)
+    local config_count=$(find "$BACKUP_ROOT/daily" -name "*.tar.gz" -path "*/configs_*" 2>/dev/null | wc -l)
+    local docs_count=$(find "$BACKUP_ROOT/daily" -name "docs_*.tar.gz" 2>/dev/null | wc -l)
     
     cat >> "$report_file" << EOF
 Database Backups: $db_count
@@ -327,7 +361,7 @@ Daily backups: $BACKUP_RETENTION_DAYS days
 Weekly backups: $BACKUP_RETENTION_WEEKS weeks
 Monthly backups: $BACKUP_RETENTION_MONTHS months
 
-Backup Status: $([ $verification_failed -eq 0 ] && echo "SUCCESS" || echo "FAILED")
+Backup Status: $([ $verification_status -eq 0 ] && echo "SUCCESS" || echo "FAILED")
 EOF
     
     log "INFO" "Backup report generated: $report_file"
@@ -387,7 +421,7 @@ main() {
         create_weekly_backup
         create_monthly_backup
         verify_backups || backup_failed=1
-        generate_backup_report
+        generate_backup_report $backup_failed
     fi
     
     local backup_end=$(date +%s)

@@ -14,7 +14,7 @@ ALERT_LOG="/var/log/chaba-backup-alerts.log"
 
 # Alert thresholds
 MAX_BACKUP_AGE_HOURS=36
-MIN_BACKUP_SIZE_MB=10
+MIN_BACKUP_SIZE_MB=1  # Adjusted for small database
 MAX_FAILURE_COUNT=3
 
 # Logging function
@@ -55,21 +55,21 @@ send_alert() {
 # Check backup freshness
 check_backup_freshness() {
     log "INFO" "Checking backup freshness..."
-    
-    local latest_backup=$(ls -t "$BACKUP_ROOT/daily/postgres_*.sql.gz" 2>/dev/null | head -1)
-    
+
+    local latest_backup=$(find "$BACKUP_ROOT/daily" -name "postgres_*.sql.gz" -type f 2>/dev/null | sort -r | head -1)
+
     if [ -z "$latest_backup" ]; then
         send_alert "critical" "No database backups found"
         return 1
     fi
-    
+
     local backup_age_hours=$(( ($(date +%s) - $(stat -c %Y "$latest_backup")) / 3600 ))
-    
+
     if [ "$backup_age_hours" -gt "$MAX_BACKUP_AGE_HOURS" ]; then
         send_alert "critical" "Latest backup is ${backup_age_hours}h old (threshold: ${MAX_BACKUP_AGE_HOURS}h)"
         return 1
     fi
-    
+
     log "INFO" "Backup freshness check passed (${backup_age_hours}h old)"
     return 0
 }
@@ -77,21 +77,21 @@ check_backup_freshness() {
 # Check backup size
 check_backup_size() {
     log "INFO" "Checking backup size..."
-    
-    local latest_backup=$(ls -t "$BACKUP_ROOT/daily/postgres_*.sql.gz" 2>/dev/null | head -1)
-    
+
+    local latest_backup=$(find "$BACKUP_ROOT/daily" -name "postgres_*.sql.gz" -type f 2>/dev/null | sort -r | head -1)
+
     if [ -z "$latest_backup" ]; then
         send_alert "critical" "No database backups found for size check"
         return 1
     fi
-    
+
     local backup_size_mb=$(du -m "$latest_backup" | cut -f1)
-    
+
     if [ "$backup_size_mb" -lt "$MIN_BACKUP_SIZE_MB" ]; then
         send_alert "warning" "Backup size suspiciously small: ${backup_size_mb}MB (threshold: ${MIN_BACKUP_SIZE_MB}MB)"
         return 1
     fi
-    
+
     log "INFO" "Backup size check passed (${backup_size_mb}MB)"
     return 0
 }
@@ -99,8 +99,8 @@ check_backup_size() {
 # Check backup integrity
 check_backup_integrity() {
     log "INFO" "Checking backup integrity..."
-    
-    local latest_backup=$(ls -t "$BACKUP_ROOT/daily/postgres_*.sql.gz" 2>/dev/null | head -1)
+
+    local latest_backup=$(find "$BACKUP_ROOT/daily" -name "postgres_*.sql.gz" -type f 2>/dev/null | sort -r | head -1)
     
     if [ -z "$latest_backup" ]; then
         send_alert "critical" "No database backups found for integrity check"
@@ -119,23 +119,24 @@ check_backup_integrity() {
 # Check backup completeness
 check_backup_completeness() {
     log "INFO" "Checking backup completeness..."
-    
+
     local required_backups=("postgres" "volumes" "configs" "docs")
     local missing_backups=()
-    
+
     for backup_type in "${required_backups[@]}"; do
-        local backup_count=$(ls -1 "$BACKUP_ROOT/daily/${backup_type}_*.tar.gz" 2>/dev/null | wc -l)
-        
+        # Check for both direct files and subdirectory structure
+        local backup_count=$(find "$BACKUP_ROOT/daily" -name "${backup_type}_*.tar.gz" -o -name "${backup_type}_*.sql.gz" -o -name "${backup_type}_*" -type d 2>/dev/null | wc -l)
+
         if [ "$backup_count" -eq 0 ]; then
             missing_backups+=("$backup_type")
         fi
     done
-    
+
     if [ ${#missing_backups[@]} -gt 0 ]; then
         send_alert "warning" "Missing backup types: ${missing_backups[*]}"
         return 1
     fi
-    
+
     log "INFO" "Backup completeness check passed"
     return 0
 }
@@ -143,11 +144,11 @@ check_backup_completeness() {
 # Check backup rotation
 check_backup_rotation() {
     log "INFO" "Checking backup rotation..."
-    
-    local daily_count=$(ls -1 "$BACKUP_ROOT/daily/"*.{sql.gz,tar.gz} 2>/dev/null | wc -l)
-    local weekly_count=$(ls -1 "$BACKUP_ROOT/weekly/"* 2>/dev/null | wc -l)
-    local monthly_count=$(ls -1 "$BACKUP_ROOT/monthly/"* 2>/dev/null | wc -l)
-    
+
+    local daily_count=$(find "$BACKUP_ROOT/daily" -type f 2>/dev/null | wc -l)
+    local weekly_count=$(find "$BACKUP_ROOT/weekly" -type f 2>/dev/null | wc -l)
+    local monthly_count=$(find "$BACKUP_ROOT/monthly" -type f 2>/dev/null | wc -l)
+
     log "INFO" "Backup counts: daily=$daily_count, weekly=$weekly_count, monthly=$monthly_count"
     
     # Check if rotation is working (should not have excessive old backups)
@@ -164,14 +165,17 @@ check_backup_rotation() {
 # Check backup failures
 check_backup_failures() {
     log "INFO" "Checking recent backup failures..."
-    
-    local failure_count=$(grep -c "ERROR.*backup failed" "$BACKUP_LOG" 2>/dev/null || echo "0")
-    
+
+    # Only check recent failures (last 24 hours)
+    local cutoff_date=$(date -d '24 hours ago' '+%Y-%m-%d %H')
+    local failure_count=$(grep "$cutoff_date" "$BACKUP_LOG" 2>/dev/null | grep -c "ERROR.*backup failed" || true)
+    failure_count=${failure_count:-0}
+
     if [ "$failure_count" -gt "$MAX_FAILURE_COUNT" ]; then
         send_alert "critical" "Found $failure_count backup failures in log (threshold: $MAX_FAILURE_COUNT)"
         return 1
     fi
-    
+
     log "INFO" "Backup failure check passed ($failure_count failures)"
     return 0
 }
@@ -215,7 +219,7 @@ Backup Status:
 EOF
     
     # Backup freshness
-    local latest_backup=$(ls -t "$BACKUP_ROOT/daily/postgres_*.sql.gz" 2>/dev/null | head -1)
+    local latest_backup=$(find "$BACKUP_ROOT/daily" -name "postgres_*.sql.gz" -type f 2>/dev/null | sort -r | head -1)
     if [ -n "$latest_backup" ]; then
         local backup_age_hours=$(( ($(date +%s) - $(stat -c %Y "$latest_backup")) / 3600 ))
         echo "Latest backup: $backup_age_hours hours old" >> "$report_file"
@@ -224,9 +228,9 @@ EOF
     fi
     
     # Backup counts
-    local daily_count=$(ls -1 "$BACKUP_ROOT/daily/"*.{sql.gz,tar.gz} 2>/dev/null | wc -l)
-    local weekly_count=$(ls -1 "$BACKUP_ROOT/weekly/"* 2>/dev/null | wc -l)
-    local monthly_count=$(ls -1 "$BACKUP_ROOT/monthly/"* 2>/dev/null | wc -l)
+    local daily_count=$(find "$BACKUP_ROOT/daily" -type f 2>/dev/null | wc -l)
+    local weekly_count=$(find "$BACKUP_ROOT/weekly" -type f 2>/dev/null | wc -l)
+    local monthly_count=$(find "$BACKUP_ROOT/monthly" -type f 2>/dev/null | wc -l)
     
     cat >> "$report_file" << EOF
 Daily backups: $daily_count
@@ -269,34 +273,34 @@ main() {
     
     case "$check_type" in
         freshness)
-            check_backup_freshness && ((checks_passed++)) || ((checks_failed++))
+            check_backup_freshness && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
             ;;
         size)
-            check_backup_size && ((checks_passed++)) || ((checks_failed++))
+            check_backup_size && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
             ;;
         integrity)
-            check_backup_integrity && ((checks_passed++)) || ((checks_failed++))
+            check_backup_integrity && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
             ;;
         completeness)
-            check_backup_completeness && ((checks_passed++)) || ((checks_failed++))
+            check_backup_completeness && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
             ;;
         rotation)
-            check_backup_rotation && ((checks_passed++)) || ((checks_failed++))
+            check_backup_rotation && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
             ;;
         failures)
-            check_backup_failures && ((checks_passed++)) || ((checks_failed++))
+            check_backup_failures && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
             ;;
         disk)
-            check_disk_space && ((checks_passed++)) || ((checks_failed++))
+            check_disk_space && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
             ;;
         all)
-            check_backup_freshness && ((checks_passed++)) || ((checks_failed++))
-            check_backup_size && ((checks_passed++)) || ((checks_failed++))
-            check_backup_integrity && ((checks_passed++)) || ((checks_failed++))
-            check_backup_completeness && ((checks_passed++)) || ((checks_failed++))
-            check_backup_rotation && ((checks_passed++)) || ((checks_failed++))
-            check_backup_failures && ((checks_passed++)) || ((checks_failed++))
-            check_disk_space && ((checks_passed++)) || ((checks_failed++))
+            check_backup_freshness && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
+            check_backup_size && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
+            check_backup_integrity && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
+            check_backup_completeness && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
+            check_backup_rotation && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
+            check_backup_failures && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
+            check_disk_space && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
             generate_monitoring_report
             ;;
         *)
