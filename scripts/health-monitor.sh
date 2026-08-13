@@ -133,7 +133,7 @@ fi
 
 # ── Key service health ───────────────────────────────────────────────────────
 declare -A SERVICE_URLS=(
-    [status-api]="http://tony-omen.local:8080/api/health"
+    [status-api]="http://tony-omen.local:8080/health"
     [yomi-api]="http://tony-omen.local:8080/api/yomi/health"
     [caddy]="http://tony-omen.local:8080/"
 )
@@ -146,7 +146,7 @@ for name in "${!SERVICE_URLS[@]}"; do
 done
 
 # ── Google Drive backup mount ───────────────────────────────────────────────
-if ! mount | grep -q "gdrive.*on /home/tony/GoogleDrive"; then
+if ! mountpoint -q /home/tony/GoogleDrive; then
     alert critical "Google Drive Not Mounted" "Backup storage unavailable — remount with: rclone mount gdrive: /home/tony/GoogleDrive --daemon"
 fi
 
