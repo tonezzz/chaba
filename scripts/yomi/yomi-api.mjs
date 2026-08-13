@@ -8,8 +8,7 @@ import {
   handleMediaAnalysisJobs 
 } from './media-analysis.mjs';
 import pool from './db.mjs';
-import { invalidateConversationsCache, invalidateMessagesCache, invalidateDailyCache, getCacheStats } from './cached-api.mjs';
-import { CachedQueryBuilder, invalidateDbCache, warmCache, withCache } from '../db-cache.mjs';
+import { invalidateConversationsCache, invalidateMessagesCache, invalidateDailyCache, invalidateAllYomiCache, getCacheStats, withCache } from './cached-api.mjs';
 
 const PORT = parseInt(process.env.YOMI_API_PORT || '3000', 10);
 const HOST = process.env.YOMI_API_HOST || '0.0.0.0';
@@ -158,10 +157,8 @@ async function handleProcess(chatId, res, force = false) {
     if (chatId) {
       await invalidateDailyCache(chatId);
       await invalidateConversationsCache();
-      await invalidateDbCache('summaries');
     } else {
       await invalidateAllYomiCache();
-      await invalidateDbCache('conversations');
     }
     sendJson(res, 200, { ok: true, forced: force, output: out });
   } else {
@@ -170,11 +167,18 @@ async function handleProcess(chatId, res, force = false) {
 }
 
 async function handleConversations(res) {
-  const builder = new CachedQueryBuilder(pool);
-  const { rows, cached } = await builder.conversations();
+  const { data, cached } = await withCache('conversations', 'list', async () => {
+    const { rows } = await pool.query(`
+      SELECT chat_id AS id, name, is_group AS "isGroup", category, category_source AS "categorySource",
+             unread, last_message_time AS "lastMessageTime", last_preview AS "lastPreview", summary
+      FROM conversations
+      ORDER BY last_message_time DESC NULLS LAST
+    `);
+    return { generatedAt: new Date().toISOString(), conversations: rows };
+  }, 300);
   
   res.setHeader('X-Cache', cached ? 'HIT' : 'MISS');
-  sendJson(res, 200, { generatedAt: new Date().toISOString(), conversations: rows });
+  sendJson(res, 200, data);
 }
 
 async function handleLastUpdated(res) {
@@ -747,7 +751,8 @@ const server = createServer(async (req, res) => {
   }
 
   if (url.pathname === '/api/yomi/health') {
-    return sendJson(res, 200, { ok: true, cacheStats: getCacheStats() });
+    const cacheStats = getCacheStats();
+    return sendJson(res, 200, { ok: true, cacheStats });
   }
 
   if (url.pathname === '/api/yomi/session-status' && req.method === 'GET') {

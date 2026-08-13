@@ -340,6 +340,7 @@ services:
     environment:
       - YOMI_API_PORT=3000
       - YOMI_API_HOST=0.0.0.0
+      - REDIS_URL=redis://redis:6379
       - GEMINI_VISION_MODEL_PRIMARY=gemma-4-31b-it
       - GEMINI_VISION_MODEL_FALLBACK=gemma-4-26b-a4b-it
       - CONTEXT_MESSAGES_BEFORE=3
@@ -373,6 +374,8 @@ services:
       - default
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   weaviate:

@@ -3,7 +3,7 @@
  * Adds Redis caching to read-heavy endpoints
  */
 
-import cacheManager from '../cache-manager.mjs';
+import cacheManager from './cache-manager.mjs';
 
 const CACHE_TTLS = {
   conversations: 300,      // 5 minutes
