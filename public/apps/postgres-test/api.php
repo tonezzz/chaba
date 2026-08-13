@@ -4,13 +4,13 @@
  * Tests database connection, query performance, and concurrent operations
  */
 
-// Configuration - adjust these for your chaba-h3 PostgreSQL setup
+// Configuration - adjust these for your chaba PostgreSQL setup
 $db_config = [
     'host' => 'localhost',
     'port' => '5432',
-    'dbname' => 'test_db', // Change to your database name
-    'user' => 'test_user', // Change to your username
-    'password' => '' // Add your password if needed
+    'dbname' => 'chaba', // Main chaba database
+    'user' => 'chaba', // Database user
+    'password' => '' // Password should be set via environment or pg_hba.conf
 ];
 
 // Test results storage
