@@ -36,6 +36,39 @@ corpus:
 
 # Session memories
 sessions:
+  - date: 2026-08-12
+    duration: 1 hour
+    topics: [yomi-archive, mddb-migration, data-cleanup, infrastructure-cleanup]
+    outcomes:
+      - Successfully migrated old Yomi files to MDDB knowledge base
+      - Removed original Yomi archive files after successful migration verification
+      - Updated documentation to reflect MDDB as primary Yomi archive location
+    decisions:
+      - Use MDDB for Yomi archival instead of file-based storage
+      - Clean up original files after successful migration verification
+      - Update SSOT and rules to reflect new archival location
+    discoveries:
+      - MDDB successfully handles 2.2M of Yomi data (65 documents)
+      - BM25 search works with Thai text content
+      - MDDB API endpoint: http://localhost:9001/tools/call with MCP protocol
+      - MDDB Panel access: http://tony-omen.local:3002/ for web interface
+    infrastructure_changes:
+      - scripts/migrate-yomi-to-mddb.py - New migration script for Yomi archival
+      - chaba/stacks/web/public/apps/yomi-archive/ - Removed conversations.json and messages/ directory
+      - MDDB yomi-archive collection - 65 documents (conversations + 64 message files)
+    configuration_changes:
+      - docs/overview/ssot.kb.yml - Added Yomi archival session memory
+      - .windsurfrules - Updated to reflect MDDB as Yomi archive location
+    related_kb:
+      - docs/kb/yomi-archive-migration.md (to be created)
+    related_ssot:
+      - docs/overview/ssot.kb.yml
+    notes:
+      - Original Yomi files were in chaba project: conversations.json (48K) + messages/ (2.2M, 64 files)
+      - MDDB database now 370 documents total (84.6 MB) with yomi-archive collection
+      - Migration script can be reused for future Yomi data archival needs
+      - MDDB provides semantic search, web UI, and MCP integration advantages over file storage
+
   - date: 2026-08-04
     duration: 2 hours
     topics: [dependency-management, impact-scoring, improvements-tracking, gpu-monitoring, yomi-enhancements]

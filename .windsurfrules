@@ -46,6 +46,19 @@ When adding or editing pages for `chaba.h3.gizmo-thailand.com`, follow `.windsur
 - For health check configs, use location-specific files: `ssot.health.home.yml` and `ssot.health.mobile.yml`
 - See `docs/overview/hostname-enforcement-strategy.md` for comprehensive enforcement strategy
 
+## Yomi Data Archival
+
+- **Primary Archive**: MDDB knowledge base (yomi-archive collection)
+- **Access Methods**: 
+  - MDDB Panel: http://tony-omen.local:3002/
+  - MCP API: http://localhost:9001/tools/call
+  - Migration script: scripts/migrate-yomi-to-mddb.py
+- **Archive Content**: Old Yomi files (conversations.json, messages/) migrated to MDDB
+- **Search Capabilities**: BM25 search with Thai text support, semantic search via Ollama
+- **Original Files**: Removed from chaba/stacks/web/public/apps/yomi-archive/ after successful migration
+- **Migration Date**: 2026-08-12 (65 documents: conversations + 64 message files)
+- **Benefits**: Structured storage, search capabilities, web UI, MCP integration, automated backup
+
 ## Auto KB review at end of each session (MANDATORY)
 
 At the end of every assistant response that answers or completes a user request — including small test questions — you MUST append a markdown section titled exactly `KB review`. In that section, briefly list any KB-worthy facts from the conversation: decisions, discoveries, infrastructure changes, conventions, and workarounds. Before saving anything, check existing memories and update or archive stale entries rather than duplicating. Create new memories in the correct corpus with clear titles and tags. Do NOT save temporary commands, one-off output, or obvious trivia.

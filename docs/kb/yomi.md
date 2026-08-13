@@ -46,6 +46,20 @@ Yomi has been split into a two-stage pipeline for better reliability and monitor
   - `/api/yomi/resummarize` - Trigger re-summarization of conversations
   - `/api/yomi/rate-limiter-status` - Rate limiter and circuit breaker status
 
+## Data Archival
+
+**Primary Archive**: MDDB knowledge base (yomi-archive collection)
+- **Access**: MDDB Panel at http://tony-omen.local:3002/
+- **MCP API**: http://localhost:9001/tools/call
+- **Migration Script**: `scripts/migrate-yomi-to-mddb.py`
+- **Content**: 65 documents (conversations metadata + 64 message files)
+- **Search**: BM25 search with Thai text support
+- **Original Files**: Removed from chaba project after successful migration (2026-08-12)
+
+**Historical Context**: Old Yomi files (conversations.json, messages/) were stored in file-based format and migrated to MDDB for enhanced search capabilities and better data organization after Postgres migration made them redundant.
+
+**Related Documentation**: `docs/kb/yomi-mddb-migration.md`
+
 ## Key files
 
 | File | Purpose |
@@ -71,25 +85,23 @@ Only one Yomi MCP server can hold `search-index.db` at a time.
 
 Yomi uses systemd timers for automated operation:
 
-### API Server (`yomi-api.service`)
-- **Purpose**: HTTP API server for Yomi data
-- **Location**: `/etc/systemd/system/yomi-api.service`
-- **Enabled**: Yes (auto-restart on failure)
-- **Status**: Active (added 2026-08-04)
-- **Environment Variables**: Requires Gemini API configuration for media analysis:
-  - `GEMINI_API_KEY` - Gemini API authentication key
-  - `GEMINI_VISION_MODEL_PRIMARY` - Primary vision model for media analysis
-  - `GEMINI_VISION_MODEL_FALLBACK` - Fallback vision model
-  - `CONTEXT_MESSAGES_BEFORE` - Context messages before media
-  - `CONTEXT_MESSAGES_AFTER` - Context messages after media
-  - PostgreSQL connection variables
-- **Note**: Missing environment variables cause HTTP 500 errors in media analysis (see [yomi-media-analysis-http500.md](yomi-media-analysis-http500.md))
+### API Server Deployment
+- **Current Deployment**: Systemd service `yomi-api.service` (host-based)
+- **Service Location**: `/etc/systemd/system/yomi-api.service`
+- **Port**: 3000 (0.0.0.0:3000)
+- **Status**: Active and healthy (systemd deployment)
+- **Health Check**: `/api/yomi/health` returns `{"ok":true}`
+- **Docker Container**: `yomi-api` container is **NOT RUNNING** (Created state)
+- **Environment Variables**: Configured in systemd service with Gemini API settings
+- **Caddy Proxy**: Using `handle` directive for `/api/yomi/*` routes (full path preservation)
+- **Note**: Switched back to systemd deployment (2026-08-12) - container disabled due to operational issues
 
 ### Fetch Timer (`yomi-fetch.timer`)
 - **Frequency**: Every 15 minutes (`*:0/15`)
 - **Service**: `yomi-fetch.service`
 - **Location**: `/etc/systemd/system/yomi-fetch.timer`
 - **Enabled**: Yes (symlinked in `timers.target.wants`)
+- **Dependencies**: Requires `yomi-api.service` (updated 2026-08-12 for systemd deployment)
 
 ### Process Timer (`yomi-process.timer`)
 - **Frequency**: Every minute during midnight to 7 AM (`*-*-* 00,01,02,03,04,05,06,07:*:0/1`)
@@ -97,6 +109,8 @@ Yomi uses systemd timers for automated operation:
 - **Location**: `/etc/systemd/system/yomi-process.timer`
 - **Enabled**: Yes (symlinked in `timers.target.wants`)
 - **Time-Restricted Execution**: Configured to run only during overnight hours (00:00-07:00) to avoid GPU resource contention during daytime usage (updated 2026-08-04)
+- **Dependencies**: Requires `docker.service` (updated 2026-08-10 for containerized deployment)
+- **Override Configuration**: `/etc/systemd/system/yomi-process.service.d/override.conf` contains Gemini API settings and timeout configuration
 
 ### Management Commands
 ```bash
