@@ -38,7 +38,7 @@ alerts:
   service_criticality:
     critical: [caddy, postgres, gpu-queue]
     important: [yomi-api, status-api, trade-api, mddb-api, playlived, llama-server, remote-exec-tony-dell]
-    optional: [redis, weaviate, activepieces, frigate, camera-control, imagen2, txt2vid, thai-legal, cpu-frequency-monitor]
+    optional: [redis, weaviate, activepieces, frigate, camera-control, imagen2, txt2vid, thai-legal, cpu-frequency-monitor, gdrive-backup]
 
 # Service groups for dependency tracking
 groups:
@@ -50,7 +50,7 @@ groups:
   automation: [playlived]
   ssot-sync: [mddb-api, mddb-mcp, mddb-stats, mddb-vector-stats, mddb-metrics, mddb-container]
   remote-exec: [remote-exec-tony-dell]
-  system: [cpu-frequency-monitor, chaba-health-monitor-timer]
+  system: [cpu-frequency-monitor, chaba-health-monitor-timer, gdrive-backup]
 
 # Service dependencies
 dependencies:
@@ -536,6 +536,28 @@ services:
       - "Monitor CPU frequency: watch -n 1 'cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq'"
       - "Change CPU governor: echo performance | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
       - "Check thermal throttling: watch -n 1 'cat /sys/class/thermal/thermal_zone*/temp'"
+
+  - id: gdrive-backup
+    name: Google Drive Backup
+    type: mount
+    mount_point: /home/tony/GoogleDrive
+    expected_state: mounted
+    timeout: 10
+    category: system
+    profiles: [home]
+    note: "Google Drive mount for automated backup storage at /home/tony/GoogleDrive/Tony AI/backup/chaba"
+    verification:
+      - "Check mount status: mount | grep gdrive"
+      - "Check backup directory: ls -la /home/tony/GoogleDrive/Tony AI/backup/chaba"
+      - "Check recent backups: ls -lt /home/tony/GoogleDrive/Tony AI/backup/chaba/daily/ | head -5"
+      - "Test write access: echo 'test' > /home/tony/GoogleDrive/Tony AI/backup/chaba/test-write.txt && rm /home/tony/GoogleDrive/Tony AI/backup/chaba/test-write.txt"
+      - "Check backup logs: tail -f /var/log/chaba-backup.log"
+    recovery_actions:
+      - "Check rclone status: rclone status gdrive"
+      - "Remount Google Drive: rclone mount gdrive: /home/tony/GoogleDrive --daemon"
+      - "Check rclone config: rclone config show gdrive"
+      - "Check backup service: systemctl status chaba-backup.timer"
+      - "Check backup logs for errors: tail -100 /var/log/chaba-backup.log"
 
 # Recovery suggestions for common failure modes
 recovery_actions:

@@ -1,6 +1,6 @@
 title: Chaba System Automation
 description: Automated monitoring and maintenance schedules for Chaba infrastructure
-version: 5
+version: 7
 
 automation:
   gpu_monitoring:
@@ -44,20 +44,62 @@ automation:
     report_dir: reports/
     report_retention: 30 days
     features:
-      - enhanced health check integration (13 comprehensive areas)
-      - comprehensive log analysis (Docker + systemd error patterns)
-      - database performance deep dive (PostgreSQL + Weaviate)
+      - enhanced health check integration (14 comprehensive areas)
+      - enhanced comprehensive log analysis (7-day patterns + frequency analysis)
+      - enhanced database performance deep dive (historical trends + long-running queries)
       - extended GPU & queue analysis (job history + patterns)
       - enhanced Yomi system health (rate limit analysis)
       - network performance analysis (interface stats + connectivity)
       - backup verification (status + integrity checks)
-      - container security analysis (image ages + compliance)
+      - enhanced container security analysis (Trivy vulnerability scanning + security audit)
       - dependency security audit (outdated packages + vulnerabilities)
-      - system resource deep dive (CPU + memory + disk I/O)
+      - enhanced system resource deep dive (capacity planning + historical trends)
       - documentation consistency (SSOT validation + hostname checks)
       - configuration validation (YAML + environment variables)
       - MCP health server integration (PostgreSQL for historical analysis)
+      - performance baseline comparison (7-day trend analysis + degradation detection)
       - auto-improvement creation (automatic SSOT entry generation for critical findings)
+    status: active (2026-08-13)
+
+  backup_system:
+    script: scripts/backup-manager.sh
+    schedule: "0 2 * * *"
+    frequency: daily at 2 AM
+    log_file: /var/log/chaba-backup.log
+    backup_root: /home/tony/GoogleDrive/Tony AI/backup/chaba
+    retention:
+      daily: 30 days
+      weekly: 12 weeks
+      monthly: 6 months
+    backup_types:
+      - database (PostgreSQL with compression)
+      - docker_volumes (postgres_data, redis_data, weaviate_data)
+      - configurations (Docker Compose, environment files, SSOT, systemd)
+      - documentation (docs directory)
+    monitoring:
+      script: scripts/backup-monitor.sh
+      schedule: hourly
+      log_file: /var/log/chaba-backup-monitor.log
+      checks:
+        - backup freshness (36-hour threshold)
+        - backup size (10MB minimum)
+        - backup integrity (gzip verification)
+        - backup completeness
+        - backup rotation
+        - backup failures
+        - disk space
+    restoration:
+      script: scripts/restore-manager.sh
+      features:
+        - selective restoration (database, volumes, configs)
+        - restoration verification
+        - user confirmation prompts
+        - safe restoration procedures
+    systemd_services:
+      - chaba-backup.service
+      - chaba-backup.timer
+      - chaba-backup-monitor.service
+      - chaba-backup-monitor.timer
     status: active (2026-08-13)
 
 monitoring:
@@ -100,6 +142,14 @@ data_locations:
     archive: reports/archive/
     improvements: docs/ssot/ssot.improvements.yml
     mcp_health_database: PostgreSQL (chaba database, health_checks/alerts tables)
+
+  backup_system:
+    backup_root: /home/tony/GoogleDrive/Tony AI/backup/chaba
+    daily_backups: daily/ (postgres_*.sql.gz, volumes_*.tar.gz, configs_*.tar.gz, docs_*.tar.gz)
+    weekly_backups: weekly/week_YYYY-WW/
+    monthly_backups: monthly/month_YYYYMM/
+    logs: logs/ (backup_report_*.txt, monitoring_report_*.txt)
+    system_logs: /var/log/chaba-backup.log, /var/log/chaba-backup-monitor.log, /var/log/chaba-backup-alerts.log
 
 integration:
   status_api:
@@ -159,7 +209,8 @@ maintenance:
 performance_impact:
   gpu_monitoring: minimal (<1 second per check)
   system_maintenance: variable (1-5 minutes depending on cleanup)
-  overnight_assessment: 20-35 minutes (13 comprehensive assessment areas + auto-improvement creation)
+  overnight_assessment: 15-25 minutes (14 comprehensive assessment areas + auto-improvement + Trivy scanning)
+  backup_system: 5-15 minutes (full backup with verification)
 
 future_enhancements:
   - web-based monitoring dashboard

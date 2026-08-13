@@ -145,6 +145,22 @@ for name in "${!SERVICE_URLS[@]}"; do
     fi
 done
 
+# ── Google Drive backup mount ───────────────────────────────────────────────
+if ! mount | grep -q "gdrive on /home/tony/GoogleDrive"; then
+    alert critical "Google Drive Not Mounted" "Backup storage unavailable — remount with: rclone mount gdrive: /home/tony/GoogleDrive --daemon"
+fi
+
+# Check backup directory accessibility
+if [[ -d "/home/tony/GoogleDrive/Tony AI/backup/chaba" ]]; then
+    if ! touch "/home/tony/GoogleDrive/Tony AI/backup/chaba/.health-check" 2>/dev/null; then
+        alert critical "Google Drive Not Writable" "Backup directory not writable — check mount and permissions"
+    else
+        rm -f "/home/tony/GoogleDrive/Tony AI/backup/chaba/.health-check" 2>/dev/null
+    fi
+else
+    alert warning "Backup Directory Missing" "Backup directory not found — may need manual creation"
+fi
+
 # ── Summary log ─────────────────────────────────────────────────────────────
 if [[ ${#ISSUES[@]} -eq 0 ]]; then
     echo "[$ts] OK — all checks passed" >> "$ALERT_LOG"
