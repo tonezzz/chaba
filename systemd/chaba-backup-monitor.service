@@ -1,15 +1,11 @@
 [Unit]
-Description=Chaba Backup Monitoring Service
+Description=Chaba Backup Monitoring and Alerting
 After=network.target
 
 [Service]
 Type=oneshot
 User=tony
-Group=tony
-ExecStart=/home/tony/CascadeProjects/chaba/scripts/backup-monitor.sh all
 WorkingDirectory=/home/tony/CascadeProjects/chaba
+ExecStart=/home/tony/CascadeProjects/chaba/scripts/backup-monitor.sh
 StandardOutput=append:/var/log/chaba-backup-monitor.log
 StandardError=append:/var/log/chaba-backup-monitor.log
-
-[Install]
-WantedBy=multi-user.target
