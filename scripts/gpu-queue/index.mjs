@@ -7,6 +7,7 @@ import * as scheduler from './scheduler.mjs';
 import { getGPUMemoryStats } from './gpu-memory-aware.mjs';
 import { getPredictionAccuracy, setPredictionModel } from './job-duration-prediction.mjs';
 import { getPriorityAdjustmentStats, adjustPendingJobPriorities } from './dynamic-priority.mjs';
+import * as intelligentMonitoring from './intelligent-monitoring.mjs';
 
 const PORT = process.env.GPU_QUEUE_PORT || 3001;
 const HOST = process.env.GPU_QUEUE_HOST || '0.0.0.0';
@@ -225,6 +226,50 @@ async function handleRequest(req, res) {
       return;
     }
 
+    // GET /api/gpu-queue/intelligent-metrics - Comprehensive intelligent scheduling metrics
+    if (path[0] === 'api' && path[1] === 'gpu-queue' && path[2] === 'intelligent-metrics' && method === 'GET') {
+      const metrics = await intelligentMonitoring.getIntelligentSchedulingMetrics();
+      sendJson(res, 200, metrics);
+      return;
+    }
+
+    // GET /api/gpu-queue/scheduling-performance - Scheduling performance comparison
+    if (path[0] === 'api' && path[1] === 'gpu-queue' && path[2] === 'scheduling-performance' && method === 'GET') {
+      const performance = await intelligentMonitoring.getSchedulingPerformanceComparison();
+      sendJson(res, 200, performance);
+      return;
+    }
+
+    // GET /api/gpu-queue/memory-trends - Memory utilization trends
+    if (path[0] === 'api' && path[1] === 'gpu-queue' && path[2] === 'memory-trends' && method === 'GET') {
+      const hours = parseInt(new URL(req.url, `http://${HOST}`).searchParams.get('hours')) || 24;
+      const trends = await intelligentMonitoring.getMemoryUtilizationTrends(hours);
+      sendJson(res, 200, trends);
+      return;
+    }
+
+    // GET /api/gpu-queue/prediction-performance - Prediction model performance
+    if (path[0] === 'api' && path[1] === 'gpu-queue' && path[2] === 'prediction-performance' && method === 'GET') {
+      const hours = parseInt(new URL(req.url, `http://${HOST}`).searchParams.get('hours')) || 24;
+      const performance = await intelligentMonitoring.getPredictionModelPerformance(hours);
+      sendJson(res, 200, performance);
+      return;
+    }
+
+    // GET /api/gpu-queue/priority-effectiveness - Priority adjustment effectiveness
+    if (path[0] === 'api' && path[1] === 'gpu-queue' && path[2] === 'priority-effectiveness' && method === 'GET') {
+      const effectiveness = await intelligentMonitoring.getPriorityAdjustmentEffectiveness();
+      sendJson(res, 200, effectiveness);
+      return;
+    }
+
+    // GET /api/gpu-queue/monitoring-dashboard - Comprehensive monitoring dashboard
+    if (path[0] === 'api' && path[1] === 'gpu-queue' && path[2] === 'monitoring-dashboard' && method === 'GET') {
+      const dashboard = await intelligentMonitoring.getMonitoringDashboard();
+      sendJson(res, 200, dashboard);
+      return;
+    }
+
     // GET /health - Health check
     if (path[0] === 'health' && method === 'GET') {
       const health = await monitoring.getQueueHealth();
@@ -247,25 +292,31 @@ const server = http.createServer(handleRequest);
 server.listen(PORT, HOST, () => {
   console.log(`GPU Queue API listening on http://${HOST}:${PORT}`);
   console.log('Endpoints:');
-  console.log('  POST   /api/gpu-queue/jobs              - Submit job');
-  console.log('  GET    /api/gpu-queue/jobs              - List jobs');
-  console.log('  GET    /api/gpu-queue/jobs/:id          - Get job status');
-  console.log('  DELETE /api/gpu-queue/jobs/:id          - Cancel job');
-  console.log('  GET    /api/gpu-queue/status            - Queue status');
-  console.log('  GET    /api/gpu-queue/monitoring/health      - Monitoring health');
-  console.log('  GET    /api/gpu-queue/monitoring/performance  - Monitoring performance');
-  console.log('  GET    /api/gpu-queue/monitoring/activity     - Monitoring activity');
-  console.log('  GET    /api/gpu-queue/monitoring/overview     - Monitoring overview');
-  console.log('  GET    /api/gpu-queue/stats                   - Job statistics');
-  console.log('  GET    /api/gpu-queue/cancellation-rate      - Cancellation rate monitoring');
-  console.log('  GET    /api/gpu-queue/recent-failures       - Recent job failures');
-  console.log('  GET    /api/gpu-queue/gpu-memory            - GPU memory statistics');
-  console.log('  GET    /api/gpu-queue/prediction-accuracy   - Prediction model accuracy');
-  console.log('  GET    /api/gpu-queue/priority-stats         - Priority adjustment statistics');
-  console.log('  POST   /api/gpu-queue/adjust-priorities     - Manual priority adjustment');
-  console.log('  GET    /api/gpu-queue/scheduler             - Get current scheduler');
-  console.log('  PUT    /api/gpu-queue/scheduler             - Set scheduler');
-  console.log('  GET    /health                              - Health check');
+  console.log('  POST   /api/gpu-queue/jobs                      - Submit job');
+  console.log('  GET    /api/gpu-queue/jobs                      - List jobs');
+  console.log('  GET    /api/gpu-queue/jobs/:id                  - Get job status');
+  console.log('  DELETE /api/gpu-queue/jobs/:id                  - Cancel job');
+  console.log('  GET    /api/gpu-queue/status                    - Queue status');
+  console.log('  GET    /api/gpu-queue/monitoring/health         - Monitoring health');
+  console.log('  GET    /api/gpu-queue/monitoring/performance     - Monitoring performance');
+  console.log('  GET    /api/gpu-queue/monitoring/activity        - Monitoring activity');
+  console.log('  GET    /api/gpu-queue/monitoring/overview       - Monitoring overview');
+  console.log('  GET    /api/gpu-queue/stats                       - Job statistics');
+  console.log('  GET    /api/gpu-queue/cancellation-rate          - Cancellation rate monitoring');
+  console.log('  GET    /api/gpu-queue/recent-failures           - Recent job failures');
+  console.log('  GET    /api/gpu-queue/gpu-memory                 - GPU memory statistics');
+  console.log('  GET    /api/gpu-queue/prediction-accuracy        - Prediction model accuracy');
+  console.log('  GET    /api/gpu-queue/priority-stats              - Priority adjustment statistics');
+  console.log('  POST   /api/gpu-queue/adjust-priorities          - Manual priority adjustment');
+  console.log('  GET    /api/gpu-queue/scheduler                   - Get current scheduler');
+  console.log('  PUT    /api/gpu-queue/scheduler                   - Set scheduler');
+  console.log('  GET    /api/gpu-queue/intelligent-metrics         - Comprehensive intelligent metrics');
+  console.log('  GET    /api/gpu-queue/scheduling-performance       - Scheduling performance comparison');
+  console.log('  GET    /api/gpu-queue/memory-trends               - Memory utilization trends');
+  console.log('  GET    /api/gpu-queue/prediction-performance      - Prediction model performance');
+  console.log('  GET    /api/gpu-queue/priority-effectiveness       - Priority adjustment effectiveness');
+  console.log('  GET    /api/gpu-queue/monitoring-dashboard         - Comprehensive monitoring dashboard');
+  console.log('  GET    /health                                    - Health check');
   console.log('');
   console.log('Queue processor enabled with intelligent scheduling.');
   console.log(`Current scheduler: ${scheduler.getScheduler()}`);
