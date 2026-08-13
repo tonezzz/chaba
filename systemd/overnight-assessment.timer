@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Chaba Overnight Assessment Daily at 2 AM
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+Unit=overnight-assessment.service
+
+[Install]
+WantedBy=timers.target

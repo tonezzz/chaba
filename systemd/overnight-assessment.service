@@ -1,0 +1,11 @@
+[Unit]
+Description=Chaba Overnight System Assessment
+After=network.target
+
+[Service]
+Type=oneshot
+User=tony
+WorkingDirectory=/home/tony/CascadeProjects/chaba
+ExecStart=/home/tony/CascadeProjects/chaba/scripts/overnight-jobs-expanded.sh
+StandardOutput=append:/home/tony/CascadeProjects/chaba/logs/overnight-service.log
+StandardError=append:/home/tony/CascadeProjects/chaba/logs/overnight-service.log
