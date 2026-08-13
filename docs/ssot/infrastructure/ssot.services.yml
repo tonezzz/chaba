@@ -4,19 +4,20 @@ version: 2
 
 tony-omen:
   llama-router:
-    container: thai-legal-inference
+    container: ai-llama-server-1
     image: ghcr.io/ggml-org/llama.cpp:server-cuda
     mode: router (--models-dir, --models-max 2, --models-autoload)
     models:
       - thai-legal-gemma-4b-cpt.Q4_K_M.gguf (5GB)
-      - Phi-3-mini-4k-instruct-q4.gguf (2.3GB)
-    port: 8001 (host), 8000 (internal)
+      - Phi-3-mini-4k-instruct-Q4_K_M.gguf (2.3GB)
+    port: 8008 (host), 8008 (internal)
+    network: ai_default (external network)
     vram_overhead: ~70MB (vs 4.8GB for separate container)
     routing:
-      - /apps/thai-legal/api/* → thai-legal-gemma-4b-cpt.Q4_K_M
-      - /v1/*, /apps/chatllama/* → Phi-3-mini-4k-instruct-q4
-      - MCP llama server → http://localhost:8001
-    status: implemented (2026-07-31)
+      - /v1/chat/completions → Phi-3-mini-4k-instruct-q4
+      - GPU queue → http://ai-llama-server-1:8008/v1/chat/completions
+      - MCP llama server → http://ai-llama-server-1:8008
+    status: implemented (2026-08-13), network configuration fixed
   postgres:
     container: postgres
     image: postgres:16-alpine
@@ -34,11 +35,12 @@ tony-omen:
     container: mddb-panel
     image: tradik/mddb:panel-latest
     port: 3002 (host), 3000 (internal)
-    status: implemented (2026-08-12)
+    status: implemented (2026-08-13), Caddy routing updated
     routing:
       - /apps/mddb/* → mddb-panel:3000 (container name routing in Caddy)
       - /api/mddb/* → mddb:11023 (Caddy reverse proxy for API)
-    notes: MDDB web panel interface, uses container name for routing. Current implementation uses Referer-based asset routing for SPA assets. Recommended improvement: Configure MDDB panel build to use /apps/mddb/assets/* instead of root-relative /assets/* to avoid Caddy routing conflicts with other services (Activepieces, Raceman).
+      - SPA assets: Referer-based routing for /assets/* requests from MDDB panel
+    notes: MDDB web panel interface, uses container name for routing. Updated Caddy routing to use handle directive (preserves full path) instead of handle_path for SPA asset loading. Uses Referer-based asset routing to handle root-relative asset requests from the panel.
   gemini-api:
     service: Google Gemini API
     provider: Google Cloud
@@ -123,3 +125,26 @@ tony-omen:
       - Check AI Studio for specific model limits: https://aistudio.google.com/app/apikey
       - Free tier TPM limit: 250K tokens/minute (except 2.5 models which support 1M)
       - Batch processing: 4 dates per API call (75% reduction in API calls)
+  gpu-queue:
+    container: gpu-queue
+    image: node:20-alpine
+    port: 3001 (host), 3001 (internal)
+    networks: web_default, ai_default (external)
+    database: postgres (chaba database)
+    scheduling: memory_aware (GPU memory-aware scheduling)
+    features:
+      - Intelligent scheduling with memory-aware and predictive features
+      - Dynamic priority adjustment based on system state
+      - Job duration prediction using historical data
+      - Multi-layer caching with Redis integration
+      - Comprehensive monitoring and metrics
+    job_types:
+      - embedding (priority 4)
+      - txt2vid, cogvideo (priority 3)
+      - imagen2, yomi_summary, yomi_daily, yomi_daily_batch (priority 2)
+      - llama (priority 1)
+    llama_integration:
+      - URL: http://ai-llama-server-1:8008/v1/chat/completions
+      - Network: ai_default external network
+      - Status: Fixed (2026-08-13) - corrected from incorrect IP/port
+    status: implemented (2026-08-13), Llama API configuration fixed
