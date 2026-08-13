@@ -1,6 +1,6 @@
 title: Chaba System Automation
 description: Automated monitoring and maintenance schedules for Chaba infrastructure
-version: 4
+version: 5
 
 automation:
   gpu_monitoring:
@@ -56,8 +56,9 @@ automation:
       - system resource deep dive (CPU + memory + disk I/O)
       - documentation consistency (SSOT validation + hostname checks)
       - configuration validation (YAML + environment variables)
-      - MCP health server integration (database fallback for historical analysis)
+      - MCP health server integration (SQLite database fallback for historical analysis)
       - auto-improvement creation (automatic SSOT entry generation for critical findings)
+    note: MCP health server currently using SQLite - migration to PostgreSQL planned (see ssot.improvements.yml)
     status: active (2026-08-13)
 
 monitoring:
@@ -99,6 +100,7 @@ data_locations:
     reports: reports/overnight-assessment-YYYY-MM-DD-HH-MM-SS.md
     archive: reports/archive/
     improvements: docs/ssot/ssot.improvements.yml
+    mcp_health_database: mcp/mcp-health/health-history.db (SQLite) - planned migration to PostgreSQL
 
 integration:
   status_api:
