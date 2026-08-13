@@ -4,6 +4,19 @@
 	@tony_omen_temp_bare path /apps/tony-omen-temp
 	redir @tony_omen_temp_bare /apps/tony-omen-temp/ 308
 
+	# Static asset caching - CSS, JS, images
+	@static_assets path /assets/* *.css *.js *.png *.jpg *.jpeg *.gif *.svg *.ico *.woff *.woff2
+	handle @static_assets {
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+
+	@static_html path *.html
+	handle @static_html {
+		header Cache-Control "public, max-age=3600"
+		file_server
+	}
+
 	# Disable caching for CarPlay development files
 	@carplay_files path /apps/test-carplay/*.js
 	handle @carplay_files {
@@ -78,6 +91,24 @@
 		}
 	}
 
+	# API response caching
+	@api_cache path /api/*
+	handle @api_cache {
+		header Cache-Control "public, max-age=60, s-maxage=300"
+		reverse_proxy host.docker.internal:3000 {
+			header_up Host localhost
+		}
+	}
+
+	# Yomi API with longer cache for read endpoints
+	@yomi_read_api path /api/yomi/conversations /api/yomi/daily /api/yomi/last-updated
+	handle @yomi_read_api {
+		header Cache-Control "public, max-age=300, s-maxage=600"
+		reverse_proxy host.docker.internal:3000 {
+			header_up Host localhost
+		}
+	}
+
 	# Trade API proxy - /apps/trade/api/* to trade-api (must come before UI files)
 	@trade_api_apps path /apps/trade/api/*
 	handle @trade_api_apps {
@@ -102,6 +133,7 @@
 	handle_path /apps/trade/* {
 		root * /srv/public/apps/trade
 		file_server
+		header Cache-Control "public, max-age=3600"
 	}
 
 	# Trade WebSocket proxy - direct /api/ws/* to trade-api
@@ -125,6 +157,7 @@
 	handle_path /apps/shared/* {
 		root * /srv/public/apps/shared
 		file_server
+		header Cache-Control "public, max-age=86400"
 	}
 
 	# Weaviate API proxy (must come before catchall)
@@ -168,6 +201,7 @@
 	handle_path /apps/yomi/* {
 		root * /srv/public/apps/yomi
 		file_server
+		header Cache-Control "public, max-age=3600"
 	}
 
 	# Frigate proxy
@@ -216,5 +250,6 @@
 	handle_path /apps/* {
 		root * /srv/public/apps
 		file_server
+		header Cache-Control "public, max-age=1800"
 	}
 }
