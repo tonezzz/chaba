@@ -58,6 +58,7 @@ services:
       # - /home/tony/CascadeProjects:/home/tony/CascadeProjects:ro
     environment:
       - NODE_ENV=production
+      - DATABASE_URL=postgresql://chaba:chabapass@postgres:5432/chaba
       - PROJECTS_PATH=/app/projects  # Use container path instead of host path
 
   # In production, additional services would be added here:

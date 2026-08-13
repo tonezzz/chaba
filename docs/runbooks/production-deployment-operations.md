@@ -215,6 +215,7 @@ volumes:
   - ./public:/app/public:ro
 environment:
   - NODE_ENV=production
+  - DATABASE_URL=postgresql://chaba:chabapass@postgres:5432/chaba
   - PROJECTS_PATH=/app/projects
 ```
 
