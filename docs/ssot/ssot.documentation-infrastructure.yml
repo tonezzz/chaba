@@ -20,7 +20,7 @@ sections:
         recovery_priority: critical
 
       - label: MCP Configuration
-        text: Devin/Windsurf MCP server configuration including docs MCP server
+        text: Devin/Windsurf MCP server configuration including mddb, mcp-health, and other services
         path: /home/tony/.config/devin/mcp_config.json
         backup_priority: critical
         recovery_priority: critical
@@ -45,11 +45,11 @@ sections:
         recovery_priority: high
 
       - label: Search Index Cache
-        text: MCP docs server Flexsearch index in .docs-mcp/ directory
-        path: /home/tony/CascadeProjects/chaba/.docs-mcp
-        backup_priority: low
-        recovery_priority: low
-        note: Can be rebuilt automatically, not critical for backup
+        text: MDDB vector search index with Ollama embeddings (nomic-embed-text)
+        path: /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb
+        backup_priority: high
+        recovery_priority: high
+        note: Containerized with automatic backup and restore procedures
 
   - title: Backup Strategy
     icon: 🔄
