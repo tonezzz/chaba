@@ -5,23 +5,25 @@
 	redir @tony_omen_temp_bare /apps/tony-omen-temp/ 308
 
 	# MDDB API (for panel proxy) - must come before panel route
-	handle /apps/mddb/v1/* {
+	handle /api/mddb/* {
 		reverse_proxy mddb:11023
 		encode gzip
 	}
 
-	# MDDB Panel assets (must come before general static assets)
-	@mddb_assets path /apps/mddb/assets/*
-	handle @mddb_assets {
+	# MDDB Panel assets - strip /mddb prefix for proper asset loading
+	handle_path /mddb/assets/* {
 		reverse_proxy mddb-panel:3000
 		encode gzip
 	}
 
-	# MDDB Panel (UI only)
-	handle_path /apps/mddb/* {
+	# MDDB Panel (UI only) - strip /mddb prefix
+	handle_path /mddb/* {
 		reverse_proxy mddb-panel:3000
 		encode gzip
 	}
+
+	# Redirect /apps/mddb to /mddb for convenience
+	redir /apps/mddb /mddb 308
 
 	# Static asset caching - CSS, JS, images
 	@static_assets path /assets/* *.css *.js *.png *.jpg *.jpeg *.gif *.svg *.ico *.woff *.woff2
@@ -49,25 +51,6 @@
 	handle /docs/* {
 		root * /srv/docs
 		file_server
-	}
-
-	# MDDB API (for panel proxy) - must come before panel route
-	handle /apps/mddb/v1/* {
-		reverse_proxy mddb:11023
-		encode gzip
-	}
-
-	# MDDB Panel assets (must come before general static assets)
-	@mddb_assets path /apps/mddb/assets/*
-	handle @mddb_assets {
-		reverse_proxy mddb-panel:3000
-		encode gzip
-	}
-
-	# MDDB Panel (UI only)
-	handle_path /apps/mddb/* {
-		reverse_proxy mddb-panel:3000
-		encode gzip
 	}
 
 	# Raceman assets (must come before Activepieces to avoid conflicts)
