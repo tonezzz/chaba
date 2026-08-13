@@ -1,7 +1,7 @@
 # Overnight Assessment Jobs Guide
 
 ## Overview
-The expanded overnight assessment system provides comprehensive system health monitoring and performance analysis. It runs 13 major assessment areas covering all aspects of the Chaba infrastructure.
+The expanded overnight assessment system provides comprehensive system health monitoring and performance analysis. It runs 13 major assessment areas covering all aspects of the Chaba infrastructure, plus automatic improvement creation for critical findings.
 
 ## What's New (Expanded from Original)
 The original overnight assessment covered 8 areas. The expanded version adds 5 new comprehensive areas and enhances existing ones:
@@ -153,6 +153,13 @@ The timer is configured to run daily at 2:00 AM.
 - Service dependency analysis and cascading failure detection
 - **Output:** Health score, historical trends, alert patterns, dependency health
 
+### Auto-Improvement Creation (NEW)
+- Automatic detection of critical findings from assessment
+- YAML entry generation for SSOT improvements file
+- Priority-based categorization (high/medium/low)
+- Integration with existing SSOT improvement tracking
+- **Output:** Auto-generated improvement entries in `docs/ssot/ssot.improvements.yml`
+
 ## Monitoring Progress
 
 ### While Running
@@ -203,21 +210,28 @@ grep "API failed" logs/overnight-manual-TIMESTAMP.log
 The script uses standard Linux tools. If something is missing:
 ```bash
 # Check for required tools
-which curl docker journalctl ip host
+which curl docker journalctl ip host sqlite3
 
 # Install missing tools on Ubuntu/Debian
-sudo apt-get install curl iproute2 iputils-ping sysstat
+sudo apt-get install curl iproute2 iputils-ping sysstat sqlite3
 ```
 
 ### MCP Health Server Integration
-The MCP Health Server integration (Area 13) requires MCP client setup to function fully:
+The MCP Health Server integration (Area 13) uses direct database queries for historical analysis:
 ```bash
-# Check if MCP client is available
-which mcp_call_tool
+# Check if sqlite3 is available for database queries
+which sqlite3
 
-# If not available, the script will skip MCP integration with a graceful fallback
-# To enable full MCP integration, ensure MCP client is properly configured
+# If not available, the script will skip historical analysis with a graceful fallback
+# To enable full historical analysis, install sqlite3:
+sudo apt-get install sqlite3
 ```
+
+**Database Fallback Approach:**
+- Direct SQLite queries to MCP health database (`mcp/mcp-health/health-history.db`)
+- Provides 7-day health trends, failure rates, and alert analysis
+- No MCP client dependency required
+- Graceful fallback if database or sqlite3 unavailable
 
 ### Systemd Timer Issues
 ```bash
@@ -258,6 +272,7 @@ The generated markdown report includes:
 3. **Health Score** - Overall system health metrics
 4. **Priority Actions** - Recommended next steps
 5. **Completion Checklist** - Which assessments were completed
+6. **Auto-Improvement Entries** - Critical findings automatically added to SSOT
 
 ## Best Practices
 

@@ -376,51 +376,60 @@ EOF
 env | grep -E "(API_KEY|DATABASE|GEMINI|OPENAI)" | head -10 >> "$REPORT_FILE" 2>&1 || echo "No critical env vars exposed" >> "$REPORT_FILE"
 
 # ============================================
-# 13. MCP HEALTH SERVER INTEGRATION (New)
+# 13. MCP HEALTH SERVER INTEGRATION (Database Fallback)
 # ============================================
-echo "[13/13] Running MCP Health Server Analysis..." | tee -a "$LOG_FILE"
+echo "[13/13] Running MCP Health Server Analysis (Database Fallback)..." | tee -a "$LOG_FILE"
 cat >> "$REPORT_FILE" << EOF
 
-## 13. MCP Health Server Analysis
+## 13. MCP Health Server Analysis (Database Fallback)
 
-### System Health Score
+### System Health Score (7-day Analysis)
 EOF
 
-# Get overall health score from MCP health server
-if command -v mcp_call_tool &> /dev/null; then
-    echo "Attempting to get health score from MCP health server..." | tee -a "$LOG_FILE"
-    # Note: This would require MCP client integration, for now we'll provide fallback
-    echo "MCP health server integration available but requires MCP client setup" >> "$REPORT_FILE"
+# Query MCP health database directly for historical analysis
+MCP_DB="/home/tony/CascadeProjects/chaba/mcp/mcp-health/health-history.db"
+
+if [ -f "$MCP_DB" ] && command -v sqlite3 &> /dev/null; then
+    echo "Querying MCP health database for 7-day trends..." | tee -a "$LOG_FILE"
+    
+    cat >> "$REPORT_FILE" << EOF
+
+#### Recent Health Check Results (Last 50 checks)
+EOF
+    sqlite3 "$MCP_DB" "SELECT service_name, status, timestamp, response_time FROM health_checks ORDER BY timestamp DESC LIMIT 50" >> "$REPORT_FILE" 2>&1 || echo "Database query failed" >> "$REPORT_FILE"
+    
+    cat >> "$REPORT_FILE" << EOF
+
+#### Service Health Summary (7-day)
+EOF
+    sqlite3 "$MCP_DB" "SELECT service_name, status, COUNT(*) as check_count, AVG(response_time) as avg_response_time FROM health_checks WHERE timestamp > datetime('now', '-7 days') GROUP BY service_name, status ORDER BY service_name, status" >> "$REPORT_FILE" 2>&1 || echo "Summary query failed" >> "$REPORT_FILE"
+    
+    cat >> "$REPORT_FILE" << EOF
+
+#### Failure Rate Analysis (7-day)
+EOF
+    sqlite3 "$MCP_DB" "SELECT service_name, COUNT(*) as total_checks, SUM(CASE WHEN status != 'healthy' THEN 1 ELSE 0 END) as failures, ROUND(SUM(CASE WHEN status != 'healthy' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as failure_rate FROM health_checks WHERE timestamp > datetime('now', '-7 days') GROUP BY service_name HAVING failures > 0 ORDER BY failure_rate DESC" >> "$REPORT_FILE" 2>&1 || echo "Failure analysis failed" >> "$REPORT_FILE"
+    
+    cat >> "$REPORT_FILE" << EOF
+
+#### Recent Critical Alerts (Last 20)
+EOF
+    sqlite3 "$MCP_DB" "SELECT id, service_name, severity, message, resolved, created_at FROM alerts WHERE severity IN ('critical', 'error') ORDER BY created_at DESC LIMIT 20" >> "$REPORT_FILE" 2>&1 || echo "Alerts query failed" >> "$REPORT_FILE"
+    
+    cat >> "$REPORT_FILE" << EOF
+
+#### Unresolved Alerts
+EOF
+    sqlite3 "$MCP_DB" "SELECT id, service_name, severity, message, created_at FROM alerts WHERE resolved = 0 ORDER BY severity DESC, created_at" >> "$REPORT_FILE" 2>&1 || echo "Unresolved alerts query failed" >> "$REPORT_FILE"
+    
+    echo "MCP health database analysis completed" | tee -a "$LOG_FILE"
+elif [ -f "$MCP_DB" ]; then
+    echo "MCP health database found but sqlite3 not available" | tee -a "$LOG_FILE"
+    echo "MCP health database available but sqlite3 command not found - install sqlite3 for historical analysis" >> "$REPORT_FILE"
 else
-    echo "MCP client not available - skipping MCP health server integration" >> "$REPORT_FILE"
+    echo "MCP health database not found at $MCP_DB" | tee -a "$LOG_FILE"
+    echo "MCP health database not available - skipping historical analysis" >> "$REPORT_FILE"
 fi
-
-cat >> "$REPORT_FILE" << EOF
-
-### Historical Health Analysis (7-day trend)
-EOF
-
-# Try to get historical health data
-echo "Historical health analysis would use MCP health server get_health_history tool" >> "$REPORT_FILE"
-echo "This provides 7-day trend analysis for service health patterns" >> "$REPORT_FILE"
-
-cat >> "$REPORT_FILE" << EOF
-
-### Recent Alerts Analysis
-EOF
-
-# Try to get recent alerts
-echo "Alert analysis would use MCP health server get_alerts tool" >> "$REPORT_FILE"
-echo "This provides recent critical alerts and their resolution status" >> "$REPORT_FILE"
-
-cat >> "$REPORT_FILE" << EOF
-
-### Dependency Analysis
-EOF
-
-# Try to analyze service dependencies
-echo "Dependency analysis would use MCP health server analyze_dependencies tool" >> "$REPORT_FILE"
-echo "This detects cascading failures and dependency health patterns" >> "$REPORT_FILE"
 
 # ============================================
 # FINAL SUMMARY
@@ -465,3 +474,82 @@ EOF
 echo "=== Overnight Assessment Completed: $(date) ===" | tee -a "$LOG_FILE"
 echo "Report saved to: $REPORT_FILE" | tee -a "$LOG_FILE"
 echo "Log saved to: $LOG_FILE" | tee -a "$LOG_FILE"
+
+# ============================================
+# AUTO-IMPROVEMENT CREATION
+# ============================================
+echo "Creating auto-improvement entries for critical findings..." | tee -a "$LOG_FILE"
+
+IMPROVEMENTS_FILE="/home/tony/CascadeProjects/chaba/docs/ssot/ssot.improvements.yml"
+CRITICAL_FINDINGS=()
+
+# Function to create improvement entry
+create_improvement() {
+    local label="$1"
+    local text="$2"
+    local priority="$3"
+    local category="$4"
+    
+    local timestamp=$(date -Iseconds)
+    local entry="  - label: $label
+    text: $text (Auto-generated by overnight assessment on $timestamp)
+    status: pending
+    priority: $priority
+    effort: TBD
+    category: $category
+    discovered: $(date +%Y-%m-%d)
+    assessment_ref: overnight-assessment-$(date +%Y%m%d)
+    auto_generated: true
+    git_commit: $(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+    git_branch: $(git branch --show-current 2>/dev/null || echo "unknown")
+    tags: ['auto-generated', '$category']"
+    
+    echo "$entry" >> "$IMPROVEMENTS_FILE.tmp"
+    CRITICAL_FINDINGS+=("$label")
+}
+
+# Check for critical findings from assessment
+# Disk usage critical
+if grep -q "Disk usage critical" "$REPORT_FILE"; then
+    create_improvement "Disk Usage Critical" "Disk usage critical - immediate cleanup and storage management required" "high" "storage"
+fi
+
+# Service failures
+if grep -q "Container not found\|Not running\|API failed" "$REPORT_FILE"; then
+    create_improvement "Service Failures Detected" "Multiple services failed health checks - investigation required" "high" "service-health"
+fi
+
+# Security vulnerabilities
+if grep -q "security vulnerabilities\|HIGH\|CRITICAL" "$REPORT_FILE"; then
+    create_improvement "Security Vulnerabilities Found" "Security scan found vulnerabilities requiring immediate attention" "high" "security"
+fi
+
+# Database issues
+if grep -q "Database query failed\|Connection query failed" "$REPORT_FILE"; then
+    create_improvement "Database Performance Issues" "Database performance issues detected - optimization required" "medium" "database"
+fi
+
+# Network connectivity issues
+if grep -q "✗ Failed" "$REPORT_FILE"; then
+    create_improvement "Network Connectivity Issues" "Network connectivity checks failed for critical endpoints" "medium" "network"
+fi
+
+# If we found critical issues, append to improvements file
+if [ ${#CRITICAL_FINDINGS[@]} -gt 0 ]; then
+    echo "Found ${#CRITICAL_FINDINGS[@]} critical findings - creating improvement entries" | tee -a "$LOG_FILE"
+    
+    # Find the High Priority section and append before it
+    if grep -q "High Priority Improvements" "$IMPROVEMENTS_FILE"; then
+        # Insert before High Priority section
+        sed -i '/High Priority Improvements/r '"$IMPROVEMENTS_FILE.tmp" "$IMPROVEMENTS_FILE"
+    else
+        # Append to end of file
+        cat "$IMPROVEMENTS_FILE.tmp" >> "$IMPROVEMENTS_FILE"
+    fi
+    
+    rm "$IMPROVEMENTS_FILE.tmp"
+    echo "Auto-improvement entries created and added to $IMPROVEMENTS_FILE" | tee -a "$LOG_FILE"
+else
+    echo "No critical findings requiring auto-improvement creation" | tee -a "$LOG_FILE"
+    rm -f "$IMPROVEMENTS_FILE.tmp"
+fi
