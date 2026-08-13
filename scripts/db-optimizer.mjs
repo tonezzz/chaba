@@ -13,18 +13,18 @@ import pool from './db-optimized.mjs';
  */
 export async function analyzeTableSizes() {
   try {
-    const result = await optimizedPool.query(`
+    const result = await pool.query(`
       SELECT 
         schemaname,
-        tablename,
-        pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size,
-        pg_total_relation_size(schemaname||'.'||tablename) as size_bytes,
+        relname as tablename,
+        pg_size_pretty(pg_total_relation_size(schemaname||'.'||relname)) as size,
+        pg_total_relation_size(schemaname||'.'||relname) as size_bytes,
         (SELECT n_live_tup FROM pg_stat_user_tables 
          WHERE schemaname = pg_stat_user_tables.schemaname 
-         AND relname = pg_stat_user_tables.tablename) as row_count
+         AND relname = pg_stat_user_tables.relname) as row_count
       FROM pg_stat_user_tables
       WHERE schemaname = 'public'
-      ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
+      ORDER BY pg_total_relation_size(schemaname||'.'||relname) DESC
     `);
     
     return result.rows;
@@ -39,11 +39,11 @@ export async function analyzeTableSizes() {
  */
 export async function analyzeIndexUsage() {
   try {
-    const result = await optimizedPool.query(`
+    const result = await pool.query(`
       SELECT 
         schemaname,
-        tablename,
-        indexname,
+        relname as tablename,
+        indexrelname as indexname,
         idx_scan as index_scans,
         idx_tup_read as tuples_read,
         idx_tup_fetch as tuples_fetched,
@@ -65,16 +65,16 @@ export async function analyzeIndexUsage() {
  */
 export async function findUnusedIndexes() {
   try {
-    const result = await optimizedPool.query(`
+    const result = await pool.query(`
       SELECT 
         schemaname,
-        tablename,
-        indexname,
+        relname as tablename,
+        indexrelname as indexname,
         pg_size_pretty(pg_relation_size(indexrelid)) as index_size
       FROM pg_stat_user_indexes
       WHERE schemaname = 'public'
         AND idx_scan = 0
-        AND indexname NOT LIKE '%_pkey'
+        AND indexrelname NOT LIKE '%_pkey'
       ORDER BY pg_relation_size(indexrelid) DESC
     `);
     
@@ -91,7 +91,7 @@ export async function findUnusedIndexes() {
 export async function analyzeSlowQueries() {
   try {
     // Check if pg_stat_statements is enabled
-    const extensionCheck = await optimizedPool.query(`
+    const extensionCheck = await pool.query(`
       SELECT EXISTS(
         SELECT 1 FROM pg_extension WHERE extname = 'pg_stat_statements'
       ) as enabled
@@ -101,7 +101,7 @@ export async function analyzeSlowQueries() {
       return { enabled: false, message: 'pg_stat_statements extension not enabled' };
     }
     
-    const result = await optimizedPool.query(`
+    const result = await pool.query(`
       SELECT 
         query,
         calls,
@@ -129,7 +129,7 @@ export async function suggestMissingIndexes() {
     const suggestions = [];
     
     // Analyze foreign key columns that might benefit from indexes
-    const fkColumns = await optimizedPool.query(`
+    const fkColumns = await pool.query(`
       SELECT
         tc.table_name,
         kcu.column_name,
@@ -146,7 +146,7 @@ export async function suggestMissingIndexes() {
     
     for (const fk of fkColumns.rows) {
       // Check if index exists on foreign key column
-      const indexCheck = await optimizedPool.query(`
+      const indexCheck = await pool.query(`
         SELECT EXISTS(
           SELECT 1 FROM pg_indexes
           WHERE tablename = $1
@@ -179,11 +179,11 @@ export async function suggestMissingIndexes() {
  */
 export async function getPerformanceStats() {
   try {
-    const [tableSizes, indexUsage, queryMetrics, optimizedPoolStats] = await Promise.all([
+    const [tableSizes, indexUsage, queryMetrics, poolStats] = await Promise.all([
       analyzeTableSizes(),
       analyzeIndexUsage(),
-      Promise.resolve(optimizedPool.getQueryMetrics()),
-      optimizedPool.getPoolStats()
+      Promise.resolve(pool.getQueryMetrics()),
+      pool.getPoolStats()
     ]);
     
     return {
@@ -191,7 +191,7 @@ export async function getPerformanceStats() {
       tables: tableSizes,
       indexes: indexUsage,
       queryMetrics,
-      optimizedPoolStats
+      poolStats
     };
   } catch (error) {
     console.error('Failed to get performance stats:', error);
@@ -209,10 +209,10 @@ export async function generateOptimizationReport() {
       findUnusedIndexes(),
       analyzeSlowQueries(),
       suggestMissingIndexes(),
-      Promise.resolve(optimizedPool.getQueryMetrics())
+      Promise.resolve(pool.getQueryMetrics())
     ]);
     
-    const queryAnalysis = optimizedPool.analyzeSlowQueries();
+    const queryAnalysis = pool.analyzeSlowQueries();
     
     const report = {
       timestamp: new Date().toISOString(),
@@ -360,18 +360,18 @@ async function main() {
         break;
         
       case 'health-check':
-        const client = await optimizedPool.connect();
+        const client = await pool.connect();
         const result = await client.query('SELECT 1 as health');
         client.release();
         
-        const optimizedPoolStats = {
-          totalConnections: optimizedPool.totalCount,
-          idleConnections: optimizedPool.idleCount,
-          waitingClients: optimizedPool.waitingCount
+        const poolStats = {
+          totalConnections: pool.totalCount,
+          idleConnections: pool.idleCount,
+          waitingClients: pool.waitingCount
         };
         
         console.log('Database Health:');
-        console.log(JSON.stringify({ healthy: true, optimizedPoolStats }, null, 2));
+        console.log(JSON.stringify({ healthy: true, poolStats }, null, 2));
         break;
         
       default:
