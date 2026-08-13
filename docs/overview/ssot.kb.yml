@@ -569,6 +569,35 @@ sessions:
       - docs/kb/ssot-mddb-integration-assessment.md
 
   - date: 2026-08-12
+    duration: 2 hours
+    topics: [global-rules-improvement, mcp-integration, testing-framework, validation]
+    outcomes:
+      - Updated global rules to use MDDB semantic search instead of obsolete docs MCP server
+      - Added comprehensive MCP service inventory (9+ services) with usage guidelines
+      - Enhanced service failure detection with MDDB-specific scenarios
+      - Created comprehensive testing framework for global rules effectiveness validation
+      - Implemented automated test script with 12 tests (all passing)
+      - Validated MDDB search quality (0.63 relevance) and performance (33ms response time)
+      - Confirmed 24 collections with 370 documents, SSOT sync operational
+      - Updated documentation infrastructure SSOT to reflect current MDDB architecture
+    decisions:
+      - Use MDDB semantic search as primary documentation search method
+      - Document comprehensive MCP service selection strategy
+      - Create automated testing framework for ongoing validation
+      - Update SSOT files to reflect current architecture
+      - Establish continuous monitoring with defined alert thresholds
+    configuration_changes:
+      - /home/tony/.codeium/windsurf/memories/global_rules.md - Updated documentation search standards
+      - /home/tony/.codeium/windsurf/memories/global_rules.md - Added MCP service inventory and guidelines
+      - docs/kb/global-rules-testing-guide.md - Created comprehensive testing guide
+      - scripts/test-global-rules-and-mddb.sh - Created automated test script
+      - docs/ssot/ssot.documentation-infrastructure.yml - Updated for MDDB architecture
+      - docs/overview/ssot.kb.yml - Added global rules improvement session
+    related_kb:
+      - docs/kb/global-rules-testing-guide.md
+      - docs/kb/mddb-user-guide.md
+
+  - date: 2026-08-12
     duration: 1 hour
     topics: [chaba-docs-migration, unified-search, docs-mcp-removal, mddb-complete]
     outcomes:
