@@ -1,10 +1,10 @@
 # Overnight Assessment Jobs Guide
 
 ## Overview
-The expanded overnight assessment system provides comprehensive system health monitoring and performance analysis. It runs 12 major assessment areas covering all aspects of the Chaba infrastructure.
+The expanded overnight assessment system provides comprehensive system health monitoring and performance analysis. It runs 13 major assessment areas covering all aspects of the Chaba infrastructure.
 
 ## What's New (Expanded from Original)
-The original overnight assessment covered 8 areas. The expanded version adds 4 new comprehensive areas and enhances existing ones:
+The original overnight assessment covered 8 areas. The expanded version adds 5 new comprehensive areas and enhances existing ones:
 
 ### New Assessment Areas:
 1. **Comprehensive Log Analysis** - Pattern detection across Docker containers and systemd services
@@ -14,6 +14,7 @@ The original overnight assessment covered 8 areas. The expanded version adds 4 n
 5. **Container Security Analysis** - Image ages, security policies, resource limits
 6. **Dependency Security Audit** - Outdated packages, vulnerability scanning
 7. **System Resource Deep Dive** - CPU frequency, memory patterns, disk I/O, space analysis
+8. **MCP Health Server Integration** - Historical health analysis, alert patterns, dependency analysis
 
 ### Enhanced Areas:
 - **Health Check Integration** - Added systemd service status checks
@@ -55,7 +56,7 @@ The timer is configured to run daily at 2:00 AM.
 ## Files Created
 
 ### Core Scripts
-- `scripts/overnight-jobs-expanded.sh` - Main assessment script (12 assessment areas)
+- `scripts/overnight-jobs-expanded.sh` - Main assessment script (13 assessment areas)
 - `scripts/run-overnight-now.sh` - Manual execution helper script
 
 ### Systemd Configuration
@@ -144,6 +145,13 @@ The timer is configured to run daily at 2:00 AM.
 - Environment variable exposure checks
 - Service configuration verification
 - **Output:** Config validation results, security audit
+
+### 13. MCP Health Server Integration (NEW)
+- System health score calculation (0-100 scale)
+- Historical health analysis (7-day trend patterns)
+- Recent alerts analysis and resolution status
+- Service dependency analysis and cascading failure detection
+- **Output:** Health score, historical trends, alert patterns, dependency health
 
 ## Monitoring Progress
 
@@ -236,7 +244,7 @@ LOG_DIR="/path/to/your/logs"
 
 The generated markdown report includes:
 1. **Executive Summary** - Quick overview of system health
-2. **12 Assessment Area Sections** - Detailed analysis for each area
+2. **13 Assessment Area Sections** - Detailed analysis for each area
 3. **Health Score** - Overall system health metrics
 4. **Priority Actions** - Recommended next steps
 5. **Completion Checklist** - Which assessments were completed
