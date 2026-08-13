@@ -59,13 +59,6 @@ const server = createServer(async (request, response) => {
     return;
   }
 
-  // Bypass PHP files - let Plesk's PHP processor handle them
-  if (extname(filePath).toLowerCase() === '.php') {
-    response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-    response.end('Not found');
-    return;
-  }
-
   let file;
   try {
     file = await stat(filePath);
