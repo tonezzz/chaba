@@ -198,9 +198,10 @@
 		}
 	}
 
-	# Health check API proxy
-	handle /api/health {
-		reverse_proxy host.docker.internal:3006 {
+	# Status API proxy - /api/* catchall to status-api
+	@status_api path /api/*
+	handle @status_api {
+		reverse_proxy status-api:8000 {
 			header_up Host localhost
 		}
 	}
