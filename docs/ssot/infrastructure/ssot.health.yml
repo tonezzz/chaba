@@ -102,15 +102,15 @@ services:
   - id: status-api
     name: Status API
     type: http
-    url: "{profile}/api/health"
+    url: "{profile}/health"
     expected_status: 200
     timeout: 5
     category: api
     profiles: [home, mobile]
     verification:
       - "Test container: docker ps | grep status-api"
-      - "Test direct container: curl -s http://localhost:8000/api/health"
-      - "Test Caddy proxy: curl -s {profile}/api/health"
+      - "Test direct container: curl -s http://localhost:8000/health"
+      - "Test Caddy proxy: curl -s {profile}/health"
       - "Check container logs: docker logs status-api --tail 20"
     recovery_actions:
       - "Restart container: docker restart status-api"
