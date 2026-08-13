@@ -25,21 +25,19 @@ tony-omen:
     container: mddb
     image: tradik/mddb:latest
     port: 11023 (API), 9000 (web)
-    container_ip: 172.19.0.5
     status: implemented (2026-08-12)
     routing:
       - /api/mddb/* → mddb:11023 (Caddy reverse proxy)
-      - /apps/mddb/* → 172.19.0.6:3000 (mddb-panel direct IP)
+      - /apps/mddb/* → mddb-panel:3000 (container name routing)
     notes: Personal Knowledge Base system with panel and API services
   mddb-panel:
     container: mddb-panel
     image: tradik/mddb:panel-latest
     port: 3002 (host), 3000 (internal)
-    container_ip: 172.19.0.6
     status: implemented (2026-08-12)
     routing:
-      - /apps/mddb/* → 172.19.0.6:3000 (direct IP routing in Caddy)
-    notes: MDDB web panel interface, uses direct container IP for routing
+      - /apps/mddb/* → mddb-panel:3000 (container name routing in Caddy)
+    notes: MDDB web panel interface, uses container name for routing
   gemini-api:
     service: Google Gemini API
     provider: Google Cloud
