@@ -33,8 +33,10 @@ Input parameters:
    - Root cause analyses
    - Reusable patterns
 
-2. **Checks for redundancy** with existing KB entries:
-   - Searches existing entries for overlapping content
+2. **Checks for redundancy** with existing KB entries using MDDB:
+   - Uses MDDB semantic search across KB collections (kb-development, kb-features, kb-operations, kb-system)
+   - Provides relevance scores (0.4-1.0) for similarity detection
+   - Falls back to local file-based check if MDDB unavailable
    - Updates existing entries instead of creating duplicates
    - Archives outdated entries if needed
 
@@ -48,7 +50,13 @@ Input parameters:
    - Tags
 
 4. **Places entries** in the correct location:
-   - `/home/tony/CascadeProjects/chaba/docs/kb/` (corrected from chaba-yomi)
+   - `/home/tony/CascadeProjects/chaba/docs/kb/` (local file)
+   - Automatically indexes in MDDB for semantic search
+
+5. **Indexes in MDDB** for future semantic search:
+   - Automatically determines appropriate collection based on content
+   - Adds metadata (title, source, creation date, auto-generated flag)
+   - Enables future redundancy checking via semantic search
 
 ## Quality criteria
 

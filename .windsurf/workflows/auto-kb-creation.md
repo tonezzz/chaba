@@ -75,11 +75,18 @@ After each assistant response, analyze the KB review section for:
 - Redundancy with existing entries
 - Archival opportunities for outdated entries
 
-### Step 2: Redundancy Check
+### Step 2: Redundancy Check (MDDB Integration)
 Before creating new entries:
-1. Search existing KB entries for overlapping content
-2. Update existing entries instead of creating duplicates
-3. Archive outdated entries rather than deleting
+1. **Primary**: Use MDDB semantic search across KB collections (kb-development, kb-features, kb-operations, kb-system)
+2. **Fallback**: Use local file-based word overlap if MDDB unavailable
+3. Update existing entries instead of creating duplicates
+4. Archive outdated entries rather than deleting
+
+**MDDB Semantic Search Benefits**:
+- AI-powered semantic similarity detection (relevance scores 0.4-1.0)
+- Cross-collection search across all KB entries
+- Better understanding of conceptual similarity vs exact word matching
+- Automatic collection categorization based on content analysis
 
 ### Step 3: Entry Creation
 If new entry is warranted:
@@ -94,7 +101,17 @@ Place KB entries in: `/home/tony/CascadeProjects/chaba/docs/kb/`
 
 **Note**: Corrected from previous incorrect path `/home/tony/CascadeProjects/chaba-yomi/docs/kb/`
 
-### Step 5: Cross-Reference
+### Step 5: MDDB Indexing (Automatic)
+Auto-kb automatically indexes new KB entries in MDDB:
+- Determines appropriate collection based on content analysis:
+  - `kb-development`: Bug fixes, errors, development issues
+  - `kb-features`: Features, implementations, integrations
+  - `kb-system`: System services, infrastructure components
+  - `kb-operations`: Operations, deployment, monitoring
+- Adds metadata: title, source (auto-kb), creation date, auto-generated flag
+- Enables future semantic search and redundancy checking
+
+### Step 6: Cross-Reference
 Update related KB entries with cross-references if needed.
 
 ## Quality Criteria
@@ -143,17 +160,29 @@ For major new topics during work (not end-of-session):
 
 ### Current Implementation:
 - **Skill Location**: `.agents/skills/auto-kb/SKILL.md`
+- **Implementation**: `.agents/skills/auto-kb/auto-kb.mjs`
 - **Automatic Invocation**: MANDATORY per `.windsurfrules` 
 - **Path Configuration**: `/home/tony/CascadeProjects/chaba/docs/kb/`
-- **Redundancy Checking**: Built-in to prevent duplicate entries
+- **Redundancy Checking**: MDDB semantic search with fallback to local file-based check
+- **MDDB Integration**: Automatic indexing in appropriate KB collections
 - **Quality Criteria**: Enforced per skill documentation
 
 ### Skill Capabilities:
 - Analyzes KB review content for KB-worthiness triggers
-- Checks redundancy with existing KB entries
+- Uses MDDB semantic search for intelligent redundancy detection
+- Falls back to local file-based check if MDDB unavailable
+- Automatically indexes new entries in MDDB for future semantic search
+- Determines appropriate collection based on content analysis
 - Updates existing entries instead of creating duplicates
 - Archives outdated entries when needed
 - Follows consistent KB entry structure and quality criteria
+
+### MDDB Integration Details:
+- **Collections Searched**: kb-development, kb-features, kb-operations, kb-system
+- **Semantic Search**: AI-powered similarity detection with relevance scores (0.4-1.0)
+- **Auto-Categorization**: Content-based collection assignment
+- **Metadata**: Title, source (auto-kb), creation date, auto-generated flag
+- **Fallback**: Local file-based word overlap if MDDB unavailable
 
 ## Example KB Entry Creation
 
