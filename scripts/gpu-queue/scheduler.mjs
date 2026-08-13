@@ -6,19 +6,26 @@
  * - Shortest Job First (SJF)
  * - Round Robin
  * - Adaptive (based on historical performance)
+ * - Memory-aware (based on GPU memory availability)
+ * - Dynamic priority (based on system state)
  */
 
 import * as db from './db.mjs';
+import { predictJobDuration } from './job-duration-prediction.mjs';
+import { getNextJobWithMemoryConstraint } from './gpu-memory-aware.mjs';
+import { getNextJobWithDynamicPriority } from './dynamic-priority.mjs';
 
 // Scheduling algorithms
 const SCHEDULERS = {
-  priority: 'priority',      // Current: priority-based
-  sjf: 'sjf',                // Shortest Job First
-  rr: 'rr',                  // Round Robin
-  adaptive: 'adaptive'      // Adaptive based on performance
+  priority: 'priority',           // Current: priority-based
+  sjf: 'sjf',                     // Shortest Job First
+  rr: 'rr',                       // Round Robin
+  adaptive: 'adaptive',           // Adaptive based on performance
+  memory_aware: 'memory_aware',   // GPU memory-aware scheduling
+  dynamic_priority: 'dynamic_priority' // Dynamic priority adjustment
 };
 
-let currentScheduler = SCHEDULERS.sjf; // Use SJF for better Yomi job scheduling
+let currentScheduler = SCHEDULERS.memory_aware; // Use memory-aware by default
 let timeSlice = 10000; // 10 seconds for round robin
 
 /**
@@ -155,6 +162,20 @@ async function getNextJobAdaptive() {
 }
 
 /**
+ * Memory-aware scheduling
+ */
+async function getNextJobMemoryAware() {
+  return await getNextJobWithMemoryConstraint();
+}
+
+/**
+ * Dynamic priority scheduling
+ */
+async function getNextJobDynamicPriority() {
+  return await getNextJobWithDynamicPriority();
+}
+
+/**
  * Get next job based on current scheduler
  */
 export async function getNextJob() {
@@ -165,6 +186,10 @@ export async function getNextJob() {
       return await getNextJobRR();
     case SCHEDULERS.adaptive:
       return await getNextJobAdaptive();
+    case SCHEDULERS.memory_aware:
+      return await getNextJobMemoryAware();
+    case SCHEDULERS.dynamic_priority:
+      return await getNextJobDynamicPriority();
     case SCHEDULERS.priority:
     default:
       return await getNextJobPriority();

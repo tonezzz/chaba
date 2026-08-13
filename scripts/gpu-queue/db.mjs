@@ -105,6 +105,18 @@ export async function updateJobStatus(id, status, error = null) {
   return result.rows[0];
 }
 
+// Update job priority
+export async function updateJobPriority(id, priority) {
+  const result = await pool.query(
+    `UPDATE gpu_queue_jobs
+     SET priority = $1
+     WHERE id = $2
+     RETURNING *`,
+    [priority, id]
+  );
+  return result.rows[0];
+}
+
 // Update job metrics (for performance tracking)
 export async function updateJobMetrics(id, metrics) {
   const {
