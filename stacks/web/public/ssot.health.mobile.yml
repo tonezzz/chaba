@@ -1,5 +1,5 @@
 title: Chaba Health Check Configuration (Mobile)
-description: Health check endpoints for external/mobile access (VPN or external domain)
+description: Health check endpoints for external/mobile access (Tailscale)
 version: 1
 
 services:
@@ -7,15 +7,24 @@ services:
   - id: caddy
     name: Caddy (External)
     type: http
-    url: http://tony-omen.local:8080/apps/
+    url: http://tony-omen:8080/apps/
     expected_status: 200
     timeout: 10
     category: web
 
+  - id: tailscale-funnel
+    name: Tailscale Funnel
+    type: http
+    url: https://tony-omen.taila0626a.ts.net/apps/tailscale-funnel/
+    expected_status: 200
+    timeout: 15
+    category: optional
+    note: Public internet access via Tailscale Funnel
+
   - id: status-api
     name: Status API (External)
     type: http
-    url: http://tony-omen.local:8080/api/health
+    url: http://tony-omen:8080/api/health
     expected_status: 200
     timeout: 10
     category: api
@@ -23,7 +32,7 @@ services:
   - id: yomi-api
     name: Yomi API (External)
     type: http
-    url: http://tony-omen.local:8080/api/yomi/health
+    url: http://tony-omen:8080/api/yomi/health
     expected_status: 200
     timeout: 10
     category: api
@@ -31,7 +40,7 @@ services:
   - id: yomi-summarization
     name: Yomi Summarization (External)
     type: http
-    url: http://tony-omen.local:8080/api/yomi/summarization-status
+    url: http://tony-omen:8080/api/yomi/summarization-status
     expected_status: 200
     timeout: 10
     category: api
@@ -39,7 +48,7 @@ services:
   - id: yomi-rate-limiter
     name: Yomi Rate Limiter (External)
     type: http
-    url: http://tony-omen.local:8080/api/yomi/rate-limiter-status
+    url: http://tony-omen:8080/api/yomi/rate-limiter-status
     expected_status: 200
     timeout: 10
     category: api
@@ -48,7 +57,7 @@ services:
   - id: weaviate
     name: Weaviate (External)
     type: http
-    url: http://tony-omen.local:8080/api/weaviate/v1/nodes
+    url: http://tony-omen:8080/api/weaviate/v1/nodes
     expected_status: 200
     timeout: 10
     category: datastore
@@ -57,7 +66,7 @@ services:
   - id: thai-legal
     name: Llama Router (Phi-3 only, External)
     type: http
-    url: http://tony-omen.local:8001/health
+    url: http://tony-omen:8001/health
     expected_status: 200
     timeout: 15
     category: gpu
@@ -66,7 +75,7 @@ services:
   - id: imagen2
     name: Imagen2 (External)
     type: http
-    url: http://tony-omen.local:8000/health
+    url: http://tony-omen:8000/health
     expected_status: 200
     timeout: 15
     category: gpu
@@ -75,7 +84,7 @@ services:
   - id: txt2vid
     name: Txt2Vid (External)
     type: http
-    url: http://tony-omen.local:8002/health
+    url: http://tony-omen:8002/health
     expected_status: 200
     timeout: 15
     category: gpu
@@ -85,7 +94,7 @@ services:
   - id: gpu-queue
     name: GPU Queue (External)
     type: http
-    url: http://tony-omen.local:3001/health
+    url: http://tony-omen:3001/health
     expected_status: 200
     timeout: 10
     category: queue
@@ -94,7 +103,7 @@ services:
   - id: frigate
     name: Frigate NVR (External)
     type: http
-    url: http://tony-omen.local:8080/frigate/api/version
+    url: http://tony-omen:8080/frigate/api/version
     expected_status: 200
     timeout: 15
     category: optional
@@ -102,15 +111,15 @@ services:
 # Recovery suggestions for common failure modes (mobile-specific)
 recovery_actions:
   network_unreachable:
-    - Check if VPN is connected
-    - Verify home network is accessible
+    - Check if Tailscale is connected
+    - Verify tony-omen is reachable over the tailnet
     - Check mobile data connection
     - Try switching between WiFi and mobile data
 
   timeout:
     - External access may be slower than local
     - Check if home network has bandwidth issues
-    - VPN connection may be slow
+    - Tailscale connection may be slow
     - Consider using local network when at home
 
   service_unavailable:
@@ -120,15 +129,21 @@ recovery_actions:
     - Use Status API for container status when available
 
   vpn_required:
-    - Some services require VPN for external access
-    - Connect to home VPN first
-    - Verify VPN credentials
-    - Check VPN server status
+    - Some services require Tailscale for external access
+    - Connect to Tailscale first
+    - Verify Tailscale is active on the device
+    - Check tony-omen status with `tailscale status`
 
   hostname_resolution:
-    - tony-omen.local resolves to 172.20.10.7 (libvirt VM network) on mobile
-    - Use VPN or direct IP 192.168.1.48 for LAN access
-    - Fix /etc/hosts on mobile device if needed
+    - tony-omen.local does not resolve across the tailnet on mobile
+    - Use tony-omen (Tailscale) for remote access
+    - Verify with `tailscale status` and `tailscale ping tony-omen`
+
+  funnel_unreachable:
+    - Check `tailscale funnel status` on tony-omen
+    - Restart Funnel with `sudo tailscale funnel --bg --yes 8080`
+    - Verify Funnel is enabled in the Tailscale admin console
+    - Test direct URL: https://tony-omen.taila0626a.ts.net/apps/
 
 # Testing and debugging guidance (mobile-specific)
 debugging_guidance:
@@ -140,11 +155,11 @@ debugging_guidance:
 
   location_testing:
     - On Mobile: Use localhost if testing on the same machine
-    - External: Use VPN or external domain when away from home network
+    - External: Use Tailscale (tony-omen) when away from home network
     - At Home: Switch to tony-omen.local for better performance
 
   network_testing:
-    - Test VPN connectivity before accessing services
+    - Test Tailscale connectivity before accessing services
     - Check mobile signal strength and data connection
     - Test both WiFi and mobile data for comparison
     - Use browser dev tools network throttling to simulate poor connections

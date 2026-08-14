@@ -93,9 +93,9 @@ sections:
       - label: Local Network
         text: 192.168.1.0/24 subnet with .local hostname resolution
       - label: tony-omen.local
-        text: 192.168.1.48 - primary workstation
+        text: 192.168.1.48 - primary workstation (tailnet 100.75.102.88 / tony-omen)
       - label: tony-dell.local
-        text: 192.168.1.42 - secondary workstation
+        text: 192.168.1.42 - secondary workstation (tailnet 100.68.142.13 / tony-dell)
 
   - title: Input Sharing (Barrier)
     icon: 🖱️
@@ -212,19 +212,19 @@ sections:
         text: Home network profile (192.168.1.0/24 subnet)
         status: active_when_on_home_wifi
       - label: Switch to Mobile Profile
-        text: Connect to external network (e.g., TONY-IP), use current IP or DDNS
+        text: Connect to external network (e.g., TONY-IP), use the Tailscale tailnet hostname tony-omen (100.75.102.88)
         steps:
           - Connect to external WiFi network
           - Use ssot.mysystem.mobile.yml for configuration
           - Use ssot.health.mobile.yml for health checks
-          - Access services via current IP or DDNS hostname
+          - Access services via the Tailscale hostname tony-omen (100.75.102.88)
       - label: Mobile Profile Reference
         text: See ssot.mysystem.mobile.yml for mobile network configuration
         url: file:///home/tony/CascadeProjects/chaba/docs/ssot/ssot.mysystem.mobile.yml
 
 config:
   version: 2
-  last_updated: 2026-08-11
+  last_updated: 2026-08-14
   current_network: 192.168.1.0/24 (home WiFi)
   current_profile: home
   maintainer: tony

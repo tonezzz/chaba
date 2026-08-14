@@ -241,8 +241,15 @@ servers:
     name: MDDB Knowledge Base
     description: Personal Knowledge Base system with document management and semantic search
     implementation: docker tradik/mddb:latest (container mddb)
-    wrapper: none
-    filter: none
+    wrapper: /home/tony/.config/Claude/mddb-bridge.py
+    filter: bridge
+    filtered_tools:
+      - add_document
+      - search_documents
+      - delete_document
+      - get_stats
+      - aggregate
+      - semantic_search
     url: http://localhost:9001/mcp
     single_instance: false
     status: operational
@@ -252,8 +259,11 @@ servers:
     notes: |
       MCP endpoint requires /mcp path suffix (http://localhost:9001/mcp)
       Docker container maps internal port 9000 to host port 9001
-      Provides document management, semantic search, and aggregation capabilities
-      See docs/kb/mddb-mcp-configuration.md for configuration details
+      Claude Desktop uses the stdio bridge at /home/tony/.config/Claude/mddb-bridge.py
+      The bridge wraps mcp-proxy via /home/tony/.config/Claude/mcp-proxy-lenient.py to skip 2025 output-schema validation
+      Allowed tools for Claude: add_document, search_documents, delete_document, get_stats, aggregate, semantic_search
+      Optional local HTTPS endpoint: https://tony-omen.local:9443/mcp (see docs/kb/mddb-local-https.md)
+      See docs/kb/mddb-claude-bridge.md for Claude-specific configuration details
 
   mcp-health:
     name: Health Monitoring

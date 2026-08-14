@@ -225,6 +225,40 @@ blocks:
     depends_on:
       - detect_and_configure
 
+  - id: tailscale_check
+    type: Shell
+    description: "Check Tailscale connectivity and Funnel status"
+    inputs:
+      command: |
+        #!/bin/bash
+        set -e
+        
+        TAILSCALE_STATUS=$(tailscale status --json 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); s=d.get('Self',{}); print('self:',s.get('DNSName','?'),'ips:',s.get('TailscaleIPs',[]))" 2>&1) && \
+          echo "✅ Tailscale: $TAILSCALE_STATUS" || \
+          echo "❌ Tailscale: cannot get status"
+        
+        if tailscale ping tony-omen >/dev/null 2>&1; then
+          echo "✅ tony-omen: reachable via tailnet"
+        else
+          echo "❌ tony-omen: not reachable via tailnet"
+        fi
+        
+        if tailscale ping tony-dell >/dev/null 2>&1; then
+          echo "✅ tony-dell: reachable via tailnet"
+        else
+          echo "❌ tony-dell: not reachable via tailnet"
+        fi
+        
+        FUNNEL_STATUS=$(curl -4 -s -o /dev/null -w "%{http_code}" --max-time 10 https://tony-omen.taila0626a.ts.net/apps/tailscale-funnel/ 2>&1)
+        if [ "$FUNNEL_STATUS" = "200" ]; then
+          echo "✅ Tailscale Funnel: public page returned HTTP 200"
+        else
+          echo "❌ Tailscale Funnel: public page returned HTTP $FUNNEL_STATUS"
+        fi
+      timeout: 25
+    depends_on:
+      - detect_and_configure
+
   - id: generate_report
     type: Shell
     description: "Generate structured JSON and human-readable summary"
@@ -301,6 +335,7 @@ blocks:
       timeout: 5
     depends_on:
       - parallel_health_check
+      - tailscale_check
 
 outputs:
   detected_profile:
@@ -310,6 +345,6 @@ outputs:
   json_report:
     value: "{{blocks.generate_report.outputs.stdout}}"
   full_results:
-    value: "{{blocks.parallel_health_check.outputs.stdout}}\n{{blocks.container_check.outputs.stdout}}\n{{blocks.generate_report.outputs.stdout}}"
+    value: "{{blocks.parallel_health_check.outputs.stdout}}\n{{blocks.container_check.outputs.stdout}}\n{{blocks.tailscale_check.outputs.stdout}}\n{{blocks.generate_report.outputs.stdout}}"
   kb_creation_trigger:
     value: "{{blocks.detect_and_configure.outputs.stdout}}"

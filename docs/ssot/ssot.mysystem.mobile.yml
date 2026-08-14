@@ -1,6 +1,6 @@
 title: Mobile Environment
 subtitle: Systems, devices, and setup for mobile/remote work
-icon: 📱
+icon: "📱"
 
 ideas:
   - Mobile and remote work setup with dynamic network handling
@@ -11,7 +11,7 @@ ideas:
 
 sections:
   - title: Current Network Session
-    icon: 📡
+    icon: "📡"
     layout: list
     items:
       - label: Current WiFi
@@ -20,23 +20,23 @@ sections:
       - label: Network Type
         text: External/mobile network (not home 192.168.1.0/24)
       - label: Access Method
-        text: Remote access to tony-omen via current network IP
+        text: Remote access to tony-omen via Tailscale
       - label: Session Date
-        text: 2026-08-07
+        text: 2026-08-13
       - label: Profile Switching
         text: Can switch back to home profile when on home network
 
   - title: Workstations
-    icon: 💻
+    icon: "💻"
     layout: list
     items:
       - label: tony-omen
-        text: Primary workstation (accessible via current network IP)
+        text: Primary workstation (accessible via Tailscale)
         tags: [primary, server, remote-access]
-        current_access: Use current network IP or DDNS hostname
+        current_access: Use the tailnet hostname tony-omen (100.75.102.88)
 
   - title: Network Profiles
-    icon: 🔄
+    icon: "🔄"
     layout: list
     items:
       - label: Home Profile
@@ -48,13 +48,19 @@ sections:
         text: Current network (TONY-IP) with dynamic IP access
         config: ssot.mysystem.mobile.yml (this file)
         health_config: ssot.health.mobile.yml
-        switch_method: Use current IP or DDNS hostname
+        switch_method: Use the Tailscale tailnet name tony-omen
+      - label: Tailscale
+        text: Stable tailnet access across all networks using Tailscale
+        config: ssot.mysystem.mobile.yml (this file)
+        health_config: ssot.health.mobile.yml
+        switch_method: Connect the Tailscale app, then use tony-omen
+        note: Use this profile when away from home or on mobile networks
       - label: Profile Switching
         text: Select appropriate SSOT and health check config based on network location
         command: Update health check config references when switching networks
 
   - title: Network
-    icon: 🌐
+    icon: "🌐"
     layout: list
     items:
       - label: Current Network
@@ -62,18 +68,35 @@ sections:
       - label: Home Network
         text: 192.168.1.0/24 subnet with .local hostname resolution
       - label: Dynamic IP Challenge
-        text: tony-omen IP changes across different WiFi networks
+        text: tony-omen is now reachable via a stable Tailscale name and IP
       - label: IP Discovery
-        text: Current tony-omen IP on TONY-IP network (check with ip addr or ifconfig)
+        text: Use 'tailscale ip -4 tony-omen' to find the current Tailscale address; the hostname tony-omen is stable
+
+  - title: Tailscale Roadmap
+    icon: "🗺️"
+    layout: list
+    items:
+      - label: Auto-updates
+        text: Enable automatic Tailscale client updates on all nodes
+        status: selected
+        command: tailscale set --auto-update
+      - label: Exit node
+        text: Make tony-omen an exit node for secure mobile internet routing
+        status: future
+      - label: Headscale
+        text: Self-hosted Tailscale control plane (cloud coordination replacement)
+        status: future
 
   - title: Dynamic IP Solutions
-    icon: 🔧
+    icon: "🔧"
     layout: list
     items:
       - label: DDNS (Dynamic DNS)
         text: Use a service like DuckDNS, No-IP, or Cloudflare to get a stable hostname that updates with your IP
       - label: VPN/Tunnel
         text: Set up Tailscale, WireGuard, or similar for stable access across networks
+        status: done
+        done_date: 2026-08-13
       - label: SSH Config
         text: Use SSH config with multiple Host entries for different networks
       - label: IP Discovery Script
@@ -82,26 +105,26 @@ sections:
         text: Use .local hostnames when on same network (doesn't work across different networks)
 
   - title: Services (tony-omen)
-    icon: ⚙️
+    icon: "⚙️"
     layout: list
     items:
       - label: llama-router
         text: LLM inference router with model routing support (port 8001)
         tags: [ai, llm, router]
-        mobile_access: http://[current-ip]:8001
+        mobile_access: http://tony-omen:8001
       - label: postgres
         text: PostgreSQL database server (port 5432)
         tags: [database, postgres]
-        mobile_access: postgresql://[current-ip]:5432
+        mobile_access: postgresql://tony-omen:5432
       - label: Apps Server
         text: Main apps server (port 8080)
-        mobile_access: http://[current-ip]:8080
+        mobile_access: http://tony-omen:8080
       - label: Chaba-h3 Preview
         text: Chaba-h3 preview server (port 8081)
-        mobile_access: http://[current-ip]:8081
+        mobile_access: http://tony-omen:8081
 
   - title: Available Apps
-    icon: 📱
+    icon: "📱"
     layout: list
     items:
       - label: cams
@@ -112,22 +135,26 @@ sections:
         tags: [training, simulation]
 
   - title: Access & URLs (Mobile)
-    icon: 🔗
+    icon: "🔗"
     layout: list
     items:
       - label: Apps (tony-omen)
-        text: "Use current IP: http://[current-ip]:8080/apps"
+        text: "Use Tailscale name: http://tony-omen:8080/apps"
       - label: Chaba-h3 Preview
-        text: "Use current IP: http://[current-ip]:8081/apps"
+        text: "Use Tailscale name: http://tony-omen:8081/apps"
       - label: Llama Router API
-        text: "Use current IP: http://[current-ip]:8001"
+        text: "Use Tailscale name: http://tony-omen:8001"
       - label: PostgreSQL
-        text: "Use current IP: postgresql://[current-ip]:5432"
+        text: "Use Tailscale name: postgresql://tony-omen:5432"
       - label: SSH Access
-        text: "ssh tony@[current-ip]"
+        text: "ssh tony@tony-omen"
+      - label: Public Funnel (no client required)
+        text: "Use from any internet: https://tony-omen.taila0626a.ts.net/"
+      - label: Active Tailscale connections
+        text: "View on the Funnel landing page or via /api/tailscale/connections"
 
   - title: Profile Switching Guide
-    icon: 🔄
+    icon: "🔄"
     layout: list
     items:
       - label: Switch to Home Profile
@@ -138,12 +165,13 @@ sections:
           - Use ssot.health.home.yml for health checks
           - Access services via tony-omen.local
       - label: Switch to Mobile Profile
-        text: Connect to external network (TONY-IP), use current IP or DDNS
+        text: Connect to external network (TONY-IP) and join the Tailscale tailnet
         steps:
           - Connect to external WiFi network
+          - Open the Tailscale app and verify tony-omen is reachable
           - Use ssot.mysystem.mobile.yml for configuration
           - Use ssot.health.mobile.yml for health checks
-          - Access services via current IP or DDNS hostname
+          - Access services via tony-omen (Tailscale)
       - label: Health Check Config Update
         text: Update health check configuration references when switching profiles
         files:
@@ -152,7 +180,7 @@ sections:
 
 config:
   version: 2
-  last_updated: 2026-08-07
+  last_updated: 2026-08-14
   current_network: TONY-IP
   current_profile: mobile
   maintainer: tony
@@ -162,3 +190,4 @@ config:
     - ssot.apps.yml
     - infrastructure/ssot.health.mobile.yml (mobile health checks)
     - infrastructure/ssot.health.home.yml (home health checks)
+    - docs/kb/tailscale-rollout-plan.md (Tailscale Funnel and connections API)

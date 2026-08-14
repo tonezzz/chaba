@@ -148,42 +148,62 @@ class ChartLoader {
         console.log('Loading data for', this.config.symbol);
         
         try {
-            // Try to fetch from CSV files directly
-            const symbolFiles = {
-                'THB': 'thb_formatted.csv',
-                'EUR': 'eur_formatted.csv',
-                'GBP': 'gbp_formatted.csv',
-                'JPY': 'jpy_formatted.csv',
-                'DXY': 'dxy_formatted.csv',
-                'OIL': 'wti_formatted.csv'
-            };
+            // Try to fetch from Trade API first using full URL
+            const apiUrl = `http://tony-omen.local:9000/api/ui/chart-data/${this.config.symbol}?timeframe=${this.config.timeframe.toLowerCase()}`;
+            console.log('Fetching from API:', apiUrl);
             
-            const csvFile = symbolFiles[this.config.symbol];
-            if (csvFile) {
-                const csvUrl = `../data/imported/${csvFile}`;
-                console.log('Fetching CSV from:', csvUrl);
-                
-                const response = await fetch(csvUrl);
-                if (response.ok) {
-                    const csvText = await response.text();
-                    this.data = this.parseCSV(csvText);
-                    this.isSampleData = false;
-                    console.log('Loaded data from CSV:', this.data.length, 'points');
-                } else {
-                    console.log('CSV not available, using sample data');
-                    this.data = this.generateSampleData();
-                }
+            const response = await fetch(apiUrl);
+            if (response.ok) {
+                const apiData = await response.json();
+                this.data = apiData.data;
+                this.isSampleData = false;
+                console.log('Loaded data from API:', this.data.length, 'points');
+                console.log('Last updated:', apiData.last_updated);
             } else {
-                console.log('No CSV file for symbol, using sample data');
-                this.data = this.generateSampleData();
+                console.log('API not available, falling back to CSV');
+                // Fallback to CSV files
+                await this.loadFromCSV();
             }
         } catch (error) {
-            console.log('CSV loading error, using sample data:', error.message);
-            this.data = this.generateSampleData();
+            console.log('API loading error, falling back to CSV:', error.message);
+            // Fallback to CSV files
+            await this.loadFromCSV();
         }
 
         this.updateChart();
         this.updateUI();
+    }
+    
+    async loadFromCSV() {
+        // Try to fetch from CSV files directly
+        const symbolFiles = {
+            'THB': 'thb_formatted.csv',
+            'EUR': 'eur_formatted.csv',
+            'GBP': 'gbp_formatted.csv',
+            'JPY': 'jpy_formatted.csv',
+            'DXY': 'dxy_formatted.csv',
+            'OIL': 'wti_formatted.csv'
+        };
+        
+        const csvFile = symbolFiles[this.config.symbol];
+        if (csvFile) {
+            const csvUrl = `../data/imported/${csvFile}`;
+            console.log('Fetching CSV from:', csvUrl);
+            
+            const response = await fetch(csvUrl);
+            if (response.ok) {
+                const csvText = await response.text();
+                this.data = this.parseCSV(csvText);
+                this.isSampleData = false;
+                console.log('Loaded data from CSV:', this.data.length, 'points');
+            } else {
+                console.log('CSV not available, using sample data');
+                this.data = this.generateSampleData();
+            }
+        } else {
+            console.log('No CSV file for symbol, using sample data');
+            this.data = this.generateSampleData();
+        }
     }
 
     parseCSV(csvText) {

@@ -73,6 +73,19 @@ sections:
       - label: Verify
         text: playlive_state returns url and title.
 
+  - title: Maintenance
+    icon: 🔧
+    layout: list
+    items:
+      - label: Pinned Playwright version
+        text: playwright is pinned to 1.62.0 in /home/tony/.local/playlive/package.json to avoid package/browser binary mismatches.
+      - label: Browser install
+        text: Run 'npx playwright install chromium' from /home/tony/.local/playlive after any Playwright version change.
+      - label: Package-lock
+        text: Use 'npm install' or 'npm ci' from /home/tony/.local/playlive to keep package-lock.json in sync.
+      - label: Daemon restart
+        text: Restart playlived.service after browser or package updates.
+
   - title: Limitations & cautions
     icon: ⚠️
     layout: list

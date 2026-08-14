@@ -1,6 +1,18 @@
 :8080 {
 	root * /srv/public
 
+	# Serve the Tailscale Funnel landing page at the Funnel root
+	@funnel_root {
+		host tony-omen.taila0626a.ts.net
+		path /
+	}
+	handle @funnel_root {
+		root * /srv/public/apps/tailscale-funnel
+		file_server
+		header Access-Control-Allow-Origin "*"
+		header Vary "Origin"
+	}
+
 	# MDDB API (for panel proxy) - must come before panel route
 	handle /api/mddb/* {
 		reverse_proxy mddb:11023
@@ -101,6 +113,14 @@
 		}
 	}
 
+	# Helm proxy - /apps/helm/* to helm container (basePath configured, preserve full path)
+	@apps_helm path /apps/helm /apps/helm/*
+	handle @apps_helm {
+		reverse_proxy helm:3000 {
+			header_up Host localhost
+		}
+	}
+
 	# Trade API proxy - /apps/trade/api/* to trade-api (must come before UI files)
 	@trade_api_apps path /apps/trade/api/*
 	handle @trade_api_apps {
@@ -143,6 +163,11 @@
 		reverse_proxy host.docker.internal:3000 {
 			header_up Host localhost
 		}
+	}
+
+	# Tailscale active connections API
+	handle /api/tailscale/connections {
+		reverse_proxy host.docker.internal:9010
 	}
 
 	# Shared JS files for all apps
@@ -225,7 +250,10 @@
 	}
 
 	# Status API proxy - /api/* catchall to status-api
-	@status_api path /api/*
+	@status_api {
+		path /api/*
+		not path /api/projects /api/projects/*
+	}
 	handle @status_api {
 		reverse_proxy status-api:8000 {
 			header_up Host localhost
@@ -238,8 +266,21 @@
 		file_server
 	}
 
+	# Tailscale Funnel landing page (with CORS for cross-origin health checks)
+	handle_path /apps/tailscale-funnel/* {
+		root * /srv/public/apps/tailscale-funnel
+		file_server
+		header Access-Control-Allow-Origin "*"
+		header Vary "Origin"
+	}
+
 	# General catchall for other apps static files
-	handle_path /apps/* {
+	@apps_other {
+		path /apps/*
+		not path /apps/helm /apps/helm/*
+	}
+	handle @apps_other {
+		uri strip_prefix /apps
 		root * /srv/public/apps
 		file_server
 		header Cache-Control "public, max-age=1800"
