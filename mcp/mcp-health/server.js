@@ -380,11 +380,14 @@ function getEnhancedErrorContext(serviceName, status, error, serviceType, servic
       `Inspect container: docker inspect ${serviceName}`
     );
   } else if (serviceType === 'systemd') {
+    const serviceConfig = config?.services?.find(s => (s.name || s.id) === serviceName);
+    const systemdName = serviceConfig?.service || serviceName;
+    const systemdScope = serviceConfig?.scope === 'system' ? '' : '--user ';
     troubleshootingSteps.push(
-      `Check service status: systemctl --user status ${serviceName}`,
-      `View service logs: journalctl --user -xeu ${serviceName}`,
-      `Restart service: systemctl --user restart ${serviceName}`,
-      `Check service configuration: systemctl --user show ${serviceName}`
+      `Check service status: systemctl ${systemdScope}status ${systemdName}`,
+      `View service logs: journalctl ${systemdScope}-xeu ${systemdName}`,
+      `Restart service: systemctl ${systemdScope}restart ${systemdName}`,
+      `Check service configuration: systemctl ${systemdScope}show ${systemdName}`
     );
   } else if (serviceType === 'http') {
     troubleshootingSteps.push(
@@ -855,9 +858,10 @@ async function checkSystemService(service) {
   const { execSync } = await import('child_process');
   const startTime = Date.now();
   const expectedState = service.expected_state || 'active';
+  const systemctlCmd = service.scope === 'system' ? 'systemctl' : 'systemctl --user';
   
   try {
-    const output = execSync(`systemctl --user show ${service.service} --property=ActiveState --property=SubState`, { 
+    const output = execSync(`${systemctlCmd} show ${service.service} --property=ActiveState --property=SubState`, { 
       encoding: 'utf8',
       stdio: 'pipe'
     });
@@ -871,9 +875,9 @@ async function checkSystemService(service) {
     // Check if this is a timer service
     let isTimer = false;
     try {
-      const serviceType = execSync(`systemctl --user show ${service.service} --property=Type --value`, { encoding: 'utf8' });
+      const serviceType = execSync(`${systemctlCmd} show ${service.service} --property=Type --value`, { encoding: 'utf8' });
       isTimer = serviceType.trim() === 'oneshot' || serviceType.trim() === 'simple';
-      const unitFile = execSync(`systemctl --user show ${service.service} --property=Id --value`, { encoding: 'utf8' });
+      const unitFile = execSync(`${systemctlCmd} show ${service.service} --property=Id --value`, { encoding: 'utf8' });
       isTimer = isTimer || unitFile.trim().includes('.timer');
     } catch {
       // Assume not a timer if we can't check
@@ -1835,10 +1839,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             };
           } else if (service_type === 'systemd') {
             const systemdName = service.service || service_name;
-            execSync(`systemctl --user restart ${systemdName}`, { stdio: 'pipe' });
+            const systemdCmd = service.scope === 'system' ? 'systemctl' : 'systemctl --user';
+            execSync(`${systemdCmd} restart ${systemdName}`, { stdio: 'pipe' });
             restartResult = {
               method: 'systemd',
-              command: `systemctl --user restart ${systemdName}`,
+              command: `${systemdCmd} restart ${systemdName}`,
               success: true
             };
           } else if (service_type === 'http') {
