@@ -293,11 +293,11 @@ services:
     name: MDDB MCP Server
     type: http
     url: "http://tony-omen.local:9001/mcp"
-    expected_status: 200
+    expected_status: 400
     timeout: 5
     category: datastore
     profiles: [home, mobile]
-    note: MCP endpoint for AI agent integration (requires /mcp path suffix)
+    note: MCP endpoint for AI agent integration; GET /mcp returns 400, only POST is valid, so 400 is the healthy response
     recovery_actions:
       - "Check MDDB container: docker ps | grep mddb"
       - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb"

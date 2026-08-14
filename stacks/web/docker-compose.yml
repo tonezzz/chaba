@@ -396,7 +396,7 @@ services:
     env_file:
     - /home/tony/CascadeProjects/helm/.env.local
     working_dir: /app/yomi
-    command: sh -c "npm install && node yomi-api.mjs"
+    command: node yomi-api.mjs
     volumes:
     - ../../scripts/yomi:/app/yomi
     - ../../stacks/web/public/apps/yomi/media:/app/media
@@ -415,7 +415,7 @@ services:
     - GEMINI_API_KEY=${GEMINI_API_KEY}
     - POSTGRES_USER=chaba
     - POSTGRES_PASSWORD=chabapass
-    - POSTGRES_DB=chaba
+    - POSTGRES_DB=yomi
     - NODE_BINARY_PATH=/usr/local/bin/node
     - SCRIPT_DIR=/app/yomi
     - YOMI_MCP_PATH=/home/tony/.yomi/mcpb/run.mjs
