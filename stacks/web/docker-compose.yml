@@ -3,82 +3,87 @@ services:
     container_name: web
     image: caddy:latest
     restart: unless-stopped
-    ports:
-      - "8080:8080"
-      - "8081:8081"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - ./public:/srv/public
-      - /home/tony/CascadeProjects/chaba-omen/stacks/web/public/tony-omen:/srv/public/tony-omen
-      - /home/tony/CascadeProjects/chaba-h3/public:/srv/public/chaba-h3
-      - /home/tony/CascadeProjects/chaba/docs:/srv/docs
-      - caddy_data:/data
-      - caddy_config:/config
     env_file:
-      - .env
+    - .env
+    ports:
+    - 8080:8080
+    - 8081:8081
+    volumes:
+    - ./Caddyfile:/etc/caddy/Caddyfile
+    - ./public:/srv/public
+    - /home/tony/CascadeProjects/chaba-omen/stacks/web/public/tony-omen:/srv/public/tony-omen
+    - /home/tony/CascadeProjects/chaba-h3/public:/srv/public/chaba-h3
+    - /home/tony/CascadeProjects/chaba/docs:/srv/docs
+    - caddy_data:/data
+    - caddy_config:/config
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+    - host.docker.internal:host-gateway
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:8080
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
     networks:
-      - default
-      - frigate_default
+    - default
+    - frigate_default
     profiles:
-      - production
-
+    - production
   status-api:
     container_name: status-api
     build:
       context: /home/tony/CascadeProjects/chaba-omen/stacks/web/status-api
       dockerfile: Dockerfile
     restart: unless-stopped
+    env_file:
+    - /home/tony/CascadeProjects/helm/.env.local
     environment:
-      - REPO_PATH=/repo
-      - FRIGATE_URL=http://frigate:5000
+    - REPO_PATH=/repo
+    - FRIGATE_URL=http://frigate:5000
     volumes:
-      - ../..:/repo
-      - /var/run/docker.sock:/var/run/docker.sock:rw
-      - /sys/class/thermal:/sys/class/thermal:ro
-      - /sys/class/hwmon:/sys/class/hwmon:ro
-      - /sys/devices/platform/hp-wmi:/sys/devices/platform/hp-wmi:rw
-      - /sys/devices/system/cpu/intel_pstate:/sys/devices/system/cpu/intel_pstate:rw
-      - /home/tony/CascadeProjects/chaba-omen/stacks/web/status-api/main.py:/app/main.py:ro
+    - ../..:/repo
+    - /var/run/docker.sock:/var/run/docker.sock:rw
+    - /sys/class/thermal:/sys/class/thermal:ro
+    - /sys/class/hwmon:/sys/class/hwmon:ro
+    - /sys/devices/platform/hp-wmi:/sys/devices/platform/hp-wmi:rw
+    - /sys/devices/system/cpu/intel_pstate:/sys/devices/system/cpu/intel_pstate:rw
+    - /home/tony/CascadeProjects/chaba-omen/stacks/web/status-api/main.py:/app/main.py:ro
     privileged: true
     networks:
-      - default
-      - frigate_default
+    - default
+    - frigate_default
     external_links:
-      - web:web
-      - web_default
-
+    - web:web
+    - web_default
   trade-api:
     container_name: trade-api
     build:
       context: /home/tony/CascadeProjects/trade
       dockerfile: Dockerfile
     restart: unless-stopped
+    env_file:
+    - /home/tony/CascadeProjects/helm/.env.local
     environment:
-      - NODE_ENV=production
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=trade
-      - DB_USER=chaba
-      - DB_PASSWORD=chabapass
-      - ROOT_PATH=/apps/trade
+    - NODE_ENV=production
+    - DB_HOST=postgres
+    - DB_PORT=5432
+    - DB_NAME=trade
+    - DB_USER=chaba
+    - DB_PASSWORD=chabapass
+    - ROOT_PATH=/apps/trade
     ports:
-      - "9000:8000"
+    - 9000:8000
     networks:
-      - default
+    - default
     depends_on:
       postgres:
         condition: service_healthy
     profiles:
-      - production
-
+    - production
   helm:
     container_name: helm
     build:
@@ -86,41 +91,44 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://chaba:chabapass@postgres:5432/chaba
-      - PROJECTS_PATH=/home/tony/CascadeProjects
+    - NODE_ENV=development
+    - DATABASE_URL=postgresql://chaba:chabapass@postgres:5432/chaba
+    - PROJECTS_PATH=/home/tony/CascadeProjects
     ports:
-      - "3003:3000"
+    - 3003:3000
     volumes:
-      - /home/tony/CascadeProjects:/home/tony/CascadeProjects:ro
+    - /home/tony/CascadeProjects:/home/tony/CascadeProjects:ro
     networks:
-      - default
+    - default
     depends_on:
       postgres:
         condition: service_healthy
-
+    env_file:
+    - /home/tony/CascadeProjects/helm/.env.local
   trading-terminal:
     container_name: trading-terminal
     build:
       context: /home/tony/CascadeProjects/trading-terminal
       dockerfile: Dockerfile
     restart: unless-stopped
+    env_file:
+    - /home/tony/CascadeProjects/helm/.env.local
     networks:
-      - default
-
+    - default
   camera-control:
     container_name: camera-control
     build:
       context: ./camera-control
       dockerfile: Dockerfile
     restart: unless-stopped
+    env_file:
+    - /home/tony/CascadeProjects/helm/.env.local
     ports:
-      - "8090:8090"
+    - 8090:8090
     volumes:
-      - ../..:/repo
+    - ../..:/repo
     networks:
-      - default
-
+    - default
   bserver:
     container_name: bserver
     build:
@@ -128,329 +136,359 @@ services:
       dockerfile: Dockerfile
       network: host
     restart: unless-stopped
+    env_file:
+    - /home/tony/CascadeProjects/helm/.env.local
     environment:
-      - HTTP_ADDR=:8092
-      - HTTPS_ADDR=:8443
+    - HTTP_ADDR=:8092
+    - HTTPS_ADDR=:8443
     volumes:
-      - ./bserver-www/_config.yaml:/srv/www/_config.yaml:ro
-      - ./bserver-www/default:/srv/www/default
+    - ./bserver-www/_config.yaml:/srv/www/_config.yaml:ro
+    - ./bserver-www/default:/srv/www/default
     networks:
-      - default
-
+    - default
   imagen2-inference:
     container_name: imagen2-inference
     build:
       context: /home/tony/CascadeProjects/chaba-h3/inference2
       dockerfile: Dockerfile
     restart: unless-stopped
+    env_file:
+    - /home/tony/CascadeProjects/helm/.env.local
     environment:
-      - MODEL_ID=stabilityai/stable-diffusion-xl-base-1.0
-      - VAE_ID=madebyollin/sdxl-vae-fp16-fix
+    - MODEL_ID=stabilityai/stable-diffusion-xl-base-1.0
+    - VAE_ID=madebyollin/sdxl-vae-fp16-fix
     volumes:
-      - /home/tony/.cache/huggingface:/root/.cache/huggingface
-      - /home/tony/CascadeProjects/chaba-h3/inference2/main.py:/app/main.py:ro
-      - /home/tony/CascadeProjects/chaba-h3/inference2/data:/app/data
+    - /home/tony/.cache/huggingface:/root/.cache/huggingface
+    - /home/tony/CascadeProjects/chaba-h3/inference2/main.py:/app/main.py:ro
+    - /home/tony/CascadeProjects/chaba-h3/inference2/data:/app/data
     ports:
-      - "8000:8000"
+    - 8000:8000
     deploy:
       resources:
         reservations:
           devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+          - driver: nvidia
+            count: 1
+            capabilities:
+            - gpu
         limits:
           cpus: '4'
           memory: 8G
     networks:
-      - default
-
+    - default
   txt2vid-inference:
     container_name: txt2vid-inference
     build:
       context: /home/tony/CascadeProjects/chaba-h3/inference-cogvideo
       dockerfile: Dockerfile
     restart: unless-stopped
+    env_file:
+    - /home/tony/CascadeProjects/helm/.env.local
     environment:
-      - MODEL_ID=a-r-r-o-w/LTX-Video-diffusers
-      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+    - MODEL_ID=a-r-r-o-w/LTX-Video-diffusers
+    - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
     volumes:
-      - /home/tony/.cache/huggingface:/root/.cache/huggingface
-      - /home/tony/CascadeProjects/chaba-h3/inference-cogvideo/main.py:/app/main.py:ro
-      - /home/tony/CascadeProjects/chaba-h3/inference-cogvideo/data:/app/data
+    - /home/tony/.cache/huggingface:/root/.cache/huggingface
+    - /home/tony/CascadeProjects/chaba-h3/inference-cogvideo/main.py:/app/main.py:ro
+    - /home/tony/CascadeProjects/chaba-h3/inference-cogvideo/data:/app/data
     ports:
-      - "8002:8000"
+    - 8002:8000
     deploy:
       resources:
         reservations:
           devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+          - driver: nvidia
+            count: 1
+            capabilities:
+            - gpu
         limits:
           cpus: '4'
           memory: 8G
     networks:
-      - default
-
+    - default
   thai-legal-inference:
     container_name: thai-legal-inference
     image: ghcr.io/ggml-org/llama.cpp:server-cuda
     restart: unless-stopped
+    env_file:
+    - /home/tony/CascadeProjects/helm/.env.local
     command:
-      - "--models-dir"
-      - "/models"
-      - "--models-max"
-      - "2"
-      - "--models-autoload"
-      - "--host"
-      - "0.0.0.0"
-      - "--port"
-      - "8000"
-      - "--n-gpu-layers"
-      - "${LLAMA_N_GPU_LAYERS:-auto}"
-      - "--alias"
-      - "phi-3:Phi-3-mini-4k-instruct-q4.gguf"
+    - --models-dir
+    - /models
+    - --models-max
+    - '2'
+    - --models-autoload
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8000'
+    - --n-gpu-layers
+    - ${LLAMA_N_GPU_LAYERS:-auto}
+    - --alias
+    - phi-3:Phi-3-mini-4k-instruct-q4.gguf
     volumes:
-      - /data/gguf:/models:ro
+    - /data/gguf:/models:ro
     ports:
-      - "8001:8000"
+    - 8001:8000
     deploy:
       resources:
         reservations:
           devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+          - driver: nvidia
+            count: 1
+            capabilities:
+            - gpu
         limits:
           cpus: '4'
           memory: 8G
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:8000/health
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
     networks:
-      - default
-
+    - default
   postgres:
     container_name: postgres
     image: pgvector/pgvector:pg16
     restart: unless-stopped
     env_file:
-      - .env
+    - .env
     ports:
-      - "5432:5432"
+    - 5432:5432
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+    - postgres_data:/var/lib/postgresql/data
     networks:
-      - default
+    - default
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      test:
+      - CMD-SHELL
+      - pg_isready -U $${POSTGRES_USER}
       interval: 5s
       timeout: 5s
       retries: 5
-
   redis:
     container_name: redis
     image: redis:7.4-alpine
     restart: unless-stopped
-    command: >
-      redis-server
-      --appendonly yes
-      --maxmemory 512mb
-      --maxmemory-policy noeviction
+    env_file:
+    - /home/tony/CascadeProjects/helm/.env.local
+    command: 'redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy noeviction
+
+      '
     volumes:
-      - redis_data:/data
+    - redis_data:/data
     ports:
-      - "6379:6379"
+    - 6379:6379
     networks:
-      - default
+    - default
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test:
+      - CMD
+      - redis-cli
+      - ping
       interval: 10s
       timeout: 3s
       retries: 5
-
   activepieces:
     container_name: activepieces
     image: ghcr.io/activepieces/activepieces:latest
     restart: unless-stopped
+    env_file:
+    - /home/tony/CascadeProjects/helm/.env.local
     environment:
-      - NODE_ENV=production
-      - AP_DB_TYPE=POSTGRES
-      - AP_POSTGRES_DATABASE=activepieces
-      - AP_POSTGRES_USERNAME=activepieces
-      - AP_POSTGRES_PASSWORD=${AP_POSTGRES_PASSWORD}
-      - AP_POSTGRES_HOST=postgres
-      - AP_POSTGRES_PORT=5432
-      - AP_REDIS_URL=redis://redis:6379
-      - AP_ENCRYPTION_KEY=${AP_ENCRYPTION_KEY}
-      - AP_JWT_SECRET=${AP_JWT_SECRET}
-      - AP_FRONTEND_URL=http://tony-omen.local:8080/apps/activepieces
+    - NODE_ENV=production
+    - AP_DB_TYPE=POSTGRES
+    - AP_POSTGRES_DATABASE=activepieces
+    - AP_POSTGRES_USERNAME=activepieces
+    - AP_POSTGRES_PASSWORD=${AP_POSTGRES_PASSWORD}
+    - AP_POSTGRES_HOST=postgres
+    - AP_POSTGRES_PORT=5432
+    - AP_REDIS_URL=redis://redis:6379
+    - AP_ENCRYPTION_KEY=${AP_ENCRYPTION_KEY}
+    - AP_JWT_SECRET=${AP_JWT_SECRET}
+    - AP_FRONTEND_URL=http://tony-omen.local:8080/apps/activepieces
     volumes:
-      - ./activepieces-index.html:/usr/src/app/dist/packages/web/index.html:ro
+    - ./activepieces-index.html:/usr/src/app/dist/packages/web/index.html:ro
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     profiles:
-      - production
+    - production
     networks:
-      - default
-
+    - default
   gpu-queue:
     container_name: gpu-queue
     image: node:20-alpine
     restart: unless-stopped
+    env_file:
+    - /home/tony/CascadeProjects/helm/.env.local
     working_dir: /app/gpu-queue
     command: sh -c "npm install && npm start"
     volumes:
-      - ../../scripts/gpu-queue:/app/gpu-queue
-      - gpu_queue_node_modules:/app/gpu-queue/node_modules
+    - ../../scripts/gpu-queue:/app/gpu-queue
+    - gpu_queue_node_modules:/app/gpu-queue/node_modules
     environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgres://chaba:chabapass@postgres:5432/chaba
-      - GPU_QUEUE_PORT=3001
+    - NODE_ENV=production
+    - DATABASE_URL=postgres://chaba:chabapass@postgres:5432/chaba
+    - GPU_QUEUE_PORT=3001
     ports:
-      - "3001:3001"
+    - 3001:3001
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+    - host.docker.internal:host-gateway
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      test:
+      - CMD
+      - node
+      - -e
+      - 'require(''http'').get(''http://localhost:3001/health'', (r) => {process.exit(r.statusCode
+        === 200 ? 0 : 1)})'
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
     networks:
-      - default
-      - ai_default
+    - default
+    - ai_default
     depends_on:
       postgres:
         condition: service_healthy
     profiles:
-      - gpu-services
-      - production
-
+    - gpu-services
+    - production
   gpu-queue-processor:
     container_name: gpu-queue-processor
     image: node:20-alpine
     restart: unless-stopped
+    env_file:
+    - /home/tony/CascadeProjects/helm/.env.local
     working_dir: /app/gpu-queue
     command: sh -c "npm install && node auto-processor.mjs"
     volumes:
-      - ../../scripts/gpu-queue:/app/gpu-queue
-      - gpu_queue_node_modules:/app/gpu-queue/node_modules
+    - ../../scripts/gpu-queue:/app/gpu-queue
+    - gpu_queue_node_modules:/app/gpu-queue/node_modules
     environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgres://chaba:chabapass@postgres:5432/chaba
-      - GPU_QUEUE_PORT=3001
+    - NODE_ENV=production
+    - DATABASE_URL=postgres://chaba:chabapass@postgres:5432/chaba
+    - GPU_QUEUE_PORT=3001
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+    - host.docker.internal:host-gateway
     networks:
-      - default
-      - ai_default
+    - default
+    - ai_default
     depends_on:
-      - gpu-queue
-      - postgres
+    - gpu-queue
+    - postgres
     profiles:
-      - gpu-services
-      - production
-
+    - gpu-services
+    - production
   yomi-api:
     container_name: yomi-api
     image: node:20-alpine
     restart: unless-stopped
+    env_file:
+    - /home/tony/CascadeProjects/helm/.env.local
     working_dir: /app/yomi
     command: sh -c "npm install && node yomi-api.mjs"
     volumes:
-      - ../../scripts/yomi:/app/yomi
-      - ../../stacks/web/public/apps/yomi/media:/app/media
-      - /home/tony/.yomi:/home/tony/.yomi:ro
-      - yomi_node_modules:/app/yomi/node_modules
-      - /home/tony/.yomi/mcpb/node_modules/@modelcontextprotocol:/home/tony/.yomi/mcpb/node_modules/@modelcontextprotocol:ro
+    - ../../scripts/yomi:/app/yomi
+    - ../../stacks/web/public/apps/yomi/media:/app/media
+    - /home/tony/.yomi:/home/tony/.yomi:ro
+    - yomi_node_modules:/app/yomi/node_modules
+    - /home/tony/.yomi/mcpb/node_modules/@modelcontextprotocol:/home/tony/.yomi/mcpb/node_modules/@modelcontextprotocol:ro
     environment:
-      - NODE_ENV=production
-      - YOMI_API_PORT=3000
-      - YOMI_API_HOST=0.0.0.0
-      - REDIS_URL=redis://redis:6379
-      - GEMINI_VISION_MODEL_PRIMARY=gemma-4-31b-it
-      - GEMINI_VISION_MODEL_FALLBACK=gemma-4-26b-a4b-it
-      - CONTEXT_MESSAGES_BEFORE=3
-      - CONTEXT_MESSAGES_AFTER=3
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - POSTGRES_USER=chaba
-      - POSTGRES_PASSWORD=chabapass
-      - POSTGRES_DB=chaba
-      - NODE_BINARY_PATH=/usr/local/bin/node
-      - SCRIPT_DIR=/app/yomi
-      - YOMI_MCP_PATH=/home/tony/.yomi/mcpb/run.mjs
-      - SUMMARY_CACHE=/app/media/summaries.json
-      - MEDIA_DIR=/app/media
-      - LLAMA_URL=http://thai-legal-inference:8000/v1/chat/completions
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - WEAVIATE_SEARCH_URL=http://weaviate:8080
-      - WEAVIATE_URL=http://weaviate:8080
-      - EMBEDDING_SERVICE_URL=http://imagen2-inference:8000
+    - NODE_ENV=production
+    - YOMI_API_PORT=3000
+    - YOMI_API_HOST=0.0.0.0
+    - REDIS_URL=redis://redis:6379
+    - GEMINI_VISION_MODEL_PRIMARY=gemma-4-31b-it
+    - GEMINI_VISION_MODEL_FALLBACK=gemma-4-26b-a4b-it
+    - CONTEXT_MESSAGES_BEFORE=3
+    - CONTEXT_MESSAGES_AFTER=3
+    - GEMINI_API_KEY=${GEMINI_API_KEY}
+    - POSTGRES_USER=chaba
+    - POSTGRES_PASSWORD=chabapass
+    - POSTGRES_DB=chaba
+    - NODE_BINARY_PATH=/usr/local/bin/node
+    - SCRIPT_DIR=/app/yomi
+    - YOMI_MCP_PATH=/home/tony/.yomi/mcpb/run.mjs
+    - SUMMARY_CACHE=/app/media/summaries.json
+    - MEDIA_DIR=/app/media
+    - LLAMA_URL=http://thai-legal-inference:8000/v1/chat/completions
+    - POSTGRES_HOST=postgres
+    - POSTGRES_PORT=5432
+    - WEAVIATE_SEARCH_URL=http://weaviate:8080
+    - WEAVIATE_URL=http://weaviate:8080
+    - EMBEDDING_SERVICE_URL=http://imagen2-inference:8000
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/yomi/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      test:
+      - CMD
+      - node
+      - -e
+      - 'require(''http'').get(''http://localhost:3000/api/yomi/health'', (r) => {process.exit(r.statusCode
+        === 200 ? 0 : 1)})'
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
     ports:
-      - "3000:3000"
+    - 3000:3000
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+    - host.docker.internal:host-gateway
     networks:
-      - default
+    - default
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-
   weaviate:
     container_name: weaviate
     image: semitechnologies/weaviate:latest
     restart: unless-stopped
+    env_file:
+    - /home/tony/CascadeProjects/helm/.env.local
     ports:
-      - "8082:8080"
+    - 8082:8080
     volumes:
-      - weaviate_data:/var/lib/weaviate
+    - weaviate_data:/var/lib/weaviate
     environment:
-      - QUERY_DEFAULTS_LIMIT=25
-      - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
-      - PERSISTENCE_DATA_PATH=/var/lib/weaviate
-      - DEFAULT_VECTORIZER_MODULE=none
-      - CLUSTER_HOSTNAME=node1
+    - QUERY_DEFAULTS_LIMIT=25
+    - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
+    - PERSISTENCE_DATA_PATH=/var/lib/weaviate
+    - DEFAULT_VECTORIZER_MODULE=none
+    - CLUSTER_HOSTNAME=node1
     networks:
-      - default
-
+    - default
   weaviate-search:
     container_name: weaviate-search
     image: node:20-alpine
     restart: unless-stopped
+    env_file:
+    - /home/tony/CascadeProjects/helm/.env.local
     working_dir: /app/weaviate-search
     command: npm start
     volumes:
-      - ../../scripts/weaviate:/app/weaviate-search
+    - ../../scripts/weaviate:/app/weaviate-search
     environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - WEAVIATE_URL=http://weaviate:8080
-      - EMBEDDING_SERVICE_URL=http://embedding-service:5001
-      - PORT=3002
+    - OPENAI_API_KEY=${OPENAI_API_KEY}
+    - WEAVIATE_URL=http://weaviate:8080
+    - EMBEDDING_SERVICE_URL=http://embedding-service:5001
+    - PORT=3002
     ports:
-      - "3002:3002"
+    - 3002:3002
     networks:
-      - default
+    - default
     depends_on:
-      - weaviate
-      - embedding-service
-
+    - weaviate
+    - embedding-service
   embedding-service:
     container_name: embedding-service
     build:
@@ -458,33 +496,33 @@ services:
       dockerfile: Dockerfile
     runtime: nvidia
     restart: unless-stopped
+    env_file:
+    - /home/tony/CascadeProjects/helm/.env.local
     environment:
-      - EMBEDDING_MODEL=all-MiniLM-L6-v2
-      - BATCH_SIZE=32
-      - PORT=5001
-      - NVIDIA_VISIBLE_DEVICES=all
+    - EMBEDDING_MODEL=all-MiniLM-L6-v2
+    - BATCH_SIZE=32
+    - PORT=5001
+    - NVIDIA_VISIBLE_DEVICES=all
     ports:
-      - "5001:5001"
+    - 5001:5001
     networks:
-      - default
+    - default
     deploy:
       resources:
         reservations:
           devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-
-
+          - driver: nvidia
+            count: 1
+            capabilities:
+            - gpu
 volumes:
-  caddy_data:
-  caddy_config:
-  postgres_data:
-  redis_data:
-  weaviate_data:
-  yomi_node_modules:
-  gpu_queue_node_modules:
-
+  caddy_data: null
+  caddy_config: null
+  postgres_data: null
+  redis_data: null
+  weaviate_data: null
+  yomi_node_modules: null
+  gpu_queue_node_modules: null
 networks:
   frigate_default:
     external: true

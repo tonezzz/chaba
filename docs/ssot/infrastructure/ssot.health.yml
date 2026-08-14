@@ -8,10 +8,12 @@ profiles:
   home:
     hostname: tony-omen.local
     base_url: http://tony-omen.local:8080
+    ssids: [TONY-WIFI, TONY-WIFI_5G]
     description: Home network with local hostname
   mobile:
     hostname: tony-omen
     base_url: http://tony-omen:8080
+    ssids: [TONY-IP]
     description: Mobile/external network via Tailscale
     note: Connect to Tailscale first; use the tailnet hostname `tony-omen` (100.75.102.88) instead of a dynamic IP or DDNS hostname
 
@@ -89,6 +91,25 @@ services:
     timeout: 5
     category: web
     profiles: [home]
+
+  - id: helm
+    name: Helm Dashboard
+    type: http
+    url: http://tony-omen.local:8080/apps/helm/
+    expected_status: 200
+    timeout: 5
+    category: web
+    profiles: [home, mobile]
+    verification:
+      - "Check container: docker ps | grep helm"
+      - "Check container logs: docker logs helm --tail 20"
+      - "Test direct container: curl -s http://localhost:3003/"
+      - "Test Caddy proxy: curl -s http://tony-omen.local:8080/apps/helm/"
+    recovery_actions:
+      - "Restart container: cd /home/tony/CascadeProjects/chaba/stacks/web && docker compose restart helm"
+      - "Rebuild container: cd /home/tony/CascadeProjects/helm && docker build -t web-helm . && cd /home/tony/CascadeProjects/chaba/stacks/web && docker compose up -d helm"
+      - "Check Caddy proxy configuration in stacks/web/Caddyfile"
+      - "Verify environment variables: docker exec helm env | grep LLM"
 
   - id: raceman-php
     name: Raceman PHP

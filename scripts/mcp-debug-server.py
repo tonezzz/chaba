@@ -59,6 +59,40 @@ def run_on_host(host, command, compact):
     }
 
 
+def mcp_stats(host, command):
+    raw_result = run_on_host(host, command, compact=False)
+    compact_result = run_on_host(host, command, compact=True)
+
+    raw_out = raw_result.get("out", "") or ""
+    compact_out = compact_result.get("out", "") or ""
+
+    raw_words = len(raw_out.split())
+    compact_words = len(compact_out.split())
+    raw_chars = len(raw_out)
+    compact_chars = len(compact_out)
+
+    saved_words = raw_words - compact_words
+    savings_pct = round((saved_words / raw_words * 100), 1) if raw_words > 0 else 0.0
+    saved_chars = raw_chars - compact_chars
+    savings_pct_chars = round((saved_chars / raw_chars * 100), 1) if raw_chars > 0 else 0.0
+
+    return {
+        "ok": raw_result.get("rc") == 0 and compact_result.get("rc") == 0,
+        "host": host,
+        "command": command,
+        "raw_words": raw_words,
+        "compact_words": compact_words,
+        "saved_words": saved_words,
+        "savings_pct": savings_pct,
+        "raw_chars": raw_chars,
+        "compact_chars": compact_chars,
+        "saved_chars": saved_chars,
+        "savings_pct_chars": savings_pct_chars,
+        "raw_rc": raw_result.get("rc"),
+        "compact_rc": compact_result.get("rc"),
+    }
+
+
 def handle_initialize(id_):
     return {
         "jsonrpc": "2.0",
@@ -98,6 +132,18 @@ def handle_tools_list(id_):
                 "required": ["host", "command"],
             },
         },
+        {
+            "name": "mcp_stats",
+            "description": "Compare raw and compact output for a command and report word/character savings.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                    "command": {"type": "string", "description": "Command to compare, e.g. 'df -h'"},
+                },
+                "required": ["host", "command"],
+            },
+        },
     ]
     return {"jsonrpc": "2.0", "id": id_, "result": {"tools": tools}}
 
@@ -119,6 +165,9 @@ def handle_tools_call(id_, params):
             output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_raw":
         result = run_on_host(host, command, compact=False)
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_stats":
+        result = mcp_stats(host, command)
         output = json.dumps(result, separators=(",", ":"))
     else:
         return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32601, "message": f"unknown tool: {name}"}}

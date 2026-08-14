@@ -153,40 +153,77 @@ async function loadHealthConfig() {
   const configPath = process.env.HEALTH_CONFIG || join(process.cwd(), 'docs/ssot/infrastructure/ssot.health.yml');
   console.error(`Loading health config from: ${configPath}`);
   try {
-    // Auto-detect network profile first
+    const { execSync } = await import('child_process');
+
+    // Read main config first to get profile rules
+    let file = readFileSync(configPath, 'utf8');
+    let config = yaml.parse(file);
+
+    // Auto-detect network profile
     let profile = 'home';
-    let baseUrl = 'http://tony-omen.local:8080';
-    
-    try {
-      const { execSync } = await import('child_process');
-      execSync('ping -c 1 -W 2 tony-omen.local', { stdio: 'ignore' });
-    } catch {
-      profile = 'mobile';
+    let baseUrl = config.profiles?.home?.base_url || 'http://tony-omen.local:8080';
+
+    // 1. Optional explicit override
+    if (process.env.HEALTH_PROFILE) {
+      profile = process.env.HEALTH_PROFILE;
+      baseUrl = config.profiles?.[profile]?.base_url || baseUrl;
+      console.error(`Profile override from HEALTH_PROFILE: ${profile}`);
+    } else {
+      // 2. Try WiFi SSID detection
+      let ssid = null;
       try {
-        const { execSync } = await import('child_process');
-        const ip = execSync('ip route get 1.1.1.1 | awk \'{print $7}\'', { encoding: 'utf8' }).trim();
-        baseUrl = `http://${ip}:8080`;
-      } catch {
-        baseUrl = 'http://localhost:8080';
+        ssid = execSync('iwgetid -r 2>/dev/null', { encoding: 'utf8' }).trim();
+      } catch {}
+      if (!ssid) {
+        try {
+          const link = execSync('iw dev wlo1 link 2>/dev/null | grep -E "^\\s+SSID:"', { encoding: 'utf8' });
+          const match = link.match(/SSID:\s*(.+)/);
+          if (match) ssid = match[1].trim();
+        } catch {}
+      }
+      if (ssid) {
+        console.error(`Detected WiFi SSID: ${ssid}`);
+        const homeSsids = config.profiles?.home?.ssids || [];
+        const mobileSsids = config.profiles?.mobile?.ssids || [];
+        if (homeSsids.includes(ssid)) {
+          profile = 'home';
+          baseUrl = config.profiles?.home?.base_url || baseUrl;
+        } else if (mobileSsids.includes(ssid)) {
+          profile = 'mobile';
+          baseUrl = config.profiles?.mobile?.base_url || 'http://tony-omen:8080';
+        }
+      }
+
+      // 3. Fall back to hostname reachability
+      if (profile === 'home') {
+        try {
+          execSync('ping -c 1 -W 2 tony-omen.local', { stdio: 'ignore' });
+        } catch {
+          profile = 'mobile';
+          try {
+            const ip = execSync('ip route get 1.1.1.1 | awk \'{print $7}\'', { encoding: 'utf8' }).trim();
+            baseUrl = `http://${ip}:8080`;
+          } catch {
+            baseUrl = 'http://localhost:8080';
+          }
+        }
       }
     }
-    
+
     console.error(`Detected profile: ${profile}, base URL: ${baseUrl}`);
-    
+
     // Try to load profile-specific config first
-    let file;
     try {
       const profileConfigPath = configPath.replace('ssot.health.yml', `ssot.health.${profile}.yml`);
       file = readFileSync(profileConfigPath, 'utf8');
       console.error(`Using profile-specific config: ${profileConfigPath}`);
     } catch {
-      // Fallback to main config
       file = readFileSync(configPath, 'utf8');
       console.error(`Using main config: ${configPath}`);
     }
-    
-    const config = yaml.parse(file);
-    
+
+    config = yaml.parse(file);
+
     // Substitute {profile} placeholders in service URLs
     if (config.services) {
       config.services = config.services.map(service => {
@@ -196,11 +233,11 @@ async function loadHealthConfig() {
         return service;
       });
     }
-    
+
     // Store profile info for later use
     config.detectedProfile = profile;
     config.detectedBaseUrl = baseUrl;
-    
+
     return config;
   } catch (error) {
     console.error(`Failed to load health config from ${configPath}:`, error.message);
@@ -682,19 +719,23 @@ async function checkContainerService(service) {
   const expectedState = service.expected_state || 'running';
   
   try {
-    // Try docker compose first (old method) for better docker-compose.yml integration
-    let output;
+    // Try docker ps first (does not depend on a compose project)
+    let output = '';
     try {
-      output = execSync(`docker compose ps -a ${service.container} 2>/dev/null || true`, { 
+      output = execSync(`docker ps -a --filter "name=${service.container}" --format "table {{.Names}}\\t{{.Status}}"`, { 
         encoding: 'utf8',
         stdio: 'pipe'
       });
-    } catch {
-      // Fallback to docker ps if docker compose fails
-      output = execSync(`docker ps -a --filter "name=${service.container}" --format "{{.Status}}"`, { 
-        encoding: 'utf8',
-        stdio: 'pipe'
-      });
+    } catch {}
+    
+    // Fallback to docker compose ps if docker ps found nothing
+    if (!output.trim() || !output.includes('Up')) {
+      try {
+        output = execSync(`docker compose ps -a ${service.container}`, { 
+          encoding: 'utf8',
+          stdio: 'pipe'
+        });
+      } catch {}
     }
     
     const responseTime = Date.now() - startTime;
