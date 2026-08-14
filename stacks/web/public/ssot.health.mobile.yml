@@ -12,6 +12,15 @@ services:
     timeout: 10
     category: web
 
+  - id: tailscale-funnel
+    name: Tailscale Funnel
+    type: http
+    url: https://tony-omen.taila0626a.ts.net/apps/tailscale-funnel/
+    expected_status: 200
+    timeout: 15
+    category: optional
+    note: Public internet access via Tailscale Funnel
+
   - id: status-api
     name: Status API (External)
     type: http
@@ -129,6 +138,12 @@ recovery_actions:
     - tony-omen.local does not resolve across the tailnet on mobile
     - Use tony-omen (Tailscale) for remote access
     - Verify with `tailscale status` and `tailscale ping tony-omen`
+
+  funnel_unreachable:
+    - Check `tailscale funnel status` on tony-omen
+    - Restart Funnel with `sudo tailscale funnel --bg --yes 8080`
+    - Verify Funnel is enabled in the Tailscale admin console
+    - Test direct URL: https://tony-omen.taila0626a.ts.net/apps/
 
 # Testing and debugging guidance (mobile-specific)
 debugging_guidance:

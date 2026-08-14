@@ -157,6 +157,39 @@ skill ssot-validate
 - **Exit node**: make `tony-omen` an exit node for secure mobile internet routing.
 - **Headscale**: if the cloud coordination server is not acceptable, migrate to a self-hosted Headscale instance later.
 
+## Phase 8 — Public Funnel Access and Active Connections (Delivered)
+
+Tailscale Funnel was enabled and configured so the Chaba web UI is reachable from the public internet.
+
+- **Public URL (Funnel)**: `https://tony-omen.taila0626a.ts.net/`
+- **Magic DNS (tailnet)**: `http://tony-omen:8080`
+- **Home LAN**: `http://tony-omen.local:8080`
+
+### Delivered components
+
+1. **Funnel landing page** — `stacks/web/public/apps/tailscale-funnel/index.html` explains the three access paths (home, tailnet, public Funnel).
+2. **Network options banner** — `stacks/web/public/apps/index.html` now shows the three URLs at the top of the apps directory.
+3. **Active connections panel** — embedded in the Funnel landing page; fetches `/api/tailscale/connections` every 5 s and lists online, non-infrastructure peers with hostname, IP, OS, active/idle, and direct/relayed status.
+4. **Connections API** — `stacks/web/tailscale-connections-server.py` serves `tailscale status --json` over HTTP at `/api/tailscale/connections`, filtered to real devices (excludes Tailscale infrastructure/ingress nodes).
+5. **Caddy routes** — `stacks/web/Caddyfile` added:
+   - `handle @funnel_root` for the Funnel root landing page.
+   - `handle_path /apps/tailscale-funnel/*` for the same page under `/apps`.
+   - `handle /api/tailscale/connections` reverse-proxy to `host.docker.internal:9010`.
+6. **Systemd service** — `~/.config/systemd/user/tailscale-connections.service` makes the API persist across reboots and restart on failure.
+7. **Health check integration** — `stacks/web/public/ssot.health.mobile.yml` now has a `tailscale-funnel` HTTP service and `funnel_unreachable` recovery actions.
+8. **Workflow check** — `workflows/monitoring/universal-health-check.yml` now has a `tailscale_check` block that reports `tailscale status`, `tailscale ping`, and Funnel reachability.
+
+### Verify
+
+```bash
+# Public page and API
+curl -I https://tony-omen.taila0626a.ts.net/
+curl -s https://tony-omen.taila0626a.ts.net/api/tailscale/connections | python3 -m json.tool
+
+# Systemd service
+systemctl --user status tailscale-connections.service
+```
+
 ## Rollback
 
 1. Disconnect or uninstall Tailscale:
