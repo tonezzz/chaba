@@ -249,7 +249,7 @@ blocks:
           echo "❌ tony-dell: not reachable via tailnet"
         fi
         
-        FUNNEL_STATUS=$(curl -4 -s -o /dev/null -w "%{http_code}" --max-time 10 https://tony-omen.taila0626a.ts.net/apps/tailscale-funnel/ 2>&1)
+        FUNNEL_STATUS=$(curl -4 -s -o /dev/null -w "%{http_code}" --max-time 10 https://tony-dell.taila0626a.ts.net/apps/tailscale-funnel/ 2>&1)
         if [ "$FUNNEL_STATUS" = "200" ]; then
           echo "✅ Tailscale Funnel: public page returned HTTP 200"
         else

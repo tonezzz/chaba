@@ -21,12 +21,12 @@ status: completed
 | Home LAN | `192.168.1.0/24` |
 | `tony-omen` LAN mDNS | `tony-omen.local` |
 | `tony-dell` LAN mDNS | `tony-dell.local` |
-| Public Funnel URL | `https://tony-omen.taila0626a.ts.net/` |
-| Caddy listen port | `8080` |
-| Funnel proxy target | `http://127.0.0.1:8080` |
-| Active connections API | `https://tony-omen.taila0626a.ts.net/api/tailscale/connections` |
-| API backend | `stacks/web/tailscale-connections-server.py` on `0.0.0.0:9010` |
-| Systemd user service | `~/.config/systemd/user/tailscale-connections.service` |
+| Public Funnel URL | `https://tony-dell.taila0626a.ts.net/` |
+| Funnel server listen port | `8082` |
+| Funnel proxy target | `http://127.0.0.1:8082` |
+| Active connections API | `https://tony-dell.taila0626a.ts.net/api/tailscale/connections` |
+| API backend | `~/chaba-funnel/funnel-server.py` on `0.0.0.0:8082` |
+| Systemd user service | `~/.config/systemd/user/chaba-funnel.service` |
 | Health check file | `stacks/web/public/ssot.health.mobile.yml` |
 | Workflow block | `workflows/monitoring/universal-health-check.yml` (`tailscale_check`) |
 | Auto-update command | `tailscale set --auto-update` |
@@ -181,35 +181,32 @@ skill ssot-validate
 
 ## Phase 8 — Public Funnel Access and Active Connections (Delivered)
 
-Tailscale Funnel was enabled and configured so the Chaba web UI is reachable from the public internet.
+Tailscale Funnel is now hosted on `tony-dell` so the public landing page remains reachable even when `tony-omen` is offline.
 
-- **Public URL (Funnel)**: `https://tony-omen.taila0626a.ts.net/`
-- **Magic DNS (tailnet)**: `http://tony-omen:8080`
-- **Home LAN**: `http://tony-omen.local:8080`
+- **Public URL (Funnel)**: `https://tony-dell.taila0626a.ts.net/`
+- **Magic DNS (tailnet)**: `http://tony-dell:8082`
+- **Home LAN**: `http://tony-dell.local:8082`
 
 ### Delivered components
 
-1. **Funnel landing page** — `stacks/web/public/apps/tailscale-funnel/index.html` explains the three access paths (home, tailnet, public Funnel).
-2. **Network options banner** — `stacks/web/public/apps/index.html` now shows the three URLs at the top of the apps directory.
+1. **Funnel landing page** — `stacks/web/public/apps/tailscale-funnel/index.html` explains the three access paths (home, tailnet, public Funnel). A copy lives on `tony-dell` at `/home/tony/chaba-funnel/index.html` and is served by `chaba-funnel.service`.
+2. **Network options banner** — `stacks/web/public/apps/index.html` shows the Funnel URL at the top of the apps directory.
 3. **Active connections panel** — embedded in the Funnel landing page; fetches `/api/tailscale/connections` every 5 s and lists online, non-infrastructure peers with hostname, IP, OS, active/idle, and direct/relayed status.
-4. **Connections API** — `stacks/web/tailscale-connections-server.py` serves `tailscale status --json` over HTTP at `/api/tailscale/connections`, filtered to real devices (excludes Tailscale infrastructure/ingress nodes).
-5. **Caddy routes** — `stacks/web/Caddyfile` added:
-   - `handle @funnel_root` for the Funnel root landing page.
-   - `handle_path /apps/tailscale-funnel/*` for the same page under `/apps`.
-   - `handle /api/tailscale/connections` reverse-proxy to `host.docker.internal:9010`.
-6. **Systemd service** — `~/.config/systemd/user/tailscale-connections.service` makes the API persist across reboots and restart on failure.
-7. **Health check integration** — `stacks/web/public/ssot.health.mobile.yml` now has a `tailscale-funnel` HTTP service and `funnel_unreachable` recovery actions.
-8. **Workflow check** — `workflows/monitoring/universal-health-check.yml` now has a `tailscale_check` block that reports `tailscale status`, `tailscale ping`, and Funnel reachability.
+4. **Funnel server** — `/home/tony/chaba-funnel/funnel-server.py` on `tony-dell` serves the static landing page and serves `tailscale status --json` over HTTP at `/api/tailscale/connections`, filtered to real devices (excludes Tailscale infrastructure/ingress nodes).
+5. **Tailscale Funnel config** — `tailscale funnel --bg --yes 8082` on `tony-dell` publishes `https://tony-dell.taila0626a.ts.net/` and proxies `/` to `http://127.0.0.1:8082`.
+6. **Systemd service** — `~/.config/systemd/user/chaba-funnel.service` on `tony-dell` makes the Funnel server persist across reboots and restart on failure.
+7. **Health check integration** — `stacks/web/public/ssot.health.mobile.yml` `tailscale-funnel` service now points to `https://tony-dell.taila0626a.ts.net/apps/tailscale-funnel/`, with `funnel_unreachable` recovery actions on `tony-dell`.
+8. **Workflow check** — `workflows/monitoring/universal-health-check.yml` `tailscale_check` block now tests Funnel reachability at `https://tony-dell.taila0626a.ts.net/apps/tailscale-funnel/`.
 
 ### Verify
 
 ```bash
 # Public page and API
-curl -I https://tony-omen.taila0626a.ts.net/
-curl -s https://tony-omen.taila0626a.ts.net/api/tailscale/connections | python3 -m json.tool
+curl -I https://tony-dell.taila0626a.ts.net/
+curl -s https://tony-dell.taila0626a.ts.net/api/tailscale/connections | python3 -m json.tool
 
 # Systemd service
-systemctl --user status tailscale-connections.service
+systemctl --user status chaba-funnel.service
 ```
 
 ## Phase 9 — Tailscale Client Auto-Updates (Selected)

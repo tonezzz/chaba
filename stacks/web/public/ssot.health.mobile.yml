@@ -15,11 +15,11 @@ services:
   - id: tailscale-funnel
     name: Tailscale Funnel
     type: http
-    url: https://tony-omen.taila0626a.ts.net/apps/tailscale-funnel/
+    url: https://tony-dell.taila0626a.ts.net/apps/tailscale-funnel/
     expected_status: 200
     timeout: 15
     category: optional
-    note: Public internet access via Tailscale Funnel
+    note: Public internet access via Tailscale Funnel on tony-dell
 
   - id: status-api
     name: Status API (External)
@@ -140,10 +140,10 @@ recovery_actions:
     - Verify with `tailscale status` and `tailscale ping tony-omen`
 
   funnel_unreachable:
-    - Check `tailscale funnel status` on tony-omen
-    - Restart Funnel with `sudo tailscale funnel --bg --yes 8080`
+    - Check `tailscale funnel status` on tony-dell
+    - Restart Funnel with `sudo tailscale funnel --bg --yes 8082`
     - Verify Funnel is enabled in the Tailscale admin console
-    - Test direct URL: https://tony-omen.taila0626a.ts.net/apps/
+    - Test direct URL: https://tony-dell.taila0626a.ts.net/apps/tailscale-funnel/
 
 # Testing and debugging guidance (mobile-specific)
 debugging_guidance:
