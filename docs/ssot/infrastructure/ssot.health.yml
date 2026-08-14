@@ -10,10 +10,10 @@ profiles:
     base_url: http://tony-omen.local:8080
     description: Home network with local hostname
   mobile:
-    hostname: [CURRENT-IP]
-    base_url: http://[CURRENT-IP]:8080
-    description: Mobile/external network with IP placeholder
-    note: Replace [CURRENT-IP] with actual IP or DDNS hostname
+    hostname: tony-omen.taila0626a.ts.net
+    base_url: http://tony-omen.taila0626a.ts.net:8080
+    description: Mobile/external network via Tailscale
+    note: Tailscale MagicDNS hostname replaces [CURRENT-IP]
 
 # Alert configuration
 alerts:
@@ -220,7 +220,7 @@ services:
   - id: mddb-api
     name: MDDB API
     type: http
-    url: "http://tony-omen.local:11023/health"
+    url: "http://tony-omen.taila0626a.ts.net:11023/health"
     expected_status: 200
     timeout: 5
     category: datastore
@@ -230,7 +230,7 @@ services:
   - id: mddb-mcp
     name: MDDB MCP Server
     type: http
-    url: "http://tony-omen.local:9001/mcp"
+    url: "http://tony-omen.taila0626a.ts.net:9001/mcp"
     expected_status: 200
     timeout: 5
     category: datastore
@@ -240,7 +240,7 @@ services:
       - "Check MDDB container: docker ps | grep mddb"
       - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb"
       - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb"
-      - "Verify MCP endpoint: curl -s http://tony-omen.local:9001/mcp"
+      - "Verify MCP endpoint: curl -s http://tony-omen.taila0626a.ts.net:9001/mcp"
       - "Check MCP config: cat ~/.config/devin/mcp_config.json | grep mddb"
 
   - id: mddb-panel
@@ -255,7 +255,7 @@ services:
   - id: mddb-stats
     name: MDDB Stats Endpoint
     type: http
-    url: "http://tony-omen.local:11023/v1/stats"
+    url: "http://tony-omen.taila0626a.ts.net:11023/v1/stats"
     expected_status: 200
     timeout: 5
     category: datastore
@@ -265,12 +265,12 @@ services:
       - "Check MDDB container: docker ps | grep mddb"
       - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb"
       - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb"
-      - "Verify port 11023 is accessible: curl -s http://tony-omen.local:11023/v1/stats"
+      - "Verify port 11023 is accessible: curl -s http://tony-omen.taila0626a.ts.net:11023/v1/stats"
 
   - id: mddb-vector-stats
     name: MDDB Vector Stats Endpoint
     type: http
-    url: "http://tony-omen.local:11023/v1/vector-stats"
+    url: "http://tony-omen.taila0626a.ts.net:11023/v1/vector-stats"
     expected_status: 200
     timeout: 5
     category: datastore
@@ -280,12 +280,12 @@ services:
       - "Check MDDB container: docker ps | grep mddb"
       - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb"
       - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb"
-      - "Verify port 11023 is accessible: curl -s http://tony-omen.local:11023/v1/vector-stats"
+      - "Verify port 11023 is accessible: curl -s http://tony-omen.taila0626a.ts.net:11023/v1/vector-stats"
 
   - id: mddb-metrics
     name: MDDB Metrics Endpoint
     type: http
-    url: "http://tony-omen.local:11023/metrics"
+    url: "http://tony-omen.taila0626a.ts.net:11023/metrics"
     expected_status: 200
     timeout: 5
     category: datastore
@@ -295,7 +295,7 @@ services:
       - "Check MDDB container: docker ps | grep mddb"
       - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb"
       - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb"
-      - "Verify port 11023 is accessible: curl -s http://tony-omen.local:11023/metrics"
+      - "Verify port 11023 is accessible: curl -s http://tony-omen.taila0626a.ts.net:11023/metrics"
 
   - id: mddb-container
     name: MDDB Container
@@ -305,7 +305,7 @@ services:
     timeout: 5
     category: datastore
     profiles: [home, mobile]
-    note: Container-level health check for MDDB service (container name: mddb)
+    note: "Container-level health check for MDDB service (container name: mddb)"
     recovery_actions:
       - "Check container status: docker ps -a | grep mddb"
       - "Start container: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose up -d mddb"
@@ -528,9 +528,9 @@ recovery_actions:
     - "Check MDDB container: docker ps | grep mddb"
     - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb"
     - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb"
-    - "Verify port 11023 is accessible: curl -s http://tony-omen.local:11023/health"
+    - "Verify port 11023 is accessible: curl -s http://tony-omen.taila0626a.ts.net:11023/health"
     - "Check docker compose config: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose config"
-    - "Verify network connectivity: ping -c 2 tony-omen.local"
+    - "Verify network connectivity: ping -c 2 tony-omen.taila0626a.ts.net"
 
   mddb_container_down:
     - "Check container status: docker ps -a | grep mddb"

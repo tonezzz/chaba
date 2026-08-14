@@ -20,7 +20,7 @@ sections:
       - label: Network Type
         text: External/mobile network (not home 192.168.1.0/24)
       - label: Access Method
-        text: Remote access to tony-omen via current network IP
+        text: Remote access to tony-omen via Tailscale
       - label: Session Date
         text: 2026-08-07
       - label: Profile Switching
@@ -31,7 +31,7 @@ sections:
     layout: list
     items:
       - label: tony-omen
-        text: Primary workstation (accessible via current network IP)
+        text: Primary workstation (accessible via Tailscale MagicDNS)
         tags: [primary, server, remote-access]
         current_access: Use current network IP or DDNS hostname
 
@@ -88,17 +88,29 @@ sections:
       - label: llama-router
         text: LLM inference router with model routing support (port 8001)
         tags: [ai, llm, router]
-        mobile_access: http://[current-ip]:8001
+        mobile_access: http://tony-omen.taila0626a.ts.net:8001
       - label: postgres
         text: PostgreSQL database server (port 5432)
         tags: [database, postgres]
-        mobile_access: postgresql://[current-ip]:5432
+        mobile_access: postgresql://tony-omen.taila0626a.ts.net:5432
       - label: Apps Server
         text: Main apps server (port 8080)
-        mobile_access: http://[current-ip]:8080
+        mobile_access: http://tony-omen.taila0626a.ts.net:8080
       - label: Chaba-h3 Preview
         text: Chaba-h3 preview server (port 8081)
-        mobile_access: http://[current-ip]:8081
+        mobile_access: http://tony-omen.taila0626a.ts.net:8081
+      - label: mddb-api
+        text: MDDB REST API (port 11023)
+        tags: [mddb, api, kb]
+        mobile_access: http://tony-omen.taila0626a.ts.net:11023
+      - label: mddb-mcp
+        text: MDDB MCP server (port 9001)
+        tags: [mddb, mcp, ai]
+        mobile_access: http://tony-omen.taila0626a.ts.net:9001/mcp
+      - label: mddb-panel
+        text: MDDB web panel via Caddy
+        tags: [mddb, ui, kb]
+        mobile_access: http://tony-omen.taila0626a.ts.net:8080/apps/mddb/
 
   - title: Available Apps
     icon: 📱
@@ -116,15 +128,21 @@ sections:
     layout: list
     items:
       - label: Apps (tony-omen)
-        text: "Use current IP: http://[current-ip]:8080/apps"
+        text: "Use Tailscale: http://tony-omen.taila0626a.ts.net:8080/apps"
       - label: Chaba-h3 Preview
-        text: "Use current IP: http://[current-ip]:8081/apps"
+        text: "Use Tailscale: http://tony-omen.taila0626a.ts.net:8081/apps"
       - label: Llama Router API
-        text: "Use current IP: http://[current-ip]:8001"
+        text: "Use Tailscale: http://tony-omen.taila0626a.ts.net:8001"
       - label: PostgreSQL
-        text: "Use current IP: postgresql://[current-ip]:5432"
+        text: "Use Tailscale: postgresql://tony-omen.taila0626a.ts.net:5432"
       - label: SSH Access
-        text: "ssh tony@[current-ip]"
+        text: "ssh tony@tony-omen.taila0626a.ts.net"
+      - label: MDDB API
+        text: "Use Tailscale: http://tony-omen.taila0626a.ts.net:11023"
+      - label: MDDB MCP
+        text: "Use Tailscale: http://tony-omen.taila0626a.ts.net:9001/mcp"
+      - label: MDDB Panel
+        text: "Use Tailscale: http://tony-omen.taila0626a.ts.net:8080/apps/mddb/"
 
   - title: Profile Switching Guide
     icon: 🔄

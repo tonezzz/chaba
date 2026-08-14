@@ -196,4 +196,15 @@
 			header_up Host localhost:3000
 		}
 	}
+
+	# MDDB panel proxy
+	handle /apps/mddb {
+		redir /apps/mddb/ 308
+	}
+
+	handle_path /apps/mddb/* {
+		reverse_proxy mddb-panel:3000 {
+			header_up Host localhost
+		}
+	}
 }
