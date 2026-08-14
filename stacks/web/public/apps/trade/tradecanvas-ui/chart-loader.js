@@ -146,6 +146,7 @@ class ChartLoader {
 
     async loadData() {
         console.log('Loading data for', this.config.symbol);
+        this.loadedFromAPI = false;
         
         try {
             // Try to fetch from Trade API first using full URL
@@ -157,6 +158,7 @@ class ChartLoader {
                 const apiData = await response.json();
                 this.data = apiData.data;
                 this.isSampleData = false;
+                this.loadedFromAPI = true;
                 console.log('Loaded data from API:', this.data.length, 'points');
                 console.log('Last updated:', apiData.last_updated);
             } else {
@@ -346,8 +348,16 @@ class ChartLoader {
         // Update connection status
         const statusEl = document.getElementById('connection-status');
         if (statusEl) {
-            statusEl.textContent = this.isSampleData ? 'Sample Data' : 'CSV Data';
-            statusEl.className = 'status connected';
+            if (this.isSampleData) {
+                statusEl.textContent = 'Sample Data';
+                statusEl.className = 'status disconnected';
+            } else if (this.loadedFromAPI) {
+                statusEl.textContent = 'API Data';
+                statusEl.className = 'status connected';
+            } else {
+                statusEl.textContent = 'CSV Data';
+                statusEl.className = 'status connected';
+            }
         }
 
         // Update summary stats
