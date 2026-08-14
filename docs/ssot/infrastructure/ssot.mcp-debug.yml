@@ -115,3 +115,45 @@ workflow:
     - df -h
     - ps
   gate: "Run mcp_stats on both hosts before adding a new debug_command; add to recommended only if both hosts show positive char savings."
+
+suggested_extensions:
+  - id: stats
+    name: mcp_stats tool
+    description: Measure raw vs compact word/char savings for candidate commands on both hosts before adding them.
+    priority: high
+    status: proposed
+  - id: host-identity
+    name: Host identity in compact output
+    description: Add an "h" key to every compact JSON response so results are self-describing.
+    priority: high
+    status: proposed
+  - id: ps-bound
+    name: Bounded ps output
+    description: Replace full ps with "ps top-cpu" and "ps top-mem" returning top 20 processes by CPU or memory.
+    priority: high
+    status: proposed
+  - id: memory
+    name: free -h compact
+    description: Compact memory summary from free -h.
+    priority: medium
+    status: proposed
+  - id: uptime
+    name: uptime
+    description: Compact load average and uptime.
+    priority: medium
+    status: proposed
+  - id: mount
+    name: mount / lsblk
+    description: Compact filesystem/mount and block device listing.
+    priority: medium
+    status: proposed
+  - id: usb
+    name: lsusb
+    description: Compact USB device listing for hardware debugging.
+    priority: low
+    status: proposed
+  - id: per-host-allow
+    name: Per-host raw allowlists
+    description: Allow different raw command prefixes per host based on capabilities.
+    priority: low
+    status: proposed
