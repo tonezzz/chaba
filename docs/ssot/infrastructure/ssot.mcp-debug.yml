@@ -1,0 +1,73 @@
+title: MCP Debug
+subtitle: Multi-host compact debug output and remote execution
+icon: bug
+version: 1
+
+hosts:
+  tony_omen:
+    name: Tony Omen
+    description: Local Devin control host
+    local: true
+    mcp_debug_path: /home/tony/.local/bin/mcp-debug
+  tony_dell:
+    name: Tony Dell
+    description: Remote target host
+    hostname: tony-dell.local
+    ssh_user: tony
+    mcp_debug_path: /home/tony/.local/bin/mcp-debug
+
+debug_commands:
+  systemctl list-units:
+    description: Running systemd services
+    compact: true
+    expected_output: units
+  df -h:
+    description: Disk usage
+    compact: true
+    expected_output: filesystems
+  ps:
+    description: Process list
+    compact: true
+    expected_output: processes
+
+raw_commands:
+  allowed_prefixes:
+    - systemctl
+    - df
+    - ps
+    - tail
+    - head
+    - cat
+    - ls
+    - which
+
+server:
+  script: /home/tony/CascadeProjects/chaba/scripts/mcp-debug-server.py
+  wrapper: /home/tony/.config/devin/mcp-scripts/mcp-debug.sh
+  log_level: INFO
+
+phases:
+  - id: 1
+    name: SSOT and spec
+    status: completed
+    notes: Define hosts, commands, and progress in this file
+  - id: 2
+    name: Deploy mcp-debug to tony-omen
+    status: completed
+    notes: Copied /home/tony/mcp-debug/mcp-debug.py and symlinked to ~/.local/bin
+  - id: 3
+    name: Build host-aware mcp-debug-server
+    status: completed
+    notes: /home/tony/CascadeProjects/chaba/scripts/mcp-debug-server.py with mcp_debug and mcp_raw
+  - id: 4
+    name: Register in Devin/Windsurf MCP
+    status: completed
+    notes: Generated /home/tony/.config/devin/mcp_config.json and /home/tony/.config/windsurf/mcp_config.json
+  - id: 5
+    name: Test both hosts
+    status: completed
+    notes: mcp_debug and mcp_raw tested for tony-omen and tony-dell
+  - id: 6
+    name: Deprecate remote-exec-tony-dell
+    status: completed
+    notes: remote-exec-tony-dell status set to deprecated; mcp-debug status set to operational
