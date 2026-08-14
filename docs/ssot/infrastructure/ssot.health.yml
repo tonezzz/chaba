@@ -460,7 +460,7 @@ services:
     timeout: 10
     category: gpu
     profiles: [home]
-    note: "Offline (2026-08-09) - GPU memory constraints. Start manually when needed: docker compose -f stacks/gpu/docker-compose.yml up txt2vid-inference"
+    note: "Offline (2026-08-14) - intentionally stopped. Start manually when needed: docker compose -f stacks/gpu/docker-compose.yml up txt2vid-inference"
 
   # Queue Services
   - id: gpu-queue
@@ -501,6 +501,7 @@ services:
     timeout: 5
     category: optional
     profiles: [home]
+    note: "Offline (2026-08-14) - intentionally stopped; start manually when needed (currently runs on tony-dell)"
 
   # Systemd Services
   # Note: yomi-api systemd service failed, but docker container is running and healthy
