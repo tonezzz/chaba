@@ -9,6 +9,28 @@ status: completed
 
 # Tailscale Rollout Plan for Chaba
 
+## Tailscale Spec Reference
+
+| Item | Value |
+|---|---|
+| Tailnet account | `tonezzzz@` |
+| `tony-omen` tailnet IPv4 | `100.75.102.88` |
+| `tony-dell` tailnet IPv4 | `100.68.142.13` |
+| `tony-omen` Magic DNS (FQDN) | `tony-omen.taila0626a.ts.net` |
+| `tony-dell` Magic DNS (FQDN) | `tony-dell.taila0626a.ts.net` |
+| Home LAN | `192.168.1.0/24` |
+| `tony-omen` LAN mDNS | `tony-omen.local` |
+| `tony-dell` LAN mDNS | `tony-dell.local` |
+| Public Funnel URL | `https://tony-omen.taila0626a.ts.net/` |
+| Caddy listen port | `8080` |
+| Funnel proxy target | `http://127.0.0.1:8080` |
+| Active connections API | `https://tony-omen.taila0626a.ts.net/api/tailscale/connections` |
+| API backend | `stacks/web/tailscale-connections-server.py` on `0.0.0.0:9010` |
+| Systemd user service | `~/.config/systemd/user/tailscale-connections.service` |
+| Health check file | `stacks/web/public/ssot.health.mobile.yml` |
+| Workflow block | `workflows/monitoring/universal-health-check.yml` (`tailscale_check`) |
+| Auto-update command | `tailscale set --auto-update` |
+
 ## Goal
 
 Replace dynamic-IP and `.local` mDNS reliance for remote/mobile access with a Tailscale mesh VPN, then update the project's single-source-of-truth (SSOT) and health check files to reflect the new stable hostnames.
