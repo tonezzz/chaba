@@ -3,8 +3,8 @@ title: Tailscale Rollout Plan for Chaba
 description: Step-by-step plan to install Tailscale and update SSOT/health check configs for stable remote access
 tags: [tailscale, vpn, networking, ssot, remote-access, mobile]
 created: 2026-08-13
-updated: 2026-08-13
-status: draft
+updated: 2026-08-14
+status: in-progress
 ---
 
 # Tailscale Rollout Plan for Chaba
@@ -15,11 +15,13 @@ Replace dynamic-IP and `.local` mDNS reliance for remote/mobile access with a Ta
 
 ## Current State
 
-- `tony-omen` does **not** have Tailscale installed.
-- Home profile works with `tony-omen.local` (`192.168.1.0/24` LAN, mDNS).
-- Mobile profile relies on the current network IP or DDNS.
-- `ssot.mysystem.mobile.yml` lists VPN/Tunnel setup as an open item.
-- `stacks/web/public/ssot.health.mobile.yml` references `tony-omen.local` and contains VPN/tunnel recovery guidance.
+- `tony-omen` is already joined to the tailnet at `100.75.102.88`.
+- `tony-dell` was installed and authenticated on 2026-08-14 at `100.68.142.13` (Tailscale 1.102.2).
+- Home profile still works with `.local` hostnames (`192.168.1.0/24` LAN, mDNS).
+- Mobile profile has been updated to use the Tailscale tailnet hostname `tony-omen`.
+- `ssot.mysystem.mobile.yml` marks VPN/Tunnel setup as `done`.
+- `ssot.mysystem.home.yml` now tracks the tailnet IPs for both workstations.
+- `stacks/web/public/ssot.health.mobile.yml` and `docs/ssot/infrastructure/ssot.health.yml` reference the Tailscale mobile profile.
 
 ## Target State
 
