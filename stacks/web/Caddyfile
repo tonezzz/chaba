@@ -101,6 +101,13 @@
 		}
 	}
 
+	# Helm proxy - /apps/helm/* to helm container (basePath configured, preserve full path)
+	handle /apps/helm* {
+		reverse_proxy helm:3000 {
+			header_up Host localhost
+		}
+	}
+
 	# Trade API proxy - /apps/trade/api/* to trade-api (must come before UI files)
 	@trade_api_apps path /apps/trade/api/*
 	handle @trade_api_apps {
@@ -225,7 +232,10 @@
 	}
 
 	# Status API proxy - /api/* catchall to status-api
-	@status_api path /api/*
+	@status_api {
+		path /api/*
+		not path /api/projects /api/projects/*
+	}
 	handle @status_api {
 		reverse_proxy status-api:8000 {
 			header_up Host localhost
@@ -239,7 +249,12 @@
 	}
 
 	# General catchall for other apps static files
-	handle_path /apps/* {
+	@apps_other {
+		path /apps/*
+		not path /apps/helm /apps/helm/*
+	}
+	handle @apps_other {
+		uri strip_prefix /apps
 		root * /srv/public/apps
 		file_server
 		header Cache-Control "public, max-age=1800"
