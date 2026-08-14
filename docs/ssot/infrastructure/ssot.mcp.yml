@@ -27,21 +27,20 @@ profiles:
   mobile:
     name: Mobile Network Profile
     network: dynamic
-    hostname_pattern: [CURRENT-IP]
-    description: Mobile/external network with dynamic IP addressing
+    hostname_pattern: tony-omen
+    description: Mobile/external network via Tailscale
     base_urls:
-      tony_omen: [CURRENT-IP]
-      tony_dell: [CURRENT-IP]
+      tony_omen: tony-omen
+      tony_dell: tony-dell
     service_urls:
-      llama_url: http://[CURRENT-IP]:8001
-      imagen_url: http://[CURRENT-IP]:8080/apps/imagen2/api
+      llama_url: http://tony-omen:8008
+      imagen_url: http://tony-omen:8080/apps/imagen2/api
       playlive_url: http://tony-dell:9230
-      weaviate_url: http://[CURRENT-IP]:3002
-      postgres_url: postgresql://[CURRENT-IP]:5432
-      helm_url: http://[CURRENT-IP]:8080/apps/helm
+      weaviate_url: http://tony-omen:3002
+      postgres_url: postgresql://tony-omen:5432
+      helm_url: http://tony-omen:8080/apps/helm
     health_config: infrastructure/ssot.health.mobile.yml
     system_config: ssot.mysystem.mobile.yml
-    placeholder_instructions: Replace [CURRENT-IP] with actual IP or DDNS hostname
 
 # MCP server definitions
 servers:

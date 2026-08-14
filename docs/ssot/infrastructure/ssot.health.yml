@@ -44,14 +44,17 @@ alerts:
 
 # Service groups for dependency tracking
 groups:
-  web-stack: [caddy, status-api, yomi-api, mddb-panel]
+  web-stack: [caddy, bserver, status-api, yomi-api, mddb-panel, helm]
+  api: [yomi-api, yomi-rate-limiter, yomi-activity-status, yomi-summarization, status-api, trade-api]
+  yomi: [yomi-api, yomi-update-all-timer, yomi-update-active-timer, yomi-rate-limiter, yomi-activity-status, yomi-summarization]
+  raceman: [raceman-web, raceman-php]
   gpu-stack: [imagen2, txt2vid, thai-legal, llama-server]
-  datastore: [postgres, weaviate, mddb-api]
+  datastore: [postgres, weaviate, mddb-api, weaviate-index-timer]
   trading: [trade-api]
   optional: [activepieces, frigate, camera-control]
   automation: [playlived]
   ssot-sync: [mddb-api, mddb-mcp, mddb-stats, mddb-vector-stats, mddb-metrics, mddb-container]
-  system: [cpu-frequency-monitor, chaba-health-monitor-timer, gdrive-backup]
+  system: [cpu-frequency-monitor, chaba-health-monitor-timer, gdrive-backup, yomi-update-all-timer, yomi-update-active-timer]
 
 # Service dependencies
 dependencies:
