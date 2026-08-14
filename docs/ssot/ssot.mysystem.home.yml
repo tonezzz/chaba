@@ -93,7 +93,7 @@ sections:
       - label: Local Network
         text: 192.168.1.0/24 subnet with .local hostname resolution
       - label: tony-omen.local
-        text: 192.168.1.48 - primary workstation (tailnet 100.75.102.88 / tony-omen)
+        text: 192.168.1.51 - primary workstation (tailnet 100.75.102.88 / tony-omen) (was 192.168.1.48)
       - label: tony-dell.local
         text: 192.168.1.42 - secondary workstation (tailnet 100.68.142.13 / tony-dell)
 
@@ -102,17 +102,21 @@ sections:
     layout: list
     items:
       - label: Barrier Server
-        text: Runs on tony-omen (tony-omen.local:24800) with physical mouse/keyboard
+        text: Runs on tony-omen via systemd (barriers.service) on 0.0.0.0:24800, reachable at 100.75.102.88:24800 over Tailscale
       - label: Barrier Client
-        text: Runs on tony-dell, connects to tony-omen.local:24800
+        text: Runs on tony-dell and connects to 100.75.102.88:24800 (Tailscale) to avoid stale /etc/hosts
       - label: Client Binary
-        text: /usr/bin/barrierc
+        text: /home/tony/.local/bin/barrierc (actual path; /usr/bin/barrierc not installed)
       - label: Start Command
-        text: nohup /usr/bin/barrierc --disable-crypto --name tony-dell --restart tony-omen.local > /tmp/barrier-client.log 2>&1 &
+        text: nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &
       - label: Health Check
-        text: ps -ef | grep barrierc
+        text: ssh -o ConnectTimeout=3 tony@tony-dell.local 'pgrep -a barrierc' && tail -n 5 /tmp/barrier-client.log
+      - label: Autofix
+        text: ssh -o ConnectTimeout=3 tony@tony-dell.local 'pkill -x barrierc 2>/dev/null; nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &'
+      - label: Server Autofix
+        text: systemctl --user restart barriers.service
       - label: Logs
-        text: /tmp/barrier-client.log
+        text: /tmp/barrier-client.log (client), /tmp/barrier-server.log (server)
 
   - title: Services (tony-omen)
     icon: ⚙️
