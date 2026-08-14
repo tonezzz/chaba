@@ -65,7 +65,7 @@ def handle_initialize(id_):
         "id": id_,
         "result": {
             "protocolVersion": "2024-11-05",
-            "capabilities": {},
+            "capabilities": {"tools": {}},
             "serverInfo": {"name": "mcp-debug", "version": "1"},
         },
     }
