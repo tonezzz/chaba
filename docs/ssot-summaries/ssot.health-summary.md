@@ -50,7 +50,7 @@ Standardizes health monitoring across all services with:
 - **gpu-queue**: GPU job queue management system
 
 ### Optional Services
-- **frigate**: NVR service (on-demand, not auto-started)
+- **frigate**: NVR service (offline since 2026-08-14, on-demand only)
 
 ## Key Configuration Patterns
 

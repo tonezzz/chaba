@@ -149,8 +149,8 @@ class ChartLoader {
         this.loadedFromAPI = false;
         
         try {
-            // Try to fetch from Trade API first using full URL
-            const apiUrl = `http://tony-omen.local:9000/api/ui/chart-data/${this.config.symbol}?timeframe=${this.config.timeframe.toLowerCase()}`;
+            // Try to fetch from Trade API first using Tailscale IP for cross-network access
+            const apiUrl = `http://100.75.102.88:9000/api/ui/chart-data/${this.config.symbol}?timeframe=${this.config.timeframe.toLowerCase()}`;
             console.log('Fetching from API:', apiUrl);
             
             const response = await fetch(apiUrl);
