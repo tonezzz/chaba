@@ -17,7 +17,7 @@ profiles:
     service_urls:
       llama_url: http://tony-omen.local:8008
       imagen_url: http://tony-omen.local:8080/apps/imagen2/api
-      playlive_url: http://tony-omen.local:9231
+      playlive_url: http://tony-dell:9230
       weaviate_url: http://tony-omen.local:3002
       postgres_url: postgresql://tony-omen.local:5432
     health_config: infrastructure/ssot.health.home.yml
@@ -34,7 +34,7 @@ profiles:
     service_urls:
       llama_url: http://[CURRENT-IP]:8001
       imagen_url: http://[CURRENT-IP]:8080/apps/imagen2/api
-      playlive_url: http://[CURRENT-IP]:9231
+      playlive_url: http://tony-dell:9230
       weaviate_url: http://[CURRENT-IP]:3002
       postgres_url: postgresql://[CURRENT-IP]:5432
     health_config: infrastructure/ssot.health.mobile.yml
@@ -140,32 +140,27 @@ servers:
     wrapper: none
     filter: none
     env:
-      PLAYLIVE_URL: http://tony-omen.local:9231
+      PLAYLIVE_URL: http://tony-dell:9230
     single_instance: false
     status: operational
     config_files:
       - devin: true
       - windsurf: false
 
-  remote-exec-tony-dell:
-    name: Remote Execution (Tony Dell)
-    description: Remote command execution on tony-dell
-    implementation: bash /home/tony/CascadeProjects/trade/.devin/remote-exec-wrapper.sh
+  mcp-debug:
+    name: MCP Debug
+    description: Multi-host compact debug and remote execution
+    implementation: bash /home/tony/.config/devin/mcp-scripts/mcp-debug.sh
     wrapper: none
     filter: none
     single_instance: false
     status: operational
     config_files:
       - devin: true
-      - windsurf: false
+      - windsurf: true
     notes: |
-      Runtime config lives on tony-dell at /home/tony/mcp-remote-exec/config.yaml.
-      The "Auto-generated from SSOT" header was removed because the original source file
-      no longer exists; the on-disk YAML is the de-facto runtime source.
-      mcp-debug prototype: /home/tony/mcp-debug/mcp-debug.py is in allowed_commands and
-      returns compact JSON for `systemctl list-units`, `df -h`, and `ps`.
-      Example: mcp-debug systemctl list-units
-      Restart the remote-exec server on tony-dell after changing allowed_commands.
+      Replaces remote-exec-tony-dell. Supports mcp_debug and mcp_raw for tony_omen and tony_dell.
+      SSOT: docs/ssot/infrastructure/ssot.mcp-debug.yml
 
   alphavantage:
     name: Alpha Vantage Financial Data
