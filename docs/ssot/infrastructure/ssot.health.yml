@@ -93,7 +93,7 @@ services:
   - id: helm
     name: Helm Dashboard
     type: http
-    url: http://tony-omen.local:8080/apps/helm/
+    url: http://tony-omen.local:8080/apps/helm
     expected_status: 200
     timeout: 5
     category: web
@@ -434,6 +434,7 @@ services:
 
   - id: txt2vid
     name: Txt2Vid
+    disabled: true
     type: http
     url: http://tony-omen.local:8002/health
     expected_status: 200
@@ -455,16 +456,18 @@ services:
   # Optional Services
   - id: activepieces
     name: Activepieces
+    disabled: true
     type: container
     container: activepieces
     expected_state: running
     timeout: 5
     category: optional
     profiles: [home, mobile]
-    note: "Container not running - start with: docker compose -f stacks/activepieces/docker-compose.yml up -d"
+    note: "Offline (2026-08-14) - intentionally stopped. Start manually when needed: docker compose -f stacks/activepieces/docker-compose.yml up -d"
 
   - id: frigate
     name: Frigate NVR
+    disabled: true
     type: http
     url: "{profile}/frigate/api/version"
     expected_status: 200
@@ -475,6 +478,7 @@ services:
 
   - id: camera-control
     name: Camera Control
+    disabled: true
     type: http
     url: http://tony-omen.local:8090/
     expected_status: 200

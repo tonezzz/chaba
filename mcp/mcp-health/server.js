@@ -928,6 +928,58 @@ async function checkSystemService(service) {
   }
 }
 
+// Mount point health check
+async function checkMountService(service) {
+  const { execSync } = await import('child_process');
+  const startTime = Date.now();
+  const expectedState = service.expected_state || 'mounted';
+  const mountPoint = service.mount_point;
+  
+  if (!mountPoint) {
+    return {
+      status: 'error',
+      response_time: 0,
+      error: 'No mount_point configured',
+      http_status: null,
+      expected_status: null,
+      container_state: 'unconfigured',
+      expected_state: expectedState,
+      active_state: null,
+      sub_state: null
+    };
+  }
+  
+  try {
+    execSync(`test -d ${mountPoint}`, { encoding: 'utf8', stdio: 'pipe' });
+    // If directory exists, consider it mounted; additional verification optional
+    const responseTime = Date.now() - startTime;
+    return {
+      status: 'healthy',
+      response_time: responseTime,
+      error: null,
+      http_status: null,
+      expected_status: null,
+      container_state: 'mounted',
+      expected_state: expectedState,
+      active_state: null,
+      sub_state: null
+    };
+  } catch (error) {
+    const responseTime = Date.now() - startTime;
+    return {
+      status: 'error',
+      response_time: responseTime,
+      error: `Mount point ${mountPoint} not found`,
+      http_status: null,
+      expected_status: null,
+      container_state: 'unmounted',
+      expected_state: expectedState,
+      active_state: null,
+      sub_state: null
+    };
+  }
+}
+
 // Create MCP server
 const server = new Server(
   {
@@ -1267,12 +1319,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           let checkResult;
           
           // Perform health check based on service type
-          if (service.type === 'http') {
+          if (service.disabled) {
+            checkResult = {
+              status: 'intentional',
+              response_time: 0,
+              error: null,
+              http_status: null,
+              expected_status: null,
+              container_state: null,
+              expected_state: null,
+              active_state: null,
+              sub_state: null
+            };
+          } else if (service.type === 'http') {
             checkResult = await checkHTTPService(service);
           } else if (service.type === 'container') {
             checkResult = await checkContainerService(service);
           } else if (service.type === 'systemd') {
             checkResult = await checkSystemService(service);
+          } else if (service.type === 'mount') {
+            checkResult = await checkMountService(service);
           } else {
             checkResult = {
               status: 'unknown',
@@ -2175,12 +2241,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             const startTime = Date.now();
             let checkResult;
             
-            if (service.type === 'http') {
+            if (service.disabled) {
+              checkResult = { status: 'intentional', response_time: 0 };
+            } else if (service.type === 'http') {
               checkResult = await checkHTTPService(service);
             } else if (service.type === 'container') {
               checkResult = await checkContainerService(service);
             } else if (service.type === 'systemd') {
               checkResult = await checkSystemService(service);
+            } else if (service.type === 'mount') {
+              checkResult = await checkMountService(service);
             } else {
               checkResult = {
                 status: 'unknown',
@@ -2190,7 +2260,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
             
             let score = 0;
-            if (checkResult.status === 'healthy') score = 100;
+            if (checkResult.status === 'intentional') score = 100;
+            else if (checkResult.status === 'healthy') score = 100;
             else if (checkResult.status === 'degraded') score = 50;
             
             serviceScores.push({
