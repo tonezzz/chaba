@@ -316,9 +316,9 @@ async function processAlerts(config, serviceName, status, previousStatus, error)
     const message = error || `Service ${serviceName} is in error state`;
     
     // Check for existing unresolved alert
-    const existingAlert = checkExistingAlert(serviceName, 'service_failure');
+    const existingAlert = await checkExistingAlert(serviceName, 'service_failure');
     if (!existingAlert) {
-      const alertId = generateAlert(serviceName, 'service_failure', severity, message);
+      const alertId = await generateAlert(serviceName, 'service_failure', severity, message);
       
       // Log alert based on configured channels
       if (config.alerts.channels) {
@@ -335,7 +335,7 @@ async function processAlerts(config, serviceName, status, previousStatus, error)
   
   // Recovery notification
   if (status === 'healthy' && previousStatus === 'error' && thresholds.recovery_notification) {
-    const existingAlert = checkExistingAlert(serviceName, 'service_failure');
+    const existingAlert = await checkExistingAlert(serviceName, 'service_failure');
     if (existingAlert) {
       // Mark alert as resolved
       const stmt = db.prepare(`
@@ -343,7 +343,7 @@ async function processAlerts(config, serviceName, status, previousStatus, error)
         SET resolved = 1, resolved_at = CURRENT_TIMESTAMP 
         WHERE id = ?
       `);
-      stmt.run(existingAlert.id);
+      await stmt.run(existingAlert.id);
       
       await logAlert(serviceName, 'service_recovery', 'info', `Service ${serviceName} has recovered`);
     }
@@ -351,10 +351,10 @@ async function processAlerts(config, serviceName, status, previousStatus, error)
   
   // Performance degradation alert
   if (status === 'degraded') {
-    const existingAlert = checkExistingAlert(serviceName, 'performance_degradation');
+    const existingAlert = await checkExistingAlert(serviceName, 'performance_degradation');
     if (!existingAlert) {
       const message = `Service ${serviceName} is experiencing performance degradation`;
-      generateAlert(serviceName, 'performance_degradation', 'degraded', message);
+      await generateAlert(serviceName, 'performance_degradation', 'degraded', message);
       await logAlert(serviceName, 'performance_degradation', 'degraded', message);
     }
   }
@@ -1278,14 +1278,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             ORDER BY timestamp DESC 
             LIMIT 1
           `);
-          const previousStatus = previousStatusStmt.get(serviceName)?.status || 'unknown';
+          const previousStatus = (await previousStatusStmt.get(serviceName))?.status || 'unknown';
           
           // Store in database
           const stmt = db.prepare(`
             INSERT INTO health_checks (service_name, status, response_time, error, http_status, expected_status, container_state, expected_state, active_state, sub_state)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `);
-          stmt.run(
+          await stmt.run(
             serviceName, 
             checkResult.status, 
             checkResult.response_time, 
@@ -1373,7 +1373,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const services = config.services || [];
         const detectedProfile = config.profiles?.home ? 'home' : 'mobile';
         
-        const status = services.map(service => {
+        const status = (await Promise.all(services.map(async service => {
           const serviceName = service.name || service.id;
           
           // Profile filtering
@@ -1387,7 +1387,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             ORDER BY timestamp DESC 
             LIMIT 1
           `);
-          const lastCheck = stmt.get(serviceName);
+          const lastCheck = await stmt.get(serviceName);
           
           return {
             service: serviceName,
@@ -1398,7 +1398,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             response_time: lastCheck?.response_time || null,
             error: lastCheck?.error || null
           };
-        }).filter(Boolean); // Remove null entries from profile filtering
+        }))).filter(Boolean); // Remove null entries from profile filtering
         
         // Group by category
         const groupedStatus = status.reduce((acc, result) => {
@@ -1446,7 +1446,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         params.push(limit);
         
         const stmt = db.prepare(query);
-        const history = stmt.all(...params);
+        const history = await stmt.all(...params);
         
         // Add category information from config
         const config = await loadHealthConfig();
@@ -1491,7 +1491,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         query += ' GROUP BY service_name';
         
         const stmt = db.prepare(query);
-        const summary = stmt.all(...params);
+        const summary = (await stmt.all(...params)) || [];
         
         // Add category information from config
         const summaryWithCategory = summary.map(item => {
@@ -1552,7 +1552,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             ORDER BY timestamp DESC 
             LIMIT 1
           `);
-          const lastCheck = stmt.get(serviceName);
+          const lastCheck = await stmt.get(serviceName);
           
           statusResults.push({
             service: serviceName,
@@ -1645,7 +1645,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         params.push(limit);
         
         const stmt = db.prepare(query);
-        const alerts = stmt.all(...params);
+        const alerts = await stmt.all(...params);
         
         return {
           content: [{
@@ -1665,7 +1665,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           SET acknowledged = 1, acknowledged_at = CURRENT_TIMESTAMP 
           WHERE id = ?
         `);
-        const result = stmt.run(args.alert_id);
+        const result = await stmt.run(args.alert_id);
         
         if (result.changes === 0) {
           throw new Error(`Alert ${args.alert_id} not found`);
@@ -1848,7 +1848,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           }
           
           // Generate alert for service restart
-          generateAlert(service_name, 'service_restart', 'info', `Service ${service_name} was restarted via ${restartResult.method}`);
+          await generateAlert(service_name, 'service_restart', 'info', `Service ${service_name} was restarted via ${restartResult.method}`);
           
           return {
             content: [{
@@ -1900,7 +1900,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           ORDER BY timestamp DESC 
           LIMIT 1
         `);
-        const lastCheck = stmt.get(args.service_name);
+        const lastCheck = await stmt.get(args.service_name);
         
         // Use the resolved URL from config (after profile substitution)
         // The service.url should already be resolved by loadHealthConfig
@@ -2207,7 +2207,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               overall_score: overallScore,
               timestamp: new Date().toISOString(),
               profile: detectedProfile,
-              include_optional,
+              include_optional: includeOptional,
               services_checked: serviceScores.length,
               service_scores: serviceScores,
               grade: overallScore >= 90 ? 'A' : overallScore >= 80 ? 'B' : overallScore >= 70 ? 'C' : overallScore >= 60 ? 'D' : 'F'
@@ -2311,7 +2311,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           DO UPDATE SET enabled = ?, max_attempts = ?, cooldown_seconds = ?, updated_at = CURRENT_TIMESTAMP
         `);
         
-        stmt.run(service_name, failure_type, enabled, max_attempts, cooldown_seconds, enabled, max_attempts, cooldown_seconds);
+        await stmt.run(service_name, failure_type, enabled, max_attempts, cooldown_seconds, enabled, max_attempts, cooldown_seconds);
         
         return {
           content: [{
@@ -2414,7 +2414,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           ORDER BY timestamp DESC
         `);
         
-        const records = stmt.all(cutoffDate);
+        const records = await stmt.all(cutoffDate);
         
         // Check if mddb MCP is available
         try {
