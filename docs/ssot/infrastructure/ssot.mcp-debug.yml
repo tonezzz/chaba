@@ -45,6 +45,10 @@ server:
   script: /home/tony/CascadeProjects/chaba/scripts/mcp-debug-server.py
   wrapper: /home/tony/.config/devin/mcp-scripts/mcp-debug.sh
   log_level: INFO
+  tools:
+    - mcp_debug
+    - mcp_raw
+    - mcp_stats
 
 phases:
   - id: 1
@@ -71,3 +75,29 @@ phases:
     name: Deprecate remote-exec-tony-dell
     status: completed
     notes: remote-exec-tony-dell status set to deprecated; mcp-debug status set to operational
+
+efficiency:
+  tracked_by: mcp_stats
+  note: tony_omen baseline generated on 2026-08-14. Re-run mcp_stats to refresh per-host numbers.
+  commands:
+    systemctl list-units:
+      raw_words: 3223
+      compact_words: 137
+      savings_pct: 95.7
+      raw_chars: 76168
+      compact_chars: 5094
+      savings_pct_chars: 93.3
+    df -h:
+      raw_words: 79
+      compact_words: 2
+      savings_pct: 97.5
+      raw_chars: 696
+      compact_chars: 1000
+      savings_pct_chars: -43.7
+    ps:
+      raw_words: 524
+      compact_words: 50
+      savings_pct: 90.5
+      raw_chars: 4593
+      compact_chars: 40010
+      savings_pct_chars: -771.1
