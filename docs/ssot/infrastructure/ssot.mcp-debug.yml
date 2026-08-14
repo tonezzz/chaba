@@ -87,6 +87,7 @@ efficiency:
       raw_chars: 76168
       compact_chars: 5094
       savings_pct_chars: 93.3
+      recommended: true
     df -h:
       raw_words: 79
       compact_words: 2
@@ -94,6 +95,7 @@ efficiency:
       raw_chars: 696
       compact_chars: 1000
       savings_pct_chars: -43.7
+      recommended: false
     ps:
       raw_words: 524
       compact_words: 50
@@ -101,3 +103,15 @@ efficiency:
       raw_chars: 4593
       compact_chars: 40010
       savings_pct_chars: -771.1
+      recommended: false
+
+workflow:
+  default_tool: mcp_raw
+  compact_when: "savings_pct_chars > 0 on the target host"
+  vet_new_command: "mcp_stats(host, command)"
+  recommended:
+    - systemctl list-units
+  not_recommended:
+    - df -h
+    - ps
+  gate: "Run mcp_stats on both hosts before adding a new debug_command; add to recommended only if both hosts show positive char savings."
