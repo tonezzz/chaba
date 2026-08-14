@@ -1,18 +1,6 @@
 :8080 {
 	root * /srv/public
 
-	# Serve the Tailscale Funnel landing page at the Funnel root
-	@funnel_root {
-		host tony-omen.taila0626a.ts.net
-		path /
-	}
-	handle @funnel_root {
-		root * /srv/public/apps/tailscale-funnel
-		file_server
-		header Access-Control-Allow-Origin "*"
-		header Vary "Origin"
-	}
-
 	# MDDB API (for panel proxy) - must come before panel route
 	handle /api/mddb/* {
 		reverse_proxy mddb:11023

@@ -159,12 +159,13 @@ servers:
       - devin: true
       - windsurf: false
     notes: |
-      Remote config lives on tony-dell at /home/tony/mcp-remote-exec/config.yaml.
-      It currently claims to be "Auto-generated from SSOT: config/infrastructure.yml",
-      but that source file no longer exists, so the on-disk YAML is the de-facto config.
-      Proposed mcp-debug extension: wrap frequently run Linux commands with compact,
-      LLM-friendly output. Feasibility test on systemctl list-units: 272 raw words
-      -> 38 words using compact JSON {"s":"active","b":"running","u":["unit",...]}.
+      Runtime config lives on tony-dell at /home/tony/mcp-remote-exec/config.yaml.
+      The "Auto-generated from SSOT" header was removed because the original source file
+      no longer exists; the on-disk YAML is the de-facto runtime source.
+      mcp-debug prototype: /home/tony/mcp-debug/mcp-debug.py is in allowed_commands and
+      returns compact JSON for `systemctl list-units`, `df -h`, and `ps`.
+      Example: mcp-debug systemctl list-units
+      Restart the remote-exec server on tony-dell after changing allowed_commands.
 
   alphavantage:
     name: Alpha Vantage Financial Data
