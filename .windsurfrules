@@ -99,12 +99,16 @@ At the end of every assistant response that answers or completes a user request,
    - Archive outdated entries rather than deleting
    - Maintain single source of truth for each topic
 
-2. **Automatically invoke auto-kb skill** to process the KB review section:
-   - Auto-kb will check redundancy with existing entries
-   - Auto-kb will update existing entries or create new ones as needed
-   - Auto-kb follows consistent KB entry structure and quality criteria
+2. **Write KB review content to file** for auto-kb processing:
+   - Write KB review content to `/tmp/kb-review-content.txt`
+   - Include session context and technical details
 
-3. **Exception**: Only ask for user confirmation when creating entirely new KB entries for major new topics (not updates to existing entries)
+3. **Run auto-kb processing script** to create KB entries:
+   - Execute: `python3 .agents/skills/auto-kb/process-kb-review.py`
+   - Script will analyze content, check redundancy, and create entries
+   - Script provides summary of processing results
+
+4. **Exception**: Only ask for user confirmation when creating entirely new KB entries for major new topics (not updates to existing entries)
 
 **KB-Worthy Triggers**:
 - Fixing significant bugs or issues (especially data corruption, security vulnerabilities)

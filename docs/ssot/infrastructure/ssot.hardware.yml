@@ -1,0 +1,86 @@
+title: Hardware Specifications
+subtitle: Detailed hardware specifications and operational history for workstations
+icon: 💻
+
+ideas:
+  - Central repository for detailed hardware specifications
+  - Track hardware changes, upgrades, and operational history
+  - Support troubleshooting and capacity planning
+  - Maintain sensor data and performance baselines
+  - Document storage health and maintenance actions
+
+sections:
+  - title: Workstations
+    icon: 🖥️
+    layout: list
+    items:
+      - label: tony-omen
+        text: HP Omen 15-BC laptop, Intel i7-9750H, 32GB RAM, GTX 1650 4GB, 1TB NVMe + 500GB HDD
+        tags: [primary, workstation, laptop, gpu]
+        url: file:///home/tony/CascadeProjects/chaba-kbman/docs/kb/hardware-tony-omen-specs.md
+      - label: tony-dell
+        text: Dell OptiPlex 7040, 8GB RAM, Seagate HDD with 8 pending sectors (monitor)
+        tags: [secondary, workstation, desktop, hdd-monitoring]
+        url: file:///home/tony/CascadeProjects/chaba-kbman/docs/kb/hardware-tony-dell-specs.md
+
+  - title: Hardware Documentation
+    icon: 📋
+    layout: list
+    items:
+      - label: tony-omen Specifications
+        text: Detailed hardware specs including CPU, RAM, GPU, storage, networking, and firmware
+        url: file:///home/tony/CascadeProjects/chaba-kbman/docs/kb/hardware-tony-omen-specs.md
+        tags: [specs, tony-omen]
+      - label: tony-omen Changes
+        text: Operational history, configuration changes, and maintenance actions
+        url: file:///home/tony/CascadeProjects/chaba-kbman/docs/kb/hardware-tony-omen-changes.md
+        tags: [history, tony-omen]
+      - label: tony-omen Software Environment
+        text: OS, kernel, drivers, and software configuration details
+        url: file:///home/tony/CascadeProjects/chaba-kbman/docs/kb/hardware-tony-omen-software-env.md
+        tags: [software, tony-omen]
+      - label: tony-dell Specifications
+        text: Detailed hardware specs and component information
+        url: file:///home/tony/CascadeProjects/chaba-kbman/docs/kb/hardware-tony-dell-specs.md
+        tags: [specs, tony-dell]
+      - label: tony-dell Changes
+        text: Hardware changes, upgrades, and operational history
+        url: file:///home/tony/CascadeProjects/chaba-kbman/docs/kb/hardware-tony-dell-changes.md
+        tags: [history, tony-dell]
+
+  - title: Storage Health Monitoring
+    icon: 💾
+    layout: list
+    items:
+      - label: tony-omen Storage
+        text: Kingston SNV2S1000G 1TB NVMe (healthy), WD 500GB HDD (I/O errors, monitor)
+        tags: [nvme, hdd, monitoring]
+        status: monitor
+      - label: tony-dell Storage
+        text: Seagate HDD with 8 pending sectors (requires monitoring)
+        tags: [hdd, smart, monitoring]
+        status: monitor
+      - label: SMART Monitoring
+        text: Regular SMART checks recommended for HDD health tracking
+        tags: [smart, maintenance, monitoring]
+
+  - title: GPU Configuration
+    icon: 🎮
+    layout: list
+    items:
+      - label: tony-omen GPU
+        text: NVIDIA GeForce GTX 1650 Mobile 4GB, Intel UHD Graphics 630, Driver 595.71.05
+        tags: [nvidia, gpu, mobile]
+      - label: GPU Usage
+        text: Machine learning inference, GPU queue management, embedding services
+        tags: [ml, inference, queue]
+
+config:
+  version: 1
+  last_updated: 2026-08-13
+  maintainer: tony
+  related_files:
+    - docs/ssot/ssot.mysystem.home.yml
+    - docs/ssot/infrastructure/ssot.health.home.yml
+    - docs/kb/hardware-tony-omen-specs.md
+    - docs/kb/hardware-tony-dell-specs.md

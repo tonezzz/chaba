@@ -19,12 +19,13 @@ Invoke this skill when:
 ## What it needs
 
 Input parameters:
-- `kb_review_content`: The KB review section text from an assistant response
+- `kb_review_content`: The KB review section text from an assistant response (automatically read from `/tmp/kb-review-content.txt`)
 - `session_context`: Optional context about the session/work done
 
 ## Processing steps
 
-1. **Analyzes KB review content** for KB-worthiness triggers:
+1. **Run the processing script**: Execute `process-kb-review.py` to analyze KB review content
+2. **Analyzes KB review content** for KB-worthiness triggers:
    - Significant bug fixes (data corruption, security vulnerabilities)
    - New patterns/workarounds
    - New systems/integrations
@@ -33,12 +34,13 @@ Input parameters:
    - Root cause analyses
    - Reusable patterns
 
-2. **Checks for redundancy** with existing KB entries:
+3. **Checks for redundancy** with existing KB entries:
    - Searches existing entries for overlapping content
    - Updates existing entries instead of creating duplicates
    - Archives outdated entries if needed
+   - Excludes general guide files from redundancy checks
 
-3. **Creates KB entries** following the standard template:
+4. **Creates KB entries** following the standard template:
    - Title and description
    - Context/background
    - Key technical details
@@ -47,8 +49,43 @@ Input parameters:
    - Related documentation
    - Tags
 
-4. **Places entries** in the correct location:
-   - `/home/tony/CascadeProjects/chaba/docs/kb/` (corrected from chaba-yomi)
+5. **Places entries** in the correct location:
+   - `/home/tony/CascadeProjects/chaba-kbman/docs/kb/`
+
+## Implementation
+
+**Processing Script**: `.agents/skills/auto-kb/process-kb-review.py`
+
+**Input Method**: Reads KB review content from `/tmp/kb-review-content.txt` (created by assistant)
+
+**Redundancy Detection**: Uses specific term matching and excludes general guide files
+
+**Entry Creation**: Follows standard KB template with proper formatting
+
+## Usage
+
+When this skill is invoked, it automatically:
+1. Reads KB review content from `/tmp/kb-review-content.txt`
+2. Processes the content to extract KB-worthy facts
+3. Checks for redundancy with existing entries
+4. Creates new KB entries for non-redundant content
+5. Provides summary of processing results
+
+**Example invocation:**
+```bash
+# Assistant creates KB review content file
+echo "KB-worthy facts..." > /tmp/kb-review-content.txt
+
+# Skill is invoked automatically or manually
+cd /home/tony/CascadeProjects/chaba-kbman
+python3 .agents/skills/auto-kb/process-kb-review.py
+```
+
+**Assistant Integration:**
+When appending KB review section to response, assistant should:
+1. Write KB review content to `/tmp/kb-review-content.txt`
+2. Invoke this skill to process the content
+3. Skill will automatically create appropriate KB entries
 
 ## Quality criteria
 

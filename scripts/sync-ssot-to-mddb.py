@@ -8,20 +8,12 @@ from pathlib import Path
 from datetime import datetime
 
 SSOT_DIR = "/home/tony/CascadeProjects/chaba-kbman/docs/ssot"
-MDBB_SERVER = "http://localhost:9001"
+MDBB_SERVER = "http://tony-omen.local:11023/v1"
 
 def get_ssot_collection(rel_path):
     """Determine MDDB collection based on SSOT file path"""
-    if 'infrastructure' in rel_path:
-        return "ssot-infrastructure"
-    elif 'apps' in rel_path:
-        return "ssot-apps"
-    elif 'kb' in rel_path or 'overview' in rel_path:
-        return "ssot-kb"
-    elif 'health' in rel_path:
-        return "ssot-health"
-    else:
-        return "ssot-general"
+    # All SSOT documents now go to infrastructure-ssot
+    return "infrastructure-ssot"
 
 def convert_yaml_to_mddb(yaml_path, rel_path):
     """Convert SSOT YAML file to MDDB document format"""
@@ -77,14 +69,23 @@ def convert_yaml_to_mddb(yaml_path, rel_path):
 def sync_file(yaml_path, rel_path):
     """Sync a single SSOT YAML file to MDDB"""
     payload = convert_yaml_to_mddb(yaml_path, rel_path)
-    
+    args = payload["arguments"]
+
     try:
-        response = requests.post(f"{MDBB_SERVER}/tools/call", json=payload)
+        response = requests.post(
+            f"{MDBB_SERVER}/collections/{args['collection']}/documents",
+            json={
+                "key": args["key"],
+                "lang": args["lang"],
+                "content_md": args["content_md"],
+                "meta": args["meta"]
+            }
+        )
         response.raise_for_status()
-        return True, payload["arguments"]["collection"]
+        return True, args["collection"]
     except Exception as e:
         print(f"❌ Error syncing {rel_path}: {e}")
-        return False, payload["arguments"]["collection"]
+        return False, args["collection"]
 
 def main():
     # Find all SSOT YAML files
