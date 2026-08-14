@@ -145,6 +145,25 @@ for name in "${!SERVICE_URLS[@]}"; do
     fi
 done
 
+# ── Barrier client on tony-dell ─────────────────────────────────────────────
+client_pid=$(ssh -o ConnectTimeout=3 -o BatchMode=yes tony@tony-dell.local 'pgrep -x barrierc' 2>/dev/null || true)
+if [[ -z "$client_pid" ]]; then
+    alert warning "Barrier Client Missing" "barrierc not running on tony-dell — restarting via ssh"
+    ssh -o ConnectTimeout=3 -o BatchMode=yes tony@tony-dell.local 'pkill -x barrierc 2>/dev/null; nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &' >/dev/null 2>&1 || true
+else
+    client_log=$(ssh -o ConnectTimeout=3 -o BatchMode=yes tony@tony-dell.local 'tail -n 10 /tmp/barrier-client.log' 2>/dev/null || true)
+    if ! grep -q "connected to server" <<< "$client_log" 2>/dev/null; then
+        alert warning "Barrier Client Not Connected" "barrierc on tony-dell is not connected — restarting"
+        ssh -o ConnectTimeout=3 -o BatchMode=yes tony@tony-dell.local 'pkill -x barrierc 2>/dev/null; nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &' >/dev/null 2>&1 || true
+    fi
+fi
+
+# ── Barrier server on tony-omen ─────────────────────────────────────────────
+if ! systemctl --user is-active barriers.service >/dev/null 2>&1; then
+    alert warning "Barrier Server Not Running" "barriers.service is not active — starting"
+    systemctl --user start barriers.service || true
+fi
+
 # ── Google Drive backup mount ───────────────────────────────────────────────
 if ! mountpoint -q /home/tony/GoogleDrive; then
     alert critical "Google Drive Not Mounted" "Backup storage unavailable — remount with: rclone mount gdrive: /home/tony/GoogleDrive --daemon"

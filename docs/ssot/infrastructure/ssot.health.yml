@@ -37,7 +37,7 @@ alerts:
   
   service_criticality:
     critical: [caddy, postgres, gpu-queue]
-    important: [yomi-api, status-api, trade-api, mddb-api, playlived, llama-server, remote-exec-tony-dell]
+    important: [yomi-api, status-api, trade-api, mddb-api, playlived, llama-server, remote-exec-tony-dell, barrier-server]
     optional: [redis, weaviate, activepieces, frigate, camera-control, imagen2, txt2vid, thai-legal, cpu-frequency-monitor, gdrive-backup]
 
 # Service groups for dependency tracking
@@ -540,6 +540,26 @@ services:
       - "Monitor CPU frequency: watch -n 1 'cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq'"
       - "Change CPU governor: echo performance | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
       - "Check thermal throttling: watch -n 1 'cat /sys/class/thermal/thermal_zone*/temp'"
+
+  - id: barrier-server
+    name: Barrier KVM Server
+    type: systemd
+    service: barriers.service
+    expected_state: active
+    timeout: 5
+    category: system
+    profiles: [home, mobile]
+    note: "Barrier KVM server on tony-omen; auto-restarts on failure. Client on tony-dell connects to 100.75.102.88:24800 over Tailscale."
+    verification:
+      - "Check service: systemctl --user status barriers.service"
+      - "Check port: ss -tlnp | grep 24800"
+      - "Check server log: tail -n 20 /tmp/barrier-server.log"
+      - "Check connected client: tail -n 20 /tmp/barrier-client.log"
+    recovery_actions:
+      - "Restart server: systemctl --user restart barriers.service"
+      - "Check log: journalctl --user -u barriers.service -n 50"
+      - "Check client: ssh -o ConnectTimeout=3 tony@tony-dell.local 'pgrep -a barrierc'"
+      - "Restart client: ssh -o ConnectTimeout=3 tony@tony-dell.local 'pkill -x barrierc 2>/dev/null; nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &'"
 
   - id: gdrive-backup
     name: Google Drive Backup
