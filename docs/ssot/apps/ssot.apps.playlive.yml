@@ -16,7 +16,7 @@ sections:
     layout: list
     items:
       - label: Daemon (consolidated 2026-08-10)
-        text: playlived (chaba-omen/mcp/mcp-playlive/playlived.mjs) runs on tony-omen.local:9231 and manages both local and remote browser sessions.
+        text: playlived (chaba-omen/mcp/mcp-playlive/playlived.mjs) runs on tony-omen.local:9231 and tony-dell.local:9230. The tony-dell instance offloads UI verification from tony-omen; both manage local and remote browser sessions.
       - label: MCP client
         text: mcp-playlive (chaba-omen/mcp/mcp-playlive/playlive-server.py) forwards tool calls from Windsurf to the daemon via single "playlive" MCP server.
       - label: Target flexibility
@@ -32,6 +32,7 @@ sections:
     headers: [Name, Host, Endpoint, Purpose]
     rows:
       - [playlived, tony-omen, http://tony-omen.local:9231, Consolidated session daemon]
+      - [playlived, tony-dell, http://tony-dell.local:9230, UI verification daemon]
       - [chrome-remote, tony-dell, http://127.0.0.1:9222, Real Chrome CDP for live debugging]
 
   - title: Authentication
@@ -61,7 +62,7 @@ sections:
     layout: list
     items:
       - label: Start daemon
-        text: playlived runs on tony-omen.local:9231 via systemd service for auto-restart reliability.
+        text: tony-omen runs playlived as a systemd service on port 9231. On tony-dell, start playlived on port 9230 with `cd /home/tony/.local/playlive && setsid -f sh -c 'exec node playlived.mjs > playlived.log 2>&1'`.
       - label: Create session (default)
         text: playlive_create_playwright defaults to headless local mode for better performance.
       - label: Create session (live)
@@ -78,11 +79,13 @@ sections:
     layout: list
     items:
       - label: Pinned Playwright version
-        text: playwright is pinned to 1.62.0 in /home/tony/.local/playlive/package.json to avoid package/browser binary mismatches.
+        text: playwright is pinned to 1.62.0 in /home/tony/.local/playlive/package.json on both tony-omen and tony-dell to avoid package/browser binary mismatches.
       - label: Browser install
         text: Run 'npx playwright install chromium' from /home/tony/.local/playlive after any Playwright version change.
       - label: Package-lock
         text: Use 'npm install' or 'npm ci' from /home/tony/.local/playlive to keep package-lock.json in sync.
+      - label: Remote CDP override
+        text: playlived's default remote CDP is 127.0.0.1:9223. The Chrome instance on tony-dell is on 9222, so pass `remote_url` `http://127.0.0.1:9222` when creating chrome-live or playwright-chrome sessions on tony-dell.
       - label: Daemon restart
         text: Restart playlived.service after browser or package updates.
 
@@ -93,13 +96,13 @@ sections:
       - label: Security
         text: CDP and playlived are unauthenticated on the LAN; basic auth is for target page access only, not daemon security. Do not expose to untrusted networks.
       - label: Resource contention
-        text: Browser automation shares tony-omen with GPU/interactive workloads.
+        text: Browser automation on tony-omen shares resources with GPU/interactive workloads; use the tony-dell daemon to offload UI verification.
       - label: Windsurf reload
         text: Reload Windsurf after mcp_config.json changes for tools to appear.
       - label: Remote Chrome availability
         text: chrome-live/playwright-chrome require remote Chrome CDP (tony-dell:9222) which may not be available if Chrome is not running with remote debugging enabled.
       - label: Consolidated architecture
-        text: Single playlive MCP server replaces previous dual-server setup (playlive.local + playlive.tony-dell) for streamlined operation.
+        text: playlive MCP server is configured for tony-omen by default; playlive.tony-dell exists in mcp_config.json but is disabled to avoid tool name collisions.
 config:
   version: 2
   maintainer: tony

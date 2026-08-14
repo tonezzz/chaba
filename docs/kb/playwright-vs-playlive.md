@@ -220,10 +220,12 @@ sudo systemctl start playlived
 - **Test Files**: e2e/track3.spec.js, e2e/imagen2.spec.js, e2e/reefriders.spec.js
 
 ### PlayLive Daemon
-- **Location**: tony-dell.local:9230
-- **Active Sessions**: 2 Chrome sessions
-- **Purpose**: AI-driven browser automation
-- **MCP Server**: playlive.tony-dell
+- **Hosts**:
+  - `tony-omen.local:9231` — consolidated session daemon
+  - `tony-dell.local:9230` — UI verification daemon for offloading browser work from `tony-omen`
+- **Chrome CDP on tony-dell**: `http://127.0.0.1:9222`
+- **Purpose**: AI-driven browser automation and UI verification
+- **MCP Servers**: `playlive.local` (tony-omen), `playlive.tony-dell` (tony-dell, disabled by default in `mcp_config.json`)
 
 ## Session Types in PlayLive
 
@@ -304,6 +306,30 @@ PlayLive is effective for testing web applications when:
 - Sessions are cleaned up after testing
 - Playwright binaries are up-to-date
 - Network connectivity to target applications is verified
+
+## Multi-host PlayLive Deployment
+
+PlayLive can run on both `tony-omen` and `tony-dell` to distribute browser-automation load:
+
+- **tony-omen** (`tony-omen.local:9231`) — consolidated session daemon for general use
+- **tony-dell** (`tony-dell.local:9230`) — UI verification daemon; Chrome CDP on `127.0.0.1:9222`
+
+To use `tony-dell` for UI verification:
+
+1. Start `playlived` on `tony-dell` with a new session:
+   ```bash
+   cd /home/tony/.local/playlive
+   setsid -f sh -c 'exec node playlived.mjs > playlived.log 2>&1'
+   ```
+2. Create a session with `remote_url` set to the local Chrome CDP:
+   `http://127.0.0.1:9222` (the daemon default is `9223`, so pass the override explicitly)
+
+## Playwright Version Pinning
+
+The PlayLive browser cache on each host must match the installed `playwright` package. To prevent package/browser binary mismatches, both `tony-omen` and `tony-dell` are pinned to the exact Playwright version:
+
+- `/home/tony/.local/playlive/package.json`: `"playwright": "1.62.0"`
+- If Playwright is ever bumped, reinstall browser binaries with: `npx playwright install chromium`
 
 ## Related Documentation
 
