@@ -10,10 +10,10 @@ profiles:
     base_url: http://tony-omen.local:8080
     description: Home network with local hostname
   mobile:
-    hostname: [CURRENT-IP]
-    base_url: http://[CURRENT-IP]:8080
-    description: Mobile/external network with IP placeholder
-    note: Replace [CURRENT-IP] with actual IP or DDNS hostname
+    hostname: tony-omen
+    base_url: http://tony-omen:8080
+    description: Mobile/external network via Tailscale
+    note: Connect to Tailscale first; use the tailnet hostname `tony-omen` (100.75.102.88) instead of a dynamic IP or DDNS hostname
 
 # Alert configuration
 alerts:
@@ -174,10 +174,14 @@ services:
     profiles: [home]
     verification:
       - "Test sessions: curl -s http://tony-omen.local:9230/sessions"
+      - "Check pinned package: cat /home/tony/.local/playlive/package.json | grep '\"playwright\"'"
+      - "Verify installed version: cd /home/tony/.local/playlive && npm ls playwright"
       - "Check browsers: npx playwright install --dry-run"
+      - "Detect Playwright update: cd /home/tony/.local/playlive && installed=$(npm ls playwright --depth=0 2>/dev/null | grep -o 'playwright@[0-9.]*' | cut -d@ -f2) && latest=$(npm view playwright version) && echo \"installed: $installed\" && echo \"latest: $latest\" && { [ \"$installed\" != \"$latest\" ] && echo \"INFO: newer Playwright version available; review before pinning\" || true; }"
       - "Check service: systemctl --user status playlived.service"
     recovery_actions:
-      - "Install browsers: cd /home/tony/.local/playlive && npx playwright install"
+      - "Reinstall exact version: cd /home/tony/.local/playlive && npm ci && npx playwright install chromium"
+      - "Bump version: edit /home/tony/.local/playlive/package.json to the new exact version, npm install, npx playwright install chromium, systemctl --user restart playlived.service"
       - "Restart service: systemctl --user restart playlived.service"
       - "Fix port: ss -tulpn | grep 9230 && kill conflicting process"
 
