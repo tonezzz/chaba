@@ -34,7 +34,6 @@ mcp:
  mcp-weaviate: Weaviate vector database integration.
  playlive: Playlive browser automation (consolidated local & remote).
  postgres: PostgreSQL database operations (filtered via mcp-filter for CRUD only).
- remote-exec-tony-dell: Remote execution on Tony Dell.
  yomi: LINE conversation viewer (filtered via mcp-filter for essential tools).
  alphavantage: Alpha Vantage financial data API.
  docs: Documentation search server (chaba project docs).
@@ -69,18 +68,18 @@ profiles:
     hostname_pattern: .local
     llama_url: http://tony-omen.local:8008
     imagen_url: http://tony-omen.local:8080/apps/imagen2/api
-    playlive_url: http://tony-dell:9230
-    weaviate_url: http://tony-omen.local:3002
+    playlive_url: http://tony-omen.local:9230
+    weaviate_url: http://tony-omen.local:8082
     postgres_url: postgresql://tony-omen.local:5432
 
   mobile:
     network: dynamic
-    hostname_pattern: [CURRENT-IP]
-    llama_url: http://[CURRENT-IP]:8001
-    imagen_url: http://[CURRENT-IP]:8080/apps/imagen2/api
-    playlive_url: http://tony-dell:9230
-    weaviate_url: http://[CURRENT-IP]:3002
-    postgres_url: postgresql://[CURRENT-IP]:5432
+    hostname_pattern: tony-omen
+    llama_url: http://tony-omen:8008
+    imagen_url: http://tony-omen:8080/apps/imagen2/api
+    playlive_url: http://tony-omen:9230
+    weaviate_url: http://tony-omen:8082
+    postgres_url: postgresql://tony-omen:5432
 
 # MCP filter virtual environment
 mcp-filter-venv: /tmp/mcp-filter-venv/ (installed 2026-08-07 for GitHub MCP fix)
