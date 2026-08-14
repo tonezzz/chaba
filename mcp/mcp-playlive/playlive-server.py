@@ -15,7 +15,7 @@ import mcp.types as mcp_types
 
 mcp = FastMCP("mcp-playlive")
 
-DAEMON_URL = os.environ.get("PLAYLIVE_URL", "http://tony-dell.local:9230")
+DAEMON_URL = os.environ.get("PLAYLIVE_URL", "http://tony-dell:9230")
 
 
 def _request(method, path, payload=None):
