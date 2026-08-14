@@ -9,8 +9,8 @@ $db_config = [
     'host' => 'localhost',
     'port' => '5432',
     'dbname' => 'chaba', // Main chaba database
-    'user' => 'chaba', // Database user
-    'password' => '' // Password should be set via environment or pg_hba.conf
+    'user' => 'tony', // Database user
+    'password' => 'Love2521**' // PostgreSQL password
 ];
 
 // Test results storage
