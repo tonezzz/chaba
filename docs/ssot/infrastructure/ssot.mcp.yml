@@ -268,6 +268,7 @@ servers:
       The bridge wraps mcp-proxy via /home/tony/.config/Claude/mcp-proxy-lenient.py to skip 2025 output-schema validation
       Allowed tools for Claude: add_document, search_documents, delete_document, get_stats, aggregate, semantic_search
       Optional local HTTPS endpoint: https://tony-omen.local:9443/mcp (see docs/kb/mddb-local-https.md)
+      mcp-health "MDDB MCP Server" check: GET http://tony-omen.local:9001/mcp returns 400; only POST is valid, so 400 is the healthy HTTP status
       See docs/kb/mddb-claude-bridge.md for Claude-specific configuration details
 
   mcp-health:
