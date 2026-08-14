@@ -72,6 +72,21 @@ sections:
       - label: IP Discovery
         text: Use 'tailscale ip -4 tony-omen' to find the current Tailscale address; the hostname tony-omen is stable
 
+  - title: Tailscale Roadmap
+    icon: "🗺️"
+    layout: list
+    items:
+      - label: Auto-updates
+        text: Enable automatic Tailscale client updates on all nodes
+        status: selected
+        command: tailscale set --auto-update
+      - label: Exit node
+        text: Make tony-omen an exit node for secure mobile internet routing
+        status: future
+      - label: Headscale
+        text: Self-hosted Tailscale control plane (cloud coordination replacement)
+        status: future
+
   - title: Dynamic IP Solutions
     icon: "🔧"
     layout: list
@@ -165,7 +180,7 @@ sections:
 
 config:
   version: 2
-  last_updated: 2026-08-13
+  last_updated: 2026-08-14
   current_network: TONY-IP
   current_profile: mobile
   maintainer: tony

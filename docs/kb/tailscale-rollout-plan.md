@@ -190,6 +190,28 @@ curl -s https://tony-omen.taila0626a.ts.net/api/tailscale/connections | python3 
 systemctl --user status tailscale-connections.service
 ```
 
+## Phase 9 — Tailscale Client Auto-Updates (Selected)
+
+Enable automatic Tailscale client updates on all nodes so security patches and bug fixes apply without manual intervention.
+
+- Command on Linux: `tailscale set --auto-update`
+- Package-manager alternative: keep the `tailscale` package on the stable repo and enable the OS’s unattended-upgrades mechanism.
+- Status: **selected for implementation**.
+
+### Why
+
+Keeps the tailnet secure and reduces operational toil on each node. For a single-node setup this is low risk; for multiple nodes it should be combined with a maintenance window or update notifications.
+
+### Risks
+
+- An update could introduce a breaking change on a remote/headless host.
+- Mitigation: test updates on `tony-omen` first and keep a local console/SSH backup path.
+
+## Future (not now)
+
+- **Exit node** — make `tony-omen` an exit node for secure mobile internet routing. Useful, but not required until you want to route all remote traffic through home.
+- **Headscale** — self-hosted Tailscale control plane. Only if you want to remove the cloud coordination server dependency.
+
 ## Rollback
 
 1. Disconnect or uninstall Tailscale:
