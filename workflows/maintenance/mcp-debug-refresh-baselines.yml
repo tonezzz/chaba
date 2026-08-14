@@ -1,0 +1,104 @@
+name: mcp-debug-refresh-baselines
+description: Refresh mcp-debug efficiency baselines by running mcp_stats for known commands on tony_omen and tony_dell.
+version: "1.0"
+author: Chaba Team
+tags: [maintenance, mcp-debug, ssot, baseline]
+
+inputs:
+  update_ssot:
+    type: bool
+    description: If true, update docs/ssot/infrastructure/ssot.mcp-debug.yml with the new tony_omen baselines and recommendation lists.
+    default: false
+    required: false
+
+blocks:
+  - id: refresh_baselines
+    type: Shell
+    description: "Run mcp_stats for each known debug command on both hosts"
+    inputs:
+      command: |
+        #!/usr/bin/env python3
+        import json, subprocess, sys
+        from pathlib import Path
+
+        SSOT = Path("/home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.mcp-debug.yml")
+        SERVER = "/home/tony/CascadeProjects/chaba/scripts/mcp-debug-server.py"
+        COMMANDS = ["systemctl list-units", "df -h", "ps"]
+        HOSTS = ["tony_omen", "tony_dell"]
+        UPDATE_SSOT = "{{inputs.update_ssot}}".lower() == "true"
+
+        proc = subprocess.Popen(["python3", SERVER], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+        reqs = [{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}]
+        i = 2
+        call_map = {}
+        for cmd in COMMANDS:
+            for h in HOSTS:
+                reqs.append({
+                    "jsonrpc": "2.0",
+                    "id": i,
+                    "method": "tools/call",
+                    "params": {"name": "mcp_stats", "arguments": {"host": h, "command": cmd}},
+                })
+                call_map[i] = (cmd, h)
+                i += 1
+
+        for r in reqs:
+            proc.stdin.write(json.dumps(r) + "\n")
+        proc.stdin.close()
+
+        results = {cmd: {} for cmd in COMMANDS}
+        for line in proc.stdout:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                msg = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            mid = msg.get("id")
+            if mid in call_map:
+                cmd, h = call_map[mid]
+                results[cmd][h] = json.loads(msg["result"]["content"][0]["text"])
+
+        rc = proc.wait()
+        if rc != 0:
+            print("mcp-debug-server exited with code", rc, file=sys.stderr)
+            sys.exit(rc)
+
+        if not UPDATE_SSOT:
+            print(json.dumps(results, indent=2))
+        else:
+            import yaml
+
+            with open(SSOT) as f:
+                doc = yaml.safe_load(f)
+
+            for cmd in COMMANDS:
+                omen = results[cmd]["tony_omen"]
+                cmd_cfg = doc["efficiency"]["commands"][cmd]
+                cmd_cfg["raw_words"] = omen["raw_words"]
+                cmd_cfg["compact_words"] = omen["compact_words"]
+                cmd_cfg["savings_pct"] = omen["savings_pct"]
+                cmd_cfg["raw_chars"] = omen["raw_chars"]
+                cmd_cfg["compact_chars"] = omen["compact_chars"]
+                cmd_cfg["savings_pct_chars"] = omen["savings_pct_chars"]
+                cmd_cfg["recommended"] = omen["savings_pct_chars"] > 0
+
+            doc["workflow"]["recommended"] = [
+                c for c in COMMANDS if doc["efficiency"]["commands"][c]["recommended"]
+            ]
+            doc["workflow"]["not_recommended"] = [
+                c for c in COMMANDS if not doc["efficiency"]["commands"][c]["recommended"]
+            ]
+
+            with open(SSOT, "w") as f:
+                yaml.safe_dump(doc, f, sort_keys=False)
+
+            print("Updated:", SSOT)
+            print("Recommended:", doc["workflow"]["recommended"])
+            print("Not recommended:", doc["workflow"]["not_recommended"])
+    timeout: 120
+
+outputs:
+  report:
+    value: "{{blocks.refresh_baselines.outputs.stdout}}"

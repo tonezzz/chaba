@@ -181,3 +181,12 @@ For significant discoveries during work (not end-of-session):
 3. Use auto-kb skill for processing to ensure consistency
 4. Provide suggested KB entry title and brief description
 5. Explain why it's KB-worthy (operational value, reusability, prevention)
+
+## mcp-debug tool selection
+
+When executing a host command via the `mcp-debug` MCP server:
+
+1. Prefer `mcp_raw` for all commands by default.
+2. Use `mcp_debug` only for commands marked `recommended: true` in `docs/ssot/infrastructure/ssot.mcp-debug.yml` (currently only `systemctl list-units`).
+3. Vet any new command with `mcp_stats(host, command)` on both `tony_omen` and `tony_dell` before adding it to the `mcp_debug` whitelist. A command is efficient only when `savings_pct_chars` is positive on both hosts.
+4. Keep `ssot.mcp-debug.yml` baselines and recommendation lists up to date by running the `mcp-debug-refresh-baselines` workflow after host or command changes.
