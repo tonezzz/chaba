@@ -127,23 +127,29 @@ async function query(text, params) {
   }
 }
 
+// Convert SQLite-style ? placeholders to PostgreSQL $1, $2, etc.
+const convertPlaceholders = (sql) => {
+  let i = 0;
+  return sql.replace(/\?/g, () => '$' + (++i));
+};
+
 // Simplified SQLite-like interface for compatibility
 const db = {
   prepare: (sql) => ({
     all: async (...params) => {
-      const result = await pool.query(sql, params);
+      const result = await pool.query(convertPlaceholders(sql), params);
       return result.rows;
     },
     get: async (...params) => {
-      const result = await pool.query(sql, params);
+      const result = await pool.query(convertPlaceholders(sql), params);
       return result.rows[0] || null;
     },
     run: async (...params) => {
-      await pool.query(sql, params);
-      return { lastInsertRowid: 0 }; // PostgreSQL doesn't return lastInsertRowid
+      const result = await pool.query(convertPlaceholders(sql), params);
+      return result;
     },
     exec: async (sql) => {
-      await pool.query(sql);
+      await pool.query(convertPlaceholders(sql));
     }
   })
 };
@@ -276,7 +282,7 @@ async function checkExistingAlert(serviceName, alertType, resolved = false) {
     ORDER BY created_at DESC 
     LIMIT 1
   `);
-  const alert = await stmt.get(serviceName, alertType, resolved ? 1 : 0);
+  const alert = await stmt.get(serviceName, alertType, Boolean(resolved));
   return alert;
 }
 
@@ -340,7 +346,7 @@ async function processAlerts(config, serviceName, status, previousStatus, error)
       // Mark alert as resolved
       const stmt = db.prepare(`
         UPDATE alerts 
-        SET resolved = 1, resolved_at = CURRENT_TIMESTAMP 
+        SET resolved = TRUE, resolved_at = CURRENT_TIMESTAMP 
         WHERE id = ?
       `);
       await stmt.run(existingAlert.id);
@@ -1634,7 +1640,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         
         if (args.resolved !== undefined) {
           conditions.push('resolved = ?');
-          params.push(args.resolved ? 1 : 0);
+          params.push(args.resolved);
         }
         
         if (conditions.length > 0) {
@@ -1667,7 +1673,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         `);
         const result = await stmt.run(args.alert_id);
         
-        if (result.changes === 0) {
+        if (result.rowCount === 0) {
           throw new Error(`Alert ${args.alert_id} not found`);
         }
         
