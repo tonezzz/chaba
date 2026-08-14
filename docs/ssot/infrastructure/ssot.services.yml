@@ -1,6 +1,27 @@
 title: Chaba Services Configuration
 subtitle: Service definitions and configurations for Chaba infrastructure
-version: 2
+version: 3
+
+production_deployment:
+  profiles:
+    - production (--profile production flag)
+  environment_separation:
+    - development: NODE_ENV=development, placeholder API keys, direct project mounts
+    - production: NODE_ENV=production, real API keys, static asset mounts only
+  secrets_management:
+    - docker-compose.secrets.yml for Docker secrets
+    - generate-secrets.sh script for secret generation
+    - chmod 600 permissions for secret files
+  configuration_files:
+    - .env.production for production environment variables
+    - docker-compose.prod.yml for production overrides
+    - .env.example for environment template
+  deployment_commands:
+    - development: docker compose up -d
+    - production: docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile production up -d --build
+    - production with secrets: docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.secrets.yml --profile production up -d --build
+  status: implemented (2026-08-13)
+  notes: Production deployment system with environment separation, secrets management, and comprehensive documentation in production-deployment-operations.md
 
 tony-omen:
   llama-router:
