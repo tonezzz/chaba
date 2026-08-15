@@ -18,9 +18,12 @@ Invoke this skill when:
 
 ## What it needs
 
-Input parameters:
-- `kb_review_content`: The KB review section text from an assistant response
-- `session_context`: Optional context about the session/work done
+Input (one of):
+- CLI argument: `node auto-kb.mjs "<kb-review-content>" ["<context>"]`
+- Environment: `KB_REVIEW_CONTENT="..."` and optional `KB_SESSION_CONTEXT="..."`
+- Stdin: `echo "..." | node auto-kb.mjs`
+
+The KB review section should be a concise summary of decisions, discoveries, or fixes from the session.
 
 ## Processing steps
 
@@ -75,8 +78,14 @@ Does NOT create entries for:
 
 ## Example usage
 
-```
-/auto-kb "Created daily2 page with calendar layout for Yomi daily summaries. Required web stack restart to pick up new file. Page now accessible at /apps/yomi/daily2/index.html with basic auth. Uses existing API endpoints and follows project styling conventions."
+```bash
+node .agents/skills/auto-kb/auto-kb.mjs "Created daily2 page with calendar layout for Yomi daily summaries. Required web stack restart to pick up new file. Page now accessible at /apps/yomi/daily2/index.html with basic auth. Uses existing API endpoints and follows project styling conventions."
+
+# Or via environment
+KB_REVIEW_CONTENT="Created daily2 page..." node .agents/skills/auto-kb/auto-kb.mjs
+
+# Or piped
+echo "Created daily2 page..." | node .agents/skills/auto-kb/auto-kb.mjs
 ```
 
 ## Related documentation

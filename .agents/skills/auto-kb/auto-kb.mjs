@@ -114,7 +114,7 @@ async function checkRedundancy(content) {
             collection: collection,
             query: content,
             top_k: 5,
-            min_score: 0.4  // Only consider results with relevance > 0.4
+            threshold: 0.4  // Only consider results with relevance > 0.4
           });
           
           if (result.results && Array.isArray(result.results)) {
@@ -285,6 +285,30 @@ async function addToMDDB(filepath, filename, content) {
 }
 
 /**
+ * Read KB review content from CLI args, env, or stdin
+ */
+async function getInput() {
+  if (process.argv[2]) {
+    return process.argv[2];
+  }
+  if (process.env.KB_REVIEW_CONTENT) {
+    return process.env.KB_REVIEW_CONTENT;
+  }
+  if (process.stdin.isTTY) {
+    throw new Error(
+      'Usage: auto-kb.mjs <kb-review-content> [context]\n' +
+      '       KB_REVIEW_CONTENT="..." node auto-kb.mjs\n' +
+      '       echo "..." | node auto-kb.mjs'
+    );
+  }
+  const chunks = [];
+  for await (const chunk of process.stdin) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString('utf8').trim();
+}
+
+/**
  * Main execution
  */
 async function main() {
@@ -297,14 +321,8 @@ async function main() {
   createLock();
   
   try {
-    const args = process.argv.slice(2);
-    if (args.length === 0) {
-      console.error('Usage: auto-kb.mjs <kb-review-content> [context]');
-      process.exit(1);
-    }
-
-    const content = args[0];
-    const context = args[1] || '';
+    const content = await getInput();
+    const context = process.env.KB_SESSION_CONTEXT || process.argv[3] || '';
 
     console.log('Analyzing KB review content...');
     
