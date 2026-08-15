@@ -67,7 +67,7 @@ sections:
         status: active
         tags: [ssh, command-line, key-auth]
       - label: SSH Configuration
-        text: "Host: macbook, User: kkkakk, Key: ~/.ssh/id_ed25519_macbook"
+        text: "Host: macbook 192.168.1.39 100.124.59.112, HostName: 100.124.59.112, User: kkkakk, IdentityFile: ~/.ssh/id_ed25519_macbook"
         url: file:///home/tony/.ssh/config
       - label: SSH Connection
         text: ssh macbook (configured in ~/.ssh/config)
@@ -88,7 +88,7 @@ sections:
       - label: SSH Config
         text: ~/.ssh/config (Linux PC) with 'macbook' host entry
       - label: Connection Test
-        text: ssh macbook "whoami && hostname" (successful)
+        text: "ssh macbook 'whoami && hostname' (key auth verified 2026-08-15)"
 
   - title: Chrome Profile Management
     icon: 👤

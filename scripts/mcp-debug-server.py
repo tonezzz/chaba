@@ -505,13 +505,17 @@ def handle_tools_call(id_, params):
         if not host or not command:
             return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host and command are required"}}
         result = run_on_host(host, command, compact=True)
-        try:
-            data = json.loads(result.get("out", "") or "{}")
-            data["h"] = host
-            output = json.dumps(data, separators=(",", ":"))
-        except json.JSONDecodeError:
+        if not result.get("ok"):
             result["h"] = host
             output = json.dumps(result, separators=(",", ":"))
+        else:
+            try:
+                data = json.loads(result.get("out", "") or "{}")
+                data["h"] = host
+                output = json.dumps(data, separators=(",", ":"))
+            except json.JSONDecodeError:
+                result["h"] = host
+                output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_raw":
         if not host or not command:
             return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host and command are required"}}
