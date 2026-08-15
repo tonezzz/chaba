@@ -7,7 +7,7 @@ services:
   - id: caddy
     name: Caddy
     type: http
-    url: http://tony-omen.local:8080/apps/
+    url: http://tony-omen:8080/apps/
     expected_status: 200
     timeout: 5
     category: web
@@ -15,7 +15,7 @@ services:
   - id: bserver
     name: BServer
     type: http
-    url: http://tony-omen.local:8080/
+    url: http://tony-omen:8080/
     expected_status: 200
     timeout: 5
     category: web
@@ -23,7 +23,7 @@ services:
   - id: status-api
     name: Status API
     type: http
-    url: http://tony-omen.local:8080/api/health
+    url: http://tony-omen:8080/api/health
     expected_status: 200
     timeout: 5
     category: api
@@ -31,7 +31,7 @@ services:
   - id: yomi-api
     name: Yomi API
     type: http
-    url: http://tony-omen.local:8080/api/yomi/health
+    url: http://tony-omen:8080/api/yomi/health
     expected_status: 200
     timeout: 5
     category: api
@@ -39,7 +39,7 @@ services:
   - id: yomi-summarization
     name: Yomi Summarization
     type: http
-    url: http://tony-omen.local:8080/api/yomi/summarization-status
+    url: http://tony-omen:8080/api/yomi/summarization-status
     expected_status: 200
     timeout: 5
     category: api
@@ -47,7 +47,7 @@ services:
   - id: yomi-rate-limiter
     name: Yomi Rate Limiter
     type: http
-    url: http://tony-omen.local:8080/api/yomi/rate-limiter-status
+    url: http://tony-omen:8080/api/yomi/rate-limiter-status
     expected_status: 200
     timeout: 5
     category: api
@@ -72,7 +72,7 @@ services:
   - id: weaviate
     name: Weaviate
     type: http
-    url: http://tony-omen.local:8080/api/weaviate/v1/nodes
+    url: http://tony-omen:8080/api/weaviate/v1/nodes
     expected_status: 200
     timeout: 5
     category: datastore
@@ -81,7 +81,7 @@ services:
   - id: thai-legal
     name: Thai Legal LLM
     type: http
-    url: http://tony-omen.local:8001/health
+    url: http://tony-omen:8001/health
     expected_status: 200
     timeout: 10
     category: gpu
@@ -89,7 +89,7 @@ services:
   - id: imagen2
     name: Imagen2
     type: http
-    url: http://tony-omen.local:8000/health
+    url: http://tony-omen:8000/health
     expected_status: 200
     timeout: 10
     category: gpu
@@ -97,7 +97,7 @@ services:
   - id: txt2vid
     name: Txt2Vid
     type: http
-    url: http://tony-omen.local:8002/health
+    url: http://tony-omen:8002/health
     expected_status: 200
     timeout: 10
     category: gpu
@@ -106,7 +106,7 @@ services:
   - id: gpu-queue
     name: GPU Queue
     type: http
-    url: http://tony-omen.local:3001/health
+    url: http://tony-omen:3001/health
     expected_status: 200
     timeout: 5
     category: queue
@@ -123,7 +123,7 @@ services:
   - id: frigate
     name: Frigate NVR
     type: http
-    url: http://tony-omen.local:8080/frigate/api/version
+    url: http://tony-omen:8080/frigate/api/version
     expected_status: 200
     timeout: 10
     category: optional
@@ -141,7 +141,7 @@ recovery_actions:
     - Restart GPU service
 
   gpu_vram_high:
-    - Check Netdata GPU dashboard: http://tony-omen.local:8080/apps/netdata/
+    - Check Netdata GPU dashboard: http://tony-omen:8080/apps/netdata/
     - Identify processes using GPU memory
     - Hold llama if needed: mcp1_hold_llama
     - Check for stuck jobs in GPU queue
@@ -155,13 +155,13 @@ recovery_actions:
 # Testing and debugging guidance
 debugging_guidance:
   web_testing:
-    - Use direct hostname URLs (e.g., http://tony-dell.local:8080/apps/health-check/)
+    - Use direct hostname URLs (e.g., http://tony-dell:8080/apps/health-check/)
     - Avoid browser preview for local testing - use regular browser instead
     - Browser preview is only for isolated environments or when direct access unavailable
     - Test in multiple browsers for compatibility issues
 
   location_testing:
-    - At Home: Use tony-dell.local for direct local network access
+    - At Home: Use tony-dell for direct local network access
     - On Mobile: Use localhost if testing on the same machine
     - External: Use VPN or external domain when away from home network
 

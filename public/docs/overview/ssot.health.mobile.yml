@@ -7,7 +7,7 @@ services:
   - id: caddy
     name: Caddy (External)
     type: http
-    url: http://tony-omen.local:8080/apps/
+    url: http://tony-omen:8080/apps/
     expected_status: 200
     timeout: 10
     category: web
@@ -15,7 +15,7 @@ services:
   - id: status-api
     name: Status API (External)
     type: http
-    url: http://tony-omen.local:8080/api/health
+    url: http://tony-omen:8080/api/health
     expected_status: 200
     timeout: 10
     category: api
@@ -23,7 +23,7 @@ services:
   - id: yomi-api
     name: Yomi API (External)
     type: http
-    url: http://tony-omen.local:8080/api/yomi/health
+    url: http://tony-omen:8080/api/yomi/health
     expected_status: 200
     timeout: 10
     category: api
@@ -31,7 +31,7 @@ services:
   - id: yomi-summarization
     name: Yomi Summarization (External)
     type: http
-    url: http://tony-omen.local:8080/api/yomi/summarization-status
+    url: http://tony-omen:8080/api/yomi/summarization-status
     expected_status: 200
     timeout: 10
     category: api
@@ -39,7 +39,7 @@ services:
   - id: yomi-rate-limiter
     name: Yomi Rate Limiter (External)
     type: http
-    url: http://tony-omen.local:8080/api/yomi/rate-limiter-status
+    url: http://tony-omen:8080/api/yomi/rate-limiter-status
     expected_status: 200
     timeout: 10
     category: api
@@ -48,7 +48,7 @@ services:
   - id: weaviate
     name: Weaviate (External)
     type: http
-    url: http://tony-omen.local:8080/api/weaviate/v1/nodes
+    url: http://tony-omen:8080/api/weaviate/v1/nodes
     expected_status: 200
     timeout: 10
     category: datastore
@@ -57,7 +57,7 @@ services:
   - id: thai-legal
     name: Thai Legal LLM (External)
     type: http
-    url: http://tony-omen.local:8001/health
+    url: http://tony-omen:8001/health
     expected_status: 200
     timeout: 15
     category: gpu
@@ -65,7 +65,7 @@ services:
   - id: txt2vid
     name: Txt2Vid (External)
     type: http
-    url: http://tony-omen.local:8002/health
+    url: http://tony-omen:8002/health
     expected_status: 200
     timeout: 15
     category: gpu
@@ -73,7 +73,7 @@ services:
   - id: imagen2
     name: Imagen2 (External)
     type: http
-    url: http://tony-omen.local:8000/health
+    url: http://tony-omen:8000/health
     expected_status: 200
     timeout: 15
     category: gpu
@@ -82,7 +82,7 @@ services:
   - id: gpu-queue
     name: GPU Queue (External)
     type: http
-    url: http://tony-omen.local:3001/health
+    url: http://tony-omen:3001/health
     expected_status: 200
     timeout: 10
     category: queue
@@ -91,7 +91,7 @@ services:
   - id: frigate
     name: Frigate NVR (External)
     type: http
-    url: http://tony-omen.local:8080/frigate/api/version
+    url: http://tony-omen:8080/frigate/api/version
     expected_status: 200
     timeout: 15
     category: optional
@@ -133,7 +133,7 @@ debugging_guidance:
   location_testing:
     - On Mobile: Use localhost if testing on the same machine
     - External: Use VPN or external domain when away from home network
-    - At Home: Switch to tony-omen.local for better performance
+    - At Home: Switch to tony-omen for better performance
 
   network_testing:
     - Test VPN connectivity before accessing services

@@ -6,8 +6,8 @@ version: 8
 profiles:
   default: auto-detect
   home:
-    hostname: tony-omen.local
-    base_url: http://tony-omen.local:8080
+    hostname: tony-omen
+    base_url: http://tony-omen:8080
     ssids: [TONY-WIFI, TONY-WIFI_5G]
     description: Home network with local hostname
   mobile:
@@ -87,7 +87,7 @@ services:
   - id: raceman-web
     name: Raceman Web
     type: http
-    url: http://tony-omen.local:8083/apps/raceman/
+    url: http://tony-omen:8083/apps/raceman/
     expected_status: 200
     timeout: 5
     category: web
@@ -96,7 +96,7 @@ services:
   - id: helm
     name: Helm Dashboard
     type: http
-    url: http://tony-omen.local:8080/apps/helm
+    url: http://tony-omen:8080/apps/helm
     expected_status: 200
     timeout: 5
     category: web
@@ -105,7 +105,7 @@ services:
       - "Check container: docker ps | grep helm"
       - "Check container logs: docker logs helm --tail 20"
       - "Test direct container: curl -s http://localhost:3003/"
-      - "Test Caddy proxy: curl -s http://tony-omen.local:8080/apps/helm/"
+      - "Test Caddy proxy: curl -s http://tony-omen:8080/apps/helm/"
     recovery_actions:
       - "Restart container: cd /home/tony/CascadeProjects/chaba/stacks/web && docker compose restart helm"
       - "Rebuild container: cd /home/tony/CascadeProjects/helm && docker build -t web-helm . && cd /home/tony/CascadeProjects/chaba/stacks/web && docker compose up -d helm"
@@ -189,13 +189,13 @@ services:
   - id: playlived
     name: Playlived
     type: http
-    url: http://tony-omen.local:9230/sessions
+    url: http://tony-omen:9230/sessions
     expected_status: 200
     timeout: 5
     category: api
     profiles: [home]
     verification:
-      - "Test sessions: curl -s http://tony-omen.local:9230/sessions"
+      - "Test sessions: curl -s http://tony-omen:9230/sessions"
       - "Check pinned package: cat /home/tony/.local/playlive/package.json | grep '\"playwright\"'"
       - "Verify installed version: cd /home/tony/.local/playlive && npm ls playwright"
       - "Check browsers: npx playwright install --dry-run"
@@ -301,7 +301,7 @@ services:
   - id: mddb-api
     name: MDDB API
     type: http
-    url: "http://tony-omen.local:11023/health"
+    url: "http://tony-omen:11023/health"
     expected_status: 200
     timeout: 5
     category: datastore
@@ -311,7 +311,7 @@ services:
   - id: mddb-mcp
     name: MDDB MCP Server
     type: http
-    url: "http://tony-omen.local:9001/mcp"
+    url: "http://tony-omen:9001/mcp"
     expected_status: 400
     timeout: 5
     category: datastore
@@ -321,7 +321,7 @@ services:
       - "Check MDDB container: docker ps | grep mddb"
       - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb"
       - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb"
-      - "Verify MCP endpoint: curl -s http://tony-omen.local:9001/mcp"
+      - "Verify MCP endpoint: curl -s http://tony-omen:9001/mcp"
       - "Check MCP config: cat ~/.config/devin/mcp_config.json | grep mddb"
 
   - id: mddb-panel
@@ -336,7 +336,7 @@ services:
   - id: mddb-stats
     name: MDDB Stats Endpoint
     type: http
-    url: "http://tony-omen.local:11023/v1/stats"
+    url: "http://tony-omen:11023/v1/stats"
     expected_status: 200
     timeout: 5
     category: datastore
@@ -346,12 +346,12 @@ services:
       - "Check MDDB container: docker ps | grep mddb"
       - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb"
       - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb"
-      - "Verify port 11023 is accessible: curl -s http://tony-omen.local:11023/v1/stats"
+      - "Verify port 11023 is accessible: curl -s http://tony-omen:11023/v1/stats"
 
   - id: mddb-vector-stats
     name: MDDB Vector Stats Endpoint
     type: http
-    url: "http://tony-omen.local:11023/v1/vector-stats"
+    url: "http://tony-omen:11023/v1/vector-stats"
     expected_status: 200
     timeout: 5
     category: datastore
@@ -361,12 +361,12 @@ services:
       - "Check MDDB container: docker ps | grep mddb"
       - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb"
       - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb"
-      - "Verify port 11023 is accessible: curl -s http://tony-omen.local:11023/v1/vector-stats"
+      - "Verify port 11023 is accessible: curl -s http://tony-omen:11023/v1/vector-stats"
 
   - id: mddb-metrics
     name: MDDB Metrics Endpoint
     type: http
-    url: "http://tony-omen.local:11023/metrics"
+    url: "http://tony-omen:11023/metrics"
     expected_status: 200
     timeout: 5
     category: datastore
@@ -376,7 +376,7 @@ services:
       - "Check MDDB container: docker ps | grep mddb"
       - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb"
       - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb"
-      - "Verify port 11023 is accessible: curl -s http://tony-omen.local:11023/metrics"
+      - "Verify port 11023 is accessible: curl -s http://tony-omen:11023/metrics"
 
   - id: mddb-container
     name: MDDB Container
@@ -419,7 +419,7 @@ services:
     name: Llama Router (Phi-3 only)
     disabled: true
     type: http
-    url: http://tony-omen.local:8001/health
+    url: http://tony-omen:8001/health
     expected_status: 200
     timeout: 10
     category: gpu
@@ -429,7 +429,7 @@ services:
   - id: llama-server
     name: Llama Server (MCP)
     type: http
-    url: http://tony-omen.local:8008/health
+    url: http://tony-omen:8008/health
     expected_status: 200
     timeout: 10
     category: gpu
@@ -439,13 +439,13 @@ services:
       - "Check container: docker ps | grep llama-server"
       - "Start container: cd /home/tony/CascadeProjects/chaba-omen/stacks/ai && docker compose up -d llama-server"
       - "Check container logs: cd /home/tony/CascadeProjects/chaba-omen/stacks/ai && docker compose logs llama-server"
-      - "Verify port 8008 is accessible: curl -s http://tony-omen.local:8008/health"
-      - "Check model loading: curl -s http://tony-omen.local:8008/health (returns 503 while loading)"
+      - "Verify port 8008 is accessible: curl -s http://tony-omen:8008/health"
+      - "Check model loading: curl -s http://tony-omen:8008/health (returns 503 while loading)"
 
   - id: imagen2
     name: Imagen2
     type: http
-    url: http://tony-omen.local:8000/health
+    url: http://tony-omen:8000/health
     expected_status: 200
     timeout: 10
     category: gpu
@@ -456,7 +456,7 @@ services:
     name: Txt2Vid
     disabled: true
     type: http
-    url: http://tony-omen.local:8002/health
+    url: http://tony-omen:8002/health
     expected_status: 200
     timeout: 10
     category: gpu
@@ -467,7 +467,7 @@ services:
   - id: gpu-queue
     name: GPU Queue
     type: http
-    url: http://tony-omen.local:3001/health
+    url: http://tony-omen:3001/health
     expected_status: 200
     timeout: 5
     category: queue
@@ -500,7 +500,7 @@ services:
     name: Camera Control
     disabled: true
     type: http
-    url: http://tony-omen.local:8090/
+    url: http://tony-omen:8090/
     expected_status: 200
     timeout: 5
     category: optional
@@ -603,8 +603,8 @@ services:
     recovery_actions:
       - "Restart server: systemctl --user restart barriers.service"
       - "Check log: journalctl --user -u barriers.service -n 50"
-      - "Check client: ssh -o ConnectTimeout=3 tony@tony-dell.local 'pgrep -a barrierc'"
-      - "Restart client: ssh -o ConnectTimeout=3 tony@tony-dell.local 'pkill -x barrierc 2>/dev/null; nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &'"
+      - "Check client: ssh -o ConnectTimeout=3 tony@tony-dell 'pgrep -a barrierc'"
+      - "Restart client: ssh -o ConnectTimeout=3 tony@tony-dell 'pkill -x barrierc 2>/dev/null; nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &'"
 
   - id: gdrive-backup
     name: Google Drive Backup
@@ -670,7 +670,7 @@ recovery_actions:
     - "Install Playwright browsers: cd /home/tony/.local/playlive && npx playwright install"
     - "Verify browser installation: npx playwright install --dry-run"
     - "Check browser cache: ls -la ~/.cache/ms-playwright/"
-    - "Test session creation: curl -s -X POST http://tony-omen.local:9230/sessions -H 'Content-Type: application/json' -d '{\"type\":\"playwright-headless\",\"target\":\"local\"}'"
+    - "Test session creation: curl -s -X POST http://tony-omen:9230/sessions -H 'Content-Type: application/json' -d '{\"type\":\"playwright-headless\",\"target\":\"local\"}'"
     - "Restart playlived service: systemctl --user restart playlived.service"
 
   raceman_service_down:
@@ -678,7 +678,7 @@ recovery_actions:
     - "Restart raceman services: cd /home/tony/CascadeProjects/chaba-raceman && docker compose restart"
     - "Check raceman logs: cd /home/tony/CascadeProjects/chaba-raceman && docker compose logs"
     - "Verify nginx config: cat /home/tony/CascadeProjects/chaba-raceman/nginx.conf"
-    - "Test direct access: curl -s http://tony-omen.local:8083/apps/raceman/"
+    - "Test direct access: curl -s http://tony-omen:8083/apps/raceman/"
 
   ssot_sync_watcher_down:
     - "Check service status: systemctl status ssot-sync.service"
@@ -693,9 +693,9 @@ recovery_actions:
     - "Check MDDB container: docker ps | grep mddb"
     - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb"
     - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb"
-    - "Verify port 11023 is accessible: curl -s http://tony-omen.local:11023/health"
+    - "Verify port 11023 is accessible: curl -s http://tony-omen:11023/health"
     - "Check docker compose config: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose config"
-    - "Verify network connectivity: ping -c 2 tony-omen.local"
+    - "Verify network connectivity: ping -c 2 tony-omen"
 
   mddb_container_down:
     - "Check container status: docker ps -a | grep mddb"
@@ -706,33 +706,33 @@ recovery_actions:
     - "Restart docker if needed: systemctl restart docker"
 
   network_connectivity_home:
-    - "Check if tony-omen.local is reachable: ping -c 2 tony-omen.local"
-    - "Test HTTP connectivity: curl -s -o /dev/null -w '%{http_code}' http://tony-omen.local:8080/"
+    - "Check if tony-omen is reachable: ping -c 2 tony-omen"
+    - "Test HTTP connectivity: curl -s -o /dev/null -w '%{http_code}' http://tony-omen:8080/"
     - "Test localhost access: curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/"
     - "Check network interface status: ip addr show"
-    - "Verify DNS resolution: nslookup tony-omen.local"
+    - "Verify DNS resolution: nslookup tony-omen"
     - "Check firewall rules: sudo iptables -L -n"
     - "Test if on home network vs mobile profile"
 
   hostname_resolution_issues:
-    - "Verify /etc/hosts mapping: cat /etc/hosts | grep tony-omen.local"
-    - "Check resolved IP vs local IP: nslookup tony-omen.local and compare with ip addr show"
+    - "Verify /etc/hosts mapping: cat /etc/hosts | grep tony-omen"
+    - "Check resolved IP vs local IP: nslookup tony-omen and compare with ip addr show"
     - "Get reliable local IP: ip route get 1.1.1.1 | awk '{print $7}'"
     - "Fix incorrect /etc/hosts: sudo sed -i 's/OLD_IP/NEW_IP/' /etc/hosts"
-    - "Verify hostname-based HTTP: curl -s http://tony-omen.local:8080/"
+    - "Verify hostname-based HTTP: curl -s http://tony-omen:8080/"
     - "Universal health check now includes hostname resolution verification"
     - "Health workflows use hostname-based checks instead of hardcoded IPs"
 
 # Testing and debugging guidance
 debugging_guidance:
   web_testing:
-    - Use direct hostname URLs for local testing (tony-omen.local at Home, localhost on Mobile)
+    - Use direct hostname URLs for local testing (tony-omen at Home, localhost on Mobile)
     - Avoid browser preview for local testing - use regular browser instead
     - Browser preview is only for isolated environments or when direct access unavailable
     - Test in multiple browsers for compatibility issues
 
   location_testing:
-    - At Home: Use tony-omen.local for direct local network access
+    - At Home: Use tony-omen for direct local network access
     - On Mobile: Use localhost if testing on the same machine
     - External: Use VPN or external domain when away from home network
     - Network connectivity issues: DNS may resolve but HTTP may fail (ping vs curl discrepancy)
@@ -745,8 +745,8 @@ debugging_guidance:
     - Test API endpoints with proper HTTP methods
 
   yomi_chat_testing:
-    - "Test health endpoint: curl -s http://tony-omen.local:8080/api/yomi/health"
-    - "Test chat page load: curl -s http://tony-omen.local:8080/apps/yomi/chat.html?chat=test_id"
+    - "Test health endpoint: curl -s http://tony-omen:8080/api/yomi/health"
+    - "Test chat page load: curl -s http://tony-omen:8080/apps/yomi/chat.html?chat=test_id"
     - "Verify Caddy proxy uses handle_path not handle for /api/yomi/* routes"
     - "Check container networking: docker exec web ping -c 2 host.docker.internal"
     - "Test direct container access: docker exec web wget -qO- http://host.docker.internal:3000/api/yomi/health"

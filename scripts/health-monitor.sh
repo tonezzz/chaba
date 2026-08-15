@@ -133,9 +133,9 @@ fi
 
 # ── Key service health ───────────────────────────────────────────────────────
 declare -A SERVICE_URLS=(
-    [status-api]="http://tony-omen.local:8080/health"
-    [yomi-api]="http://tony-omen.local:8080/api/yomi/health"
-    [caddy]="http://tony-omen.local:8080/"
+    [status-api]="http://tony-omen:8080/health"
+    [yomi-api]="http://tony-omen:8080/api/yomi/health"
+    [caddy]="http://tony-omen:8080/"
 )
 for name in "${!SERVICE_URLS[@]}"; do
     url="${SERVICE_URLS[$name]}"
@@ -146,15 +146,15 @@ for name in "${!SERVICE_URLS[@]}"; do
 done
 
 # ── Barrier client on tony-dell ─────────────────────────────────────────────
-client_pid=$(ssh -o ConnectTimeout=3 -o BatchMode=yes tony@tony-dell.local 'pgrep -x barrierc' 2>/dev/null || true)
+client_pid=$(ssh -o ConnectTimeout=3 -o BatchMode=yes tony@tony-dell 'pgrep -x barrierc' 2>/dev/null || true)
 if [[ -z "$client_pid" ]]; then
     alert warning "Barrier Client Missing" "barrierc not running on tony-dell — restarting via ssh"
-    ssh -o ConnectTimeout=3 -o BatchMode=yes tony@tony-dell.local 'pkill -x barrierc 2>/dev/null; nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &' >/dev/null 2>&1 || true
+    ssh -o ConnectTimeout=3 -o BatchMode=yes tony@tony-dell 'pkill -x barrierc 2>/dev/null; nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &' >/dev/null 2>&1 || true
 else
-    client_log=$(ssh -o ConnectTimeout=3 -o BatchMode=yes tony@tony-dell.local 'tail -n 10 /tmp/barrier-client.log' 2>/dev/null || true)
+    client_log=$(ssh -o ConnectTimeout=3 -o BatchMode=yes tony@tony-dell 'tail -n 10 /tmp/barrier-client.log' 2>/dev/null || true)
     if ! grep -q "connected to server" <<< "$client_log" 2>/dev/null; then
         alert warning "Barrier Client Not Connected" "barrierc on tony-dell is not connected — restarting"
-        ssh -o ConnectTimeout=3 -o BatchMode=yes tony@tony-dell.local 'pkill -x barrierc 2>/dev/null; nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &' >/dev/null 2>&1 || true
+        ssh -o ConnectTimeout=3 -o BatchMode=yes tony@tony-dell 'pkill -x barrierc 2>/dev/null; nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &' >/dev/null 2>&1 || true
     fi
 fi
 
@@ -186,6 +186,9 @@ if [[ ${#ISSUES[@]} -eq 0 ]]; then
 else
     echo "[$ts] ISSUES (${#ISSUES[@]}): ${ISSUES[*]}" >> "$ALERT_LOG"
 fi
+
+# ── Health snapshot ─────────────────────────────────────────────────────────
+"$SCRIPT_DIR/health-snapshot.sh" >/dev/null 2>&1 || true
 
 # Rotate log: keep last 500 lines
 tail -500 "$ALERT_LOG" > "${ALERT_LOG}.tmp" && mv "${ALERT_LOG}.tmp" "$ALERT_LOG" 2>/dev/null || true

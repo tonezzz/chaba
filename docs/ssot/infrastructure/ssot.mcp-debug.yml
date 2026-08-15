@@ -265,9 +265,18 @@ presets:
       - host: tony_dell
         tool: mcp_raw
         command: free -h
+  tony-omen-snapshot:
+    description: Fetch the latest tony-omen health snapshot
+    steps:
+      - host: tony_omen
+        tool: mcp_raw
+        command: cat /home/tony/var/chaba/health/tony-omen-snapshot.json
   tony-dell-snapshot:
     description: Fetch the latest tony-dell health agent snapshot and check its freshness
     steps:
+      - host: tony_dell
+        tool: mcp_raw
+        command: systemctl --user start tony-dell-health-snapshot
       - host: tony_dell
         tool: mcp_raw
         command: ls -l --time-style=full-iso /home/tony/var/chaba/health/tony-dell-snapshot.json

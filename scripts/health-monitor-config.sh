@@ -15,7 +15,7 @@ export EMAIL_RECIPIENT="tony@example.com"
 export EMAIL_SUBJECT_PREFIX="[Chaba Health Monitor]"
 
 # Yomi API configuration
-export YOMI_API_URL="http://tony-omen.local:8080/api/yomi/send"
+export YOMI_API_URL="http://tony-omen:8080/api/yomi/send"
 export YOMI_CHAT_ID=""  # Set to specific chat ID or leave empty for default
 
 # Pushover configuration
