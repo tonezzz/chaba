@@ -2,7 +2,6 @@ title: MCP Debug
 subtitle: Multi-host compact debug output and remote execution
 icon: bug
 version: 1
-
 hosts:
   tony_omen:
     name: Tony Omen
@@ -15,7 +14,6 @@ hosts:
     hostname: tony-dell.local
     ssh_user: tony
     mcp_debug_path: /home/tony/.local/bin/mcp-debug
-
 debug_commands:
   systemctl list-units:
     description: Running systemd services
@@ -37,54 +35,86 @@ debug_commands:
     description: Top processes by memory
     compact: true
     expected_output: processes
-
+  free -h:
+    description: Memory usage
+    compact: true
+    expected_output: memory
+  uptime:
+    description: Uptime and load
+    compact: true
+    expected_output: uptime
+  mount:
+    description: Mounted filesystems
+    compact: true
+    expected_output: mounts
+  lsblk:
+    description: Block devices
+    compact: true
+    expected_output: block_devices
+  lsusb:
+    description: USB devices
+    compact: true
+    expected_output: usb_devices
 raw_commands:
   allowed_prefixes:
-    - systemctl
-    - df
-    - ps
-    - free
-    - tail
-    - head
-    - cat
-    - ls
-    - which
-
+  - systemctl
+  - df
+  - ps
+  - free
+  - uptime
+  - mount
+  - lsblk
+  - lsusb
+  - journalctl
+  - ss
+  - env
+  - nvidia-smi
+  - rocm-smi
+  - tail
+  - head
+  - cat
+  - ls
+  - which
 server:
   script: /home/tony/CascadeProjects/chaba/scripts/mcp-debug-server.py
   wrapper: /home/tony/.config/devin/mcp-scripts/mcp-debug.sh
   log_level: INFO
   tools:
-    - mcp_debug
-    - mcp_raw
-    - mcp_stats
-
+  - mcp_debug
+  - mcp_raw
+  - mcp_stats
+  - mcp_vet
+  - mcp_savings
+  - mcp_diff
+  - mcp_logs
+  - mcp_net
+  - mcp_env
+  - mcp_gpu
 phases:
-  - id: 1
-    name: SSOT and spec
-    status: completed
-    notes: Define hosts, commands, and progress in this file
-  - id: 2
-    name: Deploy mcp-debug to tony-omen
-    status: completed
-    notes: Copied /home/tony/mcp-debug/mcp-debug.py and symlinked to ~/.local/bin
-  - id: 3
-    name: Build host-aware mcp-debug-server
-    status: completed
-    notes: /home/tony/CascadeProjects/chaba/scripts/mcp-debug-server.py with mcp_debug and mcp_raw
-  - id: 4
-    name: Register in Devin/Windsurf MCP
-    status: completed
-    notes: Generated /home/tony/.config/devin/mcp_config.json and /home/tony/.config/windsurf/mcp_config.json
-  - id: 5
-    name: Test both hosts
-    status: completed
-    notes: mcp_debug and mcp_raw tested for tony-omen and tony-dell
-  - id: 6
-    name: Deprecate remote-exec-tony-dell
-    status: completed
-    notes: remote-exec-tony-dell status set to deprecated; mcp-debug status set to operational
-
+- id: 1
+  name: SSOT and spec
+  status: completed
+  notes: Define hosts, commands, and progress in this file
+- id: 2
+  name: Deploy mcp-debug to tony-omen
+  status: completed
+  notes: Copied /home/tony/mcp-debug/mcp-debug.py and symlinked to ~/.local/bin
+- id: 3
+  name: Build host-aware mcp-debug-server
+  status: completed
+  notes: /home/tony/CascadeProjects/chaba/scripts/mcp-debug-server.py with mcp_debug and mcp_raw
+- id: 4
+  name: Register in Devin/Windsurf MCP
+  status: completed
+  notes: Generated /home/tony/.config/devin/mcp_config.json and /home/tony/.config/windsurf/mcp_config.json
+- id: 5
+  name: Test both hosts
+  status: completed
+  notes: mcp_debug and mcp_raw tested for tony-omen and tony-dell
+- id: 6
+  name: Deprecate remote-exec-tony-dell
+  status: completed
+  notes: remote-exec-tony-dell status set to deprecated; mcp-debug status set to operational
 efficiency:
   tracked_by: mcp_stats
   note: tony_omen baseline generated on 2026-08-14. Re-run mcp_stats to refresh per-host numbers.
@@ -129,56 +159,62 @@ efficiency:
       compact_chars: 2157
       savings_pct_chars: 93.5
       recommended: true
-
+    free -h:
+      raw_words: 17
+      compact_words: 2
+      savings_pct: 88.2
+      raw_chars: 207
+      compact_chars: 148
+      savings_pct_chars: 28.5
+      recommended: true
 workflow:
   default_tool: mcp_raw
-  compact_when: "savings_pct_chars > 0 on the target host"
-  vet_new_command: "mcp_stats(host, command)"
+  compact_when: savings_pct_chars > 0 on the target host
+  vet_new_command: mcp_stats(host, command)
   recommended:
-    - systemctl list-units
+  - systemctl list-units
   not_recommended:
-    - df -h
-    - ps
-  gate: "Run mcp_stats on both hosts before adding a new debug_command; add to recommended only if both hosts show positive char savings."
-
+  - df -h
+  - ps
+  gate: Run mcp_stats on both hosts before adding a new debug_command; add to recommended only if both hosts show positive char savings.
 suggested_extensions:
-  - id: stats
-    name: mcp_stats tool
-    description: Measure raw vs compact word/char savings for candidate commands on both hosts before adding them.
-    priority: high
-    status: proposed
-  - id: host-identity
-    name: Host identity in compact output
-    description: Add an "h" key to every compact JSON response so results are self-describing.
-    priority: high
-    status: proposed
-  - id: ps-bound
-    name: Bounded ps output
-    description: Replace full ps with "ps top-cpu" and "ps top-mem" returning top 20 processes by CPU or memory.
-    priority: high
-    status: proposed
-  - id: memory
-    name: free -h compact
-    description: Compact memory summary from free -h.
-    priority: medium
-    status: proposed
-  - id: uptime
-    name: uptime
-    description: Compact load average and uptime.
-    priority: medium
-    status: proposed
-  - id: mount
-    name: mount / lsblk
-    description: Compact filesystem/mount and block device listing.
-    priority: medium
-    status: proposed
-  - id: usb
-    name: lsusb
-    description: Compact USB device listing for hardware debugging.
-    priority: low
-    status: proposed
-  - id: per-host-allow
-    name: Per-host raw allowlists
-    description: Allow different raw command prefixes per host based on capabilities.
-    priority: low
-    status: proposed
+- id: stats
+  name: mcp_stats tool
+  description: Measure raw vs compact word/char savings for candidate commands on both hosts before adding them.
+  priority: high
+  status: completed
+- id: host-identity
+  name: Host identity in compact output
+  description: Add an "h" key to every compact JSON response so results are self-describing.
+  priority: high
+  status: completed
+- id: ps-bound
+  name: Bounded ps output
+  description: Replace full ps with "ps top-cpu" and "ps top-mem" returning top 20 processes by CPU or memory.
+  priority: high
+  status: completed
+- id: memory
+  name: free -h compact
+  description: Compact memory summary from free -h.
+  priority: medium
+  status: completed
+- id: uptime
+  name: uptime
+  description: Compact load average and uptime.
+  priority: medium
+  status: completed
+- id: mount
+  name: mount / lsblk
+  description: Compact filesystem/mount and block device listing.
+  priority: medium
+  status: completed
+- id: usb
+  name: lsusb
+  description: Compact USB device listing for hardware debugging.
+  priority: low
+  status: completed
+- id: per-host-allow
+  name: Per-host raw allowlists
+  description: Allow different raw command prefixes per host based on capabilities.
+  priority: low
+  status: proposed
