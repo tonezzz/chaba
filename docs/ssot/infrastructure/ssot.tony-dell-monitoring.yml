@@ -27,6 +27,8 @@ sections:
     items:
       - label: Persistent monitor agent
         text: tony-dell runs tony-dell-monitor.sh as a systemd user timer every 2 minutes
+      - label: mcp-health schedule group
+        text: tony-dell-mcp-health.sh runs every 5 minutes; queries mcp-health critical-only services and caches the score
       - label: Cross-host checks
         text: polls tony-omen HTTP endpoints (caddy, yomi-api, mddb-api, status-api, gpu-queue, playlived, llama-server) and tony-dell local services (barrier-client, Funnel port 8082)
       - label: Recovery policy
@@ -87,6 +89,10 @@ sections:
         text: /home/tony/CascadeProjects/chaba/scripts/tony-dell-monitor.sh (source); deployed to /home/tony/.local/bin/tony-dell-monitor.sh
       - label: systemd user units
         text: /home/tony/.config/systemd/user/tony-dell-monitor.service and tony-dell-monitor.timer
+      - label: mcp-health query script
+        text: /home/tony/CascadeProjects/chaba/scripts/tony-dell-mcp-health.sh (source); deployed to /home/tony/.local/bin/tony-dell-mcp-health.sh
+      - label: mcp-health systemd user units
+        text: /home/tony/.config/systemd/user/tony-dell-mcp-health.service and tony-dell-mcp-health.timer
       - label: Monitor log
         text: /home/tony/var/chaba/health/tony-dell-monitor.log
       - label: mcp-health score cache
@@ -101,7 +107,7 @@ sections:
     layout: list
     items:
       - label: Timer status
-        text: systemctl --user status tony-dell-monitor.timer
+        text: systemctl --user list-timers --all
         tags: [mcp-debug]
       - label: Latest log
         text: tail -n 50 /home/tony/var/chaba/health/tony-dell-monitor.log
