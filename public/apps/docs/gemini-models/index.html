@@ -31,6 +31,7 @@
   <main class="max-w-7xl mx-auto px-4 py-10">
     <div id="header" class="mb-6"></div>
     <div id="table" class="table-wrap"></div>
+    <div id="fallbacks" class="table-wrap mt-10"></div>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
   <script src="/apps/nav.js"></script>
@@ -64,6 +65,7 @@
         <h1 class="text-3xl font-bold mb-2">${data.title}</h1>
         <p class="text-gray-500">Last verified: ${data.last_verified}</p>`;
       document.getElementById('table').innerHTML = renderTable(data.models);
+      document.getElementById('fallbacks').innerHTML = renderFallbacks(data.fallbacks);
     });
     function renderTable(models) {
       let html = `<table>
@@ -89,6 +91,18 @@
           <td><span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${m.status === 'active' ? 'bg-green-100 text-green-800' : m.status === 'deprecated' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}">${m.status}</span></td>
         </tr>`;
       });
+      html += '</tbody></table>';
+      return html;
+    }
+
+    function renderFallbacks(fallbacks) {
+      if (!fallbacks) return '';
+      let html = '<h2 class="text-2xl font-bold mt-10 mb-4">Fallbacks by task</h2><table><thead><tr><th>Task</th><th>Primary</th><th>Fallback</th><th>Expected quality</th><th>Rationale</th></tr></thead><tbody>';
+      for (const [task, cfg] of Object.entries(fallbacks)) {
+        cfg.chain.forEach(fb => {
+          html += '<tr><td class="font-medium">' + task + '</td><td class="font-mono text-xs">' + (cfg.primary || '-') + '</td><td class="font-mono text-xs">' + fb.model + '</td><td>' + fb.expected_quality + '</td><td class="text-gray-500 text-sm">' + (fb.reason || '-') + '</td></tr>';
+        });
+      }
       html += '</tbody></table>';
       return html;
     }
