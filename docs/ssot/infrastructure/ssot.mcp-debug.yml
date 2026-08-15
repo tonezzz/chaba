@@ -11,17 +11,17 @@ hosts:
   tony_dell:
     name: Tony Dell
     description: Remote target host
-    hostname: tony-dell.local
+    hostname: tony-dell
     ssh_user: tony
     mcp_debug_path: /home/tony/.local/bin/mcp-debug
   macbook:
     name: MacBook Pro
     description: macOS remote target host
-    hostname: 100.124.59.112
+    hostname: macbook
     ssh_user: kkkakk
     mcp_debug_path: /Users/kkkakk/.local/bin/mcp-debug
     compact: false
-    note: mcp_debug (compact) not yet ported to macOS; use mcp_raw with macOS-compatible commands. Tailscale IP 100.124.59.112 (machine name 'kk-macbook').
+    note: mcp_debug (compact) not yet ported to macOS; use mcp_raw with macOS-compatible commands. The literal Tailscale IPv4 100.124.59.112 is used because the mcp-debug transport does not use the macbook SSH alias; machine name is 'kk-macbook' and Magic DNS is 'kk-macbook.taila0626a.ts.net'.
 debug_commands:
   systemctl list-units:
     description: Running systemd services
