@@ -339,8 +339,8 @@ async function processAlerts(config, serviceName, status, previousStatus, error)
     }
   }
   
-  // Recovery notification
-  if (status === 'healthy' && previousStatus === 'error' && thresholds.recovery_notification) {
+  // Recovery notification (also resolves alerts when a service becomes intentionally stopped)
+  if ((status === 'healthy' || status === 'intentional') && previousStatus === 'error' && thresholds.recovery_notification) {
     const existingAlert = await checkExistingAlert(serviceName, 'service_failure');
     if (existingAlert) {
       // Mark alert as resolved
@@ -353,6 +353,16 @@ async function processAlerts(config, serviceName, status, previousStatus, error)
       
       await logAlert(serviceName, 'service_recovery', 'info', `Service ${serviceName} has recovered`);
     }
+  }
+  
+  // Always resolve any outstanding service_failure alerts for healthy or intentionally stopped services
+  if (status === 'healthy' || status === 'intentional') {
+    const stmt = db.prepare(`
+      UPDATE alerts 
+      SET resolved = TRUE, resolved_at = CURRENT_TIMESTAMP 
+      WHERE service_name = ? AND alert_type = 'service_failure' AND resolved = FALSE
+    `);
+    await stmt.run(serviceName);
   }
   
   // Performance degradation alert

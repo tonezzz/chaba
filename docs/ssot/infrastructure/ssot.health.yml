@@ -40,7 +40,7 @@ alerts:
   service_criticality:
     critical: [caddy, postgres, gpu-queue]
     important: [yomi-api, status-api, trade-api, mddb-api, playlived, llama-server, barrier-server]
-    optional: [redis, weaviate, activepieces, frigate, camera-control, imagen2, txt2vid, thai-legal, cpu-frequency-monitor, gdrive-backup]
+    optional: [redis, weaviate, activepieces, frigate, camera-control, imagen2, txt2vid, thai-legal, cpu-frequency-monitor, gdrive-backup, trade-automation]
 
 # Service groups for dependency tracking
 groups:
@@ -52,7 +52,7 @@ groups:
   datastore: [postgres, weaviate, mddb-api, weaviate-index-timer]
   trading: [trade-api]
   optional: [activepieces, frigate, camera-control]
-  automation: [playlived]
+  automation: [playlived, trade-automation]
   ssot-sync: [mddb-api, mddb-mcp, mddb-stats, mddb-vector-stats, mddb-metrics, mddb-container]
   system: [cpu-frequency-monitor, chaba-health-monitor-timer, gdrive-backup, yomi-update-all-timer, yomi-update-active-timer]
 
@@ -225,6 +225,22 @@ services:
       - "Restart container: docker restart trade-api"
       - "Check container networking: docker inspect trade-api"
       - "Verify port mapping: docker port trade-api"
+
+  - id: trade-automation
+    name: Trade Automation
+    type: container
+    container: trade-automation
+    expected_state: running
+    timeout: 5
+    category: automation
+    profiles: [home]
+    note: "Background trade automation worker (same image as trade-api, no exposed host port)"
+    verification:
+      - "Check container: docker ps | grep trade-automation"
+      - "Check container logs: docker logs trade-automation"
+    recovery_actions:
+      - "Restart container: docker restart trade-automation"
+      - "Check status: docker inspect trade-automation"
 
   # Note: trading-terminal container not currently deployed
   # - id: trading-terminal
