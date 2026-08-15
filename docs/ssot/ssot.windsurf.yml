@@ -1,0 +1,53 @@
+title: Windsurf Workspace Rules SSOT
+subtitle: Single source of truth for shared .windsurfrules sections across chaba workspaces
+icon: 🌪️
+
+ideas:
+  - .windsurfrules files are per-workspace but should share common sections such as Documentation Search Standards.
+  - This SSOT defines the canonical source and the validator that keeps other workspaces aligned.
+  - Future common sections (e.g., Auto KB Processing, Hostname Usage Standards) can be added here.
+
+sections:
+  - title: Canonical Source
+    icon: 🏠
+    layout: list
+    items:
+      - label: Canonical workspace
+        text: /home/tony/CascadeProjects/chaba/.windsurfrules is the source of truth for shared sections
+      - label: Shared section
+        text: Documentation Search Standards must be identical in all active workspaces
+
+  - title: Target Workspaces
+    icon: 🗂️
+    layout: list
+    items:
+      - label: chaba-h3
+        text: /home/tony/CascadeProjects/chaba-h3/.windsurfrules
+      - label: chaba-kbman
+        text: /home/tony/CascadeProjects/chaba-kbman/.windsurfrules
+      - label: chaba-omen
+        text: /home/tony/CascadeProjects/chaba-omen/.windsurfrules
+      - label: chaba-raceman
+        text: /home/tony/CascadeProjects/chaba-raceman/.windsurfrules
+      - label: chaba-yomi
+        text: /home/tony/CascadeProjects/chaba-yomi/.windsurfrules
+
+  - title: Health Check and Fix
+    icon: 🩺
+    layout: list
+    items:
+      - label: Validator
+        text: scripts/windsurfrules-check.py compares Documentation Search Standards in each target workspace to the canonical
+      - label: Fix mode
+        text: scripts/windsurfrules-check.py --fix replaces or inserts the canonical section into all target .windsurfrules
+      - label: Manual fallback
+        text: If the validator fails, follow the procedure in docs/kb/documentation-search.md
+
+config:
+  version: 1
+  created: 2026-08-15
+  maintainer: tony
+  status: active
+  related_files:
+    - docs/kb/documentation-search.md
+    - .windsurfrules
