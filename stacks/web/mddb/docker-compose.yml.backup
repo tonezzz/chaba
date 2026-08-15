@@ -1,0 +1,61 @@
+services:
+  mddb:
+    image: tradik/mddb:latest
+    container_name: mddb
+    restart: unless-stopped
+    command:
+      - "-http-enabled=true"
+      - "-http-addr=0.0.0.0:11023"
+      - "-grpc-enabled=true"
+      - "-grpc-addr=0.0.0.0:11024"
+      - "-mcp-enabled=true"
+      - "-mcp-addr=0.0.0.0:9000"
+      - "-mcp-stdio=false"
+      - "-mode=wr"
+      - "-panel-mode=internal"
+    ports:
+      - "11023:11023"  # HTTP/REST API
+      - "11024:11024"  # gRPC API
+      - "9001:9000"    # MCP Server (changed from 9000 due to conflict)
+    volumes:
+      - ./vaults:/vaults
+      - ./config:/config
+      - mddb-data:/app/data
+    environment:
+      - MDDB_LOG_LEVEL=INFO
+      - TZ=Asia/Bangkok
+    networks:
+      - default
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "com.centurylinklabs.watchtower.scope=mddb"
+
+  mddb-panel:
+    image: tradik/mddb:panel-latest
+    container_name: mddb-panel
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - MDDB_SERVER=http://mddb:11023
+      - PORT=3000
+    depends_on:
+      - mddb
+    networks:
+      - default
+    depends_on:
+      - mddb
+    networks:
+      - default
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "com.centurylinklabs.watchtower.scope=mddb"
+
+volumes:
+  mddb-data:
+    driver: local
+
+networks:
+  default:
+    name: web_default
+    external: true

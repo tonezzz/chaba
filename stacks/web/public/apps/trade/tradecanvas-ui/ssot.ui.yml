@@ -1,3 +1,30 @@
+title: TradeCanvas UI Configuration
+subtitle: TradeCanvas UI pages, symbols, timeframes, and data source configuration
+icon: 🎨
+
+sections:
+  - title: Pages
+    icon: 📄
+    items: pages
+  - title: Navigation
+    icon: 🔗
+    items: navigation
+  - title: Chart Settings
+    icon: 📈
+    items: chart_settings
+  - title: Strategy Panel
+    icon: 🎯
+    items: strategy_panel
+  - title: Data Policy
+    icon: 📊
+    items: data_policy
+  - title: API Configuration
+    icon: 🔌
+    items: api
+  - title: Recent Changes
+    icon: 📝
+    items: recent_changes
+
 pages:
   index:
     title: "TradeCanvas - Trading Dashboard"
@@ -6,16 +33,9 @@ pages:
     show_indicators: true
     show_volume: true
     show_controls: true
+    data_source: "api"  # api, csv, or auto
+    api_endpoint: "http://100.75.102.88:9000/api/ui/chart-data"
     
-  compare:
-    title: "TradeCanvas - Compare"
-    symbol: "THB"
-    show_chart: true
-    show_indicators: false
-    show_volume: false
-    show_controls: false
-    show_strategy_panel: true
-
 navigation:
   - title: "Trading Dashboard"
     url: "index.html"
@@ -139,3 +159,30 @@ strategy_panel:
   display:
     show_chart_markers: true
     show_equity_curve: false
+
+# Data source configuration
+data_policy:
+  primary_source: "api"  # API is primary data source
+  fallback_source: "csv"  # CSV is fallback only
+  estimation_policy: "none"  # No estimated values - only real OHLC data shown
+  ohlc_requirement: "strict"  # Only include records with complete OHLC data in charts
+  gap_handling: "skip"  # Skip records without proper OHLC data rather than estimate
+  
+# API configuration
+api:
+  base_url: "http://100.75.102.88:9000"
+  chart_endpoint: "/api/ui/chart-data/{symbol}?timeframe={timeframe}"
+  available_symbols:
+    currencies: ["THB", "EUR", "GBP", "JPY", "CAD", "CHF", "AUD", "NZD"]
+    commodities: ["GOLD", "SILVER", "OIL", "WTI", "BRENT", "COPPER", "NATURAL_GAS"]
+    indices: ["DXY"]
+  supported_timeframes: ["1D", "1W", "1M", "3M", "6M", "1Y", "all"]
+  
+# Recent changes
+recent_changes:
+  - date: 2026-08-14
+    description: "Implemented API-first data loading, OHLC filtering to prevent estimated values, Tailscale network configuration for cross-machine access"
+    impact: "UI now loads from API/database, only real OHLC data shown, charts skip records without proper OHLC"
+  - date: 2026-08-13
+    description: "Initial API chart-data endpoint configuration"
+    impact: "UI can now fetch data from API instead of static CSV files"

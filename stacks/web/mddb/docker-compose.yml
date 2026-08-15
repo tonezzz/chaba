@@ -1,0 +1,89 @@
+services:
+  mddb:
+    image: tradik/mddb:latest
+    container_name: mddb
+    restart: unless-stopped
+    command:
+      - "-http-enabled=true"
+      - "-http-addr=0.0.0.0:11023"
+      - "-grpc-enabled=true"
+      - "-grpc-addr=0.0.0.0:11024"
+      - "-mcp-enabled=true"
+      - "-mcp-addr=0.0.0.0:9000"
+      - "-mcp-stdio=false"
+      - "-mode=wr"
+    ports:
+      - "11023:11023"  # HTTP/REST API
+      - "11024:11024"  # gRPC API
+      - "9001:9000"    # MCP Server (changed from 9000 due to conflict)
+    volumes:
+      - ./vaults:/vaults
+      - mddb-data:/app/data
+    environment:
+      - MDDB_LOG_LEVEL=INFO
+      - TZ=Asia/Bangkok
+      - MDDB_PRODUCTION=false
+      - MDDB_AUTH_ENABLED=false
+      - MDDB_TLS_ENABLED=false
+      - MDDB_CORS_ORIGINS=*
+      - MDDB_AUDIT_ENABLED=false
+      - MDDB_RATE_LIMIT_ENABLED=false
+      - MDDB_EMBEDDING_PROVIDER=ollama
+      - MDDB_EMBEDDING_API_URL=http://ollama:11434
+      - MDDB_EMBEDDING_MODEL=nomic-embed-text
+      - MDDB_EMBEDDING_DIMENSIONS=768
+    networks:
+      - default
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "com.centurylinklabs.watchtower.scope=mddb"
+
+  mddb-panel:
+    image: tradik/mddb:panel-latest
+    container_name: mddb-panel
+    restart: unless-stopped
+    ports:
+      - "3002:3000"
+    environment:
+      - MDDB_SERVER=http://mddb:11023
+      - PORT=3000
+      - NODE_ENV=production
+    depends_on:
+      - mddb
+    networks:
+      - default
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "com.centurylinklabs.watchtower.scope=mddb"
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - default
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "com.centurylinklabs.watchtower.scope=mddb"
+
+volumes:
+  mddb-data:
+    driver: local
+  ollama-data:
+    driver: local
+
+networks:
+  default:
+    name: web_default
+    external: true

@@ -41,6 +41,7 @@ class TradeCanvasApp {
 
     async init() {
         try {
+            this.initializeUIComponents();
             this.setupEventListeners();
             this.initializeChart();
             await this.loadData();
@@ -56,27 +57,55 @@ class TradeCanvasApp {
         }
     }
 
-    setupEventListeners() {
-        // Symbol selector
-        document.getElementById('symbol-selector').addEventListener('change', (e) => {
-            this.currentSymbol = e.target.value;
-            this.updateChartTitle();
-            this.initialChartLoad = false; // Reset for new symbol
-            this.loadData();
-            // Reconnect WebSocket with new symbol
-            if (this.websocket) {
-                this.websocket.close();
-            }
-            this.connectWebSocket();
-        });
+    initializeUIComponents() {
+        // Initialize currency selector
+        if (typeof CurrencySelector !== 'undefined') {
+            this.currencySelector = new CurrencySelector({
+                containerId: 'currency-selector-container',
+                selectedCurrency: this.currentSymbol,
+                mode: 'full',
+                className: 'currency-selector'
+            });
+            
+            this.currencySelector.render();
+            
+            // Handle currency changes
+            this.currencySelector.on('currencyChange', (data) => {
+                this.currentSymbol = data.currency;
+                this.updateChartTitle();
+                this.initialChartLoad = false;
+                this.loadData();
+                // Reconnect WebSocket with new symbol
+                if (this.websocket) {
+                    this.websocket.close();
+                }
+                this.connectWebSocket();
+            });
+        }
 
-        // Timeframe selector
-        document.getElementById('timeframe-selector').addEventListener('change', (e) => {
-            this.currentTimeframe = e.target.value;
-            this.updateChartTitle();
-            this.initialChartLoad = false; // Reset for new timeframe
-            this.loadData();
-        });
+        // Initialize timeframe selector
+        if (typeof TimeframeSelector !== 'undefined') {
+            this.timeframeSelector = new TimeframeSelector({
+                containerId: 'timeframe-selector-container',
+                selectedTimeframe: this.currentTimeframe,
+                className: 'timeframe-selector'
+            });
+            
+            this.timeframeSelector.render();
+            
+            // Handle timeframe changes
+            this.timeframeSelector.on('timeframeChange', (data) => {
+                this.currentTimeframe = data.timeframe;
+                this.updateChartTitle();
+                this.initialChartLoad = false;
+                this.loadData();
+            });
+        }
+    }
+
+    setupEventListeners() {
+        // Note: Currency and timeframe selectors are now handled by UI components
+        // in initializeUIComponents() method
 
         // Refresh button
         document.getElementById('refresh-btn').addEventListener('click', () => {
@@ -815,6 +844,7 @@ class TradeCanvasApp {
                              this.currentSymbol === 'OIL' ? 'OIL' : 
                              `USD/${this.currentSymbol}`;
         document.getElementById('chart-title').textContent = `${symbolDisplay} - ${this.currentTimeframe}`;
+        document.getElementById('page-title').textContent = `TradeCanvas - ${symbolDisplay}`;
     }
 
     updateConnectionStatus(status) {

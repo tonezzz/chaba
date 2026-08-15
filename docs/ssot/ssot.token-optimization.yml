@@ -159,6 +159,23 @@ sections:
         priority: high
         action: Select SWE-1.6 for routine code changes, debugging
         
+      - label: Prompt Caching Model Selection
+        text: Choose models that report non-zero cached_input_tokens to reduce repeated-prefix costs
+        type: configuration
+        savings: 81% on cached input tokens (varies by model and provider)
+        implementation_effort: trivial
+        status: pending
+        priority: high
+        action: Interim default set to swe-1-7-medium; start a fresh session with GLM-5.2 to verify its cached input token behavior before making a final decision
+        findings:
+          - swe-1-7-medium reports non-zero cached_input_tokens from the first message (proxy-level cache of the system prefix)
+          - claude-sonnet-4-6-thinking reports large cached_input_tokens (31.9M in a single long session)
+          - swe-1-6 sessions consistently report 0 cached_input_tokens across 1 to 1048 messages
+          - GLM-5.2 test was inconclusive because the model was switched mid-session; the session metadata showed display model SWE-1.6 while the config had already changed to glm-5-2
+          - Session token statistics are stored in ~/.local/share/devin/cli/sessions.db under the metadata JSON column
+        pending_tests:
+          - Start a fresh GLM-5.2 session and check cached_input_tokens after the second turn to confirm whether GLM-5.2 supports prompt caching through Cognition's proxy
+
       - label: Rules Optimization
         text: Convert always_on rules to glob or model_decision where possible to reduce context overhead
         type: configuration
@@ -279,7 +296,7 @@ sections:
 # Configuration and metadata
 config:
   version: 1
-  last_updated: 2026-08-05
+  last_updated: 2026-08-13
   maintainer: tony
   validation_enabled: true
   related_files:

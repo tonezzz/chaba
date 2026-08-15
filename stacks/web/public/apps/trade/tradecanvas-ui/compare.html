@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <script src="ui-components.js?v=3"></script>
 </head>
 <body>
     <div class="container">
@@ -16,14 +17,15 @@
             <ul class="nav-list">
                 <li class="nav-item"><a href="index.html" class="nav-link">Trading Dashboard</a></li>
                 <li class="nav-item"><a href="compare.html" class="nav-link active">Compare</a></li>
-                <li class="nav-item"><a href="compare2.html?v=2" class="nav-link">Compare2</a></li>
+                <li class="nav-item"><a href="compare2.html?v=11" class="nav-link">Compare2</a></li>
             </ul>
         </nav>
 
         <header class="header">
             <h1>TradeCanvas - Compare</h1>
             <div class="header-controls">
-                <span>USD/THB</span>
+                <div id="currency-selector-container"></div>
+                <span id="pair-label">USD/THB</span>
             </div>
         </header>
 
@@ -81,10 +83,12 @@
         </footer>
     </div>
 
-    <script src="chart-loader.js"></script>
+    <script src="chart-data-provider.js?v=7"></script>
+    <script src="chart-renderer.js?v=7"></script>
+    <script src="chart-loader.js?v=7"></script>
     <script src="strategies.js"></script>
     <script src="hindsight-strategies-new.js"></script>
-    <script src="strategy-compare-new.js"></script>
+    <script src="strategy-compare-new.js?v=15"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM loaded, initializing chart loader...');
@@ -106,6 +110,29 @@
             chartLoader.init().then(() => {
                 console.log('Chart loader init complete, calling initComparePanel...');
                 initComparePanel(chartLoader);
+                
+                // Initialize currency selector after chart loader is ready
+                if (typeof CurrencySelector !== 'undefined') {
+                    const currencySelector = new CurrencySelector({
+                        containerId: 'currency-selector-container',
+                        chartLoader: chartLoader,
+                        selectedCurrency: 'THB',
+                        mode: 'full',
+                        className: 'currency-selector'
+                    });
+                    
+                    currencySelector.render();
+                    
+                    // Update pair label when currency changes
+                    currencySelector.on('currencyChange', (data) => {
+                        const pairLabel = document.getElementById('pair-label');
+                        if (pairLabel) {
+                            pairLabel.textContent = data.label;
+                        }
+                    });
+                    
+                    window.currencySelector = currencySelector;
+                }
             }).catch(error => {
                 console.error('Chart loader init failed:', error);
                 document.getElementById('strategy-controls').innerHTML = 'Chart initialization failed: ' + error.message;

@@ -1074,6 +1074,93 @@ class StrategyPanel {
     }
 }
 
+function deepMerge(base, page) {
+    if (page === null || typeof page !== 'object') return page;
+    if (Array.isArray(page)) return page;
+    if (base === null || typeof base !== 'object' || Array.isArray(base)) base = {};
+    const result = { ...base };
+    for (const [key, value] of Object.entries(page)) {
+        if (value !== null && typeof value === 'object' && !Array.isArray(value) &&
+            result[key] !== null && typeof result[key] === 'object' && !Array.isArray(result[key])) {
+            result[key] = deepMerge(result[key], value);
+        } else {
+            result[key] = value;
+        }
+    }
+    return result;
+}
+
+function stripRefs(obj) {
+    if (obj === null || typeof obj !== 'object') return obj;
+    if (Array.isArray(obj)) return obj.map(stripRefs);
+    const result = {};
+    for (const [key, value] of Object.entries(obj)) {
+        if (key === 'ref') continue;
+        result[key] = stripRefs(value);
+    }
+    return result;
+}
+
+async function loadYamlFile(yaml, filename, isOptional = false) {
+    try {
+        const resp = await fetch(filename);
+        if (!resp.ok) {
+            if (isOptional) {
+                console.log(`SSOT file not found (optional): ${filename}`);
+                return null;
+            }
+            throw new Error(`${filename} not found`);
+        }
+        const doc = yaml.load(await resp.text());
+        console.log(`Parsed ${filename}, keys:`, Object.keys(doc || {}));
+        return doc;
+    } catch (e) {
+        if (isOptional) {
+            console.log(`Optional SSOT load skipped for ${filename}:`, e.message);
+            return null;
+        }
+        throw e;
+    }
+}
+
+async function loadPageConfig() {
+    const yaml = (typeof jsyaml !== 'undefined' && jsyaml.load) ? jsyaml : null;
+    if (!yaml) throw new Error('js-yaml library not loaded');
+
+    const baseDoc = await loadYamlFile(yaml, 'ssot.ui.yml');
+    const pageName = (window.location.pathname.split('/').pop() || 'compare').replace('.html', '');
+    const pageDoc = await loadYamlFile(yaml, `ssot.ui.${pageName}.yml`, true) || {};
+
+    // Load family if declared
+    let familyDoc = {};
+    if (pageDoc.family) {
+        familyDoc = await loadYamlFile(yaml, `ssot.ui.${pageDoc.family}.yml`, true) || {};
+    }
+
+    // Load feature SSOTs
+    const featureDocs = [];
+    if (Array.isArray(pageDoc.features)) {
+        for (const featureFile of pageDoc.features) {
+            const featureDoc = await loadYamlFile(yaml, featureFile, true);
+            if (featureDoc) featureDocs.push(featureDoc);
+        }
+    }
+
+    // Remove family/features metadata from page before merging
+    const pageOnlyDoc = { ...pageDoc };
+    delete pageOnlyDoc.family;
+    delete pageOnlyDoc.features;
+
+    // Merge order: base -> family -> page -> features
+    let config = deepMerge(baseDoc, familyDoc);
+    config = deepMerge(config, pageOnlyDoc);
+    for (const feature of featureDocs) {
+        config = deepMerge(config, feature);
+    }
+
+    return stripRefs(config);
+}
+
 function initComparePanel(chartLoader) {
     console.log('initComparePanel called');
     
@@ -1087,40 +1174,20 @@ function initComparePanel(chartLoader) {
         console.log('Registered Hindsight-02 strategy');
     }
 
-    const yaml = (typeof jsyaml !== 'undefined' && jsyaml.load) ? jsyaml : null;
-    console.log('jsyaml available:', !!yaml);
-    
     const fallBack = () => {
         document.getElementById('strategy-controls').innerHTML = 'Failed to load strategy configuration.';
     };
 
-    if (!yaml) {
-        console.error('js-yaml library not loaded');
+    loadPageConfig().then(config => {
+        console.log('Resolved UI config keys:', Object.keys(config || {}));
+        if (!config || !config.strategy_panel) throw new Error('strategy_panel not found in resolved UI config');
+        console.log('Creating StrategyPanel...');
+        const panel = new StrategyPanel(chartLoader, config.strategy_panel);
+        console.log('Initializing StrategyPanel...');
+        panel.init();
+    }).catch(error => {
+        console.error('Strategy panel init failed:', error);
+        console.error('Error details:', error.message, error.stack);
         fallBack();
-        return;
-    }
-
-    console.log('Fetching ssot.ui.yml...');
-    fetch('ssot.ui.yml')
-        .then(response => {
-            console.log('Fetch response status:', response.status);
-            if (!response.ok) throw new Error('ssot.ui.yml not found');
-            return response.text();
-        })
-        .then(text => {
-            console.log('YAML text length:', text.length);
-            console.log('YAML text preview:', text.substring(0, 200));
-            const doc = yaml.load(text);
-            console.log('YAML parsed, doc keys:', Object.keys(doc || {}));
-            if (!doc || !doc.strategy_panel) throw new Error('strategy_panel not found in ssot.ui.yml');
-            console.log('Creating StrategyPanel...');
-            const panel = new StrategyPanel(chartLoader, doc.strategy_panel);
-            console.log('Initializing StrategyPanel...');
-            panel.init();
-        })
-        .catch(error => {
-            console.error('Strategy panel init failed:', error);
-            console.error('Error details:', error.message, error.stack);
-            fallBack();
-        });
+    });
 }

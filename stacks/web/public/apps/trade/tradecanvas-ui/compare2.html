@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
-    <script src="ui-components.js"></script>
+    <script src="ui-components.js?v=3"></script>
     <style>
         /* Full page layout styles */
         body {
@@ -73,6 +73,70 @@
             background-color: #161b22;
             border-top: 1px solid #30363d;
         }
+
+        .symbol-panel .currency-selector,
+        .symbol-panel .timeframe-selector {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 6px 10px;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            background-color: #21262d;
+            color: #e6edf3;
+            font-size: 14px;
+        }
+
+        .market-info {
+            margin-top: 12px;
+            padding: 12px;
+            background-color: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+        }
+
+        .market-info-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .market-info-row + .market-info-row {
+            margin-top: 8px;
+        }
+
+        .market-info .pair-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #a8d5ff;
+        }
+
+        .market-info .status {
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .market-info .price-display {
+            font-size: 18px;
+            font-weight: 700;
+            color: #e6edf3;
+        }
+
+        .market-info .price-change {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .market-info .price-change.positive {
+            color: #3fb950;
+        }
+
+        .market-info .price-change.negative {
+            color: #da3633;
+        }
     </style>
 </head>
 <body>
@@ -84,16 +148,10 @@
                 <nav class="nav-compact">
                     <a href="index.html" class="nav-link">Dashboard</a>
                     <a href="compare.html" class="nav-link">Compare</a>
-                    <a href="compare2.html?v=6" class="nav-link active">Compare2</a>
+                    <a href="compare2.html?v=11" class="nav-link active">Compare2</a>
                 </nav>
             </div>
-            <div class="header-right">
-                <div id="currency-selector-container"></div>
-                <span class="pair-label" id="pair-label">USD/THB</span>
-                <span id="current-price" class="price-display">--</span>
-                <span id="price-change" class="price-change">--</span>
-                <span id="connection-status" class="status-dot disconnected"></span>
-            </div>
+            <div class="header-right"></div>
         </header>
 
         <div class="main-content-compact">
@@ -102,6 +160,24 @@
             </div>
 
             <div class="side-panel-compact">
+                <div class="panel-section-compact symbol-panel" id="symbol-panel">
+                    <div class="panel-header">
+                        <h3>Symbol / Timeframe</h3>
+                    </div>
+                    <div id="currency-selector-container"></div>
+                    <div id="timeframe-selector-container"></div>
+                    <div class="market-info">
+                        <div class="market-info-row">
+                            <span class="pair-label" id="pair-label">USD/THB</span>
+                            <span id="connection-status" class="status disconnected">Disconnected</span>
+                        </div>
+                        <div class="market-info-row price-row">
+                            <span id="current-price" class="price-display">--</span>
+                            <span id="price-change" class="price-change">--</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="panel-section-compact" id="strategy-panel">
                     <div class="panel-header">
                         <h3>Strategy Comparison</h3>
@@ -118,10 +194,12 @@
         </footer>
     </div>
 
-    <script src="chart-loader.js?v=3"></script>
+    <script src="chart-data-provider.js?v=7"></script>
+    <script src="chart-renderer.js?v=7"></script>
+    <script src="chart-loader.js?v=7"></script>
     <script src="strategies-new.js"></script>
     <script src="hindsight-strategies-new.js"></script>
-    <script src="strategy-compare-new.js"></script>
+    <script src="strategy-compare-new.js?v=15"></script>
     <script>
         // Verify all required classes are available
         console.log('Strategy class available:', typeof Strategy !== 'undefined');
@@ -130,14 +208,34 @@
         console.log('StrategyFactory available:', typeof StrategyFactory !== 'undefined');
         console.log('initComparePanel available:', typeof initComparePanel !== 'undefined');
         console.log('CurrencySelector available:', typeof CurrencySelector !== 'undefined');
+        console.log('TimeframeSelector available:', typeof TimeframeSelector !== 'undefined');
         
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM loaded, initializing chart loader...');
-            // Initialize chart with shared loader
+
+            // Restore last selections from localStorage
+            const savedCurrency = localStorage.getItem('trade-canvas-selected-currency') || 'THB';
+            const savedTimeframe = localStorage.getItem('trade-canvas-selected-timeframe') || '1Y';
+
+            const currencyLabels = {
+                'THB': 'USD/THB',
+                'EUR': 'EUR/USD',
+                'GBP': 'GBP/USD',
+                'JPY': 'USD/JPY',
+                'GOLD': 'GOLD',
+                'DXY': 'DXY',
+                'OIL': 'OIL'
+            };
+            const pairLabelEl = document.getElementById('pair-label');
+            if (pairLabelEl) {
+                pairLabelEl.textContent = currencyLabels[savedCurrency] || savedCurrency;
+            }
+
+            // Initialize chart with restored (or default) selections
             const chartLoader = new ChartLoader({
                 containerId: 'main-chart',
-                symbol: 'THB',
-                timeframe: '1Y',
+                symbol: savedCurrency,
+                timeframe: savedTimeframe,
                 showVolume: true,
                 showIndicators: false,
                 enableControls: true,
@@ -151,19 +249,19 @@
             chartLoader.init().then(() => {
                 console.log('Chart loader init complete, calling initComparePanel...');
                 initComparePanel(chartLoader);
-                
+
                 // Initialize currency selector after chart loader is ready
                 if (typeof CurrencySelector !== 'undefined') {
                     const currencySelector = new CurrencySelector({
                         containerId: 'currency-selector-container',
                         chartLoader: chartLoader,
-                        selectedCurrency: 'THB',
+                        selectedCurrency: savedCurrency,
                         mode: 'compact',
                         className: 'currency-selector compact'
                     });
-                    
+
                     currencySelector.render();
-                    
+
                     // Update pair label when currency changes
                     currencySelector.on('currencyChange', (data) => {
                         const pairLabel = document.getElementById('pair-label');
@@ -171,8 +269,21 @@
                             pairLabel.textContent = data.label;
                         }
                     });
-                    
+
                     window.currencySelector = currencySelector;
+                }
+
+                // Initialize timeframe selector after chart loader is ready
+                if (typeof TimeframeSelector !== 'undefined') {
+                    const timeframeSelector = new TimeframeSelector({
+                        containerId: 'timeframe-selector-container',
+                        chartLoader: chartLoader,
+                        selectedTimeframe: savedTimeframe,
+                        className: 'currency-selector compact'
+                    });
+
+                    timeframeSelector.render();
+                    window.timeframeSelector = timeframeSelector;
                 }
             }).catch(error => {
                 console.error('Chart loader init failed:', error);

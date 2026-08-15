@@ -53,6 +53,7 @@ class CurrencySelector extends UIComponent {
             { value: 'EUR', label: 'EUR/USD', csv: 'eur_formatted.csv' },
             { value: 'GBP', label: 'GBP/USD', csv: 'gbp_formatted.csv' },
             { value: 'JPY', label: 'USD/JPY', csv: 'jpy_formatted.csv' },
+            { value: 'GOLD', label: 'GOLD', csv: 'gold_formatted.csv' },
             { value: 'DXY', label: 'DXY', csv: 'dxy_formatted.csv' },
             { value: 'OIL', label: 'OIL', csv: 'wti_formatted.csv' }
         ];
@@ -99,8 +100,7 @@ class CurrencySelector extends UIComponent {
         
         // Update chart loader if available
         if (this.chartLoader) {
-            this.chartLoader.config.symbol = newCurrency;
-            this.chartLoader.loadData();
+            this.chartLoader.updateSymbol(newCurrency);
         }
         
         // Emit change event
@@ -193,8 +193,7 @@ class TimeframeSelector extends UIComponent {
         
         // Update chart loader if available
         if (this.chartLoader) {
-            this.chartLoader.config.timeframe = newTimeframe;
-            this.chartLoader.loadData();
+            this.chartLoader.updateTimeframe(newTimeframe);
         }
         
         // Emit change event
