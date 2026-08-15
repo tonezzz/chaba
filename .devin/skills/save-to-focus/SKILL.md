@@ -18,7 +18,8 @@ Use this skill when the user wants to park a task or new request in the focus-in
 2. Ask for `branch` (optional) and `priority` (optional, default medium).
 3. Generate a safe filename from the title and the current UTC timestamp, e.g. `2026-08-15-123456-short-title.yml`.
 4. Write a new file in `docs/ssot/focus-inbox/` using the structure from `docs/ssot/focus-inbox/TEMPLATE.yml`.
-5. Do not edit `docs/ssot/ssot.focus.current.yml` or `docs/ssot/ssot.focus.yml`.
+5. If the user cannot provide a complete description, set `status: draft` and record the outstanding details in `missing_info`.
+6. Do not edit `docs/ssot/ssot.focus.current.yml` or `docs/ssot/ssot.focus.yml`.
 6. Validate the new YAML file with a quick Python `yaml.safe_load` check.
 7. Report the saved file path to the user.
 

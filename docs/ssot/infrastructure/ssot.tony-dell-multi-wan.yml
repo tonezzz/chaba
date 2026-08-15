@@ -1,0 +1,51 @@
+title: Tony-Dell Multi-WAN Active-Backup
+subtitle: Wired ADSL primary with Naris Wi-Fi ADSL backup on tony-dell
+icon: network
+
+ideas:
+  - Use the wired ADSL connection on tony-dell as the primary default route with a low metric.
+  - Keep the Naris Wi-Fi ADSL connection active with a high metric as a hot backup.
+  - Monitor internet reachability through the wired device and switch the default route to Wi-Fi after repeated failures.
+  - Restore the wired default route automatically when the wired internet comes back.
+  - Run the check as a root systemd service triggered by a timer so the switch is reliable and auditable.
+
+sections:
+  - title: Active Connections
+    icon: map
+    layout: list
+    items:
+      - label: Wired primary
+        text: Connection "Wired connection 1" on enp0s31f6, gateway 192.168.2.1, DHCP source 192.168.2.66/24, default route metric 100.
+      - label: Naris Wi-Fi backup
+        text: Connection "Naris" on wlx00761100125e, gateway 192.168.1.1, DHCP source 192.168.1.55, default route metric 600.
+
+  - title: Failover Mechanism
+    icon: workflow
+    layout: list
+    items:
+      - label: Script
+        text: scripts/tony-dell-wan-failover.sh runs as root and pings 8.8.8.8 through the wired device. After 3 consecutive failures it rewrites the default routes so Wi-Fi becomes metric 100 and wired becomes metric 2000.
+      - label: Restoration
+        text: When the wired ping succeeds again the script restores wired as metric 100 and demotes Wi-Fi back to a high metric.
+      - label: Scheduler
+        text: systemd unit scripts/tony-dell-wan-failover.service is triggered by scripts/tony-dell-wan-failover.timer.
+
+  - title: Verification
+    icon: check
+    layout: list
+    items:
+      - label: Wired disabled
+        text: After "nmcli con down 'Wired connection 1'" the default route became "default via 192.168.1.1 dev wlx00761100125e proto dhcp src 192.168.1.55 metric 600".
+      - label: Wired restored
+        text: After "nmcli con up 'Wired connection 1'" the primary route became "default via 192.168.2.1 dev enp0s31f6 proto dhcp src 192.168.2.66 metric 100" while the Wi-Fi route stayed as a higher-metric backup.
+
+  - title: Service Files
+    icon: files
+    layout: list
+    items:
+      - label: Failover script
+        text: scripts/tony-dell-wan-failover.sh
+      - label: systemd service
+        text: scripts/tony-dell-wan-failover.service
+      - label: systemd timer
+        text: scripts/tony-dell-wan-failover.timer

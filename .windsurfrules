@@ -193,3 +193,16 @@ When executing a host command via the `mcp-debug` MCP server:
 ## MCP Tools Policy
 
 Before using any MCP server, use `ssot-search` or `grep` to read only the relevant `policy.<domain>` section in `docs/ssot/infrastructure/ssot.mcp-tools.yml`. Avoid full-file reads. Do not silently fall back without user confirmation.
+
+## Request-to-Focus Workflow
+
+At the start of every session, read `docs/ssot/ssot.focus.current.yml` to identify the active shared focus and active branch focus. For each user request:
+
+1. Match it against active focus labels, subtasks, quick wins, and backlog items.
+2. If it matches an active task, append a `request_log` entry and do the work inside that focus.
+3. If it is a small standalone action, add it to `quick_wins` and complete it immediately.
+4. If it is new strategic work, add it to the backlog in `docs/ssot/ssot.focus.yml` and ask the user to activate it.
+5. If it comes from another session, save it as an inbox file in `docs/ssot/focus-inbox/` using the `save-to-focus` skill.
+6. Never start a new activated task while another activated task is still unfinished.
+7. For exact lookups in the full focus file, prefer `ssot-search` over reading the entire `ssot.focus.yml`.
+8. At session end, update subtask statuses, append completed quick wins to focus history, and commit only the intended files.
