@@ -1,0 +1,72 @@
+title: Home Network
+subtitle: Routers, hosts, and current IPs
+last_verified: 2026-08-15
+icon: 🌐
+note: The home LAN is being renumbered from 192.168.1.0/24 to 192.168.2.0/24. This page reflects the most recent verification from kk-macbook.
+networks:
+  - name: TONY-WIFI_5G
+    ssid: TONY-WIFI_5G
+    gateway: 192.168.2.1
+    subnet: 192.168.2.0/24
+    status: active
+    note: Primary home network after renumbering
+  - name: Naris
+    ssid: Naris
+    gateway: 192.168.1.1
+    subnet: 192.168.1.0/24
+    status: legacy
+    note: Being phased out
+hosts:
+  - name: kk-macbook
+    label: KKs-MacBook-Pro
+    tailnet: kk-macbook
+    tailscale_ip: 100.124.59.112
+    interfaces:
+      - device: en0
+        name: Wi-Fi
+        ssid: TONY-WIFI_5G
+        ip: 192.168.2.69
+        status: active
+        internet: true
+        public_ip: 171.96.219.180
+      - device: en7
+        name: USB 10/100 LAN
+        ssid: TONY-WIFI_5G
+        ip: 192.168.2.65
+        status: active
+        internet: false
+        note: Has IP and ARP but does not pass default traffic
+  - name: tony-omen
+    label: Tony Omen
+    tailnet: tony-omen
+    tailscale_ip: 100.75.102.88
+    interfaces:
+      - device: lan
+        name: LAN
+        ip: 192.168.2.67
+        status: active
+        note: Seen on 192.168.2.0/24 from kk-macbook ARP
+  - name: tony-dell
+    label: Tony Dell
+    tailnet: tony-dell
+    tailscale_ip: 100.68.142.13
+    interfaces:
+      - device: lan
+        name: LAN
+        ip: 192.168.1.42
+        status: unknown
+        note: Last known Naris address; renumbering in progress
+  - name: kk-ipad
+    label: iPad
+    tailnet: kk-ipad
+    tailscale_ip: 100.118.36.50
+    interfaces: []
+  - name: tony-ipad
+    label: iPad
+    tailnet: tony-ipad
+    tailscale_ip: 100.119.138.61
+    interfaces: []
+unknown:
+  - ip: 192.168.2.70
+  - ip: 192.168.2.71
+  - ip: 192.168.2.72

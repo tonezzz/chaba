@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Home Network</title>
+  <link rel="stylesheet" href="/assets/tailwind.css">
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; }
+    body.bright { background-color: #f8fafc; color: #111827; }
+    body.bright .bg-card { background-color: #ffffff; }
+    body.bright .border-gray-700 { border-color: #e2e8f0; }
+    body.bright .text-gray-200 { color: #111827; }
+    body.bright .text-white { color: #111827; }
+    body.bright .text-gray-400 { color: #64748b; }
+    body.bright .text-gray-500 { color: #94a3b8; }
+    body.bright .text-gray-600 { color: #94a3b8; }
+    body.bright .text-accent { color: #0a84ff; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 0.75rem; }
+    th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    th { background: #f1f5f9; font-weight: 600; }
+    tr:last-child td { border-bottom: 0; }
+    .badge { display: inline-flex; align-items: center; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-gray { background: #f3f4f6; color: #4b5563; }
+    .note { color: #64748b; font-size: 0.875rem; }
+  </style>
+</head>
+<body class="bg-bg text-gray-200 min-h-screen bright">
+  <div id="app-nav"></div>
+  <div id="app-subnav"></div>
+  <main class="max-w-7xl mx-auto px-4 py-10">
+    <div id="header" class="mb-6"></div>
+    <div id="networks" class="table-wrap mb-10"></div>
+    <div id="hosts" class="table-wrap mb-10"></div>
+    <div id="unknown" class="table-wrap"></div>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+  <script src="/apps/nav.js"></script>
+  <script>
+    function badge(status) {
+      const s = String(status || '').toLowerCase();
+      if (s === 'active') return '<span class="badge badge-green">active</span>';
+      if (s === 'true') return '<span class="badge badge-green">yes</span>';
+      if (s === 'false') return '<span class="badge badge-red">no</span>';
+      return '<span class="badge badge-gray">' + (s || '—') + '</span>';
+    }
+    function fmt(v) { return v === undefined || v === null || v === '' ? '—' : String(v); }
+    function renderNetworks(data) {
+      const rows = data.networks.map(n => `
+        <tr>
+          <td class="font-medium">${fmt(n.name)}</td>
+          <td>${fmt(n.ssid)}</td>
+          <td class="font-mono text-xs">${fmt(n.gateway)}</td>
+          <td class="font-mono text-xs">${fmt(n.subnet)}</td>
+          <td>${badge(n.status)}</td>
+          <td class="note">${fmt(n.note)}</td>
+        </tr>
+      `).join('');
+      return `<h2 class="text-xl font-bold mb-3">Networks</h2>
+        <table><thead><tr>
+          <th>Name</th><th>SSID</th><th>Gateway</th><th>Subnet</th><th>Status</th><th>Note</th>
+        </tr></thead><tbody>${rows}</tbody></table>`;
+    }
+    function renderHosts(data) {
+      const rows = data.hosts.map(h => {
+        const ifs = (h.interfaces || []).map(i => `
+          <div class="mb-1">
+            <span class="font-mono text-xs">${fmt(i.device)}</span> — ${fmt(i.name)}: <span class="font-mono text-xs">${fmt(i.ip)}</span>
+            ${i.ssid ? `<span class="note">(${fmt(i.ssid)})</span>` : ''}
+            ${badge(i.status)}
+            ${i.internet === true ? badge('true') : i.internet === false ? badge('false') : ''}
+            ${i.public_ip ? `<span class="note">public ${fmt(i.public_ip)}</span>` : ''}
+            ${i.note ? `<span class="note">— ${fmt(i.note)}</span>` : ''}
+          </div>
+        `).join('');
+        return `
+        <tr>
+          <td class="font-medium">${fmt(h.label || h.name)}</td>
+          <td class="font-mono text-xs">${fmt(h.tailnet)}</td>
+          <td class="font-mono text-xs">${fmt(h.tailscale_ip)}</td>
+          <td>${ifs || '—'}</td>
+        </tr>
+        `;
+      }).join('');
+      return `<h2 class="text-xl font-bold mb-3">Hosts</h2>
+        <table><thead><tr>
+          <th>Name</th><th>Tailnet</th><th>Tailscale IP</th><th>Interfaces</th>
+        </tr></thead><tbody>${rows}</tbody></table>`;
+    }
+    function renderUnknown(data) {
+      if (!data.unknown || data.unknown.length === 0) return '';
+      const rows = data.unknown.map(u => `
+        <tr><td class="font-mono text-xs">${fmt(u.ip)}</td></tr>
+      `).join('');
+      return `<h2 class="text-xl font-bold mb-3">Unknown local devices</h2>
+        <table><thead><tr><th>IP</th></tr></thead><tbody>${rows}</tbody></table>`;
+    }
+    Promise.all([
+      fetch('/apps/apps.yml').then(r => r.text()),
+      fetch('/apps/docs/docs.yml').then(r => r.text()),
+      fetch('/apps/docs/home-network/home-network.yml').then(r => r.text())
+    ]).then(([appsText, docsText, dataText]) => {
+      const apps = jsyaml.load(appsText);
+      const docs = jsyaml.load(docsText);
+      const data = jsyaml.load(dataText);
+      document.title = data.title || 'Home Network';
+      document.getElementById('app-nav').innerHTML = ChabaNav.renderNav(apps.nav);
+      document.getElementById('app-subnav').innerHTML = ChabaNav.renderSubnav(docs.nav);
+      document.getElementById('header').innerHTML = `
+        <h1 class="text-3xl font-bold mb-2">${data.title}</h1>
+        <p class="text-gray-500">${data.subtitle || ''}</p>
+        <p class="note mt-1">Last verified: ${fmt(data.last_verified)}</p>
+        <p class="note mt-1">${fmt(data.note)}</p>
+      `;
+      document.getElementById('networks').innerHTML = renderNetworks(data);
+      document.getElementById('hosts').innerHTML = renderHosts(data);
+      document.getElementById('unknown').innerHTML = renderUnknown(data);
+    });
+  </script>
+</body>
+</html>
