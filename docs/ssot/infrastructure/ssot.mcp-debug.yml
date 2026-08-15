@@ -29,6 +29,14 @@ debug_commands:
     description: Process list
     compact: true
     expected_output: processes
+  ps -eo pid,ppid,cmd,%cpu --sort=-%cpu:
+    description: Top processes by CPU
+    compact: true
+    expected_output: processes
+  ps -eo pid,ppid,cmd,%mem --sort=-%mem:
+    description: Top processes by memory
+    compact: true
+    expected_output: processes
 
 raw_commands:
   allowed_prefixes:
@@ -104,6 +112,22 @@ efficiency:
       compact_chars: 38168
       savings_pct_chars: -797.9
       recommended: false
+    ps -eo pid,ppid,cmd,%cpu --sort=-%cpu:
+      raw_words: 3196
+      compact_words: 163
+      savings_pct: 94.9
+      raw_chars: 33418
+      compact_chars: 2157
+      savings_pct_chars: 93.5
+      recommended: true
+    ps -eo pid,ppid,cmd,%mem --sort=-%mem:
+      raw_words: 3196
+      compact_words: 170
+      savings_pct: 94.7
+      raw_chars: 33418
+      compact_chars: 2157
+      savings_pct_chars: 93.5
+      recommended: true
 
 workflow:
   default_tool: mcp_raw
