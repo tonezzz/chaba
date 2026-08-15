@@ -21,20 +21,23 @@ hosts:
     ssh_user: kkkakk
     mcp_debug_path: /Users/kkkakk/.local/bin/mcp-debug
     compact: false
-    note: mcp_debug (compact) not yet ported to macOS; use mcp_raw with macOS-compatible commands. The literal Tailscale IPv4 100.124.59.112 is used because the mcp-debug transport does not use the macbook SSH alias; machine name is 'kk-macbook' and Magic DNS is 'kk-macbook.taila0626a.ts.net'.
+    note: mcp_debug (compact) not yet ported to macOS; use mcp_raw with macOS-compatible
+      commands. The literal Tailscale IPv4 100.124.59.112 is used because the mcp-debug
+      transport does not use the macbook SSH alias; machine name is 'kk-macbook' and
+      Magic DNS is 'kk-macbook.taila0626a.ts.net'.
 debug_commands:
   systemctl list-units:
     description: Running systemd services
     compact: true
-    expected_output: units
+    expected_output: auto
   df -h:
     description: Disk usage
     compact: true
     expected_output: filesystems
   ps:
-    description: Process list
+    description: Top 20 processes by CPU
     compact: true
-    expected_output: processes
+    expected_output: auto
   ps -eo pid,ppid,cmd,%cpu --sort=-%cpu:
     description: Top processes by CPU
     compact: true
@@ -63,6 +66,22 @@ debug_commands:
     description: USB devices
     compact: true
     expected_output: usb_devices
+  tailscale status:
+    description: Tailscale network status
+    compact: true
+    expected_output: auto
+  ip -4 route:
+    description: IPv4 routing table
+    compact: true
+    expected_output: auto
+  ss -tlnp:
+    description: Listening TCP sockets
+    compact: true
+    expected_output: sockets
+  ip -4 -br addr show:
+    description: Interface IPv4 addresses
+    compact: true
+    expected_output: interfaces
 raw_commands:
   allowed_prefixes:
   - systemctl
@@ -78,12 +97,13 @@ raw_commands:
   - env
   - nvidia-smi
   - rocm-smi
+  - tailscale
+  - ip
   - tail
   - head
   - cat
   - ls
   - which
-  # macOS equivalents and extras
   - vm_stat
   - launchctl
   - diskutil
@@ -126,7 +146,8 @@ phases:
 - id: 3
   name: Build host-aware mcp-debug-server
   status: completed
-  notes: /home/tony/CascadeProjects/chaba/scripts/mcp-debug-server.py with mcp_debug and mcp_raw
+  notes: /home/tony/CascadeProjects/chaba/scripts/mcp-debug-server.py with mcp_debug
+    and mcp_raw
 - id: 4
   name: Register in Devin/Windsurf MCP
   status: completed
@@ -141,16 +162,31 @@ phases:
   notes: remote-exec-tony-dell status set to deprecated; mcp-debug status set to operational
 efficiency:
   tracked_by: mcp_stats
-  note: tony_omen baseline generated on 2026-08-14. Re-run mcp_stats to refresh per-host numbers.
+  note: per-host baselines generated on 2026-08-15 via mcp_savings
   commands:
     systemctl list-units:
-      raw_words: 3152
+      raw_words: 3142
       compact_words: 137
-      savings_pct: 95.7
-      raw_chars: 73736
+      savings_pct: 95.6
+      raw_chars: 73422
       compact_chars: 5094
       savings_pct_chars: 93.1
       recommended: true
+      hosts:
+        tony_omen:
+          raw_words: 3142
+          compact_words: 137
+          savings_pct: 95.6
+          raw_chars: 73422
+          compact_chars: 5094
+          savings_pct_chars: 93.1
+        tony_dell:
+          raw_words: 2036
+          compact_words: 94
+          savings_pct: 95.4
+          raw_chars: 38273
+          compact_chars: 3700
+          savings_pct_chars: 90.3
     df -h:
       raw_words: 79
       compact_words: 2
@@ -159,30 +195,90 @@ efficiency:
       compact_chars: 1000
       savings_pct_chars: -43.7
       recommended: false
+      hosts:
+        tony_omen:
+          raw_words: 79
+          compact_words: 2
+          savings_pct: 97.5
+          raw_chars: 696
+          compact_chars: 1000
+          savings_pct_chars: -43.7
+        tony_dell:
+          raw_words: 61
+          compact_words: 2
+          savings_pct: 96.7
+          raw_chars: 547
+          compact_chars: 754
+          savings_pct_chars: -37.8
     ps:
-      raw_words: 480
-      compact_words: 39
-      savings_pct: 91.9
-      raw_chars: 4251
-      compact_chars: 38168
-      savings_pct_chars: -797.9
-      recommended: false
+      raw_words: 616
+      compact_words: 1
+      savings_pct: 99.8
+      raw_chars: 5402
+      compact_chars: 1047
+      savings_pct_chars: 80.6
+      recommended: true
+      hosts:
+        tony_omen:
+          raw_words: 616
+          compact_words: 1
+          savings_pct: 99.8
+          raw_chars: 5402
+          compact_chars: 1047
+          savings_pct_chars: 80.6
+        tony_dell:
+          raw_words: 280
+          compact_words: 1
+          savings_pct: 99.6
+          raw_chars: 2595
+          compact_chars: 1052
+          savings_pct_chars: 59.5
     ps -eo pid,ppid,cmd,%cpu --sort=-%cpu:
-      raw_words: 3196
-      compact_words: 163
-      savings_pct: 94.9
-      raw_chars: 33418
-      compact_chars: 2157
-      savings_pct_chars: 93.5
+      raw_words: 3471
+      compact_words: 18
+      savings_pct: 99.5
+      raw_chars: 36211
+      compact_chars: 1497
+      savings_pct_chars: 95.9
       recommended: true
+      hosts:
+        tony_omen:
+          raw_words: 3471
+          compact_words: 18
+          savings_pct: 99.5
+          raw_chars: 36211
+          compact_chars: 1497
+          savings_pct_chars: 95.9
+        tony_dell:
+          raw_words: 1332
+          compact_words: 19
+          savings_pct: 98.6
+          raw_chars: 14994
+          compact_chars: 1383
+          savings_pct_chars: 90.8
     ps -eo pid,ppid,cmd,%mem --sort=-%mem:
-      raw_words: 3196
-      compact_words: 170
-      savings_pct: 94.7
-      raw_chars: 33418
-      compact_chars: 2157
-      savings_pct_chars: 93.5
+      raw_words: 3471
+      compact_words: 13
+      savings_pct: 99.6
+      raw_chars: 36211
+      compact_chars: 1501
+      savings_pct_chars: 95.9
       recommended: true
+      hosts:
+        tony_omen:
+          raw_words: 3471
+          compact_words: 13
+          savings_pct: 99.6
+          raw_chars: 36211
+          compact_chars: 1501
+          savings_pct_chars: 95.9
+        tony_dell:
+          raw_words: 1332
+          compact_words: 19
+          savings_pct: 98.6
+          raw_chars: 14994
+          compact_chars: 1467
+          savings_pct_chars: 90.2
     free -h:
       raw_words: 17
       compact_words: 2
@@ -191,20 +287,232 @@ efficiency:
       compact_chars: 148
       savings_pct_chars: 28.5
       recommended: true
+      hosts:
+        tony_omen:
+          raw_words: 17
+          compact_words: 2
+          savings_pct: 88.2
+          raw_chars: 207
+          compact_chars: 148
+          savings_pct_chars: 28.5
+        tony_dell:
+          raw_words: 17
+          compact_words: 2
+          savings_pct: 88.2
+          raw_chars: 207
+          compact_chars: 151
+          savings_pct_chars: 27.1
+    uptime:
+      raw_words: 12
+      compact_words: 3
+      savings_pct: 75.0
+      raw_chars: 69
+      compact_chars: 69
+      savings_pct_chars: 0.0
+      recommended: false
+      hosts:
+        tony_omen:
+          raw_words: 12
+          compact_words: 3
+          savings_pct: 75.0
+          raw_chars: 69
+          compact_chars: 69
+          savings_pct_chars: 0.0
+        tony_dell:
+          raw_words: 12
+          compact_words: 3
+          savings_pct: 75.0
+          raw_chars: 71
+          compact_chars: 70
+          savings_pct_chars: 1.4
+    mount:
+      raw_words: 582
+      compact_words: 1
+      savings_pct: 99.8
+      raw_chars: 33863
+      compact_chars: 35454
+      savings_pct_chars: -4.7
+      recommended: false
+      hosts:
+        tony_omen:
+          raw_words: 582
+          compact_words: 1
+          savings_pct: 99.8
+          raw_chars: 33863
+          compact_chars: 35454
+          savings_pct_chars: -4.7
+        tony_dell:
+          raw_words: 306
+          compact_words: 1
+          savings_pct: 99.7
+          raw_chars: 5808
+          compact_chars: 6663
+          savings_pct_chars: -14.7
+    lsblk:
+      raw_words: 178
+      compact_words: 1
+      savings_pct: 99.4
+      raw_chars: 1432
+      compact_chars: 1991
+      savings_pct_chars: -39.0
+      recommended: false
+      hosts:
+        tony_omen:
+          raw_words: 178
+          compact_words: 1
+          savings_pct: 99.4
+          raw_chars: 1432
+          compact_chars: 1991
+          savings_pct_chars: -39.0
+        tony_dell:
+          raw_words: 191
+          compact_words: 1
+          savings_pct: 99.5
+          raw_chars: 1400
+          compact_chars: 2074
+          savings_pct_chars: -48.1
+    lsusb:
+      raw_words: 72
+      compact_words: 31
+      savings_pct: 56.9
+      raw_chars: 432
+      compact_chars: 535
+      savings_pct_chars: -23.8
+      recommended: false
+      hosts:
+        tony_omen:
+          raw_words: 72
+          compact_words: 31
+          savings_pct: 56.9
+          raw_chars: 432
+          compact_chars: 535
+          savings_pct_chars: -23.8
+        tony_dell:
+          raw_words: 34
+          compact_words: 14
+          savings_pct: 58.8
+          raw_chars: 209
+          compact_chars: 280
+          savings_pct_chars: -34.0
+    tailscale status:
+      raw_words: 35
+      compact_words: 17
+      savings_pct: 51.4
+      raw_chars: 535
+      compact_chars: 467
+      savings_pct_chars: 12.7
+      recommended: true
+      hosts:
+        tony_omen:
+          raw_words: 35
+          compact_words: 17
+          savings_pct: 51.4
+          raw_chars: 535
+          compact_chars: 467
+          savings_pct_chars: 12.7
+        tony_dell:
+          raw_words: 41
+          compact_words: 17
+          savings_pct: 58.5
+          raw_chars: 724
+          compact_chars: 493
+          savings_pct_chars: 31.9
+    ip -4 route:
+      raw_words: 107
+      compact_words: 3
+      savings_pct: 97.2
+      raw_chars: 799
+      compact_chars: 472
+      savings_pct_chars: 40.9
+      recommended: true
+      hosts:
+        tony_omen:
+          raw_words: 107
+          compact_words: 3
+          savings_pct: 97.2
+          raw_chars: 799
+          compact_chars: 472
+          savings_pct_chars: 40.9
+        tony_dell:
+          raw_words: 44
+          compact_words: 3
+          savings_pct: 93.2
+          raw_chars: 332
+          compact_chars: 234
+          savings_pct_chars: 29.5
+    ss -tlnp:
+      raw_words: 353
+      compact_words: 101
+      savings_pct: 71.4
+      raw_chars: 7722
+      compact_chars: 2120
+      savings_pct_chars: 72.5
+      recommended: false
+      hosts:
+        tony_omen:
+          raw_words: 353
+          compact_words: 101
+          savings_pct: 71.4
+          raw_chars: 7722
+          compact_chars: 2120
+          savings_pct_chars: 72.5
+        tony_dell:
+          raw_words: 92
+          compact_words: 93
+          savings_pct: -1.1
+          raw_chars: 1870
+          compact_chars: 1951
+          savings_pct_chars: -4.3
+    ip -4 -br addr show:
+      raw_words: 33
+      compact_words: 5
+      savings_pct: 84.8
+      raw_chars: 526
+      compact_chars: 593
+      savings_pct_chars: -12.7
+      recommended: false
+      hosts:
+        tony_omen:
+          raw_words: 33
+          compact_words: 5
+          savings_pct: 84.8
+          raw_chars: 526
+          compact_chars: 593
+          savings_pct_chars: -12.7
+        tony_dell:
+          raw_words: 12
+          compact_words: 5
+          savings_pct: 58.3
+          raw_chars: 193
+          compact_chars: 255
+          savings_pct_chars: -32.1
 workflow:
   default_tool: mcp_raw
   compact_when: savings_pct_chars > 0 on the target host
   vet_new_command: mcp_stats(host, command)
   recommended:
   - systemctl list-units
+  - ps
+  - ps -eo pid,ppid,cmd,%cpu --sort=-%cpu
+  - ps -eo pid,ppid,cmd,%mem --sort=-%mem
+  - free -h
+  - tailscale status
+  - ip -4 route
   not_recommended:
   - df -h
-  - ps
-  gate: Run mcp_stats on both hosts before adding a new debug_command; add to recommended only if both hosts show positive char savings.
+  - uptime
+  - mount
+  - lsblk
+  - lsusb
+  - ss -tlnp
+  - ip -4 -br addr show
+  gate: Run mcp_stats on both hosts before adding a new debug_command; add to recommended
+    only if both hosts show positive char savings.
 suggested_extensions:
 - id: stats
   name: mcp_stats tool
-  description: Measure raw vs compact word/char savings for candidate commands on both hosts before adding them.
+  description: Measure raw vs compact word/char savings for candidate commands on
+    both hosts before adding them.
   priority: high
   status: completed
 - id: host-identity
@@ -214,7 +522,8 @@ suggested_extensions:
   status: completed
 - id: ps-bound
   name: Bounded ps output
-  description: Replace full ps with "ps top-cpu" and "ps top-mem" returning top 20 processes by CPU or memory.
+  description: Replace full ps with "ps top-cpu" and "ps top-mem" returning top 20
+    processes by CPU or memory.
   priority: high
   status: completed
 - id: memory
@@ -242,68 +551,117 @@ suggested_extensions:
   description: Allow different raw command prefixes per host based on capabilities.
   priority: low
   status: in_progress
-  notes: macbook added with compact=false; global raw allowlist now accepts macOS commands (vm_stat, launchctl, diskutil, etc.).
+  notes: macbook added with compact=false; global raw allowlist now accepts macOS
+    commands (vm_stat, launchctl, diskutil, etc.).
 - id: presets
   name: MCP Debug presets
-  description: "Named, multi-step, multi-host diagnostic routines exposed via mcp_preset_list and mcp_preset_run. First presets: quick-health, top-cpu-both, service-diff."
+  description: 'Named, multi-step, multi-host diagnostic routines exposed via mcp_preset_list
+    and mcp_preset_run. First presets: quick-health, top-cpu-both, service-diff.'
   priority: high
   status: completed
-
 presets:
   quick-health:
     description: Service count and memory for both hosts
     steps:
-      - host: tony_omen
-        tool: mcp_debug
-        command: systemctl list-units
-      - host: tony_dell
-        tool: mcp_debug
-        command: systemctl list-units
-      - host: tony_omen
-        tool: mcp_raw
-        command: free -h
-      - host: tony_dell
-        tool: mcp_raw
-        command: free -h
+    - host: tony_omen
+      tool: mcp_debug
+      command: systemctl list-units
+    - host: tony_dell
+      tool: mcp_debug
+      command: systemctl list-units
+    - host: tony_omen
+      tool: mcp_raw
+      command: free -h
+    - host: tony_dell
+      tool: mcp_raw
+      command: free -h
   tony-omen-snapshot:
     description: Fetch the latest tony-omen health snapshot
     steps:
-      - host: tony_omen
-        tool: mcp_raw
-        command: cat /home/tony/var/chaba/health/tony-omen-snapshot.json
+    - host: tony_omen
+      tool: mcp_raw
+      command: cat /home/tony/var/chaba/health/tony-omen-snapshot.json
   tony-dell-snapshot:
     description: Fetch the latest tony-dell health agent snapshot and check its freshness
     steps:
-      - host: tony_dell
-        tool: mcp_raw
-        command: systemctl --user start tony-dell-health-snapshot
-      - host: tony_dell
-        tool: mcp_raw
-        command: ls -l --time-style=full-iso /home/tony/var/chaba/health/tony-dell-snapshot.json
-      - host: tony_dell
-        tool: mcp_raw
-        command: cat /home/tony/var/chaba/health/tony-dell-snapshot.json
+    - host: tony_dell
+      tool: mcp_raw
+      command: systemctl --user start tony-dell-health-snapshot
+    - host: tony_dell
+      tool: mcp_raw
+      command: ls -l --time-style=full-iso /home/tony/var/chaba/health/tony-dell-snapshot.json
+    - host: tony_dell
+      tool: mcp_raw
+      command: cat /home/tony/var/chaba/health/tony-dell-snapshot.json
   macbook-quick-look:
     description: Basic macOS system state via raw commands
     steps:
-      - host: macbook
-        tool: mcp_raw
-        command: sw_vers
-      - host: macbook
-        tool: mcp_raw
-        command: vm_stat
-      - host: macbook
-        tool: mcp_raw
-        command: launchctl list | head -20
-      - host: macbook
-        tool: mcp_raw
-        command: diskutil list
+    - host: macbook
+      tool: mcp_raw
+      command: sw_vers
+    - host: macbook
+      tool: mcp_raw
+      command: vm_stat
+    - host: macbook
+      tool: mcp_raw
+      command: launchctl list | head -20
+    - host: macbook
+      tool: mcp_raw
+      command: diskutil list
   macbook-snapshot:
     description: Refresh and show the latest macbook health snapshot
     steps:
-      - host: macbook
-        tool: mcp_raw
-        command: launchctl start com.chaba.macbook-health
-      - host: macbook
-        tool: mcp_raw
-        command: cat /Users/kkkakk/var/chaba/health/macbook-snapshot.json
+    - host: macbook
+      tool: mcp_raw
+      command: launchctl start com.chaba.macbook-health
+    - host: macbook
+      tool: mcp_raw
+      command: cat /Users/kkkakk/var/chaba/health/macbook-snapshot.json
+  top-cpu-both:
+    description: Top 20 processes by CPU on both Linux hosts
+    steps:
+    - host: tony_omen
+      tool: mcp_debug
+      command: ps -eo pid,ppid,cmd,%cpu --sort=-%cpu
+    - host: tony_dell
+      tool: mcp_debug
+      command: ps -eo pid,ppid,cmd,%cpu --sort=-%cpu
+  top-mem-both:
+    description: Top 20 processes by memory on both Linux hosts
+    steps:
+    - host: tony_omen
+      tool: mcp_debug
+      command: ps -eo pid,ppid,cmd,%mem --sort=-%mem
+    - host: tony_dell
+      tool: mcp_debug
+      command: ps -eo pid,ppid,cmd,%mem --sort=-%mem
+  all-snapshots:
+    description: Refresh and show health snapshots for all hosts
+    steps:
+    - host: tony_omen
+      tool: mcp_raw
+      command: cat /home/tony/var/chaba/health/tony-omen-snapshot.json
+    - host: tony_dell
+      tool: mcp_raw
+      command: systemctl --user start tony-dell-health-snapshot
+    - host: tony_dell
+      tool: mcp_raw
+      command: cat /home/tony/var/chaba/health/tony-dell-snapshot.json
+    - host: macbook
+      tool: mcp_raw
+      command: launchctl start com.chaba.macbook-health
+    - host: macbook
+      tool: mcp_raw
+      command: cat /Users/kkkakk/var/chaba/health/macbook-snapshot.json
+  macbook-network:
+    description: Listening ports on macOS
+    steps:
+    - host: macbook
+      tool: mcp_raw
+      command: lsof -i -P -n | grep LISTEN
+  macbook-disks:
+    description: Disk layout on macOS
+    steps:
+    - host: macbook
+      tool: mcp_raw
+      command: diskutil list
