@@ -1,0 +1,88 @@
+title: SSOT File Control
+subtitle: Governance and workflow for creating, updating, and validating SSOT YAML files
+icon: 🗂️
+
+ideas:
+  - Define a lightweight, repeatable lifecycle for SSOT files so contributors spend less time deciding where or how to edit.
+  - Keep naming, placement, validation, search, and indexing conventions in one canonical place.
+  - Prefer automated checks (ssot-validate, MDDB sync) over manual review.
+
+sections:
+  - title: Scope and Ownership
+    icon: 📁
+    layout: list
+    items:
+      - label: Scope
+        text: All canonical SSOT YAML files under docs/ssot/ and docs/ssot/*/
+      - label: Owner
+        text: Project maintainer (tony); day-to-day updates by the active assistant or contributor
+      - label: Exclusions
+        text: template.yml and apps/template.app.yml are boilerplate for new files and are not controlled SSOT records
+
+  - title: Naming and Placement
+    icon: 🏷️
+    layout: list
+    items:
+      - label: Prefix
+        text: All SSOT files must start with ssot. (except templates)
+      - label: kebab-case
+        text: Use lowercase words separated by hyphens, e.g. ssot.file-control.yml
+      - label: Directories
+        text: |
+          Place files in the most specific existing subdirectory:
+          - docs/ssot/ — core/cross-project policy and tooling
+          - docs/ssot/infrastructure/ — hosts, services, containers, networking
+          - docs/ssot/apps/ — application-specific data
+          Create a new subdirectory only when at least 3 related files exist.
+      - label: One file per topic
+        text: A topic must have exactly one SSOT file. Older versions are archived to ssot.<topic>.archive.yml, not duplicated.
+
+  - title: Change Workflow
+    icon: 🔄
+    layout: list
+    items:
+      - label: Draft
+        text: Copy docs/ssot/template.yml, fill title, sections, and config, then delete the placeholder comments
+      - label: Validate
+        text: Run the ssot-validate skill or script before committing; fix syntax and structural errors
+      - label: Register
+        text: Add the file to docs/ssot/ssot.index.yml under the correct category
+      - label: Log significant changes
+        text: For policy or structural changes, append a concise entry to docs/ssot/CHANGELOG.md
+      - label: Commit
+        text: Use a short commit with an allowed prefix (chore, docs, feat) and reference the SSOT file
+
+  - title: Search and Discovery
+    icon: 🔍
+    layout: list
+    items:
+      - label: Primary search
+        text: Use MDDB semantic search for conceptual SSOT and documentation queries
+      - label: Exact SSOT search
+        text: Use the ssot-search skill or grep docs/ssot/**/*.yml for exact YAML pattern matching
+      - label: Master index
+        text: Consult docs/ssot/ssot.index.yml for the authoritative list of SSOT files
+
+  - title: Validation and Quality
+    icon: ✅
+    layout: list
+    items:
+      - label: Tool
+        text: Use the ssot-validate skill to check YAML syntax and SSOT structure
+      - label: Rules
+        text: Follow the conventions in docs/ssot/ssot.validation-patterns.yml
+      - label: Pre-commit
+        text: Always validate before committing; invalid SSOT files break the MDDB sync and search index
+
+config:
+  version: 1
+  created: 2026-08-15
+  maintainer: tony
+  status: draft
+  related_files:
+    - docs/ssot/ssot.index.yml
+    - docs/ssot/ssot.validation-patterns.yml
+    - docs/ssot/ssot.maintenance.yml
+    - docs/ssot/CHANGELOG.md
+    - .windsurfrules
+    - docs/kb/documentation-search.md
