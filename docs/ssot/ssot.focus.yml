@@ -10,13 +10,14 @@ ideas:
   - Review focus at the start and end of every assistant session
 
 workflow:
-  - Assistant must read this SSOT at the start of each session
-  - For each user request, first match it against active tasks and their subtasks
-  - If it matches, append it to that item's request_log and do the work inside that focus
-  - If it is a small standalone action, add it to quick_wins and complete it immediately
-  - If it is new strategic work, add it to backlog with priority and ask the user to activate it
+  - For routine session starts, read ssot.focus.current.yml first for active focuses and quick wins
+  - Use this file (ssot.focus.yml) for backlog, archived focuses, and focus history
+  - For each user request, first match it against active tasks and their subtasks in ssot.focus.current.yml
+  - If it matches, append it to that item's request_log in ssot.focus.current.yml and do the work inside that focus
+  - If it is a small standalone action, add it to quick_wins in ssot.focus.current.yml and complete it immediately
+  - If it is new strategic work, add it to backlog in this file with priority and ask the user to activate it
   - Keep at most one active shared focus and one active branch focus at a time
-  - Update subtask status and append completed quick wins to focus history at session end
+  - Update subtask status and append completed quick wins to focus history in this file at session end
 
 validation:
   max_active_shared_focus: 1
@@ -54,7 +55,7 @@ sections:
           - label: Split ssot.focus.yml into active and archive files when it exceeds 20KB
             status: not_started
           - label: Apply .current style to expected large SSOT files to reduce token reads
-            status: not_started
+            status: completed
           - label: Adopt focus-intake-only workflow with activation gate and apps/focus page
             status: not_started
         request_log:
@@ -85,14 +86,17 @@ sections:
         tags: [infrastructure, chaba, monitoring, cleanup]
         subtasks:
           - label: Commit and push uncommitted SSOT and scripts (MCP tools policy, tony-dell monitoring)
-            status: not_started
+            status: completed
           - label: Apply tony-dell mcp-health critical-only resource optimization
             status: not_started
           - label: Release and renew tony-dell wired DHCP after router renumbering
             status: not_started
           - label: Deploy tony-dell monitor as a systemd user timer
             status: not_started
-        request_log: []
+        request_log:
+          - date: 2026-08-15
+            request: Commit and push uncommitted SSOT and scripts (MCP tools policy, tony-dell monitoring); completed as commit 9f3a984 on master and pushed to origin
+            matched_to: Commit and push uncommitted SSOT and scripts (MCP tools policy, tony-dell monitoring)
 
   - title: Backlog - Triage Queue
     icon: backlog
@@ -260,6 +264,7 @@ config:
   maintainer: tony
   validation_enabled: true
   related_files:
+    - docs/ssot/ssot.focus.current.yml
     - docs/ssot/ssot.improvements.yml
     - docs/ssot/ssot.index.yml
     - .devin/agents/AGENTS.md
