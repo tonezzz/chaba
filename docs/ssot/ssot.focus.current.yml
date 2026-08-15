@@ -4,12 +4,15 @@ icon: target
 
 workflow:
   - Assistant must read this SSOT at the start of each session
+  - List docs/ssot/focus-inbox/*.yml at session start and summarize any pending items for triage
   - Match the user request against active shared and branch focuses first
   - If it matches, append it to that item's request_log and do the work inside that focus
   - If it is a small standalone action, add it to quick_wins and complete it immediately
   - If it is new strategic work, add it to the backlog in ssot.focus.yml with priority and ask the user to activate it
+  - If it is a new focus item from another session, add it as an inbox file in docs/ssot/focus-inbox/ for triage
   - For backlog review, archived focuses, or focus history, read the full ssot.focus.yml
   - At session end, update subtask status and append completed quick wins to focus history in ssot.focus.yml
+  - When an inbox item is activated, merge it into this file and git mv the source file to docs/ssot/focus-inbox/processed/
 
 validation:
   max_active_shared_focus: 1
@@ -49,6 +52,8 @@ sections:
             status: completed
           - label: Adopt focus-intake-only workflow with activation gate and apps/focus page
             status: not_started
+          - label: Design incremental focus-inbox files that merge into the main focus on activation
+            status: completed
         request_log:
           - date: 2026-08-15
             request: Improve focus SSOT so every request is checked against a task or subtask and assigned or merged accordingly; keep old focuses in inactive and generate a new focus to follow up.
@@ -62,6 +67,9 @@ sections:
           - date: 2026-08-15
             request: Adopt focus-intake-only workflow where the assistant analyzes and saves tasks, suggests activation, and does no new processing until the last one finishes; show results on apps/focus page.
             matched_to: Adopt focus-intake-only workflow with activation gate and apps/focus page
+          - date: 2026-08-15
+            request: Can we add new focuses as incremental files that will be migrated into the main focus when we process it?
+            matched_to: Design incremental focus-inbox files that merge into the main focus on activation
 
   - title: Active Branch Focus
     icon: branch
@@ -96,7 +104,10 @@ config:
   last_updated: 2026-08-15
   maintainer: tony
   full_focus_file: docs/ssot/ssot.focus.yml
+  inbox_dir: docs/ssot/focus-inbox
+  inbox_processed_dir: docs/ssot/focus-inbox/processed
   validation_enabled: true
   related_files:
     - docs/ssot/ssot.focus.yml
     - docs/ssot/ssot.index.yml
+    - docs/ssot/focus-inbox
