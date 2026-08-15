@@ -12,15 +12,15 @@ profiles:
     hostname_pattern: .local
     description: Home network with stable .local hostname resolution
     base_urls:
-      tony_omen: tony-omen.local
-      tony_dell: tony-dell.local
+      tony_omen: tony-omen
+      tony_dell: tony-dell
     service_urls:
-      llama_url: http://tony-omen.local:8008
-      imagen_url: http://tony-omen.local:8080/apps/imagen2/api
-      playlive_url: http://tony-omen.local:9230
-      weaviate_url: http://tony-omen.local:8082
-      postgres_url: postgresql://tony-omen.local:5432
-      helm_url: http://tony-omen.local:8080/apps/helm
+      llama_url: http://tony-omen:8008
+      imagen_url: http://tony-omen:8080/apps/imagen2/api
+      playlive_url: http://tony-omen:9230
+      weaviate_url: http://tony-omen:8082
+      postgres_url: postgresql://tony-omen:5432
+      helm_url: http://tony-omen:8080/apps/helm
     health_config: infrastructure/ssot.health.home.yml
     system_config: ssot.mysystem.home.yml
 
@@ -266,8 +266,8 @@ servers:
       Claude Desktop uses the stdio bridge at /home/tony/.config/Claude/mddb-bridge.py
       The bridge wraps mcp-proxy via /home/tony/.config/Claude/mcp-proxy-lenient.py to skip 2025 output-schema validation
       Allowed tools for Claude: add_document, search_documents, delete_document, get_stats, aggregate, semantic_search
-      Optional local HTTPS endpoint: https://tony-omen.local:9443/mcp (see docs/kb/mddb-local-https.md)
-      mcp-health "MDDB MCP Server" check: GET http://tony-omen.local:9001/mcp returns 400; only POST is valid, so 400 is the healthy HTTP status
+      Optional local HTTPS endpoint: https://tony-omen:9443/mcp (see docs/kb/mddb-local-https.md)
+      mcp-health "MDDB MCP Server" check: GET http://tony-omen:9001/mcp returns 400; only POST is valid, so 400 is the healthy HTTP status
       See docs/kb/mddb-claude-bridge.md for Claude-specific configuration details
 
   mcp-health:

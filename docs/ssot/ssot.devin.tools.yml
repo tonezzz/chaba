@@ -11,7 +11,7 @@ subtitle: MCP server definitions, tool inventory, and launch configuration
 # - Wrapper scripts: Centralized in ~/.config/devin/mcp-scripts/
 # - Filtering: mcp-filter for token optimization (Yomi, GitHub, PostgreSQL)
 # - Virtual environment: /tmp/mcp-filter-venv/ for mcp-filter dependencies
-# - Profile switching: home (tony-omen.local) vs mobile (dynamic IP)
+# - Profile switching: home (tony-omen) vs mobile (dynamic IP)
 
 # Configuration Generation
 # Usage:
@@ -66,11 +66,11 @@ profiles:
   home:
     network: 192.168.1.0/24
     hostname_pattern: .local
-    llama_url: http://tony-omen.local:8008
-    imagen_url: http://tony-omen.local:8080/apps/imagen2/api
-    playlive_url: http://tony-omen.local:9230
-    weaviate_url: http://tony-omen.local:8082
-    postgres_url: postgresql://tony-omen.local:5432
+    llama_url: http://tony-omen:8008
+    imagen_url: http://tony-omen:8080/apps/imagen2/api
+    playlive_url: http://tony-omen:9230
+    weaviate_url: http://tony-omen:8082
+    postgres_url: postgresql://tony-omen:5432
 
   mobile:
     network: dynamic

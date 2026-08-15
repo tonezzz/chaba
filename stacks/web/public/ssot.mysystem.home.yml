@@ -7,18 +7,88 @@ ideas:
   - Two workstations with shared input via Barrier
   - Multiple services and apps deployed across machines
   - Local network with .local hostname resolution
+  - Profile switching capability from mobile networks
 
 sections:
+  - title: Current Network Session
+    icon: 📡
+    layout: list
+    items:
+      - label: Home WiFi
+        text: Home network (192.168.1.0/24 subnet)
+        status: available
+      - label: Network Type
+        text: Local network with .local hostname resolution
+      - label: Access Method
+        text: Direct .local hostname access (tony-omen, tony-dell)
+      - label: Profile Switching
+        text: Switch from mobile profile when returning to home network
+
   - title: Workstations
     icon: 💻
     layout: list
     items:
       - label: tony-omen
-        text: Primary workstation (tony-omen.local, 192.168.1.48)
+        text: Primary workstation (tailnet tony-omen / 100.75.102.88)
         tags: [primary, server, barrier-server]
       - label: tony-dell
-        text: Secondary workstation (tony-dell.local, 192.168.1.42)
+        text: Secondary workstation (tailnet tony-dell / 100.68.142.13)
         tags: [secondary, testing, barrier-client]
+      - label: macbook
+        text: MacBook Pro (KKs-MacBook-Pro.local, 192.168.1.39, tailnet 100.124.59.112)
+        tags: [macos, laptop, remote-access]
+        url: file:///home/tony/CascadeProjects/chaba/docs/ssot/ssot.mysystem.macbook.yml
+
+  - title: Hardware Specifications
+    icon: 🔧
+    layout: list
+    items:
+      - label: tony-omen CPU
+        text: Intel Core i7-9750H (6 cores/12 threads), 2.60GHz hardware max, 800MHz min
+        tags: [hardware, cpu, performance]
+      - label: tony-omen CPU operational cap
+        text: Software capped to 2.40GHz via cpufreq-limit.service (cpupower -u 2.40GHz, governor performance)
+        tags: [hardware, cpu, performance, power]
+        status: active
+      - label: tony-omen GPU
+        text: NVIDIA GeForce GTX 1650 (4GB VRAM)
+        tags: [hardware, gpu, performance]
+      - label: tony-omen Memory
+        text: 32GB RAM
+        tags: [hardware, memory]
+      - label: CPU Frequency Monitoring
+        text: Monitored via health-monitor.sh (checks load, temperature, throttling)
+        tags: [monitoring, cpu, health-check]
+        status: active
+
+  - title: Power Management
+    icon: 🔋
+    layout: list
+    items:
+      - label: Screen Timeout Schedule
+        text: Automatic screen timeout adjustment based on time of day
+        status: active
+        tags: [power, automation, screen-timeout]
+      - label: Nighttime Hours (10pm-8am)
+        text: "Screen timeout: 1 minute (aggressive power saving)"
+        status: scheduled
+      - label: Daytime Hours (8am-10pm)
+        text: "Screen timeout: 10 minutes (normal operation)"
+        status: scheduled
+      - label: tony-omen Scripts
+        text: /home/tony/scripts/screen-timeout-night.sh, /home/tony/scripts/screen-timeout-day.sh
+      - label: tony-dell Scripts
+        text: /home/tony/scripts/screen-timeout-night.sh, /home/tony/scripts/screen-timeout-day.sh
+      - label: Cron Schedule
+        text: "0 22 * * * (nighttime), 0 8 * * * (daytime)"
+      - label: Log Location
+        text: /home/tony/logs/screen-timeout.log
+      - label: Current Settings (tony-omen)
+        text: "Screen timeout: 600s, DPMS: Standby 3600s, Suspend 0s, Off 900s"
+      - label: Current Settings (tony-dell)
+        text: "Screen timeout: 0s (disabled), DPMS: Disabled"
+      - label: Implementation Date
+        text: 2026-08-11
 
   - title: Network
     icon: 🌐
@@ -26,27 +96,31 @@ sections:
     items:
       - label: Local Network
         text: 192.168.1.0/24 subnet with .local hostname resolution
-      - label: tony-omen.local
-        text: 192.168.1.48 - primary workstation
-      - label: tony-dell.local
-        text: 192.168.1.42 - secondary workstation
+      - label: tony-omen
+        text: Primary workstation; tailnet tony-omen (100.75.102.88). Current LAN/WiFi IP is recorded in the health snapshot.
+      - label: tony-dell
+        text: Secondary workstation; tailnet tony-dell (100.68.142.13). Current LAN/WiFi IP is recorded in the health snapshot.
 
   - title: Input Sharing (Barrier)
     icon: 🖱️
     layout: list
     items:
       - label: Barrier Server
-        text: Runs on tony-omen (tony-omen.local:24800) with physical mouse/keyboard
+        text: Runs on tony-omen via systemd (barriers.service) on 0.0.0.0:24800, reachable at 100.75.102.88:24800 over Tailscale
       - label: Barrier Client
-        text: Runs on tony-dell, connects to tony-omen.local:24800
+        text: Runs on tony-dell and connects to 100.75.102.88:24800 (Tailscale) to avoid stale /etc/hosts
       - label: Client Binary
-        text: /usr/bin/barrierc
+        text: /home/tony/.local/bin/barrierc (actual path; /usr/bin/barrierc not installed)
       - label: Start Command
-        text: nohup /usr/bin/barrierc --disable-crypto --name tony-dell --restart tony-omen.local > /tmp/barrier-client.log 2>&1 &
+        text: nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &
       - label: Health Check
-        text: ps -ef | grep barrierc
+        text: ssh -o ConnectTimeout=3 tony@tony-dell 'pgrep -a barrierc' && tail -n 5 /tmp/barrier-client.log
+      - label: Autofix
+        text: ssh -o ConnectTimeout=3 tony@tony-dell 'pkill -x barrierc 2>/dev/null; nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &'
+      - label: Server Autofix
+        text: systemctl --user restart barriers.service
       - label: Logs
-        text: /tmp/barrier-client.log
+        text: /tmp/barrier-client.log (client), /tmp/barrier-server.log (server)
 
   - title: Services (tony-omen)
     icon: ⚙️
@@ -60,14 +134,14 @@ sections:
         tags: [database, postgres]
       - label: yomi-api
         text: LINE conversation archive and viewer API (port 3000)
-        url: http://tony-omen.local:8080/api/yomi/conversations
+        url: http://tony-omen:8080/api/yomi/conversations
         tags: [api, line, messaging]
       - label: Apps Server
         text: Main apps server on port 8080
-        url: http://tony-omen.local:8080
+        url: http://tony-omen:8080
       - label: Chaba-h3 Preview
         text: Chaba-h3 preview server on port 8081
-        url: http://tony-omen.local:8081
+        url: http://tony-omen:8081
 
   - title: Services (tony-dell)
     icon: ⚙️
@@ -75,7 +149,7 @@ sections:
     items:
       - label: Apps Server
         text: Testing apps server on port 8080
-        url: http://tony-dell.local:8080
+        url: http://tony-dell:8080
 
   - title: Available Apps
     icon: 📱
@@ -89,7 +163,7 @@ sections:
         tags: [training, simulation]
       - label: yomi
         text: LINE conversation archive and viewer
-        url: http://tony-omen.local:8080/apps/yomi/
+        url: http://tony-omen:8080/apps/yomi/
         tags: [messaging, line, archive]
 
   - title: Access & URLs
@@ -97,17 +171,17 @@ sections:
     layout: list
     items:
       - label: Apps (tony-omen)
-        text: http://tony-omen.local:8080/apps
+        text: http://tony-omen:8080/apps
       - label: Apps (tony-dell)
-        text: http://tony-dell.local:8080/apps
+        text: http://tony-dell:8080/apps
       - label: Chaba-h3 Preview
-        text: http://tony-omen.local:8081/apps
+        text: http://tony-omen:8081/apps
       - label: Llama Router API
-        text: http://tony-omen.local:8001
+        text: http://tony-omen:8001
       - label: Yomi API
-        text: http://tony-omen.local:8080/api/yomi/
+        text: http://tony-omen:8080/api/yomi/
       - label: PostgreSQL
-        text: postgresql://tony-omen.local:5432
+        text: postgresql://tony-omen:5432
 
   - title: Health Check Endpoints
     icon: ❤️
@@ -115,22 +189,22 @@ sections:
     items:
       - label: Health Dashboard
         text: Location-aware health monitoring dashboard
-        url: http://tony-omen.local:8080/apps/health-check/
+        url: http://tony-omen:8080/apps/health-check/
       - label: Web Stack
         text: Caddy, BServer, Status API
-        url: http://tony-omen.local:8080/api/status
+        url: http://tony-omen:8080/api/status
       - label: Yomi API
         text: LINE conversation service health
-        url: http://tony-omen.local:8080/api/yomi/conversations
+        url: http://tony-omen:8080/api/yomi/conversations
       - label: Thai Legal LLM
         text: LLM inference health check
-        url: http://tony-omen.local:8001/health
+        url: http://tony-omen:8001/health
       - label: Imagen2
         text: Image generation service health
-        url: http://tony-omen.local:8000/health
+        url: http://tony-omen:8000/health
       - label: GPU Queue
         text: GPU workload queue health
-        url: http://tony-omen.local:3001/health
+        url: http://tony-omen:3001/health
       - label: Home Health Config
         text: Local network health check configuration
         url: file:///home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.health.home.yml
@@ -138,11 +212,61 @@ sections:
         text: External/mobile health check configuration
         url: file:///home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.health.mobile.yml
 
+  - title: Profile Switching Guide
+    icon: 🔄
+    layout: list
+    items:
+      - label: Current Profile
+        text: Home network profile (192.168.1.0/24 subnet)
+        status: active_when_on_home_wifi
+      - label: Switch to Mobile Profile
+        text: Connect to external network (e.g., TONY-IP), use the Tailscale tailnet hostname tony-omen (100.75.102.88)
+        steps:
+          - Connect to external WiFi network
+          - Use ssot.mysystem.mobile.yml for configuration
+          - Use ssot.health.mobile.yml for health checks
+          - Access services via the Tailscale hostname tony-omen (100.75.102.88)
+      - label: Mobile Profile Reference
+        text: See ssot.mysystem.mobile.yml for mobile network configuration
+        url: file:///home/tony/CascadeProjects/chaba/docs/ssot/ssot.mysystem.mobile.yml
+
 config:
-  version: 1
-  last_updated: 2026-08-03
+  version: 2
+  last_updated: 2026-08-14
+  current_network: 192.168.1.0/24 (home WiFi)
+  current_profile: home
   maintainer: tony
+  partitions:
+    - label: ubuntu-working (primary)
+      device: /dev/nvme0n1p6
+      mount: /
+      size: 100G
+      usage: 91% (88G/100G)
+      boot: true
+      boot_name: ubuntu-working
+    - label: ubuntu-home
+      device: /dev/nvme0n1p3
+      mount: /home
+      size: 100G
+      usage: 71% (62G/92G)
+      boot: false
+    - label: ubuntu-data
+      device: /dev/nvme0n1p7
+      mount: /data
+      size: 300G
+      usage: 59% (172G/295G)
+      boot: false
+    - label: ubuntu-000
+      device: /dev/nvme0n1p5
+      mount: (not mounted)
+      size: 64.9G
+      usage: minimal
+      boot: true
+      boot_name: Ubuntu 26.04 LTS
+      purpose: partition job/testing
   related_files:
+    - ssot.mysystem.mobile.yml (mobile profile)
     - ssot.services.yml
     - ssot.apps.yml
-    - ssot.health.yml
+    - infrastructure/ssot.health.home.yml (home health checks)
+    - infrastructure/ssot.health.mobile.yml (mobile health checks)

@@ -16,7 +16,7 @@ sections:
     layout: list
     items:
       - label: Daemon (consolidated 2026-08-10)
-        text: playlived (chaba-omen/mcp/mcp-playlive/playlived.mjs) runs on tony-omen.local:9231 and tony-dell.local:9230. The tony-dell instance offloads UI verification from tony-omen; both manage local and remote browser sessions.
+        text: playlived (chaba-omen/mcp/mcp-playlive/playlived.mjs) runs on tony-omen:9231 and tony-dell:9230. The tony-dell instance offloads UI verification from tony-omen; both manage local and remote browser sessions.
       - label: MCP client
         text: mcp-playlive (chaba-omen/mcp/mcp-playlive/playlive-server.py) forwards tool calls from Windsurf to the daemon via single "playlive" MCP server.
       - label: Target flexibility
@@ -31,8 +31,8 @@ sections:
     layout: table
     headers: [Name, Host, Endpoint, Purpose]
     rows:
-      - [playlived, tony-omen, http://tony-omen.local:9231, Consolidated session daemon]
-      - [playlived, tony-dell, http://tony-dell.local:9230, UI verification daemon]
+      - [playlived, tony-omen, http://tony-omen:9231, Consolidated session daemon]
+      - [playlived, tony-dell, http://tony-dell:9230, UI verification daemon]
       - [chrome-remote, tony-dell, http://127.0.0.1:9222, Real Chrome CDP for live debugging]
 
   - title: Authentication
