@@ -586,25 +586,28 @@ async function validateCaddyProxyConfig() {
     const lines = caddyfileContent.split('\n');
     let inBlock = false;
     let currentBlock = '';
+    let blockStart = -1;
     
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
+      if (line.startsWith('#')) continue;
       
       // Track blocks
       if (line.startsWith('handle ') || line.startsWith('handle_path ')) {
         inBlock = true;
         currentBlock = line;
+        blockStart = i;
       } else if (line === '}' && inBlock) {
         inBlock = false;
         
         // Check for potential issues in the block
         if (currentBlock.includes('handle ') && !currentBlock.includes('handle_path ')) {
           // Check if block contains path operations that should use handle_path
-          const blockContent = lines.slice(i - 10, i).join('\n');
+          const blockContent = lines.slice(blockStart, i).join('\n');
           if (blockContent.includes('reverse_proxy') && !blockContent.includes('file_server')) {
             issues.push({
               type: 'potential_proxy_misconfig',
-              line: i - 10,
+              line: blockStart + 1,
               block: currentBlock,
               message: 'Using "handle" instead of "handle_path" may cause path stripping issues with reverse_proxy',
               recommendation: 'Consider using "handle_path" for reverse_proxy blocks to preserve path information'
@@ -612,18 +615,21 @@ async function validateCaddyProxyConfig() {
           }
         }
         currentBlock = '';
+        blockStart = -1;
       }
     }
     
     // Check for duplicate route definitions
     const routePatterns = [];
-    for (const line of lines) {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.startsWith('#')) continue;
       const handleMatch = line.match(/handle\s+(.+?)\s*\{/);
       const handlePathMatch = line.match(/handle_path\s+(.+?)\s*\{/);
       if (handleMatch) {
-        routePatterns.push({ type: 'handle', pattern: handleMatch[1], line: lines.indexOf(line) + 1 });
+        routePatterns.push({ type: 'handle', pattern: handleMatch[1], line: i + 1 });
       } else if (handlePathMatch) {
-        routePatterns.push({ type: 'handle_path', pattern: handlePathMatch[1], line: lines.indexOf(line) + 1 });
+        routePatterns.push({ type: 'handle_path', pattern: handlePathMatch[1], line: i + 1 });
       }
     }
     

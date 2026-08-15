@@ -55,27 +55,27 @@
 		}
 	}
 
-	# Activepieces root-level assets (SPA loads from / due to original base href)
-	@ap_assets path /assets /assets/*
-	handle @ap_assets {
-		reverse_proxy activepieces:80
-	}
-
-	@ap_logo path /logo.svg /logo-192.png /logo-180.png
-	handle @ap_logo {
-		reverse_proxy activepieces:80
-	}
-
-	handle /apps/activepieces {
-		redir /apps/activepieces/ 308
-	}
-
-	handle_path /apps/activepieces/* {
-		reverse_proxy activepieces:80
-	}
+	# Activepieces routes disabled (service is currently stopped)
+	# @ap_assets path /assets /assets/*
+	# handle @ap_assets {
+	# 	reverse_proxy activepieces:80
+	# }
+	#
+	# @ap_logo path /logo.svg /logo-192.png /logo-180.png
+	# handle @ap_logo {
+	# 	reverse_proxy activepieces:80
+	# }
+	#
+	# handle /apps/activepieces {
+	# 	redir /apps/activepieces/ 308
+	# }
+	#
+	# handle_path /apps/activepieces/* {
+	# 	reverse_proxy activepieces:80
+	# }
 
 	@raceman_noslash path /apps/raceman
-	redir @raceman_noslash /apps/raceman 308
+	redir @raceman_noslash /apps/raceman/ 308
 
 	handle /apps/raceman/* {
 		reverse_proxy host.docker.internal:8083 {
@@ -178,21 +178,13 @@
 		}
 	}
 
-	handle /decisions {
+	handle /decisions* {
 		reverse_proxy bserver:8092 {
 			header_up Host bserver.local
 		}
 	}
 
-	handle /decisions/* {
-		reverse_proxy bserver:8092 {
-			header_up Host bserver.local
-		}
-	}
-
-	handle /chatlocal {
-		redir /chatlocal/ 308
-	}
+	redir /chatlocal /chatlocal/ 308
 
 	handle_path /chatlocal/* {
 		reverse_proxy host.docker.internal:3000 {
@@ -209,13 +201,13 @@
 		header Cache-Control "public, max-age=3600"
 	}
 
-	# Frigate proxy
-	@frigate path /frigate/*
-	handle @frigate {
-		reverse_proxy host.docker.internal:5000 {
-			header_up Host localhost
-		}
-	}
+	# Frigate proxy (disabled; re-enable when frigate is started)
+	# @frigate path /frigate/*
+	# handle @frigate {
+	# 	reverse_proxy host.docker.internal:5000 {
+	# 		header_up Host localhost
+	# 	}
+	# }
 
 	@chatlocal path /apps/chatlocal /apps/chatlocal/*
 	handle @chatlocal {
