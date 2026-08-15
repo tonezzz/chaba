@@ -3,7 +3,7 @@ title: Documentation Search Methods
 description: Comprehensive guide to unified MDDB search for Chaba documentation with SSOT-MDDB integration policy
 tags: [search, documentation, MDDB, ssot, semantic-search, ollama, auto-sync]
 created: 2026-08-06
-updated: 2026-08-12
+updated: 2026-08-15
 category: operations
 related: [mddb-implementation-complete.md, ssot-documentation-standards.md, ssot-mddb-integration-assessment.md]
 search_keywords: [documentation search, MDDB search, semantic search, SSOT auto-sync, Ollama embeddings]
@@ -109,45 +109,56 @@ mcp_call_tool mddb list_collections
 
 ## MDDB Search Tools
 
-### vector_search
-**Purpose**: Semantic search across MDDB collections using Ollama embeddings
+### semantic_search
+**Purpose**: Semantic search across MDDB collections by meaning
 
 **Parameters**:
-- `query`: Search query string
-- `limit`: Maximum number of results (default: 10)
-- `collection`: Specific collection to search (optional, searches all if not provided)
+- `query`: Natural language search query
+- `collection`: Specific collection to search (required)
+- `top_k`: Maximum number of results to return (default: 10)
+- `fields`: Restrict returned metadata keys
+- `filter_meta`: Optional metadata filter object
+- `include_content`: Include the document body in results
 
 **Usage**:
 ```
-mcp_call_tool mddb vector_search "mcp infrastructure" 5 "ssot-infrastructure"
+mcp_call_tool mddb semantic_search "mcp infrastructure" "ssot-infrastructure" 5
 ```
 
-### get_document
-**Purpose**: Retrieve full document content by key
+### search_documents
+**Purpose**: Filter and sort documents by metadata
 
 **Parameters**:
-- `key`: Document key (file path with / replaced by -)
-- `collection`: Collection name
+- `collection`: Required collection name
+- `filter_meta`: Metadata filter object
+- `limit`, `offset`, `sort`: Pagination and sorting options
+- `include_content`: Include the document body
 
 **Usage**:
 ```
-mcp_call_tool mddb get_document "infrastructure-ssot.mcp" "ssot-infrastructure"
+mcp_call_tool mddb search_documents "ssot-infrastructure"
 ```
 
-### list_collections
-**Purpose**: List all available collections in MDDB
-
-**Usage**:
-```
-mcp_call_tool mddb list_collections
-```
-
-### vector_stats
-**Purpose**: Get vector search subsystem status and statistics
+### get_stats
+**Purpose**: Get MDDB server statistics and available collections
 
 **Usage**:
 ```
-mcp_call_tool mddb vector_stats
+mcp_call_tool mddb get_stats
+```
+
+### aggregate
+**Purpose**: Compute metadata facets and date histograms
+
+**Parameters**:
+- `collection`: Required collection name
+- `facets`: Fields to compute value counts
+- `histograms`: Date histograms to compute
+- `filter_meta`: Optional pre-filter
+
+**Usage**:
+```
+mcp_call_tool mddb aggregate "ssot-infrastructure"
 ```
 
 ## Search Performance and Quality
@@ -155,7 +166,7 @@ mcp_call_tool mddb vector_stats
 **MDDB Semantic Search**:
 - **Relevance Scores**: 0.45-0.80 (high quality semantic understanding)
 - **Response Times**: 88-550ms (fast real-time search)
-- **Collections**: 13 collections (154+ documents)
+- **Collections**: 20 collections (340+ documents)
 - **Embeddings**: Ollama nomic-embed-text (768 dimensions)
 - **Algorithm**: Flat with cosine distance metric
 
@@ -189,8 +200,10 @@ mcp_call_tool mddb vector_stats
 
 ## Migration History
 
-**2026-08-12**: Migrated from dual search methods to unified MDDB search
-- Removed docs MCP server (redundant with MDDB)
+**2026-08-12**: Migrated to MDDB as the primary search method
+- MDDB semantic search is the first choice for documentation and SSOT queries
+- SSOT pattern matching (ssot-search skill) retained for exact YAML queries
+- docs MCP server retained as a fallback when MDDB is unavailable
 - Removed mcp-kbman (archived as obsolete)
 - All documentation now searchable via MDDB
 - SSOT YAML files auto-synced to MDDB for search
@@ -224,7 +237,7 @@ Located in `/home/tony/CascadeProjects/chaba-kbman/scripts/`:
 **MDDB Semantic Search**:
 - **Relevance Scores**: 0.45-0.80 (high quality semantic understanding)
 - **Response Times**: 88-550ms (fast real-time search)
-- **Collections**: 13 collections (154+ documents)
+- **Collections**: 20 collections (340+ documents)
 - **Embeddings**: Ollama nomic-embed-text (768 dimensions)
 - **Algorithm**: Flat with cosine distance metric
 
@@ -290,13 +303,11 @@ curl -X POST http://tony-omen.local:11023/v1/vector-reindex \
 
 ### Assistant workflow guidelines
 **When performing documentation searches:**
-1. **Primary choice**: Use MDDB semantic search via MCP (`mcp_call_tool mddb vector_search`)
+1. **Primary choice**: Use MDDB semantic search via MCP (`mcp_call_tool mddb semantic_search`)
 2. **Secondary choice**: Use SSOT pattern matching (via ssot-search skill) for exact YAML searches
-3. **Fallback**: Only use traditional tools (grep, read, find) after:
-   - Attempting MDDB search and identifying the specific issue
-   - Suggesting the fix to the user
-   - Getting user confirmation to proceed with fallback
-4. **Never silently fall back** without explaining the MDDB issue and proposed fix
+3. **Tertiary choice**: Fall back to the MCP docs server (`@devista/docs-mcp`) only if MDDB is unavailable or fails, with user confirmation per Service Failure and Fallback Procedures
+4. **Traditional tools**: Only use grep/read/find after attempting the above and identifying the specific issue
+5. **Never silently fall back** without explaining the issue and proposed fix
 
 ## Related Documentation
 
@@ -311,13 +322,8 @@ curl -X POST http://tony-omen.local:11023/v1/vector-reindex \
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-08-06 | Initial dual search methods documentation | devin |
-| 2026-08-12 | Migrated to unified MDDB search, removed docs MCP and mcp-kbman references | devin |
-
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-08-06 | Initial documentation - dual search methods | devin |
-| 2026-08-06 | Updated ssot-search skill to support both methods | devin |
-| 2026-08-06 | Added frontmatter metadata, standardized structure | devin |
+| 2026-08-12 | Migrated to unified MDDB search, removed mcp-kbman references | devin |
+| 2026-08-15 | Aligned with .windsurfrules: MDDB primary, ssot-search for exact YAML, docs MCP fallback | devin |
 
 ## Tags
 
