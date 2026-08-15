@@ -49,7 +49,7 @@ sections:
       - label: tony-omen playlive
         text: http://tony-omen:9230/sessions
       - label: tony-dell local
-        text: barrier-client process, / home disk, memory, tailscale status, optional Funnel port 8082
+        text: barrier-client process, Funnel port 8082; disk and memory are already covered by health-snapshot.sh
 
   - title: Phased Plan
     icon: 🗓️
@@ -57,7 +57,7 @@ sections:
     items:
       - label: Phase 1 — Deploy observe-only monitor
         text: Create scripts/tony-dell-monitor.sh, systemd user timer, run every 2 minutes, log only
-        status: pending
+        status: completed
       - label: Phase 2 — Add mcp-health integration
         text: Have tony-dell periodically query mcp-health critical services and store the result; do not run the full mcp-health server yet
         status: pending
