@@ -274,3 +274,18 @@ presets:
       - host: tony_dell
         tool: mcp_raw
         command: cat /home/tony/var/chaba/health/tony-dell-snapshot.json
+  macbook-quick-look:
+    description: Basic macOS system state via raw commands
+    steps:
+      - host: macbook
+        tool: mcp_raw
+        command: sw_vers
+      - host: macbook
+        tool: mcp_raw
+        command: vm_stat
+      - host: macbook
+        tool: mcp_raw
+        command: launchctl list | head -20
+      - host: macbook
+        tool: mcp_raw
+        command: diskutil list
