@@ -1,155 +1,203 @@
 title: Current Focus
-subtitle: Active shared and branch focuses plus quick wins — read this at the start of every session
+subtitle: "Active shared and branch focuses plus quick wins \u2014 read this at the start of every session"
 icon: target
-
 workflow:
-  - Assistant must read this SSOT at the start of each session
-  - List docs/ssot/focus-inbox/*.yml at session start and summarize any pending items for triage
-  - Match the user request against active shared and branch focuses first
-  - If it matches, append it to that item's request_log and do the work inside that focus
-  - If it is a small standalone action, add it to quick_wins and complete it immediately
-  - If it is new strategic work, add it to the backlog in ssot.focus.yml with priority and ask the user to activate it
-  - If it is a new focus item from another session, add it as an inbox file in docs/ssot/focus-inbox/ for triage
-  - For backlog review, archived focuses, or focus history, read the full ssot.focus.yml
-  - At session end, update subtask status and append completed quick wins to focus history in ssot.focus.yml
-  - When an inbox item is activated, merge it into this file and git mv the source file to docs/ssot/focus-inbox/processed/
-
+- Assistant must read this SSOT at the start of each session
+- List docs/ssot/focus-inbox/*.yml at session start and summarize any pending items for triage
+- Match the user request against active shared and branch focuses first
+- If it matches, append it to that item's request_log and do the work inside that focus
+- If it is a small standalone action, add it to quick_wins and complete it immediately
+- If it is new strategic work, add it to the backlog in ssot.focus.yml with priority and ask the user to activate it
+- If it is a new focus item from another session, add it as an inbox file in docs/ssot/focus-inbox/ for triage
+- For backlog review, archived focuses, or focus history, read the full ssot.focus.yml
+- At session end, update subtask status and append completed quick wins to focus history in ssot.focus.yml
+- When an inbox item is activated, merge it into this file and git mv the source file to docs/ssot/focus-inbox/processed/
 validation:
   max_active_shared_focus: 1
   max_active_branch_focus: 1
   require_priority: true
   require_tags: true
   require_request_log: true
-
 sections:
-  - title: Active Shared Focus
-    icon: active
-    layout: list
-    items:
-      - label: Request-to-Focus Workflow
-        text: Overhaul the focus SSOT so every assistant request is captured, assigned, and tracked to completion instead of being started and dropped.
-        status: active
-        priority: high
-        started: 2026-08-15
-        estimated_duration: 1 session
-        tags: [focus, workflow, tracking]
-        subtasks:
-          - label: Redesign ssot.focus.yml schema for request mapping
-            status: completed
-          - label: Move old strategic focuses to inactive archive
-            status: completed
-          - label: Define assistant request-handling workflow
-            status: completed
-          - label: Summarize and publish new active focus
-            status: completed
-          - label: Use the workflow on every future assistant request
-            status: completed
-          - label: Implement targeted ssot-search reads for ssot.focus.yml
-            status: completed
-          - label: Split ssot.focus.yml into active and archive files when it exceeds 20KB
-            status: not_started
-          - label: Apply .current style to expected large SSOT files to reduce token reads
-            status: completed
-          - label: Adopt focus-intake-only workflow with activation gate and apps/focus page
-            status: completed
-          - label: Design incremental focus-inbox files that merge into the main focus on activation
-            status: completed
-          - label: Use background sub-agents for non-interactive focus work while planning in main session
-            status: not_started
-          - label: Allow focus-inbox items to be saved as drafts with missing_info before full details are known
-            status: completed
-        request_log:
-          - date: 2026-08-15
-            request: Improve focus SSOT so every request is checked against a task or subtask and assigned or merged accordingly; keep old focuses in inactive and generate a new focus to follow up.
-            matched_to: Redesign ssot.focus.yml schema for request mapping
-          - date: 2026-08-15
-            request: Save the token-bloat mitigation recommendation for ssot.focus.yml into the focus so it is not lost track.
-            matched_to: Implement targeted ssot-search reads for ssot.focus.yml
-          - date: 2026-08-15
-            request: Apply .current style to expected large SSOT files to reduce token reads.
-            matched_to: Apply .current style to expected large SSOT files to reduce token reads
-          - date: 2026-08-15
-            request: Adopt focus-intake-only workflow where the assistant analyzes and saves tasks, suggests activation, and does no new processing until the last one finishes; show results on apps/focus page.
-            matched_to: Adopt focus-intake-only workflow with activation gate and apps/focus page
-          - date: 2026-08-15
-            request: Can we add new focuses as incremental files that will be migrated into the main focus when we process it?
-            matched_to: Design incremental focus-inbox files that merge into the main focus on activation
-          - date: 2026-08-15
-            request: Can we assign the focus jobs processing to a sub-agent so we can do more planning while tasks are being processed in the background?
-            matched_to: Use background sub-agents for non-interactive focus work while planning in main session
-          - date: 2026-08-15
-            request: Let's finish the workflow system first
-            matched_to: Adopt focus-intake-only workflow with activation gate and apps/focus page
-          - date: 2026-08-15
-            request: What if the focus I'm asking to add requires more info from me before you can start it? How can we overcome this?
-            matched_to: Allow focus-inbox items to be saved as drafts with missing_info before full details are known
-          - date: 2026-08-15
-            request: Assess the Request-to-Focus Workflow item, organize remaining subtasks, and schedule overnight tasks; commit the workflow in .windsurfrules and continue while the user sleeps.
-            matched_to: Request-to-Focus Workflow
-
-  - title: Active Branch Focus
-    icon: branch
-    layout: list
-    items:
-      - label: Chaba Infrastructure & Monitoring Cleanup
-        text: Close out the dangling chaba infrastructure work before picking up new strategic focuses.
-        branch: chaba
-        status: completed
-        priority: high
-        started: 2026-08-15
-        estimated_duration: 2-3 sessions
-        tags: [infrastructure, chaba, monitoring, cleanup]
-        subtasks:
-          - label: Commit and push uncommitted SSOT and scripts (MCP tools policy, tony-dell monitoring)
-            status: completed
-          - label: Apply tony-dell mcp-health critical-only resource optimization
-            status: completed
-          - label: Release and renew tony-dell wired DHCP after router renumbering
-            status: completed
-          - label: Deploy tony-dell monitor as a systemd user timer
-            status: completed
-        request_log:
-          - date: 2026-08-15
-            request: Deploy tony-dell 24/7 monitor with observe-only endpoint checks and cache mcp-health score.
-            matched_to: Deploy tony-dell monitor as a systemd user timer
-          - date: 2026-08-15
-            request: Split mcp-health query into its own schedule group with critical-only services to reduce tony-omen load.
-            matched_to: Apply tony-dell mcp-health critical-only resource optimization
-          - date: 2026-08-15
-            request: /save_to_focus
-            matched_to: Chaba Infrastructure & Monitoring Cleanup
-          - date: 2026-08-15
-            request: Release and renew tony-dell wired DHCP after router renumbering
-            matched_to: Release and renew tony-dell wired DHCP after router renumbering
-
-      - label: tony-dell Multi-WAN Active-Backup
-        text: Deploy and verify active-backup multi-WAN on tony-dell so the wired ADSL is primary and the Naris WiFi ADSL takes over on failure.
-        branch: chaba
-        status: completed
-        priority: high
-        started: 2026-08-15
-        estimated_duration: 1 session
-        tags: [infrastructure, networking, tony-dell, multi-wan, backup]
-        subtasks:
-          - label: Deploy tony-dell-wan-failover systemd root timer
-            status: completed
-          - label: Verify failover by disabling wired interface
-            status: completed
-          - label: Document the two-ADSL setup in SSOT
-            status: completed
-        request_log:
-          - date: 2026-08-15
-            request: Set up the multi-WAN active-backup so tony-dell uses wired primary and Naris WiFi as backup.
-            matched_to: Deploy tony-dell-wan-failover systemd root timer
-          - date: 2026-08-15
-            request: Verify failover by disabling wired interface and checking the default route falls back to Naris WiFi then returns to wired.
-            matched_to: Verify failover by disabling wired interface
-
-  - title: Quick Wins
-    icon: quick
-    layout: list
-    items: []
-
+- title: Active Shared Focus
+  icon: active
+  layout: list
+  items:
+  - label: Request-to-Focus Workflow
+    text: Overhaul the focus SSOT so every assistant request is captured, assigned, and tracked to completion instead of being
+      started and dropped.
+    status: completed
+    priority: high
+    started: 2026-08-15
+    completed: 2026-08-15
+    estimated_duration: 1 session
+    tags:
+    - focus
+    - workflow
+    - tracking
+    subtasks:
+    - label: Redesign ssot.focus.yml schema for request mapping
+      status: completed
+    - label: Move old strategic focuses to inactive archive
+      status: completed
+    - label: Define assistant request-handling workflow
+      status: completed
+    - label: Summarize and publish new active focus
+      status: completed
+    - label: Use the workflow on every future assistant request
+      status: completed
+    - label: Implement targeted ssot-search reads for ssot.focus.yml
+      status: completed
+    - label: Split ssot.focus.yml into active and archive files when it exceeds 20KB
+      status: completed
+    - label: Apply .current style to expected large SSOT files to reduce token reads
+      status: completed
+    - label: Adopt focus-intake-only workflow with activation gate and apps/focus page
+      status: completed
+    - label: Design incremental focus-inbox files that merge into the main focus on activation
+      status: completed
+    - label: Use background sub-agents for non-interactive focus work while planning in main session
+      status: completed
+    - label: Allow focus-inbox items to be saved as drafts with missing_info before full details are known
+      status: completed
+    request_log:
+    - date: 2026-08-15
+      request: Improve focus SSOT so every request is checked against a task or subtask and assigned or merged accordingly;
+        keep old focuses in inactive and generate a new focus to follow up.
+      matched_to: Redesign ssot.focus.yml schema for request mapping
+    - date: 2026-08-15
+      request: Save the token-bloat mitigation recommendation for ssot.focus.yml into the focus so it is not lost track.
+      matched_to: Implement targeted ssot-search reads for ssot.focus.yml
+    - date: 2026-08-15
+      request: Apply .current style to expected large SSOT files to reduce token reads.
+      matched_to: Apply .current style to expected large SSOT files to reduce token reads
+    - date: 2026-08-15
+      request: Adopt focus-intake-only workflow where the assistant analyzes and saves tasks, suggests activation, and does
+        no new processing until the last one finishes; show results on apps/focus page.
+      matched_to: Adopt focus-intake-only workflow with activation gate and apps/focus page
+    - date: 2026-08-15
+      request: Can we add new focuses as incremental files that will be migrated into the main focus when we process it?
+      matched_to: Design incremental focus-inbox files that merge into the main focus on activation
+    - date: 2026-08-15
+      request: Can we assign the focus jobs processing to a sub-agent so we can do more planning while tasks are being processed
+        in the background?
+      matched_to: Use background sub-agents for non-interactive focus work while planning in main session
+    - date: 2026-08-15
+      request: Let's finish the workflow system first
+      matched_to: Adopt focus-intake-only workflow with activation gate and apps/focus page
+    - date: 2026-08-15
+      request: What if the focus I'm asking to add requires more info from me before you can start it? How can we overcome
+        this?
+      matched_to: Allow focus-inbox items to be saved as drafts with missing_info before full details are known
+    - date: 2026-08-15
+      request: mcp-debug ssot is bloating, please help me prepare a new focus to automatically improve it tonight.
+      matched_to: Use background sub-agents for non-interactive focus work while planning in main session
+    - date: 2026-08-15
+      request: Assess the Request-to-Focus Workflow item, organize remaining subtasks, and schedule overnight tasks; commit
+        the workflow in .windsurfrules and continue while the user sleeps.
+      matched_to: Request-to-Focus Workflow
+- title: Active Branch Focus
+  icon: branch
+  layout: list
+  items:
+  - label: Chaba Infrastructure & Monitoring Cleanup
+    text: Close out the dangling chaba infrastructure work before picking up new strategic focuses.
+    branch: chaba
+    status: completed
+    priority: high
+    started: 2026-08-15
+    estimated_duration: 2-3 sessions
+    tags:
+    - infrastructure
+    - chaba
+    - monitoring
+    - cleanup
+    subtasks:
+    - label: Commit and push uncommitted SSOT and scripts (MCP tools policy, tony-dell monitoring)
+      status: completed
+    - label: Apply tony-dell mcp-health critical-only resource optimization
+      status: completed
+    - label: Release and renew tony-dell wired DHCP after router renumbering
+      status: completed
+    - label: Deploy tony-dell monitor as a systemd user timer
+      status: completed
+    request_log:
+    - date: 2026-08-15
+      request: Deploy tony-dell 24/7 monitor with observe-only endpoint checks and cache mcp-health score.
+      matched_to: Deploy tony-dell monitor as a systemd user timer
+    - date: 2026-08-15
+      request: Split mcp-health query into its own schedule group with critical-only services to reduce tony-omen load.
+      matched_to: Apply tony-dell mcp-health critical-only resource optimization
+    - date: 2026-08-15
+      request: /save_to_focus
+      matched_to: Chaba Infrastructure & Monitoring Cleanup
+    - date: 2026-08-15
+      request: Release and renew tony-dell wired DHCP after router renumbering
+      matched_to: Release and renew tony-dell wired DHCP after router renumbering
+  - label: tony-dell Multi-WAN Active-Backup
+    text: Deploy and verify active-backup multi-WAN on tony-dell so the wired ADSL is primary and the Naris WiFi ADSL takes
+      over on failure.
+    branch: chaba
+    status: completed
+    priority: high
+    started: 2026-08-15
+    estimated_duration: 1 session
+    tags:
+    - infrastructure
+    - networking
+    - tony-dell
+    - multi-wan
+    - backup
+    subtasks:
+    - label: Deploy tony-dell-wan-failover systemd root timer
+      status: completed
+    - label: Verify failover by disabling wired interface
+      status: completed
+    - label: Document the two-ADSL setup in SSOT
+      status: completed
+    request_log:
+    - date: 2026-08-15
+      request: Set up the multi-WAN active-backup so tony-dell uses wired primary and Naris WiFi as backup.
+      matched_to: Deploy tony-dell-wan-failover systemd root timer
+    - date: 2026-08-15
+      request: Verify failover by disabling wired interface and checking the default route falls back to Naris WiFi then returns
+        to wired.
+      matched_to: Verify failover by disabling wired interface
+  - label: mcp-debug SSOT Bloat Cleanup
+    text: 'The ssot.mcp-debug.yml file has become bloated after several mcp_vet runs and manual additions: ''Vetted ...''
+      descriptions, redundant efficiency entries, and commands that show negative char savings. Clean and compact the SSOT
+      automatically overnight, then re-run mcp_savings and ssot-validate to verify.'
+    status: completed
+    priority: high
+    started: '2026-08-15'
+    estimated_duration: 1 session
+    tags:
+    - mcp-debug
+    - ssot
+    - cleanup
+    - bloat
+    - overnight
+    subtasks:
+    - label: Audit bloat sources
+      status: completed
+    - label: Normalize command descriptions and remove "Vetted ..." prefixes
+      status: completed
+    - label: Drop or mark not-recommended commands with persistent negative char savings
+      status: completed
+    - label: Re-run mcp_savings and update efficiency baselines
+      status: completed
+    - label: Validate SSOT with ssot-validate
+      status: completed
+    - label: Commit cleaned SSOT
+      status: completed
+    request_log: []
+    branch: chaba
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/mcp-debug-ssot-cleanup.yml
+    completed: '2026-08-15'
+- title: Quick Wins
+  icon: quick
+  layout: list
+  items: []
 config:
   version: 2
   last_updated: 2026-08-15
@@ -159,6 +207,6 @@ config:
   inbox_processed_dir: docs/ssot/focus-inbox/processed
   validation_enabled: true
   related_files:
-    - docs/ssot/ssot.focus.yml
-    - docs/ssot/ssot.index.yml
-    - docs/ssot/focus-inbox
+  - docs/ssot/ssot.focus.yml
+  - docs/ssot/ssot.index.yml
+  - docs/ssot/focus-inbox

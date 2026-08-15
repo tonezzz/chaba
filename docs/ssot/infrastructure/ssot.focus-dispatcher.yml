@@ -1,0 +1,73 @@
+title: Focus Dispatcher
+subtitle: Runner, schedule, and failure handling for the focus-dispatcher script
+icon: target
+version: 1
+
+runner:
+  script: /home/tony/CascadeProjects/chaba/scripts/focus-dispatcher.py
+  entry_points:
+    - no arguments: select the highest-priority active or inbox focus
+    - --inbox <path>: force-activate a specific inbox file
+    - --dry-run: show selection without modifying files
+  permissions:
+    - read docs/ssot/ssot.focus.current.yml
+    - read docs/ssot/ssot.focus.yml
+    - read docs/ssot/focus-inbox/*.yml
+    - write docs/ssot/ssot.focus.current.yml
+    - write reports/NEXT_FOCUS.md
+    - execute git mv for inbox files
+  dependencies:
+    - python3
+    - PyYAML
+    - git
+
+selection_rules:
+  - Active focuses are chosen first when they are not completed and have incomplete subtasks.
+  - Inbox files are chosen when no active focus remains or when a specific inbox is requested.
+  - Priority order: high > medium > low.
+  - Tie-breaker for active focuses: older started date first.
+  - Inbox items are sorted by priority then filename for a stable order.
+
+activation_behavior:
+  - Loads the target inbox focus from docs/ssot/focus-inbox/.
+  - Identifies shared vs branch by the presence of the branch field.
+  - Marks the previous active item in the same section as completed and sets completed date.
+  - Appends the new focus to the Active Shared Focus or Active Branch Focus section.
+  - Runs git mv to move the inbox file to docs/ssot/focus-inbox/processed/.
+  - Writes a prompt to reports/NEXT_FOCUS.md for the assistant or sub-agent.
+
+prompt_output:
+  path: /home/tony/CascadeProjects/chaba/reports/NEXT_FOCUS.md
+  content:
+    - Focus label and section
+    - Branch or shared
+    - Priority
+    - Description
+    - Incomplete and complete subtasks
+    - Source file reference
+    - Instructions for the assistant
+
+schedule:
+  suggested_cron: "*/30 * * * * /home/tony/CascadeProjects/chaba/scripts/focus-dispatcher.py >> /home/tony/var/chaba/focus-dispatcher.log 2>&1"
+  suggested_systemd_user_timer: |
+    # Do not enable without user confirmation. These are the suggested unit files:
+    #
+    # ~/.config/systemd/user/focus-dispatcher.service
+    # [Service]
+    # Type=oneshot
+    # ExecStart=/home/tony/CascadeProjects/chaba/scripts/focus-dispatcher.py
+    #
+    # ~/.config/systemd/user/focus-dispatcher.timer
+    # [Timer]
+    # OnCalendar=*-*-* *:00/30
+    # Persistent=true
+    #
+    # [Install]
+    # WantedBy=timers.target
+
+failure_handling:
+  - If ssot.focus.current.yml is missing or unparsable, exit with an error and do not modify files.
+  - If an inbox YAML is invalid, log a warning and continue to the next file.
+  - If git mv fails (e.g. uncommitted merge conflict), leave ssot.focus.current.yml updated but report the git error.
+  - If no active or inbox focus is found, remove reports/NEXT_FOCUS.md and exit 0.
+  - If activation is requested but no matching section exists, raise RuntimeError before any git or write.
