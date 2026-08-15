@@ -37,3 +37,11 @@ When adding or editing pages for `chaba.h3.gizmo-thailand.com`, follow `.windsur
 - Place files under `chaba-h3/public/`; the `web/public/` path from the main branch is not served.
 - Link to explicit `/foo/index.html` URLs unless `proxy-server.mjs` has a directory special case.
 - Use absolute fetch paths such as `/data.json` inside pages.
+
+## Documentation Search Standards
+
+- Use MDDB (`mcp_call_tool mddb semantic_search`) as the primary search method for all SSOT and documentation queries.
+- For SSOT-specific searches: Use MDDB first for conceptual/semantic queries; use the `ssot-search` skill with the "SSOT YAML only" option only when exact YAML pattern matching is required.
+- For broad documentation searches: Use MDDB first; fall back to the MCP docs server (`@devista/docs-mcp`) only if MDDB is unavailable or fails, with user confirmation per the Service Failure and Fallback Procedures.
+- `mcp_call_tool mddb get_stats` shows available collections and document counts; use `mcp_call_tool mddb search_documents` for metadata-only filtering.
+- See `docs/kb/documentation-search.md` for the comprehensive search guide.
