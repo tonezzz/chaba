@@ -87,12 +87,21 @@ sections:
           - label: Commit and push uncommitted SSOT and scripts (MCP tools policy, tony-dell monitoring)
             status: completed
           - label: Apply tony-dell mcp-health critical-only resource optimization
-            status: not_started
+            status: completed
           - label: Release and renew tony-dell wired DHCP after router renumbering
             status: not_started
           - label: Deploy tony-dell monitor as a systemd user timer
-            status: not_started
-        request_log: []
+            status: completed
+        request_log:
+          - date: 2026-08-15
+            request: Deploy tony-dell 24/7 monitor with observe-only endpoint checks and cache mcp-health score.
+            matched_to: Deploy tony-dell monitor as a systemd user timer
+          - date: 2026-08-15
+            request: Split mcp-health query into its own schedule group with critical-only services to reduce tony-omen load.
+            matched_to: Apply tony-dell mcp-health critical-only resource optimization
+          - date: 2026-08-15
+            request: /save_to_focus
+            matched_to: Chaba Infrastructure & Monitoring Cleanup
 
   - title: Quick Wins
     icon: quick
