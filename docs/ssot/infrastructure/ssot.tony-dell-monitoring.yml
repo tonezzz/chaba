@@ -19,7 +19,7 @@ sections:
       - label: mcp-debug host
         text: tony_dell is reachable over ssh tony@tony-dell (Tailnet)
       - label: mcp-health
-        text: central mcp-health server currently runs on/against tony-omen; tony-dell is not yet an active monitor
+        text: central mcp-health server runs on tony-omen; tony-dell now queries it via SSH and stores the score at tony-dell-mcp-health.json
 
   - title: Target State
     icon: 🎯
@@ -60,7 +60,7 @@ sections:
         status: completed
       - label: Phase 2 — Add mcp-health integration
         text: Have tony-dell periodically query mcp-health critical services and store the result; do not run the full mcp-health server yet
-        status: pending
+        status: completed
       - label: Phase 3 — Safe auto-recovery
         text: Enable restart commands for services with a known-good restart path and require two consecutive failures
         status: pending
@@ -89,6 +89,10 @@ sections:
         text: /home/tony/.config/systemd/user/tony-dell-monitor.service and tony-dell-monitor.timer
       - label: Monitor log
         text: /home/tony/var/chaba/health/tony-dell-monitor.log
+      - label: mcp-health score cache
+        text: /home/tony/var/chaba/health/tony-dell-mcp-health.json
+      - label: mcp-health client
+        text: /home/tony/CascadeProjects/chaba/scripts/mcp-health-client.py (runs on tony-omen, invoked by tony-dell over SSH)
       - label: Snapshot
         text: /home/tony/var/chaba/health/tony-dell-snapshot.json (already deployed)
 
