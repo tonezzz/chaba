@@ -131,13 +131,16 @@ sections:
           - label: Deploy tony-dell-wan-failover systemd root timer
             status: completed
           - label: Verify failover by disabling wired interface
-            status: in_progress
+            status: completed
           - label: Document the two-ADSL setup in SSOT
             status: not_started
         request_log:
           - date: 2026-08-15
             request: Set up the multi-WAN active-backup so tony-dell uses wired primary and Naris WiFi as backup.
             matched_to: Deploy tony-dell-wan-failover systemd root timer
+          - date: 2026-08-15
+            request: Verify failover by disabling wired interface and checking the default route falls back to Naris WiFi then returns to wired.
+            matched_to: Verify failover by disabling wired interface
 
   - title: Quick Wins
     icon: quick
