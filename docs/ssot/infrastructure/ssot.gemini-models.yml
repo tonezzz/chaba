@@ -688,3 +688,40 @@ models:
     status: available
     notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
     last_verified: '2026-08-15'
+fallbacks:
+  helm-llm:
+    primary: gemini-2.5-flash
+    chain:
+      - model: gemini-2.5-flash-lite
+        expected_quality: high
+        reason: Same Gemini 2.5 family; 2x RPM with identical TPM
+      - model: gemini-3.5-flash-lite
+        expected_quality: medium-high
+        reason: 3x RPM and 25x RPD; slightly older family but proven
+      - model: gemini-3.7-flash
+        expected_quality: medium
+        reason: Same Flash-tier limits; adequate for code when newer models exhausted
+  yomi-summarization:
+    primary: gemma-4-31b-it
+    chain:
+      - model: gemma-4-26b-a4b-it
+        expected_quality: high
+        reason: Same Gemma 4 family; MoE variant with identical limits
+      - model: gemini-2.5-flash-lite
+        expected_quality: medium-high
+        reason: 2x RPM and large context; good for long Thai/English summaries
+      - model: gemini-2.5-flash
+        expected_quality: medium
+        reason: Large context and TPM; lower RPM and different style
+  media-analysis:
+    primary: gemma-4-31b-it
+    chain:
+      - model: gemma-4-26b-a4b-it
+        expected_quality: high
+        reason: Same Gemma 4 family; MoE variant with identical limits
+      - model: gemini-2.5-flash
+        expected_quality: medium-high
+        reason: Strong multimodal/text reasoning; lower RPM
+      - model: gemini-2.5-flash-lite
+        expected_quality: medium
+        reason: Higher RPM for batched media jobs; slightly lighter model

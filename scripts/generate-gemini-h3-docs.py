@@ -42,7 +42,8 @@ def main():
     out = {
         'title': data.get('title', 'Gemini Models'),
         'last_verified': data['source']['last_verified'],
-        'models': models
+        'models': models,
+        'fallbacks': data.get('fallbacks', {})
     }
 
     os.makedirs(os.path.dirname(DST), exist_ok=True)
