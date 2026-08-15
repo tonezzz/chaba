@@ -14,6 +14,14 @@ hosts:
     hostname: tony-dell.local
     ssh_user: tony
     mcp_debug_path: /home/tony/.local/bin/mcp-debug
+  macbook:
+    name: MacBook Pro
+    description: macOS remote target host
+    hostname: 192.168.1.39
+    ssh_user: kkkakk
+    mcp_debug_path: /Users/kkkakk/.local/bin/mcp-debug
+    compact: false
+    note: mcp_debug (compact) not yet ported to macOS; use mcp_raw with macOS-compatible commands
 debug_commands:
   systemctl list-units:
     description: Running systemd services
@@ -75,6 +83,19 @@ raw_commands:
   - cat
   - ls
   - which
+  # macOS equivalents and extras
+  - vm_stat
+  - launchctl
+  - diskutil
+  - system_profiler
+  - scutil
+  - netstat
+  - lsof
+  - pgrep
+  - pkill
+  - sw_vers
+  - sysctl
+  - top
 server:
   script: /home/tony/CascadeProjects/chaba/scripts/mcp-debug-server.py
   wrapper: /home/tony/.config/devin/mcp-scripts/mcp-debug.sh
@@ -90,6 +111,9 @@ server:
   - mcp_net
   - mcp_env
   - mcp_gpu
+  - mcp_health
+  - mcp_preset_list
+  - mcp_preset_run
 phases:
 - id: 1
   name: SSOT and spec
@@ -217,4 +241,36 @@ suggested_extensions:
   name: Per-host raw allowlists
   description: Allow different raw command prefixes per host based on capabilities.
   priority: low
-  status: proposed
+  status: in_progress
+  notes: macbook added with compact=false; global raw allowlist now accepts macOS commands (vm_stat, launchctl, diskutil, etc.).
+- id: presets
+  name: MCP Debug presets
+  description: "Named, multi-step, multi-host diagnostic routines exposed via mcp_preset_list and mcp_preset_run. First presets: quick-health, top-cpu-both, service-diff."
+  priority: high
+  status: completed
+
+presets:
+  quick-health:
+    description: Service count and memory for both hosts
+    steps:
+      - host: tony_omen
+        tool: mcp_debug
+        command: systemctl list-units
+      - host: tony_dell
+        tool: mcp_debug
+        command: systemctl list-units
+      - host: tony_omen
+        tool: mcp_raw
+        command: free -h
+      - host: tony_dell
+        tool: mcp_raw
+        command: free -h
+  tony-dell-snapshot:
+    description: Fetch the latest tony-dell health agent snapshot and check its freshness
+    steps:
+      - host: tony_dell
+        tool: mcp_raw
+        command: ls -l --time-style=full-iso /home/tony/var/chaba/health/tony-dell-snapshot.json
+      - host: tony_dell
+        tool: mcp_raw
+        command: cat /home/tony/var/chaba/health/tony-dell-snapshot.json

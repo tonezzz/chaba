@@ -20,21 +20,25 @@ with open(SSOT) as f:
 HOSTS = CONFIG.get("hosts", {})
 DEBUG_COMMANDS = CONFIG.get("debug_commands", {})
 RAW_PREFIXES = CONFIG.get("raw_commands", {}).get("allowed_prefixes", [])
+PRESETS = CONFIG.get("presets", {})
 
 
 def reload_config():
-    global CONFIG, HOSTS, DEBUG_COMMANDS, RAW_PREFIXES
+    global CONFIG, HOSTS, DEBUG_COMMANDS, RAW_PREFIXES, PRESETS
     with open(SSOT) as f:
         CONFIG = yaml.safe_load(f)
     HOSTS = CONFIG.get("hosts", {})
     DEBUG_COMMANDS = CONFIG.get("debug_commands", {})
     RAW_PREFIXES = CONFIG.get("raw_commands", {}).get("allowed_prefixes", [])
+    PRESETS = CONFIG.get("presets", {})
 
 
 def run_on_host(host, command, compact):
     if host not in HOSTS:
         return {"ok": False, "error": f"unknown host: {host}", "available_hosts": list(HOSTS.keys())}
     h = HOSTS[host]
+    if compact and not h.get("compact", True):
+        return {"ok": False, "error": f"compact mcp_debug not supported for host: {host}", "host": host, "rc": 1, "out": "", "err": ""}
     mcp_debug = h.get("mcp_debug_path", "/home/tony/.local/bin/mcp-debug")
 
     if not compact:
@@ -50,7 +54,7 @@ def run_on_host(host, command, compact):
             argv = shlex.split(command)
         proc = subprocess.run(argv, capture_output=True, text=True, timeout=300)
     else:
-        ssh = ["ssh", "-o", "StrictHostKeyChecking=no", "-o", "ServerAliveInterval=60", "-o", "ServerAliveCountMax=3"]
+        ssh = ["ssh", "-o", "StrictHostKeyChecking=no", "-o", "ServerAliveInterval=60", "-o", "ServerAliveCountMax=3", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes"]
         user = h.get("ssh_user", "tony")
         hostname = h.get("hostname", host)
         target = f"{user}@{hostname}"
@@ -107,6 +111,8 @@ def mcp_vet(command, add=False):
     stats = {}
     all_positive = True
     for host in HOSTS:
+        if not HOSTS[host].get("compact", True):
+            continue
         s = mcp_stats(host, command)
         stats[host] = s
         if not s.get("ok") or s.get("savings_pct_chars", 0) <= 0:
@@ -156,6 +162,8 @@ def mcp_savings(hosts):
     total_compact = 0
     for host in hosts:
         if host not in HOSTS:
+            continue
+        if not HOSTS[host].get("compact", True):
             continue
         per_host[host] = {"commands": {}, "raw_chars": 0, "compact_chars": 0, "saved_chars": 0}
         for command in commands:
@@ -235,6 +243,77 @@ def mcp_gpu(host):
             r["gpu_tool"] = cmd
             return r
     return {"ok": False, "error": "no supported GPU tool found (nvidia-smi or rocm-smi)", "host": host}
+
+
+def mcp_health(host):
+    if host not in HOSTS:
+        return {"ok": False, "error": f"unknown host: {host}", "available_hosts": list(HOSTS.keys())}
+    h = HOSTS[host]
+    mcp_debug = h.get("mcp_debug_path", "/home/tony/.local/bin/mcp-debug")
+    return run_on_host(host, f"ls -l {shlex.quote(mcp_debug)}", compact=False)
+
+
+def mcp_preset_list():
+    return {
+        "ok": True,
+        "presets": [
+            {"name": name, "description": data.get("description", "")}
+            for name, data in PRESETS.items()
+        ],
+    }
+
+
+def mcp_preset_run(name):
+    if name not in PRESETS:
+        return {"ok": False, "error": f"unknown preset: {name}", "available_presets": list(PRESETS.keys())}
+    preset = PRESETS[name]
+    steps = preset.get("steps", [])
+    results = []
+    all_ok = True
+    for step in steps:
+        host = step.get("host")
+        tool = step.get("tool")
+        command = step.get("command")
+        if not host or not tool:
+            results.append({"ok": False, "error": "step missing host or tool", "step": step})
+            all_ok = False
+            continue
+        if tool == "mcp_debug":
+            if not command:
+                results.append({"ok": False, "error": "mcp_debug step missing command", "step": step})
+                all_ok = False
+                continue
+            r = run_on_host(host, command, compact=True)
+            try:
+                data = json.loads(r.get("out", "") or "{}")
+                data["h"] = host
+                r["out"] = json.dumps(data, separators=(",", ":"))
+            except json.JSONDecodeError:
+                r["h"] = host
+            results.append(r)
+            if not r.get("ok"):
+                all_ok = False
+        elif tool == "mcp_raw":
+            if not command:
+                results.append({"ok": False, "error": "mcp_raw step missing command", "step": step})
+                all_ok = False
+                continue
+            r = run_on_host(host, command, compact=False)
+            r["h"] = host
+            results.append(r)
+            if not r.get("ok"):
+                all_ok = False
+        elif tool == "mcp_health":
+            results.append(mcp_health(host))
+        else:
+            results.append({"ok": False, "error": f"unsupported tool: {tool}", "step": step})
+            all_ok = False
+    return {
+        "ok": all_ok,
+        "preset": name,
+        "description": preset.get("description", ""),
+        "results": results,
+    }
 
 
 def handle_initialize(id_):
@@ -382,6 +461,36 @@ def handle_tools_list(id_):
                 "required": ["host"],
             },
         },
+        {
+            "name": "mcp_health",
+            "description": "Check that the mcp-debug binary exists and is reachable on a host. Fails fast if SSH is down.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                },
+                "required": ["host"],
+            },
+        },
+        {
+            "name": "mcp_preset_list",
+            "description": "List available multi-host diagnostic presets.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {},
+            },
+        },
+        {
+            "name": "mcp_preset_run",
+            "description": "Run a named preset. Presets are multi-step, multi-host diagnostic routines.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "preset": {"type": "string", "description": "Preset name, e.g. 'quick-health'"},
+                },
+                "required": ["preset"],
+            },
+        },
     ]
     return {"jsonrpc": "2.0", "id": id_, "result": {"tools": tools}}
 
@@ -453,6 +562,21 @@ def handle_tools_call(id_, params):
         if not h:
             return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host is required"}}
         result = mcp_gpu(h)
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_health":
+        h = arguments.get("host")
+        if not h:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host is required"}}
+        result = mcp_health(h)
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_preset_list":
+        result = mcp_preset_list()
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_preset_run":
+        preset = arguments.get("preset")
+        if not preset:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "preset is required"}}
+        result = mcp_preset_run(preset)
         output = json.dumps(result, separators=(",", ":"))
     else:
         return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32601, "message": f"unknown tool: {name}"}}
