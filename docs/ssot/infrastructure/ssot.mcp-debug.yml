@@ -289,3 +289,12 @@ presets:
       - host: macbook
         tool: mcp_raw
         command: diskutil list
+  macbook-snapshot:
+    description: Refresh and show the latest macbook health snapshot
+    steps:
+      - host: macbook
+        tool: mcp_raw
+        command: launchctl start com.chaba.macbook-health
+      - host: macbook
+        tool: mcp_raw
+        command: cat /Users/kkkakk/var/chaba/health/macbook-snapshot.json
