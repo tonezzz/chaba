@@ -124,8 +124,9 @@ sections:
     layout: list
     items:
       - label: Development Environment
-        text: macOS development tools and Xcode available
-        tags: [development, macos, xcode]
+        text: Command Line Tools installed; full Xcode not installed. Target state tracked in ssot.mysystem.macbook-appdev.yml.
+        url: file:///home/tony/CascadeProjects/chaba/docs/ssot/ssot.mysystem.macbook-appdev.yml
+        tags: [development, macos, xcode, clt]
       - label: Cross-Platform Testing
         text: Test web apps and services on macOS/Safari
         tags: [testing, cross-platform, safari]
@@ -136,7 +137,7 @@ sections:
         text: launchctl for macOS service management
         tags: [services, launchctl, macos]
       - label: Health Snapshot Agent
-        text: Periodic macOS health snapshots collected by com.chaba.macbook-health launchd job and stored at ~/var/chaba/health/macbook-snapshot.json
+        text: Periodic macOS health snapshots collected by com.chaba.macbook-health launchd job and stored at ~/var/chaba/health/macbook-snapshot.json. Each snapshot now includes lan_ip, tailscale_ip, and wifi_ssid so we can fall back to the LAN path if Tailscale is unavailable.
         status: active
         tags: [health, monitoring, snapshot]
       - label: PlayLive / CDP Node

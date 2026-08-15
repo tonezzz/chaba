@@ -1,0 +1,135 @@
+title: MacBook App Development Target State
+subtitle: Target toolchain and phased plan to make kk-macbook a macOS/iOS app development workstation
+icon: 🧑‍💻
+
+ideas:
+  - Bridge the gap between the current baseline (CLT + Node) and a full macOS/iOS dev machine
+  - Track installation, configuration, and verification steps in one place
+  - Capture signing, provisioning, and cost decisions for native Apple platform development
+  - Provide mcp-debug verification commands for ongoing health checks
+
+sections:
+  - title: Current Baseline
+    icon: 📍
+    layout: list
+    items:
+      - label: macOS Version
+        text: macOS 13.7.8 (Ventura) on Intel MacBook Pro
+      - label: Command Line Tools
+        text: Installed at /Library/Developer/CommandLineTools
+      - label: Full Xcode
+        text: Not installed — xcodebuild refuses to run because the active developer directory is a CLT instance
+      - label: Swift
+        text: Apple Swift 5.8.1 available via CLT
+      - label: Node.js
+        text: v20.17.0 and npm 10.8.2 installed at /Users/kkkakk/.local/node, not on default PATH for SSH
+      - label: Code Signing
+        text: 0 valid Apple Developer code signing identities
+      - label: Package Managers
+        text: Homebrew, CocoaPods, and Ruby gemsets not installed
+
+  - title: Target State
+    icon: 🎯
+    layout: list
+    items:
+      - label: Full Xcode
+        text: Latest Xcode 15.x that supports macOS Ventura installed in /Applications
+        priority: high
+      - label: xcode-select
+        text: Active developer directory set to /Applications/Xcode.app/Contents/Developer
+      - label: Apple Developer Account
+        text: Free Apple ID for local development; paid Apple Developer Program ($99/year) if distributing
+      - label: Node PATH
+        text: ~/.local/node/bin on default shell PATH (e.g., ~/.zshenv)
+      - label: Homebrew
+        text: Installed for macOS packages and dependencies
+      - label: Optional iOS Tooling
+        text: CocoaPods, Bundler, rbenv/nvm as needed for project dependencies
+      - label: Simulators
+        text: iOS/iPadOS simulators available for testing
+      - label: Code Signing
+        text: At least one valid signing identity or team configured for building .app bundles
+
+  - title: Phased Plan
+    icon: 🗓️
+    layout: timeline
+    items:
+      - label: Phase 1 — Install Xcode
+        text: Download and install Xcode 15.x from the App Store or Apple developer portal; accept license with xcodebuild -license accept
+        status: pending
+      - label: Phase 2 — Verify Developer Tools
+        text: Set xcode-select to Xcode and confirm xcodebuild, xcrun, and swift report the new toolchain
+        status: pending
+      - label: Phase 3 — Apple Developer Setup
+        text: Sign in with Apple ID in Xcode; join Apple Developer Program if distribution is the goal
+        status: pending
+      - label: Phase 4 — Shell Environment
+        text: Add ~/.local/node/bin to ~/.zshenv and install Homebrew
+        status: pending
+      - label: Phase 5 — Optional Dependencies
+        text: Install CocoaPods, Bundler, nvm/rbenv, or other project-specific tools as needed
+        status: pending
+      - label: Phase 6 — Verification
+        text: Build a sample SwiftUI macOS .app and an iOS simulator build to close the loop
+        status: pending
+
+  - title: Verification Commands
+    icon: 🧪
+    layout: list
+    items:
+      - label: Xcode version
+        text: xcodebuild -version
+        tags: [mcp-debug]
+      - label: Active developer directory
+        text: xcode-select -p
+        tags: [mcp-debug]
+      - label: Swift version
+        text: swift --version
+        tags: [mcp-debug]
+      - label: Signing identities
+        text: security find-identity -v -p codesigning
+        tags: [mcp-debug]
+      - label: Node version
+        text: node -v
+        tags: [mcp-debug]
+      - label: Homebrew version
+        text: brew --version
+        tags: [mcp-debug]
+
+  - title: Security & Costs
+    icon: ⚠️
+    layout: list
+    items:
+      - label: SIP
+        text: Currently disabled; may simplify unsigned app testing but should be reviewed before storing sensitive code
+        status: review-needed
+      - label: FileVault
+        text: Pending — should be enabled for a dev machine with source code and keys
+        status: pending
+      - label: Firewall
+        text: Pending — enable macOS firewall with stealth mode
+        status: pending
+      - label: Apple Developer Fee
+        text: Free for local signing; $99/year for App Store / TestFlight / notarized distribution
+        status: review-needed
+
+  - title: Related Files
+    icon: 🔗
+    layout: list
+    items:
+      - label: MacBook Workstation SSOT
+        text: Current system configuration for the MacBook
+        url: file:///home/tony/CascadeProjects/chaba/docs/ssot/ssot.mysystem.macbook.yml
+      - label: Improvements Tracking
+        text: Roadmap entry driving this target state
+        url: file:///home/tony/CascadeProjects/chaba/docs/ssot/ssot.improvements.yml
+
+config:
+  version: 1
+  created: 2026-08-15
+  maintainer: tony
+  status: draft
+  related_files:
+    - docs/ssot/ssot.mysystem.macbook.yml
+    - docs/ssot/ssot.improvements.yml
+    - docs/ssot/ssot.index.yml
