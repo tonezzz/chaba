@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Focus Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+  <link rel="stylesheet" href="./focus.css">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <nav class="bg-slate-800 border-b border-slate-700 px-4 py-3 flex items-center gap-3">
+    <a href="/apps/" class="text-sky-400 hover:text-sky-300">← Apps</a>
+    <span class="text-slate-500">|</span>
+    <span class="font-semibold">Focus Dashboard</span>
+  </nav>
+
+  <main class="max-w-6xl mx-auto p-4">
+    <header class="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold">Current Focus</h1>
+        <p class="text-slate-400 text-sm">Active focuses, quick wins, and request log</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="last-updated" class="text-xs text-slate-500">Loading...</span>
+        <button id="btn-refresh" type="button" class="bg-sky-600 hover:bg-sky-500 text-white px-3 py-1.5 rounded text-sm">Refresh</button>
+      </div>
+    </header>
+
+    <div id="content" class="space-y-6">
+      <div class="text-slate-400">Loading focus data...</div>
+    </div>
+  </main>
+
+  <script src="./focus.js"></script>
+</body>
+</html>

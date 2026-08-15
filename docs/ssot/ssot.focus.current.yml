@@ -51,7 +51,7 @@ sections:
           - label: Apply .current style to expected large SSOT files to reduce token reads
             status: completed
           - label: Adopt focus-intake-only workflow with activation gate and apps/focus page
-            status: not_started
+            status: completed
           - label: Design incremental focus-inbox files that merge into the main focus on activation
             status: completed
           - label: Use background sub-agents for non-interactive focus work while planning in main session
@@ -75,6 +75,9 @@ sections:
           - date: 2026-08-15
             request: Can we assign the focus jobs processing to a sub-agent so we can do more planning while tasks are being processed in the background?
             matched_to: Use background sub-agents for non-interactive focus work while planning in main session
+          - date: 2026-08-15
+            request: Let's finish the workflow system first
+            matched_to: Adopt focus-intake-only workflow with activation gate and apps/focus page
 
   - title: Active Branch Focus
     icon: branch
@@ -83,7 +86,7 @@ sections:
       - label: Chaba Infrastructure & Monitoring Cleanup
         text: Close out the dangling chaba infrastructure work before picking up new strategic focuses.
         branch: chaba
-        status: active
+        status: completed
         priority: high
         started: 2026-08-15
         estimated_duration: 2-3 sessions
@@ -110,6 +113,26 @@ sections:
           - date: 2026-08-15
             request: Release and renew tony-dell wired DHCP after router renumbering
             matched_to: Release and renew tony-dell wired DHCP after router renumbering
+
+      - label: tony-dell Multi-WAN Active-Backup
+        text: Deploy and verify active-backup multi-WAN on tony-dell so the wired ADSL is primary and the Naris WiFi ADSL takes over on failure.
+        branch: chaba
+        status: active
+        priority: high
+        started: 2026-08-15
+        estimated_duration: 1 session
+        tags: [infrastructure, networking, tony-dell, multi-wan, backup]
+        subtasks:
+          - label: Deploy tony-dell-wan-failover systemd root timer
+            status: not_started
+          - label: Verify failover by disabling wired interface
+            status: not_started
+          - label: Document the two-ADSL setup in SSOT
+            status: not_started
+        request_log:
+          - date: 2026-08-15
+            request: Set up the multi-WAN active-backup so tony-dell uses wired primary and Naris WiFi as backup.
+            matched_to: Deploy tony-dell-wan-failover systemd root timer
 
   - title: Quick Wins
     icon: quick
