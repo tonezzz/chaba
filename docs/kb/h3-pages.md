@@ -18,7 +18,15 @@ Created 2026-08-04 as part of Chaba infrastructure documentation.
 
 ## Docs single source of truth
 
-`/apps/docs/` and `/apps/docs/tony-omen/` are authored in the `chaba-h3` worktree only and served at `http://192.168.1.48:8081/apps/docs/tony-omen/`. Do not mirror them under `stacks/web/public/apps/docs/`; the 8080 Caddy stack is not the source of truth for docs pages.
+The docs app is now defined in the master-branch SSOT at `chaba/docs/ssot/apps/ssot.apps.docs.yml`. It lists every docs page, its source SSOT, its generator, and its generated outputs.
+
+To update the docs site:
+
+1. Edit `chaba/docs/ssot/apps/ssot.apps.docs.yml`.
+2. Run `python3 scripts/generate-h3-docs.py` from the `chaba` worktree.
+3. Commit and push both `chaba/master` and `chaba-h3/chaba.h3`.
+
+`/apps/docs/` pages are authored in the `chaba-h3` worktree only and served at `http://192.168.1.48:8081/apps/docs/tony-omen/`. Do not mirror them under `stacks/web/public/apps/docs/`; the 8080 Caddy stack is not the source of truth for docs pages.
 
 ## URL routing
 

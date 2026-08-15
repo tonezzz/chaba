@@ -6,7 +6,7 @@ description: Add a static page to chaba.h3.gizmo-thailand.com
 
 1. Work in the `chaba.h3` branch worktree: `/home/tony/CascadeProjects/chaba-h3`.
 2. Add the HTML and any YAML/JSON data files under `public/<path>/index.html` or `public/<path>.html`.
-3. If the page belongs under `/apps/`, register it in `public/apps/apps.yml` so the shared nav and app grid pick it up.
+3. If the page belongs under `/apps/docs/`, add it to the docs SSOT at `chaba/docs/ssot/apps/ssot.apps.docs.yml` and run `python3 scripts/generate-h3-docs.py` so `public/apps/docs/docs.yml` and `public/apps/apps.yml` stay in sync. For other `/apps/` pages, register directly in `public/apps/apps.yml`.
 4. For directory URLs (`/foo/`), either:
    - link users to `/foo/index.html` explicitly, or
    - add a special case in `proxy-server.mjs` and restart the Node app.
