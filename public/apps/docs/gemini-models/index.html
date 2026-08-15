@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Gemini Models</title>
+  <link rel="stylesheet" href="/assets/tailwind.css">
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; }
+    body.bright { background-color: #f8fafc; color: #111827; }
+    body.bright .bg-card { background-color: #ffffff; }
+    body.bright .border-gray-700 { border-color: #e2e8f0; }
+    body.bright .text-gray-200 { color: #111827; }
+    body.bright .text-white { color: #111827; }
+    body.bright .text-gray-400 { color: #64748b; }
+    body.bright .text-gray-500 { color: #94a3b8; }
+    body.bright .text-gray-600 { color: #94a3b8; }
+    body.bright .text-accent { color: #0a84ff; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 0.75rem; }
+    th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    th { background: #f1f5f9; font-weight: 600; }
+    tr:last-child td { border-bottom: 0; }
+    .family-row td { background: #f8fafc; font-weight: 600; border-top: 2px solid #cbd5e1; }
+  </style>
+</head>
+<body class="bg-bg text-gray-200 min-h-screen bright">
+  <div id="app-nav"></div>
+  <div id="app-subnav"></div>
+  <main class="max-w-7xl mx-auto px-4 py-10">
+    <div id="header" class="mb-6"></div>
+    <div id="table" class="table-wrap"></div>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+  <script src="/apps/nav.js"></script>
+  <script>
+    function fmt(n) {
+      if (n === null || n === undefined) return '—';
+      if (n === 'unlimited') return 'Unlimited';
+      if (typeof n !== 'number') return String(n);
+      if (n >= 1000000) {
+        const s = (n/1000000).toFixed(1).replace(/\.0$/, '');
+        return s + 'M';
+      }
+      if (n >= 1000) {
+        const s = (n/1000).toFixed(1).replace(/\.0$/, '');
+        return s + 'K';
+      }
+      return n.toString();
+    }
+    Promise.all([
+      fetch('/apps/apps.yml').then(r => r.text()),
+      fetch('/apps/docs/docs.yml').then(r => r.text()),
+      fetch('/apps/docs/gemini-models/gemini-models.yml').then(r => r.text())
+    ]).then(([appsText, docsText, dataText]) => {
+      const apps = jsyaml.load(appsText);
+      const docs = jsyaml.load(docsText);
+      const data = jsyaml.load(dataText);
+      document.title = data.title || 'Gemini Models';
+      document.getElementById('app-nav').innerHTML = ChabaNav.renderNav(apps.nav);
+      document.getElementById('app-subnav').innerHTML = ChabaNav.renderSubnav(docs.nav);
+      document.getElementById('header').innerHTML = `
+        <h1 class="text-3xl font-bold mb-2">${data.title}</h1>
+        <p class="text-gray-500">Last verified: ${data.last_verified}</p>`;
+      document.getElementById('table').innerHTML = renderTable(data.models);
+    });
+    function renderTable(models) {
+      let html = `<table>
+        <thead><tr>
+          <th>Family</th><th>Category</th><th>Model</th><th>API name</th><th>Params</th><th>Context</th><th>RPM</th><th>TPM</th><th>RPD</th><th>Status</th>
+        </tr></thead><tbody>`;
+      let lastFamily = null;
+      models.forEach(m => {
+        if (m.family !== lastFamily) {
+          html += `<tr class="family-row"><td colspan="10">${m.family}</td></tr>`;
+          lastFamily = m.family;
+        }
+        html += `<tr>
+          <td class="text-gray-400">${m.family}</td>
+          <td class="text-gray-500">${m.category || '—'}</td>
+          <td class="font-medium">${m.display_name || m.api_name}</td>
+          <td class="text-xs text-gray-500 font-mono">${m.api_name}</td>
+          <td>${m.params || '—'}</td>
+          <td>${m.context_window || '—'}</td>
+          <td>${fmt(m.free_tier && m.free_tier.rpm)}</td>
+          <td>${fmt(m.free_tier && m.free_tier.tpm)}</td>
+          <td>${fmt(m.free_tier && m.free_tier.rpd)}</td>
+          <td><span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${m.status === 'active' ? 'bg-green-100 text-green-800' : m.status === 'deprecated' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}">${m.status}</span></td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      return html;
+    }
+  </script>
+</body>
+</html>

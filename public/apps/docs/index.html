@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Docs</title>
+  <link rel="stylesheet" href="/assets/tailwind.css">
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; }
+    body.bright { background-color: #f8fafc; color: #111827; }
+    body.bright .bg-card { background-color: #ffffff; }
+    body.bright .border-gray-700 { border-color: #e2e8f0; }
+    body.bright .text-gray-200 { color: #111827; }
+    body.bright .text-white { color: #111827; }
+    body.bright .text-gray-400 { color: #64748b; }
+    body.bright .text-gray-500 { color: #94a3b8; }
+    body.bright .text-gray-600 { color: #94a3b8; }
+    body.bright .text-accent { color: #0a84ff; }
+    .page-card { display: block; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); transition: all 0.15s; }
+    .page-card:hover { border-color: #0a84ff; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); transform: translateY(-2px); }
+  </style>
+</head>
+<body class="bg-bg text-gray-200 min-h-screen bright">
+  <div id="app-nav"></div>
+  <div id="app-subnav"></div>
+  <main id="pages" class="max-w-6xl mx-auto px-4 py-10"></main>
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+  <script src="/apps/nav.js"></script>
+  <script>
+    Promise.all([
+      fetch('/apps/apps.yml').then(r => r.text()),
+      fetch('/apps/docs/docs.yml').then(r => r.text())
+    ]).then(([appsText, docsText]) => {
+      const apps = jsyaml.load(appsText);
+      const docs = jsyaml.load(docsText);
+      document.title = docs.title || 'Docs';
+      document.getElementById('app-nav').innerHTML = ChabaNav.renderNav(apps.nav);
+      document.getElementById('app-subnav').innerHTML = ChabaNav.renderSubnav(docs.nav);
+      document.getElementById('pages').innerHTML = renderPages(docs);
+    });
+    function renderPages(docs) {
+      return `<h1 class="text-3xl font-bold mb-2">${docs.title}</h1>
+        <p class="text-gray-500 mb-8">SSOT and KB reference pages.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          ${docs.pages.map(p => `
+            <a href="${p.href}" class="page-card">
+              <div class="text-2xl mb-2">${p.icon || ''}</div>
+              <h2 class="text-xl font-semibold text-white">${p.title}</h2>
+              <p class="text-gray-500 text-sm mt-2">${p.description}</p>
+            </a>
+          `).join('')}
+        </div>`;
+    }
+  </script>
+</body>
+</html>
