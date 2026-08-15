@@ -1,15 +1,49 @@
 title: Google Generative Models
 subtitle: Canonical model registry with free-tier rate limits for all Chaba Google API usage
-version: 1
+icon: 🧠
 
 # Source of truth for model names, rate limits, and usage assignments.
 # Other SSOT files and KB docs should reference entries here by model id
 # instead of duplicating names or limits.
 
+config:
+  version: 1
+  last_updated: 2026-08-15
+  maintainer: tony
+  status: active
+
 source:
   url: https://aistudio.google.com/app/apikey
   last_verified: 2026-08-15
+  input_file: null
   note: Free-tier limits captured from the Google AI Studio rate-limits dashboard
+
+sections:
+  - title: Registry Overview
+    icon: 📋
+    layout: list
+    items:
+      - label: Canonical source
+        text: Google AI Studio free-tier rate-limits dashboard
+      - label: Active assignments
+        text: gemma-4-31b-it for Yomi summarization; gemini-2.5-flash for Helm
+      - label: Ingest script
+        text: scripts/ingest-gemini-rate-limits.py updates this file from JSON/YAML input
+      - label: Consumers
+        text: 'Referenced by docs/kb/gemini-integration.md and docs/ssot/infrastructure/ssot.services.yml'
+
+  - title: Model Status Legend
+    icon: 🏷️
+    layout: list
+    items:
+      - label: active
+        text: 'Currently used in production (has verified free-tier limits)'
+      - label: available
+        text: 'Available but not currently wired to a service'
+      - label: deprecated
+        text: 'Legacy; do not use for new work'
+      - label: not_used
+        text: 'Not relevant to Chaba workload'
 
 models:
   gemma-4-31b-it:
@@ -124,3 +158,290 @@ models:
       rpd: 100
     status: not_used
     notes: Chaba does not currently use the Antigravity agent model.
+  gemini-2.0-flash-001:
+    display_name: Gemini 2.0 Flash 001
+    api_name: gemini-2.0-flash-001
+    category: Gemini 2
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 2.
+
+  gemini-2.0-flash:
+    display_name: Gemini 2.0 Flash
+    api_name: gemini-2.0-flash
+    category: Gemini 2
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 2.
+
+  gemini-2.5-pro:
+    display_name: Gemini 2.5 Pro
+    api_name: gemini-2.5-pro
+    category: Gemini 2.5
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 2.5.
+
+  gemini-2.5-flash-native-audio-preview-12-2025:
+    display_name: Gemini 2.5 Flash Native Audio Preview 12 2025
+    api_name: gemini-2.5-flash-native-audio-preview-12-2025
+    category: Gemini 2.5
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 2.5.
+
+  gemini-2.5-flash-native-audio-preview-09-2025:
+    display_name: Gemini 2.5 Flash Native Audio Preview 09 2025
+    api_name: gemini-2.5-flash-native-audio-preview-09-2025
+    category: Gemini 2.5
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 2.5.
+
+  gemini-2.5-flash-native-audio-latest:
+    display_name: Gemini 2.5 Flash Native Audio Latest
+    api_name: gemini-2.5-flash-native-audio-latest
+    category: Gemini 2.5
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 2.5.
+
+  nano-banana-pro-preview:
+    display_name: Nano Banana Pro Preview
+    api_name: nano-banana-pro-preview
+    category: Gemini 3
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
+
+  gemini-pro-latest:
+    display_name: Gemini Pro Latest
+    api_name: gemini-pro-latest
+    category: Gemini 3
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
+
+  gemini-flash-lite-latest:
+    display_name: Gemini Flash Lite Latest
+    api_name: gemini-flash-lite-latest
+    category: Gemini 3
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
+
+  gemini-3.7-flash:
+    display_name: Gemini 3.7 Flash
+    api_name: gemini-3.7-flash
+    category: Gemini 3
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
+
+  gemini-3.5-flash-lite:
+    display_name: Gemini 3.5 Flash Lite
+    api_name: gemini-3.5-flash-lite
+    category: Gemini 3
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
+
+  gemini-3.5-flash:
+    display_name: Gemini 3.5 Flash
+    api_name: gemini-3.5-flash
+    category: Gemini 3
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
+
+  gemini-3.1-pro-preview-customtools:
+    display_name: Gemini 3.1 Pro Preview Customtools
+    api_name: gemini-3.1-pro-preview-customtools
+    category: Gemini 3
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
+
+  gemini-3.1-pro-preview:
+    display_name: Gemini 3.1 Pro Preview
+    api_name: gemini-3.1-pro-preview
+    category: Gemini 3
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
+
+  gemini-3.1-flash-tts-preview:
+    display_name: Gemini 3.1 Flash Tts Preview
+    api_name: gemini-3.1-flash-tts-preview
+    category: Gemini 3
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
+
+  gemini-3.1-flash-lite-preview:
+    display_name: Gemini 3.1 Flash Lite Preview
+    api_name: gemini-3.1-flash-lite-preview
+    category: Gemini 3
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
+
+  gemini-3.1-flash-lite-image:
+    display_name: Gemini 3.1 Flash Lite Image
+    api_name: gemini-3.1-flash-lite-image
+    category: Gemini 3
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
+
+  gemini-3.1-flash-lite:
+    display_name: Gemini 3.1 Flash Lite
+    api_name: gemini-3.1-flash-lite
+    category: Gemini 3
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
+
+  gemini-3.1-flash-image-preview:
+    display_name: Gemini 3.1 Flash Image Preview
+    api_name: gemini-3.1-flash-image-preview
+    category: Gemini 3
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
+
+  gemini-3.1-flash-image:
+    display_name: Gemini 3.1 Flash Image
+    api_name: gemini-3.1-flash-image
+    category: Gemini 3
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
+
+  gemini-3-pro-preview:
+    display_name: Gemini 3 Pro Preview
+    api_name: gemini-3-pro-preview
+    category: Gemini 3
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
+
+  gemini-3-pro-image-preview:
+    display_name: Gemini 3 Pro Image Preview
+    api_name: gemini-3-pro-image-preview
+    category: Gemini 3
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
+
+  gemini-3-pro-image:
+    display_name: Gemini 3 Pro Image
+    api_name: gemini-3-pro-image
+    category: Gemini 3
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
+
+  gemini-3-flash-preview:
+    display_name: Gemini 3 Flash Preview
+    api_name: gemini-3-flash-preview
+    category: Gemini 3
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
+
+  gemini-robotics-er-2-preview:
+    display_name: Gemini Robotics Er 2 Preview
+    api_name: gemini-robotics-er-2-preview
+    category: Default
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Default.
+
+  gemini-robotics-er-1.6-preview:
+    display_name: Gemini Robotics Er 1.6 Preview
+    api_name: gemini-robotics-er-1.6-preview
+    category: Default
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Default.
+
+  gemini-robotics-er-1.5-preview:
+    display_name: Gemini Robotics Er 1.5 Preview
+    api_name: gemini-robotics-er-1.5-preview
+    category: Default
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Default.
+
+  gemini-2.5-computer-use-preview-10-2025:
+    display_name: Gemini 2.5 Computer Use Preview 10 2025
+    api_name: gemini-2.5-computer-use-preview-10-2025
+    category: Default
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Default.
+
+  deep-research-pro-preview-12-2025:
+    display_name: Deep Research Pro Preview 12 2025
+    api_name: deep-research-pro-preview-12-2025
+    category: Default
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Default.
+
+  deep-research-preview-04-2026:
+    display_name: Deep Research Preview 04 2026
+    api_name: deep-research-preview-04-2026
+    category: Default
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Default.
+
+  deep-research-max-preview-04-2026:
+    display_name: Deep Research Max Preview 04 2026
+    api_name: deep-research-max-preview-04-2026
+    category: Default
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Default.
+
+  antigravity-preview-05-2026:
+    display_name: Antigravity Preview 05 2026
+    api_name: antigravity-preview-05-2026
+    category: Default
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Default.
