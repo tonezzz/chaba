@@ -18,9 +18,10 @@ Implemented on 2026-08-06 to provide an alternative to the local Llama Phi-3 mod
 - `GEMINI_MODEL` - Model selection (default: gemma-4-31b-it, configurable)
 
 **Model Options:**
-- `gemma-4-31b-it` - Default model (higher limits on free tier)
-- `gemini-flash-latest` - Alternative flash model
-- Other Gemini models via environment variable configuration
+- See `docs/ssot/infrastructure/ssot.gemini-models.yml` for the canonical model registry, free-tier rate limits, and active/fallback assignments.
+- Default: `gemma-4-31b-it`
+- Alternative: `gemini-flash-latest`
+- Other Gemini models can be selected via the `GEMINI_MODEL` environment variable.
 
 ### Language Detection
 
@@ -66,9 +67,9 @@ Implemented on 2026-08-06 to provide an alternative to the local Llama Phi-3 mod
 ### Rate Limiting
 
 **Current Configuration:**
-- Conservative default: 15 requests per minute
+- Yomi uses a conservative app throttle of 15 requests per minute
 - 1-minute rate window (60,000ms)
-- Higher limits available on Gemma 4 models (free tier)
+- Model free-tier rate limits are recorded in `docs/ssot/infrastructure/ssot.gemini-models.yml`
 - Configurable via RATE_LIMIT constant
 
 ## Usage
@@ -136,9 +137,10 @@ const RATE_WINDOW = 60000; // 1 minute in ms
 ```
 
 **Model Selection:**
-- Default: `gemma-4-31b-it` (better free tier limits)
-- Alternative: `gemini-flash-latest` (faster but lower limits)
+- Default: `gemma-4-31b-it`
+- Alternative: `gemini-flash-latest`
 - Custom: Set via GEMINI_MODEL environment variable
+- Free-tier limits and current assignments: `docs/ssot/infrastructure/ssot.gemini-models.yml`
 
 ### Language Detection Configuration
 
@@ -217,6 +219,7 @@ return 'english';
 - `scripts/yomi/language-detection.mjs` - Language detection utilities
 - `scripts/yomi/process-conversations.mjs` - Process integration
 - `scripts/yomi/yomi-api.mjs` - API endpoint configuration
+- `docs/ssot/infrastructure/ssot.gemini-models.yml` - Canonical model registry and rate limits
 - `docs/kb/yomi.md` - Yomi system overview
 - `docs/kb/yomi-summary-corruption.md` - Summary quality and corruption handling
 

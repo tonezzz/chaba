@@ -65,14 +65,11 @@ tony-omen:
   gemini-api:
     service: Google Gemini API
     provider: Google Cloud
-    models:
-      - gemma-4-31b-it (30.7B params, 256K context, frontier performance)
-      - gemma-4-26b-a4b-it (25.2B params, 3.8B active, MoE architecture)
-      - gemma-4-12b-unified (11.95B params, 256K context)
-      - gemini-1.5-flash (fallback model)
+    model_registry: docs/ssot/infrastructure/ssot.gemini-models.yml
+    default_model: gemma-4-31b-it
+    fallback_model: gemini-1.5-flash
     api_key: GEMINI_API_KEY environment variable
     current_key: [Set via GEMINI_API_KEY environment variable - do not commit real keys]
-    rate_limit: 15 requests/minute (conservative default, varies by model)
     usage: Yomi summarization (conversation and daily summaries)
     integration: gemini-integration.mjs
     status: implemented (2026-08-06), enabled via USE_GEMINI environment variable
@@ -141,10 +138,8 @@ tony-omen:
           - Resume high-activity chat processing with Gemini
           - Monitor quota and quality during full sync
     notes:
-      - Gemma 4 models offer frontier-level performance with higher free tier limits
+      - See docs/ssot/infrastructure/ssot.gemini-models.yml for canonical model names and free-tier rate limits
       - Model availability varies by account age and project status
-      - Check AI Studio for specific model limits: https://aistudio.google.com/app/apikey
-      - Free tier TPM limit: 250K tokens/minute (except 2.5 models which support 1M)
       - Batch processing: 4 dates per API call (75% reduction in API calls)
   gpu-queue:
     container: gpu-queue
