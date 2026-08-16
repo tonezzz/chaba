@@ -1,0 +1,120 @@
+title: MCP Focus
+subtitle: Session-start router and focus recommendation policy for the mcp_focus tool
+icon: 🎯
+version: 1
+
+overview:
+  purpose: |
+    mcp_focus is the first MCP tool called when a session starts. Given an optional
+    request, it recommends the next action without modifying any focus state.
+  inputs:
+    - request: optional free-text user request
+    - mode: optional "recommend" or "status" (default "recommend")
+  guarantees:
+    - Read-only. It never writes to ssot.focus.current.yml, ssot.focus.yml, or the focus-inbox/ directory.
+    - If no request is provided, it always returns the current active foci and quick wins.
+    - If a request is provided, it returns a single recommended action and the supporting reasoning.
+
+output_schema:
+  ok: boolean
+  active:
+    shared: active shared focus or null
+    branch: active branch focus or null
+  quick_wins: list of completed quick wins
+  recommendation:
+    action: one of [continue, quick_win, triage_backlog, triage_inbox, draft_inbox]
+    target: label of the focus, quick win, or inbox item
+    confidence: high | medium | low
+    reasoning: short human-readable explanation
+    next_prompt: what to tell the user or assistant next
+
+actions:
+  continue:
+    when: |
+      A request is empty, is "continue", or matches an active shared or branch focus label or subtask label.
+    order:
+      - Prefer the active branch focus if the request mentions it.
+      - Prefer the active shared focus if the request matches it.
+      - If neither matches and one is active, continue the active shared focus.
+      - If both active and neither matches, ask the user which to continue.
+    output_target: active focus label
+    confidence: high when matched, medium otherwise
+
+  quick_win:
+    when: |
+      The request is small, concrete, and already represented in the Quick Wins section, or uses cue words
+      such as "fix", "tweak", "small", "quick", "minor".
+    output_target: matching quick-win label
+    confidence: high when label matches, medium for cues
+
+  triage_backlog:
+    when: |
+      The request is strategic, multi-step, design, implementation, or does not match any active or quick win.
+    source: docs/ssot/ssot.focus.yml backlog, scored by docs/ssot/infrastructure/ssot.focus.triage.yml
+    output_target: highest-scoring backlog label
+    confidence: medium
+
+  triage_inbox:
+    when: |
+      No active focus matches, no quick win matches, and the backlog has no strong candidate,
+      but docs/ssot/focus-inbox/ contains unprocessed draft items.
+    output_target: highest-priority unprocessed inbox item
+    confidence: medium
+
+  draft_inbox:
+    when: |
+      The request does not match any existing active focus, quick win, backlog item, or inbox item.
+    output:
+      - Create an in-memory draft inbox YAML for review.
+      - Do not write the file to disk.
+      - Return the draft content under suggestion.
+    confidence: low
+
+decision_tree:
+  - step: 1
+    check: Is there an active shared or branch focus?
+    yes: continue
+    no: go to 2
+  - step: 2
+    check: Does the request match a quick win label or a cue word?
+    yes: quick_win
+    no: go to 3
+  - step: 3
+    check: Is the request a small, concrete, single-step fix?
+    yes: quick_win
+    no: go to 4
+  - step: 4
+    check: Does the request match a backlog item label or keyword?
+    yes: triage_backlog
+    no: go to 5
+  - step: 5
+    check: Is there a higher-scoring backlog item than the default?
+    yes: triage_backlog
+    no: go to 6
+  - step: 6
+    check: Is there an unprocessed focus-inbox item?
+    yes: triage_inbox
+    no: draft_inbox
+
+confidence_rules:
+  high: direct label match or exact keyword hit
+  medium: cue word, partial match, or triage score ordering
+  low: no match; a draft inbox must be created
+
+safety:
+  - mcp_focus must not call focus-dispatcher.py, write any file, or commit.
+  - If an active focus exists, the default recommendation is "continue" unless the user explicitly asks to switch.
+  - The tool may expose a "status" mode that only returns active foci and quick wins.
+  - Any drafted inbox YAML returned to the assistant must be reviewed by the user before activation.
+
+related_files:
+  - docs/ssot/ssot.focus.current.yml
+  - docs/ssot/ssot.focus.yml
+  - docs/ssot/infrastructure/ssot.focus.triage.yml
+  - docs/ssot/infrastructure/ssot.focus-dispatcher.yml
+  - scripts/mcp_debug/focus.py
+  - scripts/mcp_debug/server.py
+
+implementation_notes:
+  - The current mcp_focus implementation in scripts/mcp_debug/focus.py returns active foci and a basic intake suggestion.
+  - The next implementation should align with this policy, return the new recommendation schema, and add the status mode.
