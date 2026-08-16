@@ -257,11 +257,12 @@ def handle_tools_list(id_):
         },
         {
             "name": "mcp_focus",
-            "description": "Return the current active focus and suggest an intake action for an optional request.",
+            "description": "Return the current active focus and recommend the next action for an optional request.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "request": {"type": "string", "description": "Optional user request to classify"},
+                    "mode": {"type": "string", "enum": ["recommend", "status"], "default": "recommend", "description": "recommend returns a recommendation; status returns active foci and quick wins only"},
                 },
             },
         },
@@ -362,7 +363,7 @@ def handle_tools_call(id_, params):
         )
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_focus":
-        result = mcp_focus(request=arguments.get("request"))
+        result = mcp_focus(request=arguments.get("request"), mode=arguments.get("mode", "recommend"))
         output = json.dumps(result, separators=(",", ":"))
     else:
         return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32601, "message": f"unknown tool: {name}"}}
