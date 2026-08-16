@@ -2,6 +2,8 @@
 import csv
 import io
 import json
+import time
+from datetime import datetime
 from .config import DEBUG_COMMANDS, TABLE_SCHEMAS, logger
 
 
@@ -71,9 +73,9 @@ def to_envelope(command, data):
 
 def mcp_table(host, command):
     """Run a compact debug command on a host and return a proxy_envelope table."""
-    from .hosts import run_on_host
     from .tools import mcp_debug
 
+    start = time.perf_counter()
     try:
         raw = mcp_debug(host, command)
         data = json.loads(raw)
@@ -81,7 +83,13 @@ def mcp_table(host, command):
         return {"ok": False, "error": f"invalid compact JSON: {e}", "command": command, "host": host}
     except Exception as e:
         return {"ok": False, "error": str(e), "command": command, "host": host}
+    duration_ms = (time.perf_counter() - start) * 1000
 
     envelope = to_envelope(command, data)
     envelope["host"] = host
+    envelope["freshness"] = {
+        "collected_at": datetime.now().isoformat(),
+        "duration_ms": round(duration_ms, 2),
+        "cache_age_ms": 0,
+    }
     return envelope

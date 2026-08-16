@@ -2,6 +2,7 @@
 import threading
 import time
 import json
+from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
@@ -14,6 +15,8 @@ REFRESH_INTERVAL = 60
 _cache = {
     "report": None,
     "generated": 0.0,
+    "collected_at": None,
+    "duration_ms": 0.0,
     "refreshing": False,
 }
 _cache_lock = threading.Lock()
@@ -25,10 +28,14 @@ def _regenerate_cache():
             return
         _cache["refreshing"] = True
     try:
+        start = time.perf_counter()
         result = mcp_report(hosts=[], save=False, format="json")
+        duration_ms = (time.perf_counter() - start) * 1000
         with _cache_lock:
             _cache["report"] = result.get("report") if result.get("ok") else None
             _cache["generated"] = time.time()
+            _cache["collected_at"] = datetime.now().isoformat()
+            _cache["duration_ms"] = round(duration_ms, 2)
     finally:
         with _cache_lock:
             _cache["refreshing"] = False
@@ -101,7 +108,13 @@ class CORSHandler(BaseHTTPRequestHandler):
             self._send_json(500, {"ok": False, "error": "report generation failed"})
             return
 
-        self._send_json(200, json.loads(report))
+        payload = json.loads(report)
+        payload["freshness"] = {
+            "collected_at": _cache.get("collected_at"),
+            "cache_age_ms": round((time.time() - _cache["generated"]) * 1000, 1),
+            "duration_ms": _cache.get("duration_ms", 0.0),
+        }
+        self._send_json(200, payload)
 
     def _send_json(self, status, payload):
         body = json.dumps(payload, separators=(",", ":")).encode()

@@ -10,10 +10,22 @@ output_formats:
       ok: boolean
       headers: list of strings
       rows: list of string arrays
+      command: string
+      host: string
+      freshness:
+        collected_at: ISO-8601 timestamp
+        duration_ms: float
+        cache_age_ms: integer
     notes:
       - The CORS endpoint /mcp-table.json returns the proxy_envelope JSON directly.
       - A same-origin PHP proxy (api/mcp-table.php) is used for HTTPS sites.
       - Keep the existing keyed JSON compact format for non-table or hierarchical output.
+  report:
+    freshness:
+      collected_at: ISO-8601 timestamp
+      cache_age_ms: integer
+      duration_ms: float
+    notes:
       - Only commands listed in table_schemas are rendered as tables.
   table_schemas:
     filesystems:
