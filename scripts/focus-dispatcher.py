@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""focus-dispatcher: pick the next active or inbox focus and prepare a prompt."""
+"""focus-dispatcher: pick the next active or inbox focus, archive completed, and prepare a prompt."""
 
 import argparse
+import os
 import shutil
 import subprocess
 import sys
@@ -43,24 +44,19 @@ def load_current():
         return yaml.safe_load(f)
 
 
-def load_inboxes():
-    items = []
-    if not INBOX_DIR.is_dir():
-        return items
-    for p in sorted(INBOX_DIR.glob("*.yml")):
-        if p.name.startswith("TEMPLATE") or p.name.startswith("processed"):
-            continue
-        try:
-            doc = yaml.safe_load(p.read_text())
-        except yaml.YAMLError as e:
-            print(f"warning: skipping invalid inbox {p}: {e}", file=sys.stderr)
-            continue
-        focus = doc.get("focus") or doc
-        if not focus or not focus.get("label"):
-            continue
-        focus["__file"] = p
-        items.append(focus)
-    return items
+def load_focus():
+    with open(FOCUS) as f:
+        return yaml.safe_load(f)
+
+
+def save_current(doc):
+    with open(CURRENT, "w") as f:
+        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+
+
+def save_focus(doc):
+    with open(FOCUS, "w") as f:
+        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
 
 
 def find_section(sections, title):
@@ -68,16 +64,6 @@ def find_section(sections, title):
         if sec.get("title") == title:
             return sec
     return None
-
-
-def save_current(doc):
-    with open(CURRENT, "w") as f:
-        yaml.safe_dump(doc, f, sort_keys=False)
-
-
-def save_focus(doc):
-    with open(FOCUS, "w") as f:
-        yaml.safe_dump(doc, f, sort_keys=False)
 
 
 def git_mv_inbox(inbox_path):
@@ -134,7 +120,6 @@ def next_from_active(doc):
                     candidates.append((sec["title"], item))
     if not candidates:
         return None, None
-    # highest priority wins; tie-break by started date (older first)
     def sort_key(x):
         _, it = x
         return (priority_value(it), it.get("started", ""))
@@ -143,11 +128,138 @@ def next_from_active(doc):
 
 
 def next_from_inbox():
-    inboxes = load_inboxes()
-    if not inboxes:
+    items = []
+    if not INBOX_DIR.is_dir():
         return None
-    inboxes.sort(key=lambda it: (priority_value(it), it.get("__file").stem), reverse=True)
-    return inboxes[0]
+    for p in sorted(INBOX_DIR.glob("*.yml")):
+        if p.name.startswith("TEMPLATE") or p.name.startswith("processed"):
+            continue
+        try:
+            doc = yaml.safe_load(p.read_text())
+        except yaml.YAMLError as e:
+            print(f"warning: skipping invalid inbox {p}: {e}", file=sys.stderr)
+            continue
+        focus = doc.get("focus") or doc
+        if not focus or not focus.get("label"):
+            continue
+        focus["__file"] = p
+        items.append(focus)
+    if not items:
+        return None
+    items.sort(key=lambda it: (priority_value(it), it.get("__file").stem), reverse=True)
+    return items[0]
+
+
+def next_from_backlog():
+    doc = load_focus()
+    section = find_section(doc.get("sections", []), "Backlog - Triage Queue")
+    if not section:
+        return None
+    items = [i for i in section.get("items", []) if i.get("status") in ("pending", "not_started", "active")]
+    if not items:
+        return None
+    items.sort(key=lambda it: (priority_value(it), it.get("started", "")), reverse=True)
+    return items[0]
+
+
+def _outcome_from_item(item):
+    completed = [s.get("label") for s in item.get("subtasks", []) if s.get("status") == "completed"]
+    if completed:
+        return "Completed subtasks: " + ", ".join(completed)
+    return "Completed"
+
+
+def _history_tags(item):
+    tags = list(item.get("tags", []))
+    if "completed" not in tags:
+        tags.append("completed")
+    return tags
+
+
+def _add_to_history(history, item):
+    labels = {h.get("label") for h in history.get("items", [])}
+    if item.get("label") in labels:
+        return
+    history_item = {
+        "label": item.get("label"),
+        "text": item.get("text", ""),
+        "date": item.get("completed") or datetime.now().strftime("%Y-%m-%d"),
+        "duration": item.get("estimated_duration", "1 session"),
+        "outcome": _outcome_from_item(item),
+        "tags": _history_tags(item),
+    }
+    history["items"].append(history_item)
+
+
+def _archive_section(current_doc, focus_doc, title):
+    changed = []
+    focus_sections = focus_doc.get("sections", [])
+    history = find_section(focus_sections, "Focus History")
+    if history is None:
+        history = {"title": "Focus History", "icon": "history", "layout": "timeline", "items": []}
+        focus_sections.append(history)
+
+    # Archive from .current first, then the full focus file
+    for doc, path in ((current_doc, CURRENT), (focus_doc, FOCUS)):
+        sections = doc.get("sections", [])
+        section = find_section(sections, title)
+        if section is None:
+            continue
+        kept = []
+        for item in section.get("items", []):
+            if is_completed(item):
+                _add_to_history(history, item)
+                changed.append(path)
+            else:
+                kept.append(item)
+        section["items"] = kept
+    return changed
+
+
+def archive_completed():
+    current_doc = load_current()
+    focus_doc = load_focus()
+    changed = []
+    changed += _archive_section(current_doc, focus_doc, "Active Shared Focus")
+    changed += _archive_section(current_doc, focus_doc, "Active Branch Focus")
+    if changed:
+        save_current(current_doc)
+        save_focus(focus_doc)
+    return list(set(changed))
+
+
+def _is_allowed_staged_path(path):
+    rel = Path(path).relative_to(REPO)
+    if path in (str(CURRENT), str(FOCUS)):
+        return True
+    inbox_rel = Path("docs/ssot/focus-inbox")
+    try:
+        rel.relative_to(inbox_rel)
+        return True
+    except ValueError:
+        pass
+    return False
+
+
+def git_commit(changed_paths, message):
+    if not changed_paths:
+        return
+    unique_paths = sorted(set(str(p) for p in changed_paths))
+    subprocess.run(["git", "add"] + unique_paths, cwd=REPO, check=True)
+    diff = subprocess.run(
+        ["git", "diff", "--cached", "--name-only"],
+        cwd=REPO, capture_output=True, text=True, check=True
+    ).stdout.strip().splitlines()
+    for name in diff:
+        if not _is_allowed_staged_path(REPO / name):
+            print(f"Refusing to commit: unexpected staged file {name}", file=sys.stderr)
+            subprocess.run(["git", "reset", "HEAD"], cwd=REPO, check=True)
+            return
+    if not diff:
+        return
+    subprocess.run(["git", "commit", "-m", message], cwd=REPO, check=True)
+    if os.environ.get("FOCUS_DISPATCHER_PUSH") == "1":
+        subprocess.run(["git", "push"], cwd=REPO, check=True)
 
 
 def generate_prompt(title, item, source):
@@ -201,6 +313,27 @@ def generate_prompt(title, item, source):
     return "\n".join(lines)
 
 
+def generate_suggestion_prompt(item):
+    label = item.get("label", "Unknown")
+    text = item.get("text", "")
+    lines = [
+        "# NO ACTIVE FOCUS — SUGGESTED BACKLOG ITEM",
+        "",
+        f"**Suggested:** {label}",
+        f"**Priority:** {item.get('priority', 'medium')}",
+        "",
+        "## Description",
+        "",
+        text.strip() if isinstance(text, str) and text.strip() else "(no description)",
+        "",
+        "## Instructions",
+        "1. This item is in the Backlog - Triage Queue; it is NOT activated.",
+        "2. To activate it, run `python3 scripts/focus-dispatcher.py --inbox <path>` or update `ssot.focus.current.yml` manually.",
+        "3. Otherwise, continue with any active focus or quick win.",
+    ]
+    return "\n".join(lines)
+
+
 def activate_inbox(inbox):
     doc = load_current()
     sections = doc.get("sections", [])
@@ -230,8 +363,8 @@ def activate_inbox(inbox):
     )
     section["items"].append(new_item)
     save_current(doc)
-    git_mv_inbox(inbox["__file"])
-    return section_title, new_item
+    target = git_mv_inbox(inbox["__file"])
+    return section_title, new_item, str(target)
 
 
 def main():
@@ -239,6 +372,10 @@ def main():
     parser.add_argument("--inbox", help="Path to a specific inbox file to activate")
     parser.add_argument("--dry-run", action="store_true", help="Show selection without modifying files")
     args = parser.parse_args()
+
+    changed = []
+    if not args.dry_run:
+        changed += archive_completed()
 
     active_title, active_item = next_from_active(load_current())
     inbox = None
@@ -250,19 +387,21 @@ def main():
     else:
         inbox = next_from_inbox()
 
-    # Decide whether to continue with an active focus or activate an inbox.
-    # If an active focus exists, it takes precedence unless a higher-priority
-    # inbox is explicitly requested or outranks it.
+    title = None
+    item = None
+    source = None
+    changed_inbox = False
+
     if active_item and not args.inbox:
-        # keep current active focus
         title = active_title
         item = active_item
         source = None
-        changed = False
+        changed_inbox = False
         print(f"Active focus: {item['label']} ({title})")
     elif args.inbox and inbox:
         if not args.dry_run:
-            title, item = activate_inbox(inbox)
+            title, item, target = activate_inbox(inbox)
+            changed += [CURRENT, FOCUS, target]
         else:
             item = make_focus_item(
                 inbox.get("label"),
@@ -275,11 +414,12 @@ def main():
             )
             title = "Active Branch Focus" if inbox.get("branch") else "Active Shared Focus"
         source = str(inbox.get("__file"))
-        changed = not args.dry_run
+        changed_inbox = not args.dry_run
         print(f"Activated: {item['label']} ({title})")
     elif inbox:
         if not args.dry_run:
-            title, item = activate_inbox(inbox)
+            title, item, target = activate_inbox(inbox)
+            changed += [CURRENT, FOCUS, target]
         else:
             item = make_focus_item(
                 inbox.get("label"),
@@ -292,12 +432,22 @@ def main():
             )
             title = "Active Branch Focus" if inbox.get("branch") else "Active Shared Focus"
         source = str(inbox.get("__file"))
-        changed = not args.dry_run
+        changed_inbox = not args.dry_run
         print(f"Activated: {item['label']} ({title})")
     else:
-        print("No active or inbox focus found.")
-        if NEXT_FOCUS_MD.exists():
-            NEXT_FOCUS_MD.unlink()
+        # No active or inbox; suggest a backlog item
+        backlog = next_from_backlog()
+        if backlog:
+            prompt = generate_suggestion_prompt(backlog)
+            REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+            NEXT_FOCUS_MD.write_text(prompt)
+            print(f"Suggested backlog: {backlog['label']}")
+        else:
+            print("No active or inbox focus found.")
+            if NEXT_FOCUS_MD.exists():
+                NEXT_FOCUS_MD.unlink()
+        if not args.dry_run and changed and os.environ.get("FOCUS_DISPATCHER_COMMIT") == "1":
+            git_commit(changed, "tweak: focus-dispatcher archived completed focuses")
         sys.exit(0)
 
     prompt = generate_prompt(title, item, source)
@@ -305,8 +455,9 @@ def main():
     NEXT_FOCUS_MD.write_text(prompt)
     print(f"Wrote {NEXT_FOCUS_MD}")
 
-    if changed:
-        print("Run `git add docs/ssot/ssot.focus.current.yml` and commit the activation.")
+    if not args.dry_run and changed and os.environ.get("FOCUS_DISPATCHER_COMMIT") == "1":
+        msg = f"tweak: focus-dispatcher activated {item['label']}"
+        git_commit(changed, msg)
 
 
 if __name__ == "__main__":
