@@ -39,7 +39,7 @@ alerts:
   
   service_criticality:
     critical: [caddy, postgres, gpu-queue]
-    important: [yomi-api, status-api, trade-api, mddb-api, playlived, llama-server, barrier-server]
+    important: [yomi-api, status-api, trade-api, mddb-api, playlived-dell, playlived-omen, llama-server, barrier-server]
     optional: [redis, weaviate, activepieces, frigate, camera-control, imagen2, txt2vid, thai-legal, cpu-frequency-monitor, gdrive-backup, trade-automation]
 
 # Service groups for dependency tracking
@@ -186,26 +186,38 @@ services:
     category: api
     profiles: [home, mobile]
 
-  - id: playlived
-    name: Playlived
+  - id: playlived-dell
+    name: Playlived (tony-dell)
     type: http
-    url: http://tony-omen:9230/sessions
+    url: http://tony-dell:9230/sessions
     expected_status: 200
     timeout: 5
     category: api
     profiles: [home]
     verification:
-      - "Test sessions: curl -s http://tony-omen:9230/sessions"
+      - "Test sessions: curl -s http://tony-dell:9230/sessions"
       - "Check pinned package: cat /home/tony/.local/playlive/package.json | grep '\"playwright\"'"
-      - "Verify installed version: cd /home/tony/.local/playlive && npm ls playwright"
       - "Check browsers: npx playwright install --dry-run"
-      - "Detect Playwright update: cd /home/tony/.local/playlive && installed=$(npm ls playwright --depth=0 2>/dev/null | grep -o 'playwright@[0-9.]*' | cut -d@ -f2) && latest=$(npm view playwright version) && echo \"installed: $installed\" && echo \"latest: $latest\" && { [ \"$installed\" != \"$latest\" ] && echo \"INFO: newer Playwright version available; review before pinning\" || true; }"
-      - "Check service: systemctl --user status playlived.service"
+      - "Check service: ssh tony-dell systemctl --user status playlived.service"
     recovery_actions:
       - "Reinstall exact version: cd /home/tony/.local/playlive && npm ci && npx playwright install chromium"
-      - "Bump version: edit /home/tony/.local/playlive/package.json to the new exact version, npm install, npx playwright install chromium, systemctl --user restart playlived.service"
+      - "Restart service: ssh tony-dell systemctl --user restart playlived.service"
+      - "Fix port: ssh tony-dell ss -tulpn | grep 9230 && kill conflicting process"
+
+  - id: playlived-omen
+    name: Playlived (tony-omen)
+    type: http
+    url: http://tony-omen:9231/sessions
+    expected_status: 200
+    timeout: 5
+    category: api
+    profiles: [home]
+    verification:
+      - "Test sessions: curl -s http://tony-omen:9231/sessions"
+      - "Check service: systemctl --user status playlived.service"
+    recovery_actions:
       - "Restart service: systemctl --user restart playlived.service"
-      - "Fix port: ss -tulpn | grep 9230 && kill conflicting process"
+      - "Fix port: ss -tulpn | grep 9231 && kill conflicting process"
 
   # Trading Services
   - id: trade-api
@@ -729,6 +741,7 @@ debugging_guidance:
     - Use direct hostname URLs for local testing (tony-omen at Home, localhost on Mobile)
     - Avoid browser preview for local testing - use regular browser instead
     - Browser preview is only for isolated environments or when direct access unavailable
+    - See docs/ssot/infrastructure/ssot.host-roles.yml for headless browser priority and chaba-h3 preview targets
     - Test in multiple browsers for compatibility issues
 
   location_testing:
