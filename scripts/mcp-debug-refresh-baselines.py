@@ -1,59 +1,29 @@
 #!/usr/bin/env python3
-"""Refresh mcp-debug efficiency baselines by running mcp_stats on both hosts."""
+"""Refresh mcp-debug efficiency baselines by running mcp_savings and updating SSOT."""
 import argparse
 import json
-import subprocess
+import re
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import yaml
 
-SSOT = Path(__file__).parent.parent / "docs" / "ssot" / "infrastructure" / "ssot.mcp-debug.yml"
-SERVER = Path(__file__).parent / "mcp-debug-server.py"
-COMMANDS = ["systemctl list-units", "df -h", "ps"]
-HOSTS = ["tony_omen", "tony_dell"]
+REPO = Path(__file__).resolve().parent.parent
+SSOT = REPO / "docs" / "ssot" / "infrastructure" / "ssot.mcp-debug.yml"
 
 
-def mcp_stats(host, command):
-    proc = subprocess.Popen(
-        ["python3", str(SERVER)],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        text=True,
-    )
-    reqs = [
-        {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}},
-        {
-            "jsonrpc": "2.0",
-            "id": 2,
-            "method": "tools/call",
-            "params": {
-                "name": "mcp_stats",
-                "arguments": {"host": host, "command": command},
-            },
-        },
-    ]
-    for r in reqs:
-        proc.stdin.write(json.dumps(r) + "\n")
-    proc.stdin.close()
+def _section_yaml(key, data):
+    """Dump a single top-level section, returning text that starts with key:."""
+    return yaml.safe_dump({key: data}, sort_keys=False, allow_unicode=True, width=120,
+                          default_flow_style=False)
 
-    results = {}
-    for line in proc.stdout:
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            msg = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if msg.get("id") == 2:
-            results = json.loads(msg["result"]["content"][0]["text"])
-            break
 
-    rc = proc.wait()
-    if rc != 0:
-        print(f"mcp-debug-server exited with code {rc}", file=sys.stderr)
-    return results
+def _replace_section(text, key, new_section):
+    """Replace a top-level YAML section using a regex that anchors on the next top-level key."""
+    # Match from `key:` at start of line until the next top-level key or end of file.
+    pattern = rf"^{re.escape(key)}:.*?^(?=(?:[a-zA-Z0-9_]+):|\Z)"
+    return re.sub(pattern, new_section, text, count=1, flags=re.MULTILINE | re.DOTALL)
 
 
 def main():
@@ -66,42 +36,74 @@ def main():
     )
     args = parser.parse_args()
 
-    all_results = {cmd: {} for cmd in COMMANDS}
-    for command in COMMANDS:
-        for host in HOSTS:
-            all_results[command][host] = mcp_stats(host, command)
+    # Import here so the package can find the local SSOT.
+    sys.path.insert(0, str(REPO / "scripts"))
+    from mcp_debug.tools import mcp_savings
+
+    savings = mcp_savings([])
+    if not savings.get("ok"):
+        print("mcp_savings failed", file=sys.stderr)
+        sys.exit(1)
+
+    print(json.dumps(savings, indent=2, default=str))
 
     if not args.update_ssot:
-        print(json.dumps(all_results, indent=2))
         return
 
-    with open(SSOT) as f:
-        doc = yaml.safe_load(f)
+    # Reorganise per-host output into per-command structures.
+    by_command = {}
+    for host, hdata in savings.get("hosts", {}).items():
+        for command, s in hdata.get("commands", {}).items():
+            by_command.setdefault(command, {})[host] = s
 
-    for command in COMMANDS:
-        omen = all_results[command]["tony_omen"]
-        cmd_cfg = doc["efficiency"]["commands"][command]
-        cmd_cfg["raw_words"] = omen["raw_words"]
-        cmd_cfg["compact_words"] = omen["compact_words"]
-        cmd_cfg["savings_pct"] = omen["savings_pct"]
-        cmd_cfg["raw_chars"] = omen["raw_chars"]
-        cmd_cfg["compact_chars"] = omen["compact_chars"]
-        cmd_cfg["savings_pct_chars"] = omen["savings_pct_chars"]
-        cmd_cfg["recommended"] = omen["savings_pct_chars"] > 0
+    commands_cfg = {}
+    for command, hosts in by_command.items():
+        baseline = hosts.get("tony_omen") or list(hosts.values())[0]
+        savings_pcts = [h.get("savings_pct_chars", 0) for h in hosts.values()]
+        recommended = all(p > 0 for p in savings_pcts)
 
-    doc["workflow"]["recommended"] = [
-        c for c in COMMANDS if doc["efficiency"]["commands"][c]["recommended"]
-    ]
-    doc["workflow"]["not_recommended"] = [
-        c for c in COMMANDS if not doc["efficiency"]["commands"][c]["recommended"]
-    ]
+        commands_cfg[command] = {
+            "raw_words": baseline["raw_words"],
+            "compact_words": baseline["compact_words"],
+            "savings_pct": baseline["savings_pct"],
+            "raw_chars": baseline["raw_chars"],
+            "compact_chars": baseline["compact_chars"],
+            "savings_pct_chars": baseline["savings_pct_chars"],
+            "recommended": recommended,
+            "hosts": {
+                h: {
+                    "raw_words": s["raw_words"],
+                    "compact_words": s["compact_words"],
+                    "savings_pct": s["savings_pct"],
+                    "raw_chars": s["raw_chars"],
+                    "compact_chars": s["compact_chars"],
+                    "savings_pct_chars": s["savings_pct_chars"],
+                }
+                for h, s in hosts.items()
+            },
+        }
+
+    efficiency = {
+        "tracked_by": "mcp_stats",
+        "note": f"per-host baselines generated on {datetime.now().strftime('%Y-%m-%d')} via mcp_savings",
+        "commands": commands_cfg,
+    }
+
+    workflow = {
+        "recommended": [c for c, d in commands_cfg.items() if d.get("recommended")],
+        "not_recommended": [c for c, d in commands_cfg.items() if not d.get("recommended")],
+    }
+
+    ssot_text = SSOT.read_text()
+    ssot_text = _replace_section(ssot_text, "efficiency", _section_yaml("efficiency", efficiency))
+    ssot_text = _replace_section(ssot_text, "workflow", _section_yaml("workflow", workflow))
 
     with open(SSOT, "w") as f:
-        yaml.safe_dump(doc, f, sort_keys=False)
+        f.write(ssot_text)
 
     print("Updated:", SSOT)
-    print("Recommended:", doc["workflow"]["recommended"])
-    print("Not recommended:", doc["workflow"]["not_recommended"])
+    print("Recommended:", workflow["recommended"])
+    print("Not recommended:", workflow["not_recommended"])
 
 
 if __name__ == "__main__":

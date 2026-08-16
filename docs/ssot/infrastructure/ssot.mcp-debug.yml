@@ -245,7 +245,7 @@ phases:
   notes: remote-exec-tony-dell status set to deprecated; mcp-debug status set to operational
 efficiency:
   tracked_by: mcp_stats
-  note: per-host baselines generated on 2026-08-15 via mcp_savings
+  note: per-host baselines generated on 2026-08-16 via mcp_savings
   commands:
     systemctl list-units:
       raw_words: 3142
@@ -264,12 +264,12 @@ efficiency:
           compact_chars: 5094
           savings_pct_chars: 93.1
         tony_dell:
-          raw_words: 2036
-          compact_words: 94
-          savings_pct: 95.4
-          raw_chars: 38273
-          compact_chars: 3700
-          savings_pct_chars: 90.3
+          raw_words: 2064
+          compact_words: 105
+          savings_pct: 94.9
+          raw_chars: 38609
+          compact_chars: 3867
+          savings_pct_chars: 90.0
     df -h:
       raw_words: 79
       compact_words: 2
@@ -294,74 +294,74 @@ efficiency:
           compact_chars: 754
           savings_pct_chars: -37.8
     ps:
-      raw_words: 616
+      raw_words: 612
       compact_words: 1
       savings_pct: 99.8
-      raw_chars: 5402
-      compact_chars: 1047
-      savings_pct_chars: 80.6
+      raw_chars: 5373
+      compact_chars: 1049
+      savings_pct_chars: 80.5
       recommended: true
       hosts:
         tony_omen:
-          raw_words: 616
+          raw_words: 612
           compact_words: 1
           savings_pct: 99.8
-          raw_chars: 5402
-          compact_chars: 1047
-          savings_pct_chars: 80.6
+          raw_chars: 5373
+          compact_chars: 1049
+          savings_pct_chars: 80.5
         tony_dell:
-          raw_words: 280
+          raw_words: 296
           compact_words: 1
-          savings_pct: 99.6
-          raw_chars: 2595
-          compact_chars: 1052
-          savings_pct_chars: 59.5
+          savings_pct: 99.7
+          raw_chars: 2741
+          compact_chars: 1026
+          savings_pct_chars: 62.6
     ps -eo pid,ppid,cmd,%cpu --sort=-%cpu:
-      raw_words: 3471
-      compact_words: 18
-      savings_pct: 99.5
-      raw_chars: 36211
-      compact_chars: 1497
-      savings_pct_chars: 95.9
-      recommended: true
-      hosts:
-        tony_omen:
-          raw_words: 3471
-          compact_words: 18
-          savings_pct: 99.5
-          raw_chars: 36211
-          compact_chars: 1497
-          savings_pct_chars: 95.9
-        tony_dell:
-          raw_words: 1332
-          compact_words: 19
-          savings_pct: 98.6
-          raw_chars: 14994
-          compact_chars: 1383
-          savings_pct_chars: 90.8
-    ps -eo pid,ppid,cmd,%mem --sort=-%mem:
-      raw_words: 3471
-      compact_words: 13
+      raw_words: 3556
+      compact_words: 16
       savings_pct: 99.6
-      raw_chars: 36211
-      compact_chars: 1501
+      raw_chars: 37044
+      compact_chars: 1523
       savings_pct_chars: 95.9
       recommended: true
       hosts:
         tony_omen:
-          raw_words: 3471
-          compact_words: 13
+          raw_words: 3556
+          compact_words: 16
           savings_pct: 99.6
-          raw_chars: 36211
-          compact_chars: 1501
+          raw_chars: 37044
+          compact_chars: 1523
           savings_pct_chars: 95.9
         tony_dell:
-          raw_words: 1332
-          compact_words: 19
-          savings_pct: 98.6
-          raw_chars: 14994
-          compact_chars: 1467
-          savings_pct_chars: 90.2
+          raw_words: 1349
+          compact_words: 22
+          savings_pct: 98.4
+          raw_chars: 15141
+          compact_chars: 1366
+          savings_pct_chars: 91.0
+    ps -eo pid,ppid,cmd,%mem --sort=-%mem:
+      raw_words: 3556
+      compact_words: 14
+      savings_pct: 99.6
+      raw_chars: 37044
+      compact_chars: 1504
+      savings_pct_chars: 95.9
+      recommended: true
+      hosts:
+        tony_omen:
+          raw_words: 3556
+          compact_words: 14
+          savings_pct: 99.6
+          raw_chars: 37044
+          compact_chars: 1504
+          savings_pct_chars: 95.9
+        tony_dell:
+          raw_words: 1356
+          compact_words: 17
+          savings_pct: 98.7
+          raw_chars: 15190
+          compact_chars: 1447
+          savings_pct_chars: 90.5
     free -h:
       raw_words: 17
       compact_words: 2
@@ -406,8 +406,8 @@ efficiency:
           compact_words: 3
           savings_pct: 75.0
           raw_chars: 71
-          compact_chars: 70
-          savings_pct_chars: 1.4
+          compact_chars: 71
+          savings_pct_chars: 0.0
     mount:
       raw_words: 582
       compact_words: 1
@@ -425,12 +425,12 @@ efficiency:
           compact_chars: 35454
           savings_pct_chars: -4.7
         tony_dell:
-          raw_words: 306
+          raw_words: 300
           compact_words: 1
           savings_pct: 99.7
-          raw_chars: 5808
-          compact_chars: 6663
-          savings_pct_chars: -14.7
+          raw_chars: 5756
+          compact_chars: 6595
+          savings_pct_chars: -14.6
     lsblk:
       raw_words: 178
       compact_words: 1
@@ -478,28 +478,28 @@ efficiency:
           compact_chars: 280
           savings_pct_chars: -34.0
     tailscale status:
-      raw_words: 35
-      compact_words: 17
-      savings_pct: 51.4
-      raw_chars: 535
-      compact_chars: 467
-      savings_pct_chars: 12.7
-      recommended: true
+      raw_words: 41
+      compact_words: 23
+      savings_pct: 43.9
+      raw_chars: 550
+      compact_chars: 550
+      savings_pct_chars: 0.0
+      recommended: false
       hosts:
         tony_omen:
-          raw_words: 35
-          compact_words: 17
-          savings_pct: 51.4
-          raw_chars: 535
-          compact_chars: 467
-          savings_pct_chars: 12.7
-        tony_dell:
           raw_words: 41
-          compact_words: 17
-          savings_pct: 58.5
-          raw_chars: 724
-          compact_chars: 493
-          savings_pct_chars: 31.9
+          compact_words: 23
+          savings_pct: 43.9
+          raw_chars: 550
+          compact_chars: 550
+          savings_pct_chars: 0.0
+        tony_dell:
+          raw_words: 47
+          compact_words: 23
+          savings_pct: 51.1
+          raw_chars: 609
+          compact_chars: 521
+          savings_pct_chars: 14.4
     ip -4 route:
       raw_words: 107
       compact_words: 3
@@ -517,35 +517,35 @@ efficiency:
           compact_chars: 472
           savings_pct_chars: 40.9
         tony_dell:
-          raw_words: 44
+          raw_words: 51
           compact_words: 3
-          savings_pct: 93.2
-          raw_chars: 332
-          compact_chars: 234
-          savings_pct_chars: 29.5
+          savings_pct: 94.1
+          raw_chars: 382
+          compact_chars: 284
+          savings_pct_chars: 25.7
     ss -tlnp:
-      raw_words: 353
+      raw_words: 371
       compact_words: 101
-      savings_pct: 71.4
-      raw_chars: 7722
+      savings_pct: 72.8
+      raw_chars: 8073
       compact_chars: 2120
-      savings_pct_chars: 72.5
-      recommended: false
+      savings_pct_chars: 73.7
+      recommended: true
       hosts:
         tony_omen:
-          raw_words: 353
+          raw_words: 371
           compact_words: 101
-          savings_pct: 71.4
-          raw_chars: 7722
+          savings_pct: 72.8
+          raw_chars: 8073
           compact_chars: 2120
-          savings_pct_chars: 72.5
+          savings_pct_chars: 73.7
         tony_dell:
-          raw_words: 92
-          compact_words: 93
-          savings_pct: -1.1
-          raw_chars: 1870
-          compact_chars: 1951
-          savings_pct_chars: -4.3
+          raw_words: 110
+          compact_words: 104
+          savings_pct: 5.5
+          raw_chars: 2200
+          compact_chars: 2121
+          savings_pct_chars: 3.6
     ip -4 -br addr show:
       raw_words: 33
       compact_words: 5
@@ -570,28 +570,22 @@ efficiency:
           compact_chars: 255
           savings_pct_chars: -32.1
 workflow:
-  default_tool: mcp_raw
-  compact_when: savings_pct_chars > 0 on the target host
-  vet_new_command: mcp_stats(host, command)
-  adaptive_tool: mcp_adaptive(host, command)
   recommended:
   - systemctl list-units
   - ps
   - ps -eo pid,ppid,cmd,%cpu --sort=-%cpu
   - ps -eo pid,ppid,cmd,%mem --sort=-%mem
   - free -h
-  - tailscale status
   - ip -4 route
+  - ss -tlnp
   not_recommended:
   - df -h
   - uptime
   - mount
   - lsblk
   - lsusb
-  - ss -tlnp
+  - tailscale status
   - ip -4 -br addr show
-  gate: Run mcp_stats on both hosts before adding a new debug_command; add to recommended
-    only if both hosts show positive char savings.
 suggested_extensions:
 - id: stats
   name: mcp_stats tool
