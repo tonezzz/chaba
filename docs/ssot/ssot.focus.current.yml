@@ -241,8 +241,8 @@ sections:
     - label: Move focus-dispatcher-overnight.timer to tony-dell
       status: completed
     - label: Redelegate Yomi/backup timers after verifying PG and storage
-      status: blocked
-      note: postgre alias and storage verified; chaba-backup is already on tony-dell; yomi-update-all blocked by /home/tony/.yomi/mcpb dependency on tony-omen
+      status: completed
+      note: 'Decision: chaba-backup already runs on tony-dell. yomi-update-all stays on tony-omen because the mcpb package and ~/.local/share/yomi LINE session are host-local; moving them would require copying the private mcpb package and the session database, and only one Yomi MCP server can hold search-index.db at a time. PG and storage were already verified on tony-dell, so this is the safest disposition.'
     - label: Move central mcp-health server to tony-dell (Phase 3/4)
       status: blocked
       note: mcp-health needs host systemctl/curl; running in a rootless podman container lacks these; keep on tony-omen
