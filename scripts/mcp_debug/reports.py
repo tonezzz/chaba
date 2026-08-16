@@ -192,6 +192,8 @@ def mcp_report(hosts=None, save=False, format="markdown"):
     if hosts is None:
         hosts = []
     savings = mcp_savings(hosts)
+    savings["generated"] = datetime.now().isoformat()
+    savings["source"] = "mcp_debug"
     report_cfg = load_report_config()
     if format == "json":
         report = generate_json_report(savings)
