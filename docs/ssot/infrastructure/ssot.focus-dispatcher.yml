@@ -79,7 +79,9 @@ schedule:
       - ~/.config/systemd/user/focus-dispatcher-overnight.timer
       - OnCalendar=*-*-* 03:00:00
     notes:
-      - mcp-health-to-inbox requires node on the runner host; install nodejs/npm on tony_dell to enable health drafts
+      - mcp-health-to-inbox requires node and a local PostgreSQL (port 5432) on the runner host.
+      - Set Environment="SKIP_HEALTH=1" on tony_dell to run only registry-drafts and focus-dispatcher --sub-agent.
+      - When health is skipped, keep mcp-health-to-inbox on tony_omen or point it at a reachable Postgres host.
   auto_commit:
     note: Set FOCUS_DISPATCHER_COMMIT=1 and FOCUS_DISPATCHER_PUSH=1 in the service unit to enable hands-off commit/push
 

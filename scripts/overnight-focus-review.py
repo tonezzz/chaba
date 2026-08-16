@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Overnight focus review: generate health inbox drafts and update focus contracts."""
+import os
 import subprocess
 import sys
 from datetime import datetime
@@ -23,7 +24,8 @@ def main():
     now = datetime.now().isoformat(timespec="seconds")
     print(f"[overnight] starting at {now}")
     rc = 0
-    rc |= run(["scripts/mcp-health-to-inbox.py"])
+    if os.environ.get("SKIP_HEALTH") != "1":
+        rc |= run(["scripts/mcp-health-to-inbox.py"])
     rc |= run(["scripts/registry-drafts.py"])
     rc |= run(["scripts/focus-dispatcher.py", "--sub-agent"])
     if rc:
