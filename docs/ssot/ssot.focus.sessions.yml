@@ -124,6 +124,25 @@ sessions:
       - Decide when to resume the parked Trade Canvas UI focus
     next_action: Start the first file bridge subtask (create ssot.mcp-debug.files.yml)
 
+  - date: '2026-08-16'
+    session: chaba-2026-08-16-cleanup
+    focus: Delegate tony-omen services and timers to tony-dell
+    source: user request
+    plan:
+      - Commit the uncommitted SSOT/infrastructure drift and trade-canvas UI changes
+      - Record the session in the focus log
+    done:
+      - Added SSOT optimization orchestration task and improvement
+      - Updated tony-dell hardware, file-control policy, maintenance bloat check, and macbook system state
+      - Completed mcp-debug baselines split (mcp_vet now writes to ssot.mcp-debug.baselines.yml)
+      - Updated yomi-failover and Caddyfile to use tony-dell tailnet IP
+      - Committed trade canvas compare UI and playlive-test SSOTs
+      - Added Tailscale Funnel 404 and healthcheck to the focus backlog
+    follow_up:
+      - Push the 5 unpushed commits on master
+      - Decide whether to activate the Tailscale Funnel 404 focus or a parked focus next
+    next_action: Push to origin or activate the next focus
+
 related_files:
   - docs/ssot/ssot.focus.current.yml
   - docs/ssot/ssot.focus.yml
