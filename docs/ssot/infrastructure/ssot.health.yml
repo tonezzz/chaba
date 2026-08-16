@@ -147,12 +147,11 @@ services:
     timeout: 5
     category: api
     profiles: [home, mobile]
+    recommendation: "If yomi-api is down and tony-dell cannot be recovered, run /home/tony/.local/bin/yomi-failover-to-omen.sh on tony-omen. See docs/ssot/infrastructure/ssot.yomi-failover.yml."
     verification:
-      - "Test direct container access: docker exec web wget -qO- http://host.docker.internal:3000/api/yomi/health"
-      - "Test Caddy proxy: curl -s {profile}/api/yomi/health"
+      - "Test direct Yomi API on tony-dell: curl -s http://tony-dell:3000/api/yomi/health"
+      - "Test Caddy proxy on tony-omen: curl -s {profile}/api/yomi/health"
       - "Test chat page: curl -s {profile}/apps/yomi/chat.html?chat=test"
-      - "Verify container networking: docker exec web ping -c 2 host.docker.internal"
-      - "Check Caddy proxy configuration uses handle_path not handle for /api/yomi/*"
 
   - id: yomi-summarization
     name: Yomi Summarization
@@ -286,20 +285,22 @@ services:
   - id: postgres
     name: Postgres
     type: container
-    container: postgres
+    container: chaba-postgres-16
+    host: tony_dell
     expected_state: running
     timeout: 5
     category: datastore
     profiles: [home, mobile]
+    disabled: true
+    note: "Postgres now runs in a rootless Podman container on tony_dell. Health is best inferred from yomi-api and the pg tailscale endpoint. If both Postgres and Yomi are down on tony_dell, use the failover plan in docs/ssot/infrastructure/ssot.yomi-failover.yml."
     verification:
-      - "Test container: docker ps | grep postgres"
-      - "Test connection: docker exec postgres pg_isready"
-      - "Test port: nc -zv localhost 5432"
-      - "Check logs: docker logs postgres --tail 20"
+      - "Test container on tony_dell: podman ps | grep chaba-postgres-16"
+      - "Test port: nc -zv postgre 5432"
+      - "Check logs: podman logs chaba-postgres-16 --tail 20"
     recovery_actions:
-      - "Restart container: docker restart postgres"
-      - "Check data volume: docker inspect postgres | grep -A 10 Mounts"
-      - "Verify networking: docker network inspect bridge"
+      - "Restart container on tony_dell: podman restart chaba-postgres-16"
+      - "Check data volume: /home/tony/.config/containers/postgres/data"
+      - "If tony_dell cannot be recovered, run the failover script: /home/tony/.local/bin/yomi-failover-to-omen.sh"
 
   - id: weaviate
     name: Weaviate
@@ -539,6 +540,8 @@ services:
     timeout: 5
     category: system
     profiles: [home, mobile]
+    disabled: true
+    note: "Timer now runs on tony_dell as a Podman user unit. Check with tony_dell: systemctl --user status yomi-update-all.timer."
 
   - id: yomi-update-active-timer
     name: Yomi Update Active Timer
@@ -548,6 +551,8 @@ services:
     timeout: 5
     category: system
     profiles: [home, mobile]
+    disabled: true
+    note: "Timer now runs on tony_dell as a Podman user unit. Check with tony_dell: systemctl --user status yomi-update-active.timer."
 
   - id: weaviate-index-timer
     name: Weaviate Index Timer

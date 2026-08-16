@@ -2297,7 +2297,32 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
         
         const overallScore = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
-        
+
+        // Build recommendations for known failure patterns
+        const recommendations = [];
+        const yomiApi = serviceScores.find(s => s.service === 'yomi-api');
+        const postgres = serviceScores.find(s => s.service === 'postgres');
+
+        if (yomiApi && (yomiApi.score === 0 || yomiApi.status === 'degraded')) {
+          recommendations.push({
+            service: 'yomi-api',
+            severity: 'high',
+            message: 'Yomi API is not healthy. If tony-dell cannot be recovered, fail over to tony-omen.',
+            script: '/home/tony/.local/bin/yomi-failover-to-omen.sh',
+            ssot: 'docs/ssot/infrastructure/ssot.yomi-failover.yml'
+          });
+        }
+
+        if (postgres && (postgres.score === 0 || postgres.status === 'degraded')) {
+          recommendations.push({
+            service: 'postgres',
+            severity: 'critical',
+            message: 'PostgreSQL is not healthy. Yomi depends on it. Review backup age and consider failover.',
+            script: '/home/tony/.local/bin/yomi-failover-to-omen.sh',
+            ssot: 'docs/ssot/infrastructure/ssot.yomi-failover.yml'
+          });
+        }
+
         return {
           content: [{
             type: 'text',
@@ -2308,6 +2333,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               include_optional: includeOptional,
               services_checked: serviceScores.length,
               service_scores: serviceScores,
+              recommendations,
               grade: overallScore >= 90 ? 'A' : overallScore >= 80 ? 'B' : overallScore >= 70 ? 'C' : overallScore >= 60 ? 'D' : 'F'
             }, null, 2)
           }]
