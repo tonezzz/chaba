@@ -75,6 +75,9 @@ class CORSHandler(BaseHTTPRequestHandler):
         if parsed.path == "/mcp-savings.json":
             self._handle_savings(parsed)
             return
+        if parsed.path == "/health":
+            self._send_json(200, {"ok": True})
+            return
 
         self.send_response(404)
         self.send_header("Content-Type", "application/json")

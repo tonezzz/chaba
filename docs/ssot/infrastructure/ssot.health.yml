@@ -645,6 +645,44 @@ services:
       - "Check backup service: systemctl status chaba-backup.timer"
       - "Check backup logs for errors: tail -100 /var/log/chaba-backup.log"
 
+  - id: chaba-funnel
+    name: Chaba Funnel landing page
+    type: http
+    url: https://tony-dell.taila0626a.ts.net/health
+    expected_status: 200
+    timeout: 5
+    category: tailscale
+    profiles: [home, mobile]
+    note: "Funnel landing page and /health endpoint on tony-dell, proxied by tailscale serve to 127.0.0.1:8082."
+    verification:
+      - "Check systemd: systemctl --user status chaba-funnel.service"
+      - "Check port: ss -tlnp | grep 8082"
+      - "Test root: curl -s -o /dev/null -w '%{http_code}' https://tony-dell.taila0626a.ts.net/"
+      - "Test health: curl -s https://tony-dell.taila0626a.ts.net/health"
+    recovery_actions:
+      - "Restart: systemctl --user restart chaba-funnel.service"
+      - "Check tailscale serve: tailscale serve status"
+      - "Check syntax: python3 -m py_compile /home/tony/chaba-funnel/funnel-server.py"
+
+  - id: mcp-debug-cors
+    name: MCP Debug CORS endpoint
+    type: http
+    url: http://100.68.142.13:9100/health
+    expected_status: 200
+    timeout: 5
+    category: mcp-debug
+    profiles: [home, mobile]
+    note: "CORS endpoint on tony-dell for mcp-savings.json and mcp-table.json, served by http_server.py via tailscale serve / Funnel."
+    verification:
+      - "Check systemd: systemctl --user status mcp-debug-cors.service"
+      - "Check port: ss -tlnp | grep 9100"
+      - "Test tailnet: curl -s http://100.68.142.13:9100/health"
+      - "Test Funnel: curl -s https://tony-dell.taila0626a.ts.net/mcp-savings.json"
+    recovery_actions:
+      - "Restart: systemctl --user restart mcp-debug-cors.service"
+      - "Check tailscale serve: tailscale serve status"
+      - "Check syntax: python3 -m py_compile /home/tony/CascadeProjects/chaba/scripts/mcp_debug/http_server.py"
+
 # Recovery suggestions for common failure modes
 recovery_actions:
   container_down: "Check docker compose status: docker compose ps, Restart container: docker compose restart <container>, Check logs: docker compose logs <container>"

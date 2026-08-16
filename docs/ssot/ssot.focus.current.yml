@@ -207,7 +207,7 @@ sections:
       failure may be client-specific or cache-related. Investigate root path handling, verify
       expected landing/health endpoint, and add a health check for the Funnel root and mcp
       endpoints in SSOT health definitions.'
-    status: active
+    status: completed
     priority: high
     started: '2026-08-16'
     estimated_duration: 1 session
@@ -220,13 +220,17 @@ sections:
     - mcp-debug
     subtasks:
     - label: Reproduce the 404 from different clients and caches
-      status: not_started
+      status: completed
+      note: 'curl from local, tony-dell, and tony-omen all returned 200; 404 not reproducible from CLI. Likely client-specific cache or browser state.'
     - label: Verify tailscale serve / Funnel root path configuration on tony-dell
-      status: not_started
+      status: completed
+      note: 'Funnel root / proxies to 127.0.0.1:8082 via chaba-funnel.service; /mcp-savings.json and /mcp-table.json proxy to 127.0.0.1:9100.'
     - label: Add a landing/health endpoint for the Funnel root
-      status: not_started
+      status: completed
+      note: 'Added /health to funnel-server.py and scripts/mcp_debug/http_server.py; both return {"ok": true}.'
     - label: Add SSOT health checks for Funnel root and mcp endpoints
-      status: not_started
+      status: completed
+      note: 'Added chaba-funnel and mcp-debug-cors services to ssot.health.yml.'
     request_log:
     - date: '2026-08-16'
       request: what's next after completing the tony-dell delegation focus
