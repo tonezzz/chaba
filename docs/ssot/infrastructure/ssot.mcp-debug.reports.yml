@@ -1,0 +1,28 @@
+title: MCP Debug Reports
+subtitle: Report templates and formatting for mcp-debug savings and diagnostics
+icon: report
+version: 1
+
+reports:
+  savings_table:
+    description: Per-host Markdown table of raw/compact/saved characters and percentages for each debug command.
+    data_source: mcp_savings
+    columns:
+      - key: command
+        label: Command
+      - key: raw_chars
+        label: Raw chars
+      - key: compact_chars
+        label: Compact chars
+      - key: saved_chars
+        label: Saved chars
+      - key: savings_pct_chars
+        label: Char %
+      - key: savings_pct
+        label: Word %
+    sort:
+      by: savings_pct_chars
+      descending: true
+    negative_marker: "(expanded)"
+    save_path_template: reports/mcp-savings-{date}.md
+    include_totals: true
