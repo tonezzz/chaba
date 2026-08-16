@@ -9,7 +9,8 @@ overview:
     - tony_omen
     - tony_dell
     - macbook
-  mode: background systemd service + optional timer
+  mode: continuous background systemd user service on tony_dell
+  service: ~/.config/systemd/user/mcp-link-monitor.service
 
 principles:
   - Cheap first: use ping or TCP connect for periodic probes, not mcp_debug.
