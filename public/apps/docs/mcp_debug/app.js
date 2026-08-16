@@ -1,4 +1,4 @@
-const LIVE_DATA_URL = null; // no public live endpoint yet; set to e.g. "http://tony-omen.local:11023/data/mcp-savings.json" if one is added
+const LIVE_DATA_URL = "http://tony-omen.local:9100/mcp-savings.json"; // served by mcp_debug.http_server on tony-omen
 
 async function loadReport() {
   const status = document.getElementById('status');
