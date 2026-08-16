@@ -743,3 +743,27 @@ presets:
     - host: macbook
       tool: mcp_raw
       command: diskutil list
+  quick-network:
+    description: Listening TCP sockets and IPv4 routing on both Linux hosts
+    steps:
+    - host: tony_omen
+      tool: mcp_debug
+      command: ss -tlnp
+    - host: tony_dell
+      tool: mcp_debug
+      command: ss -tlnp
+    - host: tony_omen
+      tool: mcp_debug
+      command: ip -4 route
+    - host: tony_dell
+      tool: mcp_debug
+      command: ip -4 route
+  service-diff:
+    description: Diff running systemd units between tony-omen and tony-dell
+    steps:
+    - tool: mcp_diff
+      command: systemctl list-units
+      hosts:
+      - tony_omen
+      - tony_dell
+      compact: true

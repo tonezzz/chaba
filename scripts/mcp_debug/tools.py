@@ -457,8 +457,12 @@ def mcp_preset_run(name):
         host = step.get("host")
         tool = step.get("tool")
         command = step.get("command")
-        if not host or not tool:
-            results.append({"ok": False, "error": "step missing host or tool", "step": step})
+        if not tool:
+            results.append({"ok": False, "error": "step missing tool", "step": step})
+            all_ok = False
+            continue
+        if tool != "mcp_diff" and not host:
+            results.append({"ok": False, "error": "step missing host", "step": step})
             all_ok = False
             continue
         if tool == "mcp_debug":
@@ -488,6 +492,20 @@ def mcp_preset_run(name):
                 all_ok = False
         elif tool == "mcp_health":
             results.append(mcp_health(host))
+        elif tool == "mcp_diff":
+            if not command:
+                results.append({"ok": False, "error": "mcp_diff step missing command", "step": step})
+                all_ok = False
+                continue
+            hosts = step.get("hosts", [])
+            if len(hosts) != 2:
+                results.append({"ok": False, "error": "mcp_diff step requires exactly 2 hosts", "step": step})
+                all_ok = False
+                continue
+            r = mcp_diff(command, hosts, step.get("compact", True))
+            results.append(r)
+            if not r.get("ok"):
+                all_ok = False
         else:
             results.append({"ok": False, "error": f"unsupported tool: {tool}", "step": step})
             all_ok = False
