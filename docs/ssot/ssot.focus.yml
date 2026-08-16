@@ -622,6 +622,22 @@ sections:
     - tony-omen
     - live-data
     - completed
+  - label: TCP/IP link monitoring with auto-scan and safe fix
+    text: Watch reachability to tony_omen, tony_dell, and macbook. On consecutive misses, scan and apply safe fixes, escalate
+      to a focus-inbox alert if unresolved.
+    date: '2026-08-16'
+    duration: 1 session
+    outcome: 'Completed subtasks: Create ssot.link-monitor.yml schema, Create ssot.mcp-debug.cors.yml policy, Implement scripts/mcp-link-monitor.py,
+      Add systemd service/timer for periodic checks, Wire scan/fix output into focus-inbox creation, Add IP-drift detection
+      and safe SSOT update path, Update ssot.index.yml to list new SSOTs, Add 60s cache to scripts/mcp_debug/http_server.py
+      per ssot.mcp-debug.cors.yml'
+    tags:
+    - monitoring
+    - network
+    - mcp-health
+    - automation
+    - focus
+    - completed
 config:
   version: 2
   last_updated: '2026-08-16'
