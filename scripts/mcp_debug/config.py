@@ -18,6 +18,7 @@ DEBUG_COMMANDS = CONFIG.get("debug_commands", {})
 RAW_PREFIXES = CONFIG.get("raw_commands", {}).get("allowed_prefixes", [])
 PRESETS = CONFIG.get("presets", {})
 PRESET_DESCRIPTIONS = {name: data.get("description", "") for name, data in PRESETS.items()}
+TABLE_SCHEMAS = CONFIG.get("output_formats", {}).get("table_schemas", {})
 
 
 def load_report_config():

@@ -1,10 +1,13 @@
 """CORS HTTP endpoint for live mcp_debug savings JSON with cached refresh."""
 import threading
 import time
+import json
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
+from .config import HOSTS
 from .reports import mcp_report
+from .formatters import mcp_table
 
 REFRESH_INTERVAL = 60
 
@@ -59,32 +62,55 @@ class CORSHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
-        if parsed.path != "/mcp-savings.json":
-            self.send_response(404)
-            self.send_header("Content-Type", "application/json")
-            self._send_cors()
-            self.end_headers()
-            self.wfile.write(b'{"ok":false,"error":"not found"}')
+        if parsed.path == "/mcp-table.json":
+            self._handle_table(parsed)
+            return
+        if parsed.path == "/mcp-savings.json":
+            self._handle_savings(parsed)
             return
 
+        self.send_response(404)
+        self.send_header("Content-Type", "application/json")
+        self._send_cors()
+        self.end_headers()
+        self.wfile.write(b'{"ok":false,"error":"not found"}')
+
+    def _handle_table(self, parsed):
+        query = parse_qs(parsed.query)
+        host = query.get("host", [""])[0]
+        command = query.get("command", [""])[0]
+
+        if not host or not command:
+            self._send_json(400, {"ok": False, "error": "host and command query params required"})
+            return
+
+        if host not in HOSTS:
+            self._send_json(404, {"ok": False, "error": f"unknown host: {host}"})
+            return
+
+        result = mcp_table(host, command)
+        status = 200 if result.get("ok") else 500
+        self._send_json(status, result)
+
+    def _handle_savings(self, parsed):
         query = parse_qs(parsed.query)
         force = query.get("refresh", ["0"])[0] in ("1", "true", "yes")
         report = _get_report(force=force)
 
         if report is None:
-            self.send_response(500)
-            self.send_header("Content-Type", "application/json")
-            self._send_cors()
-            self.end_headers()
-            self.wfile.write(b'{"ok":false,"error":"report generation failed"}')
+            self._send_json(500, {"ok": False, "error": "report generation failed"})
             return
 
-        self.send_response(200)
+        self._send_json(200, json.loads(report))
+
+    def _send_json(self, status, payload):
+        body = json.dumps(payload, separators=(",", ":")).encode()
+        self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Cache-Control", "public, max-age=60")
         self._send_cors()
         self.end_headers()
-        self.wfile.write(report.encode())
+        self.wfile.write(body)
 
     def log_message(self, *args):
         pass

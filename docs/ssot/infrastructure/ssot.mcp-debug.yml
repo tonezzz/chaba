@@ -11,9 +11,55 @@ output_formats:
       headers: list of strings
       rows: list of string arrays
     notes:
-      - CSV header row is included in the mcp_debug server output.
-      - The H3 PHP proxy wraps CSV into the proxy_envelope JSON for the JS app.
+      - The CORS endpoint /mcp-table.json returns the proxy_envelope JSON directly.
+      - A same-origin PHP proxy (api/mcp-table.php) is used for HTTPS sites.
       - Keep the existing keyed JSON compact format for non-table or hierarchical output.
+      - Only commands listed in table_schemas are rendered as tables.
+  table_schemas:
+    filesystems:
+      array_key: fs
+      headers: [Filesystem, Size, Used, Available, UsePercent, Mount]
+      fields: [f, s, u, a, m, p]
+    processes:
+      array_key: p
+      headers: [PID, Command, CPU, MEM]
+      fields: [p, c, u, m]
+    process_cpu:
+      array_key: p
+      headers: [PID, PPID, Command, CPU]
+      fields: [p, pp, c, u]
+    process_mem:
+      array_key: p
+      headers: [PID, PPID, Command, MEM]
+      fields: [p, pp, c, m]
+    mounts:
+      array_key: m
+      headers: [Device, Path, Type, Options]
+      fields: [d, p, t, o]
+    block_devices:
+      array_key: d
+      headers: [Name, Size, FSType, Type, Mount]
+      fields: [n, s, f, t, m]
+    usb_devices:
+      array_key: u
+      headers: [Bus, Device, ID, Name]
+      fields: [b, d, i, n]
+    interfaces:
+      array_key: i
+      headers: [Interface, State, Address]
+      fields: [i, s, a]
+    routes:
+      array_key: r
+      headers: [Destination, Gateway, Interface]
+      fields: [d, g, i]
+    tailscale:
+      array_key: p
+      headers: [IP, Host, User, OS_State]
+      fields: [i, h, u, o]
+    systemd_units:
+      array_key: u
+      headers: [Unit, Load, State, Active, Description]
+      fields: [u, l, s, a, d]
 
 hosts:
   tony_omen:
@@ -45,7 +91,7 @@ debug_commands:
   systemctl list-units:
     description: Running systemd services
     compact: true
-    expected_output: auto
+    expected_output: systemd_units
   df -h:
     description: Disk usage
     compact: true
@@ -53,15 +99,15 @@ debug_commands:
   ps:
     description: Top 20 processes by CPU
     compact: true
-    expected_output: auto
+    expected_output: processes
   ps -eo pid,ppid,cmd,%cpu --sort=-%cpu:
     description: Top processes by CPU
     compact: true
-    expected_output: processes
+    expected_output: process_cpu
   ps -eo pid,ppid,cmd,%mem --sort=-%mem:
     description: Top processes by memory
     compact: true
-    expected_output: processes
+    expected_output: process_mem
   free -h:
     description: Memory usage
     compact: true
@@ -85,11 +131,11 @@ debug_commands:
   tailscale status:
     description: Tailscale network status
     compact: true
-    expected_output: auto
+    expected_output: tailscale
   ip -4 route:
     description: IPv4 routing table
     compact: true
-    expected_output: auto
+    expected_output: routes
   ss -tlnp:
     description: Listening TCP sockets
     compact: true
