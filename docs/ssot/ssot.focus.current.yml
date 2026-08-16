@@ -72,7 +72,28 @@ sections:
 - title: Active Shared Focus
   icon: active
   layout: list
-  items: []
+  items:
+  - label: mcp-debug SSOT read and search tools
+    text: Build mcp_read_ssot and mcp_search_ssot in scripts/mcp-debug-server.py. mcp_search_ssot should use mddb semantic search first and fall back to a local YAML keyword scan when mddb is unavailable or stale.
+    status: active
+    priority: medium
+    started: '2026-08-16'
+    estimated_duration: 2-3 sessions
+    tags:
+    - mcp
+    - ssot
+    - read
+    - search
+    - mddb
+    subtasks:
+    - label: Add mcp_read_ssot tool
+      status: in_progress
+    - label: Add mcp_search_ssot tool with mddb fallback
+      status: not_started
+    request_log:
+    - date: '2026-08-16'
+      request: 'next?'
+      matched_to: mcp-debug SSOT read and search tools
 - title: Active Branch Focus
   icon: branch
   layout: list
