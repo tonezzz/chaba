@@ -2,8 +2,8 @@ title: Current Focus
 subtitle: Active shared and branch focuses plus quick wins — read this at the start of every session
 icon: target
 workflow:
-- Assistant must read this SSOT at the start of each session
-  - Read the most recent entry in docs/ssot/ssot.focus.sessions.yml to pick up pending follow-ups
+- Assistant must read this SSOT at the start of each session - Read the most recent entry in docs/ssot/ssot.focus.sessions.yml
+  to pick up pending follow-ups
 - List docs/ssot/focus-inbox/*.yml at session start and summarize any pending items for triage
 - Match the user request against active shared and branch focuses first
 - If it matches, append it to that item's request_log and do the work inside that focus
@@ -117,6 +117,37 @@ sections:
       matched_to: Modularize mcp-debug-server.py and large files
     branch: chaba
     source: docs/ssot/focus-inbox/2026-08-16-modularize-mcp-debug.yml
+  - label: Fix mcp_debug H3 page mixed-content (HTTP/HTTPS) error
+    text: 'The H3 page at https://chaba.h3.gizmo-thailand.com/apps/docs/mcp_debug/index.html fails to load live data because
+      app.js fetches http://tony-omen.local:9100/mcp-savings.json, which is blocked by browsers when the page is served over
+      HTTPS (mixed-content error). The page currently falls back to the cached data/mcp-savings.json snapshot, so the report
+      still renders, but the live tony-omen connection is unavailable and an error is logged. Decide whether to (a) serve
+      the tony-omen mcp-savings endpoint over HTTPS and update the CORS allowlist, (b) add an HTTPS CORS endpoint in the h3/proxy
+      layer, (c) use a relative/proxied path such as /api/mcp-savings.json inside app.js, or (d) remove the live URL until
+      a secure endpoint is available.
+
+      '
+    status: active
+    priority: high
+    started: '2026-08-16'
+    estimated_duration: 1 session
+    tags:
+    - h3
+    - mcp-debug
+    - mixed-content
+    - https
+    - cors
+    - tony-omen
+    subtasks:
+    - label: Reproduce and confirm the mixed-content error in browser dev tools
+      status: not_started
+    - label: Choose and implement the fix (HTTPS endpoint, proxy path, or disable live)
+      status: not_started
+    - label: Verify the page loads without mixed-content warnings and shows live or cached data
+      status: not_started
+    request_log: []
+    branch: chaba-h3
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-16-045950-mcp-debug-h3-mixed-content.yml
 - title: Quick Wins
   icon: quick
   layout: list
