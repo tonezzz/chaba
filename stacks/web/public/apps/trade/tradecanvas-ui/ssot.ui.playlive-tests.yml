@@ -51,3 +51,23 @@ components:
     cases:
       - step: Load compare2.html
         expected: Header shows pairLabel, price, change, and status. Symbol / Timeframe panel is above Strategy Comparison panel.
+
+  - name: Dashboard Page
+    test_page: index.html
+    cases:
+      - step: Load index.html
+        expected: Header, main chart, currency selector, and strategy panel render without JS errors.
+      - step: Switch currency and timeframe
+        expected: Chart reloads and the displayed symbol updates.
+
+  - name: Compare Page
+    test_page: compare.html
+    cases:
+      - step: Load compare.html
+        expected: Chart renders, selectors work, and strategy comparison loads.
+
+  - name: Compare-New Page
+    test_page: compare-new.html
+    cases:
+      - step: Load compare-new.html
+        expected: Chart renders and the new strategy panel initializes.

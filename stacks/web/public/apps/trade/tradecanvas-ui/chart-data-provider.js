@@ -130,7 +130,14 @@ class ChartDataProvider {
             const startTime = this.calculateStartDate(new Date(endTime * 1000), timeframe);
             const startTimestamp = Math.floor(startTime.getTime() / 1000);
 
-            return data.filter(point => point.time >= startTimestamp && point.time <= endTime);
+            const filtered = data.filter(point => point.time >= startTimestamp && point.time <= endTime);
+            if (filtered.length >= 5) {
+                return filtered;
+            }
+
+            const fallback = data.slice(-5);
+            console.log('Short timeframe has', filtered.length, 'points; falling back to', fallback.length, 'recent points');
+            return fallback;
         }
 
         return data;

@@ -115,6 +115,16 @@ class ChartRenderer {
 
         this.candlestickSeries.setData(chartData);
 
+        if (chartData.length === 0) {
+            return;
+        }
+
+        if (chartData.length === 1) {
+            // Show a few logical bars of empty space around the lone candle.
+            this.chart.timeScale().setVisibleLogicalRange({ from: -3.5, to: 3.5 });
+            return;
+        }
+
         // Density guard: if all candles are too dense to be visible, show
         // only the most recent bars instead of letting fitContent squeeze
         // them to sub-pixel width.
